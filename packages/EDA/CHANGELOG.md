@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20932: Added meta.mlprobabilities on every classifier's train function and the Class probabilities input of SVM (Platt scaling, set by Forge's Predict probability)
 * GROK-20932: Rewrote the XGBoost hyperparameter tooltips after the XGBoost parameter docs
 * GROK-20932: Added the Row sample and Column sample hyperparameters (subsample / colsample_bytree, default 1, searched in 0.5-1) and a Model seed to XGBoost; the seed matters only when a sample is below 1
 * GROK-20932: Added a Model seed hyperparameter to Linear Regression, where Crux takes one; with the current settings the model does not depend on it

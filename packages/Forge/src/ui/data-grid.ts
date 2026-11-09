@@ -21,9 +21,17 @@ export function readOnlyGrid(df: DG.DataFrame, tooltips: GridTooltips = {},
   grid.props.showRowHeader = false;
   grid.props.showCurrentRowIndicator = false;
   grid.props.showAddNewRowIcon = false;
-  // Inline, computed: one header row and the rows, so a short table shows no scroll bar.
+  // Inline, computed: the header (one row until it is drawn, then as tall as its wrapped names) and the rows, so a
+  // short table shows no scroll bar.
   grid.root.style.width = '100%';
-  grid.root.style.height = `${(Math.min(df.rowCount, maxRows) + 1) * grid.props.rowHeight + 2}px`;
+  const rows = Math.min(df.rowCount, maxRows) * grid.props.rowHeight + 2;
+  const fit = (header: number) => {
+    const height = `${Math.max(header, grid.props.rowHeight) + rows}px`;
+    if (grid.root.style.height !== height)
+      grid.root.style.height = height;
+  };
+  fit(grid.props.rowHeight);
+  grid.sub(grid.onAfterDrawContent.subscribe(() => fit(grid.colHeaderHeight)));
   TOOLTIPS.set(grid.root, tooltips);
   grid.onCellTooltip((cell, x, y) => {
     const text = gridTooltip(grid, cell);

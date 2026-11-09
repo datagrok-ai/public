@@ -409,8 +409,41 @@ category('SVM', () => {
     console.log(`winequality classification fit: ${Date.now() - t0} ms`);
   }, {timeout: TIMEOUT});
 
-  test('No class probabilities', async () => {
-    const {df, target} = classification(ROWS_K, MIN_COLS, true, CORRECTNESS_SEED);
+  test('Class probabilities only with the Class probabilities input', async () => {
+    const {df, target} = classification(ROWS_K, 1, true, CORRECTNESS_SEED);
     expectArray((await cruxPredict(df, await svm(df, target))).columns.names(), ['Prediction']);
+
+    const classes = sortedClasses(target);
+    expect(classes.length, 2, 'dataset is expected to have 2 categories');
+    const bytes = await trainSvm(df, target, 'RBF', 1, 0, 3, 0, 0.1, true);
+    const out = await cruxPredict(df, bytes);
+    expectArray(out.columns.names(), ['Prediction', ...classes.map((c) => `proba_${c}`)]);
+    const probas = classes.map((c) => out.col(`proba_${c}`)!);
+    for (const col of probas)
+      expect(col.type, DG.COLUMN_TYPE.FLOAT, `${col.name} type`);
+    const prediction = out.col('Prediction')!;
+    for (let i = 0; i < out.rowCount; ++i) {
+      if (prediction.isNone(i))
+        continue;
+      const sum = probas.reduce((s, col) => s + col.get(i), 0);
+      expect(Math.abs(sum - 1) < 1e-5, true, `row ${i}: the probabilities sum to ${sum}`);
+    }
+    const params = readCruxManifest(bytes).params;
+    expect(params.probability, true);
+    expect(params.random_state, 0);
+
+    const iris = await grok.dapi.files.readCsv('System:DemoFiles/iris.csv');
+    const features = irisMeasurements(iris);
+    const species = await cruxPredict(features, await trainSvm(features, iris.col('Species')!, 'RBF', 1, 0, 3, 0, 0.1,
+      true));
+    const columns = IRIS_SPECIES.map((c) => species.col(`proba_${c}`)!);
+    const predicted = species.col('Prediction')!;
+    let agree = 0;
+    for (let i = 0; i < species.rowCount; ++i) {
+      const values = columns.map((col) => col.get(i));
+      if (IRIS_SPECIES[values.indexOf(Math.max(...values))] === predicted.get(i))
+        ++agree;
+    }
+    expect(agree >= 0.95 * species.rowCount, true, `the predicted class is the most probable on ${agree} rows`);
   }, {timeout: TIMEOUT});
 }); // SVM

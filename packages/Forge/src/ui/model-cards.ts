@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {hyperparametersOf} from '../engines/engine';
+import {visibleHyperparametersOf} from '../engines/engine';
 import {METRIC_DESCRIPTIONS, METRIC_LABELS, metricFindings} from '../metrics/metrics';
 import {ValidationSettings} from '../training/k-fold';
 import {findingsOf, holdOutLine, METRIC_HEADERS, metricIdsOf, metricTooltip, valueColumns} from './metrics-table';
@@ -211,7 +211,7 @@ export class ModelCards {
    * every setting of the method as trained, captioned as its Manual input (hover a row for its meaning), in a table
    * styled as Performance's. */
   private static settingsTable(run: SessionRun): HTMLElement {
-    const properties = hyperparametersOf(run.engine);
+    const properties = visibleHyperparametersOf(run.engine);
     const status = ui.span([run.settingsStatus], 'forge-tune-status-text');
     ui.tooltip.bind(status, () =>
       [STATUS_TOOLTIPS[run.settingsStatus], ...RunsPanel.searchLines(run.search)].join('. '));

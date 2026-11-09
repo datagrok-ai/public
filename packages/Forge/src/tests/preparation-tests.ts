@@ -2,10 +2,10 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
 import {defaultValuesOf} from '../engines/engine';
 import {imputeFunction, imputeSettingsOf, prepareMissingValues} from '../preparation/missing-values';
-import {replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
+import {prepareFeatures, replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
 import {PreparationOptions, preparationOptionsOf} from '../preparation/preparation-options';
-import {columnNamed, expectReleased, failsWith, framesSharing, IMPUTE, names, NO_OPTIONS, valuesOf}
-  from './test-data';
+import {columnNamed, expectReleased, failsWith, framesSharing, IMPUTE, names, NO_OPTIONS, PREDICT_PROBABILITY,
+  valuesOf} from './test-data';
 
 const gapCount = (columns: DG.Column[]) => columns.reduce((sum, c) => sum + c.stats.missingValueCount, 0);
 
@@ -58,6 +58,72 @@ category('Preparation', () => {
     expectArray([...gap.categories].sort(), ['', 'no', 'yes']);
   });
 
+  test('class-probabilities: two classes cut the positive class\'s probability at the threshold', async () => {
+    const prediction = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Prediction', ['no', 'no', 'yes', 'yes']);
+    const probabilities = {classes: ['yes', 'no'], columns: [
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_yes', [0.9, 0.6, 0.59, null]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_no', [0.1, 0.4, 0.41, null])]};
+    const options: PreparationOptions = {...NO_OPTIONS, postprocessingInfo: ['class-probabilities'],
+      positiveClass: 'yes', negativeClass: 'no', binaryClassificationThreshold: 0.6};
+    const labels = replayPostprocessing(prediction, options, probabilities);
+    expectArray(labels.toList(), ['yes', 'yes', 'no', 'yes']);
+    expect(labels.type, DG.COLUMN_TYPE.STRING);
+    expect(labels.name, 'Prediction');
+    expect(labels.categories.includes(''), false, labels.categories.join(', '));
+    expectArray(prediction.toList(), ['no', 'no', 'yes', 'yes']);
+    expect(replayPostprocessing(prediction, options) === prediction, true, 'Labels without probabilities');
+  });
+
+  test('class-probabilities: a probability equal to the threshold in single precision is positive', async () => {
+    const values = [0.7, 0.9, 0.42];
+    const prediction = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Prediction', values.map(() => 'no'));
+    const probabilities = {classes: ['yes', 'no'], columns: [
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_yes', values),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_no', values.map((p) => 1 - p))]};
+    for (const [i, threshold] of values.entries()) {
+      const options: PreparationOptions = {...NO_OPTIONS, postprocessingInfo: ['class-probabilities'],
+        positiveClass: 'yes', negativeClass: 'no', binaryClassificationThreshold: threshold};
+      const labels = replayPostprocessing(prediction, options, probabilities);
+      expect(labels.get(i), 'yes', `${threshold}: ${probabilities.columns[0].getNumber(i)}`);
+      expectArray(labels.toList(), values.map((p) => Math.fround(p) >= Math.fround(threshold) ? 'yes' : 'no'));
+    }
+  });
+
+  test('class-probabilities: more classes take the most probable one, a tie the first', async () => {
+    const prediction = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Prediction', ['c', 'c', 'b', 'a', null]);
+    const probabilities = {classes: ['a', 'b', 'c'], columns: [
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_a', [0.2, 0.4, null, 0.1, 0.5]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_b', [0.5, 0.4, null, 0.1, 0.3]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_c', [0.3, 0.2, null, 0.8, 0.2])]};
+    const options: PreparationOptions = {...NO_OPTIONS, postprocessingInfo: ['class-probabilities']};
+    const labels = replayPostprocessing(prediction, options, probabilities);
+    expectArray(labels.toList().slice(0, 4), ['b', 'a', 'b', 'c']);
+    expect(labels.isNone(4), true, 'A row without a prediction got a label');
+  });
+
+  test('prepareFeatures: predict probability records class-probabilities and keeps the target', async () => {
+    const x = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2, 3, 4, 5]);
+    const sex = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'sex', ['M', 'F', 'F', 'M', null]);
+    const prepared = prepareFeatures([x], sex, {...PREDICT_PROBABILITY, threshold: 0.4}, NO_OPTIONS);
+    expect(prepared.target === sex, true, 'The target was replaced');
+    expect(JSON.stringify(prepared.options), JSON.stringify({preprocessingInfo: [],
+      postprocessingInfo: ['class-probabilities'], positiveClass: 'F', negativeClass: 'M',
+      binaryClassificationThreshold: 0.4}));
+    const optimized = prepareFeatures([x], sex, {...PREDICT_PROBABILITY, thresholdMetric: 'mcc'}, NO_OPTIONS);
+    expect(optimized.options.thresholdMetric, 'mcc');
+
+    const three =DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'kind', ['a', 'b', 'c', 'a', 'b']);
+    const classes = prepareFeatures([x], three, PREDICT_PROBABILITY, NO_OPTIONS);
+    expect(classes.target === three, true, 'A three-class target was replaced');
+    expect(JSON.stringify(classes.options), JSON.stringify({preprocessingInfo: [],
+      postprocessingInfo: ['class-probabilities']}));
+
+    const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', [1, 0, 1, 0, 1]);
+    const regression = prepareFeatures([x], y, PREDICT_PROBABILITY, NO_OPTIONS);
+    expect(regression.target === y, true, 'A numerical target was replaced');
+    expectArray(regression.options.postprocessingInfo, []);
+  });
+
   test('empty step lists leave the data untouched', async () => {
     const columns = [DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'c', ['a', 'b'])];
     const prediction = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', [0.2, 0.9]);
@@ -84,6 +150,8 @@ category('Preparation', () => {
       missingValues: {mode: 'impute', skippedRows: 2, neighbors: 4},
       oneHotCategories: {c: ['x', 'y'], d: []}, skippedColumns: ['id'],
       positiveClass: 'a', binaryClassificationThreshold: 0.4}));
+    expect(preparationOptionsOf({thresholdMetric: 'balancedAccuracy'}).thresholdMetric, 'balancedAccuracy');
+    expect(preparationOptionsOf({thresholdMetric: 'auc'}).thresholdMetric === undefined, true, 'An unknown metric');
   });
 
   test('Skip rows drops the rows with a missing feature or target value, without touching the input', async () => {

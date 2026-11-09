@@ -80,15 +80,26 @@ async function fitFailure(f: DG.Func, data: Data, values: {[name: string]: Value
 }
 
 category('Crux search spaces', () => {
-  test('Every method declares mlparallel and the spaces are well formed', async () => {
+  test('Every method declares mlparallel and mlprobabilities and the spaces are well formed', async () => {
     const functions = trainFunctions();
     expect(functions.length, 16);
     const problems: string[] = [];
+    const probabilityInputs: string[] = [];
     let spaces = 0;
     for (const f of functions) {
       const method = f.options['mlname'];
       if (f.options['mlparallel'] !== 'true')
         problems.push(`${method}: no mlparallel`);
+      const probabilities = f.options['mlprobabilities'];
+      if (REGRESSORS.includes(method)) {
+        if (probabilities !== undefined && probabilities !== null)
+          problems.push(`${method}: mlprobabilities on a regressor`);
+      } else if (probabilities !== 'true') {
+        if (f.inputs.find((p) => p.name === probabilities)?.propertyType !== DG.TYPE.BOOL)
+          problems.push(`${method}: mlprobabilities ${probabilities} is neither 'true' nor a bool input`);
+        else
+          probabilityInputs.push(method);
+      }
       const space = spaceOf(f);
       if (space === undefined)
         continue;
@@ -126,6 +137,7 @@ category('Crux search spaces', () => {
       }
     }
     expect(problems.join('\n'), '');
+    expect(probabilityInputs.join(', '), 'SVM');
     expect(spaces, 15);
   });
 

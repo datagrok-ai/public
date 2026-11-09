@@ -1,11 +1,14 @@
+import * as DG from 'datagrok-api/dg';
 import {Hyperparameters} from '../engines/engine';
 import {EnginePrediction, LoopProgress, yieldToEventLoop} from '../engines/engine-calls';
 import {errorMessage, ForgeError} from '../forge-error';
-import {classesOf, METRIC_LABELS, metricsOf, taskOf} from '../metrics/metrics';
+import {classesOf, ClassProbabilities, METRIC_LABELS, MetricId, metricsOf, taskOf} from '../metrics/metrics';
+import {SCORE_METRIC_IDS} from '../metrics/report';
+import {replayPostprocessing} from '../preparation/pipeline';
 import {validationFolds} from './k-fold';
 import {MAX_DUPLICATES, MAX_FAILED_WITHOUT_COMPLETE, PRUNE_AFTER_FOLDS, PRUNE_MIN_TRIALS, SearchExecutor,
   SearchOutcome, SearchPlan, SearchStop, Trial, trialPoints} from './search';
-import {foldMasks, foldPrediction, outOfFoldColumn, outOfFoldProbabilities} from './train-model';
+import {foldMasks, foldPrediction, outOfFoldColumn, outOfFoldProbabilities, positionsOf} from './train-model';
 
 /** At most [slots] holders at a time; the others wait in turn. */
 class Semaphore {
@@ -38,7 +41,7 @@ export class BrowserSearchExecutor implements SearchExecutor {
     const started = performance.now();
     const elapsed = () => performance.now() - started;
     const {request, fold, metric, direction} = plan;
-    const {columns, target} = request.prepared;
+    const {columns, target, options} = request.prepared;
     const task = taskOf(target);
     const classes = task === 'classification' ? classesOf(request.target) : [];
     const positiveClass = classes.length === 2 ? classes[0] : undefined;
@@ -46,7 +49,7 @@ export class BrowserSearchExecutor implements SearchExecutor {
     const folds = validationFolds(request.validation);
     const masks = Array.from({length: folds}, (_, i) => foldMasks(fold, i));
     const heldOut = masks.map(({isHeldOut}) => target.clone(isHeldOut));
-    const position = new Int32Array(fold.length);
+    const position = positionsOf(fold);
     const semaphore = new Semaphore(plan.parallelism);
     const trials: Trial[] = [];
     let completed = 0;
@@ -78,8 +81,12 @@ export class BrowserSearchExecutor implements SearchExecutor {
     };
 
     const needsProbabilities = `The metric ${label} needs class probabilities; ${candidate.engine.name} gives none.`;
+    const isScoreMetric = (SCORE_METRIC_IDS as readonly MetricId[]).includes(metric);
+    const scoreOf = (actual: DG.Column, labels: DG.Column, probabilities?: ClassProbabilities) =>
+      metricsOf(task, actual, labels, positiveClass, isScoreMetric ? probabilities : undefined)[metric];
     const foldScore = (prediction: EnginePrediction, i: number): number => {
-      const score = metricsOf(task, heldOut[i], prediction.prediction, positiveClass, prediction.probabilities)[metric];
+      const score = scoreOf(heldOut[i], replayPostprocessing(prediction.prediction, options, prediction.probabilities),
+        prediction.probabilities);
       if (score === undefined)
         throw new ForgeError(needsProbabilities);
       return score;
@@ -158,10 +165,10 @@ export class BrowserSearchExecutor implements SearchExecutor {
         else {
           pass([...scores]);
           await fitWave(rest);
+          const outOfFold = outOfFoldColumn(results, fold, position);
           const probabilities = results[0].probabilities === undefined ? undefined :
             outOfFoldProbabilities(results, results[0].probabilities, fold, position);
-          const outOfFold = outOfFoldColumn(results, fold, position);
-          const score = metricsOf(task, target, outOfFold, positiveClass, probabilities)[metric];
+          const score = scoreOf(target, replayPostprocessing(outOfFold, options, probabilities), probabilities);
           if (score === undefined)
             throw new ForgeError(needsProbabilities);
           settle({state: 'complete', score, foldScores: [...scores]});

@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {boolColumn, textColumn} from '../columns';
-import {defaultHyperparameters, Engine, hasTrainingRows, hyperparametersOf, isComplete, isServerEngine, rolesOf}
-  from './engine';
+import {defaultHyperparameters, Engine, hasTrainingRows, isComplete, isServerEngine, rolesOf,
+  visibleHyperparametersOf} from './engine';
 import {EngineRegistry} from './engine-registry';
 
 /** One setting (a `train` input) of a method, as `Forge:listMethods` describes it; absent keys are not declared. */
@@ -23,7 +23,7 @@ export function methodColumns(engines: Engine[]): DG.Column[] {
     textColumn('Package', engines.map((e) => e.namespace)),
     textColumn('Method type', engines.map((e) => e.kind)),
     textColumn('Roles', engines.map((e) => rolesOf(e).join(', '))),
-    textColumn('Hyperparameters', engines.map((e) => hyperparametersOf(e).map((p) => p.name).join(', '))),
+    textColumn('Hyperparameters', engines.map((e) => visibleHyperparametersOf(e).map((p) => p.name).join(', '))),
   ];
 }
 
@@ -34,7 +34,7 @@ export function methodsFrame(engines: Engine[]): DG.DataFrame {
 
 function methodSettings(engine: Engine): SettingDetails[] {
   const defaults = defaultHyperparameters(engine);
-  return hyperparametersOf(engine).map((p) => {
+  return visibleHyperparametersOf(engine).map((p) => {
     const setting: SettingDetails = {name: p.name, type: p.propertyType};
     const value = defaults[p.name];
     if (value !== undefined)

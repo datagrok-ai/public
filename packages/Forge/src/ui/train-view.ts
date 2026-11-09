@@ -3,13 +3,15 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {ModelInfo} from '../catalog/model-edit';
-import {defaultHyperparameters, enabledRules, EnabledRules, Engine, handlesMissingValues, Hyperparameters,
-  hyperparametersOf, isEnabled} from '../engines/engine';
+import {defaultHyperparameters, enabledRules, EnabledRules, Engine, givesProbabilities, handlesMissingValues,
+  Hyperparameters, isEnabled, probabilityInput, visibleHyperparametersOf, withProbabilityInput}
+  from '../engines/engine';
 import {errorMessage} from '../forge-error';
 import {ModelTask, TrainingRunStatus} from '../generated/db';
-import {taskOf} from '../metrics/metrics';
+import {BestThresholdMetric, taskOf} from '../metrics/metrics';
 import {_package} from '../package';
 import {missingColumnsOf} from '../preparation/missing-values';
+import {twoClasses} from '../preparation/pipeline';
 import {DatasetFingerprint, datasetFingerprint, featuresHadGaps} from '../storage/dataset-fingerprint';
 import {datasetRefOf} from '../storage/dataset-ref';
 import {StorageChoice, TrainingRunRecord, trainingRunOf} from '../storage/model-fields';
@@ -18,9 +20,9 @@ import {recordTrainingRun} from '../storage/training-run-store';
 import {browserSearch} from '../training/browser-search';
 import {defaultFeatures} from '../training/default-features';
 import {failedSearchMessage, Leader, SearchChoice, tuneSearch} from '../training/search';
-import {checkSelection, failedCheck, hasDataProblems, MetricsRecord, prepareTraining, problemMessages, recutResult,
-  retrainsLive, selectedMissingValues, SelectionCheck, trainingEngines, TrainingRequest, TrainingResult,
-  TrainingSelection, trainModel, trainPredictionOf} from '../training/train-model';
+import {bestThresholdOf, checkSelection, failedCheck, hasDataProblems, MetricsRecord, prepareTraining,
+  problemMessages, recutResult, retrainsLive, selectedMissingValues, SelectionCheck, trainingEngines, TrainingRequest,
+  TrainingResult, TrainingSelection, trainModel, trainPredictionOf} from '../training/train-model';
 import {TrainingQueue} from '../training/training-queue';
 import {openApplyDialog} from './apply-model-dialog';
 import {ButtonGate} from './button-gate';
@@ -45,7 +47,6 @@ const FIX_SETTINGS = 'Fix the settings.';
 const FORM_WIDTH = 400;
 const TRAIN_TOOLTIP = 'Train the model on the current selection.';
 const TUNE_TOOLTIP = 'Find the best settings';
-const PROBABILITY_NOTE = 'Predict probability is off during a search.';
 const CHECKING = 'Checking the selection...';
 const TRAINING = 'Training is in progress.';
 const TRAINED = 'The model is trained on this selection. Change an input to train again.';
@@ -133,8 +134,8 @@ export class TrainView extends DG.ViewBase {
   /** The latest check's result; undefined while it is pending. */
   private check: SelectionCheck | undefined;
   private checkNumber = 0;
-  /** An input other than the cutoff changed since the timer last fired: the timer checks instead of re-cutting (as it
-   * does when there is no result to re-cut and nothing trains). */
+  /** An input other than the threshold changed since the timer last fired: the timer checks instead of re-cutting (as
+   * it does when there is no result to re-cut and nothing trains). */
   private isCheckRequested = false;
   private activeTrainings = 0;
   /** A training of the current selection completed or failed; any change clears it. */
@@ -160,8 +161,7 @@ export class TrainView extends DG.ViewBase {
     this.trainRow.classList.add('forge-train-row');
     this.trainGate = new ButtonGate(this.trainButton, () => this.blocker(), TRAIN_TOOLTIP);
     this.tuneButton = ui.button('Tune', () => void this.startSearch('tune', this.form.tune.choice()));
-    this.tuneGate = new ButtonGate(this.tuneButton, () => this.tuneBlocker(), () =>
-      this.form.preparation.steps().predictProbability ? `${TUNE_TOOLTIP}. ${PROBABILITY_NOTE}` : TUNE_TOOLTIP);
+    this.tuneGate = new ButtonGate(this.tuneButton, () => this.tuneBlocker(), TUNE_TOOLTIP);
     this.saveButton = ui.bigButton('Save', () => this.save());
     this.setRibbonPanels([[this.saveButton]]);
     this.formPane = ui.panel([], 'forge-train-form');
@@ -278,7 +278,7 @@ export class TrainView extends DG.ViewBase {
 
   save(): void {
     const training = this.lastTraining;
-    if (training === undefined || training.isSaved || this.form.preparation.cutoffProblem !== null)
+    if (training === undefined || training.isSaved || this.form.preparation.thresholdProblem !== null)
       return;
     saveModelDialog(TrainView.defaultModelName(training.result), (info, choice) => this.saveModelAs(info, choice),
       {ref: datasetRefOf(training.table), rowCount: training.table.rowCount}).show();
@@ -311,12 +311,8 @@ export class TrainView extends DG.ViewBase {
   private createForm(table: DG.DataFrame, previous?: ValidationInputs): TrainForm {
     const target = table.columns.byIndex(table.columns.length - 1);
     const onChanged = () => this.requestCheck();
-    const onCutoffChanged = () => {
-      this.updateControls();
-      this.changes.next();
-    };
-    const preparation = new PreparationInputs(onChanged, onCutoffChanged,
-      () => TrainView.messageOf(this.check?.problems.missingValues));
+    const preparation = new PreparationInputs(onChanged, () => this.onProbabilityToggled(), () => this.requestRecut(),
+      (metric) => this.bestThreshold(metric), () => TrainView.messageOf(this.check?.problems.missingValues));
     const validation = new ValidationInputs(onChanged);
     if (previous !== undefined)
       validation.restore(previous.settings(), previous.seedValue);
@@ -359,8 +355,7 @@ export class TrainView extends DG.ViewBase {
       // The platform's column inputs keep a removed column until their dialog is opened again.
       table.onColumnsRemoved.subscribe(() => TrainView.dropRemovedColumns(table, targetInput, featuresInput)),
       // The task the method trains decides some of its settings' rules.
-      rxjs.merge(targetInput.onChanged, preparation.predictProbability.onChanged)
-        .subscribe(() => this.applyRules(this.form)),
+      targetInput.onChanged.subscribe(() => this.applyRules(this.form)),
       rxjs.merge(targetInput.onChanged, featuresInput.onChanged).subscribe(() => this.form.tune.updateStatus())];
     this.modelCards.clear();
     ui.empty(this.formPane);
@@ -395,10 +390,16 @@ export class TrainView extends DG.ViewBase {
     }
     this.rules = rules ?? {};
     form.preparation.setKeepsMissingValues(handlesMissingValues(engine));
+    const {predictProbability} = form.preparation;
+    form.preparation.setMethod(engine.name, givesProbabilities(engine));
+    if (this.locked !== null) {
+      this.locked.set(predictProbability, predictProbability.enabled);
+      predictProbability.enabled = false;
+    }
     const values = {...defaultHyperparameters(engine), ...this.hyperparameterValues.get(engine.name)};
     this.unsubscribeMethod();
     form.hyperparameters.clear();
-    for (const p of hyperparametersOf(engine)) {
+    for (const p of visibleHyperparametersOf(engine)) {
       const input = ui.input.forProperty(p);
       const value = values[p.name];
       if (value !== undefined)
@@ -430,16 +431,14 @@ export class TrainView extends DG.ViewBase {
     this.applyRules(form);
   }
 
-  /** Disables the settings of [form] the method ignores with its values and task (`meta.mlenabled`; Predict
-   * probability trains a regression) and enables the others; a disabled setting keeps its value. In Auto-tune a rule
-   * on a tuned setting may hold, and the task is the target's (a search trains no probability). The setting's row in
+  /** Disables the settings of [form] the method ignores with its values and task (`meta.mlenabled`) and enables the
+   * others; a disabled setting keeps its value. In Auto-tune a rule on a tuned setting may hold. The setting's row in
    * Search options follows it. While the form is locked, the states are kept for the unlock. */
   private applyRules(form: TrainForm): void {
     const {tune} = form;
     const target = form.target.value;
-    tune.setTask(target === null ? undefined : taskOf(target));
-    const task: ModelTask | undefined = target === null ? undefined :
-      !tune.isAuto && form.preparation.steps().predictProbability ? 'regression' : taskOf(target);
+    const task: ModelTask | undefined = target === null ? undefined : taskOf(target);
+    tune.setTask(task);
     const free = tune.isAuto ? tune.tunedNames : undefined;
     const values = TrainView.valuesOf(form.hyperparameters);
     const inactive = new Set<string>();
@@ -485,10 +484,33 @@ export class TrainView extends DG.ViewBase {
     if (target === null)
       return null;
     const {validation} = this.form;
+    const steps = this.form.preparation.steps();
     return {engine: this.engine, features: this.form.features.value, target,
-      hyperparameters: TrainView.valuesOf(this.form.hyperparameters), seed: validation.seedValue,
-      validation: validation.settings(), missingValues: this.form.preparation.missingValues.settings(),
-      steps: this.form.preparation.steps()};
+      hyperparameters: withProbabilityInput(this.engine, TrainView.valuesOf(this.form.hyperparameters),
+        steps.predictProbability), seed: validation.seedValue,
+      validation: validation.settings(), missingValues: this.form.preparation.missingValues.settings(), steps};
+  }
+
+  /** Predict probability changed: a method whose probabilities are a setting trains again, any other re-cuts the
+   * result. */
+  private onProbabilityToggled(): void {
+    if (probabilityInput(this.engine) !== undefined)
+      this.requestCheck();
+    else
+      this.requestRecut();
+  }
+
+  /** A change that keeps the result: the controls follow it, and the timer re-cuts the result. */
+  private requestRecut(): void {
+    this.updateControls();
+    this.changes.next();
+  }
+
+  /** The threshold that maximizes [metric] on the validation rows of the last training ({@link bestThresholdOf});
+   * undefined without a training, validation probabilities or two classes in the validation rows. */
+  private bestThreshold(metric: BestThresholdMetric): number | undefined {
+    const result = this.lastTraining?.result;
+    return result === undefined ? undefined : bestThresholdOf(result, metric);
   }
 
   /** Every change: the training of the old selection stops, its result goes, and the selection is checked again
@@ -543,7 +565,7 @@ export class TrainView extends DG.ViewBase {
       this.resultsPane.setDataInsights(check.insights);
       this.showMethods(check);
       const settings = this.form.preparation.missingValues.visibleInputs;
-      for (const input of [this.form.target, this.form.features, this.form.method, this.form.preparation.cutoff,
+      for (const input of [this.form.target, this.form.features, this.form.method, this.form.preparation.threshold,
         ...settings, ...this.form.validation.usedInputs, ...this.activeHyperparameters()])
         input.validate();
       if (check.engines.length > 0)
@@ -625,10 +647,10 @@ export class TrainView extends DG.ViewBase {
       .map((input) => `${input.caption}: ${input.validity}`);
     const settings = this.form.preparation.missingValues.visibleInputs.map((input) => input.validity)
       .filter((v): v is string => v !== null);
-    const cutoff = this.form.preparation.cutoffProblem;
+    const threshold = this.form.preparation.thresholdProblem;
     return [...TrainView.dataProblems(this.check), ...settings, ...captioned(this.form.validation.usedInputs),
       ...captioned(this.activeHyperparameters()),
-      ...(cutoff === null ? [] : [`Positive class cutoff: ${cutoff}`])][0] ?? null;
+      ...(threshold === null ? [] : [`Classification threshold: ${threshold}`])][0] ?? null;
   }
 
   /** The hyperparameter inputs of the settings the method uses with the form's values. */
@@ -651,7 +673,8 @@ export class TrainView extends DG.ViewBase {
       ModelCards.keyOf(target.name, this.form.validation.settings(), this.form.validation.seedValue));
     const training = this.lastTraining;
     ui.setDisabled(this.saveButton, this.isTraining || training === undefined || training.isSaved ||
-      this.form.preparation.cutoffProblem !== null);
+      this.form.preparation.thresholdProblem !== null);
+    this.form?.preparation.updateSet();
     this.publishState(problem);
   }
 
@@ -711,20 +734,25 @@ export class TrainView extends DG.ViewBase {
         run.record === undefined ? '' : recordTrainingRun({...run.record, status, metrics, error: message,
           duration_ms: Date.now() - (run.startedOn ?? Date.now())});
       const isCurrent = () => checkNumber === this.checkNumber;
-      const addRun = (status: TrainingRunStatus, outcome: {metrics?: MetricsRecord; error?: string}) => {
+      const addRun = (status: TrainingRunStatus, outcome: {metrics?: MetricsRecord; error?: string},
+        steps = selection.steps) => {
         if (runs === this.runs)
-          this.addRun(selection, run.record, status, outcome, settingsStatus);
+          this.addRun({...selection, steps}, run.record, status, outcome, settingsStatus);
       };
       if (queued.outcome === 'completed') {
         const {result} = queued;
+        const {binaryClassificationThreshold, thresholdMetric} = result.options;
+        if (run.record !== undefined)
+          run.record.options = result.options;
         const runId = await record('completed', result.metrics);
-        addRun('completed', {metrics: result.metrics});
+        addRun('completed', {metrics: result.metrics}, {...selection.steps,
+          threshold: binaryClassificationThreshold ?? selection.steps.threshold, thresholdMetric});
         if (isCurrent() && run.fingerprint !== undefined && run.request !== undefined) {
           this.lastTraining = {result, request: run.request, runId, engine, table, columns: [...features, target],
             datasetName, fingerprint: run.fingerprint, isSaved: false};
           this.isTrained = true;
           this.isFailed = false;
-          // The cutoff may have moved while the model trained.
+          // Predict probability or the threshold may have changed while the model trained.
           this.recut();
         }
       } else if (queued.outcome === 'cancelled') {
@@ -772,7 +800,8 @@ export class TrainView extends DG.ViewBase {
   /** Sets the target, the features, the preparation, the validation, the method and its hyperparameters of [run]
    * again; the view then checks and trains as after any change. A run whose columns the table no longer has sets
    * nothing with a warning; a run whose inputs the form has and shows the completed result of sets nothing, or only
-   * its cutoff, which re-cuts that result. The settings switch to Manual. Nothing is set while the form is locked. */
+   * its Predict probability and threshold, which re-cut that result. The settings switch to Manual. Nothing is set
+   * while the form is locked. */
   restoreRun(run: SessionRun): void {
     if (this.locked !== null)
       return;
@@ -784,11 +813,15 @@ export class TrainView extends DG.ViewBase {
       return;
     }
     this.form.tune.setMode(MANUAL);
-    // Any change but the cutoff drops lastTraining: while it is there, it is the result of the form's inputs.
+    // Any change but Predict probability (of a method without a probability setting) and the threshold drops
+    // lastTraining: while it is there, it is the result of the form's inputs.
     const current = this.selection();
     if (this.lastTraining !== undefined && current !== null && isSameInputs(run, TrainView.runInputsOf(current))) {
-      if (this.form.preparation.cutoff.value !== run.steps.cutoff)
-        this.form.preparation.cutoff.value = run.steps.cutoff;
+      const {preparation} = this.form;
+      if (preparation.predictProbability.value !== run.steps.predictProbability)
+        preparation.predictProbability.value = run.steps.predictProbability;
+      preparation.restoreThreshold(run.steps);
+      this.requestRecut();
       return;
     }
     this.setMethod(run.engine, run.hyperparameters);
@@ -805,10 +838,9 @@ export class TrainView extends DG.ViewBase {
    * measured as Test. Meanwhile the form is locked: its inputs are disabled, and a click on a **Runs** or **Search**
    * row sets nothing. */
   async startSearch(mode: 'tune', choice: SearchChoice): Promise<void> {
-    const base = this.selection();
-    if (base === null || this.tuneBlocker() !== null)
+    const selection = this.selection();
+    if (selection === null || this.tuneBlocker() !== null)
       return;
-    const selection: TrainingSelection = {...base, steps: {...base.steps, predictProbability: false}};
     const {engine} = this;
     const {space} = this.form.tune;
     const {seed} = selection;
@@ -959,18 +991,23 @@ export class TrainView extends DG.ViewBase {
       this.showHint('');
   }
 
-  /** Shows the last training cut at the current **Positive class cutoff**, without retraining; Save writes it so. */
+  /** Shows the last training with the current **Predict probability** and **Classification threshold**, without
+   * retraining; Save writes it so. A threshold not edited by hand becomes the chosen metric's best on this result. */
   private recut(): void {
     const training = this.lastTraining;
     if (training === undefined)
       return;
-    this.form.preparation.cutoff.validate();
-    this.updateControls();
-    if (this.form.preparation.cutoffProblem !== null) {
+    const {preparation} = this.form;
+    preparation.threshold.validate();
+    if (preparation.thresholdProblem !== null) {
       this.showHint(FIX_SETTINGS);
       return;
     }
-    training.result = recutResult(training.result, this.form.preparation.cutoffValue);
+    training.result = recutResult(training.result, preparation.steps());
+    const {binaryClassificationThreshold, thresholdMetric} = training.result.options;
+    if (binaryClassificationThreshold !== undefined && thresholdMetric !== undefined)
+      preparation.setThreshold(binaryClassificationThreshold, thresholdMetric);
+    this.updateControls();
     this.showResults(training);
   }
 
@@ -980,14 +1017,15 @@ export class TrainView extends DG.ViewBase {
     const summary = {metrics: result.metrics, rowCount: result.rowCount, splitting: result.splitting, seed: result.seed,
       skippedRows: result.options.missingValues?.skippedRows ?? 0,
       keepsMissingValues: result.options.missingValues?.mode === 'keep' && featuresHadGaps(fingerprint),
-      search: result.search};
+      search: result.search, threshold: result.options.binaryClassificationThreshold,
+      thresholdMetric: result.options.thresholdMetric};
     const positiveClass = result.metrics.positiveClass;
     this.results.setAttribute(SHOWN_RUN, runId);
     this.showing++;
     this.publishState(this.problem());
     this.resultsPane.show({engine, table, columns: request.prepared.columns, target: request.target,
-      prediction: trainPredictionOf(result), score: result.scores?.train, curves: result.curves,
-      keptRows: request.keptRows, positiveClass, cutoff: result.options.binaryClassificationThreshold,
+      prediction: trainPredictionOf(result), curves: result.curves,
+      keptRows: request.keptRows, positiveClass, threshold: result.options.binaryClassificationThreshold,
       blob: result.blob, summary}).catch((e) => reportError(e)).finally(() => {
       this.showing--;
       this.publishState(this.problem());
@@ -1010,7 +1048,8 @@ export class TrainView extends DG.ViewBase {
   private static runInputsOf(selection: TrainingSelection): RunInputs {
     const {engine, target, features, hyperparameters, steps, validation, seed} = selection;
     return {engine, targetName: target.name, featureNames: features.map((c) => c.name), hyperparameters,
-      missingValues: selectedMissingValues(selection), steps, validation, seed};
+      missingValues: selectedMissingValues(selection), steps, twoClasses: twoClasses(target) !== null, validation,
+      seed};
   }
 
   private static valuesOf(inputs: ReadonlyMap<string, DG.InputBase>): Hyperparameters {

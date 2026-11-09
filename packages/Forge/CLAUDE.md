@@ -42,8 +42,13 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
   `ResultsPane` keeps frames and viewers until `clear()`, a hint or other data; `ui.empty` kills widgets (`close` needs a view).
 - A masked `clone` of a text column keeps every source category (the empty one too): copy rows with `columnRowCopy`,
   never compact a user's column; the k-fold copies keep the full list on purpose.
-- The method gets `TrainingRequest.prepared` (Predict probability: a float 0/1 target); `features`/`target` are the
+- The method gets `TrainingRequest.prepared` (its target is always the selection's); `features`/`target` are the
   selection (feature list, fingerprint). Replay: `oneHotCategories`; `skippedColumns` are not needed at apply.
+- Predict probability is post-processing (`class-probabilities`): every label comes from `replayPostprocessing(prediction,
+  options, probabilities)`; a toggle or a threshold change re-cuts (`recutResult`) without retraining. A method's
+  probability input (`meta.mlprobabilities` naming a `train` input: SVM's `probability`) is hidden from the form
+  (`visibleHyperparametersOf`) and set from the checkbox (`withProbabilityInput`), so toggling it retrains.
+  `binary-classification` is the former regression mode: replayed for old models, never recorded.
 - A loop of awaited engine calls must `yieldToEventLoop` (microtasks hold back a cancel click and the repaint).
 - `ignore-missing` / `impute-missing` are recorded in `options`, never replayed. Prediction columns carry `forge.model`
   (`PREDICTION_TAG`; `predictRows` adds none). Inserts of applications and runs need explicit `source`, `status`.

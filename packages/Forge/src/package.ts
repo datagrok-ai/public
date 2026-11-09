@@ -64,7 +64,7 @@ export async function forgeApply(): Promise<void> {
 }
 
 //name: applyModel
-//description: Applies a saved Forge model to a table and adds the prediction column
+//description: Applies a saved Forge model to a table and adds the prediction column and, for a model saved with Predict probability, the probability columns P(<target> = <class>)
 //input: string model {description: Model id or name}
 //input: dataframe table
 //input: map columnNamesMap {optional: true; description: Model feature name -> table column name}
@@ -82,13 +82,13 @@ export async function applyModel(model: string, table: DG.DataFrame, columnNames
 //input: list<string> features {optional: true; description: Names of the columns to learn from. By default every numerical column except the target and id-like whole-number columns}
 //input: string method {optional: true; description: The method as Forge names it, any method Forge:listMethods lists. By default the method Forge suggests for the data}
 //input: map hyperparameters {optional: true; description: The method's settings by name, for example iterations: 50. Settings not named keep the method's defaults}
-//input: map options {optional: true; description: Data preparation. missingValues: skip, impute or keep (default keep for a method that handles missing values, otherwise skip), with neighbors and distance for impute. oneHot (default on when every text feature has at most 20 categories), skipUniqueCategories (default true), predictProbability (default false, two-class targets only), cutoff (default 0.5). Validation: scheme kfold or holdout (default kfold), folds (default 5), testFraction (holdout, 0.05 to 0.5, default 0.2), stratified (default true, ignored for a regression), shuffle (default true), seed (the split seed, default 42). search (an object: metric, budgetSeconds (default 60), maxTrials, tunes the method's settings)}
+//input: map options {optional: true; description: Data preparation. missingValues: skip, impute or keep (default keep for a method that handles missing values, otherwise skip), with neighbors and distance for impute. oneHot (default on when every text feature has at most 20 categories), skipUniqueCategories (default true), predictProbability (default false, a text or boolean target: the saved model adds the class probabilities when applied, and for two classes the labels follow threshold), threshold (the probability of the first class from which a row is predicted as it, cutoff is accepted as its old name, by default the one that maximizes thresholdMetric on the validation rows, 0.5 when there is none), thresholdMetric (f1, balancedAccuracy, mcc or accuracy, default f1, ignored when threshold is given). Validation: scheme kfold or holdout (default kfold), folds (default 5), testFraction (holdout, 0.05 to 0.5, default 0.2), stratified (default true, ignored for a regression), shuffle (default true), seed (the split seed, default 42). search (an object: metric (logLoss, brier minimized), budgetSeconds (default 60), maxTrials, tunes the method's settings)}
 //input: string name {optional: true; description: Saves the model under this name. Without a name the model is trained and measured but not saved}
 //input: string description {optional: true; description: Description of the saved model}
 //input: string tags {optional: true; description: Comma-separated tags of the saved model}
 //input: string storage = 'none' {optional: true; choices: ["none", "reference", "copy"]; description: What the saved model keeps of its training data. none keeps a summary, reference a link to the table's source (the table must have one), copy uploads the feature and target columns to the server}
 //input: bool showProgress = true {optional: true; description: Shows a cancellable progress in the task bar}
-//output: object result {description: modelId (null when not saved), runId, name, method, task, target, features, rowCount, skippedRows, seed and metrics with train, validation, test (after a search with enough rows), positiveClass and, for a classifier, classes (per-class values), and search (the leaderboard: metric, budget, trials, leaders per method, the chosen one) after a search}
+//output: object result {description: modelId (null when not saved), runId, name, method, task, target, features, rowCount, skippedRows, seed and metrics with train, validation, test (after a search with enough rows), each with logLoss and brier for a method with class probabilities, positiveClass and, for a classifier, classes (per-class values), and search (the leaderboard: metric, budget, trials, leaders per method, the chosen one) after a search}
 export async function trainModel(table: DG.DataFrame, target: string, features: string[] | null, method: string | null,
   hyperparameters: {[name: string]: unknown} | null, options: {[name: string]: unknown} | null, name: string | null,
   description: string | null, tags: string | null, storage: string | null,

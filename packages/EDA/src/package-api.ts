@@ -269,8 +269,8 @@ export namespace funcs {
    * @param {number} maxDepth - Maximum depth of a tree. Deeper trees capture more feature interactions and overfit more easily.
    * @param {number} lambda - L2 regularization on the leaf weights. Larger values give a more conservative model.
    * @param {number} alpha - L1 regularization on the leaf weights. Larger values give a more conservative model and can zero out leaves.
-   * @param {number} subsample - Share of the rows sampled for each tree. Below 1 adds randomness that the seed controls.
-   * @param {number} colsample - Share of the features sampled for each tree. Below 1 adds randomness that the seed controls.
+   * @param {number} subsample - Share of the rows sampled for each tree. Below 1 adds randomness that Model seed controls.
+   * @param {number} colsample - Share of the features sampled for each tree. Below 1 adds randomness that Model seed controls.
    * @param {number} seed - Random seed of the row and column sampling. Has an effect only when Row sample or Column sample is below 1.
    */
   export async function trainXGBooster(df: DG.DataFrame , predictColumn: DG.Column , iterations: number , eta: number , maxDepth: number , lambda: number , alpha: number , subsample: number , colsample: number , seed: number ): Promise<any> {
@@ -301,9 +301,10 @@ export namespace funcs {
    * @param {number} degree - Degree of the polynomial kernel. Higher values give a more flexible, curved decision boundary. Used by the polynomial kernel only.
    * @param {number} coef0 - Constant added inside the kernel before the polynomial power or the sigmoid. Used by the polynomial and sigmoid kernels only.
    * @param {number} epsilon - Width of the error-insensitive tube in SVR regression. Training errors smaller than this are not penalized, so larger values give a smoother model with fewer support vectors. Used for regression targets only.
+   * @param {boolean} probability - Also estimates the probability of each class (Platt scaling: an internal 5-fold cross-validation, about 5 times the training time). Classification targets only.
    */
-  export async function trainSVM(df: DG.DataFrame , predictColumn: DG.Column , kernel: string , cost: number , gamma: number , degree: number , coef0: number , epsilon: number ): Promise<any> {
-    return await grok.functions.call('EDA:TrainSVM', { df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon });
+  export async function trainSVM(df: DG.DataFrame , predictColumn: DG.Column , kernel: string , cost: number , gamma: number , degree: number , coef0: number , epsilon: number , probability: boolean ): Promise<any> {
+    return await grok.functions.call('EDA:TrainSVM', { df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon, probability });
   }
 
   /**

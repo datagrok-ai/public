@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {defaultHyperparameters, defaultValuesOf, Engine, Hyperparameters, hyperparametersOf} from '../engines/engine';
+import {defaultHyperparameters, defaultValuesOf, Engine, Hyperparameters, visibleHyperparametersOf}
+  from '../engines/engine';
 import {errorMessage} from '../forge-error';
 import {ModelTask} from '../generated/db';
 import {METRIC_LABELS, MetricId} from '../metrics/metrics';
@@ -18,8 +19,9 @@ export const ALL_FIXED = 'All settings are fixed';
 const CHOOSE_ONE = 'Choose at least one';
 const TRIALS_PROBLEM = 'Enter a whole number of trials, at least 1';
 export type TuneStatus = 'Default' | 'Auto-tuned' | 'Customized';
+export const CUSTOMIZED = 'Customized';
 export const STATUS_TOOLTIPS: Record<TuneStatus, string> = {'Default': 'Recommended values for this method',
-  'Auto-tuned': 'Found by Auto-tune; pinned values kept', 'Customized': 'Changed by hand'};
+  'Auto-tuned': 'Found by Auto-tune; pinned values kept', [CUSTOMIZED]: 'Changed by hand'};
 const PIN_TOOLTIP = 'Pin to exclude from tuning';
 const SETTINGS_TOOLTIP = 'How the settings are chosen: by hand or by a search on this data';
 const METRIC_TOOLTIP = 'Metric the search optimizes';
@@ -98,7 +100,7 @@ export class TuneSettings {
   readonly root = ui.div([], 'forge-tune');
   readonly mode: DG.InputBase<string | null>;
   readonly resetButton: HTMLButtonElement;
-  readonly statusText = ui.span([], 'forge-tune-status-text');
+  readonly statusText: HTMLSpanElement;
   readonly toggle: HTMLButtonElement;
   readonly grid = ui.div([], 'forge-tune-grid');
   readonly metric: HTMLSelectElement;
@@ -131,7 +133,7 @@ export class TuneSettings {
   constructor(engine: Engine, own: ReadonlyMap<string, DG.InputBase>, tuneButton: HTMLElement, host: TuneHost) {
     this.engine = engine;
     this.host = host;
-    const properties = hyperparametersOf(engine);
+    const properties = visibleHyperparametersOf(engine);
     let space: SearchSpace | undefined;
     try {
       space = searchSpaceOf(engine, properties);
@@ -163,9 +165,9 @@ export class TuneSettings {
     for (const element of [this.mode.captionLabel, ...options.filter((o) => o !== this.autoItem ||
       this.noSpaceReason === undefined)])
       ui.tooltip.bind(element, SETTINGS_TOOLTIP);
-    this.statusText.setAttribute('aria-live', 'polite');
+    const statusRow = TuneSettings.statusLine();
+    this.statusText = statusRow.text;
     ui.tooltip.bind(this.statusText, () => this.statusTooltip());
-    const statusRow = ui.div([ui.label(' ', 'ui-input-label'), this.statusText], 'ui-input-root forge-tune-status');
 
     for (const property of properties) {
       const input = own.get(property.name);
@@ -211,7 +213,7 @@ export class TuneSettings {
     this.autoBlock = ui.div([this.toggle, this.grid], 'forge-tune-auto');
     // A method without settings shows no Settings row at all.
     if (this.rows.size > 0) {
-      this.root.append(this.mode.root, statusRow, ...[...this.rows.values()].map((row) => row.own.root),
+      this.root.append(this.mode.root, statusRow.row, ...[...this.rows.values()].map((row) => row.own.root),
         this.autoBlock);
     }
     this.root.append(this.tuneBar);
@@ -256,7 +258,7 @@ export class TuneSettings {
       return 'Default';
     const tuned = this.tunedContext();
     return tuned !== undefined && TuneSettings.isSameContext(tuned, this.host.context()) ? 'Auto-tuned' :
-      'Customized';
+      CUSTOMIZED;
   }
 
   /** The row of the setting [name] in Search options. */
@@ -408,7 +410,7 @@ export class TuneSettings {
   private statusTooltip(): string {
     const status = this.status;
     const tuned = this.tunedContext();
-    return status === 'Customized' && tuned !== undefined ?
+    return status === CUSTOMIZED && tuned !== undefined ?
       `Tuned for ${tuned.target} on ${tuned.table.name}; tune again for this data` : STATUS_TOOLTIPS[status];
   }
 
@@ -675,6 +677,14 @@ export class TuneSettings {
     const stored: StoredTune = {mode: this.isAuto ? AUTO_TUNE : MANUAL, expanded: this.isExpanded, pinned, ranges,
       metric: this.metricId, trials: this.trialCount ?? DEFAULT_TRIALS, seconds: this.seconds};
     grok.userSettings.add(TuneSettings.storage, this.engine.name, JSON.stringify(stored));
+  }
+
+  /** The italic status line under an input (Settings' and the classification threshold's): an empty label in the
+   * form's label column, then the text, announced as it changes. */
+  static statusLine(): {row: HTMLDivElement; text: HTMLSpanElement} {
+    const text = ui.span([], 'forge-tune-status-text');
+    text.setAttribute('aria-live', 'polite');
+    return {row: ui.div([ui.label(' ', 'ui-input-label'), text], 'ui-input-root forge-tune-status'), text};
   }
 
   /** [row]'s slot shows its own value when pinned, else its range or choices; its pin shows the state. */

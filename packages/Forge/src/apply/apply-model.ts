@@ -6,9 +6,10 @@ import {apply, EnginePrediction, LoopProgress, yieldToEventLoop} from '../engine
 import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
 import {ApplicationInsert, ApplicationSource, ModelRow} from '../generated/db';
-import {ClassProbabilities} from '../metrics/metrics';
+import {ClassProbabilities, probabilityOf} from '../metrics/metrics';
 import {imputeSettings, MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
-import {isRecord, PreparationOptions, preparationOptionsOf, stringsOf} from '../preparation/preparation-options';
+import {CLASS_PROBABILITIES, isRecord, PreparationOptions, preparationOptionsOf, stringsOf}
+  from '../preparation/preparation-options';
 import {replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
 import {rowCopy} from '../preparation/row-copy';
 import {findModelRow, ownBlob} from '../storage/model-store';
@@ -44,7 +45,12 @@ export interface ApplyRequest {
   missingValues: MissingValuesSettings;
 }
 
-export interface ApplyResult { column: DG.Column; skippedRows: number }
+export interface ApplyResult {
+  column: DG.Column;
+  /** The probability columns added after the labels (a model saved with Predict probability). */
+  probabilityColumns: DG.Column[];
+  skippedRows: number;
+}
 
 /** The predictions of the rows a request keeps; nothing is added to the table. */
 export interface RowPredictions {
@@ -157,9 +163,14 @@ export function apiMapping(model: LoadedModel, table: DG.DataFrame,
 
 /** `<target> (predicted)`, then `<target> (predicted 2)`, ...: the first name no column has, ignoring case. */
 export function predictionName(table: DG.DataFrame, target: string): string {
-  let name = `${target} (predicted)`;
+  return freeName(table, `${target} (predicted)`, (i) => `${target} (predicted ${i})`);
+}
+
+/** [first], else the first of [nth] 2, 3, ... that no column of [table] has, ignoring case. */
+function freeName(table: DG.DataFrame, first: string, nth: (i: number) => string): string {
+  let name = first;
   for (let i = 2; table.col(name) !== null; i++)
-    name = `${target} (predicted ${i})`;
+    name = nth(i);
   return name;
 }
 
@@ -187,18 +198,41 @@ export async function predictRows(request: ApplyRequest, progress?: LoopProgress
   const blob = await grok.dapi.files.readAsBytes(model.blobPath);
   const {prediction: raw, probabilities} =
     await predictInBatches(model.engine, columns, rowCount, blob, request.batchSize, progress);
-  return {columns, raw, labels: replayPostprocessing(raw, model.options), keptRows: prepared.keptRows,
+  return {columns, raw, labels: replayPostprocessing(raw, model.options, probabilities), keptRows: prepared.keptRows,
     skippedRows: prepared.skippedRows, blob, probabilities};
 }
 
 async function predict(request: ApplyRequest, progress?: LoopProgress): Promise<ApplyResult> {
   const {model, table} = request;
-  const {labels, keptRows, skippedRows} = await predictRows(request, progress);
-  const column = keptRows === null ? labels : scatteredColumn(labels, keptRows, table.rowCount);
-  column.name = predictionName(table, model.row.target_name);
-  column.setTag(PREDICTION_TAG, model.row.id);
-  table.columns.add(column);
-  return {column, skippedRows};
+  const {labels, keptRows, skippedRows, probabilities} = await predictRows(request, progress);
+  const target = model.row.target_name;
+  const added = (values: DG.Column, name: string): DG.Column => {
+    const column = keptRows === null ? values : scatteredColumn(values, keptRows, table.rowCount);
+    column.name = name;
+    column.setTag(PREDICTION_TAG, model.row.id);
+    table.columns.add(column);
+    return column;
+  };
+  const column = added(labels, predictionName(table, target));
+  const {options} = model;
+  const probabilityColumns: DG.Column[] = [];
+  if (options.postprocessingInfo.includes(CLASS_PROBABILITIES) && probabilities !== undefined) {
+    const {positiveClass} = options;
+    const classes = positiveClass !== undefined && probabilities.classes.includes(positiveClass) ? [positiveClass] :
+      probabilities.classes;
+    for (const cls of classes) {
+      const probability = added(probabilityOf(probabilities, cls)!, probabilityName(table, target, cls));
+      probability.meta.description = `Probability that ${target} is ${cls}, predicted by ${model.row.name}`;
+      probabilityColumns.push(probability);
+    }
+  }
+  return {column, probabilityColumns, skippedRows};
+}
+
+/** `P(<target> = <cls>)`, then `P(<target> = <cls>) 2`, ...: the first name no column has, ignoring case. */
+function probabilityName(table: DG.DataFrame, target: string, cls: string): string {
+  const base = `P(${target} = ${cls})`;
+  return freeName(table, base, (i) => `${base} ${i}`);
 }
 
 /** One engine call on [features] themselves ([rowCount] rows) when they fit a batch; otherwise one call per batch of

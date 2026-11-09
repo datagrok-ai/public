@@ -14,12 +14,12 @@ import {enabledRules, hyperparametersOf, isEnabled} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
 import {forgeDb, ModelStorageMode} from '../generated/db';
-import {METRIC_DESCRIPTIONS} from '../metrics/metrics';
+import {BestThresholdMetric, METRIC_DESCRIPTIONS} from '../metrics/metrics';
 import {preparationOptionsOf} from '../preparation/preparation-options';
 import {datasetRefOf, storedDatasetRef} from '../storage/dataset-ref';
 import {deleteModel, modelsChanged} from '../storage/model-store';
 import {FROM_BELOW_TO, SearchRecord, tuneCandidate} from '../training/search';
-import {metricsRecordOf, trainPredictionOf} from '../training/train-model';
+import {bestThresholdOf, metricsRecordOf, trainPredictionOf} from '../training/train-model';
 import {applyModelDialog, ApplyDialogOptions, isOpen, modelLabels} from '../ui/apply-model-dialog';
 import {ButtonGate} from '../ui/button-gate';
 import {gridTooltip} from '../ui/data-grid';
@@ -39,7 +39,8 @@ import {CHECK_DELAY_MS, SHOWN_RUN, TrainView} from '../ui/train-view';
 import {ALL_FIXED, AUTO_TUNE, FIX_RANGE, MANUAL, TuneRow, TuneSettings} from '../ui/tune-settings';
 import {balloonWith, cancelOnceShown, cancelTaskBarEntry, catalogState, CLASSIFIERS, columnsOf, deleteRunsOf,
   demoDemog, expectNoFrames, expectReleased, expectGridsFillPanes, framesSharing, insertModelRow, IRIS, MEASUREMENTS,
-  openDemoTable, openIris, openIrisFromFile, readUntil, refreshThenChange, REGRESSORS, runsOf, savedFixture,
+  openDemoTable, openIris, openIrisFromFile, PREDICT_PROBABILITY, readUntil, refreshThenChange, REGRESSORS, runsOf,
+  savedFixture,
   saveIrisModel, saveKeptGapsModel, saveSkipUniqueModel, saveTestModel, taskBarEntry, twoSpeciesIris, unbalancedIris,
   valuesOf, WINE, XGBOOST_FIELDS} from './test-data';
 
@@ -130,14 +131,14 @@ async function hoverText(button: HTMLElement): Promise<string> {
   return '';
 }
 
-/** The tooltip the mouse entering the enabled [element] shows; '' if none. */
-async function enterTooltip(element: HTMLElement): Promise<string> {
+/** The tooltip the mouse entering the enabled [element] shows, its HTML with [isHtml]; '' if none. */
+async function enterTooltip(element: HTMLElement, isHtml = false): Promise<string> {
   ui.tooltip.hide();
   const rect = element.getBoundingClientRect();
   element.dispatchEvent(new MouseEvent('mouseenter', {clientX: rect.left + 2, clientY: rect.top + 2}));
   // The platform shows a tooltip 250 ms after the mouse enters.
   await delay(600);
-  const text = ui.tooltip.isVisible ? ui.tooltip.root.textContent ?? '' : '';
+  const text = !ui.tooltip.isVisible ? '' : (isHtml ? ui.tooltip.root.innerHTML : ui.tooltip.root.textContent) ?? '';
   ui.tooltip.hide();
   return text;
 }
@@ -616,8 +617,8 @@ category('UI', () => {
       expect(data.body.contains(view.featuresInput.root), true, 'Features is not under Data');
       expect(preparation.body.contains(view.missingValuesInputs.choice.root), true,
         'Missing values is not under Preparation');
-      const groupRoot = view.preparationInputs.group.root;
-      expect(!isShown(groupRoot) && groupRoot.offsetHeight === 0, true, 'Preparation is shown for iris without gaps');
+      const shown = view.preparationInputs.inputs.filter((i) => isShown(i.root)).map((i) => i.caption).join();
+      expect(isShown(view.preparationInputs.group.root) && shown === 'Predict probability', true, `Shown: ${shown}`);
       expectArray(view.groups.map((g) => Array.from(g.root.parentElement?.children ?? []).indexOf(g.root)),
         [0, 1, 2, 3]);
       const iterations = view.hyperparameterInputs.get('iterations');
@@ -796,7 +797,7 @@ category('UI: Train', () => {
       const choice = view.missingValuesInputs.choice;
       expect(view.methodInput.value, 'XGBoost');
       expect(isShown(choice.root), false, 'Missing values is shown for XGBoost');
-      expect(isShown(view.preparationInputs.group.root), false, 'Preparation is shown for XGBoost');
+      expect(isShown(view.preparationInputs.predictProbability.root), true, 'No Predict probability for Species');
       await awaitCheck(() => listItems().includes('Missing values: kept (the method handles them)'),
         `No kept line: ${listItems().join(' | ')}`, WAIT_MS);
       expect(view.lastTraining?.result.rowCount, 150);
@@ -1131,14 +1132,15 @@ category('UI: Preparation', () => {
     const view = await TrainView.create(demog);
     grok.shell.addView(view);
     const preparation = view.preparationInputs;
-    const {oneHot, skipUniqueCategories, predictProbability, cutoff} = preparation;
+    const {oneHot, skipUniqueCategories, predictProbability, threshold} = preparation;
     try {
       view.methodInput.value = 'SVM';
       await awaitTrained(view);
       expect(isShown(preparation.group.root) && isShown(view.missingValuesInputs.choice.root), true,
         'Preparation does not show Missing values for HEIGHT and WEIGHT');
-      expect([oneHot, skipUniqueCategories, predictProbability, cutoff].some((input) => isShown(input.root)), false,
+      expect([oneHot, skipUniqueCategories, threshold].some((input) => isShown(input.root)), false,
         'A step is shown for numerical features and a many-class target');
+      expect(isShown(predictProbability.root), true, 'Predict probability is not offered for a many-class target');
       const forms = view.root.querySelectorAll('.ui-form');
       expect(forms.length === 1 && forms[0].contains(preparation.group.root), true, 'Preparation is not in the form');
 
@@ -1220,53 +1222,97 @@ category('UI: Preparation', () => {
     }
   }, {timeout: 120000});
 
-  test('Predict probability trains on the classes; the cutoff re-cuts without a run', async () => {
+  test('Predict probability re-cuts without a run; the threshold optimized for a metric', async () => {
     const demog = await openDemog();
     const view = await TrainView.create(demog);
     grok.shell.addView(view);
-    const {predictProbability, cutoff} = view.preparationInputs;
+    const {predictProbability, threshold, thresholdMetric, setThresholdButton, thresholdStatus} =
+      view.preparationInputs;
+    const statusRow = thresholdStatus.parentElement!;
+    /** Set's visibility and the status shown under the threshold ('' while hidden). */
+    const state = () => `${isShown(setThresholdButton) ? 'Set' : 'no Set'}, ` +
+      `'${isShown(statusRow) ? thresholdStatus.textContent : ''}'`;
+    const bestOf = (metric: BestThresholdMetric) => bestThresholdOf(view.lastTraining!.result, metric);
     const models = () => forgeDb.models.query().where('dataset_name', '=', demog.name);
+    const options = () => view.lastTraining?.result.options;
     try {
       view.targetInput.value = demog.getCol('SEX');
       view.featuresInput.value = columnsOf(demog, ['AGE', 'HEIGHT', 'WEIGHT']);
       await awaitCheck(() => isShown(predictProbability.root), 'Predict probability is not offered for SEX', WAIT_MS);
-      expect(predictProbability.value || isShown(cutoff.root), false, 'Predict probability starts checked');
+      expect(predictProbability.enabled, true, 'Predict probability is disabled for XGBoost');
+      expect(predictProbability.value || isShown(threshold.root) || isShown(thresholdMetric.root), false,
+        'Predict probability starts checked');
       await awaitTrained(view);
-      expect(view.lastTraining?.result.task, 'classification');
-      const classificationGrid = gridWith(view.root, 'Metric').root;
-
-      predictProbability.value = true;
-      await awaitCheck(() => isShown(cutoff.root), 'No Positive class cutoff', WAIT_MS);
-      expect(cutoff.value, 0.5);
-      await awaitTrained(view);
-      expect(view.methodInput.value, 'XGBoost', 'Predict probability switched the method');
-      expect(view.lastTraining?.engine.name, 'XGBoost');
       const trained = view.lastTraining?.result;
-      expect(trained?.task, 'regression');
-      expect(trainPredictionOf(trained!).categories.includes(''), false, 'The cut labels list an empty class');
-      expect(view.methodInput.items.includes('Softmax'), false, 'Softmax is listed for the probability');
-      const auc = trained?.metrics.validation.auc;
-      expect(auc !== undefined && auc > 0.5 && auc <= 1, true, `Validation AUC-ROC ${auc}`);
-      expect(hasMetric(view.root, 'AUC-ROC'), true, 'No AUC-ROC row in Results');
-      const probabilityGrid = gridWith(view.root, 'Metric');
-      expect(probabilityGrid.root === classificationGrid, true, 'The same metric rows built a new grid');
-      expectArray(probabilityGrid.dataFrame.getCol('Metric').toList(), ['Accuracy', 'F1',
-        'Recall (Sensitivity)', 'Specificity', 'Precision', 'Negative Predictive Value', 'AUC-ROC', 'Balanced accuracy',
-        'MCC', 'Average precision']);
+      expect(trained?.task, 'classification');
+      const grid = gridWith(view.root, 'Metric');
+      const metricRows = ['Accuracy', 'F1', 'Recall (Sensitivity)', 'Specificity', 'Precision',
+        'Negative Predictive Value', 'AUC-ROC', 'Balanced accuracy', 'MCC', 'Average precision', 'Log loss',
+        'Brier score'];
+      expectArray(grid.dataFrame.getCol('Metric').toList(), metricRows);
       const runCount = (await runsOf([demog])).length;
 
-      cutoff.value = 0.9;
-      await awaitCheck(() => view.lastTraining?.result.options.binaryClassificationThreshold === 0.9 &&
-        !view.isTraining, 'The cutoff does not re-cut the result', WAIT_MS);
+      predictProbability.value = true;
+      await awaitCheck(() => options()?.postprocessingInfo.includes('class-probabilities') === true,
+        'Predict probability does not re-cut the result', WAIT_MS);
       await delay(CHECK_DELAY_MS * 3);
-      expect(view.isTraining, false, 'The cutoff retrains');
-      expect((await runsOf([demog])).length, runCount, 'The cutoff recorded a run');
+      expect(view.isTraining, false, 'Predict probability retrains');
+      expect((await runsOf([demog])).length, runCount, 'Predict probability recorded a run');
+      expectArray(options()?.postprocessingInfo ?? [], ['class-probabilities']);
+      expect(isShown(threshold.root) && isShown(thresholdMetric.root), true, 'No threshold or Best threshold by');
+      expect(`${thresholdMetric.caption} ${setThresholdButton.textContent} ${thresholdMetric.value}`,
+        'Best threshold by Set F1');
+      expect(predictProbability.root.nextElementSibling === threshold.root &&
+        threshold.root.nextElementSibling === statusRow && statusRow.nextElementSibling === thresholdMetric.root, true,
+      'The order is not Predict probability, Classification threshold, its status, Best threshold by');
+      const settingsStatus = view.tuneSettings.statusText;
+      expect(`${thresholdStatus.tagName}.${thresholdStatus.className} in ${statusRow.tagName}.${statusRow.className}`,
+        `${settingsStatus.tagName}.${settingsStatus.className} in ${settingsStatus.parentElement?.tagName}.` +
+        `${settingsStatus.parentElement?.className}`, 'The status is not built as the Settings status');
+      const f1 = bestOf('f1');
+      expect(f1 !== undefined && f1 > 0 && f1 < 1, true, `The best F1 threshold ${f1}`);
+      expect(threshold.value, f1, 'Checking does not optimize the threshold');
+      expect(options()?.binaryClassificationThreshold, f1);
+      expect(options()?.thresholdMetric, 'f1');
+      expect(state(), 'no Set, \'Best for F1\'', 'At the best F1 threshold');
+      const shownThreshold = (threshold.input as HTMLInputElement).value;
+      expect(parseFloat(shownThreshold) === parseFloat((f1 ?? NaN).toPrecision(3)) &&
+        shownThreshold.replace(/^0\.0*/, '').length <= 3, true, `The threshold ${f1} shows as ${shownThreshold}`);
+      for (const element of [thresholdMetric.captionLabel, thresholdMetric.input]) {
+        expect(await enterTooltip(element), 'The metric the classification threshold maximizes on the validation rows.',
+          `Best threshold by's ${element.tagName}`);
+      }
+      await awaitCheck(() => resultsText(view).includes(`Classification threshold: ${f1}, the best F1 on the ` +
+        'validation rows'), 'No best F1 bullet', WAIT_MS);
+      for (const element of [threshold.captionLabel, threshold.input]) {
+        const tooltip = await enterTooltip(element, true);
+        expect(tooltip.includes('Rows whose probability of <b>F</b> is at least this value are predicted as ' +
+          '<b>F</b>, the others as <b>M</b>.'), true, `The threshold's ${element.tagName}: ${tooltip}`);
+      }
+      expect(view.methodInput.value, 'XGBoost', 'Predict probability switched the method');
+      expect(gridWith(view.root, 'Metric').root === grid.root, true, 'Predict probability built a new metrics grid');
+      expectArray(grid.dataFrame.getCol('Metric').toList(), metricRows);
+      const checked = view.lastTraining?.result.metrics.train;
+
+      typeInto(threshold.input as HTMLInputElement, '0.52');
+      await awaitCheck(() => options()?.binaryClassificationThreshold === 0.52, 'Typing 0.52 does not re-cut', WAIT_MS);
+      expect(`${threshold.value} ${options()?.thresholdMetric}`, '0.52 undefined', 'Typing 0.52 is no hand edit');
+      threshold.value = 0.9;
+      await awaitCheck(() => options()?.binaryClassificationThreshold === 0.9 && !view.isTraining,
+        'The threshold does not re-cut the result', WAIT_MS);
+      await delay(CHECK_DELAY_MS * 3);
+      expect(view.isTraining, false, 'The threshold retrains');
+      expect((await runsOf([demog])).length, runCount, 'The threshold recorded a run');
+      expect(options()?.thresholdMetric === undefined, true, 'A hand edit keeps the metric');
+      expect(state(), 'Set, \'Customized\'', 'After a hand edit');
+      expect(resultsText(view).includes('the best F1'), false, 'A hand edit keeps the best bullet');
       const recut = view.lastTraining?.result.metrics.train;
-      expect(recut?.auc, trained?.metrics.train.auc, 'AUC-ROC changed with the cutoff');
-      expect(recut?.sensitivity !== trained?.metrics.train.sensitivity ||
-        recut?.specificity !== trained?.metrics.train.specificity, true, 'The cutoff left the shares as they were');
+      expect(recut?.auc, trained?.metrics.train.auc, 'AUC-ROC changed with the threshold');
+      expect(recut?.logLoss, trained?.metrics.train.logLoss, 'Log loss changed with the threshold');
+      expect(recut?.sensitivity !== checked?.sensitivity || recut?.specificity !== checked?.specificity, true,
+        'The threshold left the shares as they were');
       const recutGrid = gridWith(view.root, 'Metric');
-      expect(recutGrid.root === probabilityGrid.root, true, 'The cutoff built a new metrics grid');
+      expect(recutGrid.root === grid.root, true, 'The threshold built a new metrics grid');
       const sensitivityRow = recutGrid.dataFrame.getCol('Metric').toList().indexOf('Recall (Sensitivity)');
       // The column stores single-precision floats.
       expect(Math.abs((recutGrid.dataFrame.getCol('Train').get(sensitivityRow) ?? NaN) - (recut?.sensitivity ?? NaN)) <
@@ -1274,40 +1320,211 @@ category('UI: Preparation', () => {
       expect(gridTooltip(recutGrid, recutGrid.cell('Train', sensitivityRow)).startsWith(`${recut?.sensitivity}.`), true,
         'The cell tooltip shows the old sensitivity');
 
-      cutoff.value = 1.5;
-      await awaitCheck(() => cutoff.validity !== null, 'No mark on a cutoff of 1.5', WAIT_MS);
-      await awaitCheck(() => resultsText(view).includes('Fix the settings.'), 'No hint for a cutoff of 1.5', WAIT_MS);
-      expect(isDisabled(view.saveButton), true, 'Save stays enabled with a cutoff of 1.5');
-      expect(view.lastTraining?.result.options.binaryClassificationThreshold, 0.9, 'A cutoff of 1.5 re-cut the result');
-      cutoff.value = 0.9;
-      await awaitCheck(() => cutoff.validity === null && !resultsText(view).includes('Fix the settings.'),
-        'A valid cutoff leaves the hint', WAIT_MS);
-      expect(isDisabled(view.saveButton), false, 'Save stays disabled with a valid cutoff');
+      threshold.value = 1.5;
+      await awaitCheck(() => threshold.validity !== null, 'No mark on a threshold of 1.5', WAIT_MS);
+      const hasHint = () => resultsText(view).includes('Fix the settings.');
+      await awaitCheck(hasHint, 'No hint for a threshold of 1.5', WAIT_MS);
+      expect(isDisabled(view.saveButton), true, 'Save stays enabled with a threshold of 1.5');
+      expect(options()?.binaryClassificationThreshold, 0.9, 'A threshold of 1.5 re-cut the result');
+      threshold.value = 0.9;
+      await awaitCheck(() => threshold.validity === null && !resultsText(view).includes('Fix the settings.'),
+        'A valid threshold leaves the hint', WAIT_MS);
+      expect(isDisabled(view.saveButton), false, 'Save stays disabled with a valid threshold');
 
+      thresholdMetric.value = 'MCC';
+      await delay(CHECK_DELAY_MS * 3);
+      expect(threshold.value, 0.9, 'A metric change sets the threshold');
+      expect(state(), 'Set, \'Customized\'', 'After a metric change on a hand edit');
+      const [setRect, selectRect, bodyRect] = [setThresholdButton, thresholdMetric.input,
+        view.preparationInputs.group.body].map((e) => e.getBoundingClientRect());
+      const middle = (r: DOMRect) => r.top + r.height / 2;
+      expect(setThresholdButton.parentElement === thresholdMetric.root &&
+        setThresholdButton.closest('.ui-input-options') === null, true, 'Set is not in the row of Best threshold by');
+      const buttonClasses = (button: HTMLElement) => [...button.classList].filter((c) => c !== 'd4-disabled').sort();
+      expectArray(buttonClasses(setThresholdButton), buttonClasses(view.tuneButton));
+      const looks = (button: HTMLElement) => ['fontSize', 'height', 'marginRight', 'paddingRight', 'borderBottomStyle',
+        'textDecorationLine'].map((p) => getComputedStyle(button)[p as keyof CSSStyleDeclaration]).join(' ');
+      expect(looks(setThresholdButton), looks(view.tuneButton), 'Set does not look as Tune');
+      expect(Math.abs(setRect.right - bodyRect.right) <= 1 && setRect.left >= selectRect.right &&
+        Math.abs(middle(setRect) - middle(selectRect)) < 4, true, `Set ${setRect.left}-${setRect.right} at ` +
+        `${middle(setRect)}; Best threshold by ${selectRect.left}-${selectRect.right} at ${middle(selectRect)}; ` +
+        `the group ends at ${bodyRect.right}`);
+      expect(await enterTooltip(setThresholdButton), 'Set the threshold that maximizes MCC on the validation rows.');
+      const mcc = bestOf('mcc');
+      setThresholdButton.click();
+      expect(threshold.value, mcc, 'Set does not set the best MCC threshold');
+      await awaitCheck(() => options()?.binaryClassificationThreshold === mcc && options()?.thresholdMetric === 'mcc' &&
+        resultsText(view).includes('the best MCC on the validation rows'), 'Set does not re-cut', WAIT_MS);
+      expect(state(), 'no Set, \'Best for MCC\'', 'After Set');
+      expect(view.isTraining, false, 'Set retrains');
+      thresholdMetric.value = 'F1';
+      expect(threshold.value, mcc, 'A metric change sets the threshold');
+      expect(state(), mcc === f1 ? 'no Set, \'Best for F1\'' : 'Set, \'Best for MCC\'', 'After a metric change');
+
+      threshold.value = 0.6;
+      await awaitCheck(() => options()?.binaryClassificationThreshold === 0.6 &&
+        resultsText(view).includes('Classification threshold: 0.6') && !resultsText(view).includes('the best'),
+      'A hand edit keeps the best bullet', WAIT_MS);
       const name = `forge-test-model-${Date.now()}`;
       await view.saveModelAs({name, description: '', tags: []});
       const [saved] = await models();
-      const options = preparationOptionsOf(saved?.options);
-      expect(options.binaryClassificationThreshold, 0.9);
-      expect(metricsRecordOf(saved?.metrics)?.train.sensitivity, recut?.sensitivity);
+      const stored = preparationOptionsOf(saved?.options);
+      expect(stored.binaryClassificationThreshold, 0.6);
+      expect(stored.thresholdMetric === undefined, true, 'A hand edit stored a metric');
+      expectArray(stored.postprocessingInfo, ['class-probabilities']);
+      expect(metricsRecordOf(saved?.metrics)?.train.sensitivity, view.lastTraining?.result.metrics.train.sensitivity);
+      const handText = new MetricsTable(storedSummary(saved)!).root.textContent ?? '';
+      expect(handText.includes('Classification threshold: 0.6') && !handText.includes('the best'), true, handText);
 
-      // A change while the cutoff is invalid leaves nothing to re-cut; fixing the cutoff then trains.
-      cutoff.value = 1.5;
-      await awaitCheck(() => resultsText(view).includes('Fix the settings.'), 'No hint for a cutoff of 1.5', WAIT_MS);
+      const handRuns = view.runs.length;
+      view.featuresInput.value = columnsOf(demog, ['AGE', 'WEIGHT']);
+      await awaitCheck(() => view.runs.length > handRuns && view.lastTraining !== undefined && !view.isTraining,
+        'No retraining', TIMEOUT);
+      await delay(CHECK_DELAY_MS * 3);
+      expect(threshold.value, 0.6, 'A retraining replaced the hand edit');
+      expect(options()?.binaryClassificationThreshold, 0.6);
+      expect(options()?.thresholdMetric === undefined, true, 'A retraining optimized a hand edit');
+      expect(state(), 'Set, \'Customized\'', 'After a retraining of a hand edit');
+      expect(resultsText(view).includes('the best F1'), false, 'A hand edit shows the best bullet');
+      expect(runsColumn(view, 'Preparation')[0], 'keep missing values, probability (threshold 0.6)');
+
+      setThresholdButton.click();
+      const retrained = bestOf('f1');
+      await awaitCheck(() => options()?.binaryClassificationThreshold === retrained &&
+        options()?.thresholdMetric === 'f1', 'Set does not optimize after a hand edit', WAIT_MS);
+      const appliedRuns = view.runs.length;
+      view.featuresInput.value = columnsOf(demog, ['AGE', 'HEIGHT', 'WEIGHT']);
+      await awaitCheck(() => view.runs.length > appliedRuns && view.lastTraining !== undefined && !view.isTraining,
+        'No retraining', TIMEOUT);
+      await delay(CHECK_DELAY_MS * 3);
+      const optimized = bestOf('f1');
+      expect(threshold.value, optimized, 'A retraining does not optimize the threshold');
+      expect(options()?.thresholdMetric, 'f1');
+      expect(view.runs[0].steps.thresholdMetric, 'f1');
+      expect(runsColumn(view, 'Preparation')[0], `keep missing values, probability (threshold ${optimized}, best F1)`);
+      const optimizedName = `forge-test-model-${Date.now()}`;
+      await view.saveModelAs({name: optimizedName, description: '', tags: []});
+      const optimizedRow = (await models()).find((m) => m.name === optimizedName);
+      expect(preparationOptionsOf(optimizedRow?.options).thresholdMetric, 'f1');
+      expect(preparationOptionsOf(optimizedRow?.options).binaryClassificationThreshold, optimized);
+      await expectPaneText(modelAccordion(ForgeModelHandler.rowOf(optimizedRow!), optimizedRow!), 'Performance',
+        [`Classification threshold: ${optimized}, the best F1 on the validation rows`]);
+
+      // A change while the threshold is invalid leaves nothing to re-cut; fixing the threshold then trains.
+      threshold.value = 1.5;
+      await awaitCheck(hasHint, 'No hint for a threshold of 1.5', WAIT_MS);
       view.featuresInput.value = columnsOf(demog, ['AGE', 'HEIGHT']);
       await delay(CHECK_DELAY_MS * 5);
       await awaitCheck(() => !view.isTraining && resultsText(view).includes('Fix the settings.'),
-        'A change with an invalid cutoff does not show the hint', WAIT_MS);
-      expect(view.lastTraining === undefined, true, 'A change with an invalid cutoff trained');
-      cutoff.value = 0.5;
+        'A change with an invalid threshold does not show the hint', WAIT_MS);
+      expect(view.lastTraining === undefined, true, 'A change with an invalid threshold trained');
+      expect(state(), 'no Set, \'\'', 'Without a trained model');
+      threshold.value = 0.5;
       await awaitTrained(view);
-      expect(view.lastTraining?.result.options.binaryClassificationThreshold, 0.5);
+      expect(options()?.binaryClassificationThreshold, 0.5);
       expect(resultsText(view).includes('Fix the settings.'), false, 'Results still shows the hint');
-      expect(hasMetric(view.root, 'AUC-ROC'), true, 'Results shows no metrics');
+      const afterFix = (await runsOf([demog])).length;
+      const fixedGrid = gridWith(view.root, 'Metric').root;
+      thresholdMetric.value = 'MCC';
+
+      predictProbability.value = false;
+      await awaitCheck(() => options()?.postprocessingInfo.includes('class-probabilities') === false,
+        'Unchecking does not re-cut the result', WAIT_MS);
+      await delay(CHECK_DELAY_MS * 3);
+      expect(isShown(threshold.root) || isShown(thresholdMetric.root) || isShown(statusRow), false,
+        'The threshold stays without Predict probability');
+      expect(options()?.binaryClassificationThreshold === undefined, true, 'The threshold stays in the options');
+      expect(gridWith(view.root, 'Metric').root === fixedGrid, true, 'Unchecking built a new metrics grid');
+      expect((await runsOf([demog])).length, afterFix, 'Unchecking recorded a run');
+
+      const isCut = () => options()?.postprocessingInfo.includes('class-probabilities') === true;
+      predictProbability.value = true;
+      await awaitCheck(isCut, 'Re-checking does not re-cut the result', WAIT_MS);
+      expect(`${thresholdMetric.value} ${threshold.value} ${options()?.binaryClassificationThreshold} ` +
+        `${options()?.thresholdMetric}`, 'MCC 0.5 0.5 undefined', 'Re-checking lost the metric or the hand edit');
+      expect(state(), bestOf('mcc') === 0.5 ? 'no Set, \'Best for MCC\'' : 'Set, \'Customized\'',
+        'Re-checking lost the hand edit');
+      setThresholdButton.click();
+      const mccBest = bestOf('mcc');
+      await awaitCheck(() => options()?.thresholdMetric === 'mcc', 'Set does not optimize for MCC', WAIT_MS);
+      predictProbability.value = false;
+      await awaitCheck(() => !isCut(), 'Unchecking does not re-cut the result', WAIT_MS);
+      predictProbability.value = true;
+      await awaitCheck(() => isCut() && options()?.thresholdMetric === 'mcc' &&
+        options()?.binaryClassificationThreshold === mccBest && threshold.value === mccBest,
+      'Re-checking does not optimize for the kept metric', WAIT_MS);
     } finally {
       for (const model of await models())
         await deleteModel(model.id);
       await closeTrainView(view, [demog]);
+    }
+  }, {timeout: 120000});
+
+  test('Predict probability retrains SVM through its hidden input', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    const {predictProbability, threshold} = view.preparationInputs;
+    try {
+      view.methodInput.value = 'SVM';
+      await awaitCheck(() => view.lastTraining?.engine.name === 'SVM' && !view.isTraining, 'No SVM training', TIMEOUT);
+      expect(view.hyperparameterInputs.has('probability'), false, 'SVM shows its probability input');
+      expect(view.lastTraining?.request.hyperparameters.probability, false);
+      expect(hasMetric(view.root, 'AUC-ROC'), false, 'SVM without probabilities has AUC-ROC');
+      const first = view.lastTraining;
+      const count = view.runs.length;
+
+      predictProbability.value = true;
+      await awaitCheck(() => view.lastTraining !== first && view.lastTraining?.engine.name === 'SVM' &&
+        !view.isTraining, 'Predict probability does not retrain SVM', TIMEOUT);
+      await delay(CHECK_DELAY_MS * 3);
+      expect(view.runs.length, count + 1, 'No new run');
+      expect(view.runs[0].hyperparameters.probability, true);
+      expect(view.lastTraining?.request.hyperparameters.probability, true);
+      expect(hasMetric(view.root, 'AUC-ROC'), true, 'SVM with probabilities has no AUC-ROC');
+      expect(isShown(threshold.root), false, 'A threshold for three classes');
+      expect(trainPredictionOf(view.lastTraining!.result).categories.filter((c) => c !== '').length, 3);
+      expect(runsColumn(view, 'Preparation')[0], 'probability');
+      expect(statusOf(view), 'Default', 'The hidden input customizes the settings');
+
+      clickRunsRow(runsGrid(view), 1);
+      await awaitCheck(() => !predictProbability.value && view.lastTraining?.request.hyperparameters.probability ===
+        false && !view.isTraining, 'Restoring the earlier run does not uncheck and retrain', TIMEOUT);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: 120000});
+
+  test('Train keeps Predict probability while the form is locked', async () => {
+    const iris = await twoSpeciesIris();
+    const view = await openTrainView(iris);
+    const {predictProbability} = view.preparationInputs;
+    try {
+      view.methodInput.value = 'SVM';
+      await awaitCheck(() => view.lastTraining?.engine.name === 'SVM' && !view.isTraining, 'No SVM training', TIMEOUT);
+      predictProbability.value = true;
+      await awaitCheck(() => view.lastTraining?.request.hyperparameters.probability === true && !view.isTraining,
+        'Predict probability does not retrain SVM', TIMEOUT);
+      await delay(CHECK_DELAY_MS * 3);
+      const live = view.lastTraining;
+      const count = view.runs.length;
+
+      await view.train();
+      const training = view.lastTraining!;
+      expect(training !== live && training.engine.name === 'SVM', true, 'Train gave no new SVM training');
+      expect(predictProbability.value && predictProbability.enabled, true, 'Predict probability is off after Train');
+      expect(training.request.hyperparameters.probability, true, 'SVM trained without probabilities');
+      expect(training.result.hyperparameters.probability, true);
+      expect(training.result.options.postprocessingInfo.includes('class-probabilities'), true,
+        'The result has no class-probabilities step');
+      expect(view.runs.length, count + 1, 'No new run');
+      expect(view.runs[0].steps.predictProbability, true, 'The run row lost Predict probability');
+      expect(view.runs[0].hyperparameters.probability, true);
+      const record = await forgeDb.trainingRuns.get(training.runId);
+      expect((record.options?.postprocessingInfo as string[] | undefined)?.includes('class-probabilities'), true,
+        'The training run was recorded without the step');
+      expect(record.hyperparameters?.probability, true);
+    } finally {
+      await closeTrainView(view, [iris]);
     }
   }, {timeout: 120000});
 });
@@ -1394,24 +1611,24 @@ const metricRow = (grid: DG.Grid, label: string) => grid.dataFrame.getCol('Metri
 const prTitleOf = (view: TrainView | EvaluationView) =>
   rowTitles(view).flat().find((t) => t.startsWith('PR Curve')) ?? '';
 
-/** The row of a curve frame's `Threshold` that [cutoff] labels: the last at or above it ([fromEnd], the ROC's
+/** The row of a curve frame's `Threshold` that [threshold] labels: the last at or above it ([fromEnd], the ROC's
  * decreasing thresholds), else the first (the PR's increasing ones); -1 for none. */
-function markRow(frame: DG.DataFrame, cutoff: number, fromEnd = true): number {
+function markRow(frame: DG.DataFrame, threshold: number, fromEnd = true): number {
   const thresholds = frame.getCol('Threshold').toList();
-  const rows = thresholds.map((_, i) => i).filter((i) => thresholds[i] >= cutoff);
+  const rows = thresholds.map((_, i) => i).filter((i) => thresholds[i] >= threshold);
   return rows.length === 0 ? -1 : fromEnd ? rows[rows.length - 1] : rows[0];
 }
 
-/** [viewer]'s current point is [row] of its frame, the only `cutoff` (circle) of its `Mark` column. The canvas itself
- * is not checked. */
+/** [viewer]'s current point is [row] of its frame, the only `cutoff` mark (circle) of its `Mark` column. The canvas
+ * itself is not checked. */
 function expectMarked(viewer: DG.Viewer, row: number, name: string): void {
-  expect(viewer.dataFrame.currentRowIdx, row, `${name}: the cutoff is not marked`);
+  expect(viewer.dataFrame.currentRowIdx, row, `${name}: the threshold is not marked`);
   expect(viewer.props.showCurrentPoint, true, `${name}: no current point`);
   expect(viewer.props.markersColumnName, 'Mark', `${name}: no markers column`);
   const marks = viewer.dataFrame.getCol('Mark').toList();
   expect(marks.filter((m) => m === 'cutoff').length, row < 0 ? 0 : 1, `${name}: not one circle`);
   if (row >= 0)
-    expect(marks[row], 'cutoff', `${name}: the circle is not at the cutoff`);
+    expect(marks[row], 'cutoff', `${name}: the circle is not at the threshold`);
 }
 
 /** [viewer] draws a 3 px line on automatic axes. */
@@ -1425,17 +1642,18 @@ function expectCurveStyle(viewer: DG.Viewer, name: string): void {
 const curveValues = (frame: DG.DataFrame) => JSON.stringify(frame.columns.toList().map((c) => c.toList()));
 
 /** Predict probability on two iris species: ROC Curve and PR Curve over their own frames of Crux's curves, kept by a
- * cutoff change (the mark moves), given new frames by a retrain. */
+ * threshold change (the mark moves), given new frames by a retrain. */
 async function expectRocCurve(): Promise<void> {
   const iris = await twoSpeciesIris();
   const view = await openTrainView(iris);
-  const {predictProbability, cutoff} = view.preparationInputs;
+  const {predictProbability, threshold} = view.preparationInputs;
   try {
     predictProbability.value = true;
     const rocTitle = () => rocTitleOf(view);
     const prTitle = () => prTitleOf(view);
-    await awaitCheck(() => rocTitle() !== '' && view.lastTraining?.result.scores !== undefined && !view.isTraining,
-      'No ROC Curve', TIMEOUT);
+    const hasStep = () => view.lastTraining?.result.options.postprocessingInfo.includes('class-probabilities') === true;
+    await awaitCheck(() => rocTitle() !== '' && hasStep() && !view.isTraining, 'No ROC Curve', TIMEOUT);
+    await delay(CHECK_DELAY_MS * 3);
     const aucTitle = () => `ROC Curve (AUC = ${view.lastTraining?.result.metrics.train.auc?.toFixed(3)})`;
     const apTitle = () =>
       `PR Curve (AP = ${view.lastTraining?.result.metrics.train.averagePrecision?.toFixed(3)})`;
@@ -1455,34 +1673,32 @@ async function expectRocCurve(): Promise<void> {
     expect(view.resultsPane.frames.some((f) => f.dart === frame.dart), false, 'ROC Curve is on the preview frame');
     expect(frame.meta.formulaLines.items.some((line) => line.title === 'Non-informative baseline'), true,
       'No baseline');
-    expectMarked(roc, markRow(frame, 0.5), 'ROC Curve');
+    const optimized = view.lastTraining!.result.options.binaryClassificationThreshold!;
+    expect(threshold.value, optimized, 'The threshold is not the optimized one');
+    expectMarked(roc, markRow(frame, optimized), 'ROC Curve');
     const pr = panelViewer(view, prTitle());
     const prFrame = pr.dataFrame;
     expectArray(prFrame.columns.names(), ['Threshold', 'Recall (Sensitivity)', 'Precision', 'Mark']);
     expectCurveStyle(pr, 'PR Curve');
     const base = prFrame.meta.formulaLines.items.find((l) => l.title === 'Non-informative baseline');
     expect(base?.formula, `\${Precision} = ${view.lastTraining?.result.curves?.pr.precision[0].toFixed(4)}`);
-    expectMarked(pr, markRow(prFrame, 0.5, false), 'PR Curve');
+    expectMarked(pr, markRow(prFrame, optimized, false), 'PR Curve');
     const content = (title: string) => panelOf(view, title).lastElementChild;
     const confusions = content('Confusions');
     expect(panelViewer(view, 'Confusions').props.descriptionPosition, 'Bottom');
-    let curveChanges = 0;
-    const sub = frame.onValuesChanged.subscribe(() => curveChanges++);
-    try {
-      cutoff.value = 0.9;
-      await awaitCheck(() => view.lastTraining?.result.options.binaryClassificationThreshold === 0.9 &&
-        !view.isTraining, 'The cutoff does not re-cut the result', WAIT_MS);
-      await delay(CHECK_DELAY_MS * 3);
-    } finally {
-      sub.unsubscribe();
-    }
+    const points = () => JSON.stringify(frame.columns.toList().filter((c) => c.name !== 'Mark').map((c) => c.toList()));
+    const pointsBefore = points();
+    threshold.value = 0.9;
+    await awaitCheck(() => view.lastTraining?.result.options.binaryClassificationThreshold === 0.9 &&
+      !view.isTraining, 'The threshold does not re-cut the result', WAIT_MS);
+    await delay(CHECK_DELAY_MS * 3);
     const recut = panelViewer(view, rocTitle());
     expect(recut.root === roc.root && roc.root.isConnected && recut.dataFrame.dart === frame.dart, true,
-      'The cutoff rebuilt ROC Curve');
-    expect(curveChanges, 0, 'The cutoff changed the curve');
-    expect(frame.currentRowIdx, markRow(frame, 0.9), 'The mark did not move to the cutoff 0.9');
-    expect(prFrame.currentRowIdx, markRow(prFrame, 0.9, false), 'The PR mark did not move to the cutoff 0.9');
-    expect(content('Confusions') === confusions, true, 'The cutoff rebuilt Confusions');
+      'The threshold rebuilt ROC Curve');
+    expect(points() === pointsBefore, true, 'The threshold changed the curve');
+    expect(frame.currentRowIdx, markRow(frame, 0.9), 'The mark did not move to the threshold 0.9');
+    expect(prFrame.currentRowIdx, markRow(prFrame, 0.9, false), 'The PR mark did not move to the threshold 0.9');
+    expect(content('Confusions') === confusions, true, 'The threshold rebuilt Confusions');
 
     const values = curveValues(frame);
     const before = view.lastTraining;
@@ -1527,15 +1743,15 @@ async function expectProbabilityRocCurve(): Promise<void> {
     await awaitCheck(() => rocTitle() !== '' && !view.isTraining, 'No ROC Curve', TIMEOUT);
     expectRows(rowTitles(view)[0], ['Predicted Species vs Actual', rocTitle(), prTitle()]);
     expect(rowTitles(view)[1].includes('Performance'), true, 'Performance is not in row 2');
-    expect(view.lastTraining?.result.scores === undefined, true, 'Scores without Predict probability');
+    expect(view.lastTraining?.result.outOfFold.probabilities !== undefined, true, 'No out-of-fold probabilities');
     expect(rocTitle(), `ROC Curve (AUC = ${view.lastTraining?.result.metrics.train.auc?.toFixed(3)})`);
     const roc = panelViewer(view, rocTitle());
     const frame = roc.dataFrame;
     expectArray(frame.columns.names(), ['Threshold', 'FPR (1 − Specificity)', 'Recall (Sensitivity)', 'Mark']);
     expect(frame.rowCount, view.lastTraining?.result.curves?.roc.fpr.length);
-    expect(frame.currentRowIdx, -1, 'A curve without a cutoff has a marked point');
-    expect(frame.getCol('Mark').toList().includes('cutoff'), false, 'A curve without a cutoff has a circle');
-    expect(panelViewer(view, prTitle()).dataFrame.currentRowIdx, -1, 'A PR curve without a cutoff has a mark');
+    expect(frame.currentRowIdx, -1, 'A curve without a threshold has a marked point');
+    expect(frame.getCol('Mark').toList().includes('cutoff'), false, 'A curve without a threshold has a circle');
+    expect(panelViewer(view, prTitle()).dataFrame.currentRowIdx, -1, 'A PR curve without a threshold has a mark');
     expect(view.resultsPane.frames.some((f) => f.dart === frame.dart), false, 'ROC Curve is on the preview frame');
     const values = curveValues(frame);
 
@@ -1614,7 +1830,7 @@ async function expectProbabilityRocCurve(): Promise<void> {
 }
 
 /** XGBoost on demog SEX: ROC Curve from the class probabilities without a mark; Predict probability on marks the
- * cutoff, off drops the mark again; the metrics grid is kept throughout. */
+ * threshold, off drops the mark again; the metrics grid is kept throughout. */
 async function expectProbabilityToggle(): Promise<void> {
   const demog = await openDemog();
   const view = await TrainView.create(demog);
@@ -1627,17 +1843,22 @@ async function expectProbabilityToggle(): Promise<void> {
     view.featuresInput.value = columnsOf(demog, ['AGE', 'HEIGHT', 'WEIGHT']);
     await awaitCheck(() => view.lastTraining?.result.probabilities !== undefined && !view.isTraining &&
       rocTitle() !== '', 'No ROC Curve from the class probabilities', TIMEOUT);
-    expect(rocFrame().currentRowIdx, -1, 'A curve without a cutoff has a marked point');
+    expect(rocFrame().currentRowIdx, -1, 'A curve without a threshold has a marked point');
     const grid = gridWith(view.root, 'Metric').root;
+    const metricRows = () => JSON.stringify(gridWith(view.root, 'Metric').dataFrame.getCol('Metric').toList());
+    const rows = metricRows();
 
     predictProbability.value = true;
-    await awaitCheck(() => view.lastTraining?.result.scores !== undefined && !view.isTraining && rocTitle() !== '',
+    const hasStep = () => view.lastTraining?.result.options.postprocessingInfo.includes('class-probabilities') === true;
+    await awaitCheck(() => hasStep() && !view.isTraining && rocTitle() !== '',
       'No ROC Curve with Predict probability', TIMEOUT);
     await delay(CHECK_DELAY_MS * 3);
-    expectMarked(panelViewer(view, rocTitle()), markRow(rocFrame(), 0.5), 'ROC Curve');
+    const shown = view.lastTraining!.result.options.binaryClassificationThreshold!;
+    expectMarked(panelViewer(view, rocTitle()), markRow(rocFrame(), shown), 'ROC Curve');
     const pr = panelViewer(view, prTitleOf(view));
-    expectMarked(pr, markRow(pr.dataFrame, 0.5, false), 'PR Curve');
+    expectMarked(pr, markRow(pr.dataFrame, shown, false), 'PR Curve');
     expect(gridWith(view.root, 'Metric').root === grid, true, 'Predict probability built a new metrics grid');
+    expect(metricRows(), rows, 'Predict probability changed the metric rows');
 
     predictProbability.value = false;
     await awaitCheck(() => view.lastTraining?.result.probabilities !== undefined && !view.isTraining &&
@@ -1647,6 +1868,7 @@ async function expectProbabilityToggle(): Promise<void> {
     expect(rocFrame().getCol('Mark').toList().includes('cutoff'), false,
       'The circle stayed without Predict probability');
     expect(gridWith(view.root, 'Metric').root === grid, true, 'Turning Predict probability off built a new grid');
+    expect(metricRows(), rows, 'Turning Predict probability off changed the metric rows');
   } finally {
     await closeTrainView(view, [demog]);
   }
@@ -2054,7 +2276,7 @@ category('UI: Results', () => {
   }, {timeout: TIMEOUT});
 
   test('ROC Curve and PR Curve: lines over their own frames of Crux\'s curves, the AUC and AP of Performance; a ' +
-    'cutoff moves only their marks, a retrain gives new frames', expectRocCurve, {timeout: 120000});
+    'threshold change moves only their marks, a retrain gives new frames', expectRocCurve, {timeout: 120000});
 
   test('ROC Curve and PR Curve from the class probabilities of a two-class classifier, Per-class for more classes; ' +
     'new frames on a retrain', expectProbabilityRocCurve, {timeout: 180000});
@@ -2384,6 +2606,31 @@ category('UI: Apply dialog', () => {
       applying = true;
       ok.click();
       await expectApplied(dialog, iris, id);
+    } finally {
+      opened?.close();
+      if (applying)
+        await applicationSettled(id);
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Apply dialog of a model saved with Predict probability adds its probability column', async () => {
+    const iris = await twoSpeciesIris();
+    const {id} = await saveTestModel(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'), iris.name, {},
+      PREDICT_PROBABILITY);
+    let opened: DG.Dialog | undefined;
+    let applying = false;
+    try {
+      const dialog = (await applyModelDialog({table: iris, modelId: id})).show();
+      opened = dialog;
+      const ok = dialog.getButton('OK');
+      await awaitCheck(() => !isDisabled(ok), 'OK stays disabled', WAIT_MS);
+      applying = true;
+      ok.click();
+      await expectApplied(dialog, iris, id);
+      await awaitCheck(() => iris.col('P(Species = versicolor)') !== null, 'No probability column', WAIT_MS);
+      await awaitCheck(() => balloonWith('Added the columns "Species (predicted)", "P(Species = versicolor)"') !== null,
+        'No balloon naming both columns', WAIT_MS);
     } finally {
       opened?.close();
       if (applying)
@@ -3580,20 +3827,23 @@ category('UI: Runs', () => {
     }
   }, {timeout: TIMEOUT});
 
-  test('a click on the current run after a cutoff move restores the cutoff without training', async () => {
+  test('a click on the current run after a threshold move restores the threshold without training', async () => {
     const iris = await twoSpeciesIris();
     const view = await openTrainView(iris);
-    const {predictProbability, cutoff} = view.preparationInputs;
+    const {predictProbability, threshold} = view.preparationInputs;
     try {
       predictProbability.value = true;
+      await delay(CHECK_DELAY_MS * 3);
       await awaitTrained(view);
       const [count, shown] = [view.runs.length, shownRun(view)];
-      cutoff.value = 0.7;
+      threshold.value = 0.7;
       await delay(CHECK_DELAY_MS * 3);
       expect(shown !== null && shownRun(view) === shown, true, `A re-cut shows ${shownRun(view)}, not ${shown}`);
       clickRunsRow(runsGrid(view), 0);
       await delay(CHECK_DELAY_MS * 3);
-      expect(cutoff.value, view.runs[0].steps.cutoff);
+      expect(predictProbability.value, view.runs[0].steps.predictProbability);
+      expect(`${view.runs[0].steps.predictProbability} ${threshold.value}`, 'false 0.7',
+        'Unchecking by a run without Predict probability did not keep the hidden threshold');
       expect(!view.isTraining && view.runs.length === count && shownRun(view) === shown, true, 'The click trained');
     } finally {
       await closeTrainView(view, [iris]);
@@ -3861,6 +4111,55 @@ const tableText = (table: HTMLTableElement) =>
   Array.from(table.rows, (row) => Array.from(row.cells, (cell) => cell.textContent ?? ''));
 
 category('UI: Search', () => {
+  test('Tune keeps Predict probability; the Metric lists Log loss and Brier score last', async () => {
+    const iris = await twoSpeciesIris();
+    const view = await openTrainView(iris);
+    try {
+      view.preparationInputs.predictProbability.value = true;
+      autoTune(view);
+      await awaitCheck(() => !isDisabled(view.tuneButton), 'Tune stays disabled', WAIT_MS);
+      expect(await enterTooltip(view.tuneButton), 'Find the best settings');
+      const metrics = Array.from(view.tuneSettings.metric.options, (o) => o.textContent ?? '');
+      expectArray(metrics.slice(-2), ['Log loss', 'Brier score']);
+    } finally {
+      await closeTrainView(view, [iris]);
+      clearTestTuneStorage();
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Tune optimizes the winner\'s threshold for the chosen metric, unless it was edited by hand', async () => {
+    const iris = await twoSpeciesIris();
+    const view = await openTrainView(iris);
+    const {predictProbability, threshold, thresholdMetric} = view.preparationInputs;
+    const options = () => view.lastTraining?.result.options;
+    try {
+      predictProbability.value = true;
+      await awaitCheck(() => options()?.thresholdMetric === 'f1', 'Checking does not optimize', WAIT_MS);
+      thresholdMetric.value = 'MCC';
+      await view.startSearch('tune', {metric: 'accuracy', budgetSeconds: 60, maxTrials: 2});
+      await awaitTrained(view);
+      const best = bestThresholdOf(view.lastTraining!.result, 'mcc');
+      expect(view.lastTraining?.request.search !== undefined, true, 'The winner is not the shown training');
+      expect(options()?.postprocessingInfo.includes('class-probabilities'), true,
+        'The re-cut after Tune dropped Predict probability');
+      expect(view.runs[0].steps.predictProbability, true, 'The winner\'s run row lost Predict probability');
+      expect(options()?.thresholdMetric, 'mcc');
+      expect(options()?.binaryClassificationThreshold, best);
+      expect(threshold.value, best, 'The winner\'s threshold is not optimized');
+
+      threshold.value = 0.65;
+      await awaitCheck(() => options()?.binaryClassificationThreshold === 0.65, 'The hand edit does not re-cut',
+        WAIT_MS);
+      await view.startSearch('tune', {metric: 'accuracy', budgetSeconds: 60, maxTrials: 2});
+      await awaitTrained(view);
+      expect(threshold.value, 0.65, 'A search replaced the hand edit');
+      expect(options()?.binaryClassificationThreshold, 0.65);
+      expect(options()?.thresholdMetric === undefined, true, 'A search optimized a hand edit');
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: SEARCH_TIMEOUT});
+
   test('Tune follows the selection; a method without settings has no Settings row', async () => {
     const iris = await openIris();
     const view = await openTrainView(iris);
@@ -4250,7 +4549,7 @@ category('UI: Search', () => {
     const iris = await openIris();
     const view = await openTrainView(iris);
     try {
-      // The search's own entry: an earlier one may still be in the task bar.
+      // Only the search's own entry counts, as an earlier one may still be in the task bar.
       const entries = () => Array.from(document.querySelectorAll('.d4-task-bar-entry'));
       const earlier = new Set(entries());
       const searching = view.startSearch('tune', {metric: 'accuracy', budgetSeconds: 900});

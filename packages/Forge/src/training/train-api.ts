@@ -1,14 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 import {boolColumn} from '../columns';
-import {defaultHyperparameters, defaultValuesOf, Engine, Hyperparameters, hyperparametersOf, NUMBER_TYPES}
-  from '../engines/engine';
+import {defaultHyperparameters, defaultValuesOf, Engine, givesProbabilities, Hyperparameters, NUMBER_TYPES,
+  visibleHyperparametersOf, withProbabilityInput} from '../engines/engine';
 import {methodList} from '../engines/method-list';
 import {errorMessage, ForgeError} from '../forge-error';
 import {ModelStorageMode, ModelTask, TrainingRunStatus} from '../generated/db';
+import {BEST_THRESHOLD_METRICS} from '../metrics/metrics';
 import {imputeFunction, imputeSettings, imputeSettingsOf, MISSING_VALUES_MODES, MissingValuesSettings}
   from '../preparation/missing-values';
-import {cutoffProblem, DEFAULT_CUTOFF, DEFAULT_STEPS, defaultOneHot, PreparationSteps, twoClasses}
-  from '../preparation/pipeline';
+import {DEFAULT_STEPS, DEFAULT_THRESHOLD, DEFAULT_THRESHOLD_METRIC, defaultOneHot, PreparationSteps, thresholdProblem,
+  twoClasses} from '../preparation/pipeline';
 import {isRecord} from '../preparation/preparation-options';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {datasetRefOf} from '../storage/dataset-ref';
@@ -25,7 +26,8 @@ import {checkSelection, hasDataProblems, MAX_SEED, MetricsRecord, prepareTrainin
   from './train-model';
 
 const OPTION_NAMES = ['missingValues', 'neighbors', 'distance', 'oneHot', 'skipUniqueCategories',
-  'predictProbability', 'cutoff', 'seed', 'scheme', 'folds', 'testFraction', 'stratified', 'shuffle', 'search'];
+  'predictProbability', 'threshold', 'thresholdMetric', 'seed', 'scheme', 'folds', 'testFraction', 'stratified',
+  'shuffle', 'search'];
 const SCHEMES: ValidationScheme[] = ['kfold', 'holdout'];
 const SEARCH_OPTION_NAMES = ['metric', 'budgetSeconds', 'maxTrials'];
 const SEARCH_METRIC_IDS = [...new Set([...SEARCH_METRICS.regression, ...SEARCH_METRICS.classification])];
@@ -96,7 +98,11 @@ export async function runTrainModel(input: TrainModelInput): Promise<TrainModelR
   // A suggested method has its own rules (an explicit keep, for one): they are checked against it.
   if (engine !== chosen)
     engineOf(await checkSelection({...selection, engine}, [engine]), engine, true);
-  const hyperparameters = hyperparametersFor(engine, input.hyperparameters ?? {});
+  const {predictProbability} = options.steps;
+  if (predictProbability && !givesProbabilities(engine))
+    throw new ForgeError(`${engine.name} gives no class probabilities, so Predict probability cannot be used with it.`);
+  const hyperparameters = withProbabilityInput(engine, hyperparametersFor(engine, input.hyperparameters ?? {}),
+    predictProbability);
   const progressOf = (text: string) => input.showProgress === false ? undefined :
     DG.TaskBarProgressIndicator.create(text, {cancelable: true});
   return await trainAndSave({...selection, engine, hyperparameters}, table.name, save, progressOf, options.search);
@@ -162,7 +168,8 @@ async function trainAndSave(selection: TrainingSelection, datasetName: string, s
         .catch(() => undefined);
       throw e;
     }
-    const runId = await record('completed', result.metrics);
+    const runId = await recordTrainingRun({...run, options: result.options, status: 'completed',
+      metrics: result.metrics, duration_ms: Date.now() - startedOn});
     const {engine, features, target} = selection;
     const modelId = save === null ? null : await saveTrainedModel({...save, engine, datasetName, result, fingerprint,
       columns: [...features, target], runId});
@@ -213,7 +220,7 @@ function engineNamed(engines: Engine[], name: string): Engine {
 
 /** The method's defaults overlaid with [given], each value of the kind and in the range its input declares. */
 function hyperparametersFor(engine: Engine, given: {[name: string]: unknown}): Hyperparameters {
-  const properties = hyperparametersOf(engine);
+  const properties = visibleHyperparametersOf(engine);
   const names = properties.map((p) => p.name);
   const unknown = firstUnknown(given, names);
   if (unknown !== undefined) {
@@ -225,10 +232,13 @@ function hyperparametersFor(engine: Engine, given: {[name: string]: unknown}): H
 }
 
 /** The preparation, the split seed and the validation of [options], with the Train view's defaults. */
-function optionsOf(options: {[name: string]: unknown}, features: DG.Column[], target: DG.Column): TrainingOptions {
-  const unknown = firstUnknown(options, OPTION_NAMES);
+function optionsOf(input: {[name: string]: unknown}, features: DG.Column[], target: DG.Column): TrainingOptions {
+  const unknown = firstUnknown(input, [...OPTION_NAMES, 'cutoff']);
   if (unknown !== undefined)
     throw new ForgeError(`Unknown option '${unknown}'. The options are: ${OPTION_NAMES.join(', ')}.`);
+  const {cutoff, ...options} = input;
+  if (options.threshold === undefined)
+    options.threshold = cutoff;
   const given = options.missingValues;
   const modeName = given === undefined ? null : MISSING_VALUES_MODES.find((m) => m === given);
   if (modeName === undefined) {
@@ -237,17 +247,20 @@ function optionsOf(options: {[name: string]: unknown}, features: DG.Column[], ta
   }
   const skipUniqueCategories = boolOption(options, 'skipUniqueCategories', DEFAULT_STEPS.skipUniqueCategories);
   const search = options.search === undefined ? undefined : searchChoiceOf(options.search);
-  // As in the view, a search turns Predict probability off: it tunes the classifier.
-  const predictProbability = boolOption(options, 'predictProbability', DEFAULT_STEPS.predictProbability) &&
-    search === undefined;
-  if (predictProbability && twoClasses(target) === null)
-    throw new ForgeError('Predict probability needs a target with exactly two classes.');
-  const cutoff = numberOption(options, 'cutoff', DEFAULT_CUTOFF);
-  const problem = predictProbability ? cutoffProblem(cutoff) : null;
+  const predictProbability = boolOption(options, 'predictProbability', DEFAULT_STEPS.predictProbability);
+  if (predictProbability && target.matches(DG.COLUMN_TYPE_FILTER.NUMERICAL_NO_DATE_TIME))
+    throw new ForgeError('Predict probability needs a text or boolean target.');
+  const threshold = numberOption(options, 'threshold', DEFAULT_THRESHOLD);
+  const problem = predictProbability && twoClasses(target) !== null ? thresholdProblem(threshold) : null;
   if (problem !== null)
     throw new ForgeError(problem);
+  const thresholdMetric = BEST_THRESHOLD_METRICS.find((m) => m === (options.thresholdMetric ??
+    DEFAULT_THRESHOLD_METRIC));
+  if (thresholdMetric === undefined)
+    throw new ForgeError(`The option 'thresholdMetric' needs one of: ${BEST_THRESHOLD_METRICS.join(', ')}.`);
   const steps: PreparationSteps = {oneHot: boolOption(options, 'oneHot', defaultOneHot(features, skipUniqueCategories)),
-    skipUniqueCategories, predictProbability, cutoff};
+    skipUniqueCategories, predictProbability, threshold,
+    ...(options.threshold === undefined ? {thresholdMetric} : {})};
   const seed = wholeOption(options, 'seed', DEFAULT_SEED, 0, MAX_SEED);
   const scheme = SCHEMES.find((s) => s === (options.scheme ?? DEFAULT_VALIDATION.scheme));
   if (scheme === undefined)

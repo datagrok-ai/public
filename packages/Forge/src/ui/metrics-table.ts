@@ -5,7 +5,7 @@ import {textColumn} from '../columns';
 import {ModelRow} from '../generated/db';
 import {ClassValues, METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricFinding, metricFindings, MetricId,
   MetricValues, Split} from '../metrics/metrics';
-import {preparationOptionsOf} from '../preparation/preparation-options';
+import {CLASS_PROBABILITIES, preparationOptionsOf} from '../preparation/preparation-options';
 import {featuresHadGaps} from '../storage/dataset-fingerprint';
 import {heldOutCount} from '../training/k-fold';
 import {budgetCaption, SEARCH_CAPTIONS, SearchRecord, searchRecordOf} from '../training/search';
@@ -47,6 +47,10 @@ export interface MetricsSummary {
   evaluation?: MetricsEvaluation;
   /** The search that chose the method and settings. */
   search?: SearchRecord;
+  /** The classification threshold of a model saved with Predict probability (two classes). */
+  threshold?: number;
+  /** The metric the threshold was optimized for; absent for a threshold set by hand. */
+  thresholdMetric?: MetricId;
 }
 
 const SPLIT_COLUMNS: Record<Split, string> = {train: 'Train', validation: 'Validation'};
@@ -157,7 +161,8 @@ export class MetricsTable {
   }
 
   private fillList(): void {
-    const {metrics, rowCount, skippedRows, keepsMissingValues, splitting, seed, evaluation, search} = this.summary;
+    const {metrics, rowCount, skippedRows, keepsMissingValues, splitting, seed, evaluation, search, threshold,
+      thresholdMetric} = this.summary;
     const items: (string | HTMLElement)[][] = [];
     if (keepsMissingValues)
       items.push(['Missing values: kept (the method handles them)']);
@@ -179,6 +184,11 @@ export class MetricsTable {
     }
     if (metrics.positiveClass !== undefined)
       items.push([`Positive class: ${metrics.positiveClass}`]);
+    if (threshold !== undefined) {
+      items.push([thresholdMetric === undefined ? `Classification threshold: ${threshold}` :
+        `Classification threshold: ${threshold}, the best ${METRIC_LABELS[thresholdMetric]} on the validation rows: ` +
+        'its validation values are optimistic']);
+    }
     if (evaluation !== undefined) {
       const skipped = evaluation.skippedRows > 0 ? `, ${evaluation.skippedRows} skipped (missing values)` : '';
       items.push([`Evaluation: ${evaluation.tableName} (${evaluation.rowCount} rows${skipped})`]);
@@ -217,8 +227,11 @@ export function storedSummary(model: ModelRow): MetricsSummary | null {
   const metrics = metricsRecordOf(model.metrics);
   if (metrics === null)
     return null;
-  const missingValues = preparationOptionsOf(model.options).missingValues;
+  const options = preparationOptionsOf(model.options);
+  const {missingValues} = options;
   return {metrics, rowCount: model.row_count ?? 0, seed: model.seed, skippedRows: missingValues?.skippedRows ?? 0,
     keepsMissingValues: missingValues?.mode === 'keep' && featuresHadGaps(model.dataset_fingerprint),
-    splitting: splittingOf(model.splitting), search: searchRecordOf(model.search)};
+    splitting: splittingOf(model.splitting), search: searchRecordOf(model.search),
+    threshold: options.postprocessingInfo.includes(CLASS_PROBABILITIES) ? options.binaryClassificationThreshold :
+      undefined, thresholdMetric: options.thresholdMetric};
 }

@@ -120,7 +120,7 @@ export class EvaluationView extends DG.ViewBase {
       await view.resultsPane.show({engine: loaded.engine, table, columns: result.columns, target: result.target,
         prediction: result.prediction, score: result.score, curves: result.curves,
         keptRows: result.keptRows, positiveClass,
-        cutoff: loaded.options.binaryClassificationThreshold, blob: result.blob,
+        threshold: loaded.options.binaryClassificationThreshold, blob: result.blob,
         summary: {...stored, evaluation: {values, tableName: table.name, rowCount, skippedRows,
           ...(result.classes === undefined ? {} : {classes: result.classes})}}});
     } catch (e) {

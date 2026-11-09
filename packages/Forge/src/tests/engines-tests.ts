@@ -3,8 +3,9 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
 import {applicableEngines} from '../engines/applicable-engines';
 import {selectBestEngine} from '../engines/best-engine';
-import {defaultHyperparameters, defaultValuesOf, Engine, handlesMissingValues, hasTrainingRows, hyperparametersOf,
-  isComplete, isServerEngine, rolesOf} from '../engines/engine';
+import {defaultHyperparameters, defaultValuesOf, Engine, givesProbabilities, handlesMissingValues, hasTrainingRows,
+  hyperparametersOf, isComplete, isServerEngine, probabilityInput, rolesOf, visibleHyperparametersOf,
+  withProbabilityInput} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {apply, isApplicable, isInteractive} from '../engines/engine-calls';
 import {SettingDetails} from '../engines/method-list';
@@ -24,9 +25,9 @@ function namedEngine(name: string, functions: Engine['functions'] = {}): Engine 
 }
 
 /** A script method's train function, built in the browser (nothing is saved). */
-function scriptTrain(language: string, meta: {[key: string]: string} = {}): DG.Script {
+function scriptTrain(language: string, meta: {[key: string]: string} = {}, inputs = ''): DG.Script {
   const script = DG.Script.create(`//name: forge-test-train\n//language: ${language}\n` +
-    '//input: dataframe df\n//input: string predictColumn\n//output: blob model\n');
+    `//input: dataframe df\n//input: string predictColumn\n${inputs}//output: blob model\n`);
   for (const [key, value] of Object.entries(meta))
     script.options[key] = value;
   return script;
@@ -106,6 +107,41 @@ category('Engines', () => {
       DG.DataFrame.fromColumns([DG.Column.fromStrings('Prediction', ['a', 'b', 'a'])]));
     expect((await apply(single, columns, new Uint8Array())).probabilities === undefined, true,
       'A single column gave probabilities');
+  });
+
+  test('givesProbabilities, probabilityInput, withProbabilityInput and visibleHyperparametersOf', async () => {
+    const inputs = '//input: int a\n//input: bool probability\n//input: int count\n';
+    const stub = (mlprobabilities: string) => namedEngine('forge-test-js',
+      {train: scriptTrain('javascript', {mlprobabilities}, inputs)});
+    const always = stub('true');
+    expect(givesProbabilities(always), true, 'mlprobabilities true');
+    expect(probabilityInput(always) === undefined, true, 'An input of mlprobabilities true');
+    expect(JSON.stringify(withProbabilityInput(always, {a: 1}, true)), JSON.stringify({a: 1}));
+    expectArray(visibleHyperparametersOf(always).map((p) => p.name), ['a', 'probability', 'count']);
+    const named = stub('probability');
+    expect(givesProbabilities(named), true, 'A named bool input');
+    expect(probabilityInput(named), 'probability');
+    expect(JSON.stringify(withProbabilityInput(named, {a: 1}, true)), JSON.stringify({a: 1, probability: true}));
+    expect(JSON.stringify(withProbabilityInput(named, {a: 1}, false)), JSON.stringify({a: 1, probability: false}));
+    expectArray(visibleHyperparametersOf(named).map((p) => p.name), ['a', 'count']);
+    for (const value of ['missing', 'count']) {
+      const engine = stub(value);
+      expect(givesProbabilities(engine), false, `mlprobabilities ${value}`);
+      expect(probabilityInput(engine) === undefined, true, `An input of mlprobabilities ${value}`);
+      expectArray(visibleHyperparametersOf(engine).map((p) => p.name), ['a', 'probability', 'count']);
+    }
+    expect(givesProbabilities(namedEngine('forge-test-none')), false, 'No train function');
+
+    const engines = EngineRegistry.discover();
+    for (const name of EDA_METHODS) {
+      const engine = engineByName(engines, name);
+      const isRegression = name.endsWith('Regression');
+      expect(givesProbabilities(engine), !isRegression, `${name} gives probabilities`);
+      expect(probabilityInput(engine) ?? 'none', name === 'SVM' ? 'probability' : 'none', `${name} probability input`);
+    }
+    const svmEngine = engineByName(engines, 'SVM');
+    expect(visibleHyperparametersOf(svmEngine).some((p) => p.name === 'probability'), false, 'SVM shows probability');
+    expect(hyperparametersOf(svmEngine).some((p) => p.name === 'probability'), true, 'SVM has no probability input');
   });
 
   test('a string default loses the quotes the server keeps it in', async () => {
@@ -232,6 +268,11 @@ category('Engines', () => {
     expect(iterations.default, 20);
     expect(iterations.min, 1);
     expect(iterations.max, 100);
+    const svm = names.indexOf('SVM');
+    const svmSettings: SettingDetails[] = JSON.parse(methods.get('Settings', svm));
+    expect(svmSettings.some((s) => s.name === 'probability'), false, 'Settings lists SVM\'s probability');
+    expect(methods.get('Hyperparameters', svm).split(', ').includes('probability'), false,
+      'Hyperparameters lists SVM\'s probability');
   });
 
   test('listMethods marks the applicable and the suggested methods of a table', async () => {

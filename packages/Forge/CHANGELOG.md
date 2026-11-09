@@ -2,6 +2,14 @@
 
 ## v.next
 
+* GROK-20932: Improved Predict probability: the labels come from the method's own class probabilities for any classification; the regression mode was removed, and models saved with it still apply
+* GROK-20932: Added the probability columns P(<target> = <class>) that a model saved with Predict probability adds when applied
+* GROK-20932: Added the Classification threshold (renamed from Positive class cutoff) for two classes, optimized for the Best threshold by metric (F1, Balanced accuracy, MCC or Accuracy) on the validation rows after every training, kept when edited by hand until Set, with a status under it, and stored with the model as thresholdMetric
+* GROK-20932: Added SVM's class probabilities through its hidden Class probabilities input, set by Predict probability
+* GROK-20932: Added Log loss and Brier score to Performance and Tune
+* GROK-20932: Added the Forge:trainModel options threshold (cutoff kept as an alias) and thresholdMetric, and allowed predictProbability on any classification and during a search
+* GROK-20932: Improved the EMS schema descriptions of the Predict probability options and the logLoss and brier metrics (schema 0.1.20)
+* GROK-20932: Fixed the first Tune trial's out-of-fold class probabilities, gathered before the row positions were known (AUC-ROC, Log loss and Brier score searches)
 * GROK-20932: Added the Validation group to the Train view (stratified K-fold, K-fold or Hold-out, folds, test fraction, shuffle, a split seed 42 by default), used by Tune and stored in the model's splitting; Forge:trainModel options scheme, testFraction, stratified, shuffle and the seed 42 by default; the Runs column Split seed (empty when the rows were not shuffled)
 * GROK-20932: Added meta.mlenabled: settings a method ignores with the other values or the task are disabled in the Train view and fixed to their defaults by Tune
 * GROK-20932: Improved the Train view: Train right under the inputs and kept in view while a tall form scrolls

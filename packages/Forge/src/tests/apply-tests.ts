@@ -12,16 +12,20 @@ import {Engine} from '../engines/engine';
 import {apply, LoopProgress} from '../engines/engine-calls';
 import {errorMessage, ForgeError} from '../forge-error';
 import {forgeDb, ModelInsert} from '../generated/db';
-import {regressionMetrics} from '../metrics/metrics';
+import {aucOf, probabilityOf, regressionMetrics} from '../metrics/metrics';
 import {measure} from '../metrics/report';
 import {MissingValuesSettings} from '../preparation/missing-values';
 import {replayPostprocessing} from '../preparation/pipeline';
-import {isRecord, ONE_HOT, preparationOptionsOf} from '../preparation/preparation-options';
-import {BLOB_ROOT, deleteModel} from '../storage/model-store';
+import {BINARY_CLASSIFICATION, isRecord, ONE_HOT, preparationOptionsOf} from '../preparation/preparation-options';
+import {datasetFingerprint} from '../storage/dataset-fingerprint';
+import {modelFieldsOf} from '../storage/model-fields';
+import {BLOB_ROOT, deleteModel, saveModel} from '../storage/model-store';
 import {runEvaluateModel} from '../training/evaluate-api';
 import {evaluateModel} from '../training/evaluation';
 import {runTrainModel} from '../training/train-api';
-import {ColumnSchema, metricsRecordOf, prepareTraining, TrainingResult, trainModel} from '../training/train-model';
+import {ColumnSchema, metricsRecordOf, prepareTraining, TrainingResult, trainModel, trainPredictionOf}
+  from '../training/train-model';
+import {storedSummary} from '../ui/metrics-table';
 import {cancelTaskBarEntry, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, demoDemog, expectMetrics,
   expectNoFrames, expectReleased, failsWith, framesSharing, IMPUTE, IRIS, MEASUREMENTS, ONE_HOT_STEPS, openIris,
   openIrisFromFile, PREDICT_PROBABILITY, rawValues, requestOf, savedFixture, saveIrisModel, saveKeptGapsModel,
@@ -498,21 +502,85 @@ category('Apply', () => {
     }
   }, {timeout: TIMEOUT});
 
-  test('a predict-probability model applies as labels', async () => {
+  test('a model saved with Predict probability applies as labels plus the positive class\'s probability',
+    async () => {
+      const iris = await twoSpeciesIris();
+      const species = iris.getCol('Species');
+      const {id, result} = await saveTestModel(columnsOf(iris, MEASUREMENTS), species, iris.name, {},
+        {...PREDICT_PROBABILITY, threshold: 0.7});
+      try {
+        const model = await loadModel(id);
+        const table = iris.clone();
+        table.name = iris.name;
+        const {column, probabilityColumns} = await applyAndRecord(requestFor(model, table), 'api');
+        expect(column.type, DG.COLUMN_TYPE.STRING);
+        expect(column.name, 'Species (predicted)');
+        expectArray(column.toList(),
+          replayPostprocessing(result.prediction, result.options, result.probabilities).toList());
+        expect(column.toList().every((v) => v === 'versicolor' || v === 'virginica'), true, column.categories.join());
+        expectArray(probabilityColumns.map((c) => `${c.name} ${c.type} ${c.getTag(PREDICTION_TAG)}`),
+          [`P(Species = versicolor) ${DG.COLUMN_TYPE.FLOAT} ${id}`]);
+        const [probability] = probabilityColumns;
+        expect(probability.meta.description, `Probability that Species is versicolor, predicted by ${model.row.name}`);
+        const names = table.columns.names();
+        expect(names.indexOf(probability.name), names.indexOf(column.name) + 1, names.join(', '));
+        expect(table.col(probability.name) === probability, true, 'The probability column is not in the table');
+        expect((await forgeDb.models.get(id)).metrics?.validation?.auc !== undefined, true, 'No AUC-ROC was saved');
+
+        const again = await applyAndRecord(requestFor(model, table), 'api');
+        expectArray([again.column.name, ...again.probabilityColumns.map((c) => c.name)],
+          ['Species (predicted 2)', 'P(Species = versicolor) 2']);
+        const batched = await applyAndRecord(requestFor(model, table, {batchSize: 40}), 'api');
+        expectArray(batched.probabilityColumns[0].toList(), probability.toList());
+
+        const viaApi = iris.clone();
+        viaApi.name = iris.name;
+        await runApplyModel(id, viaApi, null, false);
+        expect(viaApi.col('P(Species = versicolor)') !== null, true, viaApi.columns.names().join(', '));
+      } finally {
+        await deleteModel(id);
+      }
+    }, {timeout: TIMEOUT});
+
+  test('a boolean-target model saved with Predict probability adds boolean labels and the first category\'s ' +
+    'probability', async () => {
     const iris = await twoSpeciesIris();
     const species = iris.getCol('Species');
-    const {id, result} = await saveTestModel(columnsOf(iris, MEASUREMENTS), species, iris.name, {},
+    const target = DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'isVersicolor',
+      Array.from({length: iris.rowCount}, (_, i) => species.get(i) === 'versicolor'));
+    const {id, result} = await saveTestModel(columnsOf(iris, MEASUREMENTS), target, iris.name, {},
+      {...PREDICT_PROBABILITY, threshold: 0.7});
+    try {
+      const positive = target.categories[0];
+      const table = iris.clone();
+      table.name = iris.name;
+      const {column, probabilityColumns} = await applyAndRecord(requestFor(await loadModel(id), table), 'api');
+      expect(column.name, 'isVersicolor (predicted)');
+      expect(column.type, DG.COLUMN_TYPE.BOOL);
+      expectArray(column.toList(), trainPredictionOf(result).toList());
+      expectArray(probabilityColumns.map((c) => c.name), [`P(isVersicolor = ${positive})`]);
+      expectArray(probabilityColumns[0].toList(), probabilityOf(result.probabilities!, positive)!.toList());
+    } finally {
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a three-class model saved with Predict probability adds every class\'s probability', async () => {
+    const iris = await openIris();
+    const {id, result} = await saveTestModel(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'), iris.name, {},
       PREDICT_PROBABILITY);
     try {
-      const model = await loadModel(id);
-      const {column} = await applyAndRecord(requestFor(model, iris), 'api');
-      expect(column.type, DG.COLUMN_TYPE.STRING);
-      expect(column.name, 'Species (predicted)');
-      if (result.scores === undefined)
-        throw new Error('The probability model kept no scores');
-      expectArray(column.toList(), replayPostprocessing(result.scores.train, result.options).toList());
-      expect(column.toList().every((v) => v === 'versicolor' || v === 'virginica'), true, column.categories.join());
-      expect((await forgeDb.models.get(id)).metrics?.validation?.auc !== undefined, true, 'No AUC-ROC was saved');
+      const table = iris.clone();
+      table.name = iris.name;
+      const {column, probabilityColumns} = await applyAndRecord(requestFor(await loadModel(id), table), 'api');
+      expectArray(probabilityColumns.map((c) => c.name),
+        ['P(Species = setosa)', 'P(Species = versicolor)', 'P(Species = virginica)']);
+      expectArray(column.toList(), trainPredictionOf(result).toList());
+
+      const plain = irisCopy('no-step');
+      const without = await applyAndRecord(requestFor(shared().model, plain), 'api');
+      expect(without.probabilityColumns.length, 0);
+      expect(plain.columns.names().some((name) => name.startsWith('P(')), false, plain.columns.names().join());
     } finally {
       await deleteModel(id);
     }
@@ -623,7 +691,7 @@ category('Apply', () => {
     }
   }, {timeout: TIMEOUT});
 
-  test('evaluateModel and runEvaluateModel of a predict-probability model give its scores and AUC-ROC', async () => {
+  test('evaluateModel of a model saved with Predict probability measures its labels and probabilities', async () => {
     const iris = await twoSpeciesIris();
     const species = iris.getCol('Species');
     const {id, result} = await saveTestModel(columnsOf(iris, MEASUREMENTS), species, iris.name, {},
@@ -632,10 +700,11 @@ category('Apply', () => {
       const model = await loadModel(id);
       const evaluation = await evaluateModel({model, table: iris, target: species,
         mapping: exactMapping(model.features, iris), positiveClass: result.metrics.positiveClass});
-      expect(evaluation.score !== undefined, true, 'No score');
-      expect(evaluation.values.auc !== undefined, true, 'No AUC-ROC');
+      expect(evaluation.score === undefined, true, 'A score of a model with class probabilities');
+      expect(evaluation.probabilities !== undefined, true, 'No class probabilities');
       expect(evaluation.curves !== undefined, true, 'No curves');
-      expect(typeof evaluation.values.averagePrecision, 'number');
+      for (const metric of ['auc', 'averagePrecision', 'logLoss', 'brier'] as const)
+        expect(typeof evaluation.values[metric], 'number', metric);
       expectMetrics(evaluation.values, result.metrics.train, 1e-6);
       expect(evaluation.prediction.toList().every((v) => v === 'versicolor' || v === 'virginica'), true,
         evaluation.prediction.categories.join());
@@ -649,6 +718,58 @@ category('Apply', () => {
       await deleteModel(id);
     }
   }, {timeout: TIMEOUT});
+
+  test('a model of the former regression mode applies its score cut at the threshold and is measured on it',
+    async () => {
+      const iris = await twoSpeciesIris();
+      const species = iris.getCol('Species');
+      const isVersicolor = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Species',
+        Array.from({length: iris.rowCount}, (_, i) => species.get(i) === 'versicolor' ? 1 : 0));
+      const regression = await requestOf(columnsOf(iris, MEASUREMENTS), isVersicolor);
+      const trained = await trainModel(regression);
+      const fields = modelFieldsOf({name: `forge-test-old-probability-${Date.now()}`, description: '', tags: [],
+        engine: regression.engine, datasetName: iris.name, result: trained, storage: {mode: 'none'},
+        fingerprint: datasetFingerprint(regression.features, regression.target)});
+      const id = await saveModel({...fields,
+        target: {name: 'Species', type: DG.COLUMN_TYPE.STRING, categories: ['versicolor', 'virginica']},
+        metrics: {...trained.metrics, positiveClass: 'versicolor'},
+        options: {targetType: DG.COLUMN_TYPE.STRING, missingValues: trained.options.missingValues,
+          negativeClass: 'virginica', positiveClass: 'versicolor', preprocessingInfo: [],
+          postprocessingInfo: [BINARY_CLASSIFICATION], binaryClassificationThreshold: 0.4}}, trained.blob);
+      try {
+        const model = await loadModel(id);
+        const scores = await predictionsOf(model.engine, columnsOf(iris, MEASUREMENTS), trained.blob);
+        const table = iris.clone();
+        table.name = iris.name;
+        const {column, probabilityColumns} = await applyAndRecord(requestFor(model, table), 'api');
+        expect(column.type, DG.COLUMN_TYPE.STRING);
+        expectArray(column.toList(), scores.map((s) => (s as number) >= 0.4 ? 'versicolor' : 'virginica'));
+        expect(probabilityColumns.length, 0, 'An old-step model added probability columns');
+        expect(table.columns.names().some((n) => n.startsWith('P(')), false, table.columns.names().join(', '));
+
+        const evaluation = await evaluateModel({model, table: iris, target: species,
+          mapping: exactMapping(model.features, iris)});
+        if (evaluation.score === undefined)
+          throw new Error('No score');
+        expectArray(evaluation.score.toList(), scores);
+        expect(evaluation.positiveClass, 'versicolor');
+        expect(evaluation.curves !== undefined, true, 'No curves');
+        expectFloat(evaluation.values.auc ?? NaN, aucOf(species, evaluation.score, 'versicolor') ?? NaN, 1e-6, 'auc');
+        expect(typeof evaluation.values.averagePrecision, 'number');
+        expect(evaluation.values.logLoss === undefined && evaluation.values.brier === undefined, true,
+          'Log loss or Brier score of a regression score');
+        expectArray(evaluation.prediction.toList(), column.toList());
+
+        const row = await forgeDb.models.get(id);
+        expect(row.task, 'regression');
+        const summary = storedSummary(row);
+        expect(summary?.threshold === undefined && summary?.thresholdMetric === undefined, true,
+          'An old-step model has a Classification threshold line');
+        expect(summary?.metrics.positiveClass, 'versicolor');
+      } finally {
+        await deleteModel(id);
+      }
+    }, {timeout: TIMEOUT});
 
   test('runEvaluateModel measures a model on a table next to its stored metrics and adds and records nothing',
     async () => {

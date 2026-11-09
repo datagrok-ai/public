@@ -6,7 +6,7 @@ import {requiredFeaturesOf} from '../apply/apply-model';
 import {isSuggested} from '../apply/column-matching';
 import {COMPARE_COLUMNS, CompareModelRow} from '../catalog/compare-models';
 import {APP_NAME, MODEL_TYPE} from '../constants';
-import {Engine, EngineKind, EngineRole, hyperparametersOf, rolesOf} from '../engines/engine';
+import {Engine, EngineKind, EngineRole, rolesOf, visibleHyperparametersOf} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {methodsFrame} from '../engines/method-list';
 import {forgeDb, ModelRow} from '../generated/db';
@@ -82,7 +82,8 @@ export class ForgeApp extends DG.ViewBase {
     this.methodsGrid = readOnlyGrid(methodsFrame(engines), {headers: METHOD_HEADERS, cells: {
       'Method type': (row) => KIND_MEANINGS[engines[row].kind],
       'Roles': (row) => rolesOf(engines[row]).map((r) => `${r}: ${ROLE_MEANINGS[r]}`).join('\n'),
-      'Hyperparameters': (row) => hyperparametersOf(engines[row]).map((p) => `${p.name}: ${p.description}`).join('\n'),
+      'Hyperparameters': (row) => visibleHyperparametersOf(engines[row]).map((p) => `${p.name}: ${p.description}`)
+        .join('\n'),
     }}, engines.length);
     const methodsPane = ui.box(ui.panel([ui.h2('Methods'), this.methodsGrid.root]));
     // Inline: the split's 50% basis (ui.css) would cut the methods off; the pane takes its rows' height.

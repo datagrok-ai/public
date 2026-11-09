@@ -2,9 +2,9 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, expectExceptionAsync, expectFloat, test}
   from '@datagrok-libraries/test/src/test';
 import {ForgeError} from '../forge-error';
-import {areValuesSimilar, aucOf, aucOfProbabilities, CLASS_METRIC_IDS, ClassProbabilities, classificationMetrics,
-  METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, metricFindings, MetricId, MetricValues, probabilityOf,
-  regressionMetrics} from '../metrics/metrics';
+import {areValuesSimilar, aucOf, aucOfProbabilities, BEST_THRESHOLD_METRICS, bestThreshold, CLASS_METRIC_IDS,
+  ClassProbabilities, classificationMetrics, METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, metricFindings, MetricId,
+  MetricValues, probabilityMetrics, probabilityOf, regressionMetrics} from '../metrics/metrics';
 import {ClassificationReport, classificationReport, curvesOf} from '../metrics/report';
 import {defaultMetric, directionOf, SEARCH_METRICS} from '../training/search';
 import {metricsRecordOf} from '../training/train-model';
@@ -131,8 +131,8 @@ category('Metrics', () => {
     expectArray(belowOnValidation.map((f) => `${f.kind}: ${f.splits.join()}`), ['threshold: validation']);
   });
 
-  test('METRIC_IDS ends with the Crux ids and every id has a label and a description', async () => {
-    expectArray(METRIC_IDS.slice(-3), ['balancedAccuracy', 'mcc', 'averagePrecision']);
+  test('METRIC_IDS ends with the Crux and the probability ids; every id has a label and a description', async () => {
+    expectArray(METRIC_IDS.slice(-5), ['balancedAccuracy', 'mcc', 'averagePrecision', 'logLoss', 'brier']);
     expectArray(CLASS_METRIC_IDS, ['precision', 'sensitivity', 'f1', 'auc', 'averagePrecision']);
     for (const id of METRIC_IDS)
       expect(METRIC_LABELS[id].length > 0 && METRIC_DESCRIPTIONS[id].length > 0, true, `${id} has no text`);
@@ -163,6 +163,9 @@ category('Metrics', () => {
     expect(directionOf('rmse'), -1);
     expect(directionOf('mae'), -1);
     expect(directionOf('r2'), 1);
+    expect(directionOf('logLoss'), -1);
+    expect(directionOf('brier'), -1);
+    expectArray(SEARCH_METRICS.classification.slice(-2), ['logLoss', 'brier']);
     expect(defaultMetric('classification'), 'balancedAccuracy');
     expect(defaultMetric('regression'), 'r2');
   });
@@ -217,6 +220,55 @@ category('Metrics', () => {
 
     const absent: ClassProbabilities = {classes: ['a', 'b', 'c'], columns: [probaA, flat, numbers([0, 0, 0, 0])]};
     expectFloat(aucOfProbabilities(two, absent)!, (0.75 + 0.5) / 2, 1e-9);
+  });
+
+  test('probabilityMetrics: log loss and Brier score match hand-computed values', async () => {
+    const doubles = (values: number[]) => DG.Column.fromFloat64Array('p', Float64Array.from(values));
+    const two: ClassProbabilities = {classes: ['a', 'b'],
+      columns: [doubles([0.8, 0.3, 0.6]), doubles([0.2, 0.7, 0.4])]};
+    const binary = probabilityMetrics(labels(['a', 'b', 'a']), two, 'a');
+    expectFloat(binary.logLoss ?? NaN, -(Math.log(0.8) + Math.log(0.7) + Math.log(0.6)) / 3, 1e-12, 'logLoss');
+    expectFloat(binary.brier ?? NaN, (0.2 ** 2 + 0.3 ** 2 + 0.4 ** 2) / 3, 1e-12, 'brier');
+
+    const classes = ['a', 'b', 'c'];
+    const oneHot: ClassProbabilities = {classes,
+      columns: [doubles([1, 0, 0]), doubles([0, 1, 0]), doubles([0, 0, 1])]};
+    const perfect = probabilityMetrics(labels(['a', 'b', 'c']), oneHot);
+    expectFloat(perfect.logLoss ?? NaN, 0, 1e-12, 'one-hot logLoss');
+    expectFloat(perfect.brier ?? NaN, 0, 1e-12, 'one-hot brier');
+    const spread: ClassProbabilities = {classes,
+      columns: [doubles([0.5, 0.2]), doubles([0.3, 0.6]), doubles([0.2, 0.2])]};
+    const summed = probabilityMetrics(labels(['a', 'b']), spread);
+    expectFloat(summed.logLoss ?? NaN, -(Math.log(0.5) + Math.log(0.6)) / 2, 1e-12, 'three-class logLoss');
+    expectFloat(summed.brier ?? NaN, (0.5 ** 2 + 0.3 ** 2 + 0.2 ** 2 + 0.2 ** 2 + 0.4 ** 2 + 0.2 ** 2) / 2, 1e-12,
+      'three-class brier');
+
+    const wrong = probabilityMetrics(labels(['a']), {classes: ['a', 'b'], columns: [doubles([0]), doubles([1])]}, 'a');
+    expectFloat(wrong.logLoss ?? NaN, -Math.log(1e-15), 1e-9, 'clipped logLoss');
+    expect(Number.isFinite(wrong.logLoss), true, `logLoss ${wrong.logLoss}`);
+    const unseen = probabilityMetrics(labels(['c', 'a']), {classes: ['a', 'b'],
+      columns: [doubles([0.3, 0.8]), doubles([0.7, 0.2])]});
+    expectFloat(unseen.logLoss ?? NaN, (-Math.log(1e-15) - Math.log(0.8)) / 2, 1e-9, 'logLoss of an unseen class');
+    expectFloat(unseen.brier ?? NaN, (0.3 ** 2 + 0.7 ** 2 + 0.2 ** 2 + 0.2 ** 2) / 2, 1e-12, 'unseen class brier');
+
+    const gapped = probabilityMetrics(labels(['a', 'b', 'a']), {classes: ['a', 'b'],
+      columns: [numbers([0.8, null, 0.6]), numbers([0.2, null, 0.4])]}, 'a');
+    expectFloat(gapped.logLoss ?? NaN, -(Math.log(0.8) + Math.log(0.6)) / 2, 1e-6, 'logLoss without the gap');
+    expectFloat(gapped.brier ?? NaN, (0.2 ** 2 + 0.4 ** 2) / 2, 1e-6, 'brier without the gap');
+  });
+
+  test('bestThreshold: the midpoint below the best candidate, ties to the one nearest 0.5', async () => {
+    const separated = numbers([0.9, 0.6, 0.4, 0.1]);
+    const overlapping = numbers([0.9, 0.8, 0.3, 0.1]);
+    for (const metric of BEST_THRESHOLD_METRICS) {
+      expect(bestThreshold(labels(['a', 'a', 'b', 'b']), separated, 'a', metric), 0.5, `${metric} separated`);
+      expect(bestThreshold(labels(['a', 'b', 'a', 'b']), overlapping, 'a', metric), 0.2, `${metric} overlapping`);
+    }
+    expect(bestThreshold(labels(['a', 'a', 'a', 'a']), separated, 'a', 'f1') === undefined, true,
+      'A threshold of one class');
+    // 0.7 is stored as 0.699999988: the rounded value is checked in single precision, as the step cuts.
+    expect(bestThreshold(labels(['a', 'b']), numbers([0.7, 0.6995]), 'a', 'f1'), 0.7, 'A single-precision candidate');
+    expectArray([...BEST_THRESHOLD_METRICS], ['f1', 'balancedAccuracy', 'mcc', 'accuracy']);
   });
 
   test('statisticsOf lists the eleven statistics, q2 being the median', async () => {

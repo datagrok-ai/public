@@ -43,6 +43,27 @@ export function handlesMissingValues(engine: Engine): boolean {
   return engine.functions.train?.options['mlnativenans'] === 'true';
 }
 
+/** The method returns class probabilities (`meta.mlprobabilities` on `train`: 'true', or the name of the bool train
+ * input that turns them on). */
+export function givesProbabilities(engine: Engine): boolean {
+  return engine.functions.train?.options['mlprobabilities'] === 'true' || probabilityInput(engine) !== undefined;
+}
+
+/** The bool `train` input that turns the class probabilities on, as `meta.mlprobabilities` names it. */
+export function probabilityInput(engine: Engine): string | undefined {
+  const text: unknown = engine.functions.train?.options['mlprobabilities'];
+  if (typeof text !== 'string' || text === 'true')
+    return undefined;
+  const input = hyperparametersOf(engine).find((p) => p.name === text);
+  return input?.propertyType === DG.TYPE.BOOL ? text : undefined;
+}
+
+/** [hyperparameters] with the method's probability input set to [on]; unchanged for a method without one. */
+export function withProbabilityInput(engine: Engine, hyperparameters: Hyperparameters, on: boolean): Hyperparameters {
+  const name = probabilityInput(engine);
+  return name === undefined ? hyperparameters : {...hyperparameters, [name]: on};
+}
+
 /** The method accepts concurrent train and apply calls (`meta.mlparallel: true` on `train`): a search runs its fits
  * in parallel. */
 export function isParallel(engine: Engine): boolean {
@@ -121,6 +142,19 @@ export function defaultMissingValues(engine: Engine): MissingValuesSettings {
 export function hyperparametersOf(engine: Engine): DG.Property[] {
   const inputs = engine.functions.train?.inputs ?? [];
   return inputs.filter((p) => !TRAIN_DATA_INPUTS.some((name) => name === p.name));
+}
+
+/** The settings the form shows: {@link hyperparametersOf} without the probability input, which Predict probability
+ * sets. */
+export function visibleHyperparametersOf(engine: Engine): DG.Property[] {
+  const hidden = probabilityInput(engine);
+  return hyperparametersOf(engine).filter((p) => p.name !== hidden);
+}
+
+/** [values] without the method's probability input, as {@link visibleHyperparametersOf}. */
+export function visibleValuesOf(engine: Engine, values: Hyperparameters): Hyperparameters {
+  const hidden = probabilityInput(engine);
+  return Object.fromEntries(Object.entries(values).filter(([name]) => name !== hidden));
 }
 
 export function defaultHyperparameters(engine: Engine): Hyperparameters {

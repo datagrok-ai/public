@@ -6,13 +6,14 @@ import {EngineRegistry} from '../engines/engine-registry';
 import {apply, EnginePrediction, isInteractive, LoopProgress, train, yieldToEventLoop} from '../engines/engine-calls';
 import {ForgeError} from '../forge-error';
 import {ModelTask} from '../generated/db';
-import {classesOf, classLabelMetrics, ClassMetrics, ClassProbabilities, Curves, METRIC_IDS, MetricValues, metricsOf,
-  probabilityOf, Split, taskOf} from '../metrics/metrics';
+import {bestThreshold, BestThresholdMetric, classesOf, classLabelMetrics, ClassMetrics, ClassProbabilities, Curves,
+  METRIC_IDS, MetricValues, metricsOf, probabilityOf, taskOf} from '../metrics/metrics';
 import {classMetricsOf, curvesOf, measure, Measured, SCORE_METRIC_IDS} from '../metrics/report';
 import {missingColumnsOf, MissingValuesSettings, missingValuesProblems, prepareMissingValues}
   from '../preparation/missing-values';
-import {PreparationSteps, PreparedFeatures, prepareFeatures, replayPostprocessing} from '../preparation/pipeline';
-import {BINARY_CLASSIFICATION, IGNORE_MISSING, IMPUTE_MISSING, isRecord, MissingValuesRecord, PreparationOptions}
+import {DEFAULT_THRESHOLD, PreparationSteps, PreparedFeatures, prepareFeatures, replayPostprocessing, twoClasses}
+  from '../preparation/pipeline';
+import {CLASS_PROBABILITIES, IGNORE_MISSING, IMPUTE_MISSING, isRecord, MissingValuesRecord, PreparationOptions}
   from '../preparation/preparation-options';
 import {bigIntProblem} from './default-features';
 import {dataInsights, Insight} from './insights';
@@ -77,15 +78,6 @@ export interface TrainingRequest {
 
 export interface HoldOut { columns: DG.Column[]; target: DG.Column; rows: number; fraction: number }
 
-/** Predict probability: the method's scores of the train and the out-of-fold predictions, and the target they are
- * measured against, kept to cut them again at another cutoff. */
-export interface ProbabilityScores {
-  actual: DG.Column;
-  positiveClass: string;
-  train: DG.Column;
-  validation: DG.Column;
-}
-
 export interface TrainingSetup {
   task: ModelTask;
   target: TargetSchema;
@@ -96,14 +88,19 @@ export interface TrainingSetup {
 
 export interface TrainingResult extends TrainingSetup {
   blob: Uint8Array;
-  /** The final model's prediction of the training rows, as the method returned it (with Predict probability, the
-   * scores: `scores.train`); {@link trainPredictionOf} gives the labels. */
+  /** The final model's prediction of the training rows, as the method returned it; {@link trainPredictionOf} gives
+   * the labels (with Predict probability, those of the class probabilities). */
   prediction: DG.Column;
   metrics: MetricsRecord;
   seed: number;
   hyperparameters: Hyperparameters;
   rowCount: number;
-  scores?: ProbabilityScores;
+  /** The selection's target the predictions are measured against. */
+  actual: DG.Column;
+  /** The out-of-fold prediction (null for a row of no fold) and probabilities, kept to re-cut the labels. */
+  outOfFold: {prediction: DG.Column; probabilities?: ClassProbabilities};
+  /** The hold out's rows, prediction and probabilities (after a search). */
+  test?: {actual: DG.Column; prediction: DG.Column; probabilities?: ClassProbabilities};
   /** The final model's class probabilities of the training rows, when the method returns them (`proba_<class>`
    * columns after its prediction). */
   probabilities?: ClassProbabilities;
@@ -138,8 +135,7 @@ const NUMERICAL = DG.COLUMN_TYPE_FILTER.NUMERICAL_NO_DATE_TIME;
 const NO_METHOD = 'No method can learn from this selection. Check the features and the target.';
 const NO_FEATURE_LEFT = 'Skip unique categories leaves no feature. Check more features.';
 
-/** The task follows the target the method learns (Predict probability makes it a regression); the target schema
- * describes the selection's target. */
+/** The task and the target schema follow the selection's target. */
 export function trainingSetupOf(request: TrainingRequest): TrainingSetup {
   const {target, features, validation, prepared} = request;
   const targetSchema: TargetSchema = columnSchemaOf(target);
@@ -323,7 +319,7 @@ export async function trainModel(request: TrainingRequest, progress?: LoopProgre
     foldResults.push(await foldPrediction(engine, columns, target, hyperparameters, foldMasks(fold, i)));
     progress?.update(100 * (i + 1) / steps, validation.scheme === 'kfold' ? `Fold ${i + 1} of ${folds}` : 'Hold out');
   }
-  const position = new Int32Array(rowCount);
+  const position = positionsOf(fold);
   const outOfFold = outOfFoldColumn(foldResults, fold, position);
   const heldOut = validation.scheme === 'kfold' ? null : DG.BitSet.create(rowCount, (r) => fold[r] === 0);
   const validated = (col: DG.Column) => heldOut === null ? col : col.clone(heldOut);
@@ -335,19 +331,6 @@ export async function trainModel(request: TrainingRequest, progress?: LoopProgre
 
   const result = {...setup, blob, prediction: trainPrediction, seed, hyperparameters: {...hyperparameters}, rowCount,
     ...(request.search === undefined ? {} : {search: request.search})};
-  const {options} = setup;
-  if (options.postprocessingInfo.includes(BINARY_CLASSIFICATION) && options.positiveClass !== undefined) {
-    const {positiveClass} = options;
-    const scores: ProbabilityScores = {actual: request.target, positiveClass, train: trainPrediction,
-      validation: outOfFold};
-    const measured = (split: Split, rows: (col: DG.Column) => DG.Column) => measure('classification',
-      rows(scores.actual), replayPostprocessing(rows(scores[split]), options), positiveClass,
-      {classes: [positiveClass], columns: [rows(scores[split])]}, split === 'train');
-    const [onTrain, onValidation] = await Promise.all([measured('train', (col) => col),
-      measured('validation', validated)]);
-    const {record, curves} = recordOf(onTrain, onValidation, positiveClass);
-    return {...result, metrics: record, scores, curves};
-  }
   const classes = setup.target.categories === undefined ? [] : classesOf(request.target);
   const positiveClass = classes.length === 2 ? classes[0] : undefined;
   const validationProbabilities = probabilities === undefined ? undefined :
@@ -357,8 +340,14 @@ export async function trainModel(request: TrainingRequest, progress?: LoopProgre
     measure(setup.task, validated(target), validated(outOfFold), positiveClass, validationProbabilities === undefined ?
       undefined : {...validationProbabilities, columns: validationProbabilities.columns.map(validated)}),
     request.holdOut === undefined ? undefined : testMetrics(engine, request.holdOut, blob, setup.task, positiveClass)]);
-  const {record, curves} = recordOf(onTrain, onValidation, positiveClass, test);
-  return {...result, metrics: record, probabilities, curves};
+  const {record, curves} = recordOf(onTrain, onValidation, positiveClass, test?.values);
+  const plain: TrainingResult = {...result, metrics: record, probabilities, curves, actual: request.target,
+    outOfFold: {prediction: outOfFold, probabilities: validationProbabilities},
+    ...(test === undefined ? {} : {test: test.test})};
+  const {options} = setup;
+  return options.postprocessingInfo.includes(CLASS_PROBABILITIES) ? recutResult(plain, {predictProbability: true,
+    threshold: options.binaryClassificationThreshold ?? DEFAULT_THRESHOLD, thresholdMetric: options.thresholdMetric}) :
+    plain;
 }
 
 /** The rows of fold [i]'s model: those it fits (the other folds') and those it predicts. */
@@ -377,27 +366,27 @@ export async function foldPrediction(engine: Engine, columns: DG.Column[], targe
   return await apply(engine, columns.map((c) => c.clone(isHeldOut)), blob);
 }
 
+/** Each row's index among the rows of its fold; 0 for a row of no fold (fold -1 of a hold out). */
+export function positionsOf(fold: Int32Array): Int32Array {
+  const next = new Int32Array(fold.reduce((max, f) => Math.max(max, f), -1) + 1);
+  return fold.map((f) => f < 0 ? 0 : next[f]++);
+}
+
 /** One column of every row's out-of-fold prediction, from the fold results in fold order (null for a row of no fold:
- * fold -1 of a hold out); [position] gets each row's index in its fold. */
+ * fold -1 of a hold out); [position] is each row's index in its fold ({@link positionsOf}). */
 export function outOfFoldColumn(results: EnginePrediction[], fold: Int32Array, position: Int32Array): DG.Column {
-  const next = new Int32Array(results.length);
   const first = results[0].prediction;
   const outOfFold = DG.Column.fromType(first.type, first.name, fold.length);
-  for (let r = 0; r < fold.length; r++) {
-    if (fold[r] < 0) {
-      outOfFold.set(r, null, false);
-      continue;
-    }
-    position[r] = next[fold[r]]++;
-    outOfFold.set(r, results[fold[r]].prediction.get(position[r]), false);
-  }
+  for (let r = 0; r < fold.length; r++)
+    outOfFold.set(r, fold[r] < 0 ? null : results[fold[r]].prediction.get(position[r]), false);
   return outOfFold;
 }
 
 async function testMetrics(engine: Engine, holdOut: HoldOut, blob: Uint8Array, task: ModelTask,
-  positiveClass: string | undefined): Promise<MetricValues> {
+  positiveClass: string | undefined): Promise<{values: MetricValues; test: NonNullable<TrainingResult['test']>}> {
   const {prediction, probabilities} = await apply(engine, holdOut.columns, blob);
-  return (await measure(task, holdOut.target, prediction, positiveClass, probabilities)).values;
+  const {values} = await measure(task, holdOut.target, prediction, positiveClass, probabilities);
+  return {values, test: {actual: holdOut.target, prediction, probabilities}};
 }
 
 /** The record of a training's measurements, with the per-class values and the train split's curves of their
@@ -435,20 +424,54 @@ export function outOfFoldProbabilities(results: EnginePrediction[], final: Class
   return {classes: final.classes, columns};
 }
 
-/** A Predict probability result cut again at [cutoff], without retraining: the metrics of the labels change (overall
- * and per class), AUC-ROC, average precision and the curves do not. Any other result is returned as it is. */
-export function recutResult(result: TrainingResult, cutoff: number): TrainingResult {
-  const {scores, metrics} = result;
-  if (scores === undefined)
-    return result;
-  const options = {...result.options, binaryClassificationThreshold: cutoff};
-  const {actual, positiveClass} = scores;
-  const labels = {train: replayPostprocessing(scores.train, options),
-    validation: replayPostprocessing(scores.validation, options)};
-  const recut: MetricsRecord = {...metrics, positiveClass,
+/** Each training's best thresholds per metric, by its out-of-fold result, which every re-cut of it keeps. */
+const bestThresholds = new WeakMap<TrainingResult['outOfFold'], Map<BestThresholdMetric, number | undefined>>();
+/** The train labels a re-cut built, read by {@link trainPredictionOf}. */
+const trainLabels = new WeakMap<TrainingResult, DG.Column>();
+
+/** A classifier's result with the Predict probability [steps] applied, without retraining: the step recorded in its
+ * options (two classes: the classes and the threshold; with `thresholdMetric`, the threshold is
+ * {@link bestThresholdOf} that metric and the metric is recorded, unless there is none), the labels taken from the
+ * class probabilities (the method's own without the step), so the metrics of the labels change (overall and per class)
+ * and AUC-ROC, average precision, log loss, Brier and the curves do not. A result without class probabilities gets no
+ * step. */
+export function recutResult(result: TrainingResult,
+  steps: Pick<PreparationSteps, 'predictProbability' | 'threshold' | 'thresholdMetric'>): TrainingResult {
+  const {metrics, actual} = result;
+  const options: PreparationOptions = {...result.options,
+    postprocessingInfo: result.options.postprocessingInfo.filter((id) => id !== CLASS_PROBABILITIES)};
+  delete options.positiveClass;
+  delete options.negativeClass;
+  delete options.binaryClassificationThreshold;
+  delete options.thresholdMetric;
+  if (result.probabilities === undefined) {
+    return options.postprocessingInfo.length === result.options.postprocessingInfo.length ? result :
+      {...result, options};
+  }
+  if (steps.predictProbability) {
+    options.postprocessingInfo.push(CLASS_PROBABILITIES);
+    const classes = twoClasses(actual);
+    if (classes !== null) {
+      const {thresholdMetric} = steps;
+      const best = thresholdMetric === undefined ? undefined : bestThresholdOf(result, thresholdMetric);
+      Object.assign(options, {positiveClass: classes[0], negativeClass: classes[1],
+        binaryClassificationThreshold: best ?? steps.threshold}, best === undefined ? {} : {thresholdMetric});
+    }
+  }
+  const {positiveClass} = metrics;
+  const labelsOf = (prediction: DG.Column, probabilities?: ClassProbabilities) =>
+    replayPostprocessing(prediction, options, probabilities);
+  const labels = {train: labelsOf(result.prediction, result.probabilities),
+    validation: labelsOf(result.outOfFold.prediction, result.outOfFold.probabilities)};
+  const recut: MetricsRecord = {...metrics,
     train: {...scoreValuesOf(metrics.train), ...metricsOf('classification', actual, labels.train, positiveClass)},
     validation: {...scoreValuesOf(metrics.validation),
       ...metricsOf('classification', actual, labels.validation, positiveClass)}};
+  const {test} = result;
+  if (test !== undefined && metrics.test !== undefined) {
+    recut.test = {...scoreValuesOf(metrics.test), ...metricsOf('classification', test.actual,
+      labelsOf(test.prediction, test.probabilities), positiveClass)};
+  }
   if (metrics.classes !== undefined) {
     const train = classLabelMetrics(actual, labels.train);
     const validation = classLabelMetrics(actual, labels.validation);
@@ -456,10 +479,29 @@ export function recutResult(result: TrainingResult, cutoff: number): TrainingRes
       train: {...scoreValuesOf(c.train), ...train.get(c.label)},
       validation: {...scoreValuesOf(c.validation), ...validation.get(c.label)}}));
   }
-  return {...result, options, metrics: recut};
+  const next = {...result, options, metrics: recut};
+  trainLabels.set(next, labels.train);
+  return next;
 }
 
-/** The cutoff-independent values of [values]: AUC-ROC and average precision. */
+/** The threshold of the positive class's probability that maximizes [metric] on [result]'s out-of-fold
+ * probabilities ({@link bestThreshold}); undefined without them, without two classes, or when the validation rows hold
+ * one class only. */
+export function bestThresholdOf(result: TrainingResult, metric: BestThresholdMetric): number | undefined {
+  const {metrics: {positiveClass}, outOfFold} = result;
+  const cached = bestThresholds.get(outOfFold) ?? new Map<BestThresholdMetric, number | undefined>();
+  bestThresholds.set(outOfFold, cached);
+  if (!cached.has(metric)) {
+    const {probabilities} = outOfFold;
+    const column = probabilities === undefined || positiveClass === undefined ? undefined :
+      probabilityOf(probabilities, positiveClass);
+    cached.set(metric, column === undefined || positiveClass === undefined ? undefined :
+      bestThreshold(result.actual, column, positiveClass, metric));
+  }
+  return cached.get(metric);
+}
+
+/** The threshold-independent values of [values]: AUC-ROC, average precision, log loss and Brier. */
 function scoreValuesOf(values: MetricValues): MetricValues {
   const kept: MetricValues = {};
   for (const id of SCORE_METRIC_IDS) {
@@ -469,9 +511,9 @@ function scoreValuesOf(values: MetricValues): MetricValues {
   return kept;
 }
 
-/** The final model's labels of the training rows: with Predict probability, its scores cut at the result's cutoff. */
+/** The final model's labels of the training rows: with Predict probability, those of its class probabilities. */
 export function trainPredictionOf(result: TrainingResult): DG.Column {
-  return result.scores === undefined ? result.prediction : replayPostprocessing(result.prediction, result.options);
+  return trainLabels.get(result) ?? replayPostprocessing(result.prediction, result.options, result.probabilities);
 }
 
 /** A stored `metrics` value: the known metric ids with numbers; null without a train and a validation object. */

@@ -28,7 +28,7 @@ export interface EvaluationResult {
   target: DG.Column;
   /** The labels (or values) of the kept rows. */
   prediction: DG.Column;
-  /** Predict probability: the method's scores. */
+  /** A model of the former regression step (`binary-classification`): the method's scores. */
   score?: DG.Column;
   keptRows: DG.BitSet | null;
   skippedRows: number;
@@ -46,8 +46,9 @@ export interface EvaluationResult {
 }
 
 /** Applies the model to the table's rows (missing values handled as at training, `missingValuesOf`) and measures the
- * predictions against the target; a row without an actual value is left out of the metrics. No column is added and
- * no application is recorded. */
+ * predictions against the target; a row without an actual value is left out of the metrics. A model saved with the
+ * regression step (`binary-classification`) is measured on its scores (no log loss / Brier); any other model on its
+ * labels and probabilities. No column is added and no application is recorded. */
 export async function evaluateModel(request: EvaluationRequest, progress?: LoopProgress): Promise<EvaluationResult> {
   const {model, table, mapping} = request;
   const applyRequest: ApplyRequest = {model, table, mapping, batchSize: DEFAULT_BATCH_SIZE,
@@ -60,9 +61,8 @@ export async function evaluateModel(request: EvaluationRequest, progress?: LoopP
   const result = {columns: rows.columns, target, prediction: rows.labels, keptRows: rows.keptRows,
     skippedRows: rows.skippedRows, rowCount: target.length, blob: rows.blob, positiveClass};
   const isProbability = options.postprocessingInfo.includes(BINARY_CLASSIFICATION) && positiveClass !== undefined;
-  const probabilities = isProbability ? {classes: [positiveClass], columns: [rows.raw]} : rows.probabilities;
   const {values, report} = await measure(isProbability ? 'classification' : taskOf(target), target, rows.labels,
-    positiveClass, probabilities, true);
+    positiveClass, isProbability ? undefined : rows.probabilities, true, isProbability ? rows.raw : undefined);
   const curves = curvesOf(report);
   return {...result, values, ...(isProbability ? {score: rows.raw} : {probabilities: rows.probabilities}),
     ...(report === undefined ? {} : {classes: classValuesOf(report)}), ...(curves === undefined ? {} : {curves})};

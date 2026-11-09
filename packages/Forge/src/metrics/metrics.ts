@@ -3,7 +3,7 @@ import {ForgeError} from '../forge-error';
 import {ModelTask} from '../generated/db';
 
 export const METRIC_IDS = ['mse', 'rmse', 'mae', 'r2', 'accuracy', 'f1', 'sensitivity', 'specificity', 'precision',
-  'npv', 'auc', 'balancedAccuracy', 'mcc', 'averagePrecision'] as const;
+  'npv', 'auc', 'balancedAccuracy', 'mcc', 'averagePrecision', 'logLoss', 'brier'] as const;
 export type MetricId = typeof METRIC_IDS[number];
 export type MetricValues = Partial<Record<MetricId, number>>;
 
@@ -51,6 +51,8 @@ export const METRIC_LABELS: Record<MetricId, string> = {
   balancedAccuracy: 'Balanced accuracy',
   mcc: 'MCC',
   averagePrecision: 'Average precision',
+  logLoss: 'Log loss',
+  brier: 'Brier score',
 };
 
 export const METRIC_DESCRIPTIONS: Record<MetricId, string> = {
@@ -82,7 +84,17 @@ export const METRIC_DESCRIPTIONS: Record<MetricId, string> = {
     'classes. 1 is perfect, 0 is random guessing, -1 is total disagreement.',
   averagePrecision: 'The area under the precision-recall curve of the class probabilities: 1 is perfect, the ' +
     'positive class\'s share of the rows is random guessing. With more than two classes, the average over the classes.',
+  logLoss: 'Log loss: the average of -ln(probability of the actual class): 0 is perfect, lower is better; a ' +
+    'confident wrong prediction costs most.',
+  brier: 'Brier score: the mean squared difference between the class probabilities and the actual class (0 or 1): ' +
+    '0 is perfect, lower is better; 0.25 is guessing 0.5 for two classes. With more than two classes, summed over ' +
+    'the classes.',
 };
+
+/** The metrics the classification threshold can be optimized for (**Best threshold by**, `thresholdMetric`). */
+export const BEST_THRESHOLD_METRICS =
+  ['f1', 'balancedAccuracy', 'mcc', 'accuracy'] as const satisfies readonly MetricId[];
+export type BestThresholdMetric = typeof BEST_THRESHOLD_METRICS[number];
 
 /** A training's two measurements: the final model on its training rows, and the out-of-fold predictions. */
 export type Split = 'train' | 'validation';
@@ -156,30 +168,11 @@ function labelCounts(actual: DG.Column, predicted: DG.Column): {n: number; count
 export function classificationMetrics(actual: DG.Column, predicted: DG.Column,
   positiveClass: string): MetricValues {
   const {n, counts} = labelCounts(actual, predicted);
-  let correct = 0;
-  let f1Sum = 0;
-  let recallSum = 0;
-  let actualClasses = 0;
-  let trueTimesPredicted = 0;
-  let trueSquares = 0;
-  let predictedSquares = 0;
-  for (const c of counts.values()) {
-    correct += c.tp;
-    f1Sum += f1Of(c);
-    const [t, p] = [c.tp + c.fn, c.tp + c.fp];
-    if (t > 0) {
-      recallSum += c.tp / t;
-      actualClasses++;
-    }
-    trueTimesPredicted += t * p;
-    trueSquares += t * t;
-    predictedSquares += p * p;
-  }
-  const covariance = correct * n - trueTimesPredicted;
-  const spread = (n * n - trueSquares) * (n * n - predictedSquares);
-  const metrics: MetricValues = {accuracy: correct / n, balancedAccuracy: recallSum / actualClasses,
-    mcc: spread === 0 ? 0 : covariance / Math.sqrt(spread)};
+  const metrics = countMetrics([...counts.values()], n);
   if (counts.size > 2) {
+    let f1Sum = 0;
+    for (const c of counts.values())
+      f1Sum += f1Of(c);
     metrics.f1 = f1Sum / counts.size;
     return metrics;
   }
@@ -199,6 +192,32 @@ export function classificationMetrics(actual: DG.Column, predicted: DG.Column,
   }
   metrics.f1 = f1Of(positive);
   return metrics;
+}
+
+/** Accuracy, balanced accuracy (the mean recall over the actual classes) and MCC (multiclass, as scikit-learn) of each
+ * class's [counts] over [n] rows. */
+function countMetrics(counts: ClassCounts[], n: number): MetricValues {
+  let correct = 0;
+  let recallSum = 0;
+  let actualClasses = 0;
+  let trueTimesPredicted = 0;
+  let trueSquares = 0;
+  let predictedSquares = 0;
+  for (const c of counts) {
+    correct += c.tp;
+    const [t, p] = [c.tp + c.fn, c.tp + c.fp];
+    if (t > 0) {
+      recallSum += c.tp / t;
+      actualClasses++;
+    }
+    trueTimesPredicted += t * p;
+    trueSquares += t * t;
+    predictedSquares += p * p;
+  }
+  const covariance = correct * n - trueTimesPredicted;
+  const spread = (n * n - trueSquares) * (n * n - predictedSquares);
+  return {accuracy: correct / n, balancedAccuracy: recallSum / actualClasses,
+    mcc: spread === 0 ? 0 : covariance / Math.sqrt(spread)};
 }
 
 /** Each label's precision, sensitivity (recall) and F1 against the rest, as EDA's report gives them per class (a
@@ -222,14 +241,105 @@ export function classesOf(target: DG.Column): string[] {
   return target.categories.filter((c) => c !== '');
 }
 
-/** The metrics of [predicted]; with a classifier's [probabilities], also `auc` ({@link aucOfProbabilities}). */
+/** The metrics of [predicted]; with a classifier's [probabilities], also `auc` ({@link aucOfProbabilities}), `logLoss`
+ * and `brier` ({@link probabilityMetrics}). */
 export function metricsOf(task: ModelTask, actual: DG.Column, predicted: DG.Column, positiveClass?: string,
   probabilities?: ClassProbabilities): MetricValues {
   if (task === 'regression')
     return regressionMetrics(actual, predicted);
   const values = classificationMetrics(actual, predicted, positiveClass ?? actual.categories[0]);
-  const auc = probabilities === undefined ? undefined : aucOfProbabilities(actual, probabilities, positiveClass);
-  return auc === undefined ? values : {...values, auc};
+  if (probabilities === undefined)
+    return values;
+  const auc = aucOfProbabilities(actual, probabilities, positiveClass);
+  return {...values, ...(auc === undefined ? {} : {auc}), ...probabilityMetrics(actual, probabilities, positiveClass)};
+}
+
+const MIN_PROBABILITY = 1e-15;
+
+/** Log loss and the Brier score of [probabilities] against [actual], over the rows where both have values (classes
+ * compared as text): log loss is the mean of -ln of the actual class's probability (clipped to [1e-15, 1 - 1e-15]; 0
+ * for a class without a column); Brier is, for two classes with a [positiveClass], the mean squared difference of its
+ * probability and 1 / 0, otherwise the mean over the rows of that difference summed over the classes. */
+export function probabilityMetrics(actual: DG.Column, probabilities: ClassProbabilities,
+  positiveClass?: string): MetricValues {
+  const {classes, columns} = probabilities;
+  if (columns.length === 0)
+    return {};
+  const positive = positiveClass === undefined || classes.length !== 2 ? -1 : classes.indexOf(positiveClass);
+  let rows = 0;
+  let logLoss = 0;
+  let brier = 0;
+  for (let i = 0; i < actual.length; i++) {
+    if (actual.isNone(i) || columns.some((c) => c.isNone(i)))
+      continue;
+    const label = String(actual.get(i));
+    const k = classes.indexOf(label);
+    const p = k < 0 ? 0 : columns[k].getNumber(i);
+    logLoss -= Math.log(Math.min(Math.max(p, MIN_PROBABILITY), 1 - MIN_PROBABILITY));
+    if (positive >= 0)
+      brier += (columns[positive].getNumber(i) - (k === positive ? 1 : 0)) ** 2;
+    else {
+      for (const [j, col] of columns.entries())
+        brier += (col.getNumber(i) - (j === k ? 1 : 0)) ** 2;
+    }
+    rows++;
+  }
+  return rows === 0 ? {} : {logLoss: logLoss / rows, brier: brier / rows};
+}
+
+/** The threshold on [probability] (of [positiveClass]) that maximizes [metric] on the rows where [actual] and
+ * [probability] have values: each distinct probability is a candidate (`p >= t` is positive; ties: the candidate
+ * nearest 0.5); the value is the midpoint between the best candidate and the next lower probability (the candidate
+ * itself when it is the lowest), rounded to 3 decimals when the rounding stays in that gap; the gap is checked in
+ * single precision, as the class-probabilities cut compares; undefined when the rows hold one class only. */
+export function bestThreshold(actual: DG.Column, probability: DG.Column, positiveClass: string,
+  metric: BestThresholdMetric): number | undefined {
+  const rows: {p: number; isPositive: boolean}[] = [];
+  for (let i = 0; i < actual.length; i++) {
+    if (!actual.isNone(i) && !probability.isNone(i))
+      rows.push({p: probability.getNumber(i), isPositive: String(actual.get(i)) === positiveClass});
+  }
+  rows.sort((a, b) => b.p - a.p);
+  const positives = rows.filter((r) => r.isPositive).length;
+  const negatives = rows.length - positives;
+  if (positives === 0 || negatives === 0)
+    return undefined;
+  const candidates: number[] = [];
+  let best = -1;
+  let bestValue = -Infinity;
+  let tp = 0;
+  let fp = 0;
+  for (let k = 0; k < rows.length;) {
+    const t = rows[k].p;
+    for (; k < rows.length && rows[k].p === t; k++) {
+      if (rows[k].isPositive)
+        tp++;
+      else
+        fp++;
+    }
+    candidates.push(t);
+    const positive = {tp, fp, fn: positives - tp};
+    const value = metric === 'f1' ? f1Of(positive) : countMetrics([positive,
+      {tp: negatives - fp, fp: positives - tp, fn: fp}], rows.length)[metric]!;
+    const isTie = value === bestValue && Math.abs(t - 0.5) < Math.abs(candidates[best] - 0.5);
+    if (value > bestValue || isTie) {
+      bestValue = value;
+      best = candidates.length - 1;
+    }
+  }
+  const t = candidates[best];
+  if (best === candidates.length - 1)
+    return t;
+  const next = candidates[best + 1];
+  const mid = (t + next) / 2;
+  const rounded = Number(mid.toFixed(3));
+  const cuts = (value: number) => isAtThreshold(t, value) && !isAtThreshold(next, value);
+  return cuts(rounded) ? rounded : cuts(mid) ? mid : t;
+}
+
+/** Probability [p] reaches [threshold], compared in single precision, as the probabilities are stored. */
+export function isAtThreshold(p: number, threshold: number): boolean {
+  return p >= Math.fround(threshold);
 }
 
 /** A numerical target makes a regression, any other a classification. */

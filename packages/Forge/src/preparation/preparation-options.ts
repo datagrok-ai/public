@@ -1,3 +1,4 @@
+import {BEST_THRESHOLD_METRICS, BestThresholdMetric} from '../metrics/metrics';
 import {MISSING_VALUES_MODES, MissingValuesMode} from './missing-values';
 
 export const ONE_HOT = 'one-hot';
@@ -5,6 +6,7 @@ export const SKIP_UNIQUE_CATEGORIES = 'skip-unique-categories';
 export const IGNORE_MISSING = 'ignore-missing';
 export const IMPUTE_MISSING = 'impute-missing';
 export const BINARY_CLASSIFICATION = 'binary-classification';
+export const CLASS_PROBABILITIES = 'class-probabilities';
 
 export interface MissingValuesRecord {
   mode: MissingValuesMode;
@@ -25,6 +27,9 @@ export interface PreparationOptions {
   positiveClass?: string;
   negativeClass?: string;
   binaryClassificationThreshold?: number;
+  /** The metric `binaryClassificationThreshold` maximizes on the out-of-fold probabilities; absent for a threshold
+   * set by hand. */
+  thresholdMetric?: BestThresholdMetric;
   targetType?: string;
   allowNulls?: boolean;
 }
@@ -54,13 +59,16 @@ export function preparationOptionsOf(value: unknown): PreparationOptions {
   }
   if (Array.isArray(source['skippedColumns']))
     options.skippedColumns = stringsOf(source['skippedColumns']);
-  const {positiveClass, negativeClass, binaryClassificationThreshold, targetType, allowNulls} = source;
+  const {positiveClass, negativeClass, binaryClassificationThreshold, thresholdMetric, targetType, allowNulls} = source;
   if (typeof positiveClass === 'string')
     options.positiveClass = positiveClass;
   if (typeof negativeClass === 'string')
     options.negativeClass = negativeClass;
   if (typeof binaryClassificationThreshold === 'number')
     options.binaryClassificationThreshold = binaryClassificationThreshold;
+  const metric = BEST_THRESHOLD_METRICS.find((m) => m === thresholdMetric);
+  if (metric !== undefined)
+    options.thresholdMetric = metric;
   if (typeof targetType === 'string')
     options.targetType = targetType;
   if (typeof allowNulls === 'boolean')

@@ -44,7 +44,7 @@ export namespace funcs {
   }
 
   /**
-   * Applies a saved Forge model to a table and adds the prediction column
+   * Applies a saved Forge model to a table and adds the prediction column and, for a model saved with Predict probability, the probability columns P(<target> = <class>)
    * @param {string} model - Model id or name
    * @param {any} columnNamesMap - Model feature name -> table column name
    */
@@ -59,7 +59,7 @@ export namespace funcs {
    * @param {any} features - Names of the columns to learn from. By default every numerical column except the target and id-like whole-number columns
    * @param {string} method - The method as Forge names it, any method Forge:listMethods lists. By default the method Forge suggests for the data
    * @param {any} hyperparameters - The method's settings by name, for example iterations: 50. Settings not named keep the method's defaults
-   * @param {any} options - Data preparation. missingValues: skip, impute or keep (default keep for a method that handles missing values, otherwise skip), with neighbors and distance for impute. oneHot (default on when every text feature has at most 20 categories), skipUniqueCategories (default true), predictProbability (default false, two-class targets only), cutoff (default 0.5). Validation: scheme kfold or holdout (default kfold), folds (default 5), testFraction (holdout, 0.05 to 0.5, default 0.2), stratified (default true, ignored for a regression), shuffle (default true), seed (the split seed, default 42). search (an object: metric, budgetSeconds (default 60), maxTrials, tunes the method's settings)
+   * @param {any} options - Data preparation. missingValues: skip, impute or keep (default keep for a method that handles missing values, otherwise skip), with neighbors and distance for impute. oneHot (default on when every text feature has at most 20 categories), skipUniqueCategories (default true), predictProbability (default false, a text or boolean target: the saved model adds the class probabilities when applied, and for two classes the labels follow threshold), threshold (the probability of the first class from which a row is predicted as it, cutoff is accepted as its old name, by default the one that maximizes thresholdMetric on the validation rows, 0.5 when there is none), thresholdMetric (f1, balancedAccuracy, mcc or accuracy, default f1, ignored when threshold is given). Validation: scheme kfold or holdout (default kfold), folds (default 5), testFraction (holdout, 0.05 to 0.5, default 0.2), stratified (default true, ignored for a regression), shuffle (default true), seed (the split seed, default 42). search (an object: metric (logLoss, brier minimized), budgetSeconds (default 60), maxTrials, tunes the method's settings)
    * @param {string} name - Saves the model under this name. Without a name the model is trained and measured but not saved
    * @param {string} description - Description of the saved model
    * @param {string} tags - Comma-separated tags of the saved model

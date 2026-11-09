@@ -7,7 +7,7 @@ import {ForgeError} from '../forge-error';
 import {forgeDb, ModelInsert, TrainingRunRow} from '../generated/db';
 import {METRIC_IDS, MetricValues} from '../metrics/metrics';
 import {MissingValuesSettings} from '../preparation/missing-values';
-import {DEFAULT_CUTOFF, PreparationSteps} from '../preparation/pipeline';
+import {DEFAULT_THRESHOLD, PreparationSteps} from '../preparation/pipeline';
 import {PreparationOptions} from '../preparation/preparation-options';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {ModelFields, modelFieldsOf} from '../storage/model-fields';
@@ -32,7 +32,7 @@ export const XGBOOST_FIELDS: Pick<ModelInsert, 'engine_name' | 'engine_namespace
   {engine_name: 'XGBoost', engine_namespace: 'Eda', engine_kind: 'function'};
 export const IMPUTE: MissingValuesSettings = {mode: 'impute', impute: {neighbors: 4, distance: 'Euclidean'}};
 export const NO_PREPARATION_STEPS: PreparationSteps =
-  {oneHot: false, skipUniqueCategories: false, predictProbability: false, cutoff: DEFAULT_CUTOFF};
+  {oneHot: false, skipUniqueCategories: false, predictProbability: false, threshold: DEFAULT_THRESHOLD};
 export const PREDICT_PROBABILITY: PreparationSteps = {...NO_PREPARATION_STEPS, predictProbability: true};
 export const ONE_HOT_STEPS: PreparationSteps = {...NO_PREPARATION_STEPS, oneHot: true};
 export const SKIP_UNIQUE_STEPS: PreparationSteps = {...NO_PREPARATION_STEPS, skipUniqueCategories: true};

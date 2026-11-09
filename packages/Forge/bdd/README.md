@@ -38,6 +38,17 @@ unedited for the BDD resume:
 - `apply-iris` 3.13: its XGBoost model's Apply dialog hides Missing values and skips no row; it needs a model of a
   method without `mlnativenans` (SVM).
 
+Stale since Predict probability uses the method's class probabilities (schema 0.1.20: no regression mode, the
+**Classification threshold** renamed from Positive class cutoff, a toggle that re-cuts without a run); left unedited
+for the BDD resume:
+
+- `train-demog` 5.10 and 5.14: they expect the regression mode (the regressors listed, a retrain and a new run on the
+  toggle, **Positive class cutoff**).
+- `train-winequality`: its Predict probability steps expect the regression mode in the same way.
+- `train-iris` (`"Preparation" group should be hidden`, `:79`) and any claim of a hidden Preparation group for a text
+  target (`train-demog` 3.14, `train-iris-gaps`): Predict probability is now shown for every text or yes/no target with
+  two or more classes, so the group shows for such a target.
+
 ## Running
 
 From `packages/Forge` (Git Bash; in PowerShell set the variables with `$env:NAME = 'value'` first):

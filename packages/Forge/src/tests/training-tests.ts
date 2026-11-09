@@ -10,18 +10,21 @@ import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {defaultFeatures} from '../training/default-features';
 import {DEFAULT_VALIDATION, heldOutCount, holdOutFold, kFold, minimumRows} from '../training/k-fold';
-import {aucOf, aucOfProbabilities, metricsOf, MetricValues, probabilityOf} from '../metrics/metrics';
+import {aucOf, aucOfProbabilities, classesOf, metricsOf, MetricValues, probabilityMetrics, probabilityOf}
+  from '../metrics/metrics';
 import {classificationReport} from '../metrics/report';
 import {MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
-import {prepareFeatures, replayPreprocessing} from '../preparation/pipeline';
-import {isRecord, PreparationOptions, stringsOf} from '../preparation/preparation-options';
+import {prepareFeatures, replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
+import {isRecord, PreparationOptions, preparationOptionsOf, stringsOf} from '../preparation/preparation-options';
+import {forgeDb} from '../generated/db';
+import {deleteModel} from '../storage/model-store';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {dataInsights, metricInsights, resultInsights} from '../training/insights';
 import {searchRecordOf} from '../training/search';
 import {runTrainModel, TrainModelInput} from '../training/train-api';
-import {checkSelection, foldMasks, foldPrediction, needsRowsWithoutGaps, outOfFoldProbabilities, prepareTraining,
-  recutResult, TrainingProblems, TrainingRequest, TrainingResult, TrainingSelection, trainingEngines, trainModel,
-  trainPredictionOf, validationSplit} from '../training/train-model';
+import {bestThresholdOf, checkSelection, foldMasks, foldPrediction, needsRowsWithoutGaps, outOfFoldProbabilities,
+  prepareTraining, recutResult, TrainingProblems, TrainingRequest, TrainingResult, TrainingSelection, trainingEngines,
+  trainModel, trainPredictionOf, validationSplit} from '../training/train-model';
 import {QueuedTraining, TrainingQueue} from '../training/training-queue';
 import {cancelTaskBarEntry, CLASSIFIERS, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, EDA_METHODS,
   engineByName, expectMetrics, expectNoFrames, expectReleased, failsWith, framesSharing, GAP_ROWS, IMPUTE,
@@ -207,8 +210,8 @@ category('Training', () => {
     const probability = await trainModel({...await requestOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'),
       PREDICT_PROBABILITY), validation: {...DEFAULT_VALIDATION, scheme: 'holdout'}});
     expect(probability.splitting.isStratified, true);
-    expect(probability.scores?.validation.stats.missingValueCount, 80);
-    const recut = recutResult(probability, 0.3);
+    expect(probability.outOfFold.probabilities?.columns[0].stats.missingValueCount, 80);
+    const recut = recutResult(probability, {predictProbability: true, threshold: 0.3});
     expect(typeof recut.metrics.validation.accuracy, 'number');
     expect(typeof recut.metrics.validation.auc, 'number');
   }, {timeout: TIMEOUT});
@@ -506,8 +509,8 @@ category('Training', () => {
     const twoSpecies = await twoSpeciesIris();
     const base = selectionOf(columnsOf(twoSpecies, MEASUREMENTS), twoSpecies.getCol('Species'));
     const probability = await checkSelection({...base, steps: {...base.steps, predictProbability: true}}, engines);
-    expect(probability.best?.name, 'XGBoost', 'Predict probability suggests a regressor');
-    expect(probability.engines.map((e) => e.name).includes('Softmax'), false, 'Softmax is listed for the probability');
+    expect(probability.best?.name, 'XGBoost', 'Predict probability suggests another method');
+    expectArray(edaNames(probability.engines), inDiscoveryOrder(engines, CLASSIFIERS));
 
     const petalLength = iris.getCol('Petal.Length');
     const three = columnsOf(iris, MEASUREMENTS.filter((name) => name !== 'Petal.Length'));
@@ -655,24 +658,6 @@ category('Training', () => {
     expectArray(problems.method, []);
   }, {timeout: TIMEOUT});
 
-  test('prepareFeatures: predict probability makes a two-class target a float 0/1 target', async () => {
-    const x = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2, 3, 4, 5]);
-    const sex = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'sex', ['M', 'F', 'F', 'M', null]);
-    const prepared = prepareFeatures([x], sex, {...PREDICT_PROBABILITY, cutoff: 0.4}, NO_OPTIONS);
-    expect(prepared.target.type, DG.COLUMN_TYPE.FLOAT);
-    expect(prepared.target.name, 'sex');
-    expectArray(prepared.target.toList(), [0, 1, 1, 0, null]);
-    expect(JSON.stringify(prepared.options), JSON.stringify({preprocessingInfo: [],
-      postprocessingInfo: ['binary-classification'], positiveClass: 'F', negativeClass: 'M',
-      binaryClassificationThreshold: 0.4, targetType: 'string'}));
-    expect(sex.type, DG.COLUMN_TYPE.STRING);
-
-    const three = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'kind', ['a', 'b', 'c', 'a', 'b']);
-    const ignored = prepareFeatures([x], three, PREDICT_PROBABILITY, NO_OPTIONS);
-    expect(ignored.target === three, true, 'A three-class target was changed');
-    expectArray(ignored.options.postprocessingInfo, []);
-  });
-
   test('aucOf: the trapezoid over the rows sorted by score', async () => {
     const labels = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'y', ['a', 'b', 'a', 'b']);
     const scores = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 's', [0.9, 0.8, 0.3, 0.1]);
@@ -693,64 +678,113 @@ category('Training', () => {
     expectFloat(aucOf(labels, mixed, 'a') ?? NaN, 2 / 3, 1e-9);
   });
 
-  test('recutResult cuts the kept scores at another cutoff without retraining', async () => {
+  test('recutResult re-cuts the kept class probabilities without retraining', async () => {
     const actual = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'y', ['a', 'b', 'a', 'b']);
-    const scores = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', [0.9, 0.8, 0.3, 0.1]);
-    const options: PreparationOptions = {...NO_OPTIONS, postprocessingInfo: ['binary-classification'],
-      positiveClass: 'a', negativeClass: 'b', binaryClassificationThreshold: 0.5, targetType: 'string'};
-    const result: TrainingResult = {task: 'regression', target: {name: 'y', type: 'string', categories: ['a', 'b']},
-      features: {columns: []}, options, splitting: {scheme: 'kfold', folds: 5}, blob: new Uint8Array(),
-      prediction: scores, metrics: {train: {auc: 0.75}, validation: {auc: 0.75}}, seed: 1, hyperparameters: {},
-      rowCount: 4, scores: {actual, positiveClass: 'a', train: scores, validation: scores}};
-    const allPositive = recutResult(result, 0);
-    expect(allPositive.options.binaryClassificationThreshold, 0);
+    const prediction = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Prediction', ['a', 'b', 'b', 'b']);
+    const probabilities = {classes: ['a', 'b'], columns: [
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_a', [0.9, 0.8, 0.3, 0.1]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'proba_b', [0.1, 0.2, 0.7, 0.9])]};
+    const scoreValues = {auc: 0.75, logLoss: 0.6};
+    const result: TrainingResult = {task: 'classification',
+      target: {name: 'y', type: 'string', categories: ['a', 'b']}, features: {columns: []}, options: NO_OPTIONS,
+      splitting: {scheme: 'kfold', folds: 5}, blob: new Uint8Array(), prediction, probabilities,
+      metrics: {train: scoreValues, validation: scoreValues, positiveClass: 'a'}, seed: 1, hyperparameters: {},
+      rowCount: 4, actual, outOfFold: {prediction, probabilities}};
+    const allPositive = recutResult(result, {predictProbability: true, threshold: 0});
+    expect(JSON.stringify(allPositive.options), JSON.stringify({preprocessingInfo: [],
+      postprocessingInfo: ['class-probabilities'], positiveClass: 'a', negativeClass: 'b',
+      binaryClassificationThreshold: 0}));
+    expectArray(trainPredictionOf(allPositive).toList(), ['a', 'a', 'a', 'a']);
     for (const values of [allPositive.metrics.train, allPositive.metrics.validation]) {
       expect(values.sensitivity, 1);
       expect(values.specificity, 0);
       expectFloat(values.auc ?? NaN, 0.75, 1e-9);
+      expectFloat(values.logLoss ?? NaN, 0.6, 1e-9);
     }
-    const allNegative = recutResult(result, 1);
+    const allNegative = recutResult(result, {predictProbability: true, threshold: 1});
+    expectArray(trainPredictionOf(allNegative).toList(), ['b', 'b', 'b', 'b']);
     expect(allNegative.metrics.validation.sensitivity, 0);
     expect(allNegative.metrics.validation.specificity, 1);
     expectFloat(allNegative.metrics.validation.auc ?? NaN, 0.75, 1e-9);
     expect(allNegative.metrics.positiveClass, 'a');
-    expect(result.options.binaryClassificationThreshold, 0.5);
-    const plain: TrainingResult = {...result, scores: undefined};
-    expect(recutResult(plain, 0) === plain, true, 'A result without scores was cut');
+    const off = recutResult(allNegative, {predictProbability: false, threshold: 1});
+    expect(JSON.stringify(off.options), JSON.stringify(NO_OPTIONS));
+    expectFloat(off.metrics.validation.accuracy ?? NaN, 0.75, 1e-9);
+
+    const optimized = recutResult(result, {predictProbability: true, threshold: 0, thresholdMetric: 'f1'});
+    expect(optimized.options.binaryClassificationThreshold, 0.2);
+    expect(optimized.options.thresholdMetric, 'f1');
+    expectArray(trainPredictionOf(optimized).toList(), ['a', 'a', 'a', 'b']);
+    const noBest = recutResult({...result, outOfFold: {prediction}},
+      {predictProbability: true, threshold: 0.4, thresholdMetric: 'f1'});
+    expect(noBest.options.binaryClassificationThreshold, 0.4, 'No best keeps the threshold');
+    expect(noBest.options.thresholdMetric === undefined, true, 'No best records the metric');
+    expect(recutResult(optimized, {predictProbability: true, threshold: 0.3}).options.thresholdMetric === undefined,
+      true, 'A threshold without a metric keeps the metric');
+
+    const plain: TrainingResult = {...result, probabilities: undefined};
+    expect(recutResult(plain, {predictProbability: true, threshold: 0}) === plain, true, 'Cut without probabilities');
+    const stale: TrainingResult = {...plain, options: allPositive.options};
+    expect(JSON.stringify(recutResult(stale, {predictProbability: true, threshold: 0}).options),
+      JSON.stringify(NO_OPTIONS));
   }, {timeout: TIMEOUT});
 
-  test('Predict probability: a regressor on the classes, AUC-ROC, metrics of the labels, non-integer scores',
-    async () => {
-      const iris = await twoSpeciesIris();
-      const features = columnsOf(iris, MEASUREMENTS);
-      const species = iris.getCol('Species');
-      const engines = EngineRegistry.discover();
-      const check = await checkSelection({...selectionOf(features, species), steps: PREDICT_PROBABILITY}, engines);
-      const listed = check.engines.map((e) => e.name);
-      expect(listed.includes('Linear Regression') && !listed.includes('Softmax'), true, listed.join(', '));
+  test('Predict probability on a boolean target: the first category positive, boolean labels', async () => {
+    const iris = await twoSpeciesIris();
+    const species = iris.getCol('Species');
+    const target = DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'isVersicolor',
+      Array.from({length: iris.rowCount}, (_, i) => species.get(i) === 'versicolor'));
+    const result = await trainModel(await requestOf(columnsOf(iris, MEASUREMENTS), target,
+      {...PREDICT_PROBABILITY, threshold: 0.7}));
+    const [positive, negative] = classesOf(target);
+    expect(target.categories[0], positive);
+    expect(result.metrics.positiveClass, positive);
+    const {options} = result;
+    expect(JSON.stringify([options.postprocessingInfo, options.positiveClass, options.negativeClass,
+      options.binaryClassificationThreshold]), JSON.stringify([['class-probabilities'], positive, negative, 0.7]));
+    const probability = probabilityOf(result.probabilities!, positive);
+    expect(probability?.name, `proba_${positive}`);
+    const labels = trainPredictionOf(result);
+    expect(labels.type, DG.COLUMN_TYPE.BOOL);
+    const expected = Array.from({length: labels.length}, (_, i) =>
+      String(probability!.getNumber(i) >= Math.fround(0.7) ? positive : negative) === 'true');
+    expectArray(labels.toList(), expected);
+    expect(expected.includes(true) && expected.includes(false), true, 'One class at 0.7');
+    const recut = trainPredictionOf(recutResult(result, {predictProbability: true, threshold: 0}));
+    expect(recut.toList().every((v) => String(v) === positive), true, 'A threshold of 0 leaves a negative label');
+  }, {timeout: TIMEOUT});
 
-      const request = await requestOf(features, species, PREDICT_PROBABILITY);
-      expect(request.prepared.target.type, DG.COLUMN_TYPE.FLOAT);
-      expect(request.target === species, true, 'The selection\'s target was replaced');
-      const result = await trainModel(request);
-      expect(result.task, 'regression');
-      expect(JSON.stringify(result.target), JSON.stringify({name: 'Species', type: 'string',
-        categories: ['versicolor', 'virginica']}));
-      const {options, metrics, scores} = result;
-      expect(JSON.stringify([options.positiveClass, options.negativeClass, options.binaryClassificationThreshold,
-        options.targetType]), JSON.stringify(['versicolor', 'virginica', 0.5, 'string']));
-      expectArray(options.postprocessingInfo, ['binary-classification']);
-      expect(metrics.positiveClass, 'versicolor');
-      for (const values of [metrics.train, metrics.validation]) {
-        const auc = values.auc ?? NaN;
-        expect(auc > 0.5 && auc <= 1, true, `AUC-ROC ${auc}`);
-        expect(values.accuracy !== undefined && values.sensitivity !== undefined, true, JSON.stringify(values));
-        expect(values.mse === undefined, true, 'A regression metric of the scores');
-      }
-      expect(scores?.validation.toList().some((v) => typeof v === 'number' && !Number.isInteger(v)), true,
-        'XGBoost returned 0/1 scores');
-      expect(scores?.actual === species, true, 'The scores are measured against another target');
-    }, {timeout: TIMEOUT});
+  test('Predict probability keeps the classifier and cuts the positive class\'s probability', async () => {
+    const iris = await twoSpeciesIris();
+    const features = columnsOf(iris, MEASUREMENTS);
+    const species = iris.getCol('Species');
+    const request = await requestOf(features, species, {...PREDICT_PROBABILITY, threshold: 0.9});
+    expect(request.prepared.target === species, true, 'The prepared target is not the selection\'s');
+    const result = await trainModel(request);
+    expect(result.task, 'classification');
+    const {options, metrics} = result;
+    expectArray(options.postprocessingInfo, ['class-probabilities']);
+    expect(JSON.stringify([options.positiveClass, options.negativeClass, options.binaryClassificationThreshold]),
+      JSON.stringify(['versicolor', 'virginica', 0.9]));
+    expect(metrics.positiveClass, 'versicolor');
+    const labels = trainPredictionOf(result);
+    expectArray(labels.toList(), replayPostprocessing(result.prediction, options, result.probabilities).toList());
+    expect(labels.toList().some((v, i) => v !== result.prediction.get(i)), true,
+      'The threshold 0.9 gives the method\'s own labels');
+    for (const values of [metrics.train, metrics.validation]) {
+      for (const id of ['accuracy', 'sensitivity', 'auc', 'logLoss', 'brier'] as const)
+        expect(typeof values[id], 'number', id);
+    }
+    expect(result.actual === species, true, 'The predictions are measured against another target');
+
+    const full = await openIris();
+    const three = await trainModel(await requestOf(columnsOf(full, MEASUREMENTS), full.getCol('Species'),
+      PREDICT_PROBABILITY));
+    expectArray(three.options.postprocessingInfo, ['class-probabilities']);
+    expect([three.options.positiveClass, three.options.negativeClass, three.options.binaryClassificationThreshold]
+      .every((v) => v === undefined), true, JSON.stringify(three.options));
+    expectArray(trainPredictionOf(three).toList(), three.prediction.toList());
+  }, {timeout: TIMEOUT});
 
   test('dataInsights: unbalanced classes, correlated columns, almost unique values', async () => {
     const rows = 10;
@@ -853,7 +887,7 @@ category('Training', () => {
     const twoSpecies = await twoSpeciesIris();
     const probability = await trainModel(await requestOf(columnsOf(twoSpecies, MEASUREMENTS),
       twoSpecies.getCol('Species'), PREDICT_PROBABILITY));
-    expect(probability.prediction === probability.scores?.train, true, 'The prediction is not the train scores');
+    expect(probability.probabilities !== undefined, true, 'The probability model kept no probabilities');
     expect(trainPredictionOf(probability).toList().every((v) => v === 'versicolor' || v === 'virginica'), true,
       trainPredictionOf(probability).categories.join());
     expectArray(trainPredictionOf(probability).categories, ['versicolor', 'virginica']);
@@ -881,7 +915,10 @@ category('Training', () => {
       }
       expectFloat(result.metrics.train.auc ?? NaN, aucOfProbabilities(species, probabilities!) ?? NaN, 1e-9);
       expect(result.task, 'classification');
-      expect(result.scores === undefined, true, 'A plain classifier has scores');
+      expect(result.outOfFold.probabilities !== undefined, true, 'No out-of-fold probabilities');
+      const {logLoss, brier} = probabilityMetrics(species, probabilities!);
+      expectFloat(result.metrics.train.logLoss ?? NaN, logLoss ?? NaN, 1e-9);
+      expectFloat(result.metrics.train.brier ?? NaN, brier ?? NaN, 1e-9);
       expect(typeof result.metrics.train.mcc, 'number');
       for (const id of ['balancedAccuracy', 'averagePrecision'] as const) {
         const value = result.metrics.validation[id] ?? NaN;
@@ -903,23 +940,25 @@ category('Training', () => {
         pr.recall[pr.recall.length - 1]], [Infinity, roc.tpr.length, Infinity, 0]);
     }, {timeout: ENGINE_TIMEOUT});
 
-  test('a regression and Predict probability get no class probabilities', async () => {
+  test('a regression gets no probability metrics', async () => {
     const iris = await openIris();
     const regression = await trainModel(await requestOf(columnsOf(iris, ['Sepal.Length', 'Sepal.Width']),
       iris.getCol('Petal.Length')));
-    expect(regression.probabilities === undefined && regression.metrics.validation.auc === undefined, true,
+    expect(regression.probabilities === undefined && regression.outOfFold.probabilities === undefined, true,
       'A regression has class probabilities');
+    for (const values of [regression.metrics.train, regression.metrics.validation]) {
+      for (const id of ['auc', 'logLoss', 'brier', 'mcc'] as const)
+        expect(values[id] === undefined, true, `A regression has ${id}`);
+    }
+    expect(regression.curves === undefined, true, 'A regression has curves');
 
     const twoSpecies = await twoSpeciesIris();
     const probability = await trainModel(await requestOf(columnsOf(twoSpecies, MEASUREMENTS),
       twoSpecies.getCol('Species'), PREDICT_PROBABILITY));
-    expect(probability.probabilities === undefined, true, 'Predict probability has class probabilities');
-    expect(probability.scores !== undefined && probability.metrics.validation.auc !== undefined, true,
-      'Predict probability lost its scores or AUC-ROC');
-    expect(typeof probability.metrics.train.mcc, 'number');
+    expect(probability.probabilities !== undefined && probability.outOfFold.probabilities !== undefined, true,
+      'Predict probability has no class probabilities');
+    expect(typeof probability.metrics.validation.logLoss, 'number');
     expect(probability.curves !== undefined, true, 'Predict probability has no curves');
-    expect(regression.curves === undefined && regression.metrics.train.mcc === undefined, true,
-      'A regression has curves or MCC');
   }, {timeout: ENGINE_TIMEOUT});
 
   test('outOfFoldProbabilities gathers by class name and gives 0 to a class a fold never saw', async () => {
@@ -1093,20 +1132,26 @@ category('Training', () => {
     expectFloat(result.metrics.train.auc ?? NaN, aucOf(request.target, positive, 'versicolor') ?? NaN, 1e-9);
   }, {timeout: ENGINE_TIMEOUT});
 
-  test('recutResult re-cuts the label metrics, keeps AUC-ROC, average precision and the curves', async () => {
+  test('recutResult re-cuts the label metrics, keeps AUC-ROC, AP, log loss, Brier and the curves', async () => {
     const twoSpecies = await twoSpeciesIris();
     const probability = await trainModel(await requestOf(columnsOf(twoSpecies, MEASUREMENTS),
       twoSpecies.getCol('Species'), PREDICT_PROBABILITY));
-    const recut = recutResult(probability, 0.9);
+    const recut = recutResult(probability, {predictProbability: true, threshold: 0.9});
     const [before, after] = [probability.metrics.train, recut.metrics.train];
     const isRecut = (['train', 'validation'] as const).some((split) =>
       recut.metrics[split].sensitivity !== probability.metrics[split].sensitivity ||
       recut.metrics[split].specificity !== probability.metrics[split].specificity);
-    expect(isRecut, true, 'The cutoff changed no label metric');
+    expect(isRecut, true, 'The threshold changed no label metric');
     expect(after.auc, before.auc);
     expect(after.averagePrecision, before.averagePrecision);
     expect(recut.metrics.validation.auc, probability.metrics.validation.auc);
     expect(recut.metrics.validation.averagePrecision, probability.metrics.validation.averagePrecision);
+    for (const split of ['train', 'validation'] as const) {
+      for (const id of ['logLoss', 'brier'] as const) {
+        const value = probability.metrics[split][id];
+        expect(typeof value === 'number' && recut.metrics[split][id] === value, true, `${split} ${id} ${value}`);
+      }
+    }
     const classes = probability.metrics.classes ?? [];
     expect(classes.some((c) => c.train.auc !== undefined), true, 'No class has AUC-ROC');
     for (const c of classes) {
@@ -1119,7 +1164,7 @@ category('Training', () => {
       }
     }
     expect(recut.curves === probability.curves, true, 'The curves were recomputed');
-    const {actual, positiveClass} = probability.scores!;
+    const {actual, metrics: {positiveClass}} = probability;
     const report = (await classificationReport(actual, trainPredictionOf(recut), positiveClass))!;
     expectFloat(report.balancedAccuracy, after.balancedAccuracy ?? NaN, 1e-9, 'recut balanced accuracy');
     expectFloat(report.mcc, after.mcc ?? NaN, 1e-9, 'recut mcc');
@@ -1133,7 +1178,8 @@ category('Training', () => {
     const iris = await openIris();
     const regression = await trainModel(await requestOf(columnsOf(iris, ['Sepal.Length', 'Sepal.Width']),
       iris.getCol('Petal.Length')));
-    expect(recutResult(regression, 0.5) === regression, true, 'A regression was cut');
+    expect(recutResult(regression, {predictProbability: true, threshold: 0.5}) === regression, true,
+      'A regression was cut');
   }, {timeout: ENGINE_TIMEOUT});
 });
 
@@ -1202,20 +1248,70 @@ category('Training', () => {
     }
   }, {timeout: TIMEOUT});
 
-  test('runTrainModel: Predict probability on two classes measures AUC-ROC', async () => {
+  test('runTrainModel: Predict probability on two classes records the step and the threshold', async () => {
     const iris = await twoSpeciesIris();
     try {
-      const result = await runTrainModel({table: iris, target: 'Species', options: {predictProbability: true,
-        cutoff: 0.4, seed: 7}, showProgress: false});
-      expect(typeof result.metrics.validation.auc, 'number');
-      expect(result.seed, 7);
-      const [run] = await runsOf([iris]);
-      expectArray(run.options?.postprocessingInfo ?? [], ['binary-classification']);
-      expect(run.options?.binaryClassificationThreshold, 0.4);
+      for (const name of ['threshold', 'cutoff']) {
+        const result = await runTrainModel({table: iris, target: 'Species', options: {predictProbability: true,
+          [name]: 0.4, seed: 7}, showProgress: false});
+        expect(typeof result.metrics.validation.auc, 'number');
+        expect(typeof result.metrics.validation.logLoss, 'number');
+        expect(result.seed, 7);
+        const run = (await runsOf([iris])).find((r) => r.id === result.runId);
+        expectArray(run?.options?.postprocessingInfo ?? [], ['class-probabilities']);
+        expect(run?.options?.binaryClassificationThreshold, 0.4, name);
+        expect(run?.options?.thresholdMetric === undefined, true, `${name} stored a metric`);
+      }
     } finally {
       await deleteRunsOf([iris]);
     }
   }, {timeout: TIMEOUT});
+
+  test('runTrainModel: without a threshold, Predict probability optimizes it for thresholdMetric', async () => {
+    const iris = await twoSpeciesIris();
+    const name = `forge-test-api-threshold-${Date.now()}`;
+    let modelId: string | null = null;
+    try {
+      for (const [given, metric] of [[undefined, 'f1'], ['mcc', 'mcc']] as const) {
+        const options = {predictProbability: true, seed: 7, ...(given === undefined ? {} : {thresholdMetric: given})};
+        const result = await runTrainModel({table: iris, target: 'Species', options, showProgress: false,
+          ...(given === undefined ? {name} : {})});
+        modelId ??= result.modelId;
+        const engine = engineByName(trainingEngines().engines, result.method);
+        const request = await prepareTraining({...selectionOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'),
+          SKIP, engine), seed: 7, steps: {...PREDICT_PROBABILITY, thresholdMetric: metric}});
+        const expected = bestThresholdOf(await trainModel(request), metric);
+        expect(expected !== undefined, true, `No best ${metric} threshold`);
+        const run = (await runsOf([iris])).find((r) => r.id === result.runId);
+        expect(run?.options?.binaryClassificationThreshold, expected, metric);
+        expect(run?.options?.thresholdMetric, metric);
+      }
+      const saved = preparationOptionsOf((await forgeDb.models.get(modelId!)).options);
+      expect(saved.thresholdMetric, 'f1');
+    } finally {
+      if (modelId !== null)
+        await deleteModel(modelId);
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('runTrainModel SVM with Predict probability fits probabilities', async () => {
+    const iris = await apiTable();
+    try {
+      const probability = await runTrainModel({table: iris, target: 'Species', method: 'SVM',
+        options: {predictProbability: true}, showProgress: false});
+      expect(typeof probability.metrics.validation.auc, 'number');
+      expect(typeof probability.metrics.validation.logLoss, 'number');
+      const plain = await runTrainModel({table: iris, target: 'Species', method: 'SVM', showProgress: false});
+      expect(plain.metrics.validation.auc === undefined, true, 'SVM without probabilities has AUC-ROC');
+      const runs = await runsOf([iris]);
+      const settingsOf = (runId: string) => runs.find((r) => r.id === runId)?.hyperparameters;
+      expect(settingsOf(probability.runId)?.probability, true);
+      expect(settingsOf(plain.runId)?.probability, false);
+    } finally {
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: ENGINE_TIMEOUT});
 
   test('runTrainModel: Impute skips only the rows without a target', async () => {
     const demog = await apiTable('System:DemoFiles/demog.csv');
@@ -1264,13 +1360,18 @@ category('Training', () => {
       [{method: 'Softmax', hyperparameters: {penalty: 'fast'}}, 'The setting \'penalty\' of Softmax needs a number.'],
       [{hyperparameters: {iterations: 500}}, 'The setting \'iterations\' of XGBoost must be at most 100.'],
       [{options: {cutof: 0.5}}, 'Unknown option \'cutof\'. The options are: missingValues, neighbors, distance, ' +
-        'oneHot, skipUniqueCategories, predictProbability, cutoff, seed, scheme, folds, testFraction, stratified, ' +
-        'shuffle, search.'],
+        'oneHot, skipUniqueCategories, predictProbability, threshold, thresholdMetric, seed, scheme, folds, ' +
+        'testFraction, stratified, shuffle, search.'],
+      [{options: {predictProbability: true, thresholdMetric: 'auc'}}, 'The option \'thresholdMetric\' needs one of: ' +
+        'f1, balancedAccuracy, mcc, accuracy.'],
       [{options: {scheme: 'loo'}}, 'The option \'scheme\' needs kfold or holdout.'],
       [{options: {scheme: 'holdout', testFraction: 0.6}}, 'The option \'testFraction\' needs a number from 0.05 to ' +
         '0.5.'],
       [{options: {shuffle: 'no'}}, 'The option \'shuffle\' needs true or false.'],
-      [{options: {predictProbability: true}}, 'Predict probability needs a target with exactly two classes.'],
+      [{target: 'Petal.Length', options: {predictProbability: true}}, 'Predict probability needs a text or boolean ' +
+        'target.'],
+      [{method: 'SVM', hyperparameters: {probability: true}}, 'The method SVM has no setting \'probability\'. Its ' +
+        'settings are: kernel, cost, gamma, degree, coef0, epsilon.'],
       [{options: {missingValues: 'fill'}}, 'The option \'missingValues\' needs skip, impute, keep ' +
         '(keep: only for a method that handles missing values).'],
       [{name: 'forge-test-api-ref', storage: 'reference'}, 'The table has no known source, so the model cannot ' +
@@ -1364,16 +1465,25 @@ category('Training', () => {
     }
   }, {timeout: ENGINE_TIMEOUT});
 
-  test('Forge:trainModel turns Predict probability off during a search', async () => {
+  test('Forge:trainModel keeps Predict probability during a search', async () => {
     const iris = await twoSpeciesIris();
     try {
       const result = await runTrainModel({table: iris, target: 'Species', method: 'XGBoost',
-        options: {predictProbability: true, cutoff: 0.4, seed: 3, search: {maxTrials: 2}}, showProgress: false});
+        options: {predictProbability: true, threshold: 0.4, seed: 3, search: {maxTrials: 2}}, showProgress: false});
       expect(result.task, 'classification');
       expect(result.search?.metric, 'balancedAccuracy');
-      const [run] = await runsOf([iris]);
-      expectArray(run.options?.postprocessingInfo ?? [], []);
-      expect(run.options?.binaryClassificationThreshold === undefined, true, 'A probability cutoff was recorded');
+      const run = (await runsOf([iris])).find((r) => r.id === result.runId);
+      expectArray(run?.options?.postprocessingInfo ?? [], ['class-probabilities']);
+      expect(run?.options?.binaryClassificationThreshold, 0.4);
+      expect(run?.options?.thresholdMetric === undefined, true, 'An explicit threshold stored a metric');
+
+      const optimized = await runTrainModel({table: iris, target: 'Species', method: 'XGBoost',
+        options: {predictProbability: true, thresholdMetric: 'mcc', seed: 3, search: {maxTrials: 2}},
+        showProgress: false});
+      const optimizedRun = (await runsOf([iris])).find((r) => r.id === optimized.runId);
+      const threshold = optimizedRun?.options?.binaryClassificationThreshold;
+      expect(optimizedRun?.options?.thresholdMetric, 'mcc');
+      expect(typeof threshold === 'number' && threshold > 0 && threshold < 1, true, `Threshold ${threshold}`);
     } finally {
       await deleteRunsOf([iris]);
     }
@@ -1384,10 +1494,10 @@ category('Training', () => {
     const refusals: [{[name: string]: unknown}, string][] = [
       [{budget: 1}, 'The option \'search\' needs an object with metric, budgetSeconds, maxTrials.'],
       [{metric: 'speed'}, 'The search metric \'speed\' is not one of: r2, rmse, mae, balancedAccuracy, accuracy, f1, ' +
-        'mcc, auc.'],
+        'mcc, auc, logLoss, brier.'],
       [{maxTrials: 0}, 'The option \'maxTrials\' needs a whole number of at least 1.'],
       [{metric: 'r2'}, 'The search metric \'r2\' does not apply to a classification. Choose one of: ' +
-        'balancedAccuracy, accuracy, f1, mcc, auc.'],
+        'balancedAccuracy, accuracy, f1, mcc, auc, logLoss, brier.'],
     ];
     try {
       const wrong: string[] = [];

@@ -1,21 +1,25 @@
 import * as DG from 'datagrok-api/dg';
 import {ForgeError} from '../forge-error';
-import {BINARY_CLASSIFICATION, IGNORE_MISSING, IMPUTE_MISSING, ONE_HOT, PreparationOptions,
+import {BestThresholdMetric, ClassProbabilities, classesOf, isAtThreshold, probabilityOf} from '../metrics/metrics';
+import {BINARY_CLASSIFICATION, CLASS_PROBABILITIES, IGNORE_MISSING, IMPUTE_MISSING, ONE_HOT, PreparationOptions,
   SKIP_UNIQUE_CATEGORIES} from './preparation-options';
 
-/** The preparation steps chosen for a training, applied after the missing values are handled. */
+/** The preparation steps chosen for a training, applied after the missing values are handled. With
+ * [thresholdMetric], the threshold of two classes is the one that maximizes it on the out-of-fold probabilities
+ * (`recutResult`), [threshold] when there is none. */
 export interface PreparationSteps { oneHot: boolean; skipUniqueCategories: boolean; predictProbability: boolean;
-  cutoff: number }
+  threshold: number; thresholdMetric?: BestThresholdMetric }
 export interface PreparedFeatures { columns: DG.Column[]; target: DG.Column; options: PreparationOptions }
 
-export const DEFAULT_CUTOFF = 0.5;
+export const DEFAULT_THRESHOLD = 0.5;
+export const DEFAULT_THRESHOLD_METRIC: BestThresholdMetric = 'f1';
 /** The defaults a training starts with, in the Train view and in `Forge:trainModel`. */
 export const DEFAULT_STEPS = {skipUniqueCategories: true, predictProbability: false} as const;
-const CUTOFF_PROBLEM = 'Enter a number from 0 to 1.';
+const THRESHOLD_PROBLEM = 'Enter a number from 0 to 1.';
 
-/** Why [value] cannot be the positive class cutoff; null for a number from 0 to 1. */
-export function cutoffProblem(value: number | null): string | null {
-  return value !== null && value >= 0 && value <= 1 ? null : CUTOFF_PROBLEM;
+/** Why [value] cannot be the classification threshold; null for a number from 0 to 1. */
+export function thresholdProblem(value: number | null): string | null {
+  return value !== null && value >= 0 && value <= 1 ? null : THRESHOLD_PROBLEM;
 }
 /** One-hot encoding is on by default while every text or yes/no feature it would encode has at most this many
  * categories. */
@@ -23,9 +27,10 @@ const ONE_HOT_MAX_CATEGORIES = 20;
 const RECORDED_ONLY = [IGNORE_MISSING, IMPUTE_MISSING];
 const COLUMN_TYPES: string[] = Object.values(DG.COLUMN_TYPE);
 
-/** Training: applies [steps] to [columns] and [target], in this order: skip unique categories, one-hot, predict
- * probability, and records each step that changed something in a copy of [options]. Only Forge's own columns are
- * created; [columns] and [target] are never changed. */
+/** Training: applies [steps] to [columns], in this order: skip unique categories, one-hot, and records each step that
+ * changed something in a copy of [options]; predict probability on a text or yes/no target with two or more classes
+ * records `class-probabilities` (with the two classes, the threshold and its metric for two). Only Forge's own columns
+ * are created; [columns] and [target] are never changed. */
 export function prepareFeatures(columns: DG.Column[], target: DG.Column, steps: PreparationSteps,
   options: PreparationOptions): PreparedFeatures {
   const preprocessingInfo = [...options.preprocessingInfo];
@@ -45,13 +50,14 @@ export function prepareFeatures(columns: DG.Column[], target: DG.Column, steps: 
     features = oneHotEncoded(features, prepared.oneHotCategories);
     preprocessingInfo.push(ONE_HOT);
   }
-  const classes = steps.predictProbability ? twoClasses(target) : null;
-  if (classes === null)
+  const classes = steps.predictProbability && target.isCategorical ? classesOf(target) : [];
+  if (classes.length < 2)
     return {columns: features, target, options: prepared};
-  const [positiveClass, negativeClass] = classes;
-  return {columns: features, target: probabilityTarget(target, positiveClass), options: {...prepared,
-    postprocessingInfo: [...prepared.postprocessingInfo, BINARY_CLASSIFICATION], positiveClass, negativeClass,
-    binaryClassificationThreshold: steps.cutoff, targetType: target.type}};
+  return {columns: features, target, options: {...prepared,
+    postprocessingInfo: [...prepared.postprocessingInfo, CLASS_PROBABILITIES],
+    ...(classes.length === 2 ? {positiveClass: classes[0], negativeClass: classes[1],
+      binaryClassificationThreshold: steps.threshold,
+      ...(steps.thresholdMetric === undefined ? {} : {thresholdMetric: steps.thresholdMetric})} : {})}};
 }
 
 /** Application: replays `options.preprocessingInfo` on [columns]; returns [columns] itself when there is nothing to
@@ -70,12 +76,16 @@ export function replayPreprocessing(columns: DG.Column[], options: PreparationOp
   return features;
 }
 
-export function replayPostprocessing(prediction: DG.Column, options: PreparationOptions): DG.Column {
+/** The labels of a method's [prediction] after `options.postprocessingInfo`: `binary-classification` cuts the raw
+ * score, `class-probabilities` takes the labels from the method's [probabilities]. */
+export function replayPostprocessing(prediction: DG.Column, options: PreparationOptions,
+  probabilities?: ClassProbabilities): DG.Column {
   let result = prediction;
   for (const id of options.postprocessingInfo) {
-    if (id !== BINARY_CLASSIFICATION)
+    if (id !== BINARY_CLASSIFICATION && id !== CLASS_PROBABILITIES)
       throw new ForgeError(notReplayable(id));
-    result = binaryClasses(result, options);
+    result = id === BINARY_CLASSIFICATION ? binaryClasses(result, options) :
+      probabilityLabels(result, options, probabilities);
   }
   return result;
 }
@@ -104,20 +114,41 @@ function notReplayable(id: string): string {
   return `The model uses the preparation step '${id}', which Forge cannot replay yet.`;
 }
 
-/** A float target: 1 for [positiveClass], 0 for the other class. A float, not an int: methods that round the
- * predictions of an int target (XGBoost) would return 0/1 instead of probabilities. */
-function probabilityTarget(target: DG.Column, positiveClass: string): DG.Column {
-  if (target.type !== DG.COLUMN_TYPE.STRING) {
-    return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, target.name, Array.from({length: target.length},
-      (_, i) => target.isNone(i) ? null : String(target.get(i)) === positiveClass ? 1 : 0));
+/** The labels the class [probabilities] give: two classes with the recorded keys, the positive class where its
+ * probability reaches the threshold (in single precision, as the probabilities are stored), else the negative one;
+ * otherwise the most probable class (ties: the first). A row without probabilities keeps [prediction]'s label; without
+ * [probabilities], [prediction] itself. */
+function probabilityLabels(prediction: DG.Column, options: PreparationOptions,
+  probabilities?: ClassProbabilities): DG.Column {
+  if (probabilities === undefined)
+    return prediction;
+  const {positiveClass, negativeClass, binaryClassificationThreshold: threshold} = options;
+  const positive = positiveClass === undefined ? undefined : probabilityOf(probabilities, positiveClass);
+  const cut = positive === undefined || negativeClass === undefined || threshold === undefined ? undefined :
+    (i: number) => positive.isNone(i) ? undefined :
+      isAtThreshold(positive.getNumber(i), threshold) ? positiveClass : negativeClass;
+  const labels = DG.Column.fromType(prediction.type, prediction.name, prediction.length);
+  for (let i = 0; i < prediction.length; i++) {
+    if (prediction.isNone(i))
+      continue;
+    const label = cut === undefined ? mostProbableClass(probabilities, i) : cut(i);
+    labels.setString(i, label ?? String(prediction.get(i)), false);
   }
-  // A text column's raw data are the indexes of its categories; the empty category is the missing value.
-  const indexes = target.getRawData();
-  const positive = target.categories.indexOf(positiveClass);
-  const empty = target.categories.indexOf('');
-  const values = Float32Array.from({length: target.length},
-    (_, i) => indexes[i] === empty ? DG.FLOAT_NULL : indexes[i] === positive ? 1 : 0);
-  return DG.Column.fromFloat32Array(target.name, values);
+  labels.compact();
+  return labels;
+}
+
+/** The class of the largest probability of row [i] (ties: the first); undefined when the row has none. */
+function mostProbableClass(probabilities: ClassProbabilities, i: number): string | undefined {
+  let best: string | undefined;
+  let max = -Infinity;
+  for (const [k, col] of probabilities.columns.entries()) {
+    if (!col.isNone(i) && col.getNumber(i) > max) {
+      max = col.getNumber(i);
+      best = probabilities.classes[k];
+    }
+  }
+  return best;
 }
 
 /** Every text or yes/no column replaced by one 0/1 column `<column>=<category>` per category, after the other columns:

@@ -26,11 +26,11 @@ export const PANEL_TEXTS: {[key in PanelText]: [title: string, tooltip: string]}
   classifierVsActual: ['Predicted <name> vs Actual',
     'The rows by two features, colored by the actual class; a cross marks a wrong prediction.'],
   rocCurve: ['ROC Curve', 'Recall (sensitivity) against the false positive rate (1 − specificity) at every cutoff of ' +
-    'the positive class\'s probability (or score); with Predict probability the circle is the current Positive ' +
-    'class cutoff. The AUC is the one of Performance.'],
+    'the positive class\'s probability (or score); with Predict probability the circle is the current ' +
+    'Classification threshold. The AUC is the one of Performance.'],
   prCurve: ['PR Curve', 'Precision against recall at every cutoff of the positive class\'s probability (or score); ' +
     'the dashed line is the positive class\'s share of the rows (a model that guesses); with Predict probability ' +
-    'the circle is the current Positive class cutoff. The AP (average precision) is the one of Performance.'],
+    'the circle is the current Classification threshold. The AP (average precision) is the one of Performance.'],
   perClass: ['Per-class', 'Each class against the rest: precision, recall (sensitivity), F1 and, with class ' +
     'probabilities, AUC-ROC, one line per class in the class\'s color.'],
   metrics: ['Performance', 'How well the model predicts, on the training rows and in validation.'],
@@ -66,15 +66,15 @@ export interface ResultsData {
   target: DG.Column;
   /** The labels or values of the kept rows: Forge's own column, renamed here. */
   prediction: DG.Column;
-  /** Predict probability: the method's scores, Forge's own column. */
+  /** A model of the former regression step (`binary-classification`): the method's scores, Forge's own column. */
   score?: DG.Column;
   /** The positive class's ROC and PR curves (two classes with a probability or score), from EDA's report. */
   curves?: Curves;
   /** The table's rows the data holds; null for all of them. */
   keptRows: DG.BitSet | null;
   positiveClass?: string;
-  /** Predict probability: the **Positive class cutoff** the scores are cut at. */
-  cutoff?: number;
+  /** Predict probability: the **Classification threshold** the labels are cut at. */
+  threshold?: number;
   blob: Uint8Array;
   /** The metrics grid's content. */
   summary: MetricsSummary;
@@ -126,7 +126,7 @@ export interface Shown {
 }
 
 /** A curve's panel: Forge's own frame of the curve's points, the viewer, the panel's title text and the frame's row
- * marked as the cutoff (-1: none). */
+ * marked as the threshold (-1: none). */
 interface CurvePanel { curve: Curve; frame: DG.DataFrame; viewer: DG.Viewer; title: HTMLElement; marked: number }
 
 interface PerClassPanel { frame: DG.DataFrame; labels: string[]; axes: PerClassAxis[] }
@@ -310,10 +310,10 @@ function isSamePrefix(a: ArrayLike<number | string>, b: ArrayLike<number | strin
 }
 
 /** The model's columns of [shown] take the values of [data]: the prediction, the scores (unless the same, as after a
- * cutoff change), the curves (unless the same object, as after a cutoff change), the marks, the per-class values, the
- * regression frames. False, with nothing changed, when a new column cannot be written into the old one, **Per-class**
- * comes or goes, or its classes or axes differ. */
-function refill(shown: Shown, {prediction, score, curves, cutoff, summary}: ResultsData): boolean {
+ * threshold change), the curves (unless the same object, as after a threshold change), the marks, the per-class values,
+ * the regression frames. False, with nothing changed, when a new column cannot be written into the old one,
+ * **Per-class** comes or goes, or its classes or axes differ. */
+function refill(shown: Shown, {prediction, score, curves, threshold, summary}: ResultsData): boolean {
   const shownScore = shown.score;
   const hasScores = shownScore !== undefined && score !== undefined;
   if (!canCopy(shown.prediction, prediction) || (hasScores && !canCopy(shownScore, score)))
@@ -329,7 +329,7 @@ function refill(shown: Shown, {prediction, score, curves, cutoff, summary}: Resu
   if (hasScores && !isSameColumn(shownScore, score))
     copyValues(shownScore, score);
   if (curves !== undefined && curves !== shown.curves)
-    replaceCurves(shown, curves, cutoff);
+    replaceCurves(shown, curves, threshold);
   const {target, marks, distributions, statistics} = shown;
   if (shown.kind === 'regression') {
     copyValues(marks, residualsOf(target, shown.prediction));
@@ -392,9 +392,9 @@ function addViewer(shown: Shown, key: PanelKey & PanelText, viewer: DG.Viewer, n
  * columns), **Confusions** (fewer than ten classes), **Class balance** (the target's classes over the kept rows, each
  * its own color), **Per-class** (three or more classes; {@link perClassPanel}). **Wrong predictions** follows the
  * prediction ({@link updateWrongPredictions}). */
-function classifierPanels(shown: Shown, {summary, cutoff}: ResultsData): void {
+function classifierPanels(shown: Shown, {summary, threshold}: ResultsData): void {
   const {frame, panels, columns, target, prediction, marks} = shown;
-  curvePanels(shown, cutoff);
+  curvePanels(shown, threshold);
   const numerical = columns.filter((c) => c.matches(NUMERICAL));
   if (numerical.length >= 2) {
     panels.set('predictedVsActual', resultsPanel('classifierVsActual', DG.Viewer.scatterPlot(frame,
@@ -418,7 +418,7 @@ const PRECISION = METRIC_LABELS.precision;
 const THRESHOLD = 'Threshold';
 const MARK = 'Mark';
 const POINT = 'point';
-const CUTOFF = 'cutoff';
+const THRESHOLD_MARK = 'cutoff';
 const MARK_SIZE = 8;
 const BASELINE = 'Non-informative baseline';
 
@@ -431,7 +431,7 @@ interface Curve {
   /** The thresholds, x and y of the points. */
   points: (curves: Curves) => [Float32Array, Float32Array, Float32Array];
   baseline: (y: Float32Array) => string;
-  /** The thresholds decrease: the cutoff's row is searched from the end. */
+  /** The thresholds decrease: the threshold's row is searched from the end. */
   fromEnd: boolean;
   value: 'auc' | 'averagePrecision';
   valueName: string;
@@ -453,22 +453,23 @@ function curveAxes(curve: Curve): {[name: string]: string} {
 }
 
 /** [curve]'s frame of [curves]: `Threshold`, x, y and `Mark` - a one-pixel dot per point, a circle at the row
- * [cutoff] labels ([marked], -1 for none; {@link markCurves} moves it) - with the dashed non-informative baseline. */
-function curveFrame(curve: Curve, curves: Curves, cutoff: number | undefined):
+ * [threshold] labels ([marked], -1 for none; {@link markCurves} moves it) - with the dashed non-informative
+ * baseline. */
+function curveFrame(curve: Curve, curves: Curves, threshold: number | undefined):
   {frame: DG.DataFrame; marked: number} {
-  const [threshold, x, y] = curve.points(curves);
-  const marked = thresholdRow(threshold, cutoff, curve.fromEnd);
-  const mark = textColumn(MARK, Array.from({length: x.length}, (_, i) => i === marked ? CUTOFF : POINT));
-  mark.meta.markers.setAll({[POINT]: DG.MARKER_TYPE.DOT, [CUTOFF]: DG.MARKER_TYPE.CIRCLE});
-  const frame = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(THRESHOLD, threshold),
+  const [thresholds, x, y] = curve.points(curves);
+  const marked = thresholdRow(thresholds, threshold, curve.fromEnd);
+  const mark = textColumn(MARK, Array.from({length: x.length}, (_, i) => i === marked ? THRESHOLD_MARK : POINT));
+  mark.meta.markers.setAll({[POINT]: DG.MARKER_TYPE.DOT, [THRESHOLD_MARK]: DG.MARKER_TYPE.CIRCLE});
+  const frame = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(THRESHOLD, thresholds),
     DG.Column.fromFloat32Array(curve.x, x), DG.Column.fromFloat32Array(curve.y, y), mark]);
   frame.meta.formulaLines.addLine({title: BASELINE, formula: curve.baseline(y), width: 1, style: 'dashed', min: 0,
     max: 1});
   return {frame, marked};
 }
 
-function curvePanel(shown: Shown, curve: Curve, curves: Curves, cutoff: number | undefined): CurvePanel {
-  const {frame, marked} = curveFrame(curve, curves, cutoff);
+function curvePanel(shown: Shown, curve: Curve, curves: Curves, threshold: number | undefined): CurvePanel {
+  const {frame, marked} = curveFrame(curve, curves, threshold);
   const viewer = DG.Viewer.scatterPlot(frame, {...curveAxes(curve), linesWidth: 3, markerDefaultSize: MARK_SIZE,
     showCurrentPoint: true, legendVisibility: 'Never', showXAxis: true, showYAxis: true, autoLayout: false,
     showXSelector: true, showYSelector: true, showSizeSelector: false, showColorSelector: false});
@@ -479,19 +480,20 @@ function curvePanel(shown: Shown, curve: Curve, curves: Curves, cutoff: number |
 }
 
 /** **ROC Curve** and **PR Curve** of [shown]'s curves (two classes): scatter plots over Forge's own frames of the
- * curves' points (one per distinct probability, as Crux computes them), drawn as lines in threshold order, [cutoff]
- * circled. A retrain replaces the frames ({@link replaceCurves}), a cutoff moves their marks ({@link markCurves}). */
-function curvePanels(shown: Shown, cutoff: number | undefined): void {
+ * curves' points (one per distinct probability, as Crux computes them), drawn as lines in threshold order, [threshold]
+ * circled. A retrain replaces the frames ({@link replaceCurves}), a threshold change moves their marks
+ * ({@link markCurves}). */
+function curvePanels(shown: Shown, threshold: number | undefined): void {
   const {curves} = shown;
   if (curves === undefined || shown.kind !== 'binary')
     return;
-  shown.curvePanels = CURVES.map((curve) => curvePanel(shown, curve, curves, cutoff));
+  shown.curvePanels = CURVES.map((curve) => curvePanel(shown, curve, curves, threshold));
 }
 
-/** The curve viewers of [shown] take new frames of [curves], [cutoff] circled. */
-function replaceCurves(shown: Shown, curves: Curves, cutoff: number | undefined): void {
+/** The curve viewers of [shown] take new frames of [curves], [threshold] circled. */
+function replaceCurves(shown: Shown, curves: Curves, threshold: number | undefined): void {
   for (const panel of shown.curvePanels) {
-    const {frame, marked} = curveFrame(panel.curve, curves, cutoff);
+    const {frame, marked} = curveFrame(panel.curve, curves, threshold);
     panel.viewer.dataFrame = frame;
     panel.frame = frame;
     panel.marked = marked;
@@ -500,25 +502,25 @@ function replaceCurves(shown: Shown, curves: Curves, cutoff: number | undefined)
   shown.curves = curves;
 }
 
-/** The index of the threshold of [thresholds] that [cutoff] labels, from the start ([fromEnd] false) or the end; -1
+/** The index of the threshold of [thresholds] that [threshold] labels, from the start ([fromEnd] false) or the end; -1
  * for none. */
-function thresholdRow(thresholds: ArrayLike<number>, cutoff: number | undefined, fromEnd: boolean): number {
-  if (cutoff === undefined)
+function thresholdRow(thresholds: ArrayLike<number>, threshold: number | undefined, fromEnd: boolean): number {
+  if (threshold === undefined)
     return -1;
   const n = thresholds.length;
   for (let k = 0; k < n; k++) {
     const i = fromEnd ? n - 1 - k : k;
-    if (thresholds[i] >= cutoff)
+    if (thresholds[i] >= threshold)
       return i;
   }
   return -1;
 }
 
 /** **ROC Curve**'s and **PR Curve**'s titles with the AUC-ROC and the average precision of the shown scores (the
- * values of **Performance**), and the cutoff's point as each curve's current row and its `circle` marker (the other
- * points are dots; a row is positive when its score is at least the cutoff: the ROC's thresholds decrease, the PR's
+ * values of **Performance**), and the threshold's point as each curve's current row and its `circle` marker (the other
+ * points are dots; a row is positive when its score is at least the threshold: the ROC's thresholds decrease, the PR's
  * increase); each set only when it changes. */
-export function markCurves({curves, curvePanels}: Shown, {summary, cutoff}: ResultsData): void {
+export function markCurves({curves, curvePanels}: Shown, {summary, threshold}: ResultsData): void {
   if (curves === undefined)
     return;
   for (const panel of curvePanels) {
@@ -527,13 +529,13 @@ export function markCurves({curves, curvePanels}: Shown, {summary, cutoff}: Resu
     const text = `${PANEL_TEXTS[curve.key][0]}${titleValue(curve.valueName, value)}`;
     if (title.textContent !== text)
       title.textContent = text;
-    const row = thresholdRow(curve.points(curves)[0], cutoff, curve.fromEnd);
+    const row = thresholdRow(curve.points(curves)[0], threshold, curve.fromEnd);
     if (panel.marked !== row) {
       const mark = frame.getCol(MARK);
       if (panel.marked >= 0)
         mark.set(panel.marked, POINT, false);
       if (row >= 0)
-        mark.set(row, CUTOFF, false);
+        mark.set(row, THRESHOLD_MARK, false);
       mark.fireValuesChanged();
       panel.marked = row;
     }

@@ -114,11 +114,15 @@ Returns one object with what the model's **Details**, **Performance** and **Acti
 
 The metric keys inside `train`, `validation` and `evaluation`: `mse`, `rmse`, `mae`, `r2` (regression), `accuracy`,
 `f1` (classification), `sensitivity`, `specificity`, `precision`, `npv` (two classes), `auc` (classifiers whose
-method returns probabilities, and Predict probability; with more than two classes, the average over the classes of
-the one-vs-rest AUCs), `balancedAccuracy` (the average over the classes of the share of each class predicted
-correctly), `mcc` (Matthews correlation, -1 to 1), `averagePrecision` (the area under the precision-recall curve; as
-`auc`, only with probabilities). `auc` (when the report exists), `averagePrecision` and `classes` come from Crux
-through the EDA package's `classificationReport`.
+method returns probabilities; with more than two classes, the average over the classes of the one-vs-rest AUCs),
+`balancedAccuracy` (the average over the classes of the share of each class predicted correctly), `mcc` (Matthews
+correlation, -1 to 1), `averagePrecision` (the area under the precision-recall curve; as `auc`, only with
+probabilities), `logLoss` (the average of -ln(probability of the actual class): 0 is perfect, lower is better) and
+`brier` (the mean squared difference between the class probabilities and the actual class: 0 is perfect, lower is
+better), both computed by Forge, only with probabilities. `auc` (when the report exists), `averagePrecision` and
+`classes` come from Crux through the EDA package's `classificationReport`. A model saved with the former regression
+mode of Predict probability (before schema 0.1.20) has `auc` and `averagePrecision` of its scores and no `logLoss`
+or `brier`.
 
 Errors (every function with `model`): `No Forge model 'X' is available to you.`,
 `Several models are named 'X'. Use the model id.`
@@ -149,15 +153,16 @@ Trains as the Predictive model view does, with its defaults (5-fold cross-valida
   | `neighbors`, `distance` | the EDA imputer's (`4`, `Euclidean`) | the settings of `impute` |
   | `oneHot` | on when every text or yes/no feature has at most 20 categories (while `skipUniqueCategories` is on, features whose values are all different do not count) | One-hot encoding of text and yes/no features |
   | `skipUniqueCategories` | `true` | leaves out text features whose values are all different |
-  | `predictProbability` | `false` | for a target with exactly two classes: trains on the probability of the first class. Predict probability is off during a search: with `search` it is ignored, and the search and the model learn the plain target |
-  | `cutoff` | `0.5` | the probability from which a row is predicted as the first class |
+  | `predictProbability` | `false` | for a text or boolean target: the saved model adds the class probabilities when applied, and the labels come from them (for two classes, at `threshold`; for more, the most probable class). It stays on with `search` (the trials score those labels) and sets SVM's `probability` setting (which `hyperparameters` cannot set) |
+  | `threshold` | optimized | two classes with `predictProbability`: the probability of the first class from which a row is predicted as it. Without it, the value that maximizes `thresholdMetric` on the validation rows (after a search, on the winner's), stored with the model as `thresholdMetric`; `0.5` when there is none (the validation rows hold one class). A given `threshold` is used as it is and no metric is stored. `cutoff` is accepted as its old name; `threshold` wins when both are given |
+  | `thresholdMetric` | `f1` | the metric the threshold is optimized for: `f1`, `balancedAccuracy`, `mcc` or `accuracy`; ignored when `threshold` (or `cutoff`) is given |
   | `scheme` | `kfold` | how Validation is measured: `kfold` (cross-validation) or `holdout` (one held out part, then the final model on all rows) |
   | `folds` | `5` | `kfold`: the number of cross-validation parts, at least 2 |
   | `testFraction` | `0.2` | `holdout`: the share of the rows held out, from 0.05 to 0.5 |
   | `stratified` | `true` | each class keeps its share in every part or in the hold out; ignored for a regression |
   | `shuffle` | `true` | shuffles the rows by `seed` before the split; `false`: blocks of consecutive rows, or the last rows held out |
   | `seed` | `42` | the split seed, a whole number from 0 to 2147483647 (with `search`, also of the search's hold out and of the trials' settings) |
-  | `search` | none | `{metric, budgetSeconds, maxTrials}`, each key optional: tunes the method's settings first (a seeded random search of the space the method declares, validated as the options above say on a split every trial shares; with 500 rows or more a fifth, rounded and kept between 100 and 2000 rows, stratified for a classifier, is held out first), then trains the chosen ones. `metric`: `r2` (regression default), `rmse`, `mae`, `balancedAccuracy` (classifier default), `accuracy`, `f1`, `mcc`, `auc`; `budgetSeconds`: a whole number, at least 1 (default `60`); `maxTrials`: stops after that many completed trials |
+  | `search` | none | `{metric, budgetSeconds, maxTrials}`, each key optional: tunes the method's settings first (a seeded random search of the space the method declares, validated as the options above say on a split every trial shares; with 500 rows or more a fifth, rounded and kept between 100 and 2000 rows, stratified for a classifier, is held out first), then trains the chosen ones. `metric`: `r2` (regression default), `rmse`, `mae`, `balancedAccuracy` (classifier default), `accuracy`, `f1`, `mcc`, `auc`, `logLoss`, `brier` (these two minimized; `auc`, `logLoss` and `brier` need class probabilities); `budgetSeconds`: a whole number, at least 1 (default `60`); `maxTrials`: stops after that many completed trials |
 
 - `name`: saves the model under this name; without a name the model is trained and measured but not saved.
   `description` and `tags` (comma-separated) go with it
@@ -170,8 +175,9 @@ Trains as the Predictive model view does, with its defaults (5-fold cross-valida
 
 Returns `modelId` (null when not saved), `runId`, `name`, `method`, `task`, `target`, `features`, `rowCount` (the
 rows trained on; after a search with a hold out, without the held out rows), `skippedRows`, `seed`, `metrics`
-(`train`, `validation`, `test` (after a search with a hold out: the final model on the held out rows), for two classes
-`positiveClass` and, for a classifier, `classes`) and, after a search, `search`: `mode` (`tune`), `metric`,
+(`train`, `validation`, `test` (after a search with a hold out: the final model on the held out rows), each with the
+metric keys above (`logLoss` and `brier` for a method with class probabilities), for two classes `positiveClass` and,
+for a classifier, `classes`) and, after a search, `search`: `mode` (`tune`), `metric`,
 `budgetSeconds`, `seed`, `trials`, `completed`, `pruned`, `failed`, `elapsedMs`, `stopped` (`budget`, `cancelled`,
 `exhausted`, `trials`, `failed`: 10 trials failed and none completed), `holdOut` (`rows`, `fraction`; absent below
 500 rows), `space` (`searched`: the dimensions searched, `pinned`: the settings kept at their values, none from the
@@ -185,19 +191,25 @@ Errors, for example:
 - `No method 'Boost' is installed. The methods are: <methods>.`
 - `The method XGBoost has no setting 'speed'. Its settings are: <settings>.`,
   `The setting 'rate' of Softmax needs a number.`, `The setting 'iterations' of XGBoost must be at most 100.`
-- `Unknown option 'cutof'. The options are: missingValues, neighbors, distance, oneHot, skipUniqueCategories, predictProbability, cutoff, seed, scheme, folds, testFraction, stratified, shuffle, search.`
+- `Unknown option 'cutof'. The options are: missingValues, neighbors, distance, oneHot, skipUniqueCategories, predictProbability, threshold, thresholdMetric, seed, scheme, folds, testFraction, stratified, shuffle, search.`
+- `The option 'thresholdMetric' needs one of: f1, balancedAccuracy, mcc, accuracy.`
 - `The option 'scheme' needs kfold or holdout.`, `The option 'testFraction' needs a number from 0.05 to 0.5.`,
   `The option 'shuffle' needs true or false.`
 - `The option 'search' needs an object with metric, budgetSeconds, maxTrials.`,
-  `The search metric 'r3' is not one of: r2, rmse, mae, balancedAccuracy, accuracy, f1, mcc, auc.`,
-  `The search metric 'r2' does not apply to a classification. Choose one of: balancedAccuracy, accuracy, f1, mcc, auc.`,
+  `The search metric 'r3' is not one of: r2, rmse, mae, balancedAccuracy, accuracy, f1, mcc, auc, logLoss, brier.`,
+  `The search metric 'r2' does not apply to a classification. Choose one of: balancedAccuracy, accuracy, f1, mcc, auc,
+  logLoss, brier.`,
   `The option 'budgetSeconds' needs a whole number of at least 1.`
 - `Naive Bayes declares no search space, so it cannot be tuned.`,
   `No trial completed within the budget. Give the search more time.`,
   `No trial completed: <the first failed trial's error>` (e.g. `No trial completed: The metric AUC-ROC needs class
   probabilities; SVM gives none.`),
   `The search was cancelled before a trial completed.`
-- `Predict probability needs a target with exactly two classes.`
+- `Predict probability needs a text or boolean target.`,
+  `Chemprop gives no class probabilities, so Predict probability cannot be used with it.`,
+  `Enter a number from 0 to 1.` (a two-class `threshold` outside 0..1),
+  `The method SVM has no setting 'probability'. Its settings are: kernel, cost, gamma, degree, coef0, epsilon.`
+  (`predictProbability` sets it)
 - `The option 'missingValues' needs skip, impute, keep (keep: only for a method that handles missing values).`,
   `SVM needs rows without missing values. Choose Skip rows or Impute.`
 - `Enter a name for the model.`,
@@ -211,7 +223,10 @@ Forge:applyModel(model: string, table: dataframe, columnNamesMap?: map, showProg
 ```
 
 Adds the prediction column `<target> (predicted)` (`<target> (predicted 2)` and so on when the name is taken) to
-`table` and returns the table. Features are matched to columns of the same name (ignoring case); `columnNamesMap`
+`table` and returns the table; a model saved with Predict probability also adds, right after it, its probability
+columns `P(<target> = <class>)` (`P(<target> = <class>) 2` and so on when taken; two classes: the positive class's
+only; more: one per class), tagged as the prediction column and described `Probability that <target> is <class>,
+predicted by <model name>` (the header tooltip); a model saved without it adds none. Features are matched to columns of the same name (ignoring case); `columnNamesMap`
 maps the others (`{'Sepal.Length': 'sepal length'}`, model feature name -> table column name), including the
 columns of a close name that `applicableTo` and `listModels` count as fitting. Missing values are handled as at
 training: a model trained with Skip rows gives the rows with empty cells no prediction, one trained with Impute fills

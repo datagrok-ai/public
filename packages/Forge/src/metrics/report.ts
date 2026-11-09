@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {ModelTask} from '../generated/db';
 import {onFrame} from '../preparation/shared-frame';
-import {CLASS_METRIC_IDS, ClassMetrics, classesOf, ClassProbabilities, ClassValues, Curves, MetricValues, metricsOf}
-  from './metrics';
+import {aucOf, aucOfProbabilities, CLASS_METRIC_IDS, ClassMetrics, classesOf, ClassProbabilities, ClassValues, Curves,
+  MetricValues, metricsOf, probabilityMetrics} from './metrics';
 
 /** Mirrors `ClassReport` of EDA's `src/crux/crux-metrics.ts`: one class against the rest. */
 export interface ClassReport {
@@ -61,27 +61,33 @@ export async function classificationReport(actual: DG.Column, predicted: DG.Colu
 
 export interface Measured { values: MetricValues; report?: ClassificationReport }
 
-/** The metrics of the class probabilities (or scores), which no cutoff changes. */
-export const SCORE_METRIC_IDS = ['auc', 'averagePrecision'] as const;
+/** The metrics of the class probabilities (or scores), which no threshold changes. */
+export const SCORE_METRIC_IDS = ['auc', 'averagePrecision', 'logLoss', 'brier'] as const;
 
-/** The metrics of [predicted] ({@link metricsOf}); for a classifier with the report, AUC-ROC and average precision
- * are the report's (with [probabilities]), and the report itself gives the per-class values and the curves. Without
- * the report, AUC-ROC is {@link metricsOf}'s. */
+/** The metrics of [predicted] ({@link metricsOf}) and, with [probabilities], log loss and Brier
+ * ({@link probabilityMetrics}); for a classifier with the report, AUC-ROC and average precision are the report's (with
+ * [probabilities], or the positive class's [score] of a model of the former regression step), and the report itself
+ * gives the per-class values and the curves. Without the report, AUC-ROC is {@link aucOfProbabilities}' (or
+ * {@link aucOf} of the [score]). */
 export async function measure(task: ModelTask, actual: DG.Column, predicted: DG.Column, positiveClass?: string,
-  probabilities?: ClassProbabilities, curves = false): Promise<Measured> {
+  probabilities?: ClassProbabilities, curves = false, score?: DG.Column): Promise<Measured> {
   if (task === 'regression')
     return {values: metricsOf(task, actual, predicted)};
-  const report = await classificationReport(actual, predicted, positiveClass ?? classesOf(actual)[0], probabilities,
-    curves);
-  if (report === undefined)
-    return {values: metricsOf(task, actual, predicted, positiveClass, probabilities)};
-  const values = metricsOf(task, actual, predicted, positiveClass);
-  for (const id of SCORE_METRIC_IDS) {
-    const v = report[id];
+  const positive = positiveClass ?? classesOf(actual)[0];
+  // The report takes a score as the positive class's only probability.
+  const scores = score === undefined ? probabilities : {classes: [positive], columns: [score]};
+  const report = await classificationReport(actual, predicted, positive, scores, curves);
+  const auc = report !== undefined ? undefined : score !== undefined ? aucOf(actual, score, positive) :
+    probabilities === undefined ? undefined : aucOfProbabilities(actual, probabilities, positiveClass);
+  const values: MetricValues = {...metricsOf(task, actual, predicted, positiveClass),
+    ...(auc === undefined ? {} : {auc}),
+    ...(probabilities === undefined ? {} : probabilityMetrics(actual, probabilities, positiveClass))};
+  for (const id of ['auc', 'averagePrecision'] as const) {
+    const v = report?.[id];
     if (v !== undefined)
       values[id] = v;
   }
-  return {values, report};
+  return report === undefined ? {values} : {values, report};
 }
 
 function classMetricValues(c: ClassReport): MetricValues {

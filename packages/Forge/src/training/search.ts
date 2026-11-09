@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import {defaultHyperparameters, enabledRules, EnabledRules, Engine, Hyperparameters, hyperparametersOf, isChoice,
-  isEnabled, isParallel, searchSpaceText} from '../engines/engine';
+import {defaultHyperparameters, enabledRules, EnabledRules, Engine, Hyperparameters, isChoice, isEnabled, isParallel,
+  searchSpaceText, visibleHyperparametersOf} from '../engines/engine';
 import {LoopProgress} from '../engines/engine-calls';
 import {ForgeError} from '../forge-error';
 import {ModelTask} from '../generated/db';
@@ -94,8 +94,8 @@ export interface SearchExecutor {
 
 export const SEARCH_CAPTIONS: Record<SearchMode, string> = {tune: 'Tune', best: 'Find best model'};
 export const SEARCH_METRICS: Record<ModelTask, MetricId[]> = {regression: ['r2', 'rmse', 'mae'],
-  classification: ['balancedAccuracy', 'accuracy', 'f1', 'mcc', 'auc']};
-const METRIC_DIRECTIONS: Partial<Record<MetricId, -1>> = {mse: -1, rmse: -1, mae: -1};
+  classification: ['balancedAccuracy', 'accuracy', 'f1', 'mcc', 'auc', 'logLoss', 'brier']};
+const METRIC_DIRECTIONS: Partial<Record<MetricId, -1>> = {mse: -1, rmse: -1, mae: -1, logLoss: -1, brier: -1};
 export const BUDGETS_SECONDS = [60, 300, 900];
 export const DEFAULT_BUDGET_SECONDS = 60;
 const TOP_K = 3;
@@ -127,8 +127,8 @@ export function defaultMetric(task: ModelTask): MetricId {
  * numbers low < high (log needs low > 0, an int log low >= 1), bounds inside the input's min / max when declared, a
  * categorical with choices inside the input's when declared, `simpler` as allowed; the ml.tune shorthands ([low, high]
  * -> int when both whole else float; a list -> categorical). Undefined without a space; a malformed one throws.
- * [properties] are the engine's hyperparameters, read from it unless given. */
-export function searchSpaceOf(engine: Engine, properties: DG.Property[] = hyperparametersOf(engine)):
+ * [properties] are the engine's visible hyperparameters, read from it unless given. */
+export function searchSpaceOf(engine: Engine, properties: DG.Property[] = visibleHyperparametersOf(engine)):
   SearchSpace | undefined {
   const text = searchSpaceText(engine);
   if (text === undefined)

@@ -5,7 +5,8 @@ import {defaultHyperparameters, enabledRules, Engine, Hyperparameters, hyperpara
   from '../engines/engine';
 import {LoopProgress} from '../engines/engine-calls';
 import {ForgeError} from '../forge-error';
-import {MetricId} from '../metrics/metrics';
+import {MetricId, metricsOf} from '../metrics/metrics';
+import {replayPostprocessing} from '../preparation/pipeline';
 import {browserSearch} from '../training/browser-search';
 import {DEFAULT_VALIDATION, mulberry32, ValidationSettings} from '../training/k-fold';
 import {fnv1a, FNV_OFFSET} from '../storage/dataset-fingerprint';
@@ -14,7 +15,8 @@ import {chooseLeader, drawnPoints, FLOAT_DIGITS, FROM_BELOW_TO, holdOutSplit, is
   searchPlanOf, SearchRecord, searchRecordFrom, searchRecordOf, SearchSpace, searchSpaceOf, Trial, trialPoints,
   tuneCandidate, userSpace} from '../training/search';
 import {TrainingRequest, trainModel} from '../training/train-model';
-import {columnsOf, edaEngine, IRIS, MEASUREMENTS, NO_PREPARATION_STEPS, requestOf, svm, xgboost} from './test-data';
+import {columnsOf, edaEngine, IRIS, MEASUREMENTS, NO_PREPARATION_STEPS, PREDICT_PROBABILITY, requestOf, svm,
+  twoSpeciesIris, xgboost} from './test-data';
 
 const TIMEOUT = 120000;
 const XGBOOST_SPACE = ['iterations int 10 100', 'eta float 0.03 0.5', 'maxDepth int 1 10', 'lambda float 0.1 10',
@@ -305,6 +307,54 @@ category('Search', () => {
     const wrong = outcome.trials.filter((t) => t.state !== 'failed' || !t.error?.includes('needs class probabilities'));
     expectArray(wrong.map((t) => `${t.state} ${t.error}`), []);
     expect(chosen === undefined, true, 'A leader was chosen');
+  }, {timeout: TIMEOUT});
+
+  test('A log loss search minimizes', async () => {
+    const plan = await irisPlan('logLoss', 1, 6, xgboost());
+    expect(plan.direction, -1);
+    const {outcome, leaders, chosen} = await runSearch(plan, NO_PROGRESS, browserSearch);
+    const complete = states(outcome.trials, 'complete');
+    expect(complete.length > 0, true, 'No complete trial');
+    expectArray(complete.filter((t) => !(t.score! > 0)).map((t) => t.score), []);
+    expectArray(leaders.map((l) => l.score), [...leaders.map((l) => l.score)].sort((a, b) => a - b));
+    const best = complete.reduce((a, b) => b.score! < a.score! ? b : a);
+    const n = best.foldScores.length;
+    const mean = best.foldScores.reduce((sum, s) => sum + s, 0) / n;
+    const se = Math.sqrt(best.foldScores.reduce((sum, s) => sum + (s - mean) ** 2, 0) / (n - 1) / n);
+    if (chosen === undefined)
+      throw new Error('Nothing chosen');
+    expect(chosen.score >= best.score! && chosen.score <= best.score! + se + 1e-12, true,
+      `chosen ${chosen.score}, the lowest ${best.score} with SE ${se}`);
+  }, {timeout: TIMEOUT});
+
+  test('A brier search of SVM fails its trials', async () => {
+    const plan = await irisPlan('brier', 1, 2, svm());
+    const {outcome, chosen} = await runSearch(plan, NO_PROGRESS, browserSearch);
+    expect(outcome.trials.length >= 1, true, 'No trial');
+    const wrong = outcome.trials.filter((t) => t.state !== 'failed' || !t.error?.includes('needs class probabilities'));
+    expectArray(wrong.map((t) => `${t.state} ${t.error}`), []);
+    expect(chosen === undefined, true, 'A leader was chosen');
+  }, {timeout: TIMEOUT});
+
+  test('The trials score the labels the step gives', async () => {
+    const iris = await twoSpeciesIris();
+    const species = iris.getCol('Species');
+    const seed = 3;
+    const request = {...await requestOf(columnsOf(iris, MEASUREMENTS), species,
+      {...PREDICT_PROBABILITY, threshold: 0.9}, xgboost()), seed};
+    const {options} = request.prepared;
+    expect(options.binaryClassificationThreshold, 0.9);
+    const {search} = holdOutSplit(request, seed);
+    const plan = searchPlanOf('tune', search, [tuneCandidate(xgboost(), request.hyperparameters)],
+      {metric: 'accuracy', budgetSeconds: 600, maxTrials: 1}, seed);
+    const {outcome} = await runSearch(plan, NO_PROGRESS, browserSearch);
+    const [trial] = states(outcome.trials, 'complete');
+    if (trial === undefined)
+      throw new Error(`No complete trial: ${outcome.trials.map((t) => t.error).join('; ')}`);
+    const result = await trainModel({...request, hyperparameters: trial.hyperparameters});
+    const {prediction, probabilities} = result.outOfFold;
+    const labels = replayPostprocessing(prediction, options, probabilities);
+    expectFloat(trial.score!, metricsOf('classification', species, labels, 'versicolor').accuracy ?? NaN, 1e-9);
   }, {timeout: TIMEOUT});
 
   test('A search where every trial fails stops after 10 failures', async () => {

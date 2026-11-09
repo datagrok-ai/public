@@ -77,7 +77,9 @@ rows)`; `, stratified` after it when the split was), `Split seed: <seed>` (only 
 can be selected, and the copy icon right after it, **Copy the seed**, copies it), after a search `Search: Tune by <metric>,
 <budget>: <N> trials of 1 method, chosen by the one-standard-error rule` with either `Test: <N> rows held out before
 the search` or, when nothing was held out, `Validation after a search is optimistic: the best of the trials was chosen
-on it`, and, for two classes, `Positive class: <class>`.
+on it`, for two classes, `Positive class: <class>`, and, with **Predict probability** on two classes,
+`Classification threshold: <t>` (`Classification threshold: <t>, the best F1 on the validation rows: its validation
+values are optimistic` while the threshold is the best value of the metric **Best threshold by** chose, see "Preparation").
 
 Hover a column header or a metric name to see what it means; hover a value to see it in full precision:
 
@@ -86,8 +88,7 @@ Hover a column header or a metric name to see what it means; hover a value to se
 | Regression | **MSE**, **RMSE** (mean squared error and its root; lower is better), **MAE** (mean absolute error; lower is better), **R2** (the share of the target's variation the model explains; 1 is perfect) |
 | Classification | **Accuracy** (the share of correct predictions), **F1** (balances precision and recall; for more than two classes, the average over the classes), **Balanced accuracy** (the average over the classes of the share of each class predicted correctly), **MCC** (Matthews correlation, -1 to 1) |
 | Two classes | also **Recall (Sensitivity)**, **Specificity**, **Precision**, **Negative Predictive Value**, computed for the positive class named under the table (the first class in alphabetical order) |
-| Classifier with class probabilities | **AUC-ROC** (the area under the ROC curve of the probabilities: 0.5 is a coin toss, 1 is perfect), for every classifier whose method returns class probabilities (all EDA classifiers but SVM): for two classes, of the positive class's probability; with more than two classes, the average over the classes of the one-vs-rest AUCs; **Average precision** (the area under the precision-recall curve of the positive class's probability; the average over the classes for more than two) |
-| Predict probability | the classification metrics of the labels the cutoff gives, and **AUC-ROC** (the area under the ROC curve of the probabilities: 0.5 is a coin toss, 1 is perfect) and **Average precision** of the scores |
+| Classifier with class probabilities | **AUC-ROC** (the area under the ROC curve of the probabilities: 0.5 is a coin toss, 1 is perfect), for every classifier whose method returns class probabilities (all EDA classifiers; SVM only with **Predict probability**): for two classes, of the positive class's probability; with more than two classes, the average over the classes of the one-vs-rest AUCs; **Average precision** (the area under the precision-recall curve of the positive class's probability; the average over the classes for more than two); **Log loss** (the average of -ln(probability of the actual class): 0 is perfect, lower is better; a confident wrong prediction costs most) and **Brier score** (the mean squared difference between the class probabilities and the actual class, 0 or 1: 0 is perfect, lower is better; 0.25 is guessing 0.5 for two classes; with more than two classes, summed over the classes), computed by Forge. With **Predict probability**, the label metrics are those of the labels the **Classification threshold** gives; the probability metrics do not depend on it |
 
 Average precision, the per-class values and the curves come from Crux (scikit-learn's metrics) through the EDA
 package's `classificationReport` function; without it, or when it fails, Forge shows the other metrics only.
@@ -146,15 +147,16 @@ The viewers:
   prediction minus the actual value, against the prediction), **Distributions of predicted and actual <target>** (a
   histogram in two colors, `TARGET` and `PREDICTION`), **Statistics** (a grid of the eleven summary statistics, `min`
   ... `q3`, of the actual and of the predicted values; hover a statistic for its meaning)
-* a classifier: **ROC Curve** (for a two-class classifier whose method returns class probabilities, and with
-  **Predict probability**: recall against the false positive rate at every distinct probability (or score) of the
-  positive class, drawn as a thin line (axes `FPR (1 − Specificity)` and `Recall (Sensitivity)`), the dashed
-  `Non-informative baseline` and, with **Predict probability** only, the current **Positive class cutoff** circled;
-  the title shows **AUC-ROC** as **Performance** does, `ROC Curve (AUC = 0.912)`: the area under the drawn
-  curve), **PR Curve** (the same two-class cases: precision against recall at every cutoff, axes
-  `Recall (Sensitivity)` and `Precision`; its dashed `Non-informative baseline` is the positive class's share
-  of the rows, the precision of a model that guesses; titled `PR Curve (AP = 0.812)` with **Average precision**, the
-  cutoff circled with **Predict probability**), **Per-class** (three or more classes: a parallel coordinates plot
+* a classifier: **ROC Curve** (for a two-class classifier whose method returns class probabilities: recall against
+  the false positive rate at every distinct probability of the positive class, drawn as a thin line (axes
+  `FPR (1 − Specificity)` and `Recall (Sensitivity)`), the dashed `Non-informative baseline` and, with **Predict
+  probability** only, the current **Classification threshold** circled; the title shows **AUC-ROC** as
+  **Performance** does, `ROC Curve (AUC = 0.912)`: the area under the drawn curve), **PR Curve** (the same two-class
+  cases: precision against recall at every cutoff of the probability, axes `Recall (Sensitivity)` and `Precision`; its
+  dashed `Non-informative baseline` is the positive class's share of the rows, the precision of a model that guesses;
+  titled `PR Curve (AP = 0.812)` with **Average precision**, the threshold circled with **Predict probability**), a
+  model saved with the former regression mode of **Predict probability** draws both from its scores in Run Evaluation,
+  **Per-class** (three or more classes: a parallel coordinates plot
   with one line per class in the class's color - the same colors as **Features** and **Class balance** - across
   **Precision**, **Recall**, **F1** and **AUC-ROC**, the validation values, the evaluation's in Run Evaluation; the
   legend of the classes is on top when it is short, not shown otherwise; no in-chart filters or color selector),
@@ -169,25 +171,32 @@ The viewers:
 
 The plots show your table's own columns, without copies: hover a point and the table's grid highlights its row, hover
 a row of the grid and the point lights up (rows skipped for missing values shift nothing). While **Table**,
-**Target**, **Features** and the rows used stay the same (a hyperparameter or **Method** change, a change of **Positive
-class cutoff**), a new result keeps the viewers, their zoom and the sizes you dragged, and only the predictions in them
-change; a panel that appears or goes (**Wrong predictions**, **Insights & Tips**, the method's own views) lays out again
-only the rows it changes (also row 3 when **Class balance** moves), at their starting sizes. Any other change builds
-the viewers again. A change of **Positive class cutoff** re-cuts the scores of the last training, without retraining:
-**ROC Curve** and **PR Curve** stay as they are and only their circles move, the panels of the labels change; a
-retrain redraws both curves in the same plots.
+**Target**, **Features** and the rows used stay the same (a hyperparameter or **Method** change, a change of **Predict
+probability** or **Classification threshold**), a new result keeps the viewers, their zoom and the sizes you dragged,
+and only the predictions in them change; a panel that appears or goes (**Wrong predictions**, **Insights & Tips**, the
+method's own views) lays out again only the rows it changes (also row 3 when **Class balance** moves), at their
+starting sizes. Any other change builds the viewers again. A change of **Predict probability** (for a method whose
+probabilities are not a setting) or of **Classification threshold** re-cuts the class probabilities of the last
+training, without retraining: **ROC Curve** and **PR Curve** stay as they are and only their circles move, the panels
+of the labels change; a retrain redraws both curves in the same plots.
 
 Under the rows (and **Wrong predictions**), the panel **Runs** (hover its title: `The trainings of this view, newest first; click one to set its
 inputs again.`) lists every training of this view that was not stopped by a change (completed, failed or
 cancelled), newest first, the newest one current: **#** (its number in this view), **Method**,
 **Target**, **Features** (how many; hover for the names), **Preparation** (`impute (4 neighbors, Euclidean)`,
-`one-hot`, `skip unique categories`, `probability (cutoff 0.5)`; empty when none), **Rows**, **Status** (`completed`,
+`one-hot`, `skip unique categories`, `probability (threshold 0.42, best F1)` for a completed
+two-class training with the threshold optimized for a metric, `probability (threshold 0.42)` for one edited by hand
+or a training that did not complete, `probability` for more classes; empty
+when none), **Rows**, **Status** (`completed`,
 `failed` or `cancelled`; hover a failed one for the error, a cancelled one reads `Stopped from the task bar.`),
 **Split seed** (empty when the rows were not shuffled), and the validation value of every metric any run has
 (`Accuracy (validation)`; hover for `Train 0.912, validation 0.845`). Click a row to set its target, features,
 preparation, validation (with the split seed), method and settings again when they differ from the form's. A click on a row whose inputs the form already has, while the results show that training, only makes
-it current; when only **Positive class cutoff** differs, the click sets the cutoff back and the results are re-cut
-without training; after a cancelled or failed training, a click on its row trains it again. The read-only grid moves
+it current; when only **Predict probability**, **Classification threshold** or **Best threshold by** differs, the click sets
+them back (an optimized threshold with its metric, a hand-edited one as edited) and the results are re-cut without
+training (for SVM, whose probabilities are a setting, **Predict probability** differs as
+that setting, so the click trains); after a cancelled or failed training, a click on its row trains it again. The
+**Method** tooltip lists the settings without that hidden one. The read-only grid moves
 nothing with the arrow keys. After a click that sets other inputs, the view
 then trains as after any change (a slow method waits for **Train**), and the new training becomes the first row. When
 the table no longer has a column of that run, a warning says `The table no longer has the columns of this run:
@@ -208,18 +217,20 @@ rows, the names light grey, the values a shade darker and right-aligned, no colo
   (**Metric**, **Train**, **Validation**, and **Test** after a search with a hold out), with three decimals;
   hovering a value shows it in full with what the column measures and, for a value **Performance** marks, the
   finding; hover a header or a metric for its meaning. The values are the ones recorded with the training: a later
-  move of **Positive class cutoff** re-cuts **Performance**, not the card.
+  change of **Predict probability** or **Classification threshold** re-cuts **Performance**, not the card.
 * **Settings**: first, in italics and aligned with the table's text, `Default`, `Customized` or `Auto-tuned` as
   **Settings** read when the training started (hover it for its meaning, followed by `Found by Tune: <n> trials` for
   a search's winner); then every setting of the method (**Setting**, **Value**) with its value as trained, the ones
-  the method ignored included (hover a row for its meaning; `No settings` for a method without any).
+  the method ignored included, but not SVM's **Class probabilities**, which **Predict probability** sets (hover a row
+  for its meaning; `No settings` for a method without any).
 
 The tabs switch together: a click on a tab of one card shows that tab on every card, and a new card opens on it.
 
 The "+" at the right of the current card's header (hover: `Pin to compare with other models`) pins the model: a light
 grey card of the same training appears right under the current card, above the cards pinned before, with a trash icon
 (`Remove from the comparison`) that removes it. While a pinned card has the current model's inputs (every input but
-**Positive class cutoff**), the current card shows no icon; removing that pinned card brings "+" back. Nothing limits the number of pinned cards. Click a pinned card (not its tab headers or its icon) to set
+**Predict probability**, **Classification threshold** and **Best threshold by**; for SVM, whose probabilities are a
+setting, **Predict probability** counts), the current card shows no icon; removing that pinned card brings "+" back. Nothing limits the number of pinned cards. Click a pinned card (not its tab headers or its icon) to set
 its inputs again, as a click on its **Runs** row does.
 
 The cards compare models of the same data: a card is shown only while **Target** and the **Validation** inputs (the
@@ -260,8 +271,9 @@ with a pin button at the right:
 * a setting the method ignores with the pinned values or the task (SVM: **Gamma** with **Kernel** pinned to Linear,
   **Epsilon** for a classifier) is disabled and not searched; one whose use depends on a tuned setting is searched
 * **Metric**: what the search maximizes (or minimizes for an error), measured by the validation the **Validation**
-  group sets: `Balanced accuracy` (the default), `Accuracy`, `F1`, `MCC`, `AUC-ROC` for a classifier (`AUC-ROC` needs
-  a method that returns class probabilities: with SVM every trial fails), `R2` (the default), `RMSE`, `MAE` for a
+  group sets: `Balanced accuracy` (the default), `Accuracy`, `F1`, `MCC`, `AUC-ROC`, `Log loss`, `Brier score`
+  (these two minimized) for a classifier (`AUC-ROC`, `Log loss` and `Brier score` need a method that returns class
+  probabilities: with SVM without **Predict probability** every trial fails), `R2` (the default), `RMSE`, `MAE` for a
   regression
 * **Budget**: `<N> trials or <time>`: the search stops after N completed trials (pruned and failed ones do not count;
   50 by default) or at the time limit (`1 minute`, the default, `5 minutes` or `15 minutes`), whichever comes first
@@ -279,8 +291,10 @@ to its default).
 **Tune** (its tooltip: `Find the best settings`) searches better values of the tuned settings on the current
 selection. It is disabled, with the reason as its tooltip, while the selection has a problem or is checked, while a
 training runs, while a range has a problem (`Fix the highlighted range`), when nothing is left to tune (`All
-settings are fixed`) and while the trial count is invalid (`Budget: Enter a whole number of trials, at least 1`). With **Predict probability** checked, its tooltip adds `Predict probability is off during a
-search.`: the search and the model it trains learn the plain target. **Missing values** stays as the form has it.
+settings are fixed`) and while the trial count is invalid (`Budget: Enter a whole number of trials, at least 1`).
+**Predict probability** stays as the form has it: the trials score the labels its threshold gives (for SVM, every
+trial fits with **Class probabilities**, about five times slower); the winner's training then optimizes the threshold
+for **Best threshold by** again, unless the threshold was edited by hand. **Missing values** stays as the form has it.
 
 Each trial is a regular training of the method with other settings, validated as the **Validation** group says (its
 folds, stratification, shuffle and split seed) on the same folds for every trial; with **Hold-out**, each trial is
@@ -328,7 +342,8 @@ its best, best first; the chosen one is marked. Click a row to set its method an
 
 The **Preparation** group, between **Data** and **Method**, prepares the data before the method gets it. Each input is
 shown only while it applies to the checked features and the target, and the group is hidden while none does; an input
-that disappears goes back to its default. Hover an input to see what it does.
+that disappears goes back to its default (except **Classification threshold** and **Best threshold by**, see below). Hover
+an input to see what it does.
 
 * **Missing values**: shown when a checked feature has empty cells; its tooltip lists the columns and how many cells
   are empty. **Skip rows** (the default) leaves those rows out. **Impute** fills the empty cells from the most similar
@@ -350,19 +365,51 @@ that disappears goes back to its default. Hover an input to see what it does.
   features are saved with the model, and the **Apply predictive model** dialog does not ask for them: a table without
   them can be applied to. When it leaves no feature, **Features** turns red: `Skip unique categories leaves no
   feature. Check more features.`
-* **Predict probability** (unchecked by default): shown while the target is text or yes/no with exactly two classes.
-  Checked, the model is trained as a regression on the two classes (1 for the positive class, the first one in
-  alphabetical order, 0 for the other) and predicts the probability of the positive class; **Method** then lists the
-  methods for a regression. The score is the regression model's prediction on the 0/1 target, not a calibrated
-  probability, and it can fall outside 0..1; **AUC-ROC** and **Average precision** use the scores, the other metrics
-  the labels after the cutoff. **Positive class cutoff** appears under it, a number from 0 to 1 (0.5 by default)
-  with a slider: type a value or move the slider, and a row whose score reaches the cutoff is predicted as the
-  positive class. A value that is not a number from 0 to 1 marks the input red, **Performance** says `Fix the
-  settings.` and **Save** is unavailable. Changing the cutoff does not retrain: the metrics are computed again from the scores of the last training,
-  **AUC-ROC**, **Average precision**, **ROC Curve** and **PR Curve** stay (only their circles move), and
-  **Save** saves the model with the current cutoff. Applied to a table, the model adds the class labels, not the
-  scores. Most methods' own class probabilities already give AUC-ROC and the ROC curve; check this to pick the
-  positive class cutoff
+* **Predict probability** (unchecked by default): shown while the target is text or yes/no with two or more classes.
+  It uses the method's own class probabilities; the method stays the classifier it is. Its tooltip: `Adds the
+  probability of each class when the model is applied; for two classes, lets you choose the classification threshold
+  of <positive class>.` (`Adds the probability of each class when the model is applied.` for more classes). For a
+  method that gives no class probabilities (Chemprop, a script without `meta.mlprobabilities`) it is unchecked and
+  disabled, its tooltip `<Method> gives no class probabilities`. Checked, the saved model adds the class probabilities
+  when it is applied (see "Apply a model"), and the labels come from them: for two classes, the positive class (the
+  first one in alphabetical order) where its probability reaches **Classification threshold**, else the other class;
+  for more classes, the most probable class. When the method returns no probabilities for this data, nothing is added.
+  Toggling it does not retrain: the labels and their metrics are computed again from the class probabilities of the
+  last training; **AUC-ROC**, **Average precision**, **Log loss** and **Brier score** do not change. SVM is the
+  exception: its probabilities are its **Class probabilities** setting (Platt scaling, an internal cross-validation,
+  about five times the training time), which **Predict probability** sets and the settings do not show, so toggling it
+  retrains SVM and adds a run
+* **Classification threshold** (two classes, under a checked **Predict probability**): a number from 0 to 1 (0.5
+  until a best is found) with a slider, shown with 3 significant digits (`0.520`; an exact value as it is: `0.5`, `0.9`) while the full value
+  is used, saved and shown everywhere else; its tooltip (on the caption and the box): `Rows whose probability of <positive class> is at
+  least this value are predicted as <positive class>, the others as <negative class>.` (the classes in bold, `true` /
+  `false` for a yes/no target; the comparison is in single precision, as the probabilities are stored). A
+  value that is not a number from 0 to 1 marks the input red, **Performance** says `Fix the settings.` and **Save** is
+  unavailable. Editing it by hand does not retrain: the label metrics are computed again, **AUC-ROC**, **Average
+  precision**, **Log loss**, **Brier score**, **ROC Curve** and **PR Curve** stay (only their circles move), and
+  **Save** saves the model with the current threshold. A hand-edited threshold stays across trainings until **Set**.
+  While the threshold is the optimized one, **Performance** adds `Classification threshold: <t>, the best <metric> on
+  the validation rows: its validation values are optimistic` (the threshold was chosen on those rows), and the saved
+  model records the metric (`thresholdMetric` in its options) and its **Performance** pane reads the same line; after a
+  hand edit it reads `Classification threshold: <t>` and records no metric. Unchecking **Predict probability** keeps
+  **Best threshold by**, the threshold and its hand edit: checked again, a threshold not edited by hand is optimized
+  for the kept metric, and a hand-edited one stays until **Set**. A target with other classes sets them back to `F1`
+  and 0.5 and forgets the hand edit.
+* **Best threshold by** (two classes, under **Classification threshold**; its tooltip: `The metric the classification
+  threshold maximizes on the validation rows.`): `F1` (the default), `Balanced accuracy` (its tooltip says it picks
+  the threshold Youden's J picks), `MCC` or `Accuracy` (each item's tooltip describes the metric). The threshold is
+  optimized at once: when **Predict probability** is checked and after every new training (a search's winner too),
+  **Classification threshold** becomes the value that maximizes the metric on the out-of-fold probabilities (the
+  midpoint between the best probability and the next lower one, rounded to 3 decimals when that stays between them; a
+  tie goes to the one nearest 0.5). Changing the metric does not change the threshold by itself. The button **Set**,
+  at the right end of the **Best threshold by** row (a button as **Tune**, its letters where Tune's end), sets the
+  threshold to the chosen metric's best (a re-cut, no training); it is shown only while the threshold differs from
+  that best (after a metric change or a hand edit; hover: `Set the threshold that maximizes <metric> on the validation
+  rows.`). Under **Classification threshold** an italic status, as the one under the method's **Settings**, says what
+  the threshold is: `Best for <metric>` (the chosen metric's best, or after a metric change the best of the metric it
+  was set for) or `Customized` (edited by hand). Without a best (no trained model yet, no class probabilities on the
+  validation rows, or one class in them; the threshold then stays as it is, 0.5 by default) neither the status nor
+  **Set** is shown.
 
 ### Validation
 
@@ -441,9 +488,14 @@ open table it fits, otherwise on the current table (or the first open one).
 A problem (an empty row, a column of the wrong kind, a column used twice, a column removed from the table meanwhile,
 a model Forge cannot apply) marks the input it concerns, and **OK** stays unavailable with the first problem as its
 tooltip. **OK** closes the dialog and adds the column `<target> (predicted)` (`<target> (predicted 2)` and so on when
-the name is taken) to the table, tagged with the model's id (`forge.model`). A progress bar in the task bar shows the
-batches; cancel it there to stop before the next batch. A balloon names the new column and the number of skipped
-rows. Every application, completed, failed or cancelled, is recorded with the model.
+the name is taken) to the table, tagged with the model's id (`forge.model`). A model saved with **Predict
+probability** also adds, right after it, the probability columns `P(<target> = <class>)` (`P(<target> = <class>) 2`
+when taken), tagged the same way: for two classes the positive class's only (`P(SEX = F)`), for more one per class
+(`P(Species = setosa)`, ...); hover a column's header for `Probability that <target> is <class>, predicted by <model
+name>` (the column's description). A model saved without it adds none. A progress bar in the task bar shows the
+batches; cancel it there to stop before the next batch. A balloon names the new columns (`Added the columns "SEX
+(predicted)", "P(SEX = F)" to demog.`) and the
+number of skipped rows. Every application, completed, failed or cancelled, is recorded with the model.
 
 ### Models for a table
 
@@ -479,7 +531,8 @@ catalog's **Methods** grid: **Method**, **Package**, **Method type**, **Runs on*
 training data leaves the browser), **Keeps training rows** (the model file holds training rows, as SVM's does),
 **Retrains live**, **Roles**, **Hyperparameters** (the setting names) and **Settings**: a json text with one entry per
 setting, `name`, `type` and, when the method declares them, `default`, `min`, `max`, `choices` and `description`. These
-are the names and values `trainModel`'s `hyperparameters` accepts.
+are the names and values `trainModel`'s `hyperparameters` accepts. A method's probability setting (SVM's
+`probability`) is not listed: `predictProbability` sets it.
 
 With a `table`, two more columns: **Applicable** (the method can learn from the table's default features, as the
 **Predictive model** view picks them, to predict `target`) and **Suggested** (the method `trainModel` trains with when
@@ -572,15 +625,16 @@ seed 42):
   | `neighbors`, `distance` | the EDA imputer's (`4`, `Euclidean`) | the settings of `impute` |
   | `oneHot` | on when every text or yes/no feature has at most 20 categories (while `skipUniqueCategories` is on, features whose values are all different do not count) | One-hot encoding of text and yes/no features |
   | `skipUniqueCategories` | `true` | leaves out text features whose values are all different |
-  | `predictProbability` | `false` | for a target with exactly two classes: trains on the probability of the first class. Predict probability is off during a search: with `search` it is ignored, and the search and the model learn the plain target |
-  | `cutoff` | `0.5` | the probability from which a row is predicted as the first class |
+  | `predictProbability` | `false` | for a text or boolean target: the saved model adds the class probabilities when applied, and the labels come from them (for two classes, at `threshold`; for more, the most probable class). It stays on with `search` (the trials score those labels) and, for SVM, sets its `probability` setting |
+  | `threshold` | optimized | two classes with `predictProbability`: the probability of the first class from which a row is predicted as it. Without it, the value that maximizes `thresholdMetric` on the validation rows (after a search, on the winner's), stored with the model as `thresholdMetric`; `0.5` when there is none (the validation rows hold one class). A given `threshold` is used as it is and no metric is stored. `cutoff` is accepted as its old name (`threshold` wins when both are given) |
+  | `thresholdMetric` | `f1` | the metric the threshold is optimized for: `f1`, `balancedAccuracy`, `mcc` or `accuracy` (as **Best threshold by**); ignored when `threshold` (or `cutoff`) is given |
   | `scheme` | `kfold` | how Validation is measured: `kfold` (cross-validation) or `holdout` (one held out part, then the final model on all rows), as **Scheme** in "Validation" |
   | `folds` | `5` | `kfold`: the number of cross-validation parts, at least 2 |
   | `testFraction` | `0.2` | `holdout`: the share of the rows held out, from 0.05 to 0.5 |
   | `stratified` | `true` | each class keeps its share in every part or in the hold out; ignored for a regression |
   | `shuffle` | `true` | shuffles the rows by `seed` before the split; `false`: blocks of consecutive rows, or the last rows held out |
   | `seed` | `42` | the split seed, a whole number from 0 to 2147483647 (with `search`, also of the search's hold out and of the trials' settings) |
-  | `search` | none | `{metric, budgetSeconds, maxTrials}`, each key optional: tunes the method's settings first, as **Tune** does (see "Search"), then trains the chosen ones. `metric`: `r2` (regression default), `rmse`, `mae`, `balancedAccuracy` (classifier default), `accuracy`, `f1`, `mcc`, `auc`; `budgetSeconds`: a whole number of seconds, at least 1 (default `60`); `maxTrials`: stops after that many completed trials |
+  | `search` | none | `{metric, budgetSeconds, maxTrials}`, each key optional: tunes the method's settings first, as **Tune** does (see "Search"), then trains the chosen ones. `metric`: `r2` (regression default), `rmse`, `mae`, `balancedAccuracy` (classifier default), `accuracy`, `f1`, `mcc`, `auc`, `logLoss`, `brier` (these two minimized); `budgetSeconds`: a whole number of seconds, at least 1 (default `60`); `maxTrials`: stops after that many completed trials |
 
 * `name`: saves the model under this name; without a name the model is trained and measured but not saved.
   `description` and `tags` (comma-separated) go with it
@@ -599,7 +653,10 @@ await grok.functions.call('Forge:trainModel', {table: grok.shell.t, target: 'Spe
 
 The result: `modelId` (null when not saved), `runId`, `name`, `method`, `task`, `target`, `features`, `rowCount` (the
 rows trained on; after a search with a hold out, without the held out rows), `skippedRows`, `seed`, `metrics` (`train`,
-`validation`, `test` (after a search with 500 rows or more: the final model on the held out rows), for two classes
+`validation`, `test` (after a search with 500 rows or more: the final model on the held out rows), each an object of
+metric ids: `mse`, `rmse`, `mae`, `r2` for a regression; `accuracy`, `f1`, `balancedAccuracy`, `mcc`, for two classes
+`sensitivity`, `specificity`, `precision`, `npv`, and, for a method with class probabilities, `auc`,
+`averagePrecision`, `logLoss`, `brier`), for two classes
 `positiveClass` and, for a classifier, `classes`, the per-class values as `getModel` gives them) and, after a search,
 `search`: `mode` (`tune`), `metric`, `budgetSeconds`, `seed`, `trials`, `completed`, `pruned`, `failed`, `elapsedMs`,
 `stopped` (`budget`, `cancelled`, `exhausted`, `trials` or `failed`), `holdOut` (`rows`, `fraction`; absent below 500
@@ -615,18 +672,21 @@ its inputs, whose data preparation fails or whose search completes no trial reco
 * `The method XGBoost has no setting 'speed'. Its settings are: <settings>.`, `The setting 'rate' of Softmax needs a
   number.`, `The setting 'iterations' of XGBoost must be at most 100.`
 * `Unknown option 'cutof'. The options are: missingValues, neighbors, distance, oneHot, skipUniqueCategories,
-  predictProbability, cutoff, seed, scheme, folds, testFraction, stratified, shuffle, search.`
+  predictProbability, threshold, thresholdMetric, seed, scheme, folds, testFraction, stratified, shuffle, search.`
+* `The option 'thresholdMetric' needs one of: f1, balancedAccuracy, mcc, accuracy.`
 * `The option 'scheme' needs kfold or holdout.`, `The option 'testFraction' needs a number from 0.05 to 0.5.`,
   `The option 'shuffle' needs true or false.`, `Training needs at least 10 rows; the table has 8.` (two rows per
   part, or two held out rows)
 * `The option 'search' needs an object with metric, budgetSeconds, maxTrials.`, `The search metric 'r3' is not one
-  of: r2, rmse, mae, balancedAccuracy, accuracy, f1, mcc, auc.`, `The search metric 'r2' does not apply to a
-  classification. Choose one of: balancedAccuracy, accuracy, f1, mcc, auc.`, `The option 'budgetSeconds' needs a
+  of: r2, rmse, mae, balancedAccuracy, accuracy, f1, mcc, auc, logLoss, brier.`, `The search metric 'r2' does not
+  apply to a classification. Choose one of: balancedAccuracy, accuracy, f1, mcc, auc, logLoss, brier.`, `The option
+  'budgetSeconds' needs a
   whole number of at least 1.`
 * `Naive Bayes declares no search space, so it cannot be tuned.`, `No trial completed within the budget. Give the
   search more time.`, `No trial completed: <the first failed trial's error>` (for example `No trial completed: The
   metric AUC-ROC needs class probabilities; SVM gives none.`), `The search was cancelled before a trial completed.`
-* `Predict probability needs a target with exactly two classes.`
+* `Predict probability needs a text or boolean target.`, `Chemprop gives no class probabilities, so Predict
+  probability cannot be used with it.`, `Enter a number from 0 to 1.` (a two-class `threshold` outside 0..1)
 * `The option 'missingValues' needs skip, impute, keep (keep: only for a method that handles missing values).`,
   `SVM needs rows without missing values. Choose Skip rows or Impute.`
 * `Enter a name for the model.`, `The table has no known source, so the model cannot keep a reference to it. Use
@@ -642,7 +702,9 @@ await grok.functions.call('Forge:applyModel',
 
 `model` is a model id or a name that only one model you can see has. Features are matched to columns of the same name
 (ignoring case); `columnNamesMap` maps the others (`{'Sepal.Length': 'sepal length'}`). A feature without a column, or
-a column of the wrong kind, fails the call with a message and no dialog. Missing values are handled as at training:
+a column of the wrong kind, fails the call with a message and no dialog. The call adds `<target> (predicted)` and, for
+a model saved with Predict probability, its probability columns `P(<target> = <class>)`, as the dialog does. Missing
+values are handled as at training:
 a model trained with Skip rows gives the rows with empty cells no prediction, one trained with Impute fills them with
 its settings, one trained with the gaps kept predicts every row; a model that does not record it keeps the gaps when
 its method handles missing values and skips those rows otherwise.
@@ -671,7 +733,9 @@ await grok.functions.call('Forge:evaluateModel', {model: 'Iris species', table: 
 The result: `id`, `name`, `table` (the evaluated table's name), `target`, `rowCount` (the rows predicted),
 `skippedRows` (the rows with a missing feature value, handled as `applyModel` does; 0 for a model trained with the
 gaps kept), `positiveClass`
-(for two classes), `metrics` (`train` and `validation` as saved, `evaluation` on this data), `classes` (a classifier:
+(for two classes), `metrics` (`train` and `validation` as saved, `evaluation` on this data, with the ids of `trainModel`'s
+result; a model saved with the former regression mode of Predict probability is measured on its scores, so its
+`evaluation` has `auc` and `averagePrecision` but no `logLoss` or `brier`), `classes` (a classifier:
 the evaluation's per-class values, each class's `label`, `rows` and `values`) and `insights` (the **Insights & Tips** of the evaluation and of the
 saved metrics: each a `text`, with the numbers behind it in `detail` or `items`). Nothing is added to the table and the
 evaluation is not recorded as an application. `model` is an id or a unique name, as for `applyModel`. The errors,
@@ -850,7 +914,7 @@ To add a method, register functions that share the same `meta.mlname` (the metho
 | Role | Required | Purpose |
 |---|---|---|
 | `train` | yes | Trains a model on a table and a target column, returns the model |
-| `apply` | yes | Applies a trained model to a table, returns the predictions: the first column; `proba_<class>` columns after it give the class probabilities (AUC-ROC, ROC curve) |
+| `apply` | yes | Applies a trained model to a table, returns the predictions: the first column; `proba_<class>` columns after it give the class probabilities (AUC-ROC, Log loss, Brier score, the curves, Predict probability) |
 | `isApplicable` | yes | Tells whether the method can learn from the given data |
 | `isInteractive` | no | Tells whether training is fast enough to rerun on every change |
 | `visualize` | no | Shows method-specific views of a trained model |
@@ -860,8 +924,8 @@ their default values and descriptions (shown as tooltips) come from the function
 `meta.mlenabled` says when a setting is used: a JSON object `{"<input>": <condition> | [<condition>, ...]}`, where a
 condition is an object whose clauses all hold and a list holds when any of its conditions does. A clause is
 `"<other input>": [<values>]` (the other input's value is one of them), `"<other input>": {"gt": <n>}` or
-`{"lt": <n>}` (above / below a number; both may be given), or `"task": ["classification" | "regression"]` (the task the
-method trains; Predict probability trains a regression). An input whose rule fails is disabled in the view (it keeps its
+`{"lt": <n>}` (above / below a number; both may be given), or `"task": ["classification" | "regression"]` (the task
+the method trains, the target's). An input whose rule fails is disabled in the view (it keeps its
 value, is not checked, and is still passed to `train`, which must ignore it), and a search sets it to its default. A
 malformed value counts as no rules (the view logs a warning once). EDA declares, for example, SVM
 `{"gamma": {"kernel": ["RBF", "Polynomial", "Sigmoid"]}, "degree": {"kernel": ["Polynomial"]}, "coef0": {"kernel":
@@ -875,6 +939,12 @@ the `train` function serve **Tune**:
   tuned: its **Auto-tune** is disabled (`<Method> declares no search space.`) (EDA declares one for every method but Naive Bayes, which has no settings)
 * `meta.mlparallel: 'true'`: the method accepts concurrent `train` and `apply` calls, so a search runs its fold fits in
   parallel (EDA's methods: a pool of Crux workers); without it they run one at a time
+
+One more optional key of the `train` function serves **Predict probability**: `meta.mlprobabilities`, `'true'` when
+`apply` returns the `proba_<class>` columns of a classifier, or the name of a bool `train` input that turns them on
+(EDA's SVM: `probability`). Such an input is set from **Predict probability**, hidden from the settings, Search options,
+the card's **Settings** tab and `Forge:listMethods`, and refused in `trainModel`'s `hyperparameters`. Without the key, **Predict
+probability** is disabled for the method. EDA declares `'true'` on every classifier but SVM.
 
 ## Data storage
 

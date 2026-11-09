@@ -97,11 +97,12 @@ export function modelFeatures(df: DG.DataFrame, manifest: CruxManifest): DG.Colu
   return featureColumns(df, names);
 }
 
-/** A classifier whose `ml.predict` fills `probas` (not `svc`), with column names that differ beyond case (a DataFrame
- * refuses two names that differ only in case) */
+/** A classifier whose `ml.predict` fills `probas` (`svc` only when fitted with `probability`), with column names that
+ * differ beyond case (a DataFrame refuses two names that differ only in case) */
 function hasProbabilities(manifest: CruxManifest): boolean {
   const classes = (manifest.classes ?? []).map((c) => String(c));
-  return manifest.model !== 'svc' && new Set(classes.map((c) => c.toLowerCase())).size === classes.length;
+  return (manifest.model !== 'svc' || manifest.params.probability === true) &&
+    new Set(classes.map((c) => c.toLowerCase())).size === classes.length;
 }
 
 /** Applies a crux-model-v1 blob or a pre-Crux EDA model; features are matched by the names saved at training */

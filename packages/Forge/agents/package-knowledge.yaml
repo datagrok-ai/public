@@ -20,6 +20,10 @@ keywords:
   - MCC
   - average precision
   - PR curve
+  - class probabilities
+  - classification threshold
+  - log loss
+  - Brier score
   - R2
   - RMSE
   - MAE

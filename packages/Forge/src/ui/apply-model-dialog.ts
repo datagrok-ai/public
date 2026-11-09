@@ -96,16 +96,17 @@ export async function openApplyDialog(table: DG.DataFrame | null,
   }
 }
 
-/** Runs [request] under the task-bar progress, then names the new column in a balloon and, with [switchToTable], shows
+/** Runs [request] under the task-bar progress, then names the new columns in a balloon and, with [switchToTable], shows
  * the table's view: the Apply dialog's OK. Outside the dialog, so the running application holds the request only, not
  * a closed dialog's form and models. */
 async function applyAndReport(request: ApplyRequest, switchToTable: boolean): Promise<void> {
   const table = request.table;
   try {
-    const {column, skippedRows} = await applyWithProgress(request, 'ui');
+    const {column, probabilityColumns, skippedRows} = await applyWithProgress(request, 'ui');
     const skipped = skippedRows === 0 ? '' :
       `; ${skippedRows} ${skippedRows === 1 ? 'row' : 'rows'} skipped (missing values)`;
-    grok.shell.info(`Added the column "${column.name}" to ${table.name}${skipped}.`);
+    const names = [column, ...probabilityColumns].map((c) => `"${c.name}"`).join(', ');
+    grok.shell.info(`Added the column${probabilityColumns.length > 0 ? 's' : ''} ${names} to ${table.name}${skipped}.`);
     const view = switchToTable ? grok.shell.getTableView(table.name) : null;
     if (view)
       grok.shell.v = view;

@@ -393,14 +393,16 @@
   color: var(--red-3);
 }
 
-/* Tune's letters end at the block's right edge, where the reset and pin glyphs and the selects end. */
+/* Tune's letters end at the block's right edge, where the reset and pin glyphs and the selects end; so do those of
+   Set, right after the select of Best threshold by (in its row, not in its options, which underline it). */
 .forge-tune-bar {
   display: flex;
   justify-content: flex-end;
   padding-top: 12px;
 }
 
-.forge-tune-bar > button.ui-btn {
+.forge-tune-bar > button.ui-btn,
+.ui-input-root.forge-threshold-metric > button.ui-btn {
   margin-right: 0;
   padding-right: 0;
 }

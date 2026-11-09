@@ -127,7 +127,9 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
 - Every table of data in the UI but the model cards' (plain `ui.table` by the user's decision of
   2026-11-05, see "Model cards") is `readOnlyGrid` (`ui/data-grid.ts`): `DG.Viewer.grid` without editing, row header,
   current-row indicator and new-row icon, as wide as its host and as tall as its rows (up to 15 by default,
-  then it scrolls: an inline height of `(rows + 1) * rowHeight + 2` px; the app's Methods grid shows every method), with tooltips from `{headers, cells}` (by column name; the cells
+  then it scrolls: an inline height of the header plus `rows * rowHeight + 2` px, the header one row high until the
+  grid draws, then `colHeaderHeight` after each `onAfterDrawContent` (a header whose names wrap, as the Runs metric
+  columns', is taller), never less than a row; the app's Methods grid shows every method), with tooltips from `{headers, cells}` (by column name; the cells
   as functions of the row) through `onCellTooltip` (`gridTooltip`; a cell without its own text shows its value).
   `numberColumn` builds the grids' float columns (format `0.000`); `textColumn` and `boolColumn` (`columns.ts`, not UI,
   also used by `catalog/`, `engines/method-list.ts` and `training/train-api.ts` for the API lists) their string and bool columns.
@@ -213,11 +215,11 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   result was trained on (the prepared columns, the selection's target, `keptRows`) for it. The Performance panel's grid is a
   `MetricsTable` of `ui/metrics-table.ts`, shared
   with the model's **Performance** pane (it builds one there). The pane keeps one while results come (a training,
-  a cutoff re-cut): `update(summary)` rewrites the values in place, refills the bullet list and repaints the marks when
+  a threshold re-cut): `update(summary)` rewrites the values in place, refills the bullet list and repaints the marks when
   the metric rows and the value columns are the same, so the grid neither flickers nor loses its column widths; other
   rows (task, AUC-ROC, the Crux ids) build a new one (the rows are the ids with a validation value or an evaluation
-  value, in `METRIC_IDS` order: `balancedAccuracy`, `mcc` and `averagePrecision` after `auc`; a model saved before
-  AUC-ROC or the Crux ids existed gets those rows with Train and Validation empty when evaluated; a change of the
+  value, in `METRIC_IDS` order: `balancedAccuracy`, `mcc`, `averagePrecision`, `logLoss` and `brier` after `auc`; a
+  model saved before AUC-ROC, the Crux ids or the probability ids existed gets those rows with Train and Validation empty when evaluated; a change of the
   Test or Evaluation column builds a new one too); a hint shown in between detaches the grid and keeps it. It is a frame of **Metric**, **Train**, **Validation**,
   with `metrics.test` **Test** and, with `MetricsSummary.evaluation`, **Evaluation** (format `0.000`) in a
   `readOnlyGrid` with the header texts, the metric descriptions and the full-precision values as tooltips, then a
@@ -231,7 +233,10 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   then, with `MetricsSummary.search` (the training's `search`, or `storedSummary`'s `searchRecordOf(model.search)`),
   `Search: <Tune> by <metric>, <budget>: <N> trials of <M> method(s), chosen by the one-standard-error rule` and either
   `Test: <rows> rows held out before the search` or `Validation after a search is optimistic: the best of the trials
-  was chosen on it`, `Positive class: <class>` (two classes only) and `Evaluation: <table> (<rows> rows[, <n> skipped
+  was chosen on it`, `Positive class: <class>` (two classes only), `Classification threshold: <t>`
+  (`MetricsSummary.threshold`: the result's `binaryClassificationThreshold` in the view, `storedSummary`'s for a
+  model whose options record `class-probabilities`; with `thresholdMetric`, the view's result's
+  `options.thresholdMetric`, the optimized variant, see "The threshold in the view") and `Evaluation: <table> (<rows> rows[, <n> skipped
   (missing values)])` (with an evaluation). The `metricFindings` of the metrics mark their cells: `onCellPrepare` paints a marked value
   (the finding's `splits`) in `DG.Color.failure`, and its tooltip ends with the finding's text (`R2 is below 0.3.`).
 - `CollapsibleGroup` (`ui/collapsible-group.ts`, classes `forge-group*` in `css/forge.css`) is the folding block of
@@ -257,13 +262,52 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   `preparation/pipeline.ts`, also `Forge:trainModel`'s default), else unchecked: a deviation from the
   built-in tool, which always starts unchecked; it follows that default until the user toggles it, `isOneHotChosen`,
   and hiding resets it), **Skip unique categories** (checked; shown while a checked feature has `hasUniqueCategories`),
-  **Predict probability** (unchecked; shown while `twoClasses(target)` is not null, its tooltip naming the positive
-  class) and under it **Positive class cutoff** (`ui.input.float` 0..1, step 0.01, with a slider, `DEFAULT_CUTOFF`; shown while
-  Predict probability is checked; a validator and `cutoffProblem` refuse an empty value or one outside 0..1). The show conditions are the pipeline's own predicates (`preparation/pipeline.ts`).
-  `update(features, target)` runs on every Features and Target change; a hidden input gets its default back, so it
-  reappears as it first appeared, and the group is hidden while nothing in it is shown. `steps()` is the
+  **Predict probability** (unchecked; shown while the target is categorical with two or more `classesOf` classes;
+  `setMethod(name, gives)` from `fillMethod` with `givesProbabilities(engine)`: without them it is unchecked,
+  `enabled = false` and its tooltip `<Method> gives no class probabilities`, otherwise `Adds the probability of each
+  class when the model is applied` plus, for two classes, `; for two classes, lets you choose the classification
+  threshold of <positive>.`; while the form is locked `fillMethod` keeps that `enabled` for the unlock and disables
+  it again; its own callback `onProbabilityChanged`), under it **Classification threshold**
+  (`ui.input.float` 0..1, step 0.01, with a slider, `DEFAULT_THRESHOLD`, `format: '3 significant digits'`: the
+  platform's `FloatInput` keeps the full value and only shows it formatted, `0.520` for 0.5201..., `0.0423`, but `0.9`
+  and `0.5` as they are, since the formatter drops the digits a value does not have (kept by the user's decision); a
+  typed value is parsed in full; its tooltip `Rows whose probability of <b>positive</b> is at least this value are
+  predicted as <b>positive</b>, the others as <b>negative</b>.` is the input's own (`setTooltip` with HTML, set by
+  `update` from the target's classes): the platform binds its caption and editor to the input's tooltip, and those
+  bindings win over one on the root, which therefore never showed while hovering them; a
+  validator and `thresholdProblem` refuse an empty value or one outside 0..1; its own callback `onThresholdChanged`),
+  and under that **Best threshold by** (`thresholdMetric`, a `ui.input.choice` of the `BEST_THRESHOLD_METRICS` labels,
+  `DEFAULT_THRESHOLD_METRIC` F1; its `tooltipText` is `The metric the classification threshold maximizes on the
+  validation rows.`, each `option`'s `title` the metric's description, Balanced accuracy's naming Youden's J; `metric`
+  maps the label back to the id) with the button **Set** (`setThresholdButton`, a `ui.button` as Tune is, appended to the
+  input's root after the select, not to its options, whose box would underline it and shrink its font; the root has
+  `forge-threshold-metric`, and the Tune bar's rule drops the button's right margin and padding, so its letters end at
+  the row's right edge where Tune's do). The order is `stepInputs`'. Both are shown
+  while Predict probability is checked and the target has exactly two classes, and hide together. The show conditions
+  count the classes `update` takes from a categorical target with `classesOf` (`metrics/metrics.ts`): Predict
+  probability two or more, the threshold and its metric exactly two. The threshold's hand-edit state `isThresholdEdited`: a value change not made
+  by `setThreshold` (which sets the value with the input's `notify` off) sets it and calls `onThresholdChanged`; `setThreshold(value,
+  metric?)` sets the value (and the metric) without telling the view and clears it, or sets it without a metric.
+  Hiding keeps the metric, the threshold and the hand edit (the user's decision 3b): checked again, the view's re-cut
+  optimizes an unedited threshold for the kept metric, and a hand edit stays. `update` resets them
+  (`setThreshold(DEFAULT_THRESHOLD, DEFAULT_THRESHOLD_METRIC)`) when the target's `classesOf` classes change (another
+  target column, or none). `steps()` carries `thresholdMetric` (the chosen metric) unless the threshold was edited
+  by hand, and `predictProbability` as the checkbox's value (a locked form, disabled, keeps it; a hidden input or a
+  method without probabilities has it unchecked). The view's `bestThreshold(metric)`
+  callback gives the best value, undefined without one; `updateSet` (called on a metric change, by `setThreshold`,
+  on a visibility change and from the view's `updateControls`) shows **Set** only while a best exists and the input
+  differs from it (hidden, not disabled, by the user's decision; its tooltip, bound with `ui.tooltip.bind`, is `Set the
+  threshold that maximizes <metric> on the validation rows.`), and the status `thresholdStatus` under the threshold
+  (`TuneSettings.statusLine()`, the italic line Settings has under its radios: `forge-tune-status-text` in a
+  `ui-input-root forge-tune-status` row) only while a best exists: `Best for <chosen metric>` while the value is its
+  best, else `Customized` (the Settings status's word) after a hand edit, else `Best for <optimizedFor>`, the metric
+  `setThreshold` last set the best of. A click
+  (ignored while the form is locked) calls `setThreshold(best, metric)` and `onThresholdChanged`, which re-cuts.
+  `restoreThreshold(steps)` sets a shown threshold from a run's steps (with their metric, else as a hand edit).
+  `update(features, target)` runs on every Features and Target change; a hidden input but the threshold pair gets its
+  default back, so it reappears as it first appeared, and the group is hidden while nothing in it is shown. `steps()` is the
   `PreparationSteps` of the selection; a hidden input's step is off (Skip unique categories, checked while hidden, is
-  sent only while it is shown).
+  sent only while it is shown), and Predict probability only while enabled.
 - **Validation** (`ui/validation-inputs.ts`, `ValidationInputs`, Train view only) owns its `CollapsibleGroup`
   (collapsed): **Scheme** (`K-fold, stratified` | `K-fold` | `Hold-out`; `update(target)` on every Target change lists
   the stratified one only for a classification target, turns it into `K-fold` for a regression and gives it back on
@@ -277,9 +321,9 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   shuffled), `restore(validation, seed)` sets them as a user would (a **Runs** row). A Table change builds a new form
   whose `ValidationInputs` takes the old one's values (`createForm(table, previous)`).
 - **Settings the method ignores** (`meta.mlenabled`, see "Engine contract"). `applyRules(form)` runs at the end of
-  `fillMethod`, on every hyperparameter change and on every Target and Predict probability change (`formSubs`): it
+  `fillMethod`, on every hyperparameter change and on every Target change (`formSubs`): it
   evaluates `isEnabled(enabledRules(engine), name, values, task)` per hyperparameter, with the task the method trains
-  (`taskOf(target)`, regression under Predict probability, unknown without a target), sets `input.enabled` (never
+  (`taskOf(target)`, unknown without a target), sets `input.enabled` (never
   hides) and passes the ignored names to `form.tune.setInactive` (read back by `isActive`; in Auto-tune with the tuned
   settings free and the target's task, see "Search"). `problem()` and `revalidate()` skip the inactive inputs
   (`activeHyperparameters()`), so a disabled invalid value blocks nothing; `selection()` still sends every value. A
@@ -360,11 +404,11 @@ Rows with a missing target are skipped by `prepareTraining`, never refused.
 features rule fails it asks no method and returns no engines (`failedCheck(problems)`, the shape of every check that
 lists no method). Otherwise it asks every
 complete method at once (`applicableEngines`, see "Choosing a method" under the engine contract) about the prepared
-columns and target (so with Predict probability the regressors are listed, as for any numerical target), and rule 8
+columns and target (the selection's target: Predict probability lists the same classifiers), and rule 8
 becomes: the selection's method is not among them (the rule 8 text), or none is (`No method can learn from this
 selection. Check the features and the target.`). The result (`SelectionCheck`) also has `best` (`selectBestEngine`
-over the listed methods, the prepared columns (one-hot copies count as numerical features) and the selection's target
-(a prepared target is a 0 / 1 float with Predict probability); the molecule rule reads the selection's features, as
+over the listed methods, the prepared columns (one-hot copies count as numerical features) and the selection's target;
+the molecule rule reads the selection's features, as
 preparation drops or one-hot encodes a molecule column), `failed` (the methods whose check threw, for the caller to log),
 `isInteractive`: the selection's method is listed and `retrainsLive` (its `isLiveUpdate` is on and its
 `isInteractive` says yes on the prepared columns), `prepared`, those columns and target (none from
@@ -373,7 +417,8 @@ empty from `failedCheck`). A method's `isInteractive` that throws makes the whol
 
 The view adds a validator to **Target**, **Features**, **Method** (the `method` messages) and **Missing values** that
 returns the view's current problems for that input. Every change of Table, Target, Features, a **Preparation** input
-but the cutoff, Method or a hyperparameter (`requestCheck`) numbers a new check, clears the problems, drops
+but Predict probability (of a method without a probability input, see "The threshold in the view") and the
+threshold, Method or a hyperparameter (`requestCheck`) numbers a new check, clears the problems, drops
 `lastTraining`, supersedes the running training (`TrainingQueue.supersede()`), disables **Train** (a tooltip
 already shown on it then reads "Checking the selection...") and schedules the check `CHECK_DELAY_MS` (200 ms, the
 built-in tool's delay) after the last change; one timer serves the check and the live training. A check that finishes
@@ -417,18 +462,18 @@ stops it before its next fit); a loader without text
 stands next to the **Performance** header, over the previous results (live) or an empty panel (**Train**). The
 queued function prepares the data, builds the run record from the request and trains. Before any training, and after a problem, a failure or a cancel, **Performance** reads `Choose the
 target and the features; the model trains as you change them.` (the not-interactive hint after a cancel of such a
-method); when the only problems are invalid settings (hyperparameters, missing-values settings or the **Positive class
-cutoff**), it reads `Fix the settings.`. `isTraining` is true from the start of a training until its run is recorded; **Save**
+method); when the only problems are invalid settings (hyperparameters, missing-values settings or the
+**Classification threshold**), it reads `Fix the settings.`. `isTraining` is true from the start of a training until its run is recorded; **Save**
 waits for it. A result
 that arrives after a newer change is recorded but not shown.
 
-**Task.** A numerical target (not a date) is regression; text and boolean targets are classification. The task
-follows the target the method learns: with Predict probability that is the float 0/1 target, so the task is
-regression, while the target schema stays the selection's (with its two categories).
+**Task.** A numerical target (not a date) is regression; text and boolean targets are classification. The task and
+the target schema follow the selection's target, which is also the prepared one (Predict probability changes no
+target since 0.1.20).
 
 **Validation.** `validationSplit(request)` gives every row's fold by the request's `validation` and split `seed`
 (`splitRows` in `training/k-fold.ts`), stratified by the selection's target when `validation.stratified` and that
-target is a classification (with Predict probability too: the classes of the text target; a regression never is).
+target is a classification (a regression never is).
 `kFold(rowCount, folds, seed, stratify?, shuffle = true)` shuffles the rows with a mulberry32 generator
 (Fisher-Yates) and deals them round-robin into the folds, so fold sizes differ by at most one and every row is
 validated exactly once. With `stratify` the shuffled rows
@@ -441,9 +486,9 @@ left) 0 and the others -1: the last ones of the (shuffled) order, with `stratify
 (`validationFolds`: k, or the one hold out) the engine trains on the other rows and
 predicts the fold's rows (`foldPrediction`); the predictions form one out-of-fold column (`outOfFoldColumn`; a row of
 fold -1 is null there, and `FLOAT_NULL` in `outOfFoldProbabilities`), and the **Validation** metrics are computed once,
-on the held out rows' clones for a hold out (so the EDA report never sees a null). With Predict probability,
-`scores.validation` keeps that column with its nulls; `recutResult` measures it with `metricsOf`, which skips rows
-without a prediction. The **Train** metrics come from the final model, trained on all rows
+on the held out rows' clones for a hold out (so the EDA report never sees a null). `outOfFold` keeps that column and
+the out-of-fold probabilities with their nulls; `recutResult` measures them with `metricsOf`, which skips rows
+without a prediction, and the threshold optimization reads only the rows with a probability. The **Train** metrics come from the final model, trained on all rows
 and applied to them. A class with fewer rows than folds still misses some folds. The split seed is the view's **Split
 seed** (42 by default, the API's `options.seed` too); the seed and `splitting` (`trainingSetupOf`: `{scheme: 'kfold',
 folds, isStratified, isShuffled}` or `{scheme: 'holdout', trainFraction: 1 - testFraction, isStratified, isShuffled}`;
@@ -488,24 +533,29 @@ click subscription), and a `readOnlyGrid` with the current-row
 indicator on, built again on every `update` over a copy of the list (a new frame, a new grid of the new height; the
 replaced grid goes with `ui.empty`, the platform's widget disposal): **#**, **Method**, **Target**,
 **Features** (the count), **Preparation** (`impute (<n> neighbors, <distance>)`, `one-hot`, `skip unique
-categories`, `probability (cutoff <c>)`, joined by commas), **Rows**, **Status**, **Split seed** (null when the run
+categories`, `probability (threshold <t>, best <metric>)` for two classes (`SessionRun.twoClasses`, from
+`twoClasses(target)` in `runInputsOf`) of a completed run whose steps carry `thresholdMetric`, `probability (threshold
+<t>)` without it, `probability` for more, joined by commas; the model cards show the same items), **Rows**, **Status**, **Split seed** (null when the run
 was not shuffled), then `<metric>
 (validation)` for every metric of `METRIC_IDS` any run's validation has, with header tooltips (the metrics'
-`METRIC_DESCRIPTIONS`) and cell tooltips (the hyperparameters, the feature names, the error or `Stopped from the task
+`METRIC_DESCRIPTIONS`) and cell tooltips (the hyperparameters without the method's `probabilityInput`, the feature
+names, the error or `Stopped from the task
 bar.`, `Train <0.000>, validation <0.000>` with `-` for a missing value). The newest row is current; a click on a
 row (`grid.onCellClick` on a table cell, the current row too) calls `restoreRun`, while code that moves the current
 row restores nothing (the read-only grid moves nothing with the arrow keys): a run whose target or a feature the
 table no longer has warns `The table no longer has the columns of this run: <names>.` and sets nothing; a run whose
 inputs equal the form's (`isSameInputs` of `ui/runs-panel.ts` over `runInputsOf` of the current selection: method, target, features,
-hyperparameters, missing values, preparation steps but the cutoff, the validation and the split seed, the same values
-a run keeps) while the view
-shows the completed result of those inputs (`lastTraining`, which any change but the cutoff drops) trains nothing:
-it only sets the run's cutoff when that differs, which re-cuts the shown result; after a cancelled or failed
+hyperparameters, missing values, preparation steps but Predict probability, the threshold and its metric, the
+validation and the split seed, the same values a run keeps; SVM's runs differ by their `probability` hyperparameter)
+while the view shows the completed result of those inputs (`lastTraining`, which any change but those drops) trains
+nothing: it sets the run's Predict probability when it differs and its threshold with `restoreThreshold` (with the
+run's metric, else as a hand edit), then re-cuts the shown result; after a
+cancelled or failed
 training there is no such result, so the click sets the same inputs and trains; otherwise it stores the run's hyperparameters for its
 method, makes that method the user's choice and the current method (its inputs rebuilt with those values), sets
 **Target** and **Features**, then `PreparationInputs.restore`
 (Missing values with the impute settings, then Skip unique categories, One-hot encoding, Predict probability and the
-cutoff, each only while shown; a hidden input keeps its default), then `ValidationInputs.restore` (the run's
+threshold with its metric, each only while shown; a hidden input keeps its default), then `ValidationInputs.restore` (the run's
 validation and split seed) and requests a check: the view retrains as after any change, and the new training is a new
 first row. While the form is locked (`locked`: a **Train** training or a search, see "Search") `restoreRun` and `restoreLeader`
 set nothing.
@@ -530,7 +580,7 @@ the findings (`findingsOf` over `metricFindings`) and the tooltips (`METRIC_HEAD
 user's decision: no failure color on a card; a value's findings stay in its tooltip); **Settings**, the run's
 `settingsStatus` in `forge-tune-status-text` with `STATUS_TOOLTIPS` and `RunsPanel.searchLines` as its tooltip, indented
 as the tables' text (`--forge-card-indent`, the cells' left padding) and placed where Performance's header row is, then
-a `ui.table` (**Setting**, **Value**) of every setting of `hyperparametersOf(run.engine)` (captioned as
+a `ui.table` (**Setting**, **Value**) of every setting of `visibleHyperparametersOf(run.engine)` (captioned as
 `ui.input.forProperty` captions it: `camelCaseToSentence` of the caption or name; the description as the row
 tooltip). Both tables are `forge-card-table`: one row height and padding, the names in `--text-color-light`, the
 values in `--grey-5` (as the platform's key-value tables) and right-aligned with their headers, the header row in
@@ -554,32 +604,74 @@ before `ui.empty(formPane)` and in `detach`. Nothing is written: the cards and t
 The result (`TrainingResult`) carries the blob, the task, the metrics, the target and feature schemas, the
 preparation options, the splitting, the seed, the hyperparameters, the row count (the prepared rows the model
 learned from; the skipped rows are in `options.missingValues`) and `prediction`, the final model's prediction of
-those rows as the method returned it (with Predict probability the scores, the same column as `scores.train`);
-`trainPredictionOf(result)` gives its labels (the scores cut at the result's cutoff). The run and model rows record that row count, and the
-dataset fingerprint is computed on the request's `features` and `target` (before the preparation steps). With
-Predict probability it also keeps `scores` (`ProbabilityScores`: the method's train and out-of-fold predictions, the
-selection's target and the positive class), so `recutResult(result, cutoff)` (synchronous, no Crux call) cuts them
-again at another cutoff without retraining: it returns the result with `options.binaryClassificationThreshold` and the
-TS metrics of the new labels (`metricsOf` per split; per class `classLabelMetrics`: precision, sensitivity, F1), the
-score values (AUC-ROC, average precision: `SCORE_METRIC_IDS`, overall and per class) kept from the trained result;
-the result's `curves` stay. A result without scores is returned as it is. When the
-method returns class probabilities (`proba_<class>` columns after its prediction, see "Engine contract") the result
-keeps the final model's ones of the training rows as `probabilities` (`ClassProbabilities` `{classes, columns}`); the
-out-of-fold ones are gathered by class name (`outOfFoldProbabilities`, named as the final model's columns) for the
-validation AUC-ROC and average precision only. Each split is one `measure(task, actual, predicted, positiveClass?,
+those rows as the method returned it; `trainPredictionOf(result)` gives its labels (`replayPostprocessing(prediction,
+options, probabilities)`: with Predict probability those of the class probabilities; for a result `recutResult` built,
+the train labels it built, kept in a `WeakMap` by result). The run and model rows record
+that row count, and the dataset fingerprint is computed on the request's `features` and `target` (before the
+preparation steps). It also keeps `actual` (the selection's target the predictions are measured against), `outOfFold`
+(`{prediction, probabilities?}`: the out-of-fold column, null for a row of no fold, and the out-of-fold
+probabilities) and, after a search with a hold out, `test` (`{actual, prediction, probabilities?}` of the held out
+rows). When the method returns class probabilities (`proba_<class>` columns after its prediction, see "Engine
+contract") the result keeps the final model's ones of the training rows as `probabilities` (`ClassProbabilities`
+`{classes, columns}`); the out-of-fold ones are gathered by class name (`outOfFoldProbabilities`, named as the final
+model's columns; `positionsOf(fold)`, each row's index in its fold, is computed first and passed to both it and
+`outOfFoldColumn`). `trainModel` returns the
+plain classifier's result, put through `recutResult` only when the prepared options record `class-probabilities`.
+`recutResult(result, {predictProbability, threshold, thresholdMetric?})` (synchronous, no Crux call) applies or
+removes the step without retraining: the options lose the id, the three two-class keys and `thresholdMetric`, then
+with `predictProbability` get the id back and, for two classes (`twoClasses(actual)`), `positiveClass`,
+`negativeClass` and `binaryClassificationThreshold`: with `thresholdMetric`, `bestThresholdOf(result, metric)`
+(`bestThreshold` of the out-of-fold probabilities of `metrics.positiveClass`, see "Metrics"; computed once per
+training and metric, cached in a `WeakMap` by the result's `outOfFold`, which every re-cut keeps, so the re-cuts and
+**Set** read the same value) and `thresholdMetric`
+itself, or `threshold` without a metric or when there is no best (no out-of-fold probabilities, one class on the
+validation rows); `trainModel`'s own re-cut passes the prepared options' `thresholdMetric` (recorded by
+`prepareFeatures` from the steps), so a training through the view, the API or a search's winner returns the optimized
+threshold. The labels of train, `outOfFold` and `test` are
+`replayPostprocessing(prediction, options, probabilities)`, and the result gets the TS metrics of those labels
+(`metricsOf` per split; per class `classLabelMetrics`: precision, sensitivity, F1), the probability values
+(AUC-ROC, average precision, log loss, Brier: `SCORE_METRIC_IDS`, overall and per class) kept from the trained
+result; the result's `curves` stay. A result without `probabilities` gets no step: it is returned as it is, or
+without the step when its options had it (a method that declares `mlprobabilities` but returned none for this data,
+such as EDA on classes that differ only in case), so Apply then adds nothing. Each split is one `measure(task, actual, predicted, positiveClass?,
 probabilities?, curves)` call (see "Metrics"; the two run together): the train split with `curves`, whose `curvesOf`
 becomes `TrainingResult.curves` (two classes with a positive class), both splits' reports giving `metrics.classes`
 (`classMetricsOf`; both in `recordOf`).
 
-**The cutoff in the view.** A **Positive class cutoff** change requests no check: it fires the same `CHECK_DELAY_MS`
-timer (`isCheckRequested` tells the two apart; a check wins), and `recut()` replaces `lastTraining.result` with
-`recutResult` at the input's value and shows it, without a training or a run row; **Save** then writes the re-cut
-`options` and metrics. A completed training is re-cut at the current value before it is shown (the cutoff may have
-moved while it trained); its run row keeps the cutoff it trained with. An invalid cutoff (`cutoffProblem`) computes
-nothing: `recut()` keeps the old result out of sight and shows `Fix the settings.`, **Save** is disabled, and
-`problem()` blocks **Train** and the live training, as for any invalid setting. When the timer fires with no result
-to re-cut, no training running and no finished training of the selection (another input changed while the cutoff
-was invalid), it runs the check instead, so a valid cutoff then trains as any fixed setting does.
+**The threshold in the view.** A **Classification threshold** change requests no check: it fires the same
+`CHECK_DELAY_MS` timer (`isCheckRequested` tells the two apart; a check wins), and `recut()` replaces
+`lastTraining.result` with `recutResult(result, preparation.steps())` and shows it, without a training or a run row;
+**Save** then writes the re-cut `options` and metrics. A **Predict probability** toggle (`onProbabilityToggled`)
+does the same for a method without a probability input; for one with it (`probabilityInput(engine)`, SVM) it
+requests a check, so the method retrains with the input set (`selection()` sets it through `withProbabilityInput`
+from `steps().predictProbability`, so runs, searches, cards and the API carry it in `hyperparameters`; the form never
+shows the input: `fillMethod` and `TuneSettings` read `visibleHyperparametersOf`). A completed training is re-cut at
+the current steps before it is shown (they may have changed while it trained); its run row keeps the steps it trained
+with, the threshold and its metric as the training resolved them (below). An invalid threshold (`thresholdProblem`) computes nothing: `recut()` keeps the old result out of sight and
+shows `Fix the settings.`, **Save** is disabled, and `problem()` blocks **Train** and the live training (`Classification
+threshold: <problem>`), as for any invalid setting. When the timer fires with no result to re-cut, no training running
+and no finished training of the selection (another input changed while the threshold was invalid), it runs the check
+instead, so a valid threshold then trains as any fixed setting does.
+
+**The optimized threshold.** While the threshold is not edited by hand, `preparation.steps()` carries the
+**Best threshold by** metric as `thresholdMetric`, so every `recut()` (Predict probability checked, a completed
+training, **Set**, a restored run) and every training (its prepared options) resolve the threshold to that metric's best on
+the result; `recut()` then writes the resolved value back into the input with `setThreshold(value, metric)` (no
+`onThresholdChanged`, no hand edit). A hand edit drops the metric from the steps, so re-cuts and trainings keep the
+typed value until **Set**; the state lives in `PreparationInputs` and survives `requestCheck` and the hiding of the
+inputs (unchecking Predict probability), and goes only when the target's classes change. The input shows the value
+with 3 significant digits (its `format`), while `value`, the steps, the options, the texts and **Set**'s comparison
+use the full value. A metric change only
+updates **Set** and the status: the threshold moves at the next re-cut or training. The view's
+`bestThreshold(metric)` gives the best value of `lastTraining` (`bestThresholdOf`), undefined without a training,
+validation probabilities or two classes in the validation rows; `updateControls` calls `updateSet()`. `showResults` passes `threshold` and
+`thresholdMetric` from the result's options, so **Performance** reads `Classification threshold: <t>, the best <metric>
+on the validation rows: its validation values are optimistic` while the result's threshold is the optimized one, and
+`Classification threshold: <t>` after a hand edit; `storedSummary` passes the saved options' `thresholdMetric`, so a
+saved model's **Performance** pane reads the same line through the same `MetricsTable.fillList`. A completed
+training's run row and its `training_run` record get
+the result's options and the resolved `threshold` / `thresholdMetric` in their steps (a failed or cancelled run keeps
+the steps it was started with; its Preparation text shows no metric).
 
 ## Search
 
@@ -660,9 +752,14 @@ do not depend on the finish order, and a parallel search gives the same trial st
 one (it may launch a few more trials after the last complete one); the 30-trial iris test runs in about 1160 ms one
 fit at a time and 480 ms with four. With no folds left after the first ones (a hold out, or 2 folds) nothing is
 pruned. A complete trial's `score` is the metric of the pooled out-of-fold predictions (as
-`trainModel`'s Validation, with the out-of-fold probabilities for `auc`; with a hold out, the held out rows only, the
-TS metrics skipping the nulls); `foldScores` are the per-fold values (one with a hold out). A
-metric the method cannot give (`auc` without probabilities) fails the trial (`The metric <label> needs class
+`trainModel`'s Validation, with the out-of-fold probabilities for `auc`, `logLoss`, `brier`, passed to `metricsOf`
+only for a metric of `SCORE_METRIC_IDS`; with a hold out, the held
+out rows only, the TS metrics skipping the nulls); `foldScores` are the per-fold values (one with a hold out). Both
+score the labels `replayPostprocessing(prediction, request.prepared.options, probabilities)` gives, so with Predict
+probability a trial is scored at the form's threshold (or the most probable class); the winner's training then
+optimizes the threshold again through its prepared options' `thresholdMetric` (absent after a hand edit or an API
+`threshold`, see "Training"). A
+metric the method cannot give (`auc`, `logLoss` or `brier` without probabilities) fails the trial (`The metric <label> needs class
 probabilities; <Method> gives none.`), and so does any error of a fit (`failed`, with `error`). Stops: `cancelled`
 (`progress.canceled`, read before every fit: fits in flight finish, nothing new starts, a cancel between fits marks
 the trial `abandoned`), `budget` (checked before every launch), `trials` (`maxTrials` complete trials; launches are
@@ -768,7 +865,8 @@ or a pinned / fixed value's own `validity`; none for a setting the method ignore
 trials' under Budget, marks the fields `aria-invalid`, and opens the grid on a problem. `setInactive` (one set, from
 `applyRules`, which the view's `activeHyperparameters` reads too through `isActive`) disables the value controls of a
 setting the method ignores, so it is not checked; `setLocked` disables every control and the mode. In Auto-tune
-`applyRules` evaluates the rules with the tuned settings free and the target's task (a search trains no probability).
+`applyRules` evaluates the rules with the tuned settings free and the target's task. `TuneSettings` reads
+`visibleHyperparametersOf(engine)`, so SVM's hidden `probability` neither shows nor makes it read `Customized`.
 The view's `applyRules` runs only when the values, the task, the mode or the pins change (`onChanged(affectsRules)`),
 not on a range, the choices, Metric or Budget, and sets an input's `enabled` only when it differs; the rules are read
 once per method (`fillMethod`). `problem()` is the Tune part of `tuneBlocker`, from the rows' problems as
@@ -784,10 +882,9 @@ back in `setTask`.
 
 **In the view.** The **Tune** button (`startSearch('tune', form.tune.choice())`, gated by `tuneBlocker`: the
 selection's problem, a training, `noSpaceReason`, or `TuneSettings.problem()`; a trained selection can be tuned; its
-tooltip `Find the best settings`, plus `. Predict probability is off during a search.` while Predict probability is
-checked: `ButtonGate` takes a tooltip function). `startSearch(mode, choice)` runs through the view's `TrainingQueue` like a training (it counts in `activeTrainings`, so **Train**,
-**Save** and `aria-busy` behave as during one; `SHOWN_RUN` goes with the hint), on the selection with Predict
-probability off and the form's missing-values setting: `prepareTraining`, the `datasetFingerprint` of all its rows,
+tooltip `Find the best settings`). `startSearch(mode, choice)` runs through the view's `TrainingQueue` like a training (it counts in `activeTrainings`, so **Train**,
+**Save** and `aria-busy` behave as during one; `SHOWN_RUN` goes with the hint), on the selection as the form has it
+(Predict probability and its threshold included) and the form's missing-values setting: `prepareTraining`, the `datasetFingerprint` of all its rows,
 `tuneSearch` with the queue's progress (`Tuning <Method>`, cancelable, closed in a `finally` before the winner's
 training starts). The split seed is the form's **Split seed**. Until the search and the winner's training end, the
 form is locked: `lockForm()` keeps each form input's `enabled` (Table, Target, Features, the Preparation and
@@ -821,8 +918,8 @@ change; a `restoreRun` switches to Manual first, whatever it then sets). `create
 
 **API.** `Forge:trainModel` with `options.search` (`searchChoiceOf`: keys `metric`, `budgetSeconds` (whole, >= 1,
 default 60), `maxTrials` (whole, >= 1)) tunes the chosen or suggested method in `trainAndSave` before its training,
-with Predict probability off as in the view (`optionsOf` drops `predictProbability` and skips its checks; the search
-and the winner's training are a classification): `tuned` runs the same `tuneSearch` with `browserSearch` and the call's progress
+with Predict probability as the call sets it, as in the view (the trials score the labels its threshold gives, and
+the winner's threshold is optimized for `thresholdMetric` unless `threshold` was given; the selection's `hyperparameters` carry the method's probability input): `tuned` runs the same `tuneSearch` with `browserSearch` and the call's progress
 (`Tuning <Method>`, then a new `Training <Method> model`), and trains the request with the chosen settings, the hold
 out and the record; no completed trial throws `No trial completed: <the first failed trial's error>` when a trial
 failed, else `No trial completed within the budget. Give the search more time.` (or `The search was cancelled before a
@@ -894,8 +991,10 @@ prediction; and an explicit Skip rows or Impute for XGBoost still keeps the gaps
 ## Preparation
 
 `preparation/pipeline.ts`. The steps after the missing values, in the built-in tool's order: skip unique categories,
-one-hot, predict probability. `PreparationSteps` is `{oneHot, skipUniqueCategories, predictProbability, cutoff}`
-(`DEFAULT_CUTOFF` 0.5).
+one-hot, predict probability. `PreparationSteps` is `{oneHot, skipUniqueCategories, predictProbability, threshold,
+thresholdMetric?}` (`DEFAULT_THRESHOLD` 0.5; `thresholdProblem` refuses a value outside 0..1; `thresholdMetric`, a
+`BestThresholdMetric` with `DEFAULT_THRESHOLD_METRIC` `f1`, asks for the threshold that maximizes it, resolved by
+`recutResult`; absent, `threshold` is used as it is).
 
 `prepareFeatures(columns, target, steps, options)` (training) returns `PreparedFeatures` `{columns, target, options}`:
 `options` is a copy of the given ones with each step that changed something recorded; a step that does not apply
@@ -908,13 +1007,15 @@ changed, and those no step touches are passed on as they are.
 - **One-hot**: every remaining text or yes/no column becomes one int 0/1 column `<column>=<category>` per category, after
   the other columns, in the order of the columns and their categories; `preprocessingInfo` gains `one-hot`, and
   `options.oneHotCategories` records `{<column>: [categories]}` in that order.
-- **Predict probability**, for a text or yes/no target with exactly two classes (`twoClasses`, the empty one aside): the method gets
-  a float target named like the selection's, 1 for the first category (the positive class) and 0 for the other; float,
-  because XGBoost rounds the predictions of an int target. `postprocessingInfo` gains `binary-classification`, and
-  `positiveClass`, `negativeClass`, `binaryClassificationThreshold` (the cutoff) and `targetType` (the target's type)
-  are recorded: the keys of the built-in tool's models. Training then measures the scores (see "Metrics"). As in the
-  built-in tool, the score is the regression model's prediction on the 0/1 target, not a calibrated probability (it can
-  fall outside 0..1). A classifier's own probabilities need no step: see "Metrics"; the step stays for the cutoff.
+- **Predict probability**, for a categorical target with two or more classes (`classesOf`, the empty one aside): the
+  target is not changed (the method trains the classifier it is); `postprocessingInfo` gains `class-probabilities`
+  (`CLASS_PROBABILITIES`), and for two classes `positiveClass` (the first class), `negativeClass` and
+  `binaryClassificationThreshold` (the threshold) are recorded, the keys of the built-in tool's models, so
+  `preparationOptionsOf` reads them as before, plus Forge's `thresholdMetric` when the steps carry one (`recutResult`
+  keeps it only when it found the best; `preparationOptionsOf` keeps a known metric id only). Since 0.1.20 Forge never records `binary-classification`, the former
+  regression mode (a float 0/1 target, `targetType`); its models still replay. The labels come from the method's class
+  probabilities in `replayPostprocessing` (below); a result without them drops the step (`recutResult`, see
+  "Training").
 
 `replayPreprocessing(columns, options)` (application) replays `options.preprocessingInfo` on the mapped columns and
 returns the columns the method gets (the given list itself when there is nothing to replay): `ignore-missing` and
@@ -923,8 +1024,15 @@ cannot replay yet."). With `oneHotCategories`, `one-hot` builds exactly the reco
 saw is 0 in each, a category the table lacks is a column of zeros); with `skippedColumns`, `skip-unique-categories`
 drops exactly those columns by name, whatever their values (the application does not map them, see "Application
 pipeline", so they are there only when passed directly); without it (the built-in tool's models) it drops the
-all-unique columns (the core's rule); without `oneHotCategories` one-hot uses the applied data's categories. `replayPostprocessing`
-(also in `pipeline.ts`) cuts the scores into the two classes (see "Application pipeline").
+all-unique columns (the core's rule); without `oneHotCategories` one-hot uses the applied data's categories.
+`replayPostprocessing(prediction, options, probabilities?)` (also in `pipeline.ts`) is the one place that turns a
+method's output into labels, for training (`recutResult`, `trainPredictionOf`), the search trials, Apply and
+Evaluation: `binary-classification` cuts the raw score into the two classes (`binaryClasses`, see "Application
+pipeline"); `class-probabilities` takes the labels from `probabilities` (`probabilityLabels`): without them the
+prediction itself; with the two-class keys and the positive class's column, `positiveClass` where its probability is
+at least `binaryClassificationThreshold`, else `negativeClass`; otherwise the most probable class (ties: the first
+column). A row without a prediction stays empty, a row without probabilities keeps the prediction's label; the column
+keeps the prediction's type and name and is compacted (no stray empty category).
 
 ## Metrics
 
@@ -950,14 +1058,28 @@ all-unique columns (the core's rule); without `oneHotCategories` one-hot uses th
   positive class's column for two classes (`probabilityOf`), the macro average of the
   one-vs-rest AUCs otherwise (scikit-learn's `multi_class='ovr', average='macro'`) over the classes whose rows hold
   both classes; the train value on the final model's probabilities, the validation value on the out-of-fold columns
-  gathered by class name (a class a fold model never saw is 0 in its rows). A
-  Predict probability training measures its train and out-of-fold scores: the classification metrics above on the
-  labels the cutoff gives (`replayPostprocessing` of the scores) against the selection's target, with its positive
-  class, and `auc` and `averagePrecision` on the scores (`measure`, see "Crux metrics"). The scores are regression outputs, not calibrated probabilities.
+  gathered by class name (a class a fold model never saw is 0 in its rows). With probabilities `metricsOf` also adds
+  `probabilityMetrics(actual, probabilities, positiveClass?)` (TS, over the rows where the actual value and every
+  probability column have a value, classes compared as text): `logLoss` ("Log loss") = the mean of -ln of the actual
+  class's probability, clipped to [1e-15, 1 - 1e-15] (0 for a class without a column, so about 34.5 for that row);
+  `brier` ("Brier score") = for two classes with a positive class the mean of (p_positive - y)^2, otherwise the mean
+  over the rows of the sum over the columns of (p_k - y_k)^2. A Predict probability training measures the labels of
+  the probabilities (`recutResult`), the probability metrics as without the step.
+- `bestThreshold(actual, probability, positiveClass, metric)` (the optimized threshold, through `bestThresholdOf` in
+  `training/train-model.ts`): the paired rows sorted by probability,
+  highest first; each distinct probability is a candidate (`p >= t` positive) whose TP / FP accumulate (TN / FN from
+  the totals) and whose metric of `BEST_THRESHOLD_METRICS` (`f1`, `balancedAccuracy`, `mcc`, `accuracy`;
+  `BestThresholdMetric`) comes from the counts (`f1Of` of the positive class; the others from `countMetrics`, the
+  per-class counts core `classificationMetrics` uses too, on the two classes' counts); the best candidate wins, a tie
+  the one nearest 0.5; the value is the midpoint between it and the next lower distinct probability (the candidate
+  itself when it is the lowest), rounded to 3 decimals when the rounding stays in that gap; the gap is checked with
+  `isAtThreshold(p, t)` (`p >= Math.fround(t)`: single precision), the predicate the `class-probabilities` replay cuts
+  the float32 probabilities with (so a typed 0.7 keeps a row stored as 0.699999988 positive); undefined when the rows
+  hold one class only.
 - `balancedAccuracy` ("Balanced accuracy": the mean recall over the actual classes) and `mcc` ("MCC": the multiclass
   formula of scikit-learn, which is the usual one for two classes) are `classificationMetrics`' too, from the same
   label counts, for any number of classes; `averagePrecision` ("Average precision") comes from Crux (below). They
-  follow `auc` in `METRIC_IDS`. `classLabelMetrics` gives each label's precision, sensitivity and F1 (the re-cut's
+  follow `auc` in `METRIC_IDS`, then `logLoss` and `brier`. `classLabelMetrics` gives each label's precision, sensitivity and F1 (the re-cut's
   per-class values); `classesOf(target)` the target's classes, its empty category aside. `CLASS_METRIC_IDS` (`precision`, `sensitivity`, `f1`, `auc`,
   `averagePrecision`) are the ids of the per-class values: `ClassMetrics` `{label, rows, train, validation}` of a
   training (`MetricsRecord.classes`), `ClassValues` `{label, rows, values}` of an evaluation. `Curves` holds the
@@ -969,9 +1091,12 @@ curves)` calls it through `func.apply` with the standalone `actual` and `predict
 probability columns (`onFrame`; `null` without them), and resolves to the report (`ClassificationReport`, mirroring
 EDA's type) or undefined when EDA has no such function or the call throws (Crux not loaded, a Crux error; caught
 there, not logged). `measure(task, actual, predicted, positiveClass?,
-probabilities?, curves)` = `metricsOf(...)`; for a classifier with the report, `auc` and `averagePrecision` (with
-probabilities; `SCORE_METRIC_IDS`) are the report's instead of a TS AUC, and the report itself is returned (the
-positive class defaults to the target's first class, `classesOf`); without the report `auc` is `metricsOf`'s. The report gives the per-class values (`classMetricsOf(train, validation)` by label from both
+probabilities?, curves, score?)` = `metricsOf(...)` for a regression; for a classifier, `metricsOf` of the labels plus
+`probabilityMetrics` (with probabilities), then `auc` and `averagePrecision` (with probabilities, or with `score`, the
+positive class's score of a model of the former regression step, which the report gets as that class's only
+probability) are the report's, and the report itself is returned (the positive class defaults to the target's first
+class, `classesOf`); without the report `auc` is `aucOfProbabilities`', as in `metricsOf` (`aucOf` of the `score`). `SCORE_METRIC_IDS` (`auc`, `averagePrecision`, `logLoss`,
+`brier`) are the values no threshold changes, which a re-cut keeps. The report gives the per-class values (`classMetricsOf(train, validation)` by label from both
 splits' reports, a label of one report only with empty values for the other; `classValuesOf(report)` for an
 evaluation; the report's recall is `sensitivity`) and the curves (`curvesOf`: float arrays, the PR's null last
 threshold becomes Infinity; undefined without curves: three classes, a missing positive class, one class only).
@@ -1059,11 +1184,12 @@ host (the two panels while there is no result) and the rows host (`forge-results
 - `setDataInsights(insights)`: the check's `SelectionCheck.insights`, set after every check (also when a problem or a
   hint follows), shown first until the next call.
 - `show(data: ResultsData)`: `engine`, `table`, `columns` (what the method saw), `target` (the selection's), `prediction`
-  (labels or values; the Train view passes `trainPredictionOf(result)`), `score` (Predict probability),
+  (labels or values; the Train view passes `trainPredictionOf(result)`), `score` (only the Run Evaluation of a model
+  of the former regression step, `binary-classification`; the Train view passes none),
   `curves` (the result's `Curves` from EDA's report: the positive class's ROC and PR curves for two classes with a
   probability or score), `keptRows`,
-  `positiveClass`, `cutoff` (Predict probability: the Train view's `binaryClassificationThreshold` of the result, the
-  evaluation's of the model), `blob`, `summary`. The grid is the `MetricsTable` in place at once (see "Components");
+  `positiveClass`, `threshold` (Predict probability: the Train view's `binaryClassificationThreshold` of the result, the
+  evaluation's of the model, circled as the current **Classification threshold**), `blob`, `summary`. The grid is the `MetricsTable` in place at once (see "Components");
   the result insights are `evaluationInsights` of `summary.evaluation?.values ?? summary.metrics.train` and
   `summary.metrics`. A `multiclass` result gets the **Per-class** parallel coordinates plot, built with the other viewers (`buildShown`)
   and refilled with them (see "Keeping the viewers").
@@ -1080,8 +1206,7 @@ host (the two panels while there is no result) and the rows host (`forge-results
 
 `ui/results-layout.ts` (no DOM): `resultsLayout(kind, available, visualizeCount)` gives the rows, each a height, its
 panel keys and their weights (the initial shares of the row's width). `kind` (`resultKindOf(target)`) is `regression` for a numerical target,
-`binary` for exactly two non-empty classes (Predict probability too: the pane's target is the selection's text
-column), `multiclass` otherwise. A key the result lacks is dropped and an empty row disappears; a row keeps its
+`binary` for exactly two non-empty classes, `multiclass` otherwise. A key the result lacks is dropped and an empty row disappears; a row keeps its
 template height (`ROW_HEIGHTS` 350 / 350 / 450). When row 2 is left with fewer than three panels and row 3 holds
 `classBalance` (`binary` without `insights`), it moves to row 2's right end (weight 1.5). Weights in brackets, 1
 where none is given:
@@ -1162,9 +1287,9 @@ are the same, with or without a score as before, with or without curves as befor
 and the same columns and target (the same objects, or copies with the same name, type and values: a skipped row or a
 preparation step gives new copies on every training) only refills: the new prediction and score are written into the
 old columns in place (`copyInto` of `apply/apply-model.ts`, or `init` for a text column so its categories are rebuilt, then `fireValuesChanged`; only when the type and the length match, otherwise everything
-is rebuilt; a score equal to the shown one, as after a cutoff change, is not written; curves that are not the shown
+is rebuilt; a score equal to the shown one, as after a threshold change, is not written; curves that are not the shown
 object (a retrain: a new report) give the two curve viewers new frames, `viewer.dataFrame = frame` with the axes and the markers column set
-again (each new frame has its own `Mark` column, the cutoff already circled; `replaceCurves`; the viewers and their panels stay), while a re-cut keeps the result's `curves` object and
+again (each new frame has its own `Mark` column, the threshold already circled; `replaceCurves`; the viewers and their panels stay), while a re-cut keeps the result's `curves` object and
 the frames), then the marks, the per-class values (each axis column `init` + `fireValuesChanged`, which the plot
 redraws on; different classes or axes rebuild everything), the distribution values and the statistics are recomputed
 in place, so the viewers redraw with their state (zoom, sizes) kept. A scatter plot recomputes its regression line only when the state of its inputs
@@ -1173,10 +1298,11 @@ regression_line.dart`), not when the values of its columns do, so a regression r
 (`filter.fireChanged()`, the filter itself unchanged). **Wrong predictions** follows the new prediction: its scattered
 column refilled and its filter re-set while a row is wrong, built when one becomes wrong, dropped (and its frame given
 back after the mount) when none is. **ROC Curve** and **PR Curve** are on their own frames, so no refill of the
-preview frame reaches them: a cutoff change only moves their current rows and the `cutoff` mark (`Mark` `init`), and the title, the current row and the marks are set only when they change (on the
+preview frame reaches them: a threshold change or a Predict probability toggle only moves their current rows and the
+`cutoff` mark (`markCurves`: `set` of the two rows, then `fireValuesChanged`), and the title, the current row and the marks are set only when they change (on the
 platform's ROC curve viewer, which shared the preview frame, every refill of the prediction and the marks redrew the
-curve). A hyperparameter, Method or cutoff change gives such a result; a change of the
-data (Table, Target, Features, other skipped rows or imputed values, Predict probability, another task kind) builds
+curve). A hyperparameter, Method, threshold or Predict probability change gives such a result; a change of the
+data (Table, Target, Features, other skipped rows or imputed values, another task kind) builds
 everything again. A panel that appears or goes (Wrong predictions, Insights & Tips, the method's own views) changes
 only the rows it is in, and row 3 too when **Class balance** moves between rows 2 and 3. A mount disposes the viewers it no longer shows with `ui.empty` of their slots and rows (the platform's
 `Widget.kill`; `Viewer.close` works only in a table view); after a rebuild the previous result's subscriptions are
@@ -1286,27 +1412,35 @@ missing-value settings. `applyAndRecord(request, source, progress?)`:
    indicator stops it ("Application was cancelled."); after every call the progress shows "Rows a-b of n". At most
    every 50 ms the loop gives the event loop a turn (`yieldToEventLoop`), so a click on the cancel and the progress
    repaint get through: fast engine calls resume as microtasks and would otherwise hold the page to the last batch.
-6. `replayPostprocessing` replays `binary-classification`: scores at or above `binaryClassificationThreshold` become
-   `positiveClass`, the others `negativeClass`, in a column of `targetType`; `compact()` then drops the unused `''`
-   category the new text column starts with.
+6. `replayPostprocessing(raw, options, probabilities)` (see "Preparation"): `binary-classification` (a model of the
+   former regression mode): scores at or above `binaryClassificationThreshold` become `positiveClass`, the others
+   `negativeClass`, in a column of `targetType`; `compact()` then drops the unused `''` category the new text column
+   starts with; `class-probabilities`: the labels of the class probabilities.
 7. With skipped rows, the predictions are spread over a full-length column (`scatteredColumn`); skipped rows stay
    empty.
 8. Names the column `predictionName(table, target)`: `<target> (predicted)`, or `<target> (predicted 2)`, ... when a
    column of that name exists (ignoring case); tags it `forge.model` = the model id (`PREDICTION_TAG` in
-   `constants.ts`) and adds it to the table.
+   `constants.ts`) and adds it to the table. A model whose options record `class-probabilities` and whose method
+   returned probabilities then adds, after it, the positive class's column (`positiveClass` recorded and among the
+   classes) or one per class, each spread over the kept rows as the labels are, named `probabilityName(table, target,
+   class)` (`P(<target> = <class>)`, `P(<target> = <class>) 2`, ...; both names come from `freeName`), tagged the same way and described (`meta.
+   description`, the grid's header tooltip) `Probability that <target> is <class>, predicted by <model name>`:
+   `ApplyResult.probabilityColumns` (empty otherwise). `recordApplication` keeps `column_name` = the label column.
 
 Steps 2-6 are `predictRows(request, progress?)`, which adds nothing to the table: it returns `RowPredictions`, the
 columns the method got, its own output (`raw`), the labels (`raw` with the postprocessing replayed, `raw` itself
-without a step), `keptRows`, `skippedRows` and the blob read. `targetSchemaOf(model.target)` reads a stored target
+without a step), `keptRows`, `skippedRows`, the blob read and the class probabilities of the kept rows. `targetSchemaOf(model.target)` reads a stored target
 schema with its categories.
 
 **Evaluation** (`training/evaluation.ts`). `evaluateModel(request, progress?)` measures a saved model on a table whose
 `target` column holds the actual values (an `EvaluationRequest`: the `LoadedModel`, the table, the target, the column
 mapping, the positive class): `checkApplyRequest`, then `predictRows` with the default batch size and the
 missing-values mode the model was trained with (`missingValuesOf`, see "Missing values"); the target is the given column, or a copy of its kept rows
-(`columnRowCopy`). A Predict probability model is measured as at training: the classification metrics of the labels with the positive class (the request's, else the options') plus
-`auc` and `averagePrecision` of the scores (`measure` with the scores as the positive class's probability, as at
-training), the scores coming back as `score`; any other model uses `measure(taskOf(target), ..., rows.probabilities,
+(`columnRowCopy`). A model of the former regression step (`binary-classification`) is measured on its scores: the
+classification metrics of the labels with the positive class (the request's, else the options') plus `auc` and
+`averagePrecision` of the scores (`measure` with no probabilities and the scores as `score`), but no `logLoss` or
+`brier` (scores are not probabilities, so they are not passed as probabilities), the scores coming back as `score`; any
+other model, one saved with `class-probabilities` too (its labels already cut by the replay), uses `measure(taskOf(target), ..., rows.probabilities,
 true)` (`taskOf`: regression for a numerical target; `auc` of the class probabilities when the method returned them:
 the positive class's column for two classes, else the macro average). A
 row without an actual value is left out by the metrics. The `EvaluationResult` holds the columns, the target and the
@@ -1430,7 +1564,7 @@ model needs. Map them in columnNamesMap."). Missing values are handled in the mo
 without the view (`runTrainModel` in `training/train-api.ts`; the view and the function share, from
 `training/train-model.ts`, `trainingEngines`, `problemMessages`, `checkSelection`,
 `prepareTraining` and `trainModel`, from `training/k-fold.ts` `DEFAULT_VALIDATION` and `DEFAULT_SEED`, and
-`defaultFeatures`, `DEFAULT_STEPS`, `defaultOneHot`, `cutoffProblem`,
+`defaultFeatures`, `DEFAULT_STEPS`, `defaultOneHot`, `thresholdProblem`,
 `modelNameOf` (`NO_NAME`; the name is written trimmed) and `saveTrainedModel`):
 
 1. The target and the features by name ("The table has no column 'x'." / "The table has no columns 'a', 'b'."); without
@@ -1444,16 +1578,26 @@ without the view (`runTrainModel` in `training/train-api.ts`; the view and the f
    `Eda:knnImpute`'s inputs, its defaults otherwise; an explicit `keep` for a method that does not handle missing
    values is the check's Missing values problem, `needsRowsWithoutGaps`: when the suggestion replaces the chosen
    method, the selection is checked again against the suggested one), `oneHot` `defaultOneHot`, `skipUniqueCategories` `true`, `predictProbability`
-   `false` (refused on a target without exactly two classes), `cutoff` `DEFAULT_CUTOFF` (with Predict probability,
-   0..1 or the view's `Enter a number from 0 to 1.`), `seed` 42 (`DEFAULT_SEED`), `scheme` `kfold`, `folds` 5, `testFraction` 0.2 (0.05..0.5),
+   `false` (kept with `search`; refused on a numerical target: `Predict probability needs a text or boolean target.`),
+   `threshold` `DEFAULT_THRESHOLD` (`cutoff` accepted as its old name: the unknown-key check takes it on top of
+   `OPTION_NAMES`, which the "Unknown option" list shows, then becomes `threshold` when that is absent, so `threshold`
+   wins when both are given; with Predict probability on two classes, 0..1 or the
+   view's `Enter a number from 0 to 1.`), `thresholdMetric` `f1` (`DEFAULT_THRESHOLD_METRIC`; one of
+   `BEST_THRESHOLD_METRICS`, else `The option 'thresholdMetric' needs one of: f1, balancedAccuracy, mcc, accuracy.`;
+   the steps carry it only when neither `threshold` nor `cutoff` is given, so the training optimizes the threshold and
+   the run and the model store the metric; a completed run's record takes the result's options), `seed` 42 (`DEFAULT_SEED`), `scheme` `kfold`, `folds` 5, `testFraction` 0.2 (0.05..0.5),
    `stratified` `true`, `shuffle` `true` (`DEFAULT_VALIDATION`), `search` none (`searchChoiceOf`:
    an object of `metric` (a search metric of either task; the task's check is `searchPlanOf`'s), `budgetSeconds` (whole,
    >= 1, default 60) and `maxTrials` (whole, >= 1), anything else refused with that key list).
 4. The save, checked before any work: a blank name ("Enter a name for the model."), an unknown storage, `reference`
    without `datasetRefOf(table)`.
 5. `checkSelection`; every problem goes into one `ForgeError`, target and features first.
-6. The hyperparameters: `defaultHyperparameters` overlaid with the given ones, each checked against its `train`
-   input (an unknown name with the list of settings; the kind, a whole number for an int, `min`/`max`, `choices`).
+6. With `predictProbability`, a final method without `givesProbabilities` is refused (`<Method> gives no class
+   probabilities, so Predict probability cannot be used with it.`). The hyperparameters: `defaultHyperparameters`
+   overlaid with the given ones, each checked against its `train` input of `visibleHyperparametersOf` (an unknown
+   name with the list of settings, so SVM's `probability` is refused; the kind, a whole number for an int,
+   `min`/`max`, `choices`), then `withProbabilityInput(engine, ..., predictProbability)`, so the training, `tuned`
+   and the run record carry the method's probability input.
 7. With `showProgress`, the task-bar indicator `Training <Method> model` (cancellable) is the `LoopProgress` of
    `trainModel`; `prepareTraining`, then `trainModel`. With `search`, `tuned` first runs the search on the prepared
    request (see "Search": the indicator `Tuning <Method>`, then a new `Training <Method> model`) and `trainModel` gets
@@ -1489,7 +1633,8 @@ columns to `methodList` of `engines/method-list.ts`) lists the complete methods
 2. **Runs on** (`server` when `isServerEngine`, else `browser`), **Keeps training rows** (`hasTrainingRows`) and
    **Retrains live** (`isLiveUpdate`) go after Method type; **Settings** last: per method the json text of
    `methodSettings(engine)`, one `{name, type, default?, min?, max?, choices?, description?}` per `train` input
-   (`hyperparametersOf`; `default` from `defaultHyperparameters`, a key the input does not declare is left out).
+   (`visibleHyperparametersOf`: a method's probability input is left out, as from the Hyperparameters column; `default`
+   from `defaultHyperparameters`, a key the input does not declare is left out).
 3. With a `table`: the target column is `target` by name ("The table has no column 'x'.", as `trainModel`), by
    default the table's last column (the Train view's default; no columns: "The table has no columns."); the features are `defaultFeatures(table, target)`.
    Then `trainModel`'s steps without a method: `trainingEngines`, `optionsOf({})`, `checkSelection` and `engineOf`,
@@ -1828,10 +1973,12 @@ ribbon holds only **Save** (no TRAIN / SAVE switch of one button; a **Train** bu
 for a method that does not retrain on every change), and the task bar names the method.
 Validation uses five folds that cover every row once,
 from a seed saved with the model, instead of five overlapping random samples, and it runs from 10 rows instead of
-being skipped below 100. MAE and F1 are new; AUC-ROC is measured on the Predict probability scores, whose target is a
-float 0/1 column (the built-in tool's int target gets rounded 0/1 predictions from XGBoost), and on the class
-probabilities of any classifier whose method returns them (new; the macro one-vs-rest average for more than two
-classes). Balanced accuracy and MCC are new; average precision, the per-class values (**Per-class**) and the exact ROC
+being skipped below 100. MAE and F1 are new; AUC-ROC is measured on the class probabilities of any classifier whose
+method returns them (new; the macro one-vs-rest average for more than two classes). Predict probability is not the
+built-in tool's regression on a 0/1 target: it keeps the classifier and takes the labels from its class
+probabilities, for any number of classes, and the applied model adds the probability columns (new; the built-in
+tool's models with `binary-classification` still replay on their scores); the threshold optimized for a metric
+(**Best threshold by**, **Set**), log loss and the Brier score are new. Balanced accuracy and MCC are new; average precision, the per-class values (**Per-class**) and the exact ROC
 and PR curves come from Crux (new; the built-in ROC curve was the platform's viewer, there was no PR curve). One-hot records the
 training categories and replays them (the built-in tool encoded the applied table's categories), and text and yes/no
 features are refused while One-hot is off (which starts checked when every such feature has at most 20 categories).
@@ -1883,7 +2030,8 @@ list says `No model fits this table.` above **Train**. The catalog view's `aiDes
 The view's history is the **Runs** grid and the model cards. **Runs** has one row per training that was not
 superseded (a cancelled or failed one too, also a failure before any run was recorded), every row side by side; a
 click on a row whose inputs differ from the form's sets them again and trains (a click on a row the form already
-matches and shows the completed result of only makes it current; a cutoff-only difference re-cuts). The model cards
+matches and shows the completed result of only makes it current; a difference of only Predict probability and the
+threshold re-cuts). The model cards
 are the built-in tool's compare cards (the current model, "+" to pin, hidden while the current model is pinned, a
 trash to remove, a click on a pinned card setting its inputs again, and their colors), extended with the **Performance** and **Settings** tabs switched together, the
 settings status as trained, and the
@@ -1909,12 +2057,12 @@ The views publish their state in the DOM, so a test waits on what a view says in
   `ResultsPane.show` settles): `aria-busy="true"` while a check is pending (`check` undefined), a training is queued,
   running or being recorded (`isTraining`) or results are being shown (`showing`, the `ResultsPane.show` calls not
   settled); `aria-invalid="true"` once checked while the selection has a problem (`problem()`, an invalid setting
-  included) or its last training ended `failed` or `cancelled` (`isFailed`, cleared by any change but the cutoff and by
+  included) or its last training ended `failed` or `cancelled` (`isFailed`, cleared by any change but the threshold and a re-cutting Predict probability toggle, and by
   a training of the current selection that completes, a **Train** click after a cancel too). Ready is
   `aria-busy="false"` without `aria-invalid="true"`; a slow method waiting for **Train** is ready.
 - On the same element, `data-forge-run-id` (`SHOWN_RUN`) is the id of the `training_run` row whose result the results
-  show. `showResults` sets it when a completed training of the current selection is shown, and a cutoff-only re-cut
-  sets the same id again. `showHint` removes it: before the first training, for a selection problem or an invalid
+  show. `showResults` sets it when a completed training of the current selection is shown, and a re-cut (a threshold
+  change or a Predict probability toggle of a method without a probability input) sets the same id again. `showHint` removes it: before the first training, for a selection problem or an invalid
   setting, for a method waiting for **Train**, after a failed or a cancelled training, when a **Train** click starts
   one, and on a Table change. A training that runs while a result is shown (a live retrain) leaves the old id until
   its own result is shown, and a superseded training leaves it as it is: it records no run and shows nothing. A new
@@ -1940,6 +2088,16 @@ The views publish their state in the DOM, so a test waits on what a view says in
   `hidden` while a pinned card has its inputs; a pinned card has `.forge-card-unpin` (its trash) only; each icon carries its tooltip as
   `aria-label`. The tabs' headers are the platform's `.d4-tab-header[data-source="tab-pane-<name>"]` (`Performance`,
   `Settings`); both panes' tables are `.forge-card-table` (`tr.header` the header row).
+- Preparation's probability inputs: the captions **Predict probability** (disabled, `enabled` false, for a method
+  without class probabilities), **Classification threshold** (its editor's text has 3 significant digits, its `value`
+  the full threshold), its status (`PreparationInputs.thresholdStatus`, a `.forge-tune-status-text` span with
+  `aria-live="polite"` in the `.forge-tune-status` row right after the threshold's root: `Best for <metric>` or
+  `Customized`; the row has `style.display` `none` while no best exists), then **Best threshold by**
+  (`PreparationInputs.thresholdMetric`, its root the next sibling of the status row; a choice of `F1`, `Balanced
+  accuracy`, `MCC`, `Accuracy`) with the button `Set` (`PreparationInputs.setThresholdButton`, a child of that input's root
+  `.forge-threshold-metric`, after the select and outside `.ui-input-options`; `style.display` `none` while the
+  threshold is the chosen metric's best or no best exists); the inputs hide together (`style.display` `none` on their
+  roots), the status with them.
 - `CollapsibleGroup`: `aria-expanded` on `.forge-group-header` follows `setExpanded`; `aria-invalid` on
   `.forge-group-summary` follows `setSummary` (the Apply dialog's red `N of M matched`).
 - Every table of data but the model cards' is the platform's grid, whose widget status publishes the hit areas `cell <row> of <column>`,
@@ -1964,9 +2122,11 @@ nothing trained reads once the view is settled (`aria-busy` not true).
 
 ## EMS schema `forge`
 
-Manifest: `databases/forge/schema.json`, version `0.1.19` (0.1.17 added the `search` json column to `model` and
-`training_run`; 0.1.18 describes the current `splitting` shape and 0.1.19 the `space` of a Tune `search`, description
-changes that need only the bump). `grok publish` deploys it; a debug publish applies
+Manifest: `databases/forge/schema.json`, version `0.1.20` (0.1.17 added the `search` json column to `model` and
+`training_run`; 0.1.18 describes the current `splitting` shape, 0.1.19 the `space` of a Tune `search`, and 0.1.20 the
+`postprocessingInfo` ids of `options` (`class-probabilities`), the `metrics` ids `logLoss` and `brier` and the
+`search` score "by the chosen validation", description changes that need only the bump; a description stays under
+the 1024 characters of its column). `grok publish` deploys it; a debug publish applies
 destructive changes without migration scripts, except a `promotion` change on a row table, which is always refused
 (`[promotion-change]`). To change it, publish a manifest with only a placeholder table, then the real one, bumping
 `version` both times; the first publish drops the tables with their data and their rows' entities and permissions,
@@ -1998,9 +2158,9 @@ EMS `json` columns hold objects only; a list is wrapped in an object. TS types: 
 |---|---|---|
 | `model.target` (caption "Target details") | `TargetSchema` | `{name, type, semType?, categories?}`; `categories` for classification targets |
 | `model.features`, `training_run.features` | `FeaturesSchema` | `{columns: [{name, type, semType?}]}`, in training order |
-| `options` | `PreparationOptions` | Preparation replay, see below and "Preparation"; Forge writes `{preprocessingInfo, postprocessingInfo, missingValues: {mode, neighbors?, distance?, skippedRows}, skippedColumns?: [names], oneHotCategories?: {<column>: [categories]}}`, plus `positiveClass`, `negativeClass`, `binaryClassificationThreshold`, `targetType` with Predict probability |
+| `options` | `PreparationOptions` | Preparation replay, see below and "Preparation"; Forge writes `{preprocessingInfo, postprocessingInfo, missingValues: {mode, neighbors?, distance?, skippedRows}, skippedColumns?: [names], oneHotCategories?: {<column>: [categories]}}`; with Predict probability `postprocessingInfo` holds `class-probabilities` and, for two classes, `positiveClass`, `negativeClass`, `binaryClassificationThreshold` are set; models of the former regression mode (before 0.1.20) hold `binary-classification` with the same keys and `targetType` |
 | `hyperparameters` | `Hyperparameters` | `{<train function input>: value}` |
-| `metrics` | `MetricsRecord` | `{train: {<metric id>: number}, validation: {<metric id>: number}, test?: {<metric id>: number} (the final model on the rows held out before a search), positiveClass?, classes?: [{label, rows, train, validation}]}`; ids `mse`, `rmse`, `mae`, `r2`, `accuracy`, `f1`, `sensitivity`, `specificity`, `precision`, `npv`, `auc`, `balancedAccuracy`, `mcc`, `averagePrecision` (`auc` and `averagePrecision` for classifiers whose method returns probabilities, and Predict probability; `balancedAccuracy` and `mcc` for every classifier; `classes` from Crux through `Eda:classificationReport`); class ids `precision`, `sensitivity`, `f1`, `auc`, `averagePrecision` |
+| `metrics` | `MetricsRecord` | `{train: {<metric id>: number}, validation: {<metric id>: number}, test?: {<metric id>: number} (the final model on the rows held out before a search), positiveClass?, classes?: [{label, rows, train, validation}]}`; ids `mse`, `rmse`, `mae`, `r2`, `accuracy`, `f1`, `sensitivity`, `specificity`, `precision`, `npv`, `auc`, `balancedAccuracy`, `mcc`, `averagePrecision`, `logLoss`, `brier` (`auc`, `averagePrecision`, `logLoss` and `brier` for classifiers whose method returns probabilities; a model of the former regression mode has `auc` and `averagePrecision` of its scores; `balancedAccuracy` and `mcc` for every classifier; `classes` from Crux through `Eda:classificationReport`); class ids `precision`, `sensitivity`, `f1`, `auc`, `averagePrecision` |
 | `splitting` | `Splitting` | `{scheme: none \| kfold \| holdout, folds?, trainFraction?, isStratified?, isShuffled?}` (`folds` for kfold, `trainFraction` for holdout; `isStratified` when the split kept each class's share; `isShuffled` false for a split in row order, absent in older models: shuffled; read by `splittingOf`); `none` only in older models |
 | `search` (`model`, `training_run`) | `SearchRecord` | `{mode: tune \| best, metric, budgetSeconds, seed, trials, completed, pruned, failed, elapsedMs, stopped: budget \| cancelled \| exhausted \| trials \| failed, holdOut?: {rows, fraction}, space?: {searched: [{name, type, low?, high?, log?, step?, choices?, simpler?}], pinned: [names]}, leaders: [{method, hyperparameters, score, se, foldScores, trials, chosen, note?}]}`; absent without a search (`mode` `best` is reserved for a search over several methods); `space` (Tune) is in the schema's description since 0.1.19 |
 | `model.dataset_ref` | `DatasetRef` | Reference mode: `{kind: file \| query \| script, script, path?, id?, name?}`, see "Storage modes" |
@@ -2123,6 +2283,16 @@ n}` or `"task": ["classification" | "regression"]` (the task the method trains; 
 gives `{}` without the key and undefined for a malformed one (the logic logs nothing; the view warns once and treats it
 as no rules). The view disables an input whose rule fails (see "Components"), the search fixes such a dimension to the
 default (see "Search"). EDA declares it for SVM (gamma, degree, coef0 by kernel, epsilon for a regression), Linear Regression (iterations while alpha > 0) and XGBoost (seed while subsample or colsample < 1).
+The optional `mlprobabilities` says the method returns class probabilities (`proba_<class>` from `apply`): `'true'`,
+or the name of a bool `train` input that turns them on (EDA: `'true'` on every classifier but SVM, whose `probability`
+input it names; none on Linear and PLS Regression). In `engines/engine.ts`: `givesProbabilities(engine)` (the meta is
+`'true'` or names such an input), `probabilityInput(engine)` (that input's name when the meta names a `train` input of
+type `DG.TYPE.BOOL`, else undefined), `withProbabilityInput(engine, hyperparameters, on)` (the hyperparameters with
+the input set to `on`; unchanged without one) and `visibleHyperparametersOf(engine)` (`hyperparametersOf` without the
+input: the form, `TuneSettings`, the cards' Settings tab, the API's `hyperparametersFor`, `methodColumns`,
+`Forge:listMethods`, the catalog's Methods tooltip and `searchSpaceOf`'s default, so a space naming the input is refused
+by the view and the API alike) and `visibleValuesOf(engine, values)` (the values without the input: the **Runs** Method
+tooltip). `hyperparametersOf` and `defaultHyperparameters` keep the input (the contract).
 
 - An engine is complete, and usable, only with `train`, `apply` and `isApplicable`.
 - A function engine receives the feature table and the target column. A script engine (`DG.Script`) receives one
@@ -2131,7 +2301,8 @@ default (see "Search"). EDA declares it for SVM (gamma, degree, coef0 by kernel,
   and build the table themselves, a frame of the columns given back by `onFrame` when the call ends.
 - `train` returns the blob as a `Uint8Array` or a `DG.FileInfo` (its `data` is used); anything else is a
   `ForgeError`. `apply` must return a dataframe with at least one column; columns named `proba_<class>` after the
-  first are read as the class probabilities (AUC-ROC, the two-class ROC curve), any other column is dropped.
+  first are read as the class probabilities (AUC-ROC, log loss, Brier, the two-class curves, Predict probability), any
+  other column is dropped.
 - Hyperparameter defaults come from the `train` annotation (`//input: int iterations = 20`). The platform keeps them
   as text in `Property.initialValue` (`Property.defaultValue` stays null), a string one in quotes (`'RBF'`);
   `defaultValuesOf` (used by `defaultHyperparameters` and for the imputation inputs) converts them by the input type

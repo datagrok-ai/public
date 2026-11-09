@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {textColumn} from '../columns';
-import {Engine, Hyperparameters} from '../engines/engine';
+import {Engine, Hyperparameters, visibleValuesOf} from '../engines/engine';
 import {TrainingRunStatus} from '../generated/db';
 import {METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricId, MetricValues} from '../metrics/metrics';
 import {MissingValuesSettings} from '../preparation/missing-values';
@@ -37,6 +37,8 @@ export interface SessionRun {
   hyperparameters: Hyperparameters;
   missingValues: MissingValuesSettings;
   steps: PreparationSteps;
+  /** The target has exactly two classes. */
+  twoClasses: boolean;
   /** The features had missing values. */
   featureGaps: boolean;
   /** The record's training rows; 0 when nothing was recorded. */
@@ -54,12 +56,14 @@ export interface SessionRun {
 
 /** What a run trained on: the inputs a restore sets again. */
 export type RunInputs = Pick<SessionRun, 'engine' | 'targetName' | 'featureNames' | 'hyperparameters' |
-  'missingValues' | 'steps' | 'validation' | 'seed'>;
+  'missingValues' | 'steps' | 'twoClasses' | 'validation' | 'seed'>;
 
-/** Whether [a] and [b] train the same model: every input but the cutoff, which only re-cuts a result. */
+/** Whether [a] and [b] train the same model: every input but Predict probability, the threshold and its metric, which
+ * only re-cut a result (a method whose probabilities are a setting differs by that setting). */
 export function isSameInputs(a: RunInputs, b: RunInputs): boolean {
   const text = (x: RunInputs) => JSON.stringify([x.engine.name, x.targetName, x.featureNames, x.hyperparameters,
-    x.missingValues, {...x.steps, cutoff: undefined}, x.validation, x.seed]);
+    x.missingValues, {...x.steps, predictProbability: undefined, threshold: undefined, thresholdMetric: undefined},
+    x.validation, x.seed]);
   return text(a) === text(b);
 }
 
@@ -108,7 +112,8 @@ export class RunsPanel {
     const headers = {...HEADERS};
     const cells: {[column: string]: (row: number) => string} = {
       'Method': (row) => [...RunsPanel.searchLines(runs[row].search),
-        ...Object.entries(runs[row].hyperparameters).map(([name, value]) => `${name}: ${value}`)].join('\n'),
+        ...Object.entries(visibleValuesOf(runs[row].engine, runs[row].hyperparameters))
+          .map(([name, value]) => `${name}: ${value}`)].join('\n'),
       'Features': (row) => runs[row].featureNames.join('\n'),
       'Status': (row) => runs[row].status === 'failed' ? runs[row].error ?? '' :
         runs[row].status === 'cancelled' ? CANCELLED_TOOLTIP : '',
@@ -131,15 +136,19 @@ export class RunsPanel {
   }
 
   /** `keep missing values` (only when the features had gaps) or `impute (<neighbors> neighbors, <distance>)`,
-   * `one-hot`, `skip unique categories`, `probability (cutoff <c>)`: the steps the training used, as the Preparation
+   * `one-hot`, `skip unique categories`, `probability (threshold <t>, best <metric>)` (without the metric for a
+   * threshold set by hand, `probability` for more than two classes): the steps the training used, as the Preparation
    * cell lists them; empty for none. */
   static preparationItems(run: SessionRun): string[] {
     const {steps} = run;
+    const best = steps.thresholdMetric === undefined || run.status !== 'completed' ? '' :
+      `, best ${METRIC_LABELS[steps.thresholdMetric]}`;
     return [
       ...RunsPanel.missingValuesText(run),
       ...(steps.oneHot ? ['one-hot'] : []),
       ...(steps.skipUniqueCategories ? ['skip unique categories'] : []),
-      ...(steps.predictProbability ? [`probability (cutoff ${steps.cutoff})`] : []),
+      ...(steps.predictProbability ? [run.twoClasses ? `probability (threshold ${steps.threshold}${best})` :
+        'probability'] : []),
     ];
   }
 
