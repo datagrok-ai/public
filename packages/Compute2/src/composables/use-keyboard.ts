@@ -19,7 +19,7 @@ const tabStops = (containers: Element[]) => containers.flatMap((container) =>
  * Tab and Shift+Tab go round the stops of the containers and never leave them. The focus is moved here rather than by
  * the browser, whose order jumps to the page start past an element with a positive tabindex, such as a grid's canvas.
  */
-function tabWithin(e: KeyboardEvent, containers: Element[]) {
+export function tabWithin(e: KeyboardEvent, containers: Element[]) {
   if (e.key !== 'Tab' || e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey)
     return;
   const stops = tabStops(containers);
