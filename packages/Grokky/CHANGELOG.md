@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [public#4552](https://github.com/datagrok-ai/public/issues/4552): Grokky: suggestions use an ID column (USUBJID) for categorical slots
 * Docker: Moved the claude-runtime image to Wolfi and raised @hono/node-server to 2.x in claude-runtime and mcp-server, so both images have no known CVEs; the runtime no longer ships npm or virtualenv
 
 ## 1.0.5 (2026-11-03)

@@ -9,6 +9,8 @@
 #
 # Slots: {name.filter} picks a live column where `filter` is truthy — isNumerical,
 #   isCategorical, semType, isDateTime — and biases the pick with `prefer` regexes.
+#   isCategorical only takes columns worth grouping by: 2 to 30 categories and at least
+#   two rows per category on average, so ID-like columns (all values unique) are skipped.
 #   Extra path segments read column props, e.g. {x.stats.med}. A suggestion whose slot
 #   finds no matching column is dropped (and its block hides if all its suggestions drop),
 #   so type-specific blocks appear only when the data supports them.
@@ -247,7 +249,7 @@
   icon: chart-line
   color: var(--steel-3)
   suggestions:
-    - label: Scatter plot of {x.isNumerical} vs {y.isNumerical}
+    - label: Scatter plot of {x.isNumerical} vs {y.isNumerical}, colored by {c.isCategorical}
       prompt: Add a scatter plot of {x.isNumerical} vs {y.isNumerical}, colored by {c.isCategorical}
       prefer:
         x: 'name~="lipo|logp|logd|mw|weight"'
@@ -316,7 +318,7 @@
     - prompt: Find and remove duplicate rows
     - label: Normalize numerical columns
       prompt: Normalize (standardize) the numerical columns into new columns
-    - label: Pivot by {c.isCategorical}
+    - label: Pivot {n.isNumerical} by {c.isCategorical}
       prompt: Pivot the table — group by {c.isCategorical} and aggregate {n.isNumerical}
     - prompt: Select the top 20 rows by {m.isNumerical}
       prefer:
