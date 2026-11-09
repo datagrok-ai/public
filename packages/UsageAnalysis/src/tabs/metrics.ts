@@ -1179,7 +1179,7 @@ export class MetricsView extends UaView {
       [ui.divText('No metric alert holds.'),
         ui.divText('Settings > Alerts > Data growth sets them.', 'ua-metrics-tt-dim')] :
       [...holding.slice(0, TOOLTIP_TOP * 2).map(([name, row]) => ui.divText(`${name}: ${row}`)),
-        ui.divText('Red: an alert is open. Browse > Platform > Alerts acts on them.', 'ua-metrics-tt-dim')];
+        ui.divText('Red: an alert is open. Browse > Platform > Observability > Alerts acts on them.', 'ua-metrics-tt-dim')];
     ui.tooltip.bind(this.card('growthAlerts').root, () => ui.div(lines, 'ua-metrics-tt'));
   }
 

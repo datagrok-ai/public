@@ -339,7 +339,7 @@ export class PackageFunctions {
     'url': '/metrics',
     'name': 'Metrics',
     'icon': 'images/icons/metrics.svg',
-    'meta': {'role': 'adminApp'},
+    'meta': {'role': 'adminApp', 'browsePath': 'Observability'},
   })
   static metricsApp(
     @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string): DG.ViewBase | null {
@@ -367,7 +367,7 @@ export class PackageFunctions {
     'url': '/reports',
     'name': 'Reports',
     'icon': 'images/icons/reports.svg',
-    'meta': {'role': 'adminApp'},
+    'meta': {'role': 'adminApp', 'browsePath': 'Observability'},
   })
   static async reportsApp(
     @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string): Promise<DG.ViewBase> {
@@ -382,7 +382,7 @@ export class PackageFunctions {
     'url': '/service-logs',
     'name': 'Service Logs',
     'icon': 'images/icons/service-logs.svg',
-    'meta': {'role': 'adminApp'},
+    'meta': {'role': 'adminApp', 'browsePath': 'Observability'},
   })
   static serviceLogsApp(
     @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string,
@@ -408,7 +408,7 @@ export class PackageFunctions {
     'url': '/cloud-logs',
     'name': 'Cloud Logs',
     'icon': 'images/icons/service-logs.svg',
-    'meta': {'role': 'adminApp'},
+    'meta': {'role': 'adminApp', 'browsePath': 'Observability'},
   })
   static cloudLogsApp(): DG.ViewBase {
     return new CloudLogsApp(grok.functions.getCurrentCall());
