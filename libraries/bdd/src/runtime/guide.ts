@@ -89,6 +89,8 @@ interface Recording {
   dragShots: number;
   beats: number;
   silent: boolean;
+  /** The step marks what it shows on the page itself: its pictures are not lit. */
+  unlit: boolean;
   /** The step aimed at a hit area (`locatedArea`): finer than the viewer a later read of it locates. */
   area?: boolean;
   open?: {index: number; line: number; keyword: string; text: string; table?: string[][]; caption?: string; started: number; before: string};
@@ -371,7 +373,7 @@ export async function attach(page: Page): Promise<void> {
     r.pending.push(...await drain(page));
     const last = [...r.pending].reverse().find((p) => p.type !== 'up');
     const from = last ?? {x, y};
-    const legs = Math.min(DRAG_SHOTS - r.dragShots, Math.max(2, Math.round(Math.hypot(x - from.x, y - from.y) / 60)));
+    const legs = Math.min(DRAG_SHOTS - r.dragShots, Math.max(2, Math.round(Math.hypot(x - from.x, y - from.y) / 24)));
     for (let i = 1; i <= legs; i++) {
       const at = {x: from.x + (x - from.x) * i / legs, y: from.y + (y - from.y) * i / legs};
       await move(at.x, at.y, {steps: 4});
@@ -518,6 +520,14 @@ export function silent(page: Page): void {
     r.silent = true;
 }
 
+/** The open step shows what it is about by a mark of the page's own (a call-out it draws): its pictures are left
+ * unlit — no dimmed page, no outline — the pointer and its presses still drawn. */
+export function unlit(page: Page): void {
+  const r = recordings.get(page);
+  if (r?.open)
+    r.unlit = true;
+}
+
 function sameFile(dir: string, a: string, b: string): boolean {
   try {
     return readFileSync(join(dir, a)).equals(readFileSync(join(dir, b)));
@@ -538,7 +548,7 @@ function recordingFor(page: Page, info: TestInfo): Recording {
   const manifest: GuideManifest =
     {feature: featureName, scenario: scenarioName, description: '', tags: info.tags, viewport,
       scale: info.project.use.deviceScaleFactor ?? 1, steps: []};
-  r = {dir, manifest, lastType: 'Given', keys: [], typed: '', legs: [], pending: [], dragShots: 0, beats: 0, silent: false};
+  r = {dir, manifest, lastType: 'Given', keys: [], typed: '', legs: [], pending: [], dragShots: 0, beats: 0, silent: false, unlit: false};
   recordings.set(page, r);
   return r;
 }
@@ -569,6 +579,7 @@ export async function begin(page: Page | undefined, info: TestInfo, line: number
   r.dragShots = 0;
   r.beats = 0;
   r.silent = false;
+  r.unlit = false;
   r.area = false;
   r.open = {index, line, keyword, text, table, caption, started: Date.now(), before: await shot(page, r.dir, `${stem}-before.png`)};
 }
@@ -610,6 +621,10 @@ export async function end(page: Page | undefined): Promise<void> {
   const hidden = r.silent || (!open.caption && (type === 'Then' || type === 'Given') && hiddenInGuide(open.text));
   const kind: GuideStepKind = hidden ? 'setup' : type === 'Then' ? 'check' :
     acted || !sameFile(r.dir, open.before, after) ? 'action' : 'setup';
+  if (r.unlit) {
+    target = undefined;
+    r.legs.forEach((leg) => leg.target = undefined);
+  }
   r.manifest.steps.push({index: open.index, line: open.line, keyword: open.keyword, text: open.text,
     caption: open.caption ?? captionOf(open.text, kind, open.table), kind, before: open.before, after, target, legs: r.legs,
     keys: r.keys, typed: r.typed, ms: Date.now() - open.started});

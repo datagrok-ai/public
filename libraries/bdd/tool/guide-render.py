@@ -406,25 +406,36 @@ class Renderer:
             yield image
 
     def drag_frames(self, lit, target, path, button, caption):
-        """The pointer along a drag, the button held: each picture taken on the way is cut in as the
-        pointer reaches it, so what the drag draws grows under the pointer. Returns the last one."""
+        """The pointer along a drag, the button held, in one eased glide (a hand does not stop at every
+        picture): each picture taken on the way is cut in as the pointer passes it, so what the drag
+        draws grows under the pointer. Returns the last one."""
         keys = [p for p in path if p.get('shot')]
         if not path[-1].get('shot'):
             keys.append(path[-1])
+        points = [self.cur] + [(p['x'], p['y']) for p in keys]
+        reached = [0.0]
+        for a, b in zip(points, points[1:]):
+            reached.append(reached[-1] + math.hypot(b[0] - a[0], b[1] - a[1]))
+        total = reached[-1]
+        shots = [None]
         for p in keys:
-            dest = (p['x'], p['y'])
-            drawn = None
-            if p.get('shot'):
-                drawn = self._image(p['shot'])
-                drawn = self.spotlight(drawn, target) if target else drawn
-            start = self.cur
-            n = self.frames_for(math.hypot(dest[0] - start[0], dest[1] - start[1]), int(0.3 * self.fps))
-            for i in range(n):
-                t = ease((i + 1) / n)
-                pos = (start[0] + (dest[0] - start[0]) * t, start[1] + (dest[1] - start[1]) * t)
-                yield self.frame(drawn if drawn is not None and i == n - 1 else lit, pos, held=button, caption=caption)
-            if drawn is not None:
-                lit = drawn
+            drawn = self._image(p['shot']) if p.get('shot') else None
+            shots.append(self.spotlight(drawn, target) if drawn is not None and target else drawn)
+        n = self.frames_for(total, int(0.6 * self.fps))
+        for i in range(n):
+            d = ease((i + 1) / n) * total
+            k = 0
+            while k < len(keys) - 1 and reached[k + 1] <= d:
+                k += 1
+            for j in range(1, len(points)):
+                if reached[j] <= d + 1e-6 and shots[j] is not None:
+                    lit = shots[j]
+            if i == n - 1 and shots[-1] is not None:
+                lit = shots[-1]
+            seg = reached[k + 1] - reached[k]
+            f = 0.0 if seg <= 0 else min(1.0, (d - reached[k]) / seg)
+            a, b = points[k], points[k + 1]
+            yield self.frame(lit, (a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f), held=button, caption=caption)
         yield from self.hold_frames(0.5, lit, self.cur, caption=caption)
         return lit
 
