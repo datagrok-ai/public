@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [#3924](https://github.com/datagrok-ai/public/issues/3924): Viewers: Added `Viewers: category order` (the per-viewer `categoryOrder` properties, a custom `categoryOrderer` function)
 * Viewers: Added `AI: Viewers: Shared rules` (a column rename followed by every viewer's settings, and by a viewer's Filter formula, core#1213) and a test moved from BDD: `AI: Viewers: PcPlot Extras` 'a layout with Line Width 0 and density on draws and takes a hover without an error (core#967)'
 * Viewers: Added a test moved from BDD: `AI: Viewers: BoxPlot extras` 'a pointer over a box plot shrunk under Auto Layout logs no error (core#960)'
 * Layouts, projects: Added tests moved from BDD: `Dapi: layouts` 'get applicable' now checks which tables a scatter plot layout and a grid-only layout are offered to (core#1179) and 'filter' that the saved layout is found by name (both asserted nothing before); `Dapi: projects: data sync` 'A data-synced file that lost a column a calculated column reads opens with it empty and a warning (GROK-19725)'
