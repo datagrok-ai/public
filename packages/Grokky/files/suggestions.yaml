@@ -9,8 +9,6 @@
 #
 # Slots: {name.filter} picks a live column where `filter` is truthy — isNumerical,
 #   isCategorical, semType, isDateTime — and biases the pick with `prefer` regexes.
-#   isCategorical only takes columns worth grouping by: 2 to 30 categories and at least
-#   two rows per category on average, so ID-like columns (all values unique) are skipped.
 #   Extra path segments read column props, e.g. {x.stats.med}. A suggestion whose slot
 #   finds no matching column is dropped (and its block hides if all its suggestions drop),
 #   so type-specific blocks appear only when the data supports them.

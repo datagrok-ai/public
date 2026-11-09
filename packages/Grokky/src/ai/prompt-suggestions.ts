@@ -37,25 +37,11 @@ export interface Block {
 const SLOT = /\{(\w+)\.(\w+)}/g;
 let _cache: Block[] | null = null;
 
-/** Most categories a grouping slot accepts: more than this does not read in a legend or on an axis. */
-export const MAX_SLOT_CATEGORIES = 30;
-
-/** Whether a categorical column is worth grouping or coloring by: it has at least two categories,
- * at most [MAX_SLOT_CATEGORIES], and on average two or more rows per category. This skips ID-like
- * columns, such as a subject ID where every value is unique. */
-export function isGroupingColumn(c: DG.Column): boolean {
-  if (!c.isCategorical)
-    return false;
-  const unique = c.stats.uniqueCount;
-  return unique >= 2 && unique <= MAX_SLOT_CATEGORIES && unique * 2 <= c.length;
-}
-
-// Slot filters beyond the native truthy Column getters (isNumerical / semType).
+// Slot filters beyond the native truthy Column getters (isNumerical / isCategorical / semType).
 // A suggestion whose slot finds no matching column is dropped, so these keep type-specific
 // suggestions (e.g. time series) from surfacing on tables that lack such a column.
 const SYNTHETIC_FILTERS: Record<string, (c: DG.Column) => boolean> = {
   isDateTime: (c) => c.type === DG.COLUMN_TYPE.DATE_TIME,
-  isCategorical: isGroupingColumn,
 };
 
 function columnMatches(c: DG.Column, filter: string): boolean {
@@ -80,7 +66,7 @@ async function load(): Promise<Block[]> {
   return _cache;
 }
 
-export function resolveSuggestion(s: Suggestion, df: DG.DataFrame | null): Suggestion | null {
+function resolveSuggestion(s: Suggestion, df: DG.DataFrame | null): Suggestion | null {
   const pickedCols: Record<string, DG.Column> = {};
   const taken = new Set<string>();
   let cols: DG.Column[] | null = null;
@@ -92,6 +78,13 @@ export function resolveSuggestion(s: Suggestion, df: DG.DataFrame | null): Sugge
     if (!cols) cols = df.columns.toList();
     const candidates = cols.filter((c) => !taken.has(c.name) && columnMatches(c, filter));
     if (!candidates.length) return null;
+    if (filter === 'isCategorical') {
+      const rank = new Map(candidates.map((c) => {
+        const unique = c.stats.uniqueCount;
+        return [c, unique < 2 ? Number.MAX_SAFE_INTEGER : unique];
+      }));
+      candidates.sort((a, b) => rank.get(a)! - rank.get(b)!);
+    }
 
     const prefer = s.prefer?.[name];
     const re = prefer ? new RegExp(prefer.match(/name~="([^"]+)"/)?.[1] ?? prefer, 'i') : null;
