@@ -3,7 +3,7 @@
    should move them (the numbers themselves are the package tests'). */
 import {Page, test} from '@playwright/test';
 import {element, Given, lookupElement, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, expect, gestures, openTopMenu, pollMs, silent, unlit} from '@datagrok-libraries/bdd/runtime';
+import {atFeatureEnd, expect, gestures, pollMs, silent, unlit} from '@datagrok-libraries/bdd/runtime';
 import type {ElementRef} from '@datagrok-libraries/bdd/runtime';
 
 element('form run button', {selector: '.pmx-declaration [data-u2="button"]:has-text("Run")'});
@@ -158,10 +158,12 @@ element('demo plan row', {selector: '.pmx-library .u2-table-row:has-text("MC38 �
 element('demo followed row', {selector: '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response"):not(:has-text("(its plan)")):not(:has-text("(all its data)"))'});
 element('demo finished row', {selector: '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response (all its data)")'});
 
-export const presenting = Given('the shell is in presentation mode without tooltips', async (page: Page) => {
-  silent(page);
-  // a film shows the app, not the platform's panels, and no hint a pointer left over a control would raise
-  await page.addStyleTag({content: '.d4-tooltip, [role="tooltip"] { display: none !important; }'});
+/** For a guide that is filmed: no hint a pointer left over a control would raise (tooltips, native titles), nor the
+ *  hover tint of a row nothing happens on (Monitor's lists), which reads as a row picked out. */
+async function noHints(page: Page): Promise<void> {
+  await page.addStyleTag({content: '.d4-tooltip, [role="tooltip"] { display: none !important; } ' +
+    ':is(.pmx-monitor-sheet, .pmx-monitor-attention) .u2-table-row:hover { background: var(--u2-row-base-bg) !important; } ' +
+    ':is(.pmx-monitor-sheet, .pmx-monitor-attention) .u2-table-row:hover > :first-child { box-shadow: none !important; }'});
   await page.evaluate(() => {
     const strip = (root: ParentNode) => root.querySelectorAll('[title]').forEach((e) => e.removeAttribute('title'));
     strip(document);
@@ -171,18 +173,22 @@ export const presenting = Given('the shell is in presentation mode without toolt
       else
         r.addedNodes.forEach((n) => n instanceof Element && (n.removeAttribute('title'), strip(n)));
     })).observe(document.body, {subtree: true, childList: true, attributes: true, attributeFilter: ['title']});
+  });
+}
+
+export const noTooltips = Given('the shell shows no tooltips', async (page: Page) => {
+  silent(page);
+  await noHints(page);
+}, {tier: 'api', description: 'for a guide that is filmed: tooltips and native titles hidden; silent in a guide'});
+
+export const presenting = Given('the shell is in presentation mode without tooltips', async (page: Page) => {
+  silent(page);
+  // a film shows the app, not the platform's panels
+  await noHints(page);
+  await page.evaluate(() => {
     (window as any).grok.shell.windows.presentationMode = true;
   });
 }, {tier: 'api', description: 'for a guide that is filmed: presentation mode on, tooltips and native titles hidden'});
-
-export const pointAtMenu = When('user points at {string} in the top menu', async (page: Page, path: string) => {
-  await openTopMenu(page, path, false);
-  await page.waitForTimeout(1500);
-  // closed by the page, not a key press: a filmed key shows as a badge over the caption
-  await page.evaluate(() => document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})));
-  // parked in the bottom-left corner, over the form's blank foot: over a chart it would raise the chart's tooltip
-  await page.mouse.move(12, 1070);
-}, {tier: 'ui', description: 'the menu walked to the item and left open a moment, nothing run'});
 
 export const stageOpen = Then('the {word} stage should be open', async (page: Page, stage: string) => {
   silent(page);
@@ -280,38 +286,71 @@ function plainly(page: Page, target: ElementRef) {
   return page.locator(selector).filter({visible: true}).last();
 }
 
-/** The yellow call-outs drawn on the page; the next action clears them. */
-const clearPointed = (page: Page) => page.evaluate(() =>
-  document.querySelectorAll('.bdd-pointed').forEach((e) => e.classList.remove('bdd-pointed')));
+/** The yellow call-out on the page, if any; the next action clears it. */
+const clearPointed = (page: Page) => page.evaluate(() => (window as any).bddPointed?.());
 
-/** A yellow outline on the element itself (it scrolls with it), until the next action: nothing is pressed. */
+/** A yellow frame over the element until the next action: laid over the whole page, so no pane clips it and no field
+ *  covers it, and following the element as it moves. Only looked at: the pointer stays where it is. */
 export const pointOut = When('user points out {element}', async (page: Page, target: ElementRef) => {
   const el = plainly(page, target);
   await el.waitFor({timeout: pollMs(15000)});
   await clearPointed(page);
   await el.evaluate((e) => {
-    if (!document.getElementById('bdd-pointed-style')) {
-      const style = document.createElement('style');
-      style.id = 'bdd-pointed-style';
-      // drawn inside the element's edge: a scrolling pane round it never clips it
-      style.textContent = '.bdd-pointed {outline: 3px solid #F5C400 !important; outline-offset: -3px; border-radius: 6px}';
-      document.head.append(style);
-    }
-    e.classList.add('bdd-pointed');
+    const frame = document.createElement('div');
+    Object.assign(frame.style, {position: 'fixed', border: '3px solid #F5C400', borderRadius: '8px',
+      pointerEvents: 'none', zIndex: '100000', boxSizing: 'border-box'});
+    document.body.append(frame);
+    let on = true;
+    const follow = () => {
+      if (!on)
+        return;
+      const r = e.getBoundingClientRect();
+      const shown = e.isConnected && r.width > 0 && r.height > 0;
+      Object.assign(frame.style, {display: shown ? '' : 'none', left: `${r.left - 5}px`, top: `${r.top - 5}px`,
+        width: `${r.width + 10}px`, height: `${r.height + 10}px`});
+      requestAnimationFrame(follow);
+    };
+    follow();
+    (window as any).bddPointed = () => {
+      on = false;
+      frame.remove();
+      (window as any).bddPointed = undefined;
+    };
   });
-  // the pointer goes to it, near its top-left corner (a row's name, a section's title): what it rests on is what is
-  // framed, not a row it was left over
-  const box = await el.boundingBox();
-  if (box)
-    await page.mouse.move(box.x + Math.min(14, box.width / 2), box.y + Math.min(12, box.height / 2), {steps: 4});
-}, {tier: 'ui', description: "a yellow outline on it until the next action (a guide's picture shows it), the pointer on it; nothing pressed"});
+}, {tier: 'ui', description: "a yellow frame over it until the next action (a guide's picture shows it); nothing pressed"});
 
-/** Set-up a viewer does not need to watch: the page scrolled so the element is in view (a cut in a guide). */
-export const scrolledTo = Given('the page is scrolled to {element}', async (page: Page, target: ElementRef) => {
-  silent(page);
-  await plainly(page, target).evaluate((e) => e.scrollIntoView({block: 'center'}));
-  await page.waitForTimeout(300);
-}, {tier: 'ui', description: 'the element scrolled into the middle of its pane; silent in a guide'});
+/** The pane scrolled by the wheel until the element is in view (in the middle, or its top near the pane's when it is
+ *  taller): a guide films the scroll. The yellow frames go first, and the step is not lit. */
+export const scrollTo = When('user scrolls the page to {element}', async (page: Page, target: ElementRef) => {
+  unlit(page);
+  await clearPointed(page);
+  const el = plainly(page, target);
+  await el.waitFor({timeout: pollMs(15000)});
+  const way = await el.evaluate((e) => {
+    let pane = e.parentElement;
+    while (pane && !(pane.scrollHeight > pane.clientHeight && /auto|scroll/.test(getComputedStyle(pane).overflowY)))
+      pane = pane.parentElement;
+    if (!pane)
+      return null;
+    const [p, r] = [pane.getBoundingClientRect(), e.getBoundingClientRect()];
+    const want = r.height < p.height * 0.8 ? (r.top + r.height / 2) - (p.top + p.height / 2) : r.top - p.top - 16;
+    const dy = Math.max(-pane.scrollTop, Math.min(pane.scrollHeight - pane.clientHeight - pane.scrollTop, want));
+    // the pane's own margin, not a chart in it that could take the wheel for itself
+    return {x: p.left + 6, y: p.top + p.height / 2, dy};
+  });
+  if (!way)
+    throw new Error(`${target.phrase} is in no scrolling pane`);
+  if (Math.abs(way.dy) < 4)
+    return;
+  // the wheel turns where the pointer is: over the pane, near its left edge
+  await page.mouse.move(way.x, way.y, {steps: 4});
+  await page.mouse.wheel(0, way.dy);
+  await page.waitForTimeout(400);
+  const box = await el.boundingBox();
+  const view = page.viewportSize();
+  if (!box || !view || box.y > view.height - 40 || box.y + box.height < 40)
+    throw new Error(`the wheel left ${target.phrase} out of view`);
+}, {tier: 'ui', description: 'the pane wheeled until the element is in view; its yellow frames cleared first, not lit'});
 
 /** A layout someone saved (a resized or moved panel) is not the one the stages define. */
 export const defaultLayouts = Given('the stages show their default layouts', async (page: Page) => {

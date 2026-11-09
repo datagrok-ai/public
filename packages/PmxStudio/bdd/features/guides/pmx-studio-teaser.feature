@@ -36,10 +36,8 @@ Feature: PMX Studio
     And user picks "Flag this animal…" from the context menu of first sheet row
     # caption: Any animal can be flagged for review, with its reason
     And user enters "Ulcerated tumor: check at the next session" into "Reason" input
-    # caption: Any animal can be flagged for review, with its reason
+    # caption: Flagged: the animal carries its mark, in the study table too
     And user clicks on "OK" button and PMX Studio settles
-    # caption: Flagged: the animal carries its mark, and its rows are coloured in the study table
-    And user points out first sheet row
     # caption: Welfare: body weight and condition of every animal, against the humane endpoints
     When user clicks on "Welfare" tab and PMX Studio settles
     # caption: Decisions: flags and exclusions logged with who, when and why; they travel with the study
@@ -48,20 +46,24 @@ Feature: PMX Studio
     When user clicks on analyze header step and the stage opens
     # caption: Each group's growth and its effect against the control, with its uncertainty
     And user points out experimental groups section
-    And the page is scrolled to km chart
+    # caption: Time to the endpoint as measured, then projected past the last measurement, marked as a projection
+    And user scrolls the page to km chart
     # caption: Time to the endpoint as measured, then projected past the last measurement, marked as a projection
     And user drags the slider of km slider to 40
-    And the page is scrolled to each animal tab
+    # caption: Each animal: its response, from the best to the worst, and its tumor over time
+    And user scrolls the page to each animal tab
     # caption: Each animal: its response, from the best to the worst, and its tumor over time
     When user clicks on each animal tab and PMX Studio settles
     # caption: Each animal: its response, from the best to the worst, and its tumor over time
     And user points out waterfall chart
-    And the page is scrolled to twin section
+    # caption: Its digital twin: the same tumor, predicted as if untreated
+    And user scrolls the page to twin section
     # caption: Its digital twin: the same tumor, predicted as if untreated
     And user clicks on third animal row and PMX Studio settles
     # caption: The gap between the animal and its twin is the effect of the treatment, animal by animal
     And user points out twin effect line
-    And the page is scrolled to tolerability tab
+    # caption: Tolerability: body weight loss and deaths in every arm
+    And user scrolls the page to tolerability tab
     # caption: Tolerability: body weight loss and deaths in every arm
     When user clicks on "Tolerability" tab and PMX Studio settles
     # caption: Against the plan: what the study found against what its design predicted
