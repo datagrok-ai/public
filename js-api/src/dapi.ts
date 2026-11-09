@@ -539,6 +539,22 @@ export class AdminDataSource {
     return AdminDataSource.getJson(`/admin/metrics?${params}`);
   }
 
+  /** How the platform's data grows: per database table and category (events by source, entities by type, ...), per
+   *  storage location and nature, per disk and per garbage collector key, the value now, its change over 1, 7 and 30
+   *  days, a daily trend, what the garbage collector deleted and has pending, and the metric alerts that cover it.
+   *  The server samples them on a schedule; a fresh server answers no rows until its first collection.
+   *  Needs the `ViewTelemetry` permission: without it, rejects with an Error whose `status` is 403; a bad `area` or
+   *  `days` rejects with `status` 400. An alert's `problemId` and `alertStatus` also need `ManageAlerts`, else they
+   *  are null. Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin} */
+  async getGrowthMetrics(options?: GrowthMetricsOptions): Promise<GrowthMetrics> {
+    const params = new URLSearchParams();
+    if (options?.area)
+      params.set('area', options.area);
+    if (options?.days != null)
+      params.set('days', `${options.days}`);
+    return AdminDataSource.getJson(`/admin/metrics/growth?${params}`);
+  }
+
   /** A problem the platform detected and its current alert, by id or `kind:key`; null when there is none.
    *  Needs the `ManageAlerts` permission: without it, rejects with an Error whose `status` is 403.
    *  Sample: {@link https://public.datagrok.ai/js/samples/dapi/problems} */
@@ -827,6 +843,100 @@ export interface ServerMetrics {
       worstCacheHit: ServerMetricsStatement[],
     },
   },
+}
+
+/** Options for {@link AdminDataSource.getGrowthMetrics}. */
+export interface GrowthMetricsOptions {
+  /** The rows to answer: `database` (tables and their categories), `storage` (storage by location and nature, and the
+   *  disks), `gc` (the garbage collector's keys), or `all` (the default). */
+  area?: 'database' | 'storage' | 'gc' | 'all',
+  /** Days of the daily trend, 1–400 (default 30). */
+  days?: number,
+}
+
+/** One value of a {@link GrowthMetricsRow} over time: bytes, or a count of rows or objects. */
+export interface GrowthMetricsSeries {
+  /** The latest sample. */
+  now: number,
+  /** Change since the newest sample at or before a day ago; null when there is none that old. */
+  d1: number | null,
+  /** Change over 7 days; null when there is no sample that old. */
+  d7: number | null,
+  /** Change over 30 days; null when there is no sample that old. */
+  d30: number | null,
+  /** The first sample of each UTC day, oldest first, `days` long; null for a day without one. */
+  trend: (number | null)[],
+  /** True when the value is an estimate (table statistics, a sampled count, a storage listing that failed in part). */
+  estimated: boolean,
+}
+
+/** What the garbage collector did to the data of a {@link GrowthMetricsRow}: rows, or directories and entries of
+ *  storage. A table's row sums its categories. */
+export interface GrowthMetricsGc {
+  /** Deleted by the last run; null when the collector never deleted anything of it. */
+  deletedLast: number | null,
+  /** Deleted in the last 7 days. */
+  deleted7d: number | null,
+  /** Left to delete when last counted; null when it is not counted (or the count timed out). */
+  pending: number | null,
+}
+
+/** A metric alert (the Alerts setting `metricAlerts`) that covers a {@link GrowthMetricsRow}. */
+export interface GrowthMetricsAlert {
+  /** The alert's name, e.g. `table-growth`. */
+  name: string,
+  /** Whether its conditions hold for the row now. */
+  holding: boolean,
+  /** The id of its `growth` problem for the row; null when there is none, or without `ManageAlerts`. */
+  problemId: string | null,
+  /** The state of that problem's alert; null when none was opened, or without `ManageAlerts`. */
+  alertStatus: 'open' | 'acknowledged' | 'resolved' | null,
+}
+
+/** One row of {@link GrowthMetrics}: a database table or one of its categories, a storage location or nature, a disk,
+ *  or a garbage collector key. */
+export interface GrowthMetricsRow {
+  /** `database`, `storage` (disks included) or `gc`. */
+  area: 'database' | 'storage' | 'gc',
+  /** The sample key: `events`, `events/source=usage`, `(total)`, `shared/packages/Chem`, `local@<host>`. */
+  key: string,
+  /** The table of a database or garbage collector row, or `(total)` for the whole database. */
+  table: string | null,
+  /** The category a row of a table counts by, e.g. `source`. */
+  dimension: string | null,
+  /** The category's value (`usage`), or the sub-breakdown of a storage nature (a package name). */
+  value: string | null,
+  /** `shared`, or `local@<host>` for a server's own disk and storage. */
+  location: string | null,
+  /** The kind of storage data (`packages`, `app-data`, `tables`, ...), or `disk`. */
+  nature: string | null,
+  /** Size, bytes (a disk's used bytes); null when not sampled. */
+  bytes: GrowthMetricsSeries | null,
+  /** Rows of a table or category, or objects in storage; null when not sampled. */
+  count: GrowthMetricsSeries | null,
+  /** A disk's free bytes. */
+  freeBytes?: number | null,
+  /** A disk's used percentage. */
+  usedPct?: number | null,
+  /** What the garbage collector deleted and has pending; null when it never touches the data. */
+  gc: GrowthMetricsGc | null,
+  /** The enabled metric alerts whose metric and key cover the row. */
+  alerts: GrowthMetricsAlert[],
+}
+
+/** Result of {@link AdminDataSource.getGrowthMetrics}. Times are ISO 8601. */
+export interface GrowthMetrics {
+  /** The newest sample; null before the first collection. */
+  collectedAt: string | null,
+  /** The shared storage the `storage` rows list; null until it was listed once. */
+  storage: {type: string, root: string, collectedAt: string, truncated: boolean} | null,
+  /** The garbage collector: on or off (null when unknown), its last run, its next scheduled run, when pending was counted. */
+  gc: {enabled: boolean | null, lastRun: string | null, nextRun: string | null, pendingAt: string | null},
+  /** How often the server samples: sizes every `everyMinutes`, categories and pending every `breakdownHours`, the
+   *  storage every `storageHours`. */
+  schedule: {everyMinutes: number, breakdownHours: number, storageHours: number},
+  /** One row per key of the requested area. */
+  rows: GrowthMetricsRow[],
 }
 
 /**

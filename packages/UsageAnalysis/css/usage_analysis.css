@@ -391,6 +391,15 @@ button.ui-btn.ui-btn-raised.ua-metrics-btn-secondary {
   height: 240px;
 }
 
+.ua-metrics-grid-host.ua-metrics-growth-host {
+  height: 280px;
+}
+
+.ua-metrics-growth-controls {
+  align-items: center;
+  gap: 12px;
+}
+
 /* Full-height tab layout: the opted-in panel/host grows to eat the remaining vertical space
    (used by the Tests tab so its detail grid fills the page instead of the fixed 200px). */
 .ua-metrics-fill {

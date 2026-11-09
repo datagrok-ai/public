@@ -71,12 +71,13 @@ export async function stressRawDashboard() : Promise<any> {
 }
 
 //name: Metrics
+//input: string path { optional: true; meta.url: true }
 //output: view result
 //meta.role: adminApp,app
 //meta.url: /metrics
 //meta.icon: images/icons/metrics.svg
-export function metricsApp() : any {
-  return PackageFunctions.metricsApp();
+export function metricsApp(path?: string) : any {
+  return PackageFunctions.metricsApp(path);
 }
 
 //name: Test Track
