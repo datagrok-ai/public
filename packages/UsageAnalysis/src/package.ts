@@ -341,8 +341,12 @@ export class PackageFunctions {
     'icon': 'images/icons/metrics.svg',
     'meta': {'role': 'adminApp'},
   })
-  static metricsApp(): DG.ViewBase | null {
-    return PackageFunctions.usageAnalysisApp('/metrics');
+  static metricsApp(
+    @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string): DG.ViewBase | null {
+    const handler = new ViewHandler('metrics');
+    handler.view.parentCall = grok.functions.getCurrentCall();
+    handler.init(undefined, undefined, undefined, undefined, undefined, undefined, path);
+    return handler.view;
   }
 
   @grok.decorators.app({
