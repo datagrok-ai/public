@@ -136,6 +136,15 @@ export async function MockPipeline2(params: any) {
   return await PackageFunctions.MockPipeline2(params);
 }
 
+//name: Mock Keyboard Pipeline
+//description: Workflow with fixed steps, a reorderable list and an invalid step, used for testing keyboard use.
+//input: object params 
+//output: object result
+//editor: Compute2:TreeWizardEditor
+export async function MockKeyboardPipeline(params: any) {
+  return await PackageFunctions.MockKeyboardPipeline(params);
+}
+
 //name: Mock Single Step Pipeline
 //description: Single-step workflow used for testing the compact Tree Wizard view.
 //input: object params 

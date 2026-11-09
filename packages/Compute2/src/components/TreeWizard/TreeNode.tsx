@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import {AugmentedStat, Status} from './types';
-import {ComboPopup, IconFA, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
+import {ComboPopup, IconFA, onPress, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
 import {useElementHover} from '@vueuse/core';
 import {OpenIcon} from '@he-tree/vue';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
@@ -106,6 +106,7 @@ export const TreeNode = Vue.defineComponent({
   },
   emits: {
     addNode: (_data: {itemId: string, position: number}) => true,
+    chooseStepToAdd: () => true,
     removeNode: () => true,
     duplicateNode: () => true,
     toggleNode: () => true,
@@ -237,6 +238,8 @@ export const TreeNode = Vue.defineComponent({
                   caption={ui.iconFA('plus')}
                   tooltip='Add a step'
                   rightAligned
+                  // the platform dropdown has no keyboard support, so the keys open the workflow's steps to add
+                  {...{tabindex: 0, onKeydown: onPress(() => emit('chooseStepToAdd'))}}
                   items={props.stat.data.stepTypes
                     .filter((stepType: StepDynamicDescription) => !stepType.disableUIAdding)
                     .map((stepType: StepDynamicDescription) =>

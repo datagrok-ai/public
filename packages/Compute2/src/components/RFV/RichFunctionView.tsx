@@ -24,6 +24,7 @@ import {richFunctionViewReport} from '@datagrok-libraries/compute-utils/shared-u
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {RangeDescription} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {ScalarsPanel} from './ScalarsPanel';
+import {SCOPE_CLASS, shortcutsRibbonItem, TAB_CYCLE_CLASS, useViewKeys} from '../../composables/use-keyboard';
 import {BehaviorSubject} from 'rxjs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
@@ -32,7 +33,10 @@ import {take} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useHistoryPanel} from '../../composables/use-history-panel';
 import {_package} from '../../package-instance';
-import {applyDefaultGridFloatFormat, canUseResults, disposeViewers, getViewers, pinView as pinViewHelper, STICKY_BAR_BACKGROUND} from '../../utils';
+import {
+  applyDefaultGridFloatFormat, canUseResults, disposeViewers, getViewers, pinView as pinViewHelper, pressControl,
+  runControl, STICKY_BAR_BACKGROUND,
+} from '../../utils';
 import {saveCallToProject, DfExportEntry} from '../../project-export';
 import {getToggledInputs} from './input-toggles';
 import {RenderStateItem, getEmptyTabToProperties, tabToProperties} from './rfv-tabs';
@@ -134,11 +138,10 @@ export const RichFunctionView = Vue.defineComponent({
     const currentCall = Vue.computed(() => Vue.markRaw(props.funcCall));
     const dgView = useDgView();
     const currentUuid = Vue.computed(() => props.uuid);
-    const isFormValid = Vue.ref(false);
 
     const isOutputOutdated = Vue.computed(() => props.callState?.isOutputOutdated);
     const isRunning = Vue.computed(() => props.callState?.isRunning);
-    const isRunnable = Vue.computed(() => props.standalone ? isFormValid.value : props.callState?.isRunnable);
+    const isRunnable = Vue.computed(() => props.callState?.isRunnable);
     const isReadonly = Vue.computed(() => props.isReadonly);
 
     const validationState = Vue.computed(() => props.validationStates);
@@ -344,7 +347,17 @@ export const RichFunctionView = Vue.defineComponent({
       changeHelpFunc(call?.func);
     }, {immediate: true});
 
-    const showRun = Vue.computed(() => !autorun.value && (isOutputOutdated.value || allowRerun.value));
+    const run = Vue.computed(() => runControl({
+      isOutputOutdated: isOutputOutdated.value,
+      allowRerun: allowRerun.value,
+      autorun: autorun.value,
+      isRunnable: isRunnable.value,
+      isRunning: isRunning.value,
+      isReadonly: props.isReadonly,
+      isBlocked: props.isBlocked,
+    }));
+
+    const pressRun = () => pressControl(run.value, () => emit('runClicked'));
 
     const reportHandler = async (nqName: string) => {
       try {
@@ -451,10 +464,8 @@ export const RichFunctionView = Vue.defineComponent({
     ////
 
     const onValidationChanged = (ev: boolean) => {
-      if (!props.standalone)
-        return;
-      isFormValid.value = ev;
-      emit('formValidationChanged', ev);
+      if (props.standalone)
+        emit('formValidationChanged', ev);
     };
 
     const getRanges = (specificRangeName: string) => {
@@ -602,10 +613,29 @@ export const RichFunctionView = Vue.defineComponent({
         active: !helpHidden.value,
         onClick: () => helpHidden.value = !helpHidden.value,
       },
+      ...(props.standalone ? [shortcutsRibbonItem(false)] : []),
     ]);
 
+    // in a workflow the tree wizard owns the keys
+    const onShortcut = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey)
+        return;
+      if (e.key === 'Enter') {
+        if (pressRun())
+          e.preventDefault();
+      } else if (e.key.toLowerCase() === 's' && props.history) {
+        e.preventDefault();
+        if (uiBlocked.value)
+          grok.shell.warning('Saving is not available while fitting is active.');
+        else
+          emit('saveToHistory', currentCall.value);
+      }
+    };
+    if (props.standalone)
+      useViewKeys(dgView, onShortcut);
+
     return () => (
-      Vue.withDirectives(<div class='w-full h-full flex'>
+      Vue.withDirectives(<div class={`w-full h-full flex outline-none ${SCOPE_CLASS}`} tabindex={-1}>
         { exportsVisible.value && !uiBlocked.value && exports.value.length > 1 &&
           <RibbonMenu groupName='Step exports' items={stepExportsItems.value}/> }
         <RibbonMenu groupName='Panels' items={panelsItems.value}/>
@@ -639,7 +669,7 @@ export const RichFunctionView = Vue.defineComponent({
           { !formHidden.value &&
               <div
                 key="__FORM__"
-                class='flex flex-col p-2 overflow-scroll h-full'
+                class={`flex flex-col p-2 overflow-scroll h-full ${TAB_CYCLE_CLASS}`}
                 {...(formAsTab.value ? {} : {
                   'dock-spawn-dock-type': 'left',
                   'dock-spawn-dock-ratio': 0.2,
@@ -680,10 +710,11 @@ export const RichFunctionView = Vue.defineComponent({
                 />
                 <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': STICKY_BAR_BACKGROUND}}>
                   { slots.navigation ?
-                    slots.navigation({runLabel: runLabel.value, allowRerun: allowRerun.value}) :
-                    showRun.value ?
+                    slots.navigation() :
+                    run.value.shown ?
                       <BigButton
-                        isDisabled={!isRunnable.value || isRunning.value || props.isReadonly}
+                        isDisabled={!!run.value.disabledReason}
+                        disabledReason={run.value.disabledReason}
                         onClick={() => emit('runClicked')}
                       >
                         { isOutputOutdated.value ? runLabel.value : 'Rerun' }

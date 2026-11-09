@@ -570,6 +570,92 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
+    name: 'Mock Keyboard Pipeline',
+    description: 'Workflow with fixed steps, a reorderable list and an invalid step, used for testing keyboard use.',
+    editor: 'Compute2:TreeWizardEditor',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async MockKeyboardPipeline(
+    @grok.decorators.param({'type': 'object'}) params: any) {
+    const c: PipelineConfiguration = {
+      id: 'keyboardRoot',
+      nqName: 'Compute2:MockKeyboardPipeline',
+      friendlyName: 'Keyboard',
+      version: '1.0',
+      type: 'static',
+      steps: [{
+        id: 'fixedAdd',
+        nqName: 'Compute2:TestAdd2',
+        friendlyName: 'fixed add',
+        initialValues: {a: -1, b: 1},
+      }, {
+        id: 'fixedMul',
+        nqName: 'Compute2:TestMul2',
+        friendlyName: 'fixed mul',
+        initialValues: {a: 2, b: 3},
+      }, {
+        id: 'list',
+        type: 'dynamic',
+        friendlyName: 'list',
+        stepTypes: [{
+          id: 'item',
+          nqName: 'Compute2:TestAdd2',
+          friendlyName: 'item',
+        }, {
+          id: 'pinned',
+          nqName: 'Compute2:TestMul2',
+          friendlyName: 'pinned',
+          disableUIDragging: true,
+          disableUIRemoving: true,
+        }],
+        initialSteps: [
+          {id: 'item', initialValues: {a: 1, b: 0}},
+          {id: 'item', initialValues: {a: 2, b: 0}},
+          {id: 'item', initialValues: {a: 3, b: 0}},
+          {id: 'pinned', initialValues: {a: 1, b: 1}},
+        ],
+        links: [{
+          id: 'itemTitle',
+          type: 'nodemeta',
+          base: 'base:expand(item)',
+          from: 'a:same(@base, item)/a',
+          to: 'title:same(@base, item)/title',
+          handler({controller}) {
+            controller.setDescriptionItem('title', `item ${controller.getFirst('a')}`);
+          },
+        }],
+      }, {
+        id: 'slow',
+        nqName: 'Compute2:LongScript',
+        friendlyName: 'slow',
+        initialValues: {a: 1, b: 1},
+      }, {
+        id: 'group',
+        type: 'static',
+        friendlyName: 'group',
+        steps: [{id: 'grouped', nqName: 'Compute2:TestAdd2', friendlyName: 'grouped step'}],
+      }],
+      links: [{
+        id: 'firstItemB',
+        from: 'in:fixedMul/a',
+        to: 'out:list/first(item)/b',
+        defaultRestrictions: {out: 'restricted'},
+      }, {
+        id: 'fixedAddPositive',
+        type: 'validator',
+        from: 'a:fixedAdd/a',
+        to: 'out:fixedAdd/a',
+        handler({controller}) {
+          controller.setValidation('out',
+            controller.getFirst('a') < 0 ? {errors: ['a must not be negative']} : undefined);
+        },
+      }],
+    };
+    return c;
+  }
+
+
+  @grok.decorators.func({
     name: 'Mock Single Step Pipeline',
     description: 'Single-step workflow used for testing the compact Tree Wizard view.',
     editor: 'Compute2:TreeWizardEditor',

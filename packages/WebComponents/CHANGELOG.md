@@ -2,6 +2,7 @@
 
 ## v.next
 
+- DockManager: Esc no longer closes the active panel
 - Viewer: An options change no longer re-sets the frame and fires `viewer-data-frame-changed` for frames created in JS
 - Viewer: A frame set on the viewer itself is kept on later options changes, and its `viewer-data-frame-changed` fires outside the Dart event
 - Viewer: Removed the unused `viewer-type-changed` event and `getViewerEventObservable`

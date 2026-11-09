@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
 import {getRunName, getViewersHook} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
-import {catchError, debounceTime, first, switchMap, withLatestFrom} from 'rxjs/operators';
+import {catchError, debounceTime, first, switchMap} from 'rxjs/operators';
 import {useUrlSearchParams} from '@vueuse/core';
 import {useSubscription} from '@vueuse/rxjs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
@@ -50,15 +50,13 @@ export const RFVApp = Vue.defineComponent({
     const viewersHookMakerName = getViewersHook(currentFuncCall.value.func);
 
     const runRequests$ = new Subject<true>();
-    const isFormValid$ = new BehaviorSubject<boolean>(false);
     const isRunning$ = new BehaviorSubject<boolean>(false);
     const inputChanges$ = new Subject<void>();
 
     useSubscription(runRequests$.pipe(
       debounceTime(RUN_DEBOUNCE_TIME),
-      withLatestFrom(isFormValid$),
-      switchMap(([, isValid]) => {
-        if (!isValid || currentCallState.value.isRunning)
+      switchMap(() => {
+        if (!currentCallState.value.isRunnable || currentCallState.value.isRunning)
           return of(null);
         // Contain run() failures: an error reaching the outer subscription terminates it and kills autorun.
         return from(run()).pipe(
@@ -255,7 +253,7 @@ export const RFVApp = Vue.defineComponent({
           onStepRunChosen={(run) => openRequests$.next(run)}
           onRunClicked={() => runRequests$.next(true)}
           onFormReplaced={onUpdateForm}
-          onFormValidationChanged={(val) => isFormValid$.next(val)}
+          onFormValidationChanged={(val) => updateCallState({isRunnable: val})}
           onFormInputChanged={onInputChanged}
           onSaveToHistory={() => saveRunWithDialog()}
           onCompareRequested={() => addToComparison(currentSnapshot(), currentFuncCall.value.func)}

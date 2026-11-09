@@ -3,6 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
+import {tooltip} from './directives/tooltip';
+import {onPress} from './on-press';
+
 import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGToggleInputT} from '@datagrok-libraries/webcomponents';
 
 declare global {
@@ -37,19 +40,34 @@ export const BigButton = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
+    // why the button is disabled: its tooltip, and a warning when it is pressed anyway
+    disabledReason: {
+      type: String,
+      required: false,
+    },
   },
   emits: {
     click: (_e: MouseEvent) => true,
   },
   setup(props, {slots, emit}) {
+    // a disabled button stays focusable, so it can tell why it does nothing; its tooltip shows only where the host
+    // keeps pointer events on it, which d4-disabled turns off
+    const onClick = (e: MouseEvent) => {
+      if (!props.isDisabled)
+        emit('click', e);
+      else if (props.disabledReason)
+        grok.shell.warning(props.disabledReason);
+    };
+
     // Vue rewrites className whenever a class is bound, so the element's own classes are repeated here
-    return () => (<button
+    return () => Vue.withDirectives(<button
       class={['ui-btn', 'ui-btn-ok', 'ui-btn-raised', {'d4-disabled': props.isDisabled}]}
-      onClick={(p) => emit('click', p)}
+      aria-disabled={props.isDisabled ? 'true' : undefined}
+      onClick={onClick}
       is="dg-big-button"
     >
       {slots.default?.()}
-    </button>);
+    </button>, [[tooltip, props.isDisabled ? props.disabledReason : undefined]]);
   },
 });
 
@@ -84,7 +102,12 @@ export const IconFA = Vue.defineComponent({
   setup(props, {emit}) {
     const instance = Vue.getCurrentInstance();
 
+    // a key press goes through a real click, so parents see the same event as from the mouse
+    const pressOnKey = onPress((e) => (e.currentTarget as HTMLElement).click());
+
     return () => {
+      const clickable = !!instance?.vnode.props?.onClick;
+      const focusable = clickable && !props.isDisabled;
       // a class binding, so a parent's class change keeps the disabled state
       return (<dg-icon-fa
         class={{'d4-disabled': props.isDisabled}}
@@ -92,10 +115,12 @@ export const IconFA = Vue.defineComponent({
         cursor={props.cursor}
         animation={props.animation}
         tooltip={props.tooltip}
-        role={props.tooltip ? (instance?.vnode.props?.onClick ? 'button' : 'img') : undefined}
+        role={props.tooltip ? (clickable ? 'button' : 'img') : undefined}
         aria-label={props.tooltip ?? undefined}
+        tabindex={focusable ? 0 : undefined}
         faStyle={props.faStyle}
         onClick={(e: MouseEvent) => emit('click', e)}
+        onKeydown={focusable ? pressOnKey : undefined}
       >
       </dg-icon-fa>);
     };
