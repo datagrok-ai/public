@@ -611,6 +611,34 @@ export const contextPanelOpen = Given('the context panel is open', async (page: 
   }), {message: 'the context panel', timeout: pollMs(30000)}).toBe('shown');
 }, {tier: 'api', description: 'idempotent: the shell setting, re-applied until the panel is shown — not a click on its toggle'});
 
+export const browsePanelClosed = Given('the browse panel is closed', async (page: Page) => {
+  silent(page);
+  await page.evaluate(() => { grok.shell.windows.showBrowse = false; });
+  await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').filter({visible: true}),
+    'the browse tree').toHaveCount(0, {timeout: pollMs(15000)});
+}, {tier: 'api', description: 'the shell setting, off camera in a filmed guide: the side panel gives its room to the view once a file is open'});
+
+/** An info balloon a set-up step raised ("Numbering applied") stays over the view's top right for seconds and
+ * takes the clicks meant for what is docked under it. */
+export const balloonsClosed = Given('the notification balloons are closed', async (page: Page) => {
+  silent(page);
+  await page.evaluate(() => (window as any).DG.Balloon.closeAll());
+  await expect(page.locator('.d4-balloon').filter({visible: true}), 'the balloons').toHaveCount(0, {timeout: pollMs(15000)});
+}, {tier: 'api', description: 'DG.Balloon.closeAll(), off camera in a filmed guide'});
+
+/** A tooltip a hover left stays on the page while off-camera steps change what is under it. */
+export const tooltipHidden = Given('the tooltip is hidden', async (page: Page) => {
+  silent(page);
+  await page.evaluate(() => (window as any).ui.tooltip.hide());
+  await expect(page.locator('.d4-tooltip').filter({visible: true}), 'the tooltip').toHaveCount(0);
+}, {tier: 'api', description: 'ui.tooltip.hide(), off camera in a filmed guide'});
+
+export const contextPanelClosed = Given('the context panel is closed', async (page: Page) => {
+  silent(page);
+  await page.evaluate(() => { grok.shell.windows.showContextPanel = false; });
+  await expect(page.locator('.grok-prop-panel').filter({visible: true}), 'the context panel').toHaveCount(0, {timeout: pollMs(15000)});
+}, {tier: 'api', description: 'the shell setting, off camera in a filmed guide: a demo that has no use for the panel gives its room to the view'});
+
 export const contextPanelShows = Then('the context panel should show {string}', async (page: Page, name: string) => {
   // case aside: a database column's friendly name is capitalized ("Categoryid"), the panel shows it as the database has it
   await expect.poll(() => page.evaluate(() => {

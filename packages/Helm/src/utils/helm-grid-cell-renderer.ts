@@ -304,6 +304,21 @@ export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
     execMonomerHoverLinks(gridCell, null);
   }
 
+  /** Where the monomer at sequence position {@link pos} (0-based) sits in the cell as last drawn, in px from the
+   * cell's top left: the point the pointer rests on for its tooltip ({@link onMouseMove}). Null when not drawn. */
+  getMonomerPoint(gridCell: DG.GridCell, pos: number): {x: number, y: number} | null {
+    const aux = gridCell.cell?.value ? this.auxList.get(gridCell.cell.value) : undefined;
+    const atom = aux ? getMolView(aux).atoms.find((a) => a.bio && a.bio.continuousId - 1 === pos) : undefined;
+    if (!aux || !atom)
+      return null;
+    const dpr = window.devicePixelRatio;
+    const gcb = gridCell.bounds;
+    return {
+      x: (aux.dBox.x + (atom.p.x - aux.bBox.x) * aux.dBox.width / aux.bBox.width) / dpr - gcb.x,
+      y: (aux.dBox.y + (atom.p.y - aux.bBox.y) * aux.dBox.height / aux.bBox.height) / dpr - gcb.y,
+    };
+  }
+
   static getOrCreate(gridCell: DG.GridCell): HelmGridCellRendererBack {
     const [gridCol, tableCol, temp] =
       getGridCellColTemp<string, HelmGridCellRendererBack>(gridCell);

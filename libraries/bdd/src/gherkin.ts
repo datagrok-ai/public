@@ -17,6 +17,8 @@ export interface StepModel {
 
 export interface ScenarioModel {
   name: string;
+  /** The text under the scenario's title: what a demo's title card says. */
+  description: string;
   tags: string[];
   steps: StepModel[];
   line: number;
@@ -102,8 +104,9 @@ function toSteps(steps: readonly messages.Step[]): StepModel[] {
 function expand(scenario: messages.Scenario, inherited: string[]): ScenarioModel[] {
   const tags = [...inherited, ...scenario.tags.map((t) => t.name)];
   const base = toSteps(scenario.steps);
+  const description = scenario.description?.trim() ?? '';
   if (scenario.examples.length === 0)
-    return [{name: scenario.name, tags, steps: base, line: scenario.location.line}];
+    return [{name: scenario.name, description, tags, steps: base, line: scenario.location.line}];
   const out: ScenarioModel[] = [];
   for (const examples of scenario.examples) {
     const header = examples.tableHeader?.cells.map((c) => c.value) ?? [];
@@ -116,7 +119,8 @@ function expand(scenario: messages.Scenario, inherited: string[]): ScenarioModel
         table: st.table?.map((r) => r.map(subst)),
         docString: st.docString === undefined ? undefined : subst(st.docString)}));
       const label = header.map((h, i) => `${h}=${values[i] ?? ''}`).join(', ');
-      out.push({name: `${subst(scenario.name)} [${label}]`, tags: [...tags, ...exampleTags], steps, line: row.location.line});
+      out.push({name: `${subst(scenario.name)} [${label}]`, description: subst(description), tags: [...tags, ...exampleTags], steps,
+        line: row.location.line});
     }
   }
   return out;

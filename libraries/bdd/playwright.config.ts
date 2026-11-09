@@ -25,7 +25,8 @@ export default defineConfig({
   // one page per worker, four workers: the shared base config on npm still says one
   workers: Number(process.env.PLAYWRIGHT_WORKERS ?? 4),
   testDir: join(root, 'generated'),
-  outputDir: join(root, 'test-results'),
+  // a guide run gets its own (`grok-bdd guide`), so two films of one project at once keep their results apart
+  outputDir: process.env.BDD_OUTPUT_DIR ?? join(root, 'test-results'),
   // every run leaves its JSON report beside the failure artifacts and says where it ran: UsageAnalysis'
   // bdd/history keeps such reports as a run's record (a --reporter given on the command line replaces
   // these, and `grok-bdd run` adds json to it)
@@ -41,9 +42,10 @@ export default defineConfig({
     // a guide run (`grok-bdd guide`) is filmed at 1080p: below 1920 px the top menu bar folds its
     // last groups (Chem, Bio) into "more"; BDD_GUIDE_VIEWPORT=<w>x<h> chooses another
     // a window narrower than the 1600 px video is filmed at twice its density, so its text stays sharp
-    // BDD_VIEWPORT=<w>x<h> runs a suite at another screen size (the base is 1920×1080): the layout
-    // audit then checks every scenario's end state at that size
-    ...(process.env.BDD_GUIDE ? {viewport: guideView, deviceScaleFactor: guideView.width < 1600 ? 2 : 1} :
+    // (a demo's 1080p video: below 1920 px, BDD_GUIDE_SCALE); BDD_VIEWPORT=<w>x<h> runs a suite at another
+    // screen size (the base is 1920×1080): the layout audit then checks every scenario's end state at that size
+    ...(process.env.BDD_GUIDE ? {viewport: guideView,
+      deviceScaleFactor: Number(process.env.BDD_GUIDE_SCALE) || (guideView.width < 1600 ? 2 : 1)} :
       runView ? {viewport: runView} : {}),
     // a failed run keeps its trace (actions, console, network) and the failure screenshot, but
     // neither DOM snapshots (serializing the shell's DOM around every action was ~45% of a

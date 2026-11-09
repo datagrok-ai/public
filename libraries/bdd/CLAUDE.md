@@ -31,9 +31,12 @@ src/runtime/            args, locate (R9 order, item reveal, BDD_RESOLVE_TRACE),
                         server (endpoints the JS API lacks, layouts, fixture families), memory (BDD_MEMORY_LOG),
                         guide (BDD_GUIDE: per-step screenshots, located element or the hit area a gesture aims at, menu stops (hop), the page's own pointer events per stop,
                         pictures taken while typing, dragging and wheeling, a `# caption:` comment's caption, a frame (frameTo) → steps.json; full shell,
-                        no test styles; a window under 1600 px at device scale 2; BDD_GUIDE_HELP: the bare shell of a help GIF)
+                        no test styles; a window under 1600 px at device scale 2; BDD_GUIDE_HELP: the bare shell of a help GIF;
+                        BDD_GUIDE_DEMO: a demo clip's shell, the sidebar only; `say`: a `the video says` note)
 tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md / audit.png (+ --gif: guide.gif from the lossless frames,
-                        guide-thumb.png of the result, guide-sheet.png; --help: no title, strip, dimming, zoom or Given steps)
+                        guide-thumb.png of the result, guide-sheet.png; --help: no title, strip, dimming, zoom or Given steps;
+                        --demo: 1080p, a wrapped title card, notes over the page, no Given or uncaptioned check, review-sheet.png,
+                        timeline.json)
 tool/gen-u2-kinds.mjs   the u2 and EMS manifests → bindings/common/u2-kinds.g.ts (npm run vocab; vocab:check compares)
 tool/snapshot-kinds.mjs the built kind table → tests/fixtures/kinds-before.json (the compat test's reference)
 tool/audit-summary.mjs  a run's report.json (+ BDD_MEMORY_LOG files) → audit findings by rule, feature, scenario; heap per worker
@@ -459,8 +462,9 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
 - A guide films without the `selenium` body class, so the page looks as a person's does: a panel's title
   bar shows its icons only while the pointer is over the panel (`dock-manager.css`), and a guide feature
   hovers the panel in a step of its own before clicking one (a step's first picture is taken before its
-  gestures, so a hover inside the clicking step never shows the icon). Typing through a locator (`fill`, `pressSequentially`) or the keyboard and a wheel turn are
-  pictured as they go (`beat` in `guide.ts`, at most six pictures each).
+  gestures, so a hover inside the clicking step never shows the icon). Typing through a locator (`fill`, `pressSequentially`) or the keyboard is
+  pictured as it goes (`beat` in `guide.ts`, at most six pictures). A wheel turn is the one event a test sends, pictured
+  after it: split into notches on film, Bio's MSA header (a position per event) scrolled to the end where the test moved it once.
 - A guide takes the pointer from the page, not from `page.mouse`: a locator's `click()`, `hover()`,
   `dragTo()` never pass through it, and a recorder that wrapped only the mouse had 60 of 80 clicks
   with no place (drawn unmarked, at the element's centre). `guide.ts` logs trusted pointer events

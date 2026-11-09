@@ -446,9 +446,11 @@ async function runEngineWithClustering(
   const unusedName = table.columns.getUnusedName(`msa(${srcCol.name})`);
   const resultValues: string[] = new Array(rowCount).fill('');
   let lastResultCol: DG.Column<string> | null = null;
+  let clusterCount = 0;
 
   for (const rowIds of clusterIndexes) {
     if (!rowIds || rowIds.length === 0) continue;
+    clusterCount++;
 
     // Create a subset column with just this cluster's sequences
     const subsetSeqs = rowIds.map((i) => srcCol.get(i)!);
@@ -472,7 +474,10 @@ async function runEngineWithClustering(
   if (lastResultCol) {
     finalCol.meta.units = lastResultCol.meta.units;
     finalCol.semType = lastResultCol.semType;
-    for (const tag of [bioTAGS.alphabet, bioTAGS.separator, bioTAGS.alphabetIsMultichar]) {
+    // the engine's own tags (its model's position names, its profile) describe one alignment, not several clusters'
+    const tags = clusterCount > 1 ? [bioTAGS.alphabet, bioTAGS.separator, bioTAGS.alphabetIsMultichar] :
+      Object.keys(lastResultCol.tags);
+    for (const tag of tags) {
       const val = lastResultCol.getTag(tag);
       if (val) finalCol.setTag(tag, val);
     }
