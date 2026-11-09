@@ -87,14 +87,10 @@ export class NcaAppView {
 
   readonly view: DG.View;
   private readonly root: HTMLDivElement;
-  /** Built once: `render()` re-runs, and each AppHeader lives until the view closes. */
+  // Built once: render() re-runs, and each AppHeader lives until the view closes.
   private header: HTMLElement | null = null;
-  /** Subscription that re-renders the Projects list when the Hub re-activates. */
   private viewActivatedSub?: {unsubscribe(): void};
-  /** Subscription that re-renders the studies + analyses lists whenever a study or
-   *  analysis is created / renamed / deleted / added-to / moved, from any surface
-   *  (the coordinator fires `NCA_STUDIES_CHANGED_EVENT` on save + delete). Fires
-   *  UNCONDITIONALLY — the Hub stays current with no manual refresh (2026-10-05). */
+  // Unconditional, not visibility-guarded: any save / delete anywhere keeps the Hub lists current.
   private studiesChangedSub?: {unsubscribe(): void};
 
   constructor() {

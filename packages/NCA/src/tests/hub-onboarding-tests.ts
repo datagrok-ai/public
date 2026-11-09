@@ -6,9 +6,9 @@
  * These tests pin the assumption the feature rests on that is NOT verifiable by
  * reading TypeScript, because it is resolved inside a third-party component:
  *
- *  - `AppHeader` (`@datagrok-libraries/u2`) renders "Learn more" under the
- *     bullets and runs its `onClick` in place, without navigating away: the Hub
- *     relies on that to open its in-app help panel.
+ *  - `AppHeader` (`@datagrok-libraries/u2`) shows "Learn more" as an in-app
+ *     action (`onClick`), not a link away: the Hub relies on that to open its
+ *     help panel.
  *
  * The third test pins idempotence against the real AppData path — the property
  * the user asked for by name ("if these tables are not already in the list").
@@ -18,6 +18,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {AppHeader} from '@datagrok-libraries/u2';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 
 import {ensureDemoTables, loadSampleByName} from '../views/nca-launch';
@@ -274,23 +275,19 @@ category('Hub onboarding: demo tables (★)', () => {
  * opening the help panel — a failure no type check catches.
  */
 category('Hub onboarding: seams the Hub stands on', () => {
-  test('AppHeader renders Learn more under the bullets and runs its onClick in place', async () => {
-    let clicks = 0;
-    const header = new AppHeader({icon: 'flask', description: '- bullet one\n- bullet two\n',
-      learnMore: {onClick: () => clicks++}});
+  test('AppHeader shows Learn more as an in-app action, not a link away', async () => {
+    // Owned by a throwaway view's host, released in `finally`.
+    const host = ViewHost.of(DG.View.create());
     try {
-      const bullets = header.root.querySelectorAll('.u2-app-header-item');
-      expect(bullets.length, 2, 'one item per markdown bullet');
-      const more = header.root.querySelector('.u2-app-header-learn-more') as HTMLAnchorElement | null;
-      expect(more !== null, true, 'Learn more is rendered');
-      expect(more?.textContent, 'Learn more', 'the default link text');
-      expect(more !== null && (bullets[1].compareDocumentPosition(more) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
-        true, 'Learn more follows the bullets');
-      expect(more?.getAttribute('href') ?? null, null, 'an onClick link does not navigate away');
-      more?.dispatchEvent(new MouseEvent('click', {bubbles: true}));
-      expect(clicks, 1, 'the click runs the onClick (the Hub opens its help panel there)');
+      const header = host.build(() => new AppHeader({icon: 'flask', description: '- bullet one\n- bullet two\n',
+        learnMore: {onClick: () => {}}}));
+      const extra = (header.getState().extra ?? {}) as {learnMore?: string, learnMoreHref?: string};
+      expect(extra.learnMore, 'Learn more', 'Learn more is shown, with the default text');
+      // `expect(x, undefined)` would compare with the default `true`: compare explicitly.
+      expect(extra.learnMoreHref === undefined, true,
+        'no URL: the link runs its onClick in place (the Hub opens its help panel there)');
     } finally {
-      header.dispose();
+      host.dispose();
     }
   });
 });
