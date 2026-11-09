@@ -1,0 +1,12 @@
+{
+  "#type": "DataConnection",
+  "name": "AthenaDBTests",
+  "friendlyName": "AthenaDBTests",
+  "parameters": {
+    "region": "us-east-2",
+    "db": "dbtests",
+    "S3OutputLocation": "s3://athena-northwind/results/dbtests/"
+  },
+  "dataSource": "Athena",
+  "description": "Test data. Credentials (IAM user dbtests-athena) are attached by CI from the Jenkins credential dbtests_athena_aws"
+}

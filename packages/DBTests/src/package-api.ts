@@ -8,6 +8,90 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace queries {
+  export async function athenaPatternsAll(): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaPatternsAll', {});
+  }
+
+  export async function athenaIntTypePatternNone(id: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaIntTypePatternNone', { id });
+  }
+
+  export async function athenaStringTypeIntPatternOpMore(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypeIntPatternOpMore', { id });
+  }
+
+  export async function athenaStringTypeIntPatternOpMoreEq(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypeIntPatternOpMoreEq', { id });
+  }
+
+  export async function athenaStringTypeIntPatternOpLessEq(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypeIntPatternOpLessEq', { id });
+  }
+
+  export async function athenaStringTypeIntPatternOpLess(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypeIntPatternOpLess', { id });
+  }
+
+  export async function athenaStringTypeIntPatternOpIn(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypeIntPatternOpIn', { id });
+  }
+
+  export async function athenaStringTypeIntPatternOpNotIn(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypeIntPatternOpNotIn', { id });
+  }
+
+  export async function athenaStringTypeIntPatternOpMinMax(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypeIntPatternOpMinMax', { id });
+  }
+
+  export async function athenaStringTypeIntPatternOpNotEq(id: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypeIntPatternOpNotEq', { id });
+  }
+
+  export async function athenaDoubleTypePatternNone(some_number: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaDoubleTypePatternNone', { some_number });
+  }
+
+  export async function athenaStringTypePatternDoubleOpMore(some_number: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypePatternDoubleOpMore', { some_number });
+  }
+
+  export async function athenaStringTypePatternDoubleOpMoreEq(some_number: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypePatternDoubleOpMoreEq', { some_number });
+  }
+
+  export async function athenaStringTypePatternDoubleOpLess(some_number: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypePatternDoubleOpLess', { some_number });
+  }
+
+  export async function athenaStringTypePatternDoubleOpLessEq(some_number: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypePatternDoubleOpLessEq', { some_number });
+  }
+
+  export async function athenaStringTypePatternStringOpContains(first_name: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypePatternStringOpContains', { first_name });
+  }
+
+  export async function athenaStringTypePatternStringOpStartsWith(first_name: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypePatternStringOpStartsWith', { first_name });
+  }
+
+  export async function athenaStringTypePatternStringOpEndsWith(first_name: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypePatternStringOpEndsWith', { first_name });
+  }
+
+  export async function athenaStringTypePatternStringOpIn(country: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypePatternStringOpIn', { country });
+  }
+
+  export async function athenaStringTypePatternStringOpRegex(email: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaStringTypePatternStringOpRegex', { email });
+  }
+
+  export async function athenaPatternsAllParams(first_name: string , id: string , bool: boolean , email: string , some_number: string , country: string , date: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('DBTests:AthenaPatternsAllParams', { first_name, id, bool, email, some_number, country, date });
+  }
+
   export async function clickHouseADBCUuidType(): Promise<DG.DataFrame> {
     return await grok.data.query('DBTests:ClickHouseADBCUuidType', {});
   }
