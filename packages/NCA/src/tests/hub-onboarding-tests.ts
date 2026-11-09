@@ -6,11 +6,9 @@
  * These tests pin the assumption the feature rests on that is NOT verifiable by
  * reading TypeScript, because it is resolved inside a third-party component:
  *
- *  - `u2.appHeader` really does emit a `.u2-app-header-description` container
- *     around its markdown bullets. That class is u2's internal hook, and the
- *     "Learn more" link is appended into it to land under the bullets. If u2
- *     renames it, the link falls back to the header root — still visible, but
- *     no longer under the bullets, which is the placement that was specified.
+ *  - `AppHeader` (`@datagrok-libraries/u2`) renders "Learn more" under the
+ *     bullets and runs its `onClick` in place, without navigating away: the Hub
+ *     relies on that to open its in-app help panel.
  *
  * The third test pins idempotence against the real AppData path — the property
  * the user asked for by name ("if these tables are not already in the list").
@@ -19,7 +17,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {u2} from '@datagrok-libraries/utils/src/u2';
+import {AppHeader} from '@datagrok-libraries/u2';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 
 import {ensureDemoTables, loadSampleByName} from '../views/nca-launch';
@@ -270,27 +268,30 @@ category('Hub onboarding: demo tables (★)', () => {
  * existing test mounts a `_package`-touching view for exactly this reason; this
  * is a harness boundary, not something to work around by contorting the view.
  *
- * So the tests target what actually carries risk. The Hub's own wiring is two
+ * So the tests target what actually carries risk. The Hub's own wiring is one
  * readable call into this seam; the seam is a third-party contract that can
- * change under us with no compile error. If it breaks, the link silently stops
- * appearing where it was specified — a failure no type check catches.
+ * change under us with no compile error. If it breaks, Learn more silently stops
+ * opening the help panel — a failure no type check catches.
  */
 category('Hub onboarding: seams the Hub stands on', () => {
-  test('u2.appHeader emits the description panel the Learn more link anchors to', async () => {
-    const header = u2.appHeader({iconPath: '', description: '- bullet one\n- bullet two\n'});
-    const desc = header.querySelector('.u2-app-header-description');
-    expect(desc !== null, true,
-      'u2 still emits .u2-app-header-description — the container holding the ' +
-      'bullets, and the anchor buildHeader appends Learn more into');
-    // The bullets must already be in it, so an appended link lands UNDER them —
-    // that ordering IS the specified placement, not a coincidence of styling.
-    const md = desc?.firstElementChild ?? null;
-    expect(md !== null, true, 'the bullet markdown is the panel first child');
-    const link = ui.link('Learn more', () => {}, 'tip', {style: {marginLeft: '15px'}});
-    desc?.appendChild(link);
-    expect(md !== null &&
-      (md.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
-    true, 'an appended Learn more follows the bullet markdown');
+  test('AppHeader renders Learn more under the bullets and runs its onClick in place', async () => {
+    let clicks = 0;
+    const header = new AppHeader({icon: 'flask', description: '- bullet one\n- bullet two\n',
+      learnMore: {onClick: () => clicks++}});
+    try {
+      const bullets = header.root.querySelectorAll('.u2-app-header-item');
+      expect(bullets.length, 2, 'one item per markdown bullet');
+      const more = header.root.querySelector('.u2-app-header-learn-more') as HTMLAnchorElement | null;
+      expect(more !== null, true, 'Learn more is rendered');
+      expect(more?.textContent, 'Learn more', 'the default link text');
+      expect(more !== null && (bullets[1].compareDocumentPosition(more) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+        true, 'Learn more follows the bullets');
+      expect(more?.getAttribute('href') ?? null, null, 'an onClick link does not navigate away');
+      more?.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      expect(clicks, 1, 'the click runs the onClick (the Hub opens its help panel there)');
+    } finally {
+      header.dispose();
+    }
   });
 });
 

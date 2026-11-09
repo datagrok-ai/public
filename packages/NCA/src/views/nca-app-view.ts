@@ -7,30 +7,29 @@
  * @see packages/DiffStudio/src/hub.ts (class
  *      skeleton + render lifecycle + buildModelCard + cards grid container)
  *
- * **Header.** Built with `u2.appHeader` from `@datagrok-libraries/utils` —
- * same idiom DiffStudio uses (`hub.ts:62-74`). Spec §5.1 calls for "3-4 lines
- * about NCA": parameter scope, target audience, single-compound serial-
- * sampling scope, PKNCA validation. Description rendered as markdown bullet
- * list (one bullet per point) so the header reads as a scannable feature list,
- * not prose.
+ * **Header.** `AppHeader` from `@datagrok-libraries/u2`, built under the view's
+ * `ViewHost` so it is disposed with the view (the DiffStudio Hub idiom). The
+ * description is a markdown bullet list, so the header reads as a scannable
+ * feature list, not prose; "Learn more" opens the in-app help panel.
  *
  * **Library cards.** Two static entries (theoph + indometh) with PNG icons at
  * `files/icons/<name>.png` (user-added 2026-05-18). Double-click
  * triggers `loadSampleByName(file) → launchAnalysis(df, viewName)`.
  *
  * **CSS.** Classes are in `css/app-styles.css`; loaded via the
- * `//@ts-ignore` import shim at the top of this file (webpack picks up
- * through `style-loader` + `css-loader` — see webpack.config.js).
+ * `//@ts-ignore` import shim at the top of this file (the default bundler rule
+ * loads imported `.css`).
  */
 
-// @ts-ignore  — CSS module not declared in tsconfig; webpack resolves at build time.
+// @ts-ignore  — CSS module not declared in tsconfig; the bundler resolves it at build time.
 import '../../css/app-styles.css';
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {u2} from '@datagrok-libraries/utils/src/u2';
+import {AppHeader} from '@datagrok-libraries/u2';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 
 import {_package} from '../package';
 import {loadSampleByName, launchAnalysis, ensureDemoTables} from './nca-launch';
@@ -88,6 +87,8 @@ export class NcaAppView {
 
   readonly view: DG.View;
   private readonly root: HTMLDivElement;
+  /** Built once: `render()` re-runs, and each AppHeader lives until the view closes. */
+  private header: HTMLElement | null = null;
   /** Subscription that re-renders the Projects list when the Hub re-activates. */
   private viewActivatedSub?: {unsubscribe(): void};
   /** Subscription that re-renders the studies + analyses lists whenever a study or
@@ -112,28 +113,20 @@ export class NcaAppView {
   }
 
   private buildHeader(): HTMLElement {
-    const header = u2.appHeader({
-      iconPath: `${_package.webRoot}package.png`,
+    if (this.header)
+      return this.header;
+    // `learnMore.onClick` (not a URL): the link opens the in-app help panel instead of navigating away.
+    const header = ViewHost.of(this.view).build(() => new AppHeader({
+      icon: `${_package.webRoot}package.png`,
       description:
         '- Perform non-compartmental analysis of preclinical PK data\n' +
         '- Compute PK parameters from concentration–time profiles\n' +
         '- Run a quick analysis on any table\n' +
         '- Group multiple analyses into a shareable Study\n',
-    });
+      learnMore: {onClick: () => openHubHelp()},
+    })).root;
     header.classList.add('nca-hub-header');
-    // "Learn more", directly under the bullets. u2.appHeader HAS a Learn-more
-    // slot (`IAppInfo.learnMoreUrl`) but it only accepts a URL and renders an
-    // external link that navigates away — we need the in-app help panel. So
-    // build the very element u2 builds for its own Learn more (`ui.link` + the
-    // same 15px indent, u2.js appHeader) and append it to u2's description
-    // panel — the container that holds the markdown bullets — so the link lands
-    // exactly where u2's own would. `ui.link` takes a Function target
-    // (ui.js:540), which is the seam `learnMoreUrl: string` closes off.
-    // Fallback to the header root if u2 ever renames its description class.
-    const learnMore = ui.link('Learn more', () => openHubHelp(),
-      'What an analysis is, and how to get from a table to a Study — opens the help panel',
-      {style: {marginLeft: '15px'}});
-    (header.querySelector('.u2-app-header-description') ?? header).appendChild(learnMore);
+    this.header = header;
     return header;
   }
 

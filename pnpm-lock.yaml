@@ -2781,6 +2781,9 @@ importers:
       '@datagrok-libraries/test':
         specifier: workspace:^
         version: link:../../libraries/test
+      '@datagrok-libraries/u2':
+        specifier: workspace:^
+        version: link:../../libraries/u2
       '@datagrok-libraries/utils':
         specifier: workspace:^
         version: link:../../libraries/utils
