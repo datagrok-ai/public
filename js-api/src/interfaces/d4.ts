@@ -810,8 +810,8 @@ export interface IBarChartSettings {
    * See also *Bar Sort Type*. */
   barSortOrder: string;
 
-  /** How the categories are ordered under the *custom* sort type, as [CategoryOrder] JSON; by default, in the
-   * column's own order. Edited through *Order > Custom Order...* in the context menu. */
+  /** How the categories are ordered under the *custom* sort type: by name, row count, an aggregated value, or manually;
+   * by default, in the column's own order. */
   categoryOrder: string;
 
   axisType: keyof typeof AxisType;
@@ -1030,8 +1030,8 @@ export interface IPieChartSettings {
 
   pieSortOrder: string;
 
-  /** How the categories are ordered under the *custom* sort type, as [CategoryOrder] JSON; by default, in the
-   * column's own order. Edited through *Order > Custom Order...* in the context menu. */
+  /** How the categories are ordered under the *custom* sort type: by name, row count, an aggregated value, or manually;
+   * by default, in the column's own order. */
   categoryOrder: string;
 
   includeNulls: boolean;
@@ -1883,18 +1883,12 @@ export interface IScatterPlot3dSettings {
 
   showXSelector: boolean;
 
-  /** How the X axis categories are ordered, as [CategoryOrder] JSON. */
-  xCategoryOrder: string;
-
   y: string;
   yColumnName: string;
 
   yAxisType: keyof typeof AxisType;
 
   showYSelector: boolean;
-
-  /** How the Y axis categories are ordered, as [CategoryOrder] JSON. */
-  yCategoryOrder: string;
 
   z: string;
   zColumnName: string;
@@ -1903,7 +1897,13 @@ export interface IScatterPlot3dSettings {
 
   showZSelector: boolean;
 
-  /** How the Z axis categories are ordered, as [CategoryOrder] JSON. */
+  /** How the X axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  xCategoryOrder: string;
+
+  /** How the Y axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  yCategoryOrder: string;
+
+  /** How the Z axis categories are ordered: by name, row count, an aggregated value, or manually. */
   zCategoryOrder: string;
 
   color: string;
@@ -2073,7 +2073,10 @@ export interface IScatterPlotSettings {
 
   showYSelector: boolean;
 
-  /** How the Y categories are ordered, as [CategoryOrder] JSON; see *X Category Order*. */
+  /** How the X axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  xCategoryOrder: string;
+
+  /** How the Y axis categories are ordered: by name, row count, an aggregated value, or manually. */
   yCategoryOrder: string;
 
   /** Shows a distribution histogram along the X axis (at the top) */
@@ -2442,11 +2445,6 @@ export interface IScatterPlotSettings {
   showDataframeFormulaLines: boolean;
 
   formulaFont: string;
-
-  /** How the X categories are ordered, as [CategoryOrder] JSON, e.g. `{"column": "AGE", "aggr": "avg", "order": "desc"}`.
-   * Edited through *Order...* in the X axis menu. */
-  xCategoryOrder: string;
-
 }
 
 export interface ITreeMapSettings {
@@ -2527,10 +2525,6 @@ export interface ITreeMapSettings {
 export interface IBoxPlotSettings {
   categoryColumnNames: Array<string>;
 
-  /** How the categories are ordered, as [CategoryOrder] JSON (a manual order only with one category level).
-   * Edited through *Order...* in the category axis menu. */
-  categoryOrder: string;
-
   /** If *Category 2* is not defined, sets *Markers Color* the same as the currently selected column. */
   category1: string;
   category1ColumnName: string;
@@ -2553,6 +2547,9 @@ export interface IBoxPlotSettings {
 
   /** Display subcategories - category combinations in the x axis table. */
   showMinorCategories: boolean;
+
+  /** How the categories are ordered: by name, row count, an aggregated value, or manually. */
+  categoryOrder: string;
 
   value: string;
   valueColumnName: string;
@@ -2930,6 +2927,9 @@ export interface ILineChartSettings {
    * Example: time series data with the "stimuli" column */
   segment: string;
   segmentColumnName: string;
+
+  /** How the X axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  xCategoryOrder: string;
 
   invertXAxis: boolean;
 
@@ -3319,11 +3319,6 @@ export interface ILineChartSettings {
   showDataframeFormulaLines: boolean;
 
   formulaFont: string;
-
-  /** How the X categories are ordered, as [CategoryOrder] JSON, e.g. `{"column": "AGE", "aggr": "avg", "order": "desc"}`.
-   * Edited through *Order...* in the X axis menu. */
-  xCategoryOrder: string;
-
 }
 
 export enum AxisTickmarksMode {

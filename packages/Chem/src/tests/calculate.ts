@@ -179,8 +179,8 @@ category('calculate', () => {
         expect(keys.length, 2, property);
         expect(keys.type === DG.TYPE.FLOAT || keys.type === DG.TYPE.INT, true, `${property}: ${keys.type} keys`);
       }
+      expectFloat((await f.apply({molecules: col, property: 'MW'})).get(0), 259.271, 1e-3, 'MW');
     });
-    expectFloat((await f.apply({molecules: col, property: 'MW'})).get(0), 259.271, 1e-3, 'MW');
   });
 
   test('structural alerts', async () => {

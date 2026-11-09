@@ -7,6 +7,7 @@ import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {isWebGLAvailable, scWebGLPointHitTest, scWebGLRender} from '../webgl/scatterplot';
 import {scWebGPUPointHitTest, scWebGPURender} from '../webgpu/scatterplot';
 import {isGpuRenderValid} from '../scatterplot-gpu';
+import {isGpuRenderable, readCheckLook} from '../scatterplot-look';
 
 const FLOAT_NONE = Math.fround(DG.FLOAT_NULL);
 
@@ -189,11 +190,13 @@ category('Scatter plot: GPU', () => {
     // a platform older than the category order has no such property
     if (!sp.props.hasProperty('xCategoryOrder'))
       return;
+    // the checks below need no GPU: a browser without one falls back for any plot
+    const renderable = () => isGpuRenderable(sp, readCheckLook(sp));
     Object.assign(sp.props, {zoomAndFilter: 'filter by zoom', xColumnName: 'race',
       xCategoryOrder: '{"manual":["Other"]}'});
-    expect(isGpuRenderValid(sp), false);
+    expect(renderable(), false);
     // an order left on an axis turned numeric does not apply
     sp.props.xColumnName = 'height';
-    expect(isGpuRenderValid(sp), true);
+    expect(renderable(), true);
   });
 });
