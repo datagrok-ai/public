@@ -99,6 +99,20 @@ function markOf(df: DG.DataFrame, i: number): {state: Mark | '', reason: string}
     reason: !r || r.isNone(i) ? '' : String(r.get(i))};
 }
 
+/** Each marked animal's mark: excluded when any of its rows is, else flagged. */
+export function animalMarks(n: StudyNames): Map<string, Mark> {
+  const col = n.study.col(n.animal);
+  const out = new Map<string, Mark>();
+  if (col) {
+    marksOf(n.study).forEach((m, i) => {
+      const a = String(col.get(i));
+      if (m.state && out.get(a) !== 'excluded')
+        out.set(a, m.state);
+    });
+  }
+  return out;
+}
+
 /** The marks of a table, row by row. */
 function marksOf(df: DG.DataFrame): {state: Mark | '', reason: string}[] {
   return Array.from({length: df.rowCount}, (_, i) => markOf(df, i));

@@ -8,6 +8,7 @@ Feature: PMX Studio
     Given the guide may take up to 10 minutes
     And user is logged in
     And simple mode is off
+    And the stages show their default layouts
     And the shell is in presentation mode without tooltips
     And user opens PMX Studio on its Overview
     And the demo study is open in Monitor and Analyze
@@ -19,12 +20,12 @@ Feature: PMX Studio
     When user clicks on demo plan row and the stage opens
     # caption: The design starts from the tumor model: its growth and variability come from past control groups
     And user points out tumor model section
-    # caption: The arms to compare, each with its dose and schedule
-    And user points out treatment arms section
     # caption: Every assumption is live: lower the endpoint volume and the design follows
     And user drags the slider of "Endpoint volume" input to 1200 and PMX Studio settles
     # caption: Animals per group, study length and power, recomputed at once
     And user points out plan figures
+    # caption: The arms to compare, each with its dose and schedule
+    And user points out treatment arms section
     # caption: Monitor: the running study against what its plan predicted
     When user clicks on monitor step and the stage opens
     # caption: Each group against its forecast, who needs attention today, and when the study should end
@@ -35,8 +36,10 @@ Feature: PMX Studio
     And user picks "Flag this animal…" from the context menu of first sheet row
     # caption: Any animal can be flagged for review, with its reason
     And user enters "Ulcerated tumor: check at the next session" into "Reason" input
-    # caption: Flagged
+    # caption: Any animal can be flagged for review, with its reason
     And user clicks on "OK" button and PMX Studio settles
+    # caption: Flagged: the animal carries its mark, and its rows are coloured in the study table
+    And user points out first sheet row
     # caption: Welfare: body weight and condition of every animal, against the humane endpoints
     When user clicks on "Welfare" tab and PMX Studio settles
     # caption: Decisions: flags and exclusions logged with who, when and why; they travel with the study
@@ -45,24 +48,22 @@ Feature: PMX Studio
     When user clicks on analyze header step and the stage opens
     # caption: Each group's growth and its effect against the control, with its uncertainty
     And user points out experimental groups section
-    # caption: Time to the endpoint, as measured
-    And user scrolls km chart into view
-    # caption: … and projected past the last measurement, marked as a projection
+    And the page is scrolled to km chart
+    # caption: Time to the endpoint as measured, then projected past the last measurement, marked as a projection
     And user drags the slider of km slider to 40
-    # caption: Each animal: its response, from the best to the worst
+    And the page is scrolled to each animal tab
+    # caption: Each animal: its response, from the best to the worst, and its tumor over time
     When user clicks on each animal tab and PMX Studio settles
-    # caption: Each animal: its response, from the best to the worst
+    # caption: Each animal: its response, from the best to the worst, and its tumor over time
     And user points out waterfall chart
-    # caption: Its digital twin: the same tumor, predicted as if untreated
-    And user scrolls "Each animal against its untreated twin" section into view
+    And the page is scrolled to twin section
     # caption: Its digital twin: the same tumor, predicted as if untreated
     And user clicks on third animal row and PMX Studio settles
     # caption: The gap between the animal and its twin is the effect of the treatment, animal by animal
     And user points out twin effect line
+    And the page is scrolled to tolerability tab
     # caption: Tolerability: body weight loss and deaths in every arm
-    When user scrolls "Tolerability" tab into view
-    # caption: Tolerability: body weight loss and deaths in every arm
-    And user clicks on "Tolerability" tab and PMX Studio settles
+    When user clicks on "Tolerability" tab and PMX Studio settles
     # caption: Against the plan: what the study found against what its design predicted
     When user clicks on "Against the plan" tab and PMX Studio settles
     # caption: The whole portfolio in one place: planned, running and finished

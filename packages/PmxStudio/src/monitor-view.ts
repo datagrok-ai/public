@@ -24,7 +24,8 @@ import {LIMITS_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf,
   restoreFields, saveStudy, studyOf, tableOf} from './study-file';
 import {editLayout, panelTabs, Tab} from './panels';
 import {stagePage, studyHeader} from './study-header';
-import {emptyStudy, studyDataLine, studyMenu, studyOf as studyNamesOf, tagStudy, withoutExcluded} from './study-table';
+import {animalMarks, emptyStudy, studyDataLine, studyMenu, studyOf as studyNamesOf, tagStudy, withoutExcluded}
+  from './study-table';
 import {StudyMeta, dateOf, dateText, emptyMeta, metaOf, setMetaOn, weekdayOf, withId} from './study-meta';
 import {CAL, DayLook, dayActions, dayToday, icsOf, mark, marked, weeksGrid} from './calendar';
 import {LineInput} from './line-input';
@@ -86,6 +87,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   const busy = signal(false);
   // the log's version: what it records (a reveal, the blinding switched) changes what is shown
   const logVersion = signal(0);
+  // the study table's values: a flag or an exclusion changes what the lists show without a new forecast
+  const dataVersion = signal(0);
   let latest = 0;
   // no Run: each change forecasts again once the changes stop
   let preparing = false;
@@ -284,7 +287,9 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   // an animal's menu on its row (its name, the first cell), in the attention list and the measurement sheet alike
   for (const list of [attention, sheet]) {
     list.addEventListener('contextmenu', (e) => {
-      const name = (e.target as HTMLElement).closest('.u2-table-row')?.querySelector('td')?.textContent?.trim();
+      const row = (e.target as HTMLElement).closest('.u2-table-row');
+      const name = (row?.querySelector('[data-animal]') as HTMLElement | null)?.dataset.animal ??
+        row?.querySelector('td')?.textContent?.trim();
       if (!name)
         return;
       e.preventDefault();
@@ -318,7 +323,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     stopWatching();
     const df = studyTable();
     if (df)
-      watching = [df.onDataChanged.subscribe(checkEntered), df.onRowsAdded.subscribe(checkEntered)];
+      watching = [df.onDataChanged.subscribe(checkEntered), df.onRowsAdded.subscribe(checkEntered),
+        df.onDataChanged.subscribe(() => dataVersion.value++)];
     checkEntered();
   });
   const groupCols = (): [string, (r: AnimalRow) => string][] => revealed.value ? [['Group', (a) => a.group]] : [];
@@ -327,8 +333,20 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     [['Body weight', (a) => typeof a.weight_change === 'number' ? signed(a.weight_change) : '—']] : [];
   form.effect(() => {
     const r = result.value;
+    void dataVersion.value;
     if (!r)
       return;
+    // an animal flagged or excluded says so by its name, as the study table colours its rows
+    const n = studyNamesOf(studyTable());
+    const marks = n ? animalMarks(n) : new Map<string, string>();
+    const animalCell = (a: AnimalRow) => {
+      const m = marks.get(String(a.animal));
+      const el = span(String(a.animal));
+      if (m)
+        el.append(' ', badge(m === 'excluded' ? 'Excluded' : 'Flagged', {variant: m === 'excluded' ? 'default' : 'warning'}));
+      el.dataset.animal = String(a.animal);
+      return el;
+    };
     // by animal: the engine's order, group by group, would show the groups
     const all = rowsOf(r.animals).sort((a, b) => String(a.animal).localeCompare(String(b.animal), undefined,
       {numeric: true}));
@@ -336,12 +354,12 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     if (listed.length === 0)
       attention.replaceChildren(noteLine('No animal needs attention today.', 'success'));
     else {
-      fill(attention, listed, (a) => a.animal, [['Animal', (a) => a.animal], ...groupCols(),
+      fill(attention, listed, (a) => a.animal, [['Animal', animalCell], ...groupCols(),
         ['Why', (a) => a.attention], ['Last volume', (a) => `${mm3(a.last_volume)} mm³, day ${a.last_day}`],
         ...weightCols(r),
         ['Next expected', (a) => a.next_median === null ? '—' : `${mm3(a.next_lower)}–${mm3(a.next_upper)} mm³`]]);
     }
-    fill(sheet, all, (a) => a.animal, [['Animal', (a) => a.animal], ...groupCols(),
+    fill(sheet, all, (a) => a.animal, [['Animal', animalCell], ...groupCols(),
       ['Last volume', (a) => mm3(a.last_volume)], ...weightCols(r),
       ['Next expected', (a) => a.next_median === null ? '—' : `${mm3(a.next_lower)}–${mm3(a.next_upper)}`],
       ['Measure again outside', (a) => a.next_median === null ? '—' : `${mm3(a.check_lower)}–${mm3(a.check_upper)}`]]);

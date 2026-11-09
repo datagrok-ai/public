@@ -3,7 +3,7 @@
    should move them (the numbers themselves are the package tests'). */
 import {Page, test} from '@playwright/test';
 import {element, Given, lookupElement, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, expect, gestures, openTopMenu, pollMs, silent} from '@datagrok-libraries/bdd/runtime';
+import {atFeatureEnd, expect, gestures, openTopMenu, pollMs, silent, unlit} from '@datagrok-libraries/bdd/runtime';
 import type {ElementRef} from '@datagrok-libraries/bdd/runtime';
 
 element('form run button', {selector: '.pmx-declaration [data-u2="button"]:has-text("Run")'});
@@ -150,6 +150,8 @@ element('plan figures', {selector: '.pmx-plan-cards'});
 element('tumor model section', {selector: '.u2-section:has(.u2-section-title:text-is("Tumor model"))'});
 element('treatment arms section', {selector: '.u2-section:has(.u2-section-title:text-is("Treatment arms"))'});
 element('experimental groups section', {selector: '.u2-section:has(.u2-section-title:text-is("Experimental groups"))'});
+element('twin section', {selector: '.u2-section:has(.u2-section-title:text-is("Each animal against its untreated twin"))'});
+element('tolerability tab', {selector: '.pmx-tab:has-text("Tolerability")'});
 element('third animal row', {selector: '.pmx-forest-row >> nth=2'});
 // the demo MC38 study at its three moments, as the Overview lists it
 element('demo plan row', {selector: '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response (its plan)")'});
@@ -218,11 +220,13 @@ const currentView = (page: Page) => page.evaluate(() => String((window as any).g
 
 export const clickOpensStage = When('user clicks on {element} and the stage opens', async (page: Page, target: ElementRef) => {
   const before = await currentView(page);
+  await clearPointed(page);
   await gestures.click(page, target);
   await settled(page, true, before);
 }, {tier: 'ui', description: 'the click, then the view it opens current and its loader gone'});
 
 export const clickSettles = When('user clicks on {element} and PMX Studio settles', async (page: Page, target: ElementRef) => {
+  await clearPointed(page);
   await gestures.click(page, target);
   await settled(page, false, '');
 }, {tier: 'ui', description: "the click, then the view's loader gone"});
@@ -266,27 +270,64 @@ export const demoOpen = Given('the demo study is open in Monitor and Analyze', a
   await page.mouse.move(12, 1070);
 }, {tier: 'api', description: 'the demo study opened in Monitor and Analyze and loaded, the Overview current again; silent in a guide'});
 
-/** A yellow box around what the step points out, for the step's picture: nothing is pressed. Found by its selector,
- *  not through the runtime's lookup, so the guide does not light it as a step's target (dimmed page, orange outline). */
-export const pointOut = When('user points out {element}', async (page: Page, target: ElementRef) => {
+/** The element a selector registered for `target` names, the innermost one on screen (a section holds the sections
+ *  inside it). Found by its selector, not through the runtime's lookup, so a guide does not light it as the step's
+ *  target. */
+function plainly(page: Page, target: ElementRef) {
   const selector = lookupElement(target.phrase)?.selector;
   if (!selector)
-    throw new Error(`${target.phrase} has no selector to point at`);
-  const box = await page.locator(selector).filter({visible: true}).last().boundingBox({timeout: pollMs(15000)});
-  if (!box)
-    throw new Error(`${target.phrase} is not on screen`);
-  await page.evaluate((b) => {
-    const mark = document.createElement('div');
-    Object.assign(mark.style, {position: 'fixed', left: `${b.x - 6}px`, top: `${b.y - 6}px`, width: `${b.width + 12}px`,
-      height: `${b.height + 12}px`, border: '3px solid #F5C400', borderRadius: '6px', boxShadow: '0 0 0 4px rgba(245,196,0,.18)',
-      pointerEvents: 'none', zIndex: '100000'});
-    document.body.append(mark);
-    setTimeout(() => mark.remove(), 900);
-  }, box);
-}, {tier: 'ui', description: "a yellow box around it for a moment (a guide's picture shows it); nothing pressed"});
+    throw new Error(`${target.phrase} has no selector`);
+  return page.locator(selector).filter({visible: true}).last();
+}
+
+/** The yellow call-outs drawn on the page; the next action clears them. */
+const clearPointed = (page: Page) => page.evaluate(() =>
+  document.querySelectorAll('.bdd-pointed').forEach((e) => e.classList.remove('bdd-pointed')));
+
+/** A yellow outline on the element itself (it scrolls with it), until the next action: nothing is pressed. */
+export const pointOut = When('user points out {element}', async (page: Page, target: ElementRef) => {
+  const el = plainly(page, target);
+  await el.waitFor({timeout: pollMs(15000)});
+  await clearPointed(page);
+  await el.evaluate((e) => {
+    if (!document.getElementById('bdd-pointed-style')) {
+      const style = document.createElement('style');
+      style.id = 'bdd-pointed-style';
+      // drawn inside the element's edge: a scrolling pane round it never clips it
+      style.textContent = '.bdd-pointed {outline: 3px solid #F5C400 !important; outline-offset: -3px; border-radius: 6px}';
+      document.head.append(style);
+    }
+    e.classList.add('bdd-pointed');
+  });
+  // the pointer goes to it, near its top-left corner (a row's name, a section's title): what it rests on is what is
+  // framed, not a row it was left over
+  const box = await el.boundingBox();
+  if (box)
+    await page.mouse.move(box.x + Math.min(14, box.width / 2), box.y + Math.min(12, box.height / 2), {steps: 4});
+}, {tier: 'ui', description: "a yellow outline on it until the next action (a guide's picture shows it), the pointer on it; nothing pressed"});
+
+/** Set-up a viewer does not need to watch: the page scrolled so the element is in view (a cut in a guide). */
+export const scrolledTo = Given('the page is scrolled to {element}', async (page: Page, target: ElementRef) => {
+  silent(page);
+  await plainly(page, target).evaluate((e) => e.scrollIntoView({block: 'center'}));
+  await page.waitForTimeout(300);
+}, {tier: 'ui', description: 'the element scrolled into the middle of its pane; silent in a guide'});
+
+/** A layout someone saved (a resized or moved panel) is not the one the stages define. */
+export const defaultLayouts = Given('the stages show their default layouts', async (page: Page) => {
+  silent(page);
+  await page.evaluate(async () => {
+    const settings = (window as any).grok.userSettings;
+    for (const key of Object.keys(settings.get('PmxStudio') ?? {}).filter((k) => k.startsWith('layout-')))
+      settings.delete('PmxStudio', key);
+    await settings.flush();
+  });
+}, {tier: 'api', description: "the user's saved panel layouts removed; silent in a guide"});
 
 export const dragSettles = When('user drags the slider of {element} to {float} and PMX Studio settles',
   async (page: Page, target: ElementRef, value: number) => {
+    // what the drag changes is pointed out already (a yellow call-out): the step's pictures are not lit over it
+    unlit(page);
     await gestures.dragSlider(page, target, value);
     await settled(page, false, '');
   }, {tier: 'ui', description: 'the slider dragged to the value, then the recompute it starts finished'});
