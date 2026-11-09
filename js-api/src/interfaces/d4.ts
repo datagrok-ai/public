@@ -873,13 +873,17 @@ export interface IBarChartSettings {
    * when the *Split* value is not present. */
   includeNulls: boolean;
 
-  /** Whether to sort bars *by category* or *by value*.
+  /** Whether to sort bars *by category*, *by value*, or in a *custom* order (see *Category Order*).
    * See also *Bar Sort Order* */
   barSortType: string;
 
   /** Whether the bars should be sorted in ascending or descending order.
    * See also *Bar Sort Type*. */
   barSortOrder: string;
+
+  /** How the categories are ordered under the *custom* sort type, as [CategoryOrder] JSON; by default, in the
+   * column's own order. Edited through *Order > Custom Order...* in the context menu. */
+  categoryOrder: string;
 
   axisType: keyof typeof AxisType;
 
@@ -3189,6 +3193,10 @@ export interface IPieChartSettings {
 
   pieSortOrder: string;
 
+  /** How the categories are ordered under the *custom* sort type, as [CategoryOrder] JSON; by default, in the
+   * column's own order. Edited through *Order > Custom Order...* in the context menu. */
+  categoryOrder: string;
+
   includeNulls: boolean;
 
   /** Pie or donut */
@@ -3496,6 +3504,9 @@ export interface IScatterPlot3dSettings {
 
   showXSelector: boolean;
 
+  /** How the X axis categories are ordered, as [CategoryOrder] JSON. */
+  xCategoryOrder: string;
+
   y: string;
   yColumnName: string;
 
@@ -3503,12 +3514,18 @@ export interface IScatterPlot3dSettings {
 
   showYSelector: boolean;
 
+  /** How the Y axis categories are ordered, as [CategoryOrder] JSON. */
+  yCategoryOrder: string;
+
   z: string;
   zColumnName: string;
 
   zAxisType: keyof typeof AxisType;
 
   showZSelector: boolean;
+
+  /** How the Z axis categories are ordered, as [CategoryOrder] JSON. */
+  zCategoryOrder: string;
 
   color: string;
   colorColumnName: string;
