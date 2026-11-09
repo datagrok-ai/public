@@ -2,6 +2,7 @@
 
 ## v.next
 
+* WebGPU: On Windows, when the browser computes on an integrated GPU, a one-time tip says how to move it to a dedicated GPU, if the computer has one (Windows Settings > System > Display > Graphics > High performance): Chrome ignores WebGPU's high-performance request there
 * Tests: Added `Forms viewer` 'A pinned row stays pinned under a filter that hides it and leaves the pinned pane once deleted', moved from BDD
 * [public#4452](https://github.com/datagrok-ai/public/issues/4452): Forms: Fixed a layout naming a removed column throwing an error on every render
 * VlaaiVis: Fixed the settings growing wider than the Context Panel when Columns lists many columns, which hid the columns' gear icons and scrolled the panel sideways
