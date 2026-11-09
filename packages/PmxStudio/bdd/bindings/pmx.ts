@@ -2,7 +2,7 @@
    analysis, read from the view's loader, and the study's figures, remembered and compared as a change of the form
    should move them (the numbers themselves are the package tests'). */
 import {Page, test} from '@playwright/test';
-import {element, Given, Then, When} from '@datagrok-libraries/bdd';
+import {element, Given, lookupElement, Then, When} from '@datagrok-libraries/bdd';
 import {atFeatureEnd, expect, gestures, openTopMenu, pollMs, silent} from '@datagrok-libraries/bdd/runtime';
 import type {ElementRef} from '@datagrok-libraries/bdd/runtime';
 
@@ -144,6 +144,13 @@ element('analyze header step', {selector: '.pmx-head-steps button:has-text("Anal
 element('first attention row', {selector: '.pmx-monitor-attention .u2-table-row >> nth=0'});
 element('first sheet row', {selector: '.pmx-monitor-sheet .u2-table-row >> nth=0'});
 element('your studies', {selector: '.pmx-library'});
+// what the teaser points out without touching: Plan's form and figures, Analyze's twin
+element('plan figures', {selector: '.pmx-plan-cards'});
+// a section by its title: the innermost one is the last of those that hold it
+element('tumor model section', {selector: '.u2-section:has(.u2-section-title:text-is("Tumor model"))'});
+element('treatment arms section', {selector: '.u2-section:has(.u2-section-title:text-is("Treatment arms"))'});
+element('experimental groups section', {selector: '.u2-section:has(.u2-section-title:text-is("Experimental groups"))'});
+element('third animal row', {selector: '.pmx-forest-row >> nth=2'});
 // the demo MC38 study at its three moments, as the Overview lists it
 element('demo plan row', {selector: '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response (its plan)")'});
 element('demo followed row', {selector: '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response"):not(:has-text("(its plan)")):not(:has-text("(all its data)"))'});
@@ -240,3 +247,46 @@ export const openOverview = Given('user opens PMX Studio on its Overview', async
 export const studiesShown = Then("the lab's studies should be on the Overview", async (page: Page) => {
   await expect(page.locator('.pmx-library .u2-table-row').filter({visible: true}).first()).toBeVisible();
 }, {description: 'the step a guide opens on: the Overview with its studies'});
+
+/** Opens the demo MC38 study in Monitor (followed) and Analyze (all its data) from the Overview's list, each loaded,
+ *  and comes back to the Overview: the header's stages then go to a study already there. */
+export const demoOpen = Given('the demo study is open in Monitor and Analyze', async (page: Page) => {
+  silent(page);
+  const DEMO = '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response")';
+  for (const [row, stage] of [[`${DEMO}:not(:has-text("(its plan)")):not(:has-text("(all its data)"))`, 'Monitor'],
+    [`${DEMO}:has-text("(all its data)")`, 'Analyze']]) {
+    await page.locator(row)
+      .filter({visible: true}).first().click();
+    await page.locator('.pmx-head-step.on').filter({visible: true, hasText: new RegExp(`^${stage}$`, 'i')}).first()
+      .waitFor({timeout: pollMs(120000)});
+    await settled(page, false, '');
+    await page.locator('.pmx-head-steps button:has-text("Overview")').filter({visible: true}).first().click();
+    await page.locator('.pmx-library .u2-table-row').filter({visible: true}).first().waitFor({timeout: pollMs(30000)});
+  }
+  await page.mouse.move(12, 1070);
+}, {tier: 'api', description: 'the demo study opened in Monitor and Analyze and loaded, the Overview current again; silent in a guide'});
+
+/** A yellow box around what the step points out, for the step's picture: nothing is pressed. Found by its selector,
+ *  not through the runtime's lookup, so the guide does not light it as a step's target (dimmed page, orange outline). */
+export const pointOut = When('user points out {element}', async (page: Page, target: ElementRef) => {
+  const selector = lookupElement(target.phrase)?.selector;
+  if (!selector)
+    throw new Error(`${target.phrase} has no selector to point at`);
+  const box = await page.locator(selector).filter({visible: true}).last().boundingBox({timeout: pollMs(15000)});
+  if (!box)
+    throw new Error(`${target.phrase} is not on screen`);
+  await page.evaluate((b) => {
+    const mark = document.createElement('div');
+    Object.assign(mark.style, {position: 'fixed', left: `${b.x - 6}px`, top: `${b.y - 6}px`, width: `${b.width + 12}px`,
+      height: `${b.height + 12}px`, border: '3px solid #F5C400', borderRadius: '6px', boxShadow: '0 0 0 4px rgba(245,196,0,.18)',
+      pointerEvents: 'none', zIndex: '100000'});
+    document.body.append(mark);
+    setTimeout(() => mark.remove(), 900);
+  }, box);
+}, {tier: 'ui', description: "a yellow box around it for a moment (a guide's picture shows it); nothing pressed"});
+
+export const dragSettles = When('user drags the slider of {element} to {float} and PMX Studio settles',
+  async (page: Page, target: ElementRef, value: number) => {
+    await gestures.dragSlider(page, target, value);
+    await settled(page, false, '');
+  }, {tier: 'ui', description: 'the slider dragged to the value, then the recompute it starts finished'});
