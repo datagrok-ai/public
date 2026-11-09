@@ -36,6 +36,7 @@ export interface Block {
 // TODO: LLM-curated suggestions vs current human + view-agnostic heuristics?
 const SLOT = /\{(\w+)\.(\w+)}/g;
 let _cache: Block[] | null = null;
+const MAX_GROUPING_CATEGORIES = 50;
 
 // Slot filters beyond the native truthy Column getters (isNumerical / isCategorical / semType).
 // A suggestion whose slot finds no matching column is dropped, so these keep type-specific
@@ -66,6 +67,10 @@ async function load(): Promise<Block[]> {
   return _cache;
 }
 
+function firstGroupingColumn(cols: DG.Column[]): DG.Column {
+  return cols.find((c) => c.categories.length > 1 && c.categories.length <= MAX_GROUPING_CATEGORIES) ?? cols[0];
+}
+
 function resolveSuggestion(s: Suggestion, df: DG.DataFrame | null): Suggestion | null {
   const pickedCols: Record<string, DG.Column> = {};
   const taken = new Set<string>();
@@ -78,17 +83,11 @@ function resolveSuggestion(s: Suggestion, df: DG.DataFrame | null): Suggestion |
     if (!cols) cols = df.columns.toList();
     const candidates = cols.filter((c) => !taken.has(c.name) && columnMatches(c, filter));
     if (!candidates.length) return null;
-    if (filter === 'isCategorical') {
-      const rank = new Map(candidates.map((c) => {
-        const unique = c.stats.uniqueCount;
-        return [c, unique < 2 ? Number.MAX_SAFE_INTEGER : unique];
-      }));
-      candidates.sort((a, b) => rank.get(a)! - rank.get(b)!);
-    }
 
     const prefer = s.prefer?.[name];
     const re = prefer ? new RegExp(prefer.match(/name~="([^"]+)"/)?.[1] ?? prefer, 'i') : null;
-    const pick = (re && candidates.find((c) => re.test(c.name))) || candidates[0];
+    const pick = (re && candidates.find((c) => re.test(c.name))) ||
+      (filter === 'isCategorical' ? firstGroupingColumn(candidates) : candidates[0]);
     pickedCols[name] = pick;
     taken.add(pick.name);
   }
