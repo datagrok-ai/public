@@ -7,7 +7,7 @@
  * Each test constructs its own DataFrame inline so tests are fully isolated.
  */
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -199,10 +199,7 @@ category('Mol3DLink', () => {
 
     try {
       clearAtomPickerHighlights(smilesCol);
-      // Allow a generous window for RxJS subscriber scheduling to deliver
-      // the event across the Datagrok event bus.
-      await new Promise<void>((r) => setTimeout(r, 250));
-      expect(receivedClearAll, true);
+      await waitUntil(() => receivedClearAll, 'no clear-all event was delivered');
     } finally {
       sub.unsubscribe();
     }

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* core#1146: Search widgets set up their table view once it is in the document instead of 200 ms later; the Helm renderer no longer waits 200 ms before wiring its clicks
 * A connection whose schema cannot be loaded (a database the stand cannot reach) is reported as a warning with its error, no longer also as a console error on the first molecule made current
 
 ## 1.7.2 (2026-01-21)

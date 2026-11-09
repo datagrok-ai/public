@@ -1,10 +1,3 @@
-/* The layout audit (R12) and the boxes the geometry claims compare. The audit is one in-page pass over
-   the visible u2 control roots of a scope: controls with no size or out of reach, controls lying on
-   one another, text cut off or ellipsized, content spilling out of its control, labels off their
-   editors and form editors out of their column. No screenshot is compared. Pairs are compared only
-   within one layer — the nearest absolutely, fixed or sticky positioned ancestor — so a dialog never
-   overlaps the page under it, and a positioned control (a badge, a virtual row, a popup) is never an
-   overlap party. A busy control (`aria-busy`) is waited for up to 2 s, then left out and counted. */
 import type {Locator, Page} from '@playwright/test';
 import type {ElementRef} from './args.js';
 import {describeCandidates, locateActionable} from './locate.js';
@@ -128,6 +121,7 @@ const audit = async (host: Element, a: AuditArg): Promise<LayoutResult> => {
   };
 
   type Edges = {l: number; t: number; r: number; b: number};
+  // pairs compare within one layer (the nearest positioned ancestor), so a dialog never overlaps the page under it
   const layers = new Map<Element, Element | null>();
   const layerOf = (e: Element | null): Element | null => {
     if (!e)
@@ -404,11 +398,11 @@ export async function auditLayout(page: Page, opts: {root?: Locator; allow?: All
   return (opts.root ?? page.locator('body')).evaluate(audit, {scoped: opts.root !== undefined, allow: opts.allow ?? [], cap: CAP});
 }
 
-const NOT_SHOWN = ' is not shown';
+export const NOT_SHOWN = ' is not shown';
 
 /** Polls a reading until it is `ok`; a timeout fails with the last reading as the sentence, except an
  * element not on the page, which keeps Playwright's wait failure so the report lists what is shown. */
-async function until(read: () => Promise<string>, ok: string, message: string): Promise<void> {
+export async function until(read: () => Promise<string>, ok: string, message: string): Promise<void> {
   let last = '';
   await expect.poll(async () => last = await read(), {message}).toBe(ok).catch((e: unknown) => {
     throw last.endsWith(NOT_SHOWN) ? e : new Error(last);

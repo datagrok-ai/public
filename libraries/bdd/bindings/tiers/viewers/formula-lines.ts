@@ -1,7 +1,3 @@
-/* The `viewers` tier, formula lines: the Formula Lines dialog a viewer's Tools > Formula Lines... opens
-   (PowerPack's dialogs/formula-lines.ts) — its list of lines, a Line pane that edits the selected one's
-   formula, a Format pane with its range — and what a viewer draws of the lines its look or its table
-   holds: a "formula line <title>" / "formula band <title>" hit area for each item it drew on screen. */
 import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Then, When} from '../../../src/registry.js';

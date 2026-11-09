@@ -125,6 +125,28 @@ anywhere else now fails the test. Pinning showed one tag green for the wrong rea
 | [Shift-click on a network diagram node adds its rows](../../packages/UsageAnalysis/bdd/features/viewers/network-diagram/network-diagram-selection.feature) | Shift-click replaced the selection (6 rows, not 554). | `client/d4/lib/src/viewers/network_diagram/network_diagram_core.dart`: the click took its modifiers from the last key event the viewer's root received, never sent while the focus is outside it; it reads them off the click's own pointer event (vis's `event.srcEvent`). The scenario's Control-click claim said "only the M rows" (447) for the one row left; it now says no F row is selected. |
 | [Save SDF with an antisense strand that cannot be converted is refused by name — GROK-20959](../../packages/UsageAnalysis/bdd/features/sequence-translator/oligo-toolkit-translator-structure.feature) | The refusal balloon does not name the strand. | The product names it ("Unable to detect the format of the sequence 'NOTASEQUENCE'"); the scenario claimed the one balloon twice, and the first claim takes it. One claim now. |
 
+## Fixed instead of tagged on 2026-11-08
+
+PRs 4479, 4488, 4516 and 4541 arrived with 35 known-failure scenarios, 13 of them in five temporary
+`<folder>-known-failures.feature` files. None was merged as a known failure. The defects below were fixed at the
+cause and are claimed by ordinary steps or tests; the rest are one `## Still open` line each in their folder's
+MISSING.md, with the claim to add once fixed. Core paths are relative to `core/`.
+
+| Defect | Fix | Claimed by |
+| --- | --- | --- |
+| core#1159, public#2548 (master's tag, retired): Up/Down no longer moved a legend's sole selection | `client/d4/lib/src/widgets/legend/legend_interaction.dart` `wireKeys`, wired by `legend_mixin.dart` and `legend.dart` (the handler "Legend: Refactor" dropped) | `viewers/legend/legend-interaction.feature` |
+| core#1174: a removed column left its rows filtered (Combined Boolean, Expression and free-text rules — which also threw — the bar chart's click filter, the sunburst's and tree's) | `bool_columns_filter.dart`, `free_text_filter.dart` (a renamed column is followed), `bar_chart_core.dart` `onLookChanged`; Charts `sunburst-viewer.ts`, `tree-viewer.ts` | xamgle `Core: d4: Filters: Removed column`, `Fixed issues`; `sunburst`, `tree-on-click-filter` |
+| core#1223: a hierarchical card kept a removed level, also from a layout | `hierarchical_filter.dart` `refresh`, `applyState` | xamgle `Core: d4: Filters: Removed column` |
+| core#1194, core#1195: Shift+Enter selected rows with Allow Row Selection off (and opened the cell editor); a blank group name made a group | `grid_row_selection.dart`, `grid_editors.dart` `isEditButton`; xamgle `column_commands.dart` | `viewers/grid/grid-rows`, `grid-column-groups` |
+| core#1137, core#1191: Unpin Column threw with Frozen Columns above the column count; pinned values past the 10-row cap came back from a layout | `grid_core.dart` (`_clampFrozenColumns`, `pinRowsByValues`), `grid_popup_menu.dart` | xamgle `Core: d4: Viewers: Grid` |
+| core#1213: a viewer's Filter formula kept a renamed column's old name | `client/d4/lib/src/viewer_base/data_frame_viewer.dart` `_renameColumnInLook` | ApiTests `AI: Viewers: Shared rules` |
+| core#1252, core#980, core#1180: a layout renamed to nothing in its Details pane; a Share dialog's OK with nobody picked; a profile name empty or over 64 characters | xamgle `view_layout_meta.dart`, `share_dataset.dart` + `permissions_browser.dart`, `user_profile.dart` | `layouts/layout-names-tags`, `sharing/sharing-dialog`, `general/profile` |
+| public#4473, public#4475: MCL on number columns never finished; Compare Columns over two tables was false in every row | libraries/ml `mcl-editor.ts`; PowerPack `compare-columns.ts` | EDA `analyze/clustering`, PowerPack `compare-columns` |
+| core#641, core#1246: Run query... on an unsaved query; Data to Curves and Compare Columns missing from the Data menu | fixed in core before the round (8fad96d965, 2f1fee3171) | `queries/parameterized-queries`, Curves and PowerPack features |
+| The Recent view's calendar offered a placeholder day for 500 ms (browse-my-stuff red on master after the Dart 3 client); its feed failed with a server RangeError when a package's log message was among the user's events | xamgle `recent_activity_view.dart`: no placeholder, the dates load at once; `server/datlas/lib/src/services/action_logger_service.dart` `getActivity` skips an event that names fewer than two entities | `browse/browse-my-stuff` |
+| The Move entity dialog of a drop on a project or space opened before its rows, which wait for each entity to be fetched again: under two workers "selects Move" found no choice (projects-move, projects-complex, now and then) | xamgle `meta/project_meta.dart` `entityProjectMove` shows the dialog once the move widget is built | xamgle `Core: xamgle: Projects/Layouts: Projects` 'The Move entity dialog opens with its choices'; the nine features that use the dialog |
+| A connection a local docker spawner serves (the ChEMBL container, PostgresDocker) failed: grok_connect, itself in docker, was handed `localhost:<port>` (the 2026-10-29 fix, lost in the Dart 3 merge) | `server/datlas/lib/src/services/connectors/connectors_service.dart` `startConnectionDocker` | `viewers/trellis-plot/trellis-plot-keyboard`; `connections/connections-schema`, which skipped at its gate before |
+
 ## Open on 2026-10-12
 
 | Scenario | Pinned at | Was |

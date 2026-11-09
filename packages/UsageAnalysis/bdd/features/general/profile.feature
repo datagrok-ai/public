@@ -13,17 +13,26 @@ Feature: A person edits their own name on their profile
   reset code instead of opening its dialog, and whether a wrong current password is refused is the
   server's answer, not the page's.
 
+  An emptied first name, and one longer than the 64 characters a name is stored in, keep OK disabled
+  (core#1180).
+
   Background:
     Given user is logged in
     And a user "bddprofile" is on the server
 
-  Scenario: An edited name shows on the profile and is saved
+  @realizes:core#1180
+  Scenario: An edited name shows on the profile and is saved, and an empty or over-long first name is refused
     When user signs in as "bddprofile"
     And user opens the address "/u"
     Then "Logout" link should be visible
     When user clicks on second "Edit" icon
     Then "Enter new name" dialog should be visible
     And "First name" input in "Enter new name" dialog should have value "bddprofile"
+    When user clears "First name" input in "Enter new name" dialog
+    Then OK button in "Enter new name" dialog should be disabled
+    When user enters "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL" into "First name" input in "Enter new name" dialog
+    Then "First name" input in "Enter new name" dialog should be invalid
+    And OK button in "Enter new name" dialog should be disabled
     When user enters "Prof{time}" into "First name" input in "Enter new name" dialog
     And user enters "Ile{time}" into "Last name" input in "Enter new name" dialog
     And user clicks on OK button in "Enter new name" dialog

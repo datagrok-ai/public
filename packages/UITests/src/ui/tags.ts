@@ -1,4 +1,4 @@
-import { after, before, category, expect, test, awaitCheck, delay } from '@datagrok-libraries/test/src/test';
+import { after, before, category, expect, test, waitUntil } from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -19,12 +19,11 @@ category('UI: Tags', () => {
   before(async () => {
     grok.shell.windows.showBrowse = true;
     let groups: any;
-    await delay(1000);
-    await awaitCheck(() => {
+    await waitUntil(() => {
       groups = Array.from(document.querySelectorAll('div.d4-tree-view-item-label'))
         .find((el) => el.textContent === 'Dashboards');
       return groups !== undefined;
-    }, '', 2000);
+    }, 'the Dashboards tree item did not appear');
     groups.click();
   });
 
@@ -33,25 +32,14 @@ category('UI: Tags', () => {
       .filter('#demo')
       .list()
       .then((projects) => projects.length);
-    await awaitCheck(() => {
-      if (document.querySelector('.grok-items-view-counts') !== null)
-        return /[0-9]+ \/ [0-9]+/g.test((document.querySelector('.grok-items-view-counts') as HTMLElement).innerText);
-      return false;
-    }, 'cannot load projects', 3000);
-    await delay(3000);
+    const counts = () => (grok.shell.v.root.querySelector('.grok-items-view-counts') as HTMLElement | null)?.innerText ?? '';
+    await waitUntil(() => /^([0-9]+ of )?[0-9]+$/.test(counts()), 'cannot load projects', 30000);
     const search = grok.shell.v.root.querySelector('.grok-gallery-search-bar .ui-input-root .ui-input-editor') as HTMLInputElement;
     search.value = '#demo';
     search.dispatchEvent(new Event('input'));
-    console.log('regex')
-    console.log(`[0-9]+ / ${prapi}`)
-    const regex = new RegExp(`[0-9]+ \\/ ((${prapi})|(...))`, 'g');
-    await awaitCheck(() => {
-      if (document.querySelector('.grok-items-view-counts') !== null) {
-        console.log(document.querySelector('.grok-items-view-counts'));
-        return regex.test((document.querySelector('.grok-items-view-counts') as HTMLElement).innerText);
-      }
-      return false;
-    }, 'number of projects does not match', 7000);
+    // one page shows just the total, several "<loaded> of <total>"
+    await waitUntil(() => new RegExp(`^([0-9]+ of )?${prapi}$`).test(counts()),
+      `the #demo search should list ${prapi} projects`, 30000);
   });
 
   test('tag.editor', async () => {

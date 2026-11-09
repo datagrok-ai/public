@@ -1,0 +1,36 @@
+{
+  "rules": {
+    "max-len": ["error", {
+      "code": 120,
+      "ignoreUrls": true,
+      "ignoreTemplateLiterals": true,
+      "ignorePattern": "^\\s*(import|export)\\s.*\\sfrom\\s"
+    }],
+    "@typescript-eslint/no-unused-vars": ["error", {
+      "varsIgnorePattern": "^(_|ui$|grok$|DG$)",
+      "argsIgnorePattern": "^_",
+      "caughtErrors": "none",
+      "ignoreRestSiblings": true
+    }],
+    "quotes": ["error", "single", {"allowTemplateLiterals": true, "avoidEscape": true}]
+  },
+  "overrides": [
+    {
+      "files": ["**/package.ts"],
+      "rules": {
+        "@typescript-eslint/no-unused-vars": ["error", {
+          "varsIgnorePattern": "^(_|ui$|grok$|DG$)",
+          "args": "none",
+          "caughtErrors": "none",
+          "ignoreRestSiblings": true
+        }]
+      }
+    },
+    {
+      "files": ["**/test/**", "**/tests/**"],
+      "rules": {
+        "max-lines-per-function": "off"
+      }
+    }
+  ]
+}

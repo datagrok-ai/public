@@ -1,0 +1,456 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "moltrack",
+  "version": "0.1.0",
+  "tables": {
+    "compound": {
+      "securityMode": "table",
+      "businessKey": [
+        "molregno"
+      ],
+      "friendlyName": "Compounds",
+      "singularName": "Compound",
+      "pluralName": "Compounds",
+      "description": "Registered parent structures; identity is the registration hash of the standardized structure under the compound matching rule",
+      "extensible": true,
+      "columns": {
+        "molregno": {
+          "type": "int",
+          "autoNumber": {
+            "start": 1
+          },
+          "format": "DG-000000",
+          "friendlyName": "Grok ID",
+          "description": "Corporate compound ID: the gapless registration number, shown as DG-000123"
+        },
+        "original_structure": {
+          "type": "string",
+          "semType": "Molecule",
+          "required": true,
+          "immutable": true,
+          "friendlyName": "Structure",
+          "description": "The structure as drawn or submitted, salts included; everything else about the compound is computed from it"
+        },
+        "structure": {
+          "type": "string",
+          "semType": "Molecule",
+          "required": true,
+          "friendlyName": "Parent Structure",
+          "description": "The standardized parent (salts and solvents stripped, charges neutralized) that identifies the compound"
+        },
+        "common_name": {
+          "type": "string",
+          "searchable": true,
+          "friendlyName": "Common Name"
+        },
+        "cas": {
+          "type": "string",
+          "searchable": true,
+          "friendlyName": "CAS",
+          "description": "CAS Registry Number, e.g. 50-78-2"
+        },
+        "epa_compound_id": {
+          "type": "string",
+          "searchable": true,
+          "friendlyName": "EPA Compound ID"
+        },
+        "usan": {
+          "type": "string",
+          "friendlyName": "USAN"
+        },
+        "iupac_name": {
+          "type": "string",
+          "friendlyName": "IUPAC Name"
+        },
+        "source": {
+          "type": "string",
+          "friendlyName": "Source",
+          "description": "e.g. Enamine, Sigma-Aldrich"
+        },
+        "source_compound_code": {
+          "type": "string",
+          "searchable": true,
+          "friendlyName": "Source Compound Code"
+        },
+        "mol_logp": {
+          "type": "float",
+          "friendlyName": "MolLogP"
+        },
+        "formula": {
+          "type": "string",
+          "searchable": true,
+          "friendlyName": "Formula"
+        },
+        "inchikey": {
+          "type": "string",
+          "searchable": true,
+          "friendlyName": "InChIKey"
+        },
+        "inchi": {
+          "type": "string",
+          "friendlyName": "InChI"
+        },
+        "hash_mol": {
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "friendlyName": "Registration Hash",
+          "description": "Registration hash under the matching rule in force when the compound was registered; unique"
+        },
+        "hash_all_layers": {
+          "type": "string",
+          "friendlyName": "Hash: All Layers",
+          "description": "Registration hash under ALL_LAYERS: what a registration under that rule is matched against"
+        },
+        "hash_stereo_insensitive": {
+          "type": "string",
+          "friendlyName": "Hash: Stereo-insensitive",
+          "description": "Registration hash under STEREO_INSENSITIVE_LAYERS: what a registration under that rule is matched against"
+        },
+        "hash_tautomer_insensitive": {
+          "type": "string",
+          "friendlyName": "Hash: Tautomer-insensitive",
+          "description": "Registration hash under TAUTOMER_INSENSITIVE_LAYERS: what a registration under that rule is matched against"
+        },
+        "match_rule": {
+          "type": "string",
+          "choices": [
+            "ALL_LAYERS",
+            "STEREO_INSENSITIVE_LAYERS",
+            "TAUTOMER_INSENSITIVE_LAYERS"
+          ],
+          "friendlyName": "Matching Rule",
+          "description": "The compound matching rule the hash was computed under"
+        }
+      },
+      "filters": [
+        {
+          "column": "source"
+        },
+        {
+          "column": "mol_logp"
+        }
+      ]
+    },
+    "compound_batch": {
+      "securityMode": "table",
+      "businessKey": [
+        "batch_regno"
+      ],
+      "friendlyName": "Batches",
+      "singularName": "Batch",
+      "pluralName": "Batches",
+      "description": "Physical lots of a registered compound",
+      "extensible": true,
+      "columns": {
+        "batch_regno": {
+          "type": "int",
+          "autoNumber": {
+            "start": 1
+          },
+          "format": "DGB-000000",
+          "friendlyName": "Grok Batch ID",
+          "description": "Corporate batch ID: the gapless batch number, shown as DGB-000123"
+        },
+        "compound_id": {
+          "type": "ref",
+          "ref": "compound",
+          "required": true,
+          "immutable": true,
+          "onDelete": "restrict",
+          "friendlyName": "Compound",
+          "description": "The registered compound this is a lot of; set when the batch is registered"
+        },
+        "epa_batch_id": {
+          "type": "string",
+          "searchable": true,
+          "friendlyName": "EPA Batch ID"
+        },
+        "source": {
+          "type": "string",
+          "friendlyName": "Source"
+        },
+        "source_batch_code": {
+          "type": "string",
+          "searchable": true,
+          "friendlyName": "Source Batch Code"
+        },
+        "acquired_date": {
+          "type": "datetime",
+          "format": "yyyy-MM-dd",
+          "friendlyName": "Acquired Date"
+        },
+        "synthesized_date": {
+          "type": "datetime",
+          "format": "yyyy-MM-dd",
+          "friendlyName": "Synthesized Date"
+        },
+        "responsible_party": {
+          "type": "string",
+          "friendlyName": "Responsible Party"
+        },
+        "eln_reference": {
+          "type": "string",
+          "searchable": true,
+          "friendlyName": "ELN Reference"
+        },
+        "purity": {
+          "type": "float",
+          "min": 0,
+          "max": 100,
+          "friendlyName": "Purity (%)"
+        },
+        "project": {
+          "type": "string",
+          "friendlyName": "Project"
+        },
+        "notes": {
+          "type": "string",
+          "editor": "textarea",
+          "friendlyName": "Notes"
+        }
+      },
+      "filters": [
+        {
+          "column": "project"
+        },
+        {
+          "column": "source"
+        },
+        {
+          "column": "purity"
+        }
+      ]
+    },
+    "addition": {
+      "securityMode": "table",
+      "businessKey": [
+        "name"
+      ],
+      "friendlyName": "Additions",
+      "singularName": "Addition",
+      "pluralName": "Additions",
+      "description": "Salts and solvates a batch may carry",
+      "columns": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "isName": true,
+          "searchable": true
+        },
+        "role": {
+          "type": "string",
+          "required": true,
+          "choices": [
+            "SALT",
+            "SOLVATE"
+          ]
+        },
+        "code": {
+          "type": "string"
+        },
+        "structure": {
+          "type": "string",
+          "semType": "Molecule",
+          "friendlyName": "Structure"
+        },
+        "formula": {
+          "type": "string"
+        },
+        "molecular_weight": {
+          "type": "float",
+          "min": 0,
+          "format": "0.00",
+          "friendlyName": "Molecular Weight"
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "filters": [
+        {
+          "column": "role"
+        }
+      ]
+    },
+    "batch_addition": {
+      "securityMode": "master",
+      "delegate": "batch_id",
+      "businessKey": [
+        "batch_id",
+        "addition_id"
+      ],
+      "friendlyName": "Batch Additions",
+      "singularName": "Batch addition",
+      "pluralName": "Batch additions",
+      "columns": {
+        "batch_id": {
+          "type": "ref",
+          "ref": "compound_batch",
+          "required": true,
+          "onDelete": "cascade",
+          "friendlyName": "Batch"
+        },
+        "addition_id": {
+          "type": "ref",
+          "ref": "addition",
+          "required": true,
+          "onDelete": "restrict",
+          "friendlyName": "Addition"
+        },
+        "equivalents": {
+          "type": "float",
+          "required": true,
+          "default": 1,
+          "min": 0,
+          "description": "Equivalents relative to the parent compound, e.g. 1 for a 1:1 salt"
+        }
+      }
+    },
+    "assay": {
+      "securityMode": "table",
+      "businessKey": [
+        "name"
+      ],
+      "friendlyName": "Assays",
+      "singularName": "Assay",
+      "pluralName": "Assays",
+      "columns": {
+        "name": {
+          "type": "string",
+          "required": true,
+          "unique": true,
+          "isName": true,
+          "searchable": true
+        },
+        "description": {
+          "type": "string",
+          "editor": "textarea"
+        },
+        "assay_format": {
+          "type": "string",
+          "friendlyName": "Assay Format"
+        },
+        "biological_system": {
+          "type": "string",
+          "friendlyName": "Biological System"
+        }
+      }
+    },
+    "assay_run": {
+      "securityMode": "table",
+      "friendlyName": "Assay Runs",
+      "singularName": "Assay run",
+      "pluralName": "Assay runs",
+      "extensible": true,
+      "columns": {
+        "name": {
+          "type": "string",
+          "isName": true,
+          "searchable": true,
+          "description": "e.g. Hepatocyte Stability, lot H1, 2024-02-01"
+        },
+        "assay_id": {
+          "type": "ref",
+          "ref": "assay",
+          "required": true,
+          "onDelete": "restrict",
+          "friendlyName": "Assay"
+        },
+        "run_date": {
+          "type": "datetime",
+          "format": "yyyy-MM-dd",
+          "friendlyName": "Assay Run Date"
+        },
+        "assayer": {
+          "type": "string"
+        },
+        "cell_species": {
+          "type": "string",
+          "friendlyName": "Cell Species"
+        },
+        "cell_lot": {
+          "type": "string",
+          "friendlyName": "Cell Lot"
+        },
+        "cell_concentration": {
+          "type": "float",
+          "min": 0,
+          "friendlyName": "Cell Concentration (10^6 cells/mL)"
+        }
+      },
+      "filters": [
+        {
+          "column": "assay_id.name",
+          "label": "Assay"
+        },
+        {
+          "column": "cell_species"
+        }
+      ]
+    },
+    "assay_result": {
+      "securityMode": "table",
+      "friendlyName": "Assay Results",
+      "singularName": "Assay result",
+      "pluralName": "Assay results",
+      "schemas": [
+        "hepatocyte_stability"
+      ],
+      "columns": {
+        "assay_run_id": {
+          "type": "ref",
+          "ref": "assay_run",
+          "required": true,
+          "onDelete": "cascade",
+          "friendlyName": "Assay Run"
+        },
+        "batch_id": {
+          "type": "ref",
+          "ref": "compound_batch",
+          "required": true,
+          "onDelete": "restrict",
+          "friendlyName": "Batch"
+        }
+      },
+      "filters": [
+        {
+          "column": "assay_run_id.assay_id.name",
+          "label": "Assay"
+        }
+      ]
+    }
+  },
+  "propertySchemas": {
+    "hepatocyte_stability": {
+      "dosed_concentration": {
+        "type": "float",
+        "min": 0,
+        "friendlyName": "Dosed Concentration (uM)"
+      },
+      "reported_clint": {
+        "type": "float",
+        "friendlyName": "Reported CLint (uL/min/10^6 cells)"
+      },
+      "reported_clint_qualifier": {
+        "type": "string",
+        "choices": [
+          "=",
+          "<",
+          ">"
+        ],
+        "friendlyName": "CLint Qualifier"
+      },
+      "mean_htc_recovery": {
+        "type": "float",
+        "friendlyName": "Mean HTC Recovery (%)"
+      },
+      "sd_htc_recovery": {
+        "type": "float",
+        "min": 0,
+        "friendlyName": "SD HTC Recovery (%)"
+      }
+    }
+  }
+}

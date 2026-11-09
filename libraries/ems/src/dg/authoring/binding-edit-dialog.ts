@@ -1,20 +1,8 @@
-/* `domains.authoring.editBinding` — the "Edit binding" dialog over a REGISTERED external binding:
-   **Connection** (the binding's connection, remote schema and catalog, read-only — a binding is
-   never re-pointed), **Design** (the `ManifestEditor` in edit mode over the registered manifest,
-   the access snapshot and a fresh draft of the warehouse), **Review** (the change list, each line
-   annotated from the dry run — what a removal takes with it, what is already so; VALIDATE is the
-   dry run bound to the exact apply body it checked, SAVE the one apply, access changes included)
-   and **Saved** (what was applied — or that the server found nothing to change — OPEN). A `version-conflict` (an `access-conflict` too) reloads
-   the binding and replays the edits over it, conflicts and drops reported for an explicit look on
-   Design; a save whose answer was lost is confirmed through the registry, never replayed — one
-   the registry cannot confirm ends the edit, as does a binding deleted and re-created under the
-   name: REOPEN starts over from the server's version. The server owns every rule — the dialog
-   names its refusals. */
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {computed, signal, div, divV, span, plural, Section, BoolInput, badge, Scope} from '@datagrok-libraries/u2';
 import {DomainErrors} from '../errors.js';
-import {groupInput} from '@datagrok-libraries/u2/src/dg/inputs/group-input.js';
+import {groupInput} from '@datagrok-libraries/u2/dg';
 import {BindingWizard} from './binding-dialog.js';
 import {ManifestEditor} from './manifest-editor.js';
 import type {ApplyPayload} from './manifest-editor.js';
@@ -60,15 +48,15 @@ interface Read {
   rest: Promise<Omit<Loaded, 'manifest'>>;
 }
 
+/** The "Edit binding" dialog over a registered external binding: Connection (read-only: a binding is never
+ * re-pointed), Design, Review (VALIDATE is the dry run over the exact apply body; SAVE the one apply) and Saved.
+ * A conflict reloads the binding and replays the edits; a save whose answer was lost is confirmed through the
+ * registry, never replayed. */
 export class BindingEditDialog extends BindingWizard<EditBindingResult> {
   private readonly _name: string;
   private readonly _handle: DG.DomainSchemaClient;
-  /** Why the editor could not be built. */
   private readonly _problem = signal<string | null>(null);
-  /** The dry run's plan of the validated payload — what annotates the change list. */
   private readonly _plan = signal<DG.DomainApplyPlan | null>(null);
-  /** Why the edit ended short of a save — its outcome unknown, or the binding another schema
-   * now — with the facts; REOPEN is the one way on. */
   private readonly _ended = signal<{why: string, facts: string[]} | null>(null);
   private readonly _facts = divV([], 'u2-binding-connection u2-binding-edit-facts');
   private readonly _designHost = div([], 'u2-binding-design');
@@ -79,11 +67,11 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
   private readonly _confirm: BoolInput;
   private readonly _applied = divV([], 'u2-binding-changes');
   private readonly _savedHost = divV([], 'u2-binding-created u2-binding-saved');
-  /** False after a reload that conflicted or dropped an edit, until Design was looked at again. */
+  // false after a reload that conflicted or dropped an edit, until Design was looked at again
   private _looked = true;
   private _report: RebaseReport | null = null;
   private _result: EditBindingResult | undefined;
-  /** The dialog REOPEN started over: what the caller gets is its outcome. */
+  // the dialog REOPEN started over: what the caller gets is its outcome
   private _reopened: Promise<EditBindingResult | null> | undefined;
   private _saved: ManifestChange[] = [];
   private _savedVersion = '';
@@ -95,7 +83,8 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     this._handle = grok.dapi.domains.schema(schema);
     this.root.dataset.u2 = 'binding-edit-dialog';
     this._body.className = 'u2-binding-json';
-    this._confirm = this.runInScope(() => new BoolInput({label: 'I understand what is removed', name: 'confirmDestructive'}));
+    this._confirm = this.build(() => new BoolInput({label: 'I understand what is removed',
+      name: 'confirmDestructive'}));
     this._confirm.root.classList.add('u2-binding-confirm');
     this._confirm.root.style.display = 'none';
     this._mount({
@@ -109,8 +98,11 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
           onActivate: () => this._review(), canProceed: () => this._reviewGate(),
           commit: () => this._ended.peek() === null ? this._save() : this._reopen(),
           actions: [{text: 'VALIDATE', run: () => this._validate(), visible: computed(() => this._ended.value === null),
-            enabled: computed(() => this._ended.value === null && this._editor.value !== undefined &&
-              this._editor.value.model.blockers.value.length === 0)}]},
+            disabled: computed(() => {
+              const blockers = this._editor.value?.model.blockers.value;
+              return this._ended.value?.why ?? (blockers === undefined ? 'Reading the binding…' :
+                blockers.length > 0 ? `Fix ${plural(blockers.length, 'problem', 'problems')} on Design first` : null);
+            })}]},
         {id: 'saved', title: 'Saved', content: () => this._savedHost, done: true,
           actions: [{text: 'OPEN', run: () => this._openAndClose()}]},
       ],
@@ -142,8 +134,7 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     return settled.then((result) => this._reopened ?? result);
   }
 
-  /** The apply body as one string, keys sorted — what a validation is bound to; the access deltas
-   * are part of it. */
+  // the access deltas are part of the apply body
   protected _payloadOf(editor: ManifestEditor): string {
     const model = editor.model;
     model.revision.value;
@@ -154,9 +145,7 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     return BindingEditDialog._canonical(editor.editPlan().payload);
   }
 
-  /** The reads: the manifest is what the dialog waits for, the rest settle into what the model
-   * can show as unknown — each failure by name. The warehouse is asked only once the registry
-   * answered; the registry reads go at once. */
+  // the warehouse is asked only once the registry answered; the registry reads go at once
   private _start(): {manifest: Promise<ManifestJson>, rest: Promise<Omit<Loaded, 'manifest'>>} {
     const manifest = this._handle.manifest() as Promise<ManifestJson>;
     const snapshot = BindingEditDialog._within(this._handle.access(), 'The access snapshot');
@@ -186,8 +175,6 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     return {manifest: m, ...await rest};
   }
 
-  /** The editor over what was read; a snapshot and a manifest read at different versions are
-   * read once more, and said if they still disagree. */
   private async _build(loading: Promise<Loaded>): Promise<void> {
     this._say('Reading the binding…');
     try {
@@ -214,14 +201,14 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
   }
 
   private _editorOver(loaded: Loaded): ManifestEditor {
-    return this.runInScope(() => new ManifestEditor(loaded.draft, {
+    return this.build(() => new ManifestEditor(loaded.draft, {
       context: {mode: 'edit', storage: 'external'}, baseline: loaded.manifest, snapshot: loaded.snapshot,
       friendlyName: loaded.friendlyName, description: loaded.description, author: BindingEditDialog._author(),
       principalPicker: (onPick) => groupInput({onPick: (g, label) => onPick({id: g.id, label})}).root,
     }));
   }
 
-  /** The author's own personal group: restricting a column keeps them on it, explicitly. */
+  // the author's own personal group: restricting a column keeps them on it, explicitly
   private static _author(): AccessPrincipal | undefined {
     const user = grok.shell.user;
     const group = user?.group;
@@ -261,7 +248,7 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
   }
 
   private _reviewStep(): HTMLElement {
-    const body = this.runInScope(() => new Section({title: 'Apply body', expanded: false}));
+    const body = this.build(() => new Section({title: 'Apply body', expanded: false}));
     body.root.classList.add('u2-binding-body');
     body.body.append(this._body);
     return div([divV([this._changes, body.root], 'u2-binding-changes-pane'),
@@ -275,12 +262,9 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
       return 'Look over the reloaded edits on Design';
     if (!this._isValidated())
       return 'Validate before saving';
-    return this._plan.value?.destructive === true && !this._confirm.value.value ? 'Confirm what is removed' : null;
+    return this._plan.value?.destructive === true && !this._confirm.value ? 'Confirm what is removed' : null;
   }
 
-  /** Rebuilt on every activation and after every validation: the change list annotated from the
-   * plan while the validation holds, the findings, the reload report, the confirmation — or,
-   * once the edit ended, why. */
   private _review(): void {
     const editor = this.editor!;
     const {payload, changes} = editor.editPlan();
@@ -310,7 +294,6 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
         'u2-binding-change-note'));
   }
 
-  /** Ends the edit: no save, no rebase; REOPEN in place of SAVE, and Design says so. */
   private _end(why: string, facts: string[]): void {
     this._ended.value = {why, facts};
     this._setPlan(null);
@@ -320,12 +303,12 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     this._review();
   }
 
-  /** The dialog over the server's version takes this one's place once it has read the registry;
-   * a read that fails leaves this one standing, and says why. */
   private async _reopen(): Promise<false> {
     this._say('Reading the binding again…');
-    // the commit runs with this dialog's scope ambient; the one taking its place must not die with it
-    const next = Scope.runWith(undefined, () => new BindingEditDialog(this._name));
+    // the commit runs with this dialog's scope ambient; the one taking its place is a tree of its own
+    const owner = Scope.root('binding edit dialog');
+    const next = owner.build(() => new BindingEditDialog(this._name));
+    next.own(() => owner.dispose());
     let read: Read;
     try {
       read = await next._read();
@@ -349,8 +332,6 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
       host.append(span(note, 'u2-binding-change-note'));
   }
 
-  /** What the plan says about one line of the change list, by its id: what a removal takes with
-   * it (`lost`), what a renamed caption was (`metadata`), an access op that is already so. */
   private static _annotate(change: ManifestChange, plan: DG.DomainApplyPlan): string {
     const [kind, ...rest] = change.id.split(':');
     if (kind === 'table' && change.removes) {
@@ -400,8 +381,6 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     return `${plural(filters, 'saved filter', 'saved filters')} ${which} no longer ${filters === 1 ? 'resolves' : 'resolve'}`;
   }
 
-  /** The effect of the access op behind `access:<op>:<target>…`: "already so" where the server
-   * found the triple there (or gone) already. */
   private static _effect(id: string[], access: DG.DomainAccessEffects): string {
     const [op, target, group, permission] = id;
     if (op === 'grant' || op === 'revoke') {
@@ -428,8 +407,6 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     return parts.join('; ');
   }
 
-  /** What the plan says beyond the change list: key columns the apply makes visible again, and
-   * refs whose saved filters stop resolving. */
   private static _planNotes(plan: DG.DomainApplyPlan): string[] {
     const notes: string[] = [];
     if (plan.keyColumnsUnrestricted.length > 0) {
@@ -457,9 +434,6 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
       ...report.dropped.map((op) => line(op, 'no longer there')));
   }
 
-  /** The dry run over the apply body as it stands; an answer to a payload since changed, or to an
-   * older run, is dropped. A failure the server did not answer is no finding. A destructive plan
-   * the server hands back with its confirmation demand is the plan all the same. */
   private async _validate(): Promise<void> {
     const editor = this.editor!;
     const {payload} = editor.editPlan();
@@ -492,14 +466,12 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
       this._say(DomainErrors.message(refusal), true);
   }
 
-  /** A confirmation holds for the plan it was given: another plan wants its own. */
+  // a confirmation holds for the plan it was given: another plan wants its own
   private _setPlan(plan: DG.DomainApplyPlan | null): void {
     this._plan.value = plan;
-    this._confirm.value.value = false;
+    this._confirm.value = false;
   }
 
-  /** The one apply. A conflict reloads the binding and replays the edits; a lost answer asks the
-   * registry whether the save landed; any other refusal lands on the findings, SAVE still offered. */
   private async _save(): Promise<boolean> {
     const editor = this.editor!;
     const {payload, changes} = editor.editPlan();
@@ -535,10 +507,8 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     return true;
   }
 
-  /** Whether an apply that got no answer landed cleanly: the registry is one version past the
-   * edited one, in the same incarnation, AND holds this edit. Anything else — the version moved
-   * on, the next version is someone else's, the name is another schema's, the reads fail — is an
-   * outcome nobody saw, and ends the edit rather than replay it. */
+  // anything short of one version past the edited one, same incarnation, holding this edit, is an outcome
+  // nobody saw: it ends the edit rather than replay it
   private async _landed(payload: ApplyPayload, e: unknown): Promise<boolean> {
     this._say('No answer to the save — reading the registry…');
     const next = String(Number(payload.ifVersion) + 1);
@@ -563,9 +533,7 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     return false;
   }
 
-  /** Whether the registry holds this edit: every table sent as registered, none dropped still
-   * there, the metadata and writability as sent, and every access op's effect in place — read
-   * at the manifest's version; a grant the snapshot cannot show proves nothing. */
+  // read at the manifest's version; a grant the snapshot cannot show proves nothing
   private async _holds(payload: ApplyPayload, manifest: DG.DomainRegisteredManifest): Promise<boolean> {
     const canonical = (decl: ManifestTableJson, logical: string): string =>
       BindingEditDialog._canonical(ManifestModel.canonicalTable(decl, logical));
@@ -615,9 +583,6 @@ export class BindingEditDialog extends BindingWizard<EditBindingResult> {
     return `${name} was deleted and re-created since — another schema is registered under the name now, at version ${version ?? '?'}`;
   }
 
-  /** After a `version-conflict`: the binding as it is now, the edits replayed over it. What
-   * conflicted or vanished is reported on Review and wants a look at Design before a save. A
-   * name that is another schema's now (deleted and re-created since) takes no replay. */
   private async _rebase(payload: ApplyPayload, e: unknown): Promise<void> {
     const editor = this.editor!;
     const conflict = e as {currentIncarnation?: unknown, currentVersion?: unknown};

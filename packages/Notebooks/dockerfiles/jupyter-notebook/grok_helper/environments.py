@@ -2,6 +2,7 @@
 import os
 import re
 import subprocess
+import sys
 import time
 import yaml
 
@@ -201,6 +202,7 @@ class Environments(object):
             # uv/pip from upgrading them (e.g. numpy 1.x -> 2.x which breaks pyarrow ABI).
             # Use <= instead of == so uv can pick older compatible transitive deps
             # when requires-python metadata conflicts (e.g. zipp on Python 3.8).
+            pip_constraints = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pip_constraints.py')
             python_version = self._get_python_version(data)
             uv_python_flag = ' --python-version ' + '.'.join(str(x) for x in python_version) if python_version else ''
             script += 'PYTHON_PATH=$(which python)\n' + \
@@ -208,7 +210,7 @@ class Environments(object):
                 'echo "ERROR: micromamba activate failed - python resolves to $PYTHON_PATH"\n' + \
                 'exit 1\n' + \
                 'fi\n' + \
-                'micromamba list -n ' + id + ' --json | python -c "import sys,json; print(chr(10).join(p[\\"name\\"]+\\"<=\\"+p[\\"version\\"] for p in json.load(sys.stdin) if not p[\\"name\\"].startswith(\\"_\\")))" > /tmp/' + id + '_constraints.txt\n' + \
+                'micromamba list -n ' + id + ' --json | ' + sys.executable + ' ' + pip_constraints + ' > /tmp/' + id + '_constraints.txt\n' + \
                 'uv pip install --system' + uv_python_flag + ' --constraint /tmp/' + id + '_constraints.txt ' + ' '.join(data['pip_dependencies']) + '\n' + \
                 'rm -f /tmp/' + id + '_constraints.txt\n'
 

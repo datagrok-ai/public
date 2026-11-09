@@ -113,9 +113,9 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
         const targetMolRow = this.idxs?.getRawData().findIndex((it) => it == this.targetMoleculeIdx);
         const targetScoreCell = this.analysisGrid.cell('score', targetMolRow!);
         targetScoreCell.cell.value = null;
-        const view = grok.shell.tv;
-        if (!this.subInited) {
-          view.grid.root.addEventListener('click', (_event: MouseEvent) => {
+        const grid = this.tableView?.grid;
+        if (!this.subInited && grid) {
+          grid.root.addEventListener('click', (_event: MouseEvent) => {
             this.gridSelect = false;
           });
           this.subInited = true;

@@ -227,3 +227,44 @@ export function addStructureFields(dict: {[key: string]: any}, comp: MixfileComp
       dict['formula'] = comp.formula;
   }
 }
+
+/** The mixture's structures as one dot-joined SMILES: each component's SMILES, or its molfile by `molfileToSmiles`
+ * (left out where that throws), the components' contents after them; '' for a string that is not JSON. */
+export function mixtureSmiles(mixfile: string, molfileToSmiles: (molfile: string) => string): string {
+  let mixture: Mixfile;
+  try {
+    mixture = JSON.parse(mixfile);
+  } catch {
+    return '';
+  }
+  const smilesList: string[] = [];
+  const collectSmiles = (component: MixfileComponent): void => {
+    if (component.smiles)
+      smilesList.push(component.smiles);
+    else if (component.molfile) {
+      try {
+        smilesList.push(molfileToSmiles(component.molfile));
+      } catch { }
+    }
+    if (Array.isArray(component.contents)) {
+      for (const child of component.contents)
+        collectSmiles(child);
+    }
+  };
+  collectSmiles(mixture);
+  return smilesList.join('.');
+}
+
+/** The `Chemistry | MixtureTree` panel: the mixture's version and an accordion of its components. */
+export function createMixtureTreeWidget(mixture: string): DG.Widget {
+  const mixtureObj = JSON.parse(mixture) as Mixfile;
+  const resDiv = ui.divV([]);
+  resDiv.append(ui.divText(`mixfileVersion: ${mixtureObj.mixfileVersion}`));
+  if (mixtureObj.contents && mixtureObj.contents.length) {
+    const contentsAcc = ui.accordion('contents');
+    for (let i = 0; i < mixtureObj.contents.length; i++)
+      contentsAcc.addPane(mixtureObj.contents![i].name ?? `component ${i + 1}`, () => createComponentPane(mixtureObj.contents![i]));
+    resDiv.append(contentsAcc.root);
+  }
+  return new DG.Widget(resDiv);
+}

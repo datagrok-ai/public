@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import { category, test, awaitCheck, expectArray, before, after, delay } from '@datagrok-libraries/test/src/test';
+import { category, test, before, after, settled, waitUntil } from '@datagrok-libraries/test/src/test';
 import $ from 'cash-dom';
 
 category('Viewers: Filters', () => {
@@ -22,14 +22,9 @@ id1_0003,id2_003,id3_3`;
     const filtersViewer = view.filters({ filters: filterList }) as DG.Viewer;
     view.dockManager.dock(filtersViewer, DG.DOCK_TYPE.LEFT, null, 'Filters', 0.4);
 
-    await awaitCheck(() => {
-      const fltColNameList = $(filtersViewer.root)
-        .find('div.d4-flex-row.d4-filter-header label.d4-filter-column-name').get()
-        .map((lbl) => lbl.innerText);
-
-      expectArray(fltColNameList, ['id1', 'id2']);
-      return true;
-    }, 'cannot find all filters', 3000);
+    await waitUntil(() => $(filtersViewer.root)
+      .find('div.d4-flex-row.d4-filter-header label.d4-filter-column-name').get()
+      .map((lbl) => lbl.innerText).join() === ['id1', 'id2'].join(), 'cannot find all filters');
   });
 
   test('customBetweenCategorical', async () => {
@@ -44,14 +39,9 @@ id1_0003,id2_003,id3_3`;
     ];
     const filtersViewer = view.filters({ filters: filterList }) as DG.Viewer;
 
-    await awaitCheck(() => {
-      const fltColNameList = $(filtersViewer.root)
-        .find('div.d4-flex-row.d4-filter-header label.d4-filter-column-name').get()
-        .map((lbl) => lbl.innerText);
-
-      expectArray(fltColNameList, ['id1', 'id3', 'id2']);
-      return true;
-    }, 'cannot find all filters', 3000);
+    await waitUntil(() => $(filtersViewer.root)
+      .find('div.d4-flex-row.d4-filter-header label.d4-filter-column-name').get()
+      .map((lbl) => lbl.innerText).join() === ['id1', 'id3', 'id2'].join(), 'cannot find all filters');
   });
 }, { owner: 'drizhinashvili@datagrok.ai' });
 
@@ -66,23 +56,21 @@ category('Viewers: Filters: Collaborative filtering', () => {
 
   before(async () => {
     _package = DG.Func.find({ package: 'UITests', name: 'test' })[0]?.package;
+    await DG.Func.find({package: 'Chem', name: 'scaffoldTreeFilter'})[0].package.load();
     df = await _package.files.readCsv('SPGI_v2_100_full.csv');
     tv = grok.shell.addTableView(df);
-    await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
+    await waitUntil(() => document.querySelector('canvas') !== null, 'cannot load table');
     fg = tv.getFiltersGroup();
   });
 
   test('Scatter plot', async () => {
-    await delay(1000);
     await addScatterPlot();
-    await delay(1000);
     await addScaffoldFilter(47);
     await addSubscructureFilter(17);
     await addCategoricalFilter(9);
     await addHistogtramFilter(6);
     tv.resetLayout();
-    await delay(1000);
-  }, {skipReason: 'GROK-16405'});
+  });
 
   // FILTERS
 
@@ -92,8 +80,8 @@ category('Viewers: Filters: Collaborative filtering', () => {
       column: 'Stereo Category',
       selected: ['R_ONE'],
     });
-    await awaitCheck(() => df.filter.trueCount === n,
-      `Categorical filter: expected ${n} rows, got ${df.filter.trueCount}`, 2000);
+    await waitUntil(() => df.filter.trueCount === n,
+      () => `Categorical filter: expected ${n} rows, got ${df.filter.trueCount}`);
   }
 
   async function addHistogtramFilter(n: number = 80) {
@@ -103,8 +91,8 @@ category('Viewers: Filters: Collaborative filtering', () => {
       min: 300,
       max: 460,
     });
-    await awaitCheck(() => df.filter.trueCount === n,
-      `Histogram filter: expected ${n} rows, got ${df.filter.trueCount}`, 2000);
+    await waitUntil(() => df.filter.trueCount === n,
+      () => `Histogram filter: expected ${n} rows, got ${df.filter.trueCount}`);
   }
 
   async function addSubscructureFilter(n: number = 32) {
@@ -114,8 +102,8 @@ category('Viewers: Filters: Collaborative filtering', () => {
       columnName: STRUCTURE,
       molBlock: BENZENE,
     });
-    await awaitCheck(() => df.filter.trueCount === n,
-      `Subscructure filter: expected ${n} rows, got ${df.filter.trueCount}`, 2000);
+    await waitUntil(() => df.filter.trueCount === n,
+      () => `Subscructure filter: expected ${n} rows, got ${df.filter.trueCount}`);
   }
 
   async function addScaffoldFilter(n: number = 92) {
@@ -125,8 +113,8 @@ category('Viewers: Filters: Collaborative filtering', () => {
       columnName: STRUCTURE,
       savedTree,
     });
-    await awaitCheck(() => df.filter.trueCount === n,
-      `Scaffold Tree filter: expected ${n} rows, got ${df.filter.trueCount}`, 2000);
+    await waitUntil(() => df.filter.trueCount === n,
+      () => `Scaffold Tree filter: expected ${n} rows, got ${df.filter.trueCount}`);
   }
 
   // VIEWERS
@@ -139,9 +127,10 @@ category('Viewers: Filters: Collaborative filtering', () => {
       zoomAndFilter: 'filter by zoom',
     });
     tv.addViewer(v);
+    await settled(v);
     v.zoom(-5, 4, 3, 11);
-    await awaitCheck(() => df.filter.trueCount === n,
-      `Scatter plot: expected ${n} rows, got ${df.filter.trueCount}`, 2000);
+    await waitUntil(() => df.filter.trueCount === n,
+      () => `Scatter plot: expected ${n} rows, got ${df.filter.trueCount}`);
   }
 }, { clear: false });
 

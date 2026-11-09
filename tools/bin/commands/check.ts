@@ -6,7 +6,7 @@ import * as color from '../utils/color-utils';
 import {FuncMetadata, FuncParam, FuncValidator, ValidationResult} from '../utils/interfaces';
 import {PackageFile} from '../utils/interfaces';
 import {FuncRoleDescription, functionRoles} from '../utils/const';
-import {execSync} from 'child_process';
+import {spawnSync} from 'child_process';
 
 
 const warns = ['Latest package version', 'Datagrok API version should contain', 'is served by the platform'];
@@ -97,6 +97,8 @@ function runChecks(packagePath: string, soft: boolean = false, noExit: boolean =
       errors.push(...checkImportStatements(packagePath, jsTsFiles, externals));
   }
   errors.push(...checkDatagrokApiImports(packagePath, jsTsFiles));
+  const u2Errors = checkU2Usage(packagePath, json);
+  errors.push(...u2Errors);
   warnings.push(...checkHeavyImports(packagePath, jsTsFiles, path.basename(packagePath)));
   if (!soft)
     errors.push(...checkSourceMap(packagePath));
@@ -117,7 +119,9 @@ function runChecks(packagePath: string, soft: boolean = false, noExit: boolean =
   if (errors.length) {
     console.log(`Checking package ${path.basename(packagePath)}...`);
     showError(errors);
-    if (soft || json.version.startsWith('0') || (errors.every((w) => warns.some((ww) => w.includes(ww)))))
+    // the u2 consumer ratchet holds pre-1.0 packages too
+    if (soft || u2Errors.length === 0 &&
+      (json.version.startsWith('0') || errors.every((w) => warns.some((ww) => w.includes(ww)))))
       return true;
 
     if (noExit)
@@ -242,6 +246,40 @@ export function checkDatagrokApiImports(packagePath: string, files: string[]): s
     }
   }
 
+  return errors;
+}
+
+/** u2's consumer check for a package built on u2 or ems: the u2 lint rules and the shrink-only counts of
+ * `consumers-baseline.json`. Prints the ratchet line; growth and enforced rules are errors. */
+export function checkU2Usage(packagePath: string, json: PackageFile): string[] {
+  const deps = {...json.dependencies, ...json.devDependencies};
+  if (!('@datagrok-libraries/u2' in deps) && !('@datagrok-libraries/ems' in deps))
+    return [];
+  let script: string;
+  try {
+    script = path.join(path.dirname(require.resolve('@datagrok-libraries/u2/package.json', {paths: [packagePath]})),
+      'scripts', 'check-consumer.mjs');
+  } catch {
+    return [];
+  }
+  if (!fs.existsSync(script))
+    return [];
+  const run = spawnSync(process.execPath, [script, packagePath, '--json'],
+    {encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024, timeout: 300000});
+  let report: {trees: {summary: string[], problems: string[], notes: string[]}[]};
+  try {
+    report = JSON.parse(run.stdout);
+  } catch {
+    return [`u2 consumer check could not run: ${(run.stderr || run.stdout || String(run.error)).trim()}`];
+  }
+  const errors: string[] = [];
+  for (const tree of report.trees) {
+    for (const line of tree.summary)
+      console.log(line);
+    for (const note of tree.notes)
+      color.log(`  ${note}`, 'warn');
+    errors.push(...tree.problems);
+  }
   return errors;
 }
 

@@ -4,7 +4,7 @@
 /* ---
 generated: features/models/models-gallery.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [views.models, ml.menu.models.train-model, ml.menu.models.apply-model]
+sub_features_covered: [views.models, ml.menu.models.train-model, ml.menu.models.apply-model, core#751]
 --- */
 import {test} from '@playwright/test';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -22,7 +22,7 @@ import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("The Predictive models gallery", () => {
   const session = feature(test, "features/models/models-gallery.feature", import.meta.url);
-  test("The Predictive models gallery", {tag: ["@journey", "@eda", "@realizes:views.models", "@realizes:ml.menu.models.train-model", "@realizes:ml.menu.models.apply-model"]}, async ({browser}) => {
+  test("The Predictive models gallery", {tag: ["@journey", "@eda", "@realizes:views.models", "@realizes:ml.menu.models.train-model", "@realizes:ml.menu.models.apply-model", "@realizes:core#751"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 8, page);
     await session.step(30, "Given user is logged in", () => loggedIn(page));
@@ -91,69 +91,70 @@ test.describe("The Predictive models gallery", () => {
       await session.step(115, "Then \"Is applicable to...\" tag should be hidden", () => shouldBe(page, el("\"Is applicable to...\" tag"), "hidden"));
       await session.step(116, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Edit... changes the description the Details pane shows", async () => {
-      await session.step(119, "When user picks \"Edit...\" from the context menu of \"BDD-Kestrel-{run}\" label in gallery", () => pickFromContextMenu(page, "Edit...", el(session.text("\"BDD-Kestrel-{run}\" label in gallery"))));
-      await session.step(120, "Then \"Predictive model\" dialog should be visible", () => shouldBe(page, el("\"Predictive model\" dialog"), "visible"));
-      await session.step(121, "And Name input in \"Predictive model\" dialog should have value \"BDD-Kestrel-{run}\"", () => shouldHaveValue(page, el("Name input in \"Predictive model\" dialog"), session.text("BDD-Kestrel-{run}")));
-      await session.step(122, "When user enters \"Classifies the readings, {run}\" into Description input in \"Predictive model\" dialog", () => enterInto(page, session.text("Classifies the readings, {run}"), el("Description input in \"Predictive model\" dialog")));
-      await session.step(123, "And user clicks on OK button in \"Predictive model\" dialog", () => clickOn(page, el("OK button in \"Predictive model\" dialog")));
-      await session.step(124, "Then the \"Predictive model\" dialog should close", () => dialogCloses(page, "Predictive model"));
-      await session.step(125, "When user clicks on \"BDD-Kestrel-{run}\" label in gallery", () => clickOn(page, el(session.text("\"BDD-Kestrel-{run}\" label in gallery"))));
-      await session.step(126, "Then the context panel should show \"BDD-Kestrel-{run}\"", () => contextPanelShows(page, session.text("BDD-Kestrel-{run}")));
-      await session.step(127, "And \"Details\" pane in context panel should contain text \"Classifies the readings, {run}\"", () => shouldContainText(page, el("\"Details\" pane in context panel"), session.text("Classifies the readings, {run}")));
-      await session.step(128, "And \"Details\" pane in context panel should contain text \"f1, f2\"", () => shouldContainText(page, el("\"Details\" pane in context panel"), "f1, f2"));
-      await session.step(129, "And no errors should have been logged", () => noErrors(page));
+    await run.scenario("Edit... changes the description the Details pane shows, which names the table the model was trained on", async () => {
+      await session.step(120, "When user picks \"Edit...\" from the context menu of \"BDD-Kestrel-{run}\" label in gallery", () => pickFromContextMenu(page, "Edit...", el(session.text("\"BDD-Kestrel-{run}\" label in gallery"))));
+      await session.step(121, "Then \"Predictive model\" dialog should be visible", () => shouldBe(page, el("\"Predictive model\" dialog"), "visible"));
+      await session.step(122, "And Name input in \"Predictive model\" dialog should have value \"BDD-Kestrel-{run}\"", () => shouldHaveValue(page, el("Name input in \"Predictive model\" dialog"), session.text("BDD-Kestrel-{run}")));
+      await session.step(123, "When user enters \"Classifies the rows, {run}\" into Description input in \"Predictive model\" dialog", () => enterInto(page, session.text("Classifies the rows, {run}"), el("Description input in \"Predictive model\" dialog")));
+      await session.step(124, "And user clicks on OK button in \"Predictive model\" dialog", () => clickOn(page, el("OK button in \"Predictive model\" dialog")));
+      await session.step(125, "Then the \"Predictive model\" dialog should close", () => dialogCloses(page, "Predictive model"));
+      await session.step(126, "When user clicks on \"BDD-Kestrel-{run}\" label in gallery", () => clickOn(page, el(session.text("\"BDD-Kestrel-{run}\" label in gallery"))));
+      await session.step(127, "Then the context panel should show \"BDD-Kestrel-{run}\"", () => contextPanelShows(page, session.text("BDD-Kestrel-{run}")));
+      await session.step(128, "And \"Details\" pane in context panel should contain text \"Classifies the rows, {run}\"", () => shouldContainText(page, el("\"Details\" pane in context panel"), session.text("Classifies the rows, {run}")));
+      await session.step(129, "And \"Details\" pane in context panel should contain text \"f1, f2\"", () => shouldContainText(page, el("\"Details\" pane in context panel"), "f1, f2"));
+      await session.step(131, "And value of \"Trained on\" details field in context panel should contain text \"readings\"", () => shouldContainText(page, el("value of \"Trained on\" details field in context panel"), "readings"));
+      await session.step(132, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Run Evaluation draws the model's charts and metrics on its training table", async () => {
-      await session.step(132, "When user clicks on \"Performance\" pane in context panel", () => clickOn(page, el("\"Performance\" pane in context panel")));
-      await session.step(133, "Then \"Run Evaluation\" button in context panel should be visible", () => shouldBe(page, el("\"Run Evaluation\" button in context panel"), "visible"));
-      await session.step(134, "And \"Performance\" pane in context panel should not contain text \"Accuracy\"", () => shouldNotContainText(page, el("\"Performance\" pane in context panel"), "Accuracy"));
-      await session.step(135, "When user clicks on \"Run Evaluation\" button in context panel", () => clickOn(page, el("\"Run Evaluation\" button in context panel")));
-      await session.step(136, "Then \"Performance\" pane in context panel should contain text \"Accuracy\"", () => shouldContainText(page, el("\"Performance\" pane in context panel"), "Accuracy"));
-      await session.step(137, "And \"Performance\" pane in context panel should contain text \"Confusions\"", () => shouldContainText(page, el("\"Performance\" pane in context panel"), "Confusions"));
-      await session.step(138, "And scatter plot viewer in \"Performance\" pane in context panel should be visible", () => shouldBe(page, el("scatter plot viewer in \"Performance\" pane in context panel"), "visible"));
-      await session.step(139, "And no error or warning balloon should have been shown", () => noBalloons(page));
-      await session.step(141, "When user clicks on \"Sharing\" pane in context panel", () => clickOn(page, el("\"Sharing\" pane in context panel")));
-      await session.step(142, "And user clicks on \"BDD-Osprey-{run}\" gallery card", () => clickOn(page, el(session.text("\"BDD-Osprey-{run}\" gallery card"))));
-      await session.step(143, "Then the context panel should show \"BDD-Osprey-{run}\"", () => contextPanelShows(page, session.text("BDD-Osprey-{run}")));
-      await session.step(144, "And no errors should have been logged", () => noErrors(page));
+      await session.step(135, "When user clicks on \"Performance\" pane in context panel", () => clickOn(page, el("\"Performance\" pane in context panel")));
+      await session.step(136, "Then \"Run Evaluation\" button in context panel should be visible", () => shouldBe(page, el("\"Run Evaluation\" button in context panel"), "visible"));
+      await session.step(137, "And \"Performance\" pane in context panel should not contain text \"Accuracy\"", () => shouldNotContainText(page, el("\"Performance\" pane in context panel"), "Accuracy"));
+      await session.step(138, "When user clicks on \"Run Evaluation\" button in context panel", () => clickOn(page, el("\"Run Evaluation\" button in context panel")));
+      await session.step(139, "Then \"Performance\" pane in context panel should contain text \"Accuracy\"", () => shouldContainText(page, el("\"Performance\" pane in context panel"), "Accuracy"));
+      await session.step(140, "And \"Performance\" pane in context panel should contain text \"Confusions\"", () => shouldContainText(page, el("\"Performance\" pane in context panel"), "Confusions"));
+      await session.step(141, "And scatter plot viewer in \"Performance\" pane in context panel should be visible", () => shouldBe(page, el("scatter plot viewer in \"Performance\" pane in context panel"), "visible"));
+      await session.step(142, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(144, "When user clicks on \"Sharing\" pane in context panel", () => clickOn(page, el("\"Sharing\" pane in context panel")));
+      await session.step(145, "And user clicks on \"BDD-Osprey-{run}\" gallery card", () => clickOn(page, el(session.text("\"BDD-Osprey-{run}\" gallery card"))));
+      await session.step(146, "Then the context panel should show \"BDD-Osprey-{run}\"", () => contextPanelShows(page, session.text("BDD-Osprey-{run}")));
+      await session.step(147, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("A card applies its model to an open table it fits, and only to that one", async () => {
-      await session.step(147, "Then \"BDD-Osprey-{run}\" gallery card should contain text \"Applicable to levels\"", () => shouldContainText(page, el(session.text("\"BDD-Osprey-{run}\" gallery card")), "Applicable to levels"));
-      await session.step(148, "And \"BDD-Osprey-{run}\" gallery card should not contain text \"readings\"", () => shouldNotContainText(page, el(session.text("\"BDD-Osprey-{run}\" gallery card")), "readings"));
-      await session.step(149, "And \"BDD-Kestrel-{run}\" gallery card should contain text \"Applicable to readings\"", () => shouldContainText(page, el(session.text("\"BDD-Kestrel-{run}\" gallery card")), "Applicable to readings"));
-      await session.step(150, "And \"BDD-Kestrel-{run}\" gallery card should not contain text \"levels\"", () => shouldNotContainText(page, el(session.text("\"BDD-Kestrel-{run}\" gallery card")), "levels"));
-      await session.step(151, "When user picks \"Apply to > levels (8 rows, 3 columns)\" from the context menu of \"BDD-Osprey-{run}\" label in gallery", () => pickFromContextMenu(page, "Apply to > levels (8 rows, 3 columns)", el(session.text("\"BDD-Osprey-{run}\" label in gallery"))));
-      await session.step(152, "Then \"Apply predictive model\" dialog should be visible", () => shouldBe(page, el("\"Apply predictive model\" dialog"), "visible"));
-      await session.step(153, "And Model input in \"Apply predictive model\" dialog should contain text \"BDD-Osprey-\"", () => shouldContainText(page, el("Model input in \"Apply predictive model\" dialog"), "BDD-Osprey-"));
-      await session.step(154, "And Model input in \"Apply predictive model\" dialog should not contain text \"BDD-Kestrel-\"", () => shouldNotContainText(page, el("Model input in \"Apply predictive model\" dialog"), "BDD-Kestrel-"));
-      await session.step(155, "And Inputs input in \"Apply predictive model\" dialog should contain text \"(2/2)\"", () => shouldContainText(page, el("Inputs input in \"Apply predictive model\" dialog"), "(2/2)"));
-      await session.step(156, "When user clicks on OK button in \"Apply predictive model\" dialog", () => clickOn(page, el("OK button in \"Apply predictive model\" dialog")));
-      await session.step(157, "Then the \"Apply predictive model\" dialog should close", () => dialogCloses(page, "Apply predictive model"));
-      await session.step(158, "And the \"levels\" view should be current", () => viewIsCurrent(page, "levels"));
-      await session.step(159, "And the table should have 4 columns", () => columnCount(page, 4));
-      await session.step(160, "And the newest column matching \"^score \\(\" should have no missing values", () => newestMatchingFilled(page, "^score \\("));
-      await session.step(161, "And no error or warning balloon should have been shown", () => noBalloons(page));
-      await session.step(162, "And no errors should have been logged", () => noErrors(page));
+      await session.step(150, "Then \"BDD-Osprey-{run}\" gallery card should contain text \"Applicable to levels\"", () => shouldContainText(page, el(session.text("\"BDD-Osprey-{run}\" gallery card")), "Applicable to levels"));
+      await session.step(151, "And \"BDD-Osprey-{run}\" gallery card should not contain text \"readings\"", () => shouldNotContainText(page, el(session.text("\"BDD-Osprey-{run}\" gallery card")), "readings"));
+      await session.step(152, "And \"BDD-Kestrel-{run}\" gallery card should contain text \"Applicable to readings\"", () => shouldContainText(page, el(session.text("\"BDD-Kestrel-{run}\" gallery card")), "Applicable to readings"));
+      await session.step(153, "And \"BDD-Kestrel-{run}\" gallery card should not contain text \"levels\"", () => shouldNotContainText(page, el(session.text("\"BDD-Kestrel-{run}\" gallery card")), "levels"));
+      await session.step(154, "When user picks \"Apply to > levels (8 rows, 3 columns)\" from the context menu of \"BDD-Osprey-{run}\" label in gallery", () => pickFromContextMenu(page, "Apply to > levels (8 rows, 3 columns)", el(session.text("\"BDD-Osprey-{run}\" label in gallery"))));
+      await session.step(155, "Then \"Apply predictive model\" dialog should be visible", () => shouldBe(page, el("\"Apply predictive model\" dialog"), "visible"));
+      await session.step(156, "And Model input in \"Apply predictive model\" dialog should contain text \"BDD-Osprey-\"", () => shouldContainText(page, el("Model input in \"Apply predictive model\" dialog"), "BDD-Osprey-"));
+      await session.step(157, "And Model input in \"Apply predictive model\" dialog should not contain text \"BDD-Kestrel-\"", () => shouldNotContainText(page, el("Model input in \"Apply predictive model\" dialog"), "BDD-Kestrel-"));
+      await session.step(158, "And Inputs input in \"Apply predictive model\" dialog should contain text \"(2/2)\"", () => shouldContainText(page, el("Inputs input in \"Apply predictive model\" dialog"), "(2/2)"));
+      await session.step(159, "When user clicks on OK button in \"Apply predictive model\" dialog", () => clickOn(page, el("OK button in \"Apply predictive model\" dialog")));
+      await session.step(160, "Then the \"Apply predictive model\" dialog should close", () => dialogCloses(page, "Apply predictive model"));
+      await session.step(161, "And the \"levels\" view should be current", () => viewIsCurrent(page, "levels"));
+      await session.step(162, "And the table should have 4 columns", () => columnCount(page, 4));
+      await session.step(163, "And the newest column matching \"^score \\(\" should have no missing values", () => newestMatchingFilled(page, "^score \\("));
+      await session.step(164, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(165, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Save as Zip downloads the model", async () => {
-      await session.step(165, "Given user watches downloads", () => watchDownloads(page));
-      await session.step(166, "And user switches to the \"Models\" view", () => switchView(page, "Models"));
-      await session.step(167, "When user picks \"Save as Zip\" from the context menu of \"BDD-Kestrel-{run}\" label in gallery", () => pickFromContextMenu(page, "Save as Zip", el(session.text("\"BDD-Kestrel-{run}\" label in gallery"))));
-      await session.step(168, "Then a file matching \"\\.zip$\" should have been downloaded", () => fileMatchingDownloaded(page, "\\.zip$"));
-      await session.step(169, "And no errors should have been logged", () => noErrors(page));
+      await session.step(168, "Given user watches downloads", () => watchDownloads(page));
+      await session.step(169, "And user switches to the \"Models\" view", () => switchView(page, "Models"));
+      await session.step(170, "When user picks \"Save as Zip\" from the context menu of \"BDD-Kestrel-{run}\" label in gallery", () => pickFromContextMenu(page, "Save as Zip", el(session.text("\"BDD-Kestrel-{run}\" label in gallery"))));
+      await session.step(171, "Then a file matching \"\\.zip$\" should have been downloaded", () => fileMatchingDownloaded(page, "\\.zip$"));
+      await session.step(172, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Two cards picked with Ctrl+click are compared side by side", async () => {
-      await session.step(172, "When user clicks on \"BDD-Osprey-{run}\" gallery card", () => clickOn(page, el(session.text("\"BDD-Osprey-{run}\" gallery card"))));
-      await session.step(173, "Then the context panel should show \"BDD-Osprey-{run}\"", () => contextPanelShows(page, session.text("BDD-Osprey-{run}")));
-      await session.step(174, "When user clicks on \"BDD-Kestrel-{run}\" gallery card holding Control", () => clickOnHolding(page, el(session.text("\"BDD-Kestrel-{run}\" gallery card")), "Control"));
-      await session.step(175, "Then context panel should contain text \"2 models\"", () => shouldContainText(page, el("context panel"), "2 models"));
-      await session.step(176, "When user clicks on \"Actions\" pane in context panel", () => clickOn(page, el("\"Actions\" pane in context panel")));
-      await session.step(177, "And user clicks on \"Compare\" label in \"Actions\" pane in context panel", () => clickOn(page, el("\"Compare\" label in \"Actions\" pane in context panel")));
-      await session.step(178, "Then the \"Compare models\" view should be current", () => viewIsCurrent(page, "Compare models"));
-      await session.step(179, "And the table should have 2 rows", () => rowCount(page, 2));
-      await session.step(180, "And the table should have the columns \"Name, Description, Method, Source\"", () => columnsExactly(page, "Name, Description, Method, Source"));
-      await session.step(181, "And no errors should have been logged", () => noErrors(page));
+      await session.step(175, "When user clicks on \"BDD-Osprey-{run}\" gallery card", () => clickOn(page, el(session.text("\"BDD-Osprey-{run}\" gallery card"))));
+      await session.step(176, "Then the context panel should show \"BDD-Osprey-{run}\"", () => contextPanelShows(page, session.text("BDD-Osprey-{run}")));
+      await session.step(177, "When user clicks on \"BDD-Kestrel-{run}\" gallery card holding Control", () => clickOnHolding(page, el(session.text("\"BDD-Kestrel-{run}\" gallery card")), "Control"));
+      await session.step(178, "Then context panel should contain text \"2 models\"", () => shouldContainText(page, el("context panel"), "2 models"));
+      await session.step(179, "When user clicks on \"Actions\" pane in context panel", () => clickOn(page, el("\"Actions\" pane in context panel")));
+      await session.step(180, "And user clicks on \"Compare\" label in \"Actions\" pane in context panel", () => clickOn(page, el("\"Compare\" label in \"Actions\" pane in context panel")));
+      await session.step(181, "Then the \"Compare models\" view should be current", () => viewIsCurrent(page, "Compare models"));
+      await session.step(182, "And the table should have 2 rows", () => rowCount(page, 2));
+      await session.step(183, "And the table should have the columns \"Name, Description, Method, Source\"", () => columnsExactly(page, "Name, Description, Method, Source"));
+      await session.step(184, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

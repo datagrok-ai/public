@@ -16,8 +16,8 @@ Feature: What the other user gets, and losing it
   notifications off. The Datagrok connection is not shared with it by this feature.
 
   That the second account may not edit, rename, delete or share the query further is the server's
-  answer and an API test (ApiTests, Dapi: permissions); the feature claims the refusal the Share
-  dialog shows.
+  answer and an API test (ApiTests, Dapi: permissions); the feature claims the context menu does not
+  offer it the Share dialog, as entity menus leave out what the user has no permission for.
 
   Adding to a space takes Edit on it, for a Link as for a Move (core#693: a Link went through on View
   until 2026-10-12). The Link's claim is the refusal and then the outcome: after Escape, which closes
@@ -94,20 +94,15 @@ Feature: What the other user gets, and losing it
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: The second account cannot share the query further
+  Scenario: The second account is not offered to share the query further
     Given the browse panel is open
     And "My stuff" tree node inside browse tree is expanded
     And "My stuff > Shared with me" tree node inside browse tree is expanded
     When user expands "." shared by the running account
-    And user picks "Share..." from the context menu of "ShareRecipient1" shared by the running account
-    Then "Share ShareRecipient1" dialog should be visible
-    When user picks the running account in "User, group, or email" input in "Share ShareRecipient1" dialog
-    And user unchecks "Send notifications" input in "Share ShareRecipient1" dialog
-    And user clicks on OK button in "Share ShareRecipient1" dialog
-    Then an error balloon containing "You don't have a permission to share this object" should have been shown
-    And "Share ShareRecipient1" dialog should be visible
-    When user clicks on CANCEL button in "Share ShareRecipient1" dialog
-    Then the "Share ShareRecipient1" dialog should close
+    And user opens the context menu of "ShareRecipient1" shared by the running account
+    Then the open menu should list "Run"
+    And the open menu should not list "Share..."
+    When user closes the context menu
 
   Scenario: The second account cannot Move a query into a space shared for viewing
     When user picks "Close All" from the context menu of browse tab

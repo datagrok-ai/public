@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, delay, test, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {setDialogInputValue, returnDialog, checkDialog} from './gui-utils';
 
 const DIALOG_TITLE = 'New file share';
@@ -20,49 +20,48 @@ and friendlyName="${CONN_NAME}"`;
     filesNode.captionLabel.click();
 
     // Wait for the "New File Share..." button to appear
-    await awaitCheck(() => {
+    await waitUntil(() => {
       const btn = Array.from(document.querySelectorAll('.ui-btn-ok.ui-btn-raised'))
         .find((el) => el.textContent?.includes('New File Share'));
       return btn != null;
-    }, '"New File Share..." button not found', 5000);
+    }, '"New File Share..." button not found');
     const newShareBtn = Array.from(document.querySelectorAll('.ui-btn-ok.ui-btn-raised'))
       .find((el) => el.textContent?.includes('New File Share')) as HTMLElement;
     newShareBtn.click();
 
-    await awaitCheck(() => checkDialog(DIALOG_TITLE), 'Dialog not found', 3000);
+    await waitUntil(() => checkDialog(DIALOG_TITLE), 'Dialog not found');
     const dialog = returnDialog(DIALOG_TITLE)!;
 
     // Wait for the General tab content to load asynchronously
-    await awaitCheck(() => {
+    await waitUntil(() => {
       try { dialog.input('Data Source'); return true; } catch (e) { return false; }
-    }, 'Data Source input not loaded', 5000);
+    }, 'Data Source input not loaded');
     setDialogInputValue(DIALOG_TITLE, 'Data Source', 'S3');
 
     // Wait for the dialog to rebuild after data source change (tabs reload asynchronously)
-    await awaitCheck(() => {
+    await waitUntil(() => {
       try { dialog.input('Region'); return true; } catch (e) { return false; }
-    }, 'S3 connection inputs not loaded', 5000);
+    }, 'S3 connection inputs not loaded');
     setDialogInputValue(DIALOG_TITLE, 'Name', CONN_NAME);
     setDialogInputValue(DIALOG_TITLE, 'Region', 'us-east-2');
     setDialogInputValue(DIALOG_TITLE, 'Bucket', 'datagrok-data');
     setDialogInputValue(DIALOG_TITLE, 'Dir', '/packages/demo/files/demo/northwind');
     setDialogInputValue(DIALOG_TITLE, 'Access Key', '');
     setDialogInputValue(DIALOG_TITLE, 'Secret Key', '');
-    await delay(300);
 
     const dialogRoot = dialog.root;
     const findBtn = (name: string) => Array.from(dialogRoot.querySelectorAll('.d4-command-bar .ui-btn'))
       .find((el) => el.textContent?.trim() === name) as HTMLElement | undefined;
 
-    await awaitCheck(() => findBtn('TEST') != null, 'TEST button not found', 5000);
+    await waitUntil(() => findBtn('TEST') != null, 'TEST button not found');
     findBtn('TEST')!.click();
-    await awaitCheck(() => document.getElementsByClassName('d4-balloon-content').length > 0,
-      'Connection test failed', 10000);
+    await waitUntil(() => document.getElementsByClassName('d4-balloon-content').length > 0,
+      'Connection test failed');
     (document.getElementsByClassName('d4-balloon-content')[0] as HTMLElement).click();
 
-    await awaitCheck(() => findBtn('OK') != null, 'OK button not found', 3000);
+    await waitUntil(() => findBtn('OK') != null, 'OK button not found');
     findBtn('OK')!.click();
-    await delay(1000);
+    await waitUntil(() => !checkDialog(DIALOG_TITLE), 'Dialog is not closed after saving the connection');
 
     const testConnection = await grok.dapi.connections.filter(connFilter).first();
     if (testConnection == undefined)

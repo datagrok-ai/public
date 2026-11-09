@@ -7,12 +7,13 @@
    display-side reads go through ColumnInput.names() and the native popup — the call-side
    assertions stand verbatim as W3's contract. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
-import {Column, DataFrame, Func, FuncParam, Shell} from './platform-doubles.mjs';
+import {Column, DataFrame, Func, FuncParam, Shell, strayTables} from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
 
@@ -24,8 +25,8 @@ const {TextInput} = await import('../src/components/inputs/text-input.js');
 
 const shell = grok.shell;
 
-/** The w2 harness plus shell hygiene: every test leaves no open tables, no current table, no
- * follow subscriptions and the live-scope count where it was. */
+/** The w2 harness plus shell hygiene: every test leaves only the stray tables open (a nameless one among them), no
+ * current table, no follow subscriptions and the live-scope count where it was. */
 function w3(name, body) {
   test(name, async () => {
     const live = Scope.liveCount;
@@ -33,7 +34,7 @@ function w3(name, body) {
       await body();
     } finally {
       Func.registry = [];
-      shell.dart.tables = [];
+      shell.dart.tables = strayTables();
       shell.dart.t = null;
       shell.dart.tableAdded.subs.clear();
       shell.dart.tableRemoved.subs.clear();
@@ -129,7 +130,7 @@ function selectOf(f, name) {
 
 /** The items on offer, the nullable empty option dropped. */
 function items(f, name) {
-  return selectOf(f, name).children.map((o) => o.value).filter((v) => v !== '');
+  return [...selectOf(f, name).children].map((o) => o.value).filter((v) => v !== '');
 }
 
 function summaryOf(f, name) {
@@ -148,12 +149,12 @@ async function pickColumnVia(f, name, colName) {
   fire(f.getInput(name).root.querySelector('.u2-columns'), 'click');
   const list = document.body.querySelector('.u2-overlay .u2-list');
   assert.ok(list, `${name} opens the column popup`);
-  // the shim lays nothing out: give the list a viewport — and rewind the highlight scroll,
-  // which the layoutless shim never clamps — so every row is rendered
-  list.clientHeight = 400;
+  // the test DOM lays nothing out: give the list a viewport — and rewind the highlight scroll,
+  // which it never clamps — so every row is rendered
+  layout(list, {clientHeight: 400});
   list.scrollTop = 0;
   fire(list, 'scroll');
-  const row = list.querySelectorAll('.u2-list-row')
+  const row = [...list.querySelectorAll('.u2-list-row')]
     .find((el) => el.querySelector('.u2-column-name')?.textContent === colName);
   assert.ok(row, `${colName} is on offer`);
   fire(row, 'click');
@@ -194,9 +195,10 @@ dbl('doubles: the shell stores frames — tables, t, derived tableNames, dedup, 
   sh.dart.tableAdded.subscribe(() => events.push('+'));
   sh.dart.tableRemoved.subscribe(() => events.push('-'));
 
+  assert.deepEqual(sh.tableNames, [undefined, ''], 'a workspace holds a table renamed to null and one named \'\'');
   const a = sh.addTable(demog());
-  assert.equal(sh.tables[0], a, 'the frame itself is stored');
-  assert.deepEqual(sh.tableNames, ['demog'], 'names derive from the frames');
+  assert.equal(sh.tables.at(-1), a, 'the frame itself is stored');
+  assert.deepEqual(sh.tableNames, [undefined, '', 'demog'], 'names derive from the frames');
   assert.equal(sh.tableByName('demog'), a, 'tableByName answers the frame');
   assert.equal(sh.tableByName('nope'), null);
   const a2 = sh.addTable(demog());
@@ -206,9 +208,9 @@ dbl('doubles: the shell stores frames — tables, t, derived tableNames, dedup, 
   assert.equal(sh.t, a2);
 
   sh.closeTable(a);
-  assert.deepEqual(sh.tableNames, ['demog (2)'], 'close by frame');
+  assert.deepEqual(sh.tableNames, [undefined, '', 'demog (2)'], 'close by frame');
   sh.closeTable('demog (2)');
-  assert.deepEqual(sh.tables, [], 'close by name');
+  assert.deepEqual(sh.tableNames, [undefined, ''], 'close by name');
   assert.equal(sh.t, null, 'the current table never answers a closed frame');
   assert.deepEqual(events, ['+', '+', '-', '-']);
 
@@ -328,20 +330,21 @@ w3('auto-fill: the current table wins, one write into the call, and the field op
   const {f, sets} = wired(call);
   assert.deepEqual(sets, [['df', b]], 'a real write, exactly one (fpe:62-64, P-W3-6)');
   assert.equal(call.inputs.df, b, 'the OBJECT lands in the call');
-  assert.equal(f.getInput('df').value.value, 'alt', 'the input holds the NAME');
+  assert.equal(f.getInput('df').value, 'alt', 'the input holds the NAME');
   assert.equal(selectOf(f, 'df').value, 'alt', 'auto-fill ran before the field seeded');
   f.dispose();
 });
 
-w3('auto-fill: no current table falls back to the first open one; zero tables stay null, empty select', () => {
+w3('auto-fill: no current table falls back to the first named one; with none the field could show, null, empty ' +
+  'select', () => {
   const a = open(demog());
   open(alt());
   const first = callOf(tableP());
   const f1 = mount(funcForm(first));
-  assert.equal(first.inputs.df, a);
+  assert.equal(first.inputs.df, a, 'the nameless tables open before it are passed over');
   f1.dispose();
 
-  shell.dart.tables = [];
+  shell.dart.tables = strayTables();
   const none = callOf(tableP());
   const {f, sets} = wired(none);
   assert.deepEqual(sets, [], 'nothing to fill is no write');
@@ -368,7 +371,7 @@ w3('skipTableAutoFill suppresses the write; a pre-valued param is never overwrit
   valued.setParamValue('df', a);
   const f2 = mount(funcForm(valued));
   assert.equal(valued.inputs.df, a, 'a held value beats the current-table preference');
-  assert.equal(f2.getInput('df').value.value, 'demog');
+  assert.equal(f2.getInput('df').value, 'demog');
   f2.dispose();
 });
 
@@ -385,7 +388,7 @@ w3('rebind re-runs auto-fill for the new call\'s null table params only', () => 
   callC.setParamValue('df', b);
   f.source = callC;
   assert.equal(callC.inputs.df, b, 'a valued one is untouched');
-  assert.equal(f.getInput('df').value.value, 'alt', 'and the field follows it');
+  assert.equal(f.getInput('df').value, 'alt', 'and the field follows it');
   f.dispose();
 });
 
@@ -394,21 +397,21 @@ w3('rebind: a dependent orphans with its missing table param, and revives when i
   shell.t = a;
   const withTable = () => callOf(tableP(), columnP('weight', {options: {type: 'numerical'}}));
   const f = mount(funcForm(withTable()));
-  assert.equal(f.getInput('weight').enabled, true);
+  assert.equal(f.getInput('weight').disabled === null, true);
 
   const noTable = new Func('fceNoTable',
     {inputs: [columnP('weight', {options: {type: 'numerical'}})]}).prepare({});
   f.source = noTable;
-  assert.equal(f.getInput('df').enabled, false, 'the table field orphans');
-  assert.equal(f.getInput('weight').enabled, false, 'and the dependent orphans WITH it');
-  f.getInput('weight').value.value = 'age';
+  assert.equal(f.getInput('df').disabled === null, false, 'the table field orphans');
+  assert.equal(f.getInput('weight').disabled === null, false, 'and the dependent orphans WITH it');
+  f.getInput('weight').value = 'age';
   await flush();
   assert.equal(noTable.inputs.weight ?? null, null,
     'no write resolved against the OLD call\'s table');
 
   const back = withTable();
   f.source = back;
-  assert.equal(f.getInput('weight').enabled, true, 'revives');
+  assert.equal(f.getInput('weight').disabled === null, true, 'revives');
   assert.deepEqual(colNames(f, 'weight'), ['age', 'height', 'weight']);
   assert.equal(back.inputs.weight, a.columns.byName('weight'), 'auto-picked against the new call');
   f.dispose();
@@ -441,13 +444,13 @@ w3('readback: a frame shows its name; a Resolve-shaped value ({name, func}) read
   const {f, sets} = wired(call);
   call.setParamValue('df', b);
   await flush();
-  assert.equal(f.getInput('df').value.value, 'alt', 'an external frame write shows its name');
+  assert.equal(f.getInput('df').value, 'alt', 'an external frame write shows its name');
   sets.length = 0;
 
   call.setParamValue('df', {name: 'demog', func: {}});
   sets.length = 0;
   await flush();
-  assert.equal(f.getInput('df').value.value, null,
+  assert.equal(f.getInput('df').value, null,
     'a pending resolver never leaks a bogus name (the \'func\' in v guard)');
   assert.deepEqual(sets.filter(([n]) => n === 'df'), [], 'and the refresh writes nothing back');
   f.dispose();
@@ -460,22 +463,22 @@ w3('readback: column object → name; array and ColumnList-shaped column_list va
   const f = mount(funcForm(call));
   call.setParamValue('num', a.columns.byName('height'));
   await flush();
-  assert.equal(f.getInput('num').value.value, 'height');
+  assert.equal(f.getInput('num').value, 'height');
 
   call.setParamValue('metrics', [a.columns.byName('age'), a.columns.byName('height')]);
   await flush();
-  assert.deepEqual(f.getInput('metrics').value.value, ['age', 'height']);
+  assert.deepEqual(f.getInput('metrics').value, ['age', 'height']);
   assert.equal(summaryOf(f, 'metrics'), '(2) age, height', 'the Dart summary shape (P-W3-9)');
 
   call.setParamValue('metrics', [a.columns.byName('age'), {name: 'pending', func: {}}]);
   await flush();
-  assert.deepEqual(f.getInput('metrics').value.value, ['age'],
+  assert.deepEqual(f.getInput('metrics').value, ['age'],
     'a resolver-FuncCall element never leaks its func name (the asNamed guard)');
 
   const listShaped = new DataFrame([{name: 'age', type: 'int'}], [], 'listShape').columns;
   call.setParamValue('metrics', listShaped);
   await flush();
-  assert.deepEqual(f.getInput('metrics').value.value, ['age'], 'a ColumnList reads through names()');
+  assert.deepEqual(f.getInput('metrics').value, ['age'], 'a ColumnList reads through names()');
   f.dispose();
 });
 
@@ -538,6 +541,7 @@ w3('a table with no passing columns names the cause instead of the generic requi
   pickTable(f, 'df', 'nums');
   await flush();
   assert.equal(f.getInput('cat').validity.peek(), 'No categorical columns in \'nums\'');
+  f.getInput('cat').touch();
   assert.equal(f.getInput('cat').root.querySelector('.u2-input-error').textContent,
     'No categorical columns in \'nums\'', 'the cause is on the field, not the generic message');
 
@@ -602,7 +606,7 @@ w3('an external table write retargets dependents too (#12); a same-frame write c
   assert.deepEqual(colNames(f, 'weight'), ['weight'],
     'the binding rides the param stream, not the input (FE-7 #2/#3)');
   assert.equal(call.inputs.weight, b.columns.byName('weight'));
-  assert.equal(f.getInput('df').value.value, 'alt', 'the field follows the external write too');
+  assert.equal(f.getInput('df').value, 'alt', 'the field follows the external write too');
   sets.length = 0;
 
   const frameSubs = b.liveSubscriptions();
@@ -628,7 +632,7 @@ w3('an override on the TABLE param keeps its dependents driven through the param
   assert.equal(call.inputs.df, a, 'auto-fill still writes the frame');
   assert.deepEqual(colNames(f, 'weight'), ['age', 'height', 'weight'], 'the dependent is populated');
   assert.equal(call.inputs.weight, a.columns.byName('weight'), 'and auto-picked into the call');
-  assert.equal(f.getInput('weight').enabled, true);
+  assert.equal(f.getInput('weight').disabled === null, true);
 
   call.setParamValue('df', b);
   await flush();
@@ -637,7 +641,7 @@ w3('an override on the TABLE param keeps its dependents driven through the param
   assert.equal(call.inputs.weight, b.columns.byName('weight'));
   assert.equal(summaryOf(f, 'metrics'), '(0)');
 
-  custom.value.value = 'demog';
+  custom.value = 'demog';
   await flush();
   assert.deepEqual(colNames(f, 'weight'), ['age', 'height', 'weight'],
     'the custom editor\'s own write drives them too (a name resolves via tableByName)');
@@ -694,14 +698,14 @@ w3('a rename remaps the held name in column and columns fields without a stale w
 
   a.columns.byName('weight').name = 'wt';
   await flush();
-  assert.equal(f.getInput('weight').value.value, 'wt', 'the value moves first (pickers.ts:22-30)');
+  assert.equal(f.getInput('weight').value, 'wt', 'the value moves first (pickers.ts:22-30)');
   assert.equal(call.inputs.weight, picked, 'the call still holds the same column');
   assert.ok(!sets.some(([, v]) => typeof v === 'string'), 'no name string ever reaches the call');
   assert.ok(!sets.some(([, v]) => v === null), 'and no stale-prune null either');
 
   a.columns.byName('age').name = 'years';
   await flush();
-  assert.deepEqual(f.getInput('metrics').value.value, ['years'], 'the columns field remaps too');
+  assert.deepEqual(f.getInput('metrics').value, ['years'], 'the columns field remaps too');
   f.dispose();
 });
 
@@ -715,7 +719,7 @@ w3('dropping the picked column prunes to null IN THE CALL — one write, through
 
   a.columns.remove('weight');
   await flush();
-  assert.equal(f.getInput('weight').value.value, null);
+  assert.equal(f.getInput('weight').value, null);
   assert.deepEqual(sets.filter(([n]) => n === 'weight'), [['weight', null]],
     'the prune the frame leaves behind is written, exactly once (FP-P-4 — the follow moved into the input)');
   assert.deepEqual(colNames(f, 'weight'), ['age', 'height'], 'the offer follows the frame');
@@ -782,6 +786,21 @@ w3('auto-pick: a semType pick prefers the molecule-ish names, else the first mat
   f.dispose();
 });
 
+w3('auto-pick: a hidden ~ column is never the pick, even the first or the only match', () => {
+  const frame = open(new DataFrame([
+    {name: '~Compound.canonicalSmiles', type: 'string', semType: 'Molecule'},
+    {name: 'Compound', type: 'string', semType: 'Molecule'},
+    {name: '~Compound.Morgan', type: 'int'},
+  ], [], 'hidden'));
+  shell.t = frame;
+  const call = callOf(tableP(), columnP('mol', {semType: 'Molecule'}),
+    columnP('compoundMorgan', {options: {type: 'numerical'}}));
+  const f = mount(funcForm(call));
+  assert.equal(call.inputs.mol, frame.columns.byName('Compound'), 'the molecule column, not its hidden cache');
+  assert.equal(call.inputs.compoundMorgan ?? null, null, 'a hidden column alone is no pick');
+  f.dispose();
+});
+
 w3('auto-pick: the nearest name wins (1-char and longer alike); no candidates → null', () => {
   const frame = open(new DataFrame([
     {name: 'ax', type: 'int'}, {name: 'xyz', type: 'int'},
@@ -825,7 +844,7 @@ w3('closing the value table prunes to null IN THE CALL and empties the dependent
   shell.closeTable(a);
   await flush();
   assert.equal(call.inputs.df, null, 'never the Dart stale-frame-plus-lying-select (P-W3-12)');
-  assert.equal(f.getInput('df').value.value, null);
+  assert.equal(f.getInput('df').value, null);
   assert.deepEqual(items(f, 'df'), ['alt'], 'the remaining table stays on offer, unchosen');
   assert.deepEqual(colNames(f, 'weight'), [], 'dependents retarget to the null table');
   assert.equal(call.inputs.weight, null);
@@ -876,7 +895,7 @@ w3('the import action writes the imported frame into the call', async () => {
   const imported = shell.tables.find((t) => t.name === 'plates');
   assert.ok(imported, 'the file joined the workspace');
   assert.equal(call.inputs.df, imported, 'and flowed into the call as the OBJECT');
-  assert.equal(f.getInput('df').value.value, 'plates');
+  assert.equal(f.getInput('df').value, 'plates');
   f.dispose();
 });
 
@@ -887,7 +906,7 @@ w3('the form\'s table field carries the platform icons when the doors exist (FP-
     open(demog());
     const f = mount(funcForm(callOf(tableP())));
     assert.deepEqual(
-      f.getInput('df').root.querySelectorAll('.u2-input-options [data-u2="icon-button"]')
+      [...f.getInput('df').root.querySelectorAll('.u2-input-options [data-u2="icon-button"]')]
         .map((el) => el.getAttribute('aria-label')),
       ['Open file', 'Add file from Files', 'Query database'],
       'feature detection reaches the form field for free');

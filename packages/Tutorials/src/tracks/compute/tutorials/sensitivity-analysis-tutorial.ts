@@ -154,8 +154,6 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       return;
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
     const modelRoot = await getElement(modelView.root, 'div.d4-line-chart');
     if (modelRoot === null) {
       grok.shell.warning('Sensitivity analysis run timeout exceeded');

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {PackageFunctions} from '../package';
 import {SubstructureFilter} from '../widgets/chem-substructure-filter';
@@ -13,8 +13,6 @@ const SMARTS = '[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1';
 // The same ring with an atom list: a query feature, which no SMILES holds
 const SMARTS_LIST = '[#6,#7]1:[#6]:[#6]:[#6]:[#6]:[#6]:1';
 const SMARTS_TARGET = 'Cc1ccc(O)cc1';
-/** Long enough for the host's handlers and for any further event a change could still cause. */
-const SETTLE_MS = 300;
 
 interface OpenSketcher {
   host: DG.chem.Sketcher;
@@ -138,8 +136,24 @@ async function openWith(o: OpenOptions): Promise<OpenSketcher> {
   }
   expect(created !== null && created === host.sketcher, true, 'the sketcher was not seen as it was created');
   expect(host.sketcher!.root.classList.contains('crux-sketcher'), true, 'the sketcher is not Crux');
-  await delay(SETTLE_MS);
+  await cruxSettled(host.sketcher!);
   return {host, dialog, changes: () => count};
+}
+
+/** Resolves once the sketcher has nothing on its way (`isRenderPending`: a press, a drawing or a wait Crux holds) on
+ * two checks in a row: what a write or an edit causes, and any further event it could still cause, has come. */
+async function cruxSettled(impl: DG.chem.SketcherBase): Promise<void> {
+  let held = 0;
+  await waitUntil(() => {
+    held = impl.isRenderPending ? 0 : held + 1;
+    return held >= 2;
+  }, `${impl.type} is still pending`);
+}
+
+/** Waits for the sketcher's onChanged events to pass `count`, and for Crux to settle after them. */
+async function changed(s: OpenSketcher, count: number): Promise<void> {
+  await waitUntil(() => s.changes() > count, () => `onChanged events: ${s.changes()}, awaited more than ${count}`);
+  await cruxSettled(s.host.sketcher!);
 }
 
 function cruxElement(s: OpenSketcher): CruxElement | null {
@@ -245,7 +259,7 @@ function sameQuery(a: string, b: string): boolean {
 async function optionsMenuItem(host: DG.chem.Sketcher, name: string): Promise<HTMLElement> {
   host.root.querySelector<HTMLElement>('.grok-sketcher-input .d4-input-options')!.click();
   let item: HTMLElement | null = null;
-  await awaitCheck(() => (item = document.querySelector<HTMLElement>(`.d4-menu-popup [d4-name="${name}"]`)) !== null,
+  await waitUntil(() => (item = document.querySelector<HTMLElement>(`.d4-menu-popup [d4-name="${name}"]`)) !== null,
     `no "${name}" in the options menu`, 5000);
   return item!;
 }
@@ -254,7 +268,7 @@ async function optionsMenuItem(host: DG.chem.Sketcher, name: string): Promise<HT
 async function expectOneChange(s: OpenSketcher, change: () => void): Promise<void> {
   const before = s.changes();
   change();
-  await delay(SETTLE_MS);
+  await changed(s, before);
   expect(s.changes() - before, 1, 'onChanged events');
 }
 
@@ -351,7 +365,7 @@ async function chooseOnBond(s: OpenSketcher, b: number, id: string): Promise<voi
   el.shadowRoot!.querySelector('[data-testid="canvas"]')!.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true,
     cancelable: true, composed: true, clientX: r.left + p.x, clientY: r.top + p.y, button: 2}));
   const item = () => el.shadowRoot!.querySelector<HTMLElement>(`[data-testid="menu.context.${id}"]`);
-  await awaitCheck(() => item() !== null, `no ${id} in the context menu of bond ${b}`, 3000);
+  await waitUntil(() => item() !== null, `no ${id} in the context menu of bond ${b}`, 3000);
   item()!.click();
 }
 
@@ -416,7 +430,7 @@ category('Crux sketcher', () => {
       for (const [w, h] of [[300, 330], [200, 260], [900, 760]]) {
         s.dialog.root.style.width = `${w}px`;
         s.dialog.root.style.height = `${h}px`;
-        await delay(SETTLE_MS);
+        await cruxSettled(sketcher);
         const box = s.host.host.getBoundingClientRect();
         expect(box.width < w && box.height < h, true, `the host box ${size(s.host.host)} in a ${w} x ${h} dialog`);
         expect(size(cruxElement(s)!), size(s.host.host), `Crux in the host box of a ${w} x ${h} dialog`);
@@ -440,12 +454,15 @@ category('Crux sketcher', () => {
       grok.shell.o = df.col('smiles');
       const filterHeader = () => [...document.querySelectorAll<HTMLElement>('.grok-prop-panel .d4-accordion-pane-header')]
         .find((h) => h.textContent?.trim() === 'Filter');
-      await awaitCheck(() => filterHeader() !== undefined, 'no Filter pane in the context panel', 10000);
+      await waitUntil(() => filterHeader() !== undefined, 'no Filter pane in the context panel', 10000);
       if (!filterHeader()!.classList.contains('expanded'))
         filterHeader()!.click();
-      await awaitCheck(() => document.querySelector('.grok-prop-panel .crux-sketcher crux-sketch') !== null,
+      await waitUntil(() => document.querySelector('.grok-prop-panel .crux-sketcher crux-sketch') !== null,
         'no Crux in the Filter pane', 15000);
-      await delay(SETTLE_MS);
+      const paneSketcher = DG.Widget.find(document.querySelector('.grok-prop-panel .crux-sketcher')!) as
+        DG.chem.SketcherBase;
+      await waitUntil(() => paneSketcher.isInitialized, 'Crux in the Filter pane is not ready', 15000);
+      await cruxSettled(paneSketcher);
       const pane = document.querySelector('.grok-prop-panel .d4-pane-filter')!.getBoundingClientRect().width;
       const crux = document.querySelector('.grok-prop-panel .crux-sketcher')!.getBoundingClientRect().width;
       expect(crux <= pane + 1, true, `Crux ${Math.round(crux)} px wide in a ${Math.round(pane)} px pane`);
@@ -469,15 +486,18 @@ category('Crux sketcher', () => {
     try {
       grok.shell.windows.showContextPanel = true;
       grok.shell.o = shown;
-      await awaitCheck(() => shown.closest('.grok-prop-panel') !== null, 'the sketcher is not in the context panel', 10000);
+      await waitUntil(() => shown.closest('.grok-prop-panel') !== null,
+        'the sketcher is not in the context panel', 10000);
       await host.sketcherReady();
-      await delay(SETTLE_MS);
-      const s = {host, changes: () => 0} as unknown as OpenSketcher;
+      await cruxSettled(host.sketcher!);
+      let changes = 0;
+      host.onChanged.subscribe(() => changes++);
+      const s = {host, changes: () => changes} as unknown as OpenSketcher;
       press(s, 'bond.single');
       const c = canvasBox(s);
       for (const [i, across] of [[1, 0.3], [2, 0.7]]) {
         pressAt(s, {x: c.x + c.width * across, y: c.y + c.height / 2});
-        await delay(SETTLE_MS);
+        await changed(s, i - 1);
         expect(cruxElement(s)!.isEmpty, false, `Crux after stroke ${i}`);
         expect(grok.shell.o === shown, true, `the current object after stroke ${i}: ${grok.shell.o?.constructor?.name}`);
       }
@@ -498,25 +518,33 @@ category('Crux sketcher', () => {
     const tv = grok.shell.addTableView(df);
     try {
       grok.shell.windows.showContextPanel = true;
-      // the new view makes its own current object (debounced) first: the column is made current after it
-      await delay(1500);
+      // the view's first-second timer makes the first row current; the column made current after that stays current
+      await waitUntil(() => df.currentRowIdx === 0, 'the table view did not make its first row current', 5000);
       grok.shell.o = df.col('smiles');
       const filterHeader = () => [...document.querySelectorAll<HTMLElement>('.grok-prop-panel .d4-accordion-pane-header')]
         .find((h) => h.textContent?.trim() === 'Filter');
-      await awaitCheck(() => filterHeader() !== undefined, 'no Filter pane in the context panel', 10000);
+      await waitUntil(() => filterHeader() !== undefined, 'no Filter pane in the context panel', 10000);
       if (!filterHeader()!.classList.contains('expanded'))
         filterHeader()!.click();
       const paneCrux = () => document.querySelector<CruxElement>('.grok-prop-panel .crux-sketcher crux-sketch');
-      await awaitCheck(() => paneCrux()?.getAttribute('aria-busy') === 'false', 'no ready Crux in the Filter pane', 15000);
+      await waitUntil(() => paneCrux()?.getAttribute('aria-busy') === 'false',
+        'no ready Crux in the Filter pane', 15000);
       const el = paneCrux()!;
-      await delay(2100);
+      // a click on the column's header ends the guard the expanded pane started, and keeps the column current
+      const col = tv.grid.columns.byName('smiles')!;
+      const box = tv.grid.overlay.getBoundingClientRect();
+      const at = {bubbles: true, cancelable: true, button: 0, clientX: box.left + col.left + col.width / 2,
+        clientY: box.top + tv.grid.colHeaderHeight / 2};
+      for (const type of ['mousedown', 'mouseup', 'click'])
+        tv.grid.overlay.dispatchEvent(new MouseEvent(type, {...at, buttons: type === 'mousedown' ? 1 : 0}));
+      expect(grok.shell.o === df.col('smiles'), true, `the header click changed the current object: ${grok.shell.o?.constructor?.name}`);
       expect(paneCrux() === el, true, `the pane was rebuilt before the stroke (current: ${grok.shell.o?.constructor?.name})`);
       const s ={host: {sketcher: {root: el.closest('.crux-sketcher')}}} as unknown as OpenSketcher;
       press(s, 'bond.single');
       const c = canvasBox(s);
       pressAt(s, {x: c.x + c.width * 0.3, y: c.y + c.height / 2});
-      await awaitCheck(() => df.filter.trueCount < df.rowCount, 'the stroke did not filter the table', 15000);
-      await delay(SETTLE_MS);
+      await waitUntil(() => df.filter.trueCount < df.rowCount, 'the stroke did not filter the table', 15000);
+      await cruxSettled(DG.Widget.find(el.closest<HTMLElement>('.crux-sketcher')!) as DG.chem.SketcherBase);
       const o = grok.shell.o;
       expect(o instanceof DG.Column ? `column ${o.name}` : `${o?.constructor?.name}`, 'column smiles',
         'the current object after the stroke');
@@ -555,13 +583,33 @@ category('Crux sketcher', () => {
     const dialog = ui.dialog().add(host).show();
     try {
       await host.sketcherReady();
-      await delay(SETTLE_MS);
+      await cruxSettled(host.sketcher!);
       const crux = () => host.sketcher!.root.querySelector<CruxElement>('crux-sketch')!;
       expect(crux().isEmpty, false, 'Crux given a molblock as SMILES before it was ready');
       expect(canonical(crux().molfile), canonical(SMILES), 'the drawing of a molblock given as SMILES');
       host.setSmiles(molblock(STEREO_SMILES));
-      await delay(SETTLE_MS);
+      await cruxSettled(host.sketcher!);
       expect(canonical(crux().molfile), canonical(STEREO_SMILES), 'a molblock given as SMILES once Crux is ready');
+    } finally {
+      dialog.close();
+    }
+  });
+
+  // The product owner (2026-10-23): SequenceTranslator's Markush enumerator opened Crux empty on Edit: it set a core's
+  // SMILES with setMolFile. Crux reads a SMILES given as a molblock as the SMILES it is, before it is ready and after.
+  test('a SMILES given as a molblock', async () => {
+    grok.chem.currentSketcherType = 'Crux';
+    const host = new DG.chem.Sketcher();
+    host.setMolFile('[*:1]CC(=O)NC1CCN([*:2])CC1');
+    const dialog = ui.dialog().add(host).show();
+    try {
+      await host.sketcherReady();
+      await cruxSettled(host.sketcher!);
+      const crux = () => host.sketcher!.root.querySelector<CruxElement>('crux-sketch')!;
+      expect(crux().isEmpty, false, 'Crux given a SMILES as a molblock before it was ready');
+      host.setMolFile(STEREO_SMILES);
+      await cruxSettled(host.sketcher!);
+      expect(canonical(crux().molfile), canonical(STEREO_SMILES), 'a SMILES given as a molblock once Crux is ready');
     } finally {
       dialog.close();
     }
@@ -631,7 +679,7 @@ category('Crux sketcher', () => {
     const dialog = ui.dialog().add(host).show();
     try {
       await host.sketcherReady();
-      await delay(SETTLE_MS);
+      await cruxSettled(host.sketcher!);
       expect(loading, true, 'the value was set while Crux was loading');
       expect(count, 1, 'onChanged events');
       expect(await host.getSmarts(), SMARTS, 'the value set while loading');
@@ -685,7 +733,7 @@ category('Crux sketcher', () => {
       const garbage = 'C1CC(((';
       const changes = s.changes();
       s.host.setSmiles(garbage);
-      await delay(SETTLE_MS);
+      await cruxSettled(s.host.sketcher!);
       // as with the other sketchers, the drawing stays and the host keeps the value shown as malformed
       expect(s.changes() - changes, 0, 'onChanged events of an unreadable value');
       expect(canonical(s.host.sketcher!.molFile), canonical(SMILES), 'the drawing after an unreadable value');
@@ -724,7 +772,7 @@ category('Crux sketcher', () => {
       await expectOneChange(s, () => press(s, 'clear'));
       await expectOneChange(s, () => s.host.setSmiles(STEREO_SMILES));
       s.dialog.close();
-      await awaitCheck(() => s.host.sketcher!.isDetached, 'Crux has not been detached', 3000);
+      await waitUntil(() => s.host.sketcher!.isDetached, 'Crux has not been detached', 3000);
       expect(cruxElement(s), null, '<crux-sketch> left in the sketcher after detach');
       expect(canonical(s.host.getSmiles()), canonical(STEREO_SMILES), 'SMILES after detach');
       expect(canonical(s.host.sketcher!.molFile), canonical(STEREO_SMILES), 'V2000 after detach');
@@ -747,14 +795,14 @@ category('Crux sketcher', () => {
       s.host.sketcherType = 'OpenChemLib';
       await s.host.sketcherReady();
       expect(s.host.sketcher !== crux, true, 'OpenChemLib replaced Crux');
-      await awaitCheck(() => canonical(s.host.getMolFile()) === canonical(SMILES), 'the molecule in OpenChemLib', 5000);
+      await waitUntil(() => canonical(s.host.getMolFile()) === canonical(SMILES), 'the molecule in OpenChemLib', 5000);
       const ocl = s.host.sketcher;
       grok.chem.currentSketcherType = 'Crux';
       s.host.sketcherType = 'Crux';
       await s.host.sketcherReady();
       expect(s.host.sketcher !== ocl, true, 'Crux replaced OpenChemLib');
       expect(s.host.sketcher!.root.classList.contains('crux-sketcher'), true, 'the sketcher is not Crux');
-      await awaitCheck(() => cruxElement(s)?.isEmpty === false, 'the molecule did not come back to Crux', 5000);
+      await waitUntil(() => cruxElement(s)?.isEmpty === false, 'the molecule did not come back to Crux', 5000);
       expect(canonical(s.host.sketcher!.molFile), canonical(SMILES), 'the molecule back in Crux');
     } finally {
       s.dialog.close();
@@ -818,7 +866,7 @@ category('Crux sketcher', () => {
       requests.observe({type: 'resource'});
       const picked = performance.now();
       item.click();
-      await awaitCheck(() => sent.length > 0, 'the pick never reached the server', 15000);
+      await waitUntil(() => sent.length > 0, 'the pick never reached the server', 15000);
       const after = Math.round(sent[0] - picked);
       expect(after < 500, true, `the pick was sent ${after} ms after it was made`);
       expect(await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY, true), pick,
@@ -944,7 +992,7 @@ category('Crux sketcher', () => {
       const dialog = ui.dialog().add(host).show();
       try {
         await host.sketcherReady();
-        await delay(SETTLE_MS);
+        await cruxSettled(host.sketcher!);
         expect(loading, true, 'Crux was loading when the value came');
         expectDrawing(host.sketcher!.root.querySelector<CruxElement>('crux-sketch'), value);
         expect(count, 1, 'onChanged events');
@@ -985,7 +1033,7 @@ category('Crux sketcher', () => {
     dialog.show();
     try {
       const impl = await host.sketcherReady();
-      await delay(SETTLE_MS);
+      await cruxSettled(impl);
       expect(JSON.stringify(moment), JSON.stringify({loading: true, detached: true}),
         'Crux was loading when the value came, and detached by the dialog\'s close');
       expect(impl.root.querySelector('crux-sketch'), null, '<crux-sketch> left after the dialog closed');
@@ -1087,13 +1135,13 @@ category('Crux sketcher', () => {
     impl.onChanged.subscribe(() => handlerReads.push(readAll(impl!)));
     press(s, 'bond.single');
     pressAt(s, canvasMiddle(s));
-    await delay(SETTLE_MS);
+    await changed(s, 0);
     expect(handlerReads.length, 1, 'onChanged events of the bond drawn');
     expectReads(handlerReads[handlerReads.length - 1], 'CC', 'read in the change handler');
     (s.dialog.root.querySelector('[name="button-OK"]') as HTMLElement).click();
-    await delay(SETTLE_MS);
+    await waitUntil(() => okReads !== null, 'the OK handler has not run');
     expectReads(okReads, 'CC', 'read in the OK handler');
-    await awaitCheck(() => impl!.isDetached, 'Crux has not been detached', 3000);
+    await waitUntil(() => impl!.isDetached, 'Crux has not been detached', 3000);
     expect(impl.root.querySelector('crux-sketch'), null, '<crux-sketch> left after detach');
     expect(document.body.contains(impl.root), false, 'the sketcher\'s root left in the page');
     expectReads(readAll(impl), 'CC', 'read after the dialog closed');
@@ -1120,7 +1168,7 @@ category('Crux sketcher', () => {
           s.host.setSmarts(text);
         else
           s.host.setMolFile(text);
-        await delay(SETTLE_MS);
+        await changed(s, 1);
         expect(s.changes(), 2, 'onChanged events, the opening\'s and the setter\'s');
         const el = cruxElement(s)!;
         if (setter === 'smarts') {
@@ -1146,7 +1194,7 @@ category('Crux sketcher', () => {
       const s = await openWith({smiles: 'CCO'});
       try {
         s.host.setMolecule(empty());
-        await delay(SETTLE_MS);
+        await changed(s, 1);
         expect(s.changes(), 2, 'onChanged events, the opening\'s and the clear\'s');
         expectEmptyCanvas(cruxElement(s));
         expect(s.host.isEmpty(), true, 'the host reads the sketcher as empty');
@@ -1159,9 +1207,9 @@ category('Crux sketcher', () => {
   test('an empty value clears a detached sketcher, with one change event', async () => {
     const s = await openWith({smiles: 'CCO'});
     s.dialog.close();
-    await awaitCheck(() => s.host.sketcher!.isDetached, 'Crux has not been detached', 3000);
+    await waitUntil(() => s.host.sketcher!.isDetached, 'Crux has not been detached', 3000);
     s.host.setMolecule('');
-    await delay(SETTLE_MS);
+    await changed(s, 1);
     expect(s.changes(), 2, 'onChanged events, the opening\'s and the clear\'s');
     expect(s.host.isEmpty(), true, 'the host reads the sketcher as empty');
   });
@@ -1170,7 +1218,7 @@ category('Crux sketcher', () => {
     const s = await openWith({smiles: 'CC(=O)O'});
     try {
       press(s, 'clear');
-      await delay(SETTLE_MS);
+      await changed(s, 1);
       const impl = s.host.sketcher!;
       const empty = (m: string) => m === '' || DG.chem.Sketcher.isEmptyMolfile(m);
       expect(impl.smiles, '', 'smiles');
@@ -1187,12 +1235,12 @@ category('Crux sketcher', () => {
     const s = await openWith({});
     try {
       s.host.setSmiles('C1=CC=CC=C1');
-      await delay(SETTLE_MS);
+      await changed(s, 0);
       expect(s.changes(), 1, 'onChanged events of the set');
       expect(s.host.sketcher!.smiles, 'C1=CC=CC=C1', 'the caller\'s string, exactly');
       press(s, 'bond.single');
       pressAt(s, atomAt(s, 0));
-      await delay(SETTLE_MS);
+      await changed(s, 1);
       expect(s.changes(), 2, 'onChanged events after the user\'s bond');
       expect(s.host.sketcher!.explicitMol ?? null, null, 'the caller\'s string, after the user\'s edit');
       expect(canonical(s.host.sketcher!.smiles), canonical('Cc1ccccc1'), 'Crux\'s own SMILES');
@@ -1207,12 +1255,12 @@ category('Crux sketcher', () => {
     try {
       const impl = first.host.sketcher!;
       first.dialog.close();
-      await awaitCheck(() => impl.isDetached, 'the first sketcher has not been detached', 3000);
+      await waitUntil(() => impl.isDetached, 'the first sketcher has not been detached', 3000);
       expect(impl.root.querySelector('crux-sketch'), null, '<crux-sketch> left after detach');
       expect(document.body.contains(impl.root), false, 'the first sketcher\'s root left in the page');
       expectReads(readAll(impl), 'CCO', 'the first sketcher, read after detach');
       press(second, 'clear');
-      await delay(SETTLE_MS);
+      await changed(second, 1);
       expect(second.changes(), 2, 'onChanged events of the second sketcher');
       expect(first.changes(), 1, 'onChanged events of the first sketcher');
     } finally {
@@ -1264,16 +1312,16 @@ category('Crux sketcher', () => {
         expect(sketcher.isRenderPending, false, 'isRenderPending once Crux is ready and shown');
         const before = el.renderCount;
         s.host.setSmiles('c1ccccc1');
-        await awaitCheck(() => rendered > 0, 'onRendered never fired after a write', 5000);
-        await awaitCheck(() => sketcher.isRenderPending === false, 'isRenderPending stayed true', 5000);
-        await delay(SETTLE_MS);
+        await waitUntil(() => rendered > 0, 'onRendered never fired after a write', 5000);
+        await waitUntil(() => sketcher.isRenderPending === false, 'isRenderPending stayed true', 5000);
+        await cruxSettled(sketcher);
         expect(rendered, el.renderCount - before, 'onRendered against the drawings Crux showed');
         expect(rendered, 1, 'onRendered after one write');
         expect(countWhenRendered, el.renderCount, 'Crux\'s render count when onRendered fired');
         expectDrawing(el, 'c1ccccc1');
         // reading the status draws nothing
         sketcher.getWidgetStatus();
-        await delay(SETTLE_MS);
+        await cruxSettled(sketcher);
         expect(rendered, 1, 'onRendered after reading the status');
       } finally {
         sub.unsubscribe();
@@ -1299,18 +1347,20 @@ category('Crux sketcher', () => {
       await new Promise((r) => requestAnimationFrame(() => r(null)));
       s.host.host.append(root);
       s.host.sketcher!.refresh();
-      await delay(SETTLE_MS);
+      await cruxSettled(s.host.sketcher!);
       expect(s.changes(), 1, 'onChanged events after refresh()');
       expect(s.host.sketcher!.smiles, 'C1=CC=CC=C1', 'the caller\'s string, exactly');
       insideCanvas('c1ccccc1');
       press(s, 'bond.single');
       pressAt(s, atomAt(s, 0));
       s.host.sketcher!.refresh();
-      await delay(SETTLE_MS);
+      await changed(s, 1);
       expect(s.changes(), 2, 'onChanged events after the user\'s bond and refresh()');
       insideCanvas('Cc1ccccc1');
       press(s, 'undo');
-      await delay(SETTLE_MS);
+      await waitUntil(() => cruxElement(s)!.positions.atoms.length === atomCount('c1ccccc1'),
+        'the undo has not taken the bond back');
+      await cruxSettled(s.host.sketcher!);
       expectDrawing(cruxElement(s), 'c1ccccc1');
     } finally {
       s.dialog.close();
@@ -1322,7 +1372,7 @@ category('Crux sketcher', () => {
     try {
       press(s, 'bond.single');
       pressAt(s, atomAt(s, 0));
-      await delay(SETTLE_MS);
+      await changed(s, 1);
       const impl = s.host.sketcher!;
       expect(impl.supportedExportFormats.join(', '), 'smiles, mol, molV3000, smarts', 'supportedExportFormats');
       const want = canonical('CCC(=O)O');
@@ -1340,7 +1390,7 @@ category('Crux sketcher', () => {
     const s = await openWith({smarts: SMARTS_LIST});
     try {
       expect(s.host.sketcher!.smiles, '', 'the SMILES of a query');
-      await awaitCheck(() => Array.from(document.querySelectorAll('.d4-balloon.warning .d4-balloon-content'))
+      await waitUntil(() => Array.from(document.querySelectorAll('.d4-balloon.warning .d4-balloon-content'))
         .some((b) => b.textContent?.includes('Smarts cannot be converted to smiles') ?? false),
       'no warning balloon', 3000);
     } finally {
@@ -1365,7 +1415,7 @@ category('Crux sketcher', () => {
       } catch (e) {
         threw = e;
       }
-      await delay(SETTLE_MS);
+      await cruxSettled(s.host.sketcher!);
       expect(threw, null, 'what the host\'s call threw');
       expect(s.dialog.root.querySelector('.chem-invalid-molecule-warning')?.textContent, 'Malformed molecule',
         'the host\'s warning');
@@ -1466,12 +1516,12 @@ category('Crux sketcher', () => {
         // from an empty canvas, all rows passing, so that the rows the query passes are its own
         impl.explicitMol = null;
         el.setValue('');
-        await awaitCheck(() => df.filter.trueCount === probes.length, `${tool}: the filter did not clear`, 10000);
+        await waitUntil(() => df.filter.trueCount === probes.length, `${tool}: the filter did not clear`, 10000);
         // as the user's drawing does, the canvas's own molblock is the query (no caller's string)
         impl.explicitMol = null;
         el.setValue(made, made.includes('|') || made.includes('\n') ? undefined : {format: 'smarts'});
         expect(sameQuery(el.smarts, intended), true, `${tool}: Crux's own SMARTS ${el.smarts} finds what ${intended} finds`);
-        await awaitCheck(() => rows(df.filter) === rows(want),
+        await waitUntil(() => rows(df.filter) === rows(want),
           `${tool}: the filter passes [${rows(df.filter)}], ${intended} matches [${rows(want)}]`, 15000);
       }
     } finally {
@@ -1495,7 +1545,7 @@ category('Crux sketcher', () => {
       for (const [choice, mark] of choices) {
         const before = s.changes();
         await chooseOnBond(s, 7, `atrop.${choice.toLowerCase()}`);
-        await delay(SETTLE_MS);
+        await changed(s, before);
         expect(s.changes() - before, 1, `onChanged events of ${choice}`);
         expect(wedges(el.molfile), `bond 16 ${mark} from 8`, `the marks of Crux's molfile after ${choice}`);
         expect(stereoLabels(el.molfile), `bond 7 (${choice})`, `RDKit.js's labels of Crux's molfile after ${choice}`);

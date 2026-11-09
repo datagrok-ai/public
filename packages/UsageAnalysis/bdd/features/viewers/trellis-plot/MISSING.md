@@ -6,34 +6,10 @@ added that day: `use-in-trellis`, `viewer-filter-and-menus`, `selectors-and-full
 `curves-table`, `click-gaps`, `scales-and-paging`, `pick-up-color-and-scroll`. Triaged with the lead on
 2026-10-11: what is not planned is under "Won't do", with the reason.
 
-## Resolved
-
-- **Reset Inner Range Sliders is Reset View** since core GROK-17986 (2026-10-08): the trellis's menu has one Reset
-  View that sets the category scrolls and every inner range slider back; `scales-and-paging` picks it (review of
-  2026-10-11).
-- **The table and the viewer's Filter formula are set in the context panel**, as a person does, in `curves-table`
-  and `viewer-filter-and-menus` (review of 2026-10-11).
-- **Cell clicks after On Click and Row Source were picked in the context panel** — not reproduced on 2026-10-11
-  (core master `6c4378c593`): after `click-gaps`'s context-panel sequence, On Click = Select and a click on
-  M | Asian select its 8 rows.
-- **Escape after the inner viewer changed — not a defect** (walked by hand on dev, 2026-10-07). Changed in the
-  viewer selector, as a person does, the current cell and the filter stay and Escape drops the filter. Only a
-  write of the Viewer Type property (API, or a step that sets the property) resets the current cell, after
-  which the Escape handler (`trellis_plot_core.dart`, `if (currentCellPos != null)`) has nothing to act on;
-  `click-gaps` changes the type through the selector.
-- **Whether a selector strip is visible** (2026-10-12): the `x selectors` / `y selectors` and `x/y selector <n>`
-  areas are reported only while the strip is on the page (`trellis_status.dart`, `htmlGetVisible`), not from the
-  layout's flag. `selectors-and-full-screen` claims Selectors step 5: Show X Selectors off, Auto Layout's shrink
-  and restore leave the X strip off, the property brings it back.
-- **What the full-screen dialog shows** (2026-10-12): the `full screen rows` reading is the row count of the inner
-  viewer the dialog shows, present only while it is open; `selectors-and-full-screen` claims 480, then its absence
-  after Escape.
-- **The rows of the table a trellis is bound to** (2026-10-12): the `table rows` reading; `curves-table` claims 30
-  after the switch to curves and 1000 after the switch back.
-
 ## Still open
 
-Nothing planned.
+- Show Empty Bars off gives every inner bar chart its own categories (public#3616): the trellis reports a cell's picture,
+  not its bars; needs a per-cell `bars of <cell>` reading from the inner bar chart's status.
 
 ## Won't do
 
@@ -56,6 +32,9 @@ Nothing planned.
   property; its slices are coloured by its Category, which `pick-up-color-and-scroll` sets.
 - **Multi Curve steps 5-7** (curve X/Y, paging, zoom slider inside the cells): the case itself leaves them manual
   for want of a recon of the curve viewer's controls.
+- **core#1057's edge cases** (a label click under a filter, the arrow keys after a table switch, Tiles Per Row 0, an
+  inner viewer type in another case, the leaks): xamgle `d4 | Viewers | Trellis plot | …` and `d4 | Viewers | Table swap |
+  Trellis plot…`; Tiles Per Row past its bounds: core#1200's clamp tests (`../MISSING.md`).
 
 ## Traps found
 

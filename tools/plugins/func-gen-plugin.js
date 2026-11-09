@@ -202,8 +202,8 @@ class FuncGeneratorPlugin {
       this._checkPackageFileForDecoratorsExport(packageFilePath);
       // Uncommment to add obvious import/export
       // this._writeToPackageFile(packageFilePath, genImports, genExports);
+      api({_: ['api']});
     });
-    api({_: ['api']});
   }
 
   _addNodeData(

@@ -5,7 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 
 import {before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
-import {Helm} from '../utils/helm-to-molfile/converter/helm';
+import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
+import {ISeqGraphInfoHelm} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 
 category('helm', () => {
   const tests = {
@@ -84,28 +85,29 @@ category('helm', () => {
     }
   };
 
+  // The converter's own HELM parser went with the JavaScript assembly (Bio on Crux): the same cases now check the
+  // splitter (hwe adapter) whose chains and connections feed the assembler
   for (const [testName, {src, tgt}] of Object.entries(tests)) {
     test(testName, async () => {
-      const resHelm = new Helm(src.helm);
+      const seqSS = splitterAsHelm(src.helm);
+      const gi = seqSS.graphInfo as ISeqGraphInfoHelm;
+      const starts = gi.disjointSeqStarts;
 
-      const simplePolymers = resHelm.simplePolymers
-        .map((sp) => sp.monomers.length);
+      const simplePolymers = wu.count(0).take(starts.length)
+        .map((i) => (i + 1 < starts.length ? starts[i + 1] : seqSS.length) - starts[i]).toArray();
       const totalMonomerCount = simplePolymers.reduce((a, b) => a + b, 0);
       expectArray(simplePolymers, tgt.simplePolymers);
+      expect(totalMonomerCount, seqSS.length);
 
-      const connections = resHelm.connectionList.getConnectionData()
-        .map((cdi) => {
+      const chainIds = gi.chainIds ?? [];
+      const connections = gi.connections
+        .map((c) => {
           return [
-            [cdi[0].polymerId, cdi[0].bond.monomerIdx + 1, `R${cdi[0].bond.rGroupId}`],
-            [cdi[1].polymerId, cdi[1].bond.monomerIdx + 1, `R${cdi[1].bond.rGroupId}`]];
+            [chainIds[c.seqIndex1], c.monomerIndex1 + 1, `R${c.rGroup1}`],
+            [chainIds[c.seqIndex2], c.monomerIndex2 + 1, `R${c.rGroup2}`]];
         });
 
       expectArray(connections, tgt.connections);
-
-      const bondedRGroups = wu.count(0).take(resHelm.bondedRGroupsMap.length)
-        .map((i) => resHelm.bondedRGroupsMap[i].length).toArray();
-      expect(totalMonomerCount, bondedRGroups.length);
-      // expectArray(bondedRGroups, tgt.bondedRGroups);
     });
   }
 });

@@ -5,10 +5,6 @@ import * as DG from 'datagrok-api/dg';
 export class DGMarkdown extends HTMLElement {
   private _content: string = '';
 
-  constructor() {
-    super();
-  }
-
   public set content(val: string) {
     this._content = val;
     this.render();

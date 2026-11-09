@@ -154,8 +154,9 @@ Server fixtures can use `{run}` in their names, for example `BDD-Share-Model-{ru
 unique per feature instance (including each worker and repeat) and stays the same across its
 scenarios. `{time}` is the feature instance's start in epoch milliseconds, for a name a login must
 accept (`[a-z0-9._-]`) and a reader can sort: the users a creation feature makes cannot be deleted,
-so they are named by it. String arguments, element phrases, data tables and doc strings resolve both
-at runtime;
+so they are named by it. `{login}` is the login of the account the run started as, for a name the product
+makes per user (the Sticky Meta tutorial's `molecule-tutorial-{login}`). String arguments, element phrases,
+data tables and doc strings resolve them at runtime;
 generated specs stay deterministic. Cleanup registered with `atFeatureEnd` attempts every callback
 and fails the run if any callback fails; a run that was killed never gets there, so the server
 steps that make or clear a `{run}`- or `{time}`-named fixture, the project save included, also
@@ -229,12 +230,25 @@ popup or menu over it) is audited by the harness, with no step in the feature:
   label off its editor, form editors out of their column. No screenshot is compared; a busy control
   (`aria-busy`) is waited for up to 2 s, then left out.
 - **errors** — the console errors and uncaught exceptions the scenario logged, before the reset too.
+- **balloons** — the error and warning balloons the scenario showed and no balloon step claimed (`an error
+  balloon containing … should have been shown` and the others take the balloon they read off the record).
+- **operability** — the engine's probe (`DG.U2.operability`, hit-testing on) over the view's u2 controls and
+  every u2 dialog, popup and menu, at the scenario's end and after every step that opened an overlay, so a
+  dialog the scenario opened and closed again is checked too: a control covered at its centre, taking no
+  pointer (`pointer-events: none` on it or above it), inert or off without a reason, an icon button named
+  unlike its tooltip, an option taller than its rail. A tooltip, a balloon or a layer opened later lying
+  over a control is not a finding; an older layer over a newer one is.
 - **leaks** — after the reset has closed the view: what u2 created since the scenario started and
   still holds live — scopes, timers, global listeners, each with its creation stack (`DG.U2.debug`).
   u2 tracks them only in the pages of a project that audits leaks (`__U2_DEBUG__`, set before the
   platform loads); a scenario that starts on a page not yet in the shell has no baseline and no check.
 
-A `@journey` audits layout and errors as each scenario ends and leaks once, at the end of the test;
+Every page runs u2 strict (`__U2_STRICT__`, set before the platform loads): a misuse u2 detects — a control
+built with no owner, a field that takes a control's own member — throws a `U2UsageError` naming the fix, which
+breaks the step or lands on the console-error floor. `U2_STRICT=report` logs each one instead.
+
+Balloons and operability run also where only a step showed u2 (a platform view with a u2 dialog).
+A `@journey` audits all but leaks as each scenario ends and leaks once, at the end of the test;
 a test with a `@known-failure` scenario skips its end-of-test audits, leaks included. The modes —
 `fail`, `report` (printed and annotated on the test as `bdd-audit`) or `off` — and the allowlists
 are the project's, in `bdd.config.json`:
@@ -245,16 +259,21 @@ are the project's, in `bdd.config.json`:
    "allow": {
      "layout": [{"rule": "overlap", "selector": ".my-pkg-slider", "reason": "the thumb overlaps the track on purpose"}],
      "errors": [{"message": "^Unable to get project asset", "url": "my-pkg", "reason": "the stand has no Chem"}],
+     "balloons": [{"message": "^Error adding filter", "reason": "the template's filters wait for their columns"}],
+     "operability": [{"rule": "covered", "selector": ".my-pkg-badge", "reason": "the badge sits on the icon on purpose"}],
      "leaks": [{"label": "interval timer", "stack": "pollQueue", "reason": "the queue poll outlives the view by design"}]}}}
 ```
 
-Without the block, layout and errors are `report` and leaks `off`; `BDD_AUDIT=<mode>` sets all three
-for a run, `BDD_AUDIT_LAYOUT`, `BDD_AUDIT_ERRORS` and `BDD_AUDIT_LEAKS` one each. The suite runs in a
+Without the block, every audit is `fail` but leaks, `off` (the library accepts the platform's own grid ribbon icons, off
+with no reason, until the platform says why); `BDD_AUDIT=<mode>` sets all of them
+for a run, `BDD_AUDIT_LAYOUT`, `BDD_AUDIT_ERRORS`, `BDD_AUDIT_BALLOONS`, `BDD_AUDIT_OPERABILITY` and
+`BDD_AUDIT_LEAKS` one each. The suite runs in a
 1920×1080 window; `BDD_VIEWPORT=<w>x<h>` (say `1280x800`) runs it at another size, so the layout audit
 checks every scenario's end state on a smaller screen. Every allowlist entry
-says why the finding is no defect (`reason`, required): a layout entry drops the findings of its rule
-whose element is inside `selector`; `message`, `url`, `label` and `stack` are regular expressions, a
-leak's label being the scope's label, `<kind> timer` or `<target> <type> listener`.
+says why the finding is no defect (`reason`, required): a layout or operability entry drops the findings of
+its rule whose element is inside `selector`; `message`, `url`, `label` and `stack` are regular expressions (a
+balloon's `message` over its text without markup), a leak's label being the scope's label, `<kind> timer` or
+`<target> <type> listener`.
 `node tool/audit-summary.mjs <report.json> [memory.jsonl …]` reads a run's report: which audits ran,
 the findings by rule, by feature (leaked scopes, timers and listeners apart) and by scenario, the most
 frequent ones, and with `BDD_MEMORY_LOG` files each worker's heap and renderer from its first feature
@@ -407,6 +426,8 @@ The u2 steps answer from the status alone and fail on an element that is not a u
 | `{element} should have the selection {string}`, `… should have nothing selected` | the selected items as a set, a comma-separated list of keys or labels |
 | `{element} should be on the {string} step`, `{element} should show the {string} tab` | the current step or tab, by key, else title |
 | `{element} should report the value {string}` | the raw value where the shown text formats it: as JSON when the argument parses, else as text |
+| `{element} should be disabled because {string}` | off, and the reason it gives (`disabledReason`; outside u2 its `aria-description`, else its `title`), whitespace aside |
+| `every control in {element} should be operable` | the operability audit ("Audits", above) over the element finds nothing; an element with no control fails |
 
 The geometry claims poll the box of the one visible match of each phrase, allow 1 px and fail with
 both boxes in one sentence:

@@ -1,5 +1,6 @@
 import {batch, computed, signal, untracked, ReadonlySignal, Signal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
+import {textWidth} from '../../core/text.js';
 import {Input, LiveOption} from '../../core/input-base.js';
 import type {IItemsState} from '../../core/widget-like.js';
 
@@ -23,12 +24,18 @@ export interface FormOptions {
    * else, or rows with one-letter captions (`R1`) that want a narrow column. */
   labelWidth?: number;
   /** One label column for several forms — the tabs of an editor, a header form over a body form: each
-   * measures its own captions and all of them take the widest, so switching tabs moves no input. */
-  labelColumn?: LabelColumn;
+   * measures its own captions and all of them take the widest, so switching tabs moves no input. Without it a
+   * form joins the column of the `Page` around it; `false` keeps a column of its own. */
+  labelColumn?: LabelColumn | false;
   /** Values read as text: an editor's underline shows while it is hovered, focused, empty or wrong,
    * not at rest — for an inspector or a docked editor, where a column of rules is noise. Any other
    * host gets the same look from the `u2-quiet` class. */
   quiet?: boolean;
+  /** The widest the form gets, in px: 700 by default, as wide as the page in a `Page` given a `maxWidth`
+   * (`--u2-form-max-width`). */
+  maxWidth?: number;
+  /** `'compact'`: 24px rows and the tighter spacing of the compact token set; the platform's 28px by default. */
+  density?: 'compact' | 'normal';
 }
 
 export interface FormColumnsOptions {
@@ -46,21 +53,39 @@ export class LabelColumn {
   /** The column's width in px; 0 until a member measured. */
   readonly width: ReadonlySignal<number>;
   private readonly _width = signal(0);
-  private readonly _members = new Map<Form, number>();
+  private readonly _members = new Map<object, number>();
 
   constructor() {
     this.width = this._width;
   }
 
-  /** @internal A member's own widest caption. */
-  report(form: Form, width: number): void {
-    this._members.set(form, width);
+  private static readonly _shared = new WeakMap<Element, LabelColumn>();
+
+  /** The forms under `host` that have no column of their own join `column` — what a `Page` does for its forms. */
+  static share(host: Element, column: LabelColumn): void {
+    LabelColumn._shared.set(host, column);
+  }
+
+  /** The column shared by the nearest host around `el`, if any. */
+  static around(el: Element): LabelColumn | undefined {
+    for (let at: Element | null = el.parentElement; at !== null; at = at.parentElement) {
+      const column = LabelColumn._shared.get(at);
+      if (column !== undefined)
+        return column;
+    }
+    return undefined;
+  }
+
+  /** A member's own widest caption: a form's, or the measured labels of a platform form laid out beside the forms
+   * (the member is its key). */
+  report(member: object, width: number): void {
+    this._members.set(member, width);
     this._update();
   }
 
-  /** @internal A disposed member leaves. */
-  leave(form: Form): void {
-    this._members.delete(form);
+  /** A member gone (a disposed form, a platform form taken down) leaves. */
+  leave(member: object): void {
+    this._members.delete(member);
     this._update();
   }
 
@@ -76,7 +101,6 @@ export class LabelColumn {
 const LABELS = '.u2-input-label, .ui-input-label';
 
 const _warnedUnkeyed = new Set<string>();
-let _measure: CanvasRenderingContext2D | null | undefined;
 
 /** Vertical input layout with an aligned label column and aggregated validity. The form does not
  * own the inputs it lays out: each one is already adopted by the scope that created it. */
@@ -88,15 +112,21 @@ export class Form extends Control {
   /** {@link validity} with the input's caption: "Name: Value can't be empty" — what a disabled OK or
    * Save says. */
   readonly problem: ReadonlySignal<string | null>;
+  /** {@link error} with the input's caption: what a status line beside Save says in red — the verdict the user
+   * sees, of the field they left, not the first field still waiting for a touch. */
+  readonly shownProblem: ReadonlySignal<string | null>;
 
   private readonly _rows = document.createElement('div');
   private readonly _inputs: Input<any>[] = [];
   private readonly _first = signal<ReadonlySignal<string | null>>(computed(() => null));
   private readonly _firstShown = signal<ReadonlySignal<string | null>>(computed(() => null));
   private readonly _firstNamed = signal<ReadonlySignal<string | null>>(computed(() => null));
+  private readonly _firstShownNamed = signal<ReadonlySignal<string | null>>(computed(() => null));
   private readonly _layout: FormLayout;
   private readonly _labelWidth: number | undefined;
-  private readonly _column: LabelColumn | undefined;
+  private _column: LabelColumn | undefined;
+  // neither a column given nor `labelColumn: false`: joins a page's at its first alignment
+  private _joins: boolean;
   private _buttons: HTMLElement | undefined;
   private _frame = 0;
   private _queued = false;
@@ -112,6 +142,7 @@ export class Form extends Control {
     this.validity = computed(() => this._first.value.value);
     this.error = computed(() => this._firstShown.value.value);
     this.problem = computed(() => this._firstNamed.value.value);
+    this.shownProblem = computed(() => this._firstShownNamed.value.value);
 
     this.root.classList.add('u2-form');
     this.root.dataset.u2 = 'form';
@@ -119,16 +150,13 @@ export class Form extends Control {
     this._labelWidth = options.labelWidth;
     if (this._labelWidth !== undefined)
       this.root.style.setProperty('--u2-form-label-width', `${this._labelWidth}px`);
-    const column = this._column = options.labelColumn;
-    if (column !== undefined) {
-      this.own(() => column.leave(this));
-      // a wider caption elsewhere moves this form's editors too, and may tip it into the tall layout
-      this.effect(() => {
-        const width = column.width.value;
-        if (width > 0)
-          untracked(() => this._applyLabelWidth(width));
-      });
-    }
+    this._joins = options.labelColumn === undefined;
+    if (options.labelColumn)
+      this._join(options.labelColumn);
+    if (options.maxWidth !== undefined)
+      this.root.style.setProperty('--u2-form-max-width', `${options.maxWidth}px`);
+    if (options.density === 'compact')
+      this.root.dataset.dgDensity = 'compact';
     // the auto form's roomy state is wide, but its editors keep the platform widths ui.form gives
     if (this._layout === 'auto')
       this.root.classList.add('u2-form-auto');
@@ -169,7 +197,7 @@ export class Form extends Control {
 
   /** `host` lays the row out elsewhere — a Section body, say — while the input still joins the
    * form's label column, validity and Enter navigation. */
-  add(input: Input<any>, host?: HTMLElement): Form {
+  add(input: Input<any>, host?: HTMLElement): this {
     // dev-mode nudge (once per input kind): a keyless input has no getValues entry and no
     // automation id — nothing can address it
     if (input.name === undefined) {
@@ -194,7 +222,7 @@ export class Form extends Control {
 
   /** Takes `input` out of the form — its row, the label column, the validity and the Enter order.
    * The input stays its builder's to dispose; a disposed input leaves on its own. */
-  remove(input: Input<any>): Form {
+  remove(input: Input<any>): this {
     const at = this._inputs.indexOf(input);
     if (at < 0)
       return this;
@@ -207,7 +235,7 @@ export class Form extends Control {
     return this;
   }
 
-  addAll(inputs: Input<any>[]): Form {
+  addAll(inputs: Input<any>[]): this {
     for (const input of inputs)
       this.add(input);
     return this;
@@ -217,7 +245,7 @@ export class Form extends Control {
    * Text. The inputs join the form's validity, values and Enter order; their own captions sit beside
    * their editors (after them with `captionsAfter`, as a checklist's do) and size no column. `host`
    * places the row elsewhere, as {@link add} does. */
-  addGroup(caption: string, inputs: Input<any>[], options?: {captionsAfter?: boolean, host?: HTMLElement}): Form {
+  addGroup(caption: string, inputs: Input<any>[], options?: {captionsAfter?: boolean, host?: HTMLElement}): this {
     const label = document.createElement('span');
     label.className = 'u2-input-label u2-form-group-label';
     label.id = `${this.rootId}-group-${++Form._groups}`;
@@ -243,7 +271,7 @@ export class Form extends Control {
    * than squeezing them. Every column keeps the form's label column, and an editor fills its column, so
    * captions and editors line up down the rows and across them. The inputs join the form as
    * {@link add}'s do. */
-  addColumns(inputs: Input<any>[], options?: FormColumnsOptions): Form {
+  addColumns(inputs: Input<any>[], options?: FormColumnsOptions): this {
     const grid = document.createElement('div');
     grid.className = 'u2-form-columns';
     grid.dataset.u2Part = 'columns';
@@ -259,7 +287,7 @@ export class Form extends Control {
 
   /** A non-input row — a button, a heading, a plain element — kept in document order with the
    * input rows instead of trailing the form. */
-  addElement(el: HTMLElement): Form {
+  addElement(el: HTMLElement): this {
     this._rows.append(el);
     return this;
   }
@@ -269,7 +297,7 @@ export class Form extends Control {
    * form. `host` puts the row elsewhere — a footer pinned under a form that scrolls — and its buttons
    * keep the platform's form-button look there. */
   addButtons(build: (row: HTMLElement) => void, options?: {align?: 'end' | 'editors' | 'start',
-    host?: HTMLElement}): Form {
+    host?: HTMLElement}): this {
     if (!this._buttons) {
       this._buttons = document.createElement('div');
       this._buttons.className = 'u2-form-buttons';
@@ -314,7 +342,7 @@ export class Form extends Control {
 
   getItems(opts?: {all?: boolean}): IItemsState {
     const list = this._inputs.map((input, index) => ({key: input.name ?? `#${index}`, label: input.label, index,
-      ...input.validity.peek() !== null ? {invalid: true} : {}, ...input.enabled ? {} : {disabled: true},
+      ...input.validity.peek() !== null ? {invalid: true} : {}, ...input.disabled === null ? {} : {disabled: true},
       rendered: input.root.isConnected}));
     return Input.itemsState(list, opts?.all);
   }
@@ -323,7 +351,7 @@ export class Form extends Control {
     const values: Record<string, unknown> = {};
     for (const input of this._inputs) {
       if (input.name)
-        values[input.name] = input.value.peek();
+        values[input.name] = input.peek();
     }
     return values;
   }
@@ -332,7 +360,7 @@ export class Form extends Control {
     batch(() => {
       for (const input of this._inputs) {
         if (input.name && input.name in values)
-          input.value.value = values[input.name];
+          input.value = values[input.name];
       }
     });
   }
@@ -347,13 +375,13 @@ export class Form extends Control {
       }
       return null;
     });
+    const named = (input: Input<any>, message: string | null) =>
+      message !== null && input.label ? `${input.label}: ${message}` : message;
     batch(() => {
       this._first.value = first((input) => input.validity.value);
       this._firstShown.value = first((input) => input.error.value);
-      this._firstNamed.value = first((input) => {
-        const message = input.validity.value;
-        return message !== null && input.label ? `${input.label}: ${message}` : message;
-      });
+      this._firstNamed.value = first((input) => named(input, input.validity.value));
+      this._firstShownNamed.value = first((input) => named(input, input.error.value));
     });
   }
 
@@ -398,12 +426,28 @@ export class Form extends Control {
     this._alignLabels();
   }
 
+  private _join(column: LabelColumn): void {
+    this._column = column;
+    this.own(() => column.leave(this));
+    // a wider caption elsewhere moves this form's editors too, and may tip it into the tall layout
+    this.effect(() => {
+      const width = column.width.value;
+      if (width > 0)
+        untracked(() => this._applyLabelWidth(width));
+    });
+  }
+
   private _alignLabels(): void {
     if (this._layout === 'tall' || this.scope.isDisposed)
       return;
     if (this._labelWidth !== undefined) {
       this._applyLabelWidth(this._labelWidth);
       return;
+    }
+    if (this._joins && this._column === undefined) {
+      const shared = LabelColumn.around(this.root);
+      if (shared !== undefined)
+        this._join(shared);
     }
     const width = this._measureLabels();
     this._column?.report(this, width);
@@ -475,15 +519,14 @@ export class Form extends Control {
     const text = label.textContent ?? '';
     if (text === '' || !label.isConnected)
       return 0;
-    _measure ??= document.createElement('canvas').getContext?.('2d') ?? null;
-    if (_measure === null)
-      return 0;
     const style = getComputedStyle(label);
-    _measure.font = style.font || `${style.fontSize} ${style.fontFamily}`;
-    let width = _measure.measureText(text).width + (parseFloat(style.paddingLeft) || 0) +
-      (parseFloat(style.paddingRight) || 0);
+    const font = style.font || `${style.fontSize} ${style.fontFamily}`;
+    const measured = textWidth(text, font);
+    if (measured === 0)
+      return 0;
+    let width = measured + (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
     if (label.parentElement?.classList.contains('u2-input-required'))
-      width += _measure.measureText('*').width + (parseFloat(getComputedStyle(label, '::after').marginLeft) || 0);
+      width += textWidth('*', font) + (parseFloat(getComputedStyle(label, '::after').marginLeft) || 0);
     return Math.ceil(width);
   }
 

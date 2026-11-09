@@ -7,16 +7,18 @@ import * as rxjs from 'rxjs';
 
 import {CombinedAISearchAssistant} from './search/combined-search';
 import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEvent,
-  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey, SHORTCUT_HINT,
-  copyToClipboard} from '../utils';
+  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, tryMarkdown, plainTextEl, isEnterKey,
+  SHORTCUT_HINT, copyToClipboard} from '../utils';
 import {AIPanel, StreamingPanel} from './panel';
 import {AIWindowManager} from './ai-window';
-import {ClaudeRuntimeClient, ClaudeModel, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
+import {ClaudeRuntimeClient, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
 import {executeSingleBlock, runVerification, renderEntityRefList} from '../claude/exec-blocks';
 import {sendChatTurn} from '../claude/queue-task';
 import {UsageLimiter} from './usage-limiter';
 import {viewFunctionTools, NO_VIEW_TOOLS} from './view-tools';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
+import {AiFeature} from '../claude/ai-feature';
+import {contentLoggingNotice} from '../claude/turn-log';
 
 interface ExecutionPlan {
   plan: string[];
@@ -43,7 +45,7 @@ const executionPlanSchema = {
 const MAX_ACTIVITY_LINES = 5;
 
 interface StreamingOpts {
-  sessionPrefix?: string;
+  sessionPrefix: AiFeature;
   sessionId?: string;
   outputSchema?: object;
   onFinal: (evt: FinalEvent, host: HTMLElement) => void | Promise<void>;
@@ -55,11 +57,12 @@ export const RENDERED_EVENT = 'grokky-rendered';
 async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.Widget> {
   const client = ClaudeRuntimeClient.getInstance();
   await client.ensureConnected();
-  const sessionId = opts.sessionId ?? `${opts.sessionPrefix ?? 'stream'}-${crypto.randomUUID()}`;
+  const sessionId = opts.sessionId ?? `${opts.sessionPrefix}-${crypto.randomUUID()}`;
 
   const activityHost = ui.divV([], 'grokky-stream-activity');
   const contentHost = ui.div([], 'grokky-stream-content');
-  const container = ui.divV([activityHost, contentHost], 'grokky-stream');
+  const notice = opts.sessionId ? null : contentLoggingNotice();
+  const container = ui.divV([activityHost, contentHost, ...(notice ? [notice] : [])], 'grokky-stream');
 
   let onFirstEvent: () => void = () => {};
   const firstEvent = new Promise<void>((res) => { onFirstEvent = res; });
@@ -110,14 +113,14 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
     stopListening();
   });
 
-  client.send(sessionId, prompt, {model: ClaudeModel.Sonnet, ...(opts.outputSchema ? {outputSchema: opts.outputSchema} : {})});
+  client.send(sessionId, prompt, {logPrompt: prompt, outputSchema: opts.outputSchema});
   return widget;
 }
 
 export async function smartExecution(prompt: string, sessionId?: string): Promise<DG.Widget> {
   return streamingWidget(prompt, {
     sessionId,
-    sessionPrefix: 'execute',
+    sessionPrefix: AiFeature.Execute,
     outputSchema: executionPlanSchema,
     onFinal: async (evt, host) => {
       const result = evt.structured_output as ExecutionPlan | undefined;
@@ -155,9 +158,10 @@ export async function smartExecution(prompt: string, sessionId?: string): Promis
 export async function askWiki(question: string, sessionId?: string): Promise<DG.Widget> {
   return streamingWidget(question, {
     sessionId,
-    sessionPrefix: 'help',
+    sessionPrefix: AiFeature.Help,
     onFinal: (evt, host) => {
-      const md = ui.markdown(evt.content || '');
+      const text = evt.content || '';
+      const md = tryMarkdown(text) ?? plainTextEl(text);
       md.style.userSelect = 'text';
       host.appendChild(md);
     },
@@ -252,7 +256,7 @@ export async function runPromptWithLifecycle(
     prompt = prompt.slice(1); // !!cmd → !cmd, falls through to normal pipeline
   else if (prompt.startsWith('!')) {
     const command = prompt.slice(1).trimStart();
-    if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, command))
+    if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory))
       return;
     await runClaudeStreaming(panel, command, view, 'bash');
     return;
@@ -281,7 +285,7 @@ export async function runPromptWithLifecycle(
       return;
     }
   }
-  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory, prompt)) {
+  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory)) {
     session?.endSession();
     return;
   }
@@ -406,34 +410,38 @@ async function streamOnce(
 
 
       forSession(client.onFinal, async (evt) => {
-        panel.cancelInputRequest();
-        if (revisingTimer != null) {
-          clearTimeout(revisingTimer);
-          revisingTimer = null;
+        // Always end the turn: otherwise the panel stays busy and the chat is not saved.
+        try {
+          panel.cancelInputRequest();
+          if (revisingTimer != null) {
+            clearTimeout(revisingTimer);
+            revisingTimer = null;
+          }
+          if (evt.revision === 'replaced') {
+            // The revision supersedes the visible answer — render it in place of the original.
+            accumulated = evt.content;
+            segmentStart = 0;
+            toolStatus = '';
+          } else if (evt.revision === 'kept')
+            toolStatus = ''; // original answer stands; just drop the Revising status
+          const fullContent = accumulated || evt.content;
+          const segmentContent = accumulated ? accumulated.slice(segmentStart) : fullContent;
+          chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
+          const finalExecCodes = evt.revision === 'kept' && preRevisionExecCodes ? preRevisionExecCodes : execCodes;
+          await panel.finalizeStreaming(segmentContent, finalExecCodes, view);
+          if (evt.unverified) {
+            const warn = 'Not verified — the assistant could not confirm this action took effect.';
+            panel.appendStreamedElement(ui.divText(warn, 'grokky-unverified-warning'));
+          }
+        } finally {
+          cleanup();
+          resolve();
         }
-        if (evt.revision === 'replaced') {
-          // The revision supersedes the visible answer — render it in place of the original.
-          accumulated = evt.content;
-          segmentStart = 0;
-          toolStatus = '';
-        } else if (evt.revision === 'kept')
-          toolStatus = ''; // original answer stands; just drop the Revising status
-        const fullContent = accumulated || evt.content;
-        const segmentContent = accumulated ? accumulated.slice(segmentStart) : fullContent;
-        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
-        const finalExecCodes = evt.revision === 'kept' && preRevisionExecCodes ? preRevisionExecCodes : execCodes;
-        await panel.finalizeStreaming(segmentContent, finalExecCodes, view);
-        if (evt.unverified) {
-          const warn = 'Not verified — the assistant could not confirm this action took effect.';
-          panel.appendStreamedElement(ui.divText(warn, 'grokky-unverified-warning'));
-        }
-        cleanup();
-        resolve();
       });
 
       forSession(client.onError, (evt) => {
         panel.cancelInputRequest();
-        endWithError(`Claude: ${evt.message}`);
+        endWithError(`AI assistant: ${evt.message}`);
       });
 
       forSession(client.onAborted, async () => {
@@ -528,7 +536,7 @@ async function streamOnce(
         }
       });
 
-      subs.push(client.onClose.subscribe(() => endWithError('Claude: connection lost')));
+      subs.push(client.onClose.subscribe(() => endWithError('AI assistant: connection lost')));
 
       subs.push(getAIAbortSubscription().subscribe(() => {
         client.abort(sessionId);
@@ -541,16 +549,17 @@ async function streamOnce(
         const options = {
           ...(resolvedMode ? {systemPromptMode: resolvedMode} : {}),
           ...(viewTools.defs.length ? {clientTools: viewTools.defs} : {}),
+          logPrompt: userPrompt,
         };
         // Queued-task admission (queue-task.ts): the queued call only holds the turn's
         // admission slot; the turn itself streams over this socket as usual.
         sendChatTurn(client, sessionId, message, options)
-          .catch((e: any) => endWithError(`Claude: ${e?.message ?? e}`));
+          .catch((e: any) => endWithError(`AI assistant: ${e?.message ?? e}`));
       };
 
       forSession(client.onSessionReset, () => {
         if (resentAfterReset)
-          return endWithError('Claude: the session was lost and could not be restored');
+          return endWithError('AI assistant: the session was lost and could not be restored');
         resentAfterReset = true;
         sendPrompt();
       });
@@ -558,7 +567,7 @@ async function streamOnce(
       sendPrompt();
     } catch (e: any) {
       panel.clearStreaming();
-      grok.shell.error(`Claude runtime: ${e.message}`);
+      grok.shell.error(`AI runtime: ${e.message}`);
       console.error('Claude runtime error:', e);
       cleanup();
       resolve();

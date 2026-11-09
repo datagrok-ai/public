@@ -5,6 +5,7 @@ test/container/
 test/fixtures/
 test/integration/
 test/live/
+test/agent-credentials.test.js
 test/agent-leak.test.js
 test/agent-pool.test.js
 test/agent-spares-cap.test.js

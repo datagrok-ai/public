@@ -1,10 +1,13 @@
-import {before, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import {uiSettled, waitUntil} from '@datagrok-libraries/test/src/test';
+import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {createStudyWithConfig, readClinicalData, studies} from '../utils/app-utils';
 import {CONFIGURATION_VIEW_NAME, MATRIX_TABLE_VIEW_NAME, MEASUREMENT_PROFILE_TABLE_VIEW_NAME,
   MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME, OBSERVATION_TIMELINES_VIEW_NAME,
   SUMMARY_VIEW_NAME, VALIDATION_VIEW_NAME} from '../constants/view-names-constants';
 import {calculateLBBaselineColumns, createAllMeasurementsDf} from '../data-preparation/data-preparation';
+import {COL_HAS_ERRORS_POSTFIX, ERRORS_POSTFIX, VIOLATED_RULES_COL} from '../constants/columns-constants';
 import { _package } from '../package-test';
 import { funcs } from '../package-api';
 
@@ -65,50 +68,57 @@ category('preclinicalCase views and functions', () => {
 
   // Table views kick off async work in onTableViewAdded (dock, setOrder, hideValidationColumns).
   // The next test's addPreview tears the previous view down before that work finishes, which
-  // triggers post-test errors against a disposed grid/dockManager. A short settle here lets
-  // each view's deferred work drain before the framework moves on.
-  const VIEW_SETTLE_MS = 2000;
+  // triggers post-test errors against a disposed grid/dockManager: let it land first.
+  async function viewSettled(view: DG.ViewBase): Promise<void> {
+    if (view instanceof DG.TableView) {
+      const isValidationCol = (name: string) =>
+        name === VIOLATED_RULES_COL || name.endsWith(COL_HAS_ERRORS_POSTFIX) || name.endsWith(ERRORS_POSTFIX);
+      await waitUntil(() => view.grid != null && view.dataFrame.columns.names().filter(isValidationCol)
+        .every((name) => view.grid.col(name)?.visible === false), `${view.name}: validation columns are still shown`);
+    }
+    await uiSettled(view.name);
+  }
 
   test('view: Summary', async () => {
     const view = await funcs.openPreclinicalCaseView(TEST_STUDY_ID, SUMMARY_VIEW_NAME);
     expect(view != null, true);
-    await delay(VIEW_SETTLE_MS);
+    await viewSettled(view);
   });
 
   test('view: Validation', async () => {
     const view = await funcs.openPreclinicalCaseView(TEST_STUDY_ID, VALIDATION_VIEW_NAME);
     expect(view != null, true);
-    await delay(VIEW_SETTLE_MS);
+    await viewSettled(view);
   });
 
   test('view: Matrix', async () => {
     const view = await funcs.openPreclinicalCaseView(TEST_STUDY_ID, MATRIX_TABLE_VIEW_NAME);
     expect(view != null, true);
-    await delay(VIEW_SETTLE_MS);
+    await viewSettled(view);
   });
 
   test('view: Measurements', async () => {
     const view = await funcs.openPreclinicalCaseView(TEST_STUDY_ID, MEASUREMENT_PROFILE_TABLE_VIEW_NAME);
     expect(view != null, true);
-    await delay(VIEW_SETTLE_MS);
+    await viewSettled(view);
   });
 
   test('view: Microscopic Findings', async () => {
     const view = await funcs.openPreclinicalCaseView(TEST_STUDY_ID, MICROSCOPIC_FINDINGS_TABLE_VIEW_NAME);
     expect(view != null, true);
-    await delay(VIEW_SETTLE_MS);
+    await viewSettled(view);
   });
 
   test('view: Observation timelines', async () => {
     const view = await funcs.openPreclinicalCaseView(TEST_STUDY_ID, OBSERVATION_TIMELINES_VIEW_NAME);
     expect(view != null, true);
-    await delay(VIEW_SETTLE_MS);
+    await viewSettled(view);
   });
 
   test('view: Configuration', async () => {
     const view = await funcs.openPreclinicalCaseView(TEST_STUDY_ID, CONFIGURATION_VIEW_NAME);
     expect(view != null, true);
-    await delay(VIEW_SETTLE_MS);
+    await viewSettled(view);
   });
 
   test('calculateLBBaselineColumns adds baseline / change / pct columns', async () => {

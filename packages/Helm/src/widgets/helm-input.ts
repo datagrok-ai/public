@@ -1,5 +1,4 @@
 import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
@@ -9,7 +8,6 @@ import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library
 import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmAtom, HelmMol, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {SeqValueBase} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
-import {MonomerNumberingTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {defaultErrorHandler} from '../utils/err-info';
@@ -86,9 +84,6 @@ export class HelmInput extends HelmInputBase {
   readonly viewer: IHelmWebEditor;
   readonly editHintDiv: HTMLDivElement;
 
-  helmString: string = '';
-  helmSelection: number[];
-
   private subs: Unsubscribable[];
 
   protected constructor(
@@ -96,7 +91,6 @@ export class HelmInput extends HelmInputBase {
     private readonly monomerLib: IMonomerLibBase,
     name?: string,
     public readonly options?: IHelmInputInitOptions,
-    private readonly logger = _package.logger,
   ) {
     super();
 
@@ -135,7 +129,6 @@ export class HelmInput extends HelmInputBase {
     this.subs = [];
     this.subs.push(this.monomerLib.onChanged
       .subscribe(() => this.viewer.editor.redraw()));
-    /* eslint-disable rxjs/no-ignored-subscription */
     fromEvent<MouseEvent>(this.viewer.host, 'mousemove')
       .subscribe(this.viewerOnMouseMove.bind(this));
     fromEvent<MouseEvent>(this.viewer.host, 'mouseenter')
@@ -144,7 +137,6 @@ export class HelmInput extends HelmInputBase {
       .subscribe(this.viewerOnMouseLeave.bind(this));
     fromEvent<MouseEvent>(this.viewer.host, 'click')
       .subscribe(this.viewerOnClick.bind(this));
-    /* eslint-enable rxjs/no-ignored-subscription */
 
     // Drive the editor canvas from the host element's OWN measured box so it
     // works no matter how the consumer mounts the input — via `root` (form
@@ -203,8 +195,6 @@ export class HelmInput extends HelmInputBase {
   }
 
   private viewerOnMouseMove(event: MouseEvent): void {
-    const logPrefix = `${this.toLog()}.viewerOnMouseMove()`;
-
     const argsX = event.offsetX;
     const argsY = event.offsetY;
     const mol = this.viewer.editor.m;
@@ -219,12 +209,9 @@ export class HelmInput extends HelmInputBase {
       event.stopPropagation();
     } else
       ui.tooltip.hide();
-
-    //this.logger.debug(`${logPrefix}, x = ${event.x}, y = ${event.y}`);
   }
 
   private viewerOnMouseEnter(_event: MouseEvent): void {
-    //this.logger.debug(`${this.toLog()}.viewerOnMouseEnter()`);
     if (this.options?.editable != false)
       this.showEditHint();
   }
@@ -232,7 +219,6 @@ export class HelmInput extends HelmInputBase {
   private viewerOnMouseLeave(event: MouseEvent): void {
     if (this.editHintDiv.contains(event.relatedTarget as Node)) return; // prevents flickering
 
-    //this.logger.debug(`${this.toLog()}.viewerOnMouseLeave()`);
     if (this.options?.editable != false)
       this.hideEditHint();
   }
@@ -255,6 +241,7 @@ export class HelmInput extends HelmInputBase {
     const webEditorApp = this.helmHelper.createWebEditorApp(webEditorHost, this.viewer.editor.getHelm());
 
     const destroyEditorDialog = () => {
+      webEditorApp.destroy();
       $(webEditorHost).empty();
     };
 
@@ -263,32 +250,26 @@ export class HelmInput extends HelmInputBase {
       .add(webEditorHost!)
       .onOK(() => {
         try {
-          const webEditorValue = webEditorApp!.canvas!.getHelm(true)
-            .replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
+          const webEditorValue = webEditorApp!.canvas!.getHelm(true);
           // Through setStringValue, not just editor.setHelm — updating only the drawing
           // left `value`/`stringValue` stale (a Flow Helm Input read back an empty value).
           this.setStringValue(webEditorValue);
-          this.helmString = webEditorValue;
 
           const selection = webEditorApp!.canvas!.helm!.jsd.m.atoms;
-          this.helmSelection = [];
-          for (let i = 0; i < selection.length; i++) {
-            if (selection[i].selected)
-              this.helmSelection.push(i);
-
+          for (let i = 0; i < selection.length; i++)
             this.viewer.editor.m.atoms[i].highlighted = selection[i].selected;
-          }
           this.viewer.editor.redraw();
           this.fireChanged();
         } catch (err: any) {
           defaultErrorHandler(err);
-        } finally {
-          destroyEditorDialog();
         }
       })
-      .onCancel(() => {
-        destroyEditorDialog();
-      })
       .show({modal: true, fullScreen: true});
+    // OK, Cancel and Escape close the dialog, after its OK handler: the editor goes with it (its document listeners,
+    // and the monomer that follows the mouse, which stayed on the page after Escape)
+    const closeSub = _editorDialog.onClose.subscribe(() => {
+      closeSub.unsubscribe();
+      destroyEditorDialog();
+    });
   }
 }

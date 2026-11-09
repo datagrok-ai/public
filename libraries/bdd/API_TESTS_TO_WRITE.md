@@ -9,6 +9,51 @@ then remove the scenario or lines named, with one line in the feature's descript
 | Behaviour | Where the test goes | What it lets go |
 |---|---|---|
 | The toolbox Search box with "and" / "or" (GROK-20229) | with the fix, beside xamgle `features/search.dart` | — (the cases left the feature already); the fix is deferred |
+| MPO: Score as on rising and falling curves and inside a flat part; a log10 curve with <-1 (empty) and >-1 (whole curve), >0 with Limit value gives 0; MPO Score by Profile on a qnum column uses the profile's qualifiers; the coverage count on a log10 curve at 0 or below, after a compute without coverage (no cached desirability reused), and in Chem:mpoCalculate's result table | Chem src/tests/mpo-tests.ts ('MPO: qnum scoring', 'MPO: coverage') | — (Chem bdd/features/mpo/MISSING.md items 6–7) |
+
+## Written on 2026-11-08
+
+PRs 4479, 4488, 4516 and 4541: the checks that are not a user's gesture.
+
+| Behaviour | Test | What went |
+|---|---|---|
+| A rule of an Expression, free-text or Combined Boolean card or a hierarchical level goes with its removed column, follows a renamed one, and gives the rows back (core#1174, core#1223) | xamgle `Core: d4: Filters: Removed column` (5) | the filter-panel known failures of PR 4488 |
+| Pin/Unpin Column with Frozen Columns above the column count (core#1137); rows pinned past the 10-row cap leave no layout values (core#1191); sort and pinned rows follow a column rename | xamgle `Core: d4: Viewers: Grid` (3) | grid-pinning known failures and the grid rename edge cases |
+| Data shown as text in bar and density tooltips and markup; density bins over a narrowed view (core#1048); a bar chart click filter outliving a setting change (core#974) and released with its removed column (core#1174); a line chart type no renderer draws; two `{{…}}` on one markup line | xamgle `Core: d4: Viewers: Fixed issues`, `Density plot` (6) | the bar chart, density, line chart and markup edge cases |
+| A tooltip column removed from the table is skipped | xamgle `Core: d4: Tooltip` | edit-tooltip edge case |
+| A renamed column is followed by the settings of 12 viewers and by a viewer's Filter formula (core#1213) | ApiTests `AI: Viewers: Shared rules` | the per-viewer rename edge cases |
+| Charts viewers with every row filtered out and every row deleted | Charts `Viewers: no rows` | the radar, Sankey, Chord and timelines "API tests to write" |
+| A box plot shrunk under Auto Layout takes a hover (core#960); a PC plot with Line Width 0 and density on, through a layout (core#967) | ApiTests `AI: Viewers: BoxPlot extras`, `AI: Viewers: PcPlot Extras` | box-plot and pc-plot edge cases |
+| A pinned form survives a filter and leaves the pinned pane with its row | PowerGrid `Forms viewer` | forms edge case |
+| Closing a linked source table releases the target's filter | ApiTests `DataFrame: Methods: Link` | filter-panel-linked-tables edge case |
+| The layouts a table is offered (core#1179) | ApiTests `Dapi: layouts` 'get applicable', 'filter' | layout-names-tags suggestion walk |
+| A data-synced file that lost a column a calculated column reads (GROK-19725) | ApiTests `Dapi: projects: data sync` | projects-data-sync edge case |
+| An address value of the wrong type is refused | xamgle `Core: xamgle: Projects/Layouts: Projects` 'URL params bind list elements' | projects-url-parameters edge case |
+| A name with no letter is no name | prop_gen 'FriendlyName test' | the name Outlines of the Save, Rename and New dialogs |
+| The only admin cannot leave a group or lose Admin; a name a group or role has is refused | ApiTests `Dapi: groups` (2) | groups-members and roles name edge cases |
+| Deleting a connection deletes its queries | ApiTests `Dapi: connection` | connections-delete edge case |
+| An emptied input invalidates the form unless it is nullable | ApiTests `Widgets: InputForm validation and events` | parameterized-queries Outline |
+| An empty required Table input keeps Run... OK disabled, an optional one does not (core#1155) | xamgle `Core: xamgle: FuncParamEditor: DataFrameParam` | scripts-run core#1155 scenario (it read whichever table an earlier feature left in the page) |
+| An empty molecule exports as an empty CSV field | Chem `save as csv` | molecule-in-exported-csv edge case |
+| DBSCAN labels; k-NN imputation in place and to a copy; Data to Curves groups wells into curves; a BMG PHERAstar reader; Plates search criteria (ranges, lists) | EDA `DBSCAN`, `Missing values imputation`; Curves `Data to Curves`; Plates `plates` (2) | the algorithm results of PR 4479's EDA, Curves and Plates features |
+| Structural Alerts adds a column per ticked rule set only; Pharmacophores flags each molecule by family | Chem `calculate` 'structural alerts', `pharmacophores` | the per-row results of PR 4479's Chem features |
+
+## Written on 2026-10-30
+
+| Behaviour | Test | What went |
+|---|---|---|
+| A layout with a logarithmic scatter plot saves and loads after its X column is removed (public#2867) | ApiTests `Shell: ViewLayout` | PR 4414 scatter-plot regression scenario (dropped before merge) |
+| A histogram on a table with no rows renders (core#998) | ApiTests `AI: Viewers: Histogram extras` | PR 4414 histogram regression scenario |
+| A datetime Split with Split Map month comes back from a layout (public#2562) | ApiTests `AI: Viewers: BarChart extras` | PR 4414 bar-chart regression scenario |
+| A pie chart moved to a table with the same columns keeps its Category and angle aggregation (core#982) | ApiTests `AI: Viewers: PieChart JS API` | PR 4414 pie-chart regression scenario |
+| A violin over a double column holding a raw NaN draws and takes a hover (core#960) | ApiTests `AI: Viewers: BoxPlot extras` | box-plot MISSING.md entry |
+| The trellis plot's inner box plot look survives the view's table being replaced (public#3692) | ApiTests `AI: Viewers: Trellis Plot` | trellis-plot MISSING.md entry |
+| A grid viewer bound to a second table keeps its table and sort through a project (public#2718) | ApiTests `Dapi: projects: viewers` | PR 4414 grid regression scenario |
+| Compare Tables: the rows the diff holds and its counters | ApiTests `DataFrame: Methods` `compareTables`; ddt `table_comparison_test.dart` | PR 4464 compare-tables "With no value columns…" |
+| Select > Duplicates with Superfluous rows only | ddt `data_utils_test.dart` `selectDuplicates (superfluousOnly)` | PR 4464 select-menu "Superfluous rows only…" |
+| A formula naming its column as a string recalculates after an edit (core#1128) | ApiTests `DataFrame: Calculated columns` (unskipped) | — |
+| A child of a scaffold drawn with an explicit H opens with no warning (public#2626) | Chem `scaffold tree` | PR 4414 scaffold-tree regression scenario |
+| Use as filter after a second view removed its Structure card (public#2628) | Chem `substructure filters` | PR 4414 substructure-filter regression scenario |
 
 ## Written on 2026-10-18
 

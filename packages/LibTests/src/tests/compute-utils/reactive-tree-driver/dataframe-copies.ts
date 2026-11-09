@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, test, before, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, before, waitUntil} from '@datagrok-libraries/test/src/test';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {getProcessedConfig, PipelineConfigurationProcessed} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
@@ -88,8 +88,11 @@ category('ComputeUtils: Driver dataframe copies', async () => {
     let tree: StateTree;
     if (readonly) {
       const state = StateTree.fromPipelineConfig({config, mockMode: true}).toSerializedState();
-      const steps = (state as any).steps.map((s: PipelineSerializedState) => isFuncCallSerializedState(s) ? {...s, isReadonly: true} : s);
-      tree = StateTree.fromInstanceState({state: {...state, steps} as PipelineSerializedState, config, isReadonly: false, mockMode: true});
+      const steps = (state as any).steps.map((s: PipelineSerializedState) =>
+        isFuncCallSerializedState(s) ? {...s, isReadonly: true} : s);
+      tree = StateTree.fromInstanceState({
+        state: {...state, steps} as PipelineSerializedState, config, isReadonly: false, mockMode: true,
+      });
     } else
       tree = StateTree.fromPipelineConfig({config, mockMode: true});
     await tree.init().toPromise();
@@ -98,12 +101,13 @@ category('ComputeUtils: Driver dataframe copies', async () => {
 
   const step = (tree: StateTree) => tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
   const input = (tree: StateTree) => step(tree).getStateStore().getState('df') as DG.DataFrame | undefined;
-  const snapshot = (tree: StateTree) => step(tree).instancesWrapper.inputRestrictions$.value.df?.assignedValue as DG.DataFrame | undefined;
+  const snapshot = (tree: StateTree) =>
+    step(tree).instancesWrapper.inputRestrictions$.value.df?.assignedValue as DG.DataFrame | undefined;
   const inconsistent = (tree: StateTree) => step(tree).consistencyInfo$.value.df?.inconsistent;
 
   // waits until the change is visible, then for the links it triggered
   async function settle(tree: StateTree, changed: () => boolean, what: string) {
-    await awaitCheck(changed, `${what} not applied`, 3000);
+    await waitUntil(changed, `${what} not applied`, 3000);
     await tree.linksState.waitForLinks().toPromise();
   }
 

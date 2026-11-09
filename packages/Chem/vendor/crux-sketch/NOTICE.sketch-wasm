@@ -1,7 +1,7 @@
 sketch-wasm: third-party notices
 
 Crux Sketch's engine: reading and writing molecules, laying them out and drawing them.
-This WebAssembly module is Rust code of crux-core (https://github.com/datagrok/crux), ported
+This WebAssembly module is Rust code of crux-core (https://github.com/datagrok-ai/crux-core), ported
 from the software below or embedding it. Each part names what the module holds of it and
 reproduces its licence. Written by crux-core's tools/wasm_notices.py from the licence files in
 the repository and the pinned RDKit wheel.
@@ -294,7 +294,7 @@ MathFunctions.h), which RDKit's MolTransforms::computeCanonicalTransform calls: 
 module's normalizeDepiction (RDKit's normalizeDepiction) runs it. That file only is
 under the MPL-2.0 below (Copyright (C) 2008-2010 Gael Guennebaud, (C) 2010 Jitse Niesen,
 (C) 2006-2010 Benoit Jacob, (C) 2014 Pedro Gonnet). Its Source Code Form is the file
-crates/rk/src/shape_helpers/eigen.rs of crux-core (https://github.com/datagrok/crux);
+crates/rk/src/shape_helpers/eigen.rs of crux-core (https://github.com/datagrok-ai/crux-core);
 Eigen's own source is at the link above, tag 3.3.9.
 
 Mozilla Public License Version 2.0

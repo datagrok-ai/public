@@ -523,10 +523,8 @@ export class MpoProfileCreateView {
     if (visible) {
       if (!viewNode)
         this.tableView.dockManager.dock(this.view.root, DG.DOCK_TYPE.FILL, null, '');
-      const gridNode = this.tableView.dockManager.findNode(this.tableView.grid.root);
       const vNode = this.tableView.dockManager.findNode(this.view.root);
-      if (gridNode && vNode)
-        this.tableView.dockManager.dock(this.tableView.grid.root, DG.DOCK_TYPE.DOWN, vNode, '', ratio);
+      this.tableView.dockManager.dock(this.tableView.grid.root, DG.DOCK_TYPE.DOWN, vNode, '', ratio);
     } else {
       this.tableView.dockManager.dock(this.tableView.grid.root, DG.DOCK_TYPE.FILL, null, '');
       this.tableView.dockManager.dock(this.view.root, DG.DOCK_TYPE.FILL, null, '');

@@ -44,8 +44,10 @@ Feature: Grid column groups
   menu are not in the product: the core draws the band, selects on it and shows a tooltip
   (`grid_column_groups.dart`), the only command is Group columns... (`column_commands.dart`), and the
   header menu has no group item. Running Group columns... again on the same columns is how a group
-  gets a new name and colour, and running it with an empty name is how it is ungrouped
-  (`column_commands.dart` removes the `group` tag); the last two scenarios claim both. GROK-17443
+  gets a new name and colour, and running it with a blank name is how it is ungrouped
+  (`column_commands.dart` trims the name and removes the `group` tag, core#1195); the last two
+  scenarios claim both. The Filter Panel's Column groups tree hides a group's columns and shows them
+  again, keeping hidden a member that was hidden before (public#3907). GROK-17443
   (a click on the band over columns that belong to no group) is not claimed: the grid reports an
   area only for a group, so the empty part of the band has no name to click. The Context Panel is
   checked by the column names it lists, not by the current object: a list of columns has no name
@@ -180,17 +182,27 @@ Feature: Grid column groups
     When user presses Escape
     Then no errors should have been logged
 
-  Scenario: Grouping with an empty name ungroups the columns
+  @realizes:core#1195 @realizes:public#3907
+  Scenario: Grouping with a blank name ungroups the columns, and a member hidden before its group is hidden and shown stays hidden
     When user clicks on the "group Measures" area of grid
     Then columns "AGE, SEX" should be selected
     Given the context panel is open
     Then context panel should contain text "AGE"
     Given Actions accordion header in context panel is expanded
     When user clicks on "Group columns..." text in context panel
-    And user clears Group input in dialog
+    And user types "   " into Group input in dialog
     And user clicks on OK button in dialog
     Then dialog should be hidden
     And grid should not have a "group Measures" area
+    And "AGE" column should have tag "group" equal to ""
     And grid should have a "group Body" area
     When user presses Escape
     Then no errors should have been logged
+    When user picks "Hide" from the context menu of the "header WEIGHT" area of grid
+    Then grid should not have a "header WEIGHT" area
+    When user opens an empty filter panel
+    And user unchecks "Body" tree node in filter panel
+    Then grid should not have a "header HEIGHT" area
+    When user checks "Body" tree node in filter panel
+    Then grid should have a "header HEIGHT" area
+    And grid should not have a "header WEIGHT" area

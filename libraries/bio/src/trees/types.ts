@@ -20,6 +20,4 @@ export type ClusterMatrix = {
   heightsResult:Float32Array;
 }
 
-export type TreeLeafDict = { [nodeName: string]: NodeType };
 export type DataNodeDict = { [nodeName: string]: number };
-export type NodeNameCallback = (nodeName: string) => void;

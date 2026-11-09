@@ -3,7 +3,8 @@ Feature: Box plot selection and highlight
   Pointer selection on the box plot and how it is shown: a marker click sets the current row,
   a Shift-drag selects a band and paints it in the selection color under any coloring, category
   labels select whole categories (plain, with Control, and a click on empty space clears),
-  a filtered-out category never leaks into a selection, Show Selected Rows and Row Source gate
+  a filtered-out category never leaks into a selection, a Shift-drag over a category picks that
+  category when the categories to its left are filtered out (public#2764), Show Selected Rows and Row Source gate
   the highlight, hover tooltips and Show Mouse Over Point, a hover on another viewer leaves the
   box plot alone, and a categorical coloring survives deleting the selected rows.
   One journey on demog-1000 with a box plot of AGE by RACE and 10-pixel markers.
@@ -61,6 +62,23 @@ Feature: Box plot selection and highlight
     When user resets the filter
     And user clears the row selection
 
+  @realizes:public#2764
+  Scenario: A Shift-drag picks its category when the categories to its left are filtered out (public#2764)
+    When user clears the row selection
+    And user adds a categorical filter on "RACE" keeping "Caucasian, Other"
+    Then 958 rows should pass the filter
+    And box plot viewer should not have a "category Asian" area
+    When user drags a selection box over the "Other values" area of box plot viewer
+    Then some rows where "RACE" is "Other" should be selected
+    And no rows where "RACE" is "Caucasian" should be selected
+    When user clears the row selection
+    And user drags a selection box over the "Caucasian values" area of box plot viewer
+    Then some rows where "RACE" is "Caucasian" should be selected
+    And no rows where "RACE" is "Other" should be selected
+    When user adds a categorical filter on "RACE" keeping "Asian, Black, Caucasian, Other"
+    Then all rows should pass the filter
+    When user clears the row selection
+
   Scenario: Show Selected Rows and Row Source gate the highlight
     When user sets "Marker Color Column" property of box plot viewer to "RACE"
     And user clicks on the "category Caucasian" area of box plot viewer
@@ -80,8 +98,10 @@ Feature: Box plot selection and highlight
     And user clears the row selection
 
   Scenario: The hover tooltip and Show Mouse Over Point
-    When user hovers over the "marker" area of box plot viewer
+    When user takes a snapshot of box plot viewer
+    And user hovers over the "marker" area of box plot viewer
     Then tooltip should be visible
+    And box plot viewer should have repainted
     When user moves the pointer away from box plot viewer
     And user sets "Show Mouse Over Point" property of box plot viewer to "false"
     And user hovers over the "marker" area of box plot viewer
@@ -89,13 +109,15 @@ Feature: Box plot selection and highlight
     When user moves the pointer away from box plot viewer
     And user sets "Show Mouse Over Point" property of box plot viewer to "true"
 
-  Scenario: A hover on a bar chart highlights its rows in the box plot only while the row group is shown
+  Scenario: A hover on a bar chart highlights its rows in the box plot only while the row group is shown (github-3065)
     When user adds a bar chart viewer with:
       | Split | RACE |
     And user sets "Marker Color Column" property of box plot viewer to "RACE"
-    And user takes a snapshot of box plot viewer
+    Then the "Caucasian values" area of box plot viewer should contain the color "#2CA02C"
+    When user takes a snapshot of box plot viewer
     And user hovers over the "bar Caucasian" area of bar chart viewer
     Then box plot viewer should have repainted by at least 2000 pixels
+    And the "Caucasian values" area of box plot viewer should contain the color "#2CA02C"
     When user moves the pointer away from bar chart viewer
     And user sets "Show Mouse Over Row Group" property of box plot viewer to "false"
     And user takes a snapshot of box plot viewer

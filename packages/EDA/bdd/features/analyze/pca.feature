@@ -1,5 +1,5 @@
 @journey @eda @realizes:ml.menu.analyze.pca
-Feature: Principal component analysis
+Feature: Principal component analysis and Reduce Dimensionality over cars
   ML | Analyze | PCA... over cars: the sixteen numeric columns, three components, then the same with
   Center and Scale on. Translated from files/TestTrack/EDA/pca.md and the package's
   playwright/pca.test.ts.
@@ -8,6 +8,12 @@ Feature: Principal component analysis
   offers, and the picker counts them itself. The second run excludes PC1 to PC3 from its inputs,
   keeping the original sixteen predictors; the platform suffixes the repeated output names.
   Centered unit-variance scores over thirty rows have magnitude below six.
+
+  ML | Reduce Dimensionality... (help `explore/dim-reduction.md`, as PCA) on three columns adds an Embed_X / Embed_Y
+  pair and, from its default DBSCAN postprocessing, a Cluster (DBSCAN) column, and docks a scatter plot of the
+  embedding titled after the method and the columns and coloured by the clusters. The embeddings, t-SNE and the
+  plot a run adds are EDA's 'Dimensionality reduction' tests; the dialog's other options are one flag each
+  (MISSING.md).
 
   Background:
     Given user is logged in
@@ -86,4 +92,23 @@ Feature: Principal component analysis
     And every value of "PC2 (2)" column should lie between -6 and 6
     And every value of "PC3 (2)" column should lie between -6 and 6
     And no error or warning balloon should have been shown
+    And no errors should have been logged
+
+  Scenario: Reduce Dimensionality on three columns adds the embedding and its clusters, and plots them
+    When user picks "ML > Reduce Dimensionality..." from the top menu
+    Then "Reduce Dimensionality" dialog should be visible
+    When user clicks on Columns input in "Reduce Dimensionality" dialog
+    And user toggles the "wheel.base" column in the column list of "Select columns..." dialog
+    And user toggles the "length" column in the column list of "Select columns..." dialog
+    And user toggles the "width" column in the column list of "Select columns..." dialog
+    And user clicks on OK button in "Select columns..." dialog
+    Given user watches the task bar
+    When user clicks on OK button in "Reduce Dimensionality" dialog
+    Then the task bar should have finished "dimensionality reduction"
+    And 3 new columns should have been added
+    And a new column "Cluster (DBSCAN)" should have been added
+    And "title" property of scatter plot viewer should be "UMAP (wheel.base, length, width)"
+    And "xColumnName" property of scatter plot viewer should be "Embed_X_1"
+    And "yColumnName" property of scatter plot viewer should be "Embed_Y_1"
+    And "colorColumnName" property of scatter plot viewer should be "Cluster (DBSCAN)"
     And no errors should have been logged

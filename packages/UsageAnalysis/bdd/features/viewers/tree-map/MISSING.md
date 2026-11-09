@@ -8,52 +8,20 @@ selectors (public#2131), and the categorical gate.
 
 ## Still open
 
-- **Picking a column in an on-viewer split selector.** The split selectors are plain `<select>` elements
-  (`class="d4-column-selector-aggregation d4-column-selector-tree-map"`, `TreeMapCore._addSplit`), not
-  `ColumnComboBox`es: neither `user picks {string} in the {string} column selector of {widget}` nor
-  `user picks {string} in the column selector at the {string} area of {widget}` reaches them, because both
-  look for `.d4-column-selector` (`gestures.ts` `select`, `widgets.ts` `pickInAreaSelector`), and the
-  selects carry no name a `{element}` could resolve. Blocked, so not written:
-  - picking a column in the trailing empty selector (`split selector 2` on a one-level map) adds a level:
-    `levels` 1 → 2, `selectors` 2 → 3, `split columns` "RACE, SEX";
-  - setting a middle selector to empty drops it and every level after it (`_splitChange` removes the
-    selectors past the emptied one): `levels` 2 → 1 on "RACE, SEX".
-  Needs either a name on each select (`split selector <n>`, the area's own name) that `user selects
-  {string} in {element}` can resolve, or the area-based pick learning a native `<select>` under the area.
-  The features set `splitByColumnNames` as a property instead, which is the other half of the same round
-  trip (`onLookChanged` rebuilds the selectors).
-- **`{widget} should report the error {string}` on the tree map.** The generic step reads
-  `WidgetStatus.error`; the tree map's status leaves it null and reports the gate as the `error`
-  *reading* (`values['error']`, `_TreeMapStatusFeature._error`), so the step read "" on a table with no
-  categorical column. The feature claims `the "error" reading of tree map viewer should be "Requires
-  categorical columns"`. Either the status fills `error:` as well, or the step falls back to the reading.
-- **No selection highlight cannot be claimed on the RACE colours.** `tree map viewer should show no
-  selection highlight` reads 275 587 px in the selection hue on demog-1000 split by RACE with Row Source
-  Selected and no band drawn (measured 2026-10-19): the category colours themselves fall in the selection
-  hue, so the claim does not tell a band from no band and is not written. Row Source Selected's "no band"
-  is claimed by the absent `selection of <path>` areas only. Needs either the band counted in the status
-  (a `bands drawn` reading) or a pixel claim restricted to the band's colour as drawn.
-
-## Resolved
-
-- **The selectors' areas now come from the DOM, not the computed getter.** `tree_map_status.dart`
-  reported `split selector <n>` / `color selector` only `if (plot.showColumnSelectionPanel)`, so the
-  Auto Layout scenario's "should not have a `split selector 1` area" restated `selection panel shown`
-  and would have passed with the selectors still on screen. The `if` is dropped: each area is reported
-  only while `_controlRect`'s `htmlIsElementVisible` finds the control shown, so the absence claim
-  proves the selector is off the screen.
-
-## Answered
-
-- **What a person sees on a table with no categorical column** (lead, 2026-10-19): intended. Add Viewer
-  does not offer the tree map for such a table — the item is disabled with the tooltip "Requires
-  categorical columns" — so a person never reaches the blank map. Only a viewer added through the API
-  draws it, with the gate in the `error` reading, which is what the feature claims.
+- Picking a column in an on-viewer split selector: the selectors are plain `<select>`s with no name
+  (`TreeMapCore._addSplit`); needs `split selector <n>` names, or the area-based pick learning a native `<select>`.
+- `{widget} should report the error {string}` on the tree map: its status reports the gate as the `error` reading only;
+  the status should fill `error:` too.
+- No selection highlight on the RACE colours: the category colours fall in the selection hue; needs a `bands drawn`
+  reading.
 
 ## Won't do
 
-- **The selection band's height** (`selection of <path>` as the leaf's selected share): the area is the
-  renderer's own condition and rectangle; the features claim it present or absent and pair the toggle
-  with a repaint, not a pixel scan of the band.
-- **What a layout stores for Show Selected Rows / Auto Layout**: a layout round trip is ApiTests',
-  `tree-map-color-size-selection.feature` already claims the one the md asks for.
+- What a person sees on a table with no categorical column: Add Viewer does not offer the tree map (the lead,
+  2026-10-19); the feature claims the gate an API-added map shows.
+- The selection band's height: the features claim the band present or absent, paired with a repaint.
+- What a layout stores for Show Selected Rows / Auto Layout: an API test's; `tree-map-color-size-selection.feature`
+  claims the one the md asks for.
+- Color or Size removed (core#1135), NaN in a Size or Color column, a renamed split column, no rows, 1000 categories:
+  xamgle `d4 | Viewers | Column removal | Tree map…` and `d4 | Viewers | Non-finite values | Tree map`, the rules every
+  viewer shares (`../MISSING.md`).

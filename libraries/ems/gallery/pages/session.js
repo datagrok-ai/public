@@ -87,8 +87,8 @@ function liveItems(host, src) {
 /** Delete where the row allows it; a row marked deleted stays, struck through, with Restore alone. */
 function actionsOf(src, row) {
   if (row['~state'] === 'deleted')
-    return [{name: 'Restore', icon: 'undo', run: () => src.edit.peek()?.unmarkDeleted(row.id)}];
-  const actions = [{name: 'Delete', icon: 'trash-alt', requires: 'delete', run: () => src.edit.peek()?.markDeleted(row.id)}];
+    return [{text: 'Restore', icon: 'undo', run: () => src.edit.peek()?.unmarkDeleted(row.id)}];
+  const actions = [{text: 'Delete', icon: 'trash-alt', requires: 'delete', run: () => src.edit.peek()?.markDeleted(row.id)}];
   return actions.filter((a) => a.requires === undefined || viewOf(src, row).can(a.requires));
 }
 
@@ -106,7 +106,7 @@ function formOf(src, host, empty) {
     shown?.dispose();
     sub?.unsubscribe();
     shown = new Scope();
-    host.root.replaceChildren(Scope.runWith(shown, () => {
+    host.root.replaceChildren(shown.build(() => {
       if (row === null)
         return span(empty, 'u2-domain-form-hint');
       const form = propertyForm(src.schema.properties, row, {access: viewOf(src, row), exclude: SYSTEM});
@@ -192,12 +192,12 @@ function issueFilters(src, session, host) {
       return;
     input = host.runInScope(() => new FilterQueryInput({schema: src.schema, target: 'domain', inline: true,
       name: 'filters', placeholder: 'Filter issues…'}));
-    let accepted = input.value.peek();
+    let accepted = input.peek();
     input.effect(() => {
-      const next = input.value.value;
+      const next = input.value;
       if (Filters.equals(next, accepted))
         return;
-      gated(session, 'change the filter', () => tree.value = accepted = next, () => input.value.value = accepted);
+      gated(session, 'change the filter', () => tree.value = accepted = next, () => input.value = accepted);
     });
     host.root.append(input.root);
   });
@@ -245,7 +245,7 @@ export async function render(main) {
 
   const filterHost = divH([], 'u2-gallery-row');
   const filterHostControl = {root: filterHost, effect: (fn) => page.effect(fn), own: (fn) => page.own(fn),
-    runInScope: (fn) => Scope.runWith(page, fn)};
+    runInScope: (fn) => page.build(fn)};
   const tree = issueFilters(issues, session, filterHostControl);
   const search = new DomainSearch(issues, {placeholder: 'Search issues', debounceMs: 0});
   // the issues are the selected project's, narrowed by the filter box

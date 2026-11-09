@@ -6,10 +6,22 @@ import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns,
   parseTimeUnit, resolveAxisModes, targetAxisMode, resolveDisplayUnit, pickAutoUnit, targetContexts,
-  selectionGaps, withAnnotatedDefaults, PickerSelections, unmatchedItems,
+  selectionGaps, withDefaultPicks, PickerSelections, unmatchedItems, withoutOutdatedOutputs, uniqueEntryName,
+  sameFuncPeers, agreedPick, listedTargets, TargetListOptions, equalTargetKeys, statusChips, groupCandidatesByEntry,
 } from '../components/RunComparison/selection';
-import {ColumnBinding, ColumnTarget, AxisConfigMap, TimeUnit, TableNodeInfo} from '../components/RunComparison/types';
+import {
+  ColumnBinding, ColumnTarget, AxisConfigMap, AxisModeConfig, TimeUnit, TableNodeInfo, ScalarTarget,
+} from '../components/RunComparison/types';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
+
+category('RunComparison: entry names', () => {
+  test('a free name is kept, a taken one gets the first free suffix', async () => {
+    expect(uniqueEntryName('Run', ['Other']), 'Run');
+    expect(uniqueEntryName('Run', ['Run']), 'Run (2)');
+    expect(uniqueEntryName('Run', ['Run', 'Run (2)', 'Run (3)']), 'Run (4)');
+    expect(uniqueEntryName('Run', ['Run', 'Run (3)']), 'Run (2)');
+  });
+});
 
 category('RunComparison: entry statuses', () => {
   test('reports matched, index-not-set, and no-similar-data', async () => {
@@ -793,7 +805,7 @@ category('RunComparison: annotated defaults', () => {
   const empty = (): PickerSelections => ({index: {}, split: {}, axis: {}});
 
   test('empty pickers take the annotated index, split, mode and units', async () => {
-    const next = withAnnotatedDefaults(annotated({defaultIndexColumn: 'time', defaultSplitColumn: 'species',
+    const next = withDefaultPicks(annotated({defaultIndexColumn: 'time', defaultSplitColumn: 'species',
       defaultAxisMode: 'timeseries', defaultTimeUnits: 'h'}), empty());
     expect(next.index.a.t, 'time');
     expect(next.split.a.t, 'species');
@@ -804,26 +816,235 @@ category('RunComparison: annotated defaults', () => {
     const selections: PickerSelections = {
       index: {a: {t: 'value'}}, split: {a: {t: 'value'}}, axis: {a: {t: {mode: 'points'}}},
     };
-    const next = withAnnotatedDefaults(annotated({defaultIndexColumn: 'time', defaultSplitColumn: 'species',
+    const next = withDefaultPicks(annotated({defaultIndexColumn: 'time', defaultSplitColumn: 'species',
       defaultAxisMode: 'timeseries'}), selections);
     expect(next.index === selections.index && next.split === selections.split && next.axis === selections.axis, true);
   });
 
   test('defaults that are not valid picks are ignored', async () => {
-    const missing = withAnnotatedDefaults(
+    const missing = withDefaultPicks(
       annotated({defaultIndexColumn: 'nope', defaultSplitColumn: 'nope'}), empty());
     expect(missing.index.a === undefined && missing.split.a === undefined, true);
-    const splitIsIndex = withAnnotatedDefaults(
+    const splitIsIndex = withDefaultPicks(
       annotated({defaultIndexColumn: 'species', defaultSplitColumn: 'species'}), empty());
     expect(splitIsIndex.index.a.t, 'species');
     expect(splitIsIndex.split.a === undefined, true);
-    const numericSplit = withAnnotatedDefaults(annotated({defaultSplitColumn: 'value'}), empty());
+    const numericSplit = withDefaultPicks(annotated({defaultSplitColumn: 'value'}), empty());
     expect(numericSplit.split.a === undefined, true);
   });
 
   test('units are stored for the relative timeseries mode only', async () => {
-    const next = withAnnotatedDefaults(annotated({defaultAxisMode: 'points', defaultTimeUnits: 'h'}), empty());
+    const next = withDefaultPicks(annotated({defaultAxisMode: 'points', defaultTimeUnits: 'h'}), empty());
     expect(next.axis.a.t.mode, 'points');
     expect(next.axis.a.t.units === undefined, true);
+  });
+});
+
+category('RunComparison: default picks', () => {
+  const columns = [{name: 'time'}, {name: 'height'}, {name: 'species', type: 'string'}];
+  const simRun = (id: string, tableColumns = columns, defaults: Partial<TableNodeInfo> = {}) => {
+    const entry = makeEntry(id, [], [{path: 's/df', nqName: 'Pkg:Sim', columns: tableColumns}]);
+    Object.assign(entry.tables[0], defaults);
+    return entry;
+  };
+  const pick = <T, >(a: T, b: T) => ({a: {'s/df': a}, b: {'s/df': b}});
+  const agreed = (): PickerSelections => ({
+    index: pick('time', 'time'), split: pick('species', 'species'),
+    axis: pick<AxisModeConfig>({mode: 'points'}, {mode: 'points'}),
+  });
+  const runs = () => [simRun('a'), simRun('b')];
+
+  test('peers are the same output of the same function in the other runs', async () => {
+    const others = [
+      simRun('a'),
+      makeEntry('b', [], [{path: 'other/df', nqName: 'Pkg:Sim', columns}]),
+      makeEntry('d', [], [{path: 's/other', nqName: 'Pkg:Sim', columns}]),
+      makeEntry('e', [], [{path: 's/df', nqName: 'Pkg:Other', columns}]),
+      makeEntry('f', [], [{path: 's/df', columns}]),
+    ];
+    expectArray(sameFuncPeers(simRun('c').tables[0], others),
+      [{entryId: 'a', tablePath: 's/df'}, {entryId: 'b', tablePath: 'other/df'}]);
+    const raw = makeEntry('c', [], [{path: 's/df', columns}]).tables[0];
+    expect(sameFuncPeers(raw, [makeEntry('a', [], [{path: 's/df', columns}])]).length, 0);
+  });
+
+  test('a pick counts only when all picks agree', async () => {
+    expect(agreedPick([]) === undefined, true);
+    expect(agreedPick(['time', 'time']), 'time');
+    expect(agreedPick(['time', 'height']) === undefined, true);
+    const sameMode = (a: {mode: string}, b: {mode: string}) => a.mode === b.mode;
+    expect(agreedPick([{mode: 'points'}, {mode: 'points'}], sameMode)!.mode, 'points');
+  });
+
+  test('the agreed picks win over the annotations', async () => {
+    const next = withDefaultPicks(simRun('c', columns, {defaultIndexColumn: 'height', defaultAxisMode: 'timeseries'}),
+      agreed(), runs());
+    expect(next.index.c['s/df'], 'time');
+    expect(next.split.c['s/df'], 'species');
+    expectObject(next.axis.c['s/df'], {mode: 'points'});
+  });
+
+  test('runs without a pick are ignored', async () => {
+    const selections: PickerSelections = {index: {a: {'s/df': 'time'}}, split: {}, axis: {}};
+    expect(withDefaultPicks(simRun('c'), selections, runs()).index.c['s/df'], 'time');
+  });
+
+  test('the user\'s picks win over the agreed ones', async () => {
+    const selections = agreed();
+    selections.index.c = {'s/df': 'height'};
+    selections.axis.c = {'s/df': {mode: 'series'}};
+    const next = withDefaultPicks(simRun('c'), selections, runs());
+    expect(next.index.c['s/df'], 'height');
+    expect(next.axis.c['s/df'].mode, 'series');
+  });
+
+  test('different picks fall back to the annotations', async () => {
+    const selections: PickerSelections = {index: pick('time', 'height'), split: {}, axis: {}};
+    const annotated = withDefaultPicks(simRun('c', columns, {defaultIndexColumn: 'height'}), selections, runs());
+    expect(annotated.index.c['s/df'], 'height');
+    expect(withDefaultPicks(simRun('c'), selections, runs()).index.c === undefined, true);
+  });
+
+  test('a pick the added run lacks falls back to the annotations', async () => {
+    const next = withDefaultPicks(simRun('c', [{name: 'height'}], {defaultIndexColumn: 'height'}), agreed(), runs());
+    expect(next.index.c['s/df'], 'height');
+    expect(next.split.c === undefined, true);
+  });
+
+  test('the agreed split must be valid for the index', async () => {
+    const selections: PickerSelections = {index: {}, split: pick('species', 'species'), axis: {}};
+    const next = withDefaultPicks(simRun('c', columns, {defaultIndexColumn: 'species'}), selections, runs());
+    expect(next.index.c['s/df'], 'species');
+    expect(next.split.c === undefined, true);
+  });
+
+  test('the axis mode comes from the runs only along with their index', async () => {
+    const own = agreed();
+    own.index.c = {'s/df': 'height'};
+    expect(withDefaultPicks(simRun('c', columns, {defaultAxisMode: 'timeseries'}), own, runs())
+      .axis.c['s/df'].mode, 'timeseries');
+    const mixed: PickerSelections = {...agreed(), axis: {a: {'s/df': {mode: 'points'}}}};
+    expect(withDefaultPicks(simRun('c', columns, {defaultAxisMode: 'timeseries'}), mixed, runs())
+      .axis.c['s/df'].mode, 'timeseries');
+  });
+
+  test('an added run joins the merged index row', async () => {
+    const next = withDefaultPicks(simRun('c'), agreed(), runs());
+    const [row] = computeIndexRows([...runs(), simRun('c')], next.index, next.split, true, next.axis);
+    expect(row.members.length, 3);
+    expect(row.current, 'time');
+    expect(row.currentSplit, 'species');
+    expect(row.axis!.mode, 'points');
+  });
+});
+
+category('RunComparison: outdated outputs', () => {
+  test('hiding drops only the outdated nodes and leaves the entry untouched', async () => {
+    const nodes = makeEntry('a', [{name: 'Biomass'}, {name: 'Feed'}],
+      [{path: 'profile', columns: [{name: 'time'}]}, {path: 'summary', columns: [{name: 'time'}]}]);
+    nodes.scalars[0].outdated = true;
+    nodes.tables[1].outdated = true;
+    const kept = withoutOutdatedOutputs(nodes);
+    expectArray(kept.scalars.map((s) => s.name), ['Feed']);
+    expectArray(kept.tables.map((t) => t.path), ['profile']);
+    expect(nodes.scalars.length, 2);
+    expect(nodes.tables.length, 2);
+  });
+
+  test('a value backed only by outdated outputs leaves the comparison', async () => {
+    const fresh = makeEntry('a', [{name: 'Biomass'}]);
+    const stale = makeEntry('b', [{name: 'Biomass'}]);
+    stale.scalars[0].outdated = true;
+    expect(matchScalarTargets([fresh, stale]).length, 1);
+    expect(matchScalarTargets([fresh, stale].map(withoutOutdatedOutputs)).length, 0);
+  });
+});
+
+category('RunComparison: compare list', () => {
+  const target = (key: string, displayName = key): ScalarTarget => ({
+    kind: 'scalar', key, displayName, confidence: 'exact', unitsWarning: false, coverage: 2, total: 2, bindings: [],
+  });
+  const targets = [target('a', 'Biomass'), target('b', 'Glucose'), target('c', 'Biomass'), target('d', 'Oxygen')];
+  const list = (options: Partial<TargetListOptions>) => listedTargets(targets, {
+    multiMode: false, isCharted: () => false, compatible: [], equalKeys: new Set(), filter: '', contexts: new Map(),
+    ...options,
+  }).map((item) => item.key);
+
+  test('single mode lists every target', async () => {
+    expectArray(list({}), ['a', 'b', 'c', 'd']);
+  });
+
+  test('multi mode lists the suggestions and the charted targets', async () => {
+    expectArray(list({multiMode: true, compatible: [targets[0], targets[1]], isCharted: (key) => key === 'd'}),
+      ['a', 'b', 'd']);
+  });
+
+  test('equal targets are hidden unless charted', async () => {
+    expectArray(list({equalKeys: new Set(['a', 'b']), isCharted: (key) => key === 'b'}), ['b', 'c', 'd']);
+  });
+
+  test('the filter matches the name and the step context', async () => {
+    expectArray(list({filter: 'biomass'}), ['a', 'c']);
+    expectArray(list({filter: 'day 2', contexts: new Map([['c', 'Day 2']])}), ['c']);
+  });
+});
+
+category('RunComparison: equal target keys', () => {
+  const binding = (entryId: string, columnName: string): ColumnBinding => ({
+    entryId, tablePath: 't', tableName: 't', columnName, indexColumnName: 'time',
+  });
+  const columnTarget = (key: string, columnName: string): ColumnTarget => {
+    const bindings = [binding('a', columnName), binding('b', columnName)];
+    return {
+      kind: 'column', key, displayName: columnName, confidence: 'exact', unitsWarning: false,
+      coverage: 2, total: 2, candidates: [], bindings,
+    };
+  };
+  const data: Record<string, Record<string, unknown[]>> = {
+    a: {time: [0, 1], same: [1, 2], other: [1, 2]},
+    b: {time: [0, 1], same: [1, 2], other: [1, 3]},
+  };
+
+  test('lists the equal targets and fetches each column once', async () => {
+    const fetched: string[] = [];
+    const keys = equalTargetKeys([columnTarget('k1', 'same'), columnTarget('k2', 'other')],
+      (entryId, _tablePath, columnName) => {
+        fetched.push(`${entryId}|${columnName}`);
+        return data[entryId]?.[columnName];
+      });
+    expectArray([...keys], ['k1']);
+    expect(fetched.length, new Set(fetched).size);
+    expect(fetched.filter((key) => key === 'a|time').length, 1);
+  });
+});
+
+category('RunComparison: status chips', () => {
+  test('excluded runs get red chips, partially configured ones amber chips, matched none', async () => {
+    const chips = statusChips([
+      {entryId: 'a', matched: true},
+      {entryId: 'b', matched: false, reason: 'index not set'},
+      {entryId: 'c', matched: false, reason: 'units differ', units: 'mg/L'},
+      {entryId: 'd', matched: true, warning: 'relative timeseries not set'},
+      {entryId: 'e', matched: true, warning: 'independent points not set'},
+    ]);
+    expectArray(chips.map((chip) => chip.entryId), ['b', 'c', 'd', 'e']);
+    expect(chips[0].text, 'index not set');
+    expect(chips[0].warningMode == null, true);
+    expect(chips[1].text, 'units differ (mg/L)');
+    expect(chips[2].warningMode, 'relative timeseries');
+    expect(chips[3].warningMode, 'independent points');
+  });
+});
+
+category('RunComparison: candidate groups', () => {
+  test('consecutive candidates of one run form a group, in list order', async () => {
+    const candidate = (entryId: string, columnName: string) => ({
+      binding: {entryId, tablePath: 't', tableName: 't', columnName, indexColumnName: 'time'},
+      confidence: 'exact' as const, unitsWarn: false, auto: false, enabled: false,
+    });
+    const groups = groupCandidatesByEntry([candidate('a', 'x'), candidate('a', 'y'), candidate('b', 'x')]);
+    expectArray(groups.map((group) => group.entryId), ['a', 'b']);
+    expectArray(groups[0].candidates.map((item) => item.binding.columnName), ['x', 'y']);
+    expectArray(groups[1].candidates.map((item) => item.binding.columnName), ['x']);
   });
 });

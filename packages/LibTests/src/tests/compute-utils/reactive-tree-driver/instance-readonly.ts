@@ -155,7 +155,8 @@ category('ComputeUtils: Driver readonly bridge', async () => {
         bridge.editState('arg1', 'edited');
       });
       // editState bypasses readonly — value changes
-      expectObservable(bridge.getStateChanges('arg1'), '^ 1000ms !').toBe('abc', {a: undefined, b: undefined, c: 'edited'});
+      expectObservable(bridge.getStateChanges('arg1'), '^ 1000ms !')
+        .toBe('abc', {a: undefined, b: undefined, c: 'edited'});
     });
   });
 
@@ -352,7 +353,7 @@ category('ComputeUtils: Driver readonly tree', async () => {
         inNode.getItem().getStateStore().editState('b', 1);
       });
       // meta writes to metaStates, not to adapter — works in RO
-      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).meta.a
+      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).meta.a,
       ).toBe('ab', {
         a: undefined,
         b: {
@@ -414,7 +415,10 @@ const mutationsConfig: PipelineConfiguration = {
   type: 'static',
   steps: [
     {id: 's1', nqName: 'LibTests:TestAdd2'},
-    {id: 'sub', type: 'static', steps: [{id: 'x1', nqName: 'LibTests:TestAdd2'}, {id: 'x2', nqName: 'LibTests:TestMul2'}]},
+    {id: 'sub', type: 'static', steps: [
+      {id: 'x1', nqName: 'LibTests:TestAdd2'},
+      {id: 'x2', nqName: 'LibTests:TestMul2'},
+    ]},
     {
       id: 'dyn',
       type: 'parallel',
@@ -542,7 +546,8 @@ category('ComputeUtils: Driver readonly mutations and runs', async () => {
       cold('-a').subscribe(() => tree.runSequence(tree.nodeTree.root.getItem().uuid, false, true).subscribe());
       cold('-----a').subscribe(() => {
         const at = (path: number[]) =>
-          (tree.nodeTree.getNode(path.map((idx) => ({idx}))).getItem() as FuncCallNode).instancesWrapper.isOutputOutdated$.value;
+          (tree.nodeTree.getNode(path.map((idx) => ({idx}))).getItem() as FuncCallNode)
+            .instancesWrapper.isOutputOutdated$.value;
         outdated = {s1: at([0]), x1: at([1, 0]), x2: at([1, 1]), add: at([2, 0])};
       });
     });

@@ -5,7 +5,8 @@ import {AbstractPipelineActionConfiguration, PipelineSelfRef, PipelineStepConfig
 
 
 export type PipelineStepConfigurationProcessed = PipelineStepConfiguration<FuncCallIODescription[]>;
-export type ConfigTraverseItem = PipelineConfigurationProcessed | PipelineStepConfigurationProcessed | AbstractPipelineActionConfiguration | PipelineSelfRef;
+export type ConfigTraverseItem = PipelineConfigurationProcessed | PipelineStepConfigurationProcessed |
+  AbstractPipelineActionConfiguration | PipelineSelfRef;
 
 export type ConfigItem = PipelineConfigurationProcessed | PipelineStepConfigurationProcessed;
 
@@ -98,7 +99,9 @@ export function getConfigByInstancePath(
     throw new Error(`Segment ${targetSegment} not found on path ${currentPath.join('/')}`);
   }
 
-  const traverse = buildTraverseD([] as ItemPathArray, (item: ConfigTraverseItem, path: ItemPathArray, remainingPath?: ItemPathArray) => {
+  const traverse = buildTraverseD([] as ItemPathArray, (
+    item: ConfigTraverseItem, path: ItemPathArray, remainingPath?: ItemPathArray,
+  ) => {
     if (remainingPath?.length == 0)
       return [];
     const [segment, ...newRemainingPath] = remainingPath!;

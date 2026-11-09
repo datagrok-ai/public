@@ -6,7 +6,7 @@
    connection or the CreateDomainSchema privilege. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 
 const CONNECTION = 'NorthwindBinding:PostgresNorthwind';
 
@@ -23,10 +23,7 @@ category('U2: domain authoring', () => {
   const reason = () => document.querySelector('.u2-wizard-reason')?.textContent ?? '';
 
   async function until(check: () => boolean, what: string): Promise<void> {
-    for (let i = 0; i < 300 && !check(); i++)
-      await delay(100);
-    if (!check())
-      throw new Error(`timed out waiting for ${what}; status "${status()}", reason "${reason()}"`);
+    await waitUntil(check, () => `timed out waiting for ${what}; status "${status()}", reason "${reason()}"`, 30000);
   }
 
   const skipped = (): boolean => {

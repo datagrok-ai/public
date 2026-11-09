@@ -127,12 +127,14 @@ category('ComputeUtils: Driver value annotations', async () => {
     ]);
     const byId = Object.fromEntries(links.map((link: any) => [link.id, link]));
     expectDeepEqual(byId['::city:choices::meta'].params.effects, [
-      {effect: 'items', targets: 'city_target', items: {var: 'city_choices.items'}, when: {'!!': {var: 'city_choices'}}},
+      {effect: 'items', targets: 'city_target', items: {var: 'city_choices.items'},
+        when: {'!!': {var: 'city_choices'}}},
     ]);
     expectDeepEqual(byId['::model:choices::validator'].debounce, 0);
     const lookup = byId['::model:lookup::data'];
     expectDeepEqual([lookup.runOnInit, lookup.from.map((item: any) => item.name)], [true, ['model', '$call']]);
-    expectDeepEqual(lookup.to.map((item: any) => item.name), ['calc', 'bare', 'metric', 'speed', 'region', 'city', 'mpg', 'cyl']);
+    expectDeepEqual(lookup.to.map((item: any) => item.name),
+      ['calc', 'bare', 'metric', 'speed', 'region', 'city', 'mpg', 'cyl']);
     expectDeepEqual(lookup.params.effects, [{
       effect: 'assign', values: {var: 'model_choices.row'}, ignoreCase: true, restriction: 'restricted',
       when: {'!!': {var: 'model_choices.row'}},
@@ -141,7 +143,8 @@ category('ComputeUtils: Driver value annotations', async () => {
     testScheduler.run(() => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
-      const link = [...tree.linksState.links.values()].find((item) => item.matchInfo.spec.id === '::model:lookup::data')!;
+      const link = [...tree.linksState.links.values()]
+        .find((item) => item.matchInfo.spec.id === '::model:lookup::data')!;
       outputs = Object.keys(link.matchInfo.outputs).sort();
     });
     expectDeepEqual(outputs, ['bare', 'calc', 'city', 'cyl', 'metric', 'region', 'speed']);

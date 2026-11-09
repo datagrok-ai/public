@@ -4,7 +4,7 @@
 /* ---
 generated: features/viewers/pie-chart/pie-chart-nulls-and-highlight.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [viewers.pie-chart]
+sub_features_covered: [viewers.pie-chart, core#982]
 --- */
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
@@ -30,7 +30,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Pie chart missing values and the mouse-over row group", () => {
   const session = feature(test, "features/viewers/pie-chart/pie-chart-nulls-and-highlight.feature", import.meta.url);
-  test("Pie chart missing values and the mouse-over row group", {tag: ["@journey", "@viewers", "@realizes:viewers.pie-chart"]}, async ({browser}) => {
+  test("Pie chart missing values and the mouse-over row group", {tag: ["@journey", "@viewers", "@realizes:viewers.pie-chart", "@realizes:core#982"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 7, page);
     await session.step(15, "Given user is logged in", () => loggedIn(page));
@@ -58,58 +58,63 @@ test.describe("Pie chart missing values and the mouse-over row group", () => {
       await session.step(40, "Then no rows should be selected", () => noneSelected(page));
       await session.step(41, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Include Nulls off drops the wedge and the legend item with it", async () => {
-      await session.step(44, "Then pie chart viewer should have a \"slice (no value)\" area", () => hasArea(page, el("pie chart viewer"), "slice (no value)"));
-      await session.step(45, "And the legend of pie chart viewer should list 5 items", () => legendLists(page, el("pie chart viewer"), 5));
-      await session.step(46, "When user sets \"Include Nulls\" property of pie chart viewer to \"false\"", () => setProperty(page, "Include Nulls", el("pie chart viewer"), "false"));
-      await session.step(47, "Then pie chart viewer should not have a \"slice (no value)\" area", () => hasNoArea(page, el("pie chart viewer"), "slice (no value)"));
-      await session.step(48, "And the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
-      await session.step(49, "And the legend of pie chart viewer should list 4 items", () => legendLists(page, el("pie chart viewer"), 4));
-      await session.step(50, "And the \"angle value of Caucasian\" reading of pie chart viewer should be 793", () => readingIs(page, "angle value of Caucasian", el("pie chart viewer"), 793));
-      await session.step(51, "And the \"share of Caucasian\" reading of pie chart viewer should be between 89.3 and 89.31", () => readingBetween(page, "share of Caucasian", el("pie chart viewer"), 89.3, 89.31));
-      await session.step(52, "And pie chart viewer should have repainted by at least 500 pixels", () => repaintedBy(page, el("pie chart viewer"), 500));
-      await session.step(53, "And no errors should have been logged", () => noErrors(page));
+    await run.scenario("Include Nulls off drops the wedge and the legend item with it, under Row Source All too (core#982)", async () => {
+      await session.step(45, "Then pie chart viewer should have a \"slice (no value)\" area", () => hasArea(page, el("pie chart viewer"), "slice (no value)"));
+      await session.step(46, "And the legend of pie chart viewer should list 5 items", () => legendLists(page, el("pie chart viewer"), 5));
+      await session.step(47, "When user sets \"Include Nulls\" property of pie chart viewer to \"false\"", () => setProperty(page, "Include Nulls", el("pie chart viewer"), "false"));
+      await session.step(48, "Then pie chart viewer should not have a \"slice (no value)\" area", () => hasNoArea(page, el("pie chart viewer"), "slice (no value)"));
+      await session.step(49, "And the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
+      await session.step(50, "And the legend of pie chart viewer should list 4 items", () => legendLists(page, el("pie chart viewer"), 4));
+      await session.step(51, "And the \"angle value of Caucasian\" reading of pie chart viewer should be 793", () => readingIs(page, "angle value of Caucasian", el("pie chart viewer"), 793));
+      await session.step(52, "And the \"share of Caucasian\" reading of pie chart viewer should be between 89.3 and 89.31", () => readingBetween(page, "share of Caucasian", el("pie chart viewer"), 89.3, 89.31));
+      await session.step(53, "And pie chart viewer should have repainted by at least 500 pixels", () => repaintedBy(page, el("pie chart viewer"), 500));
+      await session.step(54, "When user sets \"Row Source\" property of pie chart viewer to \"All\"", () => setProperty(page, "Row Source", el("pie chart viewer"), "All"));
+      await session.step(55, "Then pie chart viewer should not have a \"slice (no value)\" area", () => hasNoArea(page, el("pie chart viewer"), "slice (no value)"));
+      await session.step(56, "And the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
+      await session.step(57, "And the \"angle value of Caucasian\" reading of pie chart viewer should be 793", () => readingIs(page, "angle value of Caucasian", el("pie chart viewer"), 793));
+      await session.step(58, "When user sets \"Row Source\" property of pie chart viewer to \"Filtered\"", () => setProperty(page, "Row Source", el("pie chart viewer"), "Filtered"));
+      await session.step(59, "Then no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Include Nulls on brings both back", async () => {
-      await session.step(56, "When user sets \"Include Nulls\" property of pie chart viewer to \"true\"", () => setProperty(page, "Include Nulls", el("pie chart viewer"), "true"));
-      await session.step(57, "Then pie chart viewer should have a \"slice (no value)\" area", () => hasArea(page, el("pie chart viewer"), "slice (no value)"));
-      await session.step(58, "And the \"slices\" reading of pie chart viewer should be 5", () => readingIs(page, "slices", el("pie chart viewer"), 5));
-      await session.step(59, "And the legend of pie chart viewer should list 5 items", () => legendLists(page, el("pie chart viewer"), 5));
-      await session.step(60, "And the \"share of (no value)\" reading of pie chart viewer should be 11.2", () => readingIs(page, "share of (no value)", el("pie chart viewer"), 11.2));
-      await session.step(61, "And pie chart viewer should have repainted by at least 500 pixels", () => repaintedBy(page, el("pie chart viewer"), 500));
-      await session.step(62, "And no errors should have been logged", () => noErrors(page));
+      await session.step(62, "When user sets \"Include Nulls\" property of pie chart viewer to \"true\"", () => setProperty(page, "Include Nulls", el("pie chart viewer"), "true"));
+      await session.step(63, "Then pie chart viewer should have a \"slice (no value)\" area", () => hasArea(page, el("pie chart viewer"), "slice (no value)"));
+      await session.step(64, "And the \"slices\" reading of pie chart viewer should be 5", () => readingIs(page, "slices", el("pie chart viewer"), 5));
+      await session.step(65, "And the legend of pie chart viewer should list 5 items", () => legendLists(page, el("pie chart viewer"), 5));
+      await session.step(66, "And the \"share of (no value)\" reading of pie chart viewer should be 11.2", () => readingIs(page, "share of (no value)", el("pie chart viewer"), 11.2));
+      await session.step(67, "And pie chart viewer should have repainted by at least 500 pixels", () => repaintedBy(page, el("pie chart viewer"), 500));
+      await session.step(68, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("With Show Mouse Over Row Group off a hovered wedge paints no group overlay", async () => {
-      await session.step(65, "When user sets \"Show Mouse Over Row Group\" property of pie chart viewer to \"false\"", () => setProperty(page, "Show Mouse Over Row Group", el("pie chart viewer"), "false"));
-      await session.step(66, "And user moves the pointer away from pie chart viewer", () => pointerAway(page, el("pie chart viewer")));
-      await session.step(67, "Then pie chart viewer should not have a \"mouse over Caucasian\" area", () => hasNoArea(page, el("pie chart viewer"), "mouse over Caucasian"));
-      await session.step(68, "When user hovers over the \"slice Caucasian\" area of pie chart viewer", () => hoverArea(page, "slice Caucasian", el("pie chart viewer")));
-      await session.step(69, "Then pie chart viewer should not have a \"mouse over Caucasian\" area", () => hasNoArea(page, el("pie chart viewer"), "mouse over Caucasian"));
-      await session.step(70, "And no errors should have been logged", () => noErrors(page));
+      await session.step(71, "When user sets \"Show Mouse Over Row Group\" property of pie chart viewer to \"false\"", () => setProperty(page, "Show Mouse Over Row Group", el("pie chart viewer"), "false"));
+      await session.step(72, "And user moves the pointer away from pie chart viewer", () => pointerAway(page, el("pie chart viewer")));
+      await session.step(73, "Then pie chart viewer should not have a \"mouse over Caucasian\" area", () => hasNoArea(page, el("pie chart viewer"), "mouse over Caucasian"));
+      await session.step(74, "When user hovers over the \"slice Caucasian\" area of pie chart viewer", () => hoverArea(page, "slice Caucasian", el("pie chart viewer")));
+      await session.step(75, "Then pie chart viewer should not have a \"mouse over Caucasian\" area", () => hasNoArea(page, el("pie chart viewer"), "mouse over Caucasian"));
+      await session.step(76, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("With it on the hovered wedge lights up and goes out again", async () => {
-      await session.step(73, "When user moves the pointer away from pie chart viewer", () => pointerAway(page, el("pie chart viewer")));
-      await session.step(74, "And user sets \"Show Mouse Over Row Group\" property of pie chart viewer to \"true\"", () => setProperty(page, "Show Mouse Over Row Group", el("pie chart viewer"), "true"));
-      await session.step(75, "And user hovers over the \"slice Caucasian\" area of pie chart viewer", () => hoverArea(page, "slice Caucasian", el("pie chart viewer")));
-      await session.step(76, "Then pie chart viewer should have a \"mouse over Caucasian\" area", () => hasArea(page, el("pie chart viewer"), "mouse over Caucasian"));
-      await session.step(77, "And pie chart viewer should not have a \"mouse over Asian\" area", () => hasNoArea(page, el("pie chart viewer"), "mouse over Asian"));
-      await session.step(78, "And pie chart viewer should have repainted", () => repainted(page, el("pie chart viewer")));
-      await session.step(79, "When user hovers over the \"slice Asian\" area of pie chart viewer", () => hoverArea(page, "slice Asian", el("pie chart viewer")));
-      await session.step(80, "Then pie chart viewer should have a \"mouse over Asian\" area", () => hasArea(page, el("pie chart viewer"), "mouse over Asian"));
-      await session.step(81, "And pie chart viewer should not have a \"mouse over Caucasian\" area", () => hasNoArea(page, el("pie chart viewer"), "mouse over Caucasian"));
-      await session.step(82, "When user moves the pointer away from pie chart viewer", () => pointerAway(page, el("pie chart viewer")));
-      await session.step(83, "Then pie chart viewer should not have a \"mouse over Asian\" area", () => hasNoArea(page, el("pie chart viewer"), "mouse over Asian"));
-      await session.step(84, "And no errors should have been logged", () => noErrors(page));
+      await session.step(79, "When user moves the pointer away from pie chart viewer", () => pointerAway(page, el("pie chart viewer")));
+      await session.step(80, "And user sets \"Show Mouse Over Row Group\" property of pie chart viewer to \"true\"", () => setProperty(page, "Show Mouse Over Row Group", el("pie chart viewer"), "true"));
+      await session.step(81, "And user hovers over the \"slice Caucasian\" area of pie chart viewer", () => hoverArea(page, "slice Caucasian", el("pie chart viewer")));
+      await session.step(82, "Then pie chart viewer should have a \"mouse over Caucasian\" area", () => hasArea(page, el("pie chart viewer"), "mouse over Caucasian"));
+      await session.step(83, "And pie chart viewer should not have a \"mouse over Asian\" area", () => hasNoArea(page, el("pie chart viewer"), "mouse over Asian"));
+      await session.step(84, "And pie chart viewer should have repainted", () => repainted(page, el("pie chart viewer")));
+      await session.step(85, "When user hovers over the \"slice Asian\" area of pie chart viewer", () => hoverArea(page, "slice Asian", el("pie chart viewer")));
+      await session.step(86, "Then pie chart viewer should have a \"mouse over Asian\" area", () => hasArea(page, el("pie chart viewer"), "mouse over Asian"));
+      await session.step(87, "And pie chart viewer should not have a \"mouse over Caucasian\" area", () => hasNoArea(page, el("pie chart viewer"), "mouse over Caucasian"));
+      await session.step(88, "When user moves the pointer away from pie chart viewer", () => pointerAway(page, el("pie chart viewer")));
+      await session.step(89, "Then pie chart viewer should not have a \"mouse over Asian\" area", () => hasNoArea(page, el("pie chart viewer"), "mouse over Asian"));
+      await session.step(90, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Back on the gapless column the blank wedge is gone for good", async () => {
-      await session.step(87, "When user sets \"Category\" property of pie chart viewer to \"RACE\"", () => setProperty(page, "Category", el("pie chart viewer"), "RACE"));
-      await session.step(88, "Then the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
-      await session.step(89, "And pie chart viewer should not have a \"slice (no value)\" area", () => hasNoArea(page, el("pie chart viewer"), "slice (no value)"));
-      await session.step(90, "And the \"angle value of Caucasian\" reading of pie chart viewer should be 896", () => readingIs(page, "angle value of Caucasian", el("pie chart viewer"), 896));
-      await session.step(91, "When user removes \"RACE_GAPS\" column", () => removeColumn(page, "RACE_GAPS"));
-      await session.step(92, "Then the table should not have a column \"RACE_GAPS\"", () => hasNoColumn(page, "RACE_GAPS"));
-      await session.step(93, "And pie chart viewer should be painted", () => painted(page, el("pie chart viewer")));
-      await session.step(94, "And no errors should have been logged", () => noErrors(page));
+      await session.step(93, "When user sets \"Category\" property of pie chart viewer to \"RACE\"", () => setProperty(page, "Category", el("pie chart viewer"), "RACE"));
+      await session.step(94, "Then the \"slices\" reading of pie chart viewer should be 4", () => readingIs(page, "slices", el("pie chart viewer"), 4));
+      await session.step(95, "And pie chart viewer should not have a \"slice (no value)\" area", () => hasNoArea(page, el("pie chart viewer"), "slice (no value)"));
+      await session.step(96, "And the \"angle value of Caucasian\" reading of pie chart viewer should be 896", () => readingIs(page, "angle value of Caucasian", el("pie chart viewer"), 896));
+      await session.step(97, "When user removes \"RACE_GAPS\" column", () => removeColumn(page, "RACE_GAPS"));
+      await session.step(98, "Then the table should not have a column \"RACE_GAPS\"", () => hasNoColumn(page, "RACE_GAPS"));
+      await session.step(99, "And pie chart viewer should be painted", () => painted(page, el("pie chart viewer")));
+      await session.step(100, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

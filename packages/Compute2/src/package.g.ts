@@ -63,6 +63,25 @@ export async function StartWorkflow(nqName: string, version: string, instanceCon
   return await PackageFunctions.StartWorkflow(nqName, version, instanceConfig);
 }
 
+//description: Run a compute workflow without UI and return the state of every step.
+//input: string nqName { description: Qualified name of the workflow function to run }
+//input: string version { description: Workflow version to run }
+//input: object instanceConfig { description: Optional initial pipeline configuration }
+//output: object result
+export async function RunWorkflow(nqName: string, version: string, instanceConfig?: any) {
+  return await PackageFunctions.RunWorkflow(nqName, version, instanceConfig);
+}
+
+//description: Save the state returned by RunWorkflow as a new workflow run in history.
+//input: string nqName { description: Qualified name of the workflow function }
+//input: string version { description: Workflow version }
+//input: object state { description: The state of a RunWorkflow result }
+//input: object metadata { description: Optional title, description and tags }
+//output: funccall run
+export async function SaveWorkflowRun(nqName: string, version: string, state: any, metadata?: any) {
+  return await PackageFunctions.SaveWorkflowRun(nqName, version, state, metadata);
+}
+
 //description: Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.
 //input: string id { description: Meta FuncCall id of the saved workflow run }
 export async function OpenWorkflowRun(id: string) : Promise<void> {
@@ -83,6 +102,12 @@ export async function CompareRuns() : Promise<void> {
   await PackageFunctions.CompareRuns();
 }
 
+//name: Browse Runs
+//description: Browse saved runs of any model in My runs and in spaces, and open or compare them
+export async function BrowseRuns() : Promise<void> {
+  await PackageFunctions.BrowseRuns();
+}
+
 //name: ViewerTestApp
 export async function ViewerTestApp() : Promise<void> {
   await PackageFunctions.ViewerTestApp();
@@ -91,11 +116,6 @@ export async function ViewerTestApp() : Promise<void> {
 //name: FormTestApp
 export async function FormTestApp() : Promise<void> {
   await PackageFunctions.FormTestApp();
-}
-
-//name: HistoryTestApp
-export async function HistoryTestApp() : Promise<void> {
-  await PackageFunctions.HistoryTestApp();
 }
 
 //name: Mock Pipeline 1
@@ -114,6 +134,15 @@ export async function MockPipeline1(params: any) {
 //editor: Compute2:TreeWizardEditor
 export async function MockPipeline2(params: any) {
   return await PackageFunctions.MockPipeline2(params);
+}
+
+//name: Mock Keyboard Pipeline
+//description: Workflow with fixed steps, a reorderable list and an invalid step, used for testing keyboard use.
+//input: object params 
+//output: object result
+//editor: Compute2:TreeWizardEditor
+export async function MockKeyboardPipeline(params: any) {
+  return await PackageFunctions.MockKeyboardPipeline(params);
 }
 
 //name: Mock Single Step Pipeline
@@ -183,29 +212,6 @@ export async function TestCustomView() {
   return await PackageFunctions.TestCustomView();
 }
 
-//description: Test for optimization: multiple scalars output
-//input: double x1 = 1 { caption: param1; min: -3; max: 3 }
-//input: double x2 = -1 { caption: param2; min: -3; max: 3 }
-//input: dataframe y { caption: table }
-//input: bool bool 
-//output: int integer
-//output: double float1
-//output: double float2
-//output: dataframe table1 { viewer: Line chart(block:60) | Grid(block:40) }
-//output: dataframe table2 { viewer: Line chart(block:60) | Grid(block:40) }
-//meta.features: {"fitting": true, "sens-analysis": true}
-//meta.runOnOpen: true
-//meta.runOnInput: true
-//editor: Compute2:RichFunctionViewEditor
-export function fitTestFunc(x1: number, x2: number, y: DG.DataFrame, bool: boolean) {
-  return PackageFunctions.fitTestFunc(x1, x2, y, bool);
-}
-
-//description: Test for optimization: multiple scalars output
-export async function testFittingOutputs() : Promise<void> {
-  await PackageFunctions.testFittingOutputs();
-}
-
 //input: double a 
 //output: double result
 //meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]
@@ -218,19 +224,6 @@ export async function TestCustomExportModel(a: number) : Promise<number> {
 //output: string result
 export async function TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean) : Promise<string> {
   return await PackageFunctions.TestCustomExportRecorder(funcCall, startDownload);
-}
-
-//input: int a 
-//input: double b 
-//input: bool flag 
-//input: string s 
-//input: datetime when 
-//input: dataframe df 
-//input: double opt { optional: true }
-//input: int nul { nullable: true }
-//output: double result
-export async function TestUrlInputsFixture(a: number, b: number, flag: boolean, s: string, when: any, df: DG.DataFrame, opt: number, nul: number) : Promise<number> {
-  return await PackageFunctions.TestUrlInputsFixture(a, b, flag, s, when, df, opt, nul);
 }
 
 //input: int x 

@@ -37,7 +37,9 @@ export function calculateStepsDependencies(state: BaseTree<StateTreeNode>, links
   return deps;
 }
 
-function addOutputDeps(state: BaseTree<StateTreeNode>, deps: Map<string, DependenciesData>, link: Link, inPathFull?: NodePathSegment[]) {
+function addOutputDeps(
+  state: BaseTree<StateTreeNode>, deps: Map<string, DependenciesData>, link: Link, inPathFull?: NodePathSegment[],
+) {
   for (const infosOut of Object.values(link.matchInfo.outputs)) {
     for (const infoOut of infosOut) {
       const outPathFull = [...link.prefix, ...infoOut.path];

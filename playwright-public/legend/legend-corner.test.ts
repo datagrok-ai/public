@@ -245,6 +245,8 @@ test('Tooltip legend — items survive the click/hide/rehover cycle', async ({pa
     // icon can still be repositioning, and a move aimed at its old spot opens nothing
     for (let attempt = 0; attempt < 3; attempt++) {
       const mini = await page.evaluate(() => {
+        // a warning balloon (Chem's sketcher fallback) can cover this corner, and stays up while hovered
+        for (const b of Array.from(document.querySelectorAll('.d4-balloon'))) b.remove();
         const el = document.querySelector('[name="mini-legend-icon"]') as HTMLElement;
         const r = el.getBoundingClientRect();
         return {x: r.x + r.width / 2, y: r.y + r.height / 2};

@@ -32,7 +32,6 @@ category('Packages: project isolation', () => {
     const text = await r.text();
     if (text.indexOf('ApiError') !== -1)
       throw new Error(`Publish ${name} returned ApiError: ${text.substring(0, 200)}`);
-    await DG.delay(5000);
   }
 
   async function safeDeletePackage(name: string) {
@@ -71,7 +70,6 @@ category('Packages: project isolation', () => {
     await safeDeletePackage('pkgisolationa');
     await safeDeletePackage('pkgisolationb');
     await cleanupProjects();
-    await DG.delay(2000);
 
     // Publish package A with a project containing hardcoded IDs
     await publish('pkgisolationa');
@@ -101,7 +99,6 @@ category('Packages: project isolation', () => {
   test('Hardcoded IDs: version isolation', async () => {
     await safeDeletePackage('pkgisolationa');
     await cleanupProjects();
-    await DG.delay(2000);
 
     // Publish release version
     await publish('pkgisolationa', false);
@@ -131,7 +128,6 @@ category('Packages: project isolation', () => {
     await safeDeletePackage('pkgisolationa');
     await cleanupProjects();
     await cleanupDashboards();
-    await DG.delay(2000);
 
     // Publish release version
     await publish('pkgisolationa', false);

@@ -14,7 +14,11 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
+import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
+import {MmcrTemps, rendererSettingsChangedState} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
+
 import {_package} from '../package-test';
+import {awaitGrid} from './utils';
 
 category('renderers: monomerPlacer', () => {
   let libHelper: IMonomerLibHelper;
@@ -222,4 +226,70 @@ id3,QHIRE--LT
       expectArray(resLengths, testData.tgt.lengths);
     });
   }
+
+  test('multiline: the lines wrap at the cell, not at the grid\'s visible edge', async () => {
+    // A column wider than the grid, scrolled: the lines wrapped at the visible part of the cell and moved as the grid
+    // scrolled (3 November)
+    const seq = 'ACDEFGHIKLMNPQRSTVWY'.repeat(12);
+    const df = DG.DataFrame.fromCsv(`seq\n${seq}\n${seq}`);
+    await grok.data.detectSemanticTypes(df);
+    df.getCol('seq').setTag('renderMultiline', 'true');
+    const tv = grok.shell.addTableView(df);
+    try {
+      const grid = tv.grid;
+      grid.props.rowHeight = 100;
+      await awaitGrid(grid); // the grid sizes its columns once it has drawn: widen the column after that
+      grid.col('seq')!.width = 5000;
+      const monomersPerLine = async (): Promise<number[]> => {
+        await awaitGrid(grid);
+        const [, , temp] = getGridCellColTemp<any, any>(grid.cell('seq', 0));
+        const bounds = (temp.rendererBack as any)._cellBounds.get(0) as { lineIdx: number }[];
+        const counts: number[] = [];
+        for (const b of bounds) counts[b.lineIdx] = (counts[b.lineIdx] ?? 0) + 1;
+        return counts;
+      };
+      const atStart = await monomersPerLine();
+      expect(grid.col('seq')!.width, 5000);
+      expect(grid.canvas.width / window.devicePixelRatio < 5000, true); // the cell runs past the grid's right edge
+      expectArray(atStart, [seq.length]); // 240 monomers fit in a 5000 px cell: one line
+      grid.scrollToPixels(1500, 0);
+      expectArray(await monomersPerLine(), atStart);
+    } finally {
+      tv.close();
+    }
+  });
+
+  test('a font size change measures every monomer in the new font', async () => {
+    // Some monomers sat above or below the others after the font size went to 18 and back (4 November): the cell drawn
+    // first after a change printed in the old font and filled the emptied text metrics with it, and every later cell
+    // centred those monomers by them
+    const df = DG.DataFrame.fromCsv('seq\nANTTYKN\nMFHPCSG\nQWDRLEV\n');
+    await grok.data.detectSemanticTypes(df);
+    const seqCol = df.getCol('seq');
+    const tv = grok.shell.addTableView(df);
+    try {
+      const grid = tv.grid;
+      await awaitGrid(grid);
+      const setFontSize = async (size: number): Promise<void> => {
+        // as the Font Size input of the renderer's settings does
+        seqCol.temp[MmcrTemps.fontSize] = size;
+        seqCol.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.true;
+        df.fireValuesChanged();
+        await awaitGrid(grid);
+      };
+      await setFontSize(18);
+      await setFontSize(12);
+      const [, , temp] = getGridCellColTemp<any, any>(grid.cell('seq', 0));
+      const metrics = (temp.rendererBack as MonomerPlacer)._monomerLengthMap;
+      const g = document.createElement('canvas').getContext('2d')!;
+      g.font = MonomerPlacer.getFontSettings(seqCol).font;
+      const height = (m: TextMetrics): number => m.fontBoundingBoxAscent + m.fontBoundingBoxDescent;
+      const fontHeight = height(g.measureText('M'));
+      const stale = Object.entries(metrics).filter(([, m]) => height(m) !== fontHeight).map(([s]) => s);
+      expect(Object.keys(metrics).length > 0, true);
+      expectArray(stale, []);
+    } finally {
+      tv.close();
+    }
+  });
 });

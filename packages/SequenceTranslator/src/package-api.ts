@@ -66,10 +66,9 @@ export namespace funcs {
   /**
    * Convert a column of sequences in custom notation to HELM and/or molfiles
    * @param {boolean} generateHelm - Also produce a HELM column alongside the molfiles
-   * @param {boolean} chiralityEngine - Use the chirality engine when building structures
    */
-  export async function polyToolConvert2(table: DG.DataFrame , seqCol: DG.Column , generateHelm: boolean , chiralityEngine: boolean , rules: any ): Promise<DG.Column> {
-    return await grok.functions.call('SequenceTranslator:PolyToolConvert2', { table, seqCol, generateHelm, chiralityEngine, rules });
+  export async function polyToolConvert2(table: DG.DataFrame , seqCol: DG.Column , generateHelm: boolean , rules: any ): Promise<DG.Column> {
+    return await grok.functions.call('SequenceTranslator:PolyToolConvert2', { table, seqCol, generateHelm, rules });
   }
 
   /**

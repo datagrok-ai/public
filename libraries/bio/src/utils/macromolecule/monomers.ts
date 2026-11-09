@@ -3,29 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
-const naturalAASmiles = {
-  A: 'C[C@H](N)C(=O)O',
-  C: 'N[C@@H](CS)C(=O)O',
-  D: 'N[C@@H](CC(=O)O)C(=O)O',
-  E: 'N[C@@H](CCC(=O)O)C(=O)O',
-  F: 'N[C@@H](Cc1ccccc1)C(=O)O',
-  G: 'NCC(=O)O',
-  H: 'N[C@@H](Cc1cnc[nH]1)C(=O)O',
-  I: 'CC[C@H](C)[C@H](N)C(=O)O',
-  K: 'NCCCC[C@H](N)C(=O)O',
-  L: 'CC(C)C[C@H](N)C(=O)O',
-  M: 'CSCC[C@H](N)C(=O)O',
-  N: 'NC(=O)C[C@H](N)C(=O)O',
-  P: 'O=C(O)[C@@H]1CCCN1',
-  Q: 'NC(=O)CC[C@H](N)C(=O)O',
-  R: 'N=C(N)NCCC[C@H](N)C(=O)O',
-  S: 'N[C@@H](CO)C(=O)O',
-  T: 'C[C@@H](O)[C@H](N)C(=O)O',
-  V: 'CC(C)[C@H](N)C(=O)O',
-  W: 'N[C@@H](Cc1c[nH]c2ccccc12)C(=O)O',
-  Y: 'N[C@@H](Cc1ccc(O)cc1)C(=O)O',
-}; // canonical smiles of canonical amino acids
-
+/** Morgan fingerprints (2048 bits) of the canonical SMILES of the 20 natural amino acids */
 const naturalAAFps = {
   A: new BitArray(
     new Uint32Array([
@@ -210,14 +188,7 @@ const naturalAAFps = {
   ),
 };
 
-const naturalRNASmiles = {
-  A: 'Nc1ncnc2[nH]cnc12',
-  C: 'Nc1cc[nH]c(=O)n1',
-  G: 'Nc1nc2[nH]cnc2c(=O)[nH]1',
-  T: 'Cc1c[nH]c(=O)[nH]c1=O',
-  U: 'O=c1cc[nH]c(=O)[nH]1',
-}; // canonical smiles of canonical NAs
-
+/** Morgan fingerprints (2048 bits) of the canonical SMILES of the 5 natural nucleobases */
 const naturalRNAFps = {
   A: new BitArray(
     new Uint32Array([
@@ -264,11 +235,6 @@ const naturalRNAFps = {
     ]),
     2048
   ),
-};
-
-export const naturalMonomers = {
-  RNA: naturalRNASmiles,
-  PEPTIDE: naturalAASmiles,
 };
 
 export const naturalMonomerFps = {

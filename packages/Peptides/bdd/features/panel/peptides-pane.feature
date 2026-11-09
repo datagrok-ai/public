@@ -64,12 +64,19 @@ Feature: Peptide column information and SAR parameters
     When user clicks on the "monomer T at position 5" area of WebLogo viewer in Peptides pane
     Then 630 rows should be selected
     And only rows with "T" at position 5 of "AlignedSequence" column should be selected
+    # the table view shows a new selection in the context panel 100 ms after it (a debounced handler) unless the current
+    # object changed meanwhile, and a click on the header of the column already current is no change: within those
+    # 100 ms the selection replaced the column, and the Peptides pane with it
+    When user waits 1 second
     When user clicks on the "header AlignedSequence" area of grid
     Then the context panel should show "AlignedSequence"
     When user expands Peptides pane in context panel
     Then the "rows selected" reading of WebLogo viewer in Peptides pane should be 630
     When user clears the row selection
     Then no rows should be selected
+    # the table view shows the table for a cleared selection 100 ms later (a debounced handler); waiting here keeps
+    # that from replacing the column the next scenario clicks
+    And the context panel should show "peptides"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

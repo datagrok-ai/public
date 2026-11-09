@@ -1,8 +1,9 @@
 @sketcher-controls @serial
 Feature: Crux in Chem's hosts
   Crux Sketch, pinned as the session's sketcher, in the places Chem opens a sketcher beyond the cell editor: the options
-  menu's Recent and Favorites, a molblock column's cell editor, the Sketch item of a molecule's menu, the substructure
-  filter's card (its dialog, its thumbnail, a column popup's inline filter, a query kept through Clone View, a layout,
+  menu's Recent and Favorites, a molblock column's cell editor, the Sketch item of a molecule's menu and of the context
+  panel's Actions, the substructure filter's card (its dialog, its thumbnail, a column popup's inline filter, a query
+  kept through Clone View, a layout,
   a project and the panel reopened), Chem > Search > Substructure Search, the Scaffold Tree's sketcher, the Similarity
   Search viewer's reference, the column's Rendering and Highlight panes, the R-Groups Analysis dialog and the Deprotect
   editor. What Crux holds is drawn on Crux's own controls (its tools, its atoms as hit areas) and read through its
@@ -64,7 +65,10 @@ Feature: Crux in Chem's hosts
 
   # HOST-053: Sketch opens a sketcher in a dialog of its own, with no OK and no Cancel: only its close icon. A table of
   # its own name: the 2D Structure pane is kept from an earlier table of the same name, column and row
-  Scenario: Sketch in the menu of a molecule's drawing shows it in Crux, and an edit there changes nothing when it closes
+  # public#4305: Actions > Sketch opened Crux empty once a sketcher had synced the current object (it passes a molblock
+  # as SMILES); the reading of that input is Chem's 'Crux sketcher' tests
+  @realizes:public#4305
+  Scenario: Sketch in the menu of a molecule's drawing shows it in Crux, and an edit there changes nothing when it closes; Actions > Sketch shows it too
     Given user opens a table "sketch-menu" with:
       | molecule           |
       | CC(=O)Nc1ccc(O)cc1 |
@@ -84,6 +88,11 @@ Feature: Crux in Chem's hosts
     When user closes sketcher dialog
     Then sketcher dialog should be absent
     And the value of "molecule" column in row 1 should be, byte for byte, as remembered
+    Given Actions accordion header in context panel is expanded
+    When user clicks on "Sketch" text in context panel
+    Then the "smiles" reading of crux sketcher widget should be the molecule in row 1 of "molecule" column
+    When user clicks on CANCEL button in sketcher dialog
+    Then sketcher dialog should be absent
 
   # HOST-054: spgi-100 has 17 molecules with a pyridine; the card's sketcher opens Crux in query mode
   Scenario: A pyridine drawn in Crux on a filter card keeps the 17 rows that contain it
@@ -184,7 +193,7 @@ Feature: Crux in Chem's hosts
     And user clicks on close of "Structure" filter card
     And user picks "Current Value > Use as filter" from the context menu of the "cell 1 of Structure" area of grid
     Then there should be 1 visible "Structure" filter card
-    And the "structure of Structure" reading of filter panel should be the molecule of row 1 of "Structure" column
+    And the "structure of Structure" reading of filter panel should be the molecule in row 1 of "Structure" column
     And 1 row should pass the filter
     When user remembers the "molecule of Structure" reading of filter panel
     And user clicks on the "card Structure" area of filter panel

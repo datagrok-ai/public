@@ -1412,7 +1412,8 @@ export class MonomerPosition extends SARViewer {
       setDefaultProperties(invariantMapMode);
 
       switchHost = ui.divH([mutationCliffsMode.root, invariantMapMode.root], {id: 'pep-viewer-title'});
-      $(switchHost).css('width', 'auto').css('align-self', 'center');
+      $(switchHost).css('width', 'auto').css('align-self', 'center').css('max-width', '100%').css('flex-wrap', 'wrap')
+        .css('height', 'auto').css('justify-content', 'center');
     }
     const viewerRoot = this.viewerGrid.root;
     viewerRoot.style.width = 'auto';

@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/grokky",
   "friendlyName": "Grokky",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Grokky AI assistant for Datagrok",
   "author": {
     "name": "Oleksandra Serhiienko",
@@ -28,6 +28,29 @@
     "lint": "eslint --ext .ts,.tsx src",
     "test:bdd": "grok-bdd run"
   },
+  "properties": [
+    {
+      "name": "logPrompts",
+      "description": "Log the text of each AI prompt, as an ai-turn-content usage event",
+      "propertyType": "bool",
+      "defaultValue": "true",
+      "nullable": false
+    },
+    {
+      "name": "logResponses",
+      "description": "Log the text of each AI response, as an ai-turn-content usage event",
+      "propertyType": "bool",
+      "defaultValue": "false",
+      "nullable": false
+    },
+    {
+      "name": "logToolCalls",
+      "description": "Log a summary of the tools each AI turn used, as an ai-turn-content usage event",
+      "propertyType": "bool",
+      "defaultValue": "false",
+      "nullable": false
+    }
+  ],
   "canEdit": [
     "Administrators"
   ],

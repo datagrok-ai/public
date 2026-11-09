@@ -10,8 +10,9 @@ import {RestrictionType} from '@datagrok-libraries/compute-utils/reactive-tree-d
 import {
   couldBeSaved, findTreeNodeByPath, findTreeNodeParrent, getRelevantGlobalActions, hasAddControls,
   hasSubtreeAnyInconsistencies, hasSubtreeFixableInconsistencies, isDeletable, isDuplicable, isEachDraggable,
-  statesToStatus,
-} from '../utils';
+  stepMoveIndex, dropIndex, focusCandidates,
+} from '../components/TreeWizard/tree-utils';
+import {statesToStatus} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/run-summary';
 import {AugmentedStat} from '../components/TreeWizard/types';
 import {mockDynamicPipeline, mockFuncCall, mockStaticPipeline} from './state-fixtures';
 
@@ -136,5 +137,44 @@ category('TreeWizard: step permissions', () => {
     expectDeepEqual(permissions(inDynamic({configId: 's', disableUIAdding: true})), [true, true, false]);
     expectDeepEqual(permissions(inDynamic({configId: 'other', disableUIRemoving: true})), [true, true, true],
       {prefix: 'Other type'});
+  });
+});
+
+category('TreeWizard: keyboard moves and focus', () => {
+  // a parent stat with its children linked both ways, like he-tree builds them
+  const tree = (parent: PipelineState, children: PipelineState[]) => {
+    const root = {data: parent, parent: null, children: []} as unknown as AugmentedStat;
+    root.children = children.map((data) => ({data, parent: root, children: []}) as unknown as AugmentedStat);
+    return root;
+  };
+  const PINNED: StepDynamicDescription = {configId: 'pinned', disableUIDragging: true};
+  const list = (stepTypes: StepDynamicDescription[] = [{configId: 's'}, PINNED]) =>
+    tree(mockDynamicPipeline('dyn', [], {stepTypes}), [mockFuncCall('s'), mockFuncCall('s'), mockFuncCall('pinned')]);
+
+  test('A step moves one place within its list and never out of it', async () => {
+    const [first, second] = list().children;
+    expectDeepEqual([stepMoveIndex(first, -1), stepMoveIndex(first, 1)], [undefined, 1], {prefix: 'First'});
+    expectDeepEqual([stepMoveIndex(second, -1), stepMoveIndex(second, 1)], [0, 2], {prefix: 'Past a pinned step'});
+  });
+
+  test('A step that cannot be dragged does not move by keys either', async () => {
+    const pinned = list().children[2];
+    expectDeepEqual(stepMoveIndex(pinned, -1), undefined, {prefix: 'Pinned'});
+    const fixed = tree(mockStaticPipeline('p', []), [mockFuncCall('a'), mockFuncCall('b')]).children[0];
+    expectDeepEqual(stepMoveIndex(fixed, 1), undefined, {prefix: 'Static parent'});
+    const readonly = tree(mockDynamicPipeline('dyn', [], {stepTypes: [{configId: 'a'}], isReadonly: true}),
+      [mockFuncCall('a'), mockFuncCall('a')]).children[0];
+    expectDeepEqual(stepMoveIndex(readonly, 1), undefined, {prefix: 'Read-only parent'});
+  });
+
+  test('A drop counts its position without the dragged step', async () => {
+    expectDeepEqual([dropIndex(0, 2), dropIndex(2, 0), dropIndex(1, 1)], [1, 0, 1]);
+  });
+
+  test('The focus falls back to the next sibling, the previous one, then the parent', async () => {
+    const root = tree(mockDynamicPipeline('dyn', []), [mockFuncCall('a'), mockFuncCall('b'), mockFuncCall('c')]);
+    expectDeepEqual(focusCandidates(root.children[1]), ['b', 'c', 'a', 'dyn'], {prefix: 'Middle'});
+    expectDeepEqual(focusCandidates(root.children[2]), ['c', 'b', 'dyn'], {prefix: 'Last'});
+    expectDeepEqual(focusCandidates(root), ['dyn'], {prefix: 'Root'});
   });
 });

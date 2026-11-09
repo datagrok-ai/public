@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {awaitCheck, delay} from '@datagrok-libraries/test/src/test';
+import {awaitCheck} from '@datagrok-libraries/test/src/test';
 
 import {SEMTYPE} from '../utils/proteomics-types';
 import {findColumn} from '../utils/column-detection';
@@ -59,7 +59,6 @@ export async function assertPublishedShape(
 ): Promise<void> {
   const projId = project.id;
   grok.shell.closeAll();
-  await delay(100);
 
   const reopened = await grok.dapi.projects.find(projId);
   await reopened.open();

@@ -21,7 +21,7 @@ Per turn it records:
 | **Total** (ms) | browser: send → `final` | everything |
 | **Tool round-trips** | count of `tool_activity` events | forced verify / grounding round trips |
 | **Input / output / cache-read tokens** | the agent's usage of every model call, summed on `final` | context diet, prompt-cache stability |
-| **Cost (USD)** | each call priced from `agent/grokky_agent/models.yaml` | context diet, model choice |
+| **Cost (USD)** | each call priced from Hermes' price list for the provider; null where it has none | context diet, model choice |
 | **num_turns**, api duration | the agent's model calls and their time | round-trip count, server-side time |
 | **Tool names**, in call order | `tool_activity.name` | *which path* a turn took — the sharpest cheap-vs-strong discriminator |
 | **Unverified rate** | `final.unverified` | how often the model could not confirm its own action |
@@ -30,10 +30,10 @@ Per turn it records:
 **Accuracy** is hybrid (chosen to keep authoring effort low):
 - **Deterministic** — most viewer/analysis/codegen prompts carry a JS `assert` checked against the
   live workspace after the turn. Reproducible, zero judge cost.
-- **LLM-judge** — free-text answers (Help Q&A, "what's the average…") are graded by a **Haiku**
-  call against a short `rubric`, returning pass/score/reason. Every rep that produced text is
-  judged and the verdict is the majority, with a score floor — judging one rep while timing three
-  let the same defect flip pass/fail between runs.
+- **LLM-judge** — free-text answers (Help Q&A, "what's the average…") are graded by a call on the
+  runtime's model against a short `rubric`, returning
+  pass/score/reason. Every rep that produced text is judged and the verdict is the majority, with a
+  score floor — judging one rep while timing three let the same defect flip pass/fail between runs.
 
 ### Assertion policy — assert what was asked for
 
@@ -85,7 +85,7 @@ asserts read live `DG` objects (viewers, filters, grid state) that only exist in
 
 ```bash
 cd dev/harness
-node run-benchmark.mjs --label sonnet-baseline --reps 3 --model claude-sonnet-5-5
+node run-benchmark.mjs --label sonnet-baseline --reps 3
 node run-benchmark.mjs --label smoke --reps 1 --only trivial,visualization
 node run-benchmark.mjs --compare sonnet-clean,haiku-probe
 ```
@@ -96,13 +96,12 @@ node run-benchmark.mjs --compare sonnet-clean,haiku-probe
 
 ```
 Grokky:runBenchmark("baseline")                          // reps defaults to 3
-Grokky:runBenchmark("pin-haiku", 3, "claude-haiku-5-5")  // pin every turn to one model
-Grokky:runBenchmark("smoke", 1, null, "trivial,help")    // run part of the suite
-Grokky:compareBenchmarks("baseline,pin-haiku")           // 2+ comma-separated labels
+Grokky:runBenchmark("smoke", 1, "trivial,help")          // run part of the suite
+Grokky:compareBenchmarks("sonnet,haiku")                 // 2+ comma-separated labels
 ```
 
-- **`model`** pins every turn to one model, producing the **control arms** for a model
-  comparison without redeploying the runtime.
+- Every turn runs on the runtime's configured model (its `model` credential). To compare models, run one
+  arm per model, each labelled after it, changing the credential between arms.
 - **`only`** narrows the suite to comma-separated categories, difficulties, or prompt
   substrings. A full arm is 44 × reps turns at ~20 s each, so validating a suite change or probing
   one tier should never cost a full run. Partial runs are stamped as such in the report and must
@@ -196,7 +195,7 @@ haiku:  TTFT  7.7s of 39.0s total (20%), median 6 round-trips
 
 **Two-thirds of a Sonnet turn is spent before the first token.** That points the latency work at
 TTFT (context diet, prompt-cache stability, thinking budget) and at eliminating round-trips — not
-at model choice. Use `--model` to re-check that conclusion when models change; it is a property of
+at model choice. Re-check that conclusion with an arm per model when models change; it is a property of
 this architecture, not a permanent law.
 
 ## Context probe — attributing the prompt prefix

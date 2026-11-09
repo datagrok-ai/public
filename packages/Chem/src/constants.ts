@@ -20,10 +20,6 @@ export const elementsTable: Array<string> = [
   'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg', 'Cn',
   'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og'];
 
-export enum MOL_FORMAT {
-  SMILES = 'smiles',
-};
-
 export const EMPTY_MOLECULE_MESSAGE = 'Molecule is empty';
 export const SMARTS_MOLECULE_MESSAGE = 'Not applicable for smarts or molecular fragments';
 export const MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT = 1000000000;
@@ -95,7 +91,6 @@ export interface FilterOperatorSet {
       signal: AbortSignal): Promise<{bits: Uint32Array, length: number}>;
   }[];
 }
-export const FILTER_TYPE_TAG = '.filter-type';
 export const AVAILABLE_FPS = [Fingerprint.Morgan, Fingerprint.AtomPair, Fingerprint.MACCS,
   Fingerprint.RDKit, Fingerprint.TopologicalTorsion];
 export const SCAFFOLD_TREE_HIGHLIGHT = '.chem-scaffold-tree-highlight';

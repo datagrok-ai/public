@@ -1,5 +1,5 @@
 import {FilterError, KIND, isColumnRef, isParam} from './model.js';
-import type {FilterCondition, FilterKind, DomainConditionNode} from './model.js';
+import type {FilterCondition, FilterKind, FilterScalar, DomainConditionNode} from './model.js';
 import type {FilterProperty} from './schema.js';
 import {domainValue, kindOf} from './kinds.js';
 import {BitArray} from 'datagrok-api/u2core';
@@ -19,9 +19,15 @@ export interface FilterOperator {
    * column offers `has substructure`, not string `contains` beside it. */
   exclusive?: boolean;
   editor: 'default' | 'range' | 'list' | 'none';
+  /** A condition the app answers, not the server: the source rewrites it into an id list before a read,
+   * so the operator has no `domain` form. */
+  host?: boolean;
   domain?: (c: FilterCondition, prop: FilterProperty, ctx: {now: Date}) => DomainConditionNode;
   mask?: (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}) => BitArray;
   bitset?: (col: unknown, c: FilterCondition, signal: AbortSignal) => Promise<BitArray>;
+  /** Why a value of the right kind is still none this operator takes (a pattern that is no regular
+   * expression); validation reports it on the condition. */
+  check?: (value: FilterScalar) => string | null;
 }
 
 /** What an operator provider answers (a `meta.role: filterOperators` package function, say) — plain
@@ -131,6 +137,11 @@ export class OperatorRegistry {
       (!exclusive || NULL_TESTS.includes(o.id)))];
   }
 
+  /** The {@link FilterOperator.host} operators, longest id first — the order the grammar tries them in. */
+  hosted(): FilterOperator[] {
+    return this._ops.filter((o) => o.host === true).sort((a, b) => b.id.length - a.id.length);
+  }
+
   get(id: string, prop?: FilterProperty): FilterOperator | undefined {
     if (prop)
       return this.for(prop).find((o) => o.id === id);
@@ -183,11 +194,30 @@ const textMask = (test: (s: string, v: string) => boolean, negate: boolean = fal
       (raw ? raw.test(String(cell)) : test(String(cell).toLowerCase(), v)) !== negate);
   };
 
+/** The user's pattern compiled, or why it does not compile. */
+function regExpOf(pattern: string): RegExp | string {
+  try {
+    return new RegExp(pattern, 'i');
+  } catch (e) {
+    return (e as Error).message.split(': ').pop() ?? String(e);
+  }
+}
+
+/** A pattern that does not compile matches nothing: validation refuses it (`check`), and a tree
+ * evaluated anyway must not throw. */
 const regexMask = (negate: boolean) =>
   (col: MaskColumnLike, c: FilterCondition, ctx: {now: Date}): BitArray => {
-    const re = new RegExp(String(c.value), 'i');
-    return ColumnEvaluator.where(col, c, ctx, (cell) => re.test(String(cell)) !== negate);
+    const re = regExpOf(String(c.value));
+    return ColumnEvaluator.where(col, c, ctx, (cell) => typeof re !== 'string' && re.test(String(cell)) !== negate);
   };
+
+/** Judged as a JS RegExp for every target. A domain query runs it as Postgres `~*`, whose dialect
+ * differs at the edges (a named group `(?<n>…)` compiles only here, `[[:alpha:]]` is a class only
+ * there): the server has the last word. */
+const regexCheck = (value: FilterScalar): string | null => {
+  const re = typeof value === 'string' ? regExpOf(value) : null;
+  return typeof re === 'string' ? `"${value}" is not a regular expression: ${re}` : null;
+};
 
 const compare = (op: string, label: string): FilterOperator => ({
   id: op, label, arity: 1, kinds: ORDERED, editor: 'default',
@@ -254,12 +284,12 @@ export const CORE_OPERATORS: FilterOperator[] = [
   {
     id: 'matches', label: 'matches regex', arity: 1, kinds: [KIND.STRING], editor: 'default',
     domain: (c) => node(c.property, '~*', textValue(c, () => String(c.value))),
-    mask: regexMask(false),
+    mask: regexMask(false), check: regexCheck,
   },
   {
     id: '!matches', label: 'does not match', arity: 1, kinds: [KIND.STRING], editor: 'default',
     domain: (c) => node(c.property, '!~*', textValue(c, () => String(c.value))),
-    mask: regexMask(true),
+    mask: regexMask(true), check: regexCheck,
   },
   {
     id: 'fuzzy', label: 'is similar to', arity: 1, kinds: [KIND.STRING], editor: 'default',

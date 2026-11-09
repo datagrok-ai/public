@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 
-import { tablePieChartNameMap } from './admetica-utils';
+import {tablePieChartNameMap} from './admetica-utils';
 
 export class FormStateGenerator {
   table: string;

@@ -52,7 +52,7 @@ scoped('arrayRows: an array or a signal, keyed lookups follow the signal', () =>
 scoped('frameRows: one live proxy per id — reads follow the frame, writes reach it', () => {
   const scope = new Scope();
   const df = issues();
-  const rows = frameRows(signal(df), scope);
+  const rows = frameRows(signal(df), {owner: scope});
   assert.deepEqual(rows.items.value.map((r) => r.id), ['a', 'b', 'c']);
   const b = rows.byKey('b');
   assert.equal(b.title, 'Ibuprofen');
@@ -77,7 +77,7 @@ scoped('frameRows: one live proxy per id — reads follow the frame, writes reac
 scoped('frameRows: items skip filtered-out rows, keep deleted ones, and follow rows added', () => {
   const scope = new Scope();
   const df = issues();
-  const rows = frameRows(signal(df), scope);
+  const rows = frameRows(signal(df), {owner: scope});
   let versions = 0;
   scope.effect(() => {
     rows.items.value;
@@ -112,7 +112,7 @@ scoped('frameRows: onWrite takes the writes instead of the frame; an id-less row
   const df = new DataFrame([{name: 'id', type: 'string'}, {name: 'title', type: 'string'}],
     [{id: 'a', title: 'x'}, {id: null, title: 'draft'}]);
   const writes = [];
-  const rows = frameRows(signal(df), scope, {onWrite: (id, column, value) => writes.push([id, column, value])});
+  const rows = frameRows(signal(df), {owner: scope, onWrite: (id, column, value) => writes.push([id, column, value])});
   assert.deepEqual(rows.items.value.map((r) => r.id), ['a', '~row:1']);
   rows.byKey('a').title = 'y';
   assert.deepEqual(writes, [['a', 'title', 'y']]);
@@ -125,7 +125,7 @@ scoped('frameRows: a repoint resubscribes and rebuilds; no frame is no rows', ()
   const scope = new Scope();
   const first = issues();
   const source = signal(first);
-  const rows = frameRows(source, scope);
+  const rows = frameRows(source, {owner: scope});
   assert.equal(first.liveSubscriptions(), 5);
 
   const second = new DataFrame([{name: 'id', type: 'string'}, {name: 'title', type: 'string'}],

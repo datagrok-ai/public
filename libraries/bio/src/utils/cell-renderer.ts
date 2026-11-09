@@ -12,6 +12,9 @@ const monomerToShortFunction: (amino: string, maxLengthOfMonomer: number) => str
 
 export enum TAGS {
   maxMonomerLength = '.mm.cellRenderer.maxMonomerLength',
+  /** 'true' / 'false': rows with connections (BILN cyclizations, HELM bonds) draw them as lines; unset, the package
+   * default decides */
+  showConnections = '.mm.cellRenderer.showConnections',
 }
 
 export enum MONOMER_RENDERER_TAGS {
@@ -42,9 +45,55 @@ export const PrintOptionsDefaults = new class {
   // Multiline stuff
   isMultiLineContext: boolean = false;
   lineNumber: number = 0;
+  /** {@link gridCell}'s column temps as {@link getPrintColumnTemps} reads them, computed once per cell by a caller
+   * that prints many monomers of the cell; read from {@link gridCell} per call when not given */
+  columnTemps?: PrintColumnTemps = undefined;
 }();
 
 export type PrintOptions = typeof PrintOptionsDefaults;
+
+/** The column temps {@link printLeftOrCentered} draws by */
+export type PrintColumnTemps = { colorCode: boolean, compareWithCurrent: boolean, highlightDifference: string };
+
+/** The `color-code`, `compare-with-current` and `highlight-difference` temps of the grid cell's column, with their
+ * defaults (also for no cell or no column), as {@link printLeftOrCentered} reads them. */
+export function getPrintColumnTemps(gridCell: DG.GridCell | null): PrintColumnTemps {
+  let colorCode = true;
+  let compareWithCurrent = true;
+  let highlightDifference = 'difference';
+  if ((gridCell != null) && (gridCell.cell.column != null)) {
+    colorCode = gridCell.cell.column.temp['color-code'] ?? true;
+    compareWithCurrent = gridCell.cell.column.temp['compare-with-current'] ?? true;
+    highlightDifference = gridCell.cell.column.temp['highlight-difference'] ?? 'difference';
+  }
+  return {colorCode, compareWithCurrent, highlightDifference};
+}
+
+/** {...PrintOptionsDefaults, ...options} without the generic object spread per printed monomer: a given key wins,
+ * even with the value undefined, as with the spread. */
+function withPrintDefaults(o: Partial<PrintOptions>): PrintOptions {
+  const d = PrintOptionsDefaults;
+  return {
+    color: 'color' in o ? o.color! : d.color,
+    pivot: 'pivot' in o ? o.pivot! : d.pivot,
+    left: 'left' in o ? o.left! : d.left,
+    transparencyRate: 'transparencyRate' in o ? o.transparencyRate! : d.transparencyRate,
+    separator: 'separator' in o ? o.separator! : d.separator,
+    last: 'last' in o ? o.last! : d.last,
+    drawStyle: 'drawStyle' in o ? o.drawStyle! : d.drawStyle,
+    maxWord: 'maxWord' in o ? o.maxWord! : d.maxWord,
+    wordIdx: 'wordIdx' in o ? o.wordIdx! : d.wordIdx,
+    gridCell: 'gridCell' in o ? o.gridCell! : d.gridCell,
+    referenceSequence: 'referenceSequence' in o ? o.referenceSequence! : d.referenceSequence,
+    maxLengthOfMonomer: 'maxLengthOfMonomer' in o ? o.maxLengthOfMonomer! : d.maxLengthOfMonomer,
+    monomerTextSizeMap: 'monomerTextSizeMap' in o ? o.monomerTextSizeMap! : d.monomerTextSizeMap,
+    logger: 'logger' in o ? o.logger : d.logger,
+    selectedPosition: 'selectedPosition' in o ? o.selectedPosition : d.selectedPosition,
+    isMultiLineContext: 'isMultiLineContext' in o ? o.isMultiLineContext! : d.isMultiLineContext,
+    lineNumber: 'lineNumber' in o ? o.lineNumber! : d.lineNumber,
+    columnTemps: 'columnTemps' in o ? o.columnTemps : d.columnTemps,
+  };
+}
 
 /** A function that prints a string aligned to left or centered.
  * @param {CanvasRenderingContext2D} g Canvas rendering context
@@ -61,7 +110,7 @@ export type PrintOptions = typeof PrintOptionsDefaults;
 export function printLeftOrCentered(g: CanvasRenderingContext2D,
   s: string, x: number, y: number, w: number, h: number, options: Partial<PrintOptions>
 ): number {
-  const opts = {...PrintOptionsDefaults, ...options};
+  const opts = withPrintDefaults(options);
 
   const logPrefix: string = `Bio: printLeftOrCentered()`;
 
@@ -113,14 +162,7 @@ export function printLeftOrCentered(g: CanvasRenderingContext2D,
   let grayPart = opts.last ? '' : opts.separator;
   if (opts.drawStyle === DrawStyle.MSA) grayPart = '';
 
-  let colorCode = true;
-  let compareWithCurrent = true;
-  let highlightDifference = 'difference';
-  if ((opts.gridCell != null) && (opts.gridCell.cell.column != null)) {
-    colorCode = opts.gridCell.cell.column.temp['color-code'] ?? true;
-    compareWithCurrent = opts.gridCell.cell.column.temp['compare-with-current'] ?? true;
-    highlightDifference = opts.gridCell.cell.column.temp['highlight-difference'] ?? 'difference';
-  }
+  const {colorCode, compareWithCurrent, highlightDifference} = opts.columnTemps ?? getPrintColumnTemps(opts.gridCell);
 
   if (opts.referenceSequence) {
     const currentMonomerCanonical = opts.referenceSequence[opts.wordIdx];

@@ -116,7 +116,7 @@ jobs:
           fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
       - name: Install commitlint dependencies
         run: npm install --location=global @commitlint/config-conventional @commitlint/cli
       - uses: wagoid/commitlint-github-action@v5
@@ -135,7 +135,7 @@ jobs:
           fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
       # https://github.com/JulienKode/pull-request-name-linter-action/issues/236
       - name: Install commitlint dependencies
         run: npm install --prefix "$RUNNER_TEMP/commitlint" @commitlint/config-conventional@v17 @commitlint/cli

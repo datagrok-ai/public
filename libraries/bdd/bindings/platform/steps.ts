@@ -1,5 +1,4 @@
-/* Platform base steps: setup through the JS API (the openers of @datagrok-libraries/test keep the
-   provenance tags the UI would set). Viewer steps live in the `viewers` tier. */
+// setup goes through @datagrok-libraries/test's openers: they keep the provenance tags the UI would set
 import {type Locator, type Page, test} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
@@ -8,7 +7,7 @@ import {expectState, type State} from '../../src/runtime/assertions.js';
 import {click, dblclick, drag, editorOf, setExpanded} from '../../src/runtime/gestures.js';
 import {atFeatureEnd, atScenarioStop} from '../../src/runtime/harness.js';
 import {shellSimpleMode, silent} from '../../src/runtime/guide.js';
-import {cssString, escapeRegExp, exactText, locate} from '../../src/runtime/locate.js';
+import {cssString, escapeRegExp, exactText, locate, locateActionable} from '../../src/runtime/locate.js';
 import {armEvent, openContextMenuOf} from '../../src/runtime/viewer-menus.js';
 import {pickMenuPath, settleAll} from '../../src/runtime/viewers.js';
 import {RUN_SUFFIX, type SavedScript, deleteChatsOf, deleteLayoutsAtEnd, deletePictures, fixtureFamilies, isStaleFixture,
@@ -275,12 +274,20 @@ export const taggedProjectOnServer = Given('a project named {string} tagged {str
 /** A tag added in the Details pane is saved after the pane shows it: a "#tag" search sent before then finds nothing.
  * The project is found in the complete listing (a name filter on projects finds nothing) and read whole by its id: a
  * listed project carries no tags. */
-export const projectTaggedOnServer = Then('the project named {string} should be tagged {string} on the server', async (page: Page, name: string, tag: string) => {
+async function projectTagReader(page: Page, name: string, tag: string): Promise<() => Promise<boolean>> {
   const found = (await serverEntities(page, 'projects', '', false)).filter((p) => p.name === name || p.friendlyName === name);
   expect(found.length, `projects named "${name}" on the server`).toBe(1);
-  await expect.poll(() => page.evaluate(async ([id, t]) => (await grok.dapi.projects.find(id)).hasTag(t), [found[0].id, tag] as [string, string]),
+  return () => page.evaluate(async ([id, t]) => (await grok.dapi.projects.find(id)).hasTag(t), [found[0].id, tag] as [string, string]);
+}
+
+export const projectTaggedOnServer = Then('the project named {string} should be tagged {string} on the server', async (page: Page, name: string, tag: string) => {
+  await expect.poll(await projectTagReader(page, name, tag),
     {message: `whether the project "${name}" carries the tag "${tag}" on the server`}).toBe(true);
 }, {tier: 'api', description: 'the entity tag as the server keeps it, which a "#tag" search of the gallery finds'});
+
+export const projectNotTaggedOnServer = Then('the project named {string} should not be tagged {string} on the server', async (page: Page, name: string, tag: string) => {
+  expect(await (await projectTagReader(page, name, tag))(), `whether the project "${name}" carries the tag "${tag}" on the server`).toBe(false);
+}, {tier: 'api', description: 'one read of the server, made after the claim that the save ended (its error balloon): a grant with no edit right did not tag'});
 
 /* The "user's own" cleanups are for names a feature does not choose — a tutorial dictates them, and
    people who took it by hand saved theirs under the same names: those of other users stay. */
@@ -640,6 +647,42 @@ export const contextPanelShowsCurrentCell = Then('the context panel should show 
   }), {message: 'the current object (grok.shell.o) against the table\'s current cell'}).toBe('the current cell');
 }, {description: 'the current object is the value of the table\'s current cell, as the panel shows it after a row or cell move'});
 
+/* A pane dragged out of an accordion floats in a panel of its own, which the first pixels of the drag make. The drop
+   point keeps the panel off the grid's first columns, whose cells a feature goes on clicking, and off the dock compass,
+   which opens over the middle of the panel under the pointer. */
+export const dragPaneOut = When('user drags {element} out of the accordion', async (page: Page, pane: ElementRef) => {
+  const box = await (await locateActionable(page, pane)).first().boundingBox();
+  if (!box)
+    throw new Error(`${pane.phrase} has no box to drag`);
+  const floating = page.locator('.dialog-floating');
+  const before = await floating.count();
+  const view = page.viewportSize()!;
+  await page.mouse.move(box.x + 30, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(view.width * 0.45, view.height * 0.25, {steps: 8});
+  await page.mouse.up();
+  await expect(floating, `${pane.phrase} dragged out into a panel of its own`).toHaveCount(before + 1);
+}, {description: 'drops it clear of the grid\'s first columns and the dock compass: "<pane name>" floating panel'});
+
+/* With the page's mouse: a locator's click keeps the element it hit in Playwright's injected script, which reads as a leak. */
+export const closePanelWatched = When('user closes {element}, watching that nothing keeps it', async (page: Page, panel: ElementRef) => {
+  const loc = (await locateActionable(page, panel)).first();
+  await loc.evaluate((e) => { (window as any).__bddClosedPanel = [e, e.querySelector('.d4-viewer') ?? e].map((x) => new WeakRef(x)); });
+  const box = (await loc.locator('.panel-titlebar-button-close').boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+});
+
+export const closedPanelReleased = Then('nothing should keep the closed panel', async (page: Page) => {
+  const cdp = await page.context().newCDPSession(page);
+  // closing a viewer is undoable, and the undo record holds it for Ctrl+Z: that is the one holder allowed
+  await page.evaluate(() => (window as any).grok_UndoService_Clear());
+  await expect.poll(async () => {
+    await cdp.send('HeapProfiler.collectGarbage');
+    return page.evaluate(() => (window as any).__bddClosedPanel.every((r: WeakRef<Element>) => r.deref() === undefined));
+  }, {message: 'the closed panel and its viewer after a garbage collection: something keeps them'}).toBe(true);
+  await cdp.detach();
+}, {description: 'after another click, whose mouse event replaces the shell\'s last one; the panel and the viewer in it, once the undo record is dropped'});
+
 /* --- the second account ------------------------------------------------------------------------
    A sharing feature needs a user other than the one running it: DATAGROK_SHARING_LOGIN — the same
    variable the hand-written suites read from playwright-tests/.env — or, when it is unset, the
@@ -707,14 +750,22 @@ export const suggestionsNotOfferOwn = Then('the user suggestions should not offe
 
 /* The grant row of the second account in a Share dialog; its Remove button shows while the row is
    hovered. The row goes at once, the grant only when the dialog is confirmed. */
-export const removeSharingUser = When('user removes the sharing user from {element}', async (page: Page, target: ElementRef) => {
-  const shown = sharingShownName();
-  const row = (await locate(page, target)).locator('[name^="div-permissions-row-"]').filter({hasText: new RegExp(shown, 'i')}).first();
-  await expect(row, `the grant row of "${shown}"`).toBeVisible({timeout: pollMs(15000)});
+async function removeGrantRow(page: Page, target: ElementRef, name: string): Promise<void> {
+  const row = (await locate(page, target)).locator('[name^="div-permissions-row-"]').filter({visible: true})
+    .filter({hasText: new RegExp(escapeRegExp(name), 'i')}).first();
+  await expect(row, `the grant row of "${name}"`).toBeVisible({timeout: pollMs(15000)});
   await row.hover();
   await row.locator('[name="button-Remove"]').click();
-  await expect(row, `the grant row of "${shown}" after Remove`).toBeHidden();
-}, {tier: 'ui', description: 'hovers the grant row of DATAGROK_SHARING_LOGIN and clicks its Remove button'});
+  await expect(row, `the grant row of "${name}" after Remove`).toBeHidden();
+}
+
+export const removeSharingUser = When('user removes the sharing user from {element}', (page: Page, target: ElementRef) =>
+  removeGrantRow(page, target, sharingShownName()),
+{tier: 'ui', description: 'hovers the grant row of DATAGROK_SHARING_LOGIN and clicks its Remove button'});
+
+export const removeGrant = When('user removes {string} from {element}', (page: Page, name: string, target: ElementRef) =>
+  removeGrantRow(page, target, name),
+{tier: 'ui', description: 'hovers the visible grant row that names the user or group ("All users") and clicks its Remove button; the name is matched as text within the row'});
 
 export const sharingUserLevel = Then('the access level of the sharing user in {element} should be {string}', async (page: Page, target: ElementRef, level: string) => {
   const shown = sharingShownName();
@@ -956,6 +1007,11 @@ export const doubleClickOpensProject = When('user double-clicks on {element} and
 export const dragShared = When('user drags {string} shared by the running account to {string} shared by the running account',
   (page: Page, source: string, target: string) => drag(page, sharedByRunningAccount(page, source), sharedByRunningAccount(page, target)),
   {tier: 'ui', description: 'one node under My stuff > Shared with me > <the account the feature started with> onto another'});
+
+export const openSharedMenu = When('user opens the context menu of {string} shared by the running account',
+  async (page: Page, path: string) => {
+    await openContextMenuOf(page, sharedByRunningAccount(page, path));
+  }, {tier: 'ui', description: 'right-clicks a node under My stuff > Shared with me > <the account the feature started with>, and leaves the menu open for menu item checks'});
 
 export const pickFromSharedMenu = When('user picks {string} from the context menu of {string} shared by the running account',
   async (page: Page, menuPath: string, path: string) => {
@@ -1503,6 +1559,7 @@ async function saveQuery(page: Page, name: string, connection: string, sql: stri
     await grok.dapi.queries.save(conn.query(n, s));
   }, [name, connection, sql] as [string, string, string]);
   await expectNamedCount(page, 'queries', 'queries', name, 1);
+  await refreshBrowseTree(page);
 }
 
 export const queryOnServer = Given('a query {string} on {string} reads {string}', (page: Page, name: string, connection: string, sql: string) =>
@@ -1589,7 +1646,7 @@ export const standServesHelp = Given('the stand serves the help pages', async (p
 /** The answer of the connection's Grok Connect test, or "N connections named ..." when the name does not
  * resolve to one connection. */
 async function connectionTestAnswer(page: Page, name: string): Promise<string> {
-  return page.evaluate(async (n) => {
+  return page.evaluate(async ([n, ms]) => {
     let found = (await grok.dapi.connections.list({pageSize: 5000})).filter((c: any) => c.friendlyName === n || c.name === n);
     // a name learners share (a tutorial's connection) lists other users' copies too: the running user's own is the fixture
     if (found.length > 1) {
@@ -1599,12 +1656,14 @@ async function connectionTestAnswer(page: Page, name: string): Promise<string> {
     if (found.length !== 1)
       return `${found.length} connections named "${n}"`;
     try {
-      return String(await (await grok.dapi.connections.find(found[0].id)).test());
+      const connection = await grok.dapi.connections.find(found[0].id);
+      return String(await Promise.race([connection.test(),
+        new Promise((resolve) => setTimeout(() => resolve(`no answer to the connection test in ${ms / 1000} s`), ms))]));
     }
     catch (error: any) {
       return error?.message ?? String(error);
     }
-  }, name);
+  }, [name, pollMs(30000)] as [string, number]);
 }
 
 export const standReachesConnection = Given('the stand can reach the database of the {string} connection', async (page: Page, name: string) => {
@@ -1707,7 +1766,7 @@ export const dbMetaOnServer = Then('the Database meta of {string} in the {string
 export const standHasReachableConnection = Given('the stand has a reachable {string} connection', async (page: Page, name: string) => {
   const answer = await connectionTestAnswer(page, name);
   test.skip(answer.trim().toLowerCase() !== 'ok', `the stand has no reachable "${name}" connection (${answer.slice(0, 200)}) — the rest of this test needs it`);
-}, {tier: 'api', description: 'a capability gate for a connection a package brings rather than the feature: absent or unreachable, the rest of the test is skipped with the reason'});
+}, {tier: 'api', description: 'a capability gate for a connection a package brings rather than the feature: absent, unreachable or silent for 30 s, the rest of the test is skipped with the reason'});
 
 export const noModelOnServer = Given('no predictive model named {string} is on the server', async (page: Page, name: string) => {
   const cleanup = namedCleanup(page, 'models', 'predictive models', namesOf(name));

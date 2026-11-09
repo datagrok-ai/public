@@ -9,11 +9,10 @@ import {withAttachedView} from '../helpers';
 // "DataSource not specified" as an unhandled async rejection when none is supplied.
 category('AI: App: CardView Extras', () => {
   const withCardView = (body: (cv: DG.CardView) => void): Promise<void> =>
-    // awaitRender=false: these getters are model-backed (attachment suffices, no render needed).
     withAttachedView<DG.CardView>(() => DG.CardView.create({dataSource: grok.dapi.scripts}), (cv) => {
       expect(cv instanceof DG.CardView, true);
       body(cv);
-    }, false);
+    });
 
   test('hierarchyProperties map round-trips', async () => {
     await withCardView((cv) => {
@@ -53,6 +52,6 @@ category('AI: App: CardView Extras', () => {
       // which needs Dart-side grid properties a JS CardView has no meta for — use BRIEF.
       ccv.renderMode = DG.RENDER_MODE.BRIEF;
       expect(ccv.renderMode, DG.RENDER_MODE.BRIEF);
-    }, false);
+    });
   });
 }, {owner: 'agolovko@datagrok.ai'});

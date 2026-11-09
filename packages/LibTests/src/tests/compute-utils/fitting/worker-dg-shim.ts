@@ -4,7 +4,7 @@
 
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectFloat, waitUntil} from '@datagrok-libraries/test/src/test';
 import {createWorkerDG, arrowIpcToLite, LiteColumn, LiteDataFrame, compileBody,
   clearCompileCache, _getCompileStats, _setCompileCacheCap, FLOAT_NULL} from
   '@datagrok-libraries/compute-utils/webworkers';
@@ -135,10 +135,11 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     // doesn't agree with DG.Column.get); we don't assert against it.
     const liteList = lite.toList();
     expect(liteList.length, lite.length, 'toList length');
-    for (let i = 0; i < liteList.length; ++i)
+    for (let i = 0; i < liteList.length; ++i) {
       expectFloat(Number((liteList[i] as any)?.valueOf?.()),
         Number((lite.get(i) as any)?.valueOf?.()), 1e-9,
         `toList[${i}] vs get(${i})`);
+    }
   });
 
   test('shim_dataframe_fromcolumns_parity', async () => {
@@ -233,7 +234,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     expect(df.getCol('value').name, 'value', 'getCol exact');
     expect(df.getCol('VALUE').name, 'value', 'getCol case-insensitive');
     let getColThrew = false;
-    try { df.getCol('nope'); } catch { getColThrew = true; }
+    try {df.getCol('nope');} catch {getColThrew = true;}
     expect(getColThrew, true, 'getCol throws when missing');
 
     expect(df.get('value', 1), 1.5, 'df.get(name, idx)');
@@ -255,7 +256,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     expect(list.byIndex(0).name, 'Id', 'byIndex 0');
     expect(list.byIndex(3).name, 'flag', 'byIndex last');
     let byIndexThrew = false;
-    try { list.byIndex(99); } catch { byIndexThrew = true; }
+    try {list.byIndex(99);} catch {byIndexThrew = true;}
     expect(byIndexThrew, true, 'byIndex throws on out-of-range');
 
     const got = list.byNames(['v', 'LABEL']);
@@ -474,9 +475,9 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     // Mimics the worker entry's body-wrap: given a script body that assigns
     // to a declared output variable, compile it with the shim's DG injected
     // and assert the captured output is a LiteDataFrame.
-    const body = "simulation = DG.DataFrame.fromColumns([" +
+    const body = 'simulation = DG.DataFrame.fromColumns([' +
       "DG.Column.fromFloat64Array('y', new Float64Array([1,2,3]))" +
-      "]);";
+      ']);';
     const wrapped = `var simulation; ${body}; return {simulation};`;
     const fn = new Function('DG', wrapped) as (dg: any) => {simulation: LiteDataFrame};
     const out = fn(shim);
@@ -566,7 +567,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     const slot = pool._slotsArrayForTest()[0];
     slot.pendingSetups.set(7, {
       sessionId: 7,
-      resolve: (a) => { resolved = true; ack = a as SetupAckLike; },
+      resolve: (a) => {resolved = true; ack = a as SetupAckLike;},
       setupTimer: setTimeout(() => {}, 60_000),
     });
     pool.dispose();
@@ -589,7 +590,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     let reply: RunReplyLike | null = null;
     const job = new RunJob(
       {sessionId: 9, seedIndex: 7, seed: new Float64Array([1, 2])}, [],
-      (r: any) => { resolved = true; reply = r as RunReplyLike; },
+      (r: any) => {resolved = true; reply = r as RunReplyLike;},
     );
     // Long-lived noop timer — RunJob.settle clearTimeouts it on dispose's
     // running→idle transition.
@@ -637,8 +638,8 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     const bodyA = 'y = a + 10;';
     const bodyB = 'y = a + 20;';
     compileBody(bodyA, ['a'], ['y']);
-    compileBody(bodyB, ['a'], ['y']);  // evicts A
-    compileBody(bodyA, ['a'], ['y']);  // miss → recompile
+    compileBody(bodyB, ['a'], ['y']); // evicts A
+    compileBody(bodyA, ['a'], ['y']); // miss → recompile
     const s = _getCompileStats();
     expect(s.misses, 3, 'A→B→A with cap=1 must produce 3 misses');
     expect(s.hits, 0);
@@ -715,10 +716,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
       // Remove slot 0. Replacement is spawned and re-primed; budget hits 1.
       // Re-prime is async; wait for it to land by polling.
       pool._removeSlotForTest(pool._slotsArrayForTest()[0], 'test forced remove 1', 77);
-      const start = Date.now();
-      while (pool._primedSlotCountForTest(77) < 2 && Date.now() - start < 2000)
-        await new Promise((r) => setTimeout(r, 10));
-      expect(pool._primedSlotCountForTest(77), 2, 'replacement should re-prime within budget');
+      await waitUntil(() => pool._primedSlotCountForTest(77) === 2, 'replacement should re-prime within budget', 2000);
       expect(pool._replacementAttemptsForTest(77), 1, 'budget consumed');
 
       // Remove a second slot. Budget exhausted: replacement spawns but is
@@ -781,11 +779,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
       expect(pool._replacementAttemptsForTest(A), 0);
       expect(pool._replacementAttemptsForTest(B), 0);
 
-      const waitForReprime = async () => {
-        const start = Date.now();
-        while (pool._primedSlotCountForTest(A) < 2 && Date.now() - start < 2000)
-          await new Promise((r) => setTimeout(r, 10));
-      };
+      const waitForReprime = () => waitUntil(() => pool._primedSlotCountForTest(A) === 2, 'A was not re-primed', 2000);
 
       // First B-attributed removal: B charged (→1), A re-primed but not charged.
       pool._removeSlotForTest(pool._slotsArrayForTest()[0], 'B caused remove 1', B);
@@ -863,7 +857,7 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
         lossType: LOSS.RMSE, fixedInputs: {}, variedInputNames: ['a'],
         bounds: inputBounds, outputTargets: targets, nmSettings: new Map(),
       });
-      await pool.setupAll(setup);  // setup is fast — only compile, no run
+      await pool.setupAll(setup); // setup is fast — only compile, no run
       const start = Date.now();
       const reply = await pool.dispatchRun({sessionId: 2, seedIndex: 0, seed: new Float64Array([1])});
       const elapsed = Date.now() - start;
@@ -948,7 +942,6 @@ category('ComputeUtils: Fitting / Worker DG shim', () => {
     expect(yb.top.value, 10);
     structuredClone(setup);
   });
-
 });
 
 /** Minimal Datagrok-script header parser: extracts input names and output names. */
@@ -968,11 +961,10 @@ function parseScript(src: string): {body: string; inputNames: string[]; outputNa
         else outputNames.push(m[2]);
       }
       bodyStart = i + 1;
-    } else if (trimmed === '') {
+    } else if (trimmed === '')
       bodyStart = i + 1;
-    } else {
+    else
       break;
-    }
   }
   return {
     body: lines.slice(bodyStart).join('\n'),

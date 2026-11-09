@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Search: Fixed a numeric range criterion (`10-20`) searching for its first number only, and an emptied numeric input of Search Plates or Search Wells showing as invalid
+* [core#1146](https://github.com/datagrok-ai/core/issues/1146): Search Plates: no second, identical search 1.5 s after opening, which could replace the results of a search started meanwhile
 * GROK-21054: Fixed the Plates app crashing when opened before demo plates are created
 * GROK-17637: DRC: Follow the statistics library's `new-fit-API` module rename to `fit-engine`
 * Plates: Fixed a crash loading the package's test suite in DevTools Test Manager.

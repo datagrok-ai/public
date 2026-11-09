@@ -4,7 +4,7 @@ export class DockConfig {
         this.escClosesDialog = true;
         this.dialogRootElement = document.body;
         this.moveOnlyWithinDockConatiner = false;
-        this.enableBrowserWindows = true;
+        this.enableBrowserWindows = false;
     }
 
     escClosesWindow?: boolean;

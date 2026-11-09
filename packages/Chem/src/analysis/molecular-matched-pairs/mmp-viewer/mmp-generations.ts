@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {GENERATIONS_GRID_HEADER_DESCRIPTIONS, MMP_NAMES} from './mmp-constants';
-import {getRdKitService} from '../../../utils/chem-common-rdkit';
+import {mmpLinkFragmentsByEngine} from '../../../engine/analysis-jobs';
 import {MMPA} from '../mmp-analysis/mmpa';
 import {resizeGridColsSize} from '../../../utils/ui-utils';
 
@@ -24,7 +24,7 @@ export async function getGenerations(mmpa: MMPA, allPairsGrid: DG.Grid):
       idxsToExclude.push(i);
   }
 
-  const generation = await (await getRdKitService()).mmpLinkFragments(genRes.cores, genRes.to);
+  const generation = await mmpLinkFragmentsByEngine(genRes.cores, genRes.to);
   const cols = [];
   cols.push(createColWithDescription('string', MMP_NAMES.STRUCTURE, genRes.allStructures,
     GENERATIONS_GRID_HEADER_DESCRIPTIONS, '', DG.SEMTYPE.MOLECULE, undefined, undefined, idxsToExclude));

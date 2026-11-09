@@ -1,14 +1,9 @@
-/* DomainSource (WO-7) over the memory backend's frame: load → rows/total/access, a query change
-   resets, loadMore appends into the same frame, drafts are rows (newRow → dirty → save → id
-   assigned, clean), discard, the `currentRow.<col>` binding writes through the edit state, the
-   spec round trip, the session and the guards a form pairs through, the frame's current row
-   mirrored both ways, H8 disposal, and the containment of a missing table or backend. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
-import {backends, Scope, signal, Signal, Registry, SpecContext, renderSpec, registerAll, MemoryFrame, Rows, Access, notify} from '@datagrok-libraries/u2';
+import {backends, Scope, signal, Signal, Registry, SpecContext, renderSpec, registerAll, MemoryFrame, Rows, Access, notify,
+  Filters} from '@datagrok-libraries/u2';
 import {registerDomainSources} from '../src/core/registrations.js';
 import {DomainSource} from '../src/core/domain-source.js';
 import {SharedSession} from '../src/core/session.js';
@@ -43,7 +38,7 @@ function env(options = {}) {
 }
 
 async function issues(options = {}) {
-  const src = new DomainSource({table: 'grit.issue', ...options}, env());
+  const src = testOwner().build(() => new DomainSource({table: 'grit.issue', ...options}, env()));
   src.start();
   await flush();
   return src;
@@ -53,7 +48,7 @@ const titles = (src) => src.rows.items.value.map((r) => r.title);
 const fn = (src, name) => src.getFunctions().find((f) => f.name === name);
 const UUID = /^[0-9a-f-]{36}$/;
 
-/** The memory backend behind a table whose frames count their disposals (H8). */
+/** The memory backend behind a table whose frames count their disposals. */
 function counting(memory, frames) {
   return {table: async (address) => {
     const t = await memory.table(address);
@@ -85,7 +80,7 @@ source('load: rows by id, total, access, schema and the summary', async () => {
   assert.equal(src.state.value, 'ready');
   assert.deepEqual(titles(src), ['Aspirin', 'Ibuprofen']);
   assert.equal(src.total.value, 3);
-  assert.equal(src.summary.value, '2 of 3');
+  assert.equal(src.summary.value, '2 of 3 issues');
   assert.equal(src.rows.byKey('i2').title, 'Ibuprofen');
   assert.equal(src.rows.keyOf(src.rows.items.value[0]), 'i1');
   assert.equal(src.access.value.field('title'), 'editable');
@@ -568,8 +563,8 @@ source('the `source` step hands the source itself to a bound control', async () 
   const reg = new Registry();
   registerAll(reg);
   registerDomainSources(reg);
-  const instance = renderSpec({$schema: 'dg-ui/1', components: [reg.get('u2-domain-source').example],
-    root: {tag: 'div'}}, new SpecContext(), reg);
+  const instance = testOwner().build(() => renderSpec({$schema: 'dg-ui/1',
+    components: [reg.get('u2-domain-source').example], root: {tag: 'div'}}, new SpecContext(), reg));
   await flush();
   assert.equal(instance.resolveBinding('$.issues.source').signal.peek(), instance.node('issues'));
   instance.dispose();
@@ -651,7 +646,8 @@ source('the summary: singular for one, "New <row>" for a draft source, deletions
   assert.equal(some.summary.value, '2 unsaved changes', 'a deletion among other changes is one of them');
   some.dispose();
 
-  const draft = new DomainSource({table: 'grit.issue', draft: true, defaults: {title: 'Draft'}}, env());
+  const draft = testOwner().build(() =>
+    new DomainSource({table: 'grit.issue', draft: true, defaults: {title: 'Draft'}}, env()));
   draft.start();
   assert.equal(draft.summary.value, 'Loading…');
   await flush();
@@ -860,7 +856,7 @@ source('the live option is a signal on the source; the poller\'s timer rides the
   watched.live.value = false;
   assert.equal(watched.live.value, false, 'a menu flips it like the trash mode flips `deleted`');
 
-  // the dispose contract WO 3-11 polls under: what the poller owns goes with the source
+  // the dispose contract the poll runs under: what the poller owns goes with the source
   let stopped = false;
   watched.own(() => stopped = true);
   watched.dispose();
@@ -1054,4 +1050,16 @@ source('afterSave: a count a later refresh outran never overwrites the refresh\'
   await saving;
   assert.equal(src.total.value, 3, 'the late count is dropped');
   src.dispose();
+});
+
+source('hosted: a host condition goes to the server as the ids the app answers', async () => {
+  emsBackends.domain = backend();
+  const off = Filters.operators.register({id: 'has', label: 'has', arity: 1, kinds: ['string'], editor: 'default', host: true});
+  const src = new DomainSource({table: 'grit.issue', query: 'title has "c1ccccc1"'}, env());
+  src.hosted = async () => ['i1', 'i3'];
+  src.start();
+  await flush();
+  assert.deepEqual(titles(src), ['Aspirin', 'Naproxen']);
+  src.dispose();
+  off();
 });

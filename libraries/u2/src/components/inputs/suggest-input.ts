@@ -90,7 +90,7 @@ export class SuggestInput extends Input<string, SuggestInputOptions> {
       scope: this.scope,
       items: this._items,
       view: source.state,
-      text: this.value,
+      text: this.signal,
       minChars: this.options.minChars ?? 0,
       render: (item) => this.options.renderItem?.(item) ??
         SuggestionList.row('u2-typeahead-text', item),
@@ -104,11 +104,11 @@ export class SuggestInput extends Input<string, SuggestInputOptions> {
 
     // registered before bindValue so the flag is up when its handler writes the value signal
     this.scope.listen(input, 'input', () => this._typing = true);
-    bindValue(this.scope, input, this.value);
-    this.scope.listen(input, 'focus', () => this._anchorValue = this.value.peek());
+    bindValue(input, this.signal, {owner: this.scope});
+    this.scope.listen(input, 'focus', () => this._anchorValue = this.peek());
     this.scope.listen(input, 'input', () => this._onInput());
     this.effect(() => {
-      const v = this.value.value;
+      const v = this.value;
       if (!this._typing)
         this._anchorValue = v;
     });
@@ -139,15 +139,15 @@ export class SuggestInput extends Input<string, SuggestInputOptions> {
   }
 
   private _refresh(): void {
-    if (this.value.peek().length >= (this.options.minChars ?? 0))
-      this._source.query(this.value.peek());
+    if (this.peek().length >= (this.options.minChars ?? 0))
+      this._source.query(this.peek());
   }
 
   private _accept(index: number): boolean {
     const item = this._items.peek()[index];
     if (item === undefined)
       return false;
-    this.value.value = item;
+    this.value = item;
     this._anchorValue = item;
     this._list.dismiss();
     return true;
@@ -188,7 +188,7 @@ export class SuggestInput extends Input<string, SuggestInputOptions> {
         }
         break;
       case ' ':
-        if (this.options.openOnFocus && this.value.peek() === '') {
+        if (this.options.openOnFocus && this.peek() === '') {
           e.preventDefault();
           this._showAll();
         }
@@ -198,9 +198,9 @@ export class SuggestInput extends Input<string, SuggestInputOptions> {
           e.stopPropagation();
           this._list.dismiss();
         }
-        else if (this.value.peek() !== this._anchorValue) {
+        else if (this.peek() !== this._anchorValue) {
           e.stopPropagation();
-          this.value.value = this._anchorValue;
+          this.value = this._anchorValue;
         }
         break;
       case 'Tab':

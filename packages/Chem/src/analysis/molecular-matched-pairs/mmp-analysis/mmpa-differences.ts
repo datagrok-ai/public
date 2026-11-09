@@ -72,19 +72,26 @@ export function getPlainData(rules: MmpRules, frags: MmpFragments,
   return [rulesBased, allCasesBased];
 }
 
-function getAllRulesOcasions(mmpr: MmpRules, frags: MmpFragments, fragSortingInfo: SortData):
+export function getAllRulesOcasions(mmpr: MmpRules, frags: MmpFragments, fragSortingInfo: SortData):
 [string [], string [], Int32Array] {
   const allSize = mmpr.rules.length;
   const fromFrag = new Array<string>(allSize);
   const toFrag = new Array<string>(allSize);
   const occasions = new Int32Array(allSize);
+  // each fragment's first index in fragSortingInfo.fragmentIdxs (what indexOf finds), kept as it grows
+  const sortingIdx = new Map<number, number>();
+  fragSortingInfo.fragmentIdxs.forEach((frag, k) => {
+    if (!sortingIdx.has(frag))
+      sortingIdx.set(frag, k);
+  });
   for (let i = 0; i < allSize; i++) {
     const fromFragment = mmpr.smilesFrags[mmpr.rules[i].sr1];
     fromFrag[i] = frags.idToName[fromFragment];
     toFrag[i] = frags.idToName[mmpr.smilesFrags[mmpr.rules[i].sr2]];
     occasions[i] = mmpr.rules[i].pairs.length;
-    const fragIdxInSortingInfo = fragSortingInfo.fragmentIdxs.indexOf(fromFragment);
+    const fragIdxInSortingInfo = sortingIdx.get(fromFragment) ?? -1;
     if (fragIdxInSortingInfo === -1) {
+      sortingIdx.set(fromFragment, fragSortingInfo.fragmentIdxs.length);
       fragSortingInfo.fragmentIdxs.push(fromFragment);
       fragSortingInfo.frequencies.push(mmpr.rules[i].pairs.length);
     } else

@@ -227,7 +227,7 @@ def run_core_validate(
 
 @app.task(name="check_health", base=DatagrokTask)
 def check_health() -> str:
-    proc = _run_core(["--version"], timeout=60)
+    proc = _run_core(["version"], timeout=60)
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip() or "Unable to execute CORE binary.")
     return json.dumps({"status": "ok", "version": proc.stdout.strip()})

@@ -7,7 +7,7 @@
    row. Skips itself without the connection or the CreateDomainSchema privilege. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {Control} from '@datagrok-libraries/u2';
 import type {ManifestEditor} from '@datagrok-libraries/ems/src/dg/authoring/manifest-editor.js';
 
@@ -39,16 +39,16 @@ category('U2: domain editing', () => {
   async function until(check: () => boolean, what: string): Promise<void> {
     const started = Date.now();
     let reported = started;
-    while (!check()) {
+    await waitUntil(() => {
+      if (check())
+        return true;
       const now = Date.now();
-      if (now - started > 25000)
-        throw new Error(`timed out waiting for ${what} — ${state()}`);
       if (now - reported > 3000) {
         reported = now;
         console.log(`domain editing: still waiting for ${what} (${((now - started) / 1000).toFixed(0)} s) — ${state()}`);
       }
-      await delay(100);
-    }
+      return false;
+    }, () => `timed out waiting for ${what} — ${state()}`, 25000, 100);
     console.log(`domain editing: ${what} (${((Date.now() - started) / 1000).toFixed(1)} s)`);
   }
 

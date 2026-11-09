@@ -45,6 +45,8 @@ export function callHandler<R, P = any>(handler: HandlerBase<P, R>, params: P): 
   if (typeof handler === 'string') {
     return defer(async () => {
       const f = DG.Func.byName(handler);
+      if (!f)
+        throw new Error(`Function '${handler}' not found`);
       const call = f.prepare({params});
       await call.call(undefined, undefined, {processed: true, report: false});
       const res = call.getOutputParamValue() as R;
@@ -188,7 +190,7 @@ function makeDeepEqual({abs, rel}: Tolerance) {
   return equal;
 }
 
-const deepEquals = new Map<string, (a: any, b: any) => boolean>();
+const deepEquals: Map<string, (a: any, b: any) => boolean> = new Map();
 
 function getDeepEqual(tolerance: Tolerance) {
   const key = `${tolerance.abs}|${tolerance.rel}`;

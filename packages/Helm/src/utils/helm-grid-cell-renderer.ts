@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {HelmType, IHelmBio, ISeqMonomer, HelmMol, Mol} from '@datagrok-libraries/bio/src/helm/types';
+import {ISeqMonomer, HelmMol} from '@datagrok-libraries/bio/src/helm/types';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {CellRendererBackBase, getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
@@ -30,8 +30,10 @@ import {_package} from '../package';
 
 /** Per-cell render bookkeeping for hover hit-testing + the highlight overlay. */
 type HelmCellAux = {
-  /** Laid-out molecule as a legacy-shaped view (atoms[].p in model space). */
-  molView: HelmMol;
+  /** The laid-out molecule hwe drew */
+  mol: Parameters<typeof buildHelmMolView>[0];
+  /** {@link mol} as a legacy-shaped view (atoms[].p in model space), built on first use: hover, highlight */
+  molView?: HelmMol;
   /** Tight model-space bbox of the drawn content. */
   bBox: DG.Rect;
   /** Absolute (device-pixel) draw box the mol was painted into. */
@@ -40,20 +42,21 @@ type HelmCellAux = {
   cellHDev: number;
 };
 
-export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
-  /**
-   * Compat shim for the `measureCellRenderer` benchmark: hwe renders
-   * synchronously with an internal LRU parse/layout cache, so this is always
-   * `true` (the benchmark then waits on `grid.onAfterDrawContent`).
-   */
-  public readonly cacheEnabled: boolean = true;
+/** How many drawn values {@link HelmGridCellRendererBack} keeps for hover and highlight */
+const AUX_MAX = 1000;
 
+function getMolView(aux: HelmCellAux): HelmMol {
+  return aux.molView ??= buildHelmMolView(aux.mol) as unknown as HelmMol;
+}
+
+export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
   private sysMonomerLib: IMonomerLibBase | null = null;
   private helmHelper: IHelmHelper | null = null;
 
   /** hwe service per monomer-library source (a cell may carry an overridden lib). */
   private readonly serviceByLib: Map<string, HweHelmService> = new Map();
-  /** Per-cell-value render bookkeeping (hover + highlight). */
+  /** Per-cell-value render bookkeeping (hover + highlight): the last {@link AUX_MAX} values drawn (the visible cells
+   * among them), oldest dropped first; it used to keep every value ever drawn. */
   private auxList: Map<string, HelmCellAux> = new Map();
 
   constructor(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>) {
@@ -76,14 +79,12 @@ export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
       for (const svc of this.serviceByLib.values()) svc.destroy();
       this.serviceByLib.clear();
       this.auxList.clear();
-      this.dirty = true;
       this.invalidateGrid();
     }));
 
     this.subs.push(grok.events.onCustomEvent(MACROMOLECULE_HIGHLIGHT_EVENT_ID)
       .subscribe((args: MacromoleculeHighlightEventArgs) => this.handleHighlightEvent(args)));
 
-    this.dirty = true;
     this.invalidateGrid();
   }
 
@@ -137,12 +138,6 @@ export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
     return svc;
   }
 
-  protected override reset(): void {
-    super.reset();
-    this.auxList = new Map<string, HelmCellAux>();
-    this.invalidateGrid();
-  }
-
   /** Synchronous paint straight into the grid canvas via hwe `renderToCanvas`. */
   public render(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
@@ -177,12 +172,15 @@ export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
       });
 
       const aux: HelmCellAux = {
-        molView: buildHelmMolView(res.mol) as unknown as HelmMol,
+        mol: res.mol,
         bBox: new DG.Rect(res.bbox.x, res.bbox.y, res.bbox.width, res.bbox.height),
         dBox: new DG.Rect(res.drawBox.x, res.drawBox.y, res.drawBox.width, res.drawBox.height),
         cellHDev: h * dpr,
       };
+      this.auxList.delete(helm); // re-inserted as the most recent
       this.auxList.set(helm, aux);
+      if (this.auxList.size > AUX_MAX)
+        this.auxList.delete(this.auxList.keys().next().value!);
 
       // drawMolToContext restores its own transform, so we are back in
       // device-pixel space here for the overlay.
@@ -205,7 +203,7 @@ export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
   ): void {
     const entry = this.getHighlightForRow(rowIdx);
     if (!entry || !entry.monomers || entry.monomers.length === 0) return;
-    const atoms = aux.molView?.atoms;
+    const atoms = getMolView(aux)?.atoms;
     if (!atoms || atoms.length === 0) return;
     if (aux.bBox.width <= 0 || aux.bBox.height <= 0) return;
 
@@ -243,7 +241,7 @@ export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
   // Best-effort monomer glyph radius in model (bBox) coordinates from the median
   // bond length (glyph width ≈ bond length), else an area-density estimate.
   private estimateMonomerRadiusModel(aux: HelmCellAux): number {
-    const bonds = (aux.molView as any)?.bonds as
+    const bonds = (getMolView(aux) as any)?.bonds as
       Array<{a1?: {p?: {x: number, y: number}}, a2?: {p?: {x: number, y: number}}}> | undefined;
     const lens: number[] = [];
     if (bonds && bonds.length > 0) {
@@ -258,7 +256,7 @@ export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
       lens.sort((p, q) => p - q);
       return lens[Math.floor(lens.length / 2)] * 0.55;
     }
-    const n = Math.max(1, aux.molView?.atoms?.length ?? 1);
+    const n = Math.max(1, getMolView(aux)?.atoms?.length ?? 1);
     return Math.sqrt((aux.bBox.width * aux.bBox.height) / n) * 0.45;
   }
 
@@ -267,7 +265,6 @@ export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
     const aux = this.auxList.get(gridCell.cell.value);
     if (!aux) return;
 
-    const logPrefix = `${this.toLog()}.onMouseMove()`;
     const dpr = window.devicePixelRatio;
 
     /** {@link gridCell}.bounds */ const gcb = gridCell.bounds;
@@ -283,12 +280,7 @@ export class HelmGridCellRendererBack extends CellRendererBackBase<string> {
     // Single-atom hover threshold (0.35·cellHeight in the legacy) mapped to model space.
     const cellHModel = aux.cellHDev * aux.bBox.height / aux.dBox.height;
 
-    const editorMol: Mol<HelmType, IHelmBio> | null = aux.molView as unknown as Mol<HelmType, IHelmBio>;
-    if (!editorMol) {
-      this.logger.warning(`${logPrefix}, editorMol of the cell not found.`);
-      return;
-    }
-    const hoveredAtom = getHoveredMonomerFromEditorMol(mX, mY, aux.molView, cellHModel);
+    const hoveredAtom = getHoveredMonomerFromEditorMol(mX, mY, getMolView(aux), cellHModel);
 
     let seqMonomer: ISeqMonomer | null = null;
     if (hoveredAtom && this.helmHelper && gridCell.tableRowIndex != null) {

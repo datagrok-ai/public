@@ -3,8 +3,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import type ExcelJS from 'exceljs';
 import type html2canvas from 'html2canvas';
-import {DEFAULT_FLOAT_FORMAT, viewerTypesMapping} from './consts';
-import {delay, getPropViewers, graphicsDataUrl, isSvgGraphics} from './utils';
+import {DEFAULT_FLOAT_FORMAT, G7_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
+import {viewerTypesMapping} from './consts';
+import {getPropViewers, graphicsDataUrl, isSvgGraphics} from './utils';
 import type {ValidationResult} from '../reactive-tree-driver/src/data/common-types';
 import type {ConsistencyInfo} from '../reactive-tree-driver/src/runtime/StateTreeNodes';
 
@@ -90,7 +91,7 @@ export const richFunctionViewReport = async (
         viewerBox.classList.add('ui-box');
         viewerBox.classList.remove('ui-div');
         grok.shell.v.root.insertAdjacentElement('afterend', viewerBox);
-        await delay(1000);
+        await DG.delay(1000);
         const imageDataUrl = (await loadedHtml2canvas(viewerBox)).toDataURL();
 
         viewerBox.remove();
@@ -141,7 +142,9 @@ export const richFunctionViewReport = async (
             caption: scalarInput.options['caption'] ?? scalarInput.name,
             value: lastCall.inputs[scalarInput.name] ?? '',
             units: scalarInput.options['units'] ?? '',
-            format: scalarInput.format || DEFAULT_FLOAT_FORMAT,
+            // the form's default, so the export matches it whether or not the form was shown
+            format: scalarInput.format ||
+              (scalarInput.propertyType === DG.TYPE.FLOAT ? G7_FLOAT_FORMAT : DEFAULT_FLOAT_FORMAT),
           })),
           validationStates,
           consistencyStates,
@@ -261,8 +264,6 @@ export const richFunctionViewReport = async (
       const blob = new Blob([buffer], {type: BLOB_TYPE});
 
       return [blob, exportWorkbook] as const;
-    } catch (e) {
-      console.log(e);
     } finally {
       ui.setDisplay(grok.shell.v.root, true);
       updateIndicatorWithText(grok.shell.v.root.parentElement!, false);
@@ -272,7 +273,7 @@ export const richFunctionViewReport = async (
   throw new Error('Format is not supported');
 };
 
-export const formatNumber = (val: any, format?: string) => {
+const formatNumber = (val: any, format?: string) => {
   try {
     return (Number.isFinite(val) && format) ? DG.format(val, format) : val;
   } catch {
@@ -280,7 +281,7 @@ export const formatNumber = (val: any, format?: string) => {
   }
 };
 
-export const scalarsToSheet = (sheet: ExcelJS.Worksheet,
+const scalarsToSheet = (sheet: ExcelJS.Worksheet,
   scalars: { name: string, caption: string, value: string, units: string, format?: string }[],
   validationStates?: Record<string, ValidationResult>,
   consistencyStates?: Record<string, ConsistencyInfo>,

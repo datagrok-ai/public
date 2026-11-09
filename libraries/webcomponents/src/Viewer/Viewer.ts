@@ -2,8 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {Subject, from, merge, of, combineLatest, Observable, identity} from 'rxjs';
-import {distinctUntilChanged, filter, switchMap, takeUntil, map} from 'rxjs/operators';
+import {Subject, from, EMPTY, asapScheduler} from 'rxjs';
+import {distinctUntilChanged, switchMap, takeUntil, map, observeOn, skip, startWith} from 'rxjs/operators';
 import {ViewerHost} from './ViewerHost';
 
 export class Viewer<T = any> extends HTMLElement {
@@ -15,51 +15,30 @@ export class Viewer<T = any> extends HTMLElement {
   constructor() {
     super();
 
-    const latestViewer$ = this.host.viewer$.pipe(distinctUntilChanged());
-
-    const latestType$ = merge(
-      latestViewer$.pipe(map((viewer) => viewer?.type)),
-      this.host.typeSetted$,
-    ).pipe(distinctUntilChanged());
-
-    const latestDf$ = merge(
-      latestViewer$.pipe(map((viewer) => viewer?.dataFrame)),
-      this.getViewerEventObservable('d4-data-frame-changed').pipe(map((ev) => ev.data.args.newValue as DG.DataFrame)),
-      this.host.dfSetted$,
-    ).pipe(distinctUntilChanged());
-
-    combineLatest([latestType$, latestDf$]).pipe(
-      takeUntil(this.destroyed$),
-    ).subscribe(([type, df]) => {
-      if (type !== this.host.typeSetted$.value)
-        this.dispatchEvent(new CustomEvent('viewer-type-changed', {detail: type}));
-      // compare dart handles: Dart events deliver a fresh JS wrapper for the same frame,
-      // and a spurious dispatch here runs inside the Dart event fire, where consumers
-      // mutating the grid hit "Controller is already firing an event"
-      if (df?.dart !== this.host.dfSetted$.value?.dart)
-        this.dispatchEvent(new CustomEvent('viewer-data-frame-changed', {detail: df}));
-    });
-
     this.host.viewer$.pipe(
       takeUntil(this.destroyed$),
     ).subscribe((viewer) => {
       ui.empty(this);
       if (viewer)
         this.appendChild(viewer.root);
-    });
-
-    // frame application is asynchronous (batched per tick), so an applied in-place swap
-    // is announced — consumers doing imperative post-swap work listen to this event
-    this.host.frameApplied$.pipe(
-      takeUntil(this.destroyed$),
-    ).subscribe((viewer) => {
-      this.dispatchEvent(new CustomEvent('viewer-data-frame-changed', {detail: viewer.dataFrame}));
-    });
-
-    latestViewer$.pipe(
-      takeUntil(this.destroyed$),
-    ).subscribe((viewer) => {
       this.dispatchEvent(new CustomEvent('viewer-changed', {detail: viewer}));
+    });
+
+    // the Dart event fires inside the frame setter, where consumers mutating the grid hit
+    // "Controller is already firing an event"; frames are compared by dart handle because
+    // Dart can return a different wrapper for the same frame; seeded with the creation frame:
+    // creation and replacement are announced by viewer-changed only
+    this.host.viewer$.pipe(
+      switchMap((viewer) => viewer ? viewer.onDataFrameChanged.pipe(
+        observeOn(asapScheduler),
+        map(() => viewer.dataFrame),
+        startWith(viewer.dataFrame),
+        distinctUntilChanged((a, b) => a?.dart === b?.dart),
+        skip(1),
+      ) : EMPTY),
+      takeUntil(this.destroyed$),
+    ).subscribe((df) => {
+      this.dispatchEvent(new CustomEvent('viewer-data-frame-changed', {detail: df}));
     });
   }
 
@@ -67,12 +46,6 @@ export class Viewer<T = any> extends HTMLElement {
     this.host.destroy();
     this.destroyed$.next(true);
     ui.empty(this);
-  }
-
-  connectedCallback() {
-  }
-
-  disconnectedCallback() {
   }
 
   get viewer() {
@@ -95,17 +68,8 @@ export class Viewer<T = any> extends HTMLElement {
     this.host.typeSetted$.next(type);
   }
 
-  set options(options: Record<string, string | boolean>) {
+  set options(options: Record<string, any>) {
     this.host.optionsSetted$.next(options);
-  }
-
-  public getViewerEventObservable<P = any>(eventType?: string): Observable<P> {
-    return this.host.viewer$.pipe(
-      switchMap((viewer) => viewer ? viewer.onEvent().pipe(
-        eventType ? filter((ev) => ev.type === eventType) : identity,
-      ) : of()),
-      filter((x) => x),
-    );
   }
 }
 

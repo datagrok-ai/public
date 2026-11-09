@@ -403,9 +403,10 @@ function getSavedSearchesNode(treeNode: DG.TreeViewGroup, libName: string, compo
 }
 
 
-export async function createSavedSearchesSatistics(statsDiv: HTMLElement, libName?: string, entityType?: string): Promise<HTMLDivElement> {
+export async function createSavedSearchesSatistics(view: DG.ViewBase, statsDiv: HTMLElement, libName?: string,
+  entityType?: string): Promise<HTMLDivElement> {
 
-  const searchesDiv = ui.divV([getAppHeader()]);
+  const searchesDiv = ui.divV([getAppHeader(view)]);
   statsDiv.append(searchesDiv);
   const tableDiv = ui.div('', { style: { position: 'relative', paddingTop: '15px' } });
   searchesDiv.append(tableDiv);

@@ -205,6 +205,11 @@ export class Dapi {
 
   /** Users API (finding, saving, deleting users, notifications).
    * Also, current user and current session. */
+  /** Chats API: the discussions on entities and their comments. */
+  get chats(): ChatsDataSource {
+    return new ChatsDataSource();
+  }
+
   get users(): UsersDataSource {
     return new UsersDataSource(api.grok_Dapi_Users());
   }
@@ -357,7 +362,7 @@ export class HttpDataSource<T> {
     return Object.assign(copy, this, {query: {...this.query, ...patch}});
   }
 
-  private prepare(q: DataSourceQuery = this.query): any {
+  _prepare(q: DataSourceQuery = this.query): any {
     let d = api.grok_DataSource_ResetQuery(this.dart);
     if (q.allPackageVersions)
       d = api.grok_DataSource_AllPackageVersions(d);
@@ -387,19 +392,19 @@ export class HttpDataSource<T> {
       s = s.filter(options.filter);
     if (options.order !== undefined)
       s = s.order(options.order);
-    return api.grok_DataSource_List(s.prepare());
+    return api.grok_DataSource_List(s._prepare());
   }
 
   /** Counts entities that satisfy the filtering criteria (see {@link filter}).
    *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
    *  Smart filter: {@link https://datagrok.ai/help/datagrok/smart-search} */
   count(): Promise<number> {
-    return api.grok_DataSource_Count(this.prepare());
+    return api.grok_DataSource_Count(this._prepare());
   }
 
   /** Returns the first entity that satisfies the filtering criteria (see {@link filter}). */
   first(): Promise<T> {
-    return api.grok_DataSource_First(this.prepare());
+    return api.grok_DataSource_First(this._prepare());
   }
 
   /** Returns an entity with the specified id.
@@ -408,12 +413,12 @@ export class HttpDataSource<T> {
    *  @param id - GUID of the corresponding object
    *  @returns `{Promise<object>}` - entity.  */
   find(id: string): Promise<T> {
-    return api.grok_DataSource_Find(this.prepare(), id);
+    return api.grok_DataSource_Find(this._prepare(), id);
   }
 
   /** Saves an entity; the saved copy comes back with this source's {@link include}s loaded. */
   save(e: DartObject): Promise<T> {
-    return api.grok_DataSource_Save(this.prepare({includes: this.query.includes}), e.dart);
+    return api.grok_DataSource_Save(this._prepare({includes: this.query.includes}), e.dart);
   }
 
   /** Deletes an entity. */
@@ -1939,9 +1944,12 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return domainCall(api.grok_Dapi_Domains_Promote(this.dart, this.schema, this.table, id));
   }
 
-  /** Returns the row's audit trail (before/after diffs, in-transaction with each write). */
-  audit(id: string): Promise<DomainAuditEntry[]> {
-    return domainCall(api.grok_Dapi_Domains_RowAudit(this.dart, this.schema, this.table, id));
+  /** Returns the row's audit trail (before/after diffs, in-transaction with each write), oldest
+   * first: the newest `limit` events (default 100, at most 1000) whose `id` is below `before`.
+   * A page shorter than `limit` reaches the row's first event. */
+  audit(id: string, options?: {limit?: number; before?: number}): Promise<DomainAuditEntry[]> {
+    return domainCall(api.grok_Dapi_Domains_RowAudit(this.dart, this.schema, this.table, id,
+      options?.limit ?? null, options?.before ?? null));
   }
 
   /** Batched facet computation for filter panels: category counts, histograms, min/max, row count,
@@ -2264,6 +2272,22 @@ export class DockerDataSource {
   getAvailableServices(): Promise<string[]> {
     return api.grok_Dapi_DockersDataSource_GetAvailableServices();
   }
+
+  /** Whether the server can run containers: Grok Spawner is switched on (`enabled`) and its last poll found
+   * no connection failure (`isActive`). Resolves `{enabled: false}`, with no `isActive`, when the status
+   * could not be read. */
+  getStatus(): Promise<DockerStatus> {
+    return api.grok_Dapi_DockersDataSource_GetStatus();
+  }
+}
+
+/** Grok Spawner status, see {@link DockerDataSource.getStatus}. */
+export interface DockerStatus {
+  /** Grok Spawner is switched on for this server. */
+  enabled: boolean,
+  /** No recent connection failure: the server's last poll of Grok Spawner succeeded. This is not a live probe.
+   * Absent when the status could not be read. */
+  isActive?: boolean,
 }
 
 /** Functionality to work with Docker images. See also {@link DockerContainersDataSource}. */
@@ -2479,6 +2503,193 @@ export class NotificationsDataSource extends HttpDataSource<UserNotification> {
   async markAsRead(notificationId: string): Promise<void> {
     return api.grok_Dapi_Notifications_MarkAsRead(notificationId);
   }
+
+  /** Sends an in-platform notification to the user [userId], from the current user. Allowed for
+   * the current user, the users that share a group with them (other than All users), and anybody
+   * for a holder of the EditUser permission.
+   * [text] may hold entity markup, such as `user.toMarkup()`; [options.data] is an opaque string
+   * kept with the notification. */
+  async send(userId: string, text: string, options?: {data?: string}): Promise<ChatNotification> {
+    return api.grok_Dapi_Notifications_Send(userId, text, options?.data ?? null);
+  }
+}
+
+/** A notification as {@link NotificationsDataSource.send} returns it. */
+export interface ChatNotification {
+  /** The notification's id. */
+  id: string;
+  /** Its text, entity markup included. */
+  text: string;
+  /** The opaque string sent with it. */
+  data?: string;
+  /** The id of the user who sent it. */
+  sender?: string;
+  /** When it was sent, ISO 8601. */
+  createdAt?: string;
+}
+
+/** A user as a chat or a comment carries it. */
+export interface ChatUser {
+  /** The user's id. */
+  id: string;
+  /** The user's login. */
+  login?: string;
+  /** The user's display name. */
+  friendlyName?: string;
+}
+
+/** A comment's typed pointer: to an entity ([entityId]), or to something that is not an entity,
+ * such as a row of an unpromoted domain table ([ref], see {@link ChatsDataSource.domainRowRef}). */
+export interface ChatCommentRef {
+  /** The id of the entity it points to. */
+  entityId?: string;
+  /** The pointer to something that is not an entity. */
+  ref?: string;
+}
+
+/** A comment in a chat. */
+export interface ChatComment {
+  /** The comment's id. */
+  id: string;
+  /** Its text, entity markup included. */
+  text: string;
+  /** When it was posted, ISO 8601. */
+  posted?: string;
+  /** When its author last edited it, ISO 8601; null if never. */
+  edited?: string | null;
+  /** The comment this one replies to. */
+  parentId?: string | null;
+  /** Its author. */
+  user?: ChatUser;
+  /** Its explicit references plus every entity marked up in its text that the author can view. */
+  refs?: ChatCommentRef[];
+  /** The number of up votes. */
+  upVotes?: number;
+  /** The number of down votes. */
+  downVotes?: number;
+}
+
+/** A chat: a discussion attached to entities (visible to whoever can view one of them), or a
+ * private conversation of a group. */
+export interface ChatInfo {
+  /** The chat's id. */
+  id: string;
+  /** Its name. */
+  friendlyName?: string;
+  /** Whether it is a private conversation of a group. */
+  private?: boolean;
+  /** The entities it is attached to. */
+  entities?: {id: string}[];
+  /** The user who started it. */
+  author?: ChatUser;
+  /** The users who have posted to it. */
+  participants?: ChatUser[];
+  /** The number of its comments. */
+  commentsCount?: number;
+  /** The number of its comments the current user has not read. */
+  unreadCommentsCount?: number;
+  /** When its first comment was posted, ISO 8601. */
+  firstTimestamp?: string;
+  /** When its last comment was posted, ISO 8601. */
+  lastTimestamp?: string;
+  /** Whether the current user watches it. */
+  isWatched?: boolean;
+}
+
+/** Options of {@link ChatsDataSource.post}. */
+export interface IChatPostOptions {
+  /** The comment it replies to. */
+  parentId?: string;
+  /** References besides the entities marked up in the text. */
+  refs?: ChatCommentRef[];
+  /** Used when the post creates the chat: its name, and the entities it is attached to. */
+  chat?: {friendlyName?: string, entityIds?: string[]};
+}
+
+/** Options of {@link ChatsDataSource.import}. */
+export interface IChatImportOptions {
+  /** The comment's id; a new one when omitted. Importing an existing id overwrites that comment. */
+  id?: string;
+  /** The author; the current user when omitted. */
+  userId?: string;
+  /** The original posted time; now when omitted. */
+  posted?: Date | string;
+  /** The comment it replies to. */
+  parentId?: string;
+  /** References besides the entities marked up in the text. */
+  refs?: ChatCommentRef[];
+}
+
+/** Chats API (`grok.dapi.chats`). A chat on entities is visible to whoever can view one of them;
+ * mentioning a user in a comment (`user.toMarkup()` in the text) notifies them, and makes them watch
+ * the chat, if they can see it. */
+export class ChatsDataSource {
+  /** The reference to a row of a domain table, promoted or not, for {@link ChatCommentRef.ref}. */
+  static domainRowRef(schema: string, table: string, rowId: string): string {
+    return `domain:${schema}.${table}/${rowId}`;
+  }
+
+  /** The chats attached to the entity, and those whose comments reference it, most recently active first. */
+  forEntity(entityId: string): Promise<ChatInfo[]> {
+    return api.grok_Dapi_Chats_List(entityId, null);
+  }
+
+  /** The chats whose comments carry the reference [ref], most recently active first. */
+  forRef(ref: string): Promise<ChatInfo[]> {
+    return api.grok_Dapi_Chats_List(null, ref);
+  }
+
+  /** The chat, or null when it does not exist or the current user cannot see it. */
+  find(chatId: string): Promise<ChatInfo | null> {
+    return api.grok_Dapi_Chats_Find(chatId);
+  }
+
+  /** The comments of the chat, oldest first; empty when it does not exist or the current user cannot see it. */
+  comments(chatId: string): Promise<ChatComment[]> {
+    return api.grok_Dapi_Chats_Comments(chatId);
+  }
+
+  /** Posts a comment, creating the chat on its first one. */
+  post(chatId: string, text: string, options?: IChatPostOptions): Promise<ChatComment> {
+    const chat = options?.chat ? {friendlyName: options.chat.friendlyName,
+      entities: (options.chat.entityIds ?? []).map((id) => ({id}))} : null;
+    return api.grok_Dapi_Chats_Post(chatId,
+      {text, parentId: options?.parentId ?? null, refs: options?.refs ?? []}, chat);
+  }
+
+  /** Replaces the text of a comment of the current user's, and its references when [options.refs]
+   * is given (otherwise it keeps its non-entity references); the comment is marked edited. */
+  edit(chatId: string, commentId: string, text: string, options?: {refs?: ChatCommentRef[]}): Promise<ChatComment> {
+    return api.grok_Dapi_Chats_Post(chatId, {id: commentId, text, refs: options?.refs ?? []}, null);
+  }
+
+  /** Posts a comment with its original author and date, sending no notifications; requires the
+   * ImportComments permission. */
+  import(chatId: string, text: string, options?: IChatImportOptions): Promise<ChatComment> {
+    const posted = options?.posted instanceof Date ? options.posted.toISOString() : options?.posted ?? null;
+    return api.grok_Dapi_Chats_Import(chatId, {id: options?.id ?? null, text, posted,
+      user: options?.userId ? {id: options.userId} : null, parentId: options?.parentId ?? null, refs: options?.refs ?? []});
+  }
+
+  /** Deletes a comment: the author's own, or any with the DeleteComments permission. */
+  deleteComment(commentId: string): Promise<void> {
+    return api.grok_Dapi_Chats_DeleteComment(commentId);
+  }
+
+  /** Subscribes the current user to the chat's new comments. */
+  watch(chatId: string): Promise<void> {
+    return api.grok_Dapi_Chats_Watch(chatId, true);
+  }
+
+  /** Unsubscribes the current user from the chat; a mention no longer subscribes them again. */
+  unwatch(chatId: string): Promise<void> {
+    return api.grok_Dapi_Chats_Watch(chatId, false);
+  }
+
+  /** Whether the current user watches the chat. */
+  isWatched(chatId: string): Promise<boolean> {
+    return api.grok_Dapi_Chats_IsWatched(chatId);
+  }
 }
 
 export class LogDataSource extends HttpDataSource<LogEvent> {
@@ -2666,7 +2877,9 @@ export class FilesDataSource {
   async readFilesAsBlobs(folder: FileInfo | string, recursive: boolean = false, ext: string | undefined = undefined): Promise<{[key: string]: Blob}> {
     const folderPath = this.setRoot(folder);
     const conn = folderPath.replace(":", ".").split('/')[0];
-    let url = `${api.grok_Dapi_Root()}/connectors/connections/${conn}/folder/${folderPath.substring(folderPath.indexOf('/') + 1)}?recursive=${recursive}`;
+    const slash = folderPath.indexOf('/');
+    const dir = slash < 0 ? '' : folderPath.substring(slash + 1);
+    let url = `${api.grok_Dapi_Root()}/connectors/connections/${conn}/folder/${dir}?recursive=${recursive}`;
     if (ext) {
       if (!ext.startsWith('.'))
         ext = `.${ext}`;

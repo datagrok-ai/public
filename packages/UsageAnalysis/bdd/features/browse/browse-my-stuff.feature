@@ -6,7 +6,10 @@ Feature: The My stuff section of the Browse tree
   Recent and Favorites reload when they are opened again: the group goes loading → loaded, which the
   expand step waits for, so Browse-MyStuff-02 (a project just opened is in Recent), -03 and Fav-01
   (an entity added from its context menu is in Favorites, and out of it when picked again) are claimed
-  on a reopened group. Add To Favorites is a submenu for an account that administers groups ("Only for
+  on a reopened group. The Recent node opens the activity view: its feed names the project, the
+  calendar beside it is the platform's calendar viewer, a click on its busiest day narrows the feed to
+  that day with a "Show all days" link, gone once it is clicked, the view opens by its address `/recent`
+  too, and a project link in the feed makes the project the context panel's object. Add To Favorites is a submenu for an account that administers groups ("Only for
   me" and every group it may edit), and picking a target the entity is already in takes it out. The
   favorite is a fixture connection the feature makes and deletes, taken out of the account's
   favorites before and after. Fav-03 and -04 are the sidebar's Favorites panel: its star docks the
@@ -69,6 +72,20 @@ Feature: The My stuff section of the Browse tree
     When user collapses My-stuff---Recent tree node inside browse tree
     And user expands My-stuff---Recent tree node inside browse tree
     Then My-stuff---Recent---bdd-browse-recent-{run} tree node inside browse tree should be visible
+    When user clicks on My-stuff---Recent tree node inside browse tree
+    Then the current view should show the text "bdd-browse-recent-{run}"
+    And calendar viewer should have a "busiest day" area
+    And "Show all days" text should be hidden
+    When user clicks on the "busiest day" area of calendar viewer
+    Then "Show all days" text should be visible
+    When user clicks on "Show all days" text
+    Then "Show all days" text should be hidden
+    When user closes all views
+    And user opens the address "/recent"
+    Then the current view should be a RecentActivity view
+    And the current view should show the text "bdd-browse-recent-{run}"
+    When user clicks on "bdd-browse-recent-{run}" link
+    Then the context panel should show "bdd-browse-recent-{run}"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

@@ -4,7 +4,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import wu from 'wu';
 import {Observable} from 'rxjs';
 
 import {
@@ -13,7 +12,6 @@ import {
 } from '@datagrok-libraries/bio/src/helm/types';
 import {IMonomerLibBase, IMonomerLib, Monomer,
   MonomerLibData, MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types/monomer-library';
-import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {getUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
@@ -81,33 +79,6 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     });
 
     return res;
-  }
-
-  /** Get a list of monomers with specified element attached to specified
-   * R-group
-   * WARNING: RGroup numbering starts from 1, not 0*/
-  getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: PolymerType, _element?: string): string[] {
-    const monomerSymbols = this.getMonomerSymbolsByType(polymerType);
-    let monomers = monomerSymbols.map((sym) => this.getMonomer(polymerType, sym));
-    monomers = monomers.filter((el) => el !== null);
-    if (monomers.length === 0)
-      return [];
-
-    function findAllIndices<T>(arr: T[], element: T): number[] {
-      return arr.map((value, index) => (value === element ? index : -1))
-        .filter((index) => index !== -1);
-    }
-
-    monomers = monomers.filter((monomer) => {
-      if (!monomer?.rgroups)
-        return false;
-      let criterion = monomer?.rgroups.length >= rGroupNumber;
-      const molfileHandler = MolfileHandler.getInstance(monomer.molfile);
-      const _rGroupIndices = findAllIndices(molfileHandler.atomTypes, 'R#');
-      criterion &&= true;
-      return criterion;
-    });
-    return monomers.map((monomer) => monomer?.symbol!);
   }
 
   private _updateLibInt(lib: IMonomerLib): void {
@@ -182,20 +153,6 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     for (const pt of ptList)
       res[pt] = this.getMonomerSymbolsByType(pt).length;
     return res;
-  }
-
-  getSummaryDf(): DG.DataFrame {
-    const ptList = this.getPolymerTypes();
-
-    const countList: number[] = new Array<number>(ptList.length);
-    for (const [pt, i] of wu.enumerate(ptList))
-      countList[i] = this.getMonomerSymbolsByType(pt).length;
-
-    const resDf: DG.DataFrame = DG.DataFrame.fromColumns([
-      DG.Column.fromStrings('polymerType', ptList),
-      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'count', countList),
-    ]);
-    return resDf;
   }
 
   /** @deprecated Keep for backward compatibility */

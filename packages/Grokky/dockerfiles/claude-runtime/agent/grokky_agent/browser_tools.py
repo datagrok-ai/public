@@ -41,9 +41,10 @@ EXEC: ToolSpec = {
                                   'read/render.',
                    'properties': {
                        'assertion': _string(
-                           'Async JS that re-reads the state your code changed and MUST `return` the observed result '
-                           '(truthy = verified). Runs in a fresh scope (globals grok, ui, DG, view, t) — it cannot '
-                           "see your code's variables, so re-derive everything from live state."),
+                           'Async JS that re-reads the state your code changed and MUST `return` the values it '
+                           'read (truthy = verified; a bare `true` is rejected). Runs in a fresh scope (globals grok, '
+                           "ui, DG, view, t) — it cannot see your code's variables, so re-derive everything from live "
+                           'state.'),
                        'description': _string('Short human-readable statement of what is being verified.')}}}},
 }
 
@@ -55,8 +56,9 @@ VERIFY: ToolSpec = {
         'from t/view/grok. Returns {passed, observed?, error?}. After any action you MUST call this before reporting '
         'success; passed:false means it did NOT work — fix it, do not report done.'),
     'parameters': {'type': 'object', 'required': ['assertion', 'description'], 'properties': {
-        'assertion': _string('Async JS (await works) that MUST `return` the observed result; truthy = verified. '
-                             'Re-read whatever you changed from t/view/grok. Never return a bare literal.'),
+        'assertion': _string('Async JS (await works) that MUST `return` the values it read; truthy = verified. '
+                             'Re-read whatever you changed from t/view/grok. A bare `true` or any literal is '
+                             'rejected.'),
         'description': _string('Short human-readable statement of what is being verified.')}},
 }
 

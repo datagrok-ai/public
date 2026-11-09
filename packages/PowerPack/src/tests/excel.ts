@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, expect, expectArray, expectFloat, delay, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, expectArray, expectFloat, test} from '@datagrok-libraries/test/src/test';
 
 const FIXTURES = 'System:AppData/PowerPack/tests';
 
@@ -11,7 +11,6 @@ async function testExcelImport(fileName: string, expectedTables: number) {
   try {
     tables = await grok.data.files.openTables(`${FIXTURES}/${fileName}`);
     views = tables.map((table) => grok.shell.addTableView(table));
-    await delay(10);
   } catch (e) {
     error = (e as Error).message;
   } finally {

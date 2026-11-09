@@ -4,18 +4,22 @@
 import {signal, ReadonlySignal} from '../../core/signals.js';
 import {Scope} from '../../core/scope.js';
 import {Control} from '../../core/component.js';
+import {Reason} from '../../core/reason.js';
+import {Tooltip} from '../../core/tooltip.js';
 import {Menu} from './menu.js';
 import type {IItemsState} from '../../core/widget-like.js';
 
 export interface MenuBarItem {
-  label: string;
+  text: string;
   build: (menu: Menu) => void;
-  enabled?: boolean;
+  /** Why the item opens nothing now — greyed, the reason as its tooltip; `null` or absent while it opens. */
+  disabled?: string | null;
 }
 
 interface Entry {
   item: MenuBarItem;
   el: HTMLButtonElement;
+  off: string | null;
 }
 
 export class MenuBar extends Control {
@@ -44,29 +48,36 @@ export class MenuBar extends Control {
   }
 
   /** `build` runs on every open, so a fresh Menu always reflects current checked state. */
-  menu(label: string, build: (menu: Menu) => void): this {
-    this._add({label, build});
+  menu(text: string, build: (menu: Menu) => void): this {
+    this._add({text, build});
     this._roving();
     return this;
   }
 
-  setEnabled(label: string, enabled: boolean): void {
-    const index = this._entries.findIndex((entry) => entry.item.label === label);
+  /** Turns the item `text` off with `reason`, or on with `null`. */
+  setDisabled(text: string, reason: string | null): void {
+    const index = this._entries.findIndex((entry) => entry.item.text === text);
     if (index < 0)
       return;
     const entry = this._entries[index];
-    entry.item.enabled = enabled;
-    entry.el.setAttribute('aria-disabled', String(!enabled));
-    if (!enabled && this._openIndex === index)
+    MenuBar._apply(entry, reason || null);
+    if (entry.off !== null && this._openIndex === index)
       this._close();
     this._roving();
   }
 
-  /** The items, keyed by label; the open one is expanded. */
+  /** The items, keyed by text; the open one is expanded. */
   getItems(): IItemsState {
-    const list = this._entries.map((entry, index) => ({key: entry.item.label, label: entry.item.label, index,
-      disabled: entry.item.enabled === false, expanded: index === this._openIndex, rendered: true}));
+    const list = this._entries.map((entry, index) => ({key: entry.item.text, label: entry.item.text, index,
+      disabled: entry.off !== null, expanded: index === this._openIndex, rendered: true}));
     return {count: list.length, list, truncated: false};
+  }
+
+  private static _apply(entry: Entry, reason: string | null): void {
+    entry.off = reason;
+    Reason.apply(entry.el, reason);
+    if (reason === null)
+      entry.el.setAttribute('aria-disabled', 'false');
   }
 
   private _add(item: MenuBarItem): void {
@@ -74,13 +85,14 @@ export class MenuBar extends Control {
     el.type = 'button';
     el.className = 'u2-menu-bar-item';
     el.tabIndex = -1;
-    el.textContent = item.label;
-    el.dataset.u2Item = item.label;
+    el.textContent = item.text;
+    el.dataset.u2Item = item.text;
     el.setAttribute('role', 'menuitem');
     el.setAttribute('aria-haspopup', 'menu');
     el.setAttribute('aria-expanded', 'false');
-    el.setAttribute('aria-disabled', String(item.enabled === false));
-    const entry: Entry = {item, el};
+    const entry: Entry = {item, el, off: null};
+    MenuBar._apply(entry, item.disabled || null);
+    Tooltip.bind(el, () => entry.off ?? '', {owner: this.scope});
     this.scope.listen(el, 'click', () => this._toggle(this._entries.indexOf(entry)));
     this.scope.listen(el, 'pointerenter', () => this._hover(this._entries.indexOf(entry)));
     this._entries.push(entry);
@@ -96,7 +108,7 @@ export class MenuBar extends Control {
 
   private _show(index: number): void {
     const entry = this._entries[index];
-    if (!entry || entry.item.enabled === false)
+    if (!entry || entry.off !== null)
       return;
     this._close();
     this._active = index;
@@ -107,7 +119,7 @@ export class MenuBar extends Control {
     entry.item.build(menu);
     this._menu = menu;
     this._openIndex = index;
-    this._open.value = entry.item.label;
+    this._open.value = entry.item.text;
     menu.show({anchor: entry.el});
 
     const watch = new Scope(undefined, {label: 'menu-bar-open'});
@@ -164,7 +176,7 @@ export class MenuBar extends Control {
 
   private _disabled(index: number): boolean {
     const entry = this._entries[index];
-    return !entry || entry.item.enabled === false;
+    return !entry || entry.off !== null;
   }
 
   private _step(from: number, delta: number): number {

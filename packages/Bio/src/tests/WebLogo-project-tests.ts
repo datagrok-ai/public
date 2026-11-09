@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 
-import {category, delay, expect, test, testViewer} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, testViewer} from '@datagrok-libraries/test/src/test';
 
 import {awaitGrid} from './utils';
 import {WebLogoViewer} from '../viewers/web-logo-viewer';
@@ -29,7 +29,6 @@ category('WebLogo.project', () => {
 
     await uploadProject(prjName, df.getTableInfo(), view, df);
     grok.shell.closeAll();
-    await delay(500);
 
     const prj2 = await grok.dapi.projects.open(prjName);
     const view2 = grok.shell.tableView(tableName);

@@ -2,12 +2,45 @@
 
 ## v.next
 
-* Workflows: Nested pipelines have two history loads: Load completed run loads an editable copy, Load completed run (read-only) a locked one; read-only steps and pipelines show a lock on the left of their tree row; one loaded as is opens the original run from it, one based on a run (editable) has a branch icon at the end of its row instead; steps name the source run in the tooltip and menu; a loaded pipeline also has a line in its view to open the original run in a new view
+* Workflows: A step with inconsistent inputs shows a broken link icon in the steps tree, like the inputs themselves (needs WebComponents v.next)
+* Keyboard: Ctrl/Cmd+Enter presses Run, Ctrl/Cmd+Shift+Enter presses Update and Ctrl/Cmd+S saves the run, with the same checks as their buttons; a warning says why when the button is disabled. In a workflow Run and Update act on the step focused in the steps tree (Update on a workflow row updates its substeps), else on the open step
+* RFV, Workflows: Tab and Shift+Tab go round the form and the steps tree (outputs, run history and the ribbon are left to the pointer) instead of leaving for the page, buttons show the keyboard focus, and the Keyboard shortcuts ribbon icon lists the keys; Tab does nothing in the Update confirmation, where Enter confirms and Esc cancels
+* RFV, Workflows: A disabled Run or Update button shows why on hover and when pressed; fixed pressing a disabled Run from the keyboard showing an internal error
+* Workflows: Alt+Up/Down moves a step in the steps tree under the drag-and-drop rules and Delete removes it after the confirmation, the focus staying on the step or its neighbour; fixed Alt+arrows moving any step in the tree only, without changing the workflow
+* Workflows: Back and Next move the keyboard focus into the opened step; the pipeline cards (Choose a step to add, Load completed run, actions) and clickable icons work from the keyboard, and the plus of a tree row opens the steps to add (needs WebComponents v.next)
+* Loading overlay: Fixed inputs under the overlay still reachable with Tab and editable while a run is in progress (autorun RFVs keep taking input)
+* RFV: Fixed the loading overlay not showing for a function that blocks the browser while it runs
+* RFV: Fixed autorun losing an input change made while a run was in progress, leaving the old outputs marked as current
+* Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
+* Export: Fixed float inputs of workflow steps never opened in the session exporting with fewer digits than the form shows (0.0001 as 0)
+* Run compare: Fixed the chart's "Ctrl + scroll to zoom" hint never showing
+* Requires platform 1.28.0 or later: removed the fallbacks for older platforms
+* RFV: Fixed a run opened with invalid or missing required inputs being runnable (needs WebComponents v.next)
+* Help: Fixed the help panel staying empty for every later step after one help file failed to load
+* Runs: Added the Save run dialog: saves to My runs or a space with a name, description and tags; names are unique in a space, where a taken run name asks to replace it (the space link moves to the new run) and a name taken by another item is refused; its spaces open like folders, and clicking a run of a space offers to overwrite it. My runs lists all of the user's runs, including those saved to spaces but not the step runs saved as part of a workflow, and names can repeat there
+* Runs: The Runs panel, Model Hub's Tools > Browse Runs... and the Compare Runs run picker browse runs of all models or one in My runs and spaces like a file browser: subspaces as folders with `..` and a path, tree counts of the runs in a space and all its subspaces, linked subspaces under each parent, and filters that search a space and its subspaces and show where each run is; they offer tag, author and favorites filters, platform favorites for runs and spaces (the Save dialog too), a tree filter that shows only favorite spaces and the spaces above them, Edit details, Add to space for one or several runs and Delete with a confirmation for one or several runs (a run that fails to delete is named and stays selected, and the others are still deleted); they replace the history panel
+* Runs: Removed Share to workspace and the `sharingMethod` setting
+* RFV: Removed URL parameters as input overrides and the "Copy link with inputs" export; saved runs in spaces replace them
+* Custom function views: Save opens the Save run dialog and History the Open run dialog instead of a docked history panel, so the whole view is the custom content; saved runs are listed under the custom view's function in the run browsers and open in that view again
+* Run compare: Several comparisons of the same runs open as tabs in one view; each tab has its own selected values, Hide equal values, chart and export, while index columns, mappings, matched columns and Hide outdated outputs are shared
+* Workflows: A workflow that was never saved shows its root `title` link in the view name
+* Workflows: Fixed Run ready steps running a step before its debounced or async validators checked its new inputs, or before an async link set them; the workflow stays busy until they finish, and validator debounce applies to edits only
+* Workflows: Added `RunWorkflow` to run a workflow without UI from an initial configuration, as `StartWorkflow` takes it; it returns every step's values, status and validations, and a summary. `SaveWorkflowRun` saves the result to history
+* RFV: In workflows, inputs with the `disabled` or `restricted` restriction are hidden behind a Show linked inputs row and show a link icon while the value is the one the workflow set; `meta.inputToggles` picks the inputs (by category or name, linked or not) and the row captions, the `keepVisible` input annotation exempts an input, and inputs with errors, warnings or an inconsistent value are always shown
+* RFV: In workflows, `meta.inputsHidden` hides every input behind the Show linked inputs row instead of collapsing the form; inputs with errors, warnings or an inconsistent value stay visible. The standalone RFV ignores it and `meta.inputToggles`
+* RFV: In workflows, a dataframe input with the `mutateOnly` annotation can't be replaced under the `restricted` or `info` restriction, only edited in its viewers
+* RFV: The `standalone` prop replaces `localValidation`, `skipInit`, `skipLogic`, `showRunButton` and `keepExportsVisible`; autorun is read from `runOnInput`
+* RFV: Malformed JSON in `outputCategoryGroups` or an output's `hidden` annotation logs a warning instead of breaking the view
+* Workflows: Nested pipelines have two history loads: Load completed run loads an editable copy, Load completed run (read-only) a locked one; read-only steps and pipelines show a lock on the left of their tree row; both have a branch icon at the end of the row whose menu opens the original run; steps name the source run in the tooltip and menu; a loaded pipeline also has a line in its view to open the original run in a new view
+* Workflows: An editable step or pipeline based on a completed run compares its current state with that run (Compare with original in the branch icon menu or the pipeline view), or adds it to a comparison (Add to comparison...). The compare icon next to Save adds the current state of a workflow or a standalone model to a comparison. These and Compare in the run browsers open one dialog: each run has an editable name, and when comparisons are open you pick one or a new one (Compare and Compare with original start on a new one, the rest on the most recent). The current state is a snapshot that is not saved to history; the dialog warns about outdated outputs, and the compared model joins the comparison's model list
+* Run compare: Snapshots of the current state are marked unsaved and ask before removal, and a save icon saves one to history; runs with outdated outputs are marked, and Hide outdated outputs leaves those outputs out
 * Workflows: Steps with history have a lock ribbon icon next to history that loads a completed run read-only
 * Workflows: Fixed OpenWorkflowRun opening the default input dialog for runs of functions without a Compute2 editor, such as workflow steps; they open in the Rich Function View, nested pipeline runs in the Tree Wizard
 * Workflows: Read-only subtrees can no longer be duplicated, and duplicating a pipeline that contains one keeps it read-only
 * Workflows: Actions hidden by a node meta link (`setActionVisible`) are not shown
 * Run compare: Selected runs and workflow steps load in parallel; a run that fails to load no longer stops the others, and runs with steps that could not be loaded show a warning
+* Run compare: Fixed runs with the same name merging in charts: a repeated name gets a ` (2)`, ` (3)`... suffix
+* Run compare: Fixed an added run not taking the index picked for the same function's runs, which cleared the merged index row and left the run out of the charts; split and axis mode picks carry over too
 * Run compare: Empty index cells no longer show up as an `undefined` category on a categorical index
 * Run compare: Fixed a blank chart when the first checked value disappears while others stay checked; a charted value stays listed when Hide equal values would hide it
 * Run compare: Chart and export columns carry their units in the name (`Biomass (g/L)`, `Time (h)`), and the Compare list shows each value's units
@@ -33,7 +66,7 @@
 * TreeWizard: Added duplicating a dynamic workflow item (step or nested workflow) from the tree; the copy keeps input and state values, and the outputs of a run step, and does not rerun init hooks
 * TreeWizard: The workflow Excel export adds a `000_summary.xlsx` with each step's status, run error, messages and inconsistent inputs, and each workflow's validations and step counts; custom exports get the same data from `getExportSummary` and `reportSummaryExcel`, and the step callback gets the `status`
 * TreeWizard: Step forms only render and bind (`skipLogic`): the workflow owns values, choices, validation, visibility and enabled state, and the form no longer overrides them
-* TreeWizard: Opt-in compact view for single-step workflows (`compactView: true`; no tree or navigation; save, share, history and export on the step ribbon, history always available)
+* TreeWizard: Opt-in compact view for single-step workflows (`compactView: true`; no tree or navigation; Save run, the Runs panel and export on the step ribbon, the Runs panel always available)
 * RFV: Default Excel export includes validation and consistency
 * Run compare: Fixed a fuzzy-named value taking a run's slot from an exact match declared after it
 * RFV: Graphics outputs (R/Python plots) render as images in their own panel instead of base64 text, and export to Excel

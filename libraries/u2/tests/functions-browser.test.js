@@ -4,9 +4,10 @@
    Mock items only — the platform feed is the dg factory's, tested through e2e. Same contract as
    the other UI suites: every test leaves the live-scope count where it found it. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {signal, Scope} from '../src/index.js';
 import {FunctionsBrowser, filterFuncItems, tagCounts}
   from '../src/components/collections/functions-browser.js';
@@ -46,7 +47,7 @@ function mount(options) {
   const fb = new FunctionsBrowser(options);
   document.body.append(fb.root);
   const list = fb.root.querySelector('.u2-list');
-  list.clientHeight = 220;
+  layout(list, {clientHeight: 220});
   fire(list, 'scroll');
   return fb;
 }

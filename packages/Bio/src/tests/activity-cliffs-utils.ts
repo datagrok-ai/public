@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {awaitCheck, expect} from '@datagrok-libraries/test/src/test';
+import {waitUntil, expect} from '@datagrok-libraries/test/src/test';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {BYPASS_LARGE_DATA_WARNING} from '@datagrok-libraries/ml/src/functionEditors/consts';
@@ -29,7 +29,7 @@ export async function _testActivityCliffsOpen(df: DG.DataFrame, drMethod: DimRed
   const scatterPlot = Array.from(grok.shell.tv.viewers)[1];
   expect(scatterPlot?.type === DG.VIEWER.SCATTER_PLOT, true);
 
-  await awaitCheck(() => {
+  await waitUntil(() => {
     const link = Array.from(scatterPlot!.root.getElementsByClassName('scatter_plot_link'));
     if (link.length)
       return (link[0] as HTMLElement).innerText.toLowerCase() === `${tgtNumberCliffs} cliffs`;
@@ -52,7 +52,7 @@ export async function _testActivityCliffsOnNotation(fileName: string, seqColName
     preprocessingFunction: preprocessingFunction, options: {[BYPASS_LARGE_DATA_WARNING]: true}, demo: false,
   });
   expect(df.getCol('Embed_X_1').stats.missingValueCount, 0, 'Embed_X_1 has missing values');
-  await awaitCheck(() => {
+  await waitUntil(() => {
     const sp = Array.from(tv.viewers).find((v) => v.type === DG.VIEWER.SCATTER_PLOT);
     const link = sp?.root.querySelector('.scatter_plot_link') as HTMLElement | null;
     return parseInt(link?.innerText ?? '') >= 1;

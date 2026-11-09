@@ -5,7 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {fromEvent} from 'rxjs';
 
-import {before, after, category, expect, test, expectArray, testEvent, delay} from '@datagrok-libraries/test/src/test';
+import {before, after, category, expect, test, expectArray, testEvent, settled}
+  from '@datagrok-libraries/test/src/test';
 
 import {_package} from '../package-test';
 
@@ -27,7 +28,7 @@ category('rendering-tooltip', () => {
     await grok.data.detectSemanticTypes(df);
     const sp: DG.ScatterPlotViewer = df.plot.scatter({x: 'x', y: 'y'});
     view.dockManager.dock(sp, DG.DOCK_TYPE.RIGHT, null);
-    await delay(200);
+    await settled(sp);
     await Promise.all([
       testEvent(sp.onAfterDrawScene, () => {}, () => { sp.invalidateCanvas(); }, 1000),
       testEvent(view.grid.onAfterDrawContent, () => {}, () => { view.grid.invalidate(); }, 1000)

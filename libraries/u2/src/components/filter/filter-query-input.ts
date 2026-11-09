@@ -7,6 +7,7 @@ import {signal, computed, untracked, Signal, ReadonlySignal} from '../../core/si
 import {Input, InputOptions} from '../../core/input-base.js';
 import {bindValue} from '../../core/bind.js';
 import {div, span} from '../../core/elements.js';
+import {textWidth} from '../../core/text.js';
 import {SuggestionList} from '../../core/suggestion-list.js';
 import type {AsyncState} from '../../core/async-source.js';
 import type {IWidgetStatus} from '../../core/widget-like.js';
@@ -51,6 +52,8 @@ const KIND_HINTS: Partial<Record<FilterKind, string[]>> = {
 const SPELLED: Record<string, string> = {'is null': '= null', 'is not null': '!= null'};
 /** Their value is a pattern: a picked literal is escaped the way the formatter spells it. */
 const LIKE_FAMILY = new Set(['like', '!like', 'starts', 'ends']);
+/** The popup's `max-width` in css/filter-query.css. */
+const POPUP_MAX_WIDTH = 320;
 /** `<column> under <bare word…>` at the end of the text — the shape the grammar refuses. */
 const UNDER_BARE = /([A-Za-z_]\w*)\s+under\s+[^"'\s]\S*(\s+\S+)*\s*$/i;
 
@@ -70,6 +73,7 @@ function row(main: HTMLElement | string, secondary?: string, glyph?: HTMLElement
 }
 
 export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions> {
+
   /** The raw text; committed to `value` on Enter or blur. */
   readonly text: Signal<string>;
   /** The same text, for read-only bindings. */
@@ -121,7 +125,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     const o = this.options;
     // the text is still exactly what the tree in force reads as: nothing to parse, and a displayed
     // form that is not the formatter's (a preset's `$me`) is not turned into a query of its own
-    if (this._raw.peek() === null && this._text.peek() === this._display(this.value.peek())) {
+    if (this._raw.peek() === null && this._text.peek() === this._display(this.peek())) {
       // the text IS the tree in force again (the box was cleared back to it): whatever the last
       // refused commit reported is no longer about what is in the box, and holding on to it left
       // the box red and the collection marked stale over rows that were right all along
@@ -132,15 +136,18 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     const text = this._text.peek();
     const {root, problems} = Filters.parse(text, o.schema, o.target);
     this._problems.value = FilterQueryInput.worded(text, o.schema, problems);
-    if (problems.length > 0)
+    // a refused commit is the user's apply: its reason shows at once
+    if (problems.length > 0) {
+      this.touch();
       return false;
+    }
     this._dirty = false;
     this._raw.value = null;
-    const current = this.value.peek();
+    const current = this.peek();
     if (Filters.equals(root, current))
       this._text.value = this._display(current);
     else
-      this.value.value = root;
+      this.value = root;
     return true;
   }
 
@@ -172,11 +179,13 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     this._text.value = text;
     this._problems.value = problems;
     this.revalidate();
+    if (problems.length > 0)
+      this.touch();
   }
 
   getWidgetStatus(): FilterQueryInputStatus {
     const status = super.getWidgetStatus() as FilterQueryInputStatus;
-    status.tree = this.value.peek();
+    status.tree = this.peek();
     status.query = this._text.peek();
     status.problems = this._problems.peek();
     status.mode = 'text';
@@ -220,6 +229,8 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
       autoHighlight: true,
       // a query's options are many and the rows under the box are what the user is filtering
       maxHeight: 'calc(var(--dg-control-height) * 6)',
+      // sized by its rows and hung at the caret
+      matchWidth: false,
       onPick: (index) => {
         this._moved = true;
         return this._insert(index);
@@ -229,7 +240,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     });
     this.own(() => this._abort?.abort());
 
-    bindValue(this.scope, input, this._text);
+    bindValue(input, this._text, {owner: this.scope});
     this.scope.listen(input, 'input', () => {
       this._dirty = true;
       this._suggest();
@@ -254,7 +265,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     });
     this.scope.listen(input, 'select', refreshIfOpen);
     this.scope.listen(input, 'focus', () => {
-      if (this._text.peek() === this._display(this.value.peek()))
+      if (this._text.peek() === this._display(this.peek()))
         this._dirty = false;
     });
     this.scope.listen(input, 'blur', () => {
@@ -265,13 +276,28 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     this.effect(() => input.setAttribute('aria-expanded', String(this._list.isOpen.value)));
     this.addValidator(() => this._problems.value[0]?.message ?? null);
     this.effect(() => this._syncText());
-    return input;
+    return this._searchSkin(input);
+  }
+
+  /** The search box's look, with a funnel for its magnifier; ✕ applies the empty filter at once. */
+  private _searchSkin(input: HTMLInputElement): HTMLElement {
+    const editor = document.createElement('div');
+    editor.className = 'u2-input-search u2-fq-search';
+    const clear = this.createClearButton(() => {
+      this._list.dismiss();
+      this._text.value = '';
+      this.commit();
+      input.focus();
+    }, 'Clear filter');
+    this.effect(() => clear.hidden = this._text.value === '');
+    editor.append(input, clear);
+    return editor;
   }
 
   /** The bound tree re-formats the text — except under the user's feet, or over text {@link
    * showText} put there that no commit has taken yet. */
   private _syncText(): void {
-    const root = this.value.value;
+    const root = this.value;
     if (this._raw.peek() !== null || (this._dirty && document.activeElement === this._input))
       return;
     this._dirty = false;
@@ -311,6 +337,7 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
       ctx.prefix = this._text.peek().slice(ctx.valueSpan!.start, ctx.valueSpan!.end);
     }
     this._prefix.value = ctx.prefix;
+    this._list.popup.style.marginLeft = `${this._caretOffset(ctx.replace.start)}px`;
     this._abort?.abort();
     this._abort = undefined;
     const q = ctx.prefix.toLowerCase();
@@ -331,6 +358,12 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
         return this._values(ctx, starts);
     }
     return true;
+  }
+
+  /** Where the token at `at` starts in the box, clamped so the widest popup still fits under it. */
+  private _caretOffset(at: number): number {
+    const x = textWidth(this._text.peek().slice(0, at), getComputedStyle(this._input).font) - this._input.scrollLeft;
+    return Math.max(0, Math.min(x, this._input.clientWidth - POPUP_MAX_WIDTH));
   }
 
   private _ready(items: Option[]): boolean {
@@ -423,6 +456,8 @@ export class FilterQueryInput extends Input<FilterGroup, FilterQueryInputOptions
     // that only filled a slot leaves the caret where the value ended
     const applied = this._applyPick();
     const at = applied ? this._text.peek().length : caret;
+    // the box follows the text only when the handler's batch ends: a caret placed in the old text is clamped to it
+    this._input.value = this._text.peek();
     this._input.setSelectionRange?.(at, at);
     if (applied)
       this._list.dismiss();
