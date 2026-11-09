@@ -26,6 +26,8 @@ import '../../../css/sankey-viewer.css';
 import {MessageHandler, RenderSignals, subscribeToColumnRemoval, unsubscribeAll} from '../../utils/utils';
 import {sankeyStatus} from './sankey-status';
 
+const MAX_CATEGORIES = 50;
+
 interface Node {
   node: number,
   name: string,
@@ -111,7 +113,7 @@ export class SankeyViewer extends DG.JsViewer {
     this.targetColumnName = this.string('targetColumnName', null, {nullable: false, columnTypeFilter: DG.TYPE.STRING});
     this.valueColumnName = this.string('valueColumnName', null, {nullable: false, columnTypeFilter: DG.TYPE.NUMERICAL});
     this.nodeColorColumnName = this.string('nodeColorColumnName', null, {category: 'Color', columnTypeFilter: DG.TYPE.CATEGORICAL});
-    this.linkColorColumnName = this.string('linkColorColumnName', null, {category: 'Color', columnTypeFilter: DG.TYPE.CATEGORICAL});
+    this.linkColorColumnName = this.string('linkColorColumnName', null, {category: 'Color', columnTypeFilter: DG.TYPE.STRING});
     this.addRowSourceAndFormula();
 
     this.initialized = false;
@@ -128,22 +130,27 @@ export class SankeyViewer extends DG.JsViewer {
     this.initialized = true;
   }
 
+  static isPlain(col: DG.Column | null, ...types: string[]): col is DG.Column {
+    return col !== null && !col.isVirtual && types.includes(col.type);
+  }
+
+  static isCategorical(col: DG.Column | null): col is DG.Column {
+    return SankeyViewer.isPlain(col, DG.COLUMN_TYPE.STRING) && col.categories.length <= MAX_CATEGORIES;
+  }
+
   strColumnNames(): string[] {
-    return this.dataFrame.columns.toList()
-      .filter((col) => col.type === 'string' && !col.isVirtual && col.categories.length <= 50).map((col) => col.name);
+    return this.dataFrame.columns.toList().filter((col) => SankeyViewer.isCategorical(col)).map((col) => col.name);
   }
 
   numColumnNames(): string[] {
-    return this.dataFrame.columns.toList().filter((col) => ['double', 'int'].includes(col.type) && !col.isVirtual).map((col) => col.name);
+    return this.dataFrame.columns.toList()
+      .filter((col) => SankeyViewer.isPlain(col, DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT)).map((col) => col.name);
   }
 
   hasColumns(): boolean {
-    const plain = (name: string, types: string[]) => {
-      const col = this.dataFrame.col(name);
-      return col !== null && !col.isVirtual && types.includes(col.type);
-    };
-    return plain(this.sourceColumnName, [DG.COLUMN_TYPE.STRING]) && plain(this.targetColumnName, [DG.COLUMN_TYPE.STRING]) &&
-      plain(this.valueColumnName, [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT]);
+    return SankeyViewer.isCategorical(this.dataFrame.col(this.sourceColumnName)) &&
+      SankeyViewer.isCategorical(this.dataFrame.col(this.targetColumnName)) &&
+      SankeyViewer.isPlain(this.dataFrame.col(this.valueColumnName), DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT);
   }
 
   private side(name: string): Side {
@@ -153,9 +160,9 @@ export class SankeyViewer extends DG.JsViewer {
       firstRows: new Int32Array(names.length).fill(-1), nodeOf: new Int32Array(names.length)};
   }
 
-  private stringLinkColorCol(): DG.Column | null {
+  private linkColorColumn(): DG.Column | null {
     const col = this.linkColorColumnName ? this.dataFrame.col(this.linkColorColumnName) : null;
-    return col !== null && col.type === DG.COLUMN_TYPE.STRING && !col.isVirtual ? col : null;
+    return SankeyViewer.isCategorical(col) ? col : null;
   }
 
   _testColumns() {
@@ -180,6 +187,7 @@ export class SankeyViewer extends DG.JsViewer {
   addSubs() {
     this.subs.push(this.signals.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(this.signals.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
+    this.subs.push(this.signals.debounce(this.dataFrame.onValuesChanged, 50).subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
     this.subs.push(subscribeToColumnRemoval(this, {
       sourceColumnName: () => this.strColumnNames().find((name) => name !== this.targetColumnName),
@@ -206,7 +214,7 @@ export class SankeyViewer extends DG.JsViewer {
     const values = valueCol.getRawData() as Int32Array | Float32Array | Float64Array;
     // a missing value is the int or float null, which would sink both nodes of the row
     const missing = valueCol.type === DG.COLUMN_TYPE.INT ? DG.INT_NULL : DG.FLOAT_NULL;
-    const colorCol = this.stringLinkColorCol();
+    const colorCol = this.linkColorColumn();
     const colors = (colorCol?.getRawData() ?? null) as Int32Array | null;
     const colorCount = colorCol?.categories.length ?? 1;
     const links = new Map<number, Link>();
@@ -290,7 +298,7 @@ export class SankeyViewer extends DG.JsViewer {
       return;
     }
     if (!this.hasColumns()) {
-      MessageHandler._showMessage(this.root, 'Select the Source, Target and Value columns.', 'd4-viewer-error');
+      MessageHandler._showMessage(this.root, `Select string Source and Target columns with at most ${MAX_CATEGORIES} categories and an int or double Value column.`, 'd4-viewer-error');
       return;
     }
 
@@ -340,7 +348,7 @@ export class SankeyViewer extends DG.JsViewer {
     const linkRows = (link: Link) => (i: number) => passes(i) &&
       sources[i] === link.sourceCode && targets[i] === link.targetCode && (colors === null || colors[i] === link.color);
     const nodeColorCol = this.nodeColorColumnName ? this.dataFrame.col(this.nodeColorColumnName) : null;
-    const linkColorCol = this.linkColorColumnName ? this.dataFrame.col(this.linkColorColumnName) : null;
+    const linkColorCol = this.linkColorColumn();
 
     const nodes = nodeGroup
       .selectAll('rect')
