@@ -39,6 +39,11 @@ interface Link {
   rowIdx: number,
 }
 
+interface CategoryCodes {
+  codes: Int32Array,
+  names: string[],
+}
+
 interface Margin {
   top: number,
   right: number,
@@ -65,6 +70,7 @@ export class SankeyViewer extends DG.JsViewer {
   initialized: boolean;
 
   graph: any;
+  codes: {source: CategoryCodes, target: CategoryCodes, color: CategoryCodes | null} | null = null;
   margin?: Margin;
   alignMethod?: AlignMethod;
   color?: ScaleOrdinal<string, number, never>;
@@ -166,76 +172,84 @@ export class SankeyViewer extends DG.JsViewer {
     this.render();
   }
 
-  prepareData() {
-    if (!this._testColumns())
-      return;
+  static categoryCodes(col: DG.Column, rows: Int32Array): CategoryCodes {
+    if (col.type === DG.COLUMN_TYPE.STRING && !col.isVirtual)
+      return {codes: col.getRawData() as Int32Array, names: col.categories};
 
-    const sourceCol = this.dataFrame.getCol(this.sourceColumnName);
-    const targetCol = this.dataFrame.getCol(this.targetColumnName);
-    const valueCol = this.dataFrame.getCol(this.valueColumnName);
+    const codes = new Int32Array(col.length);
+    const codeByName = new Map<string, number>();
+    for (const row of rows) {
+      const name = col.getString(row);
+      let code = codeByName.get(name);
+      if (code === undefined)
+        codeByName.set(name, code = codeByName.size);
+      codes[row] = code;
+    }
+    return {codes: codes, names: Array.from(codeByName.keys())};
+  }
+
+  prepareData() {
+    const rows = this.filter.getSelectedIndexes();
+    const source = SankeyViewer.categoryCodes(this.dataFrame.getCol(this.sourceColumnName), rows);
+    const target = SankeyViewer.categoryCodes(this.dataFrame.getCol(this.targetColumnName), rows);
     const linkColorCol = this.linkColorColumnName ? this.dataFrame.col(this.linkColorColumnName) : null;
-    const sourceNames = sourceCol.categories;
-    const targetNames = targetCol.categories;
-    const sources = sourceCol.getRawData();
-    const targets = targetCol.getRawData();
-    const values = valueCol.getRawData();
+    const color = linkColorCol ? SankeyViewer.categoryCodes(linkColorCol, rows) : null;
+    const valueCol = this.dataFrame.getCol(this.valueColumnName);
+    const values = !valueCol.isVirtual && (valueCol.type === DG.COLUMN_TYPE.INT || valueCol.type === DG.COLUMN_TYPE.FLOAT) ?
+      valueCol.getRawData() : null;
     // a missing value is the int or float null, which would sink both nodes of the row
     const missing = valueCol.type === DG.COLUMN_TYPE.INT ? DG.INT_NULL : DG.FLOAT_NULL;
-    const colors = linkColorCol?.type === DG.COLUMN_TYPE.STRING ? linkColorCol.getRawData() : null;
-    const colorCount = linkColorCol === null ? 1 : colors !== null ? linkColorCol.categories.length : 2 ** 32;
 
-    // one link per pair (and link color): d3-sankey's layout is superlinear in links, so a link per row freezes big tables
-    const firstAsSource = new Int32Array(sourceNames.length).fill(-1);
-    const firstAsTarget = new Int32Array(targetNames.length).fill(-1);
-    const links = new Map<number, Link>();
+    const firstAsSource = new Int32Array(source.names.length).fill(-1);
+    const firstAsTarget = new Int32Array(target.names.length).fill(-1);
+    const groups = new Map<number, {source: number, target: number, value: number, rowIdx: number}>();
     let negative = false;
-    for (const row of this.filter.getSelectedIndexes()) {
-      const s = sources[row];
-      const t = targets[row];
+    for (const row of rows) {
+      const s = source.codes[row];
+      const t = target.codes[row];
       if (firstAsSource[s] < 0)
         firstAsSource[s] = row;
       if (firstAsTarget[t] < 0)
         firstAsTarget[t] = row;
-      if (!sourceNames[s] || !targetNames[t])
+      if (!source.names[s] || !target.names[t])
         continue;
 
-      const value = values[row] === missing ? 0 : values[row];
+      const value = values !== null ? (values[row] === missing ? 0 : values[row]) :
+        valueCol.isNone(row) ? 0 : Number(valueCol.get(row));
       negative ||= value < 0;
-      const color = linkColorCol === null ? 0 : colors !== null ? colors[row] : DG.Color.getRowColor(linkColorCol, row) >>> 0;
-      const key = (s * targetNames.length + t) * colorCount + color;
-      const link = links.get(key);
-      if (link)
-        link.value += value;
+      const key = (s * target.names.length + t) * (color?.names.length ?? 1) + (color?.codes[row] ?? 0);
+      const group = groups.get(key);
+      if (group)
+        group.value += value;
       else
-        links.set(key, {source: s, target: t, value: value, rowIdx: row});
+        groups.set(key, {source: s, target: t, value: value, rowIdx: row});
     }
 
-    // a name in both columns is one node; sources come first, each side in the order its rows come
     const nodes: Node[] = [];
     const nodeByName = new Map<string, Node>();
-    for (const [names, first] of [[sourceNames, firstAsSource], [targetNames, firstAsTarget]] as const) {
+    for (const [names, first] of [[source.names, firstAsSource], [target.names, firstAsTarget]] as const) {
       const shown = Array.from(first.keys()).filter((c) => first[c] >= 0 && names[c]).sort((a, b) => first[a] - first[b]);
       for (const c of shown) {
-        const node = nodeByName.get(names[c]);
-        if (node)
-          node.rowIdx = Math.min(node.rowIdx, first[c]);
+        const known = nodeByName.get(names[c]);
+        if (known)
+          known.rowIdx = Math.min(known.rowIdx, first[c]);
         else {
-          nodes.push({node: nodes.length, name: names[c], rowIdx: first[c]});
-          nodeByName.set(names[c], nodes[nodes.length - 1]);
+          const node = {node: nodes.length, name: names[c], rowIdx: first[c]};
+          nodes.push(node);
+          nodeByName.set(node.name, node);
         }
       }
     }
 
-    for (const link of links.values()) {
-      link.source = nodeByName.get(sourceNames[link.source])!.node;
-      link.target = nodeByName.get(targetNames[link.target])!.node;
-    }
+    const links: Link[] = Array.from(groups.values(), (group) => ({
+      source: nodeByName.get(source.names[group.source])!.node,
+      target: nodeByName.get(target.names[group.target])!.node,
+      value: group.value,
+      rowIdx: group.rowIdx,
+    }));
 
-    this.graph = {
-      nodes: nodes,
-      links: Array.from(links.values()),
-      negative: negative,
-    };
+    this.graph = {nodes: nodes, links: links, negative: negative};
+    this.codes = {source: source, target: target, color: color};
   }
 
   detectGraphCycles(graph: { nodes: Node[], links: Link[] }): string[][] {
@@ -254,21 +268,6 @@ export class SankeyViewer extends DG.JsViewer {
     super.onPropertyChanged(property);
     if (this.initialized)
       this.render();
-  }
-
-  rowMatchesColumnValues(sourceCol: DG.Column | null, targetCol: DG.Column | null,
-    rowIndex: number, sourceName: string, targetName: string, operator: 'AND' | 'OR' = 'AND',
-  ): boolean {
-    if (!sourceCol || !targetCol || !this.filter.get(rowIndex))
-      return false;
-
-    const sourceMatch = this.dataFrame.get(sourceCol.name, rowIndex) === sourceName;
-    const targetMatch = this.dataFrame.get(targetCol.name, rowIndex) === targetName;
-
-    switch (operator) {
-    case 'AND': return sourceMatch && targetMatch;
-    case 'OR': return sourceMatch || targetMatch;
-    }
   }
 
   render() {
@@ -324,8 +323,20 @@ export class SankeyViewer extends DG.JsViewer {
 
     const nodeGroup = svg.append('g').attr('class', 'node');
 
-    const dataFrameSourceColumn = this.dataFrame.getCol(this.sourceColumnName);
-    const dataFrameTargetColumn = this.dataFrame.getCol(this.targetColumnName);
+    const {source, target, color} = this.codes!;
+    const filter = this.filter.getBuffer();
+    const passes = (i: number) => (filter[i >>> 5] & (1 << (i & 31))) !== 0;
+    const nodeRows = (name: string) => {
+      const s = source.names.indexOf(name);
+      const t = target.names.indexOf(name);
+      return (i: number) => passes(i) && (source.codes[i] === s || target.codes[i] === t);
+    };
+    const linkRows = (rowIdx: number) => {
+      const s = source.codes[rowIdx];
+      const t = target.codes[rowIdx];
+      const c = color?.codes[rowIdx];
+      return (i: number) => passes(i) && source.codes[i] === s && target.codes[i] === t && (color === null || color.codes[i] === c);
+    };
     const nodeColorCol = this.nodeColorColumnName ? this.dataFrame.col(this.nodeColorColumnName) : null;
     const linkColorCol = this.linkColorColumnName ? this.dataFrame.col(this.linkColorColumnName) : null;
 
@@ -342,18 +353,14 @@ export class SankeyViewer extends DG.JsViewer {
         return DG.Color.toRgb(color);
       })
       .on('mouseover', (event, d: any) => {
-        ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-          return this.rowMatchesColumnValues(dataFrameSourceColumn, dataFrameTargetColumn, i, d.name, d.name, 'OR');
-        }, event.x, event.y);
+        ui.tooltip.showRowGroup(this.dataFrame, nodeRows(d.name), event.x, event.y);
       })
       .on('mouseout', () => ui.tooltip.hide())
       //@ts-ignore
       .call(drag().subject((d) => d).on('drag', dragmove))
       .on('click', (event, d: any) => {
         if (event.defaultPrevented) return; // dragging
-        this.dataFrame.selection.handleClick((i) => {
-          return this.rowMatchesColumnValues(dataFrameSourceColumn, dataFrameTargetColumn, i, d.name, d.name, 'OR');
-        }, event);
+        this.dataFrame.selection.handleClick(nodeRows(d.name), event);
       });
 
     const links = svg.append('g')
@@ -369,15 +376,11 @@ export class SankeyViewer extends DG.JsViewer {
       .style('fill', 'none')
       .attr('stroke-width', (d) => Math.max(1, d.width!))
       .on('mouseover', (event, d: any) => {
-        ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-          return this.rowMatchesColumnValues(dataFrameSourceColumn, dataFrameTargetColumn, i, d.source.name, d.target.name);
-        }, event.x, event.y);
+        ui.tooltip.showRowGroup(this.dataFrame, linkRows(d.rowIdx), event.x, event.y);
       })
       .on('mouseout', () => ui.tooltip.hide())
       .on('click', (event, d: any) => {
-        this.dataFrame.selection.handleClick((i) => {
-          return this.rowMatchesColumnValues(dataFrameSourceColumn, dataFrameTargetColumn, i, d.source.name, d.target.name);
-        }, event);
+        this.dataFrame.selection.handleClick(linkRows(d.rowIdx), event);
       });
 
     const titles = nodeGroup
