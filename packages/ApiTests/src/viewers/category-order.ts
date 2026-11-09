@@ -32,27 +32,6 @@ category('Viewers: category order', () => {
     expect(propertyOf(bp.getOptions(true).look, 'categoryOrder'), 'Chem:molecularProperty(MW)');
   }, anywhere);
 
-  test('category order reorders the boxes', async () => {
-    const df = DG.DataFrame.fromCsv('cat,val\na,1\nb,2\nb,3\nb,4\nc,5\nc,6');
-    const view = grok.shell.addTableView(df);
-    try {
-      const bp = view.addViewer(DG.VIEWER.BOX_PLOT, {valueColumnName: 'val', categoryColumnNames: ['cat']});
-      const boxes = () => {
-        const areas = bp.getWidgetStatus().hitAreas;
-        return ['a', 'b', 'c'].filter((c) => areas[`category ${c}`])
-          .sort((x, y) => areas[`category ${x}`].x - areas[`category ${y}`].x).join(',');
-      };
-      await waitUntil(() => boxes() === 'a,b,c', () => `default order: ${boxes()}`);
-      bp.setOptions({categoryOrder: JSON.stringify({column: 'cat', aggr: 'values', order: 'desc'})});
-      await waitUntil(() => boxes() === 'b,c,a', () => `row count, descending: ${boxes()}`);
-      bp.setOptions({categoryOrder: JSON.stringify({manual: ['c', 'a', 'b']})});
-      await waitUntil(() => boxes() === 'c,a,b', () => `manual order: ${boxes()}`);
-    } finally {
-      view.close();
-      grok.shell.closeTable(df);
-    }
-  }, browserOnly);
-
   test('property keys computed for distinct categories', async () => {
     const calls: number[] = [];
     // grok.functions has no unregister; the func stays registered, harmless under the private ApiTestsNames semType

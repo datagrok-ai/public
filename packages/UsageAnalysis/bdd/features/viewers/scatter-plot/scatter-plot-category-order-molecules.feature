@@ -3,6 +3,8 @@ Feature: Scatter plot molecule categories ordered by a computed property
   A categorical axis of molecules is ordered by a property a package computes for them: Aggregated
   value on the molecule column itself offers Chem's Molecular Property choices (MW first), and the
   markers move to their core's place by molecular weight once the values arrive, in either direction.
+  Descending MW happens to put the three markers in their by-name places, so that step also reads the
+  order the plot holds.
   The plot reports nothing pending while Chem computes the values (about a second for the seven
   cores), so the first claim after the pick polls the places of the three markers together.
   spgi-100 with Core (six scaffolds with R-group attachment points, seven rows without one) on X and
@@ -34,7 +36,8 @@ Feature: Scatter plot molecule categories ordered by a computed property
     When user selects "Ascending" in "Direction" input in "Order categories: Core" dialog
     Then once the computed order arrives, the areas "marker of row 8, marker of row 1, marker of row 2" of scatter plot viewer should lie from left to right
     When user selects "Descending" in "Direction" input in "Order categories: Core" dialog
-    Then the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 1" area
+    Then "X Category Order" property of scatter plot viewer should contain '"order":"desc"'
+    And the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 1" area
     And the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 8" area
     When user selects "Default" in "Order by" input in "Order categories: Core" dialog
     And user clicks on "CLOSE" button in "Order categories: Core" dialog

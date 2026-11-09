@@ -5,8 +5,8 @@ Feature: Category order in everyday workflows
   old column's names or counts), so the property and the dialog always show the order the axis has;
   the dialog of the column switched away from closes, a renamed column keeps its order, and a date
   shown by month can be ordered by an aggregate (it has no names or counts of its own). Several
-  viewers on one column keep their own orders until one is applied to all; the dialog then says the
-  column has an order of its own and Reset gives it back to every viewer. Trying modes out in the
+  viewers on one column keep their own orders (APPLY TO ALL VIEWERS and Reset are in
+  category-order-across-viewers.feature). Trying modes out in the
   dialog leaves the plot as the dialog shows it, Manual starts from the order shown, an order set
   elsewhere closes the dialog, and the order survives a layout round trip and a filter, while the
   removal of the column it sorts by ends it.
@@ -78,7 +78,7 @@ Feature: Category order in everyday workflows
     And user clicks on "CLOSE" button in "Order categories: STARTED" dialog
     Then no errors should have been logged
 
-  Scenario: Viewers on one column keep their own orders until one is applied to all, and Reset takes it back
+  Scenario: Viewers on one column keep their own orders
     Given user adds a box plot viewer with:
       | Value      | AGE  |
       | Category 1 | RACE |
@@ -101,29 +101,7 @@ Feature: Category order in everyday workflows
     And the "category Other" area of box plot viewer should lie to the left of the "category Asian" area
     And the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 1" area
     And the "categories of RACE" reading of filter panel should be "Asian, Black, Caucasian, Other"
-    When user clicks on "APPLY TO ALL VIEWERS" button in "Order categories: RACE" dialog
-    Then "Order by" input in "Order categories: RACE" dialog should have value "Default"
-    And "Order categories: RACE" dialog should contain text "RACE has its own order"
-    And the "category Black" area of box plot viewer should lie to the left of the "category Caucasian" area
-    And "X Category Order" property of scatter plot viewer should be ""
-    And the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 2" area
-    And the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 10" area
-    And the "categories of RACE" reading of filter panel should be "Black, Caucasian, Other, Asian"
     When user clicks on "CLOSE" button in "Order categories: RACE" dialog
-    And user picks "Order..." from the context menu of the "left edge of x axis" area of scatter plot viewer
-    Then "Order by" input in "Order categories: RACE" dialog should have value "Default"
-    And "Order categories: RACE" dialog should contain text "RACE has its own order"
-    When user clicks on "Reset" action link in "Order categories: RACE" dialog
-    Then "Order categories: RACE" dialog should not contain text "RACE has its own order"
-    And the "marker of row 10" area of scatter plot viewer should lie to the left of the "marker of row 1" area
-    And the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 2" area
-    And the "category Asian" area of box plot viewer should lie to the left of the "category Black" area
-    And the "categories of RACE" reading of filter panel should be "Asian, Black, Caucasian, Other"
-    When user selects "Row count" in "Order by" input in "Order categories: RACE" dialog
-    Then the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 1" area
-    And the "category Asian" area of box plot viewer should lie to the left of the "category Black" area
-    When user selects "Default" in "Order by" input in "Order categories: RACE" dialog
-    And user clicks on "CLOSE" button in "Order categories: RACE" dialog
     Then the "x categories" reading of line chart viewer should be 4
     When user sets properties of line chart viewer:
       | X    | STARTED |

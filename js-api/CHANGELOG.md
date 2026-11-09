@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [#3924](https://github.com/datagrok-ai/public/issues/3924): Viewers: Added category order settings: `xCategoryOrder` / `yCategoryOrder` (scatter plot), `categoryOrder` (box plot; bar and pie charts under the `custom` sort type), `xCategoryOrder` (line chart), `xCategoryOrder` / `yCategoryOrder` / `zCategoryOrder` (3D scatter plot)
 * Docker: Added `grok.dapi.docker.getStatus()`: whether Grok Spawner is switched on and its last poll found no connection failure, so a plugin can tell if the server can run containers; `isActive` is absent when the status could not be read
 * Files: Fixed `files.readFilesAsBlobs` and `readFilesAsJson` on a connection root given without a trailing slash (`System:DemoFiles`) asking the server for a folder named after the whole path; a path with no slash now reads the root, as `files.list` does
 * [public#4549](https://github.com/datagrok-ai/public/issues/4549): Fixed `Column.fromList('bigint', ...)` with JS `BigInt` values creating a column whose `get()` threw and whose table view could not render
