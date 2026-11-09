@@ -24,8 +24,6 @@ export interface LinePrior {
   /** log of the volume (mm3) alpha refers to: d log V / dt = alpha - beta (log V - log_v_ref) */
   log_v_ref: number;
   sd_within: {log_alpha: number, log_beta: number, log_v0: number};
-  /** study-level sd of log beta: the labs' shapes (v0 / v1; v2 has it in study_prior) */
-  sd_study_log_beta?: number;
   /** v2: a new study's (log alpha, log beta), the labs' joint distribution (deconvolution of the atlas's controls,
    *  its size calibrated) */
   study_prior?: {mean_log_alpha: number, sd_log_alpha: number, mean_log_beta: number, sd_log_beta: number,
@@ -42,9 +40,6 @@ export interface LinePrior {
   /** sd of log V between a study's animals at randomisation, measured in the atlas (measurement_error.py) */
   start_sd: number;
   sd_residual_log_v: number;
-  /** sd of log V of the animals' departures from a smooth curve, per measurement, in quadrature with the caliper's
-   *  error (v1: fitted with the twin; absent in v0; v2's noise replaces it) */
-  sd_process?: number;
   take: {nonprogressing_map: number, nonprogressing: number, animals: number, definition: string};
   facet_shifts_log_rate: {facet: string, shift_log_lambda: number, se: number, ci95: number[], papers: number}[];
   studies: Study[];

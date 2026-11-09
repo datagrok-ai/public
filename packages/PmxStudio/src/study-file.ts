@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
 
-import {PLAN_TAG, SavedPlan, parsePlan} from './plan-file';
+import {PLAN_TAG, SavedPlan, fileNameOf, parsePlan} from './plan-file';
 import {StudyMeta, metaOf, parseMeta, setMetaOn} from './study-meta';
 
 export const STUDY_EXT = 'pmxstudy';
@@ -173,7 +173,7 @@ export function tableOf(s: SavedStudy): DG.DataFrame {
 }
 
 export const studiesFolder = () => `${grok.shell.user.project.name}:Home/PMX Studio/studies/`;
-const fileName = (name: string) => `${name.replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Study'}.${STUDY_EXT}`;
+const fileName = (name: string) => fileNameOf(name, 'Study', STUDY_EXT);
 
 /** Saves the study to the user's studies folder (replacing the same study's file); returns its path. A different
  *  study saved under the same name (another ID) is not replaced: the user is asked to rename this one. */

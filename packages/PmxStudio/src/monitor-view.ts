@@ -6,8 +6,8 @@
    go on, only on the reviews fixed at the start (MONITOR_DESIGN.md). */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {badge, BasicTable, button, buttonWithIcon, computed, div, divH, divV, signal, span,
-  Splitter} from '@datagrok-libraries/u2';
+import {badge, BasicTable, button, buttonWithIcon, computed, div, divH, divV, signal,
+  span} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
@@ -33,12 +33,9 @@ import {printSheet, sheetHtml} from './sheet';
 import {Exports, download, exportMenu, reportHtml} from './report';
 import {studyInputsOf} from './explore';
 import {tolerabilityTab} from './tolerability';
-import {askedOf, autoRun, block, busyBar, busyOverlay, callInputs, cardGrid, dayText, declarationPane, DECLARATION_MIN,
-  infoNote,
-  onTableEdits, TABLE_EDITS,
-  isBodyWeight, keepNamedColumns, noteLine, notes,
-  notesBox, num, pct, resultsFrame, settleForm, sized, staleNote,
-  markStage, signed, stageOf, statCard, swatch, volumeAxis, wrapCells} from './ui';
+import {askedOf, autoRun, block, callInputs, cardGrid, dayText, infoNote, onTableEdits, TABLE_EDITS, isBodyWeight,
+  keepNamedColumns, noteLine, notes, notesBox, num, pct, settleForm, sized, markStage, signed, stageOf, statCard,
+  swatch, volumeAxis, wrapCells, stagePanes} from './ui';
 
 /** Monitor's tabs and their panels, in order and width (twelfths): today's work and how the groups grow; the
  *  measurements and the groups formed; how the animals bear it; whether each group is worth continuing. */
@@ -352,7 +349,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       const m = marks.get(String(a.animal));
       const el = span(String(a.animal));
       if (m)
-        el.append(' ', badge(m === 'excluded' ? 'Excluded' : 'Flagged', {variant: m === 'excluded' ? 'default' : 'warning'}));
+        el.append(' ', badge(m === 'excluded' ? 'Excluded' : 'Flagged',
+          {variant: m === 'excluded' ? 'default' : 'warning'}));
       el.dataset.animal = String(a.animal);
       return el;
     };
@@ -759,29 +757,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     content.hidden = !result.value;
     start.hidden = !!result.value;
   });
-  // the first run under u2's loader; every later one under the thin bar, what was shown left in view
-  const overlay = busyOverlay('Forecasting the study…');
-  const bar = busyBar();
-  const failure = div([], 'pmx-monitor-error');
-  Object.assign(failure.style, {color: 'var(--dg-error-color, #c62828)'});
-  form.effect(() => {
-    overlay.hidden = !busy.value || result.value !== undefined;
-    bar.hidden = !busy.value || result.value === undefined;
-  });
-  form.effect(() => {
-    failure.hidden = error.value === null;
-    failure.replaceChildren(...(error.value === null ? [] : [noteLine(error.value, 'error')]));
-  });
-  // the view follows the form by itself: what it shows is behind only while a field is missing or invalid
-  const outdated = staleNote('A field is missing or invalid: the forecasts shown are for the last complete inputs');
-  form.effect(() => {
-    outdated.hidden = !stale.value || form.missingRequired.value.length + form.invalidFields.value.length === 0;
-    content.style.opacity = stale.value ? '0.5' : '';
-  });
-
-  const panes = new Splitter([declarationPane(form.root),
-    resultsFrame([failure, outdated, start, content], overlay, bar)],
-  {direction: 'horizontal', sizes: [0.2, 0.8], minSize: DECLARATION_MIN});
+  const panes = stagePanes(form, content, {busy, result, error, stale, before: [start],
+    busyText: 'Forecasting the study…', staleText: 'the forecasts shown are for the last complete inputs'});
   // a session's values pasted or typed into the table: the forecasts follow, after a pause (one value, then the next)
   self.own(onTableEdits(form, computed(() => [result.value, error.value]),
     studyTable, () => auto.changed(TABLE_EDITS)));

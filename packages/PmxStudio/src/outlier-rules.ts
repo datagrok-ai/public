@@ -7,6 +7,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {_package} from './package';
+import {isFiniteNumber as ok, median} from './engine';
 
 export interface OutlierRules {
   /** a negative volume or body weight, an animal measured twice on one day */
@@ -36,7 +37,6 @@ export interface StudyColumns {
 /** One finding: the row, the value it is about and why, in words. */
 export interface Finding {row: number, on: 'volume' | 'weight' | 'row', reason: string}
 
-const ok = (x: number | null | undefined): x is number => typeof x === 'number' && Number.isFinite(x);
 const mm3 = (v: number) => `${Math.round(v)} mm³`;
 /** The robust standard deviation of normal data from its median absolute deviation. */
 const MAD_SD = 1.4826;
@@ -125,12 +125,6 @@ export function findOutliers(s: StudyColumns, r: OutlierRules): Finding[] {
     });
   }
   return out;
-}
-
-function median(xs: number[]): number {
-  const s = [...xs].sort((a, b) => a - b);
-  const m = s.length >> 1;
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
 // --- where the rules are kept: the user's own, else the lab's, else the defaults

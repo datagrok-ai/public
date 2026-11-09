@@ -9,23 +9,20 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {badge, BasicTable, button, computed, div, divH, divV, dot, loader, signal, span, Splitter,
-  tableFromMap,
+import {badge, BasicTable, button, computed, div, divH, divV, dot, loader, signal, span, tableFromMap,
   Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
-import {AnalysisFrames, AnalysisInputs, PREDICTED, analysisDeclarationOf, analysisFrames, exampleStudy, median}
+import {AnalysisFrames, AnalysisInputs, PREDICTED, analysisDeclarationOf, analysisFrames, exampleStudy}
   from './analyze';
+import {median} from './engine';
 import {groupColors} from './frames';
 import {CorrectionInput} from './arms-input';
-import {askedOf, autoRun, axisAt, busyBar, busyOverlay, callInputs, cardGrid, dayText, declarationPane,
-  keepSame,
-  onTableEdits, only, TABLE_EDITS,
-  DECLARATION_MIN, guide,
-  infoNote, noteLine, notesBox, num, pct, pValue, resultsFrame, settleForm, signed,
-  isBodyWeight, keepNamedColumns, sized, markStage, staleNote, statCard, swatch, volumeAxis, wrapCells} from './ui';
+import {askedOf, autoRun, axisAt, callInputs, cardGrid, dayText, keepSame, onTableEdits, only, TABLE_EDITS, guide,
+  infoNote, noteLine, notesBox, num, pct, pValue, settleForm, signed, isBodyWeight, keepNamedColumns, sized, markStage,
+  statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
 import {logOf, restoreFields} from './study-file';
 import {openStage} from './stages';
 import {noEffectNote, observedCell, planInput, planTab} from './plan-vs-observed';
@@ -1044,29 +1041,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     start.hidden = !!result.value;
   });
 
-  // the first run under u2's loader; every later one under the thin bar, what was shown left in view
-  const overlay = busyOverlay('Analyzing the study…');
-  const bar = busyBar();
-  const failure = div([], 'pmx-analyze-error');
-  Object.assign(failure.style, {color: 'var(--dg-error-color, #c62828)'});
-  form.effect(() => {
-    overlay.hidden = !busy.value || result.value !== undefined;
-    bar.hidden = !busy.value || result.value === undefined;
-  });
-  form.effect(() => {
-    failure.hidden = error.value === null;
-    failure.replaceChildren(...(error.value === null ? [] : [noteLine(error.value, 'error')]));
-  });
-  // the view follows the form by itself: what it shows is behind only while a field is missing or invalid
-  const outdated = staleNote('A field is missing or invalid: the analysis shown is for the last complete inputs');
-  form.effect(() => {
-    outdated.hidden = !stale.value || form.missingRequired.value.length + form.invalidFields.value.length === 0;
-    content.style.opacity = stale.value ? '0.5' : '';
-  });
-
-  const panes = new Splitter([declarationPane(form.root),
-    resultsFrame([failure, outdated, start, content], overlay, bar)],
-  {direction: 'horizontal', sizes: [0.2, 0.8], minSize: DECLARATION_MIN});
+  const panes = stagePanes(form, content, {busy, result, error, stale, before: [start],
+    busyText: 'Analyzing the study…', staleText: 'the analysis shown is for the last complete inputs'});
   // an edit of the study table (a value corrected, rows added): analyzed again, after a pause
   self.own(onTableEdits(form, computed(() => [result.value, error.value]),
     () => call.getParamValue('study'), () => auto.changed(TABLE_EDITS)));

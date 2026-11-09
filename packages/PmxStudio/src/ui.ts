@@ -5,7 +5,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {buttonWithIcon, computed, div, divH, divV, dot, effect, icon, loader, RadioInput, Section, signal, span,
-  StatCard, Tooltip} from '@datagrok-libraries/u2';
+  Splitter, StatCard, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
 
@@ -372,6 +372,34 @@ export function declarationPane(form: HTMLElement): HTMLElement {
   Object.assign(pane.style, {height: '100%', overflowY: 'auto', overflowX: 'hidden', boxSizing: 'border-box',
     padding: 'var(--dg-space-m) var(--dg-space-l) var(--dg-space-l)', minWidth: `${DECLARATION_MIN}px`});
   return pane;
+}
+
+/** A stage's two panes: its declaration, and its results under the run's error and, while a field is missing or
+ *  invalid, a note that they are behind (dimmed); the first run under the loader, every later one under the thin
+ *  bar, what was shown left in view. `before`: shown between the note and the results (an empty state). */
+export function stagePanes(form: FuncCallForm, content: HTMLElement, o: {busy: ReadonlySignal<boolean>,
+  result: ReadonlySignal<unknown>, error: ReadonlySignal<string | null>, stale: ReadonlySignal<boolean>,
+  busyText: string, staleText: string, before?: HTMLElement[], declaration?: HTMLElement}): Splitter {
+  const overlay = busyOverlay(o.busyText);
+  const bar = busyBar();
+  form.effect(() => {
+    overlay.hidden = !o.busy.value || o.result.value !== undefined;
+    bar.hidden = !o.busy.value || o.result.value === undefined;
+  });
+  const failure = div([], 'pmx-stage-error');
+  Object.assign(failure.style, {color: 'var(--dg-error-color, #c62828)'});
+  form.effect(() => {
+    failure.hidden = o.error.value === null;
+    failure.replaceChildren(...(o.error.value === null ? [] : [noteLine(o.error.value, 'error')]));
+  });
+  const outdated = staleNote(`A field is missing or invalid: ${o.staleText}`);
+  form.effect(() => {
+    outdated.hidden = !o.stale.value || form.missingRequired.value.length + form.invalidFields.value.length === 0;
+    content.style.opacity = o.stale.value ? '0.5' : '';
+  });
+  return new Splitter([o.declaration ?? declarationPane(form.root),
+    resultsFrame([failure, outdated, ...o.before ?? [], content], overlay, bar)],
+  {direction: 'horizontal', sizes: [0.2, 0.8], minSize: DECLARATION_MIN});
 }
 
 /** u2 auto-picks a column for every column param, the optional ones too (the nearest name): an optional column keeps

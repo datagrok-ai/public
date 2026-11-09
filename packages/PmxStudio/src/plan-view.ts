@@ -8,7 +8,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {BasicTable, buttonWithIcon, ChoiceInput, computed, Dialog, div, divH, divV, dot, emptyState, loader, Reason,
-  signal, span, Splitter, tableFromMap, TextInput, Tooltip} from '@datagrok-libraries/u2';
+  signal, span, tableFromMap, TextInput, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
@@ -17,10 +17,8 @@ import {PlanFrames, PlanInputs, WEEKDAY_NAMES, armColors, declarationOf, planFra
   weekdaysText} from './frames';
 import {ArmsInput, CorrectionInput, armsFrame} from './arms-input';
 import {MIN_GROUP, finite} from './engine';
-import {askedOf, autoRun, busyBar, busyOverlay, callInputs, cardGrid, copyRow, declarationPane, DECLARATION_MIN,
-  infoNote, notes,
-  notesBox, num, pct, resultsFrame, settleForm, sized, staleNote,
-  markStage, statCard, swatch, volumeAxis, wrapCells} from './ui';
+import {askedOf, autoRun, callInputs, cardGrid, copyRow, infoNote, notes, notesBox, num, pct, settleForm, sized,
+  markStage, statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
 import {openStage, showStage} from './stages';
 import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
@@ -745,32 +743,12 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const content = divV([cards, panels], 'pmx-plan-content');
   Object.assign(content.style, {gap: 'var(--dg-space-l)'});
 
-  // the first plan under u2's loader; every later one under the thin bar, what was shown left in view
-  const overlay = busyOverlay('Designing the study…');
-  const bar = busyBar();
-  const failure = div([], 'pmx-plan-error');
-  Object.assign(failure.style, {color: 'var(--dg-error-color, #c62828)'});
-  form.effect(() => {
-    overlay.hidden = !planning.value || result.value !== undefined;
-    bar.hidden = !planning.value || result.value === undefined;
-  });
   // a calendar change: its own loader, the calendar dimmed, the page in view; a plan from the form clears its note
   form.effect(() => {
     calendarLoader.hidden = !refreshing.value;
     calendarBox.style.opacity = refreshing.value ? '0.5' : '';
     if (planning.value)
       calendarStatus.replaceChildren();
-  });
-  form.effect(() => {
-    failure.hidden = error.value === null;
-    failure.replaceChildren(...(error.value === null ? [] : [divH([dot('error'), span(error.value)])]));
-  });
-
-  // the view follows the form by itself: what it shows is behind only while a field is missing or invalid
-  const outdated = staleNote('A field is missing or invalid: the plan shown is for the last complete inputs');
-  form.effect(() => {
-    outdated.hidden = !stale.value || form.missingRequired.value.length + form.invalidFields.value.length === 0;
-    content.style.opacity = stale.value ? '0.5' : '';
   });
 
   // no treated arm yet: what to add, in place of a plan
@@ -783,8 +761,9 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     content.style.display = none ? 'none' : '';
   });
 
-  const results = resultsFrame([failure, outdated, noArms, content], overlay, bar);
-  const declaration = declarationPane(form.root);
+  // the first plan under u2's loader, every later one under the thin bar
+  const panes = stagePanes(form, content, {busy: planning, result, error, stale, before: [noArms],
+    busyText: 'Designing the study…', staleText: 'the plan shown is for the last complete inputs'});
 
   // the plan carries the schedules while their section is open; opened on a plan without them, they are computed
   // for it (the form's own inputs, the plan unchanged)
@@ -927,8 +906,6 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     [saveButton, downloadButton, followButton].forEach((b) => Reason.apply(b, off));
   });
 
-  const panes = new Splitter([declaration, results], {direction: 'horizontal', sizes: [0.2, 0.8],
-    minSize: DECLARATION_MIN});
   const head = studyHeader(form, 'plan', computed(() => {
     const r = result.value;
     if (!r)

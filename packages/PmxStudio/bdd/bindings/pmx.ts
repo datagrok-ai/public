@@ -9,7 +9,7 @@ import type {ElementRef} from '@datagrok-libraries/bdd/runtime';
 element('form run button', {selector: '.pmx-declaration [data-u2="button"]:has-text("Run")'});
 element('advanced header', {selector: '.pmx-declaration .u2-form-category:has-text("Advanced")'});
 element('stale note', {selector: '.pmx-stale'});
-element('study error', {selector: '.pmx-plan-error, .pmx-analyze-error'});
+element('study error', {selector: '.pmx-stage-error'});
 element('calendar status', {selector: '.pmx-calendar-status'});
 element('calendar summary', {selector: '.pmx-calendar-summary'});
 element('study calendar', {selector: '.pmx-calendar'});

@@ -8,7 +8,7 @@ import * as DG from 'datagrok-api/dg';
 import {Arm, armsOf} from './arms-input';
 import {PlanFrames, PlanInputs, declarationOf} from './frames';
 import {PlanChecks, planChecks} from './plan-checks';
-import {finite} from './engine';
+import {finite, isFiniteNumber as fin} from './engine';
 import {StudyMeta, parseMeta} from './study-meta';
 
 export const PLAN_EXT = 'pmxplan';
@@ -107,7 +107,6 @@ export function parsePlan(text: string): SavedPlan {
     throw new Error('Not a PMX Studio plan');
   if (p.version !== 1)
     throw new Error(`A plan of version ${p.version}, which this PMX Studio cannot read: update the package`);
-  const fin = (x: unknown) => typeof x === 'number' && Number.isFinite(x);
   const range = (r: any) => fin(r?.q025) && fin(r.median) && (r.q975 === null || fin(r.q975));
   const pr = p.predicted;
   const ch = pr?.checks;
@@ -130,7 +129,10 @@ export function parsePlan(text: string): SavedPlan {
 /** The folder of the user's plans, in their Home. */
 export const plansFolder = () => `${grok.shell.user.project.name}:Home/PMX Studio/plans/`;
 
-const fileName = (name: string) => `${name.replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Plan'}.${PLAN_EXT}`;
+/** A name as a file name: without the characters a path cannot hold, `fallback` when nothing is left. */
+export const fileNameOf = (name: string, fallback: string, ext: string) =>
+  `${name.replace(/[\\/:*?"<>|]+/g, ' ').trim() || fallback}.${ext}`;
+const fileName = (name: string) => fileNameOf(name, 'Plan', PLAN_EXT);
 const textOf = (p: SavedPlan) => JSON.stringify(p, null, 2);
 
 /** Where a plan of this name is saved, in the user's plans folder. */

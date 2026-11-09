@@ -58,7 +58,8 @@ export function uniqueName(base: string): string {
  *  so a view ready at once (its data at hand) would be put behind the one clicked. */
 export function showStage(stage: Stage, view: DG.ViewBase): Promise<DG.ViewBase> {
   return new Promise((resolve) => setTimeout(() => {
-    view.name = uniqueName(stage === 'home' ? 'PMX Studio' : `PMX Studio · ${STAGES.find((s) => s.stage === stage)?.label}`);
+    const label = STAGES.find((s) => s.stage === stage)?.label;
+    view.name = uniqueName(stage === 'home' ? 'PMX Studio' : `PMX Studio · ${label}`);
     grok.shell.addView(view);
     // the platform puts the app's root before the path of the view it opens as the app, not of one added later
     view.path = pathOf(stage);

@@ -1,15 +1,15 @@
 /*
  * The Plan engine: Crux's stats.tumor_study_design (crate tgi, [decision:tumor-study-design]), called once per
  * treated arm. This file only translates and combines: the cell line's prior (files/engine_priors_v3.json: the labs'
- * joint distribution of a new study's log alpha and log beta, and the heavy-tailed observation error; an older file's
- * MAP prior of log alpha, Crux stats.map_prior) and the arm's therapy (archetypes.ts) become the
+ * joint distribution of a new study's log alpha and log beta, and the heavy-tailed observation error) and the arm's
+ * therapy (archetypes.ts) become the
  * function's table and parameters; every arm is designed with the same seed, so the studies drawn, the study end
  * and the controls are the same in every call, and the study's animals per arm are the largest arm's.
  */
 import * as DG from 'datagrok-api/dg';
 
 import {crux, CruxResult, MAX_SETS, named, rows} from './crux';
-import {MeasurementError, enginePriors, linePrior, mapPrior} from './priors';
+import {MeasurementError, enginePriors, linePrior} from './priors';
 import {ARCHETYPES, Archetype, Therapy} from './archetypes';
 
 export type EffectMetric = 'TGI' | 'TC';
@@ -23,6 +23,12 @@ export const correctionOf = (x: unknown): Correction =>
  *  of an integer column, which reads as INT_NULL). */
 export const isFiniteNumber = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
 export const finite = (x: unknown): number | null => isFiniteNumber(x) && x !== DG.INT_NULL ? x : null;
+/** The median (the mean of the middle two for an even count). */
+export const median = (xs: number[]) => {
+  const s = [...xs].sort((a, b) => a - b);
+  const m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+};
 
 /** Monday, Wednesday and Friday (0 Monday … 6 Sunday): the measurement weekdays when none are given. */
 export const LAB_WEEKDAYS = [0, 2, 4];
@@ -177,26 +183,20 @@ async function enough(n: number | null, keep: number, confidence: number,
 }
 
 /** A line's growth model as Crux stats.tumor_study_design / tumor_study_simulate take it: the table of a new study's
- *  log alpha (one component with v2's labs' bivariate normal; v0 / v1: the MAP prior) and the model parameters. */
+ *  log alpha (one component, the labs' bivariate normal) and the model parameters. */
 export async function lineModel(line: string) {
   const [lp, atlasMe] = [await linePrior(line), (await enginePriors()).measurement_error];
-  // v2: a new study from the labs' bivariate normal and the heavy-tailed error; v0 / v1: the MAP prior of log alpha
-  const sp = lp.study_prior;
-  const nz = lp.noise;
-  let prior: {w: ArrayLike<number>, a: ArrayLike<number>, b: ArrayLike<number>};
-  if (sp)
-    prior = {w: Float64Array.of(1), a: Float64Array.of(sp.mean_log_alpha), b: Float64Array.of(sp.sd_log_alpha)};
-  else {
-    const map = await mapPrior(line);
-    prior = {w: map.main.col['w'], a: map.main.col['a'], b: map.main.col['b']};
-  }
-  const me: MeasurementError = nz ? {...atlasMe, model: `${atlasMe.model}, Student t (df ${nz.df.toFixed(1)})`,
-    c0: nz.c0, c1: nz.c1} : atlasMe;
+  const [sp, nz] = [lp.study_prior, lp.noise];
+  if (!sp || !nz)
+    throw new Error(`The engine priors have no study prior for ${line}`);
+  const prior = {w: Float64Array.of(1), a: Float64Array.of(sp.mean_log_alpha), b: Float64Array.of(sp.sd_log_alpha)};
+  const me: MeasurementError = {...atlasMe, model: `${atlasMe.model}, Student t (df ${nz.df.toFixed(1)})`,
+    c0: nz.c0, c1: nz.c1};
   const params = {
-    log_beta: sp?.mean_log_beta ?? lp.log_beta, log_v_ref: lp.log_v_ref, sd_log_alpha: lp.sd_within.log_alpha,
-    sd_log_beta: lp.sd_within.log_beta, sd_study_log_beta: sp?.sd_log_beta ?? lp.sd_study_log_beta,
-    rho_study: sp?.rho ?? 0, start_sd: lp.start_sd, nonprogressing: lp.take.nonprogressing_map,
-    me_c0: me.c0, me_c1: me.c1, noise_df: nz?.df ?? 0, sd_process: nz ? 0 : lp.sd_process ?? 0,
+    log_beta: sp.mean_log_beta, log_v_ref: lp.log_v_ref, sd_log_alpha: lp.sd_within.log_alpha,
+    sd_log_beta: lp.sd_within.log_beta, sd_study_log_beta: sp.sd_log_beta,
+    rho_study: sp.rho, start_sd: lp.start_sd, nonprogressing: lp.take.nonprogressing_map,
+    me_c0: me.c0, me_c1: me.c1, noise_df: nz.df, sd_process: 0,
   };
   return {lp, me, prior, params};
 }

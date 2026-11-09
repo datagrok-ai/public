@@ -18,7 +18,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {crux, CruxResult, MAX_SETS, named, rows} from './crux';
 import {Correction, EffectMetric, HUMANE, LAB_WEEKDAYS, SEED, StudyDeclaration, StudyDesign, correctionOf,
-  designStudy, finite, isFiniteNumber as ok, lineModel} from './engine';
+  designStudy, finite, isFiniteNumber as ok, lineModel, median} from './engine';
 import type {Therapy} from './archetypes';
 import {PlanInputs, armColors, declarationOf} from './frames';
 import {gpu} from './gpu';
@@ -195,13 +195,6 @@ export interface PlanComparison {
 
 /** Whether x falls in a 95% range (an open top: no upper limit). */
 const within = (x: number, r: Range) => x >= r.q025 && (r.q975 === null || x <= r.q975);
-
-/** The median (the mean of the middle two for an even count). */
-export const median = (xs: number[]) => {
-  const s = [...xs].sort((a, b) => a - b);
-  const m = s.length >> 1;
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
-};
 
 /** Plan's evaluation day, observed: the first day the median control is measured at or above the endpoint; the
  *  last measurement day when it never is. */

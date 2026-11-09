@@ -40,7 +40,6 @@ const RESPONSE_COLORS = {[RESPONSE.responder]: '#2ca02c', [RESPONSE.like]: '#9aa
 /** The group colours every chart of the analysis uses, by group. */
 export type GroupColors = {[group: string]: string};
 
-const finiteOrNull = finite;
 
 /** A column's values as numbers, an empty cell NaN (an integer column's reads as INT_NULL, which is finite). */
 export const numbersOf = (c: DG.Column): Float64Array =>
@@ -58,7 +57,7 @@ export function animalsTable(r: AnalysisFrames, s: StudyInputs, colors: GroupCol
   const v0 = new Map<string, {d: number, v: number}>();
   const [an, dy, vol] = [s.animal, s.day, s.volume].map((c) => s.study.col(c)!);
   for (let i = 0; i < s.study.rowCount; i++) {
-    const [id, d, v] = [String(an.get(i)), finiteOrNull(dy.get(i)), finiteOrNull(vol.get(i))];
+    const [id, d, v] = [String(an.get(i)), finite(dy.get(i)), finite(vol.get(i))];
     if (d === null || v === null)
       continue;
     const best = v0.get(id);
@@ -70,12 +69,12 @@ export function animalsTable(r: AnalysisFrames, s: StudyInputs, colors: GroupCol
     const id = String(a.get('animal', i));
     const group = a.get('group', i) as string;
     const j = effectRow.get(id);
-    const eff = (k: string) => j === undefined ? null : finiteOrNull(e.get(k, j));
+    const eff = (k: string) => j === undefined ? null : finite(e.get(k, j));
     const [lo, hi] = [eff('effect_lower'), eff('effect_upper')];
     const response = group === control ? RESPONSE.control : !twinned || lo === null || hi === null ? null :
       lo > 0 ? RESPONSE.responder : hi < 0 ? RESPONSE.larger : RESPONSE.like;
     return {[COL.animal]: id, [COL.group]: group, [COL.v0]: v0.get(id)?.v ?? null,
-      [COL.rate]: finiteOrNull(a.get('slope_per_day', i)), [COL.tte]: finiteOrNull(a.get('time_to_endpoint', i)),
+      [COL.rate]: finite(a.get('slope_per_day', i)), [COL.tte]: finite(a.get('time_to_endpoint', i)),
       [COL.reached]: !!a.get('endpoint_reached', i), [COL.mrecist]: a.get('mrecist', i) ?? null,
       [COL.effect]: eff('effect'), [COL.effectLow]: lo, [COL.effectHigh]: hi, [COL.response]: response};
   });
@@ -103,8 +102,8 @@ export function measurementsTable(s: StudyInputs, animals: DG.DataFrame, r: Anal
   const rows = Array.from({length: s.study.rowCount}, (_, i) => {
     const [id, g] = [String(an.get(i)), String(gr.get(i))];
     groupOf.set(id, g);
-    return {[COL.animal]: id, [COL.group]: g, [COL.day]: finiteOrNull(dy.get(i)),
-      [COL.volume]: finiteOrNull(vol.get(i)), ...(bw ? {[COL.weight]: finiteOrNull(bw.get(i))} : {}),
+    return {[COL.animal]: id, [COL.group]: g, [COL.day]: finite(dy.get(i)),
+      [COL.volume]: finite(vol.get(i)), ...(bw ? {[COL.weight]: finite(bw.get(i))} : {}),
       [COL.response]: responseOf.get(id) ?? null};
   });
   const df = DG.DataFrame.fromObjects(rows)!;
