@@ -44,6 +44,22 @@ interface Link {
   color: number,
 }
 
+interface Side {
+  names: string[],
+  codes: Int32Array,
+  firstRows: Int32Array,
+  nodeOf: Int32Array,
+}
+
+interface SankeyData {
+  nodes: Node[],
+  links: Link[],
+  negative: boolean,
+  sources: Int32Array,
+  targets: Int32Array,
+  colors: Int32Array | null,
+}
+
 interface Margin {
   top: number,
   right: number,
@@ -130,7 +146,14 @@ export class SankeyViewer extends DG.JsViewer {
       plain(this.valueColumnName, [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT]);
   }
 
-  stringLinkColorCol(): DG.Column | null {
+  private side(name: string): Side {
+    const col = this.dataFrame.getCol(name);
+    const names = col.categories;
+    return {names: names, codes: col.getRawData() as Int32Array,
+      firstRows: new Int32Array(names.length).fill(-1), nodeOf: new Int32Array(names.length)};
+  }
+
+  private stringLinkColorCol(): DG.Column | null {
     const col = this.linkColorColumnName ? this.dataFrame.col(this.linkColorColumnName) : null;
     return col !== null && col.type === DG.COLUMN_TYPE.STRING && !col.isVirtual ? col : null;
   }
@@ -176,21 +199,15 @@ export class SankeyViewer extends DG.JsViewer {
     this.render();
   }
 
-  private prepareData(): {nodes: Node[], links: Link[], negative: boolean} {
-    const side = (name: string) => {
-      const col = this.dataFrame.getCol(name);
-      const names = col.categories;
-      return {names: names, codes: col.getRawData(),
-        firstRows: new Int32Array(names.length).fill(-1), nodeOf: new Int32Array(names.length)};
-    };
-    const source = side(this.sourceColumnName);
-    const target = side(this.targetColumnName);
+  private prepareData(): SankeyData {
+    const source = this.side(this.sourceColumnName);
+    const target = this.side(this.targetColumnName);
     const valueCol = this.dataFrame.getCol(this.valueColumnName);
-    const values = valueCol.getRawData();
+    const values = valueCol.getRawData() as Int32Array | Float32Array | Float64Array;
     // a missing value is the int or float null, which would sink both nodes of the row
     const missing = valueCol.type === DG.COLUMN_TYPE.INT ? DG.INT_NULL : DG.FLOAT_NULL;
     const colorCol = this.stringLinkColorCol();
-    const colors = colorCol?.getRawData() ?? null;
+    const colors = (colorCol?.getRawData() ?? null) as Int32Array | null;
     const colorCount = colorCol?.categories.length ?? 1;
     const links = new Map<number, Link>();
     let negative = false;
@@ -217,7 +234,7 @@ export class SankeyViewer extends DG.JsViewer {
 
     const nodes: Node[] = [];
     const byName = new Map<string, Node>();
-    const addNodes = ({names, firstRows, nodeOf}: typeof source, code: 'sourceCode' | 'targetCode') => {
+    const addNodes = ({names, firstRows, nodeOf}: Side, code: 'sourceCode' | 'targetCode') => {
       const shown = Array.from(firstRows.keys())
         .filter((c) => firstRows[c] >= 0 && names[c])
         .sort((a, b) => firstRows[a] - firstRows[b]);
@@ -240,7 +257,8 @@ export class SankeyViewer extends DG.JsViewer {
       link.target = target.nodeOf[link.targetCode];
     }
 
-    return {nodes: nodes, links: Array.from(links.values()), negative: negative};
+    return {nodes: nodes, links: Array.from(links.values()), negative: negative,
+      sources: source.codes, targets: target.codes, colors: colors};
   }
 
   detectGraphCycles(graph: { nodes: Node[], links: Link[] }): string[][] {
@@ -314,9 +332,7 @@ export class SankeyViewer extends DG.JsViewer {
 
     const nodeGroup = svg.append('g').attr('class', 'node');
 
-    const sources = this.dataFrame.getCol(this.sourceColumnName).getRawData();
-    const targets = this.dataFrame.getCol(this.targetColumnName).getRawData();
-    const colors = this.stringLinkColorCol()?.getRawData() ?? null;
+    const {sources, targets, colors} = data;
     const filter = this.filter.getBuffer();
     const passes = (i: number) => (filter[i >>> 5] & (1 << (i & 31))) !== 0;
     const nodeRows = (node: Node) => (i: number) => passes(i) &&
@@ -334,17 +350,17 @@ export class SankeyViewer extends DG.JsViewer {
       .attr('y', (d) => d.y0!)
       .attr('height', (d) => Math.abs(d.y1! - d.y0!))
       .attr('width', (d) => d.x1! - d.x0!)
-      .attr('fill', (d: any) => {
+      .attr('fill', (d) => {
         const color = nodeColorCol ? DG.Color.getRowColor(nodeColorCol, d.rowIdx) : this.color!(d.name);
         return DG.Color.toRgb(color);
       })
-      .on('mouseover', (event, d: any) => {
+      .on('mouseover', (event, d) => {
         ui.tooltip.showRowGroup(this.dataFrame, nodeRows(d), event.x, event.y);
       })
       .on('mouseout', () => ui.tooltip.hide())
       //@ts-ignore
       .call(drag().subject((d) => d).on('drag', dragmove))
-      .on('click', (event, d: any) => {
+      .on('click', (event, d) => {
         if (event.defaultPrevented) return; // dragging
         this.dataFrame.selection.handleClick(nodeRows(d), event);
       });
@@ -355,17 +371,17 @@ export class SankeyViewer extends DG.JsViewer {
       .join('path')
       .attr('class', 'link')
       .attr('d', sankeyLinkHorizontal())
-      .style('stroke', (d: any) => {
+      .style('stroke', (d) => {
         const color = linkColorCol ? DG.Color.getRowColor(linkColorCol, d.rowIdx) : DG.Color.darkGray;
         return DG.Color.toRgb(color);
       })
       .style('fill', 'none')
       .attr('stroke-width', (d) => Math.max(1, d.width!))
-      .on('mouseover', (event, d: any) => {
+      .on('mouseover', (event, d) => {
         ui.tooltip.showRowGroup(this.dataFrame, linkRows(d), event.x, event.y);
       })
       .on('mouseout', () => ui.tooltip.hide())
-      .on('click', (event, d: any) => {
+      .on('click', (event, d) => {
         this.dataFrame.selection.handleClick(linkRows(d), event);
       });
 
@@ -377,7 +393,7 @@ export class SankeyViewer extends DG.JsViewer {
       .attr('y', (d) => (d.y1! + d.y0!) / 2)
       .attr('dy', '0.35em')
       .attr('text-anchor', (d) => d.x0! < width / 2 ? 'start' : 'end')
-      .text((d: any) => d.name);
+      .text((d) => d.name);
 
     function dragmove(this: any, event: any, d: any) {
       // this: Element???
