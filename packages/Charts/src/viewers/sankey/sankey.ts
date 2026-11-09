@@ -177,38 +177,37 @@ export class SankeyViewer extends DG.JsViewer {
   }
 
   private prepareData(): {nodes: Node[], links: Link[], negative: boolean} {
-    const sourceCol = this.dataFrame.getCol(this.sourceColumnName);
-    const targetCol = this.dataFrame.getCol(this.targetColumnName);
+    const side = (name: string) => {
+      const col = this.dataFrame.getCol(name);
+      const names = col.categories;
+      return {names: names, codes: col.getRawData(),
+        firstRows: new Int32Array(names.length).fill(-1), nodeOf: new Int32Array(names.length)};
+    };
+    const source = side(this.sourceColumnName);
+    const target = side(this.targetColumnName);
     const valueCol = this.dataFrame.getCol(this.valueColumnName);
-    const colorCol = this.stringLinkColorCol();
-    const sourceNames = sourceCol.categories;
-    const targetNames = targetCol.categories;
-    const sources = sourceCol.getRawData();
-    const targets = targetCol.getRawData();
     const values = valueCol.getRawData();
-    const colors = colorCol?.getRawData() ?? null;
-    const colorCount = colorCol?.categories.length ?? 1;
     // a missing value is the int or float null, which would sink both nodes of the row
     const missing = valueCol.type === DG.COLUMN_TYPE.INT ? DG.INT_NULL : DG.FLOAT_NULL;
-
-    const firstAsSource = new Int32Array(sourceNames.length).fill(-1);
-    const firstAsTarget = new Int32Array(targetNames.length).fill(-1);
+    const colorCol = this.stringLinkColorCol();
+    const colors = colorCol?.getRawData() ?? null;
+    const colorCount = colorCol?.categories.length ?? 1;
     const links = new Map<number, Link>();
     let negative = false;
     for (const row of this.filter.getSelectedIndexes()) {
-      const s = sources[row];
-      const t = targets[row];
-      if (firstAsSource[s] < 0)
-        firstAsSource[s] = row;
-      if (firstAsTarget[t] < 0)
-        firstAsTarget[t] = row;
-      if (!sourceNames[s] || !targetNames[t])
+      const s = source.codes[row];
+      const t = target.codes[row];
+      if (source.firstRows[s] < 0)
+        source.firstRows[s] = row;
+      if (target.firstRows[t] < 0)
+        target.firstRows[t] = row;
+      if (!source.names[s] || !target.names[t])
         continue;
 
       const value = values[row] === missing ? 0 : values[row];
       negative ||= value < 0;
       const color = colors?.[row] ?? 0;
-      const key = (s * targetNames.length + t) * colorCount + color;
+      const key = (s * target.names.length + t) * colorCount + color;
       const link = links.get(key);
       if (link)
         link.value += value;
@@ -218,35 +217,27 @@ export class SankeyViewer extends DG.JsViewer {
 
     const nodes: Node[] = [];
     const byName = new Map<string, Node>();
-    const nodeOf = (name: string, rowIdx: number): Node => {
-      let node = byName.get(name);
-      if (node === undefined) {
-        node = {node: nodes.length, name: name, rowIdx: rowIdx, sourceCode: -1, targetCode: -1};
-        nodes.push(node);
-        byName.set(name, node);
+    const addNodes = ({names, firstRows, nodeOf}: typeof source, code: 'sourceCode' | 'targetCode') => {
+      const shown = Array.from(firstRows.keys())
+        .filter((c) => firstRows[c] >= 0 && names[c])
+        .sort((a, b) => firstRows[a] - firstRows[b]);
+      for (const c of shown) {
+        let node = byName.get(names[c]);
+        if (node === undefined) {
+          node = {node: nodes.length, name: names[c], rowIdx: firstRows[c], sourceCode: -1, targetCode: -1};
+          nodes.push(node);
+          byName.set(node.name, node);
+        }
+        node.rowIdx = Math.min(node.rowIdx, firstRows[c]);
+        node[code] = c;
+        nodeOf[c] = node.node;
       }
-      node.rowIdx = Math.min(node.rowIdx, rowIdx);
-      return node;
     };
-    const inRowOrder = (firstRows: Int32Array, names: string[]) => Array.from(firstRows.keys())
-      .filter((c) => firstRows[c] >= 0 && names[c])
-      .sort((a, b) => firstRows[a] - firstRows[b]);
-
-    const sourceNode = new Int32Array(sourceNames.length);
-    for (const s of inRowOrder(firstAsSource, sourceNames)) {
-      const node = nodeOf(sourceNames[s], firstAsSource[s]);
-      node.sourceCode = s;
-      sourceNode[s] = node.node;
-    }
-    const targetNode = new Int32Array(targetNames.length);
-    for (const t of inRowOrder(firstAsTarget, targetNames)) {
-      const node = nodeOf(targetNames[t], firstAsTarget[t]);
-      node.targetCode = t;
-      targetNode[t] = node.node;
-    }
+    addNodes(source, 'sourceCode');
+    addNodes(target, 'targetCode');
     for (const link of links.values()) {
-      link.source = sourceNode[link.sourceCode];
-      link.target = targetNode[link.targetCode];
+      link.source = source.nodeOf[link.sourceCode];
+      link.target = target.nodeOf[link.targetCode];
     }
 
     return {nodes: nodes, links: Array.from(links.values()), negative: negative};
