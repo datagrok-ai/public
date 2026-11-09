@@ -71,9 +71,6 @@ export class SankeyViewer extends DG.JsViewer {
   nodeWidth?: number;
   nodePadding?: number;
 
-  sourceCol: DG.Column | null = null;
-  targetCol: DG.Column | null = null;
-
   nodeColorColumnName: string;
   linkColorColumnName: string;
 
@@ -144,7 +141,6 @@ export class SankeyViewer extends DG.JsViewer {
       this.valueColumnName = this.numColumnNames()[0];
     }
 
-    this.prepareData();
     this.render();
   }
 
@@ -174,62 +170,65 @@ export class SankeyViewer extends DG.JsViewer {
     if (!this._testColumns())
       return;
 
-    const dataFrameSourceColumn = this.dataFrame.getCol(this.sourceColumnName);
-    const dataFrameTargetColumn = this.dataFrame.getCol(this.targetColumnName);
-    const dataFrameValueColumn = this.dataFrame.getCol(this.valueColumnName);
-    const filteredIndexList = this.filter.getSelectedIndexes();
-
-    const sourceList = new Array<string>(filteredIndexList.length);
-    const targetList = new Array<string>(filteredIndexList.length);
-    const valueList = new Array<number>(filteredIndexList.length);
-
-    for (let i = 0; i < filteredIndexList.length; i++) {
-      sourceList[i] = dataFrameSourceColumn.get(filteredIndexList[i]);
-      targetList[i] = dataFrameTargetColumn.get(filteredIndexList[i]);
-      // a missing value reads as the int null (-2^31), which would sink both nodes of the row
-      valueList[i] = dataFrameValueColumn.isNone(filteredIndexList[i]) ? 0 : dataFrameValueColumn.get(filteredIndexList[i]);
-    }
-
-    this.sourceCol = DG.Column.fromList('string', this.sourceColumnName, sourceList);
-    this.targetCol = DG.Column.fromList('string', this.targetColumnName, targetList);
-
-    const nodeRowIdx = new Map<string, number>();
-    const filteredRowCount = filteredIndexList.length;
-    for (let i = 0; i < filteredRowCount; i++) {
-      const rowIdx = filteredIndexList[i];
-      if (!nodeRowIdx.has(sourceList[i]))
-        nodeRowIdx.set(sourceList[i], rowIdx);
-      if (!nodeRowIdx.has(targetList[i]))
-        nodeRowIdx.set(targetList[i], rowIdx);
-    }
-
-    const nodes: Node[] = Array.from(new Set(sourceList.concat(targetList)))
-      .filter((element) => element)
-      .map((name: string, index: number) => ({
-        node: index,
-        name: name,
-        rowIdx: nodeRowIdx.get(name)!,
-      }));
-
-    // one link per pair and link color: d3-sankey's layout is superlinear in links, so a link per row freezes big tables
-    const nodeIdx = new Map(nodes.map((node) => [node.name, node.node]));
+    const sourceCol = this.dataFrame.getCol(this.sourceColumnName);
+    const targetCol = this.dataFrame.getCol(this.targetColumnName);
+    const valueCol = this.dataFrame.getCol(this.valueColumnName);
     const linkColorCol = this.linkColorColumnName ? this.dataFrame.col(this.linkColorColumnName) : null;
-    const links = new Map<string, Link>();
+    const sourceNames = sourceCol.categories;
+    const targetNames = targetCol.categories;
+    const sources = sourceCol.getRawData();
+    const targets = targetCol.getRawData();
+    const values = valueCol.getRawData();
+    // a missing value is the int or float null, which would sink both nodes of the row
+    const missing = valueCol.type === DG.COLUMN_TYPE.INT ? DG.INT_NULL : DG.FLOAT_NULL;
+    const colors = linkColorCol?.type === DG.COLUMN_TYPE.STRING ? linkColorCol.getRawData() : null;
+    const colorCount = linkColorCol === null ? 1 : colors !== null ? linkColorCol.categories.length : 2 ** 32;
+
+    // one link per pair (and link color): d3-sankey's layout is superlinear in links, so a link per row freezes big tables
+    const firstAsSource = new Int32Array(sourceNames.length).fill(-1);
+    const firstAsTarget = new Int32Array(targetNames.length).fill(-1);
+    const links = new Map<number, Link>();
     let negative = false;
-    for (let i = 0; i < filteredRowCount; i++) {
-      const source = nodeIdx.get(sourceList[i]);
-      const target = nodeIdx.get(targetList[i]);
-      if (source === undefined || target === undefined)
+    for (const row of this.filter.getSelectedIndexes()) {
+      const s = sources[row];
+      const t = targets[row];
+      if (firstAsSource[s] < 0)
+        firstAsSource[s] = row;
+      if (firstAsTarget[t] < 0)
+        firstAsTarget[t] = row;
+      if (!sourceNames[s] || !targetNames[t])
         continue;
 
-      const rowIdx = filteredIndexList[i];
-      negative ||= valueList[i] < 0;
-      const key = `${source} ${target} ${linkColorCol ? DG.Color.getRowColor(linkColorCol, rowIdx) : ''}`;
+      const value = values[row] === missing ? 0 : values[row];
+      negative ||= value < 0;
+      const color = linkColorCol === null ? 0 : colors !== null ? colors[row] : DG.Color.getRowColor(linkColorCol, row) >>> 0;
+      const key = (s * targetNames.length + t) * colorCount + color;
       const link = links.get(key);
       if (link)
-        link.value += valueList[i];
+        link.value += value;
       else
-        links.set(key, {source: source, target: target, value: valueList[i], rowIdx: rowIdx});
+        links.set(key, {source: s, target: t, value: value, rowIdx: row});
+    }
+
+    // a name in both columns is one node; sources come first, each side in the order its rows come
+    const nodes: Node[] = [];
+    const nodeByName = new Map<string, Node>();
+    for (const [names, first] of [[sourceNames, firstAsSource], [targetNames, firstAsTarget]] as const) {
+      const shown = Array.from(first.keys()).filter((c) => first[c] >= 0 && names[c]).sort((a, b) => first[a] - first[b]);
+      for (const c of shown) {
+        const node = nodeByName.get(names[c]);
+        if (node)
+          node.rowIdx = Math.min(node.rowIdx, first[c]);
+        else {
+          nodes.push({node: nodes.length, name: names[c], rowIdx: first[c]});
+          nodeByName.set(names[c], nodes[nodes.length - 1]);
+        }
+      }
+    }
+
+    for (const link of links.values()) {
+      link.source = nodeByName.get(sourceNames[link.source])!.node;
+      link.target = nodeByName.get(targetNames[link.target])!.node;
     }
 
     this.graph = {
@@ -344,7 +343,7 @@ export class SankeyViewer extends DG.JsViewer {
       })
       .on('mouseover', (event, d: any) => {
         ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-          return this.rowMatchesColumnValues(this.sourceCol, this.targetCol, i, d.name, d.name, 'OR');
+          return this.rowMatchesColumnValues(dataFrameSourceColumn, dataFrameTargetColumn, i, d.name, d.name, 'OR');
         }, event.x, event.y);
       })
       .on('mouseout', () => ui.tooltip.hide())
@@ -371,7 +370,7 @@ export class SankeyViewer extends DG.JsViewer {
       .attr('stroke-width', (d) => Math.max(1, d.width!))
       .on('mouseover', (event, d: any) => {
         ui.tooltip.showRowGroup(this.dataFrame, (i) => {
-          return this.rowMatchesColumnValues(this.sourceCol, this.targetCol, i, d.source.name, d.target.name);
+          return this.rowMatchesColumnValues(dataFrameSourceColumn, dataFrameTargetColumn, i, d.source.name, d.target.name);
         }, event.x, event.y);
       })
       .on('mouseout', () => ui.tooltip.hide())
