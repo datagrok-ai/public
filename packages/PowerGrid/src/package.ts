@@ -25,13 +25,31 @@ import {names, SparklineType, sparklineTypes, SummarySettingsBase} from './spark
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {FormCellRenderer} from './forms/forms';
 import {gpuPointHitTest, gpuRender, isGpuAvailable, isGpuRenderValid, setGPUDevice} from './scatterplot-gpu';
-import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
+import {getGPUDevice, getGPURenderer, isIntegratedGPU} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {TagsCellRenderer, TAGS_CELL_TYPE} from './cell-types/tags-cell-renderer';
 import {ConfidenceIntervalCellRenderer} from './cell-types/confidence-interval-cell-renderer';
 import {StarsCellRenderer} from './cell-types/stars-cell-renderer';
 // import {isValidColor} from './cell-types/color-cell-renderer';
 export * from './package.g';
 export const _package = new DG.Package();
+
+// Chrome on Windows computes on the GPU Windows gives it and ignores WebGPU's powerPreference: on a laptop that is
+// the integrated GPU, slower than the dedicated one. The browser can't tell whether a dedicated GPU exists, so the
+// tip says "if"; once per user.
+function tipIntegratedGPU(): void {
+  const key = 'integratedGpuTip';
+  if (!navigator.userAgent.includes('Windows') || grok.userSettings.getValue(_package.name, key))
+    return;
+  const renderer = getGPURenderer();
+  if (!renderer || !isIntegratedGPU(renderer))
+    return;
+  grok.userSettings.add(_package.name, key, 'shown');
+  grok.userSettings.flush();
+  const name = renderer.match(/^ANGLE \([^,]*, (.*?)(?: \(0x|,)/)?.[1] ?? renderer;
+  grok.shell.info(`GPU calculations run on the integrated graphics (${name}). If this computer also has a ` +
+    'dedicated GPU, they run faster there: Windows Settings > System > Display > Graphics, pick your browser, ' +
+    'choose High performance and restart the browser.', {autoHide: false});
+}
 
 export class PackageFunctions {
   @grok.decorators.func({
@@ -416,8 +434,12 @@ export class PackageFunctions {
       if (view.grid)
         attachSummaryColumnHandlers(view.grid);
 
-    if (navigator.gpu)
-      setGPUDevice(await getGPUDevice());
+    if (navigator.gpu) {
+      const device = await getGPUDevice();
+      setGPUDevice(device);
+      if (device)
+        tipIntegratedGPU();
+    }
     // scatter plots drawn on the CPU before this autostart landed switch to the GPU
     for (const view of grok.shell.tableViews) {
       for (const viewer of view.viewers ?? []) {
