@@ -10,6 +10,7 @@
 - InputForm: `destroy()` cancels a form still being built
 - ToggleInput: A value set by the host is no longer sent back as `value-changed`
 - ValidationIcon: A `disabled` or `restricted` input whose value is consistent shows a link icon
+- ValidationIcon: An inconsistent value shows a broken link icon instead of the handshake, matching the link icon of workflow-set values
 - InputForm: Added the `skipLogic` property
 - DockManager: Fixed views opened, or re-rendered, in the background splitting their panels evenly instead of by the declared ratios
 - ValidationIcon: Advice actions send their `additionalParams` with the action request

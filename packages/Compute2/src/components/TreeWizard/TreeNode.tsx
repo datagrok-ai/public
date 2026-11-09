@@ -28,7 +28,7 @@ const statusToIcon: Record<Status, string> = {
   ['succeeded']: 'check-circle',
   ['succeeded info']: 'info-circle',
   ['succeeded warn']: 'exclamation-circle',
-  ['succeeded inconsistent']: 'handshake-slash',
+  ['succeeded inconsistent']: 'unlink',
   ['failed']: 'times-circle',
 };
 

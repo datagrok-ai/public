@@ -31,8 +31,8 @@ category('WebComponents: ValidationIcon', () => {
         [{validation: {warnings: ['w'], notifications: ['n']}}, 'exclamation-circle', 'var(--orange-2)'],
         [{validation: {notifications: ['n']}}, 'info-circle', 'var(--blue-1)'],
         [{validation: {errors: ['e']}, consistency: consistency('restricted', true)},
-          'handshake-slash', 'var(--red-3)'],
-        [{consistency: consistency('info', true)}, 'handshake-slash', 'var(--blue-1)'],
+          'unlink', 'var(--red-3)'],
+        [{consistency: consistency('info', true)}, 'unlink', 'var(--blue-1)'],
       ];
       for (const [status, name, color] of cases) {
         icon.validationStatus = status;
@@ -51,7 +51,7 @@ category('WebComponents: ValidationIcon', () => {
       for (const [status, expected] of [
         [consistency('restricted'), 'link'],
         [consistency('disabled'), 'link'],
-        [consistency('restricted', true), 'handshake-slash'],
+        [consistency('restricted', true), 'unlink'],
         [consistency('info'), undefined],
       ] as const) {
         icon.validationStatus = {consistency: status};
@@ -128,7 +128,7 @@ category('WebComponents: ValidationIcon', () => {
       try {
         icon.validationStatus = {validation, consistency: consistency(restriction, true, 'computed')};
         expectDeepEqual(sections(await openPopover(host)), [...severities,
-          ['handshake-slash', color, `Current value is inconsistent. Computed value was ${computed}`]]);
+          ['unlink', color, `Current value is inconsistent. Computed value was ${computed}`]]);
       } finally {
         dispose();
       }
