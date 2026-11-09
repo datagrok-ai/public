@@ -410,7 +410,7 @@ async function streamOnce(
 
 
       forSession(client.onFinal, async (evt) => {
-        // Whatever fails while rendering, the turn must end: endSession() frees the panel and saves the chat.
+        // Always end the turn: otherwise the panel stays busy and the chat is not saved.
         try {
           panel.cancelInputRequest();
           if (revisingTimer != null) {

@@ -270,8 +270,7 @@ export function linkBareUrls(text: string): string {
     part.replace(/(^|\s)(https?:\/\/[^\s<>()[\]`]*[^\s<>()[\]`.,;:!?'"*_])/g, '$1<$2>')).join('');
 }
 
-/** Markdown → element, or null when the platform renderer throws. Core's markdown parser reads past the end
- * of a paragraph that ends in `](` or in an unclosed link title, so streamed partial text hits this on most links. */
+/** Null when the platform's markdown parser throws (it did on a paragraph ending in `](`). */
 export function tryMarkdown(content: string): HTMLElement | null {
   try {
     return ui.markdown(normalizeMarkdownTables(linkBareUrls(content)));

@@ -780,7 +780,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this._aiMessagesAccordionPane!.appendChild(this._streamingContainer);
       this.outputArea.appendChild(loader);
     } else {
-      // Text that fails to parse mid-stream (it ends inside a link) keeps the previous render until the next chunk.
       const el = this.createStreamingEl(content);
       if (el) {
         this._streamingMarkdownEl!.replaceWith(el);
