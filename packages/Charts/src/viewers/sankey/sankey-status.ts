@@ -46,7 +46,7 @@ export function sankeyStatus(v: SankeyViewer): DG.IWidgetStatus & {values: Readi
   }
 
   const links = Array.from(svg?.querySelectorAll<SVGPathElement>('path.link') ?? []);
-  // every row draws its own link; a pair is placed by its topmost one, the last drawn
+  // Link Color splits a pair into a link per color; the pair is placed by its topmost one, the last drawn
   const tried = new Set<string>();
   for (const path of links.slice().reverse()) {
     const name = `link ${linkName((path as any).__data__)}`;

@@ -11,8 +11,9 @@ its source to its target. Registered by Charts as `Sankey`, so a feature reaches
 
 ## What it draws
 
-`prepareData` walks the viewer's filter; every row becomes its own link, so a pair carried by
-several rows draws several ribbons side by side. A graph with a cycle, or a table without two
+`prepareData` walks the viewer's filter and draws one link per source → target pair (one per pair
+and color with Link Color set), its Value summed over the pair's rows: d3-sankey's layout grows
+faster than the links, and a link per row froze a table of 10,000 rows for seconds. A graph with a cycle, or a table without two
 string columns of at most 50 categories and a numeric one, shows a message instead, and so does a
 Value with a negative value or with only zeros among the links (d3-sankey has no meaningful layout
 for either; only zeros gives NaN coordinates). A row whose
@@ -35,7 +36,7 @@ message state reports `0`/`''` and no area of an earlier frame.
 |---|---|
 | `nodes` | node rects drawn |
 | `node names` | their names, comma-separated, in drawn order |
-| `links` | link paths drawn — one per row |
+| `links` | link paths drawn — one per pair, or per pair and color with Link Color set |
 | `rows shown` | `filter.trueCount` — the viewer's own combined filter |
 
 ## `isRenderPending` and `onRendered`

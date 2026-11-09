@@ -211,24 +211,31 @@ export class SankeyViewer extends DG.JsViewer {
         rowIdx: nodeRowIdx.get(name)!,
       }));
 
-    const links: Link[] = [];
+    // one link per pair and link color: d3-sankey's layout is superlinear in links, so a link per row freezes big tables
+    const nodeIdx = new Map(nodes.map((node) => [node.name, node.node]));
+    const linkColorCol = this.linkColorColumnName ? this.dataFrame.col(this.linkColorColumnName) : null;
+    const links = new Map<string, Link>();
+    let negative = false;
     for (let i = 0; i < filteredRowCount; i++) {
-      const source = nodes.findIndex((node) => node.name === sourceList[i]);
-      const target = nodes.findIndex((node) => node.name === targetList[i]);
-      if (source === -1 || target === -1)
+      const source = nodeIdx.get(sourceList[i]);
+      const target = nodeIdx.get(targetList[i]);
+      if (source === undefined || target === undefined)
         continue;
 
-      links.push({
-        source: source,
-        target: target,
-        value: valueList[i],
-        rowIdx: filteredIndexList[i],
-      });
+      const rowIdx = filteredIndexList[i];
+      negative ||= valueList[i] < 0;
+      const key = `${source} ${target} ${linkColorCol ? DG.Color.getRowColor(linkColorCol, rowIdx) : ''}`;
+      const link = links.get(key);
+      if (link)
+        link.value += valueList[i];
+      else
+        links.set(key, {source: source, target: target, value: valueList[i], rowIdx: rowIdx});
     }
 
     this.graph = {
       nodes: nodes,
-      links: links,
+      links: Array.from(links.values()),
+      negative: negative,
     };
   }
 
@@ -286,7 +293,7 @@ export class SankeyViewer extends DG.JsViewer {
     if (this.graph.links.length === 0)
       return;
 
-    if (this.graph.links.some((link: Link) => link.value < 0)) {
+    if (this.graph.negative) {
       MessageHandler._showMessage(this.root, `${this.valueColumnName} contains negative values`, 'd4-viewer-error');
       return;
     }

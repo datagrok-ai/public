@@ -23,7 +23,7 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
     Then sankey viewer should be visible
     And sankey viewer should be bound to table "demog-1000"
     And the "node names" reading of sankey viewer should be "F, M, Caucasian, Other, Asian, Black"
-    And the "links" reading of sankey viewer should be 1000
+    And the "links" reading of sankey viewer should be 8
     When user clicks on grid
     And user clicks on settings icon of sankey viewer
     Then "Source" property in context panel should be visible
@@ -58,7 +58,7 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
     When user clicks on the "category F of SEX" area of filter panel
     Then 553 rows should pass the filter
     And the filter should pass exactly the rows where "SEX" is "F"
-    And the "links" reading of sankey viewer should be 553
+    And the "links" reading of sankey viewer should be 4
     And the "node names" reading of sankey viewer should contain "F"
     And the "node names" reading of sankey viewer should not contain "M"
     And no errors should have been logged
@@ -81,14 +81,14 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
     When user hovers over filter panel
     And user clicks on reset icon of filter panel
     Then 1000 rows should pass the filter
-    And the "links" reading of sankey viewer should be 1000
+    And the "links" reading of sankey viewer should be 8
     And the "node names" reading of sankey viewer should contain "M"
     And no errors should have been logged
 
   Scenario: Sankey with a filter no row passes draws nothing and logs no error (GROK-21110)
     When user clicks on "Add viewer" icon
     And user clicks on first "Sankey" card in "Add Viewer" dialog
-    Then the "links" reading of sankey viewer should be 1000
+    Then the "links" reading of sankey viewer should be 8
     When user clicks on filter icon in toolbar
     Then filter panel should be visible
     When user clicks on the "category true of CONTROL" area of filter panel
