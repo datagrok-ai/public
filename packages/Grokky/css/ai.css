@@ -576,6 +576,11 @@
   margin-top: 8px;
 }
 
+/* An answer the markdown renderer could not parse, shown as text. */
+.grokky-markdown-fallback {
+  white-space: pre-wrap;
+}
+
 .grokky-exec-sep {
   width: 1px;
   height: 13px;

@@ -270,9 +270,23 @@ export function linkBareUrls(text: string): string {
     part.replace(/(^|\s)(https?:\/\/[^\s<>()[\]`]*[^\s<>()[\]`.,;:!?'"*_])/g, '$1<$2>')).join('');
 }
 
+/** Markdown → element, or null when the platform renderer throws. Core's markdown parser reads past the end
+ * of a paragraph that ends in `](` or in an unclosed link title, so streamed partial text hits this on most links. */
+export function tryMarkdown(content: string): HTMLElement | null {
+  try {
+    return ui.markdown(normalizeMarkdownTables(linkBareUrls(content)));
+  } catch {
+    return null;
+  }
+}
+
+export function plainTextEl(content: string): HTMLElement {
+  return ui.divText(content, 'grokky-markdown-fallback');
+}
+
 /** Renders markdown content with copy-on-code-blocks behavior and selectable text. */
 export function createStyledMarkdown(content: string): HTMLElement {
-  const markDown = ui.markdown(normalizeMarkdownTables(linkBareUrls(content)));
+  const markDown = tryMarkdown(content) ?? plainTextEl(content);
   markDown.style.position = 'relative';
   dartLike(markDown.style).set('userSelect', 'text').set('maxWidth', '100%');
   if (markDown.querySelector('pre > code')) {
