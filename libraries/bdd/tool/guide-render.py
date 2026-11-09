@@ -209,7 +209,7 @@ class Renderer:
         d.rounded_rectangle((x0, y0, x1, y1), radius=6, outline=color + (255,), width=3)
         return out.convert('RGB')
 
-    def caption_layer(self, step, index, total):
+    def caption_layer(self, step, index, total, alone=True):
         if self.bar_h == 0:
             return None
         layer = Image.new('RGBA', (self.w, self.bar_h), BAR)
@@ -219,7 +219,8 @@ class Renderer:
         d.text((pad, self.bar_h / 2), counter, font=self.small, fill=(170, 178, 190, 255), anchor='lm')
         x = pad + d.textlength(counter, font=self.small) + pad
         text = step['caption']
-        if step['kind'] == 'check':
+        # a check's tick, unless its caption goes on over other steps (it would come and go under the same words)
+        if step['kind'] == 'check' and alone:
             s = self.font.size
             mid = self.bar_h / 2
             d.line([(x, mid), (x + s * 0.32, mid + s * 0.32), (x + s * 0.85, mid - s * 0.4)], fill=CHECK + (255,), width=3)
@@ -439,10 +440,12 @@ class Renderer:
         yield from self.hold_frames(0.5, lit, self.cur, caption=caption)
         return lit
 
-    def step_frames(self, step, index, total):
+    def step_frames(self, step, index, total, beat=None):
+        """`beat`: the caption's number, how many captions there are, and whether this step has its caption to
+        itself; by default the step's own."""
         fps = self.fps
         after = self._image(step['after'])
-        caption = self.caption_layer(step, index, total)
+        caption = self.caption_layer(step, *(beat or (index, total, True)))
         legs = step.get('legs', [])
         still_path = os.path.join(self.folder, f'step-{index:02d}.png')
         if step['kind'] == 'check':
@@ -543,8 +546,24 @@ class Renderer:
         else:
             yield from self.title_frames(first)
         total = len(self.steps)
+        # steps in a row with the same caption are one beat of the story: counted once, the caption held throughout
+        beats, last = [], None
+        for step in self.steps:
+            beats.append((beats[-1] if beats else 0) + (step['caption'] != last))
+            last = step['caption']
+        shown, frame = 0, None
         for i, step in enumerate(self.steps, 1):
-            yield from self.step_frames(step, i, total)
+            b = beats[i - 1]
+            for frame in self.step_frames(step, i, total, (b, beats[-1], beats.count(b) == 1)):
+                shown += 1
+                yield frame
+            # a beat stays until its caption can be read: a second to look, then three words a second
+            if i == total or beats[i] != b:
+                need = int((1.0 + len((step['caption'] or '').split()) / 3) * self.fps) if step['caption'] else 0
+                for _ in range(need - shown):
+                    self.frame_no += 1
+                    yield frame
+                shown = 0
         yield from self.hold_frames(end_hold, self._image(self.steps[-1]['after']), self.cur)
 
     def write_markdown(self):
@@ -710,6 +729,15 @@ def with_press_colours(path):
 
 
 def selftest(folder):
+    # it writes a guide's files: only into an empty folder, or over an earlier self-test
+    manifest_path = os.path.join(folder, 'steps.json')
+    if os.path.isdir(folder) and os.listdir(folder):
+        ours = False
+        if os.path.exists(manifest_path):
+            with open(manifest_path, encoding='utf8') as f:
+                ours = json.load(f).get('feature') == 'Self test'
+        if not ours:
+            sys.exit(f'{folder} is not empty: the self-test writes a guide of its own, give it an empty folder')
     os.makedirs(folder, exist_ok=True)
     w, h = 640, 400
     names = ['01-before', '01-after', '02-before', '02-after', '03-before', '03-drag1', '03-drag2', '03-after',
