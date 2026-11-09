@@ -1,6 +1,6 @@
 # math changelog
 
-## 1.2.11
+## v.next
 
 * getGPUDevice: `getGPURenderer` names the GPU the browser runs on (WebGL's unmasked renderer) and `isIntegratedGPU` tells whether that name is a GPU built into the CPU (Intel but Arc A/B cards, AMD Radeon "Graphics" without RX, Pro or Instinct)
 * getGPUAdapterDescription: Describes the high-performance adapter getGPUDevice computes on; it requested a default adapter of its own, and when it ran first getGPUDevice computed on that one

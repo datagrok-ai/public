@@ -35,16 +35,15 @@ export const _package = new DG.Package();
 
 // Chrome on Windows computes on the GPU Windows gives it and ignores WebGPU's powerPreference: on a laptop that is
 // the integrated GPU, slower than the dedicated one. The browser can't tell whether a dedicated GPU exists, so the
-// tip says "if"; once per user.
+// tip says "if"; once per browser (localStorage).
 function tipIntegratedGPU(): void {
-  const key = 'integratedGpuTip';
-  if (!navigator.userAgent.includes('Windows') || grok.userSettings.getValue(_package.name, key))
+  const key = 'powergrid-integrated-gpu-tip';
+  if (!navigator.userAgent.includes('Windows') || localStorage.getItem(key))
     return;
   const renderer = getGPURenderer();
   if (!renderer || !isIntegratedGPU(renderer))
     return;
-  grok.userSettings.add(_package.name, key, 'shown');
-  grok.userSettings.flush();
+  localStorage.setItem(key, 'shown');
   const name = renderer.match(/^ANGLE \([^,]*, (.*?)(?: \(0x|,)/)?.[1] ?? renderer;
   grok.shell.info(`GPU calculations run on the integrated graphics (${name}). If this computer also has a ` +
     'dedicated GPU, they run faster there: Windows Settings > System > Display > Graphics, pick your browser, ' +
