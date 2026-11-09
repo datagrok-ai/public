@@ -2773,6 +2773,30 @@ importers:
         specifier: ^1.62.1
         version: 1.63.0
 
+  packages/NCA:
+    dependencies:
+      '@datagrok-libraries/sci-comp':
+        specifier: workspace:^
+        version: link:../../libraries/sci-comp
+      '@datagrok-libraries/test':
+        specifier: workspace:^
+        version: link:../../libraries/test
+      '@datagrok-libraries/u2':
+        specifier: workspace:^
+        version: link:../../libraries/u2
+      '@datagrok-libraries/utils':
+        specifier: workspace:^
+        version: link:../../libraries/utils
+      datagrok-api:
+        specifier: workspace:^
+        version: link:../../js-api
+      dayjs:
+        specifier: 'catalog:'
+        version: 1.11.23
+      rxjs:
+        specifier: 'catalog:'
+        version: 6.6.7
+
   packages/NLP:
     dependencies:
       '@aws-sdk/client-translate':
