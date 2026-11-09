@@ -1,6 +1,6 @@
 @journey @viewers @realizes:viewers.pie-chart
 Feature: Pie chart category order
-  Order > Custom Order... switches Pie Sort Type to custom and opens "Order categories", whose every
+  Under Pie Sort Type custom, the Category Order property opens "Order categories", whose every
   change the slices show at once; Default gives the column's own order. Pie Sort Order reverses the
   column's order, not an order of the viewer, which carries its own direction. The order is read from
   the slices' start angles, clockwise from the start: a slice starts where the ones before it end.
@@ -14,10 +14,13 @@ Feature: Pie chart category order
       | Category | RACE |
     Then the "slices" reading of pie chart viewer should be 4
 
-  Scenario: Custom Order... orders the slices by row count in both directions, and Default gives the column's order
-    When user picks "Order > Custom Order..." from the context menu of the "slice Caucasian" area of pie chart viewer
+  Scenario: Category Order orders the slices by row count in both directions, and Default gives the column's order
+    Given the context panel is open
+    When user sets "Pie Sort Type" property of pie chart viewer to "custom"
+    And user clicks on settings icon of pie chart viewer
+    And "Data" category in context panel is expanded
+    And user clicks on button in "Category Order" property in context panel
     Then "Order categories: RACE" dialog should be visible
-    And "Pie Sort Type" property of pie chart viewer should be "custom"
     And the "start angle of Asian" reading of pie chart viewer should be between -0.01 and 0.01
     And the "start angle of Black" reading of pie chart viewer should be between 5.39 and 5.41
     And the "start angle of Caucasian" reading of pie chart viewer should be between 15.11 and 15.13
