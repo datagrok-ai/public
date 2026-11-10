@@ -442,7 +442,7 @@
       "cssInternalLines": 5,
       "cssImportant": 13,
       "commentLines": 3161,
-      "fileHeaders": 13,
+      "fileHeaders": 17,
       "privateDocs": 46,
       "classes": {
         "subclassU2": [],
@@ -915,7 +915,7 @@
       "cssInternalLines": 0,
       "cssImportant": 2,
       "commentLines": 1399,
-      "fileHeaders": 1,
+      "fileHeaders": 2,
       "privateDocs": 20,
       "classes": {
         "subclassU2": [],
@@ -1407,6 +1407,14 @@
         "packages/PmxStudio u2/comments: 0 → 18",
         "packages/PmxStudio u2/no-raw-column-list: 0 → 1",
         "packages/PmxStudio u2/no-unowned-root: 0 → 1"
+      ]
+    },
+    {
+      "date": "2026-11-10",
+      "reason": "Bio and Peptides file headers as they stand on master (009dd3b55), recorded so that the consumer check runs again: neither package is touched by this change",
+      "grown": [
+        "packages/Bio fileHeaders: 13 → 17",
+        "packages/Peptides fileHeaders: 1 → 2"
       ]
     }
   ]
