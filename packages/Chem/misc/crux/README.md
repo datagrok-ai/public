@@ -31,16 +31,14 @@ The vendored build is named in `vendor/chem-wasm/VERSION.chem-wasm`. The Chem wo
 
 ## Setting up crux on a machine
 
-- Crux lives in its own GitHub repos. Clone the umbrella `datagrok-ai/crux` and run `bash bootstrap.sh` in it
-  (needs GitHub auth: `gh auth login`, `gh auth setup-git`); it clones `crux-core`, `crux-js`, `crux-bench`, … as
-  siblings inside it.
-- Work in `crux-core` there. It is its own clone (own `.git` and remote), not a submodule — the umbrella ignores
-  it — so its `git status` / `diff` show your changes and nothing leaves the machine until you push. Keep the
-  sibling layout: crux-js builds from `../crux-core`, crux-core's tools read `../crux-bench/datasets`.
-- Open the Claude Code session in `crux-core` itself: its `CLAUDE.md` defines the workflow (`/spike <slug>` →
-  branch `spike/<slug>` in a worktree beside the umbrella, `crux-spikes/<slug>`; `/accept` merges it into the local
-  `main` and never pushes) and the rule that chemistry fixes are ports of RDKit's C++ (vendored in the repo), not
-  rewrites. A spike worktree has no RDKit venv of its own: point `CRUX_RDKIT_PYTHON` at `crux-core/.venv/bin/python`.
+- Crux lives in its own GitHub repos, under the umbrella `datagrok-ai/crux` (`crux-core`, `crux-bench`, … as its
+  submodules), which the datagrok umbrella pins at `crux/`. With GitHub auth (`gh auth login`, `gh auth setup-git`),
+  run `grok src add crux` at the datagrok umbrella root; without it, follow the quick start in crux's `README.md`.
+- Open the Claude Code session in `crux/crux-core`: its `CLAUDE.md` defines the workflow (`/crux-spike <slug>` →
+  branch `spike/<slug>` in the worktree `crux-spikes/<slug>` beside the crux umbrella; `/crux-ready` hands it to the
+  lander, the only one that commits to crux-core's `main` or pushes) and the rule that chemistry fixes are ports of
+  RDKit's C++, not rewrites. A spike worktree has no RDKit venv of its own: point `CRUX_RDKIT_PYTHON` at
+  `crux/crux-core/.venv/bin/python`.
 - Rust: `rustup` with the toolchain `crux-core/rust-toolchain.toml` pins (1.95.0) and the `wasm32-unknown-unknown`
   target: `rustup-init -y --default-toolchain 1.95.0 --profile minimal -t wasm32-unknown-unknown`. On Windows it
   needs the MSVC build tools (Visual Studio Build Tools).
