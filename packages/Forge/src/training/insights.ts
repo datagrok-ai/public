@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import {areValuesSimilar, METRIC_LABELS, metricFindings, MetricId, MetricValues, Split} from '../metrics/metrics';
+import {areValuesSimilar, METRIC_DESCRIPTIONS, METRIC_LABELS, metricFindings, MetricId, MetricValues, Split}
+  from '../metrics/metrics';
 import {residualsOf, statisticsOf} from '../metrics/statistics';
 
 /** The panel of the results an insight is about. */
@@ -77,6 +78,27 @@ export function metricInsights(metrics: Record<Split, MetricValues>): Insight[] 
 export function evaluationInsights(result: Parameters<typeof resultInsights>[0],
   stored: Record<Split, MetricValues>): Insight[] {
   return [...resultInsights(result), ...metricInsights(stored)];
+}
+
+/** One line reading the model's quality when nothing else is worth a tip: Balanced accuracy for a classifier, R2 for a
+ * regressor, on the evaluated rows ([evaluation]), else the validation rows, else the training rows; undefined without
+ * either metric. */
+export function summaryInsight(stored: Record<Split, MetricValues>, evaluation?: MetricValues): Insight | undefined {
+  const metricOf = (values: MetricValues): 'balancedAccuracy' | 'r2' | undefined =>
+    values.balancedAccuracy !== undefined ? 'balancedAccuracy' : values.r2 !== undefined ? 'r2' : undefined;
+  const [values, where]: [MetricValues, string] = evaluation !== undefined ? [evaluation, 'on the evaluated rows'] :
+    metricOf(stored.validation) !== undefined ? [stored.validation, 'on the validation rows'] :
+      [stored.train, 'on the training rows'];
+  const id = metricOf(values);
+  const v = id === undefined ? undefined : values[id];
+  if (id === undefined || v === undefined)
+    return undefined;
+  const reading = id === 'balancedAccuracy' ?
+    `on average ${Math.round(100 * v)}% of each class is predicted correctly.` :
+    v < 0 ? 'the model predicts worse than the target\'s mean.' :
+      `the model explains ${Math.round(100 * v)}% of the target's variation.`;
+  return {text: `${METRIC_LABELS[id]} ${v.toFixed(3)} ${where}: ${reading}`, detail: METRIC_DESCRIPTIONS[id],
+    panel: 'metrics'};
 }
 
 /** A class far from the average count makes its column unbalanced; [target]'s classes are shown in **Class

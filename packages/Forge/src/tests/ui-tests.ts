@@ -1561,7 +1561,7 @@ function insightsText(view: TrainView): string {
 }
 
 /** The text of each line of Insights & Tips of [view], its pointer line included. */
-const insightLines = (view: TrainView) =>
+const insightLines = (view: TrainView | EvaluationView) =>
   Array.from(view.resultsPane.root.querySelectorAll('.forge-insights > ul > li'), (li) => li.textContent ?? '');
 
 /** The line of Insights & Tips of [view] whose text starts with [text]. */
@@ -1957,28 +1957,26 @@ category('UI: Results', () => {
     expectRows(binary.map((r) => r.weights), [[1, 1, 1], [1, 1.5, 1.5], [1, 1, 1], [1]]);
     const multiclass = resultsLayout('multiclass', new Set<PanelKey>(['predictedVsActual', 'features', 'correlation',
       'classBalance']), 0);
-    expectRows(multiclass.map((r) => r.panels), [['predictedVsActual'], ['metrics', 'classBalance'],
+    expectRows(multiclass.map((r) => r.panels), [['predictedVsActual'], ['insights', 'metrics', 'classBalance'],
       ['features', 'correlation']]);
-    expectRows(multiclass.map((r) => r.weights), [[1], [1.5, 1.5], [1, 1]]);
+    expectRows(multiclass.map((r) => r.weights), [[1], [1, 1.5, 1.5], [1, 1]]);
     const regression = resultsLayout('regression', new Set<PanelKey>(['predictedVsActual', 'residuals',
       'distributions', 'statistics']), 4);
     expectRows(regression.map((r) => r.panels), [['predictedVsActual', 'residuals', 'distributions'],
-      ['metrics', 'statistics'], ['visualize:0', 'visualize:1', 'visualize:2'], ['visualize:3']]);
+      ['insights', 'metrics', 'statistics'], ['visualize:0', 'visualize:1', 'visualize:2'], ['visualize:3']]);
     expectArray(regression.map((r) => r.height), [350, 350, 350, 350]);
-    expectRows(regression.map((r) => r.weights), [[1, 1, 1], [1.5, 1.5], [1, 1, 1], [1]]);
-    expectRows(resultsLayout('binary', new Set<PanelKey>(['metrics']), 0).map((r) => r.panels), [['metrics']]);
+    expectRows(regression.map((r) => r.weights), [[1, 1, 1], [1, 1.5, 1.5], [1, 1, 1], [1]]);
+    expectRows(resultsLayout('binary', new Set<PanelKey>(['metrics']), 0).map((r) => r.panels),
+      [['insights', 'metrics']]);
   });
 
-  test('resultsLayout: a row 2 of two panels takes Class balance from row 3', async () => {
+  test('resultsLayout: Insights & Tips is always in row 2, Class balance in its template row', async () => {
     const withoutWrong = new Set<PanelKey>(['predictedVsActual', 'confusions', 'insights', 'features', 'correlation',
       'classBalance']);
     expectRows(resultsLayout('multiclass', withoutWrong, 0).map((r) => r.panels), [['predictedVsActual', 'confusions'],
       ['insights', 'metrics', 'classBalance'], ['features', 'correlation']]);
     expectRows(resultsLayout('binary', withoutWrong, 0).map((r) => r.panels), [['predictedVsActual'],
       ['insights', 'confusions', 'metrics'], ['features', 'correlation', 'classBalance']]);
-    const withoutInsights = new Set<PanelKey>(['predictedVsActual', 'confusions', 'wrongPredictions', 'classBalance']);
-    expectRows(resultsLayout('binary', withoutInsights, 0).map((r) => r.panels), [['predictedVsActual'],
-      ['confusions', 'metrics', 'classBalance'], ['wrongPredictions']]);
     const full = new Set<PanelKey>([...withoutWrong, 'wrongPredictions', 'perClass']);
     expectRows(resultsLayout('multiclass', full, 0).map((r) => r.panels), [['predictedVsActual', 'confusions',
       'perClass'], ['insights', 'metrics', 'classBalance'], ['features', 'correlation'], ['wrongPredictions']]);
@@ -2335,6 +2333,9 @@ category('UI: Results', () => {
         const titles = rowTitles(view);
         expectRows(titles[0], ['Predicted Species vs Actual', 'Confusions', 'Per-class']);
         expect(titles[1]?.includes('Performance'), true, JSON.stringify(titles));
+        expect(titles[1][0], 'Insights & Tips', 'The evaluation hides Insights & Tips');
+        // This model gets the overfitting tip, so the metric line stays out.
+        expectArray(insightLines(view), ['The model may be overfitting.']);
         expect(iris.columns.length, columnCount, 'A column was added');
         expect(await forgeDb.applications.query().where('model_id', '=', id).count(), 0);
         view.close();
@@ -2428,6 +2429,65 @@ category('UI: Results', () => {
         accordion.root.remove();
       await deleteModel(id);
       await forgeDb.models.delete(manual);
+    }
+  }, {timeout: TIMEOUT});
+});
+
+/** The lines of Insights & Tips of [view] with the metric's value and percentage masked. */
+const metricLines = (view: TrainView) =>
+  insightLines(view).map((l) => l.replace(/ -?\d\.\d{3} /, ' <v> ').replace(/\d+%/, '<p>%'));
+const BALANCED_ACCURACY_LINE =
+  'Balanced accuracy <v> on the validation rows: on average <p>% of each class is predicted correctly.';
+
+// One category, split for its length.
+category('UI: Results', () => {
+  test('the layout stays while the threshold empties and fills Insights & Tips; one line reads the metric when ' +
+    'nothing else does', async () => {
+    const demog = await openDemog();
+    const view = await TrainView.create(demog);
+    grok.shell.addView(view);
+    const {predictProbability, threshold, setThresholdButton} = view.preparationInputs;
+    const options = () => view.lastTraining?.result.options;
+    let iris: DG.DataFrame | undefined;
+    let irisView: TrainView | undefined;
+    try {
+      view.targetInput.value = demog.getCol('SEX');
+      view.featuresInput.value = columnsOf(demog, ['AGE', 'HEIGHT', 'WEIGHT']);
+      predictProbability.value = true;
+      await awaitTrained(view);
+      await awaitCheck(() => options()?.postprocessingInfo.includes('class-probabilities') === true && !view.isTraining,
+        'Predict probability does not cut the result', WAIT_MS);
+      const titles = rowTitles(view);
+      const rows = rowsOf(view);
+      expect(titles[1][0], 'Insights & Tips');
+      expect(titles[2].includes('Class balance'), true, JSON.stringify(titles));
+
+      threshold.value = 0.03;
+      await awaitCheck(() => options()?.binaryClassificationThreshold === 0.03, 'The threshold does not re-cut',
+        WAIT_MS);
+      expectRows(rowTitles(view), titles);
+      expect(rowsOf(view).every((r, i) => r === rows[i]), true, 'A re-cut rebuilt a row');
+      expect(insightLines(view).some((l) => l.startsWith('The model finds ')), true, insightLines(view).join(' | '));
+      setThresholdButton.click();
+      await awaitCheck(() => options()?.thresholdMetric === 'f1', 'Set does not optimize for F1', WAIT_MS);
+      expectRows(rowTitles(view), titles);
+      expect(isShown(panelOf(view, 'Insights & Tips')), true, 'Insights & Tips is hidden');
+      expectArray(metricLines(view), [BALANCED_ACCURACY_LINE]);
+
+      iris = await twoSpeciesIris();
+      irisView = await openTrainView(iris);
+      // XGBoost gets the overfitting tip on these rows; LDA gets none.
+      irisView.methodInput.value = 'LDA';
+      await awaitCheck(() => irisView?.lastTraining?.engine.name === 'LDA' && !irisView.isTraining, 'No LDA training',
+        TIMEOUT);
+      expectArray(metricLines(irisView), [BALANCED_ACCURACY_LINE]);
+      const tooltip = await enterTooltip(insightItem(irisView, 'Balanced accuracy'));
+      expect(tooltip.includes('See Performance.'), true, tooltip);
+      expectRows(rowTitles(irisView)[1], ['Insights & Tips', 'Confusions', 'Performance']);
+    } finally {
+      await closeTrainView(view, [demog]);
+      if (irisView !== undefined && iris !== undefined)
+        await closeTrainView(irisView, [iris]);
     }
   }, {timeout: TIMEOUT});
 });

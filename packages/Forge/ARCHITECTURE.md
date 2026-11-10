@@ -1162,6 +1162,14 @@ insights with panel `metrics`: each `threshold` finding as it is (its text and d
 one `The model may be overfitting.` with `items` `<label>: train 0.912, validation 0.405` per metric (the grid's cell
 tooltips keep the finding's own text per metric).
 
+`summaryInsight(stored, evaluation?)` is the one line the Results pane shows when there is no other: Balanced accuracy
+for a classifier, R2 for a regressor (`METRIC_LABELS`), read from `evaluation` (`on the evaluated rows`, Run
+Evaluation), else from the stored validation values when they have either metric (`on the validation rows`), else
+from the train ones (`on the training rows`): `Balanced accuracy 0.850 on the validation rows: on average 85% of each
+class is predicted correctly.`, `R2 0.800 on the training rows: the model explains 80% of the target's variation.`
+(a negative R2: `the model predicts worse than the target's mean.`); the metric's `METRIC_DESCRIPTIONS` entry is its
+detail, panel `metrics`. Without either metric (only an old model's stored record) it is `undefined`.
+
 ## Results
 
 `ui/results-pane.ts`, `ResultsPane`: the Train view's results and the content of the `EvaluationView` (see "Run
@@ -1173,7 +1181,9 @@ the evaluation passes none). Two panels are built once and never rebuilt: the **
 (`forge-results-panel forge-results-metrics`: its title with the status, then the metrics host `forge-results-body`
 with a hint text or the `MetricsTable` root) and **Insights & Tips** (`forge-insights`: one `li` per insight, its text
 only; its tooltip the detail lines, the `items` as a bulleted list and, last, `See <panel title>.` in grey
-(`forge-tooltip-minor`) when the insight's `panel` is mounted; repeated texts once; hidden while empty). The insights of a viewer panel
+(`forge-tooltip-minor`) when the insight's `panel` is mounted; repeated texts once; hidden only while empty in the
+hint state; with a result never (the `summaryInsight` line of `training/insights.ts` when there is no other, the
+metric's description as its detail; nothing when it is `undefined`)). The insights of a viewer panel
 (every `InsightPanel` but `metrics`, whose grid marks its own findings) are also its viewer's `description`
 (`descriptionVisibilityMode: 'Always'`, the texts joined by a space, escaped as literal Markdown), refreshed with the
 list; **Confusions** shows it under the matrix (`descriptionPosition: 'Bottom'`), the others above the viewer. Every panel's title is the built-in tool's widget title, `ui.div([span], 'd4-dialog-header d4-dialog-title
@@ -1191,7 +1201,8 @@ host (the two panels while there is no result) and the rows host (`forge-results
   `positiveClass`, `threshold` (Predict probability: the Train view's `binaryClassificationThreshold` of the result, the
   evaluation's of the model, circled as the current **Classification threshold**), `blob`, `summary`. The grid is the `MetricsTable` in place at once (see "Components");
   the result insights are `evaluationInsights` of `summary.evaluation?.values ?? summary.metrics.train` and
-  `summary.metrics`. A `multiclass` result gets the **Per-class** parallel coordinates plot, built with the other viewers (`buildShown`)
+  `summary.metrics`, the fallback line `summaryInsight(summary.metrics, summary.evaluation?.values)` (cleared by
+  `showHint`); **Insights & Tips** is always one of the mounted panels. A `multiclass` result gets the **Per-class** parallel coordinates plot, built with the other viewers (`buildShown`)
   and refilled with them (see "Keeping the viewers").
   Then the method's `visualize` is awaited, and the rows are mounted in one step: the previous rows stay until the
   whole result is ready, and a show that a newer show or hint outdated (a `version` counter) detaches the views it got
@@ -1206,9 +1217,9 @@ host (the two panels while there is no result) and the rows host (`forge-results
 
 `ui/results-layout.ts` (no DOM): `resultsLayout(kind, available, visualizeCount)` gives the rows, each a height, its
 panel keys and their weights (the initial shares of the row's width). `kind` (`resultKindOf(target)`) is `regression` for a numerical target,
-`binary` for exactly two non-empty classes, `multiclass` otherwise. A key the result lacks is dropped and an empty row disappears; a row keeps its
-template height (`ROW_HEIGHTS` 350 / 350 / 450). When row 2 is left with fewer than three panels and row 3 holds
-`classBalance` (`binary` without `insights`), it moves to row 2's right end (weight 1.5). Weights in brackets, 1
+`binary` for exactly two non-empty classes, `multiclass` otherwise. `metrics` and `insights` are always available; any
+other key the result lacks is dropped and an empty row disappears; a row keeps its
+template height (`ROW_HEIGHTS` 350 / 350 / 450). Weights in brackets, 1
 where none is given:
 
 | kind | row 1 (350 px) | row 2 (350 px) | row 3 (450 px) |
@@ -1303,8 +1314,8 @@ preview frame reaches them: a threshold change or a Predict probability toggle o
 platform's ROC curve viewer, which shared the preview frame, every refill of the prediction and the marks redrew the
 curve). A hyperparameter, Method, threshold or Predict probability change gives such a result; a change of the
 data (Table, Target, Features, other skipped rows or imputed values, another task kind) builds
-everything again. A panel that appears or goes (Wrong predictions, Insights & Tips, the method's own views) changes
-only the rows it is in, and row 3 too when **Class balance** moves between rows 2 and 3. A mount disposes the viewers it no longer shows with `ui.empty` of their slots and rows (the platform's
+everything again. A panel that appears or goes (Wrong predictions, the method's own views) changes
+only the rows it is in. A mount disposes the viewers it no longer shows with `ui.empty` of their slots and rows (the platform's
 `Widget.kill`; `Viewer.close` works only in a table view); after a rebuild the previous result's subscriptions are
 dropped and its shared frames given back (`releaseFrame`); a hint and `clear` do the same for the shown result. A
 viewer or the **Wrong predictions** grid that fails to build gives its frame and hover links back before the error
@@ -1714,7 +1725,8 @@ It returns `EvaluateModelResult`: `id`, `name`, `table` (the evaluated table's n
 `skippedRows`, `positiveClass` (when there is one), `metrics` (`train` and `validation` from the stored record, `{}`
 each without one, and `evaluation`), `classes` (the evaluation's per-class values, a classifier with EDA's report)
 and `insights`: `evaluationInsights` of the evaluation and the
-stored metrics, as the Evaluation view's Insights & Tips, as `{text, detail?, items?}` (no `panel`). No column is
+stored metrics, as the Evaluation view's Insights & Tips without its `summaryInsight` fallback line, as
+`{text, detail?, items?}` (no `panel`; empty when there is nothing to say). No column is
 added and no application is recorded.
 
 ## `Forge:shareModel`

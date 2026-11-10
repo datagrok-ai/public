@@ -1,7 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {onFrame} from '../preparation/shared-frame';
-import {evaluationInsights, Insight} from '../training/insights';
+import {evaluationInsights, Insight, summaryInsight} from '../training/insights';
 import {MetricsTable} from './metrics-table';
 import {reportError} from './report-error';
 import {PanelKey, resultKindOf, ResultsRow, resultsLayout} from './results-layout';
@@ -26,10 +26,10 @@ interface RowRecord {
 
 /** The results of the Train view and the evaluation. Before a result: the **Performance** panel (its header, a hint)
  * and **Insights & Tips** under it. With a result: rows of panels in the platform's splitters (`results-layout.ts`),
- * the two panels among them; the metrics grid kept in place while the metric rows stay; the viewers of
- * `results-viewers.ts` over one frame of the user's columns and Forge's own (no copies), linked to the table by the
- * hovered row. A result of the same data keeps the viewers and refills the model's columns; a row whose panels stay
- * the same keeps the sizes the user gave it. */
+ * the two panels among them (**Insights & Tips** never hidden); the metrics grid kept in place while the metric rows
+ * stay; the viewers of `results-viewers.ts` over one frame of the user's columns and Forge's own (no copies), linked
+ * to the table by the hovered row. A result of the same data keeps the viewers and refills the model's columns; a row
+ * whose panels stay the same keeps the sizes the user gave it. */
 export class ResultsPane {
   readonly root: HTMLElement;
   private readonly insightsList = ui.element('ul');
@@ -51,6 +51,8 @@ export class ResultsPane {
   private dataInsights: Insight[] = [];
   /** The insights of the shown result and its metric findings. */
   private resultLines: Insight[] = [];
+  /** The line shown alone when there is no other: the result's {@link summaryInsight}. */
+  private fallbackLine: Insight | undefined;
   private shown: Shown | undefined;
   /** Counts the shows and hints: a show that a newer call outdated while `visualize` ran mounts nothing. */
   private version = 0;
@@ -86,6 +88,7 @@ export class ResultsPane {
     this.version++;
     this.unmount();
     this.resultLines = [];
+    this.fallbackLine = undefined;
     this.fillInsights();
     this.metricsTable?.root.remove();
     ui.empty(this.metricsHost);
@@ -108,6 +111,7 @@ export class ResultsPane {
     }
     this.resultLines = evaluationInsights({values: summary.evaluation?.values ?? summary.metrics.train, target,
       prediction, positiveClass}, summary.metrics);
+    this.fallbackLine = summaryInsight(summary.metrics, summary.evaluation?.values);
     this.fillInsights();
     const elements = await this.visualizeElements(data);
     if (version !== this.version) {
@@ -127,9 +131,8 @@ export class ResultsPane {
         releaseShown(shown);
       throw e;
     }
-    const panels = new Map<PanelKey, HTMLElement>([...shown.panels, ['metrics', this.metricsPanel]]);
-    if (this.insightsList.childElementCount > 0)
-      panels.set('insights', this.insightsPanel);
+    const panels = new Map<PanelKey, HTMLElement>([...shown.panels, ['metrics', this.metricsPanel],
+      ['insights', this.insightsPanel]]);
     for (const [i, element] of elements.entries())
       panels.set(`visualize:${i}`, resultsPanel('visualize', element, data.engine.name));
     this.mountRows(resultsLayout(kind, new Set(panels.keys()), elements.length), panels);
@@ -149,12 +152,14 @@ export class ResultsPane {
   }
 
   /** The insights, each with a tooltip of its numbers and, last and in grey, a pointer to the mounted panel it is
-   * about; a viewer panel's insights also become the viewer's description. */
+   * about; a viewer panel's insights also become the viewer's description. Without any, the one line reading a metric
+   * ({@link fallbackLine}); the panel is hidden only while empty under the hint, never with a result. */
   private fillInsights(): void {
     ui.empty(this.insightsList);
     const texts = new Set<string>();
     const lines = [...this.dataInsights, ...this.resultLines].filter(({text}) => !texts.has(text) && texts.add(text));
-    for (const {text, detail, items, panel} of lines) {
+    const shown = lines.length > 0 || this.fallbackLine === undefined ? lines : [this.fallbackLine];
+    for (const {text, detail, items, panel} of shown) {
       const li = ui.element('li');
       li.append(ui.divText(text));
       const pointer = panel !== undefined && this.mounted.has(panel) ? [`See ${PANEL_TEXTS[panel][0]}.`] : [];
@@ -165,9 +170,9 @@ export class ResultsPane {
       }
       this.insightsList.append(li);
     }
-    ui.setDisplay(this.insightsPanel, lines.length > 0);
+    ui.setDisplay(this.insightsPanel, shown.length > 0 || this.mounted.has('insights'));
     for (const [key, viewer] of this.shown?.viewers ?? []) {
-      const description = lines.filter(({panel}) => panel === key && panel !== 'metrics')
+      const description = shown.filter(({panel}) => panel === key && panel !== 'metrics')
         .map(({text}) => ResultsPane.markdownText(text)).join(' ');
       if ((viewer.props.description ?? '') !== description)
         viewer.setOptions({description, descriptionVisibilityMode: 'Always'});

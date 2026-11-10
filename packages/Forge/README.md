@@ -111,14 +111,16 @@ the rows below; the sizes are kept when you switch to another view and back. A p
 | Two classes | **Predicted <target> vs Actual**, **ROC Curve**, **PR Curve** (equal widths) | **Insights & Tips**, **Confusions**, **Performance** | **Features**, **Features correlation**, **Class balance** |
 | More classes | **Predicted <target> vs Actual**, **Confusions**, **Per-class** | **Insights & Tips**, **Performance**, **Class balance** | **Features**, **Features correlation** |
 
-When the second row of a two-class model is left with two panels (no **Insights & Tips**), **Class balance** moves
-to its right end. Then come the method's own views where the method has them (**PLS Regression**), at most three in
+**Insights & Tips** is always in the second row: when there is nothing to say it shows one line that reads the model's
+quality (`Balanced accuracy 0.9xx on the validation rows: on average 9x% of each class is predicted correctly.` for a
+classifier, `R2 ...: the model explains ...% of the target's variation.` for a regression), so the panels never move
+when a setting or the threshold changes. Then come the method's own views where the method has them (**PLS Regression**), at most three in
 a row of 350 px, then, when the model gets a training row wrong, **Wrong predictions** as the last row (300 px), right
 above **Runs**. Before the first result, and while **Train** runs, the area shows
 only the **Performance** panel (its title and a hint) with **Insights & Tips** under it.
 
-**Insights & Tips** lists what is worth a look in the data and in the trained model (the panel is absent when there is
-nothing to say). Each line is short; hover it to see the numbers behind it, and the tooltip's last line, in grey
+**Insights & Tips** lists what is worth a look in the data and in the trained model (with a result that has Balanced
+accuracy or R2, as every result of the Train view has, it is never empty: see above). Each line is short; hover it to see the numbers behind it, and the tooltip's last line, in grey
 (`See Class balance.`), names the panel that shows what it is about, when that panel is shown. That panel's viewer
 shows the line as its description too, above the viewer, under the matrix for **Confusions** (not **Performance**,
 whose grid marks its own values):
@@ -173,9 +175,8 @@ The plots show your table's own columns, without copies: hover a point and the t
 a row of the grid and the point lights up (rows skipped for missing values shift nothing). While **Table**,
 **Target**, **Features** and the rows used stay the same (a hyperparameter or **Method** change, a change of **Predict
 probability** or **Classification threshold**), a new result keeps the viewers, their zoom and the sizes you dragged,
-and only the predictions in them change; a panel that appears or goes (**Wrong predictions**, **Insights & Tips**, the
-method's own views) lays out again only the rows it changes (also row 3 when **Class balance** moves), at their
-starting sizes. Any other change builds the viewers again. A change of **Predict probability** (for a method whose
+and only the predictions in them change; a panel that appears or goes (**Wrong predictions**, the
+method's own views) lays out again only the rows it changes, at their starting sizes. Any other change builds the viewers again. A change of **Predict probability** (for a method whose
 probabilities are not a setting) or of **Classification threshold** re-cuts the class probabilities of the last
 training, without retraining: **ROC Curve** and **PR Curve** stay as they are and only their circles move, the panels
 of the labels change; a retrain redraws both curves in the same plots.
@@ -737,7 +738,8 @@ gaps kept), `positiveClass`
 result; a model saved with the former regression mode of Predict probability is measured on its scores, so its
 `evaluation` has `auc` and `averagePrecision` but no `logLoss` or `brier`), `classes` (a classifier:
 the evaluation's per-class values, each class's `label`, `rows` and `values`) and `insights` (the **Insights & Tips** of the evaluation and of the
-saved metrics: each a `text`, with the numbers behind it in `detail` or `items`). Nothing is added to the table and the
+saved metrics: each a `text`, with the numbers behind it in `detail` or `items`; empty when there is nothing to say,
+without the panel's line that reads Balanced accuracy or R2). Nothing is added to the table and the
 evaluation is not recorded as an application. `model` is an id or a unique name, as for `applyModel`. The errors,
 besides the ones of `applyModel`'s mapping:
 

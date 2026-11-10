@@ -170,7 +170,7 @@ export const rememberPanelSizes = When('user remembers the sizes of the results 
   rememberedRows.set(page, await panelRows(page));
 }, {tier: 'api', description: 'the width and height of every shown panel of the results, by its row and its title'});
 
-/* A row of the results is laid out again when a panel of it comes or goes (Insights & Tips after a cutoff): the rows
+/* A row of the results is laid out again when a panel of it comes or goes: the rows
    that keep their panels are claimed, and no remembered panel may go. */
 export const panelSizesKept = Then('the results panels should keep their remembered sizes', async (page: Page) => {
   const kept = rememberedRows.get(page);

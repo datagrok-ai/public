@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20932: Improved the results: Insights & Tips always keeps its place in the second row (one line reads Balanced accuracy or R2 when there is nothing else to say), so the panels no longer move when a setting or the threshold changes
 * GROK-20932: Improved Predict probability: the labels come from the method's own class probabilities for any classification; the regression mode was removed, and models saved with it still apply
 * GROK-20932: Added the probability columns P(<target> = <class>) that a model saved with Predict probability adds when applied
 * GROK-20932: Added the Classification threshold (renamed from Positive class cutoff) for two classes, optimized for the Best threshold by metric (F1, Balanced accuracy, MCC or Accuracy) on the validation rows after every training, kept when edited by hand until Set, with a status under it, and stored with the model as thresholdMetric

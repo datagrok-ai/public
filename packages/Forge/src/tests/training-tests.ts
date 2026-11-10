@@ -10,8 +10,8 @@ import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {defaultFeatures} from '../training/default-features';
 import {DEFAULT_VALIDATION, heldOutCount, holdOutFold, kFold, minimumRows} from '../training/k-fold';
-import {aucOf, aucOfProbabilities, classesOf, metricsOf, MetricValues, probabilityMetrics, probabilityOf}
-  from '../metrics/metrics';
+import {aucOf, aucOfProbabilities, classesOf, METRIC_DESCRIPTIONS, metricsOf, MetricValues, probabilityMetrics,
+  probabilityOf} from '../metrics/metrics';
 import {classificationReport} from '../metrics/report';
 import {MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
 import {prepareFeatures, replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
@@ -19,7 +19,7 @@ import {isRecord, PreparationOptions, preparationOptionsOf, stringsOf} from '../
 import {forgeDb} from '../generated/db';
 import {deleteModel} from '../storage/model-store';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
-import {dataInsights, metricInsights, resultInsights} from '../training/insights';
+import {dataInsights, metricInsights, resultInsights, summaryInsight} from '../training/insights';
 import {searchRecordOf} from '../training/search';
 import {runTrainModel, TrainModelInput} from '../training/train-api';
 import {bestThresholdOf, checkSelection, foldMasks, foldPrediction, needsRowsWithoutGaps, outOfFoldProbabilities,
@@ -875,6 +875,23 @@ category('Training', () => {
     expectArray(insights[1].items ?? [], ['MSE: train 1.000, validation 4.000', 'R2: train 0.200, validation 0.900']);
     expect(insights.every((i) => i.panel === 'metrics'), true, JSON.stringify(insights));
     expectArray(metricInsights({train: {accuracy: 0.97}, validation: {accuracy: 0.95}}), []);
+  });
+
+  test('summaryInsight: Balanced accuracy or R2 on the evaluated, validation or training rows', async () => {
+    const classifier = summaryInsight({train: {balancedAccuracy: 0.9}, validation: {balancedAccuracy: 0.85}});
+    expect(classifier?.text,
+      'Balanced accuracy 0.850 on the validation rows: on average 85% of each class is predicted correctly.');
+    expect(classifier?.panel, 'metrics');
+    expect(classifier?.detail, METRIC_DESCRIPTIONS.balancedAccuracy);
+    const regressor = summaryInsight({train: {r2: 0.8}, validation: {}});
+    expect(regressor?.text, 'R2 0.800 on the training rows: the model explains 80% of the target\'s variation.');
+    expect(regressor?.detail, METRIC_DESCRIPTIONS.r2);
+    expect(summaryInsight({train: {r2: 0.5}, validation: {r2: 0.5}}, {r2: -0.2})?.text,
+      'R2 -0.200 on the evaluated rows: the model predicts worse than the target\'s mean.');
+    expect(summaryInsight({train: {balancedAccuracy: 0.9}, validation: {balancedAccuracy: 0.85}},
+      {balancedAccuracy: 0.7})?.text,
+    'Balanced accuracy 0.700 on the evaluated rows: on average 70% of each class is predicted correctly.');
+    expect(summaryInsight({train: {}, validation: {}}) === undefined, true, 'A line without either metric');
   });
 
   test('trainModel keeps the prediction of the training rows; prepareTraining the kept rows', async () => {

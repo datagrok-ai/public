@@ -18,8 +18,6 @@ const ROW_HEIGHTS = [350, 350, 450] as const;
 const VISUALIZE_ROW_HEIGHT = 350;
 const WRONG_ROW_HEIGHT = 300;
 const VISUALIZE_PER_ROW = 3;
-/** The weight of **Class balance** when it joins row 2. */
-const CLASS_BALANCE_ROW_2_WEIGHT = 1.5;
 
 type Template = [PanelKey, number][];
 
@@ -41,20 +39,13 @@ const TEMPLATES: {[kind in ResultKind]: Template[]} = {
     [['features', 1], ['correlation', 1]]],
 };
 
-/** The rows of panels for [kind]: its template rows filtered to [available] (`metrics` is always available), an empty
- * row dropped, then the [visualizeCount] method panels in rows of at most {@link VISUALIZE_PER_ROW}, then **Wrong
- * predictions** alone as the last row (above the Train view's Runs). When row 2 is left with fewer than three panels,
- * **Class balance** moves from row 3 to its right end. */
+/** The rows of panels for [kind]: its template rows filtered to [available] (`metrics` and `insights` are always
+ * available), an empty row dropped, then the [visualizeCount] method panels in rows of at most
+ * {@link VISUALIZE_PER_ROW}, then **Wrong predictions** alone as the last row (above the Train view's Runs). */
 export function resultsLayout(kind: ResultKind, available: ReadonlySet<PanelKey>, visualizeCount: number):
   ResultsRow[] {
   const templates = TEMPLATES[kind].map((template) =>
-    template.filter(([key]) => key === 'metrics' || available.has(key)));
-  const [, second, third] = templates;
-  const balance = third.findIndex(([key]) => key === 'classBalance');
-  if (balance >= 0 && second.length < 3) {
-    third.splice(balance, 1);
-    second.push(['classBalance', CLASS_BALANCE_ROW_2_WEIGHT]);
-  }
+    template.filter(([key]) => key === 'metrics' || key === 'insights' || available.has(key)));
   const rows: ResultsRow[] = [];
   for (const [i, template] of templates.entries()) {
     if (template.length > 0)
