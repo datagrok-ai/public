@@ -46,8 +46,11 @@ export class CloudLogsApp extends DG.ViewBase {
 
     this.sourceInput = ui.input.choice<string | null>('Source', {
       items: [SOURCE_PLATFORM, SOURCE_CLOUDWATCH, SOURCE_ARCHIVE],
-      value: SOURCE_CLOUDWATCH, nullable: false,
-      onValueChanged: () => this.onSourceChanged(),
+      value: SOURCE_PLATFORM, nullable: false,
+      onValueChanged: () => {
+        this.onSourceChanged();
+        this.loadGroups();
+      },
     });
     this.connectionInput = ui.input.choice<string | null>('Connection', {
       items: [], nullable: true,
@@ -86,10 +89,11 @@ export class CloudLogsApp extends DG.ViewBase {
     ]]);
     this.onSourceChanged();
     this.init();
+    this.run();
   }
 
   private get source(): string {
-    return this.sourceInput.value ?? SOURCE_CLOUDWATCH;
+    return this.sourceInput.value ?? SOURCE_PLATFORM;
   }
 
   private async init(): Promise<void> {
@@ -169,8 +173,8 @@ export class CloudLogsApp extends DG.ViewBase {
     const rows = events
       .map((e) => ({
         time: e.eventTime,
-        source: e.eventType?.friendlyName ?? '',
-        message: e.description ?? e.name ?? '',
+        source: e.eventType?.name ?? '',
+        message: (e.description ?? e.name ?? '').replace(/<[^>]+>/g, ''),
       }))
       .filter((r) => !text || r.message.toLowerCase().includes(text));
     return DG.DataFrame.fromColumns([
@@ -217,6 +221,12 @@ export class CloudLogsApp extends DG.ViewBase {
       return;
     }
     const grid = DG.Viewer.grid(events, {showRowHeader: false, allowBlockSelection: false});
+    const time = grid.col('time');
+    if (time)
+      time.width = 170;
+    const message = grid.col('message');
+    if (message)
+      message.width = 900;
     grid.onCellPrepare((gc) => {
       if (gc.gridColumn.name === 'message')
         gc.style.font = '13px monospace';

@@ -2,6 +2,12 @@
 
 ## v.next
 
+* DB explorer: Added catalogs to Configure Identifiers: on a database that has them (Databricks, Snowflake, SQL Server) the dialog asks for the catalog first - it opens on the connection's own, lists the others with a search, and reads the schemas of the picked catalog alone; the configuration is listed as catalog.schema, and the Explore pane of a query result explores the catalog the result came from
+* DB explorer: Fixed Configure Identifiers showing nothing until the schemas were read, and nothing at all when they could not be: the dialog opens at once and reports the error with a way to retry; a configuration that cannot be loaded says so in its view instead of loading forever; the editor opens on the configurations as the server has them now, not as they were when the page loaded
+* [public#4538](https://github.com/datagrok-ai/public/issues/4538): Add New Column: Fixed the formula `null` being rejected for a column of a chosen type
+* [public#4497](https://github.com/datagrok-ai/public/issues/4497): Search: Fixed the broken PubChem frame for "aspirin"; it now shows a link and the structure
+* [public#4475](https://github.com/datagrok-ai/public/issues/4475): Compare Columns: Fixed Add Column over two tables being false in every row
+* [public#4461](https://github.com/datagrok-ai/public/issues/4461): Add New Column: Fixed adding a column or editing its formula not being undoable
 * [core#342](https://github.com/datagrok-ai/core/issues/342): Excel import: Fixed an unreadable .xlsx file leaving its loading indicator spinning forever; it now reports the error
 * Chat: Fixed the compose box building its u2 input with no owner, which threw in strict mode (tests, dev) and leaked the input; it now lives on a root of its own that the chat disposes
 * [public#4445](https://github.com/datagrok-ai/public/issues/4445): Add New Column: Fixed the preview wrapping a long double onto two lines when the column name is short

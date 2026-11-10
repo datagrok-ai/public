@@ -2,6 +2,13 @@
 
 ## v.next
 
+* Tests: Added BDD steps to the existing scenarios for closed bugs (a favorite opened once, Delete Project, column groups, toolbox search and Extract Rows, the script view's menu, a query address), viewer interactions (Sankey and Chord clicks, timelines under the Filter Panel, Globe, the confusion matrix tooltip, PC plot Save as PNG) and dialog cases a user meets (the Save dialog with its only table left out, an emptied name, a taken group name, Invite a Friend, the own account without Disable..., a Share dialog with nobody picked), and an Apps > Plates journey; checks that are not a gesture went to ApiTests, package and Dart tests, and each folder's MISSING.md says in one `Won't do` line what was left out
+* Metrics: Added data growth (Postgres tables and categories, storage by nature and location, GC deleted and pending, growth alerts)
+* Metrics: Added a drill-down from a route's error rate to its failed requests, their errors and log
+* Metrics: Removed the Share button; the Metrics app URL no longer repeats `/metrics`
+* Metrics, Reports, Service Logs, Cloud Logs: Moved from Browse > Platform > Admin to Platform > Observability, next to Alerts
+* Cloud Logs: Opens on this instance's platform events of the last hour instead of an empty CloudWatch form; choosing CloudWatch loads its log groups
+* Cloud Logs: Fixed the Platform events source, which failed on every run
 * AI Usage: Added a dashboard of the assistant's requests: counters of requests, users, tokens and estimated cost, usage over time by model, usage by user and by group, filters, the requests grid, and a request's details, prompt, answer, tool calls and chat in the context panel
 * Toolbox: Fixed the Groups, Packages, Tags, Categories and Projects inputs, which were disabled on every tab
 * Tests: Added BDD features for the table-view shell (`bdd/features/table-view/`): column edits and their undo (remove, rename, color coding, Ctrl+Shift+R, Column Properties with F2, Change Type), the Data menu dialogs (Join Tables, Compare Tables, Unpivot, Split Column, Batch Edit, Anonymize, Categorize), the Select menu and Add Rows, the shell shortcuts and the Column Manager, a table renamed from the Table Manager, and a folder and a file created, renamed and deleted in Files (`browse/files-lifecycle.feature`); findings filed as [public#4461](https://github.com/datagrok-ai/public/issues/4461), [core#1220](https://github.com/datagrok-ai/core/issues/1220), [core#1225](https://github.com/datagrok-ai/core/issues/1225), [core#1231](https://github.com/datagrok-ai/core/issues/1231), [core#1235](https://github.com/datagrok-ai/core/issues/1235) and [core#1236](https://github.com/datagrok-ai/core/issues/1236)

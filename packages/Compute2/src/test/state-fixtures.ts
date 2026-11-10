@@ -21,6 +21,7 @@ const defaultPipelineRuntimeData: PipelineInstanceRuntimeData = {
   actions: undefined,
   disableHistory: false,
   customExports: undefined,
+  disableDefaultExport: false,
   forceNavigate: false,
   compactView: false,
 };

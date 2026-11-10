@@ -5,76 +5,23 @@ surface", the TestTrack `scatterplot-*.md` and `scatter-plot-ui.md`. The "(no va
 in `scatter-plot-legend-no-value.feature`; the rejected line formula (GROK-17282) in
 PowerPack's `formula-lines-dialog.feature`.
 
-## Needs a reading
+## Still open
 
-- **Structures on the X axis** (`scatter-plot-ui.md`, "Structures as markers and as an axis", items
-  7-8, spgi-100). With a molecule column on X the axis draws structures instead of tick labels;
-  the status reports the axis column and range, not what the ticks are drawn as. Needs an
-  `x axis labels drawn as` reading (`text` / `structure`, from the axis painter's renderer), claimed
-  after the pick and again after a saved layout is applied.
+- Structures on the X axis (`scatter-plot-ui.md`, items 7-8): needs an `x axis labels drawn as` reading (`text` /
+  `structure`), claimed after the pick and after a saved layout is applied.
+- public#3091 — a layout applied after its Y column was removed draws `y: Column "HEIGHT" does not exist.`, but the
+  status carries no `error` (`scatterplot_status.dart` should pass `error: p.error`).
+- Markers the renderer drew (public#2108, public#1411; Size on HEIGHT hides the 128 empty rows while `rows shown` reads
+  1000): needs a `markers drawn` reading counted by `_ScatterPlotRenderer`.
+- A wheel zoom's end: the zoom animation is not in `isRenderPending`, so a claim right after a wheel zoom reads a window
+  still narrowing.
+- core#1339 — a viewer's picture (General > Save as PNG, Control+C) logs three 404s for `/font/MaterialIcons-Regular.*`;
+  once fixed, Control+C copying the picture (public#3052) can be claimed in `viewer-chrome.feature`.
 
-## Closed issues the regression round of 26 Oct 2026 could not claim
+## Won't do
 
-Written while turning the closed scatter plot issues into scenarios, now in the scatter plot's own
-journeys, `scatter-plot-labels-regressions.feature` and `../viewer-chrome.feature`.
-
-- **The missing-column message (public#3091).** A layout applied after its Y column was removed draws
-  `y: Column "HEIGHT" does not exist.` on the plot (`DataFrameViewer._validateColumns`), but
-  `_ScatterPlotStatus.of` builds its `WidgetStatus` without `error:` (the line chart passes
-  `error: plot.error`), so `scatter plot viewer should report the error …` reads `""`. Removing the
-  column live is no test either: the plot re-picks another column. Until then
-  `scatter plot viewer should report no error` cannot fail, and no scenario uses it. Needs
-  `error: p.error` in `scatterplot_status.dart`:
-
-  ```gherkin
-  Scenario: A plot whose Y column is gone says which column it misses (public#3091)
-    Given user opens demog-1000 dataset
-    And user adds a scatter plot viewer with:
-      | X | WEIGHT |
-      | Y | HEIGHT |
-    Then scatter plot viewer should report no error
-    When user saves the layout of the current table view
-    And user removes "HEIGHT" column
-    And user loads the saved layout
-    Then scatter plot viewer should report the error "y: Column \"HEIGHT\" does not exist."
-    And no errors should have been logged
-  ```
-- **Markers the renderer drew (public#2108, public#1411).** `rows shown` counts the rows the axes can
-  place (`isRowDrawable`), not what the renderer drew, so it reads 872 whether the dot renderer puts the
-  128 rows with no HEIGHT on the zero line (public#2108) and whether a numeric Color column's markers
-  come back after a layout (public#1411, which said markers went missing). A pixel claim does not
-  help: a layout round trip repaints the canvas by a few pixels with every marker in place (measured
-  26 Oct 2026). Needs a `markers drawn` reading counted by `_ScatterPlotRenderer` in the last frame:
-
-  ```gherkin
-  Scenario: Dot markers draw no row whose Y is empty (public#2108)
-    When user sets "Marker Type" property of scatter plot viewer to "dot"
-    Then the "markers drawn" reading of scatter plot viewer should be 872
-    When user sets "Marker Type" property of scatter plot viewer to "circle"
-    Then the "markers drawn" reading of scatter plot viewer should be 872
-    And no errors should have been logged
-
-  Scenario: A numeric Color column comes back from a layout with every marker it drew (public#1411)
-    When user sets "Color" property of scatter plot viewer to "AGE"
-    And user saves the layout of the current table view
-    And user loads the saved layout
-    Then the "markers drawn" reading of scatter plot viewer should be 872
-    When user sets "Color" property of scatter plot viewer to ""
-    Then no errors should have been logged
-  ```
-- **A wheel zoom ends after the plot says it has settled.** After `user scrolls the mouse wheel up 3
-  times over the "view" area`, `user remembers the value range` and an immediate `should show the
-  remembered value range` failed: the window went on narrowing (x 79.3..127.3, then 85.5..121.1), so
-  the zoom animation is not in `isRenderPending`. The regression scenarios set a window with the range
-  slider instead; a claim on a wheel zoom's end needs the animation in the pending flags.
-
-### A viewer's picture logs three 404s (public#942, public#3052)
-
-General > Save as PNG and Control+C on a viewer make the picture (what the two issues fixed holds),
-but each logs `cannot fetch resource: …/font/MaterialIcons-Regular.woff2|woff|ttf, status: 404`:
-the picture embeds every `@font-face` of the page, and `core/client/xamgle/web/google_fonts.css:313-318`
-still declares Material Icons from `/font/`, whose files left the repository in 2018 (`70272c5e29c`).
-A product bug to file in core; once fixed, `viewer-chrome.feature` gets "General > Save as PNG
-downloads the viewer as a .png file (public#942)" and "Control+C on a viewer copies its picture and
-says so (public#3052)" (`user watches downloads` / `a file matching "\.png$" should have been
-downloaded`; `the clipboard should hold a PNG image of at least 2000 bytes`).
+- Moving Average Window typed past its bounds: core#1200's clamp tests (`../MISSING.md`).
+- A plot that filters by its zoom, closed: `filter-panel/compose-with-viewers.feature` claims the rows come back.
+- A layout naming a missing Color column, a removed Color or Size column, a renamed X or Color column, no rows, a one-row
+  table: the rules every viewer shares (`../MISSING.md`).
+- Scale (1M-row hover and drag): timing belongs to the Dart benchmarks, not a feature.

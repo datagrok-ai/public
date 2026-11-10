@@ -7,7 +7,7 @@ import {_package} from '../package-test';
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {MetricInfo, DISTANCE_TYPE, impute} from '../missing-values-imputation/knn-imputer';
+import {MetricInfo, DISTANCE_TYPE, METRIC_TYPE, impute} from '../missing-values-imputation/knn-imputer';
 import {getFeatureInputSettings} from '../missing-values-imputation/ui';
 import {dataWithMissingVals} from './utils';
 
@@ -55,4 +55,22 @@ const testKNN = (dist: DISTANCE_TYPE) => {
 category(`Missing values imputation`, () => {
   testKNN(DISTANCE_TYPE.EUCLIDEAN);
   testKNN(DISTANCE_TYPE.MANHATTAN);
+
+  test('a missing value is the average of its nearest neighbours, in place or in a copy', async () => {
+    const gaps = () => DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'a', [1, 2, 5, 9, 10]),
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'b', [10, 20, null, 90, 100]),
+    ]);
+    const features = new Map<string, MetricInfo>([['a', {weight: 1, type: METRIC_TYPE.DIFFERENCE}]]);
+
+    const inPlace = gaps();
+    impute(inPlace, ['b'], features, new Map([['b', [2]]]), DISTANCE_TYPE.EUCLIDEAN, 4, true);
+    expect(inPlace.col('b')!.get(2), 55);
+    expect(inPlace.columns.length, 2);
+
+    const copied = gaps();
+    impute(copied, ['b'], features, new Map([['b', [2]]]), DISTANCE_TYPE.EUCLIDEAN, 1, false);
+    expect(copied.col('b(copy)')!.get(2), 20);
+    expect(copied.col('b')!.isNone(2), true);
+  });
 });

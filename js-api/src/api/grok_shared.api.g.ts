@@ -187,6 +187,8 @@ export class Permission {
 
   static VIEW_TELEMETRY = 'ViewTelemetry';
 
+  static EDIT_AUDIT_LOGGING = 'EditAuditLogging';
+
   static CREATE_REPOSITORY = 'CreateRepository';
 
   static CREATE_GROUP = 'CreateGroup';

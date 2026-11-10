@@ -9,6 +9,7 @@ sub_features_covered: [powerpack.db-explorer]
 import {test} from '@playwright/test';
 import '../../bindings/add-new-column.js';
 import '../../bindings/home.js';
+import '../../bindings/identifiers.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';

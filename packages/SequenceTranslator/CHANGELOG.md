@@ -1,5 +1,11 @@
 # Sequence Translator changelog
 
+## v.next
+
+* PolyTool: Enumerate: Fixed a "This column is read-only" warning on every double-click of a placeholder's Monomers cell, the gesture that opens Select Monomers
+* Pattern: Fixed 2'-O-Methyl nucleotides written in the Axolabs translation as 2'-Fluoro ones (`Af` instead of `a`): the sample pattern data gave both the same code; a substitution can now write the base in lowercase (`\L$1`)
+* OligoNucleotide renderer: Added `getMonomerPoint` and `getLinkagePoint` (the renderer keeps itself in the grid column's temp, `oligoNucleotideRenderer`): where a duplex cell draws a nucleotide's or a conjugate's chip, or the arc of a 3' linkage, so a UI test or a filmed demo rests the pointer there for its tooltip
+
 ## 1.11.7 (2026-11-05)
 
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)

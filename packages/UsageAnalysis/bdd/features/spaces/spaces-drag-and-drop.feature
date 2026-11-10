@@ -17,6 +17,9 @@ Feature: Putting files into a space by dragging them
   what the old spec's "add waitForTimeout(600) before clicking YES (let the dialog initialize)" was
   covering up.
 
+  The file moved into BDD-DnD is then linked back into BDD-DnD-Src, where the link shows (core#1042): a
+  link of a copy in a space, never of a Demo file.
+
   Background:
     Given user is logged in
     And the browse panel is open
@@ -79,7 +82,8 @@ Feature: Putting files into a space by dragging them
     Then the "BDD-DnD-Src" view should be current
     And beer.csv link in gallery should be visible
 
-  Scenario: Moving takes the file out of the source space
+  @realizes:core#1042
+  Scenario: Moving takes the file out of the source space, and a link puts it back there
     When user drags beer.csv link in gallery to Spaces---BDD-DnD tree node inside browse tree
     Then Move entity dialog should be visible
     And choice input in Move entity dialog should be visible
@@ -92,6 +96,18 @@ Feature: Putting files into a space by dragging them
     When user double-clicks on Spaces---BDD-DnD-Src tree node inside browse tree
     Then the "BDD-DnD-Src" view should be current
     And beer.csv link in gallery should be absent
+    When user double-clicks on Spaces---BDD-DnD tree node inside browse tree
+    Then the "BDD-DnD" view should be current
+    When user drags beer.csv link in gallery to Spaces---BDD-DnD-Src tree node inside browse tree
+    Then Move entity dialog should be visible
+    And choice input in Move entity dialog should have value "Link"
+    When user clicks on YES button in Move entity dialog
+    Then Move entity dialog should be hidden
+    When user double-clicks on Spaces---BDD-DnD-Src tree node inside browse tree
+    Then the "BDD-DnD-Src" view should be current
+    And beer.csv link in gallery should be visible
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
 
   Scenario: The demo files kept their originals
     When user clicks on "Files > Demo" tree node inside browse tree

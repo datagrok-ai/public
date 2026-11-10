@@ -2,6 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import {useDebounceFn} from '@vueuse/core';
 import {DebounceFactory, DISABLED_STYLE_DEBOUNCE_TIME, RibbonMenuItem, RibbonPanelItem} from './ribbon-types';
 import {dispatchClick, hoverText} from './ribbon-core';
+import {onPress} from '../on-press';
 
 export const defaultDebounce: DebounceFactory = (fn, wait) => useDebounceFn(fn, wait);
 
@@ -47,6 +48,9 @@ export function createPanelItem(item: RibbonPanelItem, iconKey: string, deps: El
   ui.tooltip.bind(el, () => hoverText(state.item));
   nameByTooltip(el, item);
   el.addEventListener('click', () => dispatchClick(state.item, deps.warn));
+  el.tabIndex = 0;
+  el.setAttribute('role', 'button');
+  el.addEventListener('keydown', onPress(() => dispatchClick(state.item, deps.warn)));
   return state;
 }
 
@@ -62,6 +66,7 @@ export function updatePanelItem(state: PanelItemState, item: RibbonPanelItem): v
   state.item = item;
   nameByTooltip(state.el, item);
   state.el.style.backgroundColor = item.active ? 'var(--grey-1)' : '';
+  state.el.toggleAttribute('aria-disabled', !!item.disabled);
   state.applyDisabledStyle(!!item.disabled && (item.disabledStyle ?? 'default') === 'default');
 }
 

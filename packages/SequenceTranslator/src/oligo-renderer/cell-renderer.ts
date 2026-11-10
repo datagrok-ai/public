@@ -20,6 +20,8 @@ import {ParsedDuplex} from './types';
 import {showMonomerTooltip} from './tooltip';
 
 const CELL_TYPE = 'OligoNucleotide';
+/** The grid column's temp key the renderer keeps itself under, where hover tests find {@link getMonomerPoint}. */
+export const OLIGO_RENDERER_TEMP = 'oligoNucleotideRenderer';
 
 export class OligoNucleotideCellRenderer extends DG.GridCellRenderer {
   /** WeakMap-by-value cache of parsed HELM. Avoids reparsing on redraw. */
@@ -61,6 +63,8 @@ export class OligoNucleotideCellRenderer extends DG.GridCellRenderer {
       y = 0;
       // this happens in forms....
     }
+    else if (gridCell.gridColumn && gridCell.gridColumn.temp[OLIGO_RENDERER_TEMP] !== this)
+      gridCell.gridColumn.temp[OLIGO_RENDERER_TEMP] = this;
     const layout = drawDuplex(g, x, y, w, h, model);
     // Cache for hit-test on subsequent mouse moves over the same cell.
     this.layoutCache.set(this.cellKey(value, w, h, DEFAULT_OPTS), layout);
@@ -73,11 +77,7 @@ export class OligoNucleotideCellRenderer extends DG.GridCellRenderer {
       return;
     }
     const model = this.getOrParse(value);
-    const layout = this.layoutCache.getOrCreate(
-      this.cellKey(value, gridCell.bounds.width, gridCell.bounds.height, DEFAULT_OPTS), (v) => drawDuplex(
-        null as unknown as CanvasRenderingContext2D, 0, 0, gridCell.bounds.width, gridCell.bounds.height,
-        model, DEFAULT_OPTS, true,
-      ));
+    const layout = this.layoutOf(gridCell, value, model);
     if (!layout) return;
 
     const bounds = gridCell.bounds;
@@ -94,6 +94,45 @@ export class OligoNucleotideCellRenderer extends DG.GridCellRenderer {
 
   override onMouseLeave(_gridCell: DG.GridCell, _e: MouseEvent): void {
     ui.tooltip.hide();
+  }
+
+  /** Where the monomer at {@link pos} (0-based over the sense strand's monomers, then the antisense's, as the
+   * duplex parses) sits in the cell as laid out, in px from the cell's top left: the middle of a nucleotide's or a
+   * conjugate's chip, of a standalone linker's arc. The point the pointer rests on for its tooltip. */
+  getMonomerPoint(gridCell: DG.GridCell, pos: number): {x: number, y: number} | null {
+    return this.pointOf(gridCell, pos, false);
+  }
+
+  /** The middle of the arc of the 3' linkage after the monomer at {@link pos} (counted as in
+   * {@link getMonomerPoint}): where the pointer rests for the linkage's tooltip. */
+  getLinkagePoint(gridCell: DG.GridCell, pos: number): {x: number, y: number} | null {
+    return this.pointOf(gridCell, pos, true);
+  }
+
+  private pointOf(gridCell: DG.GridCell, pos: number, linkage: boolean): {x: number, y: number} | null {
+    const value = gridCell.cell.value as string | null;
+    if (!value || !looksLikeHelm(value))
+      return null;
+    const model = this.getOrParse(value);
+    const layout = this.layoutOf(gridCell, value, model);
+    const senseCount = model.sense.monomers.length;
+    const sense = pos < senseCount;
+    const monomer = (sense ? model.sense : model.antisense)?.monomers[sense ? pos : pos - senseCount];
+    if (!layout || layout.textOnlyFallback || !monomer)
+      return null;
+    const chip = linkage ? undefined : (sense ? layout.senseChips : layout.antiChips).find((c) => c.monomer === monomer);
+    if (chip)
+      return {x: chip.x + chip.w / 2, y: (sense ? layout.senseY : layout.antiY) + layout.chipH / 2};
+    const arc = (sense ? layout.senseLinks : layout.antiLinks).find((l) => l.ownerOrigIdx === monomer.position);
+    if (!arc)
+      return null;
+    return {x: arc.x + arc.w / 2, y: sense ? arc.y - layout.apexH / 2 : arc.y + arc.h + layout.apexH / 2};
+  }
+
+  private layoutOf(gridCell: DG.GridCell, value: string, model: ParsedDuplex): DuplexLayout | null {
+    const {width, height} = gridCell.bounds;
+    return this.layoutCache.getOrCreate(this.cellKey(value, width, height, DEFAULT_OPTS),
+      () => drawDuplex(null as unknown as CanvasRenderingContext2D, 0, 0, width, height, model, DEFAULT_OPTS, true));
   }
 
   private getOrParse(helm: string): ParsedDuplex {

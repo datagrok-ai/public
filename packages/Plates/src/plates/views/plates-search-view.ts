@@ -47,7 +47,7 @@ function getSearchForm(
         input = ui.input.string(prop.name);
     } else if (prop.type === DG.TYPE.FLOAT || prop.type === DG.TYPE.INT) {
       input = ui.input.string(prop.name);
-      input.addValidator((s) => NumericMatcher.parse(s) ? null : 'Invalid numerical criteria. Example: ">10"');
+      input.addValidator((s) => (s === '' || NumericMatcher.parse(s)) ? null : 'Invalid numerical criteria. Example: ">10"');
     } else if (prop.type === DG.TYPE.BOOL) {
       input = ui.input.bool(prop.name);
     }

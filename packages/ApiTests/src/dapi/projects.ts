@@ -179,6 +179,30 @@ category('Dapi: projects: data sync', () => {
 
   test('A calculated-column chain over a query result survives a data-sync round trip and a source rename',
     () => columnChainSurvivesDataSync(products), {timeout: 120000});
+
+  test('A data-synced file that lost a column a calculated column reads opens with it empty and a warning (GROK-19725)', async () => {
+    const path = `System:AppData/ApiTests/sync-lost-column-${DG.Utils.randomString(8)}.csv`;
+    const saved: Saved[] = [];
+    try {
+      await grok.dapi.files.writeAsText(path, grok.data.demo.demog(20).toCsv());
+      const df = await openSource({run: () => runCore('OpenServerFile', {fullPath: path}), column: 'height', rows: 20});
+      await runCore('AddNewColumn', {table: df, expression: '${height} + 1', name: 'HeightPlus'});
+      saved.push(await saveProject(df, true));
+      const lost = grok.data.demo.demog(20);
+      lost.columns.remove('height');
+      await grok.dapi.files.writeAsText(path, lost.toCsv());
+      const reopened = await reopen(saved[0], 20);
+      expect(reopened.col('height'), null);
+      expect(reopened.col('HeightPlus')?.stats.missingValueCount, 20);
+      await waitUntil(() => Array.from(document.querySelectorAll('.d4-balloon'))
+        .some((b) => (b.textContent ?? '').includes('"HeightPlus": missing columns: height')),
+      'no warning names HeightPlus and its missing column height', 5000);
+    }
+    finally {
+      await remove(saved);
+      await grok.dapi.files.delete(path).catch(() => {});
+    }
+  }, {timeout: 60000});
 }, {owner: 'aparamonov@datagrok.ai'});
 
 category('Dapi: projects: viewers', () => {

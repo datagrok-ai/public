@@ -1,0 +1,88 @@
+{
+  "dataset": "04b_iv_infusion_multi_nonmem",
+  "pknca_version": "0.12.1",
+  "config": {
+    "auc_method": "lin up/log down",
+    "min_points": 3,
+    "min_r_squared": 0.85,
+    "exclude_cmax": true,
+    "min_span_ratio": 2,
+    "extrap_warn": 20,
+    "extrap_error": 50
+  },
+  "dataset_meta": {
+    "dose": {
+      "value": 100,
+      "unit": "mg"
+    },
+    "route": "iv-infusion",
+    "conc_unit": "mg/L",
+    "model": "1-cmt: CL=2 L/h, V=10 L, k=0.2 /h (AUCinf=50, MRT_iv=1/k=5, Vss=10)"
+  },
+  "profiles": [
+    {
+      "profile_key": {
+        "subject": "1",
+        "route": "iv-infusion"
+      },
+      "parameters": {
+        "cmax": 9.0634623461,
+        "tmax": 1,
+        "auclast": 49.535037112808,
+        "aucinf": 49.990559286826,
+        "pct_aucextrap": 0.9112163986888,
+        "lambda_z": 0.1999999999922,
+        "half_life": 3.465735902935,
+        "cl": 2.000377699842,
+        "vz": 10.001888499601,
+        "aumclast": 261.879697041759,
+        "aumcinf_obs": 275.089840088364,
+        "mrt": 5.002835815659,
+        "vss": 10.007561201615,
+        "tlag": null,
+        "pct_aumcextrap": 4.802119570233
+      },
+      "provenance": {
+        "lambda_z_n_points": null,
+        "lambda_z_r_squared": null,
+        "lambda_z_adj_r_squared": null,
+        "lambda_z_time_first": null,
+        "lambda_z_time_last": null,
+        "clast_obs": null,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "2",
+        "route": "iv-infusion"
+      },
+      "parameters": {
+        "cmax": 8.2419988491,
+        "tmax": 2,
+        "auclast": 49.473873664464,
+        "aucinf": 49.979822771516,
+        "pct_aucextrap": 1.012306724985,
+        "lambda_z": 0.1999999999797,
+        "half_life": 3.465735903152,
+        "cl": 2.000807414967,
+        "vz": 10.004037075854,
+        "aumclast": 285.504011062771,
+        "aumcinf_obs": 300.176535167521,
+        "mrt": 5.005954373624,
+        "vss": 10.015950629734,
+        "tlag": null,
+        "pct_aumcextrap": 4.887965042491
+      },
+      "provenance": {
+        "lambda_z_n_points": null,
+        "lambda_z_r_squared": null,
+        "lambda_z_adj_r_squared": null,
+        "lambda_z_time_first": null,
+        "lambda_z_time_last": null,
+        "clast_obs": null,
+        "c0_extrapolated": null
+      }
+    }
+  ]
+}

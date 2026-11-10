@@ -203,6 +203,12 @@ export class SunburstViewer extends EChartViewer {
       this.clearViewerFilter();
       break;
 
+    // a click filter holds the rows of a segment of the old hierarchy; a removed column changes the hierarchy too
+    case 'hierarchyColumnNames':
+      this.clearViewerFilter();
+      this.render();
+      break;
+
     default:
       this.render();
       break;

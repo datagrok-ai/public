@@ -13,6 +13,10 @@ Feature: Opening what the address names
   NorthwindTest connection (PostgresTest), which the queries features run on too: Germany has 122
   orders; a stand that does not reach its database skips the scenario.
 
+  An app address that names no app (`routing.dart` `_appsHandler`) says "Application not found" and
+  opens the Apps view. A function address that names nothing is xamgle's routing test ('Unable to find
+  function').
+
   Background:
     Given user is logged in
 
@@ -43,20 +47,26 @@ Feature: Opening what the address names
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+  @realizes:public#3873
   Scenario: A query address runs the query with the parameter it carries
     # the query runs on db.datagrok.ai, outside the stand
     Given the stand has a reachable "PostgresTest" connection
     When user opens the address "/func/Dbtests.PostgresByStringChoices?shipCountry=%22Germany%22"
     Then the "PostgresByStringChoices" view should be current
+    And the current view should be a TableView view
+    And the page address should not contain "preview"
     And the table should have 122 rows
     And every value of "shipcountry" column should match "^Germany$"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: An address that names nothing says so and leaves the shell as it was
+  Scenario: An address that names nothing says so, and an app address that names nothing opens the Apps view
     Given user opens demog-1000 dataset
     Then the "demog-1000" view should be current
     When user opens the address "/p/no.such_project/none"
     Then an error balloon containing "Unable to get project asset" should have been shown
     And the "demog-1000" view should be current
     And no errors should have been logged
+    When user opens the address "/apps/BddNoSuchApp{time}"
+    Then an error balloon containing "Application not found" should have been shown
+    And the "Apps" view should be current

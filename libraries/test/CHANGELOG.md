@@ -2,6 +2,7 @@
 
 ## 1.5.0 (WIP)
 
+* Added `skipCategoryWithoutSpawner`, which skips a category, with the reason, when `grok.dapi.docker.getStatus()` reports Grok Spawner switched off or unreachable (a test's own skip reason is kept), and fails it when the status cannot be read or the platform has no `getStatus`
 * [core#1050](https://github.com/datagrok-ai/core/issues/1050): Added `waitUntil`, `waitUntilAsync` and `settled(viewer)`; `testViewer` and its helpers and the demo auto-tests wait for viewers to settle instead of fixed delays
 * The `BinaryImage` column of the detectors' test data holds a PNG instead of zero bytes, which PowerGrid's detector no longer treats as an image
 * Added the TestTrack shared-page lanes (`shared-page`: worker-shared `test`/`localTest` with `resetShell`), the `known-open-bug`, `filter-panel`, `forms` and `balloons` helpers, and the viewer, property-grid, canvas and event-wait helpers in `viewers`

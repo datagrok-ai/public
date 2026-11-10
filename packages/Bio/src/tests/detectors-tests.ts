@@ -263,6 +263,7 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     fastaPtCsv = 'fastaPtCsv',
     msaComplex = 'msaComplex',
     helmCsv = 'helmCsv',
+    bilnComplexCsv = 'bilnComplexCsv',
     testDemogCsv = 'testDemogCsv',
     testHelmCsv = 'testHelmCsv',
     testIdCsv = 'testIdCsv',
@@ -286,6 +287,7 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     [Samples.msaComplex]: 'System:AppData/Bio/samples/MSA.csv',
     [Samples.fastaCsv]: 'System:AppData/Bio/samples/FASTA.csv',
     [Samples.helmCsv]: 'System:AppData/Bio/samples/HELM.csv',
+    [Samples.bilnComplexCsv]: 'System:AppData/Bio/samples/BILN_complex.csv',
     [Samples.peptidesComplex]: 'System:AppData/Bio/tests/peptides_complex_msa.csv',
     [Samples.peptidesSimple]: 'System:AppData/Bio/tests/peptides_simple_msa.csv',
     [Samples.testDemogCsv]: 'System:AppData/Bio/tests/testDemog.csv',
@@ -444,6 +446,50 @@ MWRSWY-CKHPMWRSWY-CKHP`;
       await _testBilnDetection(bilnT.seqs, seqHelper, bilnT.negative);
     });
   }
+
+  test('Separator with a stray dot Neg', async () => {
+    // dot-free values vote for BILN only when some value carries a connection mark
+    const col = DG.Column.fromList(DG.TYPE.STRING, 'seq', [
+      'A-C-D-E-F-G-H-I-K-L', 'M-N-P-Q-R-S-T-V-W-Y', 'A-C-D-E-F-G-H-I-K-M', 'A-C-D-E.F-G-H-I-K-L',
+      'M-N-P-Q-R-S-T-V-W-A',
+    ]);
+    const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
+    if (semType) col.semType = semType;
+    if (col.semType === DG.SEMTYPE.MACROMOLECULE) await seqHelper.getSeqHandler(col).refinerPromise;
+    expect(col.meta.units === NOTATION.BILN, false, `Detected as ${col.meta.units}`);
+  });
+
+  test('Biln with free chains in most values Neg', async () => {
+    // half of the sampled values or more must be one chain or have a connection mark in every chain
+    const col = DG.Column.fromList(DG.TYPE.STRING, 'seq', [
+      'A-C(1,3)-G-G-H-A-V-E-A-K-Y-L-V-C(1,3)-S.G-I-V-E-A-W-L-K-S-I-F-S-L-Y-Q-L-E-N-Y-W-Y',
+      'A-C-G-G-H-A-V-E-A-K-Y-L-V-C-S.G-I-V-E-A-C-C-T-S-I-C-S-L-Y-Q-L-E-N-Y-C-Y',
+      'A-C-G-G-H-A-V-E-A-T-Y-L-V-C-G.G-I-V-E-A-C-C-K-S-I-C-S-L-Y-Q-L-E-N-Y-C-Y',
+      'A-C-G-G-H-L-V-E-A-K-Y-L-V-C-G.G-I-V-E-A-C-C-T-S-I-C-S-L-Y-Q-L-E-N-Y-C-N',
+      'A-C-G-G-H-L-V-E-A-K-Y-L-V-C-S.G-I-V-E-A-C-C-K-S-I-C-S-L-Y-Q-L-E-N-Y-C-N',
+    ]);
+    const semType: string = await grok.functions.call('Bio:detectMacromolecule', {col: col});
+    if (semType) col.semType = semType;
+    if (col.semType === DG.SEMTYPE.MACROMOLECULE) await seqHelper.getSeqHandler(col).refinerPromise;
+    expect(col.meta.units === NOTATION.BILN, false, `Detected as ${col.meta.units}`);
+  });
+
+  test('samplesBilnComplexCsv', async () => {
+    // only biln is a macromolecule, and every connection mark pairs up (an unpaired id drops its bond silently)
+    const df = await readSamples(Samples.bilnComplexCsv)();
+    await grok.data.detectSemanticTypes(df);
+    const macromolecules = df.columns.toList().filter((c) => c.semType === DG.SEMTYPE.MACROMOLECULE).map((c) => c.name);
+    expect(macromolecules.join(), 'biln');
+    const col = df.getCol('biln');
+    await seqHelper.getSeqHandler(col).refinerPromise;
+    expect(col.meta.units, NOTATION.BILN);
+    const sh = seqHelper.getSeqHandler(col);
+    for (let i = 0; i < col.length; i++) {
+      const marks = (col.get(i)!.match(/\(\d{1,2},\d{1,2}\)/g) ?? []).length;
+      const bonds = sh.getSplitted(i).graphInfo?.connections.length ?? 0;
+      expect(bonds * 2, marks, `${df.get('name', i)}: bonds`);
+    }
+  });
   // test('samplesFastaFasta', async () => {
   //   await _testDf(readSamples(Samples.fastaFasta), {
   //     'sequence': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false),

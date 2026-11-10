@@ -108,6 +108,12 @@ export class MultiColumnDimReductionEditor {
     vectorDistanceInput: DG.InputBase<string | null> = ui.input.choice('Distance metric', {value: VectorMetricsNames.Euclidean, items: [VectorMetricsNames.Euclidean, VectorMetricsNames.Manhattan, VectorMetricsNames.Cosine]});
 
     onColumnsChanged: Subject<void>;
+
+    /** False for a computation that has no vector path and reads the per-column parameters only (MCL). */
+    protected get vectorizesNumericalColumns(): boolean {
+      return true;
+    }
+
     constructor(editorSettings: DimReductionEditorOptions = {}) {
       this.aggregationMethodInput.setTooltip('Aggregation method for combining distances between columns');
       this.vectorDistanceInput.root.style.display = 'none';
@@ -211,7 +217,7 @@ export class MultiColumnDimReductionEditor {
 
         // All-numerical columns are treated as a single vector — per-column editors
         // are neither rendered nor needed, so skip constructing them entirely.
-        if (value.every((it) => it.isNumerical)) {
+        if (this.vectorizesNumericalColumns && value.every((it) => it.isNumerical)) {
           this.columnOptEditors = [];
           this.aggregationMethodInput.root.style.display = 'none';
           this.columnParamsEditorAccordion.root.style.display = 'none';

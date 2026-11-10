@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import {AugmentedStat, Status} from './types';
-import {ComboPopup, IconFA, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
+import {ComboPopup, IconFA, onPress, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
 import {useElementHover} from '@vueuse/core';
 import {OpenIcon} from '@he-tree/vue';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
@@ -106,6 +106,7 @@ export const TreeNode = Vue.defineComponent({
   },
   emits: {
     addNode: (_data: {itemId: string, position: number}) => true,
+    chooseStepToAdd: () => true,
     removeNode: () => true,
     duplicateNode: () => true,
     toggleNode: () => true,
@@ -142,7 +143,7 @@ export const TreeNode = Vue.defineComponent({
     const gutterStyle = {alignSelf: 'center', left: '-20px', position: 'absolute'} as const;
 
     const sourceRunLockIcon = (tooltip: string, color?: string) =>
-      <IconFA name='lock' tooltip={tooltip} style={{...gutterStyle, color}} />;
+      <IconFA name='lock' tooltip={tooltip} style={{color}} />;
 
     const progressIcon = (status: Status, isReadOnly: boolean) => {
       const data: any = props.stat.data;
@@ -157,7 +158,7 @@ export const TreeNode = Vue.defineComponent({
         name={isReadOnly ? 'lock' : statusToIcon[status]}
         animation={status === `running` ? 'spin': null}
         tooltip={statusTooltip ?? null}
-        style={{...gutterStyle, color: statusToColor[status]}}
+        style={{color: statusToColor[status]}}
       />;
     };
 
@@ -167,18 +168,16 @@ export const TreeNode = Vue.defineComponent({
           <ValidationIcon
             validationStatus={pipelineValidation.value}
             useHover={true}
-            style={{
-              alignSelf: 'center',
-              left: '-20px',
-              position: 'absolute',
-            }}
           />);
       }
     };
 
     const pipelineLockIcon = () => sourceRunId.value ?
       sourceRunLockIcon(sourceRunLabel(true)) :
-      <IconFA name='lock' tooltip='This workflow is locked' style={gutterStyle} />;
+      <IconFA name='lock' tooltip='This workflow is locked' />;
+
+    const gutter = (icon?: Vue.VNode) => icon &&
+      <span style={gutterStyle} onClick={(e: MouseEvent) => e.stopPropagation()}>{icon}</span>;
 
     const nodeLabel = (state: AugmentedStat) =>
       state.data.friendlyName ?? state.data.configId;
@@ -205,6 +204,7 @@ export const TreeNode = Vue.defineComponent({
           width: '100%',
           borderBottom: '1px solid var(--steel-2)',
         }}
+        aria-current={props.isSelected ? 'step' : undefined}
         ref={treeNodeRef}
       >
         <div
@@ -215,8 +215,8 @@ export const TreeNode = Vue.defineComponent({
             alignItems: 'center',
           }}
         >
-          { status.value && progressIcon(status.value, props.isReadonly) }
-          { !isFuncCallState(props.stat.data) && props.isReadonly ? pipelineLockIcon() : checkIcon() }
+          { status.value && gutter(progressIcon(status.value, props.isReadonly)) }
+          { gutter(!isFuncCallState(props.stat.data) && props.isReadonly ? pipelineLockIcon() : checkIcon()) }
           { props.stat.children.length ? openIcon() : null }
           <span
             class="mtl-ml text-nowrap text-ellipsis overflow-hidden"
@@ -239,6 +239,8 @@ export const TreeNode = Vue.defineComponent({
                   caption={ui.iconFA('plus')}
                   tooltip='Add a step'
                   rightAligned
+                  // the platform dropdown has no keyboard support, so the keys open the workflow's steps to add
+                  {...{tabindex: 0, onKeydown: onPress(() => emit('chooseStepToAdd'))}}
                   items={props.stat.data.stepTypes
                     .filter((stepType: StepDynamicDescription) => !stepType.disableUIAdding)
                     .map((stepType: StepDynamicDescription) =>

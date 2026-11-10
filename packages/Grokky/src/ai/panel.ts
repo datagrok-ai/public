@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
-import {dartLike, fireAIAbortEvent, createStyledMarkdown, normalizeMarkdownTables, linkBareUrls, isEnterKey,
+import {dartLike, fireAIAbortEvent, createStyledMarkdown, tryMarkdown, plainTextEl, isEnterKey,
   copyToClipboard} from '../utils';
 import {buildWorkspaceContext, executeSingleBlock} from '../claude/exec-blocks';
 import {ConversationStorage, StoredConversationWithContext} from './storage';
@@ -759,29 +759,32 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return ctx + '\n---\n\n' + prompt;
   }
 
-  private createStreamingEl(content: string): HTMLElement {
+  private createStreamingEl(content: string): HTMLElement | null {
     if (this._rawRender) {
       const pre = document.createElement('pre');
       pre.textContent = content;
       pre.style.cssText = 'white-space:pre-wrap;user-select:text;margin:0';
       return pre;
     }
-    const md = ui.markdown(normalizeMarkdownTables(linkBareUrls(content)));
-    dartLike(md.style).set('userSelect', 'text').set('maxWidth', '100%');
+    const md = tryMarkdown(content);
+    if (md)
+      dartLike(md.style).set('userSelect', 'text').set('maxWidth', '100%');
     return md;
   }
 
   updateStreaming(content: string, loader: HTMLElement): void {
     if (!this._streamingContainer) {
       this.ensureResponseBlock();
-      this._streamingMarkdownEl = this.createStreamingEl(content);
+      this._streamingMarkdownEl = this.createStreamingEl(content) ?? plainTextEl(content);
       this._streamingContainer = ui.divV([this._streamingMarkdownEl], 'd4-ai-assistant-response-container');
       this._aiMessagesAccordionPane!.appendChild(this._streamingContainer);
       this.outputArea.appendChild(loader);
     } else {
       const el = this.createStreamingEl(content);
-      this._streamingMarkdownEl!.replaceWith(el);
-      this._streamingMarkdownEl = el;
+      if (el) {
+        this._streamingMarkdownEl!.replaceWith(el);
+        this._streamingMarkdownEl = el;
+      }
     }
     this.refreshStreamingLoader(loader);
     this.outputArea.scrollTop = this.outputArea.scrollHeight;

@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {category, test, expect, waitUntil, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, waitUntil, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
+import {OUTPUT_OUTDATED_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {closeViewsAfter, awaitWebComponents, deleteSavedWorkflow} from './utils';
 import {DAY_CALCULATION, uniqueName, withRunStorage} from './run-storage';
@@ -166,7 +167,7 @@ res = ranged;`).prepare(preset);
     const formOf = () => (view.root.querySelector('dg-input-form') as any)?.formInst as DG.InputForm | undefined;
     await waitUntil(() => !!formOf(), 'Form not rendered', 15000);
     const runDisabled = () => Array.from(view.root.querySelectorAll('button'))
-      .find((b) => b.textContent?.trim() === 'Run')!.classList.contains('d4-disabled');
+      .find((b) => b.textContent?.trim() === 'Run')!.getAttribute('aria-disabled') === 'true';
     return {view, call, form: formOf()!, runDisabled};
   };
 
@@ -193,6 +194,54 @@ res = ranged;`).prepare(preset);
     const {form, runDisabled} = await open({ranged: 5, code: '12ab'});
     expect(form.isValid, false);
     expect(runDisabled(), true);
+  });
+});
+
+category('RFV: autorun', () => {
+  const track = closeViewsAfter();
+
+  /** Opens an autorun script, then sets `a` to 10 and, while the run that starts is in progress, to [next]. */
+  const editDuringRun = async (body: string, next: number) => {
+    await awaitWebComponents();
+    const call = DG.Script.create(`//name: RfvAutorun
+//language: javascript
+//input: double a = 1 {min: 0}
+//input: double b = 2
+//output: double c
+//meta.runOnInput: true
+await new Promise((r) => setTimeout(r, 1500));
+${body}`).prepare({a: 1, b: 2});
+    const view = track(await grok.functions.call(
+      'Compute2:RichFunctionViewEditor', {call},
+    ) as unknown as DG.ViewBase);
+    const formOf = () => (view.root.querySelector('dg-input-form') as any)?.formInst as DG.InputForm | undefined;
+    await waitUntil(() => !!formOf(), 'Form not rendered', 15000);
+    const isRunning = () => !!view.root.querySelector('.c2-compositor-overlay--active');
+    await waitUntil(() => !isRunning(), 'Initial autorun did not finish', 10000);
+
+    formOf()!.getInput('a').value = 10;
+    await waitUntil(isRunning, 'Autorun did not start', 5000);
+    formOf()!.getInput('a').value = next;
+    return {call, isRunning};
+  };
+
+  test('An input changed during a run is run again', async () => {
+    const {call} = await editDuringRun('c = a + b;', 40);
+    await waitUntil(() => call.outputs.get('c') === 42, () => `Expected c = 42, got ${call.outputs.get('c')}`, 10000);
+  });
+
+  test('An input changed during a failed run is run again', async () => {
+    const {call} = await editDuringRun('if (a === 10) throw new Error("Expected failure");\nc = a + b;', 40);
+    await waitUntil(() => call.outputs.get('c') === 42, () => `Expected c = 42, got ${call.outputs.get('c')}`, 10000);
+  });
+
+  test('An input made invalid during a run leaves the outputs outdated and is not run', async () => {
+    const {call, isRunning} = await editDuringRun('c = a + b;', -5);
+    await waitUntil(() => !isRunning(), 'Run did not finish', 10000);
+    await delay(1000);
+    expect(isRunning(), false, 'An invalid input should not start a run');
+    expect(call.outputs.get('c'), 12);
+    expect(call.options[OUTPUT_OUTDATED_PATH], 'true', 'Outputs of a=10 should be outdated for a=-5');
   });
 });
 
@@ -295,11 +344,11 @@ const hasButton = (root: HTMLElement, label: string) =>
   Array.from(root.querySelectorAll('button')).some((b) => b.textContent?.trim() === label);
 
 // the editor view is not added to the shell here, so read the ribbon through the API
-const ribbonIcons = (view: DG.ViewBase, name: string) => view.getRibbonPanels().flat()
+export const ribbonIcons = (view: DG.ViewBase, name: string) => view.getRibbonPanels().flat()
   .flatMap((el) => [el, ...Array.from(el.querySelectorAll('*'))])
   .filter((el) => el.classList.contains(`fa-${name}`));
 
-const savedRunId = (view: DG.ViewBase) => new URLSearchParams((view.path ?? '').split('?')[1] ?? '').get('id');
+export const savedRunId = (view: DG.ViewBase) => new URLSearchParams((view.path ?? '').split('?')[1] ?? '').get('id');
 
 async function openCompact(nqName: string): Promise<DG.ViewBase> {
   await awaitWebComponents();

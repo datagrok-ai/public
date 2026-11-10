@@ -25,6 +25,8 @@ const skip = [
   // is not an option: clicking the confirm button completes the flow and leaves
   // server state behind (a published project, a grit.issue row).
   'projects-save-dialog', 'facade-form-dialog', 'facade-list-view', 'row-editor', 'pick-table',
+  // Development only: reads the database list of the stand's own server
+  'catalogs',
 
   // To fix
   'custom-viewer-properties',

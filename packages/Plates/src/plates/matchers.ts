@@ -84,7 +84,8 @@ export class NumericMatcher {
     if (matchEmptyPattern && (!query || query.trim() === ''))
       return new NumericMatcher(NumericMatcher.NONE);
 
-    const x = parseFloat(query);
+    // the whole query, not its leading number: parseFloat('10-20') is 10, which hid every range
+    const x = query.trim() === '' ? NaN : Number(query);
     if (!isNaN(x))
       return new NumericMatcher(NumericMatcher.EQUALS, x);
 

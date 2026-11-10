@@ -148,7 +148,8 @@ Feature: The Presentation mode switch of a saved project's Save dialog
     And user clicks on OK button in "Save project" dialog
     Then the "Save project" dialog should close
     And an info balloon containing 'Project "BDDPresentNew{time}" uploaded' should have been shown
-    When user clicks on OK button in "Share BDDPresentNew{time}" dialog
+    # nobody is picked, so the Share dialog that follows a first save is closed, not confirmed
+    When user clicks on CANCEL button in "Share BDDPresentNew{time}" dialog
     Then the "Share BDDPresentNew{time}" dialog should close
     # the new project is the open one now, and the shell goes into its presentation mode at once
     And "back to design mode" link should be visible

@@ -266,7 +266,6 @@ export class FormsViewer extends DG.JsViewer {
     this._timers.add(gridSubTimer);
 
     sub(this.dataFrame.onColumnsRemoved, () => {
-      this.updateFieldsColumnNames();
       this.render();
     });
 
@@ -303,16 +302,7 @@ export class FormsViewer extends DG.JsViewer {
   }
 
   updateFieldsColumnNames() {
-    const newColumns = this.dataFrame.columns.names();
-    let counter = this.fieldsColumnNames.length;
-    for (let i = 0; i < counter; i++) {
-      const colIdx = newColumns.indexOf(this.fieldsColumnNames[i]);
-      if (colIdx === -1) {
-        this.fieldsColumnNames.splice(i, 1);
-        counter--;
-        i--;
-      }
-    }
+    this.fieldsColumnNames = this.fieldsColumnNames.filter((name) => this.dataFrame.col(name) !== null);
   }
 
   onPropertyChanged(property: DG.Property): void {
@@ -571,6 +561,8 @@ export class FormsViewer extends DG.JsViewer {
   render() {
     if (this.dataFrame == null)
       return;
+    if (this.fieldsColumnNames)
+      this.updateFieldsColumnNames();
     const grid = this.getGrid();
 
     if (this.pinnedRowIndexes.some((i) => i >= this.dataFrame.rowCount))

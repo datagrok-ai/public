@@ -1,10 +1,12 @@
 @journey @viewers @realizes:viewers.histogram
 Feature: Histogram range filter
   The histogram filters the table through the range under its plot: the two range inputs write the
-  slider's values, the slider clamps a bound outside the column's extent, an inverted range
-  collapses the filter and says so, a handle dragged with the pointer moves the same range, and a
-  narrowed range zooms the horizontal axis, rescales the vertical one under Normalize To Filter and
-  survives a stacked split; a saved layout carries the look but not the range. One journey on
+  slider's values (dates too: STARTED from 1/1/1991 keeps 483 rows), the slider clamps a bound
+  outside the column's extent and text it cannot read leaves the range as it was, an inverted range
+  collapses the filter and says so, a handle dragged
+  with the pointer moves the same range, a narrowed range zooms the horizontal axis, rescales the
+  vertical one under Normalize To Filter and survives a stacked split, and another value column
+  picked on the plot releases it; a saved layout carries the look but not the range. One journey on
   demog-1000 with a histogram of AGE; every scenario puts the full range back.
 
   Background:
@@ -37,6 +39,13 @@ Feature: Histogram range filter
     And the "range max" reading of histogram viewer should be 60
     And the "bins shown" reading of histogram viewer should be lower than before
     And histogram viewer should have a "range bar" area
+    When user picks "WEIGHT" in the "value" column selector of histogram viewer
+    Then all rows should pass the filter
+    When user sets "Value" property of histogram viewer to "STARTED"
+    And user enters "1/1/1991" into the "range min input" area of histogram viewer
+    Then 483 rows should pass the filter
+    When user sets "Value" property of histogram viewer to "AGE"
+    Then all rows should pass the filter
     When user enters "18" into the "range min input" area of histogram viewer
     And user enters "89" into the "range max input" area of histogram viewer
     Then all rows should pass the filter
@@ -116,6 +125,9 @@ Feature: Histogram range filter
 
   Scenario: Bounds outside the column extent are clamped, the typed text is kept
     When user enters "40" into the "range min input" area of histogram viewer
+    Then 665 rows should pass the filter
+    And the "range min" reading of histogram viewer should be 40
+    When user enters "abc" into the "range min input" area of histogram viewer
     Then 665 rows should pass the filter
     And the "range min" reading of histogram viewer should be 40
     When user enters "-999" into the "range min input" area of histogram viewer

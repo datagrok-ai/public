@@ -1,9 +1,12 @@
 import * as grok from 'datagrok-api/grok';
 
-import {category, test, expect} from '@datagrok-libraries/test/src/test';
+import {before, category, test, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
+import {skipWithoutChemblDatabase} from './utils';
 
 category('Cartridge usage', () => {
+  before(() => skipWithoutChemblDatabase('Cartridge usage'));
+
   test('Similarity pattern', async () => {
     const df =
       await grok.data.query(`${_package.name}:patternSimilaritySearch`, {'pattern': 'c1ccc(O)cc1', 'maxRows': 1000});

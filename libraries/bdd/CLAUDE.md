@@ -31,9 +31,12 @@ src/runtime/            args, locate (R9 order, item reveal, BDD_RESOLVE_TRACE),
                         server (endpoints the JS API lacks, layouts, fixture families), memory (BDD_MEMORY_LOG),
                         guide (BDD_GUIDE: per-step screenshots, located element or the hit area a gesture aims at, menu stops (hop), the page's own pointer events per stop,
                         pictures taken while typing, dragging and wheeling, a `# caption:` comment's caption, a frame (frameTo) → steps.json; full shell,
-                        no test styles; a window under 1600 px at device scale 2; BDD_GUIDE_HELP: the bare shell of a help GIF)
+                        no test styles; a window under 1600 px at device scale 2; BDD_GUIDE_HELP: the bare shell of a help GIF;
+                        BDD_GUIDE_DEMO: a demo clip's shell, the sidebar only; `say`: a `the video says` note)
 tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md / audit.png (+ --gif: guide.gif from the lossless frames,
-                        guide-thumb.png of the result, guide-sheet.png; --help: no title, strip, dimming, zoom or Given steps)
+                        guide-thumb.png of the result, guide-sheet.png; --help: no title, strip, dimming, zoom or Given steps;
+                        --demo: 1080p, a wrapped title card, notes over the page, no Given or uncaptioned check, review-sheet.png,
+                        timeline.json; --reel: demo clips cut into one video, with its index)
 tool/gen-u2-kinds.mjs   the u2 and EMS manifests → bindings/common/u2-kinds.g.ts (npm run vocab; vocab:check compares)
 tool/snapshot-kinds.mjs the built kind table → tests/fixtures/kinds-before.json (the compat test's reference)
 tool/audit-summary.mjs  a run's report.json (+ BDD_MEMORY_LOG files) → audit findings by rule, feature, scenario; heap per worker
@@ -108,6 +111,19 @@ when translating, not when looking for gaps, not when a TestTrack case asks for 
   paint and goes stale when the column is removed or a second column of the type shows. The package
   tests the renderer (`src/tests`, `grok test`); a feature claims what the platform reports around
   the cell — its value, semantic type, menus and panes (ruling of 2026-10-06).
+- **Edge cases that permute one rule** (lead's ruling, 2026-11-08). The rule is tested once where it
+  lives; a feature claims a dialog's or viewer's use of it once, as steps of an existing scenario:
+  - a name that is empty, blank, digits only or has odd characters, in any Save, Rename, New or
+    Properties dialog (`friendlyNameToName`, `Validators.notEmpty`, `getRenameDialog`);
+  - CANCEL or Escape changing nothing (every dialog writes on OK or SAVE only);
+  - a property value out of its bounds (`Property` clamps it: prop_gen and xamgle tests);
+  - a viewer with no rows, rows deleted, a column removed or renamed, non-finite values, or a layout
+    naming a missing column (the loops over every viewer in xamgle `viewers_test.dart`, ApiTests
+    `AI: Viewers: Shared rules`);
+  - search or filter syntax (the matcher and filter-grammar tests).
+  What a round removes gets one line under `## Won't do` in its folder's MISSING.md. A known failure
+  is a last resort: fix the defect, or record it as one `## Still open` line with the claim to add
+  once it is fixed; never a new feature file of known failures.
 
 One exception, by the lead's ruling: the Scaffold Tree features stay. The viewer's tree comes from
 the Python `GenerateScaffoldTree`, but what they test is the viewer's own UI (checking, colouring,
@@ -405,6 +421,7 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   listing (`forum.dart` `_refreshChats`) for that account — it happened once on dev.
 - **A translated stack trace is not a second error**: the platform logs "… Look below, ID = X" and,
   seconds later, "Stack trace X"; the floor joins it to its error, or drops it once reported.
+  `no errors should have been logged` and the scenario-end errors audit wait for the stacks of what they are about to report (`stacksLogged`, 30 s at most); an audit finding is the error's first line, then the first 30 lines of that stack.
 - **Model cards are not completion signals.** The Train Model preview reports `aria-busy` before
   debounce/queued training and `aria-invalid` for unavailable or failed results. `model preview
   should be ready` requires the latest completed training, predictions, charts and history.
@@ -445,8 +462,9 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
 - A guide films without the `selenium` body class, so the page looks as a person's does: a panel's title
   bar shows its icons only while the pointer is over the panel (`dock-manager.css`), and a guide feature
   hovers the panel in a step of its own before clicking one (a step's first picture is taken before its
-  gestures, so a hover inside the clicking step never shows the icon). Typing through a locator (`fill`, `pressSequentially`) or the keyboard and a wheel turn are
-  pictured as they go (`beat` in `guide.ts`, at most six pictures each).
+  gestures, so a hover inside the clicking step never shows the icon). Typing through a locator (`fill`, `pressSequentially`) or the keyboard is
+  pictured as it goes (`beat` in `guide.ts`, at most six pictures). A wheel turn is the one event a test sends, pictured
+  after it: split into notches on film, Bio's MSA header (a position per event) scrolled to the end where the test moved it once.
 - A guide takes the pointer from the page, not from `page.mouse`: a locator's `click()`, `hover()`,
   `dragTo()` never pass through it, and a recorder that wrapped only the mouse had 60 of 80 clicks
   with no place (drawn unmarked, at the element's centre). `guide.ts` logs trusted pointer events

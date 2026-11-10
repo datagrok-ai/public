@@ -1,31 +1,21 @@
 # Forms viewer — what the features cannot say yet
 
 Written during the viewer-gaps round of 23 Oct 2026, against `files/TestTrack/Viewers/FormsViewer/`
-and the viewer's "Automation surface" (`public/libraries/utils/src/viewers/CLAUDE.md`). New this round:
-`forms-cards-drawn.feature` (`forms.md` Step 4c — every selected row gets a card).
+and the viewer's "Automation surface" (`public/libraries/utils/src/viewers/CLAUDE.md`); trimmed in the BDD PR
+round of 8 Nov 2026.
 
 ## Still open
 
-- **The field takes the grid column's alignment** (`forms.md` Scenario 1, Step 1b, GROK-19339). The
-  reading exists — `align of <COL> of <label>` — and `forms-presentation.feature` claims the default
-  (`start`). What is missing is a step that sets a grid column's horizontal alignment the way a person
-  does (the column's Style / format pane, or `user sets the alignment of {string} column of grid to
-  {word}` writing `GridColumn.cellStyle.horzAlign`). Then:
+- **public#4452** — a forms layout naming a column the table no longer has throws "TypeError: Cannot read properties of
+  null (reading 'semType')" on every render (`buildForm`); claim when fixed: the layout loads with fields "AGE, SEX".
+- **The field takes the grid column's alignment** (`forms.md` Step 1b, GROK-19339): the `align of <COL> of <label>`
+  reading exists; needs a step that sets a grid column's horizontal alignment the way a person does.
 
-  ```gherkin
-  Scenario: A centred grid column centres its field on every card
-    When user sets the alignment of "AGE" column of grid to "center"
-    Then the "align of AGE of card 1" reading of forms viewer should be "center"
-    And the "align of SEX of card 1" reading of forms viewer should be "start"
-    And no errors should have been logged
-  ```
+## Won't do
 
-- **"Molecules occupy the left part of the card"** (`forms-ui.md`, exploratory) is not a gap but a
-  question: the card stacks its fields in one column (Structure above Primary Series Name, same x), so
-  the md's "text fields to its right" does not describe the viewer. Nothing to write until the owner
-  says which layout is intended.
-
-- **Each card draws that row's molecule** (`forms.md` Scenario 4, Step 4c) is not a gap: what a cell
-  renderer draws, on a card or in the grid, is the renderer's package test, not a feature (the
-  library's "What never becomes a feature"). `forms-cards-drawn.feature` claims which row each card
-  shows (`record of card <n>`).
+- **Each card draws that row's molecule** (`forms.md` Step 4c): what a cell renderer draws is the renderer's package
+  test; `forms-cards-drawn.feature` claims which row each card shows.
+- A pinned row under a filter that hides it, a pinned row deleted: PowerGrid `Forms viewer` "A pinned row stays pinned
+  under a filter that hides it and leaves the pinned pane once deleted".
+- No rows, rows deleted, all columns removed or empty, `fixedRowNumbers` before Show Current Row, "molecules on the
+  left of the card": the shared viewer rules or no gap.

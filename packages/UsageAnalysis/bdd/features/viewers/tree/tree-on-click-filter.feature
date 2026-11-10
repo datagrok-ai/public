@@ -9,7 +9,9 @@ Feature: Tree clicks: On Click = Filter and Select, Shift and Control, and the g
   CONTROL, SEX, RACE, picked in the Select columns dialog. Counts on demog-1000: false | F | Asian 7,
   false | M | Asian 8 (every Asian row), true | F | Caucasian 5. A branch is the viewer's
   `branch <path>` area, the line into the node, where a click lands on the node it leads into.
-  A first click made with Shift filters to the branch too (public#4393, fixed).
+  A first click made with Shift filters to the branch too (public#4393, fixed). The rows a Filter
+  click filtered out come back when On Click goes back to Select, when the tree is closed
+  (public#4425) and when the column of the clicked branch is removed (core#1174).
   Translated from the TestTrack case Charts/tree (On Click) and the github-3245 spec
   tree-rowsource-onclick-state-bug.
 
@@ -36,8 +38,8 @@ Feature: Tree clicks: On Click = Filter and Select, Shift and Control, and the g
     And "Hierarchy" property of tree viewer should be "CONTROL, SEX, RACE"
     And tree viewer should have a "branch All | false | F | Asian" area
 
-  @realizes:public#3249 @realizes:public#3298
-  Scenario: The grid's selection is drawn on the tree; a click filters to the branch, Shift or Control adds a branch, a plain click starts over, and Select selects again (public#3249, public#3298)
+  @realizes:public#3249 @realizes:public#3298 @realizes:public#4425
+  Scenario: The grid's selection is drawn on the tree; a click filters to the branch, Shift or Control adds a branch, a plain click starts over, and Select gives the rows back and selects again (public#3249, public#3298, public#4425)
     When user takes a snapshot of tree viewer
     And user selects rows where "RACE" is "Asian"
     Then 15 rows should be selected
@@ -71,8 +73,7 @@ Feature: Tree clicks: On Click = Filter and Select, Shift and Control, and the g
     And no rows should be selected
     When user selects "Select" in "On Click" property in context panel
     Then "On Click" property of tree viewer should be "Select"
-    When user resets the filter
-    Then 1000 rows should pass the filter
+    And 1000 rows should pass the filter
     When user clicks on the "branch All | false | F | Asian" area of tree viewer
     Then 7 rows should be selected
     And no rows where "SEX" is "M" should be selected
@@ -80,11 +81,19 @@ Feature: Tree clicks: On Click = Filter and Select, Shift and Control, and the g
     Then 15 rows should be selected
     And no errors should have been logged
 
-  Scenario: A first click made with Shift filters to the branch as a plain click does
+  @realizes:core#1174 @realizes:public#4425
+  Scenario: A first click made with Shift filters to the branch as a plain click does; removing the clicked column or closing the tree gives the rows back (core#1174, public#4425)
     Given "Misc" category in context panel is expanded
     When user selects "Filter" in "On Click" property in context panel
     Then "On Click" property of tree viewer should be "Filter"
     And 1000 rows should pass the filter
     When user clicks on the "branch All | false | F | Asian" area of tree viewer holding Shift
     Then 7 rows should pass the filter
+    When user scrolls the grid to the "RACE" column
+    And user picks "Remove" from the context menu of the "header RACE" area of grid
+    Then 1000 rows should pass the filter
+    When user clicks on the "branch All | false | F" area of tree viewer
+    Then 548 rows should pass the filter
+    When user clicks on close icon of tree viewer
+    Then 1000 rows should pass the filter
     And no errors should have been logged

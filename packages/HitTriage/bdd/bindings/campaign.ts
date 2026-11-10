@@ -604,10 +604,13 @@ export const ribbonLastGroup = Then('the last group of the ribbon should list {s
     const panels = Array.from(document.querySelectorAll('.d4-ribbon-panel')).filter((p) => (p as HTMLElement).offsetWidth > 0);
     const last = panels[panels.length - 1];
     const group = last?.querySelector('[data-u2="ribbon-group"]');
-    if (group)
-      return (DG.U2.Control.forElement(group).getItems().list as {key: string}[]).map((i) => i.key);
-    return last ? Array.from(last.querySelectorAll(':scope > .d4-ribbon-item > *'))
-      .map((e) => (e.getAttribute('aria-label') ?? e.textContent ?? '').trim()).filter((s) => s.length > 0) : [];
+    // a package with a designer function (Reinvent4) adds its action to the group, on the stands it is published to
+    const designers = DG.Func.find({meta: {role: 'HitDesignerFunction'}})
+      .map((f: {description: string, friendlyName: string}) => f.description || f.friendlyName);
+    const names = group ? (DG.U2.Control.forElement(group).getItems().list as {key: string}[]).map((i) => i.key) :
+      last ? Array.from(last.querySelectorAll(':scope > .d4-ribbon-item > *'))
+        .map((e) => (e.getAttribute('aria-label') ?? e.textContent ?? '').trim()).filter((s) => s.length > 0) : [];
+    return names.filter((name) => !designers.includes(name));
   }), {message: 'the items of the ribbon\'s last group, by their names'}).toEqual(want);
 }, {tier: 'ui', description: 'the shown ribbon\'s last panel, item by item in order: a u2 ribbon group\'s items by their keys (an icon\'s name or tooltip, a button\'s text, folded ones included), else each element by its aria-label or text; an item with no name (a separator) is left out'});
 

@@ -51,6 +51,9 @@ export type ExplicitReference = {
 
 export type DBExplorerConfig = {
     connectionName: string;
+    /** Catalog the schemas live in, for a database that has catalogs (Databricks, Snowflake, MS SQL).
+     * When omitted, tables are addressed as schema.table and resolve in the connection's own catalog */
+    catalogName?: string;
     /** Primary schema, that can be overriden by schemas in entry points */
     schemaName: string;
     nqName?: string;
@@ -82,7 +85,8 @@ export class DBValueObject {
     public table: string,
     public column: string,
     public value: string | number,
-    public semValue?: DG.SemanticValue
+    public semValue?: DG.SemanticValue,
+    public catalogName?: string
   ) {}
 }
 

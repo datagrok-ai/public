@@ -22,6 +22,9 @@ Feature: Grid cell editing and the clipboard
   The refusal message is matched by its text, not by the login it names. The "Pin if editable" switch
   (`grid-ui.md` "Context Panel - Permissions") is in `grid-pin-if-editable.feature`.
 
+  The last scenario pastes into a read-only grid: the cell keeps its value, and the same paste into an
+  editable cell right after shows that the clipboard held one.
+
   Background:
     Given user is logged in
     And user opens demog-1000 dataset
@@ -226,4 +229,22 @@ Feature: Grid cell editing and the clipboard
     And user types "28" into cell editor
     And user presses Enter
     Then the value of "AGE" column in row 12 should be "28"
+    And no errors should have been logged
+
+  Scenario: A read-only grid takes no paste
+    When user sets "Allow Edit" property of grid to "false"
+    And user clicks on the "cell 2 of AGE" area of grid
+    And user presses Control+C
+    And user clicks on the "cell 11 of AGE" area of grid
+    And user presses Control+V
+    And user sets "Allow Edit" property of grid to "true"
+    And user clicks on the "cell 13 of AGE" area of grid
+    And user presses Control+V
+    Then the value of "AGE" column in row 13 should be "30"
+    And the value of "AGE" column in row 11 should be "46"
+    When user double-clicks on the "cell 13 of AGE" area of grid
+    And user presses Control+A in cell editor
+    And user types "43" into cell editor
+    And user presses Enter
+    Then the value of "AGE" column in row 13 should be "43"
     And no errors should have been logged

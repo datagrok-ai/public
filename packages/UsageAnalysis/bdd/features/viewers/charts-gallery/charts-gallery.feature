@@ -3,9 +3,10 @@ Feature: The Add viewer gallery for Charts viewers, Surface plot, Globe and Grou
   The ribbon's Add viewer gallery disables a Charts viewer when the table cannot feed it and says
   why in the card's tooltip; a card is disabled through aria-disabled, so its state is read as it
   is. The Globe draws with WebGL, which no pixel step reads, so what it placed is its `points`
-  reading; the Surface plot is claimed by its properties and a silent console; Group Analysis by
-  its inner grid's readings, and its layout is saved and applied from the toolbox's Layouts pane,
-  under the run-unique name its table gets.
+  reading, which follows the table's filter (72 earthquakes of MagType Mb); the Surface plot is
+  claimed by its properties and a silent console; Group Analysis by its inner grid's readings, and
+  its layout is saved and applied from the toolbox's Layouts pane, under the run-unique name its
+  table gets.
   Translated from the TestTrack case Charts/charts-other-viewers. The Surface plot is checked on
   demog-1000: on earthquakes.csv it is not shown.
 
@@ -57,6 +58,10 @@ Feature: The Add viewer gallery for Charts viewers, Surface plot, Globe and Grou
     And user clicks on first "Globe" card in "Add Viewer" dialog
     Then globe viewer should be visible
     And the "points" reading of globe viewer should be 2426
+    When user filters rows where "MagType" is "Mb"
+    Then the "points" reading of globe viewer should be 72
+    When user resets the filter
+    Then the "points" reading of globe viewer should be 2426
     And no errors should have been logged
     When user clicks on close icon of globe viewer
     Then globe viewer should be absent

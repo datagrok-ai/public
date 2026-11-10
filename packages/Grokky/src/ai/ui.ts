@@ -7,8 +7,8 @@ import * as rxjs from 'rxjs';
 
 import {CombinedAISearchAssistant} from './search/combined-search';
 import {fireAIPanelToggleEvent, getAIAbortSubscription, fireBeforeUserPromptEvent,
-  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, isEnterKey, SHORTCUT_HINT,
-  copyToClipboard} from '../utils';
+  fireAfterUserPromptEvent, UserPromptEventArgs, createStyledMarkdown, tryMarkdown, plainTextEl, isEnterKey,
+  SHORTCUT_HINT, copyToClipboard} from '../utils';
 import {AIPanel, StreamingPanel} from './panel';
 import {AIWindowManager} from './ai-window';
 import {ClaudeRuntimeClient, ErrorEvent, FinalEvent, ToolActivityEvent} from '../claude/runtime-client';
@@ -160,7 +160,8 @@ export async function askWiki(question: string, sessionId?: string): Promise<DG.
     sessionId,
     sessionPrefix: AiFeature.Help,
     onFinal: (evt, host) => {
-      const md = ui.markdown(evt.content || '');
+      const text = evt.content || '';
+      const md = tryMarkdown(text) ?? plainTextEl(text);
       md.style.userSelect = 'text';
       host.appendChild(md);
     },
@@ -409,29 +410,33 @@ async function streamOnce(
 
 
       forSession(client.onFinal, async (evt) => {
-        panel.cancelInputRequest();
-        if (revisingTimer != null) {
-          clearTimeout(revisingTimer);
-          revisingTimer = null;
+        // Always end the turn: otherwise the panel stays busy and the chat is not saved.
+        try {
+          panel.cancelInputRequest();
+          if (revisingTimer != null) {
+            clearTimeout(revisingTimer);
+            revisingTimer = null;
+          }
+          if (evt.revision === 'replaced') {
+            // The revision supersedes the visible answer — render it in place of the original.
+            accumulated = evt.content;
+            segmentStart = 0;
+            toolStatus = '';
+          } else if (evt.revision === 'kept')
+            toolStatus = ''; // original answer stands; just drop the Revising status
+          const fullContent = accumulated || evt.content;
+          const segmentContent = accumulated ? accumulated.slice(segmentStart) : fullContent;
+          chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
+          const finalExecCodes = evt.revision === 'kept' && preRevisionExecCodes ? preRevisionExecCodes : execCodes;
+          await panel.finalizeStreaming(segmentContent, finalExecCodes, view);
+          if (evt.unverified) {
+            const warn = 'Not verified — the assistant could not confirm this action took effect.';
+            panel.appendStreamedElement(ui.divText(warn, 'grokky-unverified-warning'));
+          }
+        } finally {
+          cleanup();
+          resolve();
         }
-        if (evt.revision === 'replaced') {
-          // The revision supersedes the visible answer — render it in place of the original.
-          accumulated = evt.content;
-          segmentStart = 0;
-          toolStatus = '';
-        } else if (evt.revision === 'kept')
-          toolStatus = ''; // original answer stands; just drop the Revising status
-        const fullContent = accumulated || evt.content;
-        const segmentContent = accumulated ? accumulated.slice(segmentStart) : fullContent;
-        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
-        const finalExecCodes = evt.revision === 'kept' && preRevisionExecCodes ? preRevisionExecCodes : execCodes;
-        await panel.finalizeStreaming(segmentContent, finalExecCodes, view);
-        if (evt.unverified) {
-          const warn = 'Not verified — the assistant could not confirm this action took effect.';
-          panel.appendStreamedElement(ui.divText(warn, 'grokky-unverified-warning'));
-        }
-        cleanup();
-        resolve();
       });
 
       forSession(client.onError, (evt) => {

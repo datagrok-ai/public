@@ -112,7 +112,8 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
       workingLength,
       Math.min(workingLength, this.limit),
       (i1: number, i2: number) => {
-        return distanceMatrixData[linearizeFunc(i1, i2)];
+        // the matrix holds the upper triangle only: its index needs i1 < i2
+        return distanceMatrixData[i1 < i2 ? linearizeFunc(i1, i2) : linearizeFunc(i2, i1)];
       }
     );
 

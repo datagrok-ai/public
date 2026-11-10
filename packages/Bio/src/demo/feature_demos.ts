@@ -101,7 +101,7 @@ export async function sirnaDemo() {
   await df.meta.detectSemanticTypes();
   const tv = grok.shell.addTableView(df);
   tv.loadLayout(layout, true);
-  grok.shell.info('Hover over the oligo structrues to see modifications to different sugars, linkers and residues.', {timeout: 10});
+  grok.shell.info('Hover over the oligo structures to see modifications to different sugars, linkers and residues.', {timeout: 10});
   setTimeout(() => {
     df.currentCell = df.cell(0, 'oligo_helm');
   }, 300);

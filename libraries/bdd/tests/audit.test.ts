@@ -144,13 +144,16 @@ test('a scenario is audited when it passed as expected and carries no @known-fai
   assert.equal(shouldAudit(info('passed', 'passed', ['@journey', '@known-failure:12'])), false);
 });
 
-test('a console error is a finding unless an entry matches its text and, when it names one, where it came from', () => {
+test('a console error is a finding, its first line then at most 30 lines of its stack, unless an entry matches its text and, when it names one, where it came from', () => {
   const logged = [{message: 'TypeError: x is null\n    at f (a.js:1:1)', url: 'https://host/dist/package.js'},
     {message: 'ResizeObserver loop limit exceeded', url: ''}, {message: 'ResizeObserver loop limit exceeded', url: 'https://other/x.js'}];
   const found = errorFindings(logged, [{message: '^ResizeObserver loop', url: '^$', reason: 'browser noise'}]);
-  assert.deepEqual(found.map((f) => f.detail), ['TypeError: x is null (https://host/dist/package.js)',
+  assert.deepEqual(found.map((f) => f.detail), ['TypeError: x is null (https://host/dist/package.js)\n    at f (a.js:1:1)',
     'ResizeObserver loop limit exceeded (https://other/x.js)']);
   assert.ok(found.every((f) => f.audit === 'errors' && f.rule === 'console-error'));
+  const frames = Array.from({length: 40}, (_, i) => `    at f${i} (a.js:${i}:1)`);
+  const [long] = errorFindings([{message: ['E'.repeat(400), ...frames].join('\n'), url: ''}], []);
+  assert.deepEqual(long.detail.split('\n'), ['E'.repeat(300), ...frames.slice(0, 30)]);
 });
 
 test('a leaked record is one sentence with its first three frames; an entry matching its label or stack drops it', () => {

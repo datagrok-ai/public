@@ -483,7 +483,9 @@ export class TreeViewer extends EChartViewer {
       this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
       break;
 
+    // a click filter holds the rows of a branch of the old hierarchy; a removed column changes the hierarchy too
     case 'hierarchyColumnNames':
+      this.clearViewerFilter();
       this.chart.clear();
       this.render(false);
       break;

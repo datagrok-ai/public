@@ -491,6 +491,10 @@ M  END
     sketcherDialogs.forEach((it) => it.close());
   });
 
+  test('a filter that never got its column detaches without an error', async () => {
+    new SubstructureFilter().detach();
+  });
+
   test('removedDisabledFilterReleasesPeers', async () => { //Remove All deactivates a card before it removes it
     const df = await readDataframe('tests/spgi-100.csv');
     await grok.data.detectSemanticTypes(df);

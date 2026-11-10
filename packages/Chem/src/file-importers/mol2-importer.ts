@@ -110,10 +110,9 @@ class TriposToMolfileConverter {
   }
 
   private getIdxOfNextLine(): number {
-    if (this._str.at(this._currentIdx) !== '\n')
-      return this._str.indexOf('\n', this._currentIdx) + 1;
-    else
-      return this._str.indexOf('\n', this._currentIdx + 1) + 1;
+    const from = this._str.at(this._currentIdx) !== '\n' ? this._currentIdx : this._currentIdx + 1;
+    const lineEnd = this._str.indexOf('\n', from);
+    return lineEnd === -1 ? this._str.length : lineEnd + 1;
   }
 
   /** Returns 'true' if there is a next Tripos molecule to parse */
@@ -153,6 +152,13 @@ class TriposToMolfileConverter {
 
   private jumpToNextLine(): void {
     this._currentIdx = this.getIdxOfNextLine();
+  }
+
+  // jumps to the next atom or bond line; throws when the block has fewer lines than its molecule declares
+  private jumpToNextRecord(): void {
+    this.jumpToNextLine();
+    if (this._currentIdx >= this._str.length || this._str.at(this._currentIdx) === '@')
+      throw new Error('A mol2 block has fewer records than the molecule declares');
   }
 
   /** Construct molfile from the parsed atom and bond data  */
@@ -236,7 +242,7 @@ class TriposToMolfileConverter {
       throw new Error('No valid atom block');
 
     for (let i = 0; i < atomCount; ++i) {
-      this.jumpToNextLine();
+      this.jumpToNextRecord();
 
       const atomType = this.parseAtomType();
       if (atomType !== HYDROGEN) {
@@ -253,9 +259,10 @@ class TriposToMolfileConverter {
         this.jumpToNextColumn(); // jump to the Z coordinates column
         z.push(this.parseFloatValue());
 
-        for (let j = 0; j < 4; ++j) // jump to the last column with charge value
-          this.jumpToNextColumn();
-        charge.push(Math.round(this.parseFloatValue())); // charge values are integer in MDL molfiles
+        // the charge column is optional; from Z it is the fifth value of the line
+        const lineEnd = this.getIdxOfNextLine();
+        const chargeValue = this._str.substring(this._currentIdx, lineEnd).trim().split(/\s+/)[4];
+        charge.push(chargeValue === undefined ? 0 : Math.round(parseFloat(chargeValue))); // charge values are integer in MDL molfiles
         // todo: molfile charges are limited to the span from -15 to 15,
         // condider the corresponding exception
       } else
@@ -282,7 +289,7 @@ class TriposToMolfileConverter {
       throw new Error('No valid bond block');
 
     for (let i = 0; i < bondCount; ++i) {
-      this.jumpToNextLine();
+      this.jumpToNextRecord();
 
       const colsToSkip = this.isWhitespace(this._currentIdx) ? 2 : 1;
       for (let j = 0; j < colsToSkip; ++j)
@@ -347,9 +354,7 @@ class TriposToMolfileConverter {
       this.jumpToNextColumn();
 
     // let end = this._endIdx + 1;
-    let end = this._currentIdx + 1;
-    while (!this.isWhitespace(end))
-      ++end;
+    const end = this.getValueEndIdx(this._currentIdx + 1);
 
     let atomType = this._str.substring(this._currentIdx, end);
     // in case atom type column has values like C1 or F11, strip numbers
@@ -370,9 +375,7 @@ class TriposToMolfileConverter {
 
   /** Parse a numeric value depending on the functional argument  */
   private parseNumericValue(parserFunction: (str: string) => number): number {
-    let end = this._currentIdx + 1;
-    while (!this.isWhitespace(end))
-      ++end;
+    const end = this.getValueEndIdx(this._currentIdx + 1);
     const value = parserFunction(this._str.substring(this._currentIdx, end));
     return value;
   }
@@ -384,12 +387,17 @@ class TriposToMolfileConverter {
 
   /** Gets the idx of the next column relatively to this._currentIdx  */
   private getNextColumnIdx(): number {
-    let idx = this._currentIdx;
     // skip non-whitespace, if necessary
-    while (!this.isWhitespace(idx))
-      ++idx;
+    let idx = this.getValueEndIdx(this._currentIdx);
     // skip whitespace
     while (this.isWhitespace(idx))
+      ++idx;
+    return idx;
+  }
+
+  // the idx after the value [idx] is in: the next whitespace or the end of the file
+  private getValueEndIdx(idx: number): number {
+    while (idx < this._str.length && !this.isWhitespace(idx))
       ++idx;
     return idx;
   }

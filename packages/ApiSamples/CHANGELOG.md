@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Added data-access/db/catalogs.js (`grok.dapi.connections.getCatalogs`: the catalogs of a database server and the schemas of one of them)
+* Added dapi/docker-status.js (`grok.dapi.docker.getStatus()`: whether the server can run containers)
 * Added ui/widgets/u2-usage.js (`DG.U2.Usage`: a misuse reported, then thrown), u2-task.js (`Scope.root`, `build`, `task` with a serial queue, `subscribe`), u2-lens.js (`lens`, `afterFlush`), u2-operability.js (`DG.U2.operability`) and u2-build.js (`DG.U2.component` with a handle and a name)
 * Added ui/dialogs/pick-file.js (`ui.pickFileFromFiles`: one file, then several from one share) and ui/views/layout-bound-columns.js (`DG.ViewLayout.boundColumnNames` of a view state with a scatter plot and filters)
 * Added ui/widgets/u2-version.js (`DG.U2.version`, the engine version a u2 plugin checks on load) and ui/widgets/u2-thenable.js (`DG.U2.Scope.thenable`: which handler answers are waited for)

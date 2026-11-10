@@ -21,7 +21,9 @@ Feature: Form viewer
   reaction — a column renamed in the grid's Column Properties dialog renames its field and the
   label beside it (step 3, a deleted column, is the removed-column scenario: the field stays);
   Table switching — the Table property moves a default form to spgi-100's columns and back, and a
-  form built from columns chosen in that dialog shows spgi-100's columns too.
+  form built from columns chosen in that dialog shows spgi-100's columns too. Text typed into a numeric
+  field leaves the cell as it was (core#1192), and a JSON file with no form in it (a saved table layout,
+  a fixture of the nx features) is refused with "<file> is not a valid form file" (core#1138).
 
   Background:
     Given user is logged in
@@ -194,6 +196,8 @@ Feature: Form viewer
     When user enters "31" into the "field AGE" area of form viewer
     Then the value of "AGE" column in row 1 should be "31"
     And the "AGE" reading of form viewer should be "31"
+    When user enters "abc" into the "field AGE" area of form viewer
+    Then the value of "AGE" column in row 1 should be "31"
     When user enters "26" into the "field AGE" area of form viewer
     And user clicks on the "edit" area of form viewer
     Then the "editable" reading of form viewer should be "false"
@@ -299,6 +303,9 @@ Feature: Form viewer
     And form viewer should have a "field SEX" area
     And form viewer should not have a "field HEIGHT" area
     And the "AGE" reading of form viewer should be "26"
+    When user uploads "fixtures/nx/spgi-legend-position-old.layout" through folder open icon in form viewer
+    Then an error balloon containing "spgi-legend-position-old.layout is not a valid form file" should have been shown
+    And the "fields shown" reading of form viewer should be 3
     When user sets "columnNames" property of form viewer to "AGE, HEIGHT, WEIGHT"
     Then the "fields shown" reading of form viewer should be 3
     And no errors should have been logged

@@ -54,6 +54,29 @@ category('Dapi: connection', () => {
     }
   }, {stressTest: true});
 
+  test('deleting a connection deletes its queries', async () => {
+    const dcName = `Local DG Test ${DG.Utils.randomString(8)}`;
+    let dc: _DG.DataConnection | null = DG.DataConnection.create(dcName, dcParams);
+    dc.newId();
+    let query: _DG.DataQuery | null = null;
+    try {
+      dc = await grok.dapi.connections.save(dc);
+      const q = dc.query(`${dcName} query`, 'select 1');
+      q.newId();
+      query = await grok.dapi.queries.save(q);
+      expect((await grok.dapi.queries.find(query.id))?.id, query.id);
+      await grok.dapi.connections.delete(dc);
+      dc = null;
+      expect(await grok.dapi.queries.find(query.id) == undefined);
+      query = null;
+    } finally {
+      if (query)
+        await grok.dapi.queries.delete(query);
+      if (dc)
+        await grok.dapi.connections.delete(dc);
+    }
+  });
+
   test('JS postprocess', async () => {
     const script = `//language: javascript
 //input: dataframe result
@@ -84,6 +107,13 @@ FROM generate_series(1, 10) AS s(i);
     expect(df.columns.length, 9);
     await grok.dapi.queries.delete(query);
   });
+
+  test('getCatalogs lists the databases of the server, the connection\'s own among them', async () => {
+    const dc = await grok.dapi.connections.filter('name = "Datagrok"').first();
+    const catalogs = await grok.dapi.connections.getCatalogs(dc);
+    expect(catalogs.includes((dc.parameters as any)['db']), true);
+  }, {skipReason:
+    'Development only: reads the database list of the stand\'s own server; unskip while working on catalogs'});
 
   after(async () => {
     // Safety net for any leaked test connections (names are randomized per run).

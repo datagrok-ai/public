@@ -18,6 +18,7 @@ import {
 } from './run-storage';
 import {getRunName} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {showVueDialog} from '../../utils';
+import {RunMetadataFields} from './RunMetadataFields';
 import './RunStorage.css';
 
 export type SaveRunResult = {metadata: RunMetadata, target: SaveTarget, place: Place, outcomes?: SpaceAddOutcome[]};
@@ -306,22 +307,12 @@ export const SaveRunDialog = Vue.defineComponent({
         </div>
         <div class='c2-runs-form'>
           { isLinkingSeveral && renderOutcomes() }
-          { !isLinkingSeveral && <label class='c2-runs-field'>
-            <span>Name</span>
-            <input class='ui-input-editor' value={name.value}
-              onInput={(e: Event) => {name.value = (e.target as HTMLInputElement).value; error.value = undefined;}}
-              onKeydown={(e: KeyboardEvent) => e.key === 'Enter' && save()}/>
-          </label> }
-          { !isLinking && <label class='c2-runs-field'>
-            <span>Description</span>
-            <textarea class='ui-input-editor' rows={5} value={description.value}
-              onInput={(e: Event) => description.value = (e.target as HTMLTextAreaElement).value}/>
-          </label> }
-          { !isLinking && <label class='c2-runs-field'>
-            <span>Tags</span>
-            <input class='ui-input-editor' placeholder='Comma-separated' value={tagsText.value}
-              onInput={(e: Event) => tagsText.value = (e.target as HTMLInputElement).value}/>
-          </label> }
+          { !isLinkingSeveral && <RunMetadataFields name={name.value} description={description.value}
+            tags={tagsText.value} showDetails={!isLinking}
+            onUpdate:name={(value: string) => {name.value = value; error.value = undefined;}}
+            onUpdate:description={(value: string) => description.value = value}
+            onUpdate:tags={(value: string) => tagsText.value = value}
+            onSubmit={save}/> }
           { error.value && <div class='c2-runs-error'>{error.value}</div> }
           { !error.value && hasPlace.value && canWrite.value === false &&
             <div class='c2-runs-error'>You can view this space but not save to it</div> }
@@ -334,6 +325,7 @@ export const SaveRunDialog = Vue.defineComponent({
           <div class='c2-runs-button-group'>
             <button class='ui-btn' onClick={() => emit('done', null)}>Cancel</button>
             <button class={['ui-btn', 'ui-btn-ok', blocked.value || isChecking.value ? 'd4-disabled' : '']}
+              aria-disabled={blocked.value || isChecking.value ? 'true' : undefined}
               title={blocked.value} onClick={save}>
               {isLinkingSeveral ? `Add (${outcomes.value.length ? addedCount.value : props.linkedRuns.length})` :
                 (isLinking ? 'Add' : 'Save')}</button>

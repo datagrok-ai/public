@@ -2,31 +2,24 @@
 
 Written during the color scheme editor round of 14 Oct 2026 (TestTrack `Viewers/color-coding-ui.md`
 steps 9-12, the help's "Color code columns", and the closed Jira and GitHub tickets on color coding),
-reviewed on 18 Oct 2026 against the library's rules (`public/libraries/bdd/CLAUDE.md`).
+reviewed on 18 Oct 2026 against the library's rules (`public/libraries/bdd/CLAUDE.md`) and in the BDD PR
+round of 8 Nov 2026.
 
 ## Resolved
 
-- **A category's colour in the categorical editor (public#3413).** The `item` kind has a `color bar` part
-  (`.d4-legend-item-bar`, the bar that opens the picker), so `color-coding-editor-conditional-and-categorical`
-  picks a colour for "M" with the existing picker step and claims the column's categorical colour and the
-  colour the grid paints the cell, before Off clears the column.
-- **The text flag unset.** Switching Apply to back to background stored the tag as the string "null"
-  (`GridColumn.isTextColorCoded` set it without `removeIfNull`, `grid_column.dart`); it is now removed, pinned
-  by ApiTests `Grid: Color Coding` "colorCoding.text", and `the text of {string} column should not be
-  color-coded` claims both directions of Apply to in `color-coding-editor-linear`.
-- **A saved layout bringing the text coloring back (GROK-13668).** What a layout stores: ApiTests `Grid: Color
-  Coding` "colorCoding.api" now sets the text flag on SEX and claims it after the layout is applied to a new
-  view; the scenario is gone from the feature.
-- **The conditional rows and the stops of "Edit color scheme".** A map input's row editors are named ("Key N" /
-  "Value N", `map_input.dart`); the conditional editor calls its rows "Pattern N" with a "Color N" bar, the scheme
-  editor its stops "Stop N" with a "Stop N color" bar, and a colour input's box is a button named by its caption
-  ("Below min"), all in core d4. The `text input` kind takes a map input's named row editor. The features type a
-  pattern that takes cells over, a single value that colours the cells equal to it (public#1967) and an invalid
-  pattern with its "Invalid pattern" tooltip, pick a stop's colour and Below min's.
+- **A category's colour in the categorical editor (public#3413)**: the `color bar` part of an `item`, claimed in
+  `color-coding-editor-conditional-and-categorical`.
+- **The text flag unset**: ApiTests `Grid: Color Coding` "colorCoding.text"; both directions of Apply to in
+  `color-coding-editor-linear`.
+- **A saved layout bringing the text coloring back (GROK-13668)**: ApiTests `Grid: Color Coding` "colorCoding.api".
+- **The conditional rows and the stops of "Edit color scheme"** are named ("Pattern N", "Stop N", "Below min"):
+  claimed in the editor features.
 
 ## Still open
 
-Nothing planned.
+- **core#1153** — a colour-coded Split column no longer paints the bar chart's category names (public#3621
+  regressed); claim it in `bar-chart/bar-chart.feature` once fixed.
+- **Needs a ruling**: a one-value column coloured linearly or conditionally paints nothing.
 
 ## Won't do
 
@@ -40,10 +33,8 @@ Nothing planned.
 - **Pixel checks of a renderer, a correlation plot's mirrored cells (GROK-20919)**: renderer.
 - **The legend's own picker, its Cancel and a second pick (github-3132)**: `legend/legend-across-viewers.feature`;
   a conditional coloring's legend: `guides/scatter-plot-conditional-colors.feature`.
-
-## Closed issues the regression round of 26 Oct 2026 could not claim
-
-- **A colour-coded category column paints the bar chart's category names (public#3621)** regressed: filed
-  as core#1153; claim it in `bar-chart/bar-chart.feature` once fixed.
-- **Pick Up Coloring / Apply Coloring is per grid** — by design (Olesia, 27 Oct 2026); across tables it is
-  Pick Up / Apply that carries a colouring (`color-coding-pick-up-apply-and-viewers.feature`, public#1887).
+- **Pick Up / Apply Coloring across grids**: per grid by design (Olesia, 27 Oct 2026); across tables it is Pick Up /
+  Apply (public#1887).
+- **Bin... with 0 bins (core#1171)**: Dart `Conditional color coding: Bin... accepts only 1 to 500 bins`.
+- **A value on a shared bin edge, a Min typed above Max, a cycle of linked colourings, a linked source renamed or
+  removed (core#1139), stop values typed out of order**: colour arithmetic, not UI checks.

@@ -3,6 +3,7 @@
 ## v.next
 
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
+* Tests: The ribbon scenario no longer fails on a stand where a package with a designer function (Reinvent4) is published
 * Hit Triage, Hit Design, PeptiHit, PepTriage: Fixed a campaign link (`?campaignId=`) opening only the landing when the address changed while the app started: the apps take the campaign from the call the link opens them with
 * PeptiHit: Added its own help page (README_PH.md): HELM designs converted to molecules, templates, campaigns, the Progress Tracker, custom functions and permissions; the landing, its Learn more and the template editor open it
 * Hit Design, PeptiHit: Fixed molecules and cards cut off in the Progress Tracker at 1366 px: lanes are as wide as their cards (the campaign's card layout, else the platform's) and scroll sideways when they do not fit; five lanes fit at 1920

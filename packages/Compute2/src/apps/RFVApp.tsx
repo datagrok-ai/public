@@ -7,12 +7,13 @@ import dayjs from 'dayjs';
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
 import {getRunName, getViewersHook} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
-import {catchError, debounceTime, switchMap, withLatestFrom} from 'rxjs/operators';
+import {catchError, debounceTime, first, switchMap} from 'rxjs/operators';
 import {useUrlSearchParams} from '@vueuse/core';
 import {useSubscription} from '@vueuse/rxjs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import type {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {compositorOverlay} from '../directives/compositor-overlay';
+import {createCompositorOverlayService} from '../composables/use-compositor-overlay';
 import {canUseResults, pinView} from '../utils';
 import {defaultRunName, modelLabel} from '../components/RunStorage/run-storage';
 import {openSaveRunDialog} from '../components/RunStorage/SaveRunDialog';
@@ -49,13 +50,13 @@ export const RFVApp = Vue.defineComponent({
     const viewersHookMakerName = getViewersHook(currentFuncCall.value.func);
 
     const runRequests$ = new Subject<true>();
-    const isFormValid$ = new BehaviorSubject<boolean>(false);
+    const isRunning$ = new BehaviorSubject<boolean>(false);
+    const inputChanges$ = new Subject<void>();
 
     useSubscription(runRequests$.pipe(
       debounceTime(RUN_DEBOUNCE_TIME),
-      withLatestFrom(isFormValid$),
-      switchMap(([, isValid]) => {
-        if (!isValid || currentCallState.value.isRunning)
+      switchMap(() => {
+        if (!currentCallState.value.isRunnable || currentCallState.value.isRunning)
           return of(null);
         // Contain run() failures: an error reaching the outer subscription terminates it and kills autorun.
         return from(run()).pipe(
@@ -71,7 +72,7 @@ export const RFVApp = Vue.defineComponent({
     const currentCallState = Vue.ref<FuncCallStateInfo>(
       {isRunning: false, isOutputOutdated: true, isRunnable: false, runError: undefined, pendingDependencies: []},
     );
-    const overlayActive = Vue.ref(false);
+    const overlayService = createCompositorOverlayService();
     const currentView = useDgView();
 
     const func = Vue.shallowRef<DG.Func | undefined>(undefined);
@@ -145,8 +146,9 @@ export const RFVApp = Vue.defineComponent({
 
     const run = async () => {
       if (!currentFuncCall.value) return;
-      overlayActive.value = true;
       updateCallState({isRunning: true});
+      isRunning$.next(true);
+      await overlayService.show();
       try {
         await currentFuncCall.value.call(undefined, undefined, {processed: true, report: false});
         currentFuncCall.value.started = dayjs();
@@ -156,7 +158,8 @@ export const RFVApp = Vue.defineComponent({
       } finally {
         if (currentCallState.value.isRunning)
           updateCallState({isRunning: false});
-        overlayActive.value = false;
+        overlayService.hide();
+        isRunning$.next(false);
       }
     };
 
@@ -167,14 +170,21 @@ export const RFVApp = Vue.defineComponent({
       return entryFromLiveCall(fc, currentCallState.value, snapshotName(name || modelLabel(fc.func)), metadata);
     };
 
-    const onInputChanged = () => {
-      pinView(currentView);
+    // a change made during a run applies once the run ends, so the run can't mark its outputs current over it
+    useSubscription(inputChanges$.pipe(
+      switchMap(() => isRunning$.pipe(first((running) => !running))),
+    ).subscribe(() => {
       currentFuncCall.value.options[OUTPUT_OUTDATED_PATH] = 'true';
       updateCallState({isOutputOutdated: true});
-      searchParams.id = undefined;
-      isEdited.value = true;
       if (isRunningOnInput.value)
         runRequests$.next(true);
+    }));
+
+    const onInputChanged = () => {
+      pinView(currentView);
+      searchParams.id = undefined;
+      isEdited.value = true;
+      inputChanges$.next();
     };
 
     const openRequests$ = new Subject<DG.FuncCall>();
@@ -243,7 +253,7 @@ export const RFVApp = Vue.defineComponent({
           onStepRunChosen={(run) => openRequests$.next(run)}
           onRunClicked={() => runRequests$.next(true)}
           onFormReplaced={onUpdateForm}
-          onFormValidationChanged={(val) => isFormValid$.next(val)}
+          onFormValidationChanged={(val) => updateCallState({isRunnable: val})}
           onFormInputChanged={onInputChanged}
           onSaveToHistory={() => saveRunWithDialog()}
           onCompareRequested={() => addToComparison(currentSnapshot(), currentFuncCall.value.func)}
@@ -252,7 +262,7 @@ export const RFVApp = Vue.defineComponent({
         />
         {feedbackItems.value.length > 0 &&
           <RibbonMenu groupName='Feedback' items={feedbackItems.value}/>}
-      </div>, [[compositorOverlay, overlayActive.value]])
+      </div>, [[compositorOverlay, overlayService.isActive.value, undefined, {allowInput: isRunningOnInput.value}]])
     );
   },
 });

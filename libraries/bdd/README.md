@@ -652,6 +652,24 @@ regenerated from features rather than recorded by hand.
 Guides live under `features/guides/` and run with the rest of the suite, in the full shell: an
 answer that stops being true fails a test.
 
+A feature tagged `@demo` (or filmed with `--demo`) is a demo clip, one of several cut into a showcase
+video, under `features/demos/`: a 1920×1080 video of a 1600×900 window filmed at twice its density
+(`@viewport:<w>x<h>` picks another window: `1920x1080` for a wide layout, `1280x720` for a close-up),
+opened by a title card — the feature's name, the scenario's name and the scenario's own description
+(the text under `Scenario:`), wrapped, never cut — then the page with no caption strip, dimming or
+zoom, its presses still marked, at a slightly quicker pace that rests on each step as long as its
+change takes to take in. Every `Given` (wherever it stands, the set-up arranging the grid included:
+`the "<col>" column of the grid is <n> px wide`, `the rows of the grid are <n> px tall`, `the column
+headers of the grid are <n> px tall`, `the grid shows only the columns "<a, b>"`, `the context panel is
+closed`, `the notification balloons are closed`, `the tooltip is hidden`, `the viewers have settled`) and
+every uncaptioned check stay off camera; an action is cut straight to the page the steps after it settled
+on. `the video says "<text>"` puts a line over the page for as long as it takes to
+read (a guide shows it as a caption; a test does nothing). `review-sheet.png` and `timeline.json`
+beside the video are for its review. `py tool/guide-render.py --reel <out.mp4> <clip dir>…` cuts rendered
+clips together, in the order given, into one video (each clip also copied beside it as `NN -
+<scenario>.mp4`, and `<out>.md` saying where each starts). The `bdd-answer` skill, section 5, has the
+conventions.
+
 ## Generated specs
 
 One `test()` per scenario and per outline row, one `test.step` per Gherkin step located at the

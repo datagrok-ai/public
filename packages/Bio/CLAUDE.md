@@ -119,7 +119,7 @@ Other packages depend on these implementations: **Helm**, **Peptides**, **Biostr
 - `seqHelper: ISeqHelper` — sequence operations facade
 - `monomerLib: IMonomerLib` — current merged monomer library
 - `monomerSets: IMonomerSet` — monomer set preferences
-- `properties: BioPackageProperties` — observable package settings (FontSize, MaxMonomerLength, TooltipWebLogo, DefaultSeparator)
+- `properties: BioPackageProperties` — package settings as loaded at init (FontSize, MaxMonomerLength, ShowConnections, TooltipWebLogo, DefaultSeparator); renderers read the live values through `utils/renderer-defaults.ts` (`getBioRendererDefaults()`)
 - `completeInit()` — wires up all singletons after loading
 
 ### Semantic Type Detector — `detectors.js`
@@ -176,6 +176,7 @@ Key methods: `detectSeparator()`, `detectAlphabet()`, `getAlphabetSimilarity()`,
 |---|---|
 | `cell-renderer.ts` | `MacromoleculeSequenceCellRenderer` — main cell renderer for macromolecule columns. Delegates to `MonomerPlacer` back-end from bio library. Also `MacromoleculeDifferenceCellRenderer` / `MacromoleculeDoubleCellRenderer` for showing diffs between two aligned sequences. |
 | `monomer-cell-renderer.ts` | `MonomerCellRenderer` — renders individual monomer cells with color from library. Extends `MonomerCellRendererBase`. |
+| `renderer-defaults.ts` | `getBioRendererDefaults()` — the sequence renderers' package defaults (FontSize, MaxMonomerLength with 'long' = 50, ShowConnections) read live from `_package.settings`; `parseBioRendererDefaults()` the pure parsing. Bio's renderer providers (`cell-renderer.ts`, `biln.ts`) pass them to `MonomerPlacer` as props |
 | `monomer-cell-renderer-base.ts` | `MonomerCellRendererBase` — abstract base that async-loads monomer library, invalidates grid on lib change |
 | `convert.ts` | `convert()` — dialog for notation conversion (FASTA ↔ SEPARATOR ↔ HELM ↔ BILN). `convertDo()` performs actual conversion via `ISeqHandler`. |
 | `get-region.ts` | `getRegionDo()` — extracts positional sub-region from macromolecule column via `ISeqHandler.getRegion()` |
@@ -389,6 +390,12 @@ vocabulary). What the package exposes for them, and must keep:
   `monomer <M> at position <label>` (CSS px of the canvas, the last laid-out range); readings
   `positions shown`, `rows shown`, `rows selected`. `isRenderPending` is true from a render
   request to the paint; `onRendered` fires after every render pass.
+- A sequence cell's renderer back (`MonomerPlacer`, kept in the grid column's `temp.rendererBack`, or in the
+  table column's for a notation provider such as BILN's; Helm's `HelmGridCellRendererBack` for HELM) answers
+  `getMonomerPoint(gridCell, position)`: where it drew that monomer, px from the cell's top left, the point its
+  hover hit test maps back to it. The bdd step `user hovers over monomer N of the "cell R of <col>" area of grid`
+  (the bdd library's viewers tier, `bindings/tiers/viewers/widgets.ts`) rests the pointer there and waits for
+  the monomer's tooltip.
 - The MSA header over a long sequence column (`MSAScrollingHeader`, installed by
   `widgets/sequence-scrolling-widget.ts`) adds to the grid's status, while the header is on screen,
   the readings `header tracks of <col>` (the tracks shown, top to bottom: `Conservation, WebLogo,
@@ -436,6 +443,7 @@ Test entry point: `src/package-test.ts` — imports all test files, exports `tes
 | `seq-handler-get-helm-tests.ts` | HELM conversion from other notations |
 | `renderers-test.ts` | Cell renderer behavior |
 | `renderers-monomer-placer-tests.ts` | MonomerPlacer rendering engine |
+| `renderers-connections-tests.ts` | Category `renderers: connections`: connections drawn as lines (flat positions, lanes, rings, combs, fit by height, one line per chain), canonical symbols when drawn, the column tag over the package default, multiline chain breaks, stacked hit bounds, the bond tooltip, a font size reaching every grid, package defaults (`renderer-defaults.ts`) |
 | `converters-test.ts` | Notation conversion |
 | `bio-tests.ts` | General bio functionality |
 | `helm-tests.ts` | HELM-specific operations |
@@ -489,6 +497,7 @@ Test entry point: `src/package-test.ts` — imports all test files, exports `tes
 | `FontSize` | int | 12 | Font size for monomer symbols in renderer |
 | `MaxMonomerLength` | string | "4" | Max displayed monomer symbol length ("long" = unlimited) |
 | `TooltipWebLogo` | bool | true | Show WebLogo in column header tooltip |
+| `ShowConnections` | bool | true | Draw BILN cyclizations and inter-chain bonds as lines in sequence cells when rows are tall enough (column override: the `.mm.cellRenderer.showConnections` tag, Renderer Settings "Show Connections") |
 | `DefaultSeparator` | string | "." | Default separator for notation conversion |
 
 ## Data Files
