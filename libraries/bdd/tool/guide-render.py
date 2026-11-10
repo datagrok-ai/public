@@ -9,15 +9,28 @@ window is filmed at twice its density (the manifest's `scale`).
 --help makes a help-page GIF: no title card, caption strip or dimming, no zoom, the set-up (the
 Given steps) left out, a pause before the first action and a longer one on the result.
 
+--demo makes a demo clip, one of several cut into a longer video: always 1920×1080, a title card
+(the scenario, the feature, the description, wrapped to fit), then the page with no caption strip,
+dimming or zoom, the presses still marked. The set-up (Given steps) and the checks are left out but
+for those the feature captioned; a check's result shows as the page settles on it. A note (`the video
+says …`, or a caption) is a line over the page for as long as it takes to read. The pace is a little
+quicker, and a step rests as long as its change takes to take in. review-sheet.png (the last frame of
+every step) and timeline.json (when each step starts and ends) are written for a review.
+
+--reel <out.mp4> cuts demo clips (the folders a --demo rendering wrote) together, in the order given, into
+one video; each clip is copied beside it as `NN - <scenario>.mp4`, and `<out>.md` lists them with where
+each starts in the reel.
+
 The pointer goes where the page says it went, and never skips: every frame's pointer continues
 from the frame before, so an action starts where the one before it ended — a skip is an error,
 not a frame. A press is marked where it landed, under the pointer's tip: a yellow ring for the
 left button, a green one for the right. audit.png shows every press as the video shows it, and
 audit.json how far the mark's centre and the pointer's tip are from the press.
 
-    py tool/guide-render.py <scenario dir> [--gif] [--help] [--fps 30] [--hold 1.4] [--travel 0.7]
+    py tool/guide-render.py <scenario dir> [--gif] [--help | --demo] [--fps 30] [--hold 1.4] [--travel 0.7]
         [--zoom 1.8] [--zoom-time 0.8] [--gif-fps 12] [--colors 256] [--gif-width <px>] [--end-hold <s>]
         [--ffmpeg <path>] [--quiet]
+    py tool/guide-render.py --reel <out.mp4> <demo clip dir>…   cuts the clips together in that order
     py tool/guide-render.py --selftest <dir>      renders a synthetic guide there, and checks its audit
 """
 import glob
@@ -29,7 +42,7 @@ import subprocess
 import sys
 
 try:
-    from PIL import Image, ImageChops, ImageDraw, ImageFont
+    from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 except ImportError:
     print('guide-render: Pillow is missing — py -m pip install pillow', file=sys.stderr)
     sys.exit(3)
@@ -44,7 +57,10 @@ VIDEO_W, VIDEO_H = 1600, 1000   # the video and the stills, caption strip includ
 PULSE_S = 0.5   # how long a press ripples
 MAX_STEP_PX = 70   # the farthest the pointer moves between two frames, in pixels of a 1080p page: a longer way takes more frames
 AUDIT_TOLERANCE_PX = 2   # how far, in video pixels, a press mark's centre or the pointer's tip may sit from the press
-BEAT_S = 0.15   # how long a picture taken in the middle of a step (typing, a wheel notch) is shown
+BEAT_S = 0.15   # how long a picture taken in the middle of a step (typing, a wheel turn) is shown
+DEMO_W, DEMO_H = 1920, 1080   # a demo clip, whatever window it was filmed in
+DEMO_KICKER = (110, 180, 235)
+NOTE_BOX = (16, 20, 28)
 
 
 def find_ffmpeg(explicit):
@@ -71,15 +87,58 @@ def has_encoder(ffmpeg, name):
     return f' {name} ' in out
 
 
-def load_font(size):
-    for path in ['C:/Windows/Fonts/segoeui.ttf', 'C:/Windows/Fonts/arial.ttf',
-                 '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', '/System/Library/Fonts/Helvetica.ttc']:
+def load_font(size, bold=False):
+    faces = [('C:/Windows/Fonts/segoeuib.ttf', 0), ('C:/Windows/Fonts/arialbd.ttf', 0),
+             ('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 0), ('/System/Library/Fonts/Helvetica.ttc', 1)] if bold else \
+        [('C:/Windows/Fonts/segoeui.ttf', 0), ('C:/Windows/Fonts/arial.ttf', 0),
+         ('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 0), ('/System/Library/Fonts/Helvetica.ttc', 0)]
+    for path, index in faces:
         if os.path.exists(path):
-            return ImageFont.truetype(path, size)
+            return ImageFont.truetype(path, size, index=index)
     try:
         return ImageFont.load_default(size)
     except TypeError:
         return ImageFont.load_default()
+
+
+def wrap(d, text, font, width):
+    """The text in lines no wider than `width`, broken between words (a word wider than the line is a line)."""
+    lines, line = [], ''
+    for word in text.split():
+        candidate = (line + ' ' + word).strip()
+        if line and d.textlength(candidate, font=font) > width:
+            lines.append(line)
+            line = word
+        else:
+            line = candidate
+    return lines + [line] if line else lines
+
+
+def balanced(d, text, font, width):
+    """The lines of `text` at the narrowest width that still needs no more lines than `width` does: lines of
+    even length, no word left alone on the last."""
+    lines = wrap(d, text, font, width)
+    if len(lines) < 2:
+        return lines
+    lo, hi = max(d.textlength(w, font=font) for w in text.split()), width
+    while hi - lo > 2:
+        mid = (lo + hi) / 2
+        if len(wrap(d, text, font, mid)) <= len(lines):
+            hi = mid
+        else:
+            lo = mid
+    return wrap(d, text, font, hi)
+
+
+def fit_text(d, text, size, least, width, max_lines, bold=False):
+    """The largest font from `size` down to `least` that sets the text in at most `max_lines` balanced lines
+    of `width`; at the smallest size every line is kept, however many — a title card never cuts its text."""
+    for s in range(size, least - 1, -2):
+        font = load_font(s, bold)
+        lines = balanced(d, text, font, width)
+        if len(lines) <= max_lines:
+            return font, lines
+    return font, lines
 
 
 def ease(t):
@@ -118,14 +177,19 @@ def is_small(box):
 
 
 class Renderer:
-    def __init__(self, folder, fps, hold, travel, zoom, zoom_time=0.8, help=False):
+    def __init__(self, folder, fps, hold, travel, zoom, zoom_time=0.8, help=False, demo=False):
         self.folder = folder
         self.fps = fps
         self.help = help
+        self.demo = demo
         self.hold = hold
         self.travel = travel
-        self.zoom = 1.0 if help else zoom
+        self.zoom = 1.0 if help or demo else zoom
         self.zoom_time = zoom_time
+        # a demo keeps a little quicker pace wherever a guide waits for its caption to be read: the rest
+        # before a press, the ripple, a stop on a menu's way, the step's picture before its result, a typing beat
+        self.rest_s, self.pulse_s, self.leg_s, self.cut_s, self.beat_s = \
+            (0.2, 0.42, 0.22, 0.12, 0.1) if demo else (0.4, PULSE_S, 0.4, 0.3, BEAT_S)
         with open(os.path.join(folder, 'steps.json'), encoding='utf-8') as f:
             self.manifest = json.load(f)
         # the page records CSS pixels; the pictures have `scale` times as many. A guide framed to a part
@@ -136,63 +200,128 @@ class Renderer:
         if self.frame_box:
             self.frame_box = {k: round(v * scale) for k, v in self.frame_box.items()}
         fx, fy = (self.frame_box['x'], self.frame_box['y']) if self.frame_box else (0, 0)
+        # the keyword each step stands under: an And or But takes the one before it
+        kind = 'Given'
+        for s in self.manifest['steps']:
+            if s['keyword'] not in ('And', 'But', '*'):
+                kind = s['keyword']
+            s['type'] = kind
+        self.steps = [s for s in self.manifest['steps'] if self.shown(s)]
+        first_name = self.steps[0]['before'] if self.steps else self.manifest['steps'][0]['before']
+        # a demo is drawn at the video's size: each picture is shrunk once, as it is read, and every point
+        # and box with it
+        self.k = 1.0
+        self.cache = {}
+        if demo:
+            raw = self._raw(first_name)
+            self.k = min(1.0, DEMO_W / raw.width, DEMO_H / raw.height)
+        k = self.k
 
         def place(box):
-            box.update(x=box['x'] * scale - fx, y=box['y'] * scale - fy, width=box['width'] * scale, height=box['height'] * scale)
+            box.update(x=(box['x'] * scale - fx) * k, y=(box['y'] * scale - fy) * k, width=box['width'] * scale * k,
+                       height=box['height'] * scale * k)
         for step in self.manifest['steps']:
             for box in [step.get('target')] + [leg.get('target') for leg in step.get('legs', [])]:
                 if box:
                     place(box)
             for leg in step.get('legs', []):
                 for p in leg.get('pointer', []):
-                    p['x'] = p['x'] * scale - fx
-                    p['y'] = p['y'] * scale - fy
+                    p['x'] = (p['x'] * scale - fx) * k
+                    p['y'] = (p['y'] * scale - fy) * k
                     if p.get('box'):
                         place(p['box'])
         self.scale = scale
-        self.steps = [s for s in self.manifest['steps'] if s['kind'] != 'setup' and not (help and self.is_given(s))]
-        first = self._image(self.steps[0]['before'] if self.steps else self.manifest['steps'][0]['before'])
+        first = self._image(first_name)
         self.w, self.h = first.width & ~1, first.height & ~1
         # marks and the pointer keep their size on the page: twice the pixels where the page has twice the density
-        self.s = max(self.h / 1080, scale)
+        self.s = max(self.h / 1080, scale * k)
         self.big = load_font(max(20, self.h // 18))
-        self.cursor = cursor_sprite(max(1.0, self.h / 700, 1.2 * scale))
+        self.cursor = cursor_sprite(max(1.0, self.h / 700, 1.2 * scale * k))
         # the caption sits above the page: nothing of the page is covered, and a player's timeline
         # lands on the bottom edge. The page keeps the pixels it was filmed at (every box, pointer
         # and zoom is in them); the strip is as tall as makes page plus strip the video's aspect
         # (120 px over a 1080p page), and the composed frame is downsampled to the video size —
-        # never upsampled, so a small capture stays as it is
-        self.bar_h = 0 if help else max(int(self.h * 0.085), round(self.w * VIDEO_H / VIDEO_W) - self.h) & ~1
+        # never upsampled, so a small capture stays as it is. A demo has no strip: its page is
+        # centred in the 1080p frame
+        self.bar_h = 0 if help or demo else max(int(self.h * 0.085), round(self.w * VIDEO_H / VIDEO_W) - self.h) & ~1
         self.out_h = self.h + self.bar_h
-        scale = min(1.0, VIDEO_W / self.w, VIDEO_H / self.out_h)
-        self.video = (int(self.w * scale) & ~1, int(self.out_h * scale) & ~1)
+        if demo:
+            self.video = (DEMO_W, DEMO_H)
+            self.pad = ((DEMO_W - self.w) // 2, (DEMO_H - self.h) // 2)
+        else:
+            scale = min(1.0, VIDEO_W / self.w, VIDEO_H / self.out_h)
+            self.video = (int(self.w * scale) & ~1, int(self.out_h * scale) & ~1)
+            self.pad = (0, 0)
         self.font = load_font(max(14, self.bar_h // 3))
         self.small = load_font(max(12, self.bar_h // 4))
         self.cur = (self.w / 2, self.h / 2)
         self.drawn = None
         self.frame_no = 0
         self.presses = []
+        # the line a demo shows over the page, while it lasts; the last frame composed without it
+        self.note = None
+        self.plain = None
+        # where each part of the video starts (the title, every step, the end): timeline.json, review-sheet.png
+        self.marks = []
+        if demo:
+            self.settle_results()
+
+    def shown(self, step):
+        """What the video shows: never the set-up; in a help GIF or a demo no Given step either; a demo
+        shows a check only when the feature captioned it, and a help GIF no note."""
+        if step['kind'] == 'setup':
+            return False
+        if step['kind'] == 'note':
+            return not self.help
+        if (self.help or self.demo) and step['type'] == 'Given':
+            return False
+        return not (self.demo and step['kind'] == 'check' and not step.get('captioned'))
+
+    def settle_results(self):
+        """A demo leaves its checks and its set-up out, not what they waited for or arranged: the page an
+        action led to once the steps after it passed (a column computed, an analysis drawn, the new column
+        sized to show its sequences) is the action's result."""
+        steps = self.manifest['steps']
+        shown = {id(s) for s in self.steps}
+        for i, step in enumerate(steps):
+            if id(step) not in shown or step['kind'] not in ('action', 'note'):
+                continue
+            for later in steps[i + 1:]:
+                # a table opened off camera is the next scene, not this step's result
+                if id(later) in shown or later.get('view', step.get('view')) != step.get('view'):
+                    break
+                step['settled'] = later['after']
 
     def is_given(self, step):
         """A set-up step: a Given, or an And or But after one."""
-        kind = step['keyword']
-        for s in self.manifest['steps'][:self.manifest['steps'].index(step) + 1]:
-            if s['keyword'] not in ('And', 'But', '*'):
-                kind = s['keyword']
-        return kind == 'Given'
+        return step['type'] == 'Given'
 
-    def _image(self, name):
+    def _raw(self, name):
         img = Image.open(os.path.join(self.folder, name)).convert('RGB')
         if self.frame_box:
             b = self.frame_box
             img = img.crop((b['x'], b['y'], b['x'] + b['width'], b['y'] + b['height']))
-        if hasattr(self, 'w') and (img.width != self.w or img.height != self.h):
+        return img
+
+    def _image(self, name):
+        if name in self.cache:
+            return self.cache[name]
+        img = self._raw(name)
+        if self.k < 1:
+            img = img.resize((max(2, round(img.width * self.k)), max(2, round(img.height * self.k))), Image.LANCZOS)
+        if not hasattr(self, 'w'):
+            return img
+        if img.width != self.w or img.height != self.h:
             img = img.crop((0, 0, self.w, self.h))
+        # a picture is read again for every stop and hold of its step: the last few are kept, never drawn on
+        if len(self.cache) >= 24:
+            self.cache.pop(next(iter(self.cache)))
+        self.cache[name] = img
         return img
 
     def spotlight(self, img, box, color=ACCENT):
-        """The frame with everything but the box dimmed and the box outlined — none in a help GIF."""
-        if self.help:
+        """The frame with everything but the box dimmed and the box outlined — none in a help GIF or a demo."""
+        if self.help or self.demo:
             return img
         pad = 6
         x0, y0 = max(0, box['x'] - pad), max(0, box['y'] - pad)
@@ -297,6 +426,12 @@ class Renderer:
         if zoom > 1.001 and anchor:
             x0, y0, x1, y1 = self.zoom_box(zoom, anchor)
             frame = frame.crop((x0, y0, x1, y1)).resize((self.w, self.h), Image.BILINEAR)
+        if self.demo:
+            if frame.size == self.video:
+                return frame
+            canvas = Image.new('RGB', self.video, NOTE_BOX)
+            canvas.paste(frame, self.pad)
+            return canvas
         canvas = Image.new('RGB', (self.w, self.out_h), BAR[:3])
         canvas.paste(frame, (0, self.bar_h))
         if caption is not None:
@@ -315,6 +450,8 @@ class Renderer:
         if zoom > 1.001 and anchor:
             x0, y0, x1, y1 = self.zoom_box(zoom, anchor)
             x, y = (x - x0) * self.w / (x1 - x0), (y - y0) * self.h / (y1 - y0)
+        if self.demo:
+            return x + self.pad[0], y + self.pad[1]
         return x * self.video[0] / self.w, (y + self.bar_h) * self.video[1] / self.out_h
 
     def frame(self, base, cursor=None, **kw):
@@ -328,26 +465,168 @@ class Renderer:
                                        f'({self.drawn[0]:.0f}, {self.drawn[1]:.0f}) to ({cursor[0]:.0f}, {cursor[1]:.0f})')
             self.drawn = self.cur = cursor
         self.frame_no += 1
-        return self.compose(base, cursor, **kw)
+        self.plain = self.compose(base, cursor, **kw)
+        return self.with_note(self.plain)
 
     def hold_frames(self, seconds, base, cursor=None, **kw):
         n = int(seconds * self.fps)
         if n <= 0:
             return
-        still = self.frame(base, cursor, **kw)
-        yield still
+        yield self.frame(base, cursor, **kw)
+        still = self.plain
         for _ in range(n - 1):
             self.frame_no += 1
-            yield still
+            yield self.with_note(still)
 
     def title_frames(self, base):
+        """The scenario's name over the first page, the feature's below it, each wrapped to fit."""
         layer = Image.new('RGBA', (self.w, self.h), (10, 14, 20, 150))
         frame = Image.alpha_composite(base.convert('RGBA'), layer).convert('RGB')
         d = ImageDraw.Draw(frame)
-        d.text((self.w / 2, self.h * 0.44), self.manifest['scenario'], font=self.big, fill=(255, 255, 255), anchor='mm')
-        d.text((self.w / 2, self.h * 0.44 + self.h * 0.09), self.manifest['feature'], font=self.font,
-               fill=(200, 206, 214), anchor='mm')
+        width = self.w * 0.9
+        big, title = fit_text(d, self.manifest['scenario'], self.big.size, max(14, round(self.big.size * 0.6)), width, 2)
+        small, sub = fit_text(d, self.manifest['feature'], self.font.size, max(12, round(self.font.size * 0.7)), width, 2)
+        big_lead, small_lead, gap = big.size * 1.2, small.size * 1.3, big.size * 0.5
+        y = self.h * 0.47 - (len(title) * big_lead + gap + len(sub) * small_lead) / 2
+        for line in title:
+            d.text((self.w / 2, y + big_lead / 2), line, font=big, fill=(255, 255, 255), anchor='mm')
+            y += big_lead
+        y += gap
+        for line in sub:
+            d.text((self.w / 2, y + small_lead / 2), line, font=small, fill=(200, 206, 214), anchor='mm')
+            y += small_lead
         yield from self.hold_frames(1.8, frame)
+
+    def demo_card(self, base):
+        """A demo's title card: the page it starts on, blurred and darkened, under the feature's name (small,
+        above), the scenario's (large) and the description — each wrapped to fit, never cut."""
+        vw, vh = self.video
+        page = self.compose(base).filter(ImageFilter.GaussianBlur(radius=vh / 120))
+        card = Image.alpha_composite(page.convert('RGBA'), Image.new('RGBA', self.video, (10, 14, 20, 190))).convert('RGB')
+        d = ImageDraw.Draw(card)
+        width = int(vw * 0.7)
+        title = self.manifest['scenario']
+        kicker = self.manifest.get('feature') or ''
+        body = self.manifest.get('description') or ''
+        # (font, lines, colour, leading, space after) from the top; a short rule between the title and the description
+        blocks = []
+        if kicker and kicker.lower() != title.lower():
+            blocks.append(fit_text(d, kicker.upper(), round(vh * 0.022), round(vh * 0.017), width, 2, bold=True) +
+                          (DEMO_KICKER, 1.4, round(vh * 0.02)))
+        blocks.append(fit_text(d, title, round(vh * 0.056), round(vh * 0.034), width, 3, bold=True) +
+                      ((255, 255, 255), 1.2, round(vh * 0.05)))
+        if body:
+            blocks.append(fit_text(d, body, round(vh * 0.029), round(vh * 0.019), width, 6) + ((212, 220, 230), 1.45, 0))
+        height = sum(len(lines) * font.size * lead + space for font, lines, _, lead, space in blocks[:-1]) + \
+            len(blocks[-1][1]) * blocks[-1][0].size * blocks[-1][3]
+        y = (vh - height) / 2
+        for i, (font, lines, colour, lead, space) in enumerate(blocks):
+            for line in lines:
+                d.text((vw / 2, y + font.size * lead / 2), line, font=font, fill=colour, anchor='mm')
+                y += font.size * lead
+            if i == len(blocks) - 2 and body:
+                rule = round(vh * 0.035)
+                d.rectangle((vw / 2 - rule, y + space / 2 - 2, vw / 2 + rule, y + space / 2 + 1), fill=DEMO_KICKER)
+            y += space
+        return card
+
+    def demo_title_frames(self, base):
+        """The card, faded in from dark (clips cut together meet in the dark), for as long as its words take to
+        read, then a dissolve into the page."""
+        card = self.demo_card(base)
+        dark = Image.new('RGB', self.video, NOTE_BOX)
+        n = int(0.3 * self.fps)
+        for i in range(n):
+            self.frame_no += 1
+            yield Image.blend(dark, card, ease((i + 1) / n))
+        words = len((self.manifest['scenario'] + ' ' + (self.manifest.get('description') or '')).split())
+        for _ in range(int(min(5.5, max(2.4, 1.2 + 0.15 * words)) * self.fps)):
+            self.frame_no += 1
+            yield card
+        page = self.compose(base)
+        n = int(0.45 * self.fps)
+        for i in range(n):
+            self.frame_no += 1
+            yield Image.blend(card, page, ease((i + 1) / n))
+
+    def reading(self, text, least=2.2, most=7.0):
+        """Seconds to read a line of text."""
+        return min(most, max(least, 1.2 + 0.3 * len(text.split())))
+
+    def start_note(self, text, ahead=()):
+        """A line over a demo's page from the next frame on, for as long as it takes to read: at the bottom,
+        or at the top while what the coming steps point at is down there."""
+        vw, vh = self.video
+        d = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+        size = round(vh * 0.027)
+        font, lines = fit_text(d, text, size, round(size * 0.75), int(vw * 0.6), 3)
+        lead = font.size * 1.32
+        px, py = round(font.size * 0.9), round(font.size * 0.55)
+        bw = int(max(d.textlength(line, font=font) for line in lines) + 2 * px)
+        bh = int(len(lines) * lead + 2 * py)
+        layer = Image.new('RGBA', (bw, bh), (0, 0, 0, 0))
+        ld = ImageDraw.Draw(layer)
+        ld.rounded_rectangle((0, 0, bw - 1, bh - 1), radius=round(font.size * 0.45), fill=NOTE_BOX + (228,))
+        for i, line in enumerate(lines):
+            ld.text((bw / 2, py + (i + 0.5) * lead), line, font=font, fill=(255, 255, 255, 255), anchor='mm')
+        low = [p for s in ahead for p in self.points_of(s) if p[1] > self.h * 0.74]
+        top = len(low) > 0
+        at = ((vw - bw) // 2, round(vh * 0.075) if top else vh - bh - round(vh * 0.07))
+        self.note = {'rgb': layer.convert('RGB'), 'alpha': layer.getchannel('A'), 'at': at,
+                     'total': int(self.reading(text) * self.fps), 'shown': 0}
+
+    def points_of(self, step):
+        """Where a step points on the page: its stops' targets and the pointer's way."""
+        out = []
+        for leg in step.get('legs', []):
+            box = leg.get('target')
+            if box:
+                out.append((box['x'] + box['width'] / 2, box['y'] + box['height'] / 2))
+            out += [(p['x'], p['y']) for p in leg.get('pointer', [])]
+        return out
+
+    def ahead(self, step, n=2):
+        """The step and the next shown ones a note will be read over."""
+        i = self.steps.index(step)
+        return self.steps[i:i + n + 1]
+
+    def with_note(self, img):
+        """The frame with the note over it, faded in and out; the note counts the frame."""
+        note = self.note
+        if note is None:
+            return img
+        fade = max(1, int(0.25 * self.fps))
+        a = min(1.0, (note['shown'] + 1) / fade, (note['total'] - note['shown']) / fade)
+        note['shown'] += 1
+        if note['shown'] >= note['total']:
+            self.note = None
+        out = img.copy()
+        out.paste(note['rgb'], note['at'], note['alpha'] if a >= 1 else note['alpha'].point(lambda v: int(v * a)))
+        return out
+
+    def change(self, a, b):
+        """The share of the page two pictures differ in, read on small grey copies: a tooltip is a few
+        hundredths, a dialog a tenth, a new view most of it."""
+        size = (192, 108)
+        diff = ImageChops.difference(a.convert('L').resize(size, Image.BILINEAR), b.convert('L').resize(size, Image.BILINEAR))
+        return diff.point(lambda v: 255 if v > 20 else 0).histogram()[255] / (size[0] * size[1])
+
+    def rest_for(self, change, least=0.3, most=1.3):
+        """How long a demo rests on a change: a checkbox ticked hardly at all, a new view the longest."""
+        return least + (most - least) * min(1.0, max(0.0, (change - 0.01) / 0.24))
+
+    def demo_result(self, step, shown, after):
+        """The page a demo's step led to — once the steps after it settled it (a column computed, a viewer
+        drawn, the new column sized), the page they left, cut to straight from the gesture — held as long
+        as its change takes to take in, and a tooltip a hover brought up long enough to read."""
+        result = self._image(step['settled']) if step.get('settled') else after
+        change = self.change(shown, result)
+        hold = self.rest_for(change, 0.3, 1.5)
+        events = [p['type'] for leg in step.get('legs', []) for p in leg.get('pointer', [])]
+        # a hover brought up a tooltip: the bigger it is, the longer it takes to read
+        if 'down' not in events and 'move' in events and change > 0.002:
+            hold = max(hold, min(2.6, 1.2 + 7 * change))
+        yield from self.hold_frames(hold, result, self.cur)
 
     def frames_for(self, distance, least):
         """Enough frames that the eased way never moves the pointer more than MAX_STEP_PX in one."""
@@ -367,7 +646,7 @@ class Renderer:
         for i in range(n):
             t = ease((i + 1) / n)
             pos = (start[0] + (dest[0] - start[0]) * t, start[1] + (dest[1] - start[1]) * t)
-            mix = ease((t - 0.5) / 0.5) if fade else 1.0
+            mix = ease((t - 0.5) / 0.5) if fade and lit is not base else 1.0
             yield self.frame(lit if mix >= 1 else Image.blend(base, lit, mix) if mix > 0 else base, pos, caption=caption)
 
     def light_frames(self, base, lit, caption):
@@ -386,7 +665,7 @@ class Renderer:
         """The ripple of a press, the pointer's tip on its centre; the frame a fifth of the way in is
         kept for the audit, with the same frame bare and with the mark only, to measure both."""
         button = press.get('button', 'left')
-        n = int((PULSE_S if (press.get('count') or 1) == 1 else PULSE_S * 0.6) * self.fps)
+        n = int((self.pulse_s if (press.get('count') or 1) == 1 else self.pulse_s * 0.6) * self.fps)
         peak = max(0, n // 5)
         for i in range(n):
             t = (i + 1) / n
@@ -397,7 +676,8 @@ class Renderer:
                     'button': button, 'count': press.get('count') or 1, 'on': press.get('on'), 'target': target,
                     'inside': None if target is None else inside(target, at[0], at[1]),
                     'video': self.to_video(at, zoom, anchor),
-                    'images': (image,
+                    # measured without a demo's note over it
+                    'images': (self.plain,
                                self.compose(lit, None, press=(at, t, button), zoom=zoom, anchor=anchor, caption=caption),
                                self.compose(lit, None, zoom=zoom, anchor=anchor, caption=caption))})
             yield image
@@ -415,14 +695,14 @@ class Renderer:
                 drawn = self._image(p['shot'])
                 drawn = self.spotlight(drawn, target) if target else drawn
             start = self.cur
-            n = self.frames_for(math.hypot(dest[0] - start[0], dest[1] - start[1]), int(0.3 * self.fps))
+            n = self.frames_for(math.hypot(dest[0] - start[0], dest[1] - start[1]), int((0.2 if self.demo else 0.3) * self.fps))
             for i in range(n):
                 t = ease((i + 1) / n)
                 pos = (start[0] + (dest[0] - start[0]) * t, start[1] + (dest[1] - start[1]) * t)
                 yield self.frame(drawn if drawn is not None and i == n - 1 else lit, pos, held=button, caption=caption)
             if drawn is not None:
                 lit = drawn
-        yield from self.hold_frames(0.5, lit, self.cur, caption=caption)
+        yield from self.hold_frames(0.3 if self.demo else 0.5, lit, self.cur, caption=caption)
         return lit
 
     def step_frames(self, step, index, total):
@@ -431,6 +711,21 @@ class Renderer:
         caption = self.caption_layer(step, index, total)
         legs = step.get('legs', [])
         still_path = os.path.join(self.folder, f'step-{index:02d}.png')
+        # a line of text: a demo shows it over the page while the steps after it go on, a guide as its caption
+        if step['kind'] == 'note':
+            self.compose(after, self.cur, caption=caption).save(still_path)
+            if self.demo:
+                self.start_note(step['caption'], self.ahead(step))
+                yield from self.hold_frames(0.8, self._image(step['settled']) if step.get('settled') else after, self.cur)
+            else:
+                yield from self.hold_frames(self.reading(step['caption']), after, self.cur, caption=caption)
+            return
+        if self.demo and step.get('captioned'):
+            self.start_note(step['caption'], self.ahead(step))
+        if step['kind'] == 'check' and self.demo:
+            self.compose(after, self.cur).save(still_path)
+            yield from self.hold_frames(1.0, after, self.cur)
+            return
         if step['kind'] == 'check':
             target = step.get('target')
             base = self.spotlight(after, target, CHECK) if target else after
@@ -444,7 +739,10 @@ class Renderer:
         # a step with nothing to point at (a table opened through the API) shows the page it led to
         if not any(leg.get('target') or leg.get('pointer') for leg in legs):
             self.compose(after, self.cur, caption=caption).save(still_path)
-            yield from self.hold_frames(self.hold, after, self.cur, caption=caption)
+            if self.demo:
+                yield from self.demo_result(step, self._image(step['before']), after)
+            else:
+                yield from self.hold_frames(self.hold, after, self.cur, caption=caption)
             return
         # the stops of the step in order — one, or a menu's group, each item, the leaf: the pointer
         # goes where the page says it went on each, over the page as it was then, and every press
@@ -463,12 +761,12 @@ class Renderer:
             while i < len(events):
                 e = events[i]
                 at = (e['x'], e['y'])
-                # a picture taken while the step went on (text typed so far, a wheel notch): cut in, the pointer still
+                # a picture taken while the step went on (text typed so far, a wheel turn): cut in, the pointer still
                 if e['type'] == 'still':
                     shot = self._image(e['shot'])
                     lit = self.spotlight(shot, target) if target else shot
                     lit_up = True
-                    yield from self.hold_frames(BEAT_S, lit, self.cur, zoom=zoom, anchor=zoom_at, caption=caption)
+                    yield from self.hold_frames(self.beat_s, lit, self.cur, zoom=zoom, anchor=zoom_at, caption=caption)
                     i += 1
                     continue
                 if e['type'] == 'up' or (e['type'] == 'move' and e.get('held')):
@@ -493,7 +791,7 @@ class Renderer:
                     yield from self.zoom_frames(lit, at, 1.0, self.zoom, caption)
                     zoom, zoom_at = self.zoom, at
                 if (e.get('count') or 1) == 1:
-                    yield from self.hold_frames(0.4, lit, at, zoom=zoom, anchor=zoom_at, caption=caption)
+                    yield from self.hold_frames(self.rest_s, lit, at, zoom=zoom, anchor=zoom_at, caption=caption)
                 yield from self.press_frames(lit, at, e, target, step, index, caption, zoom, zoom_at)
                 still = self.compose(lit, at, press=(at, 0.3, e.get('button', 'left')), caption=caption)
                 if path:
@@ -503,13 +801,16 @@ class Renderer:
             if not lit_up and target:
                 yield from self.light_frames(shot, lit, caption)
             if n_leg < len(legs) - 1:
-                yield from self.hold_frames(0.4, lit, self.cur, zoom=zoom, anchor=zoom_at, caption=caption)
+                yield from self.hold_frames(self.leg_s, lit, self.cur, zoom=zoom, anchor=zoom_at, caption=caption)
                 if zoom > 1:
                     yield from self.zoom_frames(lit, zoom_at, zoom, 1.0, caption)
                     zoom = 1.0
         # the picture of the step for steps.md: the last stop lit, and where the pointer acted on it
         (still if still is not None else self.compose(lit, self.cur, caption=caption)).save(still_path)
-        yield from self.hold_frames(0.3, lit, self.cur, zoom=zoom, anchor=zoom_at, caption=caption)
+        yield from self.hold_frames(self.cut_s, lit, self.cur, zoom=zoom, anchor=zoom_at, caption=caption)
+        if self.demo:
+            yield from self.demo_result(step, lit, after)
+            return
         # the page after the step: zooming out over the step's picture, then cut to the page after it,
         # whose light fades — a cross-fade of two pictures of a changed page shows both at once
         if zoom > 1:
@@ -524,14 +825,30 @@ class Renderer:
         if not self.steps:
             return
         first = self._image(self.steps[0]['before'])
+        self.marks.append((self.frame_no, 'title'))
         if self.help:
             yield from self.hold_frames(1.0, first, self.cur)
+        elif self.demo:
+            yield from self.demo_title_frames(first)
         else:
             yield from self.title_frames(first)
         total = len(self.steps)
         for i, step in enumerate(self.steps, 1):
+            self.marks.append((self.frame_no, f"{i}. {step['caption']}"))
             yield from self.step_frames(step, i, total)
-        yield from self.hold_frames(end_hold, self._image(self.steps[-1]['after']), self.cur)
+        self.marks.append((self.frame_no, 'end'))
+        last = self.steps[-1]
+        # a note still being read keeps the last picture up until it is
+        rest = (self.note['total'] - self.note['shown']) / self.fps if self.note else 0
+        yield from self.hold_frames(max(end_hold, rest), self._image(last.get('settled') or last['after']), self.cur)
+        # a demo ends in the dark its next clip starts from
+        if self.demo:
+            self.marks.append((self.frame_no, 'fade'))
+            dark = Image.new('RGB', self.video, NOTE_BOX)
+            n = int(0.35 * self.fps)
+            for i in range(n):
+                self.frame_no += 1
+                yield Image.blend(self.plain, dark, ease((i + 1) / n))
 
     def write_markdown(self):
         lines = [f"# {self.manifest['scenario']}", '']
@@ -617,7 +934,9 @@ class Renderer:
     def encode(self, ffmpeg, gif, gif_fps=12, colors=256, gif_width=None, end_hold=0.8):
         h264 = has_encoder(ffmpeg, 'libx264')
         video = os.path.join(self.folder, 'guide.mp4' if h264 else 'guide.webm')
-        codec = ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22', '-pix_fmt', 'yuv420p', '-movflags', '+faststart'] \
+        # a demo is watched on a large screen and cut into a longer video: its text is kept sharper
+        quality = ['-preset', 'medium', '-crf', '18'] if self.demo else ['-preset', 'veryfast', '-crf', '22']
+        codec = ['-c:v', 'libx264', *quality, '-pix_fmt', 'yuv420p', '-movflags', '+faststart'] \
             if h264 else ['-c:v', 'libvpx', '-b:v', '2M', '-pix_fmt', 'yuv420p']
         cmd = [ffmpeg, '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{self.video[0]}x{self.video[1]}',
                '-r', str(self.fps), '-i', '-', *codec, video]
@@ -628,12 +947,20 @@ class Renderer:
             os.makedirs(frames_dir)
         proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         count = kept = 0
+        # the last frame of every part (the title, each step, the end), for a review of a demo at a glance
+        ends, seen, last = [], 0, None
         try:
             for frame in self.frames(end_hold):
+                if len(self.marks) > seen:
+                    if seen > 0:
+                        ends += [last] * (len(self.marks) - seen)
+                    seen = len(self.marks)
                 proc.stdin.write(frame.tobytes())
                 if gif and count * gif_fps // self.fps >= kept:
                     frame.save(os.path.join(frames_dir, f'{kept:05d}.png'), compress_level=1)
                     kept += 1
+                if self.demo:
+                    last = frame.resize((480, 270), Image.BILINEAR)
                 count += 1
         finally:
             proc.stdin.close()
@@ -641,6 +968,9 @@ class Renderer:
         if code != 0:
             raise RuntimeError(f'ffmpeg failed encoding {video}')
         outputs = [video]
+        if self.demo and last is not None:
+            ends.append(last)
+            outputs += self.write_review(ends, count)
         if gif and self.steps:
             out = os.path.join(self.folder, 'guide.gif')
             width = min(gif_width or self.video[0], self.video[0]) & ~1
@@ -665,6 +995,29 @@ class Renderer:
                         'kb': round(os.path.getsize(out) / 1024)}
             outputs += [out, thumb, sheet]
         return outputs, count
+
+    def write_review(self, ends, count):
+        """timeline.json: when each part of the demo starts and how long it lasts; review-sheet.png: the
+        last frame of each, with its start and its step."""
+        parts = []
+        for i, (start, label) in enumerate(self.marks):
+            end = self.marks[i + 1][0] if i + 1 < len(self.marks) else count
+            parts.append({'part': label, 'start': round(start / self.fps, 2), 'seconds': round((end - start) / self.fps, 2)})
+        with open(os.path.join(self.folder, 'timeline.json'), 'w', encoding='utf-8') as f:
+            json.dump({'seconds': round(count / self.fps, 2), 'parts': parts}, f, indent=2)
+        cols, tw, th, label_h = 4, 480, 270, 40
+        shown = [(thumb, part) for thumb, part in zip(ends, parts) if part['part'] != 'fade']
+        sheet = Image.new('RGB', (cols * tw, math.ceil(len(shown) / cols) * (th + label_h)), (255, 255, 255))
+        d = ImageDraw.Draw(sheet)
+        font = load_font(13)
+        for i, (thumb, part) in enumerate(shown):
+            x, y = (i % cols) * tw, (i // cols) * (th + label_h)
+            sheet.paste(thumb, (x, y + label_h))
+            d.text((x + 6, y + 4), f"{part['start']:.1f} s +{part['seconds']:.1f} s", font=font, fill=(160, 0, 0))
+            d.text((x + 6, y + 21), part['part'][:70], font=font, fill=(30, 30, 30))
+        path = os.path.join(self.folder, 'review-sheet.png')
+        sheet.save(path)
+        return [os.path.join(self.folder, 'timeline.json'), path]
 
     def contact_sheet(self, frames_dir, count, path, n=12, cols=4, tile_w=400):
         """Twelve frames of the GIF, evenly spaced, for a review at a glance."""
@@ -693,6 +1046,51 @@ def with_press_colours(path):
     palette = Image.new('RGBA', (16, 16))
     palette.putdata(colours)
     palette.save(path)
+
+
+def reel(ffmpeg, out, folders):
+    """Demo clips cut together in the order given: every demo is 1920×1080 at the same rate, so the cut is a
+    stream copy. Each clip is copied beside the reel under its scenario's name, and `<out>.md` lists them."""
+    clips = []
+    for folder in folders:
+        video, timeline = os.path.join(folder, 'guide.mp4'), os.path.join(folder, 'timeline.json')
+        if not (os.path.exists(video) and os.path.exists(timeline)):
+            print(f'guide-render: {folder} holds no demo clip (guide.mp4 and timeline.json): film it with @demo or --demo',
+                  file=sys.stderr)
+            return 2
+        with open(os.path.join(folder, 'steps.json'), encoding='utf-8') as f:
+            manifest = json.load(f)
+        with open(timeline, encoding='utf-8') as f:
+            clips.append((video, manifest, json.load(f)['seconds']))
+    target = os.path.dirname(os.path.abspath(out))
+    os.makedirs(target, exist_ok=True)
+    listing, rows, start = [], [], 0.0
+    for i, (video, manifest, seconds) in enumerate(clips, 1):
+        title = manifest['scenario']
+        # Windows takes no \ / : * ? " < > | in a file name, nor a trailing dot or space
+        name = ''.join('-' if c in '\\/:*?"<>|' else c for c in title).rstrip('. ')
+        shutil.copyfile(video, os.path.join(target, f'{i:02d} - {name}.mp4'))
+        # the concat list quotes with ', so a ' in a path ("A sequence's structure") is closed, escaped and reopened
+        listing.append("file '" + os.path.abspath(video).replace('\\', '/').replace("'", "'\\''") + "'")
+        rows.append(f"| {i:02d} | {int(start // 60)}:{start % 60:04.1f} | {seconds:.1f} s | {title} | "
+                    f"{manifest.get('description', '')} | {manifest['feature']} |")
+        start += seconds
+    stem = os.path.splitext(out)[0]
+    with open(stem + '.concat.txt', 'w', encoding='utf-8') as f:
+        f.write('\n'.join(listing) + '\n')
+    try:
+        cut = subprocess.run([ffmpeg, '-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', stem + '.concat.txt',
+                              '-c', 'copy', '-movflags', '+faststart', out])
+    finally:
+        os.remove(stem + '.concat.txt')
+    if cut.returncode != 0:
+        return cut.returncode
+    with open(stem + '.md', 'w', encoding='utf-8') as f:
+        f.write(f"# {os.path.basename(stem)}\n\n{len(clips)} clips, {start / 60:.1f} min; `{os.path.basename(out)}` is all of "
+                f"them in this order, and each is beside it as `NN - <title>.mp4`.\n\n"
+                "| # | Starts | Length | Title | Card text | Feature |\n|---|---|---|---|---|---|\n" + '\n'.join(rows) + '\n')
+    print(f'{len(clips)} clips, {start:.1f} s: {out}, {stem}.md')
+    return 0
 
 
 def selftest(folder):
@@ -745,7 +1143,10 @@ def selftest(folder):
                           {'shot': '05-hop2.png', 'target': {'x': 300, 'y': 180, 'width': 160, 'height': 30},
                            'pointer': [{'type': 'move', 'x': 330, 'y': 195}] + press(330, 195)}]),
                     step(6, 'user double-clicks on the blue button', 'Double-click on the blue button', 'action',
-                         [{'shot': '06-before.png', 'target': button, 'pointer': press(100, 58) + press(100, 58, count=2)}])]}
+                         [{'shot': '06-before.png', 'target': button, 'pointer': press(100, 58) + press(100, 58, count=2)}]),
+                    # a line of text over the page, with nothing settled after it
+                    dict(step(7, 'the video says "Blue is the button"', 'Blue is the button', 'note', []),
+                         before='06-after.png', after='06-after.png', captioned=True)]}
     with open(os.path.join(folder, 'steps.json'), 'w', encoding='utf-8') as f:
         json.dump(manifest, f)
 
@@ -770,29 +1171,33 @@ def main(argv):
     gif = flag('--gif')
     quiet = flag('--quiet')
     help = flag('--help')
+    demo = flag('--demo') and not help
     fps = int(opt('--fps', 30))
     hold = float(opt('--hold', 0.9 if help else 1.4))
     gif_fps = int(opt('--gif-fps', 12))
     colors = int(opt('--colors', 256))
     gif_width = opt('--gif-width')
     gif_width = int(gif_width) if gif_width else None if help else 880
-    end_hold = float(opt('--end-hold', 2.0 if help else 0.8))
-    travel = float(opt('--travel', 0.7))
+    end_hold = float(opt('--end-hold', 2.0 if help else 1.6 if demo else 0.8))
+    travel = float(opt('--travel', 0.5 if demo else 0.7))
     zoom = float(opt('--zoom', 1.8))
     zoom_time = float(opt('--zoom-time', 0.8))
     ffmpeg = find_ffmpeg(opt('--ffmpeg'))
+    reel_out = opt('--reel')
     test_dir = opt('--selftest')
     if test_dir:
         selftest(test_dir)
         args.append(test_dir)
         gif = True
-    if len(args) != 1:
+    if len(args) != 1 and not (reel_out and args):
         print(__doc__, file=sys.stderr)
         return 2
     if not ffmpeg:
         print('guide-render: no ffmpeg — py -m pip install imageio-ffmpeg, or set FFMPEG', file=sys.stderr)
         return 3
-    renderer = Renderer(args[0], fps, hold, travel, zoom, zoom_time, help)
+    if reel_out:
+        return reel(ffmpeg, reel_out, args)
+    renderer = Renderer(args[0], fps, hold, travel, zoom, zoom_time, help, demo)
     renderer.write_markdown()
     outputs, count = renderer.encode(ffmpeg, gif, gif_fps, colors, gif_width, end_hold)
     report = renderer.write_audit()

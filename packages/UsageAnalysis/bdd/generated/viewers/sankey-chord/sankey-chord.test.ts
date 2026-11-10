@@ -41,7 +41,7 @@ test.describe("Sankey and Chord columns, and redrawing on every filter change", 
     await session.step(23, "Then sankey viewer should be visible", () => shouldBe(page, el("sankey viewer"), "visible"));
     await session.step(24, "And sankey viewer should be bound to table \"demog-1000\"", () => boundTable(page, el("sankey viewer"), "demog-1000"));
     await session.step(25, "And the \"node names\" reading of sankey viewer should be \"F, M, Caucasian, Other, Asian, Black\"", () => readingReads(page, "node names", el("sankey viewer"), "F, M, Caucasian, Other, Asian, Black"));
-    await session.step(26, "And the \"links\" reading of sankey viewer should be 1000", () => readingIs(page, "links", el("sankey viewer"), 1000));
+    await session.step(26, "And the \"links\" reading of sankey viewer should be 8", () => readingIs(page, "links", el("sankey viewer"), 8));
     await session.step(27, "When user clicks on grid", () => clickOn(page, el("grid")));
     await session.step(28, "And user clicks on settings icon of sankey viewer", () => clickOn(page, el("settings icon of sankey viewer")));
     await session.step(29, "Then \"Source\" property in context panel should be visible", () => shouldBe(page, el("\"Source\" property in context panel"), "visible"));
@@ -73,7 +73,7 @@ test.describe("Sankey and Chord columns, and redrawing on every filter change", 
     await session.step(58, "When user clicks on the \"category F of SEX\" area of filter panel", () => clickArea(page, "category F of SEX", el("filter panel")));
     await session.step(59, "Then 553 rows should pass the filter", () => filterPasses(page, 553));
     await session.step(60, "And the filter should pass exactly the rows where \"SEX\" is \"F\"", () => filterIsExactlyCategory(page, "SEX", "F"));
-    await session.step(61, "And the \"links\" reading of sankey viewer should be 553", () => readingIs(page, "links", el("sankey viewer"), 553));
+    await session.step(61, "And the \"links\" reading of sankey viewer should be 4", () => readingIs(page, "links", el("sankey viewer"), 4));
     await session.step(62, "And the \"node names\" reading of sankey viewer should contain \"F\"", () => readingContains(page, "node names", el("sankey viewer"), "F"));
     await session.step(63, "And the \"node names\" reading of sankey viewer should not contain \"M\"", () => readingNotContains(page, "node names", el("sankey viewer"), "M"));
     await session.step(64, "And no errors should have been logged", () => noErrors(page));
@@ -96,7 +96,7 @@ test.describe("Sankey and Chord columns, and redrawing on every filter change", 
     await session.step(81, "When user hovers over filter panel", () => hoverOver(page, el("filter panel")));
     await session.step(82, "And user clicks on reset icon of filter panel", () => clickOn(page, el("reset icon of filter panel")));
     await session.step(83, "Then 1000 rows should pass the filter", () => filterPasses(page, 1000));
-    await session.step(84, "And the \"links\" reading of sankey viewer should be 1000", () => readingIs(page, "links", el("sankey viewer"), 1000));
+    await session.step(84, "And the \"links\" reading of sankey viewer should be 8", () => readingIs(page, "links", el("sankey viewer"), 8));
     await session.step(85, "And the \"node names\" reading of sankey viewer should contain \"M\"", () => readingContains(page, "node names", el("sankey viewer"), "M"));
     await session.step(86, "And no errors should have been logged", () => noErrors(page));
   });
@@ -107,7 +107,7 @@ test.describe("Sankey and Chord columns, and redrawing on every filter change", 
     await session.step(17, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(89, "When user clicks on \"Add viewer\" icon", () => clickOn(page, el("\"Add viewer\" icon")));
     await session.step(90, "And user clicks on first \"Sankey\" card in \"Add Viewer\" dialog", () => clickOn(page, el("first \"Sankey\" card in \"Add Viewer\" dialog")));
-    await session.step(91, "Then the \"links\" reading of sankey viewer should be 1000", () => readingIs(page, "links", el("sankey viewer"), 1000));
+    await session.step(91, "Then the \"links\" reading of sankey viewer should be 8", () => readingIs(page, "links", el("sankey viewer"), 8));
     await session.step(92, "When user clicks on filter icon in toolbar", () => clickOn(page, el("filter icon in toolbar")));
     await session.step(93, "Then filter panel should be visible", () => shouldBe(page, el("filter panel"), "visible"));
     await session.step(94, "When user clicks on the \"category true of CONTROL\" area of filter panel", () => clickArea(page, "category true of CONTROL", el("filter panel")));

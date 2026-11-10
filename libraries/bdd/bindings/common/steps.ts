@@ -9,6 +9,7 @@ import {el} from '../../src/runtime/args.js';
 import {expectCount, expectOption, expectOptions, expectState, expectSwitched, expectText, expectValue, expectValueBetween, expectVisible, readValue,
   State} from '../../src/runtime/assertions.js';
 import * as g from '../../src/runtime/gestures.js';
+import * as guide from '../../src/runtime/guide.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {cssString, escapeRegExp, locate} from '../../src/runtime/locate.js';
 import {centerOf, dragFrom} from '../../src/runtime/viewers.js';
@@ -184,6 +185,8 @@ export const shouldBecomeVisibleWithin = Then('{element} should become visible w
   {description: 'for what a computation produces well past the usual budget (a search\'s hits): the budget is the scenario\'s claim about how long it may take'});
 export const waitSeconds = When('user waits {int} second(s)', (page: Page, seconds: number) => page.waitForTimeout(seconds * 1000),
   {tier: 'ui', description: 'a plain pause, only where the platform gives nothing to wait on (a Properties pane of the previous object landing after a click on a new one); everything else waits for its outcome'});
+export const videoSays = When('the video says {string}', (page: Page, text: string) => guide.say(page, text),
+  {tier: 'api', description: 'a line of text a filmed guide shows as its caption and a demo over the page, for as long as it takes to read; nothing in a test run'});
 export const shouldContainText = Then('{element} should contain (the )text {string}', (page: Page, target: ElementRef, text: string) => expectText(page, target, text));
 export const shouldNotContainText = Then('{element} should not contain (the )text {string}', (page: Page, target: ElementRef, text: string) => expectText(page, target, text, {negate: true}));
 export const shouldHaveText = Then('{element} should have (the )text {string}', (page: Page, target: ElementRef, text: string) => expectText(page, target, text, {exact: true}));

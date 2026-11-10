@@ -16,6 +16,7 @@ import {
   anyInput, inputHasError, inputHasWarning, inputsWhere, isChange, isFixableInconsistency, isInconsistent,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/run-summary';
 import type {AugmentedStat, Status} from './types';
+import type {DriverAPI} from '../../composables/use-reactive-tree-driver';
 
 export type NodeWithPath = {
   state: PipelineState,
@@ -171,6 +172,28 @@ export const isDeletable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'd
 export const isDuplicable = (stat: AugmentedStat) =>
   !stat.data.isReadonly && isItemActionAllowed(stat, 'disableUIAdding');
 
+/** Where a step moves by `delta` among its siblings, or undefined when it can't be dragged or would leave them. */
+export function stepMoveIndex(stat: AugmentedStat, delta: number): number | undefined {
+  if (!isEachDraggable(stat))
+    return undefined;
+  const siblings = stat.parent!.children;
+  const index = siblings.indexOf(stat) + delta;
+  return index >= 0 && index < siblings.length ? index : undefined;
+}
+
+/** The index a dragged step ends at: he-tree counts the drop position with the step still in place. */
+export const dropIndex = (from: number, beforeDrop: number) => from < beforeDrop ? beforeDrop - 1 : beforeDrop;
+
+/** The steps that take the focus when the tree is rebuilt: the step itself, or its next or previous sibling or its
+ * parent if it is gone. */
+export function focusCandidates(stat: AugmentedStat): string[] {
+  const siblings = stat.parent?.children ?? [];
+  const index = siblings.indexOf(stat);
+  return [stat, siblings[index + 1], siblings[index - 1], stat.parent]
+    .filter((item): item is AugmentedStat => !!item)
+    .map((item) => item.data.uuid);
+}
+
 export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName && !data.disableHistory;
 
 export function getRelevantGlobalActions(data: PipelineState, currentStepUuid: string) : ViewAction[] {
@@ -251,3 +274,21 @@ export const statusInputs = (
 };
 
 export const SELECTED_STEP_BACKGROUND = 'var(--grey-1)';
+
+type Descriptions = DriverAPI['states']['descriptions'];
+
+export const nodeName = (descriptions: Descriptions, state: PipelineState) => {
+  const title = descriptions[state.uuid]?.title;
+  return typeof title === 'string' ? title : (state.friendlyName ?? state.configId);
+};
+
+// a node's title, description and tags from its meta states, overridden by extra
+export const nodeMetadata = (descriptions: Descriptions, uuid?: string, extra?: Record<string, any>) => {
+  const desc = uuid ? descriptions[uuid] : undefined;
+  return {
+    title: typeof desc?.title === 'string' ? desc.title : '',
+    description: typeof desc?.description === 'string' ? desc.description : '',
+    tags: Array.isArray(desc?.tags) ? desc.tags : [],
+    ...extra,
+  };
+};

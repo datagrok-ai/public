@@ -108,6 +108,13 @@ FROM generate_series(1, 10) AS s(i);
     await grok.dapi.queries.delete(query);
   });
 
+  test('getCatalogs lists the databases of the server, the connection\'s own among them', async () => {
+    const dc = await grok.dapi.connections.filter('name = "Datagrok"').first();
+    const catalogs = await grok.dapi.connections.getCatalogs(dc);
+    expect(catalogs.includes((dc.parameters as any)['db']), true);
+  }, {skipReason:
+    'Development only: reads the database list of the stand\'s own server; unskip while working on catalogs'});
+
   after(async () => {
     // Safety net for any leaked test connections (names are randomized per run).
     const connections: _DG.DataConnection[] = await grok.dapi.connections.filter(`name like "Local DG Test%"`).list();

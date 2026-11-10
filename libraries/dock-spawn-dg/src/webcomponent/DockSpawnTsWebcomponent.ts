@@ -50,6 +50,8 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         // tab must not steal focus from the user's current tab. The preferred tab is
         // driven explicitly via the `preferredPanelTitle` property instead.
         this.dockManager.config.activatePanelOnAdd = false;
+        // Esc belongs to the focused input or popup; a panel closes only from its own button
+        this.dockManager.config.escClosesWindow = false;
     }
 
     private initDockManager() {

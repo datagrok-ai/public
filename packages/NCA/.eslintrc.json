@@ -1,0 +1,18 @@
+{
+  "ignorePatterns": [
+    "src/generated/**"
+  ],
+  "overrides": [
+    {
+      "files": ["src/pipeline/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [{
+            "group": ["**/views", "**/views/**"],
+            "message": "The headless pipeline must not import the view layer: use the adapter."
+          }]
+        }]
+      }
+    }
+  ]
+}

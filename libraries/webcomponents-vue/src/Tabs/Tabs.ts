@@ -1,5 +1,6 @@
 import * as Vue from 'vue';
 import './Tabs.css';
+import {onPress} from '../on-press';
 
 export interface TabItem {
   key: string;
@@ -9,14 +10,6 @@ export interface TabItem {
 
 // Vue.useId counts per app, and each view is its own app: ids must not repeat across views
 let lastId = 0;
-
-// Enter and Space press a focused header, like a button
-const onPress = (action: () => void) => (e: KeyboardEvent) => {
-  if (e.key !== 'Enter' && e.key !== ' ')
-    return;
-  e.preventDefault();
-  action();
-};
 
 /**
  * Tab strip styled like ui.tabControl. Controlled: bind the shown tab via `activeKey`/`update:activeKey`

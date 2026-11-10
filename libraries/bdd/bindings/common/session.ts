@@ -33,7 +33,7 @@ async function homeWidgetsSettled(page: Page): Promise<void> {
 export async function resetShellAfterLoad(page: Page, simpleMode = guide.shellSimpleMode()): Promise<void> {
   // the preloader goes once the start-up URL is routed; a closeAll before that is undone by the view it opens
   await page.waitForFunction(() => !document.querySelector('#grok-preloader'), null, {timeout: 180000});
-  await page.evaluate(([simple, filmed, help]) => {
+  await page.evaluate(([simple, filmed, help, demo]) => {
     grok.shell.closeAll();
     // the test styles (title-bar icons shown without a hover) are not what a person sees in a guide
     document.body.classList.toggle('selenium', !filmed);
@@ -45,13 +45,21 @@ export async function resetShellAfterLoad(page: Page, simpleMode = guide.shellSi
     if (grok.shell.windows.presentationMode)
       grok.shell.windows.presentationMode = false;
     // a help GIF starts from the bare shell, whatever panels the account keeps open; a step opens the one it needs
-    if (help) {
-      grok.shell.windows.showSidebar = false;
+    // a demo clip keeps the sidebar, so the shell is recognisable, and opens the panels it shows; the stand
+    // account's count of unread notifications is no part of any demo
+    if (help || demo) {
+      grok.shell.windows.showSidebar = demo;
       grok.shell.windows.showBrowse = false;
       grok.shell.windows.showToolbox = false;
       grok.shell.windows.showContextPanel = false;
     }
-  }, [simpleMode, !!guide.guideDir(), guide.helpMode()] as [boolean, boolean, boolean]);
+    if (demo && !document.getElementById('bdd-demo-style')) {
+      const style = document.createElement('style');
+      style.id = 'bdd-demo-style';
+      style.textContent = '.grok-notification-count {display: none !important}';
+      document.head.append(style);
+    }
+  }, [simpleMode, !!guide.guideDir(), guide.helpMode(), guide.demoMode()] as [boolean, boolean, boolean, boolean]);
   // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it, and the view a
   // reloaded address opens (a script, a project) can land after it: that one is closed in turn
   await page.waitForFunction(() => {

@@ -167,7 +167,7 @@ res = ranged;`).prepare(preset);
     const formOf = () => (view.root.querySelector('dg-input-form') as any)?.formInst as DG.InputForm | undefined;
     await waitUntil(() => !!formOf(), 'Form not rendered', 15000);
     const runDisabled = () => Array.from(view.root.querySelectorAll('button'))
-      .find((b) => b.textContent?.trim() === 'Run')!.classList.contains('d4-disabled');
+      .find((b) => b.textContent?.trim() === 'Run')!.getAttribute('aria-disabled') === 'true';
     return {view, call, form: formOf()!, runDisabled};
   };
 
@@ -344,11 +344,11 @@ const hasButton = (root: HTMLElement, label: string) =>
   Array.from(root.querySelectorAll('button')).some((b) => b.textContent?.trim() === label);
 
 // the editor view is not added to the shell here, so read the ribbon through the API
-const ribbonIcons = (view: DG.ViewBase, name: string) => view.getRibbonPanels().flat()
+export const ribbonIcons = (view: DG.ViewBase, name: string) => view.getRibbonPanels().flat()
   .flatMap((el) => [el, ...Array.from(el.querySelectorAll('*'))])
   .filter((el) => el.classList.contains(`fa-${name}`));
 
-const savedRunId = (view: DG.ViewBase) => new URLSearchParams((view.path ?? '').split('?')[1] ?? '').get('id');
+export const savedRunId = (view: DG.ViewBase) => new URLSearchParams((view.path ?? '').split('?')[1] ?? '').get('id');
 
 async function openCompact(nqName: string): Promise<DG.ViewBase> {
   await awaitWebComponents();

@@ -615,12 +615,33 @@ category('Run storage: space index', () => {
         await historyUtils.listSpace(first.id);
         expect(listed().includes(firstRun), false);
         const saveButton = () => root.querySelector<HTMLElement>('.ui-btn-ok')!;
-        await awaitCheck(() => !saveButton().classList.contains('d4-disabled'),
+        await awaitCheck(() => saveButton().getAttribute('aria-disabled') !== 'true',
           'the access check should allow the save', 5000);
       } finally {
         unmount();
       }
     }));
+
+  test('Tab in the Save dialog goes round its three fields only', async () => {
+    const {root, unmount} = mount(SaveRunDialog, {func: DG.Func.byName(DAY_CALCULATION), name: 'New'});
+    try {
+      const fields = Array.from(root.querySelectorAll<HTMLElement>('.c2-runs-form .ui-input-editor'));
+      expect(document.activeElement === fields[0], true, 'Name should take the focus on open');
+      const tab = (from: HTMLElement, shiftKey = false) => {
+        from.focus();
+        from.dispatchEvent(new KeyboardEvent('keydown', {key: 'Tab', shiftKey, bubbles: true, cancelable: true}));
+        return document.activeElement;
+      };
+      // Vue skips an event stamped in the millisecond its listener was attached
+      await new Promise((resolve) => setTimeout(resolve, 2));
+      expect(fields.length, 3);
+      expect(tab(fields[0]) === fields[1], true, 'Tab from Name should go to Description');
+      expect(tab(fields[2]) === fields[0], true, 'Tab from Tags should go round to Name');
+      expect(tab(fields[0], true) === fields[2], true, 'Shift+Tab from Name should go round to Tags');
+    } finally {
+      unmount();
+    }
+  });
 
   test('The open model dropdown doesn\'t scroll sideways', async () => {
     const {root, unmount} = mount(ModelSelector, {models: [DG.Func.byName(DAY_CALCULATION)]});

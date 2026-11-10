@@ -76,7 +76,7 @@ const CATEGORY_ICONS: Record<typeof CATEGORIES[number], IconSpec> = {
 };
 
 const inconsistentIcon = (restriction?: string): IconSpec =>
-  ({name: 'handshake-slash', color: isLinkedRestriction(restriction) ? 'var(--red-3)' : 'var(--blue-1)'});
+  ({name: 'unlink', color: isLinkedRestriction(restriction) ? 'var(--red-3)' : 'var(--blue-1)'});
 
 // an inconsistent workflow-set value outranks validation, an inconsistent free value ranks last
 function statusIcon({validation, consistency}: ValidationIconInput): IconSpec | undefined {

@@ -736,6 +736,36 @@ category('Run storage', () => {
     }
   }));
 
+  test('Edit details: Tab goes round the fields and Enter in Name saves', () => withRunStorage(async (f) => {
+    const saved = await f.saveDayRun(uniqueName('Keyboard'));
+    let done = 0;
+    const root = ui.div();
+    document.body.append(root);
+    const app = Vue.createApp(RunDetailsForm, {run: await historyUtils.shallowLoadRun(saved.id), onDone: () => done++});
+    app.mount(root);
+    try {
+      const fields = Array.from(root.querySelectorAll<HTMLElement>('.ui-input-editor'));
+      const press = (from: HTMLElement, key: string, shiftKey = false) => {
+        from.focus();
+        from.dispatchEvent(new KeyboardEvent('keydown', {key, shiftKey, bubbles: true, cancelable: true}));
+        return document.activeElement;
+      };
+      // Vue skips an event stamped in the millisecond its listener was attached
+      await new Promise((resolve) => setTimeout(resolve, 2));
+      expect(fields.length, 3);
+      expect(press(fields[0], 'Tab') === fields[1], true, 'Tab from Name should go to Description');
+      expect(press(fields[2], 'Tab') === fields[0], true, 'Tab from Tags should go round to Name');
+      expect(press(fields[0], 'Tab', true) === fields[2], true, 'Shift+Tab from Name should go round to Tags');
+      press(fields[1], 'Enter');
+      expect(done, 0, 'Enter in Description should not save');
+      press(fields[0], 'Enter');
+      await awaitCheck(() => done === 1, 'Enter in Name should save', 10000);
+    } finally {
+      app.unmount();
+      root.remove();
+    }
+  }));
+
   test('Run names, details and tags default sensibly', async () => {
     const func = dayFunc();
     expect(defaultRunName(func, 'Loaded', 'Title link'), 'Loaded');

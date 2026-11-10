@@ -139,7 +139,7 @@ export type PipelineInstanceRuntimeData = {
   actions: ViewAction[] | undefined;
   disableHistory: boolean;
   customExports: CustomExport[] | undefined;
-  disableDefaultExport?: boolean;
+  disableDefaultExport: boolean;
   compactView: boolean;
   structureCheckResults?: ValidationResult | undefined;
   forceNavigate: boolean;

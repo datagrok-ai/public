@@ -1,0 +1,18 @@
+{
+  "#type": "DataConnection",
+  "name": "CatalogsDemo",
+  "friendlyName": "Catalogs Demo",
+  "parameters": {
+    "server": "host.docker.internal",
+    "port": 14333,
+    "db": "archive"
+  },
+  "credentials": {
+    "parameters": {
+      "login": "sa",
+      "password": "<password>"
+    }
+  },
+  "dataSource": "MS SQL",
+  "description": "SQL Server with several catalogs: the fixture of identifiers-catalogs.feature"
+}

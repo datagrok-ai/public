@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as Vue from 'vue';
-import {category, test} from '@datagrok-libraries/test/src/test';
+import {category, delay, test} from '@datagrok-libraries/test/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {BigButton, Button, ComboPopup, IconFA, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
 import {awaitWebComponents} from '../../test-utils';
@@ -59,6 +59,33 @@ category('WebComponentsVue: element wrappers', () => {
     }
   });
 
+  test('a clickable icon takes focus and presses on Enter and Space', async () => {
+    await awaitWebComponents();
+    const disabled = Vue.ref(false);
+    const clicks: string[] = [];
+    let outerKeys = 0;
+    const h = mount(() => Vue.h('div', {onKeydown: () => outerKeys++}, [
+      Vue.h(IconFA, {name: 'save', isDisabled: disabled.value, onClick: (e: MouseEvent) => clicks.push(e.type)}),
+      Vue.h(IconFA, {name: 'lock'}),
+    ]));
+    const [clickable, plain] = [...h.root.querySelectorAll('dg-icon-fa')] as HTMLElement[];
+    // Vue's listeners skip an event from the millisecond they were attached in
+    await delay(2);
+    try {
+      expectDeepEqual(clickable.tabIndex, 0, {prefix: 'clickable'});
+      expectDeepEqual(plain.hasAttribute('tabindex'), false, {prefix: 'plain'});
+      for (const key of ['Enter', ' ', 'a'])
+        clickable.dispatchEvent(new KeyboardEvent('keydown', {key, bubbles: true}));
+      expectDeepEqual(clicks, ['click', 'click'], {prefix: 'presses'});
+      expectDeepEqual(outerKeys, 1, {prefix: 'only the unhandled key bubbles'});
+      disabled.value = true;
+      await Vue.nextTick();
+      expectDeepEqual(clickable.hasAttribute('tabindex'), false, {prefix: 'disabled'});
+    } finally {
+      h.dispose();
+    }
+  });
+
   test('a disabled big button keeps its button classes when its class changes', async () => {
     await awaitWebComponents();
     const cls = Vue.ref('a');
@@ -76,6 +103,45 @@ category('WebComponentsVue: element wrappers', () => {
       await Vue.nextTick();
       expectDeepEqual(classes(), ['b', ...base], {prefix: 'enabled'});
     } finally {
+      h.dispose();
+    }
+  });
+
+  test('a disabled big button does not click, says why and stays focusable', async () => {
+    await awaitWebComponents();
+    const bound = new Map<HTMLElement, unknown>();
+    const original = ui.tooltip.bind;
+    ui.tooltip.bind = ((el: HTMLElement, value: unknown) => {
+      bound.set(el, value);
+      return original(el, value as any);
+    }) as typeof ui.tooltip.bind;
+    const disabled = Vue.ref(true);
+    let clicks = 0;
+    const h = mount(() => Vue.h(BigButton,
+      {isDisabled: disabled.value, disabledReason: 'Fix the inputs', onClick: () => clicks++}, () => 'Run'));
+    const button = h.root.querySelector('button')!;
+    const tooltipText = () => {
+      const value = bound.get(button);
+      return typeof value === 'function' ? value() : value;
+    };
+    const balloons = () => Array.from(document.querySelectorAll('.d4-balloon')).map((el) => el.textContent ?? '');
+    try {
+      document.querySelectorAll('.d4-balloon').forEach((el) => el.remove());
+      expectDeepEqual(button.getAttribute('aria-disabled'), 'true', {prefix: 'aria-disabled'});
+      expectDeepEqual(button.tabIndex, 0, {prefix: 'focusable'});
+      expectDeepEqual(tooltipText(), 'Fix the inputs', {prefix: 'tooltip'});
+      button.click();
+      expectDeepEqual(clicks, 0, {prefix: 'no click while disabled'});
+      expectDeepEqual(balloons().some((text) => text.includes('Fix the inputs')), true, {prefix: 'warning'});
+
+      disabled.value = false;
+      await Vue.nextTick();
+      expectDeepEqual(button.hasAttribute('aria-disabled'), false, {prefix: 'enabled aria'});
+      expectDeepEqual(tooltipText() ?? null, null, {prefix: 'no tooltip when enabled'});
+      button.click();
+      expectDeepEqual(clicks, 1, {prefix: 'clicks when enabled'});
+    } finally {
+      ui.tooltip.bind = original;
       h.dispose();
     }
   });

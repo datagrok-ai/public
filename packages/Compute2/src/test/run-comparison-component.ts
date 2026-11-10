@@ -15,8 +15,10 @@ const table = (name: string, values: number[]) => {
 };
 
 // the index pickers sit above the tabs; the Compare list, toggles and chart in the shown tab
-const shownPane = (root: HTMLElement) => Array.from(root.querySelectorAll<HTMLElement>('[role="tabpanel"]'))
-  .find((pane) => pane.style.display !== 'none') ?? null;
+const shownPane = (root: HTMLElement) => {
+  const paneId = root.querySelector('[role="tab"][aria-selected="true"]')?.getAttribute('aria-controls');
+  return paneId ? root.querySelector<HTMLElement>(`#${paneId}`) : null;
+};
 const indexSelects = (root: HTMLElement) => Array.from(root.querySelectorAll<HTMLElement>('.c2-comparison-table'))
   .filter((table) => !table.closest('[role="tabpanel"]'))
   .flatMap((table) => Array.from(table.querySelectorAll<HTMLElement>('.c2-comparison-row')))

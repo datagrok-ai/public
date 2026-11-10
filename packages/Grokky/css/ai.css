@@ -576,6 +576,10 @@
   margin-top: 8px;
 }
 
+.grokky-markdown-fallback {
+  white-space: pre-wrap;
+}
+
 .grokky-exec-sep {
   width: 1px;
   height: 13px;

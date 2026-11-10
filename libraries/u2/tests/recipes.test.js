@@ -279,8 +279,9 @@ function programOver(virtual) {
   const parsed = ts.getParsedCommandLineOfConfigFile(config, {}, {...ts.sys, onUnRecoverableConfigFileDiagnostic: (d) => {
     throw new Error(ts.flattenDiagnosticMessageText(d.messageText, '\n'));
   }});
+  // ems's built declarations where it is built, else its sources: the CI job of u2 builds u2 alone
   const options = {...parsed.options, paths: {...parsed.options.paths,
-    '@datagrok-libraries/ems/src/dg': ['../../../ems/dist/src/dg/index.d.ts']}};
+    '@datagrok-libraries/ems/src/dg': ['../../../ems/dist/src/dg/index.d.ts', '../../../ems/src/dg/index.ts']}};
   const host = ts.createCompilerHost(options, true);
   const getSourceFile = host.getSourceFile.bind(host);
   host.getSourceFile = (name, version, onError, create) => virtual.has(name) ?

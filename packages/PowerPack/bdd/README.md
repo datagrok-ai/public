@@ -15,12 +15,40 @@ dialog session or data source, each saying in its description what it claims and
 | `navigation/` | direct link loading | a project opened by its direct link on a fresh page load and the same project from the Browse tree |
 | `io/` | xlsx open, xlsx shared with me | a three-sheet workbook through My files, a drop, the file chooser, File > Open and Shared with me — exactly three table views |
 | `enrichment/` | data enrichment | creating, applying, editing and deleting enrichments, several at once, a layout and a reopened project, the enrichments of a referenced column offered through a foreign key |
+| `identifiers/` | identifiers, identifiers of a database with catalogs — both `@skip`, development only | Configure Identifiers... on a connection: the dialog that asks for the schema, the editor with an identifier previewed from its table, the saved configuration under the connection, opened again and removed; on a database with catalogs, the catalog asked for first, its schemas alone, and after a reload the identifier's row read from that catalog and not the connection's own |
 
 `annotation-regions/` and `formula-lines/` came from `packages/UsageAnalysis/bdd/features/viewers/`:
 the feature belongs to PowerPack (the Formula Lines dialog is `PowerPack:formulaLinesDialog`).
 
 `add-new-column/persistence-northwind` is `@full-stand`: it needs the Postgres Northwind database
 (the NorthwindTest connection of dev); a stand without it runs with `--grep-invert @full-stand`.
+
+Both features of `identifiers/` are `@skip`: they are for development and do not run in CI, as the
+package tests of the same area (`src/tests/db-explorer.ts`, category DB Explorer, each with a
+`skipReason`) do not. They write to the one file every identifiers configuration of a stand is kept
+in. To work on Configure Identifiers or the db-explorer library, take `@skip` off the feature and the
+`DEV_ONLY` reason off the tests, `grok-bdd compile`, run them on a local stand, and put both back
+before committing.
+
+`identifiers/identifiers-catalogs` also needs a database with catalogs behind a connection named
+`CatalogsDemo`; unskipped, it still skips itself on a stand where the connection is missing or its
+database does not answer. Two files in `features/identifiers/` make the fixture on any machine with Docker:
+`catalogs-fixture.sql` makes the database (it can be run again: it re-creates its three working
+catalogs and adds the two hundred others only where they are missing), `catalogs-connection.json`
+is the connection.
+
+```bash
+docker run -d --name dg-catalogs-mssql -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD=<password> -p 14333:1433 mcr.microsoft.com/mssql/server:2022-latest
+docker cp features/identifiers/catalogs-fixture.sql dg-catalogs-mssql:/tmp/fixture.sql
+docker exec dg-catalogs-mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P <password> -C -b -i /tmp/fixture.sql
+# a copy of the connection with the password in it, saved as the account the tests run as; the copy is not committed
+grok s connections save --json <copy of catalogs-connection.json> --save-credentials
+```
+
+The feature counts 207 catalogs: the three it works on, the two hundred, and the four a new SQL
+Server has. `host.docker.internal` in the connection is the Docker host as Grok Connect sees it from
+its container on Docker Desktop; elsewhere put the address the stand's Grok Connect reaches the
+database by.
 
 What the stand needs: PowerPack published from the same checkout, Chem (the SPGI features pick
 Molecule functions), the demo files under `System:DemoFiles/` and a "My files" share for the
@@ -47,7 +75,8 @@ found by the grid's own readings; the functions list's order and what its top ro
 highlighted column references and their computed color. `home.ts` — the Home widgets, their stored
 settings, Spotlight's tip of the day and the administrator account the widget feature signs in as;
 `search.ts` — the Home search and its suggestions; `enrichment.ts` — the Enrich pane, its editor and
-the enrichment files on the server. What other suites use too is library vocabulary: signing in as
+the enrichment files on the server; `identifiers.ts` — the identifiers editor, its preview, and the
+configurations the server keeps (one file, `System:AppData/PowerPack/db-explorer/configs.json`). What other suites use too is library vocabulary: signing in as
 another account, a reload, files put into the user's files or a space, a dropped file, a direct link,
 a named table's cells, element sizes, and the Formula Lines dialog — PowerPack's, but the NX chain of
 UsageAnalysis drives it as well.
