@@ -17,7 +17,7 @@ import {RunBrowser} from '../RunStorage/RunBrowser';
 import {KeptAlive} from '../KeptAlive/KeptAlive';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ScalarsPanel} from './ScalarsPanel';
-import {SCOPE_CLASS, shortcutsRibbonItem, TAB_CYCLE_CLASS, useViewKeys} from '../../composables/use-keyboard';
+import {isKey, SCOPE_CLASS, shortcutsRibbonItem, TAB_CYCLE_CLASS, useViewKeys} from '../../composables/use-keyboard';
 import {BehaviorSubject} from 'rxjs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
@@ -312,12 +312,10 @@ export const RichFunctionView = Vue.defineComponent({
 
     // in a workflow the tree wizard owns the keys
     const onShortcut = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey)
-        return;
-      if (e.key === 'Enter') {
+      if (isKey(e, ['Enter'], {mod: true})) {
         if (pressRun())
           e.preventDefault();
-      } else if (e.key.toLowerCase() === 's' && props.history) {
+      } else if (isKey(e, ['s'], {mod: true}) && props.history) {
         e.preventDefault();
         if (uiBlocked.value)
           grok.shell.warning('Saving is not available while fitting is active.');

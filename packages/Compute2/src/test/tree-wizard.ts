@@ -5,18 +5,14 @@ import {category, test, expect, waitUntil} from '@datagrok-libraries/test/src/te
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {awaitWebComponents, closeViewsAfter, deleteSavedWorkflow} from './utils';
 import {
-  balloons, buttons, choose, clearBalloons, closeDialog, dialogTitles, labels, openKeyboardWorkflow, press, row,
-  rowLabel, rows, type,
+  balloons, buttons, choose, chosen, clearBalloons, closeDialog, dialogTitles, labels, openKeyboardWorkflow, press,
+  row, type,
 } from './keyboard';
 import {ribbonIcons, savedRunId} from './rfv';
 import {uniqueName} from './run-storage';
-import {SELECTED_STEP_BACKGROUND} from '../components/TreeWizard/tree-utils';
 
 const currentStep = (view: DG.ViewBase) =>
   new URLSearchParams((view.path ?? '').split('?')[1] ?? '').get('currentStep');
-
-export const chosen = (view: DG.ViewBase) =>
-  rows(view).filter((el) => el.querySelector(`[style*="${SELECTED_STEP_BACKGROUND}"]`)).map(rowLabel);
 
 export async function chooseRow(view: DG.ViewBase, label: string) {
   const el = row(view, label);

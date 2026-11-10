@@ -337,6 +337,7 @@ export const SaveRunDialog = Vue.defineComponent({
           <div class='c2-runs-button-group'>
             <button class='ui-btn' onClick={() => emit('done', null)}>Cancel</button>
             <button class={['ui-btn', 'ui-btn-ok', blocked.value || isChecking.value ? 'd4-disabled' : '']}
+              aria-disabled={blocked.value || isChecking.value ? 'true' : undefined}
               title={blocked.value} onClick={save}>
               {isLinkingSeveral ? `Add (${outcomes.value.length ? addedCount.value : props.linkedRuns.length})` :
                 (isLinking ? 'Add' : 'Save')}</button>

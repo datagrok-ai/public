@@ -27,7 +27,7 @@ import {
   nodeName, resolveSingleStep, SELECTED_STEP_BACKGROUND,
   isDeletable, isDuplicable,
 } from './tree-utils';
-import {SCOPE_CLASS, shortcutsRibbonItem, useViewKeys} from '../../composables/use-keyboard';
+import {isKey, SCOPE_CLASS, shortcutsRibbonItem, useViewKeys} from '../../composables/use-keyboard';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {setHelpService} from '../../composables/use-help';
@@ -266,17 +266,21 @@ export const TreeWizard = Vue.defineComponent({
     });
 
     // Ctrl/Cmd+Enter presses Run and Ctrl/Cmd+Shift+Enter Update of the focused tree row, else of the open step;
-    // Ctrl/Cmd+S saves the workflow
+    // Ctrl/Cmd+S saves the workflow; Alt+PageUp/PageDown go Back and Next, except in a grid, which pages with them
     useViewKeys(currentView, (e) => {
-      if (!(e.ctrlKey || e.metaKey) || e.altKey)
-        return;
-      if (e.key === 'Enter') {
+      if (isKey(e, ['PageUp', 'PageDown'], {alt: true}) && !singleStep.value) {
+        e.preventDefault();
+        if (e.key === 'PageUp')
+          goBack();
+        else
+          goNextStep();
+      } else if (isKey(e, ['Enter'], {mod: true}) || isKey(e, ['Enter'], {mod: true, shift: true})) {
         const state = stepsTree.value?.stepAt(e.target as Element) ?? chosenStepState.value;
         if (state && (e.shiftKey ?
           pressControl(updateControlOf(state), () => runSubtreeWithConfirm(state.uuid, true)) :
           pressControl(runControlOf(state), () => runStep(state.uuid))))
           e.preventDefault();
-      } else if (!e.shiftKey && e.key.toLowerCase() === 's' && isTreeLoaded.value) {
+      } else if (isKey(e, ['s'], {mod: true}) && isTreeLoaded.value) {
         e.preventDefault();
         whenIdle('saving', () => saveEntireModelState());
       }

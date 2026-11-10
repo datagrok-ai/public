@@ -615,7 +615,7 @@ category('Run storage: space index', () => {
         await historyUtils.listSpace(first.id);
         expect(listed().includes(firstRun), false);
         const saveButton = () => root.querySelector<HTMLElement>('.ui-btn-ok')!;
-        await awaitCheck(() => !saveButton().classList.contains('d4-disabled'),
+        await awaitCheck(() => saveButton().getAttribute('aria-disabled') !== 'true',
           'the access check should allow the save', 5000);
       } finally {
         unmount();

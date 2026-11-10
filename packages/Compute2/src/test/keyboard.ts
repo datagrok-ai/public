@@ -22,6 +22,8 @@ export const row = (view: DG.ViewBase, label: string) => {
     throw new Error(`No tree row "${label}" in ${JSON.stringify(labels(view))}`);
   return found;
 };
+export const chosen = (view: DG.ViewBase) =>
+  rows(view).filter((el) => el.querySelector('[aria-current="step"]')).map(rowLabel);
 const focusedLabel = () => {
   const el = document.activeElement as HTMLElement | null;
   return el?.classList.contains('tree-node') ? rowLabel(el) : null;
@@ -349,6 +351,21 @@ category('TreeWizard: keyboard shortcuts', () => {
     await waitUntil(() => view.root.contains(document.activeElement) && !document.activeElement!.closest('.mtl-tree'),
       `The focus should be in the opened step, is on ${document.activeElement?.tagName}`, 10000);
   });
+
+  test('Alt+PgDn and Alt+PgUp go to the next and previous step, even before a run or with the focus lost', async () => {
+    const view = await openKeyboardWorkflow(track);
+    await choose(view, 'fixed add');
+    const expectChosen = (label: string) =>
+      waitUntil(() => chosen(view).join() === label, () => `${label} should be chosen, is ${chosen(view)}`, 5000);
+    press(row(view, 'fixed add'), 'PageDown', {alt: true});
+    await expectChosen('fixed mul');
+    // the list holds steps, so Next skips it
+    press(document.activeElement!, 'PageDown', {alt: true});
+    await expectChosen('item 1');
+    (document.activeElement as HTMLElement).blur();
+    press(document.body, 'PageUp', {alt: true});
+    await expectChosen('fixed mul');
+  });
 });
 
 category('TreeWizard: keyboard focus', () => {
@@ -432,7 +449,8 @@ category('RFV: keyboard shortcuts', () => {
     type(a, '1');
     type(b, '2');
     type(c, 'x');
-    await waitUntil(() => !buttons(view.root, 'Run')[0]?.classList.contains('d4-disabled'), 'Run stays disabled', 5000);
+    await waitUntil(() => buttons(view.root, 'Run')[0]?.getAttribute('aria-disabled') !== 'true',
+      'Run stays disabled', 5000);
     press(c, 'Enter', {ctrl: true});
     await waitUntil(() => view.root.querySelector('[dock-spawn-title="Output"]') !== null, 'No outputs after the run',
       10000);
@@ -449,7 +467,8 @@ category('RFV: keyboard shortcuts', () => {
     type(a, '1');
     type(b, '2');
     type(c, 'x');
-    await waitUntil(() => !buttons(view.root, 'Run')[0]?.classList.contains('d4-disabled'), 'Run stays disabled', 5000);
+    await waitUntil(() => buttons(view.root, 'Run')[0]?.getAttribute('aria-disabled') !== 'true',
+      'Run stays disabled', 5000);
     press(c, 'Enter', {ctrl: true});
     await waitUntil(() => view.root.querySelector('[dock-spawn-title="Output"]') !== null, 'No outputs after the run',
       10000);
@@ -463,7 +482,7 @@ category('RFV: keyboard shortcuts', () => {
   test('The disabled Run button explains why on hover', async () => {
     const view = await openSimpleInputs();
     const run = buttons(view.root, 'Run')[0];
-    expect(run.classList.contains('d4-disabled'), true, 'Run should be disabled');
+    expect(run.getAttribute('aria-disabled') === 'true', true, 'Run should be disabled');
     await expectHoverable(run);
     run.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
     run.dispatchEvent(new MouseEvent('mouseenter'));
@@ -482,7 +501,7 @@ table = DG.DataFrame.fromCsv('x\\n1\\n2\\n3');`).prepare({n: 3});
     grok.shell.addView(view);
     const visibleGrid = () => Array.from(view.root.querySelectorAll<HTMLElement>('dg-viewer canvas'))
       .find((el) => el.getClientRects().length > 0);
-    await waitUntil(() => buttons(view.root, 'Run').some((el) => !el.classList.contains('d4-disabled')),
+    await waitUntil(() => buttons(view.root, 'Run').some((el) => el.getAttribute('aria-disabled') !== 'true'),
       'Run stays disabled', 15000);
     buttons(view.root, 'Run')[0].click();
     await waitUntil(() => !!visibleGrid(), 'No output grid', 10000);

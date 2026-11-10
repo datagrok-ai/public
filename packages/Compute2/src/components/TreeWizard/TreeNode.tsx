@@ -204,6 +204,7 @@ export const TreeNode = Vue.defineComponent({
           width: '100%',
           borderBottom: '1px solid var(--steel-2)',
         }}
+        aria-current={props.isSelected ? 'step' : undefined}
         ref={treeNodeRef}
       >
         <div

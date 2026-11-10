@@ -167,7 +167,7 @@ res = ranged;`).prepare(preset);
     const formOf = () => (view.root.querySelector('dg-input-form') as any)?.formInst as DG.InputForm | undefined;
     await waitUntil(() => !!formOf(), 'Form not rendered', 15000);
     const runDisabled = () => Array.from(view.root.querySelectorAll('button'))
-      .find((b) => b.textContent?.trim() === 'Run')!.classList.contains('d4-disabled');
+      .find((b) => b.textContent?.trim() === 'Run')!.getAttribute('aria-disabled') === 'true';
     return {view, call, form: formOf()!, runDisabled};
   };
 

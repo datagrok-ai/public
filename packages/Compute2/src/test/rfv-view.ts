@@ -20,7 +20,7 @@ async function openEditor(track: Track, call: DG.FuncCall) {
   await awaitWebComponents();
   const view = track(await grok.functions.call('Compute2:RichFunctionViewEditor', {call}) as DG.ViewBase);
   grok.shell.addView(view);
-  await waitUntil(() => buttons(view.root, 'Run').some((el) => !el.classList.contains('d4-disabled')),
+  await waitUntil(() => buttons(view.root, 'Run').some((el) => el.getAttribute('aria-disabled') !== 'true'),
     'Run stays disabled', 15000);
   return view;
 }
@@ -37,7 +37,7 @@ async function run(view: DG.ViewBase) {
 
 async function rerunWith(view: DG.ViewBase, rows: number) {
   type(rowsInput(view), `${rows}`);
-  await waitUntil(() => buttons(view.root, 'Run').some((el) => !el.classList.contains('d4-disabled')),
+  await waitUntil(() => buttons(view.root, 'Run').some((el) => el.getAttribute('aria-disabled') !== 'true'),
     'Run stays disabled', 5000);
   await run(view);
 }
