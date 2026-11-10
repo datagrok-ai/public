@@ -9,7 +9,7 @@ import {BasicTable, computed, signal} from '@datagrok-libraries/u2';
 import {ViewHost} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
-import {MONITOR_READY, markStage} from './ui';
+import {markStage, stageOf} from './ui';
 import {steps} from './study-header';
 import type {Stage} from './ui';
 import {openStage, showStage} from './stages';
@@ -20,11 +20,12 @@ import {monitorView, openStudyFile} from './monitor-view';
 import {newStudyTable, parseStudy, tableOf} from './study-file';
 import {PLAN_TAG, myPlans, parsePlan} from './plan-file';
 import {LibraryEntry, matches, myLibrary} from './library';
+import {dayToday} from './calendar';
 import {Brought, OPENED_EXTS, OpenStage, bring, readFile, suggestedStage} from './open-study';
 
 /** The home view. */
 export async function hubView(): Promise<DG.ViewBase> {
-  return markStage(ViewHost.create({name: 'PMX Studio', content: () => hubContent()}).view, 'home');
+  return markStage(ViewHost.create({name: 'PMX Studio', content: (self) => hubContent(self)}).view, 'home');
 }
 
 // ---- small builders: the page is static markup with a few listeners, so plain elements do -------------------------
@@ -122,24 +123,22 @@ function arc(chip: string): HTMLElement {
   return a;
 }
 
-interface Card {stage: Stage, n: string, name: string, what: string, icon: string, ready: boolean}
+interface Card {stage: Stage, n: string, name: string, what: string, icon: string}
 const CARDS: Card[] = [
   {stage: 'plan', n: '01', name: 'Plan', what: 'Animals, duration, calendar and power, before the study runs.',
-    icon: ICON.plan, ready: true},
+    icon: ICON.plan},
   {stage: 'monitor', n: '02', name: 'Monitor', what: 'A running study against its plan: new measurements, animals ' +
-    'that need attention, futility reviews.', icon: ICON.monitor, ready: MONITOR_READY},
+    'that need attention, planned reviews.', icon: ICON.monitor},
   {stage: 'analyze', n: '03', name: 'Analyze', what: 'A finished study as planned: each arm against the control, ' +
-    'each animal against its untreated twin.', icon: ICON.analyze, ready: true},
+    'each animal against its untreated twin.', icon: ICON.analyze},
 ];
 
 function card(c: Card, onOpen: () => void, onHover: (on: boolean) => void): HTMLButtonElement {
   const b = h('button', 'pmx-card pmx-rise', [
-    h('span', 'pmx-card-top', [h('span', 'pmx-ico', [icon(c.icon)]),
-      c.ready ? h('span', 'pmx-num', [c.n]) : h('span', 'pmx-soon', ['Coming soon'])]),
-    h('span', 'pmx-name', [c.name + ' ', ...(c.ready ? [h('span', 'pmx-go', ['→'], {'aria-hidden': 'true'})] : [])]),
+    h('span', 'pmx-card-top', [h('span', 'pmx-ico', [icon(c.icon)]), h('span', 'pmx-num', [c.n])]),
+    h('span', 'pmx-name', [c.name + ' ', h('span', 'pmx-go', ['→'], {'aria-hidden': 'true'})]),
     h('span', 'pmx-what', [c.what]),
   ], {'type': 'button', 'data-stage': c.stage});
-  b.disabled = !c.ready;
   b.addEventListener('click', onOpen);
   for (const [ev, on] of [['mouseenter', true], ['focus', true], ['mouseleave', false], ['blur', false]] as const)
     b.addEventListener(ev, () => onHover(on));
@@ -148,14 +147,14 @@ function card(c: Card, onOpen: () => void, onHover: (on: boolean) => void): HTML
 
 // ---- the page ------------------------------------------------------------------------------------------------------
 
-function hubContent(): ViewContent {
+function hubContent(self: ViewHost): ViewContent {
   const open = (stage: Stage) => stage === 'plan' ? void openStage('plan') : openStudyDialog();
   // the card under the pointer lights the edges that touch it and dims the others
-  const edges: {el: HTMLElement, ends: Stage[], off: boolean}[] = [];
+  const edges: {el: HTMLElement, ends: Stage[]}[] = [];
   const hover = (stage: Stage | null) => {
     for (const e of edges) {
       const on = stage !== null && e.ends.includes(stage);
-      e.el.classList.toggle('is-on', on && !e.off);
+      e.el.classList.toggle('is-on', on);
       e.el.classList.toggle('is-dim', stage !== null && !on);
     }
   };
@@ -165,12 +164,9 @@ function hubContent(): ViewContent {
     return el;
   });
   const between = [edge('.pmxplan'), edge('.pmxstudy')];
-  between.forEach((el, i) => {
-    edges.push({el, ends: [CARDS[i].stage, CARDS[i + 1].stage], off: !MONITOR_READY});
-    el.classList.toggle('is-off', !MONITOR_READY);
-  });
+  between.forEach((el, i) => edges.push({el, ends: [CARDS[i].stage, CARDS[i + 1].stage]}));
   const under = arc('.pmxplan');
-  edges.push({el: under, ends: ['plan', 'analyze'], off: false});
+  edges.push({el: under, ends: ['plan', 'analyze']});
 
   const flow = h('div', 'pmx-flow', [cards[0], between[0], cards[1], between[1], cards[2]]);
   flow.style.gridTemplateColumns = 'minmax(0,1fr) 72px minmax(0,1fr) 72px minmax(0,1fr)';
@@ -184,12 +180,18 @@ function hubContent(): ViewContent {
   strip.addEventListener('click', () => openStudyDialog());
 
   const studies = yourStudies();
-  studies.style.animationDelay = '.52s';
+  studies.root.style.animationDelay = '.52s';
+  // back on the Overview after saving a plan or a study elsewhere: the list is read again
+  const back = grok.events.onCurrentViewChanged.subscribe(() => {
+    if (stageOf(grok.shell.v) === 'home')
+      studies.reload();
+  });
+  self.own(() => back.unsubscribe());
 
   const title = h('h1', 'pmx-hub-title pmx-rise', ['PMX Studio']);
   const lede = h('p', 'pmx-hub-lede pmx-rise', ['Xenograft and syngeneic efficacy studies, from design to analysis.']);
   lede.style.animationDelay = '.08s';
-  const page = h('div', 'pmx-hub-page', [title, lede, flow, under, strip, studies]);
+  const page = h('div', 'pmx-hub-page', [title, lede, flow, under, strip, studies.root]);
 
   // a file dragged anywhere on the page: the whole page takes it, and the dialog opens with it read
   const dropLayer = h('div', 'pmx-drop', [h('div', 'pmx-drop-frame'),
@@ -209,10 +211,8 @@ function stageMarker(e: LibraryEntry): HTMLElement {
   return h('span', 'pmx-stage-cell', [marker, ['Plan', 'Monitor', 'Analyze'][e.stage - 1]]);
 }
 
-const DAY_MS = 86_400_000;
-/** The study day today is, from its day 0 (null: day 0 not fixed). */
-const todayOf = (e: LibraryEntry) => e.start ? Math.floor((Date.now() - Date.parse(`${e.start}T00:00`)) / DAY_MS) :
-  null;
+/** The study day today is, from its day 0 (null: day 0 not fixed): the calendar's own count. */
+const todayOf = (e: LibraryEntry) => dayToday(e.start);
 const shortDate = (iso: string) => new Date(`${iso}T00:00`).toLocaleDateString('en-GB',
   {weekday: 'short', day: 'numeric', month: 'short'});
 
@@ -242,8 +242,8 @@ function todayLine(entries: LibraryEntry[]): string {
 
 /** The user's plans and studies, newest first, found by any word of their ID, name, line, compounds, owner or tags;
  *  a plan opens in Plan, a study in Monitor. Hidden while there are none. Built with the page (the view owns the
- *  table), filled once the folders are read. */
-function yourStudies(): HTMLElement {
+ *  table), filled once the folders are read; `reload` reads them again. */
+function yourStudies(): {root: HTMLElement, reload: () => void} {
   const all = signal<LibraryEntry[]>([]);
   const query = signal('');
   const stage = signal('All');
@@ -267,17 +267,35 @@ function yourStudies(): HTMLElement {
     };
     return b;
   }));
-  // the user's own, then the demo portfolio after them (each demo's design takes a moment)
-  void Promise.all([myLibrary().catch(() => [] as LibraryEntry[]), demoEntries().catch(() => [] as LibraryEntry[])])
-    .then(([own, demos]) => {
-      const entries = [...own, ...demos];
-      all.value = entries;
-      host.hidden = entries.length === 0;
-      today.textContent = todayLine(entries);
-      today.hidden = !today.textContent;
-      drawChips();
-      showNone();
-    });
+  // the user's own as soon as they are read, the demo portfolio after them (each demo's design takes a moment)
+  let [own, demos]: LibraryEntry[][] = [[], []];
+  const show = () => {
+    const entries = [...own, ...demos];
+    all.value = entries;
+    host.hidden = entries.length === 0;
+    today.textContent = todayLine(entries);
+    today.hidden = !today.textContent;
+    drawChips();
+    showNone();
+  };
+  const reload = () => void myLibrary().catch(() => [] as LibraryEntry[]).then((mine) => {
+    own = mine;
+    show();
+  });
+  reload();
+  void demoEntries().catch(() => [] as LibraryEntry[]).then((d) => {
+    demos = d;
+    show();
+  });
+  // a row opens its file as it is now, not as it was when the list was read (the study may have been saved since),
+  // and once: a second click while it opens would open it twice
+  let opening = false;
+  const openEntry = async (e: LibraryEntry): Promise<unknown> => {
+    if (e.open)
+      return e.open();
+    const text = e.file ? await grok.dapi.files.readAsText(e.file) : e.text;
+    return e.kind === 'plan' ? showStage('plan', await planView(parsePlan(text))) : openStudyFile(text);
+  };
   const search = ui.input.string('', {placeholder: 'Search studies',
     tooltipText: 'Any word of the ID, name, line, compound, owner or tags',
     onValueChanged: (v) => {
@@ -304,13 +322,16 @@ function yourStudies(): HTMLElement {
         return tags;
       }},
     ],
-    onRowClick: (e) => void (e.open ? e.open() : e.kind === 'plan' ?
-      planView(parsePlan(e.text)).then((v) => showStage('plan', v)) : openStudyFile(e.text))
-      .catch((err) => grok.shell.error(String(err?.message ?? err)))});
+    onRowClick: (e) => {
+      if (opening)
+        return;
+      opening = true;
+      void openEntry(e).catch((err) => grok.shell.error(String(err?.message ?? err))).finally(() => opening = false);
+    }});
   table.root.style.cursor = 'pointer';
   host.append(h('div', 'pmx-library-head', [h('h3', '', ['Your studies']), search.root, chips]), today,
     h('div', 'pmx-library', [table.root, none]));
-  return host;
+  return {root: host, reload};
 }
 
 /** Takes the files dragged over `target` (and only files): `over` says when some are over it, `got` receives them.
@@ -367,32 +388,31 @@ export function openStudyDialog(first?: File[]): void {
   const body = h('div', 'pmx-open');
   const dialog = ui.dialog({title: 'Open a study'});
   dialog.add(body);
-  dialog.onOK(() => void go(), {closeOnEnter: false});
+  dialog.onOK(() => void go().catch((e) => grok.shell.error(String(e?.message ?? e))), {closeOnEnter: false});
   // the OK button says where the study opens, and waits until there is one
   const ok: HTMLButtonElement = dialog.getButton('OK') ?? document.createElement('button');
 
   const options = (): {question: string, list: Option[], hint: string} => {
     const {table, plan, study} = brought;
-    const monitorNote = MONITOR_READY ? '' : 'Coming soon';
     if (study) {
-      return {question: 'Has the study finished?', hint: '', list: [
-        {stage: 'monitor', title: 'Still running', desc: 'Monitor', note: monitorNote, disabled: !MONITOR_READY}]};
+      // a followed study is Monitor's file: nothing to choose
+      return {question: 'A followed study', hint: '', list: [
+        {stage: 'monitor', title: 'Open it', desc: 'Monitor', note: '', disabled: false}]};
     }
     if (table) {
-      const canMonitor = MONITOR_READY && !!plan;
-      const dated = canMonitor && table.lastDay !== null && plan!.end !== null;
+      const dated = !!plan && table.lastDay !== null && plan.end !== null;
       return {question: 'Has the study finished?',
         hint: dated ? `Day ${table.lastDay} of about ${plan!.end}, from the dates alone.` : '',
         list: [
-          {stage: 'monitor', title: 'Still running', desc: 'Monitor', disabled: !canMonitor,
-            note: !MONITOR_READY ? monitorNote : !plan ? 'Needs the plan it was run with' : ''},
+          {stage: 'monitor', title: 'Still running', desc: 'Monitor', disabled: !plan,
+            note: !plan ? 'Add the plan it is run with to follow it' : ''},
           {stage: 'analyze', title: 'Finished', note: '', disabled: false,
             desc: plan ? 'Analyze, against its plan' : 'Analyze, against the historical controls'},
         ]};
     }
     return {question: 'Has the study started?', hint: '', list: [
       {stage: 'plan', title: 'Not started', desc: 'Plan', note: '', disabled: false},
-      {stage: 'monitor', title: 'Starting now', desc: 'Monitor', note: monitorNote, disabled: !MONITOR_READY}]};
+      {stage: 'monitor', title: 'Starting now', desc: 'Monitor', note: '', disabled: false}]};
   };
 
   const selected = (): Option | null => {
@@ -400,7 +420,7 @@ export function openStudyDialog(first?: File[]): void {
       return null;
     const list = options().list;
     const pick = list.find((o) => o.stage === chosen && !o.disabled) ??
-      list.find((o) => o.stage === suggestedStage(brought, MONITOR_READY) && !o.disabled) ??
+      list.find((o) => o.stage === suggestedStage(brought) && !o.disabled) ??
       list.find((o) => !o.disabled);
     return pick ?? null;
   };

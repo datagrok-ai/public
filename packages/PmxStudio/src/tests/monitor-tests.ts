@@ -1,10 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
+import {Scope} from '@datagrok-libraries/u2';
 
 import {exampleStudy} from '../analyze';
 import {allocateGroups, futureDays, outsideBand, parseLooks, reasonsOf, weightReasons} from '../monitor';
 import {PLAN_TAG, parsePlan} from '../plan-file';
-import {LIMITS_TAG, LOG_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseStudy, studyOf, tableOf}
+import {LIMITS_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseStudy, studyOf, tableOf}
   from '../study-file';
 import {panelTabs} from '../panels';
 
@@ -84,8 +85,13 @@ category('Monitor', () => {
     expect(back.col('body_weight')!.stats.valueCount, study.col('body_weight')!.stats.valueCount);
     expect(JSON.parse(back.getTag(LIMITS_TAG)!).weightLimit, 15);
     expect(JSON.parse(back.getTag(LIMITS_TAG)!).humane, 1800);
-    // and one without body weights stays without
+    // a weight column the study does not use as its body weight travels as any other column: kept, not the weight
+    const unused = tableOf(parseStudy(JSON.stringify(studyOf(await upTo(9), 2000))));
+    expect(unused.col('body_weight') !== null, true);
+    expect(unused.getTag(WEIGHT_TAG) ?? null, null);
+    // and a table without one stays without
     const none = await upTo(9);
+    none.columns.remove('body_weight');
     expect(tableOf(parseStudy(JSON.stringify(studyOf(none, 2000)))).col('body_weight'), null);
   });
 
@@ -144,7 +150,6 @@ category('Monitor', () => {
     expect(back.rowCount, df.rowCount);
     expect(back.getTag(LOOKS_TAG), '7, 10');
     expect(logOf(back)[0].what, 'Groups revealed');
-    expect(back.getTag(LOG_TAG)!.length > 0, true);
     expect(parsePlan(back.getTag(PLAN_TAG)!).name, plan.name);
     let bad = false;
     try {
@@ -157,13 +162,15 @@ category('Monitor', () => {
 
   test('A panel on another tab opens that tab; the report shows every tab, then the open one alone again', async () => {
     const panel = (id: string) => ({id, title: id, hint: '', content: [document.createElement('div')]});
-    const t = panelTabs([panel('a'), panel('b')], [{name: 'One', layout: [{id: 'a', span: 12}]},
-      {name: 'Two', layout: [{id: 'b', span: 12}]}], 'pmx-test', 'test');
+    const root = Scope.root('panels test');
+    const t = root.build(() => panelTabs([panel('a'), panel('b')], [{name: 'One', layout: [{id: 'a', span: 12}]},
+      {name: 'Two', layout: [{id: 'b', span: 12}]}], 'pmx-test', 'test'));
     const shown = () => [...t.root.querySelectorAll<HTMLElement>('.pmx-grid-host')].map((g) => !g.hidden).join();
     expect(shown(), 'true,false');
     t.show('b');
     expect(shown(), 'false,true');
     expect(await t.all(async () => shown()), 'true,true');
     expect(shown(), 'false,true');
+    root.dispose();
   });
 });

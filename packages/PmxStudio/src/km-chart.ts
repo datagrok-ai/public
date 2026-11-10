@@ -56,6 +56,10 @@ export class KmChart extends Control {
       last = k.lastDay;
       slider.min = String(last);
       slider.max = String(2 * last);
+      // a horizon set for another study, or before more days were measured, is outside this slider: as measured
+      const h = horizon.peek();
+      if (h !== null && (h <= last || h > 2 * last))
+        horizon.value = null;
       if (horizon.peek() === null)
         slider.value = String(last);
       measured.textContent = k.horizon === undefined ? `day ${last}, as measured` : `day ${k.horizon}, projected` +

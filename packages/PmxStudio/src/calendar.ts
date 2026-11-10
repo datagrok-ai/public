@@ -158,7 +158,10 @@ export function icsOf(name: string, meta: StudyMeta, last: number, events: [numb
   const all = [...events, ...[...dosingDays(meta.groups, last)].map(([d, g]) => [d, `Dose: ${g.join(', ')}`])]
     .sort((a, b) => (a[0] as number) - (b[0] as number)) as [number, string][];
   const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Datagrok//PMX Studio//EN', 'CALSCALE:GREGORIAN'];
-  all.forEach(([day, what], i) => lines.push('BEGIN:VEVENT', `UID:${meta.id || name}-${day}-${i}@pmxstudio`,
+  // an event keeps its UID from one export to the next (its day and what it is), so importing a later export
+  // updates the calendar's events and does not double them
+  all.forEach(([day, what]) => lines.push('BEGIN:VEVENT',
+    `UID:${meta.id || name}-${day}-${what.replace(/[^a-z0-9]+/gi, '-')}@pmxstudio`,
     `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${ymd(dateOf(meta.start, day)!)}`,
     `DTEND;VALUE=DATE:${ymd(dateOf(meta.start, day + 1)!)}`, `SUMMARY:${text(`${name}: ${what} (day ${day})`)}`,
     'END:VEVENT'));

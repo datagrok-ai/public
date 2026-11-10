@@ -103,10 +103,15 @@ export class LineInput extends Input<string | null, InputOptions<string | null>>
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
           e.preventDefault();
           move(e.key === 'ArrowDown' ? 1 : -1);
-        } else if (e.key === 'Enter' && active.peek()) {
+        } else if (e.key === 'Enter') {
+          // what Enter picks is on screen: the marked line while the search still shows it, else the first shown
+          const shown = visible();
+          const line = shown.includes(active.peek() ?? '') ? active.peek()! : shown[0];
+          if (!line)
+            return;
           e.preventDefault();
           e.stopPropagation();
-          pick(active.peek()!);
+          pick(line);
         } else if (e.key === 'Escape') {
           e.stopPropagation();
           open.value = false;

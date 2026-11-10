@@ -128,7 +128,10 @@ const PLACEHOLDER = 'Optional: a plan saved in Plan';
 export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: Signal<boolean>,
   error: Signal<string | null>, result: ReadonlySignal<{analysis: DG.DataFrame} | undefined>,
   /** the plan file being read: a run waits for it, or it would analyze without the plan just picked */
-  reading: Promise<unknown>}): FileInput {
+  reading: Promise<unknown>,
+  /** the plan picked or taken off: the view runs again (the call's plan is no field of the form, so the form does
+   *  not say it changed, and the results would stay dimmed for good) */
+  changed: () => void}): FileInput {
   const {stale, error, result} = state;
   // the Plan field also offers the user's saved plans; a plan picked writes its pre-specified analysis into the form
   const applyPlan = (p: SavedPlan) => {
@@ -173,10 +176,14 @@ export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: 
     form.getInput('volume')?.root.after(planField.root);
     form.effect(() => {
       const file = planField.value;
+      // (the effect's first pass is the view opening with no plan picked: nothing changed)
+      const opening = latest === 0;
       const mine = ++latest;
       stale.value = result.peek() !== undefined;
       if (!file) {
         call.setParamValue('plan', null);
+        if (!opening)
+          state.changed();
         return;
       }
       state.reading = file.readAsString().then((text) => {
@@ -184,6 +191,7 @@ export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: 
           return;
         applyPlan(parsePlan(text));
         call.setParamValue('plan', text);
+        state.changed();
       }).catch((e) => error.value = String(e?.message ?? e));
     });
   });

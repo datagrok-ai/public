@@ -2,10 +2,10 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {DEFAULT_RULES, findOutliers, StudyColumns} from '../outlier-rules';
-import {AnimalSelection, EXCLUDED, FLAGGED, MARK_REASON, appendPasted, caliperVolume, emptyStudy, exclusionsOf,
-  mark, mirrorSelection, withoutExcluded}
-  from '../study-table';
-import {REVEALED, addLog, groupsShown, logOf, parseStudy, studyOf, tableOf} from '../study-file';
+import {AnimalSelection, animalMarks, appendPasted, caliperVolume, emptyStudy, exclusionsOf, mark, mirrorSelection,
+  pastedNumber, withoutExcluded} from '../study-table';
+import {EXCLUDED, FLAGGED, MARK_REASON, REVEALED, STUDY_TAG, addLog, groupsShown, logOf, parseStudy, studyOf, tableOf}
+  from '../study-file';
 import {dateOf, dosingDays, emptyMeta, metaOf, parseMeta, setMetaOn, startFrom, weekdayOf} from '../study-meta';
 import {entryOf, libraryOf, matches} from '../library';
 import {spiderLines} from '../spider-chart';
@@ -61,6 +61,86 @@ category('Study table', () => {
     expect(appendPasted(df, 'M3\tVehicle\t3\t150\t21'), 1);
     expect(df.get('body_weight', 2), 21);
     expect(df.get('day', 2), 3);
+    // values that look like headings are values: nothing dropped
+    expect(appendPasted(df, 'Mouse 4\tGroup 2\t3\t160'), 1);
+    expect(df.get('animal', 3), 'Mouse 4');
+  });
+
+  test('a pasted number is read or refused, never guessed: nothing is added when one cell cannot be read', async () => {
+    expect(pastedNumber('101.5'), 101.5);
+    expect(pastedNumber('101,5'), 101.5);
+    expect(pastedNumber('1,234.5'), 1234.5);
+    expect(pastedNumber('1.234,5'), 1234.5);
+    expect(pastedNumber(' n/a '), null);
+    expect(Number.isNaN(pastedNumber('1,234')), true, '1.234 or 1234: not guessed');
+    expect(Number.isNaN(pastedNumber('120 mm3')), true);
+    const df = emptyStudy();
+    const refused = (text: string) => {
+      try {
+        appendPasted(df, text);
+        return '';
+      } catch (e: any) {
+        return String(e.message);
+      }
+    };
+    expect(refused('M1\tVehicle\t0\t100\nM2\tVehicle\t0\t1,234').includes('row 2, volume: "1,234"'), true);
+    expect(refused('animal\t0\t3\t7\nM1\t100\t150\t220').includes('wide table'), true);
+    expect(refused('M1;Vehicle;0;100').includes('no tabs'), true);
+    expect(df.rowCount, 0, 'none of the three added a row');
+  });
+
+  test('the jump rule reads a change against the group’s over the same days; excluded rows are out of it', async () => {
+    // measured weekly, every tumor about four times larger: growth, not a typo; M3 tenfold is one
+    const s: StudyColumns = {animal: [], group: [], day: [], volume: [], weight: null};
+    for (const [a, v7] of [['M1', 400], ['M2', 420], ['M3', 1000], ['M4', 380]] as [string, number][]) {
+      for (const [day, v] of [[0, 100], [7, v7]]) {
+        s.animal.push(a);
+        s.group.push('Vehicle');
+        s.day.push(day);
+        s.volume.push(v);
+      }
+    }
+    const jumps = (x: StudyColumns) => findOutliers(x, {...DEFAULT_RULES, group: {...DEFAULT_RULES.group, on: false}});
+    expect(jumps(s).length, 0, 'a fourfold week is what the group did; tenfold is under three times that');
+    s.volume[5] = 4000; // M3's day 7
+    expect(jumps(s).map((f) => f.row).join(','), '5');
+    // an animal alone (no group to compare with) is read against no change, as before
+    expect(jumps({animal: ['M1', 'M1'], group: ['A', 'A'], day: [0, 3], volume: [100, 320], weight: null}).length, 1);
+    // an animal out of the analysis in part is said to be so, not "Excluded"
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M1', 'M1', 'M2', 'M2', 'M3']),
+      DG.Column.fromList('bool', EXCLUDED, [true, true, true, false, false]),
+      DG.Column.fromList('bool', FLAGGED, [false, false, false, false, true])]);
+    const marks = animalMarks({study: df, animal: 'animal', group: 'animal', day: 'animal', volume: 'animal',
+      bodyWeight: null});
+    expect([marks.get('M1'), marks.get('M2'), marks.get('M3')].join(','), 'excluded,partly,flagged');
+  });
+
+  test('a study with its own column names and extra columns saves by role and keeps them', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('Mouse', ['M1', 'M2']),
+      DG.Column.fromStrings('Arm', ['A', 'B']), DG.Column.fromList('double', 'Day', [0, 0]),
+      DG.Column.fromList('double', 'TV', [100, 110]), DG.Column.fromList('double', 'length', [6.5, 6.25]),
+      DG.Column.fromStrings('cage', ['C1', 'C2'])]);
+    df.name = 'S';
+    let refused = false;
+    try {
+      studyOf(df, 2000);
+    } catch {
+      refused = true;
+    }
+    expect(refused, true, 'no roles yet: the usual names are not there');
+    df.setTag(STUDY_TAG, JSON.stringify({animal: 'Mouse', group: 'Arm', day: 'Day', volume: 'TV', bodyWeight: null}));
+    const back = tableOf(parseStudy(JSON.stringify(studyOf(df, 2000))));
+    expect(back.get('animal', 1), 'M2');
+    expect(back.get('volume', 1), 110);
+    expect(back.get('length', 0), 6.5, 'the caliper reading travels with the study');
+    expect(back.get('cage', 1), 'C2');
+    let damaged = false;
+    try {
+      parseStudy(JSON.stringify({...studyOf(df, 2000), log: [{who: 'x'}]}));
+    } catch {
+      damaged = true;
+    }
+    expect(damaged, true, 'a log line with no time is refused on opening, not deep in a view');
   });
 
   test('excluded rows leave the engine’s inputs and are reported with their reasons', async () => {
@@ -99,7 +179,7 @@ category('Study table', () => {
     expect(JSON.parse(df.getTag('pmx.log') || '[]').length, 3);
   });
 
-  test('the spider plot: each animal from its first volume, excluded rows left out', async () => {
+  test('the spider plot: each animal from its volume at randomization, excluded rows left out', async () => {
     const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M1', 'M1', 'M1', 'M2', 'M2']),
       DG.Column.fromStrings('group', ['A', 'A', 'A', 'B', 'B']), DG.Column.fromList('double', 'day', [7, 0, 3, 0, 3]),
       DG.Column.fromList('double', 'volume', [50, 100, 150, 0, 80]),

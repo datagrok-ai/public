@@ -33,9 +33,10 @@ export interface SavedPlan {
     /** the study's last day, the day the median control reaches the endpoint, and 8 in 10 studies' range of it */
     studyEnd: number; endpointDay: number; durationQ10: number; durationQ90: number | null;
     nControl: number | null;
-    /** each arm with its animals, the animals it needed for the plan's power, and its power (assurance) by animals
-     *  per arm (a plan saved before these were kept has neither) */
-    arms: (Arm & {n: number | null, nNeeded?: number | null, power?: PowerAt[]})[];
+    /** each arm with its animals, the animals it needed for the plan's power, its power (assurance) by animals
+     *  per arm, and the kill rate that gives its declared effect: Monitor's chance of success rests on that rate, so
+     *  it is kept as planned (a plan saved before these were kept has none of them) */
+    arms: (Arm & {n: number | null, nNeeded?: number | null, power?: PowerAt[], killRate?: number | null})[];
     /** what a study run as planned should observe, as 95% ranges: the end, the controls' growth, each arm's effect */
     checks: PlanChecks;
   };
@@ -84,7 +85,8 @@ export async function planOf(name: string, call: DG.FuncCall, f: PlanFrames, stu
     .filter((i) => pc.get('arm', i) === arm && finite(pc.get('assurance', i)) !== null)
     .map((i) => ({n: pc.get('n', i), assurance: pc.get('assurance', i)}));
   const arms = armsOf(inputs.arms as DG.DataFrame).map((arm, i) => ({...arm, n: finite(a.get('n', i)),
-    nNeeded: finite(a.get('n_needed', i)), power: curve(a.get('arm', i))}));
+    nNeeded: finite(a.get('n_needed', i)), power: curve(a.get('arm', i)),
+    killRate: finite(a.get('kill_rate_per_day', i))}));
   const d = declarationOf(inputs as unknown as PlanInputs);
   const checks = await planChecks({line: d.line, vRand: d.vRand, endpoint: d.endpoint, humane: d.humane,
     weekdays: d.weekdays, startWeekday: d.startWeekday, endpointDay: v('endpoint_day'), nControl: n('n_control') ?? 40,

@@ -256,7 +256,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   });
   // busy while the study is analyzed, and before that while the example study is prepared
   const busy = signal(false);
-  const planState = {stale, error, result, reading: Promise.resolve() as Promise<unknown>};
+  const planState = {stale, error, result, reading: Promise.resolve() as Promise<unknown>,
+    changed: () => auto.changed()};
   // the study and columns the shown result read (Your data opens them)
   let resultStudy: StudyInputs | null = null;
   // the same without its excluded rows: what the analysis read, and so what KM, Fine-Gray, synergy and Your data read
@@ -266,6 +267,10 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     keptStudy = reads && withoutExcluded(reads);
     selection.attach(reads);
   };
+  // what the last analysis read of the study (its table as text, the columns' roles, the removal column): the panels
+  // that draw the study's own rows (each animal's line, the days to the endpoint) follow it, since a value edited may
+  // leave every table of the result as it was (the medians by day) and still move them
+  const dataRead = signal('');
   // the animals selected, through the study table's own selection: what one chart picks, every chart marks
   const selection = new AnimalSelection();
   self.own(() => selection.dispose());
@@ -285,6 +290,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       const reads = studyInputsOf(call);
       tagStudy(reads);
       const twinSent = askedOf(call, TWIN_INPUTS);
+      const removal = call.getParamValue('removalReason');
+      const data = `${twinSent}\u0000${removal instanceof DG.Column ? removal.name : removal ?? ''}`;
       // the twin unchanged (cached): one call, with it
       if (twinsCached.includes(twinSent)) {
         const frames = await run({withTwin: true});
@@ -294,6 +301,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
         stale.value = askedOf(call) !== sent;
         shown(reads);
         result.value = keepSame(result.peek(), frames);
+        dataRead.value = data;
         return;
       }
       // else the analysis first; then the same inputs with the twins (seconds), whatever the form holds by then
@@ -305,6 +313,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       stale.value = askedOf(call) !== sent;
       shown(reads);
       result.value = keepSame(result.peek(), frames);
+      dataRead.value = data;
       void analysisFrames(analysisDeclarationOf(withTwin)).then((done) => {
         if (mine !== latest)
           return;
@@ -316,11 +325,17 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
           error.value = String(e?.message ?? e);
       });
     } catch (e: any) {
-      error.value = String(e?.message ?? e);
+      // only the last run speaks: an older one failing late would write over a newer result's place
+      if (mine === latest) {
+        error.value = String(e?.message ?? e);
+        // what is shown is no longer what the table or the form says
+        stale.value = result.peek() !== undefined;
+      }
     } finally {
-      preparing = false;
-      if (mine === latest)
+      if (mine === latest) {
+        preparing = false;
         busy.value = false;
+      }
     }
   };
 
@@ -847,6 +862,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   // each animal's growth as a % change from randomization, in its group's colour (the study's own rows, as analyzed)
   const spider = new SpiderChart(computed(() => {
     const r = volumesOnly.value;
+    void dataRead.value;
     const s = resultStudy;
     return r && s ? {lines: spiderLines(s), colors: colorsOf(r)} : undefined;
   }), selection);
@@ -855,7 +871,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   // projected, by its slider: at the last day measured, what was measured; further right, each animal still under
   // the endpoint carried on at the rate of its last three measurements to that day
   const survival = signal<Survival | undefined>(undefined);
-  const kmOnly = only(result, ['volumes'], (r) => [...groupsOf(r), r.analysis.get('endpoint', 0)]);
+  const kmOnly = only(result, ['volumes'], (r) => [...groupsOf(r), r.analysis.get('endpoint', 0), dataRead.value]);
   const horizon = signal<number | null>(null);
   // one computation at a time, of the latest day asked for: a slider dragged fast asks for many, and answers
   // arriving out of order made the curves jump
@@ -1002,6 +1018,9 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const r = result.value;
     if (!df || !r)
       throw new Error('Analyze a study first');
+    // an export is what is on screen: not while that is behind the table or the form
+    if (busy.peek() || stale.peek())
+      throw new Error('The analysis is not up to date yet: export once it is');
     return {df, r};
   };
   exports.push(
@@ -1018,7 +1037,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       const plan = r.analysis.get('plan', 0);
       arriveDialog(arriveItems({control: r.analysis.get('control', 0), arms: c.col('arm')!.toList() as string[],
         plan: plan ? String(plan) : null, exclusions: exclusionsOf(studyOf(df)), meta: metaOf(df),
-        randomized: !!plan || logOf(df).some((e) => /randomi[sz]|allocat/i.test(e.what)),
+        // from the log alone: a plan says how many animals, not that the groups were formed at random
+        randomized: logOf(df).some((e) => /randomi[sz]|allocat/i.test(e.what)),
         endpoint: r.analysis.get('endpoint', 0), evaluationDay: r.analysis.get('evaluation_day', 0),
         protocol: protocolText, analyzed: [{group: r.analysis.get('control', 0), n: r.analysis.get('n_control', 0)},
           ...Array.from({length: c.rowCount}, (_, i) => ({group: c.get('arm', i), n: c.get('n', i)}))]}));
@@ -1057,7 +1077,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     // the study's own name, as Monitor's header (the analysis table's name says only what was compared)
     return {name: df?.name || r.analysis.name, groups: [control, ...arms].map((name) => ({name, color: colors[name]})),
       status: `${r.analysis.get('line', 0)} · evaluated on ${dayText(r.analysis.get('evaluation_day', 0))}`,
-      meta: metaOf(df), setMeta: df ? (m) => setMetaOn(df, m) : undefined,
+      meta: () => metaOf(df), setMeta: df ? (m) => setMetaOn(df, m) : undefined,
       groupMenu: (g, e) => studyMenu(studyOf(df), 'group', g, {causedBy: e})};
   }), (s) => void openStage(s));
   return {

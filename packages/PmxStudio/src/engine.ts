@@ -19,10 +19,11 @@ export type Correction = 'dunnett' | 'bonferroni' | 'none';
 export const correctionOf = (x: unknown): Correction =>
   x === 'bonferroni' || x === 'none' ? x : 'dunnett';
 
-/** Whether x is a finite number; `finite` gives it or null (Crux's nulls, a form's empty optionals, and the empty cell
- *  of an integer column, which reads as INT_NULL). */
+/** Whether x is a finite number; `finite` gives it or null (Crux's nulls, a form's empty optionals, and a column's
+ *  empty cell where the platform gives its sentinel and not null: INT_NULL, FLOAT_NULL). */
 export const isFiniteNumber = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
-export const finite = (x: unknown): number | null => isFiniteNumber(x) && x !== DG.INT_NULL ? x : null;
+export const finite = (x: unknown): number | null =>
+  isFiniteNumber(x) && x !== DG.INT_NULL && x !== DG.FLOAT_NULL ? x : null;
 /** The median (the mean of the middle two for an even count). */
 export const median = (xs: number[]) => {
   const s = [...xs].sort((a, b) => a - b);
@@ -70,7 +71,8 @@ export interface StudyDeclaration {
   /** share of randomised animals not analysable: ulceration, deaths, technical failures (at least the atlas's
    *  non-progressing share) */
   postLoss: number;
-  /** probability that the animals planned leave every group its analysable n */
+  /** probability that the animals planned leave a group its analysable n: each group's own, and the implanted
+   *  pool's, not that of all of them at once (three groups at 0.9 keep all their animals about 0.7 of the time) */
   confidence: number;
   /** 'confident': enough with that probability (binomial); 'expected': the average loss only, n / (1 - loss) */
   lossRule: 'confident' | 'expected';
@@ -98,17 +100,15 @@ export interface ArmDesign {
   effect: number;
   /** analysable animals this arm needs for the target assurance (null: not up to 40) */
   nAssurance: number | null;
-  nConditional: number | null;
   /** the arm's analysable animals (the user's n when given, else nAssurance) and the animals to randomise for them */
   n: number | null;
   randomise: number | null;
   /** at the arm's n */
   assurance: number | null;
-  conditional: number | null;
   /** minimum detectable effect at the user's n (percent; null without one, or out of reach) */
   mde: number | null;
   /** null where Crux gives no power */
-  power: {n: number, implant: number, assurance: number | null, conditional: number | null}[];
+  power: {n: number, implant: number, assurance: number | null}[];
 }
 
 export interface StudyDesign {
@@ -269,7 +269,9 @@ async function designArmNow(prior: object, params: Row, shards: number, power: n
     x.assurance = mean('assurance', null, x.n);
   const nAssurance = reaches('assurance', null);
   const chosen = nFixed ?? nAssurance ?? t.power[t.power.length - 1].n;
-  t.plan = {...t.plan, n_assurance: nAssurance, alpha_arm: t.power.find((x) => x.n === chosen)?.alpha,
+  // (a given n outside the power table, 2 or over 40, keeps the α its own call gave)
+  const alphaArm = t.power.find((x) => x.n === chosen)?.alpha ?? t.plan.alpha_arm;
+  t.plan = {...t.plan, n_assurance: nAssurance, alpha_arm: alphaArm,
     ...(nFixed ? {assurance_at_n: mean('assurance', null, nFixed)} : {})};
   for (const x of t.duration)
     x.assurance = mean('duration', x.day, chosen);
@@ -288,7 +290,10 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     endpoint: d.endpoint, power: d.power, alpha: d.alpha, treated_arms: d.treatedArms ?? d.arms.length,
     correction: d.correction,
     weekdays: weekdaysParam(d.weekdays),
-    start_weekday: d.startWeekday, humane: d.humane, schedules: d.schedules, mde: d.mde !== false, seed: SEED,
+    // (the smallest detectable effect is searched only at a given n: without one the flag would only keep Plan's
+    // designs and Monitor's or Analyze's of the same study apart in the cache)
+    start_weekday: d.startWeekday, humane: d.humane, schedules: d.schedules, mde: !!d.n && d.mde !== false,
+    seed: SEED,
     ...POOLS, ...(d.n ? {n: d.n} : {}), ...(d.lastDay ? {last_day: d.lastDay} : {}),
   };
   // the minimum detectable effect searches over every study at once: such a design is one call; else the worker sets
@@ -306,16 +311,15 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
   // so each comparison has at least the control its own design assumed (equal groups): conservative
   const plans = results.map((r) => r.plan);
   const powers = results.map((r) => r.power.map((x) => ({n: x.n, implant: x.implant,
-    assurance: finite(x.assurance), conditional: finite(x.conditional)})));
+    assurance: finite(x.assurance)})));
   const arms: ArmDesign[] = d.arms.map((decl, k) => {
     const p = plans[k];
     const nAssurance = finite(p['n_assurance']);
     const n = d.n ?? (nAssurance === null ? null : Math.max(nAssurance, MIN_GROUP));
     const row = n === null ? undefined : powers[k].find((r) => r.n === n);
     return {declaration: decl, archetype: ARCHETYPES[decl.therapy], killRate: p['kill_rate'], effect: p['effect'],
-      nAssurance, nConditional: finite(p['n_conditional']), n, randomise: null,
+      nAssurance, n, randomise: null,
       assurance: d.n ? finite(p['assurance_at_n']) : row?.assurance ?? null,
-      conditional: d.n ? finite(p['conditional_at_n']) : row?.conditional ?? null,
       mde: d.n ? finite(p['mde']) : null, power: powers[k]};
   });
   const sizes = arms.map((a) => a.n);

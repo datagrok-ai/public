@@ -9,7 +9,8 @@ import {_package} from './package';
 
 /** The part of crux-modules.js's call result this package reads. */
 export interface CruxResult {
-  main: {rows: number, columns: string[], col: {[name: string]: any}};
+  /** `columns`: each column as decoded (its name and values); `col`: the values by name */
+  main: {rows: number, columns: {name: string, [k: string]: any}[], col: {[name: string]: any}};
   named?: {[name: string]: any};
 }
 
@@ -33,12 +34,6 @@ function load(): Promise<CruxModules> {
     .then((m) => m.CruxModules.fromBase(base) as Promise<CruxModules>);
   first.catch(() => first = null);
   return first;
-}
-
-/** A float column of `n` nulls (a function's "solve for this" input): the leaf ABI's explicit layout, since
- *  a typed array's NaN is a value and an all-null plain array has no type to infer. */
-export function nullFloats(n: number): {format: string, values: Float64Array, validity: Uint8Array} {
-  return {format: 'g', values: new Float64Array(n), validity: new Uint8Array(Math.ceil(n / 8))};
 }
 
 const utf8 = new TextDecoder();

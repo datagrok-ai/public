@@ -46,8 +46,9 @@ export async function competingOf(s: StudyInputs, removal: string | null, contro
     x.last = Math.max(x.last, d);
     if (vol[i] >= endpoint)
       x.reached = x.reached === null ? d : Math.min(x.reached, d);
+    // (a status column says of most animals that they finished: that is no removal)
     const r = why.get(i);
-    if (r !== null && r !== undefined && String(r).trim() !== '')
+    if (r !== null && r !== undefined && String(r).trim() !== '' && !FINISHED.test(String(r)))
       x.removed = true;
     animals.set(a, x);
   }
@@ -75,6 +76,10 @@ export async function competingOf(s: StudyInputs, removal: string | null, contro
 /** A measurement row, as tumor_survival takes them. */
 export interface VolumeRow {animal: string, group: string, day: number, volume: number}
 
+/** A removal column's entry for an animal that was not removed: it finished the study (what Tolerability reads
+ *  as not removed too). */
+const FINISHED = /\b(none|completed?|terminal|scheduled)\b|end of study/i;
+
 /** How many of an animal's last measurements give its rate. */
 const RATE_FROM = 3;
 
@@ -91,10 +96,13 @@ export function projectedRows(rows: VolumeRow[], endpoint: number, horizon: numb
     }
   }
   const out: VolumeRow[] = [];
+  // an animal that left before the study's last measurement (found dead, removed) is not carried on: it was not
+  // there to be followed
+  const studyLast = Math.max(...[...by.values()].flat().map((r) => r.day));
   for (const own of by.values()) {
     own.sort((a, b) => a.day - b.day);
     const last = own[own.length - 1];
-    if (own.some((r) => r.volume >= endpoint) || own.length < 2 || horizon <= last.day)
+    if (own.some((r) => r.volume >= endpoint) || own.length < 2 || horizon <= last.day || last.day < studyLast)
       continue;
     const fit = own.slice(-RATE_FROM);
     const mx = fit.reduce((s, r) => s + r.day, 0) / fit.length;

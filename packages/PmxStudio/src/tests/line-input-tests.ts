@@ -1,4 +1,5 @@
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {Scope} from '@datagrok-libraries/u2';
 
 import {tumorModels} from '../priors';
 import {LineInput, modelsFound, tumorsOf} from '../line-input';
@@ -22,10 +23,11 @@ category('Tumor models', () => {
   });
 
   test('the picker holds a line name, as the functions take it', async () => {
-    const input = new LineInput({label: 'Tumor model'});
+    const root = Scope.root('line input test');
+    const input = root.build(() => new LineInput({label: 'Tumor model'}));
     expect(input.value, 'MC38');
     input.value = '4T1';
     expect(input.value, '4T1');
-    input.dispose();
+    root.dispose();
   });
 });

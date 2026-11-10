@@ -6,6 +6,7 @@
    go on, only on the reviews fixed at the start (MONITOR_DESIGN.md). */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import {badge, BasicTable, button, buttonWithIcon, computed, div, divH, divV, signal,
   span} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
@@ -21,7 +22,7 @@ import {PLAN_TAG, SavedPlan, parsePlan} from './plan-file';
 import {planInput} from './plan-vs-observed';
 import {openStage, showStage} from './stages';
 import {LIMITS_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf, newStudyTable, parseStudy,
-  restoreFields, saveStudy, studyOf, tableOf} from './study-file';
+  restoreFields, roleColumns, saveStudy, studyOf, tableOf} from './study-file';
 import {editLayout, panelTabs, Tab} from './panels';
 import {stagePage, studyHeader} from './study-header';
 import {animalMarks, emptyStudy, studyDataLine, studyMenu, studyOf as studyNamesOf, tagStudy, withoutExcluded}
@@ -125,7 +126,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       weightLimit: call.getParamValue('weightLimit') ?? null}));
   };
   const planState = {stale, error, result: computed(() => result.value && {analysis: result.value.status}),
-    reading: Promise.resolve() as Promise<unknown>};
+    reading: Promise.resolve() as Promise<unknown>, changed: () => auto.changed()};
   const run = async (prepare?: () => Promise<void>) => {
     busy.value = true;
     const mine = ++latest;
@@ -155,11 +156,17 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       remember();
       result.value = frames;
     } catch (e: any) {
-      error.value = String(e?.message ?? e);
+      // only the last run speaks: an older one failing late would write over a newer result's place
+      if (mine === latest) {
+        error.value = String(e?.message ?? e);
+        // what is shown is no longer what the table or the form says
+        stale.value = result.peek() !== undefined;
+      }
     } finally {
-      preparing = false;
-      if (mine === latest)
+      if (mine === latest) {
+        preparing = false;
         busy.value = false;
+      }
     }
   };
 
@@ -298,13 +305,21 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   const entered = div([], 'pmx-monitor-entered');
   const checkEntered = () => {
     const [r, df] = [result.peek(), studyTable()];
-    if (!r || !df || !['animal', 'day', 'volume'].every((c) => df.col(c))) {
+    // the columns as the last run read them (the table's own names, whatever they are)
+    let cols: ReturnType<typeof roleColumns> | null = null;
+    try {
+      cols = df ? roleColumns(df) : null;
+    } catch {
+      // not a study yet
+    }
+    if (!r || !df || !cols) {
       entered.replaceChildren();
       return;
     }
+    const {animal, day, volume} = cols;
     const nextDay = r.status.get('next_day', 0);
-    const off = outsideBand(Array.from({length: df.rowCount}, (_, i) => ({animal: String(df.get('animal', i)),
-      day: df.get('day', i), volume: df.col('volume')!.isNone(i) ? NaN : df.get('volume', i)})), nextDay,
+    const off = outsideBand(Array.from({length: df.rowCount}, (_, i) => ({animal: String(animal.get(i)),
+      day: day.get(i), volume: volume.isNone(i) ? NaN : volume.get(i)})), nextDay,
     new Map(rowsOf(r.animals).map((a) => [a.animal, a as any])));
     entered.replaceChildren(...off.length === 0 ? [] : [noteLine(`Measure again (${dayText(nextDay)}): ` +
       off.map((o) => `${o.animal} at ${mm3(o.volume)} mm³, expected ${mm3(o.lower)}–${mm3(o.upper)}`).join('; '),
@@ -348,9 +363,10 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     const animalCell = (a: AnimalRow) => {
       const m = marks.get(String(a.animal));
       const el = span(String(a.animal));
-      if (m)
-        el.append(' ', badge(m === 'excluded' ? 'Excluded' : 'Flagged',
-          {variant: m === 'excluded' ? 'default' : 'warning'}));
+      if (m) {
+        el.append(' ', badge(m === 'excluded' ? 'Excluded' : m === 'partly' ? 'Some values excluded' : 'Flagged',
+          {variant: m === 'flagged' ? 'warning' : 'default'}));
+      }
       el.dataset.animal = String(a.animal);
       return el;
     };
@@ -383,10 +399,13 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     if (!text)
       throw new Error('Propose groups needs the study\'s plan, for its groups and animals');
     const plan: SavedPlan = parsePlan(text);
+    const [animal, day, volume] = ['animal', 'day', 'volume'].map((role) => roleCol(df, role));
+    if (!animal || !day || !volume)
+      throw new Error('Propose groups needs the animals, their days and volumes: pick those columns in the form');
     // each animal's latest volume
     const last = new Map<string, {day: number, v: number}>();
     for (let i = 0; i < df.rowCount; i++) {
-      const [a, d, v] = [String(df.get('animal', i)), df.get('day', i), df.get('volume', i)];
+      const [a, d, v] = [String(animal.get(i)), day.get(i), volume.isNone(i) ? NaN : volume.get(i)];
       if (!(last.get(a)?.day! >= d) && Number.isFinite(v))
         last.set(a, {day: d, v});
     }
@@ -397,30 +416,47 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     const {allocation, balance} = await allocateGroups([...last.keys()], [...last.values()].map((x) => x.v), groups,
       seed);
     const group = new Map(rowsOf(allocation).map((r) => [r.animal, r.group]));
-    const col = df.col('group') ?? df.columns.addNewString('group');
+    const col = roleCol(df, 'group') ?? df.columns.addNewString('group');
     for (let i = 0; i < df.rowCount; i++)
-      col.set(i, group.get(String(df.get('animal', i))) ?? '');
+      col.set(i, group.get(String(animal.get(i))) ?? '');
     addLog(df, `Groups allocated (seed ${seed})`);
+    logVersion.value++;
     fill(allocationTable, rowsOf(balance), (b) => b.group, [['Group', (b) => b.group], ['Animals', (b) => String(b.n)],
       ['Geometric mean volume', (b) => `${mm3(b.geo_mean)} mm³`],
       ['Spread (sd of log volume)', (b) => String(num(b.sd_log, 2))]]);
   };
-  const proposeButton = buttonWithIcon('Propose groups', 'random', () => void propose().catch((e) =>
-    error.value = String(e?.message ?? e)));
+  // an action's failure is said where it happened and goes away (the run's error line stays the run's)
+  const failed = (e: any) => grok.shell.error(String(e?.message ?? e));
+  // groups already in the table are someone's allocation, perhaps the one the animals are being dosed by, so they
+  // are replaced only when asked twice
+  const proposeAsked = () => {
+    const df = studyTable();
+    const groups = df ? roleCol(df, 'group') : null;
+    const allocated = !!df && !!groups &&
+      Array.from({length: df.rowCount}, (_, i) => i).some((i) => !groups.isNone(i) && String(groups.get(i)).trim());
+    if (!allocated)
+      return void propose().catch(failed);
+    ui.dialog('Propose groups')
+      .add(ui.divText('The table already has groups. Proposing them again gives every animal a new random group, ' +
+        'from its latest volume, in place of the one it has. The study\'s log keeps the new seed, not the old groups.'))
+      .onOK(() => void propose().catch(failed)).show();
+  };
+  const proposeButton = buttonWithIcon('Propose groups', 'random', proposeAsked);
   proposeButton.title = 'Fill the table\'s group column with random groups alike in their tumors';
   // the animal room's sheet, from the groups in the table and the seed the log kept
   const sheetButton = buttonWithIcon('Print randomization sheet', 'print', () => {
     const df = studyTable();
-    if (!df?.col('group')) {
-      error.value = 'The sheet needs the study\'s groups: propose them, or open a table with a group column';
+    if (!df || !roleCol(df, 'group')) {
+      failed('The sheet needs the study\'s groups: propose them, or open a table with a group column');
       return;
     }
     const seed = [...logOf(df)].reverse().map((e) => /seed (\d+)/.exec(e.what)?.[1]).find((s) => s) ?? null;
     try {
       printSheet(sheetHtml(df.name, metaOf(df), df, seed));
       addLog(df, 'Randomization sheet printed (it shows the groups)');
+      logVersion.value++;
     } catch (e: any) {
-      error.value = String(e?.message ?? e);
+      failed(e);
     }
   });
   sheetButton.title = 'A page for the animal room: each animal, its group and its volume at randomization, ' +
@@ -524,15 +560,18 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     // the plan's measurement days: day 0 and its weekdays (no plan: only the days measured count)
     const planned = (d: number) => plan !== null && (d === 0 || weekdays.has((startWeekday + d) % 7));
     const today = dayToday(m.start);
-    // the day the study is on: today's, or without a date the last day measured
-    const now = today ?? latest;
     const round = (x: number | undefined) => x === undefined ? undefined : Math.round(x);
     const [end, lo, hi] = [round(cell('end_median').value), round(cell('end_lower').value),
       round(cell('end_upper').value)];
     const planEnd = plan?.predicted.studyEnd ?? null;
+    // the calendar's last day: the study's own span, and today while it is no more than two weeks past it (a study
+    // opened again a year on is not a year of empty weeks, each a measurement missed)
+    const span = Math.max(latest, hi ?? end ?? 0, planEnd ?? 0);
+    const last = Math.max(span, Math.min(today ?? 0, span + 14));
+    // the day the study is on: today's, or without a date the last day measured
+    const now = Math.min(today ?? latest, last);
     const looks = new Set(String(df.getTag(LOOKS_TAG) ?? '').split(/[,;\s]+/).filter((x) => x).map(Number));
     const missing = Array.from({length: Math.max(0, now)}, (_, d) => d).filter((d) => planned(d) && !measured.has(d));
-    const last = Math.max(latest, today ?? 0, hi ?? end ?? 0, planEnd ?? 0);
 
     const lines: HTMLElement[] = [];
     const todayMark = mark('Today', CAL.blue, true);
@@ -675,22 +714,27 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     if (!df)
       return;
     remember();
-    setMetaOn(df, withId(metaOf(df) ?? emptyMeta()));
-    void saveStudy(studyOf(df, call.getParamValue('humane') ?? null, call.getParamValue('weightLimit') ?? null))
-      .then((p) => grok.shell.info(`Study saved: ${p}`), (e) => error.value = String(e?.message ?? e));
+    // through setMeta: the header shows the ID the study has just been given
+    setMeta(withId(metaOf(df) ?? emptyMeta()));
+    void Promise.resolve().then(() => saveStudy(studyOf(df, call.getParamValue('humane') ?? null,
+      call.getParamValue('weightLimit') ?? null))).then((p) => grok.shell.info(`Study saved: ${p}`), failed);
   });
   saveButton.title = 'Save the plan, the measurements and the log to your files';
-  const analyzeButton = buttonWithIcon('Analyze this study', 'chart-line', () => {
+  let toAnalyze = false;
+  const analyzeThis = () => {
     const df = studyTable();
-    if (!df)
+    // (a second click while Analyze is being built would open it twice)
+    if (!df || toAnalyze)
       return;
+    toAnalyze = true;
     // Analyze shows the groups: that is revealing them
     if (!revealed.peek())
       reveal();
     // in place of an Analyze view already open
     [...grok.shell.views].find((v) => stageOf(v) === 'analyze')?.close();
-    void analyzeView({study: df}).then((v) => showStage('analyze', v));
-  });
+    void analyzeView({study: df}).then((v) => showStage('analyze', v)).catch(failed).finally(() => toAnalyze = false);
+  };
+  const analyzeButton = buttonWithIcon('Analyze this study', 'chart-line', analyzeThis);
   analyzeButton.title = 'Analyze this table as planned; in a blinded study this reveals the groups, and the log ' +
     'says so';
 
@@ -706,10 +750,17 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   // the study's data in Datagrok's own table view; here, one line on it and the way there
   const dataLine = studyDataLine(() => studyInputsOf(call));
   self.own(dataLine.dispose);
+  // after a run that failed too: the way to the table is what a study with no forecast yet needs
   form.effect(() => {
-    if (result.value)
-      dataLine.refresh();
+    void result.value;
+    void error.value;
+    dataLine.refresh();
   });
+  // a study with animals and volumes but no groups yet has no forecast, so no panels: forming the groups is here
+  const firstGroups = divH([buttonWithIcon('Propose groups', 'random', proposeAsked),
+    span('Day-0 volumes in the table and no groups yet? Random groups alike in their tumors, from the plan.')]);
+  Object.assign(firstGroups.style, {gap: 'var(--dg-space-m)', alignItems: 'center'});
+  form.effect(() => firstGroups.hidden = !!result.value || !error.value || !studyTable()?.getTag(PLAN_TAG));
   const panels = panelTabs([
     {id: 'today', title: 'Needs attention', hint: 'Who needs attention today; a person decides what to do',
       content: [limits, entered, attention, noteBox]},
@@ -721,8 +772,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     {id: 'sheet', title: 'Measurement sheet', hint: 'The range the next value of each animal should fall in: check ' +
       'each value as you measure it', content: [sheet]},
     {id: 'decisions', title: 'Decisions', hint: 'Whether each treated group is still worth continuing, and what was ' +
-      'decided', content: [decisionBody, block('Log', 'Who did what, and when', logBox), divH([saveButton,
-      analyzeButton])]},
+      'decided', content: [decisionBody, block('Log', 'Who did what, and when', logBox)]},
     {id: 'welfare', title: 'Welfare', hint: 'Whether the treatments are being tolerated, from the body weights so far',
       content: [welfareHidden, welfareBody]},
     {id: 'enrollment', title: 'Enrollment', hint: 'Random groups alike in their starting tumors',
@@ -730,13 +780,16 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   ], MONITOR_TABS, 'pmx-monitor-panels', 'monitor');
   exports.push(['Layout…', () => editLayout(panels.root), 'View']);
 
-  const content = divV([dataLine.root, cards, panels.root], 'pmx-monitor-content');
+  const content = divV([cards, panels.root], 'pmx-monitor-content');
   const needStudy = () => studyTable() ?? (() => {
     throw new Error('Open a study first');
   })();
   exports.push(
     ['Report (PDF)…', async () => {
       const df = needStudy();
+      // the report is what is on screen: not while that is behind the table or the form
+      if (busy.peek() || stale.peek() || !result.peek())
+        throw new Error('The forecasts are not up to date yet: export the report once they are');
       printSheet(await panels.all(() => reportHtml({title: df.name, stage: 'Monitor', meta: metaOf(df), content,
         log: logOf(df)})));
     }],
@@ -757,7 +810,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     content.hidden = !result.value;
     start.hidden = !!result.value;
   });
-  const panes = stagePanes(form, content, {busy, result, error, stale, before: [start],
+  const panes = stagePanes(form, content, {busy, result, error, stale, before: [start, firstGroups, dataLine.root],
     busyText: 'Forecasting the study…', staleText: 'the forecasts shown are for the last complete inputs'});
   // a session's values pasted or typed into the table: the forecasts follow, after a pause (one value, then the next)
   self.own(onTableEdits(form, computed(() => [result.value, error.value]),
@@ -766,6 +819,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   self.own(stopWatching);
   const head = studyHeader(form, 'monitor', computed(() => {
     const r = result.value;
+    // the details changed (an ID given on saving, a note, day 0's date): the header shows them as they are
+    void metaVersion.value;
     if (!r)
       return undefined;
     const colors = colorsOf(r);
@@ -775,16 +830,20 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       Object.entries(colors).map(([name, color]) => ({name, color})) : [],
     status: [r.status.get('line', 0), day === undefined ? '' : dayText(day),
       revealed.value ? '' : 'groups hidden'].filter((x) => x).join(' · '),
-    meta: metaOf(df), setMeta: df ? (m) => {
+    meta: () => metaOf(df), setMeta: df ? (m) => {
       const was = !!metaOf(df)?.blinded;
       setMeta(m);
       if (m.blinded !== was)
         record(m.blinded ? 'Blinded entry on' : 'Blinded entry off: the groups are shown');
     } : undefined, groupMenu: (g, e) => studyMenu(studyNamesOf(df), 'group', g, {causedBy: e})};
-  }), (s) => void openStage(s));
+    // the header's Analyze step is this study's analysis (unless that would reveal a blinded study's groups: the
+    // button does that, and says so)
+  }), (s) => s === 'analyze' && studyTable() && revealed.peek() ? analyzeThis() : void openStage(s));
+  // saving is always in reach, as in Plan: a study's measurements, log and notes live in the table until saved
+  form.effect(() => [saveButton, analyzeButton].forEach((b) => b.hidden = !result.value));
   return {
     root: stagePage(head.row, panes),
-    ribbon: [[head.steps]],
+    ribbon: [[head.steps], [saveButton, analyzeButton]],
     path: '/monitor',
     status: computed(() => busy.value ? 'Forecasting the study…' : result.value ? String(status.value?.get('line', 0)) :
       ''),

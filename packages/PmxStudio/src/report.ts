@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as echarts from 'echarts/core';
 
+import {esc} from './sheet';
 import type {LogEntry} from './study-file';
 import {StudyMeta, dateOf, dateText} from './study-meta';
 
@@ -40,7 +41,8 @@ const pngOf = (chart: echarts.ECharts) => chart.getDataURL({type: 'png', pixelRa
 export function chartMenu(host: HTMLElement): void {
   host.addEventListener('contextmenu', (e) => {
     const chart = echarts.getInstanceByDom(host);
-    if (!chart)
+    // a right click the chart has taken for itself (an animal's menu on its bar) is not the figure's
+    if (!chart || e.defaultPrevented)
       return;
     e.preventDefault();
     const name = host.closest<HTMLElement>('.pmx-panel')?.dataset.panel ?? 'figure';
@@ -66,9 +68,7 @@ async function imageOf(el: HTMLElement): Promise<string | null> {
   }
 }
 
-const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) =>
-  ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[c]!);
-const table = (head: string[], rows: unknown[][]) => `<table><tr>${head.map((h) => `<th>${esc(h)}</th>`).join('')}` +
+const table =(head: string[], rows: unknown[][]) => `<table><tr>${head.map((h) => `<th>${esc(h)}</th>`).join('')}` +
   `</tr>${rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</table>`;
 
 /** The report: `content` (the stage's results) as shown, its charts as images, after a title; then the study's

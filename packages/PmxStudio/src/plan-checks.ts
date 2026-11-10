@@ -45,12 +45,12 @@ export async function planChecks(x: ChecksInput): Promise<PlanChecks> {
     n_control: Math.max(2, x.nControl), last_day: Math.min(365, Math.max(2 * x.endpointDay, x.endpointDay + 14))};
   // with no treated arm, one with no effect: the controls and the end are the same in every call (one seed)
   const calls = x.arms.length ? x.arms : [{name: '', therapy: 'small_molecule' as Therapy, killRate: 0, n: 2}];
-  const results: CruxResult[] = [];
-  for (const arm of calls) {
+  // every arm's at once: each is a call of its own, on a worker set of its own
+  const results: CruxResult[] = await Promise.all(calls.map((arm) => {
     const a = ARCHETYPES[arm.therapy];
-    results.push(await crux('stats.tumor_plan_checks', prior, {...shared, kill_rate: arm.killRate,
-      n_treated: Math.max(2, arm.n), onset: a.onsetDays, kappa_sd: a.kappaSd, responders: a.responders}));
-  }
+    return crux('stats.tumor_plan_checks', prior, {...shared, kill_rate: arm.killRate,
+      n_treated: Math.max(2, arm.n), onset: a.onsetDays, kappa_sd: a.kappaSd, responders: a.responders});
+  }));
   const first = rows(results[0].main as any)[0];
   return {
     end: range(first, 'end'), notReached: first.not_reached, controlSlope: range(first, 'control_slope'),

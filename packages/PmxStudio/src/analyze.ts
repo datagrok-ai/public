@@ -196,6 +196,10 @@ export interface PlanComparison {
 /** Whether x falls in a 95% range (an open top: no upper limit). */
 const within = (x: number, r: Range) => x >= r.q025 && (r.q975 === null || x <= r.q975);
 
+/** The days with a tumor measured: a study weighed on other days has rows with no volume, and those days are not
+ *  ones an analysis can be on. */
+const volumeDays = (data: StudyData) => data.day.filter((_, i) => Number.isFinite(data.volume[i]));
+
 /** Plan's evaluation day, observed: the first day the median control is measured at or above the endpoint; the
  *  last measurement day when it never is. */
 function evaluationDay(d: AnalysisDeclaration): {day: number, fromEndpoint: boolean} {
@@ -214,7 +218,7 @@ function evaluationDay(d: AnalysisDeclaration): {day: number, fromEndpoint: bool
     if (median(byDay.get(day)!) >= d.endpoint)
       return {day, fromEndpoint: true};
   }
-  return {day: Math.max(...data.day), fromEndpoint: false};
+  return {day: Math.max(...volumeDays(data)), fromEndpoint: false};
 }
 
 /** Crux stats.tumor_twin's model of the line: the engine priors' study prior, noise and start spread with the twin's
@@ -327,7 +331,7 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
     throw new Error('The study has no treated group');
   const end = d.day === null ? evaluationDay(d) : {day: d.day, fromEndpoint: false};
   // the tests and the twins read the volumes of that very day, and a growth rate takes two days from randomization
-  const measured = [...new Set(d.data.day.filter((t) => t >= 0))].sort((a, b) => a - b);
+  const measured = [...new Set(volumeDays(d.data).filter((t) => t >= 0))].sort((a, b) => a - b);
   if (!measured.includes(end.day) || end.day <= measured[0]) {
     throw new Error(`Evaluation day ${end.day} cannot be analyzed: choose a measurement day after the first, ` +
       `one of ${measured.slice(1).join(', ')}`);
@@ -561,7 +565,7 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
   // the first measurement day the median control reached the endpoint, whatever evaluation day was chosen; a study
   // that never did is later than planned only if it was measured beyond the range's top
   const reached = evaluationDay({...d, endpoint: p.endpoint});
-  const lastDay = Math.max(...d.data.day);
+  const lastDay = Math.max(...volumeDays(d.data));
   const end: PlanComparison['end'] = {observed: reached.fromEndpoint ? reached.day : null, range: c.end,
     notReached: c.notReached, verdict: !reached.fromEndpoint ?
       (c.end.q975 !== null && lastDay > c.end.q975 ? 'Later than predicted' : 'Endpoint not reached') :
@@ -843,7 +847,7 @@ export async function exampleStudy(spec: ExampleSpec = MC38_EXAMPLE): Promise<DG
   const plan = savedPlan(spec.name ? `${spec.name} plan` : `Example ${line} plan`, exampleInputs(spec), {line,
     endpoint: 1500, vRand: 100, studyEnd: design.studyEnd,
     endpointDay: design.endpointDay, durationQ10: design.durationQ10, durationQ90: design.durationQ90, nControl,
-    arms: arms.map((a, k) => ({...a, n: n[k], nNeeded: design.arms[k].nAssurance,
+    arms: arms.map((a, k) => ({...a, n: n[k], nNeeded: design.arms[k].nAssurance, killRate: design.arms[k].killRate,
       power: design.arms[k].power.flatMap((r) => r.assurance === null ? [] : [{n: r.n, assurance: r.assurance}])})),
     checks});
   df.setTag(PLAN_TAG, JSON.stringify(plan));

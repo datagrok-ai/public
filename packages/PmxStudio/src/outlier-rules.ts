@@ -12,7 +12,8 @@ import {isFiniteNumber as ok, median} from './engine';
 export interface OutlierRules {
   /** a negative volume or body weight, an animal measured twice on one day */
   impossible: boolean;
-  /** a volume this many times larger or smaller than the animal's previous one */
+  /** a volume that changed since the animal's previous one this many times more, or less, than its group's did over
+   *  the same days (no group measured on both days: than no change) */
   jump: {on: boolean, fold: number};
   /** a volume this many robust deviations (MAD of log volume) from its group's median on its day, in groups of at
    *  least `minAnimals` */
@@ -40,6 +41,11 @@ export interface Finding {row: number, on: 'volume' | 'weight' | 'row', reason: 
 const mm3 = (v: number) => `${Math.round(v)} mm³`;
 /** The robust standard deviation of normal data from its median absolute deviation. */
 const MAD_SD = 1.4826;
+/** A group's spread is not taken below a caliper's own error on a large tumor (sd of log volume about 0.1): a group
+ *  tighter than that is tight by its randomization window or by chance, and would flag every animal a little off. */
+const SD_FLOOR = 0.1;
+/** The animals of a group measured on the same two days that it takes to say what the group did between them. */
+const MIN_SAME_DAYS = 3;
 
 /** What the rules find in a study, row by row. */
 export function findOutliers(s: StudyColumns, r: OutlierRules): Finding[] {
@@ -76,17 +82,32 @@ export function findOutliers(s: StudyColumns, r: OutlierRules): Finding[] {
     return null;
   };
   if (r.jump.on && r.jump.fold > 1) {
+    // each animal's change since its previous volume, on the log scale, and the days it spans
+    const steps: {row: number, from: number, change: number, days: string}[] = [];
     byAnimal.forEach((is) => is.forEach((i, k) => {
       const v = s.volume[i];
       const p = previous(is, k, s.volume);
-      if (!ok(v) || v <= 0 || p === null)
-        return;
-      const ratio = v / s.volume[p]!;
-      if (ratio >= r.jump.fold || ratio <= 1 / r.jump.fold) {
-        out.push({row: i, on: 'volume', reason: `${ratio >= 1 ? `${ratio.toFixed(1)} times` : `1/${(1 / ratio)
-          .toFixed(1)} of`} its volume on day ${s.day[p]} (${mm3(s.volume[p]!)} to ${mm3(v)})`});
+      if (ok(v) && v > 0 && p !== null) {
+        steps.push({row: i, from: p, change: Math.log(v / s.volume[p]!),
+          days: `${s.group[i]}\u0000${s.day[p]}\u0000${s.day[i]}`});
       }
     }));
+    // against what its group did over the same days: a tumor that triples in a week is growth where its group's do,
+    // a typo where they do not. Too few of the group measured on both days: against no change
+    const together = new Map<string, number[]>();
+    for (const t of steps)
+      together.set(t.days, [...(together.get(t.days) ?? []), t.change]);
+    for (const t of steps) {
+      const same = together.get(t.days)!;
+      const usual = same.length >= MIN_SAME_DAYS ? median(same) : 0;
+      if (Math.abs(t.change - usual) < Math.log(r.jump.fold))
+        continue;
+      const ratio = Math.exp(t.change);
+      const times = (x: number) => x >= 1 ? `${x.toFixed(1)} times` : `1/${(1 / x).toFixed(1)} of`;
+      out.push({row: t.row, on: 'volume', reason: `${times(ratio)} its volume on day ${s.day[t.from]} ` +
+        `(${mm3(s.volume[t.from]!)} to ${mm3(s.volume[t.row]!)})` +
+        (same.length >= MIN_SAME_DAYS ? `; its group's changed ${Math.exp(usual).toFixed(1)}-fold` : '')});
+    }
   }
   if (r.weightDrop.on && s.weight) {
     const w = s.weight;
@@ -113,9 +134,7 @@ export function findOutliers(s: StudyColumns, r: OutlierRules): Finding[] {
         return;
       const logs = is.map((i) => Math.log(s.volume[i]!));
       const med = median(logs);
-      const sd = MAD_SD * median(logs.map((x) => Math.abs(x - med)));
-      if (!(sd > 0))
-        return;
+      const sd = Math.max(MAD_SD * median(logs.map((x) => Math.abs(x - med))), SD_FLOOR);
       is.forEach((i, k) => {
         if (Math.abs(logs[k] - med) / sd > r.group.mads) {
           out.push({row: i, on: 'volume', reason: `Far from its group on day ${s.day[i]}: ${mm3(s.volume[i]!)}, ` +
@@ -173,8 +192,9 @@ export function saveUserRules(r: OutlierRules | null): void {
 
 /** The lab's rules, for every user (who has none of their own). */
 export async function saveLabRules(r: OutlierRules): Promise<void> {
+  // every setting kept, as panels.ts does: the lab's group and its layouts live there too
   // @ts-ignore (setSettings is declared with a Map; the platform takes the plain object, as ApiTests does)
-  await _package.setSettings({[LAB_RULES]: JSON.stringify(r)}, DG.Group.allUsers);
+  await _package.setSettings({..._package.settings, [LAB_RULES]: JSON.stringify(r)}, DG.Group.allUsers);
 }
 
 /** Whether this user may change the lab's rules: an Administrator, or a member of the lab's group (by name, set in

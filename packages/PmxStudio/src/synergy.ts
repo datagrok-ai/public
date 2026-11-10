@@ -19,7 +19,8 @@ export async function synergyOf(s: StudyInputs, groups: {control: string, a: str
   const [dy, vol] = [s.day, s.volume].map((c) => numbersOf(s.study.col(c)!));
   const wanted = new Set(Object.values(groups));
   const keep = Array.from({length: s.study.rowCount}, (_, i) => i).filter((i) => wanted.has(String(gr.get(i))) &&
-    Number.isFinite(dy[i]) && dy[i] <= lastDay && vol[i] > 0);
+    // from randomization on, as the analysis: growth before any dose would pull every rate together
+    Number.isFinite(dy[i]) && dy[i] >= 0 && dy[i] <= lastDay && vol[i] > 0);
   const r = await crux('stats.tumor_growth_synergy', {group: keep.map((i) => String(gr.get(i))),
     animal: keep.map((i) => String(an.get(i))), time: Float64Array.from(keep, (i) => dy[i]),
     volume: Float64Array.from(keep, (i) => vol[i])}, groups);

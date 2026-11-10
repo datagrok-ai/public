@@ -4,7 +4,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import {PLAN_EXT, parsePlan} from './plan-file';
-import {STUDY_EXT} from './study-file';
+import {STUDY_EXT, parseStudy} from './study-file';
 
 export const OPENED_EXTS = [PLAN_EXT, STUDY_EXT, 'csv', 'tsv', 'txt'];
 
@@ -22,7 +22,9 @@ export const ROLES: [string, RegExp][] = [
   ['Day', /^(day|days|study[ _]?day|time)\b/i],
   ['Volume', /vol/i],
 ];
-export const WEIGHT = /(body[ _]?weight|^bw\b|^weight)/i;
+/** A body weight column by its name: any weight that is not the tumor's (ui.ts's isBodyWeight, what the form's
+ *  own pick is kept by: the hub must not say "No body weight" of a column Monitor then uses as one). */
+export const WEIGHT = /^(?!.*tum).*(weight|\bbw\b)/i;
 
 const extOf = (name: string) => (name.split('.').pop() ?? '').toLowerCase();
 const baseOf = (name: string) => name.replace(/\.[^.]+$/, '');
@@ -36,8 +38,11 @@ export function readFile(name: string, text: string): FileRead {
       return {kind: 'plan', file: name, text, name: p.name || baseOf(name), line: p.predicted.line ?? '',
         end: Number.isFinite(p.predicted.studyEnd) ? Math.round(p.predicted.studyEnd) : null};
     }
-    if (ext === STUDY_EXT)
+    if (ext === STUDY_EXT) {
+      // read now, as a plan is: a damaged or newer study is said to be no study file here, not on opening it
+      parseStudy(text);
       return {kind: 'study', file: name, text};
+    }
     if (ext === 'csv' || ext === 'tsv' || ext === 'txt') {
       const df = DG.DataFrame.fromCsv(text);
       if (df.rowCount === 0)
@@ -86,14 +91,14 @@ export type OpenStage = 'plan' | 'monitor' | 'analyze';
 
 /** The stage a study is suggested to open in, from its dates alone: a table whose last measurement comes before
  *  its plan's end is still running. */
-export function suggestedStage(b: Brought, monitorReady: boolean): OpenStage {
-  // a followed study is Monitor's file, whether Monitor is here yet or not
+export function suggestedStage(b: Brought): OpenStage {
+  // a followed study is Monitor's file
   if (b.study)
     return 'monitor';
   if (b.table) {
     const t = b.table;
     const running = !!b.plan && b.plan.end !== null && t.lastDay !== null && t.lastDay < b.plan.end - 1;
-    return running && monitorReady ? 'monitor' : 'analyze';
+    return running ? 'monitor' : 'analyze';
   }
   return 'plan';
 }

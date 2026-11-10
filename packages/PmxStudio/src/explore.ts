@@ -162,7 +162,8 @@ function measurementsView(df: DG.DataFrame, parent: DG.ViewBase): DG.TableView {
 /** The crumb back to Analyze over a Your data view; the grid's coloured columns in coloured text, not filled cells
  *  (an animal's every row in its group's colour fills the grid). */
 function backTo(tv: DG.TableView, parent: DG.ViewBase): void {
-  ViewHost.of(tv).ribbon({breadcrumbs: {parent}});
+  const host = ViewHost.of(tv);
+  host.build(() => host.ribbon({breadcrumbs: {parent}}));
   for (const c of [COL.animal, COL.group, COL.response]) {
     const gc = tv.grid.col(c);
     if (gc)

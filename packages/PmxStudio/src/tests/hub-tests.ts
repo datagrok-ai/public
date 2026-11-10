@@ -2,7 +2,6 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {exampleStudy} from '../analyze';
 import {PLAN_TAG} from '../plan-file';
-import {MONITOR_READY} from '../ui';
 import {hubView} from '../hub-view';
 import {bring, readFile, suggestedStage} from '../open-study';
 import {gpu} from '../gpu';
@@ -45,25 +44,25 @@ category('Hub', () => {
     expect(plan.end !== null && plan.end > 5, true);
     const finished = bring({}, [plan, readFile('study.csv', CSV.replace(/,12,/g, `,${plan.end},`))]).brought;
     const running = bring({}, [plan, readFile('study.csv', CSV)]).brought;
-    expect(suggestedStage(finished, true), 'analyze');
-    expect(suggestedStage(running, true), plan.end! - 1 > 12 ? 'monitor' : 'analyze');
-    // without Monitor, a running study still opens: in Analyze
-    expect(suggestedStage(running, false), 'analyze');
-    expect(suggestedStage({plan}, true), 'plan');
+    expect(suggestedStage(finished), 'analyze');
+    // the CSV ends on day 12: still running when the plan's last day is past day 13
+    expect(plan.end! > 13, true, `the example plan ends on day ${plan.end}`);
+    expect(suggestedStage(running), 'monitor');
+    expect(suggestedStage({plan}), 'plan');
   });
 
   test('what is not a study file is set aside, by name', async () => {
     const {brought, bad} = bring({}, [readFile('notes.docx', 'x'), readFile('broken.pmxplan', '{'),
-      readFile('empty.csv', '')]);
-    expect(bad.join(), 'notes.docx,broken.pmxplan,empty.csv');
+      readFile('empty.csv', ''), readFile('cut.pmxstudy', '{"format": "pmx-study", "version": 1, "rows": [')]);
+    expect(bad.join(), 'notes.docx,broken.pmxplan,empty.csv,cut.pmxstudy');
     expect(Object.keys(brought).length, 0);
   });
 
-  test('the home: three stages, Monitor open only once it is built', async () => {
+  test('the home: three stages, each open', async () => {
     const root = (await hubView()).root;
     const cards = [...root.querySelectorAll<HTMLButtonElement>('.pmx-card')];
     expect(cards.map((c) => c.dataset.stage).join(), 'plan,monitor,analyze');
-    expect(cards[1].disabled, !MONITOR_READY);
+    expect(cards.some((c) => c.disabled), false);
     expect(root.querySelectorAll('.pmx-link, .pmx-arc').length, 3);
   });
 });

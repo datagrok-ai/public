@@ -52,10 +52,6 @@
 .pmx-go { display: inline-block; opacity: 0; transform: translateX(-6px); color: var(--dg-accent, #2083D5);
   transition: opacity .4s var(--pmx-ease), transform .5s var(--pmx-ease-out); }
 .pmx-card:hover .pmx-go, .pmx-card:focus-visible .pmx-go { opacity: 1; transform: none; }
-.pmx-soon { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--dg-bg-secondary, #F2F2F5); color: var(--pmx-muted); }
-.pmx-card:disabled { cursor: default; border-style: dashed; }
-.pmx-card:disabled:hover { transform: none; box-shadow: none; border-color: var(--dg-border, #DBDCDF); }
-.pmx-card:disabled .pmx-ico, .pmx-card:disabled:hover .pmx-ico { background: var(--dg-bg-secondary, #F2F2F5); color: var(--pmx-muted); transform: none; }
 
 /* the connections, as Flow draws its edges */
 .pmx-link { position: relative; z-index: 2; transition: opacity .45s var(--pmx-ease); }
@@ -76,8 +72,6 @@
 .is-on .pmx-chip { color: var(--dg-accent, #2083D5); border-color: color-mix(in srgb, var(--dg-accent, #2083D5) 35%, var(--dg-bg, #fff)); }
 .pmx-link.is-on .pmx-chip { transform: translateX(-50%) translateY(-2px); }
 .is-dim { opacity: .4; }
-.is-off .pmx-wire { stroke: var(--dg-grey-2, #DBDCDF); stroke-dasharray: 2 6; animation: none; }
-.is-off .pmx-port { stroke: var(--dg-grey-2, #DBDCDF); }
 @keyframes pmx-march { to { stroke-dashoffset: -28; } }
 .pmx-arc { position: relative; height: 48px; z-index: 2; transition: opacity .45s var(--pmx-ease); }
 .pmx-arc svg { position: absolute; top: 0; overflow: visible; }

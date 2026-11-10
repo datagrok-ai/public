@@ -2,6 +2,7 @@
  * functions. */
 import * as DG from 'datagrok-api/dg';
 
+import {rows} from './crux';
 import {enginePriors, mapPrior} from './priors';
 import {HUMANE, LAB_WEEKDAYS, StudyDeclaration, correctionOf, designScenarios, designStudy,
   isFiniteNumber as ok} from './engine';
@@ -83,11 +84,8 @@ export async function priorsFrame(): Promise<DG.DataFrame> {
 }
 
 export async function mapPriorFrame(line: string): Promise<DG.DataFrame> {
-  const r = await mapPrior(line);
-  const df = DG.DataFrame.fromColumns(r.main.columns.map((c) => {
-    const v = r.main.col[c];
-    return v instanceof Float64Array ? DG.Column.fromFloat64Array(c, v) : DG.Column.fromList(DG.TYPE.STRING, c, [...v]);
-  }));
+  // (Crux gives each column decoded, not its name: read as rows, as every other result is)
+  const df = DG.DataFrame.fromObjects(rows((await mapPrior(line)).main))!;
   df.name = `MAP prior log alpha ${line}`;
   return df;
 }

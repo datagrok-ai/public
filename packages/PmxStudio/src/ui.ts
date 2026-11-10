@@ -203,10 +203,6 @@ export function callInputs<T>(call: DG.FuncCall, extra: object = {}): T {
   })), ...extra} as T;
 }
 
-/** A finished call's outputs by name. */
-export const outputsOf = <T>(c: DG.FuncCall): T =>
-  Object.fromEntries(c.func.outputs.map((p) => [p.name, c.outputs[p.name]])) as T;
-
 /** A titled block of the results column. */
 export function block(title: string, hint: HTMLElement | string, ...content: HTMLElement[]): HTMLElement {
   const s = new Section({title, hint, collapsible: false});
@@ -295,8 +291,6 @@ export function markStage<V extends DG.ViewBase>(view: V, stage: Stage): V {
   return view;
 }
 export const stageOf = (view: DG.ViewBase | null | undefined) => view?.root?.dataset.pmxStage as Stage | undefined;
-/** Whether Monitor is built in this package: its card, its step and the studies it opens. */
-export const MONITOR_READY = true;
 export const STAGES: {stage: Stage, label: string, tip: string}[] = [
   {stage: 'home', label: 'Overview', tip: 'Every stage, and your studies'},
   {stage: 'plan', label: 'Plan', tip: 'Design the study before it runs: animals, end of study, calendar and power'},
@@ -379,7 +373,7 @@ export function declarationPane(form: HTMLElement): HTMLElement {
  *  bar, what was shown left in view. `before`: shown between the note and the results (an empty state). */
 export function stagePanes(form: FuncCallForm, content: HTMLElement, o: {busy: ReadonlySignal<boolean>,
   result: ReadonlySignal<unknown>, error: ReadonlySignal<string | null>, stale: ReadonlySignal<boolean>,
-  busyText: string, staleText: string, before?: HTMLElement[], declaration?: HTMLElement}): Splitter {
+  busyText: string, staleText: string, before?: HTMLElement[]}): Splitter {
   const overlay = busyOverlay(o.busyText);
   const bar = busyBar();
   form.effect(() => {
@@ -397,7 +391,7 @@ export function stagePanes(form: FuncCallForm, content: HTMLElement, o: {busy: R
     outdated.hidden = !o.stale.value || form.missingRequired.value.length + form.invalidFields.value.length === 0;
     content.style.opacity = o.stale.value ? '0.5' : '';
   });
-  return new Splitter([o.declaration ?? declarationPane(form.root),
+  return new Splitter([declarationPane(form.root),
     resultsFrame([failure, outdated, ...o.before ?? [], content], overlay, bar)],
   {direction: 'horizontal', sizes: [0.2, 0.8], minSize: DECLARATION_MIN});
 }

@@ -50,7 +50,9 @@ export function parseMeta(x: unknown): StudyMeta | null {
   const text = (v: unknown) => typeof v === 'string' ? v : '';
   return {...emptyMeta(), id: text(m.id), description: text(m.description), owner: text(m.owner), project:
     text(m.project), tags: Array.isArray(m.tags) ? m.tags.filter((t) => typeof t === 'string') : [],
-  start: typeof m.start === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(m.start) ? m.start : null,
+  // a date that exists: 2026-13-45 has the shape and would empty the calendar
+  start: typeof m.start === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(m.start) && !Number.isNaN(Date.parse(m.start)) ?
+    m.start : null,
   groups: Array.isArray(m.groups) ? m.groups.filter((g) => g && typeof g.group === 'string').map((g) => ({
     group: g.group, compound: text(g.compound), dose: typeof g.dose === 'number' && Number.isFinite(g.dose) ?
       g.dose : null, unit: text(g.unit), route: text(g.route), schedule: text(g.schedule)})) : [],

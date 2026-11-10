@@ -17,15 +17,12 @@ import {DEFAULT_RULES, Finding, OutlierRules, RulesSource, canEditLabRules, find
 import {StudyInputs as StudyNames} from './explore';
 import type {MenuAt} from './calendar';
 import {ROLES, WEIGHT} from './open-study';
-import {EXCLUDED, FLAGGED, MARK_REASON, addLog, groupsShown, ticked} from './study-file';
+import {EXCLUDED, FLAGGED, MARK_REASON, STUDY_TAG, addLog, groupsShown, ticked} from './study-file';
 import {metaOf} from './study-meta';
 import {stageOf} from './ui';
 
-/** The columns' roles of a study table, as JSON: what makes a table a study (detectors.js reads it too). */
-export const STUDY_TAG = 'pmx.study';
 /* The marks (study-file.ts's EXCLUDED, FLAGGED, MARK_REASON) are visible columns created on first use; a tick typed
    straight into the grid counts as well, and so does a study file's own Excluded column (true, yes, 1, x). */
-export {EXCLUDED, FLAGGED, MARK_REASON};
 export type Mark = 'flagged' | 'excluded';
 
 const COLORS = {finding: DG.Color.fromHtml('#fff1c2'), flagged: DG.Color.fromHtml('#ffd8a8'),
@@ -84,13 +81,14 @@ export function exclusionsOf(n: StudyNames | null): string | null {
   const parts: string[] = [];
   byAnimal.forEach((rows, a) => {
     const out = rows.filter((i) => marks[i].state === 'excluded');
-    const why = (i: number) => marks[i].reason ? ` (${marks[i].reason})` : '';
+    // a tick typed straight into the grid has no reason and no log line, and the report says so
+    const why = (i: number) => ` (${marks[i].reason || 'no reason given'})`;
     if (out.length === rows.length && new Set(out.map((i) => marks[i].reason)).size === 1)
       parts.push(`animal ${a}, all its measurements${why(out[0])}`);
     else
       out.forEach((i) => parts.push(`${a} on day ${df.get(n.day, i)}${why(i)}`));
   });
-  return `Left out by the investigator, each with its reason (who and when in the study's log): ${parts.join('; ')}`;
+  return `Left out by the investigator (who and when, in the study's log): ${parts.join('; ')}`;
 }
 
 /** A row's mark (excluded over flagged) and its reason. */
@@ -100,17 +98,24 @@ function markOf(df: DG.DataFrame, i: number): {state: Mark | '', reason: string}
     reason: !r || r.isNone(i) ? '' : String(r.get(i))};
 }
 
-/** Each marked animal's mark: excluded when any of its rows is, else flagged. */
-export function animalMarks(n: StudyNames): Map<string, Mark> {
+/** Each marked animal's mark: excluded when every row of it is (it is out of the analysis), partly when only some
+ *  are (it is still analysed, on the rest), else flagged. */
+export function animalMarks(n: StudyNames): Map<string, Mark | 'partly'> {
   const col = n.study.col(n.animal);
-  const out = new Map<string, Mark>();
+  const rows = new Map<string, {all: number, out: number, flagged: boolean}>();
   if (col) {
     marksOf(n.study).forEach((m, i) => {
       const a = String(col.get(i));
-      if (m.state && out.get(a) !== 'excluded')
-        out.set(a, m.state);
+      const r = rows.get(a) ?? {all: 0, out: 0, flagged: false};
+      rows.set(a, {all: r.all + 1, out: r.out + (m.state === 'excluded' ? 1 : 0),
+        flagged: r.flagged || m.state === 'flagged'});
     });
   }
+  const out = new Map<string, Mark | 'partly'>();
+  rows.forEach((r, a) => {
+    if (r.out > 0 || r.flagged)
+      out.set(a, r.out === r.all ? 'excluded' : r.out > 0 ? 'partly' : 'flagged');
+  });
   return out;
 }
 
@@ -204,9 +209,12 @@ export function findingsOf(n: StudyNames): Map<number, Finding[]> {
     return c ? Array.from({length: n.study.rowCount}, (_, i) => c.isNone(i) ? null : c.get(i)) : null;
   };
   const text = (name: string) => (values(name) ?? []).map((a) => a === null ? null : String(a));
+  // an excluded row is out of the rules too: it is neither looked at again nor what the others are compared with
+  const out = n.study.col(EXCLUDED);
+  const kept = <T>(xs: (T | null)[] | null) => xs && xs.map((x, i) => ticked(out, i) ? null : x);
   const found = new Map<number, Finding[]>();
-  for (const f of findOutliers({animal: text(n.animal), group: text(n.group), day: values(n.day) ?? [],
-    volume: values(n.volume) ?? [], weight: values(n.bodyWeight)}, rulesInForce().rules))
+  for (const f of findOutliers({animal: kept(text(n.animal))!, group: text(n.group), day: values(n.day) ?? [],
+    volume: kept(values(n.volume)) ?? [], weight: kept(values(n.bodyWeight))}, rulesInForce().rules))
     found.set(f.row, [...(found.get(f.row) ?? []), f]);
   return found;
 }
@@ -254,33 +262,78 @@ export function emptyStudy(): DG.DataFrame {
   return df;
 }
 
+/** A pasted cell as a number: digits with a dot or a comma for the decimals, or with the thousands marked as well
+ *  (1,234.5 or 1.234,5). NaN for what cannot be read without guessing: "1,234" alone (1.234 or 1234?), a unit, "<50".
+ *  null: an empty cell, or one that says so (NA, n/a, -). */
+export function pastedNumber(cell: string): number | null {
+  const v = cell.trim();
+  if (v === '' || /^(na|n\/a|nan|-|\.)$/i.test(v))
+    return null;
+  if (/^[+-]?\d+(\.\d+)?$/.test(v))
+    return Number(v);
+  if (/^[+-]?\d{1,3}(,\d{3})+\.\d+$/.test(v))
+    return Number(v.replace(/,/g, ''));
+  if (/^[+-]?\d{1,3}(\.\d{3})+,\d+$/.test(v))
+    return Number(v.replace(/\./g, '').replace(',', '.'));
+  // a decimal comma, unless three digits follow it: that reads as thousands just as well
+  return /^[+-]?\d+,\d+$/.test(v) && !/,\d{3}$/.test(v) ? Number(v.replace(',', '.')) : NaN;
+}
+
 /** Rows pasted from a spreadsheet, added at the end of `df` (the grid's own paste writes over the cells there):
  *  with a header row, each pasted column goes to the table's column of its name (or of its role: animal, group, day,
- *  volume, body weight); without one, in the table's order. Returns how many rows were added. */
+ *  volume, body weight); without one, in the table's order. Returns how many rows were added: all of them, or none
+ *  and an error that names the cells it could not read (a number is never guessed at). */
 export function appendPasted(df: DG.DataFrame, text: string): number {
-  const lines = text.replace(/\r/g, '').split('\n').filter((l) => l.trim() !== '').map((l) => l.split('\t'));
-  if (lines.length === 0)
+  const raw = text.replace(/\r/g, '').split('\n').filter((l) => l.trim() !== '');
+  if (raw.length === 0)
     return 0;
+  if (!raw.some((l) => l.includes('\t')) && /[;,]/.test(raw[0])) {
+    throw new Error('Nothing added: the text is not cells copied from a spreadsheet (it has no tabs between its ' +
+      'values). Open the file as a table, or copy the cells from a spreadsheet');
+  }
+  const lines = raw.map((l) => l.split('\t'));
   const visible = df.columns.names().filter((c) => !c.startsWith('~'));
   const roles: RegExp[] = [...ROLES.map(([, re]) => re), WEIGHT];
   const target = (cell: string): string | null => {
     const name = cell.trim();
     const exact = visible.find((c) => c.toLowerCase() === name.toLowerCase());
-    const role = roles.find((re) => re.test(name));
+    // a role's word with a number in it is a value ("Mouse 1", "Group 2"), not a heading
+    const role = /\d/.test(name) ? undefined : roles.find((re) => re.test(name));
     return exact ?? (role ? visible.find((c) => role.test(c)) ?? null : null);
   };
+  const numeric = (c: string) => c.trim() !== '' && !Number.isNaN(Number(c.trim().replace(',', '.')));
   const header = lines[0].map(target);
+  if (header[0] !== null && lines[0].length > 2 && lines[0].slice(1).every(numeric)) {
+    throw new Error('Nothing added: this looks like a wide table (a column per day). Paste one row per animal and ' +
+      'day: animal, group, day, volume');
+  }
   const hasHeader = header.filter((h) => h !== null).length >= Math.min(2, lines[0].length) &&
-    lines[0].every((c) => c.trim() === '' || Number.isNaN(Number(c.replace(',', '.'))));
-  const columns = hasHeader ? header : visible.slice(0, lines[0].length);
+    lines[0].every((c) => !numeric(c));
+  const columns = (hasHeader ? header : visible.slice(0, lines[0].length)).map((c) => c ? df.col(c) : null);
   const body = hasHeader ? lines.slice(1) : lines;
-  for (const cells of body) {
+  // every cell read before any row is added
+  const unread: string[] = [];
+  const values = body.map((cells, r) => columns.map((col, k) => {
+    const v = (cells[k] ?? '').trim();
+    if (!col || v === '')
+      return null;
+    if (!col.isNumerical)
+      return v;
+    const x = pastedNumber(v);
+    if (Number.isNaN(x))
+      unread.push(`row ${r + 1}, ${col.name}: "${v}"`);
+    return x;
+  }));
+  if (unread.length > 0) {
+    throw new Error(`Nothing added: ${unread.length} value${unread.length === 1 ? '' : 's'} could not be read as ` +
+      `numbers (${unread.slice(0, 4).join('; ')}${unread.length > 4 ? '; …' : ''}). Write them as plain numbers, ` +
+      'without units or thousands separators');
+  }
+  for (const cells of values) {
     const row = df.rows.addNew(null, false).idx;
-    columns.forEach((c, k) => {
-      const v = (cells[k] ?? '').trim();
-      const col = c ? df.col(c) : null;
-      if (col && v !== '')
-        col.set(row, col.isNumerical ? Number(v.replace(',', '.')) : v, false);
+    cells.forEach((v, k) => {
+      if (v !== null)
+        columns[k]!.set(row, v, false);
     });
   }
   df.fireValuesChanged();
@@ -306,7 +359,8 @@ export async function rulesDialog(): Promise<void> {
     tooltipText: 'A negative volume or body weight; an animal measured twice on one day'});
   const jumpOn = ui.input.bool('Jumps between measurements', {value: rules.jump.on});
   const fold = ui.input.float('Times larger or smaller', {value: rules.jump.fold, min: 1.5, max: 20,
-    tooltipText: 'A volume this many times its previous one (a caliper typo, a misread animal)'});
+    tooltipText: 'A volume that changed since the animal’s previous one this many times more, or less, than its ' +
+      'group’s did over the same days (a caliper typo, a misread animal)'});
   const groupOn = ui.input.bool('Far from its group', {value: rules.group.on});
   const mads = ui.input.float('Robust deviations', {value: rules.group.mads, min: 2, max: 10,
     tooltipText: 'How far from the group’s median on that day, in robust deviations (MAD) of log volume'});
@@ -419,8 +473,12 @@ export function decorateStudyView(view: DG.TableView): void {
   });
 
   const paste = () => navigator.clipboard.readText().then((text) => {
-    const n = appendPasted(df, text);
-    grok.shell.info(n ? `${n} row${n === 1 ? '' : 's'} added from the clipboard` : 'Nothing to paste');
+    try {
+      const n = appendPasted(df, text);
+      grok.shell.info(n ? `${n} row${n === 1 ? '' : 's'} added from the clipboard` : 'Nothing to paste');
+    } catch (e: any) {
+      grok.shell.warning(String(e?.message ?? e));
+    }
   }, () => grok.shell.warning('The browser did not give the clipboard: allow it, then try again'));
   const back = () => {
     // the stage views (every view is named PMX Studio; the stage is on its root): the last one opened, not the home

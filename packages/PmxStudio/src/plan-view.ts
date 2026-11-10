@@ -6,7 +6,6 @@
    group size, by end of study (platform line charts) and by measurement schedule, and the study protocol. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
 import {BasicTable, buttonWithIcon, ChoiceInput, computed, Dialog, div, divH, divV, dot, emptyState, loader, Reason,
   signal, span, tableFromMap, TextInput, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
@@ -31,7 +30,6 @@ import {printSheet} from './sheet';
 import {LineInput, lastLine, tumorsOf} from './line-input';
 import {BandChart} from './band-chart';
 
-/** Where the plan's first stage is run: Monitor takes the implanted pool to randomization. */
 /** Plan's panels, in order and width (twelfths), as the demo reads: the growth and under it the calendar, then what
  *  a smaller effect would need beside the power by group size (one height), then the groups, the trade-offs of the
  *  end and the schedule, the protocol. */
@@ -199,7 +197,6 @@ export async function openPlanFile(content: string): Promise<DG.DataFrame[]> {
   return [];
 }
 
-/** The Plan view; given a saved plan, its declaration in the form and planned again. */
 /** What Plan opens with: a saved plan, or only its name, details and form (a demo's). */
 export type PlanStart = Pick<SavedPlan, 'name' | 'study'> & {inputs: {[param: string]: unknown}};
 
@@ -646,6 +643,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const SWEEP = '30, 40, 50, 60, 70, 80, 90';
   const sensitivity = signal<{of: PlanFrames, sc: DG.DataFrame} | undefined>(undefined);
   let sweeping: PlanFrames | null = null;
+  const sweepFailed = signal<PlanFrames | null>(null);
   form.effect(() => {
     const r = result.value;
     if (!r || stale.value || busy.value || sweeping === r || sensitivity.peek()?.of === r)
@@ -655,10 +653,16 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       return;
     }
     sweeping = r;
-    void designed({compareSchedules: false, tgiScenarios: SWEEP}).then((c) => {
+    // (with the plan's own schedules setting: the sweep's first design is then the plan's, already computed)
+    void designed({tgiScenarios: SWEEP}).then((c) => {
       if (result.peek() === r)
         sensitivity.value = {of: r, sc: c.scenarios};
-    }).catch((e) => error.value = String(e?.message ?? e)).finally(() => {
+    }).catch((e) => {
+      // the plan itself stands: the chart says it has no sizes, the run's error line stays the run's
+      if (result.peek() === r)
+        sweepFailed.value = r;
+      grok.shell.error(`The study could not be sized for each TGI: ${e?.message ?? e}`);
+    }).finally(() => {
       if (sweeping === r)
         sweeping = null;
     });
@@ -685,16 +689,15 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   form.effect(() => {
     const s = sensitivity.value;
     const r = result.value;
-    sweepNote.textContent = !r ? '' : !s || s.of !== r ? 'Sizing the study for each TGI…' : 'The whole study with ' +
+    sweepNote.textContent = !r ? '' : sweepFailed.value === r ? 'The sizes for each TGI could not be computed.' :
+      !s || s.of !== r ? 'Sizing the study for each TGI…' : 'The whole study with ' +
       'every arm at the TGI on the axis, sized for the target power: a smaller effect costs animals fast. Scenarios ' +
       'to read across, not predictions.';
   });
   const scenarioEnd = div([], 'pmx-plan-scenario-end');
   const scenarioBox = div([]);
-  const noScenarios = div([]);
   form.effect(() => {
     const has = !!result.value?.scenarios.rowCount;
-    noScenarios.hidden = has;
     scenarioEnd.hidden = !has;
     scenarioBox.hidden = !has;
   });
@@ -714,7 +717,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     {id: 'scenarios', title: 'Assumed TGI', hint: 'What the study would need if the treatment had each TGI: ' +
       'scenarios you read across, not predictions. The animals of the whole study with every arm at that TGI, ' +
       'sized for the target power whatever animals per arm is set', content: [
-      sized(sensitivityChart, 280), sweepNote, noScenarios, scenarioEnd, scenarioBox]},
+      sized(sensitivityChart, 280), sweepNote, scenarioEnd, scenarioBox]},
     {id: 'protocol', title: 'Study protocol', hint: 'Design, sample size and analysis, ready to paste',
       content: [copyRow(() => protocolText, 'Study protocol'), analysis]},
   ], PLAN_LAYOUT, 'pmx-plan-panels', 'plan');
@@ -836,7 +839,9 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     }
     return r;
   };
-  const defaultName = (r: PlanFrames) => initial?.name ?? `${r.plan.get('line', 0)} plan`;
+  // the plan's name once saved or opened from a file: what the header, the next Save and Monitor call it
+  const named = signal<string | null>(initial?.name ?? null);
+  const defaultName = (r: PlanFrames) => named.value ?? `${r.plan.get('line', 0)} plan`;
   const stamped = () => meta.value = withId(meta.peek());
   const planFor = (name: string, r: PlanFrames) => planOf(name, call, r, stamped());
   const saveDialog = () => {
@@ -855,7 +860,11 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
           replacing = chosen;
           throw new Error(`A plan named "${chosen}" is already saved: press Save again to replace it, or rename it`);
         }
+        // saved under another name, it is another study, with an ID of its own: the Overview then lists both
+        if (named.peek() !== null && chosen !== named.peek())
+          meta.value = {...meta.peek(), id: ''};
         const path = await savePlan(await planFor(chosen, r));
+        named.value = chosen;
         grok.shell.info(`Plan saved: ${path}`);
       }, {text: 'Save'});
     }));
@@ -868,7 +877,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     if (!r)
       return;
     saving.value = true;
-    void planFor(defaultName(r), r).then(downloadPlan).catch((e) => error.value = String(e?.message ?? e))
+    void planFor(defaultName(r), r).then(downloadPlan).catch((e) => grok.shell.error(String(e?.message ?? e)))
       .finally(() => saving.value = false);
   });
   downloadButton.title = 'Download the plan as a file, to send it to someone';
@@ -895,7 +904,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     if (!r)
       return;
     saving.value = true;
-    void planFor(defaultName(r), r).then(followPlan).catch((e) => error.value = String(e?.message ?? e))
+    void planFor(defaultName(r), r).then(followPlan).catch((e) => grok.shell.error(String(e?.message ?? e)))
       .finally(() => saving.value = false);
   }, {primary: true, iconRight: true});
   followButton.title = 'Start following this study in Monitor, with this plan';
@@ -913,7 +922,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const arms = r.armResults.col('arm')!.toList() as string[];
     const colors = armColors(arms);
     return {name: defaultName(r), groups: ['Control', ...arms].map((name) => ({name, color: colors[name]})),
-      status: `${r.plan.get('line', 0)} · planned`, meta: meta.value, setMeta: (m) => meta.value = m};
+      status: `${r.plan.get('line', 0)} · planned`, meta: () => meta.value, setMeta: (m) => meta.value = m};
   }), (s) => void openStage(s));
   return {
     root: stagePage(head.row, panes),

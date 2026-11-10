@@ -3,25 +3,28 @@
    randomization, a column to write the cage in, and the lines to sign. It shows the groups: printing it is logged. */
 import * as DG from 'datagrok-api/dg';
 
+import {roleColumns} from './study-file';
 import {StudyMeta, dateOf, dateText} from './study-meta';
 
-const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) =>
+/** Text as HTML: a study's names (animals, groups, notes) come from files and are never markup. */
+export const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) =>
   ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[c]!);
 
 /** Whether a measurement on `day` is closer to randomization than one on `was`: the last on or before day 0, else
  *  the first after it. */
-const closer = (day: number, was: number) => day <= 0 ? was > 0 || day > was : was > 0 && day < was;
+export const closer = (day: number, was: number) => day <= 0 ? was > 0 || day > was : was > 0 && day < was;
 
 /** Each animal once, by group then name, with its volume at randomization. */
 export function sheetRows(df: DG.DataFrame): {animal: string, group: string, volume: number | null}[] {
+  const c = roleColumns(df);
   const at = new Map<string, {group: string, day: number, volume: number | null}>();
   for (let i = 0; i < df.rowCount; i++) {
-    const animal = String(df.get('animal', i));
-    const day = df.get('day', i) as number;
+    const animal = String(c.animal.get(i));
+    const day = c.day.get(i) as number;
     const was = at.get(animal);
     if (!was || closer(day, was.day)) {
-      at.set(animal, {group: String(df.get('group', i) ?? ''), day,
-        volume: df.col('volume')!.isNone(i) ? null : df.get('volume', i)});
+      at.set(animal, {group: c.group.isNone(i) ? '' : String(c.group.get(i)), day,
+        volume: c.volume.isNone(i) ? null : c.volume.get(i)});
     }
   }
   return [...at.entries()].map(([animal, x]) => ({animal, group: x.group, volume: x.volume}))
@@ -67,11 +70,12 @@ export function printSheet(html: string): void {
   const w = window.open('', '_blank');
   if (!w)
     throw new Error('The browser blocked the sheet\'s tab: allow pop-ups for Datagrok and print again');
-  // printed once its images are in
+  w.document.write(html);
+  // printed once its images are in. Listened for after the write: writing opens the document anew, and that drops
+  // the listeners its window had
   w.addEventListener('load', () => {
     w.focus();
     w.print();
   });
-  w.document.write(html);
   w.document.close();
 }

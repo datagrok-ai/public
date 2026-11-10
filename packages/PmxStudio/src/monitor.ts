@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {AnalysisInputs, analysisDeclarationOf, pairGroups, tolerabilityFrames, twinModel} from './analyze';
 import {ARCHETYPES} from './archetypes';
 import {crux, CruxResult, named, rows} from './crux';
-import {LAB_WEEKDAYS, designStudy} from './engine';
+import {HUMANE, LAB_WEEKDAYS, designStudy, finite} from './engine';
 import {gpu} from './gpu';
 import {SavedPlan} from './plan-file';
 import {oneDecimal} from './study-file';
@@ -102,16 +102,22 @@ export function futureDays(days: number[], plan?: SavedPlan | null, start?: stri
 /** Each treated group as an arm of the plan: its kill rate (the design's for the plan's effect) and its therapy's
  *  archetype. A group not in the plan, or a study with no plan: no assumed effect (a kill rate of 0), and no chance of
  *  success is given for it. */
-async function armsOf(plan: SavedPlan | null, treated: string[], endpoint: number, humane: number, notes: string[]) {
+async function armsOf(plan: SavedPlan | null, treated: string[], notes: string[]) {
   const pairs = plan ? pairGroups(treated, plan.predicted.arms, notes) :
     new Map<string, SavedPlan['predicted']['arms'][0]>();
   const kill = new Map<string, number>();
-  if (plan) {
+  if (plan && plan.predicted.arms.every((a) => typeof a.killRate === 'number')) {
+    // as planned: the rate the plan gave each arm, kept in its file
+    plan.predicted.arms.forEach((a) => kill.set(a.name, a.killRate!));
+  } else if (plan) {
+    // a plan saved before its rates were kept: designed again as the plan declared it (its endpoint and limit, not
+    // the ones in Monitor's form: the declared effect is at the plan's endpoint), which the engine remembers
     const arms = plan.predicted.arms.map((a) => ({name: a.name, therapy: a.therapy, metric: a.metric,
       effect: a.effect}));
-    const d = await designStudy({line: plan.predicted.line, vRand: plan.predicted.vRand, endpoint, power: 0.8,
-      alpha: 0.05, correction: 'dunnett', n: null, arms, preLoss: 0, postLoss: 0, lossRule: 'confident',
-      confidence: 0.9, weekdays: LAB_WEEKDAYS, startWeekday: 0, humane, schedules: false, lastDay: null});
+    const d = await designStudy({line: plan.predicted.line, vRand: plan.predicted.vRand,
+      endpoint: plan.predicted.endpoint, power: 0.8, alpha: 0.05, correction: 'dunnett', n: null, arms, preLoss: 0,
+      postLoss: 0, lossRule: 'expected', confidence: 0.9, weekdays: LAB_WEEKDAYS, startWeekday: 0,
+      humane: finite(plan.inputs.humane) ?? HUMANE, schedules: false, lastDay: null});
     d.arms.forEach((a) => kill.set(a.declaration.name, a.killRate));
   }
   return treated.map((g) => {
@@ -174,7 +180,7 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
   const notes: string[] = [];
   // the plan's arms, the line's twin and the body weights do not wait for one another
   const [arms, model, {tolerability, weights, animals: weighed}] = await Promise.all([
-    armsOf(d.plan, names.filter((g) => g !== d.control), d.endpoint, d.humane, notes), twinModel(d.line),
+    armsOf(d.plan, names.filter((g) => g !== d.control), notes), twinModel(d.line),
     tolerabilityFrames(d)]);
   const latest = Math.max(...day);
   const future = futureDays(day, d.plan, metaOf(x.study)?.start);
@@ -226,7 +232,9 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
   });
   const study = (r.named as any).study.value;
   // the chance of success only on a planned review: between them, an empty table (MONITOR_DESIGN.md §3)
-  const atLook = looks.includes(latest);
+  // a review planned for a day that is not measured (day 10, a Thursday, of a Monday-Wednesday-Friday study) is
+  // held on the first measurement from that day on
+  const atLook = looks.some((l) => l <= latest && (previous === null || l > previous));
   const decisions = named(r, 'decisions').map((a, i) => ({arm: arms[i].name, planned: arms[i].planned,
     success: a.success, tgi_lower: a.tgi_lo, tgi_median: a.tgi_median, tgi_upper: a.tgi_hi, n_end: a.n_end}));
   const days = DG.DataFrame.fromObjects(named(r, 'days').map((g) => ({group: g.group, day: g.day, lower: g.q05,

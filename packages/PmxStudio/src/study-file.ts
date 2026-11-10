@@ -11,9 +11,12 @@ import {StudyMeta, metaOf, parseMeta, setMetaOn} from './study-meta';
 
 export const STUDY_EXT = 'pmxstudy';
 const FORMAT = 'pmx-study';
+/** The tag with the columns' roles of a study table, as JSON ({animal, group, day, volume, bodyWeight}): what makes a
+ *  table a study (study-table.ts writes it on every run; detectors.js reads it too). */
+export const STUDY_TAG = 'pmx.study';
 /** The tags of a measurements table that carry the study's reviews and log. */
 export const LOOKS_TAG = 'pmx.looks';
-export const LOG_TAG = 'pmx.log';
+const LOG_TAG = 'pmx.log';
 /** The name of the table's body weight column, and the protocol's limits ({humane, weightLimit}). */
 export const WEIGHT_TAG = 'pmx.weight';
 export const LIMITS_TAG = 'pmx.limits';
@@ -45,6 +48,8 @@ export interface SavedStudy {
   /** `weight`: only when the study has body weights; the marks only on marked rows */
   rows: {animal: string, group: string | null, day: number | null, volume: number | null, weight?: number | null,
     excluded?: true, flagged?: true, reason?: string}[];
+  /** the table's other columns (caliper readings, cage, sex, comments), by name, a value per row (older files: none) */
+  extra?: {[column: string]: (string | number | boolean | null)[]};
   log: LogEntry[];
 }
 
@@ -102,20 +107,41 @@ export function newStudyTable(plan: SavedPlan): DG.DataFrame {
   return df;
 }
 
+/** A study table's columns by role, as Monitor or Analyze last ran on it (STUDY_TAG); a table neither has run on
+ *  yet, by their usual names. */
+export function roleColumns(df: DG.DataFrame): {animal: DG.Column, group: DG.Column, day: DG.Column,
+  volume: DG.Column} {
+  let roles: {[role: string]: unknown} = {};
+  try {
+    roles = JSON.parse(df.getTag(STUDY_TAG) || '{}') ?? {};
+  } catch {
+    // a damaged tag: the usual names
+  }
+  const col = (role: string) => {
+    const c = (typeof roles[role] === 'string' ? df.col(roles[role] as string) : null) ?? df.col(role);
+    if (!c)
+      throw new Error(`The study table has no ${role} column`);
+    return c;
+  };
+  return {animal: col('animal'), group: col('group'), day: col('day'), volume: col('volume')};
+}
+
 export function studyOf(df: DG.DataFrame, humane: number | null, weightLimit: number | null = null): SavedStudy {
   const planText = df.getTag(PLAN_TAG);
-  const [a, g, d, v] = ['animal', 'group', 'day', 'volume'].map((c) => {
-    const col = df.col(c);
-    if (!col)
-      throw new Error(`The study table has no column "${c}"`);
-    return col;
-  });
+  const {animal: a, group: g, day: d, volume: v} = roleColumns(df);
   const weightName = df.getTag(WEIGHT_TAG);
   const w = weightName ? df.col(weightName) : null;
   const [e, f, r] = [df.col(EXCLUDED), df.col(FLAGGED), df.col(MARK_REASON)];
   const meta = metaOf(df);
+  // what else the table holds goes with the study: the caliper readings behind a volume, a cage, a comment
+  const kept = new Set([a, g, d, v, w, e, f, r].filter((c) => c).map((c) => c!.name));
+  const plain: string[] = [DG.TYPE.FLOAT, DG.TYPE.INT, DG.TYPE.STRING, DG.TYPE.BOOL];
+  const extra = Object.fromEntries(df.columns.toList()
+    .filter((c) => !kept.has(c.name) && !c.name.startsWith('~') && plain.includes(c.type))
+    .map((c) => [c.name, Array.from({length: df.rowCount}, (_, i) => c.isNone(i) ? null : c.get(i))]));
   return {format: FORMAT, version: 1, name: df.name, plan: planText ? parsePlan(planText) : null,
     looks: df.getTag(LOOKS_TAG) ?? '', humane, weightLimit, log: logOf(df), ...meta ? {meta} : {},
+    ...Object.keys(extra).length ? {extra} : {},
     rows: Array.from({length: df.rowCount}, (_, i) => ({animal: String(a.get(i)), group: g.isNone(i) ? null : g.get(i),
       day: d.isNone(i) ? null : d.get(i), volume: v.isNone(i) ? null : v.get(i),
       ...w ? {weight: w.isNone(i) ? null : w.get(i)} : {},
@@ -135,24 +161,36 @@ export function parseStudy(text: string): SavedStudy {
     throw new Error('Not a PMX Studio study');
   if (s.version !== 1)
     throw new Error(`A study of version ${s.version}, which this PMX Studio cannot read: update the package`);
-  if (!Array.isArray(s.rows) || !Array.isArray(s.log))
+  // what the views read without asking: a row's animal, a log line's time and text
+  if (!Array.isArray(s.rows) || !Array.isArray(s.log) ||
+    !s.rows.every((r: any) => r && typeof r.animal === 'string') ||
+    !s.log.every((e: any) => e && typeof e.when === 'string' && typeof e.what === 'string'))
     throw new Error('The study file is damaged');
   if (s.plan)
     parsePlan(JSON.stringify(s.plan));
-  return s as SavedStudy;
+  return {...s, name: typeof s.name === 'string' ? s.name : '',
+    looks: typeof s.looks === 'string' ? s.looks : ''} as SavedStudy;
 }
 
 /** The measurements table of a saved study, with its plan, reviews, limits and log in tags. */
 export function tableOf(s: SavedStudy): DG.DataFrame {
+  // a value someone typed into the file as text is an empty cell, not NaN
+  const floats = (name: string, values: unknown[]) => DG.Column.fromFloat64Array(name,
+    Float64Array.from(values, (x) => typeof x === 'number' && Number.isFinite(x) ? x : DG.FLOAT_NULL));
   const df = DG.DataFrame.fromColumns([
     DG.Column.fromStrings('animal', s.rows.map((r) => r.animal)),
     DG.Column.fromStrings('group', s.rows.map((r) => r.group ?? '')),
-    DG.Column.fromFloat64Array('day', Float64Array.from(s.rows, (r) => r.day ?? DG.FLOAT_NULL)),
-    DG.Column.fromFloat64Array('volume', Float64Array.from(s.rows, (r) => r.volume ?? DG.FLOAT_NULL))]);
+    floats('day', s.rows.map((r) => r.day)), floats('volume', s.rows.map((r) => r.volume))]);
   if (s.rows.some((r) => 'weight' in r)) {
-    df.columns.add(DG.Column.fromFloat64Array('body_weight',
-      Float64Array.from(s.rows, (r) => r.weight ?? DG.FLOAT_NULL)));
+    df.columns.add(floats('body_weight', s.rows.map((r) => r.weight)));
     df.setTag(WEIGHT_TAG, 'body_weight');
+  }
+  for (const [name, values] of Object.entries(s.extra ?? {})) {
+    if (df.col(name) || !Array.isArray(values) || values.length !== s.rows.length)
+      continue;
+    // ponytail: a calculated column comes back as its values (its formula is not kept); numbers as floats
+    df.columns.add(values.every((x) => x === null || typeof x === 'number') ? floats(name, values) :
+      DG.Column.fromStrings(name, values.map((x) => x === null ? '' : String(x))));
   }
   oneDecimal(df);
   if (s.rows.some((r) => r.excluded || r.flagged || r.reason)) {
@@ -179,8 +217,9 @@ const fileName = (name: string) => fileNameOf(name, 'Study', STUDY_EXT);
  *  study saved under the same name (another ID) is not replaced: the user is asked to rename this one. */
 export async function saveStudy(s: SavedStudy): Promise<string> {
   const path = studiesFolder() + fileName(s.name);
+  // a file there that does not read (cut short, edited by hand) is no one's study: saving replaces it
   const other = await grok.dapi.files.exists(path) ?
-    await grok.dapi.files.readAsText(path).then((t) => JSON.parse(t)?.meta?.id ?? null, () => null) : null;
+    await grok.dapi.files.readAsText(path).then((t) => JSON.parse(t)?.meta?.id ?? null).catch(() => null) : null;
   if (other && s.meta?.id && other !== s.meta.id)
     throw new Error(`Another study (${other}) is saved as "${s.name}": rename this one to save it`);
   await grok.dapi.files.writeAsText(path, JSON.stringify(s, null, 2));

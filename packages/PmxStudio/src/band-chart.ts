@@ -15,6 +15,7 @@ import {CanvasRenderer} from 'echarts/renderers';
 import type {EChartsOption} from 'echarts';
 
 import {chartMenu} from './report';
+import {esc} from './sheet';
 
 echarts.use([BarChart, CustomChart, LineChart, ScatterChart, GridComponent, LegendComponent, MarkAreaComponent,
   MarkLineComponent, TooltipComponent, CanvasRenderer]);
@@ -196,10 +197,10 @@ function tooltip(params: any[], bands: Band[], fmt: Look['fmt']): string {
     if (!b || i >= b.x.length)
       continue;
     const range = `${y(b.lower[i])} – ${y(b.upper[i])}${u}`;
-    rows.add(`${b.name === '' ? '' : `<b>${b.name}</b>: `}${b.line ? `${y(b.line[i])}${u} (${range})` : range}`);
+    rows.add(`${b.name === '' ? '' : `<b>${esc(b.name)}</b>: `}${b.line ? `${y(b.line[i])}${u} (${range})` : range}`);
   }
   const xu = fmt.xUnits ? ` ${fmt.xUnits}` : '';
-  return [`${fmt.xTitle}: ${DG.format(params[0].data[0], fmt.x)}${xu}`, ...rows].join('<br>');
+  return [`${esc(fmt.xTitle)}: ${DG.format(params[0].data[0], fmt.x)}${xu}`, ...rows].join('<br>');
 }
 
 /** "Tumor volume (mm³)", "Tumor volume (mm³, log scale)": the units once, when given and not already in the title,
