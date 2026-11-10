@@ -90,7 +90,7 @@ export class PackageFunctions {
     view.name = 'Peptides';
     const appHeader = ViewHost.of(view).build(() => new AppHeader({
       icon: _package.getIconUrl(),
-      learnMore: 'https://datagrok.ai/help/datagrok/solutions/domains/bio/peptides-sar',
+      learnMore: 'https://github.com/datagrok-ai/help/blob/master/datagrok/solutions/domains/bio/peptides-sar.md',
       items: [
         'Automatically recognizes peptides in your data',
         'Invariant map and mutation cliffs',
