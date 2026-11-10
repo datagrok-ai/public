@@ -3,8 +3,8 @@ Feature: Scatter plot molecule categories ordered by a computed property
   A categorical axis of molecules is ordered by a property a package computes for them: Aggregated
   value on the molecule column itself offers Chem's Molecular Property choices (MW first), and the
   markers move to their core's place by molecular weight once the values arrive, in either direction.
-  Descending MW happens to put the three markers in their by-name places, so that step also reads the
-  order the plot holds; ascending already showed the computed order is not the by-name one.
+  Ascending MW is the claim that the computed order is not the by-name one; descending MW gives the
+  by-name places, so its claim is the order the X Category Order property holds.
   The plot reports a render pending while Chem computes the values (about a second for the seven
   cores), so the claims after the pick wait for them.
   spgi-100 with Core (six scaffolds with R-group attachment points, seven rows without one) on X and

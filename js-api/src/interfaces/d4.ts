@@ -2445,6 +2445,7 @@ export interface IScatterPlotSettings {
   showDataframeFormulaLines: boolean;
 
   formulaFont: string;
+
 }
 
 export interface ITreeMapSettings {
@@ -3319,6 +3320,7 @@ export interface ILineChartSettings {
   showDataframeFormulaLines: boolean;
 
   formulaFont: string;
+
 }
 
 export enum AxisTickmarksMode {

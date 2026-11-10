@@ -15,8 +15,8 @@ Feature: Box plot category order
   women Asian 44, Caucasian 47, Other 48, Black 49.5 (the men keep the alphabetical order); with RACE filtered
   to Asian and Other, four boxes stay of the eight combinations ranked.
   How each mode ranks the categories (ties, missing values, the semantic properties) is the Dart
-  test `d4 | Axes | Category Order` and ApiTests `Viewers: category order`; APPLY TO ALL VIEWERS is
-  in category-order/category-order-across-viewers.feature. One journey; every scenario puts the
+  test `d4 | Axes | Category Order`; ApiTests `Viewers: category order` holds the settings' round trip
+  and a categoryOrderer call; APPLY TO ALL VIEWERS is in category-order/category-order-across-viewers.feature. One journey; every scenario puts the
   order back to Default.
 
   Background:

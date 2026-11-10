@@ -182,21 +182,27 @@ for (const backend of backends) {
 }
 
 category('Scatter plot: GPU', () => {
-  test('Leaves jittered, packed and category-ordered plots to the CPU', async () => {
+  const categoryOrder: TestOptions = {};
+  before(async () => {
+    if (!DG.Viewer.scatterPlot(grok.data.demo.demog(10)).props.hasProperty('xCategoryOrder'))
+      categoryOrder.skipReason = 'the platform has no category order yet';
+  });
+
+  test('Leaves jittered and packed plots to the CPU', async () => {
     const sp = await scatterPlot(60000, {jitterSize: 5});
     expect(isGpuRenderValid(sp), false);
     Object.assign(sp.props, {jitterSize: 0, zoomAndFilter: 'pack and zoom by filter'});
     expect(isGpuRenderValid(sp), false);
-    // a platform older than the category order has no such property
-    if (!sp.props.hasProperty('xCategoryOrder'))
-      return;
-    // the checks below need no GPU: a browser without one falls back for any plot
+  });
+
+  test('Leaves category-ordered plots to the CPU', async () => {
+    const sp = await scatterPlot(60000, {zoomAndFilter: 'filter by zoom'});
+    // no GPU needed: a browser without one falls back for any plot
     const renderable = () => isGpuRenderable(sp, readCheckLook(sp));
-    Object.assign(sp.props, {zoomAndFilter: 'filter by zoom', xColumnName: 'race',
-      xCategoryOrder: '{"manual":["Other"]}'});
+    Object.assign(sp.props, {xColumnName: 'race', xCategoryOrder: '{"manual":["Other"]}'});
     expect(renderable(), false);
     // an order left on an axis turned numeric does not apply
     sp.props.xColumnName = 'height';
     expect(renderable(), true);
-  });
+  }, categoryOrder);
 });

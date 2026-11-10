@@ -2547,7 +2547,13 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {choices: ['MW', 'HBA', 'HBD', 'LogP', 'LogS', 'PSA',
       'Rotatable bonds', 'Stereo centers', 'Molecule charge']}}) property: string): Promise<DG.Column> {
-    return (await getPropertiesAsColumns(molecules, [property]))[0];
+    const keys = (await getPropertiesAsColumns(molecules, [property]))[0];
+    // OpenChemLib reads an empty cell as an empty molecule, which would rank first instead of last
+    for (let i = 0; i < molecules.length; i++) {
+      if (molecules.isNone(i))
+        keys.set(i, null, false);
+    }
+    return keys;
   }
 
   @grok.decorators.func({

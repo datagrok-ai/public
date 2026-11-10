@@ -144,19 +144,19 @@ Feature: Category order across viewers
     And no errors should have been logged
 
   Scenario: RESET in Sort > Custom... gives the column its default order back
+    Given the "RACE" column is the current object
+    And the context panel is open
+    And "Details" pane in context panel is expanded
     When user picks "Sort > Custom..." from the context menu of the "header RACE" area of grid
     And user drags the "cell 4 of RACE" area of grid in "Order categories" dialog to the "cell 1 of RACE" area
     And user clicks on OK button in "Order categories" dialog
     Then the "category Other" area of box plot viewer should lie to the left of the "category Asian" area
+    And "custom" action link in Details pane in context panel should be visible
     When user picks "Sort > Custom..." from the context menu of the "header RACE" area of grid
     And user clicks on RESET button in "Order categories" dialog
     Then "Order categories" dialog should be absent
     And the "category Asian" area of box plot viewer should lie to the left of the "category Other" area
-    Given the "AGE" column is the current object
-    And the "RACE" column is the current object
-    And the context panel is open
-    And "Details" pane in context panel is expanded
-    Then "default" action link in Details pane in context panel should be visible
+    And "default" action link in Details pane in context panel should be visible
     And no errors should have been logged
 
   Scenario: CANCEL in Sort > Custom... takes back its own APPLY only
@@ -181,10 +181,9 @@ Feature: Category order across viewers
     And user drags the "cell 4 of RACE" area of grid in "Order categories" dialog to the "cell 1 of RACE" area
     And user clicks on APPLY button in "Order categories" dialog
     Then the "category Other" area of box plot viewer should lie to the left of the "category Asian" area
+    And "custom" action link in Details pane in context panel should be visible
     When user clicks on CANCEL button in "Order categories" dialog
     Then the "category Asian" area of box plot viewer should lie to the left of the "category Other" area
-    Given the "AGE" column is the current object
-    And the "RACE" column is the current object
-    Then the context panel should show "RACE"
+    And the context panel should show "RACE"
     And "default" action link in Details pane in context panel should be visible
     And no errors should have been logged

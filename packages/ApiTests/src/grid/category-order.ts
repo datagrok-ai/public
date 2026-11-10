@@ -2,16 +2,12 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {before, category, expect, test, TestOptions, waitUntil} from '@datagrok-libraries/test/src/test';
 
-const nodeSkip = typeof process !== 'undefined' ? 'browser-only: a table view and grok.functions.register' : undefined;
-const anywhere: TestOptions = {};
-const browserOnly: TestOptions = {skipReason: nodeSkip};
+const options: TestOptions = {};
 
 category('Viewers: category order', () => {
   before(async () => {
-    if (!DG.Viewer.scatterPlot(grok.data.demo.demog(10)).props.hasProperty('xCategoryOrder')) {
-      for (const options of [anywhere, browserOnly])
-        options.skipReason ??= 'the platform has no category order yet';
-    }
+    if (!DG.Viewer.scatterPlot(grok.data.demo.demog(10)).props.hasProperty('xCategoryOrder'))
+      options.skipReason = 'the platform has no category order yet';
   });
 
   test('category order round-trip', async () => {
@@ -19,18 +15,18 @@ category('Viewers: category order', () => {
     const byProperty = (property: string) => JSON.stringify({property: property, aggr: 'avg', order: 'desc'});
     const propertyOf = (look: {[key: string]: any}, name: string) => JSON.parse(look[name]).property;
     const sp = demog.plot.scatter();
-    sp.setOptions({xCategoryOrder: byProperty('Chem:molecularProperty(MW)'),
-      yCategoryOrder: byProperty('Chem:molecularProperty(LogP)')});
+    sp.setOptions({xCategoryOrder: byProperty('Chem:MolecularProperty(MW)'),
+      yCategoryOrder: byProperty('Chem:MolecularProperty(LogP)')});
     const spLook = sp.getOptions(true).look;
-    expect(propertyOf(spLook, 'xCategoryOrder'), 'Chem:molecularProperty(MW)');
-    expect(propertyOf(spLook, 'yCategoryOrder'), 'Chem:molecularProperty(LogP)');
+    expect(propertyOf(spLook, 'xCategoryOrder'), 'Chem:MolecularProperty(MW)');
+    expect(propertyOf(spLook, 'yCategoryOrder'), 'Chem:MolecularProperty(LogP)');
     const lc = demog.plot.line();
-    lc.setOptions({xCategoryOrder: byProperty('Chem:molecularProperty(MW)')});
-    expect(propertyOf(lc.getOptions(true).look, 'xCategoryOrder'), 'Chem:molecularProperty(MW)');
+    lc.setOptions({xCategoryOrder: byProperty('Chem:MolecularProperty(MW)')});
+    expect(propertyOf(lc.getOptions(true).look, 'xCategoryOrder'), 'Chem:MolecularProperty(MW)');
     const bp = demog.plot.box();
-    bp.setOptions({categoryOrder: byProperty('Chem:molecularProperty(MW)')});
-    expect(propertyOf(bp.getOptions(true).look, 'categoryOrder'), 'Chem:molecularProperty(MW)');
-  }, anywhere);
+    bp.setOptions({categoryOrder: byProperty('Chem:MolecularProperty(MW)')});
+    expect(propertyOf(bp.getOptions(true).look, 'categoryOrder'), 'Chem:MolecularProperty(MW)');
+  }, options);
 
   test('property keys computed for distinct categories', async () => {
     const calls: number[] = [];
@@ -59,5 +55,5 @@ category('Viewers: category order', () => {
       view.close();
       grok.shell.closeTable(df);
     }
-  }, browserOnly);
+  }, options);
 });
