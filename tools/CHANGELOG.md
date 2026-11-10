@@ -2,7 +2,7 @@
 
 ## v.next
 
-* `grok test`: Run from a core Dart library (d4, xamgle, ddt, dml), finds DevTools in the umbrella's `public/` next to core
+* `grok test`: Fixed finding DevTools when run from a core Dart library (d4, xamgle, ddt, dml): it is in the umbrella's `public/` next to core
 
 ## 6.7.10 (2026-11-06)
 
