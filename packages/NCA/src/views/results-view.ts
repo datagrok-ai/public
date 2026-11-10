@@ -2327,13 +2327,21 @@ export function buildC0TooltipSpec(
     }
   };
   const c0 = readC0();
-  if (c0 === null || c0.method === 'observed') return null;
-  const pct = c0.pctAucBackExtrap;
+  if (c0 === null) return null;
+  const line = c0ShareLine(c0.method, c0.pctAucBackExtrap);
+  return line === null ? null : {...header, extra: [line]};
+}
+
+/**
+ * The ONE `back-extrapolated: N % of AUC₀–∞` line of a `C0_EXTRAP` cell — the dense results grid
+ * ({@link buildC0TooltipSpec}) and the Sparse NCA grid (an IV-bolus composite) both print it. Null
+ * on a measured dose-time value (`observed`: nothing extrapolated — omitted, never `0 %`) and when
+ * the share does not exist (no AUC₀–∞).
+ */
+export function c0ShareLine(method: unknown, pct: unknown): HTMLElement | null {
+  if (method == null || method === 'observed') return null;
   if (typeof pct !== 'number' || !Number.isFinite(pct)) return null;
-  return {
-    ...header,
-    extra: [ui.divText(`back-extrapolated: ${pct.toFixed(1)} % of AUC₀–∞`, 'nca-richtip-summary')],
-  };
+  return ui.divText(`back-extrapolated: ${pct.toFixed(1)} % of AUC₀–∞`, 'nca-richtip-summary');
 }
 
 /** The columns that rest on the profile's FIRST-row body weight when the weight varies (AD-2). */
@@ -3210,8 +3218,9 @@ const SPARSE_NCA_FIXED: FixedGridSpec = {
     desc: 'Sampling design derived from the animal × nominal-time table: ' +
       'destructive (1 sample/animal) / batch (partial overlap) / serial (full).'},
   AUC_LAST: {header: 'AUClast', width: 80, format: '0.000',
-    desc: 'Closed-form composite AUClast (mg·h/L), linear trapezoid from (0, 0) — the regulatory headline. ' +
-      'The linear rule can overestimate a convex decline across wide sampling gaps (see Notes).'},
+    desc: 'Closed-form composite AUClast (mg·h/L), linear trapezoid from (0, 0) — from (0, C_0) on an ' +
+      'IV-bolus composite — the regulatory headline. The linear rule can overestimate a convex decline ' +
+      'across wide sampling gaps (see Notes).'},
   AUC_SE: {header: 'SE', width: 64, format: '0.000',
     desc: 'Holder/Bailer standard error of AUClast (mg·h/L).'},
   // The Satterthwaite df floor is the sparse path's OWN threshold — it is not
@@ -3231,6 +3240,11 @@ const SPARSE_NCA_FIXED: FixedGridSpec = {
   AUC_CI_METHOD: {header: 'CI method', width: 78,
     desc: 'Closed-form variance used: Bailer (destructive, r_ij = 0) / Holder (batch/serial).'},
   CMAX: {header: 'Cmax', width: 70, format: '0.000', desc: 'Composite peak mean concentration (mg/L).'},
+  // The dense grid's column (name, header, format), on the composite: the start of AUClast.
+  C0_EXTRAP: {header: 'C_0', width: 64, format: '0.000',
+    desc: 'Concentration at the dose time of the composite (mg/L), where AUClast starts. IV bolus only. ' +
+      'Measured when a t = 0 mean exists, otherwise estimated from the composite means — Notes say ' +
+      'when it could not be back-extrapolated.'},
   TMAX: {header: 'Tmax', width: 56, format: '0.##', desc: 'Time of the composite Cmax (h).'},
   AUC_INF: {header: 'AUCinf', width: 76, format: '0.000',
     desc: 'Composite AUC extrapolated to infinity (mg·h/L): the linear AUClast of this row + Clast / λz. ' +
@@ -3338,6 +3352,9 @@ export interface SparseCohort {
   readonly maxPerTimepoint: number;
   /** The composite's violated acceptance criteria (short form), empty unless Flagged. */
   readonly reasons: ReadonlyArray<string>;
+  /** IV bolus: how the composite's C0 was obtained and its back-extrapolated share of AUCinf (the
+   *  `C0_EXTRAP` cell's tooltip line); null on every other route. */
+  readonly c0?: {readonly method: string; readonly pctAucBackExtrap: number} | null;
 }
 
 /** The pooled-cohort cue that leads every composite verdict surface (AC-S4.8.0; R1/LBC-3): the
@@ -3380,6 +3397,11 @@ export function configureSparseNcaGrid(
     headerLegend: (name) => {const r = banded[name]; return r !== undefined ? legendRows(r) : [];},
     cellTip: (name, i) => {
       if (name === PIPELINE_COL) return pipelineTipAt(df, i);
+      if (name === 'C0_EXTRAP') {
+        const c0 = cohorts[i]?.c0 ?? null;
+        const line = c0 !== null ? c0ShareLine(c0.method, c0.pctAucBackExtrap) : null;
+        return line === null ? null : {title: 'C_0', summary: SPARSE_NCA_FIXED.C0_EXTRAP.desc, extra: [line]};
+      }
       if (isSparseLzDependentCol(name)) {
         const d = excludedAt(i);
         return d !== null ? excludedCellTipSpec(d, true) : null;
@@ -3427,6 +3449,9 @@ export function configureSparseNcaGrid(
   });
   applyReasonPillColours(grid, thresholds);
   hideRouteUnlessVarying(grid);
+  // `C0_EXTRAP` hides on a frame with no IV-bolus composite — the dense grid's route rule, called.
+  const c0Col = grid.columns.byName('C0_EXTRAP');
+  if (c0Col !== null && df !== null) c0Col.visible = !routeSuppressed(df).has('C0_EXTRAP');
 }
 
 /**

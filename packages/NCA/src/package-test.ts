@@ -27,6 +27,7 @@ import './tests/toxicokinetics-tests';
 import './tests/dose-proportionality-tests';
 import './tests/sparse-nca-tests';
 import './tests/sparse-strata-tests';
+import './tests/sparse-iv-anchor-tests';
 import './tests/adapter-na-normalize-tests';
 import './tests/adapter-csv-float64-tests';
 import './tests/adapter-unit-conversion-tests';

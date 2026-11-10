@@ -5285,6 +5285,8 @@ function sparseCohortsOf(result: SparseNcaResult): SparseCohort[] {
   return result.groups.map((g) => ({
     nAnimals: g.nAnimals, minPerTimepoint: g.minTimepointN, maxPerTimepoint: g.maxTimepointN,
     reasons: g.acceptance.reasons,
+    // The C0_EXTRAP tooltip: the method of the shown anchor (`sparseAuc`), the share from the dense run.
+    c0: g.c0 !== null ? {method: g.c0.method, pctAucBackExtrap: g.c0Provenance?.pctAucBackExtrap ?? NaN} : null,
   }));
 }
 

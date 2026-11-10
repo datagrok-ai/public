@@ -640,7 +640,8 @@ function computeSparse(sub: DG.DataFrame, m: PipelineMapping, pr: PipelineRules,
     reasons.push(...warnings.reasons);
     const sexCodes = sexCodesIn(part, sex, allRows);
     const params: Partial<Record<ParamCol, number>> = {
-      CMAX: g.cmax, TMAX: g.tmax, C0_EXTRAP: NaN, AUC_LAST: g.aucLast, AUC_INF: g.aucInf,
+      // C0_EXTRAP: the IV-bolus anchor of AUC_LAST, as the Sparse NCA grid shows it (NaN off IV bolus).
+      CMAX: g.cmax, TMAX: g.tmax, C0_EXTRAP: g.c0?.value ?? NaN, AUC_LAST: g.aucLast, AUC_INF: g.aucInf,
       PCT_EXTRAP: g.pctExtrap, LAMBDA_Z: g.lambdaZ, HALF_LIFE: g.halfLife, CL: g.cl, VZ: g.vz,
       MRT: g.mrt, VSS: g.vss, CL_ABS: g.clAbs, VZ_ABS: g.vzAbs, VSS_ABS: g.vssAbs,
       LAMBDAZ_ADJ_R2: g.lambdaZAdjR2, LAMBDAZ_NPOINTS: g.lambdaZNPoints, SPAN_RATIO: g.spanRatio,

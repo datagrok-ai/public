@@ -101,6 +101,11 @@ numeric sex code.
   Asserted by `src/tests/workflow-stages-exclusion-tests.ts`, which reads this file.
 - `mouse_sparse-reference.json`, `*_nonmem-reference.json`, `04b_…-reference.json`: references for
   the sparse and NONMEM event-format tests.
+- `07_iv_bolus_sparse.csv` + `07_iv_bolus_sparse-reference.json`: SIMULATED destructive IV-bolus
+  composites (four dose groups) and their PKNCA 0.12.1 oracle (`pk.calc.c0`, `pk.calc.auciv`). Written,
+  not copied, by sci-comp `src/nca/__tests__/regen-sparse-fixture.R` block 4 (seeded generator; run it
+  from `libraries/sci-comp`); identical to sci-comp's `datasets/07_iv_bolus_sparse.csv` and
+  `fixtures/07_iv_bolus_sparse.json`. Asserted by `src/tests/sparse-iv-anchor-tests.ts`.
 
 ## Demo tables (`demo/`)
 
