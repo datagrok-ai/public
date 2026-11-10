@@ -13,7 +13,8 @@ Feature: Category order across viewers
   order (its Order reads "default").
   demog-1000: RACE rows Asian 15, Black 27, Caucasian 896, Other 62; on the scatter plot row 1 is
   Caucasian, row 2 Other and row 10 Asian. Sorted by RACE descending, the grid shows the Other rows 2
-  and 133 on top, and the Caucasian rows 1 and 3 once the column's order puts Caucasian last. Asian, Black and Other kept by the filter are 104 rows.
+  and 133 on top, and the Caucasian rows 1 and 3 once the column's order puts Caucasian last; with every viewer
+  docked the grid is too narrow for RACE, so the rows are read on USUBJID. Asian, Black and Other kept by the filter are 104 rows.
   The bars are drawn from the top, so the column's order shows bottom-up; a slice spans 0.36 degrees per row,
   so Caucasian starts at 15.12 degrees in the default order and at 37.44 by row count ascending.
   Every scenario starts from the table again.
@@ -34,6 +35,12 @@ Feature: Category order across viewers
     When user double-clicks on the "header RACE" area of grid
     Then the "sort column" reading of grid should be "RACE"
     And the "cell 2 of RACE" area of grid should lie above the "cell 133 of RACE" area
+    When user picks "Order..." from the context menu of the "left edge of x axis" area of scatter plot viewer
+    And user selects "Row count" in "Order by" input in "Order categories: RACE" dialog
+    And user selects "Descending" in "Direction" input in "Order categories: RACE" dialog
+    And user clicks on "CLOSE" button in "Order categories: RACE" dialog
+    Then the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 2" area
+    And the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 10" area
     Given user adds a trellis plot viewer with:
       | X Column Names | RACE      |
       | Viewer Type    | Histogram |
@@ -48,12 +55,7 @@ Feature: Category order across viewers
     And user opens the filter panel
     Then the "categories of RACE" reading of filter panel should be "Asian, Black, Caucasian, Other"
     And the "x label Caucasian" area of trellis plot viewer should lie to the left of the "x label Other" area
-    When user picks "Order..." from the context menu of the "left edge of x axis" area of scatter plot viewer
-    And user selects "Row count" in "Order by" input in "Order categories: RACE" dialog
-    And user selects "Descending" in "Direction" input in "Order categories: RACE" dialog
-    And user clicks on "CLOSE" button in "Order categories: RACE" dialog
-    Then the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 2" area
-    And the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 10" area
+    And the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 2" area
     And the "bar Caucasian" area of bar chart viewer should lie below the "bar Other" area
     And the "start angle of Caucasian" reading of pie chart viewer should be between 15.11 and 15.13
     And the "x labels" reading of 3d scatter plot viewer should be "Asian, Black, Caucasian, Other"
@@ -74,8 +76,8 @@ Feature: Category order across viewers
     And the "bar Other" area of bar chart viewer should lie below the "bar Caucasian" area
     And the "start angle of Caucasian" reading of pie chart viewer should be between 37.43 and 37.45
     And the "x labels" reading of 3d scatter plot viewer should be "Asian, Black, Other, Caucasian"
-    And grid should not have a "cell 2 of RACE" area
-    And the "cell 1 of RACE" area of grid should lie above the "cell 3 of RACE" area
+    And grid should not have a "cell 2 of USUBJID" area
+    And the "cell 1 of USUBJID" area of grid should lie above the "cell 3 of USUBJID" area
     When user clicks on "Reset" action link in "Order categories: RACE" dialog
     Then "Order categories: RACE" dialog should not contain text "RACE has its own order"
     And the "category Caucasian" area of box plot viewer should lie to the left of the "category Other" area
@@ -85,7 +87,7 @@ Feature: Category order across viewers
     And the "bar Caucasian" area of bar chart viewer should lie below the "bar Other" area
     And the "start angle of Caucasian" reading of pie chart viewer should be between 15.11 and 15.13
     And the "x labels" reading of 3d scatter plot viewer should be "Asian, Black, Caucasian, Other"
-    And the "cell 2 of RACE" area of grid should lie above the "cell 133 of RACE" area
+    And the "cell 2 of USUBJID" area of grid should lie above the "cell 133 of USUBJID" area
     When user clicks on "CLOSE" button in "Order categories: RACE" dialog
     Then no errors should have been logged
 
