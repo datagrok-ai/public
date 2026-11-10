@@ -234,7 +234,7 @@ Expected:
 - ui_coverage_responsibility covers all 7 pcmd flows extracted by Gate F
   F-UI-COVERAGE-01: pcmdOpen, pcmdEdit, pcmdDelete, pcmdSaveAsJSON,
   pcmdShare, pcmdRename, pcmdApplyTo.
-- See: public/help/compute/jupyter-notebook.md#Notebooks browser
-- See: public/help/compute/jupyter-notebook.md#Apply existing notebooks into tables
+- See: help/compute/jupyter-notebook.md#Notebooks browser
+- See: help/compute/jupyter-notebook.md#Apply existing notebooks into tables
 - # atlas entry derived from source: core/client/xamgle/lib/src/meta/notebook_meta.dart#L12
 - # atlas entry derived from source: core/client/xamgle/lib/src/meta/notebook_meta.dart#L51

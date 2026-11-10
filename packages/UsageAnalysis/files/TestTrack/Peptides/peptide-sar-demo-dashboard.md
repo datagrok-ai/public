@@ -90,7 +90,7 @@ Expected:
 - **Why bundled together.** Both scenarios are smoke-class, independent-of-prior-state entry points registered side by side in the package, so they're covered in one file rather than two.
 - **No related bugs.** No curated bug currently anchors the demo or app-browser surfaces. The closest sibling bug class is GROK-17557 (an init-prerequisite race on the context-panel Launch SAR path) — the demo and app paths don't hit the same race, since both go through their own dedicated entry handlers rather than the context-panel button.
 - **Setup composition.** Both scenarios are expected to succeed from a clean shell with no prior state. Package init is allowed to run lazily on first invocation — the assertion is that both paths complete cleanly whether the package was already warmed up or not.
-- **See:** `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Table View`; `public/packages/Peptides/README.md#Detection and usage`.
+- **See:** `help/datagrok/solutions/domains/bio/peptides-sar.md#Table View`; `public/packages/Peptides/README.md#Detection and usage`.
 
 ## Original trailing metadata
 

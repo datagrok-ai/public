@@ -175,5 +175,5 @@ Expected:
   (atlas `manual_only` rationale: not reachable via platform selectors).
 - `notebooks.editor.environment-input` deferred — "currently disabled in rendering pipeline"
   per atlas description; no automatable surface available.
-- See: public/help/compute/jupyter-notebook.md#Environments (covers notebooks.entity.environment,
+- See: help/compute/jupyter-notebook.md#Environments (covers notebooks.entity.environment,
   notebooks.editor.environment-input — navigation pointer, not derivation source).
