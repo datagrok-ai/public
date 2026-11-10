@@ -2140,8 +2140,6 @@ export interface IScatterPlotSettings {
   /** By default - automatic sizing based on current dataframe */
   markerDefaultSize: number;
 
-  markerOpacity: number;
-
   /** Randomly shift (x, y) marker position up to the *Jitter Size* pixels.
    * Useful when multiple points fall on the same exact position.
    * If *Jitter Size Y* is defined, then *Jitter Size* shifts x only. */
@@ -2233,6 +2231,7 @@ export interface IScatterPlotSettings {
 
   backColor: number;
 
+  /** Its alpha is the opacity of all markers colored by the Color column too; a missing value keeps the Missing Value Color alpha. */
   filteredRowsColor: number;
 
   filteredOutRowsColor: number;
@@ -2370,8 +2369,6 @@ export interface IScatterPlotSettings {
 
   regressionLineColor: number;
 
-  regressionLineTransparency: number;
-
   /** Gives all category lines the same slope, with a confidence band. Fitted by ANCOVA. Needs numerical X and Y. */
   regressionCommonSlope: boolean;
 
@@ -2398,8 +2395,6 @@ export interface IScatterPlotSettings {
   movingAveragePerCategory: boolean;
 
   movingAverageLineColor: number;
-
-  movingAverageLineTransparency: number;
 
   annotationRegions: string;
 
@@ -2968,8 +2963,6 @@ export interface ILineChartSettings {
 
   markerSize: number;
 
-  markerOpacity: number;
-
   /** A boolean column that determines whether to show markers. */
   showMarkers: keyof typeof VisibilityMode;
 
@@ -2977,8 +2970,6 @@ export interface ILineChartSettings {
   markersVisibilityColumnName: string;
 
   lineWidth: number;
-
-  lineTransparency: number;
 
   lineColoringType: string;
 
@@ -3245,8 +3236,6 @@ export interface ILineChartSettings {
 
   regressionLineColor: number;
 
-  regressionLineTransparency: number;
-
   /** Moving (rolling) average line visibility. */
   showMovingAverageLine: boolean;
 
@@ -3267,8 +3256,6 @@ export interface ILineChartSettings {
   movingAveragePerCategory: boolean;
 
   movingAverageLineColor: number;
-
-  movingAverageLineTransparency: number;
 
   annotationRegions: string;
 

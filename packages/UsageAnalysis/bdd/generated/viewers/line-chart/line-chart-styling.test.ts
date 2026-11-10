@@ -57,12 +57,12 @@ test.describe("Line chart axis types, label orientation, line styling and a char
     await run.scenario("Line width, transparency and colouring type restyle the line", async () => {
       await session.step(47, "When user sets \"lineWidth\" property of line chart viewer to \"3\"", () => setProperty(page, "lineWidth", el("line chart viewer"), "3"));
       await session.step(48, "Then line chart viewer should have more ink than before", () => moreInk(page, el("line chart viewer")));
-      await session.step(49, "When user sets \"lineTransparency\" property of line chart viewer to \"0.5\"", () => setProperty(page, "lineTransparency", el("line chart viewer"), "0.5"));
+      await session.step(49, "When user sets \"lineColor\" property of line chart viewer to \"2157758693\"", () => setProperty(page, "lineColor", el("line chart viewer"), "2157758693"));
       await session.step(50, "Then line chart viewer should have repainted", () => repainted(page, el("line chart viewer")));
       await session.step(51, "When user sets \"lineColoringType\" property of line chart viewer to \"Custom\"", () => setProperty(page, "lineColoringType", el("line chart viewer"), "Custom"));
       await session.step(52, "Then line chart viewer should have repainted", () => repainted(page, el("line chart viewer")));
       await session.step(53, "And line chart viewer should report no error", () => reportsNoError(page, el("line chart viewer")));
-      await session.step(54, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["lineWidth","1"],["lineTransparency","0"],["lineColoringType","Auto"]]), [["lineWidth","1"],["lineTransparency","0"],["lineColoringType","Auto"]]);
+      await session.step(54, "When user sets properties of line chart viewer:", () => setProperties(page, el("line chart viewer"), [["lineWidth","1"],["lineColor","4288465125"],["lineColoringType","Auto"]]), [["lineWidth","1"],["lineColor","4288465125"],["lineColoringType","Auto"]]);
       await session.step(58, "Then line chart viewer should have less ink than before", () => lessInk(page, el("line chart viewer")));
       await session.step(59, "And no errors should have been logged", () => noErrors(page));
     });

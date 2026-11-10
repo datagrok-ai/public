@@ -236,9 +236,9 @@ test('Line chart tests (Playwright) — UI-first', async ({page}) => {
   await softStep('Line styling', async () => {
     const errBefore = errorCount();
     await lcSetProps(page, {xColumnName: 'AGE', lineWidth: 3});
-    await lcSetProps(page, {lineTransparency: 0.5});
+    await lcSetProps(page, {lineColor: 0x809CC8E5});
     await lcSetProps(page, {lineColoringType: 'Custom'});
-    await lcSetProps(page, {lineWidth: 1, lineTransparency: 0, lineColoringType: 'Auto'});
+    await lcSetProps(page, {lineWidth: 1, lineColor: 0xFF9CC8E5, lineColoringType: 'Auto'});
     expect(await chartAlive()).toBe(true);
     expect(errorCount()).toBe(errBefore);
   });

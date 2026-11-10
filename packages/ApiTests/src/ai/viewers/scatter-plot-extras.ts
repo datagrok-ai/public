@@ -1,9 +1,13 @@
 import * as DG from 'datagrok-api/dg';
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, df, expectChoices, expectRoundTrip, until} from '../helpers';
+import {category, expect, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
+import {demog, df, expectChoices, expectRoundTrip, look, reloadLayoutWithLook, until,
+  withTableView} from '../helpers';
 
 // ScatterPlot prop JSON-shape round-trips not covered by scatter-plot-js-api.ts.
 category('AI: Viewers: ScatterPlot extras', () => {
+  const markerColors = ['filteredRowsColor', 'selectedRowsColor', 'filteredOutRowsColor', 'missingValueColor',
+    'whiskerColor'] as const;
+
   const v = (): DG.ScatterPlotViewer => demog().plot.scatter({x: 'age', y: 'height'}) as DG.ScatterPlotViewer;
 
   test('xAxisType + yAxisType (AxisType) round-trip + getProperties choices on yAxisType', async () => {
@@ -51,10 +55,59 @@ category('AI: Viewers: ScatterPlot extras', () => {
     });
   });
 
-  test('markerOpacity/jitterSize/jitterSizeY/markerBorderWidth boundary round-trip', async () => {
+  test('jitterSize/jitterSizeY/markerBorderWidth boundary round-trip', async () => {
     const c = v();
-    expectRoundTrip(c, {markerOpacity: 0, jitterSize: 0, jitterSizeY: 0, markerBorderWidth: 1});
-    expectRoundTrip(c, {markerOpacity: 100, jitterSize: 50, jitterSizeY: 50, markerBorderWidth: 10});
+    expectRoundTrip(c, {jitterSize: 0, jitterSizeY: 0, markerBorderWidth: 1});
+    expectRoundTrip(c, {jitterSize: 50, jitterSizeY: 50, markerBorderWidth: 10});
+  });
+
+  test('removed markerOpacity / line transparencies move into the color alpha', async () => {
+    const c = v();
+    c.setOptions({markerOpacity: 30, regressionLineTransparency: 0.5, movingAverageLineTransparency: 0.75});
+    for (const color of markerColors)
+      expect(DG.Color.a(c.props[color]), 76);
+    expect(DG.Color.a(c.props.regressionLineColor), 128);
+    expect(DG.Color.a(c.props.movingAverageLineColor), 64);
+    for (const removed of ['markerOpacity', 'regressionLineTransparency', 'movingAverageLineTransparency'])
+      expect(removed in look(c), false);
+    c.setOptions({filteredRowsColor: '#ff0000', markerOpacity: 50});
+    expect((c.props.filteredRowsColor >>> 0).toString(16), '7fff0000');
+
+    await withTableView(demog(), (tv) => {
+      tv.scatterPlot({x: 'height', y: 'weight'});
+      const sp = reloadLayoutWithLook(tv, DG.VIEWER.SCATTER_PLOT, {markerOpacity: 50, filteredRowsColor: 0xFFFF0000});
+      expect((sp.props.filteredRowsColor >>> 0).toString(16), '7fff0000');
+      expect(DG.Color.a(sp.props.selectedRowsColor), 127);
+      const fromString = reloadLayoutWithLook(tv, DG.VIEWER.SCATTER_PLOT, {markerOpacity: '40'});
+      expect(DG.Color.a(fromString.props.filteredRowsColor), 102);
+    });
+  });
+
+  test('setMarkerOpacity sets the alpha of all marker colors or of the given colors', async () => {
+    const c = v();
+    c.setMarkerOpacity(50);
+    for (const color of markerColors)
+      expect(DG.Color.a(c.props[color]), 127);
+    c.setMarkerOpacity(25, ['regressionLineColor']);
+    expect(DG.Color.a(c.props.regressionLineColor), 63);
+    expect(DG.Color.a(c.props.filteredRowsColor), 127);
+  });
+
+  test('the opacity and transparencies are not viewer properties', async () => {
+    const c = v();
+    for (const removed of ['markerOpacity', 'regressionLineTransparency', 'movingAverageLineTransparency'])
+      expect(removed in c.props, false);
+    await expectExceptionAsync(async () => {
+      Reflect.set(c.props, 'markerOpacity', 40);
+    });
+  });
+
+  test('zero opacity keeps alpha 1: alpha 0 means a color written without alpha', async () => {
+    const c = v();
+    c.setMarkerOpacity(0);
+    expect(DG.Color.a(c.props.filteredRowsColor), 1);
+    c.setOptions({regressionLineTransparency: 1});
+    expect(DG.Color.a(c.props.regressionLineColor), 1);
   });
 
   test('selection visibility bools combined round-trip', async () => {
