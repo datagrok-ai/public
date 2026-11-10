@@ -44,7 +44,7 @@ services:
       - datagrok_data:/home/grok/data
       - datagrok_cfg:/home/grok/cfg
       - type: bind
-        source: ${FULL_PATH_TO_BUILD_JS_API:-./../js-api/../../xamgle/web/js/api}
+        source: ${FULL_PATH_TO_BUILD_JS_API:-./../../core/client/xamgle/web/js/api}
         target: /home/grok/datagrok/html.build/web/js/api
     restart: unless-stopped
     profiles: ["all", "datagrok"]
