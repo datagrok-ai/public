@@ -1035,6 +1035,21 @@ export class PackageFunctions {
     return `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}|${startDownload}`;
   }
 
+  // Fixture for the RFV tab tests (see test/rfv-view.ts): empty outputs get no tab, so `last` has one only
+  // while `rows` > 0
+  @grok.decorators.func({outputs: [
+    {type: 'dataframe', name: 'first'},
+    {type: 'dataframe', name: 'middle'},
+    {type: 'dataframe', name: 'last'},
+  ]})
+  static async TestRfvTabs(
+    @grok.decorators.param({type: 'int'}) rows: number,
+  ): Promise<any> {
+    return {
+      first: DG.DataFrame.fromCsv('x\n1'), middle: DG.DataFrame.fromCsv('y\n1'), last: DG.DataFrame.create(rows),
+    };
+  }
+
   // Fixtures for the project-export data-prep tests (see test/project-export-data.ts);
   // the tests only prepare() these calls, the bodies never run.
   @grok.decorators.func({outputs: [{type: 'dataframe', name: 'res'}]})

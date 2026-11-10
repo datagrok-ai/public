@@ -36,6 +36,7 @@ import './test/inspector-annotation-links';
 import './test/keyboard';
 import './test/run-control';
 import './test/tree-wizard';
+import './test/rfv-view';
 
 export const _package = new DG.Package();
 export {tests};

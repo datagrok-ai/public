@@ -15,20 +15,20 @@ import {SELECTED_STEP_BACKGROUND} from '../components/TreeWizard/tree-utils';
 const currentStep = (view: DG.ViewBase) =>
   new URLSearchParams((view.path ?? '').split('?')[1] ?? '').get('currentStep');
 
-const chosen = (view: DG.ViewBase) =>
+export const chosen = (view: DG.ViewBase) =>
   rows(view).filter((el) => el.querySelector(`[style*="${SELECTED_STEP_BACKGROUND}"]`)).map(rowLabel);
 
-async function chooseRow(view: DG.ViewBase, label: string) {
+export async function chooseRow(view: DG.ViewBase, label: string) {
   const el = row(view, label);
   el.focus();
   press(el, 'Enter');
   await waitUntil(() => chosen(view).join() === label, `${label} should be chosen, is ${chosen(view)}`, 5000);
 }
 
-const panel = (view: DG.ViewBase, title: string) => view.root.querySelector(`[dock-spawn-title="${title}"]`);
+export const panel = (view: DG.ViewBase, title: string) => view.root.querySelector(`[dock-spawn-title="${title}"]`);
 
 // the workflow's own dock is the first, the open step has its own inside
-function closePanel(view: DG.ViewBase, title: string) {
+export function closePanel(view: DG.ViewBase, title: string) {
   const shadow = view.root.querySelector('dock-spawn-ts')!.shadowRoot!;
   const bar = Array.from(shadow.querySelectorAll('.panel-titlebar'))
     .find((el) => el.querySelector('.panel-titlebar-text')?.textContent?.trim() === title);
@@ -43,14 +43,14 @@ function closePanel(view: DG.ViewBase, title: string) {
   tab.querySelector<HTMLElement>('.dockspan-tab-handle-close-button')!.click();
 }
 
-async function closedPanel(view: DG.ViewBase, title: string) {
+export async function closedPanel(view: DG.ViewBase, title: string) {
   closePanel(view, title);
   await waitUntil(() => !panel(view, title), `The ${title} panel should close`, 5000);
 }
 
 const WIZARD = ['Wizard title', 'first 3', 'group title', 'inner', 'review', 'last'];
 
-async function openWizard(track: <T extends DG.ViewBase>(view: T) => T, resolve?: (data?: any) => void) {
+export async function openWizard(track: <T extends DG.ViewBase>(view: T) => T, resolve?: (data?: any) => void) {
   await awaitWebComponents();
   const call = DG.Func.byName('Compute2:MockTreeWizardPipeline').prepare();
   if (resolve)
@@ -62,7 +62,7 @@ async function openWizard(track: <T extends DG.ViewBase>(view: T) => T, resolve?
   return view;
 }
 
-const clickRibbon = (view: DG.ViewBase, icon: string) => (ribbonIcons(view, icon)[0] as HTMLElement).click();
+export const clickRibbon = (view: DG.ViewBase, icon: string) => (ribbonIcons(view, icon)[0] as HTMLElement).click();
 
 // the compositor overlay covers the workflow while it is busy, so a user can't press its buttons then
 const idle = (view: DG.ViewBase) => waitUntil(

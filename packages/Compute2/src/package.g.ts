@@ -243,6 +243,14 @@ export async function TestCustomExportRecorder(funcCall: DG.FuncCall, startDownl
   return await PackageFunctions.TestCustomExportRecorder(funcCall, startDownload);
 }
 
+//input: int rows 
+//output: dataframe first
+//output: dataframe middle
+//output: dataframe last
+export async function TestRfvTabs(rows: number) : Promise<any> {
+  return await PackageFunctions.TestRfvTabs(rows);
+}
+
 //input: int x 
 //output: dataframe res
 export async function TestProjectExportSingleOut(x: number) : Promise<any> {
