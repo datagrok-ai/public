@@ -15,7 +15,7 @@ import type {ViewContent} from '@datagrok-libraries/u2/dg';
 import {PlanFrames, PlanInputs, WEEKDAY_NAMES, armColors, declarationOf, planFrames, tgisOf, weekdaysOf,
   weekdaysText} from './frames';
 import {ArmsInput, CorrectionInput, armsFrame} from './arms-input';
-import {MIN_GROUP, finite} from './engine';
+import {MIN_GROUP, diameterOf, finite} from './engine';
 import {askedOf, autoRun, callInputs, cardGrid, copyRow, infoNote, notes, notesBox, num, pct, settleForm, sized,
   markStage, statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
 import {openStage, showStage} from './stages';
@@ -23,6 +23,7 @@ import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
 import {followPlan} from './monitor-view';
 import {SavedPlan, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
+import {labHumane} from './study-file';
 import {StudyMeta, dateOf, dateText, dosingDays, emptyMeta, weekdayOf, withId} from './study-meta';
 import {CAL, MenuAt, WEEKDAYS, dayActions, icsOf, mark, marked, weeksGrid} from './calendar';
 import {Exports, download, exportMenu, reportHtml} from './report';
@@ -530,6 +531,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         `window) and ${pct(v('post_loss'))} after it (ulceration, deaths, technical failures); ` +
         (v('loss_rule') === 'expected' ? 'the counts cover the average loss' :
           `each count is enough with ${pct(v('confidence'))} probability`) +
+        (finite(v('confidence_study')) === null ? '' :
+          `; every group ends with its animals in ${pct(v('confidence_study'))} of studies`) +
         (k < 2 ? '' : '. The control is as large as the largest treated group'),
       'Randomization': `When the tumors reach ${v('v_rand')} mm³, into groups balanced on tumor volume; the ` +
         'randomization day is day 0',
@@ -544,7 +547,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         `day ${v('endpoint_day')}, when the median control reaches ${v('endpoint')} mm³` :
         `The first measurement day once the median control reaches ${v('endpoint')} mm³ (expected day ` +
         `${v('study_end')})`,
-      'Humane limit': `${v('humane_limit')} mm³: an animal above it is removed, whatever the study day; its ` +
+      'Humane limit': `${v('humane_limit')} mm³ (a mean diameter of about ` +
+        `${diameterOf(v('humane_limit')).toFixed(1)} cm): an animal above it is removed, whatever the study day; its ` +
         'measurements up to removal stay in the analysis',
       'Measurements': `Tumor volume and body weight on ${v('measurement_weekdays')}: days ` +
         `${v('measurement_days')} from randomization`,
@@ -817,7 +821,9 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     // a new plan opens on the tumor model picked last, with no arm: not the table in view, which the platform gives
     // a table parameter by default (Monitor's study would read as 267 arms)
     const last = initial ? null : lastLine();
-    for (const [name, value] of Object.entries(initial?.inputs ?? {arms: null, ...last ? {line: last} : {}})) {
+    const lab = labHumane();
+    for (const [name, value] of Object.entries(initial?.inputs ??
+      {arms: null, ...last ? {line: last} : {}, ...lab ? {humane: lab} : {}})) {
       const v = name === 'arms' && value ? armsFrame(value as SavedPlan['inputs']['arms']) : value;
       const field = form.getInput(name);
       if (field)

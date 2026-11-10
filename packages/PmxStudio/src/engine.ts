@@ -130,6 +130,9 @@ export interface StudyDesign {
   randomiseTotal: number | null;
   /** animals to implant so that the randomised ones are there: one pool for every group */
   implant: number | null;
+  /** the chance that the implanted animals give the randomised ones and every group then keeps its analysable
+   *  animals, all at once (null: not sized) */
+  confidenceStudy: number | null;
   /** the post-randomisation loss used: the declared one, or the atlas's non-progressing share when larger */
   postLoss: number;
   /** per-comparison level of the largest arm */
@@ -158,8 +161,16 @@ export const SEED = 20261021;
 export const weekdaysParam = (days: number[]) =>
   days.map((i) => ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][i]).join(',');
 
-/** mm3: the humane limit when none is declared (Crux's default) */
-export const HUMANE = 2000;
+/** mm3: where a study starts until the lab sets its own limit (study-file.ts labHumane): the humane limit under the
+ *  guideline's, the endpoint below it. Against 1,500 and 2,000, a default study needs no more animals and ends 2 to 9
+ *  days sooner (preclinical bundle, analysis/humane_default_impact.py). */
+export const HUMANE = 1500;
+export const ENDPOINT = 1000;
+/** mm3: Workman et al. 2010 (Br J Cancer 102:1555) advise a mean diameter of 1.5 cm at most in therapy studies; as a
+ *  volume by length x width^2 / 2. */
+export const GUIDE_LIMIT = 1690;
+/** The mean diameter (cm) of a tumor of `volume` mm3, by length x width^2 / 2 with both equal. */
+export const diameterOf = (volume: number) => Math.cbrt(2 * volume) / 10;
 
 /** Fewest analyzable animals in any group, whatever the power needs: with fewer, losing one animal can leave a
  *  comparison without a usable variance (a design rule; usual xenograft groups are 8-10). */
@@ -337,6 +348,13 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
   const nTotal = sum([nControl, ...sizes]);
   const randomiseTotal = sum([randomiseControl, ...arms.map((a) => a.randomise)]);
   const implant = await enough(randomiseTotal, 1 - d.preLoss, d.confidence, d.lossRule);
+  // each count covers its own loss; what they give together: P(Binom(m, keep) >= n) of the pool and of every group
+  const kept = async (m: number | null, n: number | null, keep: number) => m === null || n === null ? null :
+    keep >= 1 ? 1 : Number((await crux('stats.dist_eval', {x: Float64Array.from([n - 1])},
+      {dist: 'binom', func: 'sf', shape1: m, shape2: keep})).main.col['value'][0]);
+  const each = await Promise.all([kept(implant, randomiseTotal, 1 - d.preLoss),
+    kept(randomiseControl, nControl, 1 - postLoss), ...arms.map((a) => kept(a.randomise, a.n, 1 - postLoss))]);
+  const confidenceStudy = each.some((p) => p === null) ? null : (each as number[]).reduce((t, p) => t * p, 1);
   const first = plans[0];
 
   // the control from the first call (the same in every call), then each arm's treated rows under its name
@@ -373,6 +391,11 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     notes.growth.push(`By day ${end.day}, ${Math.round(end.pastHumane * 100)}% of the controls are over the humane ` +
       `limit (${d.humane} mm³) and leave the study before its end`);
   }
+  if (d.humane > GUIDE_LIMIT) {
+    notes.growth.push(`The humane limit (${d.humane} mm³, a mean diameter of about ` +
+      `${diameterOf(d.humane).toFixed(1)} cm) is above the 1.5 cm that Workman et al. 2010 advise for therapy ` +
+      `studies (about ${GUIDE_LIMIT} mm³)`);
+  }
   if (d.endpoint >= d.humane) {
     notes.growth.push(`The endpoint (${d.endpoint} mm³) is not below the humane limit (${d.humane} mm³): ` +
       'controls are ' +
@@ -404,7 +427,7 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     declaration: d, studyEnd: first['evaluation_day'], endpointDay: first['endpoint_day'], duration, schedules,
     durationQ10: first['duration_q10'],
     durationQ90: finite(first['duration_q90']), pNotReached: pNot, nControl, randomiseControl, nTotal, randomiseTotal,
-    implant, postLoss,
+    implant, postLoss, confidenceStudy,
     alphaArm: plans[largest]['alpha_arm'], calendar: String(first['calendar']).split(',').map(Number), arms, curves,
     measurement: me, nonprogressing: lp.take.nonprogressing_map,
     atlas: {papers: lp.papers, animals: lp.animals, ess: lp.log_alpha.ess}, notes,

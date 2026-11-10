@@ -129,7 +129,7 @@ With a **Body weight** column (grams, weighed with the tumor, on the rows of the
   the vehicle's in percentage points (a tumor-bearing vehicle can lose weight itself: CT26 is cachectic).
 - **Removed early**: weighed for the last time before the rest of its group; at the weight endpoint when its
   measured loss there reached **Humane limit, weight loss** (Advanced, 20%: Workman et al. 2010, Br J Cancer
-  102:1555), at the tumor's when its volume reached **Humane limit, tumor** (2000 mm³), else for another reason. With
+  102:1555), at the tumor's when its volume reached **Humane limit, tumor** (1500 mm³ unless the lab set its own in the package's settings, `humaneLimit`), else for another reason. With
   a **Removal reason** column (found dead, moribund, weight, tumor, ulceration, other; on any of the animal's rows)
   the reason given replaces the one read.
 - **NCI limits** for a treatment in mice (Plowman et al. 1997, in Teicher (ed.) *Anticancer Drug Development

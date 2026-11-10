@@ -46,6 +46,12 @@
       "defaultValue": "",
       "nullable": true,
       "description": "The lab's outlier rules for the study table (JSON, written from the table's Rules dialog; empty: the defaults)"
+    },
+    {
+      "name": "humaneLimit",
+      "propertyType": "int",
+      "nullable": true,
+      "description": "The lab's humane limit for the tumor volume (mm³), from its approved protocol: a new plan or study starts from it (empty: 1500)"
     }
   ],
   "devDependencies": {

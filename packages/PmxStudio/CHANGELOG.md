@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+* Defaults (2026-11-10):
+  * A new plan or study starts from a humane limit of 1500 mm³ and an endpoint of 1000 mm³ (2000 and 1500 before):
+    the limit is under the 1.5 cm mean diameter that Workman et al. 2010 advise for therapy studies, a default study
+    needs no more animals and ends 2 to 9 days sooner. A lab sets its own limit once, in the package's settings
+    (`humaneLimit`); the plan says the limit's mean diameter and when it is above the guideline. Saved plans and
+    studies keep their own limits.
+  * Plan: the protocol says what the extra animals for losses give for every group at once, beside each group's
+    own probability (`confidence_study` in the plan's table). The counts are unchanged.
+  * Monitor: under the measurement sheet, how often a correct value is asked to be measured again (about 1 in 27,
+    measured on published controls) and what that is for the study's animals in a session.
 * Review fixes (2026-11-10):
   * A study's details: saving them from the header no longer drops the notebook's notes, an ID given on saving, or a
     date of day 0 set from the calendar.

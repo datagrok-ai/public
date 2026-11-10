@@ -130,6 +130,7 @@ export async function planFrames(d: StudyDeclaration, tgis: number[] = []): Prom
     p_endpoint_not_reached: s.pNotReached, endpoint: d.endpoint, v_rand: d.vRand,
     n_control: s.nControl, randomise_control: s.randomiseControl, n_total: s.nTotal, randomise_total: s.randomiseTotal,
     implant_total: s.implant, pre_loss: d.preLoss, post_loss: s.postLoss, confidence: d.confidence,
+    confidence_study: s.confidenceStudy,
     loss_rule: d.lossRule,
     n_fixed: d.n !== null,
     nonprogressing: s.nonprogressing, power_target: d.power, alpha: d.alpha, correction: d.correction,

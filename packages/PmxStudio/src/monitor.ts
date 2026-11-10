@@ -50,6 +50,15 @@ function monitorOf(study: Study, params: {[k: string]: any}): Promise<CruxResult
 export const LIMIT_ALERT = 0.2;
 /** A last value this far out of its forecast (two-sided) is listed as unexpected. */
 export const UNEXPECTED = 0.005;
+/** The share of correct values that fell outside that 99% range on the atlas's controls (9,508 predictions, the
+ *  preclinical bundle's MONITOR_DESIGN.md): what the prompts cost until the range is recalibrated. */
+export const UNEXPECTED_MEASURED = 0.037;
+
+/** How often a session of `n` animals asks to measure a correct value again, in words. */
+export function promptsByChance(n: number): string {
+  const each = Math.max(n, 1) * UNEXPECTED_MEASURED;
+  return each >= 0.75 ? `about ${Math.round(each)} a session` : `about one every ${Math.round(1 / each)} sessions`;
+}
 /** The share of the weight-loss limit from which an animal is listed (15% for the usual 20%). Our criterion, not a
  *  published one: a margin to act before the limit. */
 export const WEIGHT_WATCH = 0.75;

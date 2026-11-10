@@ -6,6 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
 
+import {_package} from './package';
 import {PLAN_TAG, SavedPlan, fileNameOf, parsePlan} from './plan-file';
 import {StudyMeta, metaOf, parseMeta, setMetaOn} from './study-meta';
 
@@ -55,6 +56,13 @@ export interface SavedStudy {
 
 export const logOf = (df: DG.DataFrame): LogEntry[] => JSON.parse(df.getTag(LOG_TAG) || '[]');
 
+/** The lab's humane limit (mm3), set once in the package's settings (humaneLimit): where a plan or a study with no
+ *  limit of its own starts; null: none set, the form's default stands. */
+export function labHumane(): number | null {
+  const x = Number(_package.settings?.['humaneLimit']);
+  return Number.isFinite(x) && x > 0 ? x : null;
+}
+
 /** What a table says of itself into a form on it: its plan's tumor model, its body weight column and the protocol's
  *  limits. */
 export function restoreFields(form: FuncCallForm, df: DG.DataFrame): void {
@@ -65,7 +73,7 @@ export function restoreFields(form: FuncCallForm, df: DG.DataFrame): void {
   } catch {
     // a damaged plan: Analyze says so; the field stays as it is
   }
-  const fields = {line, bodyWeight: df.getTag(WEIGHT_TAG) || null, humane: limits.humane ?? null,
+  const fields = {line, bodyWeight: df.getTag(WEIGHT_TAG) || null, humane: limits.humane ?? labHumane(),
     weightLimit: limits.weightLimit ?? null};
   for (const [name, value] of Object.entries(fields)) {
     const input = form.getInput(name);

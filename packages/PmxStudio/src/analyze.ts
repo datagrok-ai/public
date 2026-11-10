@@ -17,7 +17,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import {crux, CruxResult, MAX_SETS, named, rows} from './crux';
-import {Correction, EffectMetric, HUMANE, LAB_WEEKDAYS, SEED, StudyDeclaration, StudyDesign, correctionOf,
+import {Correction, ENDPOINT, EffectMetric, HUMANE, LAB_WEEKDAYS, SEED, StudyDeclaration, StudyDesign, correctionOf,
   designStudy, finite, isFiniteNumber as ok, lineModel, median} from './engine';
 import type {Therapy} from './archetypes';
 import {PlanInputs, armColors, declarationOf} from './frames';
@@ -767,12 +767,12 @@ export const MC38_EXAMPLE: ExampleSpec = {line: 'MC38', arms: [[10, 40], [30, 70
   ({name: `Cpd-A ${dose} mg/kg`, therapy: 'small_molecule' as const, metric: 'TGI' as const, effect}))};
 
 /** Plan's form for an example: what Plan reopens it with, and what its study's plan carries. */
-export const exampleInputs = (spec: ExampleSpec) => ({line: spec.line, endpoint: 1500, arms: spec.arms, power: 80,
+export const exampleInputs = (spec: ExampleSpec) => ({line: spec.line, endpoint: ENDPOINT, arms: spec.arms, power: 80,
   correction: 'dunnett', n: null, vRand: 100, measurementDays: 'Mon, Wed, Fri', startWeekday: 'Monday',
   humane: HUMANE, alpha: 0.05, preLoss: 0, postLoss: 0});
 
 /** An example's design, as Plan makes it from exampleInputs (its end, its animals per arm). */
-export const exampleDesign = (spec: ExampleSpec) => designStudy({line: spec.line, vRand: 100, endpoint: 1500,
+export const exampleDesign = (spec: ExampleSpec) => designStudy({line: spec.line, vRand: 100, endpoint: ENDPOINT,
   power: 0.8, alpha: 0.05, correction: 'dunnett', n: null, arms: spec.arms, preLoss: 0, postLoss: 0,
   lossRule: 'confident', confidence: 0.9, weekdays: LAB_WEEKDAYS, startWeekday: 0, humane: HUMANE, schedules: false,
   lastDay: null});
@@ -841,11 +841,11 @@ export async function exampleStudy(spec: ExampleSpec = MC38_EXAMPLE): Promise<DG
   const df = DG.DataFrame.fromObjects(out)!;
   df.name = spec.name ?? `Example ${line} study`;
   // its plan in a tag: the plan Plan would save for it, with its predictive checks and each arm's power by n
-  const checks = await planChecks({line, vRand: 100, endpoint: 1500, humane: HUMANE, weekdays: LAB_WEEKDAYS,
+  const checks = await planChecks({line, vRand: 100, endpoint: ENDPOINT, humane: HUMANE, weekdays: LAB_WEEKDAYS,
     startWeekday: 0, endpointDay: design.endpointDay, nControl, arms: design.arms.map((a, k) => ({
       name: a.declaration.name, therapy: a.declaration.therapy, killRate: a.killRate, n: n[k]}))});
   const plan = savedPlan(spec.name ? `${spec.name} plan` : `Example ${line} plan`, exampleInputs(spec), {line,
-    endpoint: 1500, vRand: 100, studyEnd: design.studyEnd,
+    endpoint: ENDPOINT, vRand: 100, studyEnd: design.studyEnd,
     endpointDay: design.endpointDay, durationQ10: design.durationQ10, durationQ90: design.durationQ90, nControl,
     arms: arms.map((a, k) => ({...a, n: n[k], nNeeded: design.arms[k].nAssurance, killRate: design.arms[k].killRate,
       power: design.arms[k].power.flatMap((r) => r.assurance === null ? [] : [{n: r.n, assurance: r.assurance}])})),
