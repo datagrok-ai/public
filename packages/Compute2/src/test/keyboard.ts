@@ -1,8 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as Vue from 'vue';
 import {category, test, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import {closeViewsAfter, awaitWebComponents} from './utils';
+import {RunDetailsForm} from '../components/RunStorage/RunDetailsForm';
 
 // Keyboard tests need a view in the shell: focus and the dock's panel placement only work on attached elements.
 
@@ -509,5 +511,25 @@ table = DG.DataFrame.fromCsv('x\\n1\\n2\\n3');`).prepare({n: 3});
     expect(tabRound(inputs(view)[0]), JSON.stringify(['Inputs']), 'Tab round');
     expectTabEnters(visibleGrid()!, ['Inputs']);
     expectTabEnters(ribbonStops(view)[0], ['Inputs']);
+  });
+
+  test('Tab in the run details of the view stays in their fields', async () => {
+    const view = await openSimpleInputs();
+    const host = ui.div();
+    view.root.append(host);
+    const app = Vue.createApp(RunDetailsForm, {run: DG.Func.byName('Compute2:SimpleInputs2').prepare()});
+    app.mount(host);
+    try {
+      const fields = Array.from(host.querySelectorAll<HTMLElement>('.ui-input-editor'));
+      // Vue skips an event stamped in the millisecond its listener was attached
+      await new Promise((resolve) => setTimeout(resolve, 2));
+      fields[0].focus();
+      press(fields[0], 'Tab');
+      expect(document.activeElement === fields[1], true,
+        `Tab from Name should go to Description, is on ${panelOf(document.activeElement)}`);
+    } finally {
+      app.unmount();
+      host.remove();
+    }
   });
 });
