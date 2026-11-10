@@ -1,5 +1,5 @@
 name: Docusaurus
-# https://datagrok.ai/help/develop/how-to/help-pages#github-actions-docusaurus-workflow
+# https://datagrok.ai/help/develop/help-pages/github-workflow#github-actions-docusaurus-workflow
 
 on:
   workflow_dispatch:

@@ -689,7 +689,7 @@ custom types are read from the glue). A step shown as undefined while `grok-bdd 
 means the settings file is not valid JSON or the glue globs miss the tier directories.
 
 Settings are relative to the folder opened in VS Code; nested `.vscode/settings.json` files
-are not inherited. With the core repository open, use `public/packages/*/bdd/features/**/*.feature`
+are not inherited. With the datagrok umbrella open, use `public/packages/*/bdd/features/**/*.feature`
 for features, and `public/libraries/bdd/bindings/**/*.ts` plus
 `public/packages/*/bdd/bindings/**/*.ts` for glue in the root `.vscode/settings.json`.
 Include the same `state` parameter type there. With `public/` open, omit the `public/` prefix.

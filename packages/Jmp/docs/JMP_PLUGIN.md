@@ -446,7 +446,7 @@ Result on the local stand (2026-10-23): 12 passed, 0 audit findings, run with `-
 - [x] Vendored fixtures, golden JSON, unit + golden tests, fuzz test, BDD features (§9)
 - [ ] Corpus run on customer files, with `jmp-survey.mjs` where they are (first run, 2026-10-27: 4 files, all read)
 - [x] A 100 MB file against the §8 target: 3.0–6.1 s in the browser, on a synthetic file (a real one would still be worth timing)
-- [x] Help page: `.jmp` row in `help/access/files/supported-formats.md` (help submodule; not committed yet)
+- [x] Help page: `.jmp` row in `help/access/files/supported-formats.md` (help repo; not committed yet)
 - [x] Format details: the currency code (confirmed), `jmp.hidden` (confirmed on the public files) and fixed-decimal formats (provisional, §4.3–4.4)
 - [x] Row-state columns as marker and colour columns (§5); flags still to decode
 
