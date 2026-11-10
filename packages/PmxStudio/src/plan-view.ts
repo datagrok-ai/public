@@ -530,7 +530,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         `${pct(v('pre_loss'))} expected lost before randomization (no take, out of the volume ` +
         `window) and ${pct(v('post_loss'))} after it (ulceration, deaths, technical failures); ` +
         (v('loss_rule') === 'expected' ? 'the counts cover the average loss' :
-          `each count is enough with ${pct(v('confidence'))} probability`) +
+          `each count is enough with at least ${pct(v('confidence'))} probability`) +
         (finite(v('confidence_study')) === null ? '' :
           `; every group ends with its animals in ${pct(v('confidence_study'))} of studies`) +
         (k < 2 ? '' : '. The control is as large as the largest treated group'),

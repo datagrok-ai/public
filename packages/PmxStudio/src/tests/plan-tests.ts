@@ -7,7 +7,7 @@ import {tgisOf} from '../frames';
 
 /** pmxPlanStudy as the Plan view calls it: the outputs by name. */
 async function plan(params: {[k: string]: any}): Promise<{[k: string]: DG.DataFrame}> {
-  const fc = DG.Func.find({package: 'PmxStudio', name: 'pmxPlanStudy'})[0].prepare({line: 'MC38', endpoint: 1500,
+  const fc = DG.Func.find({package: 'PmxStudio', name: 'pmxPlanStudy'})[0].prepare({line: 'MC38', endpoint: 1000,
     power: 80, correction: 'dunnett', ...params});
   await fc.call();
   return Object.fromEntries(['plan', 'armResults', 'powerCurve', 'curves', 'duration', 'schedules', 'calendar',
@@ -51,6 +51,9 @@ category('Plan', () => {
     const randomised = [0, 1, 2].map((i) => dunnett.armResults.get('randomise', i) as number);
     expect(dunnett.plan.get('randomise_total', 0),
       dunnett.plan.get('randomise_control', 0) + randomised.reduce((a, b) => a + b));
+    // every group at once keeps its animals less often than each one does
+    const all = dunnett.plan.get('confidence_study', 0);
+    expect(all > 0.5 && all < 1, true, `every group at once: ${all}`);
   }, {timeout: 300000});
 
   test('a strong arm is held at the minimum group size, with a note', async () => {
@@ -74,7 +77,9 @@ category('Plan', () => {
   test('a chosen end of study: the effects stay on the endpoint day, the study is evaluated then', async () => {
     const base = await plan({arms: armsFrame([arm('Cpd-1')])});
     const e = base.plan.get('endpoint_day', 0);
-    expect(base.plan.get('study_end', 0), e);
+    // the study ends on the first measurement day from the endpoint day on (Mon, Wed, Fri: at most 3 days later)
+    const end = base.plan.get('study_end', 0);
+    expect(end >= e && end - e <= 3, true, `ends on day ${end}, the endpoint day is ${e}`);
     expect(base.duration.col('day')!.toList().includes(e), true);
     const later = await plan({arms: armsFrame([arm('Cpd-1')]), lastDay: e + 7});
     expect(later.plan.get('study_end', 0), e + 7);
@@ -131,14 +136,14 @@ category('Plan', () => {
   }, {timeout: 300000});
 
   test('Explore: a TGI no group size reaches has no count, not the column\'s empty value', async () => {
-    const s = (await plan({arms: armsFrame([arm('Cpd-1')]), tgiScenarios: '30, 80'})).scenarios;
+    const s = (await plan({arms: armsFrame([arm('Cpd-1')]), tgiScenarios: '15, 80'})).scenarios;
     const at = (tgi: number, column: string) => {
       const row = Array.from({length: s.rowCount}, (_, i) => i)
         .find((i) => s.get('tgi', i) === tgi && s.get('per_week', i) === 3)!;
       return finite(s.get(column, row));
     };
     for (const column of ['n_total', 'randomise_total', 'implant_total']) {
-      expect(at(30, column), null, column);
+      expect(at(15, column), null, column);
       expect((at(80, column) ?? 0) > 0, true, column);
     }
   }, {timeout: 120000});
@@ -183,16 +188,24 @@ category('Plan', () => {
   }, {timeout: 120000});
 
   test('the humane limit: declared, in the plan, and a note when the endpoint is not below it', async () => {
-    const o = await plan({arms: armsFrame([arm('Cpd-1')]), humane: 1500});
-    expect(o.plan.get('humane_limit', 0), 1500);
+    const o = await plan({arms: armsFrame([arm('Cpd-1')]), humane: 1000});
+    expect(o.plan.get('humane_limit', 0), 1000);
     expect(String(o.plan.get('notes_growth', 0)).includes('not below the humane limit'), true);
+    // a limit over the guideline's 1.5 cm mean diameter is said; the default (1500 mm³) is under it
+    const [high, usual] = await Promise.all([plan({arms: armsFrame([arm('Cpd-1')]), humane: 2000}),
+      plan({arms: armsFrame([arm('Cpd-1')])})]);
+    expect(String(high.plan.get('notes_growth', 0)).includes('Workman'), true);
+    expect(usual.plan.get('humane_limit', 0), 1500);
+    expect(String(usual.plan.get('notes_growth', 0)).includes('Workman'), false);
   }, {timeout: 120000});
 
   test('a fixed n gives each arm its power and smallest detectable effect', async () => {
     const free = await plan({arms: armsFrame([arm('Cpd-1')])});
     const n = free.armResults.get('n', 0);
-    const fewer = await plan({arms: armsFrame([arm('Cpd-1')]), n: n - 1});
-    expect(fewer.armResults.get('n', 0), n - 1);
+    // two fewer: with one fewer the power is just under the target, and the effect searched (other simulated
+    // animals) can land a fraction of a point on either side of the declared one
+    const fewer = await plan({arms: armsFrame([arm('Cpd-1')]), n: n - 2});
+    expect(fewer.armResults.get('n', 0), n - 2);
     expect(fewer.armResults.get('assurance', 0) < 0.8, true);
     expect(fewer.armResults.get('mde', 0) > 60, true, `mde ${fewer.armResults.get('mde', 0)}`);
   }, {timeout: 300000});

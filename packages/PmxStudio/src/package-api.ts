@@ -40,7 +40,7 @@ export namespace funcs {
    *   choices: PmxStudio:pmxLines()
    * @param {string} control - The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first).
    * @param {number} endpoint - The study ends when the median control reaches it.
-   * @param {number} humane - Your protocol’s limit: an animal near it is listed.
+   * @param {number} humane - Your protocol’s limit: an animal near it is listed. Workman 2010 advises a mean diameter of 1.5 cm at most in therapy studies, about 1,700 mm³. Your lab’s limit is set once, in the package’s settings.
    * @param {string} correction - Correction over the groups compared with the control in the final test.
    *   choices: ["dunnett","bonferroni","none"]
    * @param {number} evaluationDay - Leave empty for the day the median control reaches the endpoint volume.
@@ -111,12 +111,12 @@ export namespace funcs {
    * @param {number} postLoss - Randomized animals that cannot be analyzed (ulceration, deaths, technical failures), at your facility.
    * @param {string} lossRule - Average loss only needs fewer animals, but a group can end up short.
    *   choices: ["Enough for every group","Average loss only"]
-   * @param {number} confidence - How sure to be that every group keeps its animals (with Enough for every group).
+   * @param {number} confidence - How sure to be that a group keeps its animals (with Enough for every group). The protocol says what that gives for every group at once.
    * @param {number} vRand - Tumor volume when the animals are randomized and dosing starts.
    * @param {string} measurementDays - The weekdays the tumors are measured, e.g. Tue, Fri, also set from the study calendar.
    * @param {string} startWeekday - The day of the week the animals are randomized, measurements staying on your usual weekdays.
    *   choices: ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
-   * @param {number} humane - An animal is removed when its tumor passes your institution’s limit, whatever the study day.
+   * @param {number} humane - An animal is removed when its tumor passes your institution’s limit, whatever the study day. Workman 2010 advises a mean diameter of 1.5 cm at most in therapy studies, about 1,700 mm³. Your lab’s limit is set once, in the package’s settings.
    * @param {boolean} compareSchedules - Also give the power by measurements per week (off: that table is empty and the plan twice as fast).
    * @param {boolean} detectableEffect - With the animals per arm set, also search each arm’s smallest detectable effect (off: left empty and the plan several times faster).
    */
@@ -144,7 +144,7 @@ export namespace funcs {
    * @param {number} evaluationDay - Leave empty for the day the median control reaches the endpoint volume (the last day if it never does).
    * @param {number} alpha - Two-sided significance level of the comparisons with the control.
    * @param {number} weightLimit - An animal is removed when it loses this much weight (your institution’s limit).
-   * @param {number} humane - An animal is removed when its tumor passes your institution’s limit.
+   * @param {number} humane - An animal is removed when its tumor passes your institution’s limit. Workman 2010 advises a mean diameter of 1.5 cm at most in therapy studies, about 1,700 mm³. Your lab’s limit is set once, in the package’s settings.
    * @param {number} density - The tumor’s mass per mm³ of caliper volume (empty: the cell line’s typical one).
    * @param {boolean} withTwin - Also compare each treated animal with its untreated twin (off: those tables are empty and the analysis several times faster).
    */

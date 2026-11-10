@@ -3,7 +3,8 @@ import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/
 import {Scope} from '@datagrok-libraries/u2';
 
 import {exampleStudy} from '../analyze';
-import {allocateGroups, futureDays, outsideBand, parseLooks, reasonsOf, weightReasons} from '../monitor';
+import {allocateGroups, futureDays, outsideBand, parseLooks, promptsByChance, reasonsOf, weightReasons} from
+  '../monitor';
 import {PLAN_TAG, parsePlan} from '../plan-file';
 import {LIMITS_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseStudy, studyOf, tableOf}
   from '../study-file';
@@ -28,6 +29,11 @@ Promise<{[k: string]: DG.DataFrame}> {
 }
 
 category('Monitor', () => {
+  test('measure again by chance, in the words of a session', async () => {
+    expect(promptsByChance(30), 'about 1 a session');
+    expect(promptsByChance(8), 'about one every 3 sessions');
+  });
+
   test('reviews and days to come', async () => {
     expectArray(parseLooks('10, 7;7'), [7, 10]);
     expectArray(parseLooks(null), []);
