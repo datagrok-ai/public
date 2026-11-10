@@ -80,7 +80,8 @@ export function appendAll(root: HTMLElement, elements: (HTMLElement | Viewer)[])
  *  might contain. See also [remove]. */
 export function empty(e: HTMLElement): HTMLElement {
   while (e.firstChild) {
-    api.grok_Widget_Kill(e.firstChild);
+    if (e.firstChild instanceof Element)
+      api.grok_Widget_Kill(e.firstChild);
     e.removeChild(e.firstChild);
   }
   return e;

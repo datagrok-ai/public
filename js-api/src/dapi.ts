@@ -1092,6 +1092,14 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
     return toJs(await api.grok_DataConnectionsDataSource_SubDir(this.dart, e.dart, path));
   }
 
+  /** Lists the catalogs (databases) of the connection's server, in one request.
+   * Rejects, or resolves to an empty list, for a data source without catalogs: check
+   * `DG.ConnectionDataSource.byType(c.dataSource)?.supportCatalogs` first.
+   * @see {@link https://public.datagrok.ai/js/samples/data-access/db/catalogs} */
+  async getCatalogs(c: DataConnection): Promise<string[]> {
+    return toJs(await api.grok_DataConnectionsDataSource_Get_Catalogs(this.dart, c.dart));
+  }
+
   async getSchemas(e: DataConnection, catalog: string | null = null): Promise<string[]> {
     return toJs(await api.grok_DataConnectionsDataSource_Get_Schemas(this.dart, e.dart, catalog));
   }
