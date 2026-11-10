@@ -2,7 +2,6 @@
 
 ## v.next
 
-* `grok init --git`: Also installs the pre-merge-commit and pre-push hooks, which core's pre-commit config runs
 * `grok test`: Fixed finding DevTools when run from a core Dart library (d4, xamgle, ddt, dml): it is in the umbrella's `public/` next to core
 
 ## 6.7.10 (2026-11-06)

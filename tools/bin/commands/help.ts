@@ -546,7 +546,7 @@ Options:
 
 Examples:
     grok src clone platform
-    grok src sparse help "*.md" "*.mdx"
+    grok src sparse help '*.md'
     grok src bump core public
     grok src wt add fix-login core public
 `;
