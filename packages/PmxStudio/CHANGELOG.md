@@ -19,8 +19,17 @@
     studies keep their own limits.
   * Plan: the protocol says what the extra animals for losses give for every group at once, beside each group's
     own probability (`confidence_study` in the plan's table). The counts are unchanged.
-  * Monitor: under the measurement sheet, how often a correct value is asked to be measured again (about 1 in 27,
-    measured on published controls) and what that is for the study's animals in a session.
+  * Monitor: under the measurement sheet, how often a correct value is asked to be measured again and what that is
+    for the study's animals in a session.
+* Monitor, "measure again" (2026-11-10): one decision instead of two. The range to measure again outside, the
+  expected range and the flag on an animal's last value all come from one forecast of its next measurement (Crux
+  `stats.tumor_monitor`: `check_lower`/`check_upper`, `band_lower`/`band_upper`, `last_flag`), so the attention list
+  and the sheet no longer disagree. Before, the flag ran at 3.7% and the range beside it at 2.6% for a nominal 1%.
+  * The ranges' levels are the line's own when the engine priors carry them (`twin.conformal`), and the note under
+    the sheet quotes how often a correct value fell outside on published controls left out of the fit; a line
+    without that says so instead of quoting a number.
+  * `pmxMonitorStudy`: `animals` has `last_flag` (-1 below, 0 inside, 1 above; empty on a first value) in place of
+    `last_pit`, and `status` has `check_chance`.
 * Review fixes (2026-11-10):
   * A study's details: saving them from the header no longer drops the notebook's notes, an ID given on saving, or a
     date of day 0 set from the calendar.

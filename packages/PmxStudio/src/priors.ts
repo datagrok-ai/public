@@ -36,7 +36,13 @@ export interface LinePrior {
    *  factor, the start's t df, the slow animals' share and log alpha shift, the error's skew, and its validation */
   twin?: {sd_log_alpha: number, sd_log_beta: number, sd_process: number, first_factor: number, start_df: number,
     slow_share: number, slow_shift: number, skew: number,
-    validation: {loo_coverage_90: number, measurements: number, below: number, above: number}};
+    validation: {loo_coverage_90: number, measurements: number, below: number, above: number},
+    /** Monitor's next-measurement ranges, calibrated on published controls one session ahead: the probability
+     *  levels to ask Crux stats.tumor_monitor for ("90": next expected, "99": measure again), and how often a
+     *  correct value fell below and above each on studies left out (false: not measured for this line) */
+    conformal?: {levels: {[level: string]: {lo: number, hi: number}}, papers: number, points: number,
+      pooled: boolean, validated: {[level: string]: {miss_lo: number, miss_hi: number, cover: number}} | false,
+      source: string}};
   /** sd of log V between a study's animals at randomisation, measured in the atlas (measurement_error.py) */
   start_sd: number;
   sd_residual_log_v: number;

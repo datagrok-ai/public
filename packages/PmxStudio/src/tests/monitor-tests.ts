@@ -3,8 +3,8 @@ import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/
 import {Scope} from '@datagrok-libraries/u2';
 
 import {exampleStudy} from '../analyze';
-import {allocateGroups, futureDays, outsideBand, parseLooks, promptsByChance, reasonsOf, weightReasons} from
-  '../monitor';
+import {allocateGroups, checkLevels, futureDays, outsideBand, parseLooks, promptsByChance, reasonsOf,
+  weightReasons} from '../monitor';
 import {PLAN_TAG, parsePlan} from '../plan-file';
 import {LIMITS_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseStudy, studyOf, tableOf}
   from '../study-file';
@@ -30,8 +30,15 @@ Promise<{[k: string]: DG.DataFrame}> {
 
 category('Monitor', () => {
   test('measure again by chance, in the words of a session', async () => {
-    expect(promptsByChance(30), 'about 1 a session');
-    expect(promptsByChance(8), 'about one every 3 sessions');
+    expect(promptsByChance(30, 0.037), 'about 1 a session');
+    expect(promptsByChance(8, 0.037), 'about one every 3 sessions');
+    // a line's calibrated levels go to Crux as they are; what they cost by chance is both tails of the 99% range
+    const c = checkLevels({levels: {'90': {lo: 0.04, hi: 0.97}, '99': {lo: 0.002, hi: 0.998}}, papers: 12,
+      points: 900, pooled: false, validated: {'99': {miss_lo: 0.004, miss_hi: 0.007, cover: 0.989}}, source: ''});
+    expect(JSON.stringify(c.levels), '{"band_lo":0.04,"band_hi":0.97,"check_lo":0.002,"check_hi":0.998}');
+    expect(Math.abs(c.chance! - 0.011) < 1e-12, true);
+    // no calibration: Crux's own levels, and no rate to quote
+    expect(JSON.stringify(checkLevels(undefined)), '{"levels":{},"chance":null}');
   });
 
   test('reviews and days to come', async () => {
@@ -102,15 +109,18 @@ category('Monitor', () => {
   });
 
   test('who needs attention and why', async () => {
-    const r = (p: number, pit: number, lastDay = 10, v = 500) => reasonsOf({p_limit_next: p, last_pit: pit}, 10, 2000,
-      lastDay, v, 7);
+    const r = (p: number, flag: number | null, lastDay = 10, v = 500) => reasonsOf({p_limit_next: p, last_flag: flag},
+      10, 2000, lastDay, v, 7);
     // gone since before the previous session: listed once, not every session after
-    expectArray(r(0.01, 0.5, 2), []);
-    expectArray(r(0.01, 0.5), []);
-    expect(r(0.5, 0.5)[0].startsWith('May pass'), true);
-    expect(r(0.01, 0.001)[0].startsWith('Last value unexpected'), true);
-    expect(r(0.01, 0.5, 7)[0], 'Not measured on day 10');
-    expect(r(0.01, 0.5, 10, 2100)[0].startsWith('Over'), true);
+    expectArray(r(0.01, 0, 2), []);
+    expectArray(r(0.01, 0), []);
+    // a first value has no range to fall out of
+    expectArray(r(0.01, null), []);
+    expect(r(0.5, 0)[0].startsWith('May pass'), true);
+    expect(r(0.01, -1)[0].startsWith('Last value unexpected'), true);
+    expect(r(0.01, 1)[0].startsWith('Last value unexpected'), true);
+    expect(r(0.01, 0, 7)[0], 'Not measured on day 10');
+    expect(r(0.01, 0, 10, 2100)[0].startsWith('Over'), true);
   });
 
   test('a study followed: forecasts for every animal, the chance of success only on a review', async () => {
@@ -126,6 +136,23 @@ category('Monitor', () => {
     }
     // the groups' growth reaches beyond today
     expect((onReview.days.col('day')!.toList() as number[]).some((d) => d > 9), true);
+    // each animal's next value: the range to measure again outside lies around the expected one, and its last
+    // value is flagged below (-1), inside (0) or above (1) the range it had
+    let forecast = 0;
+    for (let i = 0; i < onReview.animals.rowCount; i++) {
+      if (onReview.animals.col('next_median')!.isNone(i))
+        continue;
+      forecast++;
+      const a = (c: string): number => onReview.animals.get(c, i);
+      expect(a('check_lower') < a('next_lower') && a('next_lower') < a('next_median') &&
+        a('next_median') < a('next_upper') && a('next_upper') < a('check_upper'), true,
+      `ranges of ${onReview.animals.get('animal', i)}`);
+      expect([-1, 0, 1].includes(a('last_flag')), true, `flag ${a('last_flag')}`);
+    }
+    expect(forecast > 0, true);
+    // what "measure again" costs by chance is quoted only where the line's ranges were validated
+    const chance = onReview.status.col('check_chance');
+    expect(!chance || chance.isNone(0) || (chance.get(0) > 0 && chance.get(0) < 0.2), true);
     const between = await monitor(study, '14');
     expect(between.status.get('at_look', 0), false);
     expect(between.decisions.rowCount, 0);

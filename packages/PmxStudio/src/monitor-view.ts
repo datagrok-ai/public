@@ -17,8 +17,7 @@ import {exampleStudy} from './analyze';
 import {analyzeView} from './analyze-view';
 import {BandChart} from './band-chart';
 import {WEEKDAY_NAMES, groupColors, weekdaysOf} from './frames';
-import {allocateGroups, MonitorFrames, monitorFrames, MonitorInputs, outsideBand, promptsByChance,
-  UNEXPECTED_MEASURED} from './monitor';
+import {allocateGroups, MonitorFrames, monitorFrames, MonitorInputs, outsideBand, promptsByChance} from './monitor';
 import {PLAN_TAG, SavedPlan, parsePlan} from './plan-file';
 import {planInput} from './plan-vs-observed';
 import {openStage, showStage} from './stages';
@@ -389,9 +388,13 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       ['Measure again outside', (a) => a.next_median === null ? '—' : `${mm3(a.check_lower)}–${mm3(a.check_upper)}`]]);
     // a prompt to measure again, not a verdict: said with what it costs by chance (no correction over animals and
     // sessions, which would let a mistyped value through)
-    sheet.append(infoNote(`A correct value falls outside its range about 1 time in ` +
-      `${Math.round(1 / UNEXPECTED_MEASURED)} (measured on published controls): with ${all.length} animals, ` +
-      `${promptsByChance(all.length)} by chance. Measure again; a second reading that agrees stands.`));
+    const chance: number | null = r.status.col('check_chance')?.isNone(0) === false ?
+      r.status.get('check_chance', 0) : null;
+    sheet.append(infoNote((chance ? `A correct value falls outside its range about 1 time in ` +
+      `${Math.round(1 / chance)} (measured on published controls left out of the fit): with ${all.length} animals, ` +
+      `${promptsByChance(all.length, chance)} by chance. ` :
+      `How often a correct value falls outside its range is not measured for ${r.status.get('line', 0)} yet. `) +
+      `Measure again; a second reading that agrees stands.`));
     noteBox.replaceChildren(...notes(r.status.get('notes', 0)));
   });
 

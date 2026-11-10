@@ -11,6 +11,7 @@ import {gpu} from './gpu';
 import {SavedPlan} from './plan-file';
 import {oneDecimal} from './study-file';
 import {WEEKDAY_NAMES, weekdaysOf} from './frames';
+import {LinePrior, linePrior} from './priors';
 import {metaOf, weekdayOf} from './study-meta';
 
 type Study = {animal: string[], group: string[], day: Float64Array, volume: Float64Array};
@@ -48,16 +49,21 @@ function monitorOf(study: Study, params: {[k: string]: any}): Promise<CruxResult
 
 /** Chance of passing the limit by the next measurement from which an animal is listed. */
 export const LIMIT_ALERT = 0.2;
-/** A last value this far out of its forecast (two-sided) is listed as unexpected. */
-export const UNEXPECTED = 0.005;
-/** The share of correct values that fell outside that 99% range on the atlas's controls (9,508 predictions, the
- *  preclinical bundle's MONITOR_DESIGN.md): what the prompts cost until the range is recalibrated. */
-export const UNEXPECTED_MEASURED = 0.037;
-
-/** How often a session of `n` animals asks to measure a correct value again, in words. */
-export function promptsByChance(n: number): string {
-  const each = Math.max(n, 1) * UNEXPECTED_MEASURED;
+/** How often a session of `n` animals asks to measure a correct value again, in words. `rate`: the share of correct
+ *  values outside the "measure again" range, as measured for the line (the engine priors' twin.conformal). */
+export function promptsByChance(n: number, rate: number): string {
+  const each = Math.max(n, 1) * rate;
   return each >= 0.75 ? `about ${Math.round(each)} a session` : `about one every ${Math.round(1 / each)} sessions`;
+}
+
+/** The line's calibrated ranges as Crux stats.tumor_monitor's levels, and what "measure again" costs by chance
+ *  (null: not measured for the line). No calibration: Crux's own levels. */
+export function checkLevels(conformal: NonNullable<LinePrior['twin']>['conformal']):
+  {levels: {[k: string]: number}, chance: number | null} {
+  const [band, check] = [conformal?.levels['90'], conformal?.levels['99']];
+  const v = conformal?.validated ? conformal.validated['99'] : null;
+  return {levels: {...band ? {band_lo: band.lo, band_hi: band.hi} : {},
+    ...check ? {check_lo: check.lo, check_hi: check.hi} : {}}, chance: v ? v.miss_lo + v.miss_hi : null};
 }
 /** The share of the weight-loss limit from which an animal is listed (15% for the usual 20%). Our criterion, not a
  *  published one: a margin to act before the limit. */
@@ -138,7 +144,7 @@ async function armsOf(plan: SavedPlan | null, treated: string[], notes: string[]
 }
 
 /** Why an animal needs attention today, most urgent first; none: not listed. */
-export function reasonsOf(a: {p_limit_next?: number | null, last_pit?: number | null}, latest: number, limit: number,
+export function reasonsOf(a: {p_limit_next?: number | null, last_flag?: number | null}, latest: number, limit: number,
   lastDay: number, lastVolume: number, previous: number | null = null): string[] {
   const out: string[] = [];
   // an animal gone since an earlier session was already seen missing: only the session it first misses lists it
@@ -150,8 +156,8 @@ export function reasonsOf(a: {p_limit_next?: number | null, last_pit?: number | 
     out.push(`Not measured on day ${latest}`);
   else if ((a.p_limit_next ?? 0) >= LIMIT_ALERT)
     out.push(`May pass the ${limit} mm³ limit by the next measurement`);
-  if (lastDay === latest && a.last_pit !== null && a.last_pit !== undefined &&
-    (a.last_pit < UNEXPECTED || a.last_pit > 1 - UNEXPECTED))
+  // Crux's one decision, the same range the sheet shows: below it (-1), inside (0), above (+1); none on a first value
+  if (lastDay === latest && a.last_flag)
     out.push('Last value unexpected: measure again');
   return out;
 }
@@ -188,13 +194,13 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
     throw new Error(`No group "${d.control}" in the study: the control must be one of ${names.join(', ')}`);
   const notes: string[] = [];
   // the plan's arms, the line's twin and the body weights do not wait for one another
-  const [arms, model, {tolerability, weights, animals: weighed}] = await Promise.all([
+  const [arms, model, {tolerability, weights, animals: weighed}, calibrated] = await Promise.all([
     armsOf(d.plan, names.filter((g) => g !== d.control), notes), twinModel(d.line),
-    tolerabilityFrames(d)]);
+    tolerabilityFrames(d), linePrior(d.line).then((lp) => checkLevels(lp.twin?.conformal))]);
   const latest = Math.max(...day);
   const future = futureDays(day, d.plan, metaOf(x.study)?.start);
   const r = await monitorOf({animal, group, day: Float64Array.from(day),
-    volume: Float64Array.from(volume)}, {...model, control: d.control,
+    volume: Float64Array.from(volume)}, {...model, ...calibrated.levels, control: d.control,
     ...arms.length ? {arms: JSON.stringify(arms)} : {}, future: future.join(','), endpoint: d.endpoint,
     humane: d.humane, alpha: d.alpha, correction: d.correction, test: TEST,
     ...d.day === null ? {} : {last_day: d.day}});
@@ -234,9 +240,9 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
   const animals = rows(r.main as any).map((a) => {
     const l = last.get(String(a.animal))!;
     const w = weightOf(String(a.animal), l.day);
-    return {animal: String(a.animal), group: a.group, last_day: l.day, last_volume: l.volume, next_lower: a.next_q05,
-      next_median: a.next_median, next_upper: a.next_q95, check_lower: a.next_q005, check_upper: a.next_q995,
-      p_limit: a.p_limit_next, limit_day: a.limit_day, last_pit: a.last_pit,
+    return {animal: String(a.animal), group: a.group, last_day: l.day, last_volume: l.volume, next_lower: a.band_lower,
+      next_median: a.next_median, next_upper: a.band_upper, check_lower: a.check_lower, check_upper: a.check_upper,
+      p_limit: a.p_limit_next, limit_day: a.limit_day, last_flag: a.last_flag,
       ...w.fields,
       attention: [...reasonsOf(a, latest, d.humane, l.day, l.volume, previous), ...w.reasons].join('; ')};
   });
@@ -268,7 +274,7 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
       planned_end: d.plan?.predicted.studyEnd ?? null, plan: d.plan?.name ?? null,
       attention: animals.filter((a) => a.attention).length, animals: animals.length,
       next_look: looks.find((l) => l > latest) ?? null, at_look: atLook, looks: looks.join(', '), humane: d.humane,
-      notes: notes.join(' | ')}])!,
+      check_chance: calibrated.chance, notes: notes.join(' | ')}])!,
     animals: animalsDf,
     days,
     decisions: atLook && decisions.length ? DG.DataFrame.fromObjects(decisions)! : emptyDecisions(),
