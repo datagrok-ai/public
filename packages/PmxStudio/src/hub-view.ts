@@ -182,11 +182,10 @@ function hubContent(self: ViewHost): ViewContent {
   const studies = yourStudies();
   studies.root.style.animationDelay = '.52s';
   // back on the Overview after saving a plan or a study elsewhere: the list is read again
-  const back = grok.events.onCurrentViewChanged.subscribe(() => {
+  self.subscribe(grok.events.onCurrentViewChanged, () => {
     if (stageOf(grok.shell.v) === 'home')
       studies.reload();
   });
-  self.own(() => back.unsubscribe());
 
   const title = h('h1', 'pmx-hub-title pmx-rise', ['PMX Studio']);
   const lede = h('p', 'pmx-hub-lede pmx-rise', ['Xenograft and syngeneic efficacy studies, from design to analysis.']);

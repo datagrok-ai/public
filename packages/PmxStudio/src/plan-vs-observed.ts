@@ -86,6 +86,7 @@ function verdictBadge(text: string | null): HTMLElement {
   const variant: BadgeVariant = /^As /.test(text) ? 'success' : /Stronger/.test(text) ? 'accent' :
     text === 'Inconclusive' ? 'default' : 'warning';
   const el = badge(text, {variant});
+  el.classList.add('pmx-badge');
   if (text === 'Inconclusive')
     Tooltip.bind(el, 'In the planned range, but the study cannot tell this group from the control');
   return el;
@@ -96,6 +97,7 @@ export function activityBadge(activity: string, p: unknown): HTMLElement {
   const variant: BadgeVariant = activity === 'Slows growth' ? 'success' : activity === 'Grows faster' ? 'warning' :
     'default';
   const el = badge(activity, {variant});
+  el.classList.add('pmx-badge');
   Tooltip.bind(el, `Tumor growth against the control, p ${pValue(p)}`);
   return el;
 }
@@ -148,10 +150,10 @@ export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: 
   // the Plan field: u2's FileInput (a path in Datagrok's files, a file from the computer, or a drop) under the Study
   // fields; the file's text goes into the call's hidden `plan` param (ponytail:
   // placed by hand, u2 funcForm has no file field yet)
-  const planField = form.runInScope(() => new FileInput({label: 'Plan', nullable: true,
+  const planField = form.build(() => new FileInput({label: 'Plan', nullable: true,
     placeholder: PLACEHOLDER, tooltipText: 'The plan saved in Plan (.pmxplan), to compare the ' +
       'study with. Empty: the plan the study table carries, if any'}));
-  planField.addOptions(form.runInScope(() => iconButton('list', () => void myPlans().then((files) => {
+  planField.addOptions(form.build(() => iconButton('list', () => void myPlans().then((files) => {
     if (files.length === 0) {
       grok.shell.info(`No saved plans yet: save one in Plan (it goes to ${plansFolder()})`);
       return;
@@ -161,7 +163,7 @@ export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: 
   }), {tooltip: 'Choose one of your saved plans'})));
   // ponytail: u2's FileInput keeps its last file when the box is emptied (it reports the empty path as missing), so
   // the plan is taken off with a button of its own
-  planField.addOptions(form.runInScope(() => iconButton('times', () => planField.value = null,
+  planField.addOptions(form.build(() => iconButton('times', () => planField.value = null,
     {tooltip: 'No plan: compare with the plan the study table carries, if any, else the atlas'})));
   // with the box empty, the plan in use says where it comes from: the study table's own, or none
   const box = planField.root.querySelector('input');
@@ -234,7 +236,7 @@ export function planTab(form: FuncCallForm, result: ReadonlySignal<AnalysisFrame
       const el = cell as HTMLElement;
       if (k !== 4)
         el.style.justifySelf = 'start';
-      if (el.classList.contains('u2-badge')) {
+      if (el.classList.contains('pmx-badge')) {
         Object.assign(el.style, {whiteSpace: 'normal', height: 'auto', minHeight: '16px', lineHeight: '1.2',
           padding: '2px var(--dg-space-s)'});
       }

@@ -66,8 +66,8 @@ export class LineInput extends Input<string | null, InputOptions<string | null>>
     const kind = span('', 'pmx-line-kind');
     field.append(name, kind, span('▾', 'pmx-line-chevron'));
 
-    const groups = new ButtonGroup({items: [{id: 'all', text: 'All'}, ...CLASSES.map((c) =>
-      ({id: c.cls, text: c.label, tooltip: c.tip}))], toggle: 'single'});
+    const groups = this.build(() => new ButtonGroup({items: [{id: 'all', text: 'All'}, ...CLASSES.map((c) =>
+      ({id: c.cls, text: c.label, tooltip: c.tip}))], toggle: 'single'}));
     groups.selected.value = ['all'];
     const search = document.createElement('input');
     search.type = 'search';
@@ -95,7 +95,7 @@ export class LineInput extends Input<string | null, InputOptions<string | null>>
       list.querySelector(`[data-line="${CSS.escape(active.peek()!)}"]`)?.scrollIntoView({block: 'nearest'});
     };
 
-    this.runInScope(() => {
+    this.build(() => {
       this.scope.listen(field, 'click', () => open.value = !open.peek());
       this.scope.listen(search, 'input', () => query.value = search.value);
       this.scope.listen(panel, 'keydown', (ev) => {

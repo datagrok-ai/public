@@ -64,11 +64,8 @@ export class BandChart extends Control {
     const host = ui.div([], {style: {position: 'absolute', inset: '0'}});
     this.root.append(host);
     this.chart = initQuietly(host);
-    const size = ui.onSizeChanged(host).subscribe(() => this.chart.resize());
-    this.own(() => {
-      size.unsubscribe();
-      this.chart.dispose();
-    });
+    this.subscribe(ui.onSizeChanged(host), () => this.chart.resize());
+    this.own(() => this.chart.dispose());
     this.effect(() => {
       void options.redrawOn?.value;
       this.draw(table.value, options.log?.value ?? false);

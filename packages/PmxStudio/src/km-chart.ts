@@ -41,11 +41,8 @@ export class KmChart extends Control {
       const v = Number(slider.value);
       horizon.value = v > last ? v : null;
     });
-    const size = ui.onSizeChanged(host).subscribe(() => this.chart.resize());
-    this.own(() => {
-      size.unsubscribe();
-      this.chart.dispose();
-    });
+    this.subscribe(ui.onSizeChanged(host), () => this.chart.resize());
+    this.own(() => this.chart.dispose());
     this.effect(() => {
       const k = survival.value;
       row.hidden = !k;

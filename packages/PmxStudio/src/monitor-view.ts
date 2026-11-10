@@ -291,7 +291,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   // an animal's menu on its row (its name, the first cell), in the attention list and the measurement sheet alike
   for (const list of [attention, sheet]) {
     list.addEventListener('contextmenu', (e) => {
-      const row = (e.target as HTMLElement).closest('.u2-table-row');
+      const row = (e.target as HTMLElement).closest('tbody tr');
       const name = (row?.querySelector('[data-animal]') as HTMLElement | null)?.dataset.animal ??
         row?.querySelector('td')?.textContent?.trim();
       if (!name)

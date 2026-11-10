@@ -61,11 +61,8 @@ export class SpiderChart extends Control {
     const host = ui.div([], {style: {position: 'absolute', inset: '0'}});
     this.root.append(host);
     this.chart = initQuietly(host);
-    const size = ui.onSizeChanged(host).subscribe(() => this.chart.resize());
-    this.own(() => {
-      size.unsubscribe();
-      this.chart.dispose();
-    });
+    this.subscribe(ui.onSizeChanged(host), () => this.chart.resize());
+    this.own(() => this.chart.dispose());
     pickOn(this.chart, picking);
     this.effect(() => {
       const x = data.value;
@@ -116,11 +113,8 @@ export class WaterfallChart extends Control {
     const host = ui.div([], {style: {position: 'absolute', inset: '0'}});
     this.root.append(host);
     this.chart = initQuietly(host);
-    const size = ui.onSizeChanged(host).subscribe(() => this.chart.resize());
-    this.own(() => {
-      size.unsubscribe();
-      this.chart.dispose();
-    });
+    this.subscribe(ui.onSizeChanged(host), () => this.chart.resize());
+    this.own(() => this.chart.dispose());
     pickOn(this.chart, picking);
     if (onMenu) {
       this.chart.on('contextmenu', (p: any) => {

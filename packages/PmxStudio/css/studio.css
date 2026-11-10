@@ -219,14 +219,21 @@
 .pmx-protocol td:first-child { white-space: nowrap; font-weight: 500; }
 
 /* Against the plan: the summary, then each block with room above it and a rule between them */
-.u2-section-body:has(> .pmx-plan-summary) > .u2-section { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--dg-grey-1, #eef0f3); }
-.u2-section-body:has(> .pmx-plan-summary) > .pmx-plan-summary { display: block; margin-bottom: 4px; }
-.u2-section-body:has(> .pmx-plan-summary) .u2-section-body > * + * { margin-top: 8px; }
+.pmx-block-body:has(> .pmx-plan-summary) > .pmx-block { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--dg-grey-1, #eef0f3); }
+.pmx-block-body:has(> .pmx-plan-summary) > .pmx-plan-summary { display: block; margin-bottom: 4px; }
+.pmx-block-body:has(> .pmx-plan-summary) .pmx-block-body > * + * { margin-top: 8px; }
 .pmx-plan-table > * + * { border-top: 1px solid var(--dg-grey-1, #eef0f3); }
 .pmx-plan-table > * { padding-top: 7px !important; padding-bottom: 7px !important; }
 
 /* the results pane fits its width: its panels shrink with it, and a table or the calendar wider than its panel
    scrolls sideways by itself, not the pane */
-.pmx-results .pmx-grid-host, .pmx-results .u2-section, .pmx-results .u2-section-body { min-width: 0; }
-.pmx-results div:has(> table.u2-table), .pmx-results div:has(> .pmx-calendar) { overflow-x: auto; max-width: 100%; }
+.pmx-results .pmx-grid-host, .pmx-results .pmx-block, .pmx-results .pmx-block-body { min-width: 0; }
+.pmx-results div:has(> table), .pmx-results div:has(> .pmx-calendar) { overflow-x: auto; max-width: 100%; }
 .pmx-results .pmx-calendar { min-width: 520px; }
+
+/* a treatment arm's card in the Plan form: the platform's card surface */
+.pmx-arm {
+  box-sizing: border-box; font-family: var(--dg-font-family); font-size: var(--dg-font-size);
+  color: var(--dg-text-color); background: var(--dg-bg); border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius-l);
+}

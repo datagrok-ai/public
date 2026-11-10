@@ -109,7 +109,7 @@
 /* your studies */
 .pmx-studies { margin-top: 44px; }
 .pmx-studies h3 { margin: 0 0 10px; font-size: 15px; font-weight: 500; color: var(--dg-text-color, #4D5261); }
-.pmx-studies .u2-table tr { transition: background-color .3s var(--pmx-ease); }
+.pmx-studies tbody tr { transition: background-color .3s var(--pmx-ease); }
 .pmx-library-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 10px; }
 .pmx-library-head h3 { margin: 0 8px 0 0; }
 .pmx-library-head .ui-input-root { margin: 0; }
@@ -225,7 +225,7 @@
 .pmx-progress { display: inline-block; width: 56px; height: 4px; border-radius: 2px; background: var(--dg-border, #DBDCDF); overflow: hidden; }
 .pmx-progress > i { display: block; height: 100%; background: var(--dg-accent, #2083D5); }
 /* each study its own band: a rule between rows, room above and below, the ID a smaller second line */
-.pmx-studies .u2-table td { padding-top: 9px; padding-bottom: 9px; border-bottom: 1px solid var(--dg-grey-1, #eef0f3); vertical-align: middle; }
+.pmx-studies tbody td { padding-top: 9px; padding-bottom: 9px; border-bottom: 1px solid var(--dg-grey-1, #eef0f3); vertical-align: middle; }
 .pmx-study-cell { line-height: 1.35; }
 .pmx-study-cell .pmx-muted { font-size: 12px; }
 .pmx-clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

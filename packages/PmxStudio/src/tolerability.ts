@@ -242,7 +242,7 @@ export function tolerabilityTab<R extends TolerabilityFrames>(form: FuncCallForm
     table.root.style.width = '100%';
     wrapCells(table.root);
     // the grade headers as the legend's badges (u2's table takes text headers), what the nadir is on hover
-    const head = table.root.querySelector('.u2-table-header')?.children;
+    const head = table.root.querySelector('thead tr')?.children;
     GRADES.forEach(([grade, variant, range], k) => {
       const cell = head?.[2 + k] as HTMLElement | undefined;
       cell?.replaceChildren(badge(grade, {variant}));

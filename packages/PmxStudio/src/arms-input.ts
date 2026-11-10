@@ -47,10 +47,10 @@ class ArmCard extends Control {
 
   constructor(arm: Arm, index: number, onChange: (a: Arm) => void, onRemove: () => void) {
     super();
-    this.root.classList.add('u2-card', 'pmx-arm');
+    this.root.classList.add('pmx-arm');
     Object.assign(this.root.style, {padding: 'var(--dg-space-m)', gap: 'var(--dg-space-s)', display: 'flex',
       flexDirection: 'column'});
-    this.runInScope(() => {
+    this.build(() => {
       const name = new TextInput({label: 'Name', value: arm.name, fill: true});
       const therapy = new ChoiceInput({label: 'Therapy', value: arm.therapy, fill: true, nullable: false,
         items: THERAPIES.map((t) => ({value: t, label: ARCHETYPES[t].label})),
@@ -132,7 +132,7 @@ export class ArmsInput extends Input<DG.DataFrame | null> {
   private _set(arms: Arm[], commit = true): void {
     this._cards.peek().forEach((c) => c.dispose());
     this._arms = arms.slice(0, MAX_ARMS);
-    this._cards.value = this._arms.map((a, i) => this.runInScope(() => new ArmCard(a, i, (next) => {
+    this._cards.value = this._arms.map((a, i) => this.build(() => new ArmCard(a, i, (next) => {
       this._arms[i] = next;
       this._commit();
     },
@@ -171,14 +171,14 @@ export class CorrectionInput extends Input<string | null, CorrectionInputOptions
   }
 
   protected createEditor(): HTMLElement {
-    const box = new BoolInput({label: 'Correct for multiple comparisons', captionAfter: true,
-      value: this.peek() !== 'none'});
+    const box = this.build(() => new BoolInput({label: 'Correct for multiple comparisons', captionAfter: true,
+      value: this.peek() !== 'none'}));
     // ponytail: u2's caption-after row tops its caption against a 28px editor, 5px above the box's centre;
     // centred here until u2 centres it
     box.root.style.alignItems = 'center';
     const note = span('', 'pmx-note');
     Object.assign(note.style, {color: 'var(--dg-text-color-muted, #68727f)', fontSize: '11.5px', lineHeight: '1.4'});
-    this.runInScope(() => {
+    this.build(() => {
       this.effect(() => {
         const v = box.value ? (this.peek() === 'bonferroni' ? 'bonferroni' : 'dunnett') : 'none';
         if (this.peek() !== v)

@@ -23,6 +23,9 @@
   * `pmxMapPrior` failed for every tumor model; fixed.
   * Removed: the `MONITOR_READY` switch and its branches, unused exports, and the bdd features written for the
     interface before the redesign.
+  * u2: a subscription or a control belongs to the control or the view that builds it; the package's CSS styles
+    its own classes where it styled u2's; the package is recorded in u2's consumer baseline, and
+    `grok check` passes.
 * Monitor (`pmxMonitorStudy`, app route `/monitor`; needs Crux `stats.tumor_monitor` and `stats.tumor_allocate`): follow
   a running study, its groups hidden when the study is blinded. Today lists who needs attention and each animal's
   expected next value; Enrollment proposes balanced groups; Growth each group's forecast; Decisions flags a treated

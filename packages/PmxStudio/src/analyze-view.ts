@@ -637,7 +637,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const dots = divH([legendDot(true), legendDot(false)]);
   dots.style.gap = '3px';
   const responderNote = divV([
-    legendLine(form.runInScope(() => explained(badge('Responder', {variant: 'success'}), responderText)),
+    legendLine(form.build(() => explained(badge('Responder', {variant: 'success'}), responderText)),
       responderWords),
     legendLine(dots, span(`Each bar: how much smaller the treated tumor is than its twin's (the dot, filled for a ` +
       `responder) and its 90% range; the line at "Same as twin" is the tumor's untreated size.`)),
