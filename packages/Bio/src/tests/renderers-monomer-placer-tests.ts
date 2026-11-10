@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 
-import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, expectArray, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {MonomerPlacer, hitBounds} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
@@ -238,7 +238,9 @@ id3,QHIRE--LT
     try {
       const grid = tv.grid;
       grid.props.rowHeight = 100;
-      await awaitGrid(grid); // the grid sizes its columns once it has drawn: widen the column after that
+      await awaitGrid(grid);
+      // the MSA header sizes a long sequence column after it installs: widen the column after that
+      await waitUntil(() => grid.col('seq')!.width === 400, 'the MSA header did not size the column');
       grid.col('seq')!.width = 5000;
       const monomersPerLine = async (): Promise<number[]> => {
         await awaitGrid(grid);
