@@ -113,7 +113,8 @@ export async function choose(view: DG.ViewBase, label: string) {
   press(el, 'Enter');
   await waitUntil(() => {
     const panel = inputsPanel();
-    return !!panel && panel !== before && panel.querySelector('input') !== null;
+    return !!panel && panel !== before &&
+      Array.from(panel.querySelectorAll('input')).some((el) => el.offsetParent !== null);
   }, `The step "${label}" did not open`, 10000);
 }
 
