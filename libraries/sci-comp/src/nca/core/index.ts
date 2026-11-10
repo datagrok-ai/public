@@ -43,11 +43,12 @@ export {
   aumcLinearUpLogDownCompensated,
   aumcExtrapolateToInfinity,
 } from './aumc';
-export {sparseAuc, buildCompositeProfile} from './sparse';
+export {sparseAuc, buildCompositeProfile, compositeProfileArrays} from './sparse';
 export type {
   SparseInput,
   SparseAucOptions,
   SparseAucResult,
+  CompositeProfileArrays,
   SparseWarning,
   SparseWarningCode,
   SamplingTopology,

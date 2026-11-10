@@ -1,5 +1,42 @@
 # sci-comp changelog
 
+## 0.12.0 (2026-11-10)
+
+Sparse NCA — an IV-bolus composite is integrated from its dose-time concentration.
+**Changes computed values on IV-bolus sparse composites only** (`sparseAuc` with the
+new `route: ROUTE_IV_BOLUS`); every other call is byte-identical to 0.11.0 (pinned by
+a jest snapshot written on 0.11.0, `core/__tests__/sparse-pin.test.ts`).
+
+Runtime:
+
+* **IV-bolus anchor.** With `route: ROUTE_IV_BOLUS`, `sparseAuc` starts the composite at
+  `(0, Ĉ0)` instead of `(0, 0)`: the dense run's dose-time rule and C0 chain on the
+  composite means (a positive measured `t = 0` mean is used as-is; otherwise
+  `estimateC0Detailed` on the post-dose means), a linear first segment. A pre-dose
+  `t = 0` group (BLQ / zero) and groups at `t < 0` are not integrated; `topology` and
+  `composite` still describe every timepoint supplied. **Moves `auc`, `se`, `df` and `ci`**
+  (e.g. the simulated fixture: AUClast 18.556 → 20.825 with a 15-min first sample).
+* **Delta-method SE.** Ĉ0's variance enters the Holder variance and the Nedelman-Jia df
+  through effective weights `w'_i = w_i + (t₁/2)·∂Ĉ0/∂C̄_i`. Phoenix keeps C0 a constant
+  in the variance; this is a documented divergence. Validated by a finite-difference
+  gradient oracle, a seeded parametric calibration (empSD / SE 1.04–1.09 on three models)
+  and a closed form; known small-SE regime at steep α, ω ≥ 0.5, n ≤ 3 (asserted).
+* **`SPARSE_TERMINAL_OVEREST` states its size.** The message gains `estimated excess ≈ N %
+  of AUClast` (linear minus log-trapezoid over every descending interval after Cmax) and
+  that the AUClast CI does not include it. Where and when the note fires is unchanged.
+
+Compile time (all additive):
+
+* `SparseAucOptions.route?: RouteCode`.
+* `SparseAucResult.c0?: {value, method}` (IV bolus only) and
+  `SparseAucResult.terminalExcessPct?: number` (when the terminal note fires) — both
+  OPTIONAL, so code that constructs a `SparseAucResult` keeps compiling.
+* `estimateC0Detailed` reports `usedIndices` (the points the answering method read).
+* New export `compositeProfileArrays(composite)` → `{time, conc, blqMask}`: the one copy
+  of the "> 50 % BLQ → 0" rule; `sparseAuc` uses it on every route.
+* Fixture `07_iv_bolus_sparse` (simulated destructive IV-bolus composites, PKNCA 0.12.1
+  `pk.calc.c0` / `pk.calc.auciv` oracle; `regen-sparse-fixture.R` block 4).
+
 ## 0.11.0 (2026-09-22 — GROK-20960)
 
 Non-Compartmental Analysis — two bug fixes in `computeNca` that **change computed

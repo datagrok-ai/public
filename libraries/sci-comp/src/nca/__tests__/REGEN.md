@@ -222,6 +222,26 @@ integrated from 0 (`1.7194` above); `augmentProfile` now REPLACES a BLQ /
 non-positive dose-time row by `(0, c0)`, so the with-row and no-row profiles
 give identical parameters (asserted in `reference-suite.test.ts`, Fx-1).
 
+**Sparse composites (0.12.0).** `sparseAuc` with `route: ROUTE_IV_BOLUS` uses the
+same anchor on the composite mean: the same dose-time rule and the same chain on
+`compositeProfileArrays`, a linear first segment `t₁·(Ĉ0 + C̄₁)/2`. Its SE carries
+Ĉ0's variance by the delta method — a documented divergence from Phoenix, which
+keeps C0 a constant in the variance (`sparse_auc_se_const_c0` in the fixture is
+that number; it equals the `(0, 0)` SE exactly). Oracle: `fixtures/07_iv_bolus_sparse.json`
+from `regen-sparse-fixture.R` block 4 — four SIMULATED destructive composites
+(seeded generator in the script; no real IV-bolus sparse data exists), PKNCA
+`pk.calc.c0` + `pk.calc.auciv` on the composite mean, cross-checked in-script
+against `pk.calc.sparse_auclast` with the t=0 anchor at c0. `delta_se` / `delta_df`
+are a hand-coded transcription check; the independent SE checks are in
+`core/__tests__/sparse-iv-bolus.test.ts` (finite-difference gradient, parametric
+calibration, closed form). The same run writes `packages/NCA/files/07_iv_bolus_sparse.csv`
+and `07_iv_bolus_sparse-reference.json`.
+
+```bash
+# from libraries/sci-comp/
+Rscript src/nca/__tests__/regen-sparse-fixture.R   # 05_mouse_sparse.json + 07_iv_bolus_sparse.json
+```
+
 ## PKNCA configuration (matches each fixture's `config` block)
 
 ```r
