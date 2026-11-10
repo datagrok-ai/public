@@ -87,21 +87,6 @@ const config = {
                         {
                             "pattern": "\\(\\./(?!help)(.*)\\.mdx?(#.*)?\\)",
                             "replace": "(https://datagrok.ai/help/develop/packages/$1$2)"
-                        },
-                        {
-                            "pattern": "\\(\\.\\.\\/\\.\\./(?!help)(.*)\\.(png|gif|jpg|jpeg)",
-                            "flags": "gi",
-                            "replace": "(../../../../help/$1.$2"
-                        },
-                        {
-                            "pattern": "\\(\\.\\.(?!/\\.\\.)/(?!help)(.*)\\.(png|gif|jpg|jpeg)",
-                            "flags": "gi",
-                            "replace": "(../../../../help/develop/$1.$2"
-                        },
-                        {
-                            "pattern": "\\(\\./(?!help)(.*)\\.(png|gif|jpg|jpeg)",
-                            "flags": "gi",
-                            "replace": "(../../../../help/develop/packages/$1.$2"
                         }
                     ]
                 }
