@@ -296,6 +296,14 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:MetricsSessionsCount', { date });
   }
 
+  export async function metricsRouteFailures(method: string , route: string , date: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsRouteFailures', { method, route, date });
+  }
+
+  export async function metricsRequestLog(session: string , time: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsRequestLog', { session, time });
+  }
+
   export async function uniqueUsersList(date: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:UniqueUsersList', { date });
   }
@@ -592,8 +600,8 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:StressRawDashboard', {});
   }
 
-  export async function metricsApp(): Promise<DG.View> {
-    return await grok.functions.call('UsageAnalysis:MetricsApp', {});
+  export async function metricsApp(path?: string ): Promise<DG.View> {
+    return await grok.functions.call('UsageAnalysis:MetricsApp', { path });
   }
 
   export async function testTrackApp(): Promise<void> {

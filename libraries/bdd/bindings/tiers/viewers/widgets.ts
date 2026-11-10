@@ -422,6 +422,84 @@ export const scrollGridTo = When('user scrolls the grid to the {string} column',
   await v.settleAll(page);
 }, {tier: 'api', description: 'grid.scrollToCell on the first row of the column, then the viewers settle'});
 
+/** The pointer on one monomer of a sequence cell, where the cell's renderer drew it: a renderer back that places
+ * monomers answers `getMonomerPoint(gridCell, position)` (Bio's sequence renderers, kept in the grid column's
+ * `temp.rendererBack` or a notation provider's on the table column, and Helm's). Its tooltip shows, and a molecule
+ * column made with Highlight monomers lights the monomer's atoms. */
+export const hoverMonomer = When('user hovers over monomer {int} of the {string} area of {widget}',
+  async (page: Page, monomer: number, area: string, target: ElementRef) => {
+    const cellOf = /^cell (\d+) of (.+)$/.exec(area);
+    if (!cellOf)
+      throw new Error(`"${area}" is no grid cell: a monomer is hovered in "cell <row> of <column>"`);
+    const cell = await v.hitArea(page, target, area, true);
+    // a renderer made by the paint before has its library and helper on the way: it answers once they are in
+    let found: unknown = null;
+    await expect.poll(async () => {
+      found = await v.onViewer(page, target, (el, [row, column, pos]) => {
+        const grid = (window as any).__bdd.viewerOf(el);
+        const gridCell = grid.cell(column, grid.tableRowToGrid(row - 1));
+        const back = gridCell.gridColumn.temp.rendererBack ?? gridCell.cell.column.temp.rendererBack;
+        if (!back?.getMonomerPoint)
+          return 'its renderer places no monomers';
+        try {
+          return back.getMonomerPoint(gridCell, pos - 1);
+        }
+        catch (e) {
+          return `its renderer is not ready: ${(e as Error).message}`;
+        }
+      }, [Number(cellOf[1]), cellOf[2], monomer]);
+      return typeof found === 'object' && found !== null;
+    }, {message: `monomer ${monomer} of ${area} of ${target.phrase}`}).toBe(true).catch(() => undefined);
+    const point = found as {x: number, y: number} | string | null;
+    if (point === null || typeof point === 'string')
+      throw new Error(`${area} of ${target.phrase} draws no monomer ${monomer}${point ? `: ${point}` : ''}`);
+    await page.mouse.move(cell.x + point.x - 3, cell.y + point.y - 3);
+    await page.mouse.move(cell.x + point.x, cell.y + point.y);
+    await expect(page.locator('.d4-tooltip').filter({visible: true}), `the tooltip of monomer ${monomer}`).toHaveCount(1);
+  }, {tier: 'ui', description: 'monomer counted from 1 as the sequence counts it; done when its tooltip shows'});
+
+/** A viewer just added or switched to a new row can still render (a deferred pass, a structure loading): a
+ * gesture on its own controls then lands on what the pass replaces, and a filmed step pictures it unfinished. */
+export const viewersSettled = When('the viewers have settled', async (page: Page) => {
+  guide.silent(page);
+  await v.settleAll(page);
+}, {tier: 'api', description: 'no viewer of an open table view has a render or a load pending (`isRenderPending`), off camera in a filmed guide'});
+
+// What a filmed guide or demo needs the grid to look like (wide sequences, tall rows, fewer columns) is set
+// up off camera: a person would not watch the columns being sized.
+export const gridColumnWidth = When('the {string} column of the grid is {int} px wide', async (page: Page, column: string, width: number) => {
+  guide.silent(page);
+  await page.evaluate(([c, w]) => {
+    const col = (window as any).grok.shell.tv?.grid?.columns.byName(c);
+    if (!col)
+      throw new Error(`the grid of the current view has no "${c}" column`);
+    col.width = w;
+  }, [column, width] as [string, number]);
+  await v.settleAll(page);
+}, {tier: 'api', description: 'set-up a filmed guide leaves out: the width of the column in the current view\'s grid'});
+export const gridRowHeight = When('the rows of the grid are {int} px tall', async (page: Page, height: number) => {
+  guide.silent(page);
+  await page.evaluate((h) => { (window as any).grok.shell.tv.grid.props.rowHeight = h; }, height);
+  await v.settleAll(page);
+}, {tier: 'api', description: 'set-up a filmed guide leaves out: the row height of the current view\'s grid'});
+export const gridHeaderHeight = When('the column headers of the grid are {int} px tall', async (page: Page, height: number) => {
+  guide.silent(page);
+  await page.evaluate((h) => { (window as any).grok.shell.tv.grid.props.colHeaderHeight = h; }, height);
+  await v.settleAll(page);
+}, {tier: 'api', description: 'set-up a filmed guide leaves out: the column header height of the current view\'s grid (room for a header a package draws, Bio\'s WebLogo)'});
+export const gridShowsColumns = When('the grid shows only the columns {string}', async (page: Page, columns: string) => {
+  guide.silent(page);
+  await page.evaluate((names) => {
+    const grid = (window as any).grok.shell.tv.grid;
+    const missing = names.filter((n) => !grid.dataFrame.col(n));
+    if (missing.length)
+      throw new Error(`the table has no column ${missing.join(', ')}`);
+    grid.columns.setVisible(names);
+    grid.columns.setOrder(names);
+  }, columns.split(',').map((c) => c.trim()));
+  await v.settleAll(page);
+}, {tier: 'api', description: 'set-up a filmed guide leaves out: the grid shows these columns, in this order, and hides the others (the table keeps them)'});
+
 /** The grid draws nothing to the right of its last column when the columns are narrower than the
  * view: a right-click there, in a row, once failed. The point is the middle of that
  * space, at the height of the row's cells. */

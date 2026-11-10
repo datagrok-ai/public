@@ -24,7 +24,8 @@ export class ViewHandler {
   private urlParams: Map<string, string> = new Map<string, string>();
   public view: DG.MultiView;
 
-  constructor() {
+  /** [appTab]: the tab an app of its own opens (`metrics`); under that app's URL the tab needs no path segment. */
+  constructor(private appTab?: string) {
     this.view = new DG.MultiView({viewFactories: {}});
     this.view.name = ViewHandler.UA_NAME;
     this.view.box = true;
@@ -52,6 +53,8 @@ export class ViewHandler {
       if (urlView)
         urlTab = urlView.name;
     }
+    else if (this.appTab)
+      urlTab = views.find((v) => ViewHandler.urlName(v) === this.appTab)?.name ?? urlTab;
 
     const indicatorTimer = setTimeout(() => ui.setUpdateIndicator(this.view.root, true, 'Loading...'), 200);
     const toolbox = await toolboxPromise;
@@ -205,13 +208,18 @@ export class ViewHandler {
     if (saveDuringChangingView)
       this.urlParams.set(key, value);
 
-    this.view.path = `/${ViewHandler.urlName(this.getCurrentView())}?${params.join('&')}`.toLowerCase();
+    this.view.path = `${this.tabPath(this.getCurrentView())}?${params.join('&')}`.toLowerCase();
   }
 
    updatePath(): void {
     const v = this.getCurrentView();
     const s = this.view.path.split('?');
     const params = s.length === 2 ? s[1] : null;
-     this.view.path = `/${ViewHandler.urlName(v)}${v.rout ?? ''}${params ? '?' + params : ''}`.toLowerCase();
+     this.view.path = `${this.tabPath(v)}${v.rout ?? ''}${params ? '?' + params : ''}`.toLowerCase();
+  }
+
+  private tabPath(v: DG.ViewBase): string {
+    const name = ViewHandler.urlName(v);
+    return name === this.appTab ? '' : `/${name}`;
   }
 }

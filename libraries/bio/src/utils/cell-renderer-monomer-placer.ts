@@ -626,6 +626,28 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     return hitBounds(monomerMaxLengthSumList, x, positionShiftPadding);
   }
 
+  /** Where the monomer at sequence position {@link pos} (0-based) of the cell's row sits in the cell, in px from its
+   * top left, as {@link onMouseMove} hit-tests it: the point the pointer rests on for its tooltip. Null when the cell
+   * does not draw it. */
+  public getMonomerPoint(gridCell: DG.GridCell, pos: number): {x: number, y: number} | null {
+    const rowIdx = gridCell.tableRowIndex;
+    const idx = pos - this.positionShift;
+    if (!this.seqHelper || rowIdx == null || idx < 0)
+      return null;
+    const {width: cellWidth, height: cellHeight} = gridCell.bounds;
+    const bounds = this._cellBounds.get(rowIdx) ?? this._stackedBounds.get(cellHeight)?.get(rowIdx);
+    if (bounds) {
+      const b = bounds.find((bound) => bound.monomerIdx === idx)?.bounds;
+      return b ? {x: b.x + b.width / 2, y: b.y + b.height / 2} : null;
+    }
+    if (this._showConnections)
+      this._widthsH = cellHeight;
+    const [lengths, sums] = this.getCellMonomerLengths(rowIdx, cellWidth);
+    const leftPadding = this.shouldRenderShiftedThreeDots(this.positionShift) ? this._leftThreeDotsPadding ?? 0 : 0;
+    const x = leftPadding + sums[idx] + lengths[idx] / 2;
+    return idx < lengths.length && lengths[idx] > 0 && x < cellWidth ? {x, y: cellHeight / 2} : null;
+  }
+
   public setMonomerLengthLimit(value: number): void {
     if (this.monomerLengthLimit != value) {
       this.monomerLengthLimit = value;
@@ -1034,6 +1056,9 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
           this._cellBounds.set(gridCell.tableRowIndex, currentCellBounds);
       } else {
         // --- Single-line rendering path ---
+        // the current row is the one the others are compared with: it is drawn whole, as the multiline path draws it
+        const rowReference = referenceSequence.length > 0 && !(notCurrentRow ??= tableRowIdx !== tableCol.dataFrame.currentRowIdx) ?
+          [] : referenceSequence;
         // The row's connections drawn as lines, when the setting is on and they fit the cell: such a row prints the
         // canonical symbols, in the widths and hit tests too, which follow the height the cell was drawn at
         // the height a row's widths are decided at; each row's cached widths follow its own canonical state, so another
@@ -1043,7 +1068,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         const conn = this.connectionsLayout(isRenderedOnGrid ? tableRowIdx : null, subParts, h, positionShift);
         if (conn !== null && conn.chains.length > 0) {
           this.renderStackedChains(g, x, y, w, h, gridCell, {sh, seqSS: subParts, layout: conn, maxLengthOfMonomer,
-            separator, monomerColor: monomerTextColor, referenceSequence, selectedPosition, highlightEntry, annotRenderer,
+            separator, monomerColor: monomerTextColor, referenceSequence: rowReference, selectedPosition, highlightEntry, annotRenderer,
             rowIdx: isRenderedOnGrid ? tableRowIdx : null, positionShift});
           return;
         }
@@ -1127,7 +1152,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
             color: color, pivot: 0, left: true, transparencyRate: 0.0,
             separator: drawnSeparator, last: last,
             drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: posIdx - positionShift, gridCell: gridCell,
-            referenceSequence: referenceSequence, maxLengthOfMonomer: maxLengthOfMonomer,
+            referenceSequence: rowReference, maxLengthOfMonomer: maxLengthOfMonomer,
             monomerTextSizeMap: this._monomerLengthMap, logger: this.logger,
             selectedPosition: isNaN(selectedPosition) || selectedPosition < 1 ? undefined : selectedPosition - positionShift,
             columnTemps,
