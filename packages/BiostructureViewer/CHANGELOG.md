@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Molstar viewer: The ligands debug record passes the ligands as its parameters, not a function
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): NGL: no 50 ms wait after the stage has already rendered
 * Biostructure viewer: Fixed "Invalid argument (index): null" when the viewer was added to a table with no current row yet; the structure loads once a row becomes current
 * [core#988](https://github.com/datagrok-ai/core/issues/988): Renderers: Fixed a scatter plot tooltip failing with "method not found on null" on a sequence difference column when no grid shows the table
