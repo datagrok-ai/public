@@ -6,9 +6,7 @@ paths:
 
 # Documentation
 
-Help pages live in the datagrok-ai/help repository, a sibling of `public/` in the datagrok umbrella
-(`../help`): commit and push doc changes there. A help merge to master redeploys the site
-(help's `bump-public` workflow dispatches `docusaurus.yaml` here).
+`help/` is the datagrok-ai/help repository: commit and push doc changes in that repo.
 
 Documentation uses Docusaurus. Files are Markdown with YAML frontmatter:
 

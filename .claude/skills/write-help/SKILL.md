@@ -32,8 +32,8 @@ Companion files:
 3. **When the reviewer questions a section**, answer with the evidence (is it new, is it covered
    elsewhere, what the code says) before changing or removing it.
 4. **Work in small, reviewable edits** on a branch cut from the current master. `help/` is the
-   `datagrok-ai/help` repository (a sibling of `public/` in the datagrok umbrella): branch, commit,
-   and open the PR there. Commit and push only when asked, with plain commit messages.
+   `datagrok-ai/help` repository: branch, commit, and open the PR there. Commit and push only when
+   asked, with plain commit messages.
 5. **Finish with a reading list**: for each topic, the page and anchor that now covers it.
 
 ### Starting from a ticket

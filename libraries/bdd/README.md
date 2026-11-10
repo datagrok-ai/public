@@ -646,9 +646,8 @@ tune the pace when run by hand on a `steps.json` directory.
 
 A feature tagged `@help:<page dir>` (`@help:access/files`) illustrates a help page:
 `grok-bdd guide --help-pages` films every such feature and copies each scenario's GIF and thumb
-into `help/<page dir>/img/<scenario slug>.gif` of the help repository, the sibling of public in the
-datagrok umbrella (`BDD_HELP_ROOT` names another tree), so the walkthroughs on the docs site are
-regenerated from features rather than recorded by hand.
+into `help/<page dir>/img/<scenario slug>.gif` (`BDD_HELP_ROOT` names another tree), so
+the walkthroughs on the docs site are regenerated from features rather than recorded by hand.
 Guides live under `features/guides/` and run with the rest of the suite, in the full shell: an
 answer that stops being true fails a test.
 

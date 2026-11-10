@@ -20,9 +20,6 @@ public/
 └── misc/            # ESLint config, utilities
 ```
 
-Documentation is the datagrok-ai/help repository, a sibling of `public/` in the datagrok umbrella
-(`../help`): commit doc changes there.
-
 ## js-api (datagrok-api)
 
 The core TypeScript API providing bindings to the Datagrok Dart backend. Packages import three namespaces:
