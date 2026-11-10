@@ -24,11 +24,15 @@ overrides:
 
 # pnpm 10 blocks postinstall scripts unless allowed here. puppeteer is deliberately not
 # allowed: its Chromium download is ~150 MB per version and irrelevant to building.
+# sharp (NLP, via @xenova/transformers) is ignored: unused in the browser, and its build
+# downloads from GitHub, which corporate proxies block.
 onlyBuiltDependencies:
   - esbuild
   - '@swc/core'
-  - sharp
   - bufferutil
   - utf-8-validate
   - core-js
   - core-js-pure
+
+ignoredBuiltDependencies:
+  - sharp
