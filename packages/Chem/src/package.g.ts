@@ -1170,7 +1170,6 @@ export async function getProperties(molecules: DG.Column, selected?: string[]) :
 //input: string property { choices: ["MW","HBA","HBD","LogP","LogS","PSA","Rotatable bonds","Stereo centers","Molecule charge"] }
 //output: column result
 //meta.role: categoryOrderer
-//meta.vectorFunc: true
 export async function molecularProperty(molecules: DG.Column, property: string) : Promise<any> {
   return await PackageFunctions.molecularProperty(molecules, property);
 }

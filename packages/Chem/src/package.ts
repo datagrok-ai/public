@@ -2541,14 +2541,13 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Molecular Property',
     description: 'Computes one chemical property for a column of molecules so that the platform can sort and order them by it.',
-    meta: {role: 'categoryOrderer', vectorFunc: 'true'},
+    meta: {role: 'categoryOrderer'},
   })
   static async molecularProperty(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {choices: ['MW', 'HBA', 'HBD', 'LogP', 'LogS', 'PSA',
-      'Rotatable bonds', 'Stereo centers', 'Molecule charge']}}) property: string): Promise<DG.Column | null> {
-    const cols = await getPropertiesAsColumns(molecules, [property]);
-    return cols.length === 0 ? null : cols[0];
+      'Rotatable bonds', 'Stereo centers', 'Molecule charge']}}) property: string): Promise<DG.Column> {
+    return (await getPropertiesAsColumns(molecules, [property]))[0];
   }
 
   @grok.decorators.func({

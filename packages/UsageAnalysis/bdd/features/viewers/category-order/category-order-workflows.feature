@@ -92,17 +92,12 @@ Feature: Category order in everyday workflows
     Then the "marker of row 10" area of scatter plot viewer should lie to the left of the "marker of row 2" area
     And the "category Caucasian" area of box plot viewer should lie to the left of the "category Other" area
     And the "point of row 3" area of line chart viewer should lie to the left of the "point of row 4" area
-    When user picks "Order..." from the context menu of the "x axis" area of box plot viewer
-    And user selects "Aggregated value" in "Order by" input in "Order categories: RACE" dialog
-    And user picks "WEIGHT" in the column selector of the "Order categories: RACE" dialog
-    And user selects "Avg" in "Aggregation" input in "Order categories: RACE" dialog
-    And user selects "Descending" in "Direction" input in "Order categories: RACE" dialog
+    When user sets "categoryOrder" property of box plot viewer to '{"column":"WEIGHT","aggr":"avg","order":"desc"}'
     Then the "category Black" area of box plot viewer should lie to the left of the "category Caucasian" area
     And the "category Other" area of box plot viewer should lie to the left of the "category Asian" area
     And the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 1" area
     And the "categories of RACE" reading of filter panel should be "Asian, Black, Caucasian, Other"
-    When user clicks on "CLOSE" button in "Order categories: RACE" dialog
-    Then the "x categories" reading of line chart viewer should be 4
+    And the "x categories" reading of line chart viewer should be 4
     When user sets properties of line chart viewer:
       | X    | STARTED |
       | xMap | month   |
@@ -129,11 +124,7 @@ Feature: Category order in everyday workflows
     And user sets "X Category Order" property of scatter plot viewer to ""
     Then "Order categories: RACE" dialog should be absent
     And the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 2" area
-    When user picks "Order..." from the context menu of the "left edge of x axis" area of scatter plot viewer
-    And user selects "Aggregated value" in "Order by" input in "Order categories: RACE" dialog
-    And user picks "WEIGHT" in the column selector of the "Order categories: RACE" dialog
-    And user selects "Avg" in "Aggregation" input in "Order categories: RACE" dialog
-    And user clicks on "CLOSE" button in "Order categories: RACE" dialog
+    When user sets "xCategoryOrder" property of scatter plot viewer to '{"column":"WEIGHT","aggr":"avg","order":"asc"}'
     Then the "marker of row 10" area of scatter plot viewer should lie to the left of the "marker of row 2" area
     And the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 1" area
     When user saves the layout of the current table view
@@ -158,12 +149,7 @@ Feature: Category order in everyday workflows
     Given user adds a box plot viewer with:
       | Value      | AGE  |
       | Category 1 | RACE |
-    When user picks "Order..." from the context menu of the "x axis" area of box plot viewer
-    And user selects "Aggregated value" in "Order by" input in "Order categories: RACE" dialog
-    And user picks "WEIGHT" in the column selector of the "Order categories: RACE" dialog
-    And user selects "Avg" in "Aggregation" input in "Order categories: RACE" dialog
-    And user selects "Descending" in "Direction" input in "Order categories: RACE" dialog
-    And user clicks on "CLOSE" button in "Order categories: RACE" dialog
+    When user sets "categoryOrder" property of box plot viewer to '{"column":"WEIGHT","aggr":"avg","order":"desc"}'
     And user picks "SEX" in the "Category 1" column selector of box plot viewer
     Then "Category Order" property of box plot viewer should contain "WEIGHT"
     And the "category M" area of box plot viewer should lie to the left of the "category F" area

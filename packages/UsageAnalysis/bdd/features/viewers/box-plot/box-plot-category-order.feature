@@ -118,20 +118,13 @@ Feature: Box plot category order
     And no errors should have been logged
 
   Scenario: An order by another column survives that column's rename
-    When user picks "Order..." from the context menu of the "x axis" area of box plot viewer
-    And user selects "Aggregated value" in "Order by" input in "Order categories: RACE" dialog
-    And user picks "WEIGHT" in the column selector of the "Order categories: RACE" dialog
-    And user selects "Avg" in "Aggregation" input in "Order categories: RACE" dialog
-    And user selects "Ascending" in "Direction" input in "Order categories: RACE" dialog
-    And user clicks on "CLOSE" button in "Order categories: RACE" dialog
+    When user sets "categoryOrder" property of box plot viewer to '{"column":"WEIGHT","aggr":"avg","order":"asc"}'
     Then the "category Caucasian" area of box plot viewer should lie to the left of the "category Black" area
     When user renames "WEIGHT" column to "BODY WEIGHT"
     Then the "category Caucasian" area of box plot viewer should lie to the left of the "category Black" area
     And the "category Asian" area of box plot viewer should lie to the left of the "category Other" area
     When user renames "BODY WEIGHT" column to "WEIGHT"
-    And user picks "Order..." from the context menu of the "x axis" area of box plot viewer
-    And user selects "Default" in "Order by" input in "Order categories: RACE" dialog
-    And user clicks on "CLOSE" button in "Order categories: RACE" dialog
+    And user sets "categoryOrder" property of box plot viewer to ""
     Then the "category Black" area of box plot viewer should lie to the left of the "category Caucasian" area
     And no errors should have been logged
 

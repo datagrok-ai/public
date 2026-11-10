@@ -4,9 +4,9 @@ Feature: Scatter plot molecule categories ordered by a computed property
   value on the molecule column itself offers Chem's Molecular Property choices (MW first), and the
   markers move to their core's place by molecular weight once the values arrive, in either direction.
   Descending MW happens to put the three markers in their by-name places, so that step also reads the
-  order the plot holds.
-  The plot reports nothing pending while Chem computes the values (about a second for the seven
-  cores), so the first claim after the pick polls the places of the three markers together.
+  order the plot holds; ascending already showed the computed order is not the by-name one.
+  The plot reports a render pending while Chem computes the values (about a second for the seven
+  cores), so the claims after the pick wait for them.
   spgi-100 with Core (six scaffolds with R-group attachment points, seven rows without one) on X and
   Series on Y, so the dialog starts on the first column it can order by, Structure. Row 8 holds the
   triazole core (the lightest), row 1 CC1(N…)CCN(…)C1 and row 2 the heavier CC1(CN…)CCN(…)C1; by
@@ -34,7 +34,8 @@ Feature: Scatter plot molecule categories ordered by a computed property
     And "Property" input in "Order categories: Core" dialog should have value "MW"
     And "Aggregation" input in "Order categories: Core" dialog should be hidden
     When user selects "Ascending" in "Direction" input in "Order categories: Core" dialog
-    Then once the computed order arrives, the areas "marker of row 8, marker of row 1, marker of row 2" of scatter plot viewer should lie from left to right
+    Then the "marker of row 8" area of scatter plot viewer should lie to the left of the "marker of row 1" area
+    And the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 2" area
     When user selects "Descending" in "Direction" input in "Order categories: Core" dialog
     Then "X Category Order" property of scatter plot viewer should contain '"order":"desc"'
     And the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 1" area

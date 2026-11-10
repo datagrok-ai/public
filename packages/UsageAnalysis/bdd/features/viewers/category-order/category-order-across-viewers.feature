@@ -1,8 +1,9 @@
-@viewers @realizes:viewers.box-plot @realizes:viewers.scatter-plot @realizes:viewers.trellis-plot @realizes:viewers.filters.categorical @realizes:viewers.grid
+@viewers @realizes:viewers.box-plot @realizes:viewers.scatter-plot @realizes:viewers.trellis-plot @realizes:viewers.filters.categorical @realizes:viewers.grid @realizes:viewers.bar-chart @realizes:viewers.pie-chart @realizes:viewers.scatter-plot3d
 Feature: Category order across viewers
   A viewer's order stays its own until APPLY TO ALL VIEWERS makes it the column's category order:
   then every viewer on the column follows it — a scatter plot that had none, one whose own order on
-  the column is dropped, the trellis plot's splits, the filter panel's list — and a filter keeps the
+  the column is dropped, the trellis plot's splits, the filter panel's list, a bar chart and a pie
+  chart under the custom sort type, a 3D scatter plot — and a filter keeps the
   categories it was given by name. The viewer it came from goes back to Default, which now shows the
   column's order, and its dialog says so with a Reset that gives the column its default order back.
   The order applied is ranked over all rows, so a category the filter hides takes its place too
@@ -13,6 +14,8 @@ Feature: Category order across viewers
   demog-1000: RACE rows Asian 15, Black 27, Caucasian 896, Other 62; on the scatter plot row 1 is
   Caucasian, row 2 Other and row 10 Asian. Sorted by RACE descending, the grid shows the Other rows 2
   and 133 on top, and the Caucasian rows 1 and 3 once the column's order puts Caucasian last. Asian, Black and Other kept by the filter are 104 rows.
+  The bars are drawn from the top, so the column's order shows bottom-up; a slice spans 0.36 degrees per row,
+  so Caucasian starts at 15.12 degrees in the default order and at 37.44 by row count ascending.
   Every scenario starts from the table again.
 
   Background:
@@ -34,6 +37,14 @@ Feature: Category order across viewers
     Given user adds a trellis plot viewer with:
       | X Column Names | RACE      |
       | Viewer Type    | Histogram |
+    And user adds a bar chart viewer with:
+      | Split         | RACE   |
+      | Bar Sort Type | custom |
+    And user adds a pie chart viewer with:
+      | Category      | RACE   |
+      | Pie Sort Type | custom |
+    And user adds a 3d scatter plot viewer with:
+      | X | RACE |
     And user opens the filter panel
     Then the "categories of RACE" reading of filter panel should be "Asian, Black, Caucasian, Other"
     And the "x label Caucasian" area of trellis plot viewer should lie to the left of the "x label Other" area
@@ -43,6 +54,9 @@ Feature: Category order across viewers
     And user clicks on "CLOSE" button in "Order categories: RACE" dialog
     Then the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 2" area
     And the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 10" area
+    And the "bar Caucasian" area of bar chart viewer should lie below the "bar Other" area
+    And the "start angle of Caucasian" reading of pie chart viewer should be between 15.11 and 15.13
+    And the "x labels" reading of 3d scatter plot viewer should be "Asian, Black, Caucasian, Other"
     When user picks "Order..." from the context menu of the "x axis" area of box plot viewer
     And user selects "Row count" in "Order by" input in "Order categories: RACE" dialog
     And user clicks on "APPLY TO ALL VIEWERS" button in "Order categories: RACE" dialog
@@ -57,6 +71,9 @@ Feature: Category order across viewers
     And the "x label Other" area of trellis plot viewer should lie to the left of the "x label Caucasian" area
     And the "x label Black" area of trellis plot viewer should lie to the left of the "x label Other" area
     And the "categories of RACE" reading of filter panel should be "Asian, Black, Other, Caucasian"
+    And the "bar Other" area of bar chart viewer should lie below the "bar Caucasian" area
+    And the "start angle of Caucasian" reading of pie chart viewer should be between 37.43 and 37.45
+    And the "x labels" reading of 3d scatter plot viewer should be "Asian, Black, Other, Caucasian"
     And grid should not have a "cell 2 of RACE" area
     And the "cell 1 of RACE" area of grid should lie above the "cell 3 of RACE" area
     When user clicks on "Reset" action link in "Order categories: RACE" dialog
@@ -65,6 +82,9 @@ Feature: Category order across viewers
     And the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 2" area
     And the "x label Caucasian" area of trellis plot viewer should lie to the left of the "x label Other" area
     And the "categories of RACE" reading of filter panel should be "Asian, Black, Caucasian, Other"
+    And the "bar Caucasian" area of bar chart viewer should lie below the "bar Other" area
+    And the "start angle of Caucasian" reading of pie chart viewer should be between 15.11 and 15.13
+    And the "x labels" reading of 3d scatter plot viewer should be "Asian, Black, Caucasian, Other"
     And the "cell 2 of RACE" area of grid should lie above the "cell 133 of RACE" area
     When user clicks on "CLOSE" button in "Order categories: RACE" dialog
     Then no errors should have been logged
