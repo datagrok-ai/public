@@ -89,16 +89,8 @@ jobs:
             package.json
             turbo.json
             .npmrc
-      # help is a sibling of public in the datagrok umbrella: same layout here.
-      # Same-named help branch if it exists, else master (as in Jenkins).
-      - name: Checkout help next to public
-        env:
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-        run: |
-          url=https://github.com/datagrok-ai/help.git
-          rc=0; git ls-remote --exit-code --heads "$url" "refs/heads/$BRANCH" > /dev/null || rc=$?
-          case $rc in 0) ;; 2) BRANCH=master ;; *) exit "$rc" ;; esac
-          git clone --depth 1 --branch "$BRANCH" "$url" ../help
+      - name: Checkout help
+        run: git clone --depth 1 https://github.com/datagrok-ai/help.git ../help
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -126,8 +118,7 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           pnpm turbo run build --filter='datagrok-api^...'
-      - run: '"$GITHUB_WORKSPACE/docusaurus/node_modules/.bin/markdownlint-cli2" "**/*.md" "**/*.mdx" > "$GITHUB_WORKSPACE/_lint-check-report.md" 2>&1'
-        working-directory: ../help
+      - run: docusaurus/node_modules/.bin/markdownlint-cli2 "../help/**/*.md" "../help/**/*.mdx" > _lint-check-report.md 2>&1
         continue-on-error: true
         if: inputs.force == 'no' && needs.lint.outputs.result != 'success'
       - name: Build Docusaurus website
