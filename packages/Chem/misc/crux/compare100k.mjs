@@ -41,7 +41,7 @@ import {CHEM_DIR, DATA_DIR, loadRdkit, readSmilesCsv, requireFromChem} from './n
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SRC = join(CHEM_DIR, 'src');
-const GROK = resolvePath(CHEM_DIR, '..', '..', '..', '..', '..');
+const GROK = resolvePath(CHEM_DIR, '..', '..', '..');
 const CRUX_CORE = join(GROK, 'crux', 'crux-core');
 const OUT = process.env.OUT ?? join(tmpdir(), 'chem-compare100k');
 const RAW = join(OUT, 'raw');
