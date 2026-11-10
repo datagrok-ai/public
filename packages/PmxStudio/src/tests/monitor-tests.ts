@@ -22,7 +22,7 @@ async function monitor(study: DG.DataFrame, looks: string, bodyWeight: DG.Column
 Promise<{[k: string]: DG.DataFrame}> {
   const fc = DG.Func.find({package: 'PmxStudio', name: 'pmxMonitorStudy'})[0].prepare({study,
     animal: study.col('animal'), group: study.col('group'), day: study.col('day'), volume: study.col('volume'), looks,
-    line: 'MC38', endpoint: 1500, humane: 2000, correction: 'dunnett', bodyWeight, weightLimit: 20});
+    line: 'MC38', endpoint: 1500, humane: 2000, correction: 'holm', bodyWeight, weightLimit: 20});
   await fc.call();
   return Object.fromEntries(['status', 'animals', 'days', 'decisions', 'tolerability', 'weights'].map((o) =>
     [o, fc.outputs[o] as DG.DataFrame]));

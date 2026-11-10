@@ -1,7 +1,7 @@
 /* Two u2 inputs the Plan form uses in place of the editors generated for two of pmxPlanStudy's parameters:
    - ArmsInput, the `arms` table: one card per treated arm (name, therapy, metric, expected effect), a remove icon
      on each and "Add treatment arm" under them;
-   - CorrectionInput, the `correction` choice: one checkbox (Dunnett, recommended) with what it means, worded for
+   - CorrectionInput, the `correction` choice: one checkbox (Holm, recommended) with what it means, worded for
      the number of arms declared. Bonferroni stays a value of the function, for scripts and Grokky. */
 import * as DG from 'datagrok-api/dg';
 import {BoolInput, buttonWithIcon, ChoiceInput, Control, div, divH, Form, iconButton, Input, InputOptions, NumberInput,
@@ -10,7 +10,7 @@ import {ARCHETYPES, THERAPIES, Therapy} from './archetypes';
 
 export interface Arm {name: string, therapy: Therapy, metric: 'TGI' | 'TC', effect: number}
 
-/** At most as many arms as the Dunnett tables of crate lsmeans and a readable chart hold. */
+/** At most as many arms as the Dunnett tables of crate lsmeans (the sensitivity analysis) and a readable chart hold. */
 export const MAX_ARMS = 6;
 
 const newArm = (k: number): Arm => ({name: `Treatment ${k}`, therapy: 'small_molecule', metric: 'TGI', effect: 60});
@@ -163,10 +163,10 @@ export interface CorrectionInputOptions extends InputOptions<string | null> {
   arms: ReadonlySignal<number>;
 }
 
-/** The multiplicity correction as one checkbox: Dunnett (recommended) or none, with what it means. */
+/** The multiplicity correction as one checkbox: Holm (recommended) or none, with what it means. */
 export class CorrectionInput extends Input<string | null, CorrectionInputOptions> {
   constructor(options: CorrectionInputOptions) {
-    super(options, 'dunnett');
+    super(options, 'holm');
     this.root.dataset.u2 = 'pmx-correction-input';
   }
 
@@ -180,7 +180,7 @@ export class CorrectionInput extends Input<string | null, CorrectionInputOptions
     Object.assign(note.style, {color: 'var(--dg-text-color-muted, #68727f)', fontSize: '11.5px', lineHeight: '1.4'});
     this.build(() => {
       this.effect(() => {
-        const v = box.value ? (this.peek() === 'bonferroni' ? 'bonferroni' : 'dunnett') : 'none';
+        const v = box.value ? (this.peek() === 'bonferroni' ? 'bonferroni' : 'holm') : 'none';
         if (this.peek() !== v)
           this.value = v;
       });
@@ -195,8 +195,8 @@ export class CorrectionInput extends Input<string | null, CorrectionInputOptions
         box.disabled = k >= 2 ? null : 'Applies when two or more treated arms are compared with the control';
         note.hidden = k < 2;
         note.textContent = k < 2 ? '' : this.value !== 'none' ?
-          `Recommended. Dunnett's test keeps the chance of any false positive over the ${k} comparisons at α; it ` +
-          'needs a few more animals.' :
+          `Recommended. ${this.value === 'bonferroni' ? 'Bonferroni' : 'Holm'}'s correction keeps the chance of ` +
+          `any false positive over the ${k} comparisons at α; it needs a few more animals.` :
           `Each of the ${k} comparisons is tested at α: fine for an exploratory study, but the chance of at least ` +
           'one false positive grows with the number of arms.';
       });

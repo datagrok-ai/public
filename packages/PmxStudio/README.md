@@ -10,7 +10,7 @@
 De novo design of xenograft and syngeneic efficacy studies: the user declares the cell line, the endpoint
 volume and the treated arms (each with its kind of therapy and expected TGI or T/C); the design gives the end
 of the study and its uncertainty, the analysable animals per arm for the declared power (with a multiplicity
-correction over the arms, Dunnett by default), the animals to implant for them, the power curves and the
+correction over the arms, Holm by default: each arm against the control by Welch's t test), the animals to implant for them, the power curves and the
 predicted volumes of every arm; given the animals per arm, the power there and each arm's smallest detectable
 effect. Analyze reads a finished study as Plan pre-specified it (each arm against the control on the per-animal
 slope of log volume, with the same correction) and adds the digital twin of every treated animal: what it would

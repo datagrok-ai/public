@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {AnalysisInputs, analysisDeclarationOf, pairGroups, tolerabilityFrames, twinModel} from './analyze';
 import {ARCHETYPES} from './archetypes';
 import {crux, CruxResult, named, rows} from './crux';
-import {HUMANE, LAB_WEEKDAYS, designStudy, finite} from './engine';
+import {HUMANE, LAB_WEEKDAYS, TEST, designStudy, finite} from './engine';
 import {gpu} from './gpu';
 import {SavedPlan} from './plan-file';
 import {oneDecimal} from './study-file';
@@ -124,7 +124,7 @@ async function armsOf(plan: SavedPlan | null, treated: string[], notes: string[]
     const arms = plan.predicted.arms.map((a) => ({name: a.name, therapy: a.therapy, metric: a.metric,
       effect: a.effect}));
     const d = await designStudy({line: plan.predicted.line, vRand: plan.predicted.vRand,
-      endpoint: plan.predicted.endpoint, power: 0.8, alpha: 0.05, correction: 'dunnett', n: null, arms, preLoss: 0,
+      endpoint: plan.predicted.endpoint, power: 0.8, alpha: 0.05, correction: 'holm', n: null, arms, preLoss: 0,
       postLoss: 0, lossRule: 'expected', confidence: 0.9, weekdays: LAB_WEEKDAYS, startWeekday: 0,
       humane: finite(plan.inputs.humane) ?? HUMANE, schedules: false, lastDay: null});
     d.arms.forEach((a) => kill.set(a.declaration.name, a.killRate));
@@ -196,7 +196,8 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
   const r = await monitorOf({animal, group, day: Float64Array.from(day),
     volume: Float64Array.from(volume)}, {...model, control: d.control,
     ...arms.length ? {arms: JSON.stringify(arms)} : {}, future: future.join(','), endpoint: d.endpoint,
-    humane: d.humane, alpha: d.alpha, correction: d.correction, ...d.day === null ? {} : {last_day: d.day}});
+    humane: d.humane, alpha: d.alpha, correction: d.correction, test: TEST,
+    ...d.day === null ? {} : {last_day: d.day}});
 
   // each animal's last measurement, which the forecast does not repeat
   const last = new Map<string, {day: number, volume: number}>();

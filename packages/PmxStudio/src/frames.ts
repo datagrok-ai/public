@@ -139,7 +139,7 @@ export async function planFrames(d: StudyDeclaration, tgis: number[] = []): Prom
     measurement_weekdays: weekdaysText(d.weekdays),
     start_weekday: d.startWeekday,
     humane_watch_day: watch, humane_limit: d.humane,
-    compared: 'per-animal slope of log V over the calendar (two-sample t test)',
+    compared: 'per-animal slope of log V over the calendar (Welch t test)',
     measurement_error: `${me.model}: c0 ${me.c0.toFixed(3)}, c1 ${me.c1.toFixed(2)} (atlas, ${me.triples} triples)`,
     notes_groups: s.notes.groups.join(' | '), notes_growth: s.notes.growth.join(' | '),
   }])!;

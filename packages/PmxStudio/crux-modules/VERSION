@@ -1,1 +1,1 @@
-crux-core main 3e77becef (land: tumor-monitor, on tumor-twin-webgpu): stats.tumor_twin / tumor_monitor variants webgpu, stats.tumor_monitor, stats.tumor_allocate; modules nonclinical and stats
+nonclinical: crux-core main 0004f3c58 (land: tgi-welch-holm 4d8cfe12a, stats.tumor_study_design and stats.tumor_monitor take test=welch and correction=holm; land: map-robust-n); stats: crux-core main 3e77becef (land: tumor-monitor, on tumor-twin-webgpu)

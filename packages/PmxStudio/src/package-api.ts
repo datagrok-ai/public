@@ -42,7 +42,7 @@ export namespace funcs {
    * @param {number} endpoint - The study ends when the median control reaches it.
    * @param {number} humane - Your protocol’s limit: an animal near it is listed. Workman 2010 advises a mean diameter of 1.5 cm at most in therapy studies, about 1,700 mm³. Your lab’s limit is set once, in the package’s settings.
    * @param {string} correction - Correction over the groups compared with the control in the final test.
-   *   choices: ["dunnett","bonferroni","none"]
+   *   choices: ["holm","bonferroni","none"]
    * @param {number} evaluationDay - Leave empty for the day the median control reaches the endpoint volume.
    * @param {number} alpha - Two-sided significance level of the final test.
    * @param {number} weightLimit - An animal is listed when it nears this loss of weight, and is over it at this one (your institution’s limit).
@@ -95,14 +95,14 @@ export namespace funcs {
   }
 
   /**
-   * Designs a xenograft or syngeneic efficacy study de novo with Crux stats.tumor_study_design: from the cell line, the endpoint volume and the treated arms (each with its kind of therapy and expected TGI or T/C), predicts the end of the study (when the median control reaches the endpoint) and its uncertainty, each arm’s kill rate, the analysable animals per arm for the declared assurance (power over the historical-control prior) with the multiplicity correction chosen (Dunnett by default), the animals to implant for them, the power curves and the predicted control and treated arms. Given a number of animals per arm, the power there and each arm’s minimum detectable effect. Given an end of study, the study is evaluated that day; the power by end of study shows what ending earlier or later costs, and the power by measurement schedule what measuring less often costs.
+   * Designs a xenograft or syngeneic efficacy study de novo with Crux stats.tumor_study_design: from the cell line, the endpoint volume and the treated arms (each with its kind of therapy and expected TGI or T/C), predicts the end of the study (when the median control reaches the endpoint) and its uncertainty, each arm’s kill rate, the analysable animals per arm for the declared assurance (power over the historical-control prior) with the multiplicity correction chosen (Holm by default; each arm against the control by Welch’s t test), the animals to implant for them, the power curves and the predicted control and treated arms. Given a number of animals per arm, the power there and each arm’s minimum detectable effect. Given an end of study, the study is evaluated that day; the power by end of study shows what ending earlier or later costs, and the power by measurement schedule what measuring less often costs.
    * @param {string} line - Tumor model (syngeneic cell line or PDX): its growth prior comes from the atlas of historical controls.
    *   choices: PmxStudio:pmxLines()
    * @param {number} endpoint - The study ends when the median control reaches it.
    * @param {DG.DataFrame} arms - The treated arms, each compared with the control: name, therapy (small_molecule, biologic, immunotherapy, immune_agonist, cell_therapy, vaccine_peptide, oligo_rna), metric (TGI or TC) and the expected effect in percent. Empty: one small-molecule arm at TGI 60%.
    * @param {number} power - Chance of detecting each arm’s effect.
-   * @param {string} correction - Correction over the arms compared with the control: Dunnett (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).
-   *   choices: ["dunnett","bonferroni","none"]
+   * @param {string} correction - Correction over the arms compared with the control, each by Welch’s t test: Holm (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).
+   *   choices: ["holm","bonferroni","none"]
    * @param {number} n - Empty for the number the target power needs, or set it to see the power and smallest detectable effect with that many.
    * @param {number} lastDay - Leave empty to end when the median control reaches the endpoint.
    * @param {string} tgiScenarios - Up to 8 TGIs to compare, such as 30, 50, 70: the animals the study needs if every arm had each one, sized for the target power whatever the animals per arm. Scenarios, not predictions. Each adds a whole design to the run. Empty: off.
@@ -125,7 +125,7 @@ export namespace funcs {
   }
 
   /**
-   * Analyzes a xenograft or syngeneic efficacy study as PMX Studio’s Plan pre-specifies it, with Crux stats.tgi and stats.contrast: each treated arm against the control on the per-animal slope of log tumor volume from randomization to the evaluation day (two-sample t test, with the multiplicity correction chosen: Dunnett by default). The evaluation day is the first measurement day the median control reaches the endpoint volume, as in the design. Also each arm’s TGI and T/C on that day, the median time to the endpoint volume, and per animal the slope, the time to the endpoint and the mRECIST category. With Crux stats.tumor_twin, the digital twin of each treated animal: what it would measure untreated (from its volume at randomization, the study’s controls and the cell line’s model), its paired effect on the evaluation day, and each control checked against the others. Given the plan saved in Plan, the study against it: the controls against their predicted growth, the end against the predicted day, each arm’s TGI or T/C against the one assumed. Given the body weight, with Crux stats.tumor_body_weight, whether the treatments were tolerated: each group’s weight change from day 0, measured and without the tumor’s mass (its volume at the cell line’s density, or at the study’s when the excised tumors were weighed), its weight-loss grades (CTCAE v5, adapted), the animals removed early and whether each group stays within the NCI limits for a treatment (a mean loss at the nadir over 20%, or over 10% of the animals dead or removed for their weight).
+   * Analyzes a xenograft or syngeneic efficacy study as PMX Studio’s Plan pre-specifies it, with Crux stats.tgi and stats.contrast: each treated arm against the control on the per-animal slope of log tumor volume from randomization to the evaluation day (Welch’s t test, each group its own variance, with the multiplicity correction chosen: Holm by default). The evaluation day is the first measurement day the median control reaches the endpoint volume, as in the design. Also each arm’s TGI and T/C on that day, the median time to the endpoint volume, and per animal the slope, the time to the endpoint and the mRECIST category. With Crux stats.tumor_twin, the digital twin of each treated animal: what it would measure untreated (from its volume at randomization, the study’s controls and the cell line’s model), its paired effect on the evaluation day, and each control checked against the others. Given the plan saved in Plan, the study against it: the controls against their predicted growth, the end against the predicted day, each arm’s TGI or T/C against the one assumed. Given the body weight, with Crux stats.tumor_body_weight, whether the treatments were tolerated: each group’s weight change from day 0, measured and without the tumor’s mass (its volume at the cell line’s density, or at the study’s when the excised tumors were weighed), its weight-loss grades (CTCAE v5, adapted), the animals removed early and whether each group stays within the NCI limits for a treatment (a mean loss at the nadir over 20%, or over 10% of the animals dead or removed for their weight).
    * @param {DG.DataFrame} study - The measurements: one row per animal and day, day 0 the randomization (start of treatment).
    * @param {DG.Column} animal - The animal (tumor) identifier, unique in the study.
    * @param {DG.Column} group - The treatment group.
@@ -139,8 +139,8 @@ export namespace funcs {
    *   choices: PmxStudio:pmxLines()
    * @param {string} control - The control (vehicle) group (empty: the one named vehicle, control, PBS, saline or untreated, else the first).
    * @param {number} endpoint - The effects are read on the first measurement day the median control reaches this volume, as the design defines the end of the study.
-   * @param {string} correction - Correction over the arms compared with the control: Dunnett (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).
-   *   choices: ["dunnett","bonferroni","none"]
+   * @param {string} correction - Correction over the arms compared with the control, each by Welch’s t test: Holm (recommended), Bonferroni, or none (each comparison at alpha, as in an exploratory study).
+   *   choices: ["holm","bonferroni","none"]
    * @param {number} evaluationDay - Leave empty for the day the median control reaches the endpoint volume (the last day if it never does).
    * @param {number} alpha - Two-sided significance level of the comparisons with the control.
    * @param {number} weightLimit - An animal is removed when it loses this much weight (your institution’s limit).

@@ -13,7 +13,7 @@ async function example(): Promise<{r: AnalysisFrames, s: StudyInputs, colors: {[
   const study = await exampleStudy();
   const fc = DG.Func.find({package: 'PmxStudio', name: 'pmxAnalyzeStudy'})[0].prepare({study,
     animal: study.col('animal'), group: study.col('group'), day: study.col('day'), volume: study.col('volume'),
-    line: 'MC38', endpoint: 1500, correction: 'dunnett'});
+    line: 'MC38', endpoint: 1500, correction: 'holm'});
   await fc.call();
   const r = Object.fromEntries(OUTPUTS.map((o) => [o, fc.outputs[o]])) as unknown as AnalysisFrames;
   const colors = armColors(r.comparisons.col('arm')!.toList());

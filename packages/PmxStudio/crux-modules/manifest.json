@@ -31,14 +31,14 @@
     "trendtests",
     "vcg"
    ],
-   "functions": 85,
+   "functions": 87,
    "abi": 1,
    "fns": "nonclinical/fns.json",
    "thread": "worker",
    "compute": "nonclinical/compute.json",
    "hash": {
-    "js": "9c550e3c6f53ba42",
-    "wasm": "5974417591c83e52"
+    "js": "ca8ea1acc33ddaaa",
+    "wasm": "806bda017fe28065"
    }
   },
   "stats": {
@@ -265,7 +265,9 @@
   "tox.tgx_pod": "nonclinical",
   "tox.toxref_pod": "nonclinical",
   "tox.toxref_profile": "nonclinical",
-  "toxrefdb.load": "nonclinical"
+  "toxrefdb.load": "nonclinical",
+  "stats.tumor_twin_fit": "nonclinical",
+  "stats.tumor_twin_loo_parts": "nonclinical"
  },
  "exports": {
   "fnDataset": [

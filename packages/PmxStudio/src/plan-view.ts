@@ -537,12 +537,12 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       'Randomization': `When the tumors reach ${v('v_rand')} mm³, into groups balanced on tumor volume; the ` +
         'randomization day is day 0',
       'Outcome and analysis': 'The growth rate of each animal’s tumor (slope of log volume over its ' +
-        'measurements), compared between each treated group and the control by a two-sample t test',
-      'Multiple comparisons': k < 2 ? 'One treated group: none needed' : corr === 'dunnett' ?
-        `Dunnett's many-to-one test over ${k} comparisons (each at α = ${num(v('alpha_per_comparison'), 3)} for ` +
-        'the largest group)' :
-        corr === 'bonferroni' ? `Bonferroni over ${k} comparisons (each at α = ${num(v('alpha_per_comparison'), 3)})` :
-          `None: each of the ${k} comparisons at α = ${num(v('alpha'), 2)} (exploratory)`,
+        'measurements), compared between each treated group and the control by Welch’s t test (each group its ' +
+        'own variance)',
+      'Multiple comparisons': k < 2 ? 'One treated group: none needed' : corr === 'none' ?
+        `None: each of the ${k} comparisons at α = ${num(v('alpha'), 2)} (exploratory)` :
+        `${corr === 'bonferroni' ? 'Bonferroni' : 'Holm'} over ${k} comparisons; each group is sized at α = ` +
+        `${num(v('alpha_per_comparison'), 3)}` + (corr === 'bonferroni' ? '' : ', the level of Holm’s first step'),
       'End of study': v('last_day_chosen') ? `Day ${v('study_end')}, chosen. The expected effects are the ones on ` +
         `day ${v('endpoint_day')}, when the median control reaches ${v('endpoint')} mm³` :
         `The first measurement day once the median control reaches ${v('endpoint')} mm³ (expected day ` +

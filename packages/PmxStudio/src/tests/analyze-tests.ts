@@ -16,7 +16,7 @@ const OUTPUTS = ['analysis', 'comparisons', 'animals', 'volumes', 'twins', 'effe
 async function analyze(study: DG.DataFrame, params: {[k: string]: any} = {}): Promise<{[k: string]: DG.DataFrame}> {
   const fc = DG.Func.find({package: 'PmxStudio', name: 'pmxAnalyzeStudy'})[0].prepare({study,
     animal: study.col('animal'), group: study.col('group'), day: study.col('day'), volume: study.col('volume'),
-    line: 'MC38', endpoint: 1500, correction: 'dunnett', ...params});
+    line: 'MC38', endpoint: 1500, correction: 'holm', ...params});
   await fc.call();
   return Object.fromEntries(OUTPUTS.map((o) => [o, fc.outputs[o] as DG.DataFrame]));
 }
@@ -139,13 +139,20 @@ category('Analyze', () => {
     expect(coverage > 0.7, true, `control coverage ${coverage}`);
   }, {timeout: 300000});
 
-  test('the corrections order the p-values: none ≤ Dunnett ≤ Bonferroni', async () => {
+  test('the corrections order the p-values: none ≤ Holm ≤ Bonferroni; the interval is Bonferroni\'s', async () => {
     const study = await exampleStudy();
-    const p = async (correction: string) => (await analyze(study, {correction})).comparisons.col('p_value')!.toList();
-    const [none, dunnett, bonferroni] = [await p('none'), await p('dunnett'), await p('bonferroni')];
-    for (let i = 0; i < none.length; i++) {
-      expect(none[i] <= dunnett[i] + 1e-12, true, `arm ${i}: ${none[i]} vs ${dunnett[i]}`);
-      expect(dunnett[i] <= bonferroni[i] + 1e-12, true, `arm ${i}: ${dunnett[i]} vs ${bonferroni[i]}`);
+    const of = async (correction: string) => (await analyze(study, {correction})).comparisons;
+    const [none, holm, bonferroni] = [await of('none'), await of('holm'), await of('bonferroni')];
+    const p = (t: DG.DataFrame, i: number) => t.get('p_value', i) as number;
+    for (let i = 0; i < none.rowCount; i++) {
+      expect(p(none, i) <= p(holm, i) + 1e-12, true, `arm ${i}: ${p(none, i)} vs ${p(holm, i)}`);
+      expect(p(holm, i) <= p(bonferroni, i) + 1e-12, true, `arm ${i}: ${p(holm, i)} vs ${p(bonferroni, i)}`);
+      // 0 outside the interval at 1 - alpha / k says what Bonferroni's p-value says
+      const out = holm.get('slope_difference_lower', i) > 0 || holm.get('slope_difference_upper', i) < 0;
+      expect(out, p(bonferroni, i) < 0.05, `arm ${i}: interval and Bonferroni p ${p(bonferroni, i)}`);
+      // and beside the test, what one variance for every group gives
+      const common = holm.get('p_common_variance', i);
+      expect(common >= 0 && common <= 1, true, `arm ${i}: p with a common variance ${common}`);
     }
   }, {timeout: 300000});
 

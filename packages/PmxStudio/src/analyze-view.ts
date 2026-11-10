@@ -148,8 +148,8 @@ function effectAxis(lo: number): HTMLElement {
   return axis;
 }
 
-const correctionWords = (corr: unknown, k: number) => k < 2 ? 'one comparison' : corr === 'dunnett' ?
-  'Dunnett\'s correction' : corr === 'bonferroni' ? 'Bonferroni\'s correction' : 'no correction';
+const correctionWords = (corr: unknown, k: number) => k < 2 ? 'one comparison' : corr === 'bonferroni' ?
+  'Bonferroni\'s correction' : corr === 'none' ? 'no correction' : 'Holm\'s correction';
 
 /** A group's result, with a red "!" after it when the group is over the NCI limits for tolerability: the criteria on
  *  hover, the Tolerability tab on click. */
@@ -538,11 +538,10 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     const corr = v('correction');
     const rowsOf: {[row: string]: string} = {
       'Primary comparison': 'Each treated group against the control on tumor growth: the per-animal slope of log ' +
-        'volume from randomization to the evaluation day, by a two-sample t test',
-      'Multiple comparisons': k < 2 ? 'One treated group: none needed' : corr === 'dunnett' ?
-        `Dunnett's many-to-one test over ${k} comparisons` : corr === 'bonferroni' ?
-          `Bonferroni over ${k} comparisons` : `None: each of the ${k} comparisons at α = ${num(v('alpha'), 2)} ` +
-          '(exploratory)',
+        'volume from randomization to the evaluation day, by Welch’s t test (each group its own variance)',
+      'Multiple comparisons': k < 2 ? 'One treated group: none needed' : corr === 'none' ?
+        `None: each of the ${k} comparisons at α = ${num(v('alpha'), 2)} (exploratory)` :
+        `${corr === 'bonferroni' ? 'Bonferroni' : 'Holm'} over ${k} comparisons`,
       'Significance': `α = ${num(v('alpha'), 2)}, two-sided; the intervals are adjusted as the p-values`,
       'Evaluation day': v('from_endpoint') ? `Day ${v('evaluation_day')}, the first measurement day the median ` +
         `control reached ${v('endpoint')} mm³, as Plan defines the end of the study` : `Day ${v('evaluation_day')}`,

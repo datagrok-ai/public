@@ -8,7 +8,7 @@ import {tgisOf} from '../frames';
 /** pmxPlanStudy as the Plan view calls it: the outputs by name. */
 async function plan(params: {[k: string]: any}): Promise<{[k: string]: DG.DataFrame}> {
   const fc = DG.Func.find({package: 'PmxStudio', name: 'pmxPlanStudy'})[0].prepare({line: 'MC38', endpoint: 1000,
-    power: 80, correction: 'dunnett', ...params});
+    power: 80, correction: 'holm', ...params});
   await fc.call();
   return Object.fromEntries(['plan', 'armResults', 'powerCurve', 'curves', 'duration', 'schedules', 'calendar',
     'scenarios'].map((o) => [o, fc.outputs[o] as DG.DataFrame]));
@@ -37,22 +37,22 @@ category('Plan', () => {
     expect(o.curves.col('median')!.meta.units, 'mm³');
   }, {timeout: 120000});
 
-  test('three arms: each its own size, the control the largest, Dunnett at least one arm\'s', async () => {
+  test('three arms: each its own size, the control the largest, Holm at least one arm\'s', async () => {
     const one = (await plan({arms: armsFrame([arm('A', 50)])})).armResults.get('n', 0);
     const three = [arm('A', 50), arm('B', 60), arm('C', 70)];
-    const dunnett = await plan({arms: armsFrame(three)});
+    const corrected = await plan({arms: armsFrame(three)});
     const none = await plan({arms: armsFrame(three), correction: 'none'});
     const sizes = (o: {[k: string]: DG.DataFrame}) => [0, 1, 2].map((i) => o.armResults.get('n', i) as number);
-    expect(sizes(dunnett)[0] >= one, true, `${sizes(dunnett)} vs ${one}`);
+    expect(sizes(corrected)[0] >= one, true, `${sizes(corrected)} vs ${one}`);
     // without correction the 50% arm needs what it needs alone; a stronger arm needs no more
     expect(sizes(none)[0], one);
     expect(sizes(none)[2] <= sizes(none)[0], true);
-    expect(dunnett.plan.get('n_control', 0), Math.max(...sizes(dunnett)));
-    const randomised = [0, 1, 2].map((i) => dunnett.armResults.get('randomise', i) as number);
-    expect(dunnett.plan.get('randomise_total', 0),
-      dunnett.plan.get('randomise_control', 0) + randomised.reduce((a, b) => a + b));
+    expect(corrected.plan.get('n_control', 0), Math.max(...sizes(corrected)));
+    const randomised = [0, 1, 2].map((i) => corrected.armResults.get('randomise', i) as number);
+    expect(corrected.plan.get('randomise_total', 0),
+      corrected.plan.get('randomise_control', 0) + randomised.reduce((a, b) => a + b));
     // every group at once keeps its animals less often than each one does
-    const all = dunnett.plan.get('confidence_study', 0);
+    const all = corrected.plan.get('confidence_study', 0);
     expect(all > 0.5 && all < 1, true, `every group at once: ${all}`);
   }, {timeout: 300000});
 

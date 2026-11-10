@@ -13,11 +13,16 @@ import {MeasurementError, enginePriors, linePrior} from './priors';
 import {ARCHETYPES, Archetype, Therapy} from './archetypes';
 
 export type EffectMetric = 'TGI' | 'TC';
-export type Correction = 'dunnett' | 'bonferroni' | 'none';
+export type Correction = 'holm' | 'bonferroni' | 'none';
 
-/** A form's correction choice, Dunnett when it is none of them. */
+/** A form's correction choice, Holm when it is none of them. */
 export const correctionOf = (x: unknown): Correction =>
-  x === 'bonferroni' || x === 'none' ? x : 'dunnett';
+  x === 'bonferroni' || x === 'none' ? x : 'holm';
+
+/** The test of Plan, Monitor and Analyze: each treated group against the control with their own variances (Welch's t
+ *  test on the per-animal slopes). With one variance for every group, an arm less spread than another lost 13 to 38
+ *  points of the power its plan gave it (preclinical bundle, analysis/test_unequal_spread.py). */
+export const TEST = 'welch';
 
 /** Whether x is a finite number; `finite` gives it or null (Crux's nulls, a form's empty optionals, and a column's
  *  empty cell where the platform gives its sentinel and not null: INT_NULL, FLOAT_NULL). */
@@ -299,7 +304,7 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     ...params,
     v_rand: d.vRand,
     endpoint: d.endpoint, power: d.power, alpha: d.alpha, treated_arms: d.treatedArms ?? d.arms.length,
-    correction: d.correction,
+    correction: d.correction, test: TEST,
     weekdays: weekdaysParam(d.weekdays),
     // (the smallest detectable effect is searched only at a given n: without one the flag would only keep Plan's
     // designs and Monitor's or Analyze's of the same study apart in the cache)

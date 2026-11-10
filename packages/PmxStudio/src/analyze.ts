@@ -2,8 +2,9 @@
  * The Analyze engine: a study's long table (animal, group, day, volume) analysed as Plan pre-specifies it, so the
  * test that decides is the one the design powered: each animal's least-squares slope of log V from randomisation
  * (day 0) to the evaluation day, volumes below the smallest a caliper records raised to it (Crux stats.tgi's
- * per-animal rate, rate_floor), every treated arm against the control by the two-sample t test on those slopes
- * with the declared correction (Crux stats.contrast, rate ~ group, treatment vs control: Dunnett exact). TGI and
+ * per-animal rate, rate_floor), every treated arm against the control on those slopes with their own variances
+ * (Welch's t test, Crux stats.posthoc) and the declared correction, Holm by default; beside it, what one variance
+ * for every group gives (Crux stats.contrast, rate ~ group, treatment vs control: Dunnett exact). TGI and
  * T/C on the evaluation day (the NCI definitions Plan declares effects in; TGI on each animal's change from its own
  * day 0, which gives its interval), the time to the endpoint volume and
  * mRECIST come from the same stats.tgi call. The digital twin of each treated animal (Crux stats.tumor_twin, the
@@ -93,9 +94,43 @@ export function analysisDeclarationOf(x: AnalysisInputs): AnalysisDeclaration {
 
 /** The smallest volume a caliper records (mm3): the design's v_lod (stats.tumor_study_design's default). */
 const V_LOD = 3.4;
-/** Dunnett is lsmeans' mvt: exact for any arm sizes (dunnettx assumes equal arms), as scipy and the box plot. */
-const ADJUST: {[c in Correction]: string} = {dunnett: 'mvt', bonferroni: 'bonferroni', none: 'none'};
-export const COMPARED = 'per-animal slope of log V from randomization (two-sample t test)';
+export const COMPARED = 'per-animal slope of log V from randomization (Welch t test)';
+
+type Contrast = {term: string, estimate: number, lower: number, upper: number, p_value: number};
+
+/** Each treated group (g1, g2, ...) against the control (g0) with their own variances: Welch's t test, its p-values
+ *  adjusted over the comparisons (Crux stats.posthoc), and each difference's interval at 1 - alpha / k (1 - alpha
+ *  with no correction; Holm has no interval of its own: Bonferroni's, never narrower than its decisions). A group
+ *  with fewer than two slopes has no row. */
+async function welchContrasts(x: {slope: Float64Array, group: string[]}, correction: Correction,
+  alpha: number): Promise<Contrast[]> {
+  const by = new Map<string, number[]>();
+  x.group.forEach((g, i) => (by.get(g) ?? by.set(g, []).get(g)!).push(x.slope[i]));
+  const of = (g: string) => {
+    const v = by.get(g) ?? [];
+    const mean = v.reduce((t, y) => t + y, 0) / v.length;
+    return {n: v.length, mean, sem2: v.reduce((t, y) => t + (y - mean) ** 2, 0) / (v.length - 1) / v.length};
+  };
+  const arms = [...by.keys()].filter((g) => g !== 'g0' && by.get(g)!.length >= 2);
+  if ((by.get('g0')?.length ?? 0) < 2 || arms.length === 0)
+    return [];
+  const keep = x.group.map((g) => g === 'g0' || arms.includes(g));
+  const tested = rows((await crux('stats.posthoc', {x: x.slope.filter((_, i) => keep[i]),
+    group: x.group.filter((_, i) => keep[i])}, {test: 'ttest', equal_var: false, control: 'g0',
+    p_adjust: correction, alpha})).main as any);
+  const [c, level] = [of('g0'), correction === 'none' ? alpha : alpha / arms.length];
+  return Promise.all(arms.map(async (g) => {
+    const a = of(g);
+    const [estimate, se2] = [a.mean - c.mean, a.sem2 + c.sem2];
+    // Satterthwaite's degrees of freedom, as the test's
+    const df = se2 * se2 / (a.sem2 * a.sem2 / (a.n - 1) + c.sem2 * c.sem2 / (c.n - 1));
+    const t = se2 > 0 ? Number((await crux('stats.dist_eval', {x: Float64Array.from([1 - level / 2])},
+      {dist: 't', func: 'ppf', shape1: df})).main.col['value'][0]) : 0;
+    const half = t * Math.sqrt(se2);
+    return {term: `${g} - g0`, estimate, lower: estimate - half, upper: estimate + half,
+      p_value: tested.find((r) => r.group_a === g)?.pvalue ?? NaN};
+  }));
+}
 
 export interface ArmAnalysis {
   arm: string;
@@ -116,6 +151,9 @@ export interface ArmAnalysis {
   upper: number;
   /** adjusted for the comparisons with the control */
   p: number;
+  /** the sensitivity analysis: what one variance for every group gives (Dunnett's p-value; with one treated group,
+   *  the two-sample t test's); null: the group has none */
+  pCommon: number | null;
   /** Kaplan-Meier median time to the endpoint volume (null: not reached) */
   medianTte: number | null;
   /** the twin: animals measured on the evaluation day, the median of their paired effects (percent) and how many
@@ -356,9 +394,13 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
   const sloped = animals.filter((a) => a.slope !== null);
   // the groups coded g0 (the control), g1, ...: a contrast's label is then "gk - g0" whatever the groups' names
   const code = new Map([d.control, ...treated].map((g, k) => [g, `g${k}`]));
-  const contrasts = rows((await crux('stats.contrast', {slope: Float64Array.from(sloped, (a) => a.slope),
-    group: sloped.map((a) => code.get(a.group)!)}, {formula: 'slope ~ group', specs: 'group',
-    contrast: 'trt.vs.ctrl', ref: 'g0', adjust: ADJUST[d.correction], alpha: d.alpha})).main as any);
+  const coded = {slope: Float64Array.from(sloped, (a) => a.slope), group: sloped.map((a) => code.get(a.group)!)};
+  // beside the test, what one variance for every group gives (Dunnett is lsmeans' mvt: exact for any arm sizes, as
+  // scipy and the box plot); it fails where the test has no row either
+  const [contrasts, sensitivity] = await Promise.all([welchContrasts(coded, d.correction, d.alpha),
+    crux('stats.contrast', coded, {formula: 'slope ~ group', specs: 'group', contrast: 'trt.vs.ctrl', ref: 'g0',
+      adjust: treated.length < 2 ? 'none' : 'mvt', alpha: d.alpha})
+      .then((r) => rows(r.main as any) as Contrast[], () => [] as Contrast[])]);
 
   // each treated animal against its twin, each control against the others
   const {twins, effects, checks} = await twinning ?? {twins: [], effects: [], checks: []};
@@ -379,6 +421,7 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
       tgiLower: finite(e.tgi_change_lower), tgiUpper: finite(e.tgi_change_upper), tc: finite(e.tc),
       tcLower: finite(e.tc_lower), tcUpper: finite(e.tc_upper), slope: meanSlope(g), slopeControl: meanSlope(d.control),
       difference: c.estimate, lower: c.lower, upper: c.upper, p: c.p_value,
+      pCommon: finite(sensitivity.find((r) => String(r.term).startsWith(`g${k + 1} `))?.p_value),
       medianTte: finite(delay.find((r) => r.group === g)?.median),
       twinAnimals: own.length, pairedEffect: own.length ? 100 * median(own.map((r) => r.effect)) : null,
       responders: own.filter((r) => r.effect_lo > 0).length};
@@ -421,6 +464,11 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
   for (const a of arms) {
     if (a.n < 3)
       notes.push(`${a.arm}: ${a.n} animal${a.n === 1 ? '' : 's'} with a slope, too few for a test`);
+    // the sensitivity analysis speaks when it disagrees
+    if (a.pCommon !== null && Number.isFinite(a.p) && (a.p < d.alpha) !== (a.pCommon < d.alpha)) {
+      notes.push(`${a.arm}: p = ${a.p.toPrecision(2)} with each group's own variance (the test); with one variance ` +
+        `for every group (${treated.length < 2 ? 'the t test' : 'Dunnett'}) it would be ${a.pCommon.toPrecision(2)}`);
+    }
     if (twinned && a.twinAnimals < a.n) {
       notes.push(`${a.arm}: ${a.n - a.twinAnimals} animal${a.n - a.twinAnimals > 1 ? 's' : ''} not measured on day ` +
         `${end.day}, so not compared with ${a.n - a.twinAnimals > 1 ? 'their twins' : 'its twin'}`);
@@ -676,6 +724,7 @@ export async function analysisFrames(d: AnalysisDeclaration): Promise<AnalysisFr
     tc_upper: a.tcUpper,
     slope_per_day: a.slope, slope_control_per_day: a.slopeControl, slope_difference: a.difference,
     slope_difference_lower: a.lower, slope_difference_upper: a.upper, p_value: a.p, significant: a.p < d.alpha,
+    p_common_variance: a.pCommon,
     activity: activityOf(a),
     median_time_to_endpoint: a.medianTte, twin_animals: a.twinAnimals, paired_effect: a.pairedEffect,
     responders: a.responders,
@@ -768,12 +817,12 @@ export const MC38_EXAMPLE: ExampleSpec = {line: 'MC38', arms: [[10, 40], [30, 70
 
 /** Plan's form for an example: what Plan reopens it with, and what its study's plan carries. */
 export const exampleInputs = (spec: ExampleSpec) => ({line: spec.line, endpoint: ENDPOINT, arms: spec.arms, power: 80,
-  correction: 'dunnett', n: null, vRand: 100, measurementDays: 'Mon, Wed, Fri', startWeekday: 'Monday',
+  correction: 'holm', n: null, vRand: 100, measurementDays: 'Mon, Wed, Fri', startWeekday: 'Monday',
   humane: HUMANE, alpha: 0.05, preLoss: 0, postLoss: 0});
 
 /** An example's design, as Plan makes it from exampleInputs (its end, its animals per arm). */
 export const exampleDesign = (spec: ExampleSpec) => designStudy({line: spec.line, vRand: 100, endpoint: ENDPOINT,
-  power: 0.8, alpha: 0.05, correction: 'dunnett', n: null, arms: spec.arms, preLoss: 0, postLoss: 0,
+  power: 0.8, alpha: 0.05, correction: 'holm', n: null, arms: spec.arms, preLoss: 0, postLoss: 0,
   lossRule: 'confident', confidence: 0.9, weekdays: LAB_WEEKDAYS, startWeekday: 0, humane: HUMANE, schedules: false,
   lastDay: null});
 

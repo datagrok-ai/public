@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+* The test (2026-11-10): each treated group is compared with the control with their own variances (Welch's t test
+  on the per-animal slopes) and Holm's correction, in Plan (Crux `stats.tumor_study_design`, `test: welch`,
+  `correction: holm`), Monitor (`stats.tumor_monitor`) and Analyze (Crux `stats.posthoc`; each difference's interval
+  at 1 − α/k). With one variance for every group, an arm less spread than another lost 13 to 38 points of the power
+  Plan gave it (three-group studies simulated with the engine: a small molecule beside an immunotherapy).
+  * **Multiple comparisons**: `holm` (the default), `bonferroni` or `none`. Dunnett's test, which takes one
+    variance for every group, is no longer a choice.
+  * Analyze: beside each p-value, the one a common variance gives (`p_common_variance`: Dunnett's), and a note when
+    the two disagree at α.
 * Defaults (2026-11-10):
   * A new plan or study starts from a humane limit of 1500 mm³ and an endpoint of 1000 mm³ (2000 and 1500 before):
     the limit is under the 1.5 cm mean diameter that Workman et al. 2010 advise for therapy studies, a default study
