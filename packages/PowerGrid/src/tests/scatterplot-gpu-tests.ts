@@ -199,7 +199,9 @@ category('Scatter plot: GPU', () => {
     const sp = await scatterPlot(60000, {zoomAndFilter: 'filter by zoom'});
     // no GPU needed: a browser without one falls back for any plot
     const renderable = () => isGpuRenderable(sp, readCheckLook(sp));
-    Object.assign(sp.props, {xColumnName: 'race', xCategoryOrder: '{"manual":["Other"]}'});
+    sp.props.xColumnName = 'race';
+    expect(renderable(), true);
+    sp.props.xCategoryOrder = '{"manual":["Other"]}';
     expect(renderable(), false);
     // an order left on an axis turned numeric does not apply
     sp.props.xColumnName = 'height';

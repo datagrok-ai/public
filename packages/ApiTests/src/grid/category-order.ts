@@ -12,20 +12,18 @@ category('Viewers: category order', () => {
 
   test('category order round-trip', async () => {
     const demog = grok.data.demo.demog(100);
-    const byProperty = (property: string) => JSON.stringify({property: property, aggr: 'avg', order: 'desc'});
-    const propertyOf = (look: {[key: string]: any}, name: string) => JSON.parse(look[name]).property;
-    const sp = demog.plot.scatter();
-    sp.setOptions({xCategoryOrder: byProperty('Chem:MolecularProperty(MW)'),
-      yCategoryOrder: byProperty('Chem:MolecularProperty(LogP)')});
-    const spLook = sp.getOptions(true).look;
-    expect(propertyOf(spLook, 'xCategoryOrder'), 'Chem:MolecularProperty(MW)');
-    expect(propertyOf(spLook, 'yCategoryOrder'), 'Chem:MolecularProperty(LogP)');
-    const lc = demog.plot.line();
-    lc.setOptions({xCategoryOrder: byProperty('Chem:MolecularProperty(MW)')});
-    expect(propertyOf(lc.getOptions(true).look, 'xCategoryOrder'), 'Chem:MolecularProperty(MW)');
-    const bp = demog.plot.box();
-    bp.setOptions({categoryOrder: byProperty('Chem:MolecularProperty(MW)')});
-    expect(propertyOf(bp.getOptions(true).look, 'categoryOrder'), 'Chem:MolecularProperty(MW)');
+    const byAge = (aggr: string) => JSON.stringify({column: 'age', aggr: aggr, order: 'desc'});
+    const aggrOf = (viewer: DG.Viewer, name: string) => JSON.parse(viewer.getOptions(true).look[name]).aggr;
+    const sp = demog.plot.scatter({x: 'race', y: 'sex'});
+    sp.setOptions({xCategoryOrder: byAge('avg'), yCategoryOrder: byAge('max')});
+    expect(aggrOf(sp, 'xCategoryOrder'), 'avg');
+    expect(aggrOf(sp, 'yCategoryOrder'), 'max');
+    const lc = demog.plot.line({x: 'race'});
+    lc.setOptions({xCategoryOrder: byAge('min')});
+    expect(aggrOf(lc, 'xCategoryOrder'), 'min');
+    const bp = demog.plot.box({category1ColumnName: 'race'});
+    bp.setOptions({categoryOrder: byAge('sum')});
+    expect(aggrOf(bp, 'categoryOrder'), 'sum');
   }, options);
 
   test('property keys computed for distinct categories', async () => {
