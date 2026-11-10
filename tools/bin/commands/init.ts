@@ -69,7 +69,8 @@ export function init(args: InitArgs) {
         color.info('Installing pre-commit...');
         if (err) throw err;
         else console.log(stderr, stdout);
-        exec('pre-commit install --install-hooks --hook-type pre-commit --hook-type commit-msg',
+        exec('pre-commit install --install-hooks --hook-type pre-commit --hook-type pre-merge-commit ' +
+          '--hook-type pre-push --hook-type commit-msg',
           (err, stdout, stderr) => {
             color.info('Installing commit hooks...');
             if (err) throw err;
