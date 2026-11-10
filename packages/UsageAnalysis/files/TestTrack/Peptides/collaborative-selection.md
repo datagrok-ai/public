@@ -91,7 +91,7 @@ Expected:
 - **Related bug.** GROK-14298 ("Peptide SAR Analysis: Filtering causes panel to crash and causes lags") is the null-safety-in-listeners bug this scenario guards against: Scenario 1 step 6 and Scenario 2 step 5 both assert that a selection broadcast never throws a null-receiver error. The filter-application path itself (as opposed to the WebLogo-click selection path) is not exercised here; a dedicated filter-broadcast repro remains a separate backlog item.
 - **Setup composition.** SAR is launched via the top-menu entry path rather than the Peptides context-panel Launch SAR button, mirroring sibling scenarios (`export-mutation-cliffs.md`, `export-invariant-map.md`, `sar-similarity-threshold-matrix.md`) and keeping this scenario independent of `sar.md`, which owns the context-panel entry-path coverage.
 - **Scenario split.** Scenario 1 covers the basic single-click selection broadcast. Scenario 2 covers the Shift (additive) and Ctrl (toggle-off) modifier semantics and the re-broadcast that follows a selection mutation.
-- **See:** `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Interactive Features`; `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Sequence Variability Map`.
+- **See:** `help/datagrok/solutions/domains/bio/peptides-sar.md#Interactive Features`; `help/datagrok/solutions/domains/bio/peptides-sar.md#Sequence Variability Map`.
 
 ## Original trailing metadata
 

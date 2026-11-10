@@ -351,7 +351,7 @@ Expected:
 - Cleanup: after both scenarios the test projects `chem-state-roundtrip-test` and
   `chem-scaffold-only-test` are deleted, in a `finally` block so that server-side
   state is removed even when an assertion fails.
-- See: public/help/datagrok/solutions/domains/chem/chem.md (project save/reopen
+- See: help/datagrok/solutions/domains/chem/chem.md (project save/reopen
   with Chem features).
-- See: public/help/visualize/viewers/scaffold-tree.md (Scaffold Tree upload /
+- See: help/visualize/viewers/scaffold-tree.md (Scaffold Tree upload /
   generate controls).

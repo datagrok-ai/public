@@ -91,17 +91,17 @@ const config = {
                         {
                             "pattern": "\\(\\.\\.\\/\\.\\./(?!help)(.*)\\.(png|gif|jpg|jpeg)",
                             "flags": "gi",
-                            "replace": "(../../../help/$1.$2"
+                            "replace": "(../../../../help/$1.$2"
                         },
                         {
                             "pattern": "\\(\\.\\.(?!/\\.\\.)/(?!help)(.*)\\.(png|gif|jpg|jpeg)",
                             "flags": "gi",
-                            "replace": "(../../../help/develop/$1.$2"
+                            "replace": "(../../../../help/develop/$1.$2"
                         },
                         {
                             "pattern": "\\(\\./(?!help)(.*)\\.(png|gif|jpg|jpeg)",
                             "flags": "gi",
-                            "replace": "(../../../help/develop/packages/$1.$2"
+                            "replace": "(../../../../help/develop/packages/$1.$2"
                         }
                     ]
                 }
@@ -126,8 +126,8 @@ const config = {
             ({
                 docs: {
                     sidebarPath: require.resolve('./sidebars.js'),
-                    editUrl: 'https://github.com/datagrok-ai/help/tree/master',
-                    path: '../help',
+                    editUrl: ({docPath}) => `https://github.com/datagrok-ai/help/tree/master/${docPath}`,
+                    path: '../../help',
                     routeBasePath: 'help',
                     exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md', '**/CLAUDE.md', '**/.claude/**'],
                 },

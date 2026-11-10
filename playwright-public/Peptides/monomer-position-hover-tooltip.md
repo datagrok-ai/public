@@ -150,6 +150,6 @@ Expected (assertion summary):
   - `peptides.rendering.invariant-map-cell` — `src/utils/cell-renderer.ts#L161`
   - `peptides.rendering.draw-logo-in-bounds` — `src/utils/cell-renderer.ts#L224`
   - `peptides.viewers.monomer-position` — `src/package.ts#L182`
-- See: `public/help/visualize/viewers/sequence-variability-map.md` (atlas `help_docs[]` FOUND entry covers `peptides.viewers.monomer-position` directly).
+- See: `help/visualize/viewers/sequence-variability-map.md` (atlas `help_docs[]` FOUND entry covers `peptides.viewers.monomer-position` directly).
 - Coverage uplift narrative (for the chain's Gate F re-evaluation, informational): this scenario adds 7 previously-uncovered sub_features to the section's union (`tooltips.show-tooltip`, `tooltips.show-tooltip-at`, `tooltips`, `util.highlight-monomer-position`, `rendering.mutation-cliffs-cell`, `rendering.invariant-map-cell`, `rendering.draw-logo-in-bounds`); one re-coverage entry (`viewers.monomer-position`, already covered via sar.md / peptide-space.md / sar-viewer-lifecycle.md). The 7 new entries directly address the gap[1].uncovered_sub_feature_families enumeration entries `tooltips.{show-tooltip, show-tooltip-at}`, `util.{highlight-monomer-position, ...}` (partial), and `rendering.{mutation-cliffs-cell, invariant-map-cell, draw-logo-in-bounds, ...}` (partial) per the proposal's recommendation to author a tooltips scenario and a per-row-renderer scenario; this single scenario covers both proposals' overlap.
 - No deferrals.

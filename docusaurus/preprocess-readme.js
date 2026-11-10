@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const src = path.resolve(__dirname, '../help/develop/packages/js-api.md');
+const src = path.resolve(__dirname, '../../help/develop/packages/js-api.md');
 const dest = path.resolve(__dirname, 'js-api-readme.md');
 
 let content = fs.readFileSync(src, 'utf8');
