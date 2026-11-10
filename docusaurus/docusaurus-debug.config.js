@@ -15,6 +15,9 @@ const config = {
     onBrokenMarkdownLinks: 'warn',
     onBrokenAnchors: 'warn',
     onDuplicateRoutes: 'warn',
+    markdown: {
+        format: 'detect',
+    },
     favicon: 'favicon/favicon.ico',
     staticDirectories: ['static'],
 
@@ -35,10 +38,10 @@ const config = {
         [
             'docusaurus-plugin-typedoc',
             {
-                docsPath: './api',
+                docsPath: './js-api',
                 entryPoints: ['../js-api/dg.ts', '../js-api/ui.ts', '../js-api/grok.ts'],
                 tsconfig: '../js-api/tsconfig.json',
-                readme: '../../help/develop/packages/js-api.md',
+                readme: './js-api-readme.md',
                 mergeReadme: true,
                 entryFileName: "index",
                 out: './js-api',
@@ -97,7 +100,7 @@ const config = {
         [
             '@docusaurus/plugin-content-docs',
             {
-                sidebarPath: require.resolve('./typedoc-sidebar.js'),
+                sidebarPath: './typedoc-sidebar-debug.js',
                 id: 'api',
                 path: './js-api',
                 routeBasePath: '/js-api',
@@ -116,7 +119,7 @@ const config = {
                     editUrl: ({docPath}) => `https://github.com/datagrok-ai/help/blob/master/${docPath}`,
                     path: '../../help',
                     routeBasePath: 'help',
-                    exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md'],
+                    exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md', '**/CLAUDE.md', '**/.claude/**'],
                     beforeDefaultRemarkPlugins: [imagePlaceholder],
                 },
                 blog: {

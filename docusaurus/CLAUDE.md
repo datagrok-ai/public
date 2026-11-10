@@ -45,8 +45,7 @@ npm install
 cd .. && pnpm install && pnpm turbo run build --filter="datagrok-api^..." && cd docusaurus
 npm run start-windows   # Windows
 npm run start           # Linux/macOS
-npm run start-debug-windows   # Debug mode on Windows (warn instead of throw on broken links)
-npm run start-debug           # Debug mode on Linux/macOS
+npm run start-debug     # Debug mode on any OS (warn instead of throw on broken links)
 ```
 
 ## Building
