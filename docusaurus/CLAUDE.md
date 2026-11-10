@@ -42,7 +42,7 @@ For the full architecture, nginx routing rules, search (Typesense), CI/CD pipeli
 
 ```bash
 npm install
-cd ../js-api && npm install && cd ../docusaurus
+cd .. && pnpm install && pnpm turbo run build --filter="datagrok-api^..." && cd docusaurus
 npm run start-windows   # Windows
 npm run start           # Linux/macOS
 npm run start-debug     # Debug mode (warn instead of throw on broken links)
