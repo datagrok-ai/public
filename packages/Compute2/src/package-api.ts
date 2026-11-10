@@ -126,6 +126,17 @@ export namespace funcs {
     return await grok.functions.call('Compute2:MockKeyboardPipeline', { params });
   }
 
+  export async function mockTreeWizardPipeline(params: any ): Promise<any> {
+    return await grok.functions.call('Compute2:MockTreeWizardPipeline', { params });
+  }
+
+  /**
+   * Nested workflow of the Mock Tree Wizard Pipeline.
+   */
+  export async function mockTreeWizardGroup(params: any ): Promise<any> {
+    return await grok.functions.call('Compute2:MockTreeWizardGroup', { params });
+  }
+
   /**
    * Single-step workflow used for testing the compact Tree Wizard view.
    */

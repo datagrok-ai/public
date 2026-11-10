@@ -35,6 +35,7 @@ import './test/tree-utils';
 import './test/inspector-annotation-links';
 import './test/keyboard';
 import './test/run-control';
+import './test/tree-wizard';
 
 export const _package = new DG.Package();
 export {tests};

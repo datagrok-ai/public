@@ -344,11 +344,11 @@ const hasButton = (root: HTMLElement, label: string) =>
   Array.from(root.querySelectorAll('button')).some((b) => b.textContent?.trim() === label);
 
 // the editor view is not added to the shell here, so read the ribbon through the API
-const ribbonIcons = (view: DG.ViewBase, name: string) => view.getRibbonPanels().flat()
+export const ribbonIcons = (view: DG.ViewBase, name: string) => view.getRibbonPanels().flat()
   .flatMap((el) => [el, ...Array.from(el.querySelectorAll('*'))])
   .filter((el) => el.classList.contains(`fa-${name}`));
 
-const savedRunId = (view: DG.ViewBase) => new URLSearchParams((view.path ?? '').split('?')[1] ?? '').get('id');
+export const savedRunId = (view: DG.ViewBase) => new URLSearchParams((view.path ?? '').split('?')[1] ?? '').get('id');
 
 async function openCompact(nqName: string): Promise<DG.ViewBase> {
   await awaitWebComponents();

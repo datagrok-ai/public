@@ -8,15 +8,15 @@ import {closeViewsAfter, awaitWebComponents} from './utils';
 
 type Keys = {alt?: boolean, ctrl?: boolean, shift?: boolean};
 
-const press = (el: Element, key: string, keys: Keys = {}) => el.dispatchEvent(new KeyboardEvent('keydown', {
+export const press = (el: Element, key: string, keys: Keys = {}) => el.dispatchEvent(new KeyboardEvent('keydown', {
   key, altKey: !!keys.alt, ctrlKey: !!keys.ctrl, shiftKey: !!keys.shift, bubbles: true, cancelable: true,
 }));
 
-const rowLabel = (row: Element) => row.querySelector('.mtl-ml')?.textContent?.trim() ?? '';
-const rows = (view: DG.ViewBase) => Array.from(view.root.querySelectorAll<HTMLElement>('.mtl-tree .tree-node'));
-const labels = (view: DG.ViewBase) => rows(view).map(rowLabel);
+export const rowLabel = (row: Element) => row.querySelector('.mtl-ml')?.textContent?.trim() ?? '';
+export const rows = (view: DG.ViewBase) => Array.from(view.root.querySelectorAll<HTMLElement>('.mtl-tree .tree-node'));
+export const labels = (view: DG.ViewBase) => rows(view).map(rowLabel);
 const levels = (view: DG.ViewBase) => rows(view).map((row) => row.getAttribute('aria-level'));
-const row = (view: DG.ViewBase, label: string) => {
+export const row = (view: DG.ViewBase, label: string) => {
   const found = rows(view).find((el) => rowLabel(el) === label);
   if (!found)
     throw new Error(`No tree row "${label}" in ${JSON.stringify(labels(view))}`);
@@ -27,9 +27,9 @@ const focusedLabel = () => {
   return el?.classList.contains('tree-node') ? rowLabel(el) : null;
 };
 
-const dialogTitles = () =>
+export const dialogTitles = () =>
   Array.from(document.querySelectorAll('.d4-dialog .d4-dialog-header')).map((el) => el.textContent?.trim());
-const closeDialog = (button: string) => {
+export const closeDialog = (button: string) => {
   const found = Array.from(document.querySelectorAll<HTMLElement>('.d4-dialog button'))
     .find((el) => el.textContent?.trim().toLowerCase() === button);
   if (!found)
@@ -37,8 +37,9 @@ const closeDialog = (button: string) => {
   found.click();
 };
 
-const balloons = () => Array.from(document.querySelectorAll('.d4-balloon')).map((el) => el.textContent?.trim() ?? '');
-const clearBalloons = () => document.querySelectorAll('.d4-balloon').forEach((el) => el.remove());
+export const balloons = () =>
+  Array.from(document.querySelectorAll('.d4-balloon')).map((el) => el.textContent?.trim() ?? '');
+export const clearBalloons = () => document.querySelectorAll('.d4-balloon').forEach((el) => el.remove());
 
 const describe = (el: Element | null) => el ? `${el.tagName}.${el.className}` : 'nothing';
 
@@ -71,7 +72,7 @@ function expectTabEnters(from: HTMLElement, panels: string[]) {
 
 const treeStop = (view: DG.ViewBase) => rows(view).find((el) => el.tabIndex === 0)!;
 
-const type = (input: HTMLInputElement, value: string) => {
+export const type = (input: HTMLInputElement, value: string) => {
   input.focus();
   input.value = value;
   input.dispatchEvent(new Event('input', {bubbles: true}));
@@ -80,15 +81,16 @@ const type = (input: HTMLInputElement, value: string) => {
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-const buttons = (root: HTMLElement, label: string) => Array.from(root.querySelectorAll<HTMLButtonElement>('button'))
-  .filter((el) => el.textContent?.trim().toLowerCase() === label.toLowerCase());
+export const buttons = (root: HTMLElement, label: string) =>
+  Array.from(root.querySelectorAll<HTMLButtonElement>('button'))
+    .filter((el) => el.textContent?.trim().toLowerCase() === label.toLowerCase());
 
 const INITIAL = [
   'Keyboard', 'fixed add', 'fixed mul', 'list', 'item 1', 'item 2', 'item 3', 'pinned', 'slow', 'group', 'grouped step',
 ];
 const listed = (view: DG.ViewBase) => labels(view).slice(4, 8).join();
 
-async function openKeyboardWorkflow(track: <T extends DG.ViewBase>(view: T) => T) {
+export async function openKeyboardWorkflow(track: <T extends DG.ViewBase>(view: T) => T) {
   await awaitWebComponents();
   const call = DG.Func.byName('Compute2:MockKeyboardPipeline').prepare();
   const view = track(await grok.functions.call('Compute2:TreeWizardEditor', {call}) as unknown as DG.ViewBase);
@@ -99,7 +101,7 @@ async function openKeyboardWorkflow(track: <T extends DG.ViewBase>(view: T) => T
 }
 
 // waits for the form of the newly opened step, not the one it replaces
-async function choose(view: DG.ViewBase, label: string) {
+export async function choose(view: DG.ViewBase, label: string) {
   const inputsPanel = () => view.root.querySelector('[dock-spawn-title="Inputs"]');
   const before = inputsPanel();
   const el = row(view, label);

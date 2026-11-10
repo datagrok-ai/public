@@ -656,6 +656,132 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
+    name: 'Mock Tree Wizard Pipeline',
+    description: 'Workflow with step actions, a nested workflow, an action step, step history, a custom export ' +
+      'and a return, used for testing the Tree Wizard.',
+    editor: 'Compute2:TreeWizardEditor',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async MockTreeWizardPipeline(
+    @grok.decorators.param({'type': 'object'}) params: any) {
+    const c: PipelineConfiguration = {
+      id: 'treeWizardRoot',
+      nqName: 'Compute2:MockTreeWizardPipeline',
+      friendlyName: 'Tree wizard',
+      version: '1.0',
+      type: 'static',
+      steps: [{
+        id: 'first',
+        nqName: 'Compute2:TestAdd2',
+        friendlyName: 'first',
+        initialValues: {a: 3, b: 1},
+        enableHistory: true,
+        actions: [{
+          id: 'double',
+          friendlyName: 'Double a',
+          position: 'buttons',
+          from: 'in:a',
+          to: 'out:a',
+          handler({controller}) {
+            controller.setAll('out', controller.getFirst('in') * 2);
+          },
+        }, {
+          id: 'reset',
+          friendlyName: 'Reset a',
+          position: 'buttons',
+          confirmationMessage: 'Reset a to 1?',
+          from: [],
+          to: 'out:a',
+          handler({controller}) {
+            controller.setAll('out', 1);
+          },
+        }],
+      }, {
+        type: 'ref',
+        provider: 'Compute2:MockTreeWizardGroup',
+        version: '1.0',
+      }, {
+        id: 'review',
+        type: 'action',
+        friendlyName: 'review',
+      }, {
+        id: 'last',
+        nqName: 'Compute2:TestAdd2',
+        friendlyName: 'last',
+        initialValues: {a: 1, b: 1},
+      }],
+      links: [{
+        id: 'rootTitle',
+        type: 'nodemeta',
+        from: 'in:first/a',
+        to: 'title:title',
+        handler({controller}) {
+          controller.setDescriptionItem('title', 'Wizard title');
+        },
+      }, {
+        id: 'firstTitle',
+        type: 'nodemeta',
+        from: 'a:first/a',
+        to: 'title:first/title',
+        handler({controller}) {
+          controller.setDescriptionItem('title', `first ${controller.getFirst('a')}`);
+        },
+      }],
+      onReturn: {
+        id: 'returnA',
+        type: 'return',
+        from: 'a:first/a',
+        to: [],
+        handler({controller}) {
+          controller.returnResult({a: controller.getFirst('a')});
+        },
+      },
+      customExports: [{
+        id: 'recorder',
+        friendlyName: 'Record export',
+        handler: async (state, utils) =>
+          grok.shell.info(`Exported ${state.configId} with ${Object.keys(utils).sort().join(', ')}`),
+      }],
+    };
+    return c;
+  }
+
+
+  @grok.decorators.func({
+    name: 'Mock Tree Wizard Group',
+    description: 'Nested workflow of the Mock Tree Wizard Pipeline.',
+    editor: 'Compute2:TreeWizardEditor',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async MockTreeWizardGroup(
+    @grok.decorators.param({'type': 'object'}) params: any) {
+    const c: PipelineConfiguration = {
+      id: 'treeWizardGroup',
+      nqName: 'Compute2:MockTreeWizardGroup',
+      friendlyName: 'group',
+      version: '1.0',
+      type: 'static',
+      steps: [{
+        id: 'inner',
+        nqName: 'Compute2:TestMul2',
+        friendlyName: 'inner',
+        initialValues: {a: 2, b: 3},
+      }],
+      links: [{
+        id: 'groupTitle',
+        type: 'nodemeta',
+        from: 'in:inner/a',
+        to: 'title:title',
+        handler({controller}) {
+          controller.setDescriptionItem('title', 'group title');
+        },
+      }],
+    };
+    return c;
+  }
+
+
+  @grok.decorators.func({
     name: 'Mock Single Step Pipeline',
     description: 'Single-step workflow used for testing the compact Tree Wizard view.',
     editor: 'Compute2:TreeWizardEditor',
