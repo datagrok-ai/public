@@ -3210,7 +3210,8 @@ const SPARSE_NCA_FIXED: FixedGridSpec = {
     desc: 'Sampling design derived from the animal × nominal-time table: ' +
       'destructive (1 sample/animal) / batch (partial overlap) / serial (full).'},
   AUC_LAST: {header: 'AUClast', width: 80, format: '0.000',
-    desc: 'Closed-form composite AUClast (mg·h/L) — the regulatory headline.'},
+    desc: 'Closed-form composite AUClast (mg·h/L), linear trapezoid from (0, 0) — the regulatory headline. ' +
+      'The linear rule can overestimate a convex decline across wide sampling gaps (see Notes).'},
   AUC_SE: {header: 'SE', width: 64, format: '0.000',
     desc: 'Holder/Bailer standard error of AUClast (mg·h/L).'},
   // The Satterthwaite df floor is the sparse path's OWN threshold — it is not
@@ -3232,7 +3233,8 @@ const SPARSE_NCA_FIXED: FixedGridSpec = {
   CMAX: {header: 'Cmax', width: 70, format: '0.000', desc: 'Composite peak mean concentration (mg/L).'},
   TMAX: {header: 'Tmax', width: 56, format: '0.##', desc: 'Time of the composite Cmax (h).'},
   AUC_INF: {header: 'AUCinf', width: 76, format: '0.000',
-    desc: 'Composite AUC extrapolated to infinity (mg·h/L).'},
+    desc: 'Composite AUC extrapolated to infinity (mg·h/L): the linear AUClast of this row + Clast / λz. ' +
+      '%AUCextrap, CL, Vz, MRT and Vss rest on it.'},
   HALF_LIFE: {header: 't½', width: 56, format: '0.000',
     desc: 'Terminal half-life from the composite λz (h).'},
   // Per kg on every composite (nca-cl-bw-normalised-units D-d). The estimator is named (plan-review

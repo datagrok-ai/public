@@ -919,7 +919,9 @@ category('Pipeline functions', () => {
 async function assertMouseComposite(res: DG.DataFrame): Promise<void> {
   const golden = JSON.parse(await grok.dapi.files.readAsText(`${FIXTURE_PATH_PREFIX}/mouse_sparse-reference.json`)) as
     {destructive: Array<{dose_mg_kg: number; sparse_auclast: number;
-      composite: {nominal_time: number[]; mean: number[]}}>};
+      composite: {nominal_time: number[]; mean: number[]}}>;
+    composite_nca: {groups: Array<{dose_mg_kg: number; aucinf_obs: number; lambda_z: number;
+      half_life: number; cl_obs: number}>}};
   const rows = compositeRows(res);
   expect(rows.length, golden.destructive.length, reasonsOf(res));
   for (const g of golden.destructive) {
@@ -936,6 +938,13 @@ async function assertMouseComposite(res: DG.DataFrame): Promise<void> {
     expectFloat(num(res, 'CMAX', r!), g.composite.mean[iMax], g.composite.mean[iMax] * 0.001,
       `${g.dose_mg_kg} mg/kg: Cmax (0.1%)`);
     expect(num(res, 'TMAX', r!), g.composite.nominal_time[iMax], `${g.dose_mg_kg} mg/kg: Tmax`);
+    // PKNCA pk.nca on the composite mean, linear AUC (DATA-GAP-PIPE-SPARSE-LZ, sparse-auc-method-mix).
+    const c = golden.composite_nca.groups.find((x) => x.dose_mg_kg === g.dose_mg_kg)!;
+    expectFloat(num(res, 'AUC_INF', r!), c.aucinf_obs, c.aucinf_obs * 0.001, `${g.dose_mg_kg} mg/kg: AUCinf (0.1%)`);
+    expectFloat(num(res, 'LAMBDA_Z', r!), c.lambda_z, c.lambda_z * 0.005, `${g.dose_mg_kg} mg/kg: λz (0.5%)`);
+    expectFloat(num(res, 'HALF_LIFE', r!), c.half_life, c.half_life * 0.01, `${g.dose_mg_kg} mg/kg: t½ (1%)`);
+    const clPerKg = c.cl_obs * 1000 / 60; // L/h/kg → mL/min/kg
+    expectFloat(num(res, 'CL', r!), clPerKg, clPerKg * 0.01, `${g.dose_mg_kg} mg/kg: CL per kg (1%)`);
   }
 }
 
