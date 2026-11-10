@@ -381,14 +381,14 @@ category('TreeWizard: keyboard focus', () => {
     await waitUntil(() => buttons(view.root, 'Next').length > 0, 'The step should run and offer Next', 10000);
     for (const label of ['Back', 'Next']) {
       const button = buttons(view.root, label)[0];
-      button.focus();
+      button.focus({focusVisible: true});
       expect(getComputedStyle(button).outlineStyle !== 'none', true, `${label} shows no focus outline`);
     }
 
     const dialog = ui.dialog('Outside Compute2').show();
     try {
       const button = dialog.root.querySelector('button')!;
-      button.focus();
+      button.focus({focusVisible: true});
       expect(getComputedStyle(button).outlineStyle, 'none', 'Buttons outside Compute2 keep the platform style');
     } finally {
       dialog.close();
