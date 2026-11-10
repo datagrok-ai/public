@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Loop models: The accumulated solution starts from typed empty columns, as the platform expects
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Hub: The header is u2's `AppHeader` (moved out of `@datagrok-libraries/utils`): the same icon, bullets and Learn more
 * Tests: The catalog feature puts the library manifest back at feature end; fitting and sensitivity analysis no longer repeat open-model's and LibTests' claims

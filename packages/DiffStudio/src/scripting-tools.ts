@@ -1072,7 +1072,7 @@ function getScriptMainBodyLoopCase(ivp: IVP): string[] {
   const accColNames = hasOutputExpressions(ivp) ? [...dfNames, ...getOutputExpressionKeys(ivp)] : dfNames;
 
   res.push(`let ${DF_NAME} = DG.DataFrame.fromColumns([`);
-  accColNames.forEach((name) => res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat64Array('${name}', []),`));
+  accColNames.forEach((name) => res.push(`${SCRIPT.SPACE2}DG.Column.fromFloat64Array('${name}', new Float64Array(0)),`));
   res.push(`]);`);
   res.push(`${DF_NAME}.name = '${ivp.name}';`);
   res.push('');

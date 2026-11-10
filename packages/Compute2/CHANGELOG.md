@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Run comparison: Date, time and big integer columns are compared by their values, not as platform objects
 * Loading overlay: Fixed inputs under the overlay still reachable with Tab and editable while a run is in progress (autorun RFVs keep taking input)
 * RFV: Fixed the loading overlay not showing for a function that blocks the browser while it runs
 * RFV: Fixed autorun losing an input change made while a run was in progress, leaving the old outputs marked as current
