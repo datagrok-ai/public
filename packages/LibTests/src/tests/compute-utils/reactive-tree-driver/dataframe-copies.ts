@@ -88,8 +88,11 @@ category('ComputeUtils: Driver dataframe copies', async () => {
     let tree: StateTree;
     if (readonly) {
       const state = StateTree.fromPipelineConfig({config, mockMode: true}).toSerializedState();
-      const steps = (state as any).steps.map((s: PipelineSerializedState) => isFuncCallSerializedState(s) ? {...s, isReadonly: true} : s);
-      tree = StateTree.fromInstanceState({state: {...state, steps} as PipelineSerializedState, config, isReadonly: false, mockMode: true});
+      const steps = (state as any).steps.map((s: PipelineSerializedState) =>
+        isFuncCallSerializedState(s) ? {...s, isReadonly: true} : s);
+      tree = StateTree.fromInstanceState({
+        state: {...state, steps} as PipelineSerializedState, config, isReadonly: false, mockMode: true,
+      });
     } else
       tree = StateTree.fromPipelineConfig({config, mockMode: true});
     await tree.init().toPromise();
@@ -98,7 +101,8 @@ category('ComputeUtils: Driver dataframe copies', async () => {
 
   const step = (tree: StateTree) => tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
   const input = (tree: StateTree) => step(tree).getStateStore().getState('df') as DG.DataFrame | undefined;
-  const snapshot = (tree: StateTree) => step(tree).instancesWrapper.inputRestrictions$.value.df?.assignedValue as DG.DataFrame | undefined;
+  const snapshot = (tree: StateTree) =>
+    step(tree).instancesWrapper.inputRestrictions$.value.df?.assignedValue as DG.DataFrame | undefined;
   const inconsistent = (tree: StateTree) => step(tree).consistencyInfo$.value.df?.inconsistent;
 
   // waits until the change is visible, then for the links it triggered

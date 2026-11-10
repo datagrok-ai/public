@@ -99,11 +99,9 @@ export function createRibbonService(host: RibbonHost, opts?: {debounce?: Debounc
             changedGroups.push(group.name);
         }
         menuStates = nextStates;
-        const nextNames = next.map((g) => g.name);
-        if (host.closing) {
-          lastGroupNames = nextNames;
+        if (host.closing)
           return;
-        }
+        const nextNames = next.map((g) => g.name);
         const orderChanged = nextNames.length !== lastGroupNames.length ||
           nextNames.some((name, i) => name !== lastGroupNames[i]);
         const rebuild = (name: string, rank: number) => {

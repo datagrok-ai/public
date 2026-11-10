@@ -284,7 +284,7 @@ export function buildColumnComparison(
   const longSplits: string[] = [];
   const longRuns: string[] = [];
   const longSteps: string[] = [];
-  const longValues = new Map<string, (number | null)[]>(targets.map((target) => [labels.get(target.key)!, []]));
+  const longValues = new Map<string, Array<number | null>>(targets.map((target) => [labels.get(target.key)!, []]));
   for (const block of blocks) {
     const {entry, binding} = block;
     const df = entry.dataFrames.get(binding.tablePath)!;

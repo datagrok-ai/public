@@ -110,9 +110,31 @@ function runTwoComponentSingle(
 
 // ---- Batch UI yielding helper ----
 
+/** The longest the reaction loops run between two yields to the page. */
+const YIELD_MS = 25;
+let lastYield = -Infinity;
+/** Tests (benchmarks): yield every 50 molecules, as before (see {@link yieldIfNeeded}). */
+let yieldEvery50ForTests = false;
+
+/** Tests (benchmarks): the reaction loops yield every 50 molecules (true), as before, or by time (false). */
+export function setReactionYieldEvery50ForTests(on: boolean): void {
+  yieldEvery50ForTests = on;
+}
+
+/**
+ * Yields to the page when the loop has run {@link YIELD_MS} since the last yield. The loops yielded every 50 molecules
+ * before: from the fifth yield in a row the browser held each one 4 ms (nested timers), much of a fast reaction's time.
+ */
 async function yieldIfNeeded(i: number, batchSize: number = 50): Promise<void> {
-  if (i % batchSize === 0)
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  if (yieldEvery50ForTests) {
+    if (i % batchSize === 0)
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    return;
+  }
+  if (performance.now() - lastYield < YIELD_MS)
+    return;
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  lastYield = performance.now();
 }
 
 // ==========================================

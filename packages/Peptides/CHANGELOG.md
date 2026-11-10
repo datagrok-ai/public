@@ -2,6 +2,10 @@
 
 ## v.next
 
+* Sequence Variability Map: Fixed the mutation cliffs' statistics and colors being computed on the unscaled activity: with lg or -lg scaling their tooltip and the Mutation Cliffs pairs pane showed Mean difference and Mean activity 0.000 for a Kd in molar, and Min Activity Delta compared unscaled values
+* Tests: The BDD scenario "Clicking a WebLogo glyph selects exactly the peptides carrying that monomer" waits a second after the selection before it clicks the column header. The table view shows a new selection in the context panel 100 ms after it unless the current object changed meanwhile, and a click on the header of the column already current is no change: a click within those 100 ms had the selection replace the column and the Peptides pane with it, and the scenario failed now and then in both modes ("no readings")
+* Tests: The Most Potent Residues and Logo Summary Table viewer categories load the package's components in `before`, as the other viewer categories do, so they pass when run on their own (they failed with "SeqHelper is not initialized")
+* Sequence Variability Map: Fixed the Mutation Cliffs mode switch being cut off by the left edge of a narrow viewer, where it could not be clicked
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): SAR demo: subscribes to the grid's first draw at once instead of 50 ms later, so it no longer misses it and waits its 3 s cap
 * App: The landing header is u2's `AppHeader` (moved out of `@datagrok-libraries/utils`): the same icon, bullets and Learn more
 * [core#1010](https://github.com/datagrok-ai/core/issues/1010): Logo Summary Table: Fixed WebLogo cells failing with "row counts differ" when the table is filtered and Web Logo Aggregation Type is not count

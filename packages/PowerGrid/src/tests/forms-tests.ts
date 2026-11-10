@@ -46,4 +46,24 @@ category('Forms viewer', () => {
   test('Project', async () => {
     await projectRoundTrip(await formsView(), expectForms);
   });
+
+  test('A pinned row stays pinned under a filter that hides it and leaves the pinned pane once deleted', async () => {
+    const view = await formsView();
+    try {
+      const forms = await formsViewer(view);
+      const df = view.dataFrame;
+      const pinned = () => forms.getWidgetStatus().values!['pinned records'];
+      await waitUntil(() => !forms.isRenderPending && pinned() === 1, 'no pinned card', 5000);
+      df.filter.init((i) => i !== PINNED_ROW);
+      await waitUntil(() => !forms.isRenderPending, 'the cards did not settle after the filter', 5000);
+      expect(pinned(), 1, 'a pinned row the filter hides left the pinned pane');
+      df.filter.setAll(true);
+      df.rows.removeAt(PINNED_ROW);
+      await waitUntil(() => !forms.isRenderPending && pinned() === 0, 'a deleted pinned row stayed in the pinned pane', 5000);
+      expect(forms.pinnedRowValues.length, 0);
+    }
+    finally {
+      grok.shell.closeAll();
+    }
+  });
 });

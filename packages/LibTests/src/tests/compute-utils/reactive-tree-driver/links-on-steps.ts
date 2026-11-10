@@ -45,7 +45,8 @@ category('ComputeUtils: Driver links on steps', async () => {
       cold('-a').subscribe(() => {
         stepNode.getItem().getStateStore().setState('a', 5);
       });
-      expectObservable(stepNode.getItem().getStateStore().getStateChanges('b'), '^ 1000ms !').toBe('a b', {a: undefined, b: 5});
+      expectObservable(stepNode.getItem().getStateStore().getStateChanges('b'), '^ 1000ms !')
+        .toBe('a b', {a: undefined, b: 5});
     });
   });
 
@@ -79,7 +80,8 @@ category('ComputeUtils: Driver links on steps', async () => {
       cold('-a').subscribe(() => {
         stepNode.getItem().getStateStore().setState('a', 3);
       });
-      expectObservable(stepNode.getItem().getStateStore().getStateChanges('b'), '^ 1000ms !').toBe('a b', {a: undefined, b: 30});
+      expectObservable(stepNode.getItem().getStateStore().getStateChanges('b'), '^ 1000ms !')
+        .toBe('a b', {a: undefined, b: 30});
     });
   });
 
@@ -118,7 +120,9 @@ category('ComputeUtils: Driver links on steps', async () => {
         link.setActive();
         stepNode.getItem().getStateStore().setState('a', 1);
       });
-      expectObservable((stepNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$, '^ 1000ms !').toBe('a 250ms b', {
+      expectObservable(
+        (stepNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$, '^ 1000ms !',
+      ).toBe('a 250ms b', {
         a: {},
         b: {
           [link.uuid]: {

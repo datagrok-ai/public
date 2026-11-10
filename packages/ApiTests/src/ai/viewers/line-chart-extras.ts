@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {category, expect, settled, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectChoices, expectCleared, expectFiresWithin, expectRoundTrip, look, until, withTableView} from '../helpers';
 
 // LineChart prop JSON-shape round-trips not covered by line-chart-js-api.ts.
@@ -83,16 +83,14 @@ category('AI: Viewers: LineChart extras', () => {
       const c = v();
       tv.addViewer(c);
       await until(() => c.root.querySelector('canvas') != null);
-      c.setOptions({autoLayout: false, markerSize: 99});
-      await until(() => look(c)['markerSize'] === 99);
-      expect(look(c)['markerSize'], 99);
-      // autoLayout resets the marker size only once a layout has picked up the user-set one
-      await settled(c);
+      c.setOptions({autoLayout: false, markerSize: 25});
+      await until(() => look(c)['markerSize'] === 25);
+      expect(look(c)['markerSize'], 25);
       c.setOptions({autoLayout: true});
-      await until(() => look(c)['markerSize'] !== 99);
+      await until(() => look(c)['markerSize'] !== 25);
       const after = look(c);
       expect(after['autoLayout'], true);
-      expect(after['markerSize'] !== 99 && after['markerSize'] >= 1 && after['markerSize'] <= 5, true);
+      expect(after['markerSize'] !== 25 && after['markerSize'] >= 1 && after['markerSize'] <= 5, true);
     });
   });
 }, {owner: 'agolovko@datagrok.ai'});

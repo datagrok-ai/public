@@ -11,7 +11,6 @@ import {RuleCards} from './pt-rule-cards';
 import {getOverriddenLibrary} from './pt-synthetic';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 import {helmToMol} from './pt-atomic';
-import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {getReactionEditor, ReactionEditorProps} from './rule-reaction-editor';
 
@@ -189,7 +188,6 @@ export class RulesManager {
       initCol, helmCol
     ]);
     initCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    const rdKitModule = await getRdKitModule();
     const seqHelper = await getSeqHelper();
     // initialize seqHandler for this column
     PackageFunctions.applyNotationProviderForCyclized(initCol, '-');
@@ -205,7 +203,7 @@ export class RulesManager {
     helmCol.temp = resHelmColTemp;
 
     const resMolCol = await helmToMol(helmCol, seqs,
-      isLinear, true, false, false, lib, rdKitModule, seqHelper);
+      isLinear, true, false, false, lib, null, seqHelper);
     resMolCol.name = `molfile(sequence)`;
     resMolCol.semType = DG.SEMTYPE.MOLECULE;
     df.columns.add(resMolCol);

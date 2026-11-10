@@ -74,14 +74,16 @@ test.describe("Suspend Simulation freezes the layout, and the Layout menu says s
       await session.step(57, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Reset View leaves the graph and its counts where they were", async () => {
-      await session.step(60, "When user remembers the \"layout signature\" reading of network diagram viewer", () => rememberReading(page, "layout signature", el("network diagram viewer")));
-      await session.step(61, "And user picks \"Reset View\" from the context menu of network diagram viewer", () => pickFromContextMenu(page, "Reset View", el("network diagram viewer")));
-      await session.step(62, "Then the \"nodes\" reading of network diagram viewer should be 4", () => readingIs(page, "nodes", el("network diagram viewer"), 4));
-      await session.step(63, "And the \"edges\" reading of network diagram viewer should be 4", () => readingIs(page, "edges", el("network diagram viewer"), 4));
-      await session.step(64, "And the \"rows of node \\\"F\\\"\" reading of network diagram viewer should be 553", () => readingIs(page, "rows of node \"F\"", el("network diagram viewer"), 553));
-      await session.step(65, "And the \"layout signature\" reading of network diagram viewer should be as remembered", () => readingAsRemembered(page, "layout signature", el("network diagram viewer")));
-      await session.step(66, "And network diagram viewer should have a \"node \\\"F\\\"\" area", () => hasArea(page, el("network diagram viewer"), "node \"F\""));
-      await session.step(67, "And no errors should have been logged", () => noErrors(page));
+      await session.step(61, "When user sets \"suspendSimulation\" property of network diagram viewer to \"true\"", () => setProperty(page, "suspendSimulation", el("network diagram viewer"), "true"));
+      await session.step(62, "And user remembers the \"layout signature\" reading of network diagram viewer", () => rememberReading(page, "layout signature", el("network diagram viewer")));
+      await session.step(63, "And user picks \"Reset View\" from the context menu of network diagram viewer", () => pickFromContextMenu(page, "Reset View", el("network diagram viewer")));
+      await session.step(64, "Then the \"nodes\" reading of network diagram viewer should be 4", () => readingIs(page, "nodes", el("network diagram viewer"), 4));
+      await session.step(65, "And the \"edges\" reading of network diagram viewer should be 4", () => readingIs(page, "edges", el("network diagram viewer"), 4));
+      await session.step(66, "And the \"rows of node \\\"F\\\"\" reading of network diagram viewer should be 553", () => readingIs(page, "rows of node \"F\"", el("network diagram viewer"), 553));
+      await session.step(67, "And the \"layout signature\" reading of network diagram viewer should be as remembered", () => readingAsRemembered(page, "layout signature", el("network diagram viewer")));
+      await session.step(68, "And network diagram viewer should have a \"node \\\"F\\\"\" area", () => hasArea(page, el("network diagram viewer"), "node \"F\""));
+      await session.step(69, "When user sets \"suspendSimulation\" property of network diagram viewer to \"false\"", () => setProperty(page, "suspendSimulation", el("network diagram viewer"), "false"));
+      await session.step(70, "Then no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

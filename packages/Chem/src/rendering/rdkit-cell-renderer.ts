@@ -509,7 +509,7 @@ M  END
     width: number, height: number, molString: string, scaffolds: IColoredScaffold[],
     molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean,
     alignByFirstSubstructure: boolean, details: object = {}, substructureObj?: ISubstruct, renderingOptions?: any,
-    engine?: ChemicalEngine): ImageData {
+    engine?: ChemicalEngine, ownCanvas?: OffscreenCanvas): ImageData {
     const fetchMolObj: IMolRenderingInfo =
       this._fetchMol(molString, scaffolds, molRegenerateCoords,
         scaffoldRegenerateCoords, details, alignByFirstSubstructure, engine);
@@ -542,7 +542,7 @@ M  END
       newSubstruct.highlightBondColors = substructureObj.highlightBondColors;
     }
 
-    const canvas = this.ensureCanvasSize(width, height);
+    const canvas = ownCanvas ?? this.ensureCanvasSize(width, height);
     const ctx = canvas.getContext('2d', {willReadFrequently: true})!;
     if (molCtx.mol != null) {
       const crux = fetchMolObj.engine === ChemicalEngine.Crux;
@@ -554,7 +554,7 @@ M  END
         warnCruxFallback('drawing', `RDKit draws what Crux refuses to, e.g. ${molString}`);
         return this._rendererGetOrCreate(width, height, molString, scaffolds, molRegenerateCoords,
           scaffoldRegenerateCoords, alignByFirstSubstructure, details, substructureObj, renderingOptions,
-          ChemicalEngine.RDKit);
+          ChemicalEngine.RDKit, ownCanvas);
       }
     } else {
       // draw a crossed rectangle
@@ -595,6 +595,23 @@ M  END
   getCachedMolImageData(molString: string, width: number, height: number): ImageData {
     return this._fetchRender(width, height, molString, [], false, false, false, {}, undefined,
       {clearBackground: false});
+  }
+
+  /**
+   * {@link render}'s drawing of a molecule value (CSS pixels, as `render`) that keeps no picture: drawn on a canvas of
+   * its own instead of {@link canvasReused}, and not put in {@link rendersCache}; the parsed molecule goes to the
+   * molecule cache as every drawing's does. For one-off very large drawings (a full-screen dialog's), which the
+   * caches would otherwise hold for the session.
+   */
+  renderUncached(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, molString: string): void {
+    const r = window.devicePixelRatio;
+    const [dw, dh] = [Math.floor(r * w), Math.floor(r * h)];
+    if (!molString || dw < MIN_MOL_IMAGE_SIZE || dh < MIN_MOL_IMAGE_SIZE)
+      return;
+    this._syncEngine();
+    const image = this._rendererGetOrCreate(dw, dh, molString, [], false, false, false, {}, undefined,
+      {fixedScale: null}, undefined, new OffscreenCanvas(dw, dh));
+    g.putImageData(image, Math.round(r * x), Math.round(r * y));
   }
 
   _drawMolecule(x: number, y: number, w: number, h: number, onscreenCanvas: HTMLCanvasElement,

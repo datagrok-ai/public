@@ -2,7 +2,9 @@
 Feature: Pick Up / Apply Coloring from the header menu, and a column's coloring kept by the viewers around it
   On demog-1000. The header menu's Apply Coloring is disabled until a coloring has been picked up;
   Pick Up Coloring on RACE, coloured with colours of its own, and Apply Coloring on a copy of it give
-  the copy those colours, not the default palette. A heat map added to the view leaves the grid's
+  the copy those colours, not the default palette, while the numeric AGE is not offered them; a linear
+  coloring applied to a selection of columns colours every selected column of a type it applies to,
+  not only the one clicked (`grid_popup_menu.dart`; the last scenario). A heat map added to the view leaves the grid's
   coloring as it was (public#3043). Categorical colours set on the grid column are the colours a
   scatter plot's legend paints its categories in (public#1929). A style picked up from RACE with
   Pick Up / Apply > Pick Up is applied, colouring included, to RACE of another table, demog-1000's
@@ -39,6 +41,10 @@ Feature: Pick Up / Apply Coloring from the header menu, and a column's coloring 
     And user right-clicks on the "header Race_copy" area of grid
     And user hovers over "Color Coding" menu item
     Then "Color-Coding---Apply-Coloring" menu item should be enabled
+    When user closes the context menu
+    And user right-clicks on the "header AGE" area of grid
+    And user hovers over "Color Coding" menu item
+    Then "Color-Coding---Apply-Coloring" menu item should be disabled
     When user closes the context menu
     And user picks "Color Coding > Apply Coloring" from the context menu of the "header Race_copy" area of grid
     Then "Race_copy" column should be color-coded categorically
@@ -106,3 +112,17 @@ Feature: Pick Up / Apply Coloring from the header menu, and a column's coloring 
     And the categorical color of "Other" in "RACE" column should be "CC6699"
     And the "color of cell 1 of RACE" reading of grid should be "#3366cc"
     And no errors should have been logged
+
+  Scenario: A linear coloring applied to a selection of columns colours every one it applies to and leaves the other
+    Given user switches to the "demog-1000" table view
+    When user picks "Color Coding > Linear" from the context menu of the "header AGE" area of grid
+    Then "AGE" column should be color-coded linearly
+    When user picks "Color Coding > Pick Up Coloring" from the context menu of the "header AGE" area of grid
+    And user clicks on the "header SEX" area of grid holding Control
+    And user clicks on the "header HEIGHT" area of grid holding Control
+    And user clicks on the "header WEIGHT" area of grid holding Control
+    Then columns "SEX, HEIGHT, WEIGHT" should be selected
+    When user picks "Color Coding > Apply Coloring" from the context menu of the "header HEIGHT" area of grid
+    Then "HEIGHT" column should be color-coded linearly
+    And "WEIGHT" column should be color-coded linearly
+    And "SEX" column should have no color coding

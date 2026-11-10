@@ -35,8 +35,6 @@ SAFETY_FILTER_MESSAGE = "The model provider's safety filter stopped this answer.
 BASE_TOOLSETS = ['file', 'terminal', 'skills', 'web', browser_tools.TOOLSET]
 # The connection test's call: no system prompt, no tools, a reply of a word or two. Hermes may call again after an
 # empty reply, which a limit of one would refuse and report as the provider's error.
-CHECK: TurnCommand = {'type': 'turn', 'text': 'Reply with OK.', 'systemPrompt': '', 'cwd': '/',
-                      'limits': {'maxTurns': 3, 'maxBudgetUsd': 1.0}}
 RETRY_STRUCTURED = ('Your reply did not match the required JSON schema: {}. '
                     'Reply again with only the corrected JSON object.')
 
@@ -60,7 +58,8 @@ class Tokens:
 class Turn:
     """One browser message, with its gate follow-ups and structured-output retries."""
 
-    def __init__(self, cmd: TurnCommand) -> None:
+    def __init__(self, cmd: TurnCommand, model: str) -> None:
+        self.model = model
         self.system_prompt = cmd['systemPrompt']
         self.schema = cmd.get('outputSchema')
         self.cwd = cmd['cwd']
@@ -83,7 +82,7 @@ class Turn:
         self.redirected = False
 
     def metrics(self) -> Metrics:
-        return {'inputTokens': self.tokens.input, 'outputTokens': self.tokens.output,
+        return {'model': self.model, 'inputTokens': self.tokens.input, 'outputTokens': self.tokens.output,
                 'cacheReadTokens': self.tokens.cache_read, 'cacheCreationTokens': self.tokens.cache_write,
                 'costUsd': self.cost, 'numTurns': self.api_calls,
                 'durationMs': round((time.time() - self.started) * 1000),
@@ -261,7 +260,7 @@ class Session:
     def receive(self, cmd: TurnCommand | ContinueCommand) -> Turn:
         """The turn a `turn` or `continue` command runs, taken when the command arrives."""
         if cmd['type'] == 'turn':
-            self.latest = Turn(cmd)
+            self.latest = Turn(cmd, self.provider.model)
         assert self.latest is not None, 'a continue follows its turn'
         return self.latest
 
@@ -316,21 +315,6 @@ class Session:
                                       self.store, self._toolsets(), self._on_delta)
         self.emit({'type': 'session', 'id': self.hermes_session})
         return self.agent
-
-    def check(self) -> str | None:
-        """Why one short call to the model failed, or None when it answered: the runtime's connection test, through
-        the agent and request patch a turn uses, without tools or history."""
-        t = self.turn = self.receive(CHECK)
-        try:
-            # As the session's agent while it runs, so the call limit can interrupt it.
-            agent = self.agent = hermes.new_agent(self.provider.model, self.provider.connection(), uuid.uuid4().hex,
-                                                  self.store, [], self._on_delta)
-            result = agent.run_conversation(CHECK['text'], conversation_history=[], task_id=self.key)
-        finally:
-            self.turn = self.agent = None
-        if t.api_error:
-            return t.api_error
-        return None if result.get('final_response') else result.get('error') or 'The model returned no answer.'
 
     def _prepare(self, cmd: TurnCommand) -> hermes.Agent | None:
         """The agent for this turn's stored session, with this turn's tools; None when the stored session to
@@ -439,6 +423,7 @@ class Session:
         t.api_seconds += api_duration or 0.0
         cost = self.provider.cost(usage)
         t.cost = None if cost is None or t.cost is None else t.cost + cost
+        self.emit({'type': 'usage', 'metrics': t.metrics()})
         if t.cost is not None and t.cost > t.max_cost:
             self._stop(t, 'budget')
 

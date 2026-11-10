@@ -90,7 +90,6 @@ export interface IMonomerLib extends IMonomerLibBase {
   get duplicateMonomers(): { [polymerType: string]: { [monomerSymbol: string]: Monomer[] } };
 
   getMonomerMolsByPolymerType(polymerType: PolymerType): { [monomerSymbol: string]: string } | null;
-  getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: PolymerType, element?: string): string[];
   getPolymerTypes(): PolymerType[];
   toJSON(): Monomer[];
   toString(): string;
@@ -102,9 +101,6 @@ export interface IMonomerLib extends IMonomerLibBase {
   /** Summary with lib monomer count by type */
   getSummaryObj(): MonomerLibSummaryType;
 
-  /** Gets dataframe with columns 'polymerType', 'count'. */
-  getSummaryDf(): DG.DataFrame;
-
   // For monomer palettes
   getMonomerSet(biotype: HelmType): MonomerSetType | null;
 
@@ -115,11 +111,6 @@ export interface IMonomerLinkData {
   source: string;
   symbol: string;
   notes: string;
-}
-
-export interface IMonomerLink {
-  get lib(): IMonomerLib;
-  get symbol(): string;
 }
 
 export const DEFAULT_FILES_LIB_PROVIDER_NAME = 'Files';
@@ -197,7 +188,6 @@ export interface IMonomerLibHelper {
   /** Reads single library by finding suitable provider itself. Condition must be met that there are no overlapping library names */
   readSingleLibraryByName(libraryName: string): Promise<IMonomerLib | null>;
 
-  readSingleSet(providerName: string, setName: string): Promise<IMonomerSet | null>;
   // -- Settings --
   refreshValidLibraryLists(): Promise<void>;
   /** Changes user lib settings. */
@@ -205,7 +195,6 @@ export interface IMonomerLibHelper {
 
   get fileUploadRequested(): Observable<void>;
   requestFileUpload(): void;
-  get librarySelectionChanged(): Observable<void>;
   notifyLibrarySelectionChanged(): void;
 
   /** Use default file provider to read monomer library. just a shorthand */

@@ -15,7 +15,9 @@ Feature: Filter panel over linked tables
   Concept Id, are the pair the dialog proposes) and its type changed there. The first five rows are
   selected, and the selection cleared, through the table's API (the md allows it); the views are
   switched through the shell and each panel is opened empty through its API; the reads of the
-  tables that must not move are single reads, not two a settle apart.
+  tables that must not move are single reads, not two a settle apart. A column pinned in
+  SPGI-linked1 before any source row is selected keeps its header and stays pinned while the
+  selection filters the table (public#1812).
 
   Background:
     Given user is logged in
@@ -34,13 +36,21 @@ Feature: Filter panel over linked tables
     And 175 rows of table "SPGI-linked1" should pass the filter
     And 224 rows of table "SPGI-linked2" should pass the filter
 
-  Scenario: Rows selected in spgi-100 become the filter of SPGI-linked1
+  @realizes:public#1812
+  Scenario: Rows selected in spgi-100 become the filter of SPGI-linked1, and a column pinned there follows it
+    When user switches to the "SPGI-linked1" table view
+    And user picks "Pin > Pin Column" from the context menu of the "header Concept Id" area of grid
+    Then the grid should pin the columns "Concept Id"
+    And the "header Concept Id" area of grid should be painted
     When user switches to the "spgi-100" table view
     And user selects the first 5 rows
     Then 5 rows should be selected
     And 100 rows of table "spgi-100" should pass the filter
     And 9 rows of table "SPGI-linked1" should pass the filter
     And 224 rows of table "SPGI-linked2" should pass the filter
+    When user switches to the "SPGI-linked1" table view
+    Then the grid should pin the columns "Concept Id"
+    And the "header Concept Id" area of grid should be painted
     And no errors should have been logged
 
   Scenario: A card of SPGI-linked2 narrows SPGI-linked1 and nothing comes back

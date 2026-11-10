@@ -120,6 +120,13 @@ export namespace funcs {
   }
 
   /**
+   * Workflow with fixed steps, a reorderable list and an invalid step, used for testing keyboard use.
+   */
+  export async function mockKeyboardPipeline(params: any ): Promise<any> {
+    return await grok.functions.call('Compute2:MockKeyboardPipeline', { params });
+  }
+
+  /**
    * Single-step workflow used for testing the compact Tree Wizard view.
    */
   export async function mockSingleStepPipeline(params: any ): Promise<any> {
@@ -161,30 +168,12 @@ export namespace funcs {
     return await grok.functions.call('Compute2:TestCustomView', {});
   }
 
-  /**
-   * Test for optimization: multiple scalars output
-   */
-  export async function fitTestFunc(x1: number , x2: number , y: DG.DataFrame , bool: boolean ): Promise<{integer: number, float1: number, float2: number, table1: DG.DataFrame, table2: DG.DataFrame}> {
-    return await grok.functions.call('Compute2:FitTestFunc', { x1, x2, y, bool });
-  }
-
-  /**
-   * Test for optimization: multiple scalars output
-   */
-  export async function testFittingOutputs(): Promise<void> {
-    return await grok.functions.call('Compute2:TestFittingOutputs', {});
-  }
-
   export async function testCustomExportModel(a: number ): Promise<number> {
     return await grok.functions.call('Compute2:TestCustomExportModel', { a });
   }
 
   export async function testCustomExportRecorder(funcCall: any , startDownload: boolean ): Promise<string> {
     return await grok.functions.call('Compute2:TestCustomExportRecorder', { funcCall, startDownload });
-  }
-
-  export async function testUrlInputsFixture(a: number , b: number , flag: boolean , s: string , when: any , df: DG.DataFrame , opt: number | undefined, nul: number | null): Promise<number> {
-    return await grok.functions.call('Compute2:TestUrlInputsFixture', { a, b, flag, s, when, df, opt, nul });
   }
 
   export async function testProjectExportSingleOut(x: number ): Promise<DG.DataFrame> {

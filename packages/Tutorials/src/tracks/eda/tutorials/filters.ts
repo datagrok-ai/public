@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import $, {Cash} from 'cash-dom';
+import {merge} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import wu from 'wu';
@@ -119,11 +120,12 @@ export class FiltersTutorial extends Tutorial {
       });
 
     const resetIcon = () => $(filters.root).find('i.grok-icon.fa-arrow-rotate-left')[0] ?? null;
-    const resetFilter = () => this.action('Reset the filter', this.t!.onFilterChanged.pipe(filter((_) =>
-      this.t!.filter.trueCount === this.t!.rowCount && !filters.root.classList.contains('d4-filters-disabled'))),
-    resetIcon,
-    'Click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.',
-    () => resetIcon()!.click());
+    const resetFilter = () => this.action('Reset the filter',
+      merge(this.t!.onFilterChanged, this.t!.onRowsFiltered).pipe(filter(() =>
+        this.t!.filter.trueCount === this.t!.rowCount && !filters.root.classList.contains('d4-filters-disabled'))),
+      resetIcon,
+      'Click on <i class="grok-icon fal fa-arrow-rotate-left"></i> at the top of the filter panel.',
+      () => resetIcon()!.click());
     await resetFilter();
 
     this.title('Numerical filters');

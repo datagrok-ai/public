@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
-import {DfExportEntry, prepareExportEntries} from '../project-export-data';
+import {DfExportEntry, prepareExportEntries} from '../project-export';
 
 // Fixtures: Compute2:TestProjectExportSingleOut (int x -> res),
 // Compute2:TestProjectExportMultiOut (dataframe df, int x -> res1, res2),

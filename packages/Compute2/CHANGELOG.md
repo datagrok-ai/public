@@ -2,11 +2,25 @@
 
 ## v.next
 
+* Workflows: A step with inconsistent inputs shows a broken link icon in the steps tree, like the inputs themselves (needs WebComponents v.next)
+* Keyboard: Ctrl/Cmd+Enter presses Run, Ctrl/Cmd+Shift+Enter presses Update and Ctrl/Cmd+S saves the run, with the same checks as their buttons; a warning says why when the button is disabled. In a workflow Run and Update act on the step focused in the steps tree (Update on a workflow row updates its substeps), else on the open step
+* RFV, Workflows: Tab and Shift+Tab go round the form and the steps tree (outputs, run history and the ribbon are left to the pointer) instead of leaving for the page, buttons show the keyboard focus, and the Keyboard shortcuts ribbon icon lists the keys; Tab does nothing in the Update confirmation, where Enter confirms and Esc cancels
+* RFV, Workflows: A disabled Run or Update button shows why on hover and when pressed; fixed pressing a disabled Run from the keyboard showing an internal error
+* Workflows: Alt+Up/Down moves a step in the steps tree under the drag-and-drop rules and Delete removes it after the confirmation, the focus staying on the step or its neighbour; fixed Alt+arrows moving any step in the tree only, without changing the workflow
+* Workflows: Back and Next move the keyboard focus into the opened step; the pipeline cards (Choose a step to add, Load completed run, actions) and clickable icons work from the keyboard, and the plus of a tree row opens the steps to add (needs WebComponents v.next)
+* Loading overlay: Fixed inputs under the overlay still reachable with Tab and editable while a run is in progress (autorun RFVs keep taking input)
+* RFV: Fixed the loading overlay not showing for a function that blocks the browser while it runs
+* RFV: Fixed autorun losing an input change made while a run was in progress, leaving the old outputs marked as current
+* Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
+* Export: Fixed float inputs of workflow steps never opened in the session exporting with fewer digits than the form shows (0.0001 as 0)
+* Run compare: Fixed the chart's "Ctrl + scroll to zoom" hint never showing
 * Requires platform 1.28.0 or later: removed the fallbacks for older platforms
+* RFV: Fixed a run opened with invalid or missing required inputs being runnable (needs WebComponents v.next)
 * Help: Fixed the help panel staying empty for every later step after one help file failed to load
 * Runs: Added the Save run dialog: saves to My runs or a space with a name, description and tags; names are unique in a space, where a taken run name asks to replace it (the space link moves to the new run) and a name taken by another item is refused; its spaces open like folders, and clicking a run of a space offers to overwrite it. My runs lists all of the user's runs, including those saved to spaces but not the step runs saved as part of a workflow, and names can repeat there
 * Runs: The Runs panel, Model Hub's Tools > Browse Runs... and the Compare Runs run picker browse runs of all models or one in My runs and spaces like a file browser: subspaces as folders with `..` and a path, tree counts of the runs in a space and all its subspaces, linked subspaces under each parent, and filters that search a space and its subspaces and show where each run is; they offer tag, author and favorites filters, platform favorites for runs and spaces (the Save dialog too), a tree filter that shows only favorite spaces and the spaces above them, Edit details, Add to space for one or several runs and Delete with a confirmation for one or several runs (a run that fails to delete is named and stays selected, and the others are still deleted); they replace the history panel
 * Runs: Removed Share to workspace and the `sharingMethod` setting
+* RFV: Removed URL parameters as input overrides and the "Copy link with inputs" export; saved runs in spaces replace them
 * Custom function views: Save opens the Save run dialog and History the Open run dialog instead of a docked history panel, so the whole view is the custom content; saved runs are listed under the custom view's function in the run browsers and open in that view again
 * Run compare: Several comparisons of the same runs open as tabs in one view; each tab has its own selected values, Hide equal values, chart and export, while index columns, mappings, matched columns and Hide outdated outputs are shared
 * Workflows: A workflow that was never saved shows its root `title` link in the view name

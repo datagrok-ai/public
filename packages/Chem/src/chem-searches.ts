@@ -10,7 +10,7 @@ import {
   rdKitFingerprintToBitArray,
 } from './utils/chem-common';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {diverseSubset} from './utils/diverse-subset';
 import {assure} from '@datagrok-libraries/utils/src/test';
 import {ArrayUtils} from '@datagrok-libraries/utils/src/array-utils';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
@@ -93,8 +93,13 @@ export function _chemGetSimilarities(queryMolString: string, fingerprints: (BitA
   const distances = new Array(fingerprints.length).fill(0.0);
   try {
     const sample = chemGetFingerprint(queryMolString, Fingerprint.Morgan);
-    for (let i = 0; i < fingerprints.length; ++i)
-      distances[i] = tanimotoSimilarity(fingerprints[i] ?? BitArray.fromBytes(new Uint8Array()), sample);
+    // a molecule with no fingerprint (an empty cell, one no engine reads) is similar to nothing: 0; its stand-in, an
+    // empty bit array, made the comparison throw (the lengths differ) and left every row after it 0 too
+    for (let i = 0; i < fingerprints.length; ++i) {
+      const fp = fingerprints[i];
+      if (fp)
+        distances[i] = tanimotoSimilarity(fp, sample);
+    }
   } catch {
     return distances;
   }
@@ -102,9 +107,11 @@ export function _chemGetSimilarities(queryMolString: string, fingerprints: (BitA
 }
 
 function _chemGetDiversities(limit: number, molStringsColumn: DG.Column, fingerprints: (BitArray | null)[]): string[] {
-  limit = Math.min(limit, fingerprints.length);
   const indexes = ArrayUtils.indexesOf(fingerprints, (f) => f != null);
-  const diverseIndexes = getDiverseSubset(indexes.length, limit,
+  // only the molecules with a fingerprint are candidates: asked for more (the default asks for every row), a column
+  // with an empty or unreadable cell hung the pick (getDiverseSubset), or read rows past the picks (diverseSubset)
+  limit = Math.min(limit, indexes.length);
+  const diverseIndexes = diverseSubset(indexes.length, limit,
     (i1: number, i2: number) => 1 - tanimotoSimilarity(fingerprints[indexes[i1]]!, fingerprints[indexes[i2]]!));
 
   // Pre-allocated to the known length; every slot is written below so no need to .fill('').

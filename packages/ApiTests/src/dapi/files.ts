@@ -121,6 +121,13 @@ category('Dapi: files', () => {
     expect(!!res);
   }, {stressTest: true});
 
+  test('readFilesAsBlobs: connection root without a slash', async () => {
+    const withSlash = await grok.dapi.files.readFilesAsBlobs('System:DemoFiles/', false, 'csv');
+    const noSlash = await grok.dapi.files.readFilesAsBlobs('System:DemoFiles', false, 'csv');
+    expect(Object.keys(withSlash).length > 0, true, 'System:DemoFiles has no .csv files at its root');
+    expect(Object.keys(noSlash).sort().join(), Object.keys(withSlash).sort().join());
+  });
+
 }, {owner: 'aparamonov@datagrok.ai'});
 
 category('Dapi: files: formats', () => {

@@ -7,7 +7,8 @@ import {
   historyUtils, RunMetadata, SaveTarget,
 } from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {PlacesTree} from './PlacesTree';
-import {Breadcrumbs, FolderRows, spaceFolders} from './RunList';
+import {Breadcrumbs, FolderRows} from './RunList';
+import {spaceFolders} from './space-index';
 import {useFavorites} from './use-favorites';
 import {useSpaceIndex} from './use-space-index';
 import {MY_RUNS, SPACES, locationKey, useSpaceNavigation} from './use-space-navigation';
@@ -17,6 +18,7 @@ import {
 } from './run-storage';
 import {getRunName} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {showVueDialog} from '../../utils';
+import {tabWithin} from '../../composables/use-keyboard';
 import './RunStorage.css';
 
 export type SaveRunResult = {metadata: RunMetadata, target: SaveTarget, place: Place, outcomes?: SpaceAddOutcome[]};
@@ -292,8 +294,10 @@ export const SaveRunDialog = Vue.defineComponent({
       </div>
     );
 
+    // Tab goes round the fields only: the platform doesn't keep the focus in a dialog
+    const form = Vue.ref<HTMLElement>();
     return () => (
-      <div class='c2-runs-dialog'>
+      <div class='c2-runs-dialog' onKeydown={(e: KeyboardEvent) => form.value && tabWithin(e, [form.value])}>
         <div class='c2-runs-split'>
           <div class='c2-runs-pane c2-runs-tree-pane'>
             <div class='c2-runs-label'>{isLinking ? 'Add to' : 'Save to'}</div>
@@ -303,7 +307,7 @@ export const SaveRunDialog = Vue.defineComponent({
           </div>
           { renderListing() }
         </div>
-        <div class='c2-runs-form'>
+        <div class='c2-runs-form' ref={form}>
           { isLinkingSeveral && renderOutcomes() }
           { !isLinkingSeveral && <label class='c2-runs-field'>
             <span>Name</span>

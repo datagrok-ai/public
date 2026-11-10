@@ -14,7 +14,6 @@ import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule
 import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {IMonomerLib, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
-import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
 import {createJsonMonomerLibFromSdf,} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
@@ -28,7 +27,6 @@ import {ITSNEOptions, IUMAPOptions} from '@datagrok-libraries/ml/src/multi-colum
 import {generateLongSequence, generateLongSequence2} from '@datagrok-libraries/bio/src/utils/generator';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {ISeqHelper, ToAtomicLevelRes} from '@datagrok-libraries/bio/src/utils/seq-helper';
-import {RDModule as _RDMoule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {ISeqHandler, SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
@@ -59,7 +57,7 @@ import {demoActivityCliffsCyclicLayout} from './demo/bio01b-hierarchical-cluster
 import {checkInputColumnUI} from './utils/check-input-column';
 import {MsaWarning} from './utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from './utils/multiple-sequence-alignment-ui';
-import {alignWithPepsea, pepseaMethods} from './utils/pepsea';
+import {alignWithPepsea} from './utils/pepsea';
 import {WebLogoApp} from './apps/web-logo-app';
 import {splitToMonomersUI} from './utils/split-to-monomers';
 import {MonomerCellRenderer} from './utils/monomer-cell-renderer';
@@ -77,7 +75,6 @@ import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
 import {matchMoleculesWithMonomers, MonomerManager, standardizeMonomerLibrary} from './utils/monomer-lib/monomer-manager/monomer-manager';
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
-import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {molecular3DStructureWidget, toAtomicLevelWidget, toAtomicLevelSingle} from './widgets/to-atomic-level-widget';
 import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
 import {PolymerType} from '@datagrok-libraries/bio/src/helm/types';
@@ -101,16 +98,58 @@ export * from './package.g';
 let initBioPromise: Promise<void> | null = null;
 
 /** Sequence → molblock conversion, shared by the `To Atomic Level...` menu entry
- *  (which discards the result) and its column-returning twin. */
-async function toAtomicLevelDo(
-  table: DG.DataFrame, seqCol: DG.Column<string>, nonlinear: boolean, highlight: boolean
+ *  (which discards the result), its column-returning twin and the one-sequence panels ({@link notify} false: no
+ *  warning balloon, the panel shows the error). */
+export async function toAtomicLevelDo(
+  table: DG.DataFrame, seqCol: DG.Column<string>, nonlinear: boolean, highlight: boolean, notify: boolean = true,
 ): Promise<ToAtomicLevelRes> {
   await initBioPromise;
   const sh = _package.seqHelper.getSeqHandler(seqCol);
   await sh.refinerPromise;
   const monomerLib = seqCol.temp[MmcrTemps.overriddenLibrary] ?? _package.monomerLib;
-  return sequenceToMolfile(
-    table, seqCol, nonlinear, highlight, monomerLib, _package.seqHelper, _package.rdKitModule);
+  return sequenceToMolfile(table, seqCol, nonlinear, highlight, monomerLib, _package.seqHelper, notify);
+}
+
+/** {@link PackageFunctions.toAtomicLevelSingleSeq} with a layout choice: the non-linear layout when {@link nonlinear},
+ * else the linear one with the assembler's per-row fallback. */
+async function toAtomicLevelSingleSeqInt(sequence: string, nonlinear: boolean): Promise<string> {
+  // create temporary column and table
+  const isHelm = sequence.includes('$$');
+  const isSeparator = sequence.split('').filter((c) => c == '/').length > 2;
+  // biln is super separator basically :D. A BILN monomer is never empty: '--' or a '-' at an end are FASTA gaps
+  const isBiln = !isHelm && !isSeparator && sequence.split('').filter((c) => c == '-').length > 2 &&
+    !/--|^-|-$/.test(sequence);
+  // const isFasta = !isHelm && !isSeparator && !isBiln;
+  const tempCol = DG.Column.fromStrings('sequence', [sequence]);
+  tempCol.semType = DG.SEMTYPE.MACROMOLECULE;
+  tempCol.meta.units = isHelm ? NOTATION.HELM : isSeparator ? NOTATION.SEPARATOR : isBiln ? NOTATION.BILN : NOTATION.FASTA;
+  tempCol.setTag(bioTAGS.aligned, 'SEQ');
+  if (isSeparator)
+    tempCol.setTag(bioTAGS.separator, '/');
+  if (isBiln)
+    tempCol.setTag(bioTAGS.separator, '-');
+  // detect alphabet
+  const dnaAlphabet = 'AGCT';
+  const RNAAlphabet = 'AGCU';
+  const isDNA = sequence.split('').every((c) => dnaAlphabet.includes(c) || c === '/' || c === '-');
+  const isRNA = !isDNA && sequence.split('').every((c) => RNAAlphabet.includes(c) || c === '/' || c === '-');
+
+  tempCol.setTag(bioTAGS.alphabet, isDNA && !isBiln ? ALPHABET.DNA : isRNA && !isBiln ? ALPHABET.RNA : 'UN');
+  tempCol.setTag(bioTAGS.alphabetIsMultichar, 'true');
+  // a BILN column reads through its notation provider, which the detector sets (detectMacromoleculeBiln)
+  if (isBiln)
+    tempCol.temp[SeqTemps.notationProvider] = new BilnNotationProvider('-', await PackageFunctions.getSeqHelper(), tempCol);
+
+  const tempDF = DG.DataFrame.fromColumns([tempCol]);
+
+  // get the sell as semantic value
+  const cell = tempDF.cell(0, 'sequence');
+  const semValue = DG.SemanticValue.fromTableCell(cell);
+
+  const res = await toAtomicLevelSingle(semValue, undefined, nonlinear);
+  if (res.errorText || !res.mol)
+    throw new Error(res.errorText);
+  return res.mol;
 }
 
 /** Temporary polyfill */
@@ -879,8 +918,8 @@ export class PackageFunctions {
   static async toAtomicLevel(
     @grok.decorators.param({options: {description: 'Input data table'}})table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Macromolecule', caption: 'Sequence'}})seqCol: DG.Column,
-    @grok.decorators.param({options: {initialValue: 'true', caption: 'Non-linear', description: 'Slower mode for cycling/branching HELM structures'}}) nonlinear: boolean = true,
-    @grok.decorators.param({options: {initialValue: 'false', caption: 'Highlight monomers', description: 'Highlight monomers\' substructures of the molecule'}}) highlight: boolean = false
+    @grok.decorators.param({options: {initialValue: 'true', caption: 'Non-linear', description: 'Draw every molecule as a 2D depiction. When off, plain chains are drawn straight and sequences with cycles or branches as a depiction'}}) nonlinear: boolean = true,
+    @grok.decorators.param({options: {initialValue: 'false', caption: 'Highlight monomers', description: 'Color each molecule\'s atoms by the monomer they come from (the monomer\'s color in the library)'}}) highlight: boolean = false,
   ): Promise<void> {
     const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
     try {
@@ -923,38 +962,7 @@ export class PackageFunctions {
   static async toAtomicLevelSingleSeq(
     @grok.decorators.param({name: 'sequence', type: 'string', options: {semType: 'Macromolecule'}}) sequence: string,
   ) : Promise<string> {
-    // create temporary column and table
-    const isHelm = sequence.includes('$$');
-    const isSeparator = sequence.split('').filter((c) => c == '/').length > 2;
-    const isBiln = sequence.split('').filter((c) => c == '-').length > 2; // biln is super separator basically :D
-    // const isFasta = !isHelm && !isSeparator && !isBiln;
-    const tempCol = DG.Column.fromStrings('sequence', [sequence]);
-    tempCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    tempCol.meta.units = isHelm ? NOTATION.HELM : isSeparator ? NOTATION.SEPARATOR : isBiln ? NOTATION.BILN : NOTATION.FASTA;
-    tempCol.setTag(bioTAGS.aligned, 'SEQ');
-    if (isSeparator)
-      tempCol.setTag(bioTAGS.separator, '/');
-    if (isBiln)
-      tempCol.setTag(bioTAGS.separator, '-');
-    // detect alphabet
-    const dnaAlphabet = 'AGCT';
-    const RNAAlphabet = 'AGCU';
-    const isDNA = sequence.split('').every((c) => dnaAlphabet.includes(c) || c === '/' || c === '-');
-    const isRNA = !isDNA && sequence.split('').every((c) => RNAAlphabet.includes(c) || c === '/' || c === '-');
-
-    tempCol.setTag(bioTAGS.alphabet, isDNA ? ALPHABET.DNA : isRNA ? ALPHABET.RNA : 'UN');
-    tempCol.setTag(bioTAGS.alphabetIsMultichar, 'true');
-
-    const tempDF = DG.DataFrame.fromColumns([tempCol]);
-
-    // get the sell as semantic value
-    const cell = tempDF.cell(0, 'sequence');
-    const semValue = DG.SemanticValue.fromTableCell(cell);
-
-    const res = await toAtomicLevelSingle(semValue);
-    if (res.errorText || !res.mol)
-      throw new Error(res.errorText);
-    return res.mol;
+    return toAtomicLevelSingleSeqInt(sequence, false);
   }
 
   @grok.decorators.panel({
@@ -1296,8 +1304,8 @@ export class PackageFunctions {
   static async toAtomicLevelColumn(
     @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule', caption: 'Sequence', nullable: false}}) sequence: DG.Column<string>,
-    @grok.decorators.param({options: {initialValue: 'true', caption: 'Non-linear', description: 'Slower mode for cycling/branching HELM structures'}}) nonlinear: boolean = true,
-    @grok.decorators.param({options: {initialValue: 'false', caption: 'Highlight monomers', description: 'Highlight monomers\' substructures of the molecule'}}) highlight: boolean = false,
+    @grok.decorators.param({options: {initialValue: 'true', caption: 'Non-linear', description: 'Draw every molecule as a 2D depiction. When off, plain chains are drawn straight and sequences with cycles or branches as a depiction'}}) nonlinear: boolean = true,
+    @grok.decorators.param({options: {initialValue: 'false', caption: 'Highlight monomers', description: 'Color each molecule\'s atoms by the monomer they come from (the monomer\'s color in the library)'}}) highlight: boolean = false,
   ): Promise<DG.Column<string>> {
     const res = await toAtomicLevelDo(table, sequence, nonlinear, highlight);
     if (!res.molCol) {
@@ -1816,29 +1824,8 @@ export class PackageFunctions {
       nonlinear: boolean
   ): Promise<string | undefined> {
     if (!(seq.trim())) return '';
-    return PackageFunctions.toAtomicLevelSingleSeq(seq);
+    return toAtomicLevelSingleSeqInt(seq, !!nonlinear);
   }
-
-  // //description: Gets similarity to a reference sequence
-  // //input: string seq { semType: Macromolecule }
-  // //input: string ref { semType: Macromolecule }
-  // //output: double result
-  // export async function seqSimilarity(seq: string, ref: string): Promise<number> {
-  //   // if (!(seq.trim())) return null;
-  //   try {
-  //     const seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, `seq`, [seq]);
-  //     const df = DG.DataFrame.fromColumns([seqCol]);
-  //     const semType = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
-  //     if (semType) seqCol.semType = semType;
-  //
-  //     const resCol = await calculateScoresWithEmptyValues(df, seqCol, ref, SCORE.SIMILARITY);
-  //     return resCol.get(0)!;
-  //   } catch (err: any) {
-  //     const [errMsg, errStack] = errInfo(err);
-  //     _package.logger.error(errMsg, undefined, errStack);
-  //     throw err;
-  //   }
-  // }
 
   @grok.decorators.func({
     name: 'seqIdentity',
@@ -1891,25 +1878,10 @@ export class PackageFunctions {
   static async getMolFromHelm(
     df: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Macromolecule', description: 'Column of HELM sequences to convert'}})helmCol: DG.Column<string>,
-    @grok.decorators.param({options: {initialValue: 'true', description: 'Preserve monomer stereochemistry using the chirality engine'}})
-    chiralityEngine: boolean = true
   ): Promise<DG.Column<string>> {
-    return getMolColumnFromHelm(df, helmCol, chiralityEngine, _package.monomerLib);
-  }
-}
-
-
-//export let hydrophobPalette: SeqPaletteCustom | null = null;
-
-export class SeqPaletteCustom implements SeqPalette {
-  private readonly _palette: { [m: string]: string };
-
-  constructor(palette: { [m: string]: string }) {
-    this._palette = palette;
-  }
-
-  public get(m: string): string {
-    return this._palette[m];
+    // no chiralityEngine input any more: the assembler always writes absolute stereo (every specified centre in one
+    // ABS group); a caller that still passes it is not refused, the platform drops arguments a function does not declare
+    return getMolColumnFromHelm(df, helmCol, true, _package.monomerLib);
   }
 }
 
@@ -1918,8 +1890,11 @@ async function initBioInt() {
   _package.logger.debug(`${logPrefix}, start`);
   const t1: number = window.performance.now();
   // very important that loading should happen in correct order!
-  // first make sure chem and rdkit module are loaded
-  const rdKitModule = await getRdKitModule();
+  // first make sure chem and rdkit module are loaded. The conversions no longer use RDKit (they run on Chem's
+  // macromolecule assembler); what still needs this call: Chem initialised before the monomer libraries load
+  // (inline-SMILES monomers call grok.chem.convert, tooltips grok.chem.canvasMol).
+  // TODO(Bio on Crux §9): replace with a Chem init that does not load RDKit.
+  await getRdKitModule();
   // then load package settings
   const bioPkgProps = new BioPackageProperties(_package.settings ?? {});
   _package.properties = bioPkgProps;
@@ -1942,31 +1917,8 @@ async function initBioInt() {
   const t2: number = window.performance.now();
   _package.logger.debug(`${logPrefix}, loading ET: ${t2 - t1} ms`);
 
-  // const monomers: string[] = [];
-  // const logPs: number[] = [];
-
-  const seqHelper = new SeqHelper(libHelper, rdKitModule);
-  _package.completeInit(seqHelper, monomerLib, monomerSets, rdKitModule);
-
-  // NB! do not delete the code below. not used now but in future we might use hydrophobicity palette
-  // const series = monomerLib!.getMonomerMolsByPolymerType('PEPTIDE')!;
-  // Object.keys(series).forEach((symbol) => {
-  //   monomers.push(symbol);
-  //   const block = series[symbol].replaceAll('#R', 'O ');
-  //   const mol = rdKitModule.get_mol(block);
-  //   const logP = JSON.parse(mol.get_descriptors()).CrippenClogP;
-  //   logPs.push(logP);
-  //   mol?.delete();
-  // });
-
-  // const sum = logPs.reduce((a, b) => a + b, 0);
-  // const avg = (sum / logPs.length) || 0;
-
-  // const palette: { [monomer: string]: string } = {};
-  // for (let i = 0; i < monomers.length; i++)
-  //   palette[monomers[i]] = logPs[i] < avg ? '#4682B4' : '#DC143C';
-
-  // hydrophobPalette = new SeqPaletteCustom(palette);
+  const seqHelper = new SeqHelper(libHelper);
+  _package.completeInit(seqHelper, monomerLib, monomerSets);
 
   // Register object handlers
   DG.ObjectHandler.register(new MonomerCollectionHandler());
@@ -1974,19 +1926,6 @@ async function initBioInt() {
   _package.logger.debug(`${logPrefix}, end`);
   handleSequenceHeaderRendering();
 }
-
-// -- Package settings editor --
-
-// //name: packageSettingsEditor
-// //description: The database connection
-// //tags: packageSettingsEditor
-// //input: object propList
-// //output: widget result
-// export function packageSettingsEditor(propList: DG.Property[]): DG.Widget {
-//   const widget = new PackageSettingsEditorWidget(propList);
-//   widget.init().then(); // Ignore promise returned
-//   return widget as DG.Widget;
-// }
 
 //name: test1
 //output: object result

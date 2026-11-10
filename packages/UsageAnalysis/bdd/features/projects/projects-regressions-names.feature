@@ -21,6 +21,10 @@ Feature: Projects regressions: names of projects and their tables
   only the new table is read in the reopened workspace (no demog-1000 view); the server-side claim on the
   project's tables is parked in the request document.
 
+  The Save dialog of the "|" and "_" scenario also shows its own guards: an emptied name marks the Name
+  box invalid and disables OK (the rule, `friendlyNameToName`, is prop_gen's 'FriendlyName test'), and a
+  table opened through the JS API has no creation script, so it gets no Data sync switch.
+
   Background:
     Given user is logged in
     And the browse panel is open
@@ -74,6 +78,11 @@ Feature: Projects regressions: names of projects and their tables
     And user opens demog-1000 dataset
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
+    And "demog-1000" project table in "Save project" dialog should be visible
+    And Data sync switch in "demog-1000" project table in "Save project" dialog should be hidden
+    When user clears Name text input in "Save project" dialog
+    Then Name text input in "Save project" dialog should be invalid
+    And OK button in "Save project" dialog should be disabled
     When user enters "BDDRegPipe{time}|A_B" into Name text input in "Save project" dialog
     Then OK button in "Save project" dialog should be enabled
     When user clicks on OK button in "Save project" dialog

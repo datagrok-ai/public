@@ -30,7 +30,7 @@ class OpenRouterProvider(Provider):
 
     def check_key(self, key: str) -> None:
         if not key.startswith('sk-or-'):
-            raise ProviderError('The apiKey container credential is not an OpenRouter API key (sk-or-…)')
+            raise ProviderError('The apiKey Grokky credential is not an OpenRouter API key (sk-or-…)')
 
     def patch_request(self, api_mode: str, request: JsonObject, system_prompt: str,
                       output_schema: JsonObject | None) -> JsonObject:
@@ -43,4 +43,4 @@ class OpenRouterProvider(Provider):
         return out
 
     def error_hint(self, status: int | None) -> str:
-        return ' (check the apiKey container credential: an OpenRouter API key)' if status == 401 else ''
+        return ' (check the apiKey Grokky credential: an OpenRouter API key)' if status == 401 else ''

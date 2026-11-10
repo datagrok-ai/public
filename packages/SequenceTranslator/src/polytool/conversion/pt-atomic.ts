@@ -19,9 +19,12 @@ export function dealGroups(col: DG.Column<string>): void {
   }
 }
 
+/** PolyTool's HELM to molecules (Bio's conversions, on Chem's macromolecule assembler): the non-linear layout with
+ * the override library, and with {@link linearize} the linear rows redone with the linear layout.
+ * @param {RDModule} rdkit deprecated and unused: the conversions no longer use RDKit */
 export async function helmToMol(resHelmCol: DG.Column, resList: string[],
   isLinear: boolean[], chiralityEngine: boolean, highlight: boolean, linearize: boolean,
-  lib: IMonomerLibBase, rdkit: RDModule, seqHelper: ISeqHelper) {
+  lib: IMonomerLibBase, rdkit: RDModule | null, seqHelper: ISeqHelper) {
   const getUnusedName = (df: DG.DataFrame | undefined, colName: string): string => {
     if (!df) return colName;
     return df.columns.getUnusedName(colName);
@@ -50,7 +53,7 @@ export async function helmToMol(resHelmCol: DG.Column, resList: string[],
     const monomerLibHelper = await getMonomerLibHelper();
     const systemMonomerLib = monomerLibHelper.getMonomerLib();
     try {
-      const linear = await _toAtomicLevel(DG.DataFrame.create(0), linCol, systemMonomerLib, seqHelper, rdkit);
+      const linear = await _toAtomicLevel(DG.DataFrame.create(0), linCol, systemMonomerLib, seqHelper);
       counter = 0;
       for (let i = 0; i < isLinear.length; i++) {
         if (isLinear[i]) {

@@ -21,6 +21,16 @@ dataset('cyclized', {path: 'System:AppData/SequenceTranslator/samples/cyclized.c
   description: 'SequenceTranslator\'s sample: "seqs", separator sequences with cyclized monomers ("C(1)"), which its notation refiner turns into custom units'});
 dataset('BILN', {path: 'System:AppData/Bio/samples/BILN.csv', aliases: ['biln-sample'],
   description: 'column "biln" (BILN notation: "-" between monomers, "(n,m)" ring bonds, "." between chains) and Activity'});
+dataset('BILN_complex', {path: 'System:AppData/Bio/samples/BILN_complex.csv', aliases: ['biln-complex'],
+  description: '120 peptides in BILN with their connections: name, category (disulfide, multi-chain, head-to-tail, side-chain ring, branched, scaffold, linear, long names), biln, notes'});
+dataset('HELM_cyclic', {path: 'System:AppData/Bio/samples/HELM_cyclic.tsv', aliases: ['helm-cyclic'],
+  description: '41 head-to-tail cyclic HELM peptides of non-natural monomers: cluster, sequence_id, sequence, activity, is_cliff'});
+dataset('FASTA_DNA', {path: 'System:AppData/Bio/samples/FASTA_DNA.csv', aliases: ['fasta-dna'],
+  description: '100 DNA sequences: id, sequence (fasta)'});
+dataset('FASTA_RNA', {path: 'System:AppData/Bio/samples/FASTA_RNA.csv', aliases: ['fasta-rna'],
+  description: '100 RNA sequences: id, sequence (fasta)'});
+dataset('SEPARATOR_PT', {path: 'System:AppData/Bio/samples/SEPARATOR_PT.csv', aliases: ['separator-pt'],
+  description: '99 peptides: id, sequence (separator "-")'});
 
 element('monomer libraries link', {selector: '.d4-link-action[data-source="Bio:Bioinformatics | Manage Monomer Libraries"]',
   description: 'the "Manage monomer libraries" link of a Macromolecule column\'s Bioinformatics > Manage Monomer Libraries pane: the dialog, or the Manage Monomer Libraries view when one is open'});

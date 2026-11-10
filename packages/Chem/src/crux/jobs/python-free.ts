@@ -108,7 +108,4 @@ export const SCRIPT_JOBS: {[op: string]: WorkerJob} = {
   // the container's molecules_to_canonical: a SMILES per molecule, '' where it does not read
   chemCanonicalSmiles: ({crux}, molecules: (string | null)[]): string[] =>
     JSON.parse(crux.chemCanonicalSmiles(molecules)),
-  // the container's molecules_to_inchi up to the InChI library: an input per molecule, null where it writes ''
-  chemInchiInputs: ({crux}, molecules: (string | null)[]): (Uint8Array | null)[] =>
-    crux.chemInchiInputs(molecules),
 };

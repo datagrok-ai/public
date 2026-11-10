@@ -118,3 +118,16 @@ Feature: Editing the table's tooltip from a viewer
     When user clicks on CANCEL button in "Edit Tooltip" dialog
     Then the "Edit Tooltip" dialog should close
     And no errors should have been logged
+
+  @realizes:core#474
+  Scenario: View > Edit Tooltip keeps setting the table's tooltip for the plots (core#474)
+    When user picks "View > Edit Tooltip..." from the top menu
+    Then "Edit Tooltip" dialog should be visible
+    And "Use tooltip" input in "Edit Tooltip" dialog should have value "Table"
+    When user toggles the "WEIGHT" column in the column list of "Edit Tooltip" dialog
+    And user clicks on OK button in "Edit Tooltip" dialog
+    Then the "Edit Tooltip" dialog should close
+    When user hovers over the "marker" area of box plot viewer
+    Then the tooltip should show columns in the order "AGE, SEX"
+    When user moves the pointer away from grid
+    Then no errors should have been logged

@@ -113,7 +113,9 @@ export class LinksState {
         of(this.wireLinks(state)),
         this.runNewInits(state),
         this.runLinks(state, initLinks, false),
-        (this.annotationChecks || this.forceInitialMetaRun) ? of(null).pipe(delay(0, asapScheduler), concatMap(() => this.runLinks(state, metaMap, true))) : of(null),
+        (this.annotationChecks || this.forceInitialMetaRun) ?
+          of(null).pipe(delay(0, asapScheduler), concatMap(() => this.runLinks(state, metaMap, true))) :
+          of(null),
       ).pipe(toArray(), mapTo(undefined));
     }
   }
@@ -121,7 +123,9 @@ export class LinksState {
   public getNodeActionsData(uuid: string): ViewAction[] | undefined {
     const actions = this.nodesActions.get(uuid);
     if (actions) {
-      return actions.map(({uuid, spec: {id, position, description, menuCategory, friendlyName, icon, confirmationMessage, visibleOn}}) =>
+      return actions.map(({
+        uuid, spec: {id, position, description, menuCategory, friendlyName, icon, confirmationMessage, visibleOn},
+      }) =>
         ({uuid, id, position, description, menuCategory, friendlyName, icon, confirmationMessage, visibleOn}));
     }
     return actions;
@@ -168,9 +172,8 @@ export class LinksState {
         if (!found)
           continue;
         targetUuid = found[0].getItem().uuid;
-      } else {
+      } else
         targetUuid = owningNode.getItem().uuid;
-      }
       const acts = nodeActions.get(targetUuid) ?? [];
       acts.push(action);
       nodeActions.set(targetUuid, acts);
@@ -214,9 +217,9 @@ export class LinksState {
       const links = matchedLinks.map((minfo) => {
         this.resolveActions(node, minfo);
         const spec = minfo.spec;
-        const debounce = (spec.type === 'validator' || spec.type === 'pipelineValidator')
-          ? (spec.debounce ?? (this.batchLinks ? 0 : undefined))
-          : undefined;
+        const debounce = (spec.type === 'validator' || spec.type === 'pipelineValidator') ?
+          (spec.debounce ?? (this.batchLinks ? 0 : undefined)) :
+          undefined;
         const link = new Link(path, minfo, debounce, this.logger);
         return link;
       });
@@ -277,9 +280,9 @@ export class LinksState {
       for (const linkUUID of priorityOrderedLinks) {
         scheduledLinks.add(linkUUID);
         const link = links.get(linkUUID)!;
-        if (this.batchLinks && link.isBatchable) {
+        if (this.batchLinks && link.isBatchable)
           batchableLinks.push(link);
-        } else {
+        else {
           sequentialObs.push(
             combineLatest([
               this.runningLinks$,
@@ -402,8 +405,14 @@ export class LinksState {
   public getLinksInfo(includeAnnotationChecks = false): LinksData[] {
     const links = [...this.links.values()]
       .filter((l) => includeAnnotationChecks || !isAnnotationCheck(l.matchInfo.spec))
-      .map((l) => ({id: l.matchInfo.spec.id, uuid: l.uuid, prefix: l.prefix, basePath: l.matchInfo.basePath, isAction: false, matchInfo: l.matchInfo}));
-    const actions = [...this.actions.values()].map((l) => ({id: l.matchInfo.spec.id, uuid: l.uuid, prefix: l.prefix, basePath: l.matchInfo.basePath, isAction: true, matchInfo: l.matchInfo}));
+      .map((l) => ({
+        id: l.matchInfo.spec.id, uuid: l.uuid, prefix: l.prefix, basePath: l.matchInfo.basePath, isAction: false,
+        matchInfo: l.matchInfo,
+      }));
+    const actions = [...this.actions.values()].map((l) => ({
+      id: l.matchInfo.spec.id, uuid: l.uuid, prefix: l.prefix, basePath: l.matchInfo.basePath, isAction: true,
+      matchInfo: l.matchInfo,
+    }));
     return [...links, ...actions];
   }
 

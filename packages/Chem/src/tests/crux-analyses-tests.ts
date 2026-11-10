@@ -284,6 +284,9 @@ category('crux analyses', () => {
         await workerBusy(service, 0);
         const {results, timedOut} = await service.clusterMCS([sar.slice(0, 6), sar.slice(6, 12), sar.slice(12)],
           true, true);
+        // the clusters done, the call returns: it waited for the busy worker's call to end too (until 2026-11-02)
+        const workers = (service as unknown as {workers: {pendingCalls: number}[]}).workers;
+        expect(workers[0].pendingCalls > 0, true, 'the clusters waited for the busy worker');
         expect(JSON.stringify(timedOut), '[]', 'clusters past their time limit');
         expect(results.every((mcs) => !!mcs), true, 'every cluster has an MCS');
         await busy;

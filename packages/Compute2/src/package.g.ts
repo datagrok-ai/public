@@ -136,6 +136,15 @@ export async function MockPipeline2(params: any) {
   return await PackageFunctions.MockPipeline2(params);
 }
 
+//name: Mock Keyboard Pipeline
+//description: Workflow with fixed steps, a reorderable list and an invalid step, used for testing keyboard use.
+//input: object params 
+//output: object result
+//editor: Compute2:TreeWizardEditor
+export async function MockKeyboardPipeline(params: any) {
+  return await PackageFunctions.MockKeyboardPipeline(params);
+}
+
 //name: Mock Single Step Pipeline
 //description: Single-step workflow used for testing the compact Tree Wizard view.
 //input: object params 
@@ -203,29 +212,6 @@ export async function TestCustomView() {
   return await PackageFunctions.TestCustomView();
 }
 
-//description: Test for optimization: multiple scalars output
-//input: double x1 = 1 { caption: param1; min: -3; max: 3 }
-//input: double x2 = -1 { caption: param2; min: -3; max: 3 }
-//input: dataframe y { caption: table }
-//input: bool bool 
-//output: int integer
-//output: double float1
-//output: double float2
-//output: dataframe table1 { viewer: Line chart(block:60) | Grid(block:40) }
-//output: dataframe table2 { viewer: Line chart(block:60) | Grid(block:40) }
-//meta.features: {"fitting": true, "sens-analysis": true}
-//meta.runOnOpen: true
-//meta.runOnInput: true
-//editor: Compute2:RichFunctionViewEditor
-export function fitTestFunc(x1: number, x2: number, y: DG.DataFrame, bool: boolean) {
-  return PackageFunctions.fitTestFunc(x1, x2, y, bool);
-}
-
-//description: Test for optimization: multiple scalars output
-export async function testFittingOutputs() : Promise<void> {
-  await PackageFunctions.testFittingOutputs();
-}
-
 //input: double a 
 //output: double result
 //meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]
@@ -238,19 +224,6 @@ export async function TestCustomExportModel(a: number) : Promise<number> {
 //output: string result
 export async function TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean) : Promise<string> {
   return await PackageFunctions.TestCustomExportRecorder(funcCall, startDownload);
-}
-
-//input: int a 
-//input: double b 
-//input: bool flag 
-//input: string s 
-//input: datetime when 
-//input: dataframe df 
-//input: double opt { optional: true }
-//input: int nul { nullable: true }
-//output: double result
-export async function TestUrlInputsFixture(a: number, b: number, flag: boolean, s: string, when: any, df: DG.DataFrame, opt: number, nul: number) : Promise<number> {
-  return await PackageFunctions.TestUrlInputsFixture(a, b, flag, s, when, df, opt, nul);
 }
 
 //input: int x 

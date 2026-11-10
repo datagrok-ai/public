@@ -47,9 +47,6 @@ export class MonomerLibManager implements IMonomerLibHelper {
   }
 
   private _selectionChanged = new Subject<void>();
-  public get librarySelectionChanged(): Observable<void> {
-    return this._selectionChanged;
-  }
   public notifyLibrarySelectionChanged(): void {
     this._selectionChanged.next();
   }
@@ -390,27 +387,6 @@ export class MonomerLibManager implements IMonomerLibHelper {
       return null;
     }
     return this.readSingleLibrary(provider.name, libraryName);
-  }
-
-  async readSingleSet(providerName: string, setName: string): Promise<IMonomerSet | null> {
-    const providers = await this.getProviders();
-    const provider = providers.find((p) => p.name === providerName);
-    if (!provider) {
-      this.logger.error(`Provider '${providerName}' not found.`);
-      return null;
-    }
-    try {
-      const setDatas = await provider.loadSets([setName]);
-      if (setDatas.length === 0) {
-        this.logger.error(`Set '${setName}' not found in provider '${providerName}'.`);
-        return null;
-      }
-      return setDatas[0];
-    } catch (err: any) {
-      this.logger.error(`Loading monomer set '${setName}' from provider '${provider.name}' failed: ` +
-      `${err instanceof Error ? err.message : err.toString()}`);
-      return null;
-    }
   }
 
   async listMonomerCollections(): Promise<string[]> {

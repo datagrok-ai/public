@@ -23,12 +23,20 @@ function showOutputs(t1: { value: string; }, t2: { value: string; },
       () => selection.init((i) => col1.getString(i) != col2.getString(i)));
 
     const addColumnButton = ui.button('Add Column', () => {
+      const name = c1.value + ' == ' + c2.value;
+      if (t1.value != t2.value) {
+        const table = grok.shell.table(t1.value);
+        table.columns.add(DG.Column.bool(table.columns.getUnusedName(name), col1.length)
+          .init((i) => col1.getString(i) == col2.getString(i)));
+        grok.shell.info('Column was added to ' + t1.value);
+        return;
+      }
       grok.shell.table(t1.value).columns.addNewCalculated(
-        c1.value + ' == ' + c2.value,
+        name,
         '${' + col1.name + '} == ${' + col2.name + '}',
         DG.TYPE.BOOL,
         false,
-      ).then((_: any) => {if (t1.value != t2.value) grok.shell.info('Column was added to ' + t1.value);});
+      );
     });
 
     const matched = ui.divText('Matched: ' + counter.toString(), {});

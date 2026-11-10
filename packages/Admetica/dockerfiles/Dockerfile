@@ -1,62 +1,60 @@
-FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
+FROM mambaorg/micromamba:2.10.0 AS builder
 
-SHELL ["/bin/bash","-c"]
+ENV PIP_NO_CACHE_DIR=1
 
-ARG DEBIAN_FRONTEND=noninteractive
-RUN apt update && apt upgrade -y && \
-    apt install -y --no-install-recommends \
-        curl bzip2 ca-certificates ; \
-     apt clean
+COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml /tmp/environment.yml
 
-ENV MAMBA_EXE=/bin/micromamba
-ARG MAMBA_VERSION=1.5.3
+# padelpy's bundled PaDEL-Descriptor Java tool (log4j 1.2.15, guava 17.0) comes in via
+# chemprop -> astartes[molecules] -> aimsim -> padelpy and is unused at inference.
 RUN set -ex ; \
-    curl -L "https://micro.mamba.pm/api/micromamba/linux-64/${MAMBA_VERSION}" --output /tmp/micromamba.tar.bz2; \
-    mkdir -p /tmp/micromamba ; \
-    tar --bzip2 --extract -C /tmp/micromamba --strip-components=1 -f /tmp/micromamba.tar.bz2 ; \
-    mv /tmp/micromamba/micromamba "${MAMBA_EXE}" ; \
-    rm -rf /tmp/micromamba
+    micromamba env create -f /tmp/environment.yml -y ; \
+    env=$MAMBA_ROOT_PREFIX/envs/myenv ; \
+    site=$env/lib/python3.11/site-packages ; \
+    rm -rf $site/pip $site/pip-* $site/setuptools $site/setuptools-* $site/_distutils_hack \
+        $site/distutils-precedence.pth $site/wheel $site/wheel-* $site/pkg_resources \
+        $site/padelpy/PaDEL-Descriptor $env/lib/python3.11/ensurepip/_bundled ; \
+    find $env/conda-meta -name 'pip-*.json' -o -name 'setuptools-*.json' -o -name 'wheel-*.json' | xargs -r rm -f
+
+RUN mkdir /tmp/models && $MAMBA_ROOT_PREFIX/envs/myenv/bin/python -c "\
+import boto3; from botocore import UNSIGNED; from botocore.config import Config; \
+s3 = boto3.client('s3', region_name='us-east-2', config=Config(signature_version=UNSIGNED)); \
+keys = [o['Key'] for o in s3.list_objects_v2(Bucket='datagrok-data', Prefix='models/admetox/')['Contents']]; \
+[s3.download_file('datagrok-data', k, '/tmp/models/' + k.rsplit('/', 1)[1]) for k in keys if not k.endswith('/')]"
+
+FROM cgr.dev/chainguard/wolfi-base
 
 ARG MAMBA_USER=mambauser
 ARG MAMBA_USER_ID=57439
 ARG MAMBA_USER_GID=57439
-ENV MAMBA_USER=$MAMBA_USER
-ENV MAMBA_USER_GID=$MAMBA_USER_GID
-ENV MAMBA_USER_ID=$MAMBA_USER_ID
-ENV MAMBA_ROOT_PREFIX=/opt/conda
-COPY --from=mambaorg/micromamba:latest /usr/local/bin/_dockerfile_initialize_user_accounts.sh /usr/local/bin/_dockerfile_initialize_user_accounts.sh
-COPY --from=mambaorg/micromamba:latest /usr/local/bin/_dockerfile_setup_root_prefix.sh /usr/local/bin/_dockerfile_setup_root_prefix.sh
-RUN /usr/local/bin/_dockerfile_initialize_user_accounts.sh && /usr/local/bin/_dockerfile_setup_root_prefix.sh
+ENV MAMBA_USER=$MAMBA_USER \
+    MAMBA_USER_ID=$MAMBA_USER_ID \
+    MAMBA_USER_GID=$MAMBA_USER_GID \
+    MAMBA_ROOT_PREFIX=/opt/conda \
+    PATH=/opt/conda/envs/myenv/bin:$PATH \
+    NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+    LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64
 
-RUN mkdir /app && chown $MAMBA_USER:$MAMBA_USER /app
+RUN apk upgrade --no-cache && apk add --no-cache libstdc++ libgcc && \
+    addgroup -g $MAMBA_USER_GID $MAMBA_USER && \
+    adduser -D -u $MAMBA_USER_ID -G $MAMBA_USER $MAMBA_USER
+
+COPY --from=builder --chown=$MAMBA_USER:$MAMBA_USER /opt/conda/envs/myenv /opt/conda/envs/myenv
+COPY --from=builder --chown=$MAMBA_USER:$MAMBA_USER /tmp/models /app
+COPY --chown=$MAMBA_USER:$MAMBA_USER . /app
 
 USER $MAMBA_USER
-
 WORKDIR /app
 
-COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml /app/
-
-RUN micromamba install -n base -c conda-forge awscli -y && \
-    micromamba run -n base aws s3 cp s3://datagrok-data/models/admetox /app --no-sign-request --recursive --region us-east-2 && \
-    micromamba remove -n base awscli -y && \
-    micromamba clean -afy
-
-# Create env, then drop padelpy's bundled PaDEL-Descriptor Java tool
-# (cdk-1.4.15.jar embeds log4j 1.2.15, plus guava-17.0.jar) — pulled via
-# chemprop -> astartes[molecules] -> aimsim -> padelpy, unused at inference.
-# Verify at smoke time: micromamba run -n myenv python -c "import padelpy, chemprop".
-RUN set -ex ; \
-    micromamba env create -f environment.yml -y ; \
-    micromamba run -n myenv pip install --no-cache-dir --upgrade pip setuptools wheel ; \
-    rm -rf $MAMBA_ROOT_PREFIX/envs/myenv/lib/python*/site-packages/padelpy/PaDEL-Descriptor ; \
-    micromamba clean -afy
-
-COPY --chown=$MAMBA_USER:$MAMBA_USER . /app
+# Load a checkpoint and predict on CPU, as the worker does, so a missing library fails the build.
+RUN python -c "import padelpy, chemprop, pandas, Admetica; \
+r = Admetica.predict(pandas.Series(['CCO', 'c1ccccc1O']), 'Caco2,PPBR'); print(r); \
+assert r.notna().all().all()" && rm -rf /app/lightning_logs
 
 EXPOSE 8000
 
-ENTRYPOINT micromamba run -n myenv celery -A Admetica worker \
+ENTRYPOINT exec celery -A Admetica worker \
     --loglevel=info \
     --hostname=$CELERY_HOSTNAME \
     --concurrency=1 \
-    -Q $TASK_QUEUE_NAME
+    -Q ${TASK_QUEUE_NAME:-celery}

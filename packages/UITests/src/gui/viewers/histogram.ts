@@ -41,14 +41,14 @@ category('Viewers: Histogram', () => {
     v = grok.shell.addTableView(demog);
     const histogram = v.histogram({
       value: 'weight',
-      binWidthRatio: 2,
+      binWidthRatio: 0.5,
     });
     await waitUntil(() => document.querySelector('.d4-histogram') !== null, 'histogram not found');
 
     if (histogram.props.valueColumnName != 'weight')
       throw 'Value column has not been set';
-    if (histogram.props.binWidthRatio != 2)
-      throw 'binWidthRatio has not been set to 2';
+    if (histogram.props.binWidthRatio != 0.5)
+      throw 'binWidthRatio has not been set to 0.5';
     const filterCheckbox = document.getElementsByClassName('d4-layout-root d4-root d4-viewer d4-histogram ui-box')[0]
       .getElementsByClassName('d4-filter-out-missing-values')[0] as HTMLInputElement;
     if (!filterCheckbox)
@@ -82,7 +82,7 @@ category('Viewers: Histogram', () => {
     v = grok.shell.addTableView(demog);
     await settled(v.histogram({
       value: 'weight',
-      binWidthRatio: 2,
+      binWidthRatio: 0.5,
       title: 'Test Histogram',
       colorColumnName: 'age',
       showRangeInputs: true,
@@ -98,7 +98,7 @@ category('Viewers: Histogram', () => {
 
       if (histogram!.props.valueColumnName != 'weight')
         throw 'Value column has not been deserialized';
-      if (histogram!.props.binWidthRatio != 2)
+      if (histogram!.props.binWidthRatio != 0.5)
         throw 'binWidthRatio has not been deserialized';
       if (histogram!.props.bins != 30)
         throw 'bins property has not been deserialized';

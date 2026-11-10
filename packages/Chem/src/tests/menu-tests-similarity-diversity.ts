@@ -184,6 +184,31 @@ category('top menu similarity/diversity', () => {
   test('diversitySearchViewerOpen', async () => {
     await _testDiversitySearchViewerOpen();
   });
+
+  test('similarities: the rows after an empty or malformed molecule', async () => {
+    // the rows after the first molecule with no fingerprint got 0 (until 2026-11-03): its stand-in made the comparison
+    // throw, and the scores computed so far were returned
+    const query = 'c1ccccc1O';
+    const scores = async (smiles: string[]) => {
+      const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', smiles)]);
+      df.col('smiles')!.semType = DG.SEMTYPE.MOLECULE;
+      return (await PackageFunctions.getSimilarities(df.col('smiles')!, query)).columns.byIndex(0).toList();
+    };
+    const good = ['c1ccccc1O', 'c1ccccc1N', 'CCO'];
+    const clean = await scores(good);
+    const withBad = await scores([good[0], '', 'C1CC(', good[1], good[2]]);
+    expect(clean[1] > 0, true, 'a similar molecule');
+    expectArray(withBad, [clean[0], 0, 0, clean[1], clean[2]]);
+  });
+
+  test('diversities: a column with an empty or malformed molecule', async () => {
+    // more molecules asked for than have a fingerprint (the default asks for every row) hung the pick until 2026-11-03:
+    // an empty or malformed cell is no candidate
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', ['c1ccccc1O', '', 'C1CC(', 'CCO', 'CCN'])]);
+    df.col('smiles')!.semType = DG.SEMTYPE.MOLECULE;
+    const picked: string[] = (await PackageFunctions.getDiversities(df.col('smiles')!)).columns.byIndex(0).toList();
+    expectArray([...picked].sort(), ['CCN', 'CCO', 'c1ccccc1O']);
+  });
 });
 
 export async function _testFindSimilar(findSimilarFunction: (...args: any) => Promise<DG.DataFrame | null>,

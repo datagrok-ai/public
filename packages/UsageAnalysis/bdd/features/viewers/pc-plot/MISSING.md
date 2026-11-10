@@ -3,41 +3,24 @@
 Written during the viewer gap round of 23 Oct 2026 against `pc_plot/CLAUDE.md` "Automation surface"
 and `pc-plot-ui.md`. What could be said is in `pc-plot-hover-and-layout.feature`.
 
-## Needs a reading
+## Still open
 
-- **Show Mouse Over Row Group** ("Mouse-over and row group", item 2). With the property on, hovering a
-  row that belongs to a row group (a category hovered in another viewer, `dataFrame.mouseOverRowGroup`)
-  draws every line of the group in the mouse-over colour on the overlay. `lines drawn` counts only
-  `_renderAllLines`; nothing counts the group lines. `pc-plot-hover-and-layout.feature` claims the
-  group pass as a repaint (and none with the flag off); the exact count needs a `mouse-over group lines drawn` reading
-  (the rows the overlay's group pass stroked, `pc_plot_core.dart` where `showMouseOverRowGroup` is
-  read):
+- Show Mouse Over Row Group ("Mouse-over and row group", item 2): `lines drawn` counts only the plot's own lines; needs
+  a `mouse-over group lines drawn` reading (the overlay's group pass in `pc_plot_core.dart`).
+- Undock and dock again ("Viewer basics", items 1-2): no step floats a viewer out of the dock manager.
+- General > Save to Gallery: it leaves a server entity, which needs a gallery entry swept at feature end.
+- core#1339 — General > Save as PNG logs three 404s for `/font/MaterialIcons-Regular.*` (`google_fonts.css`); claim when
+  fixed: `And no errors should have been logged` after the download in `pc-plot.feature`.
 
-  ```gherkin
-  Scenario: Hovering a category in another viewer draws its whole group on the plot
-    Given user adds a bar chart viewer with:
-      | Split | RACE |
-    When user hovers over the "bar Asian" area of bar chart viewer
-    Then the "mouse-over group lines drawn" reading of pc plot viewer should be <Asian rows>
-    When user sets "Show Mouse Over Row Group" property of pc plot viewer to "false"
-    Then the "mouse-over group lines drawn" reading of pc plot viewer should be 0
-    And no errors should have been logged
-  ```
+## Won't do
 
-## Needs a step
-
-- **Undock and dock again** ("Viewer basics", items 1-2): no step floats a viewer out of the dock
-  manager (`user undocks {widget}` and `{widget} should be floating`, through the panel's title-bar
-  menu, in `bindings/tiers/viewers/widgets.ts`). Docking along an edge is in `viewer-chrome.feature`.
-- **General > Save as PNG / Save to Gallery** ("Context menu: General"): both leave the page — a
-  download and a server entity. Needs `the download should be a PNG named {string}` (Playwright's
-  `download` event) and a gallery entry swept at feature end; `viewer-chrome.feature` claims only that
-  the items are offered.
-
-## Not a gap
-
-- **A grid column header dropped on the plot.** `pc-plot-ui.md` lists the grid-to-plot drag among the
-  manual checks, but the plot takes no foreign drop: its overlay accepts a drag only when
-  `AppEvents.currentlyDragging.dragSource == this` (`pc_plot_core.dart:125`), i.e. its own axis
-  labels. Dropping `header STARTED` onto `view` leaves `axes` at 3 (measured). If adding an axis that
-  way is wanted, it is a feature request, not a missing step.
+- A grid column header dropped on the plot: the plot takes no foreign drop (`pc_plot_core.dart:125`, its own axis labels
+  only); adding an axis that way is a feature request.
+- An Axis Font the canvas cannot parse (core#967): reachable only through the API or a layout; the panel's font editor
+  makes valid fonts.
+- A layout with Line Width 0 and density on, hovered (core#967): ApiTests `AI: Viewers: PcPlot Extras`.
+- A Log Columns axis over zeros or negatives (core#1203): xamgle `d4 | Viewers | Fixed issues | PC plot Log Columns with
+  zero or negative values`.
+- Bins, Horz Margin and the line widths past their bounds, an axis column removed or renamed, a layout naming a missing
+  column, no rows and deleted rows: the rules every viewer shares (`../MISSING.md`).
+- One axis left (the "at least 2 columns" message), a constant column under Normalized with a density: low value.

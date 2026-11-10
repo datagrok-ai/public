@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
-import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
+import {diverseSubset} from '../utils/diverse-subset';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {chemGetFingerprints} from '../chem-searches';
 import $ from 'cash-dom';
@@ -159,7 +159,7 @@ export async function chemDiversitySearch(
     malformedDataWarning(fingerprintArray, moleculeColumn);
   limit = Math.min(limit, indexes.length);
 
-  const diverseIndexes = getDiverseSubset(indexes.length, limit,
+  const diverseIndexes = diverseSubset(indexes.length, limit,
     (i1, i2) => 1 - similarity(fingerprintArray[indexes[i1]]!, fingerprintArray[indexes[i2]]!));
 
   const molIds: number[] = [];

@@ -15,7 +15,7 @@ import {openTableOf, SKETCHER_CONTROLS_TAG, sketcherPin} from '../bindings/platf
 import {fixtureFamilies, isStaleFixture, RUN_SUFFIX, serviceGap} from '../src/runtime/server.js';
 import {el} from '../src/runtime/args.js';
 import {columnSelectorChoices, select} from '../src/runtime/gestures.js';
-import {hitArea, readValue} from '../src/runtime/viewers.js';
+import {expectReading, hitArea, readValue} from '../src/runtime/viewers.js';
 import {locate} from '../src/runtime/locate.js';
 import {knownFailure} from '../src/runtime/harness.js';
 import {StepFailure} from '../src/runtime/failure.js';
@@ -231,6 +231,24 @@ scenario('a widget outside any viewer that reports a status is found up from its
   assert.equal(await readValue(page!, el('Probe widget'), 'smiles'), 'CC');
   await assert.rejects(() => readValue(page!, el('Plain widget'), 'smiles'), /not a viewer/);
   await assert.rejects(() => readValue(page!, el('Card link'), 'smiles'), /not a viewer/);
+});
+
+scenario('a reading waits for a viewer the platform knows only after its element is on the page', async () => {
+  // an element can be on the page while the platform does not know it as a viewer (one being built): the read threw
+  // "the element is not a viewer", which `expect.poll` does not retry, and the step failed at once, reporting "no
+  // readings" (seen in the Peptides pane's WebLogo scenario, 2026-11-04)
+  await page!.setContent('<div name="viewer-Logo" style="width:100px;height:50px"></div>');
+  await standIn(page!, {seq: ['T']}); // the shell and the events the viewer runtime subscribes to
+  await page!.evaluate(() => {
+    const w = window as any;
+    const root = document.querySelector('[name="viewer-Logo"]')!;
+    const logo = {root, type: 'Logo', isRenderPending: false,
+      getWidgetStatus: () => ({parts: {}, hitAreas: {}, values: {'rows selected': 630}})};
+    let known = false;
+    setTimeout(() => known = true, 300);
+    w.DG = {Widget: {find: (e: Element) => known && e === root ? logo : null}};
+  });
+  await expectReading(page!, el('Logo viewer'), 'rows selected', 'equal', 630);
 });
 
 scenario('a table tag is compared with a file byte for byte', async () => {

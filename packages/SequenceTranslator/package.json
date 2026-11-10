@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/sequence-translator",
   "friendlyName": "Sequence Translator",
-  "version": "1.11.6",
+  "version": "1.11.7",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -30,13 +30,13 @@
   "dependencies": {
     "@datagrok-libraries/bio": "workspace:^",
     "@datagrok-libraries/chem-meta": "workspace:^",
-    "@datagrok-libraries/hwe": "^1.0.0",
+    "@datagrok-libraries/hwe": "^1.1.1",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/tutorials": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "@types/react": "^18.0.15",
     "cash-dom": "catalog:",
-    "datagrok-api": "^1.27.4",
+    "datagrok-api": "workspace:^",
     "lodash": "^4.17.21",
     "object-hash": "^3.0.0",
     "openchemlib": "catalog:",
@@ -45,6 +45,9 @@
     "wu": "catalog:",
     "rxjs": "catalog:",
     "lru-cache": "^11.0.0"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",

@@ -2,6 +2,11 @@
 
 ## v.next
 
+* [public#4538](https://github.com/datagrok-ai/public/issues/4538): Add New Column: Fixed the formula `null` being rejected for a column of a chosen type
+* [public#4497](https://github.com/datagrok-ai/public/issues/4497): Search: Fixed the broken PubChem frame for "aspirin"; it now shows a link and the structure
+* [public#4475](https://github.com/datagrok-ai/public/issues/4475): Compare Columns: Fixed Add Column over two tables being false in every row
+* [public#4461](https://github.com/datagrok-ai/public/issues/4461): Add New Column: Fixed adding a column or editing its formula not being undoable
+* [core#342](https://github.com/datagrok-ai/core/issues/342): Excel import: Fixed an unreadable .xlsx file leaving its loading indicator spinning forever; it now reports the error
 * Chat: Fixed the compose box building its u2 input with no owner, which threw in strict mode (tests, dev) and leaked the input; it now lives on a root of its own that the chat disposes
 * [public#4445](https://github.com/datagrok-ai/public/issues/4445): Add New Column: Fixed the preview wrapping a long double onto two lines when the column name is short
 * [public#4404](https://github.com/datagrok-ai/public/issues/4404): Add New Column: Fixed an unknown table or column passed by name (`RowCount("nope")`, `Column("nope")`) showing no error and adding an empty column

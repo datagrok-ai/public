@@ -1,29 +1,25 @@
 # Density plot — what the features cannot say yet
 
 Written during the viewer gap review of 23 Oct 2026 against `density_plot/CLAUDE.md` "Automation
-surface". What could be said is in `density-plot-bin-selector-escape-tooltip.feature`.
+surface"; trimmed in the BDD PR round of 8 Nov 2026.
 
-## Needs a step
+## Resolved (core#1048)
 
-- **The bin selector is on screen, and gone when Show Bin Selector is off** (`density-plot-ui.md`,
-  "Show Bin Selector"). The `bin selector shown` reading is `showBinSelector`, the auto-layout's
-  computed result (the root must be over 300×300), not a check of the screen — and the slider is
-  hover-revealed, so `true` means the layout keeps it, not that a person sees it this instant
-  (`density_plot/CLAUDE.md`, readings table). The viewer already publishes the slider as the
-  `bin selector` **part** (the bins range `<input>`, `features/density_plot_status.dart`), but no step
-  claims a part's visibility. Needs `the {string} part of {widget} should be visible` / `… hidden`
-  in the library (an on-screen check of the part's element: in the document, non-zero box, not
-  `display:none` / `visibility:hidden` / `opacity:0`):
+- Bins 0, −5 or null and a 0 × 0 root: Dart `Density plot | Invalid bins keep the view…` and `A property keeps a
+  value inside its declared bounds`.
+- A logarithmic X axis bins only the positive values, and a click selects the rows a bin holds in either shape: Dart
+  `Density plot | A click selects the rows a bin holds for every shape and axis…`.
+- Listeners across table swaps: Dart `Table swap | Density plot` and `Lifecycle`.
 
-  ```gherkin
-  Scenario: Show Bin Selector takes the bin selector off the screen and puts it back
-    When user hovers over the "densest bin" area of density plot viewer
-    Then the "bin selector" part of density plot viewer should be visible
-    When user moves the pointer away from density plot viewer
-    And user sets "showBinSelector" property of density plot viewer to "false"
-    And user hovers over the "densest bin" area of density plot viewer
-    Then the "bin selector" part of density plot viewer should be hidden
-    When user moves the pointer away from density plot viewer
-    And user sets "showBinSelector" property of density plot viewer to "true"
-    Then no errors should have been logged
-  ```
+## Still open
+
+- **The bin selector on screen, and gone with Show Bin Selector off** (`density-plot-ui.md`): the viewer publishes it as
+  the `bin selector` part; needs a library step `the {string} part of {widget} should be visible` / `… hidden`.
+
+## Won't do
+
+- A click on a rectangular bin (core#1048): Dart `Density plot | A click selects the rows a bin holds…`.
+- Rectangular bins after a zoom (core#1048): Dart `Density plot | Rectangular bins over a narrowed view bin every row
+  unless Bin To Range is on`.
+- A column name with markup characters in the bin tooltip (core#1048): Dart `Data shows as text, not markup…`.
+- The bin tooltip's range on a logarithmic axis: not worth a reading.

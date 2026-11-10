@@ -10,7 +10,10 @@
 
 import {WebSocket} from 'ws';
 
+// The runtime reads model credentials only with the token the platform's docker proxy adds, so a turn needs the
+// stand's proxy URL (ws://<host>/docker/containers/proxy-ws/<container id>/ws) and a session token of its user.
 export const DEFAULT_URL = process.env.GROKKY_DEV_WS ?? 'ws://localhost:5355/ws';
+const DEFAULT_TOKEN = process.env.GROKKY_DEV_TOKEN;
 
 /** Browser-side tool answers. A stub is a literal value or (input) => value. */
 const DEFAULT_STUBS = {
@@ -25,8 +28,9 @@ const DEFAULT_STUBS = {
 };
 
 export class RuntimeDriver {
-  constructor({url = DEFAULT_URL, apiKey, mcpServerUrl} = {}) {
+  constructor({url = DEFAULT_URL, token = DEFAULT_TOKEN, apiKey, mcpServerUrl} = {}) {
     this.url = url;
+    this.token = token;
     this.apiKey = apiKey;
     this.mcpServerUrl = mcpServerUrl;
     this.ws = null;
@@ -34,7 +38,7 @@ export class RuntimeDriver {
 
   connect() {
     return new Promise((resolve, reject) => {
-      this.ws = new WebSocket(this.url);
+      this.ws = new WebSocket(this.url, this.token ? {headers: {cookie: `auth=${encodeURIComponent(this.token)}`}} : {});
       const fail = (e) => reject(new Error(`cannot reach ${this.url} — is \`node dev/runtime.mjs up\` running? (${e.message ?? e})`));
       this.ws.once('open', () => {
         this.ws.removeListener('error', fail);

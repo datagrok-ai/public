@@ -107,4 +107,6 @@ export interface ReturnResult {
   event: 'returnResult',
 }
 
-export type ViewConfigCommands = AddDynamicItem | LoadDynamicItem | SaveDynamicItem | RemoveDynamicItem | MoveDynamicItem | DuplicateDynamicItem | RunStep | RunAction | RunSequence | SavePipeline | LoadPipeline | InitPipeline | ResetToConsistent | UpdateFuncCall | ReturnResult;
+export type ViewConfigCommands = AddDynamicItem | LoadDynamicItem | SaveDynamicItem | RemoveDynamicItem |
+  MoveDynamicItem | DuplicateDynamicItem | RunStep | RunAction | RunSequence | SavePipeline | LoadPipeline |
+  InitPipeline | ResetToConsistent | UpdateFuncCall | ReturnResult;

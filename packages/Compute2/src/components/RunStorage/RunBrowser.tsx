@@ -11,12 +11,12 @@ import {ModelSelector} from './ModelSelector';
 import {addRunToSpace, addSeveralToSpace} from './add-to-space';
 import {RunDetailsForm} from './RunDetailsForm';
 import {RunFiltersBar} from './RunFiltersBar';
-import {ListedRun, RunList, spaceFolders} from './RunList';
+import {ListedRun, RunList} from './RunList';
 import {
   Place, bySavedDesc, deleteOrRemoveRuns, formatSaved, modelLabel, placeName, placeRunFilter, runVersion,
   notifyRunsChanged, spaceListingError,
 } from './run-storage';
-import {subtreeRuns} from './space-index';
+import {spaceFolders, subtreeRuns} from './space-index';
 import {useFavorites} from './use-favorites';
 import {useSpaceIndex} from './use-space-index';
 import {locationKey, useSpaceNavigation} from './use-space-navigation';

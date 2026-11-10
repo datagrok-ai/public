@@ -11,9 +11,9 @@ BASE_URL = re.compile(r'https://[\w-]+(\.[\w-]+)*(:\d+)?(/[^?#\s]*)?', re.ASCII)
 # What to check after a failed call, by its HTTP status; without one nothing answered as the API (a connection error,
 # a login page instead of an event stream).
 HINTS: dict[int | None, str] = {
-    None: 'the baseUrl container credential',
-    401: 'the apiKey container credential: a key the endpoint takes as a Bearer token',
-    404: 'the baseUrl, apiFormat and model container credentials'}
+    None: 'the baseUrl Grokky credential',
+    401: 'the apiKey Grokky credential: a key the endpoint takes as a Bearer token',
+    404: 'the baseUrl, apiFormat and model Grokky credentials'}
 
 
 class CustomProvider(Provider):
@@ -27,10 +27,10 @@ class CustomProvider(Provider):
     def routes(self, credentials: Credentials) -> dict[ApiMode, Route]:
         api_format = BY_CREDENTIAL.get(credentials.get('apiFormat') or '')
         if api_format is None:
-            raise ProviderError(f'The apiFormat container credential must be one of {", ".join(BY_CREDENTIAL)}')
+            raise ProviderError(f'The apiFormat Grokky credential must be one of {", ".join(BY_CREDENTIAL)}')
         url = credentials.get('baseUrl') or ''
         if not BASE_URL.fullmatch(url):
-            raise ProviderError("The baseUrl container credential must be the endpoint's https URL, without user "
+            raise ProviderError("The baseUrl Grokky credential must be the endpoint's https URL, without user "
                                 'info, a query or a fragment')
         route = Route(self.endpoint(url), bearer=True)
         self.refuse_subscription_token(credentials.get('apiKey') or '', route.url)

@@ -74,7 +74,8 @@ category('ComputeUtils: Driver config path resolution', async () => {
   test('Multiple trailing segments past a leaf throw with all segments listed', async () => {
     const msg = await resolveError(['step1', 'garbage', 'more']);
     expectDeepEqual(msg != null, true, {prefix: 'Path past a leaf rejected'});
-    expectDeepEqual(msg != null && msg.includes('garbage') && msg.includes('more'), true, {prefix: 'Error names all segments'});
+    expectDeepEqual(msg != null && msg.includes('garbage') && msg.includes('more'), true,
+      {prefix: 'Error names all segments'});
   });
 
   test('Trailing segment past a nested leaf throws', async () => {

@@ -171,7 +171,14 @@ export class SunburstViewer extends EChartViewer {
     this.chart.getDom().ondblclick = handleCanvasDblClick;
 
     this.subs.push(ui.onSizeChanged(this.root).subscribe((_) => {
-      requestAnimationFrame(() => this.chart?.resize());
+      requestAnimationFrame(() => {
+        const {clientWidth, clientHeight} = this.root;
+        if (this.chart.getWidth() === clientWidth && this.chart.getHeight() === clientHeight)
+          return;
+        this.chart.resize();
+        if (this.renderError === null && this.dataFrame?.selection.anyTrue)
+          this.drawSeries();
+      });
     }));
 
     fromEvent(this.chart, 'mouseover')
@@ -194,6 +201,12 @@ export class SunburstViewer extends EChartViewer {
     case 'onClick':
       this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
       this.clearViewerFilter();
+      break;
+
+    // a click filter holds the rows of a segment of the old hierarchy; a removed column changes the hierarchy too
+    case 'hierarchyColumnNames':
+      this.clearViewerFilter();
+      this.render();
       break;
 
     default:
@@ -417,7 +430,42 @@ export class SunburstViewer extends EChartViewer {
     });
 
     this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
+    this.drawSeries();
+  }
+
+  private drawSeries(): void {
+    if (this.dataFrame.selection.anyTrue)
+      this.paintSelection();
     this.chart.setOption(this.option, false, true);
+  }
+
+  private paintSelection(): void {
+    const [x, y] = [this.chart.getWidth() / 2, this.chart.getHeight() / 2];
+    const radius = Math.min(x, y) * parseFloat(this.option.series[0].radius) / 100;
+    if (radius === 0)
+      return;
+
+    const ringWidth = radius / this.eligibleHierarchyNames.length;
+    const selected = DG.Color.toRgb(DG.Color.selectedRows);
+    const paint = (nodes: TreeDataType[], r0: number): void => {
+      const r = r0 + ringWidth;
+      for (const node of nodes) {
+        paint(node.children ?? [], r);
+        const color = node.baseColor ??= node.itemStyle?.color;
+        if (node.selectedCount === node.value)
+          node.itemStyle = {color: selected};
+        else if (node.selectedCount && color) {
+          const cut = Math.sqrt(r0 * r0 + node.selectedCount! / node.value * (r * r - r0 * r0));
+          const underLabel = cut > (r0 + r) / 2 ? DG.Color.selectedRows : DG.Color.fromHtml(color);
+          node.label = {color: DG.Color.toHtml(DG.Color.getContrastColor(underLabel))};
+          node.itemStyle = {color: {type: 'radial', x, y, r: radius, global: true, colorStops: [
+            {offset: 0, color: selected}, {offset: cut / radius, color: selected},
+            {offset: cut / radius, color}, {offset: 1, color},
+          ]}};
+        }
+      }
+    };
+    paint(this.option.series[0].data ?? [], 0);
   }
 
   detach() {

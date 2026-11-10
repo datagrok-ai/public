@@ -16,7 +16,6 @@ import {FingerprintOptions, fingerprintOptions, needsCrux} from '../utils/finger
 import {cruxReadsCxExtension} from '../crux/crux-service';
 import {hasNewLines} from '../utils/chem-common';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
-import {inchisFromInputs} from '../crux/crux-inchi';
 
 /** Tests: molecules the Crux workers get as unreadable (see {@link setCruxUnreadableForTests}). */
 let unreadableForTests: Set<string> | null = null;
@@ -123,10 +122,9 @@ export async function inchisByEngine(molecules: string[], keys: boolean): Promis
   };
   return byEngineAsync('InChI', async () => {
     const {input, skipped} = cruxInput(molecules);
-    const inputs = await (await getCruxService()).inchiInputs(input);
+    const results = await (await getCruxService()).inchis(input, keys);
     for (const row of skipped)
-      inputs[row] = null; // (Crux's input of '' is '')
-    const results = await inchisFromInputs(inputs, keys);
+      results[row] = null; // (Crux's InChI of '' is '')
     await rdkitForRows('InChI', results.flatMap((r, i) => r === null ? [i] : []),
       (rows) => rdkit(rows.map((i) => molecules[i])), (patch, k, row) => !!(results[row] = patch[k]),
       (row) => molecules[row]);

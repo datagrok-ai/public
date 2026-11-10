@@ -6,7 +6,7 @@ import * as Vue from 'vue';
 import {IconFA, Viewer, ResizeHandle, ToggleInput, wheelGuard} from '@datagrok-libraries/webcomponents-vue';
 import {
   AxisConfigMap, CandidateOverrides, ColumnCandidate, ColumnTarget, ComparisonEntry, ComparisonEntryNodes,
-  ComparisonTarget, EntrySourceKind, MatchConfidence, candidateId,
+  ComparisonTarget, candidateId,
 } from './types';
 import {UnitConverter} from './matching';
 import {
@@ -18,26 +18,7 @@ import {
 import {captureTableLayout, showProjectSaveDialog} from '../../project-export';
 import {buildComparison} from './comparison-builders';
 import {ScalarChartType, chartSpec} from './chart-spec';
-
-// chip styling lives in RunComparison.css (c2-comparison-badge + these modifiers)
-export const sourceBadge = (kind: EntrySourceKind) =>
-  <span class={`c2-comparison-badge c2-badge-${kind}`}>{kind}</span>;
-
-const confidenceBadge = (confidence: MatchConfidence) =>
-  <span class={`c2-comparison-badge c2-confidence-${confidence}`}>{confidence}</span>;
-
-export const renderListFilter = (value: Vue.Ref<string>, placeholder: string) => (
-  <input
-    type='text'
-    placeholder={placeholder}
-    value={value.value}
-    onInput={(e: Event) => value.value = (e.target as HTMLInputElement).value}
-    style={{
-      border: '1px solid var(--grey-2)', borderRadius: '3px', padding: '1px 6px',
-      outline: 'none', width: '160px',
-    }}
-  />
-);
+import {confidenceBadge, renderListFilter, sourceBadge} from './list-ui';
 
 type ColumnTypeGetter = (entryId: string, tablePath: string, columnName: string) => string | undefined;
 
@@ -366,7 +347,9 @@ export const ComparisonTab = Vue.defineComponent({
                 {target.displayName}
                 { context && <span class='c2-comparison-context'>{context}</span> }
               </span>
-              <span class='c2-comparison-units' title={target.units ? 'Units of the first run' : ''}>{target.units ?? ''}</span>
+              <span class='c2-comparison-units' title={target.units ? 'Units of the first run' : ''}>
+                {target.units ?? ''}
+              </span>
               { target.unitsWarning ?
                 <IconFA name='exclamation-triangle' tooltip='Units are missing on some runs'/> :
                 target.kind === 'column' && target.rawWithoutUnits ?
@@ -468,14 +451,17 @@ export const ComparisonTab = Vue.defineComponent({
               onUpdate:value={(val) => sharedScale.value = val}
             />
           </div> }
+        {/* the guard's hint goes on a wrapper: dg-viewer replaces its own children on every viewer render */}
         { Vue.withDirectives(
-          <Viewer
-            type={spec.type}
-            dataFrame={comparison.value!.chartDf}
-            style={{width: '100%', height: `${effectiveChartHeight}px`, flexShrink: '0'}}
-            onViewerChanged={onChartViewerChanged}
-            options={spec.options}
-          />,
+          <div style={{width: '100%', height: `${effectiveChartHeight}px`, flexShrink: '0'}}>
+            <Viewer
+              type={spec.type}
+              dataFrame={comparison.value!.chartDf}
+              style={{width: '100%', height: '100%'}}
+              onViewerChanged={onChartViewerChanged}
+              options={spec.options}
+            />
+          </div>,
           [[wheelGuard]],
         ) }
       </div>;

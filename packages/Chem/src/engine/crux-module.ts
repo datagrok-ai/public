@@ -2,14 +2,15 @@
  * The lazy loader of Chem's one Crux file, `vendor/chem-wasm` (RDKit.js-shaped calls, the search Collection,
  * descriptors, the scaffold tree): fetched and compiled once, on the first use; instantiated on the main thread on the
  * first use there (rendering, the search's query check); the compiled Module is what the Crux workers instantiate.
- * In RDKit mode only what runs on Crux in both modes loads it (molzip; FCFP and chirality fingerprints). A load not
- * done within a minute of its fetch's start (a stalled fetch) has failed; a failed load is tried once more a minute
- * later (a network hiccup), then it is final for the session; a wasm trap on the main thread
- * (`WebAssembly.RuntimeError`) is final at once. The callers take their RDKit paths meanwhile.
+ * In RDKit mode only what runs on Crux in both modes loads it (molzip, the macromolecule assembler; FCFP and
+ * chirality fingerprints). A load not done within a minute of its fetch's start (a stalled fetch) has failed; a failed
+ * load is tried once more a minute later (a network hiccup), then it is final for the session; a wasm trap on the main
+ * thread (`WebAssembly.RuntimeError`) is final at once. The callers take their RDKit paths meanwhile.
  */
 import * as DG from 'datagrok-api/dg';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitWebRoot} from '../utils/chem-common-rdkit';
+import {isWasmTrap} from '../crux/crux-api';
 
 /** The vendored wasm, emitted under its own name into `dist/` (rspack.config.js `emit`). */
 export const CRUX_WASM_FILE = 'chem_wasm_bg.wasm';
@@ -90,8 +91,9 @@ export function loadCrux(reason: string): Promise<ChemWasm> {
   if (held)
     return held.then(() => loadCrux(reason));
   instantiated ??= withinLimit((async () => {
-    const module = await compileCrux();
-    const glue: ChemWasm = await import('../../vendor/chem-wasm/chem_wasm.js');
+    // the glue's chunk is fetched while the wasm downloads and compiles, not after
+    const [module, glue]: [WebAssembly.Module, ChemWasm] =
+      await Promise.all([compileCrux(), import('../../vendor/chem-wasm/chem_wasm.js')]);
     memory = (await glue.default({module_or_path: module})).memory;
     glue.prefer_coordgen(false);
     glue.use_legacy_stereo_perception(false);
@@ -159,10 +161,11 @@ function fail(e: any): never {
 
 /**
  * A main-thread Crux call threw `e`: a wasm trap (`WebAssembly.RuntimeError`: a Rust panic or an out-of-bounds access)
- * may have left the instance broken, so Crux is off for the session and RDKit does its work; logged once.
+ * or a stack overflow out of a wasm call (crux-api.ts `isWasmTrap`) may have left the instance broken, so Crux is off
+ * for the session and RDKit does its work; logged once.
  */
 export function noteCruxError(e: unknown): void {
-  if (!(e instanceof WebAssembly.RuntimeError) || failureFinal)
+  if (!isWasmTrap(e) || failureFinal)
     return;
   failure = e;
   failureFinal = true;

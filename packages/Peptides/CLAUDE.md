@@ -11,7 +11,7 @@ Category: **Bioinformatics**. Top menu: `Bio | Analyze | SAR...`.
 ### Entry Point — `src/package.ts`
 
 `PackageFunctions` class registers all platform-visible functions via `@grok.decorators`:
-- `initPeptides` — `@init`: loads MonomerWorks, TreeHelper, and monomer library components
+- `initPeptides` — `@init`: loads TreeHelper and the monomer library components
 - `Peptides` — `@func`: app landing view with Simple/Complex/HELM demo buttons
 - `peptidesDialog` (`Bio Peptides`) — `@func`: top-menu SAR dialog (`Bio | Analyze | SAR...`). Validates active table has Macromolecule + numerical columns, shows config dialog, launches analysis
 - `peptidesPanel` — `@panel`: property panel widget for Macromolecule columns
@@ -27,7 +27,7 @@ Category: **Bioinformatics**. Top menu: `Bio | Analyze | SAR...`.
 - `Sequence Position Statistics` → `SequencePositionStatsViewer`
 - `Active peptide selection` → `ClusterMaxActivityViewer`
 
-**Exports**: `_package`, `getMonomerWorksInstance()`, `getTreeHelperInstance()`
+**Exports**: `_package`, `getTreeHelperInstance()`
 
 ### Model — `src/model.ts`
 
@@ -128,7 +128,7 @@ Receives a chunk of the upper-triangular pairwise comparison matrix. For each pa
 
 ## Analysis Flow
 
-1. User opens table with Macromolecule column → `initPeptides` loads MonomerWorks + TreeHelper
+1. User opens table with Macromolecule column → `initPeptides` loads TreeHelper
 2. User triggers SAR via top menu (`Bio | Analyze | SAR...`) or column panel → `analyzePeptidesUI` shows config dialog
 3. `startAnalysis` creates `PeptidesModel`, splits sequences into position columns, scales activity
 4. Model adds viewers (MonomerPosition, MostPotentResidues, LogoSummaryTable, etc.) to the TableView
@@ -150,7 +150,7 @@ Receives a chunk of the upper-triangular pairwise comparison matrix. For each pa
 
 ## Key Dependencies
 
-- `@datagrok-libraries/bio` — macromolecule utilities, sequence splitting, monomer palettes, WebLogo, MonomerWorks
+- `@datagrok-libraries/bio` — macromolecule utilities, sequence splitting, monomer palettes, WebLogo
 - `@datagrok-libraries/ml` — distance matrices, dimensionality reduction (UMAP/tSNE), MCL clustering, macromolecule distance functions
 - `@datagrok-libraries/math` — DBSCAN worker, WebGPU utilities
 - `@datagrok-libraries/statistics` — statistical functions

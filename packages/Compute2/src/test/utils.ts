@@ -31,7 +31,7 @@ export async function launchApp(name: string, timeout = 10000): Promise<DG.ViewB
 
 /** Close a view, swallowing errors if already closed. */
 export function closeView(view: DG.ViewBase): void {
-  try { view.close(); } catch (_) { /* already closed */ }
+  try {view.close();} catch (_) {/* already closed */}
 }
 
 /** Registers views a category's tests open, so every one of them is closed after the category. */

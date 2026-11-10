@@ -25,13 +25,14 @@ import {GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/cons
 import {execMonomerHoverLinks} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {CellRendererBackBase, getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
-import {MmcrTemps, rendererSettingsChangedState, tempTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
+import {MmcrTemps, tempTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
 import {CellRendererWithMonomerLibBackBase} from './monomer-cell-renderer-base';
 import * as C from './constants';
 
 import {_package} from '../package';
 import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {getBioRendererDefaults} from './renderer-defaults';
 
 type TempType = { [tagName: string]: any };
 
@@ -120,6 +121,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
       });
     }
     this.hasMouseOver = false;
+    try { // the back clears what it shows while the mouse is over a cell
+      this.getRendererBack(gridCell)?.onMouseLeave(gridCell, _e);
+    } catch (err) {
+      _package.logger.error(err instanceof Error ? err.message : String(err));
+    }
   }
 
   override onDoubleClick(gridCell: DG.GridCell, e: MouseEvent) {
@@ -163,8 +169,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const gapLength = 0;
     const msaGapLength = 8;
 
-    // Cell renderer settings
-    let maxLengthOfMonomer: number = (_package.properties ? _package.properties.maxMonomerLength : 4) ?? 50;
+    // Cell renderer settings: the column's, else the package defaults
+    let maxLengthOfMonomer: number = getBioRendererDefaults().maxMonomerLength;
     if (mmcrTAGS.maxMonomerLength in tableCol.tags) {
       const v = parseInt(tableCol.getTag(mmcrTAGS.maxMonomerLength));
       maxLengthOfMonomer = !isNaN(v) && v ? v : 50;
@@ -178,13 +184,14 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     if (!seqColTemp) {
       seqColTemp = temp.rendererBack = new MonomerPlacer(gridCol, tableCol, _package.logger, maxLengthOfMonomer,
         () => {
-          const {font, fontWidth} = MonomerPlacer.getFontSettings(tableCol);
+          const defaults = getBioRendererDefaults();
+          const {font, fontWidth, fontSize} = MonomerPlacer.getFontSettings(tableCol, defaults.fontSize);
           return {
-            font: font, fontCharWidth: fontWidth, separatorWidth: !sh.isMsa() ? gapLength : msaGapLength,
-            monomerToShort: monomerToShortFunction,
+            font: font, fontCharWidth: fontWidth, fontSize, separatorWidth: !sh.isMsa() ? gapLength : msaGapLength,
+            monomerToShort: monomerToShortFunction, maxMonomerLength: defaults.maxMonomerLength,
+            showConnections: defaults.showConnections,
           };
         });
-      tableCol.temp[MmcrTemps.rendererSettingsChanged] === rendererSettingsChangedState.true;
       seqColTemp.init().then(() => {});
     }
 

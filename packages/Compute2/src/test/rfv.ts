@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {category, test, expect, waitUntil, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, waitUntil, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
+import {OUTPUT_OUTDATED_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {closeViewsAfter, awaitWebComponents, deleteSavedWorkflow} from './utils';
 import {DAY_CALCULATION, uniqueName, withRunStorage} from './run-storage';
@@ -147,6 +148,103 @@ category('RFV: run ObjectCooling2', () => {
   });
 });
 
+category('RFV: core validation', () => {
+  const track = closeViewsAfter();
+
+  const open = async (preset: Record<string, any>) => {
+    await awaitWebComponents();
+    const call = DG.Script.create(`//name: RfvCoreValidation
+//language: javascript
+//input: int ranged = 5 {min: 0; max: 10}
+//input: string code = "12ab" {validator: startsWith(value, "12")}
+//input: string req
+//output: int res
+res = ranged;`).prepare(preset);
+    const view = track(await grok.functions.call(
+      'Compute2:RichFunctionViewEditor', {call},
+    ) as unknown as DG.ViewBase);
+    // the form reports its validity to the view before the instance becomes readable here
+    const formOf = () => (view.root.querySelector('dg-input-form') as any)?.formInst as DG.InputForm | undefined;
+    await waitUntil(() => !!formOf(), 'Form not rendered', 15000);
+    const runDisabled = () => Array.from(view.root.querySelectorAll('button'))
+      .find((b) => b.textContent?.trim() === 'Run')!.classList.contains('d4-disabled');
+    return {view, call, form: formOf()!, runDisabled};
+  };
+
+  test('Opened with valid values can run', async () => {
+    const {form, runDisabled} = await open({ranged: 5, code: '12ab', req: 'x'});
+    expect(form.isValid, true);
+    expect(runDisabled(), false);
+  });
+
+  test('Opened with invalid values blocks the run until fixed', async () => {
+    const {view, call, form, runDisabled} = await open({ranged: 50, code: 'xyz', req: 'x'});
+    expect(form.isValid, false);
+    expect(runDisabled(), true);
+
+    form.getInput('ranged').value = 3;
+    form.getInput('code').value = '12cd';
+    await waitUntil(() => !runDisabled(), 'Run should be enabled once inputs are fixed', 5000);
+    await clickBigButton(view.root, 'Run');
+    await awaitRunComplete(view.root);
+    expect(call.outputs.get('res'), 3);
+  });
+
+  test('Opened with an empty required input blocks the run', async () => {
+    const {form, runDisabled} = await open({ranged: 5, code: '12ab'});
+    expect(form.isValid, false);
+    expect(runDisabled(), true);
+  });
+});
+
+category('RFV: autorun', () => {
+  const track = closeViewsAfter();
+
+  /** Opens an autorun script, then sets `a` to 10 and, while the run that starts is in progress, to [next]. */
+  const editDuringRun = async (body: string, next: number) => {
+    await awaitWebComponents();
+    const call = DG.Script.create(`//name: RfvAutorun
+//language: javascript
+//input: double a = 1 {min: 0}
+//input: double b = 2
+//output: double c
+//meta.runOnInput: true
+await new Promise((r) => setTimeout(r, 1500));
+${body}`).prepare({a: 1, b: 2});
+    const view = track(await grok.functions.call(
+      'Compute2:RichFunctionViewEditor', {call},
+    ) as unknown as DG.ViewBase);
+    const formOf = () => (view.root.querySelector('dg-input-form') as any)?.formInst as DG.InputForm | undefined;
+    await waitUntil(() => !!formOf(), 'Form not rendered', 15000);
+    const isRunning = () => !!view.root.querySelector('.c2-compositor-overlay--active');
+    await waitUntil(() => !isRunning(), 'Initial autorun did not finish', 10000);
+
+    formOf()!.getInput('a').value = 10;
+    await waitUntil(isRunning, 'Autorun did not start', 5000);
+    formOf()!.getInput('a').value = next;
+    return {call, isRunning};
+  };
+
+  test('An input changed during a run is run again', async () => {
+    const {call} = await editDuringRun('c = a + b;', 40);
+    await waitUntil(() => call.outputs.get('c') === 42, () => `Expected c = 42, got ${call.outputs.get('c')}`, 10000);
+  });
+
+  test('An input changed during a failed run is run again', async () => {
+    const {call} = await editDuringRun('if (a === 10) throw new Error("Expected failure");\nc = a + b;', 40);
+    await waitUntil(() => call.outputs.get('c') === 42, () => `Expected c = 42, got ${call.outputs.get('c')}`, 10000);
+  });
+
+  test('An input made invalid during a run leaves the outputs outdated and is not run', async () => {
+    const {call, isRunning} = await editDuringRun('c = a + b;', -5);
+    await waitUntil(() => !isRunning(), 'Run did not finish', 10000);
+    await delay(1000);
+    expect(isRunning(), false, 'An invalid input should not start a run');
+    expect(call.outputs.get('c'), 12);
+    expect(call.options[OUTPUT_OUTDATED_PATH], 'true', 'Outputs of a=10 should be outdated for a=-5');
+  });
+});
+
 // ---- Pipeline tests ----
 
 category('Pipeline: MockPipeline1 static', () => {
@@ -225,9 +323,9 @@ category('Pipeline: MockPipeline2 sequential', () => {
     await waitUntil(() => {
       const labels = view.root.querySelectorAll('.mtl-tree .mtl-ml');
       const texts = Array.from(labels).map((l) => l.textContent?.trim());
-      const count = (texts.some((t) => t === 'add') ? 1 : 0)
-        + (texts.some((t) => t === 'mul') ? 1 : 0)
-        + (texts.some((t) => t?.includes('cooling')) ? 1 : 0);
+      const count = (texts.some((t) => t === 'add') ? 1 : 0) +
+        (texts.some((t) => t === 'mul') ? 1 : 0) +
+        (texts.some((t) => t?.includes('cooling')) ? 1 : 0);
       return count >= 2;
     }, 'Tree should show at least 2 of: add, mul, cooling', 10000);
 

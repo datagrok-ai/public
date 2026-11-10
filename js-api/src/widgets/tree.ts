@@ -138,9 +138,9 @@ export class TreeViewNode<T = any> {
   /** Occurs when the selected node is changed. */
   get onSelected(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-current', this.dart); }
 
-  /** Removes the node and its children from the parent */
-  remove(): void {
-    api.grok_TreeViewNode_Remove(this.dart);
+  /** Removes the node and its children from the parent; pass `kill: true` to also dispose of it when it will not be added back */
+  remove(kill: boolean = false): void {
+    api.grok_TreeViewNode_Remove(this.dart, kill);
   }
 }
 
@@ -276,6 +276,7 @@ export class TreeViewGroup extends TreeViewNode {
 
   /** Populates this group from a server data source (one node per entity). */
   async loadSources(source: HttpDataSource<any>): Promise<void> {
-    return api.grok_TreeViewGroup_Load_Sources(this.dart, source.dart);
+    // source.dart is shared by every copy of the source; only _prepare() puts this copy's query on it
+    return api.grok_TreeViewGroup_Load_Sources(this.dart, source._prepare());
   }
 }

@@ -134,14 +134,15 @@ category('calculate', () => {
     });
     expect(['MW', 'HBA', 'HBD'].every((it) => smiles.columns.names().includes(it)),
       true, 'Not all properties columns have been added');
-    expect(smiles.col('MW')?.get(3), 342.107177734375, `incorrect MW value`);
+    // the average molecular weight, as Crux mode's (OpenChemLib's monoisotopic mass until 2026-11-04: 342.107)
+    expect(smiles.col('MW')?.get(3), 342.482666015625, `incorrect MW value`);
     expect(smiles.col('HBA')?.get(3), 5, `incorrect HBA value`);
     expect(smiles.col('HBD')?.get(3), 1, `incorrect HBD value`);
   });
 
   test('properties: Crux mode, RDKit\'s definitions', async () => {
-    // the pinned RDKit's values (crux-core's tools/chem-wasm/chem_props_oracle.py): MolWt, not OpenChemLib's
-    // monoisotopic mass; ESOL, Crippen, RDKit's strict rotatable bonds; empty cells where no molecule is read
+    // the pinned RDKit's values (crux-core's tools/chem-wasm/chem_props_oracle.py): MolWt; ESOL, Crippen, RDKit's
+    // strict rotatable bonds; empty cells where no molecule is read
     const col = DG.Column.fromStrings('smiles', ['CN1CCC(CC1)Oc2ccc(cc2)C(F)(F)F',
       'CC1CCN(CC(O)CN2C(=O)C3=C(SCCS3)C2=O)CC1', 'NCc1cnn(O)c1Br', '', 'C1CC(']);
     col.semType = DG.SEMTYPE.MOLECULE;
@@ -169,9 +170,11 @@ category('calculate', () => {
   test('structural alerts', async () => {
     smiles = grok.data.demo.molecules(20);
     await grok.data.detectSemanticTypes(smiles);
+    const columnCount = smiles.columns.length;
     await PackageFunctions.structuralAlertsTopMenu(smiles, smiles.col('smiles')!, true, true, true, false, false, false, false, false);
     expect(['PAINS (smiles)', 'BMS (smiles)', 'SureChEMBL (smiles)'].every((it) => smiles.columns.names().includes(it)),
       true, 'Not all structural alerts columns have been added');
+    expect(smiles.columns.length, columnCount + 3, 'only the rule sets ticked get a column');
     expect(smiles.col('PAINS (smiles)')?.get(2), false, `incorrect PAINS (smiles) value`);
     expect(smiles.col('BMS (smiles)')?.get(2), true, `incorrect BMS (smiles) value`);
     expect(smiles.col('SureChEMBL (smiles)')?.get(2), true, `incorrect SureChEMBL (smiles) value`);

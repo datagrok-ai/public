@@ -16,6 +16,9 @@ Feature: Creating a space
   Serial with spaces-delete, whose tree lost its fixture space while this feature made root spaces (twice in four
   full runs; see spaces-delete.feature).
 
+  The child, dropped on the Spaces node, is moved out to the root once the "Move space" dialog asks
+  (`_initSpacesDragDrop` in browse_panel_tree.dart); the Background's sweep takes it as a root.
+
   Background:
     Given user is logged in
     And the browse panel is open
@@ -65,7 +68,7 @@ Feature: Creating a space
     When user clicks on CANCEL button in Create Space dialog
     Then the "Create Space" dialog should close
 
-  Scenario: A child space is created under a root space
+  Scenario: A child space is created under a root space, and dropped on Spaces it moves out to the root
     When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
     And user enters "BDD-Parent" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
@@ -76,3 +79,10 @@ Feature: Creating a space
     And user clicks on OK button in Create Space dialog
     Then the "Create Space" dialog should close
     And BDD-Child tree node inside browse tree should be visible
+    When user drags BDD-Child tree node inside browse tree to Spaces tree node inside browse tree
+    Then "Move space" dialog should be visible
+    And "Move space" dialog should contain text "Move BDD-Child out?"
+    When user clicks on MOVE button in "Move space" dialog
+    Then the "Move space" dialog should close
+    And Spaces---BDD-Child tree node inside browse tree should be visible
+    And no errors should have been logged

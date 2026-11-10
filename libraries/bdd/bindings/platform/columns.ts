@@ -310,6 +310,26 @@ export const joinedValues = Then('every value of {string} column should be {stri
   expect(bad, `rows of "${column}" that are not "${a}${sep}${b}"`).toEqual([]);
 }, {description: 'a pairing column: each cell is the two source cells of its row with the separator between'});
 
+export const setGridColumnBackColor = When('user sets the back color of the {word} of {string} column to {string}', async (page: Page, part: string, column: string, color: string) => {
+  await page.evaluate(([p, c, hex]) => {
+    const gc = grok.shell.tv.grid.col(c);
+    if (!gc)
+      throw new Error(`no "${c}" column in the grid`);
+    (p === 'header' ? gc.headerCellStyle : gc.contentCellStyle).backColor = (0xFF000000 | parseInt(hex.slice(1), 16)) >>> 0;
+    grok.shell.tv.grid.invalidate();
+  }, [part, column, color] as [string, string, string]);
+}, {tier: 'api', description: 'the Back Color of a grid column\'s Style section, written directly: part is cells or header; the panel\'s colour picker is claimed elsewhere'});
+
+export const setGridColumnFormat = When('user sets the format of {string} column in the grid to {string}', async (page: Page, column: string, format: string) => {
+  await page.evaluate(([c, f]) => {
+    const gc = grok.shell.tv.grid.col(c);
+    if (!gc)
+      throw new Error(`no "${c}" column in the grid`);
+    gc.format = f;
+    grok.shell.tv.grid.invalidate();
+  }, [column, format] as [string, string]);
+}, {tier: 'api', description: 'the Format of a grid column, written directly: the Style section\'s dropdown is not what this step claims'});
+
 export const setColumnSemType = When('user sets the semantic type of {string} column to {string}', async (page: Page, column: string, semType: string) => {
   await page.evaluate(([c, s]) => {
     const col = grok.shell.t.col(c);

@@ -11,19 +11,27 @@ Feature: A space in favorites
 
   For an account that administers a group, as the running one does, "Add To Favorites" is a submenu
   of "Only for me" and the groups, and its item is a check: picking it again takes the space out
-  (GROK-21108 replaced "Remove from favorites" with it).
+  (GROK-21108 replaced "Remove from favorites" with it). The favorite expands to its child space
+  (core#840).
 
   Background:
     Given user is logged in
     And the browse panel is open
     And no space named "BDD-Fav" is on the server
 
+  @realizes:core#840
   Scenario: A space is added to favorites
     Given a space named "BDD-Fav" is on the server
+    And a space named "BDD-FavChild" under "BDD-Fav" is on the server
     And Spaces tree node inside browse tree is expanded
     And "My stuff > Favorites > BDD-Fav" tree node inside browse tree should be absent
     When user picks "Add To Favorites > Only for me" from the context menu of Spaces---BDD-Fav tree node inside browse tree
     Then "My stuff > Favorites > BDD-Fav" tree node inside browse tree should be present
+    Given My stuff tree node inside browse tree is expanded
+    And My-stuff---Favorites tree node inside browse tree is expanded
+    When user expands "My stuff > Favorites > BDD-Fav" tree node inside browse tree
+    Then My-stuff---Favorites---BDD-Fav---BDD-FavChild tree node inside browse tree should be visible
+    And no errors should have been logged
 
   Scenario: A space is removed from favorites
     When user picks "Add To Favorites > Only for me" from the context menu of Spaces---BDD-Fav tree node inside browse tree

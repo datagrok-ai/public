@@ -6,7 +6,7 @@ import * as Vue from 'vue';
 import type {InputFormT} from '@datagrok-libraries/webcomponents';
 import {
   applyDefaultFloatFormats, applyInputsVisibility, ConsistencyInfo, injectInputBaseStatus, isInputEnabled,
-  isInputInjected, ValidationResult,
+  ValidationResult,
 } from './utils';
 import {BehaviorSubject} from 'rxjs';
 import {useUnwrappedCallMeta} from '../composables/useUnwrappedCallMeta';
@@ -66,10 +66,6 @@ export const InputForm = Vue.defineComponent({
     consistencyReset: (_ioName: string) => true,
   },
   setup(props, {emit}) {
-    Vue.onRenderTriggered((event) => {
-      console.log('InputForm onRenderTriggered', event);
-    });
-
     const currentCall = Vue.computed(() => {
       if (props.funcCall) applyDefaultFloatFormats(props.funcCall);
       return Vue.markRaw(props.funcCall);
@@ -86,7 +82,9 @@ export const InputForm = Vue.defineComponent({
 
     const currentForm = Vue.shallowRef(undefined as undefined | DG.InputForm);
 
-    Vue.watch([currentCall, currentForm, validationStates, consistencyStates], ([call, form, validationStates, consistencyStates]) => {
+    Vue.watch([currentCall, currentForm, validationStates, consistencyStates, isReadonly], (
+      [call, form, validationStates, consistencyStates, isReadonly],
+    ) => {
       if (!form || !call) return;
 
       [...call.inputParams.values()]
@@ -96,12 +94,9 @@ export const InputForm = Vue.defineComponent({
           const validation = validationStates?.[param.property.name];
           const consistency = consistencyStates?.[param.property.name];
 
-          if (!isInputInjected(input))
-            injectInputBaseStatus(emit, param.property.name, input);
+          injectInputBaseStatus(emit, param.property.name, input)({validation, consistency});
 
-          (input as any).setStatus({validation, consistency});
-
-          input.enabled = isInputEnabled(param.property, consistency, isReadonly.value);
+          input.enabled = isInputEnabled(param.property, consistency, isReadonly);
         });
     });
 
@@ -135,7 +130,7 @@ export const InputForm = Vue.defineComponent({
                 if (isParsed)
                   (input as DG.ChoiceInput<any>).items = items;
               }
-            } catch(e) {
+            } catch (e) {
               console.error(e);
             } finally {
               input.value = currentValue;
@@ -157,7 +152,7 @@ export const InputForm = Vue.defineComponent({
     });
 
     const formReplacedCb = async (event: {detail?: DG.InputForm}) => {
-      const form = event.detail ? Vue.markRaw(event.detail) : undefined
+      const form = event.detail ? Vue.markRaw(event.detail) : undefined;
       currentForm.value = form;
       emit('formReplaced', form);
     };

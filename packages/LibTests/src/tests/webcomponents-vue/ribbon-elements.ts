@@ -63,6 +63,26 @@ category('WebComponentsVue: Ribbon elements', () => {
     expectDeepEqual(warned, ['busy']);
   });
 
+  test('presses on Enter and Space like a click', async () => {
+    let ran = 0;
+    const warned: string[] = [];
+    const state = createPanelItem(panelItem({onClick: () => ran++}), 'fa:save', deps(warned));
+    expectDeepEqual(state.el.tabIndex, 0);
+    expectDeepEqual(state.el.getAttribute('role'), 'button');
+    state.el.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
+    state.el.dispatchEvent(new KeyboardEvent('keydown', {key: ' '}));
+    state.el.dispatchEvent(new KeyboardEvent('keydown', {key: 'a'}));
+    expectDeepEqual(ran, 2);
+    updatePanelItem(state, panelItem({
+      onClick: () => ran++,
+      disabled: true, disabledStyle: 'none', disabledReason: 'busy', disabledReasonMode: 'popup',
+    }));
+    expect(state.el.hasAttribute('aria-disabled'));
+    state.el.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
+    expectDeepEqual(ran, 2);
+    expectDeepEqual(warned, ['busy']);
+  });
+
   test('debounces disabled style with real timers', async () => {
     const warned: string[] = [];
     const state = createPanelItem(
@@ -81,5 +101,12 @@ category('WebComponentsVue: Ribbon elements', () => {
     const withIcon = createMenuItem(menuItem({text: 'Run', icon: 'play'}), 'Run|play');
     expect(withIcon.el.textContent?.includes('Run'));
     expect(withIcon.el.querySelector('i')?.classList.contains('fa-play'));
+  });
+
+  test('names an icon by its tooltip and drops the name with it', async () => {
+    const state = createPanelItem(panelItem({icon: 'save', tooltip: 'Save'}), 'fa:save', deps());
+    expectDeepEqual(state.el.getAttribute('aria-label'), 'Save');
+    updatePanelItem(state, panelItem({icon: 'save'}));
+    expectDeepEqual(state.el.getAttribute('aria-label'), null);
   });
 });

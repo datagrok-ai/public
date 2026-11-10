@@ -10,7 +10,8 @@ import {
 } from '../components/RunStorage/run-storage';
 import {useSpaceIndex} from '../components/RunStorage/use-space-index';
 import {
-  SpaceIndex, favoriteSpaces, loadSpaceIndex, makeIndex, parentsOf, reloadSpaces, subtreeCounts, subtreeRuns,
+  SpaceIndex, favoriteSpaces, loadSpaceIndex, makeIndex, parentsOf, reloadSpaces, spaceFolders, subtreeCounts,
+  subtreeRuns,
 } from '../components/RunStorage/space-index';
 import {FavoritesApi, createFavorites} from '../components/RunStorage/use-favorites';
 import {RunsLocation, SPACES, locationKey, useSpaceNavigation} from '../components/RunStorage/use-space-navigation';
@@ -20,7 +21,7 @@ import {useRunDetails} from '../components/RunStorage/use-run-details';
 import {useRunSelection} from '../components/RunStorage/use-run-selection';
 import {useMyRuns} from '../components/RunStorage/use-my-runs';
 import {useRunAuthors} from '../components/RunStorage/use-run-authors';
-import {RunList, spaceFolders} from '../components/RunStorage/RunList';
+import {RunList} from '../components/RunStorage/RunList';
 import {ModelSelector} from '../components/RunStorage/ModelSelector';
 import {PlacesTree} from '../components/RunStorage/PlacesTree';
 import {SaveRunDialog} from '../components/RunStorage/SaveRunDialog';
@@ -620,6 +621,29 @@ category('Run storage: space index', () => {
         unmount();
       }
     }));
+
+  test('Tab in the Save dialog goes round its three fields only', async () => {
+    const {root, unmount} = mount(SaveRunDialog, {func: DG.Func.byName(DAY_CALCULATION), name: 'New'});
+    try {
+      const fields = Array.from(root.querySelectorAll<HTMLElement>('.c2-runs-form .ui-input-editor'));
+      const cancel = Array.from(root.querySelectorAll<HTMLElement>('button'))
+        .find((el) => el.textContent === 'Cancel')!;
+      const tab = (from: HTMLElement, shiftKey = false) => {
+        from.focus();
+        from.dispatchEvent(new KeyboardEvent('keydown', {key: 'Tab', shiftKey, bubbles: true, cancelable: true}));
+        return document.activeElement;
+      };
+      // Vue skips an event stamped in the millisecond its listener was attached
+      await new Promise((resolve) => setTimeout(resolve, 2));
+      expect(fields.length, 3);
+      expect(tab(fields[0]) === fields[1], true, 'Tab from Name should go to Description');
+      expect(tab(fields[2]) === fields[0], true, 'Tab from Tags should go round to Name');
+      expect(tab(fields[0], true) === fields[2], true, 'Shift+Tab from Name should go round to Tags');
+      expect(tab(cancel) === fields[0], true, 'Tab from Cancel should go to Name');
+    } finally {
+      unmount();
+    }
+  });
 
   test('The open model dropdown doesn\'t scroll sideways', async () => {
     const {root, unmount} = mount(ModelSelector, {models: [DG.Func.byName(DAY_CALCULATION)]});

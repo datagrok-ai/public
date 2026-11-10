@@ -68,7 +68,8 @@ export class BaseTree<T> {
   }
 
   traverse<A>(start: TreeNode<T>, handler: TraverseHandler<A, TreeNode<T>, NodePath>, acc: A) {
-    const fn = buildTraverseD([] as NodePath, (item: TreeNode<T>, path: NodePath) => item.getChildren().map(({id, item}, idx) => [item, [...path, {id, idx}] as NodePath] as const));
+    const fn = buildTraverseD([] as NodePath, (item: TreeNode<T>, path: NodePath) =>
+      item.getChildren().map(({id, item}, idx) => [item, [...path, {id, idx}] as NodePath] as const));
     return fn(start, handler, acc);
   }
 
@@ -136,7 +137,8 @@ export class TreeNode<T> {
   constructor(private item: T) {}
 
   public traverse<A>(handler: TraverseHandler<A, TreeNode<T>, NodePath>, acc: A) {
-    const fn = buildTraverseD([] as NodePath, (item: TreeNode<T>, path: NodePath) => item.getChildren().map(({id, item}, idx) => [item, [...path, {id, idx}] as NodePath] as const));
+    const fn = buildTraverseD([] as NodePath, (item: TreeNode<T>, path: NodePath) =>
+      item.getChildren().map(({id, item}, idx) => [item, [...path, {id, idx}] as NodePath] as const));
     return fn(this, handler, acc);
   }
 

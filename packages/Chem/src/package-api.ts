@@ -304,8 +304,11 @@ export namespace funcs {
     return await grok.functions.call('Chem:CanvasMol', { x, y, w, h, canvas, molString, scaffoldMolString, options, renderingOptions });
   }
 
-  export async function drawMolecule(molStr: string , w?: number , h?: number , popupMenu?: boolean ): Promise<any> {
-    return await grok.functions.call('Chem:DrawMolecule', { molStr, w, h, popupMenu });
+  /**
+   * @param {boolean} cache - Keep the drawing in the renderer's caches. False keeps nothing, for very large one-off drawings
+   */
+  export async function drawMolecule(molStr: string , w?: number , h?: number , popupMenu?: boolean , cache?: boolean ): Promise<any> {
+    return await grok.functions.call('Chem:DrawMolecule', { molStr, w, h, popupMenu, cache });
   }
 
   /**
@@ -568,6 +571,10 @@ export namespace funcs {
    */
   export async function molzip(molecules: any , params?: any ): Promise<any> {
     return await grok.functions.call('Chem:Molzip', { molecules, params });
+  }
+
+  export async function getMacromoleculeAssembler(): Promise<any> {
+    return await grok.functions.call('Chem:GetMacromoleculeAssembler', {});
   }
 
   /**
@@ -1210,7 +1217,7 @@ export namespace funcs {
   }
 
   /**
-   * Calculates chemical properties and adds them as columns to the input table. With the Chemical Engine setting on RDKit (the default) OpenChemLib calculates them, with Crux they follow RDKit's definitions (MW is then the average molecular weight, not the monoisotopic mass). Properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
+   * Calculates chemical properties and adds them as columns to the input table. With the Chemical Engine setting on Crux (the default) they follow RDKit's definitions, on RDKit OpenChemLib calculates them; MW is the average molecular weight in both. Properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
    * @param {DG.DataFrame} table - Input data table
    * @param {DG.Column} molecules
    *   semType: Molecule
@@ -1516,7 +1523,7 @@ export namespace funcs {
    *   choices: ["Average","Sum","Product","Geomean","Min","Max"]
    * @param {boolean} createCoverageColumn - Add a column counting non-empty properties per row
    */
-  export async function mpoCalculate(df: DG.DataFrame , columns: string[] , profileName: string , aggregation: string , createDesirabilityColumns: boolean , createCoverageColumn: boolean ): Promise<DG.DataFrame> {
+  export async function mpoCalculate(df: DG.DataFrame , columns: string[] , profileName: string , aggregation: string , createDesirabilityColumns: boolean , createCoverageColumn?: boolean ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:MpoCalculate', { df, columns, profileName, aggregation, createDesirabilityColumns, createCoverageColumn });
   }
 

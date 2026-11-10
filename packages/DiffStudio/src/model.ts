@@ -26,12 +26,11 @@ export class Model {
     this.info = modelInfo.info;
   }
 
-  private async showHelpPanel(): Promise<void> {
+  private showHelpPanel(): void {
     const helpMD = ui.markdown(this.info);
     helpMD.classList.add('diff-studio-demo-app-div-md');
     const divHelp = ui.div([helpMD], 'diff-studio-demo-app-div-help');
 
-    await new Promise<void>((r) => setTimeout(r, 1000));
     grok.shell.windows.help.showHelp(divHelp);
     grok.shell.windows.context.visible = true;
     grok.shell.windows.showContextPanel = false;
@@ -47,6 +46,6 @@ export class Model {
   public async runDemo(): Promise<void> {
     const solver = new DiffStudio(true, undefined, undefined, undefined, this.uiOptions);
     await solver.runModel(this.model);
-    await this.showHelpPanel();
+    this.showHelpPanel();
   }
 }; // Model

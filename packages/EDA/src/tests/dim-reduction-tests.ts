@@ -76,6 +76,19 @@ category('Dimensionality reduction: T-SNE', () => {
   });
 });
 
+category('DBSCAN', () => {
+  test('two dense groups and a far point', async () => {
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromFloat32Array('x', new Float32Array([0, 0.01, 0, 0.01, 5, 5.01, 5, 5.01, 20])),
+      DG.Column.fromFloat32Array('y', new Float32Array([0, 0, 0.01, 0.01, 5, 5, 5.01, 5.01, 20])),
+    ]);
+    const clusters: DG.Column = await grok.functions.call('EDA:DBSCAN',
+      {df, xCol: df.col('x'), yCol: df.col('y'), epsilon: 0.02, minPts: 4});
+    expect(clusters.name, 'Cluster (DBSCAN)');
+    expect(clusters.toList().join(', '), '1, 1, 1, 1, 2, 2, 2, 2, -1');
+  });
+});
+
 async function testDimensionalityReductionUI(
   columns: string[], methodName: DimReductionMethods, metrics: KnownMetrics[],
 ) {

@@ -13,5 +13,6 @@ export * from './src/directives/wheelGuard';
 export * from './src/ValidationIcon/ValidationIcon';
 export * from './src/ResizeHandle/ResizeHandle';
 export * from './src/Tabs/Tabs';
+export * from './src/on-press';
 export type {ValidationIconInput} from '@datagrok-libraries/webcomponents/src/ValidationIcon/ValidationIcon';
 export * from './src/composables/useUnwrappedCallMeta';

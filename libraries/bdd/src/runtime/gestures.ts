@@ -139,9 +139,10 @@ export async function readClipboard(page: Page): Promise<string> {
 
 /** Leaves the element first, to its left on the same line — a pointer already resting on it (the
  * previous click) produces no pointerenter, and tooltips listen for that; leaving upwards would
- * cross a neighbouring menu row and close the submenu the element sits in — then lands on its
- * centre in one move and checks that the element is still where it was: a shift under the
- * pointer right after the move (a view still docking) leaves it again, unseen. The browser
+ * cross a neighbouring menu row and close the submenu the element sits in — then lands on the
+ * centre of its part the panels around it do not clip (a tree row as wide as its longest name) in
+ * one move and checks that the element is still where it was: a shift under the pointer right
+ * after the move (a view still docking) leaves it again, unseen. The browser
  * coalesces mouse moves queued while its main thread is busy, so the pair can collapse into the
  * last move alone — one that enters nothing when the pointer already rested inside; the gesture
  * therefore waits, in the page and for a few frames at most, for the element's own `mouseenter`,
@@ -160,17 +161,28 @@ export async function hover(page: Page, target: ElementRef): Promise<void> {
       return;
     }
     const cy = before.y + before.height / 2;
-    await loc.evaluate((el) => {
+    const cx = await loc.evaluate((el) => {
       (el as any).__bddEntered = false;
       el.addEventListener('mouseenter', () => { (el as any).__bddEntered = true; }, {once: true});
+      const r = el.getBoundingClientRect();
+      let left = r.left;
+      let right = r.right;
+      for (let p = el.parentElement; p; p = p.parentElement) {
+        if (getComputedStyle(p).overflowX === 'visible')
+          continue;
+        const c = p.getBoundingClientRect();
+        left = Math.max(left, c.left);
+        right = Math.min(right, c.right);
+      }
+      return right > left ? (left + right) / 2 : r.left + r.width / 2;
     });
     await page.mouse.move(Math.max(0, before.x - 8), cy);
-    await page.mouse.move(before.x + before.width / 2, cy);
-    const entered = await loc.evaluate((el) => new Promise<boolean>((resolve) => {
-      let frames = 0;
-      const tick = () => (el as any).__bddEntered || frames++ > 4 ? resolve((el as any).__bddEntered === true) : requestAnimationFrame(tick);
-      tick();
-    }));
+    await page.mouse.move(cx, cy);
+    const entered = await loc.evaluate(async (el) => {
+      for (let frames = 0; frames < 5 && !(el as any).__bddEntered; frames++)
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      return (el as any).__bddEntered === true;
+    });
     const after = await loc.boundingBox();
     if (entered && (!after || (before.x === after.x && before.y === after.y)))
       return;

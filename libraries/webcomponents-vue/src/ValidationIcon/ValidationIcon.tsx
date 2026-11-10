@@ -18,7 +18,7 @@ export const ValidationIcon = Vue.defineComponent({
   props: {
     validationStatus: {
       type: Object as Vue.PropType<ValidationIconInput | undefined>,
-      required: false
+      required: false,
     },
     isScalar: {
       type: Boolean,
@@ -31,17 +31,19 @@ export const ValidationIcon = Vue.defineComponent({
     useHover: {
       type: Boolean,
       default: false,
-    }
+    },
   },
   emits: {
     consistencyReset: () => true,
     actionRequest: (_a: string, _additionalParams?: Record<string, any>) => true,
+    showDataFrameDiff: (_consistentValue: any) => true,
   },
   setup(props, {emit}) {
     const isScalar = Vue.computed(() => props.isScalar);
     const isDataFrame = Vue.computed(() => props.isDataFrame);
     const useHover = Vue.computed(() => props.useHover);
-    const validationStatus = Vue.computed(() => props.validationStatus ? Vue.markRaw(props.validationStatus) : undefined);
+    const validationStatus = Vue.computed(() =>
+      props.validationStatus ? Vue.markRaw(props.validationStatus) : undefined);
     return () => (
       <dg-validation-icon
         isScalar={isScalar.value}
@@ -50,8 +52,9 @@ export const ValidationIcon = Vue.defineComponent({
         validationStatus={validationStatus.value}
         onConsistencyReset={(_ev: CustomEvent) => emit('consistencyReset')}
         onActionRequest={(ev: ActionRequestEvent) => emit('actionRequest', ev.detail, ev.additionalParams)}
+        onShowDataframeDiff={(ev: CustomEvent) => emit('showDataFrameDiff', ev.detail)}
       >
       </dg-validation-icon>
     );
-  }
-})
+  },
+});

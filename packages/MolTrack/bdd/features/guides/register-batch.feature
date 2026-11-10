@@ -10,9 +10,9 @@ Feature: MolTrack: register a batch of a registered compound
     And simple mode is off
     And the MolTrack demo data is on the server
     And no batch with the Source Batch Code "GUIDE-001" is registered, now and at feature end
-    # caption: Open the compound by its Grok ID: DG-000482, bisphenol A
-    And user opens the "Compounds?corporate_compound_id=DG-000482" view of MolTrack
-    Then breadcrumbs should contain text "DG-000482"
+    # caption: Open the compound by its Grok ID: bisphenol A
+    And user opens the compound "Bisphenol A" of MolTrack by its Grok ID
+    Then breadcrumbs should name the remembered compound
     # caption: Its batches are below it; New starts one with the compound filled in
     When user clicks on "New" button in batches tab
     # caption: The batch's own fields, typed into its new row under bisphenol A's one batch
