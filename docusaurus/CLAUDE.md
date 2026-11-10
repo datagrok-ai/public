@@ -21,7 +21,7 @@ Nginx routes decide which directory serves each URL path. The two deploys never 
 Any new top-level route served by Docusaurus (e.g. `/blog`) needs a matching nginx `location` in the
 landing repo, otherwise the landing SPA catches it and serves the homepage.
 
-For the full architecture, nginx routing rules, search (Typesense), CI/CD pipelines, and deployment details, see `../landing/CLAUDE.md`.
+For the landing site, its local nginx rules and its deploy, see `landing/README.md`.
 
 ## Key Files
 
