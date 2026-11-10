@@ -147,7 +147,7 @@ Two rspack bundles in `rspack.config.js` (swc, no ts-loader):
 
 After editing TypeScript sources here, regenerate the bundle Datagrok ships:
 
-1. Work in the datagrok umbrella: `core/` (reddata) must be a sibling of `public/`,
+1. Work in the datagrok umbrella: `core/` must be a sibling of `public/`,
    on the matching branch.
 2. From the root of `public/`, run `pnpm install` once (or after dependency bumps),
    then `pnpm run build` in `public/js-api/` (or `grok build` there).
