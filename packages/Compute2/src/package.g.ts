@@ -145,6 +145,23 @@ export async function MockKeyboardPipeline(params: any) {
   return await PackageFunctions.MockKeyboardPipeline(params);
 }
 
+//name: Mock Tree Wizard Pipeline
+//input: object params 
+//output: object result
+//editor: Compute2:TreeWizardEditor
+export async function MockTreeWizardPipeline(params: any) {
+  return await PackageFunctions.MockTreeWizardPipeline(params);
+}
+
+//name: Mock Tree Wizard Group
+//description: Nested workflow of the Mock Tree Wizard Pipeline.
+//input: object params 
+//output: object result
+//editor: Compute2:TreeWizardEditor
+export async function MockTreeWizardGroup(params: any) {
+  return await PackageFunctions.MockTreeWizardGroup(params);
+}
+
 //name: Mock Single Step Pipeline
 //description: Single-step workflow used for testing the compact Tree Wizard view.
 //input: object params 
@@ -224,6 +241,14 @@ export async function TestCustomExportModel(a: number) : Promise<number> {
 //output: string result
 export async function TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean) : Promise<string> {
   return await PackageFunctions.TestCustomExportRecorder(funcCall, startDownload);
+}
+
+//input: int rows 
+//output: dataframe first
+//output: dataframe middle
+//output: dataframe last
+export async function TestRfvTabs(rows: number) : Promise<any> {
+  return await PackageFunctions.TestRfvTabs(rows);
 }
 
 //input: int x 

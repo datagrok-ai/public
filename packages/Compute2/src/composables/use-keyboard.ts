@@ -9,6 +9,11 @@ export const SCOPE_CLASS = 'compute2-scope';
 /** Marks the panels Tab goes round in a view: the form and the workflow. */
 export const TAB_CYCLE_CLASS = 'compute2-tab-cycle';
 
+/** The key with exactly these modifiers; mod is Ctrl, or ⌘ on a Mac. Letters match either case. */
+export const isKey = (e: KeyboardEvent, keys: string[], {mod = false, alt = false, shift = false} = {}) =>
+  keys.includes(e.key.length === 1 ? e.key.toLowerCase() : e.key) &&
+  (e.ctrlKey || e.metaKey) === mod && e.altKey === alt && e.shiftKey === shift;
+
 const CANDIDATES = 'a[href], button, input, select, textarea, [tabindex]';
 
 const tabStops = (containers: Element[]) => containers.flatMap((container) =>
@@ -48,7 +53,7 @@ export function tabWithin(e: KeyboardEvent, containers: Element[]) {
  */
 export function useViewKeys(view: DG.ViewBase, onKey: (e: KeyboardEvent) => void) {
   useEventListener(document, 'keydown', (e: KeyboardEvent) => {
-    if ((e.key !== 'Tab' && !e.ctrlKey && !e.metaKey) || e.defaultPrevented || grok.shell.v?.root !== view.root)
+    if (e.defaultPrevented || grok.shell.v?.root !== view.root)
       return;
     const active = document.activeElement;
     if (active === document.body || view.root.contains(active) ||
@@ -83,6 +88,7 @@ const WORKFLOW_SHORTCUTS = {
   'Ctrl/⌘+Enter': 'Run the step focused in the tree, or the open step',
   'Ctrl/⌘+Shift+Enter': 'Update the focused or open step, or the substeps of a focused workflow',
   'Ctrl/⌘+S': 'Save the workflow',
+  'Alt+PgUp, Alt+PgDn': 'Go to the previous or next step, like Back and Next',
   'Tab, Shift+Tab': 'Move between the steps tree and the open step',
   ...COMMON_SHORTCUTS,
   '↑, ↓, Home, End': 'Tree: go to another step',

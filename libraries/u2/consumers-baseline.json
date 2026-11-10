@@ -1389,6 +1389,14 @@
     },
     {
       "date": "2026-11-10",
+      "reason": "Bio and Peptides file headers as they stand on master (a1059592a), recorded so that the consumer check runs again: neither package is touched by this change",
+      "grown": [
+        "packages/Bio fileHeaders: 13 → 17",
+        "packages/Peptides fileHeaders: 1 → 2"
+      ]
+    },
+    {
+      "date": "2026-11-10",
       "reason": "PmxStudio becomes a u2 consumer (PR #4416): its code is recorded as it is after owning its subscriptions and styling its own classes. What stays: 8 class components (chart and input controls written before function components were the documented form); StatCard's value, label and change restyled for a compact card (4 CSS lines: u2 has no option for it); a ButtonGroup label, a form category and the loader's spinner looked up by class (u2 has no option for a count in a label, a folded category or a spinner size); 7 subscriptions that follow a table the view swaps, each unsubscribed by hand; one table built inside its caller's effect and one results table read as rows (no-unowned-root and no-raw-column-list see neither)",
       "grown": [
         "packages/PmxStudio rawSubscribe: 0 → 7",
@@ -1407,14 +1415,6 @@
         "packages/PmxStudio u2/comments: 0 → 18",
         "packages/PmxStudio u2/no-raw-column-list: 0 → 1",
         "packages/PmxStudio u2/no-unowned-root: 0 → 1"
-      ]
-    },
-    {
-      "date": "2026-11-10",
-      "reason": "Bio and Peptides file headers as they stand on master (009dd3b55), recorded so that the consumer check runs again: neither package is touched by this change",
-      "grown": [
-        "packages/Bio fileHeaders: 13 → 17",
-        "packages/Peptides fileHeaders: 1 → 2"
       ]
     }
   ]

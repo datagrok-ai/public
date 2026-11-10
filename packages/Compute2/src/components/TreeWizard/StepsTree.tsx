@@ -7,7 +7,7 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {AugmentedStat} from './types';
 import {dropIndex, focusCandidates, isDeletable, isEachDraggable, stepMoveIndex} from './tree-utils';
-import {TAB_CYCLE_CLASS} from '../../composables/use-keyboard';
+import {isKey, TAB_CYCLE_CLASS} from '../../composables/use-keyboard';
 
 /**
  * The workflow's steps on he-tree. Drops and Alt+Up/Down move a step under the drag rules and Delete removes one, all
@@ -114,7 +114,7 @@ export const StepsTree = Vue.defineComponent({
           stepMoveIndex(stat, e.key === 'ArrowUp' ? -1 : 1) : undefined;
         if (index !== undefined)
           emit('move', stat.data.uuid, index);
-      } else if (e.key === 'Delete' && !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && isDeletable(stat)) {
+      } else if (isKey(e, ['Delete']) && isDeletable(stat)) {
         e.preventDefault();
         emit('remove', stat.data);
       }

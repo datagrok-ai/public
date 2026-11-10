@@ -6,6 +6,7 @@ import {DBExplorerConfig, EntryPointOptions,
   QueryJoinOptions, ReferencedByObject, ReferenceObject, SchemaAndConnection} from './types';
 import {DBExplorerObjectHandler, SemValueObjectHandler} from './object-handlers';
 import {getDefaultRendererByName} from './renderer';
+import {getSchemaReferences} from './utils';
 
 export class DBExplorer {
   private schemasLoaded: boolean = false;
@@ -21,7 +22,8 @@ export class DBExplorer {
     private connectionName: string,
     private schemaName: string,
     private nqName?: string,
-    private dataSourceName?: string
+    private dataSourceName?: string,
+    private catalogName?: string
   ) {
     // in order for other functionality to be able to await the _dbLoadPromise,
     // we need to assign it to some promise and register resolver
@@ -35,7 +37,8 @@ export class DBExplorer {
         return await this.dbSchema;
       },
       nqName ?? connectionName,
-      this.schemaName
+      this.schemaName,
+      this.catalogName
     );
     DG.ObjectHandler.register(this.genericValueHandler);
     this.objHandlers.push(this.genericValueHandler);
@@ -75,32 +78,10 @@ export class DBExplorer {
         return;
       }
 
-      const tables = await grok.dapi.connections.getSchema(this.connection, this.schemaName);
-      if (!tables)
-        throw new Error(`Schema ${this.schemaName} not found`);
       // for implicit references, schema is always the primary one
-      this.references[this.schemaName] = {};
-      this.referencedBy[this.schemaName] = {};
-      const schemaRefs = this.references[this.schemaName];
-      const schemaRefBy = this.referencedBy[this.schemaName];
-      tables.forEach((table) => {
-        const tableName = table.friendlyName ?? table.name;
-        schemaRefs[tableName] = {};
-        const t = schemaRefs[tableName];
-        table.columns.forEach((column) => {
-          const ref = column.referenceInfo;
-          if (ref && ref.table && ref.column) {
-            t[column.name] = {refTable: ref.table, refColumn: ref.column, refSchema: this.schemaName};
-            if (!schemaRefBy[ref.table])
-              schemaRefBy[ref.table] = {};
-
-            if (!schemaRefBy[ref.table][ref.column])
-              schemaRefBy[ref.table][ref.column] = [];
-
-            schemaRefBy[ref.table][ref.column].push({refTable: tableName, refColumn: column.name, refSchema: this.schemaName});
-          }
-        });
-      });
+      const schema = await getSchemaReferences(this.connection, this.schemaName, this.catalogName);
+      this.references = schema.references;
+      this.referencedBy = schema.referencedBy;
       this.schemasLoaded = true;
     } catch (e) {
       this.loadingFailed = true;
@@ -159,7 +140,8 @@ export class DBExplorer {
       fullOpts,
       schemaPromise,
       this.schemaName,
-      this.nqName ?? this.connectionName
+      this.nqName ?? this.connectionName,
+      this.catalogName
     );
     // if the matching regexp is also provided, register it
     if (options?.matchRegexp)
@@ -208,7 +190,7 @@ export class DBExplorer {
   }
 
   public static initFromConfig(config: DBExplorerConfig) {
-    const exp = new DBExplorer(config.connectionName, config.schemaName, config.nqName, config.dataSourceName);
+    const exp = new DBExplorer(config.connectionName, config.schemaName, config.nqName, config.dataSourceName, config.catalogName);
     for (const [semType, entry] of Object.entries(config.entryPoints))
       exp.addEntryPoint(semType, entry.table, entry.column, {regexpExample: entry.regexpExample, matchRegexp: entry.matchRegexp});
     if (config.joinOptions)

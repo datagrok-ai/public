@@ -7,7 +7,7 @@
 * RFV, Workflows: Tab and Shift+Tab go round the form and the steps tree (outputs, run history and the ribbon are left to the pointer) instead of leaving for the page, buttons show the keyboard focus, and the Keyboard shortcuts ribbon icon lists the keys; Tab does nothing in the Update confirmation, where Enter confirms and Esc cancels
 * RFV, Workflows: A disabled Run or Update button shows why on hover and when pressed; fixed pressing a disabled Run from the keyboard showing an internal error
 * Workflows: Alt+Up/Down moves a step in the steps tree under the drag-and-drop rules and Delete removes it after the confirmation, the focus staying on the step or its neighbour; fixed Alt+arrows moving any step in the tree only, without changing the workflow
-* Workflows: Back and Next move the keyboard focus into the opened step; the pipeline cards (Choose a step to add, Load completed run, actions) and clickable icons work from the keyboard, and the plus of a tree row opens the steps to add (needs WebComponents v.next)
+* Workflows: Back and Next move the keyboard focus into the opened step, Alt+PgUp and Alt+PgDn do the same as Back and Next (grids keep them for paging); the pipeline cards (Choose a step to add, Load completed run, actions) and clickable icons work from the keyboard, and the plus of a tree row opens the steps to add (needs WebComponents v.next)
 * Loading overlay: Fixed inputs under the overlay still reachable with Tab and editable while a run is in progress (autorun RFVs keep taking input)
 * RFV: Fixed the loading overlay not showing for a function that blocks the browser while it runs
 * RFV: Fixed autorun losing an input change made while a run was in progress, leaving the old outputs marked as current

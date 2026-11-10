@@ -202,7 +202,15 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
       return pie.props.categoryMap;
     });
     expect(defaultMap).toBe('year');
-    const yearLegend = await v.readLegend(page, 'Pie chart');
+    // onViewerRendered can resolve before the legend element exists (CI #1542: legendRendered false)
+    const legendAfter = async (prev: string[]) => {
+      await expect.poll(async () => {
+        const labels = (await v.readLegend(page, 'Pie chart')).labels;
+        return labels.length > 0 && labels.join('|') !== prev.join('|');
+      }, {timeout: 10_000}).toBe(true);
+      return await v.readLegend(page, 'Pie chart');
+    };
+    const yearLegend = await legendAfter([]);
     const setMap = (map: string) => page.evaluate(async (m) => {
       const w = window as any;
       const pie = Array.from(grok.shell.tv.viewers).find((vw: any) => vw.type === 'Pie chart') as any;
@@ -211,9 +219,9 @@ test('Pie Chart — Aggregation Tour, Validation Messages, DateTime Category Map
       }, 2000);
     }, map);
     await setMap('month');
-    const monthLegend = await v.readLegend(page, 'Pie chart');
+    const monthLegend = await legendAfter(yearLegend.labels);
     await setMap('quarter');
-    const quarterLegend = await v.readLegend(page, 'Pie chart');
+    const quarterLegend = await legendAfter(monthLegend.labels);
     console.log(`Category map legend labels: year=[${yearLegend.labels}] month=[${monthLegend.labels}] quarter=[${quarterLegend.labels}]`);
     expect(yearLegend.labels.length).toBeGreaterThan(0);
     expect(monthLegend.labels.length).toBeGreaterThan(0);
