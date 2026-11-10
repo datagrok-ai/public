@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Hit Design, Hit Triage, PeptiHit: Fixed the images of the help pages, which pointed at the help folder that public no longer has
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Tests: The ribbon scenario no longer fails on a stand where a package with a designer function (Reinvent4) is published
 * Hit Triage, Hit Design, PeptiHit, PepTriage: Fixed a campaign link (`?campaignId=`) opening only the landing when the address changed while the app started: the apps take the campaign from the call the link opens them with

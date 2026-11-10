@@ -149,7 +149,7 @@ where is_valid_smiles(Cast(molecules as cstring))
 
 - **Submit function** : Users can define custom submit functions (tagged with `HitTriageSubmitFunction`) to further process or save the filtered and computed dataset. This could include saving to a private database or additional calculations.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/template.png?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/template.png)
 
 ## Campaigns
 
@@ -161,22 +161,22 @@ Campaigns are built based on templates and encompass the actual hit triage proce
 
 - **Functionality**: Once a campaign starts, you can add extra calculated columns, apply changes, fileter, save or submit the campaign.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/campaign.png?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/campaign.png)
 
 ## Getting started
 
 Users can continue ongoing campaigns either directly by a link or by selecting it from the campaigns table.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HT_Continue_campaign.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/HT_Continue_campaign.gif)
 
 Users can create a new template by clicking on the `New Template` button in the `Templates` dropdown.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HT_create_template.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/HT_create_template.gif)
 
 Users can start a new campaign by choosing a template and filling out the required information. 
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HT_create_campaign.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/HT_create_campaign.gif)
 
 After the campaign starts, new calculated columns will be added. Users can filter, modify or add viewers to the campaign and then save them. Once saved, reloading the campaign will restore the saved state.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HT_save_campaign.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/HT_save_campaign.gif)
