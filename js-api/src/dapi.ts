@@ -817,8 +817,9 @@ export interface ServerMetrics {
     bySource: {[source: string]: number},
     top: ServerMetricsError[],
   },
-  /** `func_calls` by status: `queued` are waiting, `running` are executing. */
-  queue: {queued: number, running: number},
+  /** `func_calls` started within the last day by status: `queued` are waiting, `running` are executing; `stale` are
+   *  older calls still marked queued or running, left by a server that stopped. */
+  queue: {queued: number, running: number, stale?: number},
   /** Platform database statistics. */
   database: {
     /** `pg_database_size` of the platform database. */

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Metrics: Moved to the platform: Browse > Platform > Observability > Metrics
+* Cloud Logs, Service Logs: Moved to the platform as one explorer with stored and live service logs: Browse > Platform > Observability > Logs
 * Tests: Added BDD steps to the existing scenarios for closed bugs (a favorite opened once, Delete Project, column groups, toolbox search and Extract Rows, the script view's menu, a query address), viewer interactions (Sankey and Chord clicks, timelines under the Filter Panel, Globe, the confusion matrix tooltip, PC plot Save as PNG) and dialog cases a user meets (the Save dialog with its only table left out, an emptied name, a taken group name, Invite a Friend, the own account without Disable..., a Share dialog with nobody picked), and an Apps > Plates journey; checks that are not a gesture went to ApiTests, package and Dart tests, and each folder's MISSING.md says in one `Won't do` line what was left out
 * Metrics: Added data growth (Postgres tables and categories, storage by nature and location, GC deleted and pending, growth alerts)
 * Metrics: Added a drill-down from a route's error rate to its failed requests, their errors and log

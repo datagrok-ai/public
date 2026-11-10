@@ -15,7 +15,7 @@ It builds a `ViewHandler`, calls `handler.init(...)`, and returns `handler.view`
 | `ViewHandler`             | `view-handler.ts`                       | Owns a `DG.MultiView` (the tab strip); registers tabs, routing, per-tab toggles          |
 | `UaToolbox`               | `ua-toolbox.ts`                         | The single shared left toolbox (filter accordion) used by every tab                      |
 | `UaView`                  | `tabs/ua.ts`                            | Base class each tab extends                                                              |
-| Tabs                      | `tabs/*.ts`                             | One file per tab (Overview, Packages, Functions, Events, Clicks, Log, Projects, Metrics) |
+| Tabs                      | `tabs/*.ts`                             | One file per tab (Overview, Packages, Functions, Events, Clicks, Log, Projects)          |
 | `UaQueryViewer`           | `viewers/abstract/ua-query-viewer.ts`   | Runs a named UA query and builds a `DG.Viewer`                                           |
 | `UaFilterableQueryViewer` | `viewers/ua-filterable-query-viewer.ts` | A `UaQueryViewer` that re-runs on every filter change                                    |
 
@@ -25,7 +25,7 @@ Tabs are a **fixed list** in `ViewHandler.init()`:
 
 ```ts
 const viewClasses = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView,
-                     SystemActivityView, AiUsageView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
+                     SystemActivityView, AiUsageView, ErrorsView, ProjectsView, StressView, VulnerabilitiesView];
 ```
 
 `SystemActivityView` (tab `System Activity`) lists the platform-level audit records datlas writes —
@@ -56,7 +56,7 @@ table view).
 
 `VulnerabilitiesView` is toolbox-independent: it loads the published VEX index
 (`https://data.datagrok.ai/vex/index.json`) via `grok.dapi.fetchProxy` and drills into the
-selected image's per-CVE CSV; the packages/groups filter inputs are hidden on it (like Metrics).
+selected image's per-CVE CSV; the packages/groups filter inputs are hidden on it.
 
 `StressView` (tab `Stress`) is likewise toolbox-independent: `StressTestsSummary` feeds a
 median-duration-by-build line chart (split by thread count) and a metrics grid, and
@@ -98,7 +98,7 @@ Mounted via `this.view.toolbox = toolbox.rootAccordion.root`; every tab gets the
 + an **Apply** button.
 
 `onTabChanged` (in `ViewHandler` and the toolbox) toggles which inputs are visible per tab — e.g. categories
-only on Packages, tags only on Functions, projects only on Projects, packages/groups hidden on Metrics —
+only on Packages, tags only on Functions, projects only on Projects, packages/groups hidden on Stress and Vulnerabilities —
 lazily activates the tab's viewers on first visit, and updates the URL path.
 
 ## Drilldown
