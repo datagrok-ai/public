@@ -277,6 +277,9 @@
   background-repeat: no-repeat;
   background-size: 16px;
   background-position: 100% 55%;
+}
+
+.forge-tune-choices-button {
   cursor: pointer;
 }
 
