@@ -40,13 +40,17 @@ const DEFAULT_EXPORT_OPTION: ExportOption = {id: DEFAULT_EXPORT, name: 'Default 
 const fileOf = async (fileName: string, blob: Blob) =>
   DG.FileInfo.fromBytes(fileName, new Uint8Array(await blob.arrayBuffer()));
 
+/** Preferred exports first, in their declared order, then the default report and the other exports. */
+const menuOrder = (defaults: ExportOption[], exports: (ExportOption & {preferred?: boolean})[]): ExportOption[] => [
+  ...exports.filter((x) => x.preferred), ...defaults, ...exports.filter((x) => !x.preferred),
+].map(({id, name}) => ({id, name}));
+
 /** The exports of a function's runs, in the menu's order: the first is the default. */
 export function callExports(func: DG.Func, hideDefault = false): ExportOption[] {
   const isReportEnabled = Utils.getFeature(Utils.getFeatures(func), 'export', true);
-  return [
-    ...(isReportEnabled && !hideDefault ? [DEFAULT_EXPORT_OPTION] : []),
-    ...Utils.getCustomExports(func).filter((x) => x.function && x.name).map((x) => ({id: x.name, name: x.name})),
-  ];
+  return menuOrder(isReportEnabled && !hideDefault ? [DEFAULT_EXPORT_OPTION] : [],
+    Utils.getCustomExports(func).filter((x) => x.function && x.name)
+      .map((x) => ({id: x.name, name: x.name, preferred: x.preferred})));
 }
 
 export type CallExportStates = {
@@ -77,10 +81,9 @@ export async function exportCall(
 }
 
 /** The exports of a workflow, in the menu's order: the first is the default. */
-export const workflowExports = (node: {disableDefaultExport?: boolean, customExports?: CustomExport[]}) => [
-  ...(node.disableDefaultExport ? [] : [DEFAULT_EXPORT_OPTION]),
-  ...(node.customExports ?? []).map((x): ExportOption => ({id: x.id, name: x.friendlyName ?? x.id})),
-];
+export const workflowExports = (node: {disableDefaultExport?: boolean, customExports?: CustomExport[]}) =>
+  menuOrder(node.disableDefaultExport ? [] : [DEFAULT_EXPORT_OPTION],
+    (node.customExports ?? []).map((x) => ({id: x.id, name: x.friendlyName ?? x.id, preferred: x.preferred})));
 
 /** The exports of a workflow's runs, as the menus show them once a run is open: a compact view shows its step's. */
 export function configExports(config: PipelineConfigurationProcessed): ExportOption[] {

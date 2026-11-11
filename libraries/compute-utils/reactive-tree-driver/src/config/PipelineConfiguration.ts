@@ -377,6 +377,8 @@ export interface CustomExport {
   id: string,
   friendlyName?: string,
   handler: PipelineExport,
+  // listed before the default export and the other exports, so that it is the default
+  preferred?: boolean,
 }
 
 export type PipelineConfigurationBase<S> = {

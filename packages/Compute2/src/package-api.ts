@@ -211,6 +211,10 @@ export namespace funcs {
     return await grok.functions.call('Compute2:TestCustomExportModel', { a });
   }
 
+  export async function testPreferredExportModel(a: number ): Promise<number> {
+    return await grok.functions.call('Compute2:TestPreferredExportModel', { a });
+  }
+
   export async function testCustomExportRecorder(funcCall: any ): Promise<DG.FileInfo> {
     return await grok.functions.call('Compute2:TestCustomExportRecorder', { funcCall });
   }

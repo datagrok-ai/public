@@ -111,7 +111,7 @@ export const getInputToggles = (func: DG.Func): InputToggle[] => {
     (getInputsHidden(func) ? ALL_INPUTS_TOGGLES : DEFAULT_INPUT_TOGGLES);
 };
 
-export const getCustomExports = (func: DG.Func): {name: string, function: string}[] => {
+export const getCustomExports = (func: DG.Func): {name: string, function: string, preferred?: boolean}[] => {
   return parseJsonArrayOption(func.options, 'customExports') ?? [];
 };
 

@@ -330,7 +330,8 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'object', options: {
       description: 'The viewers hook of a workflow step, in place of the function\'s own', optional: true}})
       viewersHook?: ViewersHook,
-    @grok.decorators.param({type: 'object', options: {description: 'Meta values by output, for the hook', optional: true}})
+    @grok.decorators.param({type: 'object', options: {
+      description: 'Meta values by output, for the hook', optional: true}})
       metaState?: Record<string, BehaviorSubject<any>>) {
     return callExcelReport(funcCall, {
       viewersHook: viewersHook ?? await loadViewersHook(funcCall.func), metaState,
@@ -1093,6 +1094,14 @@ export class PackageFunctions {
     return a;
   }
 
+  @grok.decorators.func({
+    // eslint-disable-next-line max-len
+    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"},{"name":"none","function":"Compute2:TestCustomExportNoFile","preferred":true},{"name":"hook","function":"Compute2:TestCustomExportHookArgs","preferred":true}]'},
+  })
+  static async TestPreferredExportModel(a: number): Promise<number> {
+    return a;
+  }
+
   @grok.decorators.func()
   static async TestCustomExportRecorder(funcCall: DG.FuncCall): Promise<DG.FileInfo> {
     return DG.FileInfo.fromString('recorded.txt', `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}`);
@@ -1107,7 +1116,8 @@ export class PackageFunctions {
   static async TestCustomExportHookArgs(
     funcCall: DG.FuncCall,
     @grok.decorators.param({type: 'object', options: {optional: true}}) viewersHook?: ViewersHook,
-    @grok.decorators.param({type: 'object', options: {optional: true}}) metaState?: Record<string, BehaviorSubject<any>>,
+    @grok.decorators.param({type: 'object', options: {optional: true}})
+      metaState?: Record<string, BehaviorSubject<any>>,
   ): Promise<DG.FileInfo> {
     return DG.FileInfo.fromString('hook.txt', `${typeof viewersHook}|${metaState?.['a']?.value}`);
   }

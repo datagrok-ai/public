@@ -265,6 +265,13 @@ export async function TestCustomExportModel(a: number) : Promise<number> {
   return await PackageFunctions.TestCustomExportModel(a);
 }
 
+//input: double a 
+//output: double result
+//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"},{"name":"none","function":"Compute2:TestCustomExportNoFile","preferred":true},{"name":"hook","function":"Compute2:TestCustomExportHookArgs","preferred":true}]
+export async function TestPreferredExportModel(a: number) : Promise<number> {
+  return await PackageFunctions.TestPreferredExportModel(a);
+}
+
 //input: funccall funcCall 
 //output: file result
 export async function TestCustomExportRecorder(funcCall: DG.FuncCall) : Promise<any> {

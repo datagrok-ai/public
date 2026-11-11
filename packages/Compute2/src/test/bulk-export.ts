@@ -62,6 +62,12 @@ category('Run storage: bulk export', () => {
       customExports: [{id: 'a', friendlyName: 'A', handler: async () => DG.FileInfo.fromString('a.txt', '')}]}),
     [{id: 'a', name: 'A'}]);
 
+    expectDeepEqual(callExports(DG.Func.byName('Compute2:TestPreferredExportModel')).map(({id}) => id),
+      ['none', 'hook', DEFAULT_EXPORT, 'rec'], {prefix: 'preferred exports first, in their order'});
+    const handler = async () => DG.FileInfo.fromString('a.txt', '');
+    expectDeepEqual(workflowExports({customExports: [{id: 'a', handler}, {id: 'b', handler, preferred: true},
+      {id: 'c', handler, preferred: true}]}).map(({id}) => id), ['b', 'c', DEFAULT_EXPORT, 'a']);
+
     const wizard = DG.Func.byName('Compute2:MockTreeWizardPipeline');
     expect(modelKind(wizard, false), 'workflow');
     expect(modelKind(wizard, true), 'call');
@@ -215,7 +221,7 @@ category('Run storage: bulk export', () => {
     expectDeepEqual(hooksOf, ['TestAdd2'], {prefix: 'the report takes the hook of the run\'s function'});
   }));
 
-  test('A step\'s history exports with the step\'s hook in place of its function\'s', () => withRunStorage(async (f) => {
+  test('A step\'s history exports with the step\'s hook, not its function\'s', () => withRunStorage(async (f) => {
     const model = DG.Func.byName('Compute2:ViewersHookModel');
     const saved = await f.save(await model.prepare({n: 2}).call(), {metadata: {name: uniqueName('Bulk step hook')}});
     const applied: string[] = [];
