@@ -90,7 +90,7 @@ Expected:
 
 - **Related bug — GROK-14461.** ("Layout is not applied in IL-4R Peptide project on reopen"). Scenario 1 step 6 (SAR viewers attached on reopen) is the direct regression check; step 7 (model present, widgets bind without a null-receiver error) is the model-rebind check. This is the same architectural bug class seen on other platform features (Bio GROK-19928, Chem GROK-17595, PowerPack GROK-17451/GROK-17109) — a fix to one of those tends to fix the others too. The acceptable outcomes are "selection restored exactly" or "cleanly re-initialized to empty" — not "state survives exactly," just "the post-reopen state isn't broken."
 - **Setup composition.** SAR is launched via the top-menu entry path, keeping this scenario independent of the context-panel `Launch SAR` entry path covered by `sar.md`. The save/reopen behavior itself doesn't depend on which entry path was used.
-- **See:** `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Saving and reopening Peptide SAR projects`.
+- **See:** `help/datagrok/solutions/domains/bio/peptides-sar.md#Saving and reopening Peptide SAR projects`.
 
 ## Original trailing metadata
 

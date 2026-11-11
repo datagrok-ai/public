@@ -4,7 +4,7 @@ A generic Node.js, Celery-compatible worker that executes a published Datagrok p
 JS functions. It is the JS mirror of the python library
 [`datagrok-celery-task`](../datagrok-celery-task): the Datagrok server (datlas) queues a
 `DockerFunc` call into a RabbitMQ task queue, the worker picks it up, streams dataframe /
-blob parameters over [grok_pipe](../../grok_pipe), runs the function from the package's
+blob parameters over [grok_pipe](../../core/grok_pipe), runs the function from the package's
 published webpack bundle (loaded via the `datagrok-api` Node runtime), and publishes the
 result back.
 

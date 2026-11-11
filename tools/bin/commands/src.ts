@@ -92,6 +92,26 @@ function locate(root: string, rel: string): Child[] | undefined {
   }
 }
 
+function fencing(dir: string, open: string[] = []) {
+  const links = !cloned(dir) ? [] : git(dir, ['ls-tree', '-r', '-z', '--full-tree', 'HEAD']).out.split('\0')
+    .filter((l) => l.startsWith('160000 ')).map((l) => l.slice(l.indexOf('\t') + 1));
+  const shut = links.filter((p) => !open.includes(p) && !cloned(path.join(dir, p)));
+  const exclude = (p: string) => `!/${p.replace(/[*?[\\]/g, '\\$&')}`;
+  const sparse = git(dir, ['config', '--type=bool', 'core.sparseCheckout']).out === 'true';
+  const now = sparse ? git(dir, ['sparse-checkout', 'list']).out : '/*';
+  const gone = now.split('\n').filter((l) => l.startsWith('!/') && !links.some((p) => exclude(p) === l));
+  const want = ['/*', ...[...shut.map(exclude), ...gone].sort()];
+  // Else a fetch of a new pin of a child with no folder fails: "Could not access submodule".
+  const quiet = git(dir, ['config', 'fetch.recurseSubmodules']).out === 'false';
+  return {sparse, want, quiet, ok: !links.length || (now === want.join('\n') && (quiet || !shut.length))};
+}
+
+function fence(dir: string, open: string[] = [], start = false): boolean {
+  const f = fencing(dir, open);
+  return f.ok || (!f.sparse && !start) || (step(dir, ['sparse-checkout', 'set', '--no-cone', ...f.want]) &&
+    (f.quiet || step(dir, ['config', 'fetch.recurseSubmodules', 'false'])));
+}
+
 const modules = (owner: string, c: Child) => path.resolve(owner, git(owner, ['rev-parse', '--git-path', `modules/${c.name}`]).out);
 
 function rollback(owner: string, c: Child, made?: string): void {
@@ -100,6 +120,7 @@ function rollback(owner: string, c: Child, made?: string): void {
   step(owner, ['config', `submodule.${c.name}.active`, 'false']);
   if (made)
     fs.rmSync(made, {recursive: true, force: true});
+  fence(owner);
 }
 
 function cloneChild(root: string, owner: string, c: Child, failed: string[]): boolean {
@@ -107,7 +128,8 @@ function cloneChild(root: string, owner: string, c: Child, failed: string[]): bo
     return true;
   const gitdir = modules(owner, c);
   const made = fs.existsSync(gitdir) ? undefined : gitdir;
-  if (!step(owner, ['submodule', 'update', '--init', '--require-init', '--checkout', '--filter=blob:none', '--', c.path])) {
+  if (!fence(owner, [c.path]) ||
+    !step(owner, ['submodule', 'update', '--init', '--require-init', '--checkout', '--filter=blob:none', '--', c.path])) {
     rollback(owner, c, made);
     failed.push(label(root, c.dir));
     return false;
@@ -116,6 +138,7 @@ function cloneChild(root: string, owner: string, c: Child, failed: string[]): bo
     failed.push(label(root, c.dir));
   if (fs.existsSync(path.join(c.dir, '.gitmodules')))
     step(c.dir, ['config', 'push.recurseSubmodules', 'check']);
+  fence(c.dir, [], true);
   return true;
 }
 
@@ -157,10 +180,12 @@ function add(root: string, sel: string[]): boolean {
 }
 
 function clone(sel: string[], url: string, dir: string): boolean {
-  if (!step(process.cwd(), ['clone', '-c', 'push.recurseSubmodules=check', '--filter=blob:none', '--', url, dir]))
+  if (!step(process.cwd(), ['clone', '-c', 'push.recurseSubmodules=check', '--filter=blob:none', '--no-checkout', '--', url, dir]))
     return false;
   if (!explain)
-    return add(dir, sel);
+    return fence(dir, [], true) && step(dir, ['checkout']) && add(dir, sel);
+  console.log(`$ ${gitC(dir)} sparse-checkout set --no-cone '/*' '!/<child>'...   # every child`);
+  console.log(`$ ${gitC(dir)} checkout`);
   console.log(`# then, in ${dir}: grok src add ${sel.join(' ') || '(profile "default", else every child)'}`);
   return true;
 }
@@ -178,7 +203,7 @@ function sparse(root: string, rel: string, globs: string[]): boolean {
   const gitdir = modules(owner, c);
   if (fs.existsSync(gitdir))
     return (color.error(`${gitdir} exists from an earlier clone: grok src add ${rel}, then sparse again`), false);
-  const ok = step(owner, ['submodule', 'init', '--', c.path]) &&
+  const ok = fence(owner, [c.path]) && step(owner, ['submodule', 'init', '--', c.path]) &&
     step(owner, ['clone', '--filter=blob:none', '--no-checkout', '--',
       git(owner, ['config', `submodule.${c.name}.url`]).out || '<url>', c.path]) &&
     step(owner, absorb) && step(c.dir, set) &&
@@ -226,7 +251,7 @@ function pull(root: string): boolean {
     else if (!s.branch || !s.upstream) {
       if (branch || dir === root)
         skipped.push(label(root, dir));
-    } else if (!step(dir, ['pull', '--ff-only', '--no-recurse-submodules']))
+    } else if (!step(dir, ['pull', '--ff-only', '--no-recurse-submodules']) || !fence(dir))
       failed.push(label(root, dir));
   }
   if (skipped.length)
@@ -249,7 +274,8 @@ function at(root: string, ref: string): boolean {
   }).map(({dir}) => label(root, dir));
   if (blocked.length)
     return (color.error(`Uncommitted changes or commits on no branch in ${blocked.join(', ')}: commit, stash or branch first`), false);
-  return step(root, ['checkout', ref, '--']) && step(root, ['submodule', 'update', '--recursive', '--checkout']);
+  return step(root, ['checkout', ref, '--']) && step(root, ['submodule', 'update', '--recursive', '--checkout']) &&
+    [...repos(root)].map(({dir}) => fence(dir)).every(Boolean);
 }
 
 function bump(root: string, rels: string[]): boolean {
@@ -366,6 +392,8 @@ function wtAdd(root: string, name: string, rels: string[], destArg?: string): bo
       git(to, ['--work-tree=.', 'rev-parse', '--path-format=absolute', '--git-path', 'config.worktree']).out;
     if (dir !== root && !step(dir, ['config', '-f', own, 'core.worktree', to]))
       return false;
+    if (!fence(to, [...dirs].map((d) => path.relative(dir, d).split(path.sep).join('/')), true))
+      return false;
   }
   console.log(`Worktrees: ${dest}`);
   return true;
@@ -392,6 +420,12 @@ function doctor(root: string, fix: boolean): boolean {
     const local = s.branch && !s.upstream ? Number(git(dir, ['rev-list', '--count', 'HEAD', '--not', '--remotes']).out) : 0;
     if (local)
       problems.push(`${name}: ${local} commit(s) on no remote: ${at} push -u origin ${s.branch}`);
+    const f = fencing(dir);
+    if (!f.ok) {
+      problems.push(`${name}: ${f.sparse ? 'sparse checkout does not match the cloned children' :
+        'empty folders for the children not cloned'}: grok src doctor --fix`);
+      synced.push(!fix || fence(dir, [], true));
+    }
     if (!c)
       continue;
     const base = git(owner, ['config', 'remote.origin.url']).out.replace(/\/+$/, '');
@@ -417,7 +451,7 @@ function doctor(root: string, fix: boolean): boolean {
 
 function run(cmd: string, rest: string[], argv: SrcArgs): boolean {
   if (cmd === 'clone') {
-    const url = argv.url ?? 'git@github.com:datagrok-ai/datagrok.git';
+    const url = argv.url ?? 'https://github.com/datagrok-ai/datagrok.git';
     return clone(rest, url, path.resolve(argv.dir ?? path.basename(url).replace(/\.git$/, '')));
   }
   const root = findRoot();
@@ -446,7 +480,7 @@ export async function src(argv: SrcArgs): Promise<boolean> {
     color.error(options.length ? `Unknown option --${options[0]}` : '--url and --dir take one value');
     return false;
   }
-  if (!cmd) {
+  if (!cmd || cmd === 'help') {
     console.log((await import('./help')).help.src);
     return true;
   }
