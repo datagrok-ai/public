@@ -13,7 +13,8 @@ import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 import {
   DEFAULT_EXPORT, callExports, exportSavedCall, exportSavedWorkflow, workflowExports,
 } from '../run-exports';
-import {ExportRun, modelExports, modelKind, zipExports} from '../components/RunStorage/bulk-export';
+import {CUSTOM_VIEW_OPTION} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {ExportRun, exportRuns, modelExports, modelKind, zipExports} from '../components/RunStorage/bulk-export';
 import {SpaceNode, makeIndex, unlistedSpaces} from '../components/RunStorage/space-index';
 import {BulkExportDialog} from '../components/RunStorage/BulkExportDialog';
 import {RunBrowser} from '../components/RunStorage/RunBrowser';
@@ -21,6 +22,7 @@ import {uniqueName, withRunStorage} from './run-storage';
 import {deleteSavedWorkflow} from './utils';
 
 const EXPORT_MODEL = 'Compute2:TestCustomExportModel';
+const CUSTOM_VIEW = 'Compute2:TestCustomView';
 
 function mount(component: Vue.Component, props: Record<string, any>) {
   const root = ui.div();
@@ -190,6 +192,27 @@ category('Run storage: bulk export', () => {
     } finally {
       await deleteSavedWorkflow(compact.id);
     }
+  }));
+
+  test('Runs of a custom view export with the exports of its function', () => withRunStorage(async (f) => {
+    const customView = DG.Func.byName(CUSTOM_VIEW);
+    expectDeepEqual((await modelExports(customView, modelKind(customView, false))).map(({id}) => id),
+      [DEFAULT_EXPORT, 'rec']);
+    const call = DG.Func.byName('Compute2:TestAdd2').prepare({a: 4, b: 1});
+    await call.call();
+    call.options[CUSTOM_VIEW_OPTION] = CUSTOM_VIEW;
+    const saved = await f.save(call, {metadata: {name: uniqueName('Bulk custom view')}});
+    const {files, failed} = await exportRuns([{item: {run: saved, model: customView, folders: []}, kind: 'call',
+      exportId: 'rec'}], {onProgress: () => {}, isCancelled: () => false});
+    expectDeepEqual(failed, []);
+    expect(text(files[0].file), 'Compute2:TestAdd2|4');
+
+    const hooksOf: string[] = [];
+    await exportSavedCall(saved.id, DEFAULT_EXPORT, customView, async (func) => {
+      hooksOf.push(func.name);
+      return undefined;
+    });
+    expectDeepEqual(hooksOf, ['TestAdd2'], {prefix: 'the report takes the hook of the run\'s function'});
   }));
 
   test('A workflow run saves whether it is completed, and one with outdated steps is not exported', async () => {

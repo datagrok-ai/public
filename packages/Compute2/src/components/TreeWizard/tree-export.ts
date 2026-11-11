@@ -220,15 +220,16 @@ export function exportedFile(result: unknown, exportName: string): DG.FileInfo {
 
 export const downloadFile = (file: DG.FileInfo) => DG.Utils.download(file.fileName, new Blob([file.data as any]));
 
-/** Resolves the custom export named `exportName` declared on the funcCall's function
- *  (via `meta.customExports`) and applies it, passing the funcCall through. */
+/** Resolves the custom export named `exportName` declared on `exportsOf` (via `meta.customExports`), the
+ *  funcCall's function unless a custom view declares them, and applies it, passing the funcCall through. */
 export async function applyCustomExport(
   fc: DG.FuncCall,
   exportName: string,
   args: Record<string, unknown> = {},
+  exportsOf: DG.Func = fc.func,
 ): Promise<DG.FileInfo> {
-  const item = getCustomExports(fc.func).find((x) => x.name === exportName);
+  const item = getCustomExports(exportsOf).find((x) => x.name === exportName);
   if (!item)
-    throw new Error(`No export named ${exportName} is defined for ${fc.func.nqName}`);
+    throw new Error(`No export named ${exportName} is defined for ${exportsOf.nqName}`);
   return exportedFile(await DG.Func.byName(item.function).apply({funcCall: fc, ...args}), exportName);
 }

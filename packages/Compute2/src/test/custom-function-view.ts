@@ -209,6 +209,16 @@ category('Custom function view', () => {
     expect(!!view.funcCall && view.funcCall.id !== missing, true);
   });
 
+  test('The editor adds the exports of the view function to the Export menu', async () => {
+    const view: CustomFunctionView = await grok.functions.call('Compute2:CustomFunctionViewEditor',
+      {call: DG.Func.byName(TEST_CUSTOM_VIEW).prepare({})});
+    expect(JSON.stringify(view.hostExports.map(({name}) => name)), JSON.stringify(['rec']));
+    expect(ribbonIcons(view).some((item) => !!item.querySelector('.fa-arrow-to-bottom')), true);
+    view.funcCall!.inputs['a'] = 6;
+    const file = await view.hostExports[0].export(view.funcCall!);
+    expect(new TextDecoder().decode(file.data), 'Compute2:TestAdd2|6');
+  });
+
   test('A run saved from a custom view is listed under it and opens in it again', () => withRunStorage(async (f) => {
     const editorCall = DG.Func.byName(TEST_CUSTOM_VIEW).prepare({});
     const view: CustomFunctionView = await grok.functions.call('Compute2:CustomFunctionViewEditor',

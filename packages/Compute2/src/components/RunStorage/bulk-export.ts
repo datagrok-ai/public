@@ -37,17 +37,17 @@ export async function exportRuns(jobs: ExportJob[], {onProgress, isCancelled}: {
   const failed: FailedExport[] = [];
   const notCompleted: DG.FuncCall[] = [];
   const hooks = new Map<string, Promise<ViewersHook | undefined>>();
-  const hookOf = (model: DG.Func) => {
-    if (!hooks.has(model.nqName))
-      hooks.set(model.nqName, loadViewersHook(model));
-    return hooks.get(model.nqName)!;
+  const hookOf = (func: DG.Func) => {
+    if (!hooks.has(func.nqName))
+      hooks.set(func.nqName, loadViewersHook(func));
+    return hooks.get(func.nqName)!;
   };
   for (const [idx, {item, kind, exportId}] of jobs.entries()) {
     if (isCancelled())
       break;
     try {
       const file = kind === 'workflow' ? await exportSavedWorkflow(item.run.id, exportId) :
-        await exportSavedCall(item.run.id, exportId, await hookOf(item.model));
+        await exportSavedCall(item.run.id, exportId, item.model, hookOf);
       if (file)
         files.push({folders: item.folders, file});
       else

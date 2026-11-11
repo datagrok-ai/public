@@ -16,6 +16,12 @@ export interface RunStorageHost {
   customView?: string;
 }
 
+/** An export a host adds to the view's Export menu; it runs on the current call. */
+export interface HostExport {
+  name: string;
+  export: (call: DG.FuncCall) => Promise<DG.FileInfo>;
+}
+
 declare global {
   var initialURLHandled: boolean;
 }
@@ -27,6 +33,8 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   private _runStorage?: RunStorageHost;
 
+  private _hostExports: HostExport[] = [];
+
   /** Set by the host that provides the Save and Open dialogs; without it the view has no History and Save buttons. */
   get runStorage(): RunStorageHost | undefined {
     return this._runStorage;
@@ -36,6 +44,19 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     this._runStorage = host;
     if (this.funcCall)
       this.buildRibbonPanels();
+  }
+
+  /** Set by the host, after the formats of `exportConfig` in the Export menu. */
+  get hostExports(): HostExport[] {
+    return this._hostExports;
+  }
+
+  set hostExports(exports: HostExport[]) {
+    this._hostExports = exports;
+    if (this.funcCall) {
+      this.buildRibbonMenu();
+      this.buildRibbonPanels();
+    }
   }
 
   constructor(public funcNqName: string) {
@@ -176,7 +197,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   public buildRibbonMenu() {
     this.ribbonMenu.clear();
 
-    if (!this.exportConfig && !this.reportBug && !this.requestFeature && !this.getHelp && !this.getMocks && !this.getTemplates) return;
+    if (!this.hasExport() && !this.reportBug && !this.requestFeature && !this.getHelp && !this.getMocks && !this.getTemplates) return;
 
     const ribbonMenu = this.ribbonMenu.group('Model');
 
@@ -222,15 +243,24 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   }
 
   public async exportRun(format: string) {
-    DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format));
+    try {
+      const hostExport = this.hostExports.find((x) => x.name === format);
+      if (hostExport) {
+        const file = await hostExport.export(this.funcCall!);
+        DG.Utils.download(file.fileName, new Blob([file.data as BlobPart]));
+      } else
+        DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format));
+    } catch (e: any) {
+      grok.shell.error(e);
+    }
   }
 
   private getFormats() {
-    return (this.exportConfig?.supportedFormats ?? []);
+    return [...(this.exportConfig?.supportedFormats ?? []), ...this.hostExports.map((x) => x.name)];
   }
 
   private hasExport() {
-    return this.exportConfig && this.exportConfig.supportedFormats.length > 0;
+    return this.getFormats().length > 0;
   }
 
   private async getPackageData() {

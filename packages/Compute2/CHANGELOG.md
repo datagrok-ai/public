@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Custom function views: Exports declared in `meta.customExports` of the view's function, as for RFV, show in the view's Export menu and export its runs in the Runs export
 * RFV, Workflows: A viewers hook that can't be made, because its function is missing or fails, shows a warning and the viewers and exports go on without it; in a workflow it used to keep the workflow from opening
 * Workflows: Fixed custom export changes to a step workbook in the `reportStateExcel` callback being lost, and `reportFuncCallExcel` building the step without its viewers hook and meta
 * Export: Added `ReportFuncCallExcel`, the default Excel report of a run, for RFV custom exports to start from

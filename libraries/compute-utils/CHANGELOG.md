@@ -2,6 +2,7 @@
 
 ## v.next
 
+* CustomFunctionView: A host can add exports to the Export menu (`hostExports`); a failing export shows an error
 * RTD: A step's viewers hook from its script that can't be made no longer fails the workflow config; `loadViewersHook` makes a function's hook, or warns and returns none
 * Export: Fixed the Excel report failing with "0 is out of bounds" on a table with no columns; its sheet is left empty
 * RTD: Added `loadSavedTree`, which loads a saved workflow run without UI as the editor opens it

@@ -250,6 +250,7 @@ export async function TestDF1(df: DG.DataFrame) : Promise<any> {
 
 //name: Custom View (Compute 2 Test)
 //output: object result
+//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]
 //editor: Compute2:CustomFunctionViewEditor
 export async function TestCustomView() {
   return await PackageFunctions.TestCustomView();

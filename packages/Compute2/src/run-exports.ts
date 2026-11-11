@@ -58,8 +58,9 @@ export type CallExportStates = {
   runError?: string,
 };
 
+/** Exports a call; custom exports come from `model`, which is a custom view's function for its runs. */
 export async function exportCall(
-  call: DG.FuncCall, exportId: string, states: CallExportStates = {},
+  call: DG.FuncCall, exportId: string, states: CallExportStates = {}, model: DG.Func = call.func,
 ): Promise<DG.FileInfo> {
   if (exportId !== DEFAULT_EXPORT) {
     return applyCustomExport(call, exportId, {
@@ -67,7 +68,7 @@ export async function exportCall(
       consistencyState: states.consistency,
       isOutputOutdated: states.isOutputOutdated,
       runError: states.runError,
-    });
+    }, model);
   }
   const [blob] = await callExcelReport(call, states);
   return fileOf(`${call.func.nqName} - ${Utils.getStartedOrNull(call) ?? 'Not completed'}.xlsx`, blob);
@@ -166,7 +167,11 @@ export const exportSavedWorkflow = (runId: string, exportId: string) =>
     defer(() => exportTree(tree, metaCall, exportId)).pipe(finalize(() => tree.close())),
   )).toPromise() as Promise<DG.FileInfo | null>;
 
-export async function exportSavedCall(runId: string, exportId: string, viewersHook?: ViewersHook) {
+/** Exports a saved run of `model`; the report takes the viewers hook of the run's function, which is not the
+ * model for a custom view. */
+export async function exportSavedCall(runId: string, exportId: string, model?: DG.Func,
+  hookOf: (func: DG.Func) => Promise<ViewersHook | undefined> = Utils.loadViewersHook) {
   const call = await historyUtils.loadRun(runId);
-  return exportCall(call, exportId, {viewersHook, isOutputOutdated: readOutputOutdated(call)});
+  const viewersHook = await hookOf(model?.name === call.func.name ? model : call.func);
+  return exportCall(call, exportId, {viewersHook, isOutputOutdated: readOutputOutdated(call)}, model);
 }
