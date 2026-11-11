@@ -1,6 +1,6 @@
 {
   "name": "datagrok-api",
-  "version": "1.27.11",
+  "version": "1.27.12",
   "description": "",
   "main": "./datagrok.js",
   "types": "./datagrok.d.ts",
