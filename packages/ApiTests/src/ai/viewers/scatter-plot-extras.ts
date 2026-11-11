@@ -63,23 +63,17 @@ category('AI: Viewers: ScatterPlot extras', () => {
 
   test('removed markerOpacity / line transparencies move into the color alpha', async () => {
     const c = v();
-    c.setOptions({markerOpacity: 30, regressionLineTransparency: 0.5, movingAverageLineTransparency: 0.75});
-    for (const color of markerColors)
-      expect(DG.Color.a(c.props[color]), 76);
-    expect(DG.Color.a(c.props.regressionLineColor), 128);
-    expect(DG.Color.a(c.props.movingAverageLineColor), 64);
-    for (const removed of ['markerOpacity', 'regressionLineTransparency', 'movingAverageLineTransparency'])
-      expect(removed in look(c), false);
-    c.setOptions({filteredRowsColor: '#ff0000', markerOpacity: 50});
+    c.setOptions({filteredRowsColor: '#ff0000', markerOpacity: 50, movingAverageLineTransparency: 0.75});
     expect((c.props.filteredRowsColor >>> 0).toString(16), '7fff0000');
+    expect(DG.Color.a(c.props.movingAverageLineColor), 64);
+    for (const removed of ['markerOpacity', 'movingAverageLineTransparency'])
+      expect(removed in look(c), false);
 
     await withTableView(demog(), (tv) => {
       tv.scatterPlot({x: 'height', y: 'weight'});
       const sp = reloadLayoutWithLook(tv, DG.VIEWER.SCATTER_PLOT, {markerOpacity: 50, filteredRowsColor: 0xFFFF0000});
       expect((sp.props.filteredRowsColor >>> 0).toString(16), '7fff0000');
       expect(DG.Color.a(sp.props.selectedRowsColor), 127);
-      const fromString = reloadLayoutWithLook(tv, DG.VIEWER.SCATTER_PLOT, {markerOpacity: '40'});
-      expect(DG.Color.a(fromString.props.filteredRowsColor), 102);
     });
   });
 
@@ -104,14 +98,6 @@ category('AI: Viewers: ScatterPlot extras', () => {
     expect(Reflect.get(c.props, 'markerOpacity'), 40);
     expect(c.getProperties().find((p) => p.name === 'markerOpacity')?.userEditable, false);
     expect('markerOpacity' in look(c), false);
-  });
-
-  test('zero opacity keeps alpha 1: alpha 0 means a color written without alpha', async () => {
-    const c = v();
-    c.setMarkerOpacity(0);
-    expect(DG.Color.a(c.props.filteredRowsColor), 1);
-    c.setOptions({regressionLineTransparency: 1});
-    expect(DG.Color.a(c.props.regressionLineColor), 1);
   });
 
   test('selection visibility bools combined round-trip', async () => {

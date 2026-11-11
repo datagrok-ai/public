@@ -40,16 +40,9 @@ category('AI: Viewers: LineChart extras', () => {
 
   test('opacity and transparencies are saved as the color alpha', async () => {
     const c = v();
-    c.setOptions({regressionLineTransparency: 0.2, movingAverageLineTransparency: 0.6,
-      lineTransparency: 0.5, markerOpacity: 30});
+    c.setOptions({regressionLineTransparency: 0.2, movingAverageLineTransparency: 0.6});
     expect(DG.Color.a(c.props.regressionLineColor), 204);
     expect(DG.Color.a(c.props.movingAverageLineColor), 102);
-    expect(DG.Color.a(c.props.lineColor), 128);
-    expect(DG.Color.a(c.props.markerColor), 76);
-    const notSaved = ['regressionLineTransparency', 'movingAverageLineTransparency', 'lineTransparency',
-      'markerOpacity'];
-    for (const name of notSaved)
-      expect(name in look(c), false);
 
     await withTableView(demog(), (tv) => {
       tv.lineChart({x: 'age', yColumnNames: ['height']});

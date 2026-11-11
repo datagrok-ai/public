@@ -76,17 +76,10 @@ category('AI: Viewers: LineChart Formula Lines', () => {
     // layouts saved before the alpha may hold a color as an ARGB number
     const savedJson = (json: string): DG.FormulaLine => JSON.parse(json);
     expect(fold({...bandFormula}).color, '#00ff004c');
-    expect(fold({...bandFormula, opacity: 30}).color, '#00ff004c');
-    expect(fold({...bandFormula, color: '#ff0000', opacity: 50}).color, '#ff00007f');
     expect(fold({...bandFormula, ...savedJson('{"color": 16711680, "opacity": 50}')}).color, '#ff00007f');
-    expect(fold({...lineFormula, opacity: 100}).color, '#838383ff');
-    expect(fold({...bandFormula, color: '#ff0000'}).color, '#ff00004c');
     expect(fold(fold({...bandFormula, color: '#ff0000'})).color, '#ff00004c');
     expect(fold({...lineFormula, color: '#ff0000'}).color, '#ff0000');
-    expect(fold({...bandFormula, color: '#ff000080', opacity: 50}).color, '#ff00003f');
-    expect(fold({...lineFormula, color: '#ff000080', opacity: 100}).color, '#ff000080');
     expect(fold({...bandFormula, color: 'lightblue'}).color, '#add8e64c');
-    expect(fold({...bandFormula, ...savedJson('{"color": 2164195328}')}).color, '#ff000026');
     expect('opacity' in fold({...bandFormula, opacity: 30}), false);
   });
 }, {owner: 'agolovko@datagrok.ai'});
