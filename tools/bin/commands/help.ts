@@ -523,7 +523,8 @@ Usage: grok src <command> [options]
 
 Git recipes across the repos of the datagrok umbrella (git submodules). Runs from anywhere
 in the tree; paths are relative to the umbrella root. Every git command that changes
-something is printed; a repo that fails is listed and the exit code is 1.
+something is printed; a repo that fails is listed and the exit code is 1. Children that are
+not cloned get no folder: the umbrella's sparse checkout leaves them out.
 
 Commands:
     clone [profile | path...]   Clone the umbrella and the given children (profiles: .gitprofiles;
@@ -537,11 +538,13 @@ Commands:
     bump [path...]              Pin children to their branch tip on origin and move clean checkouts
                                 there; commit in each umbrella (never pushes)
     wt add <name> <path>...     Worktrees of the umbrella and the given children on branch <name>
-    doctor [--fix]              Detached HEADs, unpushed commits, stale URLs; --fix resets those URLs
+    doctor [--fix]              Detached HEADs, unpushed commits, stale URLs, empty folders of children
+                                not cloned; --fix resets those URLs and the sparse patterns
 
 Options:
     --explain     Print the git commands without running them
-    --url <url>   clone: the umbrella (default git@github.com:datagrok-ai/datagrok.git)
+    --url <url>   clone: the umbrella (default https://github.com/datagrok-ai/datagrok.git;
+                  over SSH: git@github.com:datagrok-ai/datagrok.git)
     --dir <dir>   clone: target directory; wt add: worktree root (default <umbrella>-worktrees/<name>)
 
 Examples:
