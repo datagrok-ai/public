@@ -4,8 +4,9 @@ import {cruxPool} from '../crux';
 import type {CruxModules, CruxResult} from '../crux';
 
 /** Sets of workers that answer when told: `go()` resolves a set's pending calls; `ended` counts its terminations.
- *  From the `failFrom`-th set on, opening fails. */
-function fakeSets(failFrom = Infinity) {
+ *  From the `failFrom`-th set on, opening fails. `loaded` answers the pool's question of what a set has loaded (the
+ *  pause waits on it). */
+function fakeSets(failFrom = Infinity, loaded: () => Promise<string[]> = async () => ['stats']) {
   const made: {ended: number, go: () => void}[] = [];
   let opened = 0;
   const open = (): Promise<CruxModules> => {
@@ -16,10 +17,10 @@ function fakeSets(failFrom = Infinity) {
     made.push(s);
     return Promise.resolve({
       call: () => new Promise<CruxResult>((r) => waiting.push(() => r({} as CruxResult))),
-      loaded: () => ['stats'], load: async () => {}, terminate: async () => void s.ended++,
+      loaded: loaded as any, load: async () => {}, terminate: async () => void s.ended++,
     });
   };
-  return {made, open};
+  return {made, open, opens: () => opened};
 }
 
 const IDLE = 20;
@@ -57,6 +58,33 @@ category('Crux pool', () => {
     expect(made[0].ended, 0, 'closed under a call');
     made[0].go();
     await next;
+  });
+
+  test('a call that starts and ends while the pause reads the sets keeps them', async () => {
+    let answer = () => {};
+    const {made, open} = fakeSets(Infinity, () => new Promise((r) => answer = () => r(['stats'])));
+    const pool = cruxPool(open, 4, IDLE);
+    const first = pool.call('f', {});
+    await delay(0);
+    made[0].go();
+    await first;
+    await delay(IDLE * 2); // the pause has begun, and waits on loaded()
+    const quick = pool.call('f', {});
+    await delay(0);
+    made[0].go();
+    await quick;
+    answer();
+    await delay(0);
+    expect(made[0].ended, 0, 'swapped although a call came in during the pause');
+  });
+
+  test('a call that fails with no set open leaves no set opened after the pause', async () => {
+    const {open, opens} = fakeSets(0); // no set opens
+    const pool = cruxPool(open, 4, IDLE);
+    await pool.call('f', {}).catch(() => null);
+    await delay(IDLE * 3);
+    expect(opens(), 1, 'a set was opened that no call asked for');
+    expect(pool.sets(), 0);
   });
 
   test('a replacement set that fails to open leaves the pool, and the next call opens another', async () => {

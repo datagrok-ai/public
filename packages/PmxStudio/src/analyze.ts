@@ -311,6 +311,8 @@ async function stagedTwin(window: Window, params: {[k: string]: any}): Promise<T
  *  the staged twin on the workers. */
 async function fastTwin(window: Window, params: {[k: string]: any}): Promise<Twins> {
   if (await gpu()) {
+    // after the warm-up: the call then finds its set free and warm, and opens no other (cold) one
+    await warmTwin().catch(() => null);
     try {
       const r = await crux('stats.tumor_twin', window, {...params, device: 'webgpu'});
       return {twins: rows(r.main as any), effects: named(r, 'effects'), checks: named(r, 'checks')};
@@ -321,10 +323,14 @@ async function fastTwin(window: Window, params: {[k: string]: any}): Promise<Twi
   return stagedTwin(window, params);
 }
 
-/** Opens the twin's WebGPU device in Crux's worker and compiles its shaders, in the background when the app opens: the
- *  first twin of a page took 2.2 s for them, then ~0.18 s (measured). A tiny study's twin, once with series of up to 8
- *  measurements and once up to 16 (the likelihood's shader is built for the longest series, rounded up to 8). */
-export async function warmTwin(): Promise<void> {
+let warming: Promise<void> | null = null;
+/** Opens the twin's WebGPU device in Crux's worker and compiles its shaders, once a page (Analyze asks for it as it
+ *  opens, and the twin waits for it): the first twin of a page took 2.2 s for them, then ~0.18 s (measured). A tiny
+ *  study's twin, once with series of up to 8 measurements and once up to 16 (the likelihood's shader is built for the
+ *  longest series, rounded up to 8). */
+export const warmTwin = (): Promise<void> => warming ??= warm();
+
+async function warm(): Promise<void> {
   if (!await gpu())
     return;
   const m = await twinModel('MC38');

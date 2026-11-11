@@ -49,7 +49,7 @@ export function cruxPool(open: () => Promise<CruxModules>, maxSets: number, idle
   };
   const rest = async () => {
     const at = generation;
-    if (pool.some((s) => s.busy > 0))
+    if (!pool.length || pool.some((s) => s.busy > 0)) // (none open, as after a set that failed: nothing to keep)
       return;
     // the modules the sets had loaded, read before the swap: the new set loads them, so the next call finds them
     const modules = (await Promise.all(pool.map((s) => s.modules.then((m) => m.loaded(), () => []))));

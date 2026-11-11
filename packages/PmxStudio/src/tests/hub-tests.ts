@@ -3,6 +3,7 @@ import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {exampleStudy} from './example-study';
 import {PLAN_TAG} from '../plan-file';
 import {cruxCalls} from '../crux';
+import {PackageFunctions} from '../package';
 import {hubView} from '../hub-view';
 import {LibraryFiles, indexPath, indexSaved, myLibrary} from '../library';
 import {bring, readFile, suggestedStage} from '../open-study';
@@ -114,11 +115,18 @@ category('Hub', () => {
     expect(JSON.parse(store.get(indexPath())!).version, 1);
   });
 
-  test('the home opens without the engine: no calculation, no workers', async () => {
+  test('the app opens on its home without the engine: no calculation, no workers', async () => {
+    // what earlier tests left running settles first (their calls counted before the app opens)
+    let seen = -1;
+    for (let i = 0; i < 60 && cruxCalls() !== seen; i++) {
+      seen = cruxCalls();
+      await delay(500);
+    }
     const before = cruxCalls();
-    const root = (await hubView()).root;
+    // through the app's own function: what it starts beside the home counts too
+    const root = (await PackageFunctions.pmxStudioApp()).root;
     const studies = root.querySelector<HTMLElement>('.pmx-studies')!;
-    for (let i = 0; i < 100 && studies.hidden; i++) // the user's studies read
+    for (let i = 0; i < 100 && studies.hidden; i++) // the user's studies listed
       await delay(50);
     await delay(500);
     expect(studies.hidden, false);

@@ -104,10 +104,11 @@ every replan.
   the line's atlas with this study's controls.
 - Plan's kill rate makes the declared effect the median, over the labs the atlas draws, of the effect each one shows
   when its own controls reach the endpoint (Crux, decision tumor-plan-checks).
-- The package's tests use an example study (`src/tests/example-study.ts`, not in the app), run as Plan designs
-  it: each arm with the animals Plan asks for (MC38, TGI 40% and 70%: 26 controls, 26 and 6 treated), one lab of
-  the atlas drawn with the design's seed and nothing picked by its outcome, each group with mice of its own. (Crux's "median study", the lab whose controls reach the endpoint on
-  the median day, is not median in effect: its 40% arm shows a TGI of about 21%, so the example no longer uses it.)
+- The package's tests use an example study (`src/tests/example-study.ts`, not in the app), run as Plan designs it:
+  each arm with the animals Plan asks for (MC38, TGI 40% and 70%: 26 controls, 26 and 6 treated), one lab of the atlas
+  drawn with the design's seed and nothing picked by its outcome, each group with mice of its own. (Crux's "median
+  study", the lab whose controls reach the endpoint on the median day, is not median in effect: its 40% arm shows a
+  TGI of about 21%, so the example no longer uses it.)
 
 ## Tolerability
 

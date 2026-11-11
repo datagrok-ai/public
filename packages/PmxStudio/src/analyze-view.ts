@@ -224,8 +224,8 @@ export async function analyzeView(opening?: AnalyzeStart): Promise<DG.ViewBase> 
 
 /** What the view shows, built under its host, which owns it all. */
 function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, exports: Exports): ViewContent {
-  // the twin's shaders compiled in Crux's worker while the study is picked (a failure only leaves the first twin
-  // slower); here and not when the app opens, which starts no engine
+  // the twin's shaders compiled in Crux's worker while the study is picked, once a page (a failure only leaves the
+  // first twin slower); here and not when the app opens, which starts no engine
   void warmTwin().catch(() => null);
   const call = DG.Func.byName('PmxStudio:pmxAnalyzeStudy').prepare();
   // the engine itself on the form's inputs, not the registered function's FuncCall (see callInputs)

@@ -154,6 +154,8 @@ element('experimental groups section', {selector: '.u2-section:has(.u2-section-t
 element('twin section', {selector: '.u2-section:has(.u2-section-title:text-is("Each animal against its untreated twin"))'});
 element('tolerability tab', {selector: '.pmx-tab:has-text("Tolerability")'});
 element('third animal row', {selector: '.pmx-forest-row >> nth=2'});
+// ponytail: the demo studies left the app (2026-11-11); these elements and demoOpen stay for the scenarios marked
+// @skip until they are rewritten (create the study in Plan, save it, open it), and go with that rewrite
 // the demo MC38 study at its three moments, as the Overview lists it
 element('demo plan row', {selector: '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response (its plan)")'});
 element('demo followed row', {selector: '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response"):not(:has-text("(its plan)")):not(:has-text("(all its data)"))'});
