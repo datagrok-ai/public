@@ -477,8 +477,9 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
   }
   const pNot = first['p_not_reached'];
   if (pNot > ENDPOINT_RISK) {
+    // (what to do about it is the view's: whether a lower endpoint avoids it takes a search of its own, safeEndpoint)
     notes.growth.push(`In ${Math.round(pNot * 100)}% of studies like this one the controls level off below ` +
-      `${d.endpoint} mm³: a lower endpoint is safer`);
+      `${d.endpoint} mm³`);
   }
   for (const a of arms) {
     if (!d.n && a.nAssurance !== null && a.nAssurance < MIN_GROUP) {

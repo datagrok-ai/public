@@ -455,26 +455,31 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const v = (c: string) => r.plan.get(c, 0);
     groupNotes.replaceChildren(...notes(v('notes_groups')));
     growthNotes.replaceChildren(...notes(v('notes_growth')));
-    // the controls of some studies may level off below the endpoint: the warning (the engine's, same threshold) offers
-    // the endpoint that avoids it, found behind the plan for the plan's own declaration, and applies it on a click.
-    // Not with a last day fixed: there the controls are not followed to the endpoint
+    // the controls of some studies may level off below the endpoint: under the warning (the engine's, same threshold)
+    // the endpoint that avoids it, found behind the plan for the plan's own declaration, applied on a click; when none
+    // does (lines whose controls level off at any volume), what to plan for instead: the study's end day, reached or
+    // not. Not with a last day fixed: there the controls are not followed to the endpoint
     const d = declared.get(r);
     if (d && !d.lastDay && v('p_endpoint_not_reached') > ENDPOINT_RISK) {
       // ponytail: the calls of an offer a newer plan overtook are not cancelled, only ignored (cached by inputs)
       void safeEndpoint(d).then((x) => {
         // (a plan's effect runs again when its smallest detectable effects arrive: one offer)
-        if (x === null || result.peek() !== r || stale.peek() || growthNotes.querySelector('.pmx-endpoint-offer'))
+        if (result.peek() !== r || stale.peek() || growthNotes.querySelector('.pmx-endpoint-offer'))
           return;
-        const offer = div([`A ${x} mm³ endpoint avoids it: `, hintLink('use it', () => {
+        const use = (x: number) => {
           const field = form.getInput('endpoint');
           if (field)
             field.value = x;
           call.setParamValue('endpoint', x);
           void replan();
-        }, `Sets the endpoint volume to ${x} mm³`)], 'ui-label-details pmx-endpoint-offer');
+        };
+        const offer = div(x === null ?
+          [`No lower endpoint avoids it: plan to end on day ${v('study_end')} even if they have not reached it`] :
+          [`A ${x} mm³ endpoint avoids it: `, hintLink('use it', () => use(x), `Sets the endpoint volume to ${x} mm³`)],
+        'ui-label-details pmx-endpoint-offer');
         offer.style.marginLeft = '16px';
         growthNotes.append(offer);
-      }, () => {}); // no offer is all a failed search costs: the warning above still says to lower the endpoint
+      }, () => {}); // a failed search costs the line under the warning only
     }
 
     // the control first, then each arm: what it expects, the animals it gets and the power they give (a table built

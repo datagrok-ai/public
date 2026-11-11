@@ -17,6 +17,7 @@ element('analyze start', {selector: '.pmx-analyze-start'});
 element('animal list', {selector: '.pmx-animal-list'});
 element('twin effect line', {selector: '.pmx-twin-side'});
 element('results pane', {selector: '.pmx-results'});
+// under Advanced, folded: a scenario clicks 'advanced header' first
 element('tc choice', {selector: '.pmx-declaration [data-u2="choice-input"]:has(option:text-is("T/C"))'});
 element('linear axis choice', {selector: '.u2-radio-item:visible:has-text("Linear")'});
 element('log axis choice', {selector: '.u2-radio-item:visible:has-text("Log")'});
