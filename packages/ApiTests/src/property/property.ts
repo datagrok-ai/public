@@ -88,6 +88,12 @@ category('Property: Header parsing', () => {
     const input = ui.input.forProperty(started, {started: dayjs('2026-01-15T12:00:00')});
     expect(dayjs(input.value).format('YYYY-MM-DD'), '2026-01-15');
   }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
+
+  test('forProperty: a map of a JS object', async () => {
+    const tags = DG.Property.fromOptions({name: 'tags', type: DG.TYPE.MAP});
+    const input = ui.input.forProperty(tags, {tags: {a: '1', b: 'x'}});
+    expect(JSON.stringify(input.value), JSON.stringify({a: '1', b: 'x'}));
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 });
 
 category('Property: Accessors', () => {
