@@ -369,7 +369,7 @@ export interface IDartApi {
   grok_Viewer_Filters(t: any, json: String): any;
   grok_Viewer_ScatterPlot(t: any, json: String): any;
   grok_Viewer_LineChart(t: any, json: String): any;
-  grok_Viewer_SetMarkerOpacity(v: any, opacity: Num, colorProperties: any): any;
+  grok_Viewer_SetMarkerOpacity(v: any, opacity: Num): any;
   grok_Viewer_GetInfo(v: any): any;
   grok_Viewer_Get_Look(v: any): any;
   grok_Viewer_Get_ImmediateRendering(v: any): any;

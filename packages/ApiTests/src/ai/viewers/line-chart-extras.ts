@@ -64,17 +64,14 @@ category('AI: Viewers: LineChart extras', () => {
     });
   });
 
-  test('setMarkerOpacity sets the alpha of markerColor or of the given colors', async () => {
+  test('setMarkerOpacity sets the alpha of markerColor', async () => {
     const c = v();
     expect(c.getProperties().some((p) => p.name === 'markerOpacity' || p.name === 'lineTransparency'), false);
     c.setMarkerOpacity(50);
     expect(DG.Color.a(c.props.markerColor), 127);
     c.setMarkerOpacity(0);
     expect(DG.Color.a(c.props.markerColor), 1);
-    c.setMarkerOpacity(75, ['lineColor', 'regressionLineColor']);
-    expect(DG.Color.a(c.props.lineColor), 191);
-    expect(DG.Color.a(c.props.regressionLineColor), 191);
-    expect(DG.Color.a(c.props.markerColor), 1);
+    expect(DG.Color.a(c.props.lineColor), 255);
   });
 
   test('packCategories/yGlobalScale/axesFollowFilter/showCurrentRowLine/showMouseOverCategory bools', async () => {

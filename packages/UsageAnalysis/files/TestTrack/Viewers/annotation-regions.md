@@ -29,7 +29,7 @@ All scenarios start with:
 1. Open viewer properties (gear icon) → Tools — ensure **Lasso Tool** is unchecked
 2. Right-click the scatter plot canvas → **Tools** → **Draw Annotation Region** — drag to draw a rectangle
 3. Expected: rectangle region appears; Formula Lines dialog opens with the region selected; dialog preview uses the same X/Y axes as the source viewer
-4. In the dialog editor change: Title, Description, Fill color, Outline color, Outline width, Opacity — expected: all edits are reflected in the preview and on the source viewer immediately
+4. In the dialog editor change: Title, Description, Fill color (with its alpha), Outline color, Outline width — expected: all edits are reflected in the preview and on the source viewer immediately
 5. Click OK
 6. Open viewer properties → Tools → set **Lasso Tool** = true
 7. Right-click → **Tools** → **Draw Annotation Region** — drag a free-form polygon
@@ -48,7 +48,7 @@ All scenarios start with:
 
 1. Open Line Chart on demog and add one formula region via right-click → **Tools** → **Formula Lines...** → **ADD NEW** → **Region - Formula Lines**
 2. Right-click on that region → **Edit** — expected: Formula Lines dialog opens with the region pre-selected
-3. With the dialog open on an existing region, change each of: Title, Title color, Description, Fill color, Outline color, Outline width, Opacity
+3. With the dialog open on an existing region, change each of: Title, Title color, Description, Fill color (with its alpha), Outline color, Outline width
 4. Expected: each edit reflected in the preview immediately; after OK, changes persist on the source viewer
 5. Open viewer properties → find **Annotation Font** (Misc / Style section) — change font family and size
 6. Expected: region title labels on all regions update immediately; plain formula line labels are unaffected

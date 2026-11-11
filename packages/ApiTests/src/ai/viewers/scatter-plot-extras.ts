@@ -83,14 +83,12 @@ category('AI: Viewers: ScatterPlot extras', () => {
     });
   });
 
-  test('setMarkerOpacity sets the alpha of all marker colors or of the given colors', async () => {
+  test('setMarkerOpacity sets the alpha of all marker colors', async () => {
     const c = v();
     c.setMarkerOpacity(50);
     for (const color of markerColors)
       expect(DG.Color.a(c.props[color]), 127);
-    c.setMarkerOpacity(25, ['regressionLineColor']);
-    expect(DG.Color.a(c.props.regressionLineColor), 63);
-    expect(DG.Color.a(c.props.filteredRowsColor), 127);
+    expect(DG.Color.a(c.props.regressionLineColor), 255);
   });
 
   test('transparencies are not viewer properties; markerOpacity is a hidden marker color alpha', async () => {

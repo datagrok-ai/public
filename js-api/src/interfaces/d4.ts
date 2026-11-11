@@ -2140,6 +2140,9 @@ export interface IScatterPlotSettings {
   /** By default - automatic sizing based on current dataframe */
   markerDefaultSize: number;
 
+  /** @deprecated Kept for plugins built before the color alpha: the alpha of the marker colors. */
+  markerOpacity: number;
+
   /** Randomly shift (x, y) marker position up to the *Jitter Size* pixels.
    * Useful when multiple points fall on the same exact position.
    * If *Jitter Size Y* is defined, then *Jitter Size* shifts x only. */
