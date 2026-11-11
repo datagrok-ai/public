@@ -3,7 +3,7 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {armsFrame} from '../arms-input';
 import {ENDPOINT, HUMANE, LAB_WEEKDAYS, MIN_GROUP, StudyDeclaration, designStudy, finite} from '../engine';
-import {tgisOf} from '../frames';
+import {declarationOf, tgisOf} from '../frames';
 import {enginePriors} from '../priors';
 
 /** pmxPlanStudy as the Plan view calls it: the outputs by name. */
@@ -18,6 +18,15 @@ async function plan(params: {[k: string]: any}): Promise<{[k: string]: DG.DataFr
 const arm = (name: string, effect = 60) => ({name, therapy: 'small_molecule' as const, metric: 'TGI' as const, effect});
 
 category('Plan', () => {
+  test('TGI or T/C is set for the study: it sets every arm; left empty, each arm keeps its own', async () => {
+    const arms = armsFrame([{name: 'Cpd-1', therapy: 'small_molecule', metric: 'TGI', effect: 40},
+      {name: 'Cpd-2', therapy: 'small_molecule', metric: 'TC', effect: 40}]);
+    const base = {line: 'MC38', endpoint: 1000, arms, power: 80, correction: 'holm'};
+    expect(declarationOf({...base, effectAs: 'T/C'}).arms.map((a) => a.metric).join(), 'TC,TC');
+    expect(declarationOf({...base, effectAs: 'TGI'}).arms.map((a) => a.metric).join(), 'TGI,TGI');
+    expect(declarationOf(base).arms.map((a) => a.metric).join(), 'TGI,TC');
+  });
+
   test('one arm: the study, its groups, the power curve and the volumes', async () => {
     const o = await plan({arms: armsFrame([arm('Cpd-1')])});
     expect(o.plan.rowCount, 1);

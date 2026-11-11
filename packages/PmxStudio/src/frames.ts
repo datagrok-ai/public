@@ -44,6 +44,8 @@ export interface PlanInputs {
   lossRule?: string;
   confidence?: number; vRand?: number; startWeekday?: string; humane?: number; compareSchedules?: boolean;
   detectableEffect?: boolean; fits?: string;
+  /** TGI or T/C for every arm (empty: each arm's own metric) */
+  effectAs?: string;
 }
 
 /** The declaration the engine reads: each empty optional at its default, percentages as shares, counts rounded and
@@ -51,7 +53,9 @@ export interface PlanInputs {
 export function declarationOf(x: PlanInputs): StudyDeclaration {
   const share = (v: number | undefined, d: number) => (ok(v) ? v : d) / 100;
   return {
-    line: x.line, endpoint: x.endpoint, arms: armsOf(x.arms), power: x.power / 100,
+    line: x.line, endpoint: x.endpoint, power: x.power / 100,
+    arms: armsOf(x.arms).map((a) => x.effectAs === 'TGI' || x.effectAs === 'T/C' ?
+      {...a, metric: x.effectAs === 'T/C' ? 'TC' as const : 'TGI' as const} : a),
     correction: correctionOf(x.correction),
     weekdays: weekdaysOf(x.measurementDays),
     startWeekday: Math.max(0, WEEKDAY_NAMES.indexOf(x.startWeekday ?? 'Monday')),

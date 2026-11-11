@@ -307,12 +307,10 @@ async function designArmNow(prior: object, params: Row, shards: number, power: n
   return t;
 }
 
-export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
-  if (d.arms.length === 0)
-    throw new Error('Add at least one treatment arm');
-  const {lp, me, prior, params} = await lineModel(d.line);
-  const study = {
-    v_rand: d.vRand,
+/** One arm's stats.tumor_study_design parameters in study `d`, over the line's model parameters `model`. */
+function armCallParams(d: StudyDeclaration, arm: ArmDeclaration, model: Row): Row {
+  const a = ARCHETYPES[arm.therapy];
+  return {...model, v_rand: d.vRand,
     endpoint: d.endpoint, power: d.power, alpha: d.alpha, treated_arms: d.treatedArms ?? d.arms.length,
     correction: d.correction, test: TEST,
     weekdays: weekdaysParam(d.weekdays),
@@ -321,12 +319,31 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     start_weekday: d.startWeekday, humane: d.humane, schedules: d.schedules, mde: !!d.n && d.mde !== false,
     seed: SEED,
     ...POOLS, ...(d.n ? {n: d.n} : {}), ...(d.lastDay ? {last_day: d.lastDay} : {}),
-  };
-  const armParams = (arm: ArmDeclaration, model: Row) => {
-    const a = ARCHETYPES[arm.therapy];
-    return {...model, ...study, metric: arm.metric.toLowerCase(), effect: arm.effect, onset: a.onsetDays,
-      kappa_sd: a.kappaSd, responders: a.responders};
-  };
+    metric: arm.metric.toLowerCase(), effect: arm.effect, onset: a.onsetDays, kappa_sd: a.kappaSd,
+    responders: a.responders};
+}
+
+/** The highest round endpoint below the declared one (50 mm³ steps, from 90 % of it down to 40 %) at which the
+ *  controls of at most `limit` of the studies level off before reaching it; null: none. The share is the control's,
+ *  whatever the arm: one call per candidate, the first arm's at a given n (no n search, no shards), in parallel. */
+export async function safeEndpoint(d: StudyDeclaration, limit = 0.02): Promise<number | null> {
+  const step = 50;
+  const xs = [...new Set([0.9, 0.8, 0.7, 0.6, 0.5, 0.4].map((f) => Math.floor(d.endpoint * f / step) * step))]
+    .filter((x) => x > d.vRand && x < d.endpoint);
+  if (!xs.length || !d.arms.length)
+    return null;
+  const {prior, params} = await lineModel(d.line);
+  const ps = await Promise.all(xs.map((x) => designArm(prior,
+    armCallParams({...d, endpoint: x, n: MIN_GROUP, schedules: false, mde: false}, d.arms[0], params), 1, d.power,
+    MIN_GROUP).then((t) => Number(t.plan['p_not_reached']))));
+  return xs.find((_, i) => ps[i] <= limit) ?? null;
+}
+
+export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
+  if (d.arms.length === 0)
+    throw new Error('Add at least one treatment arm');
+  const {lp, me, prior, params} = await lineModel(d.line);
+  const armParams = (arm: ArmDeclaration, model: Row) => armCallParams(d, arm, model);
   const armError = (arm: ArmDeclaration) => (e: any) => {
     throw new Error(`${arm.name}: ${e?.message ?? e}`);
   };

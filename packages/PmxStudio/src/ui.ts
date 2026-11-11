@@ -270,6 +270,29 @@ export function infoNote(html: string): HTMLElement {
   return note;
 }
 
+/** A quiet line under a field, in the platform's detail style (ui.labels.details): what the app read there or can do,
+ *  while `content` gives something (text, or text with links in it); null hides it. Call it in a scope (it follows
+ *  `content` there): every feature the app keeps out of sight is offered this one way. */
+export function contextHint(content: () => string | (string | HTMLElement)[] | null): HTMLElement {
+  const e = div([], 'ui-label-details pmx-context-hint');
+  effect(() => {
+    const c = content();
+    e.replaceChildren(...c === null ? [] : typeof c === 'string' ? [c] : c);
+    e.style.display = c === null || c.length === 0 ? 'none' : '';
+  });
+  return e;
+}
+
+/** A word in a contextHint that does something on a click (opens a choice, applies a value). */
+export function hintLink(text: string, onClick: (e: MouseEvent) => void, tooltip?: string): HTMLElement {
+  const a = span(text, 'pmx-hint-link');
+  Object.assign(a.style, {cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: '2px'});
+  a.addEventListener('click', onClick);
+  if (tooltip)
+    a.title = tooltip;
+  return a;
+}
+
 /** A growth chart's volume axis, Linear or Log: Linear by default (as a lab's figures are drawn), else the user's
  *  last choice, which every chart then opens on. The row that offers it above the chart, and whether Log is chosen
  *  (the chart's `log`). */

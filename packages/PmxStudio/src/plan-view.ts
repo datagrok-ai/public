@@ -14,10 +14,10 @@ import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
 import {PlanFrames, PlanInputs, WEEKDAY_NAMES, armColors, declarationOf, planFrames, tgisOf, weekdaysOf,
   weekdaysText} from './frames';
-import {ArmsInput, CorrectionInput, armsFrame} from './arms-input';
-import {MIN_GROUP, diameterOf, finite} from './engine';
-import {askedOf, autoRun, callInputs, cardGrid, copyRow, infoNote, notes, notesBox, num, pct, settleForm, sized,
-  markStage, statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
+import {Arm, ArmsInput, CorrectionInput, armsFrame} from './arms-input';
+import {MIN_GROUP, diameterOf, finite, safeEndpoint} from './engine';
+import {askedOf, autoRun, callInputs, cardGrid, copyRow, hintLink, infoNote, notes, notesBox, num, pct, settleForm,
+  sized, markStage, statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
 import {openStage, showStage} from './stages';
 import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
@@ -230,14 +230,18 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   let running: Promise<void> | null = null;
   let again = false;
   const error = signal<string | null>(null);
-  const armsInput = new ArmsInput({label: 'Arms'});
+  // (the fields carry no caption of their own: their section's title says it)
+  const lineInput = new LineInput({});
+  // the arms read the kind of treatment from their names and the model's host; TGI or T/C is the study's (Advanced)
+  const effectAs = signal<'TGI' | 'TC'>('TGI');
+  const armsInput = new ArmsInput({metric: effectAs,
+    host: computed(() => lineInput.models.value?.[lineInput.value ?? '']?.class ?? null)});
   const correction = new CorrectionInput({label: 'Multiple comparisons', arms: armsInput.count});
   // a plan that no longer matches the form is dimmed until the next run
   const stale = signal(false);
   // captions above every field: the panel reads top to bottom, left-aligned, at any width
   // no Run: each change replans once the changes stop
   const auto = autoRun(() => form, () => replan());
-  const lineInput = new LineInput({label: 'Tumor model'});
   const form = funcForm(call, {layout: 'tall',
     overrides: {arms: {input: armsInput}, correction: {input: correction}, line: {input: lineInput}},
     onInputChanged: () => {
@@ -441,6 +445,24 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const v = (c: string) => r.plan.get(c, 0);
     groupNotes.replaceChildren(...notes(v('notes_groups')));
     growthNotes.replaceChildren(...notes(v('notes_growth')));
+    // the controls of some studies may level off below the endpoint: the warning offers the endpoint that avoids it,
+    // found behind the plan, and applies it on a click
+    if (v('p_endpoint_not_reached') > 0.02) {
+      const d = declarationOf(callInputs<PlanInputs>(call));
+      void safeEndpoint(d).then((x) => {
+        if (x === null || result.peek() !== r)
+          return;
+        const offer = div([`A ${x} mm³ endpoint avoids it: `, hintLink('use it', () => {
+          const field = form.getInput('endpoint');
+          if (field)
+            field.value = x;
+          call.setParamValue('endpoint', x);
+          void replan();
+        }, `Sets the endpoint volume to ${x} mm³`)], 'ui-label-details pmx-endpoint-offer');
+        offer.style.marginLeft = '16px';
+        growthNotes.append(offer);
+      }, () => {});
+    }
 
     // the control first, then each arm: what it expects, the animals it gets and the power they give (a table built
     // in this run is disposed with it)
@@ -781,6 +803,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // the plan carries the schedules while their section is open; opened on a plan without them, they are computed
   // for it (the form's own inputs, the plan unchanged)
   void form.settled.then(() => form.effect(() => call.setParamValue('compareSchedules', scheduleOpen.value)));
+  void form.settled.then(() => form.effect(() =>
+    effectAs.value = form.getInput('effectAs')?.value === 'T/C' ? 'TC' : 'TGI'));
   form.effect(() => {
     const r = result.value;
     schedules.value = r && r.schedules.rowCount > 0 ? r.schedules : undefined;
@@ -828,7 +852,12 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     // a table parameter by default (Monitor's study would read as 267 arms)
     const last = initial ? null : lastLine();
     const lab = labHumane();
-    for (const [name, value] of Object.entries(initial?.inputs ??
+    // a plan saved before TGI / T/C was the study's: its arms' own
+    const saved = initial?.inputs;
+    const savedArms = saved?.arms as Arm[] | null | undefined;
+    const effects = saved && saved.effectAs === undefined && savedArms?.length ?
+      {effectAs: savedArms[0].metric === 'TC' ? 'T/C' : 'TGI'} : {};
+    for (const [name, value] of Object.entries(saved ? {...saved, ...effects} :
       {arms: null, ...last ? {line: last} : {}, ...lab ? {humane: lab} : {}})) {
       const v = name === 'arms' && value ? armsFrame(value as SavedPlan['inputs']['arms']) : value;
       const field = form.getInput(name);

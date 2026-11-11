@@ -121,9 +121,11 @@ export namespace funcs {
    * @param {boolean} detectableEffect - With the animals per arm set, also search each arm’s smallest detectable effect (off: left empty and the plan several times faster).
    * @param {string} fits - For a tumor model whose published controls several fits describe equally well (Panc02, PDX-PDAC
    *   choices: ["Average their power","Best fit only"]
+   * @param {string} effectAs - How every arm’s expected effect is given: tumor growth inhibition (TGI) or the treated / control volume ratio (T/C), in percent. Empty: each arm’s own metric in the arms table.
+   *   choices: ["TGI","T/C"]
    */
-  export async function pmxPlanStudy(line: string , endpoint: number , arms: DG.DataFrame | undefined, power: number , correction: string , n?: number | null, lastDay?: number | null, tgiScenarios?: string | null, alpha?: number , preLoss?: number , postLoss?: number , lossRule?: string , confidence?: number , vRand?: number , measurementDays?: string , startWeekday?: string , humane?: number , compareSchedules?: boolean , detectableEffect?: boolean , fits?: string ): Promise<{plan: DG.DataFrame, armResults: DG.DataFrame, powerCurve: DG.DataFrame, curves: DG.DataFrame, duration: DG.DataFrame, schedules: DG.DataFrame, calendar: DG.DataFrame, scenarios: DG.DataFrame}> {
-    return await grok.functions.call('PMXStudio:PmxPlanStudy', { line, endpoint, arms, power, correction, n, lastDay, tgiScenarios, alpha, preLoss, postLoss, lossRule, confidence, vRand, measurementDays, startWeekday, humane, compareSchedules, detectableEffect, fits });
+  export async function pmxPlanStudy(line: string , endpoint: number , arms: DG.DataFrame | undefined, power: number , correction: string , n?: number | null, lastDay?: number | null, tgiScenarios?: string | null, alpha?: number , preLoss?: number , postLoss?: number , lossRule?: string , confidence?: number , vRand?: number , measurementDays?: string , startWeekday?: string , humane?: number , compareSchedules?: boolean , detectableEffect?: boolean , fits?: string , effectAs?: string ): Promise<{plan: DG.DataFrame, armResults: DG.DataFrame, powerCurve: DG.DataFrame, curves: DG.DataFrame, duration: DG.DataFrame, schedules: DG.DataFrame, calendar: DG.DataFrame, scenarios: DG.DataFrame}> {
+    return await grok.functions.call('PMXStudio:PmxPlanStudy', { line, endpoint, arms, power, correction, n, lastDay, tgiScenarios, alpha, preLoss, postLoss, lossRule, confidence, vRand, measurementDays, startWeekday, humane, compareSchedules, detectableEffect, fits, effectAs });
   }
 
   /**

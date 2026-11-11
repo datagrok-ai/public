@@ -1,6 +1,9 @@
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import * as DG from 'datagrok-api/dg';
+import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {Scope, signal} from '@datagrok-libraries/u2';
 
 import {combinationHint, describeArm, findCombinations, parseArmName, therapyOf} from '../arm-name';
+import {ArmsInput, armsFrame, armsOf} from '../arms-input';
 
 // invented names only: the curated labels the parser was measured on stay on the machine that holds them
 category('Arm names', () => {
@@ -47,7 +50,10 @@ category('Arm names', () => {
   });
 
   test('the kind of treatment read from the name; when in doubt, the one that asks for more animals', async () => {
-    const kind = (n: string) => { const r = therapyOf(n); return r.known ? r.therapy : 'unknown'; };
+    const kind = (n: string) => {
+      const r = therapyOf(n);
+      return r.known ? r.therapy : 'unknown';
+    };
     expect(kind('anti-PD-1 10 mg/kg i.p.'), 'immunotherapy');
     expect(kind('aPD-L1'), 'immunotherapy');
     expect(kind('rmIL-12 1 ug'), 'immunotherapy');
@@ -60,10 +66,65 @@ category('Arm names', () => {
     expect(kind('Cpd-X neoantigen vaccine'), 'vaccine_peptide');
     expect(kind('siXyz8 5 nmol'), 'oligo_rna');
     expect(kind('gemcitabine 50 mg/kg i.p.'), 'small_molecule');
-    expect(kind('Cpd-X kinase inhibitor 30 mg/kg p.o.'), 'unknown', 'a small molecule, but how it acts the name does not say');
+    expect(kind('Cpd-X kinase inhibitor 30 mg/kg p.o.'), 'unknown', 'a small molecule; how it acts, not said');
     expect(kind('Cpd-X 5 mg/kg'), 'unknown', 'a code: small molecule, and the app says it could not tell');
     expect(therapyOf('Cpd-X 5 mg/kg').therapy, 'small_molecule');
     // a combination takes its most variable drug
     expect(kind('cisplatin 5 mg/kg + anti-PD-1'), 'immunotherapy');
+  });
+});
+
+category('Arm cards', () => {
+  test('the name is the title; the kind read from it, asked in a syngeneic model; TGI or T/C set once', async () => {
+    const root = Scope.root('arm cards test');
+    try {
+      const host = signal<'syngeneic' | 'cdx' | 'pdx' | null>('syngeneic');
+      const metric = signal<'TGI' | 'TC'>('TGI');
+      const input = root.build(() => new ArmsInput({host, metric}));
+      // in the document: a link outside it does not get clicks
+      document.body.append(input.root);
+      input.value = armsFrame(['anti-PD-1 10 mg/kg', 'Cpd-X 5 mg/kg p.o.'].map((name) =>
+        ({name, therapy: 'small_molecule' as const, metric: 'TGI' as const, effect: 50,
+          therapySource: 'name' as const})));
+      await delay(50);
+      const cards = [...input.root.querySelectorAll<HTMLElement>('.pmx-arm')];
+      const grey = (c: HTMLElement) => c.querySelector<HTMLElement>('[data-pmx=understood]')!;
+      const therapy = (i: number) => armsOf(input.value)[i].therapy;
+      expect((cards[0].querySelector('.pmx-arm-title input') as HTMLInputElement).value, 'anti-PD-1 10 mg/kg');
+      expect(cards[0].textContent!.includes('Arm 1'), false, 'no "Arm 1" over the name');
+      expect(therapy(0), 'immunotherapy', 'read from the name');
+      expect(grey(cards[0]).textContent!.includes('immunotherapy'), true);
+      // a code in a syngeneic model: the question, through the immune system until answered
+      expect(therapy(1), 'immune_agonist');
+      expect(grey(cards[1]).textContent!.includes('works on the tumor'), true);
+      const link = (c: HTMLElement, text: string) =>
+        [...grey(c).querySelectorAll<HTMLElement>('.pmx-hint-link')].find((e) => e.textContent === text)!;
+      link(cards[1], 'directly').click();
+      await delay(50);
+      expect(therapy(1), 'small_molecule', 'answered: directly');
+      expect(armsOf(input.value)[1].therapySource, 'user');
+      // the study's T/C, every arm
+      metric.value = 'TC';
+      await delay(50);
+      expect(armsOf(input.value).map((a) => a.metric).join(), 'TC,TC');
+      expect(cards[0].textContent!.includes('Expected T/C'), true);
+      // in immunodeficient mice the code is a small molecule, said, not asked (the answer above stays the user's)
+      host.value = 'cdx';
+      input.value = armsFrame([{name: 'Cpd-Y 5 mg/kg', therapy: 'immune_agonist', metric: 'TGI', effect: 50,
+        therapySource: 'name'}]);
+      await delay(50);
+      expect(therapy(0), 'small_molecule');
+      const card = input.root.querySelector<HTMLElement>('.pmx-arm')!;
+      expect(grey(card).textContent!.includes('not recognized'), true);
+      // a table without the source column (a script, an older plan): the therapy is the user's, kept
+      input.value = DG.DataFrame.fromColumns([DG.Column.fromStrings('name', ['Cpd-Z']),
+        DG.Column.fromStrings('therapy', ['cell_therapy']), DG.Column.fromStrings('metric', ['TGI']),
+        DG.Column.fromFloat64Array('effect', Float64Array.from([50]))]);
+      await delay(50);
+      expect(therapy(0), 'cell_therapy');
+    } finally {
+      root.dispose();
+      document.querySelectorAll('[data-u2=pmx-arms-input]').forEach((e) => e.remove());
+    }
   });
 });
