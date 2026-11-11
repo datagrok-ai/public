@@ -155,7 +155,21 @@ With a **Body weight** column (grams, weighed with the tumor, on the rows of the
   exported offline from the atlas papers' excised tumors.
 - `files/SOURCES.md`: the papers the priors and the density were estimated from, with DOI and licence. The per-paper table in the
   priors (`studies`) uses anonymous ids.
+- `files/example/mc38-ld4172-anti-pd1.csv`: the example study the empty Monitor and Analyze offer to download (see
+  below), its source, licence and changes in `files/example/README.md`.
 - `crux-modules/`: Crux's browser modules, the crux-core commit they come from in `crux-modules/VERSION` (see below).
+
+## Example study
+
+The empty Monitor and Analyze offer one published study to try: MC38 tumors, vehicle, LD4172 (a RIPK1 degrader),
+anti-PD-1 and the two combined, 8 mice per group, tumor volume and body weight on days 0 to 12 from randomization.
+From Yu X. et al., "Development of a RIPK1 degrader to enhance antitumor immunity", Nature Communications 15 (2024),
+https://doi.org/10.1038/s41467-024-55006-2, Supplementary Fig. 4A–B (Source Data file), licensed CC BY 4.0
+(https://creativecommons.org/licenses/by/4.0/). Changed by us: reshaped to one row per animal and day; day
+re-expressed as days from randomization (article day 7 = day 0); animal labels assigned by column order; group names
+completed with dose, route and schedule from the article's Methods (µg written "ug"); each weight paired with the
+tumor volume in the same column position of its group (the article gives no animal identifiers). Volumes and weights
+unchanged. Its control group is also among the MC38 studies the growth model was built from (`files/SOURCES.md`).
 
 ## Crux modules
 

@@ -20,7 +20,8 @@ import {median} from './engine';
 import {groupColors} from './frames';
 import {CorrectionInput} from './arms-input';
 import {askedOf, autoRun, axisAt, callInputs, cardGrid, dayText, keepSame, onTableEdits, only, TABLE_EDITS, guide,
-  infoNote, noteLine, notesBox, num, pct, pValue, settleForm, signed, isBodyWeight, keepNamedColumns, sized, markStage,
+  exampleLine, infoNote, noteLine, notesBox, num, pct, pValue, settleForm, signed, isBodyWeight, keepNamedColumns,
+  sized, markStage,
   statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
 import {logOf, restoreFields} from './study-file';
 import {openStage} from './stages';
@@ -368,6 +369,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   const start = divV([
     span('Open your study table (one row per animal and measurement day, day 0 the randomization), check its ' +
       'columns: the analysis follows them, and any change you make to the table.'),
+    exampleLine(),
     infoNote('<b>Analyzed as planned.</b> Analyze applies the analysis Plan pre-specifies: the study is evaluated ' +
       'when the median control reaches the endpoint, each treated group is compared with the control on tumor ' +
       'growth, and each treated animal with its untreated twin: what it would measure without treatment, predicted ' +

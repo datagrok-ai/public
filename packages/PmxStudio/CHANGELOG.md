@@ -2,9 +2,13 @@
 
 ## Unreleased
 
+* An example study (2026-11-12): the empty Monitor and Analyze offer a published one to download, MC38 with LD4172,
+  anti-PD-1 and the two combined (Yu et al., Nat Commun 2024, CC BY 4.0; source and changes in
+  `files/example/README.md`).
+
 * The app starts clean (2026-11-11): the Overview lists only the user's own studies ("No studies yet" until there is
-  one) and computes nothing when it opens; the demo studies, and the example study Monitor and Analyze offered, are
-  gone (the package's tests keep it, in tests/). The engine's workers close after 30 s without a calculation, one set
+  one) and computes nothing when it opens; the demo studies are gone (the package's tests keep the simulated one, in
+  tests/). The engine's workers close after 30 s without a calculation, one set
   kept ready with the modules used; the twin's shaders are compiled when Analyze opens, not when the app does.
 
 * Plan, second pass (2026-11-11): the animals per group and the end of study leave the form: a click on the

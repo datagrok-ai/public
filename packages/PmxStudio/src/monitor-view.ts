@@ -33,7 +33,8 @@ import {printSheet, sheetHtml} from './sheet';
 import {Exports, download, exportMenu, reportHtml} from './report';
 import {studyInputsOf} from './explore';
 import {tolerabilityTab} from './tolerability';
-import {askedOf, autoRun, block, callInputs, cardGrid, dayText, infoNote, onTableEdits, TABLE_EDITS, isBodyWeight,
+import {askedOf, autoRun, block, callInputs, cardGrid, dayText, exampleLine, infoNote, onTableEdits, TABLE_EDITS,
+  isBodyWeight,
   keepNamedColumns, noteLine, notes, notesBox, num, pct, settleForm, sized, markStage, signed, stageOf, statCard,
   swatch, volumeAxis, wrapCells, stagePanes} from './ui';
 
@@ -215,6 +216,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     span('Open the study\'s measurements (one row per animal and day, day 0 the randomization), check the columns ' +
       'and the forecasts follow. Paste or type each session\'s values into the table: each is checked as you enter ' +
       'it, and the forecasts update.'),
+    exampleLine(),
     infoNote('<b>Blinded entry.</b> When whoever enters the measurements must not know the groups, turn it on in ' +
       'the study\'s details (click its name): Monitor then shows each animal without its group until someone ' +
       'reveals them, and the log says so.'),

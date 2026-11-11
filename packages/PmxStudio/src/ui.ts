@@ -9,6 +9,8 @@ import {buttonWithIcon, computed, div, divH, divV, dot, effect, icon, loader, Ra
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
 
+import {_package} from './package';
+
 /** A fraction as a whole percent: 0.734 → "73%". */
 export const pct = (x: unknown) => typeof x === 'number' && Number.isFinite(x) ? `${Math.round(x * 100)}%` : '—';
 
@@ -256,6 +258,24 @@ export function notesBox(): HTMLElement {
   const box = divV([], 'pmx-notes');
   Object.assign(box.style, {gap: 'var(--dg-space-s)', margin: 'var(--dg-space-l) 0 0'});
   return box;
+}
+
+/** The example: a published MC38 study (Yu et al., Nat Commun 2024, CC BY 4.0), its citation and changes in
+ *  files/example/README.md. */
+export const EXAMPLE = {file: 'example/mc38-ld4172-anti-pd1.csv', saveAs: 'pmx-example-mc38.csv',
+  what: 'MC38, published, CC BY'};
+
+/** The empty Monitor's and Analyze's one quiet line: a study to try (a static file of the package, no engine) and
+ *  where one's own starts. */
+export function exampleLine(): HTMLElement {
+  const get = link(`Download an example study (${EXAMPLE.what})`, () => void _package.files.readAsText(EXAMPLE.file)
+    .then((text) => DG.Utils.download(EXAMPLE.saveAs, text, 'text/csv'))
+    .catch((e) => grok.shell.error(String(e?.message ?? e))));
+  get.title = 'A table of measurements to open here: Yu X. et al., Nature Communications 15 (2024), ' +
+    'doi:10.1038/s41467-024-55006-2, CC BY 4.0';
+  const line = span('No study at hand? ', 'pmx-muted');
+  line.append(get, '. For your own, plan it in Plan and save it: its table starts there.');
+  return line;
 }
 
 /** An informative note in a tinted box (the link between the app's stages), `html` its text. */

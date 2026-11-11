@@ -1,6 +1,6 @@
 # Sources of the control-growth priors
 
-The priors in `engine_priors_v*.json` are aggregates estimated from the vehicle/control arms of these open-access papers (PubMed Central): every paper with a control experiment in a line's base pool, which feeds the MAP priors, the calibration, the leave-one-out checks and the Monitor validation, and the papers of the treated arms behind the therapy archetypes (a paper can enter some of these and not the MAP). Per-paper results are not distributed: the `studies` table uses anonymous ids.
+The priors in `engine_priors_v*.json` are aggregates estimated from the vehicle/control arms of these open-access papers (PubMed Central): every paper with a control experiment in a line's base pool, which feeds the MAP priors, the calibration, the leave-one-out checks and the Monitor validation, and the papers of the treated arms behind the therapy archetypes (a paper can enter some of these and not the MAP). Per-paper results are not distributed: the `studies` table uses anonymous ids. The one exception is the example study (`example/`, CC BY 4.0, cited in `example/README.md`), distributed animal by animal under its licence.
 
 | DOI | Journal | Year | Licence | Lines |
 |---|---|---|---|---|
@@ -59,7 +59,7 @@ The priors in `engine_priors_v*.json` are aggregates estimated from the vehicle/
 | [10.1038/s41467-024-49932-4](https://doi.org/10.1038/s41467-024-49932-4) | Nature communications | 2024 | cc by | SKOV3 |
 | [10.1038/s41467-024-52170-3](https://doi.org/10.1038/s41467-024-52170-3) | Nature communications | 2024 | cc by | Hepa1-6 |
 | [10.1038/s41467-024-53015-9](https://doi.org/10.1038/s41467-024-53015-9) | Nature communications | 2024 | cc by | CT26, MC38 |
-| [10.1038/s41467-024-55006-2](https://doi.org/10.1038/s41467-024-55006-2) | Nature communications | 2024 | cc by | B16F10, MC38 |
+| [10.1038/s41467-024-55006-2](https://doi.org/10.1038/s41467-024-55006-2) | Nature communications | 2024 | cc by | B16F10, MC38 (also the example study, `example/`: its controls are in the MC38 model) |
 | [10.1038/s41467-024-55083-3](https://doi.org/10.1038/s41467-024-55083-3) | Nature communications | 2024 | cc by | 4T1, B16F10 |
 | [10.1038/s42003-024-05854-x](https://doi.org/10.1038/s42003-024-05854-x) | Communications biology | 2024 | cc by | A549 |
 | [10.1038/s42003-024-06271-w](https://doi.org/10.1038/s42003-024-06271-w) | Communications biology | 2024 | cc by | B16F10, CT26, MC38 |

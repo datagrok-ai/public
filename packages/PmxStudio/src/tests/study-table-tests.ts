@@ -4,8 +4,10 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {DEFAULT_RULES, findOutliers, StudyColumns} from '../outlier-rules';
 import {AnimalSelection, animalMarks, appendPasted, caliperVolume, emptyStudy, exclusionsOf, mark, mirrorSelection,
   pastedNumber, withoutExcluded} from '../study-table';
-import {EXCLUDED, FLAGGED, MARK_REASON, REVEALED, STUDY_TAG, addLog, groupsShown, logOf, parseStudy, studyOf, tableOf}
-  from '../study-file';
+import {EXCLUDED, FLAGGED, MARK_REASON, REVEALED, STUDY_TAG, addLog, groupsShown, logOf, parseStudy, roleColumns,
+  studyOf, tableOf} from '../study-file';
+import {EXAMPLE, isBodyWeight} from '../ui';
+import {_package} from '../package';
 import {dateOf, dosingDays, emptyMeta, metaOf, parseMeta, setMetaOn, startFrom, weekdayOf} from '../study-meta';
 import {entryOf, libraryOf, matches} from '../library';
 import {spiderLines} from '../spider-chart';
@@ -30,6 +32,16 @@ function study(): StudyColumns {
 }
 
 category('Study table', () => {
+  test('The example study opens: 160 rows, 4 groups, days 0 to 12, a body weight', async () => {
+    const df = DG.DataFrame.fromCsv(await _package.files.readAsText(EXAMPLE.file));
+    const {group, day, volume} = roleColumns(df);
+    expect(df.rowCount, 160, 'rows');
+    expect(group.categories.length, 4, 'groups');
+    expect([...new Set(day.toList())].sort((a, b) => a - b).join(), '0,3,6,9,12', 'days from randomization');
+    expect(volume.stats.missingValueCount, 0, 'no volume missing');
+    expect(df.columns.names().filter(isBodyWeight).length, 1, 'one body weight column');
+  });
+
   test('the rules find the typo and the weight loss, nothing else', async () => {
     const s = study();
     const found = findOutliers(s, DEFAULT_RULES);
