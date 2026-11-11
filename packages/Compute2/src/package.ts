@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {of} from 'rxjs';
+import {BehaviorSubject, of} from 'rxjs';
 import {concatMap, filter, finalize, map, take} from 'rxjs/operators';
 
 import {ViewerTestApp as ViewerAppInstance} from './apps/ViewerTestApp';
@@ -12,7 +12,7 @@ import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RFVApp} from './apps/RFVApp';
 import {provideDgViewService} from '@datagrok-libraries/webcomponents-vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
-import type {PipelineConfiguration} from
+import type {PipelineConfiguration, ViewersHook} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
 import './tailwind.css';
@@ -326,9 +326,15 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'object', options: {description: 'Validation results by input', optional: true}})
       validationState?: Record<string, ValidationResult>,
     @grok.decorators.param({type: 'object', options: {description: 'Consistency by input', optional: true}})
-      consistencyState?: Record<string, ConsistencyInfo>) {
+      consistencyState?: Record<string, ConsistencyInfo>,
+    @grok.decorators.param({type: 'object', options: {
+      description: 'The viewers hook of a workflow step, in place of the function\'s own', optional: true}})
+      viewersHook?: ViewersHook,
+    @grok.decorators.param({type: 'object', options: {description: 'Meta values by output, for the hook', optional: true}})
+      metaState?: Record<string, BehaviorSubject<any>>) {
     return callExcelReport(funcCall, {
-      viewersHook: await loadViewersHook(funcCall.func), validation: validationState, consistency: consistencyState,
+      viewersHook: viewersHook ?? await loadViewersHook(funcCall.func), metaState,
+      validation: validationState, consistency: consistencyState,
     });
   }
 
@@ -1081,7 +1087,7 @@ export class PackageFunctions {
   // Fixtures for the custom-export report-handler test (see test/custom-export.ts).
   @grok.decorators.func({
     // eslint-disable-next-line max-len
-    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"},{"name":"none","function":"Compute2:TestCustomExportNoFile"}]'},
+    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"},{"name":"none","function":"Compute2:TestCustomExportNoFile"},{"name":"hook","function":"Compute2:TestCustomExportHookArgs"}]'},
   })
   static async TestCustomExportModel(a: number): Promise<number> {
     return a;
@@ -1095,6 +1101,15 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async TestCustomExportNoFile(funcCall: DG.FuncCall): Promise<string> {
     return funcCall.func.nqName;
+  }
+
+  @grok.decorators.func()
+  static async TestCustomExportHookArgs(
+    funcCall: DG.FuncCall,
+    @grok.decorators.param({type: 'object', options: {optional: true}}) viewersHook?: ViewersHook,
+    @grok.decorators.param({type: 'object', options: {optional: true}}) metaState?: Record<string, BehaviorSubject<any>>,
+  ): Promise<DG.FileInfo> {
+    return DG.FileInfo.fromString('hook.txt', `${typeof viewersHook}|${metaState?.['a']?.value}`);
   }
 
   // Fixture for the RFV tab tests (see test/rfv-view.ts): empty outputs get no tab, so `last` has one only

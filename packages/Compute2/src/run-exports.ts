@@ -68,6 +68,8 @@ export async function exportCall(
       consistencyState: states.consistency,
       isOutputOutdated: states.isOutputOutdated,
       runError: states.runError,
+      viewersHook: states.viewersHook,
+      metaState: states.metaState,
     }, model);
   }
   const [blob] = await callExcelReport(call, states);
@@ -117,13 +119,17 @@ export function treeExportUtils(root: PipelineState, ctx: TreeExportContext): Ex
     getExportSummary: (state: PipelineState) => getExportSummary(state, ctx.states),
     reportSummaryExcel: (state: PipelineState) => reportSummary(getExportSummary(state, ctx.states)),
     getFuncCallCustomExports: (fc: DG.FuncCall) => Utils.getCustomExports(fc.func).map((x) => x.name),
-    runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) =>
-      applyCustomExport(fc, exportName, {
+    runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) => {
+      const step = findNodeWithPathByUuid(uuid, root)?.state;
+      return applyCustomExport(fc, exportName, {
         validationState: validationStates?.[uuid],
         consistencyState: consistencyStates?.[uuid],
         isOutputOutdated: callInfoStates?.[uuid]?.isOutputOutdated,
         runError: callInfoStates?.[uuid]?.runError,
-      }),
+        viewersHook: step && isFuncCallState(step) ? step.viewersHook : undefined,
+        metaState: ctx.metaStates?.[uuid],
+      });
+    },
   };
 }
 

@@ -6,6 +6,7 @@ import {ResizeHandle} from '@datagrok-libraries/webcomponents-vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {getRunName, getRunTitle} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/src/model-handler';
+import type {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {PlacesTree} from './PlacesTree';
 import {ModelSelector} from './ModelSelector';
 import {addRunToSpace, addSeveralToSpace} from './add-to-space';
@@ -44,6 +45,8 @@ export const RunBrowser = Vue.defineComponent({
     roleOnlyFilter: {type: Boolean, default: false},
     layout: {type: String as Vue.PropType<'dialog' | 'docked'>, default: 'docked'},
     stepHistory: {type: Boolean, default: false},
+    // a workflow step's hook, for exporting its history
+    viewersHook: {type: Function as Vue.PropType<ViewersHook>, required: false},
     allowCompare: {type: Boolean, default: true},
     allowExport: {type: Boolean, default: true},
     allowOpen: {type: Boolean, default: true},
@@ -246,6 +249,7 @@ export const RunBrowser = Vue.defineComponent({
           .map((node) => ({spaceId: node.space.id, name: placeName(node.space)})) : [],
         filtered: isActive.value,
         stepHistory: props.stepHistory,
+        viewersHook: props.viewersHook,
       });
     };
     // the run as listed, without its tables: most hosts open runs by id, the rest load what they need

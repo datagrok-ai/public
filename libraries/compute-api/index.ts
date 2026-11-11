@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {
   ConsistencyInfo, ExportUtils, HeadlessResult, ItemMetadata, LoadedRun, PipelineInstanceConfigInput, RunState,
-  ValidationResult, normalizePipelineInstanceConfig,
+  ValidationResult, ViewersHook, normalizePipelineInstanceConfig,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
 
 type ConstructorTypeOf<T> = new (...args:any[]) => T;
@@ -100,12 +100,15 @@ export async function loadWorkflowRun(id: string): Promise<LoadedRun> {
   return call.getOutputParamValue();
 }
 
-/** The default Excel report of a run, as its export menu builds it, for a custom export to start from. */
-export async function reportFuncCallExcel(funcCall: DG.FuncCall, {validationState, consistencyState}: {
+/** The default Excel report of a run, as its export menu builds it, for a custom export to start from. Pass on
+ * the `viewersHook` and `metaState` the export gets, so that a workflow step's report uses the step's hook. */
+export async function reportFuncCallExcel(funcCall: DG.FuncCall, {validationState, consistencyState, viewersHook,
+  metaState}: {
   validationState?: Record<string, ValidationResult>, consistencyState?: Record<string, ConsistencyInfo>,
+  viewersHook?: ViewersHook, metaState?: Record<string, {value: any}>,
 } = {}): ReturnType<ExportUtils['reportFuncCallExcel']> {
   const reportFunc = DG.Func.find({package: 'Compute2', name: 'ReportFuncCallExcel'})[0];
-  const call = reportFunc.prepare({funcCall, validationState, consistencyState});
+  const call = reportFunc.prepare({funcCall, validationState, consistencyState, viewersHook, metaState});
   await call.call();
   return call.getOutputParamValue();
 }

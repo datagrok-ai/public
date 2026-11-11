@@ -29,15 +29,18 @@ export type ExportedFile = {folders: string[], file: DG.FileInfo};
 export type FailedExport = {run: DG.FuncCall, error: string};
 
 /** Exports runs one at a time; a run that fails, or turns out not completed once loaded, is reported and the rest
- * go on. Cancelling stops before the next run. */
-export async function exportRuns(jobs: ExportJob[], {onProgress, isCancelled}: {
-  onProgress: (done: number) => void, isCancelled: () => boolean,
+ * go on. Cancelling stops before the next run. A step's history passes the step's hook, which replaces the
+ * function's own. */
+export async function exportRuns(jobs: ExportJob[], {onProgress, isCancelled, viewersHook}: {
+  onProgress: (done: number) => void, isCancelled: () => boolean, viewersHook?: ViewersHook,
 }) {
   const files: ExportedFile[] = [];
   const failed: FailedExport[] = [];
   const notCompleted: DG.FuncCall[] = [];
   const hooks = new Map<string, Promise<ViewersHook | undefined>>();
   const hookOf = (func: DG.Func) => {
+    if (viewersHook)
+      return Promise.resolve(viewersHook);
     if (!hooks.has(func.nqName))
       hooks.set(func.nqName, loadViewersHook(func));
     return hooks.get(func.nqName)!;

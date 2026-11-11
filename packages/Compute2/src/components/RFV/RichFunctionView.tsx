@@ -487,6 +487,7 @@ export const RichFunctionView = Vue.defineComponent({
                 key={historyFunc().nqName}
                 model={historyFunc()}
                 stepHistory={historyMode.value === 'step'}
+                viewersHook={historyMode.value === 'step' ? viewersHook.value : undefined}
                 openLabel={historyReadonly.value ? 'Open read-only' : 'Open'}
                 onOpen={(chosenCall: DG.FuncCall) => onHistoryRunChosen(chosenCall, historyReadonly.value)}
                 class='h-full'

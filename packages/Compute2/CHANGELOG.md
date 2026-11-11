@@ -5,7 +5,8 @@
 * Custom function views: Exports declared in `meta.customExports` of the view's function, as for RFV, show in the view's Export menu and export its runs in the Runs export
 * RFV, Workflows: A viewers hook that can't be made, because its function is missing or fails, shows a warning and the viewers and exports go on without it; in a workflow it used to keep the workflow from opening
 * Workflows: Fixed custom export changes to a step workbook in the `reportStateExcel` callback being lost, and `reportFuncCallExcel` building the step without its viewers hook and meta
-* Export: Added `ReportFuncCallExcel`, the default Excel report of a run, for RFV custom exports to start from
+* Export: Added `ReportFuncCallExcel`, the default Excel report of a run, for RFV custom exports to start from; it takes the `viewersHook` and `metaState` a custom export gets
+* Export: RFV custom exports get the call's `viewersHook` (a workflow step's own when the step sets one) and, in a workflow, the step's `metaState`
 * Runs: Export saves the runs of a space, with its subspaces or without, or of My runs into one zip, each run with the export picked for its model (the first one of its export menu by default); a search or filter narrows what is exported, and runs that aren't completed (outdated outputs or unrun workflow steps) are left out and marked in the run lists
 * Workflows: Added `LoadWorkflowRun`, which loads a saved workflow run without UI and returns its state as `RunWorkflow` does
 * Export: A custom export returns its file (`DG.FileInfo`) and Compute2 downloads it; the `startDownload` argument is removed, and an export that returns no file shows an error

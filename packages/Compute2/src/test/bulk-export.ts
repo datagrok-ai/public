@@ -56,8 +56,8 @@ async function saveWorkflow(nqName: string): Promise<DG.FuncCall> {
 category('Run storage: bulk export', () => {
   test('Export lists follow the menus, the default first', async () => {
     const model = DG.Func.byName(EXPORT_MODEL);
-    expectDeepEqual(callExports(model).map(({id}) => id), [DEFAULT_EXPORT, 'rec', 'none']);
-    expectDeepEqual(callExports(model, true).map(({id}) => id), ['rec', 'none']);
+    expectDeepEqual(callExports(model).map(({id}) => id), [DEFAULT_EXPORT, 'rec', 'none', 'hook']);
+    expectDeepEqual(callExports(model, true).map(({id}) => id), ['rec', 'none', 'hook']);
     expectDeepEqual(workflowExports({disableDefaultExport: true,
       customExports: [{id: 'a', friendlyName: 'A', handler: async () => DG.FileInfo.fromString('a.txt', '')}]}),
     [{id: 'a', name: 'A'}]);
@@ -111,7 +111,7 @@ category('Run storage: bulk export', () => {
       const rows = cells().reduce<(string | null)[][]>((acc, cell, idx) =>
         idx % 3 === 0 ? [...acc, [cell]] : [...acc.slice(0, -1), [...acc.at(-1)!, cell]], []);
       expectDeepEqual(rows.map(([, count, choice]) => [count, choice]), [
-        ['3 runs, 1 not completed', 'Default Excelrecnone'], ['1 run', 'Default Excel'], ['1 run', 'Not completed'],
+        ['3 runs, 1 not completed', 'Default Excelrecnonehook'], ['1 run', 'Default Excel'], ['1 run', 'Not completed'],
       ]);
       expect(root.querySelector('.c2-runs-footer-note')!.textContent, '3 runs to export');
       expectDeepEqual(warnings(), ['Couldn\'t list Broken, so its runs aren\'t exported.',
@@ -213,6 +213,18 @@ category('Run storage: bulk export', () => {
       return undefined;
     });
     expectDeepEqual(hooksOf, ['TestAdd2'], {prefix: 'the report takes the hook of the run\'s function'});
+  }));
+
+  test('A step\'s history exports with the step\'s hook in place of its function\'s', () => withRunStorage(async (f) => {
+    const model = DG.Func.byName('Compute2:ViewersHookModel');
+    const saved = await f.save(await model.prepare({n: 2}).call(), {metadata: {name: uniqueName('Bulk step hook')}});
+    const applied: string[] = [];
+    const {files, failed} = await exportRuns([{item: {run: saved, model, folders: []}, kind: 'call',
+      exportId: DEFAULT_EXPORT}], {onProgress: () => {}, isCancelled: () => false,
+      viewersHook: (ioName: string) => applied.push(ioName)});
+    expectDeepEqual(failed, []);
+    expect(files.length, 1);
+    expectDeepEqual(applied, ['df']);
   }));
 
   test('A workflow run saves whether it is completed, and one with outdated steps is not exported', async () => {

@@ -223,6 +223,27 @@ category('Export: custom export utils', () => {
     expect(wb.worksheets.length > 0, true);
   });
 
+  test('ReportFuncCallExcel takes a step\'s hook and meta in place of the function\'s hook', async () => {
+    const applied: any[] = [];
+    await DG.Func.byName('Compute2:ReportFuncCallExcel').apply({funcCall: fc,
+      viewersHook: (ioName: string, type: string, _v: any, meta: any) => applied.push([ioName, type, meta]),
+      metaState: {df: new BehaviorSubject<any>({color: 'red'})}});
+    expectDeepEqual(applied, [['df', 'Grid', {color: 'red'}]]);
+  });
+
+  test('A step\'s custom export gets the step\'s hook and meta', async () => {
+    const call = DG.Func.byName('Compute2:TestCustomExportModel').prepare({a: 1});
+    const hook = () => {};
+    const meta = {a: new BehaviorSubject<any>('m')};
+    const text = (file: DG.FileInfo) => new TextDecoder().decode(file.data);
+    expect(text(await exportCall(call, 'hook', {viewersHook: hook, metaState: meta})), 'function|m');
+    const state = withExport([{...step('s', call), viewersHook: hook}],
+      async (_state, utils) => utils.runFuncCallCustomExport(call, 's', 'hook'));
+    expect(text(await exportWorkflow(state, 'custom', {
+      states: {callInfoStates: {s: callState(false)}}, metaStates: {s: meta},
+    })), 'function|m');
+  });
+
   test('ReportFuncCallExcel builds a run\'s default Excel with its viewers hook', async () => {
     const applied = grok.events.onCustomEvent('compute2-test-viewers-hook-applied').pipe(first()).toPromise();
     const [blob, wb] = await DG.Func.byName('Compute2:ReportFuncCallExcel').apply({funcCall: fc});

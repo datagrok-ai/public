@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import dayjs from 'dayjs';
 import {getRunName, replaceForWindowsPath} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import type {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {showVueDialog} from '../../utils';
 import {ExportOption} from '../../run-exports';
 import {ExportRun, FailedExport, exportRuns, modelExports, modelKind, zipExports} from './bulk-export';
@@ -23,6 +24,7 @@ export const BulkExportDialog = Vue.defineComponent({
     unlisted: {type: Array as Vue.PropType<{spaceId: string, name: string}[]>, default: () => []},
     filtered: {type: Boolean, default: false},
     stepHistory: {type: Boolean, default: false},
+    viewersHook: {type: Function as Vue.PropType<ViewersHook>, required: false},
   },
   emits: {
     done: (_result: null) => true,
@@ -84,6 +86,7 @@ export const BulkExportDialog = Vue.defineComponent({
         const result = await exportRuns(jobs.value, {
           onProgress: (done) => progress.value = {done, total: progress.value!.total},
           isCancelled: () => isCancelled,
+          viewersHook: props.viewersHook,
         });
         if (isCancelled)
           return;
@@ -194,7 +197,7 @@ export const BulkExportDialog = Vue.defineComponent({
 
 export function openBulkExportDialog(props: {
   locationName: string, runs: ExportRun[], spaceId?: string, unlisted: {spaceId: string, name: string}[],
-  filtered: boolean, stepHistory: boolean,
+  filtered: boolean, stepHistory: boolean, viewersHook?: ViewersHook,
 }) {
   return showVueDialog<null>(`Export runs of ${props.locationName}`, BulkExportDialog, props,
     {width: 620, height: 420});

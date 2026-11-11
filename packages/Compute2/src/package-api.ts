@@ -72,9 +72,11 @@ export namespace funcs {
    * @param {any} funcCall - The run to report
    * @param {any} validationState - Validation results by input
    * @param {any} consistencyState - Consistency by input
+   * @param {any} viewersHook - The viewers hook of a workflow step, in place of the function's own
+   * @param {any} metaState - Meta values by output, for the hook
    */
-  export async function reportFuncCallExcel(funcCall: any , validationState?: any , consistencyState?: any ): Promise<any> {
-    return await grok.functions.call('Compute2:ReportFuncCallExcel', { funcCall, validationState, consistencyState });
+  export async function reportFuncCallExcel(funcCall: any , validationState?: any , consistencyState?: any , viewersHook?: any , metaState?: any ): Promise<any> {
+    return await grok.functions.call('Compute2:ReportFuncCallExcel', { funcCall, validationState, consistencyState, viewersHook, metaState });
   }
 
   /**
@@ -215,6 +217,10 @@ export namespace funcs {
 
   export async function testCustomExportNoFile(funcCall: any ): Promise<string> {
     return await grok.functions.call('Compute2:TestCustomExportNoFile', { funcCall });
+  }
+
+  export async function testCustomExportHookArgs(funcCall: any , viewersHook?: any , metaState?: any ): Promise<DG.FileInfo> {
+    return await grok.functions.call('Compute2:TestCustomExportHookArgs', { funcCall, viewersHook, metaState });
   }
 
   export async function testRfvTabs(rows: number ): Promise<{first: DG.DataFrame, middle: DG.DataFrame, last: DG.DataFrame}> {
