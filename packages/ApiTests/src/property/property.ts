@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import dayjs from 'dayjs';
 
 import {category, test, expect, expectExceptionAsync, expectArray, before} from '@datagrok-libraries/test/src/test';
 
@@ -81,6 +82,11 @@ category('Property: Header parsing', () => {
   test('Complex caption', async () => {
     expect(func.inputs[11].friendlyName, 'MIC O2 P/V exponent');
     expect(ui.input.forProperty(func.inputs[11]).caption, 'MIC O2 P/V exponent');
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
+  test('forProperty: a datetime of a JS object', async () => {
+    const started = DG.Property.fromOptions({name: 'started', type: DG.TYPE.DATE_TIME});
+    const input = ui.input.forProperty(started, {started: dayjs('2026-01-15T12:00:00')});
+    expect(dayjs(input.value).format('YYYY-MM-DD'), '2026-01-15');
   }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 });
 
