@@ -86,10 +86,8 @@ export class DendrogramColorCodingTreeStyler extends DendrogramTreeStyler {
     let res: string;
     const colorType: string = this._colorCol.meta.colors.getType();
     if (colorType != DG.COLOR_CODING_TYPE.OFF) {
-      const nodeName: string = node.name;
-      const rowI: number = this._rowByNameDict[nodeName];
-      const color: number = this._colorCol.meta.colors.getColor(rowI);
-      res = DG.Color.toRgb(color);
+      const rowI: number | undefined = this._rowByNameDict[node.name];
+      res = rowI === undefined ? this._strokeColor : DG.Color.toRgb(this._colorCol.meta.colors.getColor(rowI));
     } else {
       res = this._strokeColor;
     }
@@ -100,11 +98,8 @@ export class DendrogramColorCodingTreeStyler extends DendrogramTreeStyler {
     let res: string;
     const colorType: string = this._colorCol.meta.colors.getType();
     if (colorType != DG.COLOR_CODING_TYPE.OFF) {
-      // const val = this._colorCol.get(node.index);
-      const nodeName: string = node.name;
-      const rowI: number = this._rowByNameDict[nodeName];
-      const color: number = this._colorCol.meta.colors.getColor(rowI);
-      res = DG.Color.toRgb(color);
+      const rowI: number | undefined = this._rowByNameDict[node.name];
+      res = rowI === undefined ? this._fillColor : DG.Color.toRgb(this._colorCol.meta.colors.getColor(rowI));
     } else {
       res = this._fillColor;
     }
