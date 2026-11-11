@@ -3,6 +3,7 @@
 ## v.next
 
 * core#1407: MMPA: Fixed the viewer staying empty under a client that checks types: the per-activity pair counts were an unsigned array passed as an int column
+* [#3924](https://github.com/datagrok-ai/public/issues/3924): Added `Molecular Property`, a single-property calculator that lets viewers order molecule categories by MW, LogP, PSA and other chemical properties
 * Save as CSV: Added a test that an empty cell of a MOLBLOCK column exported with Molecules as SMILES is an empty field (`save as csv`)
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Substructure filter: Fixed removing a filter that never got its column (the column was not found, or the filter was never attached) failing with "Cannot read properties of null (reading 'temp')", as Remove All did when a view opened

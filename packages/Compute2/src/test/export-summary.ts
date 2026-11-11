@@ -1,4 +1,8 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {BehaviorSubject} from 'rxjs';
+import {first} from 'rxjs/operators';
+import {unzipSync} from 'fflate';
 import type ExcelJS from 'exceljs';
 import {category, test, before, expect} from '@datagrok-libraries/test/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
@@ -10,6 +14,7 @@ import type {
   FuncCallStateInfo,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {getExportSummary, reportSummary, reportTree, SUMMARY_FILE_NAME} from '../components/TreeWizard/tree-export';
+import {DEFAULT_EXPORT, exportCall, exportWorkflow} from '../run-exports';
 import {friendlyIoName} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/run-summary';
 
 const callState = (isOutputOutdated: boolean, runError?: string): FuncCallStateInfo =>
@@ -136,7 +141,7 @@ category('Export: workflow summary', () => {
   test('Tree export adds the summary file next to the step files', async () => {
     const cbInputs: ExportCbInput[] = [];
     const [, zip, , summary] = await reportTree({
-      startDownload: false, treeState, ...states, cb: async (input) => {cbInputs.push(input);},
+      treeState, ...states, cb: async (input) => {cbInputs.push(input);},
     });
     const stepFiles = summary.filter((item) => item.fileName).map((item) => [...item.path, item.fileName].join('/'));
     expectDeepEqual(Object.keys(zip).sort(), [SUMMARY_FILE_NAME, ...stepFiles].sort());
@@ -146,7 +151,7 @@ category('Export: workflow summary', () => {
   });
 
   test('Summary workbook has one row per item', async () => {
-    const [, zip] = await reportTree({startDownload: false, treeState, ...states});
+    const [, zip] = await reportTree({treeState, ...states});
     const rows = sheetRows(await loadWorkbook((zip[SUMMARY_FILE_NAME] as [Uint8Array, any])[0]));
     expectDeepEqual(rows.length, 9);
     expectDeepEqual(rows[0].slice(0, 6), ['Path', 'Type', 'Name', 'File', 'Status', 'Run error']);
@@ -162,9 +167,88 @@ category('Export: workflow summary', () => {
   test('Standalone summary workbook matches the exported one', async () => {
     const items: ExportSummaryItem[] = getExportSummary(treeState, states);
     const [blob] = await reportSummary(items);
-    const [, zip] = await reportTree({startDownload: false, treeState, ...states});
+    const [, zip] = await reportTree({treeState, ...states});
     const standalone = sheetRows(await loadWorkbook(new Uint8Array(await blob.arrayBuffer())));
     const exported = sheetRows(await loadWorkbook((zip[SUMMARY_FILE_NAME] as [Uint8Array, any])[0]));
     expectDeepEqual(standalone, exported);
+  });
+});
+
+category('Export: custom export utils', () => {
+  let fc: DG.FuncCall;
+  const zipped = (file: DG.FileInfo) => unzipSync(file.data);
+  // a workflow whose custom export hands back what its handler builds with the utils
+  const withExport = (steps: any[], handler: (state: PipelineState, utils: any) => Promise<DG.FileInfo>) =>
+    ({...(workflow('root', steps) as any), customExports: [{id: 'custom', handler}]}) as PipelineState;
+
+  before(async () => {
+    fc = await DG.Func.byName('Compute2:ViewersHookModel').prepare({n: 2}).call();
+  });
+
+  test('reportFuncCallExcel applies the step\'s viewers hook and meta, as the step file does', async () => {
+    const applied: any[] = [];
+    const state = withExport([{...step('hooked', fc), viewersHook: (ioName: string, type: string, _v: any, meta: any) =>
+      applied.push([ioName, type, meta])}], async (_state, utils) => {
+      const [blob] = await utils.reportFuncCallExcel(fc, 'hooked');
+      return DG.FileInfo.fromBytes('step.xlsx', new Uint8Array(await blob.arrayBuffer()));
+    });
+    await exportWorkflow(state, 'custom', {
+      states: {callInfoStates: {hooked: callState(false)}},
+      metaStates: {hooked: {df: new BehaviorSubject<any>({color: 'red'})}},
+    });
+    expectDeepEqual(applied, [['df', 'Grid', {color: 'red'}]]);
+  });
+
+  test('reportStateExcel writes a callback\'s workbook changes, unless it replaced the file', async () => {
+    const state = withExport([step('first', fc), step('second', fc)], async (state, utils) => {
+      const [blob, , fileName] = await utils.reportStateExcel(state, async (input: ExportCbInput) => {
+        if (input.fileName.startsWith('001_'))
+          input.wb.addWorksheet('Extra');
+        else
+          input.archive[[...input.path, input.fileName].join('/')] = [new TextEncoder().encode('replaced'), {}];
+      });
+      return DG.FileInfo.fromBytes(fileName, new Uint8Array(await blob.arrayBuffer()));
+    });
+    const zip = zipped(await exportWorkflow(state, 'custom', {
+      states: {callInfoStates: {first: callState(false), second: callState(false)}},
+    }));
+    const file = (prefix: string) => zip[Object.keys(zip).find((key) => key.startsWith(prefix))!];
+    expect(!!(await loadWorkbook(file('001_'))).getWorksheet('Extra'), true, 'the added sheet should be in the file');
+    expect(new TextDecoder().decode(file('002_')), 'replaced');
+  });
+
+  test('Default Excel takes a table with no columns', async () => {
+    const empty = await DG.Func.byName('Compute2:ViewersHookModel').prepare({n: 2}).call();
+    const wb = await loadWorkbook((await exportCall(empty, DEFAULT_EXPORT)).data);
+    expect(wb.worksheets.length > 0, true);
+  });
+
+  test('ReportFuncCallExcel takes a step\'s hook and meta in place of the function\'s hook', async () => {
+    const applied: any[] = [];
+    await DG.Func.byName('Compute2:ReportFuncCallExcel').apply({funcCall: fc,
+      viewersHook: (ioName: string, type: string, _v: any, meta: any) => applied.push([ioName, type, meta]),
+      metaState: {df: new BehaviorSubject<any>({color: 'red'})}});
+    expectDeepEqual(applied, [['df', 'Grid', {color: 'red'}]]);
+  });
+
+  test('A step\'s custom export gets the step\'s hook and meta', async () => {
+    const call = DG.Func.byName('Compute2:TestCustomExportModel').prepare({a: 1});
+    const hook = () => {};
+    const meta = {a: new BehaviorSubject<any>('m')};
+    const text = (file: DG.FileInfo) => new TextDecoder().decode(file.data);
+    expect(text(await exportCall(call, 'hook', {viewersHook: hook, metaState: meta})), 'function|m');
+    const state = withExport([{...step('s', call), viewersHook: hook}],
+      async (_state, utils) => utils.runFuncCallCustomExport(call, 's', 'hook'));
+    expect(text(await exportWorkflow(state, 'custom', {
+      states: {callInfoStates: {s: callState(false)}}, metaStates: {s: meta},
+    })), 'function|m');
+  });
+
+  test('ReportFuncCallExcel builds a run\'s default Excel with its viewers hook', async () => {
+    const applied = grok.events.onCustomEvent('compute2-test-viewers-hook-applied').pipe(first()).toPromise();
+    const [blob, wb] = await DG.Func.byName('Compute2:ReportFuncCallExcel').apply({funcCall: fc});
+    expect(blob instanceof Blob && blob.size > 0, true, 'a workbook file');
+    expect(wb.worksheets.length > 0, true, 'the workbook itself, to add to');
+    expectDeepEqual(await applied, {ioName: 'df', type: 'Grid'});
   });
 });

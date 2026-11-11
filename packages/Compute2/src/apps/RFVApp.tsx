@@ -5,7 +5,7 @@ import * as Vue from 'vue';
 import {EMPTY, Subject, BehaviorSubject, of, from} from 'rxjs';
 import dayjs from 'dayjs';
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
-import {getRunName, getViewersHook} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {getRunName} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {catchError, debounceTime, first, switchMap} from 'rxjs/operators';
 import {useUrlSearchParams} from '@vueuse/core';
@@ -41,13 +41,13 @@ export const RFVApp = Vue.defineComponent({
       type: String,
       required: false,
     },
+    viewersHook: {
+      type: Function as Vue.PropType<ViewersHook>,
+      required: false,
+    },
   },
   setup(props) {
     const currentFuncCall = Vue.shallowRef(Vue.markRaw(props.funcCall));
-
-    const viewersHook = Vue.shallowRef<ViewersHook | undefined>(undefined);
-
-    const viewersHookMakerName = getViewersHook(currentFuncCall.value.func);
 
     const runRequests$ = new Subject<true>();
     const isRunning$ = new BehaviorSubject<boolean>(false);
@@ -232,23 +232,12 @@ export const RFVApp = Vue.defineComponent({
 
     const feedbackItems = useFeedbackItems(Vue.computed(() => currentFuncCall.value.func));
 
-    const loadViewersHook = async () => {
-      if (!viewersHookMakerName)
-        return;
-      try {
-        viewersHook.value = await DG.Func.byName(viewersHookMakerName).apply();
-      } catch (e: any) {
-        grok.shell.error(e);
-      }
-    };
-    loadViewersHook();
-
     return () => (
       Vue.withDirectives(<div class='w-full h-full flex'>
         <RichFunctionView
           funcCall={currentFuncCall.value}
           callState={currentCallState.value}
-          viewersHook={viewersHook.value}
+          viewersHook={props.viewersHook}
           onUpdate:funcCall={(fc) => currentFuncCall.value = Vue.markRaw(fc)}
           onStepRunChosen={(run) => openRequests$.next(run)}
           onRunClicked={() => runRequests$.next(true)}

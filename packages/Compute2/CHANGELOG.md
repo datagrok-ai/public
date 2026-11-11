@@ -3,6 +3,15 @@
 ## v.next
 
 * core#1407: Run comparison: Fixed date, time and big integer columns compared as platform objects instead of by their values
+* Export: A custom export with `preferred: true` (in `meta.customExports` or a workflow's `customExports`) comes first in the Export menu, before the default Excel report, and is the default of the Runs export; several keep their order
+* Custom function views: Exports declared in `meta.customExports` of the view's function, as for RFV, show in the view's Export menu and export its runs in the Runs export
+* RFV, Workflows: A viewers hook that can't be made, because its function is missing or fails, shows a warning and the viewers and exports go on without it; in a workflow it used to keep the workflow from opening
+* Workflows: Fixed custom export changes to a step workbook in the `reportStateExcel` callback being lost, and `reportFuncCallExcel` building the step without its viewers hook and meta
+* Export: Added `ReportFuncCallExcel`, the default Excel report of a run, for RFV custom exports to start from; it takes the `viewersHook` and `metaState` a custom export gets
+* Export: RFV custom exports get the call's `viewersHook` (a workflow step's own when the step sets one) and, in a workflow, the step's `metaState`
+* Runs: Export saves the runs of a space, with its subspaces or without, or of My runs into one zip, each run with the export picked for its model (the first one of its export menu by default); a search or filter narrows what is exported, and runs that aren't completed (outdated outputs or unrun workflow steps) are left out and marked in the run lists
+* Workflows: Added `LoadWorkflowRun`, which loads a saved workflow run without UI and returns its state as `RunWorkflow` does
+* Export: A custom export returns its file (`DG.FileInfo`) and Compute2 downloads it; the `startDownload` argument is removed, and an export that returns no file shows an error
 * Workflows: A step with inconsistent inputs shows a broken link icon in the steps tree, like the inputs themselves (needs WebComponents v.next)
 * Keyboard: Ctrl/Cmd+Enter presses Run, Ctrl/Cmd+Shift+Enter presses Update and Ctrl/Cmd+S saves the run, with the same checks as their buttons; a warning says why when the button is disabled. In a workflow Run and Update act on the step focused in the steps tree (Update on a workflow row updates its substeps), else on the open step
 * RFV, Workflows: Tab and Shift+Tab go round the form and the steps tree (outputs, run history and the ribbon are left to the pointer) instead of leaving for the page, buttons show the keyboard focus, and the Keyboard shortcuts ribbon icon lists the keys; Tab does nothing in the Update confirmation, where Enter confirms and Esc cancels
@@ -11,6 +20,7 @@
 * Workflows: Back and Next move the keyboard focus into the opened step, Alt+PgUp and Alt+PgDn do the same as Back and Next (grids keep them for paging); the pipeline cards (Choose a step to add, Load completed run, actions) and clickable icons work from the keyboard, and the plus of a tree row opens the steps to add (needs WebComponents v.next)
 * Loading overlay: Fixed inputs under the overlay still reachable with Tab and editable while a run is in progress (autorun RFVs keep taking input)
 * RFV: Fixed the loading overlay not showing for a function that blocks the browser while it runs
+* RFV: Fixed viewers flickering on open while the function's viewers hook loads: the view now opens with the hook ready
 * RFV: Fixed autorun losing an input change made while a run was in progress, leaving the old outputs marked as current
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Export: Fixed float inputs of workflow steps never opened in the session exporting with fewer digits than the form shows (0.0001 as 0)

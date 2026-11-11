@@ -7,6 +7,7 @@ import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {isWebGLAvailable, scWebGLPointHitTest, scWebGLRender} from '../webgl/scatterplot';
 import {scWebGPUPointHitTest, scWebGPURender} from '../webgpu/scatterplot';
 import {isGpuRenderValid} from '../scatterplot-gpu';
+import {isGpuRenderable, readCheckLook} from '../scatterplot-look';
 
 const FLOAT_NONE = Math.fround(DG.FLOAT_NULL);
 
@@ -181,10 +182,29 @@ for (const backend of backends) {
 }
 
 category('Scatter plot: GPU', () => {
+  const categoryOrder: TestOptions = {};
+  before(async () => {
+    if (!DG.Viewer.scatterPlot(grok.data.demo.demog(10)).props.hasProperty('xCategoryOrder'))
+      categoryOrder.skipReason = 'the platform has no category order yet';
+  });
+
   test('Leaves jittered and packed plots to the CPU', async () => {
     const sp = await scatterPlot(60000, {jitterSize: 5});
     expect(isGpuRenderValid(sp), false);
     Object.assign(sp.props, {jitterSize: 0, zoomAndFilter: 'pack and zoom by filter'});
     expect(isGpuRenderValid(sp), false);
   });
+
+  test('Leaves category-ordered plots to the CPU', async () => {
+    const sp = await scatterPlot(60000, {zoomAndFilter: 'filter by zoom'});
+    // no GPU needed: a browser without one falls back for any plot
+    const renderable = () => isGpuRenderable(sp, readCheckLook(sp));
+    sp.props.xColumnName = 'race';
+    expect(renderable(), true);
+    sp.props.xCategoryOrder = '{"manual":["Other"]}';
+    expect(renderable(), false);
+    // an order left on an axis turned numeric does not apply
+    sp.props.xColumnName = 'height';
+    expect(renderable(), true);
+  }, categoryOrder);
 });

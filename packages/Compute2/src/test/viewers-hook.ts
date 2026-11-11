@@ -6,6 +6,12 @@ import {useViewersHook} from '../composables/use-viewers-hook';
 import {BehaviorSubject} from 'rxjs';
 import * as Vue from 'vue';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {
+  getProcessedConfig,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
+import type {
+  PipelineConfiguration,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 
 category('Composables: Viewers hook', async () => {
   const mockStates = Vue.ref<Record<string, BehaviorSubject<Record<string, any>>> | undefined>();
@@ -73,5 +79,21 @@ category('Composables: Viewers hook', async () => {
     expect(lastType, 'Grid');
     expect(lastViewer, grid);
     expectDeepEqual(lastMeta, {x: 1});
+  });
+});
+
+category('Viewers hook: broken', () => {
+  const BROKEN = 'Compute2:BrokenViewersHookModel';
+
+  test('A workflow step whose viewers hook can\'t be made gets none', async () => {
+    const config = await getProcessedConfig({id: 'w', type: 'static', steps: [{id: 's', nqName: BROKEN}]} as
+      PipelineConfiguration);
+    expect((config as any).steps[0].viewersHook === undefined, true);
+  });
+
+  test('The default Excel of a run whose viewers hook can\'t be made is built without it', async () => {
+    const call = await DG.Func.byName(BROKEN).prepare({n: 2}).call();
+    const [blob] = await DG.Func.byName('Compute2:ReportFuncCallExcel').apply({funcCall: call});
+    expect(blob.size > 0, true);
   });
 });

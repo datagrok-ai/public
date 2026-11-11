@@ -3,7 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {
-  HeadlessResult, ItemMetadata, PipelineInstanceConfigInput, RunState, normalizePipelineInstanceConfig,
+  ConsistencyInfo, ExportUtils, HeadlessResult, ItemMetadata, LoadedRun, PipelineInstanceConfigInput, RunState,
+  ValidationResult, ViewersHook, normalizePipelineInstanceConfig,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
 
 type ConstructorTypeOf<T> = new (...args:any[]) => T;
@@ -87,6 +88,27 @@ export async function saveWorkflowRun(
 ): Promise<DG.FuncCall> {
   const saveFunc = DG.Func.find({package: 'Compute2', name: 'SaveWorkflowRun'})[0];
   const call = saveFunc.prepare({nqName, version, state, metadata});
+  await call.call();
+  return call.getOutputParamValue();
+}
+
+/** Loads a saved workflow run without UI and returns its state as {@link runWorkflow} does. */
+export async function loadWorkflowRun(id: string): Promise<LoadedRun> {
+  const loadFunc = DG.Func.find({package: 'Compute2', name: 'LoadWorkflowRun'})[0];
+  const call = loadFunc.prepare({id});
+  await call.call();
+  return call.getOutputParamValue();
+}
+
+/** The default Excel report of a run, as its export menu builds it, for a custom export to start from. Pass on
+ * the `viewersHook` and `metaState` the export gets, so that a workflow step's report uses the step's hook. */
+export async function reportFuncCallExcel(funcCall: DG.FuncCall, {validationState, consistencyState, viewersHook,
+  metaState}: {
+  validationState?: Record<string, ValidationResult>, consistencyState?: Record<string, ConsistencyInfo>,
+  viewersHook?: ViewersHook, metaState?: Record<string, {value: any}>,
+} = {}): ReturnType<ExportUtils['reportFuncCallExcel']> {
+  const reportFunc = DG.Func.find({package: 'Compute2', name: 'ReportFuncCallExcel'})[0];
+  const call = reportFunc.prepare({funcCall, validationState, consistencyState, viewersHook, metaState});
   await call.call();
   return call.getOutputParamValue();
 }

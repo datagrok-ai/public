@@ -4,5 +4,5 @@ export {normalizePipelineInstanceConfig, isFuncCallState, isStaticPipelineState,
 export type {PipelineInstanceConfig, PipelineInstanceConfigInput, PipelineState, PipelineOutline, PipelineStateStatic, PipelineStateDynamic, StepFunCallState, StepFunCallStateBase} from './src/config/PipelineInstance';
 export type {ValidationResult, ValidationItem, Advice, RestrictionType, StepHandle, GranularMutationOp} from './src/data/common-types';
 export type {ConsistencyInfo} from './src/runtime/StateTreeNodes';
-export type {HeadlessResult, RunState, StepRunState, WorkflowRunState} from './src/runtime/headless';
+export type {HeadlessResult, LoadedRun, RunState, StepRunState, WorkflowRunState} from './src/runtime/headless';
 export type {ItemMetadata} from './src/view/ViewCommunication';

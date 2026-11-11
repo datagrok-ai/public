@@ -18,6 +18,9 @@ import {ExportCbInput, ExportSummaryItem} from
 import {
   getRunSummary, RunStates, statesToStatus, textTitle,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/run-summary';
+import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
+import {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {BehaviorSubject} from 'rxjs';
 import {disposeViewers, getViewers} from '../../utils';
 import {statusToTooltip} from './tree-utils';
@@ -103,9 +106,20 @@ export async function reportSummary(items: ExportSummaryItem[]) {
   return [new Blob([buffer], {type: XLSX_BLOB_TYPE}), wb] as const;
 }
 
+/** The default Excel report of a call, with its viewers built and hooked for it. */
+export async function callExcelReport(call: DG.FuncCall, {viewersHook, metaState, validation, consistency}: {
+  viewersHook?: ViewersHook,
+  metaState?: Record<string, BehaviorSubject<any>>,
+  validation?: Record<string, ValidationResult>,
+  consistency?: Record<string, ConsistencyInfo>,
+} = {}) {
+  const viewers = await getViewers(call, viewersHook, metaState);
+  return richFunctionViewReport('Excel', call.func, call, viewers, validation, consistency)
+    .finally(() => disposeViewers(viewers));
+}
+
 export async function reportTree(
   {
-    startDownload,
     treeState,
     meta = {},
     callInfoStates,
@@ -117,7 +131,6 @@ export async function reportTree(
     hasNotSavedEdits,
     cb,
   }: {
-    startDownload: boolean;
     treeState: PipelineState;
     meta?: MetaCallInfo;
     metaStates?: Record<string, Record<string, BehaviorSubject<any>> | undefined>,
@@ -141,20 +154,13 @@ export async function reportTree(
       const description = descriptions?.[state.uuid];
       const metaState = metaStates?.[state.uuid];
       const {isOutputOutdated, runError} = callInfo;
-      const viewers = await getViewers(funcCall, state.viewersHook, metaState);
-
-      const [blob, wb] = await richFunctionViewReport(
-        'Excel',
-        funcCall.func,
-        funcCall,
-        viewers,
-        validation,
-        consistency,
-      ).finally(() => disposeViewers(viewers));
+      const [blob, wb] = await callExcelReport(funcCall,
+        {viewersHook: state.viewersHook, metaState, validation, consistency});
 
       const fileName = stepFileName(state, idx, callInfo, textTitle(description));
       const configKey = [...path, fileName].join('/');
-      zipConfig[configKey] = [new Uint8Array(await blob.arrayBuffer()), {level: 0}];
+      const stepFile: Zippable[string] = [new Uint8Array(await blob.arrayBuffer()), {level: 0}];
+      zipConfig[configKey] = stepFile;
       if (cb) {
         await cb({
           fc: funcCall,
@@ -170,6 +176,9 @@ export async function reportTree(
           meta: metaState ?? {},
           description,
         });
+        // the callback may edit the workbook, or replace or remove the file itself
+        if (zipConfig[configKey] === stepFile)
+          zipConfig[configKey] = [new Uint8Array(await wb.xlsx.writeBuffer()), {level: 0}];
       }
     } else {
       const nPath = state === treeState ? [] : [...path, workflowDirName(state, idx)];
@@ -186,8 +195,6 @@ export async function reportTree(
   const rawFileName = getExportName(treeState, !!hasNotSavedEdits, meta.title, meta.started);
   const fileName = replaceForWindowsPath(`${rawFileName}.zip`);
   const blob = new Blob([zipSync(zipConfig) as any]);
-  if (startDownload)
-    DG.Utils.download(fileName, blob);
   return [blob, zipConfig, fileName, summary] as const;
 }
 
@@ -205,15 +212,24 @@ function getExportName(
 }
 
 
-/** Resolves the custom export named `exportName` declared on the funcCall's function
- *  (via `meta.customExports`) and applies it, passing the funcCall through. */
+export function exportedFile(result: unknown, exportName: string): DG.FileInfo {
+  if (!(result instanceof DG.FileInfo))
+    throw new Error(`Export ${exportName} returned no file`);
+  return result;
+}
+
+export const downloadFile = (file: DG.FileInfo) => DG.Utils.download(file.fileName, new Blob([file.data as any]));
+
+/** Resolves the custom export named `exportName` declared on `exportsOf` (via `meta.customExports`), the
+ *  funcCall's function unless a custom view declares them, and applies it, passing the funcCall through. */
 export async function applyCustomExport(
   fc: DG.FuncCall,
   exportName: string,
   args: Record<string, unknown> = {},
-): Promise<unknown> {
-  const item = getCustomExports(fc.func).find((x) => x.name === exportName);
+  exportsOf: DG.Func = fc.func,
+): Promise<DG.FileInfo> {
+  const item = getCustomExports(exportsOf).find((x) => x.name === exportName);
   if (!item)
-    throw new Error(`No export named ${exportName} is defined for ${fc.func.nqName}`);
-  return DG.Func.byName(item.function).apply({funcCall: fc, ...args});
+    throw new Error(`No export named ${exportName} is defined for ${exportsOf.nqName}`);
+  return exportedFile(await DG.Func.byName(item.function).apply({funcCall: fc, ...args}), exportName);
 }

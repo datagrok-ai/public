@@ -103,6 +103,34 @@ category('RFV: run SimpleInputs2', () => {
   });
 });
 
+category('RFV: viewers hook', () => {
+  const track = closeViewsAfter();
+
+  test('Opens with the viewers hook made', async () => {
+    await awaitWebComponents();
+    let made = false;
+    const applied: {ioName: string, type: string}[] = [];
+    const subs = [
+      grok.events.onCustomEvent('compute2-test-viewers-hook-made').subscribe(() => made = true),
+      grok.events.onCustomEvent('compute2-test-viewers-hook-applied').subscribe((e) => applied.push(e)),
+    ];
+    try {
+      const call = DG.Func.byName('Compute2:ViewersHookModel').prepare();
+      const view = track(await grok.functions.call(
+        'Compute2:RichFunctionViewEditor', {call},
+      ) as unknown as DG.ViewBase);
+      expect(made, true, 'viewers hook should be made before the view opens');
+
+      await clickBigButton(view.root, 'Run');
+      await awaitRunComplete(view.root);
+      await waitUntil(() => applied.some((e) => e.ioName === 'df' && e.type === 'Grid'),
+        'viewers hook not applied to the df grid', 15000);
+    } finally {
+      subs.forEach((sub) => sub.unsubscribe());
+    }
+  });
+});
+
 category('RFV: run ObjectCooling2', () => {
   const track = closeViewsAfter();
   let call: DG.FuncCall;
