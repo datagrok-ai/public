@@ -4,18 +4,17 @@
    tumors grow (band-chart.ts), which animals responded (each treated animal against its untreated twin, the
    animals listed by effect, the one selected drawn against its twin), then, folded, what serves a closer look: the
    statistics behind each result, the control check and the analysis protocol; the study against its plan has a tab
-   of its own (plan-vs-observed.ts). With no table open, an example study predicted by Plan's model is opened and
-   analyzed. */
+   of its own (plan-vs-observed.ts). */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {badge, BasicTable, button, computed, div, divH, divV, dot, loader, signal, span, tableFromMap,
+import {badge, BasicTable, computed, div, divH, divV, dot, loader, signal, span, tableFromMap,
   Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
-import {AnalysisFrames, AnalysisInputs, PREDICTED, analysisDeclarationOf, analysisFrames, exampleStudy}
+import {AnalysisFrames, AnalysisInputs, PREDICTED, analysisDeclarationOf, analysisFrames, warmTwin}
   from './analyze';
 import {median} from './engine';
 import {groupColors} from './frames';
@@ -211,8 +210,8 @@ function summaryLines(r: AnalysisFrames, nci: Map<string, NciReading>): string[]
   return lines;
 }
 
-/** What Analyze opens with: a study table (with its plan in the `pmx.plan` tag, if any), or the example. */
-export interface AnalyzeStart {study?: DG.DataFrame, example?: boolean}
+/** What Analyze opens with: a study table (with its plan in the `pmx.plan` tag, if any). */
+export interface AnalyzeStart {study?: DG.DataFrame}
 
 /** The Analyze view; given a study, it analyzes it at once. */
 export async function analyzeView(opening?: AnalyzeStart): Promise<DG.ViewBase> {
@@ -225,12 +224,15 @@ export async function analyzeView(opening?: AnalyzeStart): Promise<DG.ViewBase> 
 
 /** What the view shows, built under its host, which owns it all. */
 function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, exports: Exports): ViewContent {
+  // the twin's shaders compiled in Crux's worker while the study is picked (a failure only leaves the first twin
+  // slower); here and not when the app opens, which starts no engine
+  void warmTwin().catch(() => null);
   const call = DG.Func.byName('PmxStudio:pmxAnalyzeStudy').prepare();
   // the engine itself on the form's inputs, not the registered function's FuncCall (see callInputs)
   const run = (extra: object) =>
     analysisFrames(analysisDeclarationOf(withoutExcluded(callInputs<AnalysisInputs>(call, extra))));
   const result = signal<AnalysisFrames | undefined>(undefined);
-  // the newest run: the form's changes and the example share the call, and a run that finishes after a newer one
+  // the newest run: the form's changes and an opened study share the call, and a run that finishes after a newer one
   // started is dropped
   let latest = 0;
   const error = signal<string | null>(null);
@@ -254,7 +256,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     tumorWeight: (c) => /tum/i.test(c) && /weight|mass/i.test(c),
     removalReason: (c) => /reason|removal|fate|cause|status/i.test(c),
   });
-  // busy while the study is analyzed, and before that while the example study is prepared
+  // busy while the study is analyzed, and before that while an opened study is prepared
   const busy = signal(false);
   const planState = {stale, error, result, reading: Promise.resolve() as Promise<unknown>,
     changed: () => auto.changed()};
@@ -339,11 +341,10 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     }
   };
 
-  // the example: Plan's study opened in the workspace like any table (the form's table picker then offers it), this
-  // view brought back and the study analyzed at once
-  // a study brought from elsewhere (the hub, Monitor's "Analyze this study") the same way: in the workspace, picked
-  // in the form, analyzed; its columns as the form picks them by name
-  const openStudy = (getStudy: () => Promise<DG.DataFrame>, weights?: [string, string][]) => analyze(async () => {
+  // a study brought from elsewhere (the hub, Monitor's "Analyze this study"): opened in the workspace like any table
+  // (the form's table picker then offers it), this view brought back, picked in the form and analyzed at once; its
+  // columns as the form picks them by name
+  const openStudy = (getStudy: () => Promise<DG.DataFrame>) => analyze(async () => {
     const df = await getStudy();
     if (!grok.shell.tables.includes(df))
       grok.shell.addTableView(df);
@@ -357,47 +358,22 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     // a table from Monitor brings its body weight column and limits
     restoreFields(form, df);
     await form.settled;
-    for (const [input, column] of weights ?? []) {
-      const w = form.getInput(input);
-      if (w)
-        w.value = column;
-    }
-    await form.settled;
   });
-  // the optional body and tumor weights: the example's own columns
-  const openExample = () => openStudy(exampleStudy, [['bodyWeight', 'body_weight'], ['tumorWeight', 'tumor_weight']]);
   void form.settled.then(() => {
-    if (opening?.example)
-      void openExample();
-    else if (opening?.study)
+    if (opening?.study)
       void openStudy(async () => opening.study!);
-  });
-  // the example also among the Study field's own actions (beside open file, Files, database), within reach once a
-  // study is open
-  void form.settled.then(() => {
-    const study = form.getInput('study') as unknown as {actions?: {id: string, icon: string, tooltip: string,
-      run: () => void}[]} | null;
-    if (study?.actions) {
-      study.actions = [...study.actions, {id: 'example', icon: 'flask', tooltip: 'Analyze an example study: MC38 ' +
-        'as Plan predicts it, a vehicle and two treated groups', run: () => void openExample()}];
-    }
   });
   planInput(form, call, planState);
 
   const start = divV([
     span('Open your study table (one row per animal and measurement day, day 0 the randomization), check its ' +
       'columns: the analysis follows them, and any change you make to the table.'),
-    divH([button('Analyze an example study', () => void openExample()),
-      span('An MC38 study as Plan predicts it: a vehicle and two treated groups at TGI 40% and 70%, with the ' +
-        'animals Plan asks for.')]),
     infoNote('<b>Analyzed as planned.</b> Analyze applies the analysis Plan pre-specifies: the study is evaluated ' +
       'when the median control reaches the endpoint, each treated group is compared with the control on tumor ' +
       'growth, and each treated animal with its untreated twin: what it would measure without treatment, predicted ' +
       'from its own tumor at randomization, this study\'s controls and the cell line\'s growth.'),
   ], 'pmx-analyze-start');
   Object.assign(start.style, {gap: 'var(--dg-space-m)', maxWidth: '760px'});
-  (start.children[1] as HTMLElement).style.gap = 'var(--dg-space-m)';
-  (start.children[1] as HTMLElement).style.alignItems = 'center';
 
   const analysis = computed(() => result.value?.analysis);
   const cell = <T = number>(name: string) =>

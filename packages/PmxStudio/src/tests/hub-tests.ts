@@ -1,7 +1,8 @@
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {exampleStudy} from '../analyze';
+import {exampleStudy} from './example-study';
 import {PLAN_TAG} from '../plan-file';
+import {cruxCalls} from '../crux';
 import {hubView} from '../hub-view';
 import {bring, readFile, suggestedStage} from '../open-study';
 import {gpu} from '../gpu';
@@ -64,5 +65,16 @@ category('Hub', () => {
     expect(cards.map((c) => c.dataset.stage).join(), 'plan,monitor,analyze');
     expect(cards.some((c) => c.disabled), false);
     expect(root.querySelectorAll('.pmx-link, .pmx-arc').length, 3);
+  });
+
+  test('the home opens without the engine: no calculation, no workers', async () => {
+    const before = cruxCalls();
+    const root = (await hubView()).root;
+    const studies = root.querySelector<HTMLElement>('.pmx-studies')!;
+    for (let i = 0; i < 100 && studies.hidden; i++) // the user's studies read
+      await delay(50);
+    await delay(500);
+    expect(studies.hidden, false);
+    expect(cruxCalls() - before, 0);
   });
 });

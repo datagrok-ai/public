@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import {Scope} from '@datagrok-libraries/u2';
 
-import {exampleStudy} from '../analyze';
+import {exampleStudy} from './example-study';
 import {allocateGroups, checkChance, futureDays, outsideBand, parseLooks, promptsByChance, reasonsOf,
   weightReasons} from '../monitor';
 import {PLAN_TAG, parsePlan} from '../plan-file';

@@ -1,5 +1,8 @@
-@guide
+@skip @guide
 Feature: Explore PMX Studio
+  Skipped until rewritten (2026-11-11): the app no longer ships the demo studies or the example study this relied on.
+  To bring it back: create the study in Plan (line, arms), save the plan, open it from the Overview; for Monitor and
+  Analyze, drop a study file (a .pmxstudy or a table of measurements) on the Overview.
   A guide: the answer to "what does PMX Studio do, and how do I find my way around it?". The Overview lists the
   lab's studies; Plan sizes one from the atlas of historical controls, Monitor follows it while it runs, Analyze reads
   it once it has run; the header moves between them.

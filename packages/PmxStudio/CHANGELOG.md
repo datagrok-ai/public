@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+* The app starts clean (2026-11-11): the Overview lists only the user's own studies ("No studies yet" until there is
+  one) and computes nothing when it opens; the demo studies, and the example study Monitor and Analyze offered, are
+  gone (the package's tests keep it, in tests/). The engine's workers close after 30 s without a calculation, one set
+  kept ready with the modules used; the twin's shaders are compiled when Analyze opens, not when the app does.
+
 * Plan, second pass (2026-11-11): the animals per group and the end of study leave the form: a click on the
   Analyzable or End of study card sets them, the card says "set", and another click changes them or goes back to the
   computed value. Multiple comparisons moves to Advanced (Holm by default, none needed with one arm; the protocol names

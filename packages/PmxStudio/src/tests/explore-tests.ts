@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {AnalysisFrames, exampleStudy} from '../analyze';
+import {AnalysisFrames} from '../analyze';
+import {exampleStudy} from './example-study';
 import {armColors} from '../frames';
 import {COL, RESPONSE, StudyInputs, animalsTable, explore} from '../explore';
 

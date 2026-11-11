@@ -1,7 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {OBSERVED, PREDICTED, REANCHOR, exampleStudy} from '../analyze';
+import {OBSERVED, PREDICTED, REANCHOR} from '../analyze';
+import {exampleStudy} from './example-study';
 import {PLAN_TAG, parsePlan, powerAt} from '../plan-file';
 import {noEffectNote} from '../plan-vs-observed';
 import {competingOf, projectedRows} from '../survival';

@@ -13,7 +13,6 @@ import {markStage, stageOf} from './ui';
 import {steps} from './study-header';
 import type {Stage} from './ui';
 import {openStage, showStage} from './stages';
-import {demoEntries} from './demo';
 import {planView} from './plan-view';
 import {analyzeView} from './analyze-view';
 import {monitorView, openStudyFile} from './monitor-view';
@@ -240,8 +239,8 @@ function todayLine(entries: LibraryEntry[]): string {
 }
 
 /** The user's plans and studies, newest first, found by any word of their ID, name, line, compounds, owner or tags;
- *  a plan opens in Plan, a study in Monitor. Hidden while there are none. Built with the page (the view owns the
- *  table), filled once the folders are read; `reload` reads them again. */
+ *  a plan opens in Plan, a study in Monitor; while there are none, a line that says so. Built with the page (the view
+ *  owns the table), filled once the folders are read; `reload` reads them again. */
 function yourStudies(): {root: HTMLElement, reload: () => void} {
   const all = signal<LibraryEntry[]>([]);
   const query = signal('');
@@ -266,32 +265,25 @@ function yourStudies(): {root: HTMLElement, reload: () => void} {
     };
     return b;
   }));
-  // the user's own as soon as they are read, the demo portfolio after them (each demo's design takes a moment)
-  let [own, demos]: LibraryEntry[][] = [[], []];
-  const show = () => {
-    const entries = [...own, ...demos];
+  // the user's own as soon as they are read (nothing is computed for the list: the page opens without the engine)
+  const show = (entries: LibraryEntry[]) => {
     all.value = entries;
-    host.hidden = entries.length === 0;
+    host.hidden = false;
+    const empty = entries.length === 0;
+    for (const el of [search.root, chips, table.root]) // (styles that set display would beat `hidden`)
+      el.style.display = empty ? 'none' : '';
+    none.textContent = empty ? 'No studies yet' : 'No study matches';
     today.textContent = todayLine(entries);
     today.hidden = !today.textContent;
     drawChips();
     showNone();
   };
-  const reload = () => void myLibrary().catch(() => [] as LibraryEntry[]).then((mine) => {
-    own = mine;
-    show();
-  });
+  const reload = () => void myLibrary().catch(() => [] as LibraryEntry[]).then(show);
   reload();
-  void demoEntries().catch(() => [] as LibraryEntry[]).then((d) => {
-    demos = d;
-    show();
-  });
   // a row opens its file as it is now, not as it was when the list was read (the study may have been saved since),
   // and once: a second click while it opens would open it twice
   let opening = false;
   const openEntry = async (e: LibraryEntry): Promise<unknown> => {
-    if (e.open)
-      return e.open();
     const text = e.file ? await grok.dapi.files.readAsText(e.file) : e.text;
     return e.kind === 'plan' ? showStage('plan', await planView(parsePlan(text))) : openStudyFile(text);
   };
@@ -445,11 +437,7 @@ export function openStudyDialog(first?: File[]): void {
       if (phase === 'error')
         parts.push(h('div', 'pmx-error', [icon(ICON.warn, 16, 1.8), h('span', '', [error])]));
       const saved = ui.link('Saved plans', () => void savedPlans(), 'Your plans saved in Plan');
-      const example = ui.link('Example study', () => {
-        dialog.close();
-        void analyzeView({example: true}).then((v) => showStage('analyze', v));
-      }, 'An MC38 study as Plan predicts it, analyzed at once');
-      parts.push(dropZone(false, ''), h('div', 'pmx-alts', [saved, example]));
+      parts.push(dropZone(false, ''), h('div', 'pmx-alts', [saved]));
     } else if (phase === 'loading') {
       parts.push(h('div', 'pmx-loading', [
         h('div', 'pmx-file-row', [icon(ICON.file, 20), h('div', '', [h('b', '', [loadingName])])]),

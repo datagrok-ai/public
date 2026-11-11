@@ -1,5 +1,8 @@
-@guide
+@skip @guide
 Feature: PMX Studio
+  Skipped until rewritten (2026-11-11): the app no longer ships the demo studies or the example study this relied on.
+  To bring it back: create the study in Plan (line, arms), save the plan, open it from the Overview; for Monitor and
+  Analyze, drop a study file (a .pmxstudy or a table of measurements) on the Overview.
   A teaser: the answer to "what does PMX Studio do for a preclinical efficacy study?". The lab's portfolio on the
   Overview; an MC38 study planned, followed halfway through (an animal flagged) and analyzed, the study followed past
   its last measurement and each animal against its digital twin; moving between the stages from the header.

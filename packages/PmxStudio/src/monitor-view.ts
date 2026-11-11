@@ -13,7 +13,6 @@ import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
-import {exampleStudy} from './analyze';
 import {analyzeView} from './analyze-view';
 import {BandChart} from './band-chart';
 import {WEEKDAY_NAMES, groupColors, weekdaysOf} from './frames';
@@ -194,19 +193,6 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     await form.settled;
     lockLooks();
   };
-  // the example: Plan's example study halfway, today a planned review
-  const openExample = () => run(async () => {
-    const whole = await exampleStudy();
-    const plan = parsePlan(whole.getTag(PLAN_TAG)!);
-    const days = [...new Set(whole.col('day')!.toList() as number[])].sort((a, b) => a - b);
-    const today = days.filter((d) => d <= plan.predicted.studyEnd / 2).pop()!;
-    const df = whole.clone(DG.BitSet.create(whole.rowCount, (i) => whole.get('day', i) <= today));
-    df.name = `Example ${plan.predicted.line} study, day ${today}`;
-    df.setTag(PLAN_TAG, whole.getTag(PLAN_TAG)!);
-    df.setTag(LOOKS_TAG, String(today));
-    df.setTag(WEIGHT_TAG, 'body_weight');
-    await setStudy(df);
-  });
   const newStudy = () => run(async () => {
     const df = emptyStudy();
     await setStudy(df);
@@ -217,8 +203,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     const study = form.getInput('study') as unknown as {actions?: {id: string, icon: string, tooltip: string,
       run: () => void}[]} | null;
     if (study?.actions) {
-      study.actions = [...study.actions, {id: 'example', icon: 'flask', tooltip: 'Follow an example study: MC38 as ' +
-        'Plan predicts it, halfway through', run: () => void openExample()}, {id: 'new', icon: 'plus',
+      study.actions = [...study.actions, {id: 'new', icon: 'plus',
         tooltip: 'Start an empty study table, to type or paste the measurements into', run: () => void newStudy()}];
     }
     if (initial)
@@ -230,15 +215,11 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     span('Open the study\'s measurements (one row per animal and day, day 0 the randomization), check the columns ' +
       'and the forecasts follow. Paste or type each session\'s values into the table: each is checked as you enter ' +
       'it, and the forecasts update.'),
-    divH([button('Follow an example study', () => void openExample()),
-      span('An MC38 study as Plan predicts it, halfway through.')]),
     infoNote('<b>Blinded entry.</b> When whoever enters the measurements must not know the groups, turn it on in ' +
       'the study\'s details (click its name): Monitor then shows each animal without its group until someone ' +
       'reveals them, and the log says so.'),
   ], 'pmx-monitor-start');
   Object.assign(start.style, {gap: 'var(--dg-space-m)', maxWidth: '760px'});
-  (start.children[1] as HTMLElement).style.gap = 'var(--dg-space-m)';
-  (start.children[1] as HTMLElement).style.alignItems = 'center';
 
   const status = computed(() => result.value?.status);
   const cell = <T = number>(name: string) => computed(() => {

@@ -38,7 +38,7 @@ priors file), and `pmxMapPrior` recomputes the MAP prior of log alpha with Crux 
 | `pmxStudyFileHandler(content)` | opens a `.pmxstudy` file in Monitor |
 | `pmxLines()` | the atlas's tumor models, for the functions' `line` choices |
 | `pmxMarkStudyRows`, `pmxStudyTableView` | the study table's menu actions (flag, exclude, clear) and its decoration, called from `detectors.js` |
-| `pmxStudioApp` | no path: the home (Overview in the stage steps: Plan, Monitor and Analyze as cards joined by the files that pass between them, the user's saved plans, and Open a study: a `.pmxplan`, `.pmxstudy` or table of measurements, dropped anywhere on the page or picked, read and opened in its stage, the stage suggested from the dates alone so a running study stays blind); `/analyze`: the Analyze view (U2): the form generated from `pmxAnalyzeStudy`, the figures, the groups with their result (marked when a group is over the NCI limits for tolerability), the observed growth, each treated animal against its untreated twin (the animals listed by effect, the one selected drawn), Plan vs observed (each arm's effect against the assumed one, the controls against their predicted growth, the end against the predicted day, and "Contribute to the atlas", coming soon: what the study's controls could add to the line's predictions), Tolerability (each group's body weight change from day 0, as weighed or tumor-corrected, the weight-loss grades, the animals removed early and each group against the NCI limits; without a body weight column, how to add one), then the results in words ready to copy, the statistics, the control check and the analysis protocol ready to copy; an example study (which carries its plan) analyzed in one click; `/plan`: the Plan view (U2): the declaration form generated from `pmxPlanStudy`, the arms as cards, the results and the study calendar (its measurement and randomization weekdays set on it), the alternatives folded, Explore (the TGIs entered in the form, each a scenario and not a prediction, and the animals each needs), the study protocol ready to copy, and Save plan / Download in the ribbon |
+| `pmxStudioApp` | no path: the home (Overview in the stage steps: Plan, Monitor and Analyze as cards joined by the files that pass between them, the user's saved plans, and Open a study: a `.pmxplan`, `.pmxstudy` or table of measurements, dropped anywhere on the page or picked, read and opened in its stage, the stage suggested from the dates alone so a running study stays blind); `/analyze`: the Analyze view (U2): the form generated from `pmxAnalyzeStudy`, the figures, the groups with their result (marked when a group is over the NCI limits for tolerability), the observed growth, each treated animal against its untreated twin (the animals listed by effect, the one selected drawn), Plan vs observed (each arm's effect against the assumed one, the controls against their predicted growth, the end against the predicted day, and "Contribute to the atlas", coming soon: what the study's controls could add to the line's predictions), Tolerability (each group's body weight change from day 0, as weighed or tumor-corrected, the weight-loss grades, the animals removed early and each group against the NCI limits; without a body weight column, how to add one), then the results in words ready to copy, the statistics, the control check and the analysis protocol ready to copy; `/plan`: the Plan view (U2): the declaration form generated from `pmxPlanStudy`, the arms as cards, the results and the study calendar (its measurement and randomization weekdays set on it), the alternatives folded, Explore (the TGIs entered in the form, each a scenario and not a prediction, and the animals each needs), the study protocol ready to copy, and Save plan / Download in the ribbon |
 
 ## Sources (`src/`)
 
@@ -62,7 +62,7 @@ priors file), and `pmxMapPrior` recomputes the MAP prior of log alpha with Crux 
 | `study-file.ts`, `study-meta.ts` | the followed study (`.pmxstudy`) and the study's details (ID, owner, day 0, what each group receives, notes) |
 | `study-table.ts`, `outlier-rules.ts`, `detectors.js` | the study's own table view: the marks (Excluded, Flagged), the outlier rules, paste, the context menu |
 | `study-header.ts`, `panels.ts` | the study's header and stage steps; a stage's panels, tabs and layout editor |
-| `library.ts`, `demo.ts` | the Overview's list of studies and its demo portfolio |
+| `library.ts` | the Overview's list of studies |
 | `calendar.ts`, `sheet.ts`, `report.ts`, `arrive.ts` | the study calendar and its `.ics`, the randomization sheet, the report and exports, the ARRIVE checklist |
 | `survival.ts`, `km-chart.ts`, `spider-chart.ts`, `synergy.ts`, `explore.ts` | days to the endpoint (Kaplan-Meier, projection, Fine-Gray), each animal's plots, combination synergy, the study as tables |
 | `plan-vs-observed.ts`, `plan-checks.ts` | the study against its plan, and the plan's predictive ranges |
@@ -104,9 +104,9 @@ every replan.
   the line's atlas with this study's controls.
 - Plan's kill rate makes the declared effect the median, over the labs the atlas draws, of the effect each one shows
   when its own controls reach the endpoint (Crux, decision tumor-plan-checks).
-- The example study is run as Plan designs it: each arm with the animals Plan asks for (MC38, TGI 40% and 70%:
-  26 controls, 26 and 6 treated), one lab of the atlas drawn with the design's seed and nothing picked by its
-  outcome, each group with mice of its own. (Crux's "median study", the lab whose controls reach the endpoint on
+- The package's tests use an example study (`src/tests/example-study.ts`, not in the app), run as Plan designs
+  it: each arm with the animals Plan asks for (MC38, TGI 40% and 70%: 26 controls, 26 and 6 treated), one lab of
+  the atlas drawn with the design's seed and nothing picked by its outcome, each group with mice of its own. (Crux's "median study", the lab whose controls reach the endpoint on
   the median day, is not median in effect: its 40% arm shows a TGI of about 21%, so the example no longer uses it.)
 
 ## Tolerability
@@ -138,7 +138,7 @@ With a **Body weight** column (grams, weighed with the tumor, on the rows of the
   1996). Shown per group, the vehicle included; a descriptive reading of an efficacy study, not a safety assessment
   (no NOAEL or MTD), and no animal is excluded from the efficacy analysis for it.
 - Doses held are not read yet: a study table has no column for them.
-- The example's body weight is illustrative (Crux `stats.tumor_body_weight_simulate`: a 20 g mouse, a slow gain,
+- The test example's body weight is illustrative (Crux `stats.tumor_body_weight_simulate`: a 20 g mouse, a slow gain,
   a dip with its nadir on day 5 of 0%, 4% and 10% for the vehicle and the 40% and 70% arms, the tumor's mass at
   MC38's density with each animal's own spread, removal at 20% loss), and so are its tumor weights, one per animal
   after its last measurement: the atlas has no body weights yet.

@@ -202,7 +202,7 @@ export async function openPlanFile(content: string): Promise<DG.DataFrame[]> {
   return [];
 }
 
-/** What Plan opens with: a saved plan, or only its name, details and form (a demo's). */
+/** What Plan opens with: a saved plan, or only its name, details and form. */
 export type PlanStart = Pick<SavedPlan, 'name' | 'study'> & {inputs: {[param: string]: unknown}};
 
 // each Plan view's call (its form's inputs, hidden ones too), by its host: what the package's tests read

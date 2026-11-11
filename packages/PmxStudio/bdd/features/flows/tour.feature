@@ -1,5 +1,8 @@
-@journey
+@skip @journey
 Feature: A tour of PMX Studio
+  Skipped until rewritten (2026-11-11): the app no longer ships the demo studies or the example study this relied on.
+  To bring it back: create the study in Plan (line, arms), save the plan, open it from the Overview; for Monitor and
+  Analyze, drop a study file (a .pmxstudy or a table of measurements) on the Overview.
   The redesigned journey, as a test: the answer to "how do I go from a plan to the analysis of a study, and arrange what I see?". The
   Overview opens Plan; the panels of a stage's tab are arranged from View > Layout; Analyze reads an example study,
   compares every animal on its own tab, marks one across every chart and follows the study past its last

@@ -12,7 +12,7 @@ import {futureDays} from './monitor';
 
 export interface LibraryEntry {
   kind: 'plan' | 'study';
-  /** 1 planned, 2 followed (Monitor), 3 finished (Analyze: the demo's) */
+  /** 1 planned, 2 followed (Monitor), 3 finished (Analyze) */
   stage: 1 | 2 | 3;
   file: DG.FileInfo | null;
   text: string;
@@ -33,8 +33,6 @@ export interface LibraryEntry {
   next: number | null;
   /** the study's last day as planned (null: no plan) */
   end: number | null;
-  /** opens it in its stage (the demo studies, which are no files); else the hub opens `text` */
-  open?: () => Promise<void>;
 }
 
 /** A plan or study file's entry (null: not one, or damaged). */

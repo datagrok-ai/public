@@ -124,7 +124,12 @@ export const rows = (t: {rows: number, columns: any[]}) => Array.from({length: t
 export const named = (r: CruxResult, name: string) => rows(r.named![name].table);
 
 const engine = cruxPool(load, MAX_SETS, IDLE_MS);
+let calls = 0;
+/** The calls made so far (for the package's tests: what opens the engine). */
+export const cruxCalls = () => calls;
 
 /** Calls the crux-fn `name` (e.g. 'stats.map_prior') on `table` (column name -> values) with `params`. */
-export const crux = (name: string, table: {[col: string]: any}, params: object = {}): Promise<CruxResult> =>
-  engine.call(name, table, params);
+export const crux = (name: string, table: {[col: string]: any}, params: object = {}): Promise<CruxResult> => {
+  calls++;
+  return engine.call(name, table, params);
+};
