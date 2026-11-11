@@ -82,6 +82,15 @@ export async function SaveWorkflowRun(nqName: string, version: string, state: an
   return await PackageFunctions.SaveWorkflowRun(nqName, version, state, metadata);
 }
 
+//description: The default Excel report of a run, as its export menu builds it: [Blob, ExcelJS.Workbook].
+//input: funccall funcCall { description: The run to report }
+//input: object validationState { description: Validation results by input; optional: true }
+//input: object consistencyState { description: Consistency by input; optional: true }
+//output: object result
+export async function ReportFuncCallExcel(funcCall: DG.FuncCall, validationState?: any, consistencyState?: any) {
+  return await PackageFunctions.ReportFuncCallExcel(funcCall, validationState, consistencyState);
+}
+
 //description: Load a saved workflow run without UI and return the state of every step, as RunWorkflow does.
 //input: string id { description: Meta FuncCall id of the saved workflow run }
 //output: object result

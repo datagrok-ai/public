@@ -18,6 +18,9 @@ import {ExportCbInput, ExportSummaryItem} from
 import {
   getRunSummary, RunStates, statesToStatus, textTitle,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/run-summary';
+import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
+import {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {BehaviorSubject} from 'rxjs';
 import {disposeViewers, getViewers} from '../../utils';
 import {statusToTooltip} from './tree-utils';
@@ -103,6 +106,18 @@ export async function reportSummary(items: ExportSummaryItem[]) {
   return [new Blob([buffer], {type: XLSX_BLOB_TYPE}), wb] as const;
 }
 
+/** The default Excel report of a call, with its viewers built and hooked for it. */
+export async function callExcelReport(call: DG.FuncCall, {viewersHook, metaState, validation, consistency}: {
+  viewersHook?: ViewersHook,
+  metaState?: Record<string, BehaviorSubject<any>>,
+  validation?: Record<string, ValidationResult>,
+  consistency?: Record<string, ConsistencyInfo>,
+} = {}) {
+  const viewers = await getViewers(call, viewersHook, metaState);
+  return richFunctionViewReport('Excel', call.func, call, viewers, validation, consistency)
+    .finally(() => disposeViewers(viewers));
+}
+
 export async function reportTree(
   {
     treeState,
@@ -139,20 +154,13 @@ export async function reportTree(
       const description = descriptions?.[state.uuid];
       const metaState = metaStates?.[state.uuid];
       const {isOutputOutdated, runError} = callInfo;
-      const viewers = await getViewers(funcCall, state.viewersHook, metaState);
-
-      const [blob, wb] = await richFunctionViewReport(
-        'Excel',
-        funcCall.func,
-        funcCall,
-        viewers,
-        validation,
-        consistency,
-      ).finally(() => disposeViewers(viewers));
+      const [blob, wb] = await callExcelReport(funcCall,
+        {viewersHook: state.viewersHook, metaState, validation, consistency});
 
       const fileName = stepFileName(state, idx, callInfo, textTitle(description));
       const configKey = [...path, fileName].join('/');
-      zipConfig[configKey] = [new Uint8Array(await blob.arrayBuffer()), {level: 0}];
+      const stepFile: Zippable[string] = [new Uint8Array(await blob.arrayBuffer()), {level: 0}];
+      zipConfig[configKey] = stepFile;
       if (cb) {
         await cb({
           fc: funcCall,
@@ -168,6 +176,9 @@ export async function reportTree(
           meta: metaState ?? {},
           description,
         });
+        // the callback may edit the workbook, or replace or remove the file itself
+        if (zipConfig[configKey] === stepFile)
+          zipConfig[configKey] = [new Uint8Array(await wb.xlsx.writeBuffer()), {level: 0}];
       }
     } else {
       const nPath = state === treeState ? [] : [...path, workflowDirName(state, idx)];

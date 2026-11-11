@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Export: Fixed the Excel report failing with "0 is out of bounds" on a table with no columns; its sheet is left empty
 * RTD: Added `loadSavedTree`, which loads a saved workflow run without UI as the editor opens it
 * RTD: A saved workflow run records whether every step's outputs were current (`RUN_COMPLETED` option, read with `readRunCompleted`)
 * RTD: A workflow custom export handler and `ExportUtils.runFuncCallCustomExport` return the exported file (`DG.FileInfo`)

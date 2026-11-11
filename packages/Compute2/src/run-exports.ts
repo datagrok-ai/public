@@ -3,7 +3,6 @@ import {BehaviorSubject, defer} from 'rxjs';
 import {concatMap, finalize} from 'rxjs/operators';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {richFunctionViewReport} from '@datagrok-libraries/compute-utils/shared-utils/export';
 import {
   isFuncCallState, PipelineState,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
@@ -26,11 +25,10 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 import {readOutputOutdated} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
-import {disposeViewers, getViewers} from './utils';
 import {
-  applyCustomExport, exportedFile, getExportSummary, reportSummary, reportTree,
+  applyCustomExport, callExcelReport, exportedFile, getExportSummary, reportSummary, reportTree,
 } from './components/TreeWizard/tree-export';
-import {resolveSingleStep} from './components/TreeWizard/tree-utils';
+import {findNodeWithPathByUuid, resolveSingleStep} from './components/TreeWizard/tree-utils';
 
 /** An export as menus list it; `id` finds it again in a run of another version. */
 export type ExportOption = {id: string, name: string};
@@ -71,9 +69,7 @@ export async function exportCall(
       runError: states.runError,
     });
   }
-  const viewers = await getViewers(call, states.viewersHook, states.metaState);
-  const [blob] = await richFunctionViewReport('Excel', call.func, call, viewers, states.validation, states.consistency)
-    .finally(() => disposeViewers(viewers));
+  const [blob] = await callExcelReport(call, states);
   return fileOf(`${call.func.nqName} - ${Utils.getStartedOrNull(call) ?? 'Not completed'}.xlsx`, blob);
 }
 
@@ -107,15 +103,18 @@ export type TreeExportContext = {
 const reportStates = ({states, metaStates, meta, hasNotSavedEdits}: TreeExportContext) =>
   ({...states, metaStates, meta, hasNotSavedEdits});
 
-export function treeExportUtils(ctx: TreeExportContext): ExportUtils {
+/** The utils a workflow's custom export gets; a step is found in `root` by its uuid. */
+export function treeExportUtils(root: PipelineState, ctx: TreeExportContext): ExportUtils {
   const {validationStates, consistencyStates, callInfoStates} = ctx.states;
   return {
-    reportFuncCallExcel: async (
-      fc: DG.FuncCall, uuid: string, viewersHook?: ViewersHook, metaState?: Record<string, BehaviorSubject<any>>,
-    ) => {
-      const viewers = await getViewers(fc, viewersHook, metaState);
-      return richFunctionViewReport('Excel', fc.func, fc, viewers, validationStates?.[uuid], consistencyStates?.[uuid])
-        .finally(() => disposeViewers(viewers));
+    reportFuncCallExcel: (fc: DG.FuncCall, uuid: string) => {
+      const step = findNodeWithPathByUuid(uuid, root)?.state;
+      return callExcelReport(fc, {
+        viewersHook: step && isFuncCallState(step) ? step.viewersHook : undefined,
+        metaState: ctx.metaStates?.[uuid],
+        validation: validationStates?.[uuid],
+        consistency: consistencyStates?.[uuid],
+      });
     },
     reportStateExcel: (state: PipelineState, cb?: (input: ExportCbInput) => Promise<void>) =>
       reportTree({treeState: state, ...reportStates(ctx), cb}),
@@ -142,7 +141,7 @@ export async function exportWorkflow(
   const item = isFuncCallState(state) ? undefined : state.customExports?.find((x) => x.id === exportId);
   if (!item)
     throw new Error(`No export ${exportId} is defined for ${state.configId}`);
-  return exportedFile(await item.handler(state, treeExportUtils(ctx)), item.friendlyName ?? item.id);
+  return exportedFile(await item.handler(state, treeExportUtils(state, ctx)), item.friendlyName ?? item.id);
 }
 
 async function exportTree(tree: StateTree, metaCall: DG.FuncCall, exportId: string) {

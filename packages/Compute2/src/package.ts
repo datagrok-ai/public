@@ -30,6 +30,9 @@ import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-seriali
 import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {CUSTOM_VIEW_OPTION} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {loadViewersHook} from './run-exports';
+import {callExcelReport} from './components/TreeWizard/tree-export';
+import type {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
+import type {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {loadSavedTree, readRun, runWorkflow, saveWorkflowRun} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 import type {RunState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
@@ -312,6 +315,23 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'object', options: {description: 'Optional title, description and tags'}})
       metadata?: ItemMetadata) {
     return saveWorkflowRun(providerOf(nqName), version, state, metadata);
+  }
+
+
+  @grok.decorators.func({
+    name: 'ReportFuncCallExcel',
+    description: 'The default Excel report of a run, as its export menu builds it: [Blob, ExcelJS.Workbook].',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async ReportFuncCallExcel(
+    @grok.decorators.param({type: 'funccall', options: {description: 'The run to report'}}) funcCall: DG.FuncCall,
+    @grok.decorators.param({type: 'object', options: {description: 'Validation results by input', optional: true}})
+      validationState?: Record<string, ValidationResult>,
+    @grok.decorators.param({type: 'object', options: {description: 'Consistency by input', optional: true}})
+      consistencyState?: Record<string, ConsistencyInfo>) {
+    return callExcelReport(funcCall, {
+      viewersHook: await loadViewersHook(funcCall.func), validation: validationState, consistency: consistencyState,
+    });
   }
 
 

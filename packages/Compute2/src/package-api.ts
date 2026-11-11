@@ -68,6 +68,16 @@ export namespace funcs {
   }
 
   /**
+   * The default Excel report of a run, as its export menu builds it: [Blob, ExcelJS.Workbook].
+   * @param {any} funcCall - The run to report
+   * @param {any} validationState - Validation results by input
+   * @param {any} consistencyState - Consistency by input
+   */
+  export async function reportFuncCallExcel(funcCall: any , validationState?: any , consistencyState?: any ): Promise<any> {
+    return await grok.functions.call('Compute2:ReportFuncCallExcel', { funcCall, validationState, consistencyState });
+  }
+
+  /**
    * Load a saved workflow run without UI and return the state of every step, as RunWorkflow does.
    * @param {string} id - Meta FuncCall id of the saved workflow run
    */

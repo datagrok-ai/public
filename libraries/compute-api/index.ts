@@ -3,7 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {
-  HeadlessResult, ItemMetadata, LoadedRun, PipelineInstanceConfigInput, RunState, normalizePipelineInstanceConfig,
+  ConsistencyInfo, ExportUtils, HeadlessResult, ItemMetadata, LoadedRun, PipelineInstanceConfigInput, RunState,
+  ValidationResult, normalizePipelineInstanceConfig,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
 
 type ConstructorTypeOf<T> = new (...args:any[]) => T;
@@ -95,6 +96,16 @@ export async function saveWorkflowRun(
 export async function loadWorkflowRun(id: string): Promise<LoadedRun> {
   const loadFunc = DG.Func.find({package: 'Compute2', name: 'LoadWorkflowRun'})[0];
   const call = loadFunc.prepare({id});
+  await call.call();
+  return call.getOutputParamValue();
+}
+
+/** The default Excel report of a run, as its export menu builds it, for a custom export to start from. */
+export async function reportFuncCallExcel(funcCall: DG.FuncCall, {validationState, consistencyState}: {
+  validationState?: Record<string, ValidationResult>, consistencyState?: Record<string, ConsistencyInfo>,
+} = {}): ReturnType<ExportUtils['reportFuncCallExcel']> {
+  const reportFunc = DG.Func.find({package: 'Compute2', name: 'ReportFuncCallExcel'})[0];
+  const call = reportFunc.prepare({funcCall, validationState, consistencyState});
   await call.call();
   return call.getOutputParamValue();
 }
