@@ -243,6 +243,7 @@ export const RunBrowser = Vue.defineComponent({
         return;
       openBulkExportDialog({
         locationName: nav.crumbs.value[nav.crumbs.value.length - 1].label,
+        modelsName: model.value ? modelLabel(model.value) : 'All models',
         runs: exportScope.value,
         spaceId: nav.spaceId.value,
         unlisted: nav.spaceId.value && spaces.index.value ? unlistedSpaces(spaces.index.value, nav.spaceId.value)

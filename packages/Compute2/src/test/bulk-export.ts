@@ -19,6 +19,7 @@ import {SpaceNode, makeIndex, unlistedSpaces} from '../components/RunStorage/spa
 import {BulkExportDialog} from '../components/RunStorage/BulkExportDialog';
 import {RunBrowser} from '../components/RunStorage/RunBrowser';
 import {uniqueName, withRunStorage} from './run-storage';
+import {modelLabel} from '../components/RunStorage/run-storage';
 import {deleteSavedWorkflow} from './utils';
 
 const EXPORT_MODEL = 'Compute2:TestCustomExportModel';
@@ -162,6 +163,8 @@ category('Run storage: bulk export', () => {
       exportButton().click();
       const dialog = () => document.querySelector<HTMLElement>('.c2-export-dialog');
       await awaitCheck(() => !!dialog()?.querySelector('.c2-export-warning'), 'the dialog should warn', 5000);
+      const title = dialog()!.closest('.d4-dialog')!.querySelector('.d4-dialog-header')!.textContent!.trim();
+      expect(title, `Export runs of My runs · ${modelLabel(DG.Func.byName(EXPORT_MODEL))}`);
       expect(dialog()!.querySelector('.c2-runs-footer-note')!.textContent, '1 run to export');
       expect(dialog()!.querySelector('.c2-export-models')!.textContent!.includes('2 runs, 1 not completed'), true);
       expect(!!dialog()!.querySelector('.c2-export-toggle'), false);

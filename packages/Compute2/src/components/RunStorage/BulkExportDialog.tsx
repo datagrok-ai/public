@@ -195,10 +195,11 @@ export const BulkExportDialog = Vue.defineComponent({
   },
 });
 
-export function openBulkExportDialog(props: {
-  locationName: string, runs: ExportRun[], spaceId?: string, unlisted: {spaceId: string, name: string}[],
-  filtered: boolean, stepHistory: boolean, viewersHook?: ViewersHook,
+/** `modelsName` is the browser's model filter: a model or All models. */
+export function openBulkExportDialog({modelsName, ...props}: {
+  locationName: string, modelsName: string, runs: ExportRun[], spaceId?: string,
+  unlisted: {spaceId: string, name: string}[], filtered: boolean, stepHistory: boolean, viewersHook?: ViewersHook,
 }) {
-  return showVueDialog<null>(`Export runs of ${props.locationName}`, BulkExportDialog, props,
+  return showVueDialog<null>(`Export runs of ${props.locationName} · ${modelsName}`, BulkExportDialog, props,
     {width: 620, height: 420});
 }
