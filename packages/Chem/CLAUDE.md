@@ -10,7 +10,7 @@ clustering, pharmacophore features, structural alerts, ChemProp ML, and chemical
 visualization — all running in the browser (RDKit's WebAssembly, or Crux's in Crux mode: "Chemical engine" below)
 with optional Docker-based server computation. Handles datasets of up to 10 million molecules.
 
-User documentation: [Cheminformatics](../../help/datagrok/solutions/domains/chem/chem.md)
+User documentation: [Cheminformatics](../../../help/datagrok/solutions/domains/chem/chem.md)
 
 ## Architecture
 

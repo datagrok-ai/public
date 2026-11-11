@@ -319,7 +319,10 @@ export function isLocalBootNoise(text: string): boolean {
   // companion multi-line "Stack trace <id>". It fires at an arbitrary moment in ~1 run in 3 on
   // ?mode=local and never on the authenticated client, so whichever step happens to be open
   // when it lands fails its no-error floor.
+  // The local fixture (xamgle/web/local/startup_data.json) lists U2demo, which master does not
+  // build, so its autostart fails ~3 s after boot in a line that carries no local/pkg path.
   return /Failed to load resource/.test(text) || /local\/pkg\//.test(text) ||
+    /Failed to autostart <U2demo:/.test(text) ||
     /removeChild.*no longer a child/.test(text) || /^Stack trace [A-Za-z0-9]+/.test(text.trim());
 }
 

@@ -65,5 +65,40 @@
     "weights": [1, 1.5, 1],
     "means": [10.625, 7.5, 2.25],
     "n": [4, 4, 4]
+  },
+  "composite_nca": {
+    "description": "PKNCA 0.12.1 pk.nca on the composite mean profile per dose (both sexes pooled; BLQ set to 0; a >50%-BLQ time zeroed; (0, 0) anchor; dose per kg, no body weight), auc.method = \"linear\" (the same linear AUClast as sparse_auclast), lambda.z best fit with min.hl.r.squared = 1e-9 (the app's composite minRSquared = 0). cl_obs is L/h/kg, vz_obs L/kg, aumc in mg/L·h², mrt_obs h. The route is PO (no Vss); the 10 mg/kg fit is fragile (adj R² 0.099, 4 points). IMPL-GAP-SPARSE-AUC-METHOD-MIX, 2026-11-09.",
+    "groups": [
+      {
+        "dose_mg_kg": 10,
+        "auclast": 3.8210016666667,
+        "aucinf_obs": 4.1558124399989,
+        "lambda_z": 0.22345955574264,
+        "half_life": 3.1018909809266,
+        "cl_obs": 2.4062683637384,
+        "vz_obs": 10.7682500116924,
+        "aucpext_obs": 8.0564457170812,
+        "adj_r_squared": 0.099246726559343,
+        "lambda_z_n_points": 4,
+        "aumclast": 7.4052889583333,
+        "aumcinf_obs": 12.9213241497388,
+        "mrt_obs": 3.1092173519126
+      },
+      {
+        "dose_mg_kg": 50,
+        "auclast": 28.9186604166667,
+        "aucinf_obs": 29.0331403806432,
+        "lambda_z": 0.76316119984629,
+        "half_life": 0.90825788928938,
+        "cl_obs": 1.7221698839487,
+        "vz_obs": 2.2566266265838,
+        "aucpext_obs": 0.39430789255173,
+        "adj_r_squared": 0.98192920034445,
+        "lambda_z_n_points": 3,
+        "aumclast": 52.937606875,
+        "aumcinf_obs": 54.0034541658131,
+        "mrt_obs": 1.8600624478714
+      }
+    ]
   }
 }

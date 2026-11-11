@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import {Place, notifyRunsChanged, parseTags, placeName} from './run-storage';
+import {RunMetadataFields} from './RunMetadataFields';
 
 /** Edits a saved run's name, description and tags; a name stays unique in the space the run is shown in. */
 export const RunDetailsForm = Vue.defineComponent({
@@ -56,15 +57,11 @@ export const RunDetailsForm = Vue.defineComponent({
     return () => (
       <div class='c2-runs-form'>
         { error.value && <div class='c2-runs-error'>{error.value}</div> }
-        <label class='c2-runs-field'><span>Name</span>
-          <input class='ui-input-editor' value={editName.value}
-            onInput={(e: Event) => editName.value = (e.target as HTMLInputElement).value}/></label>
-        <label class='c2-runs-field'><span>Description</span>
-          <textarea class='ui-input-editor' rows={5} value={editDescription.value}
-            onInput={(e: Event) => editDescription.value = (e.target as HTMLTextAreaElement).value}/></label>
-        <label class='c2-runs-field'><span>Tags</span>
-          <input class='ui-input-editor' placeholder='Comma-separated' value={editTags.value}
-            onInput={(e: Event) => editTags.value = (e.target as HTMLInputElement).value}/></label>
+        <RunMetadataFields name={editName.value} description={editDescription.value} tags={editTags.value}
+          onUpdate:name={(value: string) => {editName.value = value; error.value = undefined;}}
+          onUpdate:description={(value: string) => editDescription.value = value}
+          onUpdate:tags={(value: string) => editTags.value = value}
+          onSubmit={save}/>
         <div class='c2-runs-buttons'>
           <div class='c2-runs-button-group'>
             <button class='ui-btn' onClick={() => emit('done')}>Cancel</button>

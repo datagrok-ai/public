@@ -400,7 +400,7 @@ Expected:
   adjacent reference under the skills tree) and from atlas
   `bio.yaml` `sub_features[].source` anchors (per-id
   `package.ts#L<line>` citations above). No content sourced
-  from `public/help/**` per the binding sourcing rule.
+  from `help/**` per the binding sourcing rule.
 
 ---
 {

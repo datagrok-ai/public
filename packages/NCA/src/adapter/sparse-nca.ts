@@ -137,7 +137,9 @@ export type SparseNcaWarningCode =
   | 'SPARSE_PER_KG_WEIGHT_BASED'
   | 'PER_KG_NOT_FORMED'
   | 'COMPOSITE_BW_PARTIAL'
-  | 'COMPOSITE_NOT_WEIGHT_BASED';
+  | 'COMPOSITE_NOT_WEIGHT_BASED'
+  // sparse-auc-method-mix: IV bolus — AUClast from (0, 0), the derived row from the C0-anchored curve.
+  | 'SPARSE_IV_BOLUS_C0_ANCHOR';
 
 export interface SparseNcaWarning {
   readonly code: SparseNcaWarningCode;
@@ -393,9 +395,17 @@ function droppedMessage(
  * #4 the honest move is to *ship the fragile value and flag it* (the FRAGILITY
  * `R²<0.90` flag), not hide it — so the composite path accepts the best-fit λz
  * (`minRSquared: 0`). Dense UC-01/02/03 rules are untouched.
+ *
+ * `aucMethod: 'linear'` keeps ONE AUC method per composite row (IMPL-GAP-SPARSE-AUC-METHOD-MIX,
+ * user decision 2026-11-09): the headline AUC_LAST is the linear-trapezoid `sparseAuc` (the only
+ * method its Holder/Bailer SE is valid for), so AUCinf = AUClast + Clast/λz, %AUCextrap, CL, Vz,
+ * MRT and Vss must rest on the same linear AUClast. With the dense default (linear-up/log-down) the
+ * row showed AUCinf < AUClast (mouse F: 2.173 < 2.312). PKNCA parity: `pk.nca` on the composite
+ * mean with `auc.method = "linear"` (`mouse_sparse-reference.json` `composite_nca`).
  */
 const SPARSE_COMPOSITE_RULES: nca.NcaRules = {
   ...DEFAULT_RULES,
+  aucMethod: 'linear',
   lambdaZ: {...DEFAULT_RULES.lambdaZ, minRSquared: 0},
 };
 
@@ -602,6 +612,16 @@ export function computeSparseNca(
     const engineBw = usingAbsolute ? meanBwKg : null;
     const dense = compositeNca(input, engineDose, engineBw, routeCode, concUnit, sa.composite);
     const dv = dense.values;
+    // One AUC method per row holds on every route but IV bolus: there the dense run starts the curve
+    // at the back-extrapolated C0, while the closed-form AUClast (and its SE) starts at (0, 0). Say so
+    // with both numbers until the anchor is decided (TODO IMPL-GAP-SPARSE-IV-BOLUS-ANCHOR, SCIENCE-FLAG).
+    if (routeCode === nca.ROUTE_IV_BOLUS && Number.isFinite(dv.aucLast) &&
+        Math.abs(dv.aucLast - sa.auc) > 1e-9 * Math.max(1, Math.abs(sa.auc))) {
+      warnings.push({code: 'SPARSE_IV_BOLUS_C0_ANCHOR', group: groupKey,
+        message: `IV bolus: AUClast (${sa.auc.toPrecision(4)}) and its SE are integrated from (0, 0); AUCinf, ` +
+          '%AUCextrap, CL, Vz, MRT and Vss come from the composite curve that starts at the back-extrapolated ' +
+          `C0, whose AUClast is ${dv.aucLast.toPrecision(4)}.`});
+    }
     const norm = normaliseClVolumes(dv, engineDoseNorm, perKgBw);
     const lz = dense.provenance.lambdaZ;
     const lambdaZR2 = lz !== null ? lz.rSquared : NaN;
@@ -729,6 +749,7 @@ export function shortSparseNote(code: string): string {
   case 'SPARSE_CONC_MISSING_DROPPED': return 'missing conc dropped';
   case 'SPARSE_DOSE_SPELLING_MERGED': return 'dose spellings merged';
   case 'SPARSE_BLQ_FLAG_WITH_VALUE': return 'BLQ flag with a value → 0';
+  case 'SPARSE_IV_BOLUS_C0_ANCHOR': return 'IV bolus: AUClast from (0, 0), AUCinf from C0';
   default: return code;
   }
 }
@@ -1191,7 +1212,8 @@ const SPARSE_BOOTSTRAP_CODE = /^SPARSE_BOOTSTRAP_/;
  *  fingerprint. The rule: a code enters the fingerprint only if the composite's numbers depend on
  *  it — so `SPARSE_CONC_MISSING_DROPPED`, `SPARSE_DOSE_SPELLING_MERGED` and (user decision (a),
  *  the rows are zeroed) `SPARSE_BLQ_FLAG_WITH_VALUE` stay in. */
-const SPARSE_NUMBER_FREE_CODES: ReadonlySet<string> = new Set(['SPARSE_LLOQ_VARIES']);
+const SPARSE_NUMBER_FREE_CODES: ReadonlySet<string> =
+  new Set(['SPARSE_LLOQ_VARIES', 'SPARSE_IV_BOLUS_C0_ANCHOR']); // the IV note restates numbers, it sets none
 // (The per-kg notes — nca-cl-bw-normalised-units AD-5 — are left out by `computeDecisionFingerprint`
 // itself, `BASIS_NOTE_CODES`, for dense profiles and composites alike.)
 

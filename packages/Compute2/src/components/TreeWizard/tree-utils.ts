@@ -16,6 +16,7 @@ import {
   anyInput, inputHasError, inputHasWarning, inputsWhere, isChange, isFixableInconsistency, isInconsistent,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/run-summary';
 import type {AugmentedStat, Status} from './types';
+import type {DriverAPI} from '../../composables/use-reactive-tree-driver';
 
 export type NodeWithPath = {
   state: PipelineState,
@@ -273,3 +274,21 @@ export const statusInputs = (
 };
 
 export const SELECTED_STEP_BACKGROUND = 'var(--grey-1)';
+
+type Descriptions = DriverAPI['states']['descriptions'];
+
+export const nodeName = (descriptions: Descriptions, state: PipelineState) => {
+  const title = descriptions[state.uuid]?.title;
+  return typeof title === 'string' ? title : (state.friendlyName ?? state.configId);
+};
+
+// a node's title, description and tags from its meta states, overridden by extra
+export const nodeMetadata = (descriptions: Descriptions, uuid?: string, extra?: Record<string, any>) => {
+  const desc = uuid ? descriptions[uuid] : undefined;
+  return {
+    title: typeof desc?.title === 'string' ? desc.title : '',
+    description: typeof desc?.description === 'string' ? desc.description : '',
+    tags: Array.isArray(desc?.tags) ? desc.tags : [],
+    ...extra,
+  };
+};

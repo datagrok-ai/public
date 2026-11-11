@@ -7,14 +7,69 @@ import {DBExplorerConfig} from '@datagrok-libraries/db-explorer/src/types';
 import {DBExplorer} from '@datagrok-libraries/db-explorer/src/db-explorer';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {DB_EXPLORER_OBJ_HANDLER_TYPE, DBExplorerObjectHandler} from '@datagrok-libraries/db-explorer/src/object-handlers';
+import {explicitCatalog, hasCatalogs, listCatalogs, ownCatalog} from '@datagrok-libraries/db-explorer/src/utils';
 import {FkRef, convertTableQueryToEnrichment, deleteEnrichment, executeEnrichQuery, getEnrichConfigsNames, getFkRefs,
   readEnrichConfig, saveEnrichment} from './enrichment';
+
+type IdentifiersTarget = Pick<DBExplorerConfig, 'nqName' | 'dataSourceName' | 'catalogName' | 'schemaName'>;
+
+/** catalog.schema on a database with catalogs - the connection's own catalog when the configuration names none - else the schema */
+function targetName(target: IdentifiersTarget, connection: DG.DataConnection): string {
+  const catalog = hasCatalogs(connection) ? target.catalogName ?? ownCatalog(connection) : null;
+  return catalog ? `${catalog}.${target.schemaName}` : target.schemaName;
+}
+
+function sameTarget(a: IdentifiersTarget, b: IdentifiersTarget, connection: DG.DataConnection): boolean {
+  const catalog = (target: IdentifiersTarget) => explicitCatalog(connection, target.catalogName)?.toLowerCase();
+  return a.nqName === b.nqName && a.dataSourceName === b.dataSourceName && a.schemaName === b.schemaName && catalog(a) === catalog(b);
+}
+
+/** A driver's error without its description of the connection, which names the host and the login */
+function failureReason(error: any): string {
+  return String(error?.message ?? error).replace(/^Host - .*? Driver - \S+ - /s, '').trim();
+}
+
+const SYSTEM_SCHEMA = /^(information_schema|sys|guest|db_.+)$/i;
 
 /** Sets up editing of the db explorers config(s) */
 export async function setupGlobalDBExplorer() {
   let savedConfigs: DBExplorerConfig[] | null = null;
   const deferredTreeNodes: DG.TreeViewGroup[] = [];
   const processedNodes = new Set<DG.TreeViewGroup>();
+  // listed once per page: the list costs a request per catalog
+  const catalogLists = new Map<string, Promise<string[]>>();
+
+  /** Opens the editor on the configuration saved for the schema of [target], or on [target] when there is none */
+  async function openEditor(connection: DG.DataConnection, target: Partial<DBExplorerConfig> & IdentifiersTarget, fromTree: boolean) {
+    const view = DG.View.create();
+    view.name = `${connection.name}.${targetName(target, connection)} Identifiers`;
+    ui.setUpdateIndicator(view.root, true, 'Loading editor...');
+    if (fromTree)
+      grok.shell.addPreview(view);
+    else
+      grok.shell.addView(view);
+    try {
+      // no connection section needs to be rendered here
+      const editor: DBExplorerEditor = new DBExplorerEditor(() => onSaveAction(editor, connection), false, connection);
+      const editorUI = await editor.getUI();
+      ui.setUpdateIndicator(view.root, true, 'Initializing configuration...');
+      // read anew: another session may have saved or removed configurations since this page loaded
+      const saved = (await getSavedConfigs()).find((c) => sameTarget(c, target, connection));
+      if (saved && !fromTree)
+        grok.shell.info('Identifiers configuration for this connection and schema already exists.\n Importing...');
+      // the warning is for a saved configuration whose connection or schema is gone
+      await editor.setConfig(saved ?? target, fromTree || !!saved);
+      view.root.appendChild(editorUI);
+    } catch (e: any) {
+      _package.logger.error(`Failed to open the identifiers configuration of ${connection.nqName}: ${e}`);
+      const failure = ui.divText(`Could not load ${targetName(target, connection)} of ${connection.friendlyName ?? connection.name}: ${failureReason(e)}`,
+        {style: {color: 'var(--failure)', padding: '12px'}});
+      ui.tooltip.bind(failure, String(e?.message ?? e));
+      view.root.appendChild(failure);
+    } finally {
+      ui.setUpdateIndicator(view.root, false);
+    }
+  }
 
   const processConnectionNode = (node: DG.TreeViewGroup, highlightOnAdd: Boolean = false) => {
     if (processedNodes.has(node))
@@ -27,24 +82,11 @@ export async function setupGlobalDBExplorer() {
       const hasPermission = await grok.dapi.permissions.check(connection, 'Edit');
       if (!hasPermission)
         return; // remove in future according to what is decided
-      const itemElement = ui.divH([ui.iconFA('fingerprint', ()=>{}, 'Fingerprint'), ui.divText(`Identifiers - ${config.schemaName}`)],
+      const itemElement = ui.divH([ui.iconFA('fingerprint', ()=>{}, 'Fingerprint'), ui.divText(`Identifiers - ${targetName(config, connection)}`)],
         {style: {gap: '6px', alignItems: 'center'}});
-      ui.tooltip.bind(itemElement, `Configure identifiers for ${config.schemaName} schema...`);
-      const tnItem = node.item(itemElement, new DBExplorerConfigWrapper(config));
-      tnItem.onSelected.subscribe(async () => {
-        let editor: DBExplorerEditor | null = null;
-        // no connection section needs to be rendered here
-        const view = DG.View.create();
-        view.name = `${connection.name}.${config.schemaName} Identifiers`;
-        grok.shell.addPreview(view);
-        ui.setUpdateIndicator(view.root, true, 'Loading editor...');
-        editor = new DBExplorerEditor(() => onSaveAction(editor!), false);
-        const editorUI = await editor.getUI();
-        view.root.appendChild(editorUI);
-        ui.setUpdateIndicator(view.root, true, 'Initializing configuration...');
-        await editor.setConfig(config);
-        ui.setUpdateIndicator(view.root, false);
-      });
+      ui.tooltip.bind(itemElement, `Configure identifiers for ${targetName(config, connection)} schema...`);
+      const tnItem = node.item(itemElement, new DBExplorerConfigWrapper(config, connection));
+      tnItem.onSelected.subscribe(() => openEditor(connection, config, true));
       tnItem.root.style.order = '-1'; // make sure it is on top
       if (highlightOnAdd)
         ui.hints.addHintIndicator(tnItem.root, false, 4000);
@@ -68,19 +110,17 @@ export async function setupGlobalDBExplorer() {
       !args?.args?.menu)
       return;
     const node = DG.toJs(args.args.item) as DG.TreeViewNode<DBExplorerConfigWrapper>;
-    const config = node.value.config;
+    const {config, connection} = node.value;
     const menu = args.args.menu as DG.Menu;
     menu.item('Edit...', async () => {
       (DG.toJs(args.args.item) as DG.TreeViewNode).root.click(); // trigger selection, good enaugh
     });
     menu.item('Remove...', async () => {
       ui.dialog('Remove Identifier Configuration')
-        .add(ui.divText(`Are you sure you want to remove ${config.connectionName}.${config.schemaName} identifier configuration?`))
+        .add(ui.divText(`Are you sure you want to remove ${config.connectionName}.${targetName(config, connection)} identifier configuration?`))
         .onOK(async () => {
           const oldConfigs = await getSavedConfigs();
-          const newConfigs = oldConfigs.filter((c) =>
-            !(c.nqName === config.nqName &&
-                    c.dataSourceName === config.dataSourceName && c.schemaName === config.schemaName));
+          const newConfigs = oldConfigs.filter((c) => !sameTarget(c, config, connection));
           try {
             await _package.files.writeAsText('db-explorer/configs.json', JSON.stringify(newConfigs, null, 2));
             grok.shell.info('Identifier configuration removed. Refresh the page to see the changes.');
@@ -105,53 +145,141 @@ export async function setupGlobalDBExplorer() {
       return;
     const connection = DG.toJs(args.args.item.value) as DG.DataConnection;
     const menu = args.args.menu as DG.Menu;
-    menu.item('Configure Identifiers...', async () => {
-      // ask for schema selection first in a dialog
-      const schemas = await grok.dapi.connections.getSchemas(connection);
-      if (schemas.length === 0) {
-        grok.shell.error('No schemas found for this connection.');
+    menu.item('Configure Identifiers...', () => pickTarget(connection),
+      4, {description: 'Configure identifier settings for this database connection'});
+  });
+
+  /** Asks which schema the identifiers live in - on a database with catalogs, the catalog first - and opens the
+   * editor on it. Of the database, only the catalog names and the schemas of the picked catalog are read. */
+  function pickTarget(connection: DG.DataConnection) {
+    const withCatalogs = hasCatalogs(connection);
+    const own = withCatalogs ? ownCatalog(connection) : null;
+    const catalogChoice = ui.input.choice('Catalog', {value: own, items: own ? [own] : [], nullable: false,
+      tooltipText: 'Catalog that holds the identifier tables (a database, in SQL Server and Snowflake)'});
+    const schemaChoice = ui.input.choice('Schema', {value: null, items: [] as string[], nullable: false,
+      tooltipText: 'Select primary schema for identifiers'});
+    const note = () => ui.div([], {style: {minHeight: '18px', maxWidth: '420px', margin: '0 0 6px 4px', fontSize: '12px'}});
+    const catalogNote = note();
+    const schemaNote = note();
+    let catalogs: string[] = [];
+    let schemasRequest = 0;
+
+    /** A line under a field: what is loading, what to do next, or what failed - then with a way to try again and the
+     * full error on hover */
+    function say(line: HTMLElement, text: string, failure?: {error?: any; blocks: boolean; retry: () => void}) {
+      line.style.color = failure?.blocks ? 'var(--failure)' : 'var(--grey-5)';
+      line.title = failure?.error ? String(failure.error?.message ?? failure.error) : '';
+      line.replaceChildren(text, ...(failure ? [' ', ui.link('Retry', failure.retry)] : []));
+    }
+
+    const targetOf = (schemaName: string): Partial<DBExplorerConfig> & IdentifiersTarget => ({
+      connectionName: connection.name,
+      nqName: connection.nqName,
+      dataSourceName: connection.dataSource,
+      catalogName: explicitCatalog(connection, catalogChoice.value),
+      schemaName,
+    });
+
+    function describeSchema() {
+      const schema = schemaChoice.value;
+      if (!schema)
+        say(schemaNote, withCatalogs ? 'Select the schema that holds the identifier tables.' : '');
+      else if (savedConfigs?.some((c) => sameTarget(c, targetOf(schema), connection)))
+        say(schemaNote, `${targetName(targetOf(schema), connection)} already has identifiers. OK opens them for editing.`);
+      else
+        say(schemaNote, '');
+    }
+
+    async function loadSchemas() {
+      const request = ++schemasRequest;
+      const catalog = catalogChoice.value;
+      schemaChoice.items = [];
+      if (withCatalogs && !catalog) {
+        say(schemaNote, catalogs.length > 0 ? 'Select a catalog to see its schemas.' : '');
         return;
       }
-      const defaultSchema = schemas.includes('public') ? 'public' : schemas[0];
+      say(schemaNote, catalog ? `Loading the schemas of ${catalog}...` : 'Loading schemas...');
+      let schemas: string[];
+      try {
+        schemas = await grok.dapi.connections.getSchemas(connection, explicitCatalog(connection, catalog) ?? null);
+      } catch (e: any) {
+        if (request === schemasRequest) {
+          say(schemaNote, `Could not read the schemas${catalog ? ` of ${catalog}` : ''}: ${failureReason(e)}`,
+            {error: e, blocks: true, retry: loadSchemas});
+        }
+        return;
+      }
+      if (request !== schemasRequest)
+        return;
+      if (withCatalogs) {
+        // nothing is picked for the user among several schemas: the first by name is a system one on SQL Server
+        const userSchemas = schemas.filter((s) => !SYSTEM_SCHEMA.test(s));
+        schemaChoice.items = [...userSchemas, ...schemas.filter((s) => SYSTEM_SCHEMA.test(s))];
+        schemaChoice.value = userSchemas.length === 1 ? userSchemas[0] : null;
+      } else {
+        schemaChoice.items = schemas;
+        schemaChoice.value = schemas.includes('public') ? 'public' : schemas[0] ?? null;
+      }
+      if (schemas.length > 0)
+        describeSchema();
+      else if (catalog)
+        say(schemaNote, `${catalog} has no schemas this connection can read. Pick another catalog.`);
+      else
+        say(schemaNote, 'No schemas found for this connection.', {blocks: true, retry: loadSchemas});
+    }
 
-      const schemaChoice = ui.input.choice('Schema', {value: defaultSchema, items: schemas,
-        tooltipText: 'Select primary schema for identifiers', nullable: false} );
+    const catalogTools = ui.divH([
+      ui.iconFA('search', () => DG.Menu.popup().items(catalogs, (catalog: string) => catalogChoice.value = catalog).show(),
+        'Find a catalog by a part of its name'),
+      ui.iconFA('sync', () => showCatalogs(true), 'Read the list of catalogs again'),
+    ], {style: {gap: '10px', marginLeft: '8px', alignItems: 'center', visibility: 'hidden'}});
 
-      ui.dialog('Select primary schema for Identifiers Configuration')
-        .add(ui.form([schemaChoice]))
-        .onOK(async () => {
-          const view = DG.View.create();
-          view.name = `${connection.name}.${schemaChoice.value!} Identifiers`;
-          ui.setUpdateIndicator(view.root, true, 'Loading editor...');
+    /** The connection's own catalog is offered at once; the list of them all arrives behind it */
+    async function showCatalogs(again: boolean) {
+      catalogTools.style.visibility = 'hidden';
+      say(catalogNote, own ? 'Loading the other catalogs...' : 'Loading the catalogs...');
+      if (again || !catalogLists.has(connection.id))
+        catalogLists.set(connection.id, listCatalogs(connection));
+      const listing = catalogLists.get(connection.id)!;
+      try {
+        catalogs = await listing;
+      } catch (e: any) {
+        if (catalogLists.get(connection.id) === listing)
+          catalogLists.delete(connection.id);
+        const reason = failureReason(e).replace(/\.$/, '');
+        say(catalogNote, own ? `Could not list the other catalogs: ${reason}. You can still configure ${own}.` : `Could not list the catalogs: ${reason}.`,
+          {error: e, blocks: !own, retry: () => showCatalogs(true)});
+        return;
+      }
+      const picked = catalogChoice.value;
+      catalogChoice.notify = false;
+      catalogChoice.items = catalogs;
+      // the database's own spelling of the picked catalog, which the connection may write in another case
+      catalogChoice.value = catalogs.find((c) => c.toLowerCase() === picked?.toLowerCase()) ?? picked;
+      catalogChoice.notify = true;
+      catalogTools.style.visibility = '';
+      say(catalogNote, `${catalogs.length} catalogs${own ? `; ${own} is the connection's own` : ''}.`);
+      if (!catalogChoice.value)
+        say(schemaNote, 'Select a catalog to see its schemas.');
+    }
 
-          grok.shell.addView(view);
-          let editor: DBExplorerEditor | null = null;
-          editor = new DBExplorerEditor(() => {
-            onSaveAction(editor!);
-          }, false); // no connection section needs to be rendered here
+    const dialog = ui.dialog(withCatalogs ? 'Select catalog and schema for Identifiers Configuration' :
+      'Select primary schema for Identifiers Configuration');
+    if (withCatalogs) {
+      catalogChoice.input.style.width = schemaChoice.input.style.width = '260px';
+      catalogChoice.addOptions(catalogTools);
+      dialog.add(catalogChoice).add(catalogNote);
+    }
+    dialog.add(schemaChoice).add(schemaNote)
+      .onOK(() => openEditor(connection, targetOf(schemaChoice.value!), false))
+      .show();
 
-          const uiEl = await editor.getUI();
-          ui.setUpdateIndicator(view.root, true, 'Initializing configuration...');
-          // find if there is an existing config for this connection-schema
-          const existingConfig = savedConfigs?.find((c) =>
-            c.nqName === connection.nqName && c.dataSourceName === connection.dataSource &&
-            c.schemaName === schemaChoice.value!);
-          if (existingConfig) {
-            await editor.setConfig(existingConfig);
-            grok.shell.info('Identifiers configuration for this connection and schema already exists.\n Importing...');
-          } else {
-            await editor.setConfig({
-              connectionName: connection.name,
-              nqName: connection.nqName,
-              dataSourceName: connection.dataSource,
-              schemaName: schemaChoice.value ?? undefined,
-            }, false);
-          } // no warning because schema is deliberately left empty for user to fill in
-          ui.setUpdateIndicator(view.root, false);
-          view.root.appendChild(uiEl);
-        }).show();
-    }, 4, {description: 'Configure identifier settings for this database connection'});
-  });
+    catalogChoice.onChanged.subscribe(() => loadSchemas());
+    schemaChoice.onChanged.subscribe(() => describeSchema());
+    loadSchemas();
+    if (withCatalogs)
+      showCatalogs(false);
+  }
 
 
   async function getSavedConfigs(): Promise<DBExplorerConfig[]> {
@@ -188,14 +316,12 @@ export async function setupGlobalDBExplorer() {
   };
 
 
-  async function onSaveAction(editor: DBExplorerEditor) {
+  async function onSaveAction(editor: DBExplorerEditor, connection: DG.DataConnection) {
     // validation is already happening in the editor before calling onSave
     const oldConfigs = await getSavedConfigs();
     const newConfig = editor.getConfig();
     const existingConfiIndex = oldConfigs.findIndex((c) =>
-      c.nqName === newConfig.nqName &&
-          c.dataSourceName === newConfig.dataSourceName && c.connectionName === newConfig.connectionName &&
-          c.schemaName === newConfig.schemaName);
+      c.connectionName === newConfig.connectionName && sameTarget(c, newConfig, connection));
     if (existingConfiIndex >= 0) // one config per connection
       oldConfigs[existingConfiIndex] = newConfig;
     else
@@ -243,7 +369,7 @@ export async function setupGlobalDBExplorer() {
 }
 
 class DBExplorerConfigWrapper {
-  constructor(public config: DBExplorerConfig) {}
+  constructor(public config: DBExplorerConfig, public connection: DG.DataConnection) {}
 }
 
 /** when querying, table produced can have information in it that says where the table come from.
@@ -252,7 +378,7 @@ class DBExplorerConfigWrapper {
 export async function setupDBQueryCellHandler() {
   const explorePanelRoot = ui.div([], {style: {minHeight: '30px', width: '100%'}});
   let processTimer: any = null;
-  const conInfoCache = new Map<string, Promise<{name: string, nqName: string, friendlyName: string} | null>>();
+  const conInfoCache = new Map<string, Promise<{name: string, nqName: string, friendlyName: string, connection: DG.DataConnection} | null>>();
   const getConnectionInfo = async (connectionId: string) => {
     if (conInfoCache.has(connectionId))
       return conInfoCache.get(connectionId)!;
@@ -260,7 +386,7 @@ export async function setupDBQueryCellHandler() {
       try {
         const connection = await grok.dapi.connections.find(connectionId);
         if (connection)
-          return {name: connection.name, nqName: connection.nqName, friendlyName: connection.friendlyName ?? connection.name};
+          return {name: connection.name, nqName: connection.nqName, friendlyName: connection.friendlyName ?? connection.name, connection};
       } catch (e) {
         console.error('Failed to get connection info for id ' + connectionId, e);
       }
@@ -300,9 +426,13 @@ export async function setupDBQueryCellHandler() {
         ui.setUpdateIndicator(explorePanelRoot, false);
         return;
       }
+      // a database with catalogs is explored in the catalog the result came from; none is named for the connection's own
+      const catalogName = hasCatalogs(conInfo.connection) ?
+        explicitCatalog(conInfo.connection, cell.column.tags.get(DG.Tags.Db) || cell.dataFrame.tags.get(DG.Tags.Db)) : undefined;
       const handler = DG.ObjectHandler.list().find((h) => { // for entity method does not work, because of instanceof checks.
         // need to do it manually// underneeth, its doing the same with listing all handlers
-        return h.type === DB_EXPLORER_OBJ_HANDLER_TYPE && (h as DBExplorerObjectHandler).connectionNqName === conInfo.nqName! && (h as DBExplorerObjectHandler).schemaName === schemaName;
+        return h.type === DB_EXPLORER_OBJ_HANDLER_TYPE && (h as DBExplorerObjectHandler).connectionNqName === conInfo.nqName! && (h as DBExplorerObjectHandler).schemaName === schemaName &&
+          explicitCatalog(conInfo.connection, (h as DBExplorerObjectHandler).catalogName)?.toLowerCase() === catalogName?.toLowerCase();
       });
       if (handler) {
         const acc = (handler as DBExplorerObjectHandler).renderPropertiesFromDfRow(cell.row, schemaName, tableName);
@@ -314,6 +444,7 @@ export async function setupDBQueryCellHandler() {
         const exp = DBExplorer.initFromConfig({
           connectionName: conInfo.name!,
           nqName: conInfo.nqName!,
+          catalogName: catalogName,
           schemaName: schemaName,
           joinOptions: [],
           entryPoints: {},

@@ -397,6 +397,7 @@ export class PipelineNodeBase implements IStoreProvider {
       nqName: this.config.nqName,
       disableHistory: !!this.config.disableHistory,
       customExports: this.config.customExports,
+      disableDefaultExport: !!this.config.disableDefaultExport,
       forceNavigate: !!this.config.forceNavigate,
       compactView: !!this.config.compactView,
     };

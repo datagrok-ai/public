@@ -1222,6 +1222,7 @@ export interface IDartApi {
   grok_ProjectsDataSource_Save(s: any, p: any, saveRelations: Bool): Promise<any>;
   grok_DataConnectionsDataSource_Save(s: any, c: any, saveCredentials: Bool): Promise<any>;
   grok_DataConnectionsDataSource_SubDir(s: any, c: any, dir: String): Promise<any>;
+  grok_DataConnectionsDataSource_Get_Catalogs(s: any, c: any): Promise<any>;
   grok_DataConnectionsDataSource_Get_Schemas(s: any, c: any, catalog: String): Promise<any>;
   grok_DataConnectionsDataSource_Get_Schema(s: any, c: any, schema: String, table: String, catalog: String): Promise<any>;
   grok_DataConnectionsDataSource_Get_Unique_Columns(s: any, c: any, schema: String, table: String): Promise<any>;

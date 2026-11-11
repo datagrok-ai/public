@@ -107,4 +107,4 @@ To change the default access of new campaigns:
 3. On the context panel, expand the `Settings` pane.
 4. Modify the `Default view permissions` and `Default edit permissions` fields.
 
-![peptiHitReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/edit-default-hd-sharing.gif?raw=true)
+![peptiHitReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/edit-default-hd-sharing.gif)

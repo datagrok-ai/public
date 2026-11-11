@@ -28,7 +28,12 @@ interface DestructiveGolden {
   dose_mg_kg: number; sparse_auclast: number; sparse_auc_se: number; sparse_auc_df: number;
   composite: {nominal_time: number[]; n: number[]; n_blq: number[]; mean: number[]; sd: number[]};
 }
-interface SparseGolden {destructive: DestructiveGolden[];}
+interface CompositeNcaGolden {
+  dose_mg_kg: number; auclast: number; aucinf_obs: number; lambda_z: number; half_life: number;
+  cl_obs: number; vz_obs: number; aucpext_obs: number; lambda_z_n_points: number; adj_r_squared: number;
+  mrt_obs: number;
+}
+interface SparseGolden {destructive: DestructiveGolden[]; composite_nca: {groups: CompositeNcaGolden[]};}
 
 /**
  * Load the mouse-sparse CSV and build the `computeSparseNca` input frame:
@@ -116,6 +121,75 @@ category('Adapter: sparse NCA (UC-04)', () => {
       expectFloat(grp!.aucDf, g.sparse_auc_df, Math.abs(g.sparse_auc_df) * 0.01,
         `dose ${g.dose_mg_kg}: AUC df out of 1%`);
     }
+  }, {timeout: TIMEOUT});
+
+  // --- IMPL-GAP-SPARSE-AUC-METHOD-MIX: one (linear) AUC method per composite row ------------------
+  // PKNCA `pk.nca` on the composite mean with auc.method = "linear" (golden `composite_nca`).
+  // Tolerances: AUC 0.1 %, λz 0.5 %, derived 1 % (NFR-04 / NFR-05, rule 18).
+  test('AUC method mix: composite AUCinf / λz / t½ / CL / Vz / %extrap match PKNCA (linear)', async () => {
+    const res = runMouse(mouse);
+    for (const g of golden.composite_nca.groups) {
+      const grp = res.groups.find((x) => Math.abs(x.doseMgKg - g.dose_mg_kg) < 1e-9);
+      expect(grp !== undefined, true, `group ${g.dose_mg_kg} present`);
+      const d = `dose ${g.dose_mg_kg}`;
+      expectFloat(grp!.aucLast, g.auclast, g.auclast * 0.001, `${d}: AUClast out of 0.1%`);
+      expectFloat(grp!.aucInf, g.aucinf_obs, g.aucinf_obs * 0.001, `${d}: AUCinf out of 0.1%`);
+      expectFloat(grp!.lambdaZ, g.lambda_z, g.lambda_z * 0.005, `${d}: λz out of 0.5%`);
+      expect(grp!.lambdaZNPoints, g.lambda_z_n_points, `${d}: λz points`);
+      expectFloat(grp!.halfLife, g.half_life, g.half_life * 0.01, `${d}: t½ out of 1%`);
+      expectFloat(grp!.pctExtrap, g.aucpext_obs, g.aucpext_obs * 0.01, `${d}: %AUCextrap out of 1%`);
+      const clMlMinKg = g.cl_obs * 1000 / 60; // L/h/kg → mL/min/kg (the per-kg CL unit)
+      expectFloat(grp!.cl, clMlMinKg, clMlMinKg * 0.01, `${d}: CL out of 1%`);
+      expectFloat(grp!.vz, g.vz_obs, g.vz_obs * 0.01, `${d}: Vz out of 1%`);
+      expectFloat(grp!.mrt, g.mrt_obs, g.mrt_obs * 0.01, `${d}: MRT (linear AUMC) out of 1%`);
+      expectFloat(grp!.lambdaZAdjR2, g.adj_r_squared, Math.abs(g.adj_r_squared) * 0.005, `${d}: adj R² out of 0.5%`);
+      // A fragile fit ships flagged, never hidden (thesis #4): adj R² 0.099 on the 10 mg/kg composite.
+      if (g.adj_r_squared < 0.9) {
+        expect(grp!.acceptance.verdict, 'Flagged', `${d}: fragile λz fit is Flagged`);
+        expect(grp!.acceptance.flagCodes.includes('ADJR2_LT'), true, `${d}: adj R² criterion violated`);
+      }
+    }
+  }, {timeout: TIMEOUT});
+
+  // REGRESSION_PIN for the old bug (the PKNCA test above is the ground truth). Scoped to this
+  // extravascular fixture: on an IV-bolus composite the dense run back-extrapolates C0 while
+  // `sparseAuc` anchors at (0, 0), so %AUCextrap is not relative to the shown AUClast there.
+  test('AUC method mix: AUCinf ≥ AUClast and %AUCextrap rests on the shown AUClast', async () => {
+    const res = runMouse(mouse);
+    for (const g of res.groups) {
+      const d = `dose ${g.doseMgKg}`;
+      expect(g.aucInf >= g.aucLast, true, `${d}: AUCinf ${g.aucInf} < AUClast ${g.aucLast}`);
+      const pct = (g.aucInf - g.aucLast) / g.aucInf * 100;
+      expectFloat(g.pctExtrap, pct, 1e-9, `${d}: %AUCextrap is relative to the shown AUClast`);
+      // Direct: the dense run's AUClast (AUCinf − Clast/λz, Clast = last positive composite mean)
+      // is the shown closed-form AUClast.
+      const tps = g.composite.timepoints;
+      const clast = [...tps].reverse().find((t) => t.n > 0 && t.nBlq / t.n <= 0.5 && t.mean > 0)!.mean;
+      expectFloat(g.aucInf - clast / g.lambdaZ, g.aucLast, g.aucLast * 1e-9, `${d}: dense AUClast = shown AUClast`);
+    }
+  }, {timeout: TIMEOUT});
+
+  // REGRESSION_PIN of the disclosed IV-bolus residual (TODO IMPL-GAP-SPARSE-IV-BOLUS-ANCHOR, user
+  // decision 2026-11-09: disclose now, decide the anchor in its own cycle). Measured on this composite
+  // as IV bolus: closed-form AUClast 3.821 from (0, 0), dense AUClast 3.983 from the back-extrapolated C0.
+  test('AUC method mix: an IV-bolus composite discloses its two AUClast anchors; PO does not', async () => {
+    const po = runMouse(mouse);
+    for (const g of po.groups)
+      expect(g.warnings.some((w) => w.code === 'SPARSE_IV_BOLUS_C0_ANCHOR'), false, `PO dose ${g.doseMgKg}: no note`);
+    const iv = computeSparseNca(mouse, {
+      concCol: 'Conc', nominalTimeCol: 'NominalTime_hr', animalIdCol: 'MouseID', blqCol: 'BLQflag',
+      doseCol: 'Dose_mg_kg', bodyWeightCol: 'BodyWeight_kg', groupCol: 'Dose_mg_kg',
+      route: 'IV-bolus', concUnit: 'mg/L', lloq: 0.001, bootstrapIterations: 200,
+    });
+    for (const g of iv.groups) {
+      const d = `IV dose ${g.doseMgKg}`;
+      const note = g.warnings.find((w) => w.code === 'SPARSE_IV_BOLUS_C0_ANCHOR');
+      expect(note !== undefined, true, `${d}: the anchor note is present`);
+      expect(note!.message.includes(g.aucLast.toPrecision(4)), true, `${d}: the note names the shown AUClast`);
+      expect(g.aucInf >= g.aucLast, true, `${d}: AUCinf ${g.aucInf} < AUClast ${g.aucLast}`);
+    }
+    expect(iv.parameterTable.col('NOTES')!.get(0).includes('IV bolus: AUClast from (0, 0)'), true,
+      'the short note reaches the Notes column');
   }, {timeout: TIMEOUT});
 
   test('AC-D1: composite means/SD/n/%BLQ match the oracle', async () => {

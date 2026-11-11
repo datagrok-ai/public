@@ -1,35 +1,39 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as Vue from 'vue';
 import {category, test, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import {closeViewsAfter, awaitWebComponents} from './utils';
+import {RunDetailsForm} from '../components/RunStorage/RunDetailsForm';
 
 // Keyboard tests need a view in the shell: focus and the dock's panel placement only work on attached elements.
 
 type Keys = {alt?: boolean, ctrl?: boolean, shift?: boolean};
 
-const press = (el: Element, key: string, keys: Keys = {}) => el.dispatchEvent(new KeyboardEvent('keydown', {
+export const press = (el: Element, key: string, keys: Keys = {}) => el.dispatchEvent(new KeyboardEvent('keydown', {
   key, altKey: !!keys.alt, ctrlKey: !!keys.ctrl, shiftKey: !!keys.shift, bubbles: true, cancelable: true,
 }));
 
-const rowLabel = (row: Element) => row.querySelector('.mtl-ml')?.textContent?.trim() ?? '';
-const rows = (view: DG.ViewBase) => Array.from(view.root.querySelectorAll<HTMLElement>('.mtl-tree .tree-node'));
-const labels = (view: DG.ViewBase) => rows(view).map(rowLabel);
+export const rowLabel = (row: Element) => row.querySelector('.mtl-ml')?.textContent?.trim() ?? '';
+export const rows = (view: DG.ViewBase) => Array.from(view.root.querySelectorAll<HTMLElement>('.mtl-tree .tree-node'));
+export const labels = (view: DG.ViewBase) => rows(view).map(rowLabel);
 const levels = (view: DG.ViewBase) => rows(view).map((row) => row.getAttribute('aria-level'));
-const row = (view: DG.ViewBase, label: string) => {
+export const row = (view: DG.ViewBase, label: string) => {
   const found = rows(view).find((el) => rowLabel(el) === label);
   if (!found)
     throw new Error(`No tree row "${label}" in ${JSON.stringify(labels(view))}`);
   return found;
 };
+export const chosen = (view: DG.ViewBase) =>
+  rows(view).filter((el) => el.querySelector('[aria-current="step"]')).map(rowLabel);
 const focusedLabel = () => {
   const el = document.activeElement as HTMLElement | null;
   return el?.classList.contains('tree-node') ? rowLabel(el) : null;
 };
 
-const dialogTitles = () =>
+export const dialogTitles = () =>
   Array.from(document.querySelectorAll('.d4-dialog .d4-dialog-header')).map((el) => el.textContent?.trim());
-const closeDialog = (button: string) => {
+export const closeDialog = (button: string) => {
   const found = Array.from(document.querySelectorAll<HTMLElement>('.d4-dialog button'))
     .find((el) => el.textContent?.trim().toLowerCase() === button);
   if (!found)
@@ -37,8 +41,9 @@ const closeDialog = (button: string) => {
   found.click();
 };
 
-const balloons = () => Array.from(document.querySelectorAll('.d4-balloon')).map((el) => el.textContent?.trim() ?? '');
-const clearBalloons = () => document.querySelectorAll('.d4-balloon').forEach((el) => el.remove());
+export const balloons = () =>
+  Array.from(document.querySelectorAll('.d4-balloon')).map((el) => el.textContent?.trim() ?? '');
+export const clearBalloons = () => document.querySelectorAll('.d4-balloon').forEach((el) => el.remove());
 
 const describe = (el: Element | null) => el ? `${el.tagName}.${el.className}` : 'nothing';
 
@@ -71,7 +76,7 @@ function expectTabEnters(from: HTMLElement, panels: string[]) {
 
 const treeStop = (view: DG.ViewBase) => rows(view).find((el) => el.tabIndex === 0)!;
 
-const type = (input: HTMLInputElement, value: string) => {
+export const type = (input: HTMLInputElement, value: string) => {
   input.focus();
   input.value = value;
   input.dispatchEvent(new Event('input', {bubbles: true}));
@@ -80,15 +85,16 @@ const type = (input: HTMLInputElement, value: string) => {
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-const buttons = (root: HTMLElement, label: string) => Array.from(root.querySelectorAll<HTMLButtonElement>('button'))
-  .filter((el) => el.textContent?.trim().toLowerCase() === label.toLowerCase());
+export const buttons = (root: HTMLElement, label: string) =>
+  Array.from(root.querySelectorAll<HTMLButtonElement>('button'))
+    .filter((el) => el.textContent?.trim().toLowerCase() === label.toLowerCase());
 
 const INITIAL = [
   'Keyboard', 'fixed add', 'fixed mul', 'list', 'item 1', 'item 2', 'item 3', 'pinned', 'slow', 'group', 'grouped step',
 ];
 const listed = (view: DG.ViewBase) => labels(view).slice(4, 8).join();
 
-async function openKeyboardWorkflow(track: <T extends DG.ViewBase>(view: T) => T) {
+export async function openKeyboardWorkflow(track: <T extends DG.ViewBase>(view: T) => T) {
   await awaitWebComponents();
   const call = DG.Func.byName('Compute2:MockKeyboardPipeline').prepare();
   const view = track(await grok.functions.call('Compute2:TreeWizardEditor', {call}) as unknown as DG.ViewBase);
@@ -99,7 +105,7 @@ async function openKeyboardWorkflow(track: <T extends DG.ViewBase>(view: T) => T
 }
 
 // waits for the form of the newly opened step, not the one it replaces
-async function choose(view: DG.ViewBase, label: string) {
+export async function choose(view: DG.ViewBase, label: string) {
   const inputsPanel = () => view.root.querySelector('[dock-spawn-title="Inputs"]');
   const before = inputsPanel();
   const el = row(view, label);
@@ -107,7 +113,8 @@ async function choose(view: DG.ViewBase, label: string) {
   press(el, 'Enter');
   await waitUntil(() => {
     const panel = inputsPanel();
-    return !!panel && panel !== before && panel.querySelector('input') !== null;
+    return !!panel && panel !== before &&
+      Array.from(panel.querySelectorAll('input')).some((el) => el.offsetParent !== null);
   }, `The step "${label}" did not open`, 10000);
 }
 
@@ -347,6 +354,21 @@ category('TreeWizard: keyboard shortcuts', () => {
     await waitUntil(() => view.root.contains(document.activeElement) && !document.activeElement!.closest('.mtl-tree'),
       `The focus should be in the opened step, is on ${document.activeElement?.tagName}`, 10000);
   });
+
+  test('Alt+PgDn and Alt+PgUp go to the next and previous step, even before a run or with the focus lost', async () => {
+    const view = await openKeyboardWorkflow(track);
+    await choose(view, 'fixed add');
+    const expectChosen = (label: string) =>
+      waitUntil(() => chosen(view).join() === label, () => `${label} should be chosen, is ${chosen(view)}`, 5000);
+    press(row(view, 'fixed add'), 'PageDown', {alt: true});
+    await expectChosen('fixed mul');
+    // the list holds steps, so Next skips it
+    press(document.activeElement!, 'PageDown', {alt: true});
+    await expectChosen('item 1');
+    (document.activeElement as HTMLElement).blur();
+    press(document.body, 'PageUp', {alt: true});
+    await expectChosen('fixed mul');
+  });
 });
 
 category('TreeWizard: keyboard focus', () => {
@@ -359,14 +381,14 @@ category('TreeWizard: keyboard focus', () => {
     await waitUntil(() => buttons(view.root, 'Next').length > 0, 'The step should run and offer Next', 10000);
     for (const label of ['Back', 'Next']) {
       const button = buttons(view.root, label)[0];
-      button.focus();
+      button.focus({focusVisible: true});
       expect(getComputedStyle(button).outlineStyle !== 'none', true, `${label} shows no focus outline`);
     }
 
     const dialog = ui.dialog('Outside Compute2').show();
     try {
       const button = dialog.root.querySelector('button')!;
-      button.focus();
+      button.focus({focusVisible: true});
       expect(getComputedStyle(button).outlineStyle, 'none', 'Buttons outside Compute2 keep the platform style');
     } finally {
       dialog.close();
@@ -430,7 +452,8 @@ category('RFV: keyboard shortcuts', () => {
     type(a, '1');
     type(b, '2');
     type(c, 'x');
-    await waitUntil(() => !buttons(view.root, 'Run')[0]?.classList.contains('d4-disabled'), 'Run stays disabled', 5000);
+    await waitUntil(() => buttons(view.root, 'Run')[0]?.getAttribute('aria-disabled') !== 'true',
+      'Run stays disabled', 5000);
     press(c, 'Enter', {ctrl: true});
     await waitUntil(() => view.root.querySelector('[dock-spawn-title="Output"]') !== null, 'No outputs after the run',
       10000);
@@ -447,7 +470,8 @@ category('RFV: keyboard shortcuts', () => {
     type(a, '1');
     type(b, '2');
     type(c, 'x');
-    await waitUntil(() => !buttons(view.root, 'Run')[0]?.classList.contains('d4-disabled'), 'Run stays disabled', 5000);
+    await waitUntil(() => buttons(view.root, 'Run')[0]?.getAttribute('aria-disabled') !== 'true',
+      'Run stays disabled', 5000);
     press(c, 'Enter', {ctrl: true});
     await waitUntil(() => view.root.querySelector('[dock-spawn-title="Output"]') !== null, 'No outputs after the run',
       10000);
@@ -461,7 +485,7 @@ category('RFV: keyboard shortcuts', () => {
   test('The disabled Run button explains why on hover', async () => {
     const view = await openSimpleInputs();
     const run = buttons(view.root, 'Run')[0];
-    expect(run.classList.contains('d4-disabled'), true, 'Run should be disabled');
+    expect(run.getAttribute('aria-disabled') === 'true', true, 'Run should be disabled');
     await expectHoverable(run);
     run.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}));
     run.dispatchEvent(new MouseEvent('mouseenter'));
@@ -480,7 +504,7 @@ table = DG.DataFrame.fromCsv('x\\n1\\n2\\n3');`).prepare({n: 3});
     grok.shell.addView(view);
     const visibleGrid = () => Array.from(view.root.querySelectorAll<HTMLElement>('dg-viewer canvas'))
       .find((el) => el.getClientRects().length > 0);
-    await waitUntil(() => buttons(view.root, 'Run').some((el) => !el.classList.contains('d4-disabled')),
+    await waitUntil(() => buttons(view.root, 'Run').some((el) => el.getAttribute('aria-disabled') !== 'true'),
       'Run stays disabled', 15000);
     buttons(view.root, 'Run')[0].click();
     await waitUntil(() => !!visibleGrid(), 'No output grid', 10000);
@@ -488,5 +512,25 @@ table = DG.DataFrame.fromCsv('x\\n1\\n2\\n3');`).prepare({n: 3});
     expect(tabRound(inputs(view)[0]), JSON.stringify(['Inputs']), 'Tab round');
     expectTabEnters(visibleGrid()!, ['Inputs']);
     expectTabEnters(ribbonStops(view)[0], ['Inputs']);
+  });
+
+  test('Tab in the run details of the view stays in their fields', async () => {
+    const view = await openSimpleInputs();
+    const host = ui.div();
+    view.root.append(host);
+    const app = Vue.createApp(RunDetailsForm, {run: DG.Func.byName('Compute2:SimpleInputs2').prepare()});
+    app.mount(host);
+    try {
+      const fields = Array.from(host.querySelectorAll<HTMLElement>('.ui-input-editor'));
+      // Vue skips an event stamped in the millisecond its listener was attached
+      await new Promise((resolve) => setTimeout(resolve, 2));
+      fields[0].focus();
+      press(fields[0], 'Tab');
+      expect(document.activeElement === fields[1], true,
+        `Tab from Name should go to Description, is on ${panelOf(document.activeElement)}`);
+    } finally {
+      app.unmount();
+      host.remove();
+    }
   });
 });

@@ -30,7 +30,7 @@ Every time user changes given molecule or adds new molecule to a dataframe, comp
 
 - **Submit function** : Define custom submit functions (tagged with `HitTriageSubmitFunction`) to further process or save the filtered and computed dataset. This could include saving to a private database or additional calculations.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/template-HD.png?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/template-HD.png)
 
 ## Campaigns
 
@@ -42,41 +42,41 @@ Campaigns are built based on templates and encompass the actual hit design proce
 
 - **Functionality**: Once a campaign starts, you can add extra calculated columns, add new rows to dataframe and sketch molecules, apply changes, fileter, save or submit the campaign.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/campaign-HD.png?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/campaign-HD.png)
 
 Campaigns can be groupped either by template key, status or be ungroupped. The groupping setting can be changed by clicking 'Group By' icon next to 'Comntinue Campaign' header.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-modify-groupping.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/HD-modify-groupping.gif)
 
 ## Getting started
 
 Continue ongoing campaigns either directly by a link or by selecting it from the campaigns table.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/continue_campaign_HD.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/continue_campaign_HD.gif)
 
 Create a new template by clicking on the `New Template` button in the `Templates` dropdown.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/create-template-HD.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/create-template-HD.gif)
 
 Start a new campaign by choosing a template and filling out the required information. Once a new campaign starts, an empty dataframe will be added, where you can add new molecules. Upon adding or changing molecules, all compute functions will be executed on that row and the results in coresponding columns will be updated.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-start-campaign.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/HD-start-campaign.gif)
 
 After the campaign starts, users can sketch new molecules, filter, modify or add viewers to the campaign and then save them. Once saved, reloading the campaign will restore the saved state.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-save-campaign.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/HD-save-campaign.gif)
 
 Hit design campaign consists of two views, a main design view and a tiles view. You can access the tiles view from by clicking the 'Progrss Tracker' button on the ribbon pannel. Tiles view provides a versatile way to organize molecules in the campaign. Users can drag and drop molecules between stages, which were defined in the template.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-tiles.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/HD-tiles.gif)
 
 As mentioned previously, "Stages" or tiles are defined in the template, but users can also modify them after starting the campaign. To do so, open the Progress Tracker and click the "Modify Stages" button. You can add, remove or rename stages. After clicking OK, the changes will be saved and reflected in the Progress Tracker view. If you remove a stage which had some molecules in it, those molecules will be automatically moved to the first stage.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-tiles-modify-stages.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/HD-tiles-modify-stages.gif)
 
 Campaign status can be changed through 'Submit' menu. You can set status to anything. When you start typing, you will be suggested other statuses that are already in use.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-modify-status.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/HD-modify-status.gif)
 
 ## Adding custom compute and submit functions
 
@@ -191,7 +191,7 @@ where is_valid_smiles(Cast(molecules as cstring))
 
 If the number of functions is getting large, you might prefer to see only relevant ones in the order you prefer. You can hide/reorder the functions in functions dialog or template using the pencil (✎) icon on the top right corner.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-Reorder-functions.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/HD-Reorder-functions.gif)
 
 ### Submit Functions
 
@@ -214,11 +214,11 @@ Hit Design allows users to manage permissions for campaigns, granting `view` or 
 
 By default, any new campaign will be shared with all users. To manage who can view or edit the campaign, click on the `share` icon located in the campaigns table, or open the campaign and click on the `share` button in the ribbon menu. If all users are removed from `edit` permissions, only the creator of the campaign will be able to edit it. Users who do not have edit permission but can view the campaign, will be able to see the campaign but not make any changes or delete it.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-permissions.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/HD-permissions.gif)
 
 Similarly, you can manage view permissions, which will restrict access to viewing the campaign or accessing it directly via link. If all users are removed from `view` permissions, only the creator of the campaign will be able to view it.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-view-permissions.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/HD-view-permissions.gif)
 
 You can also modify the default sharing permissions for all newly created campaigns. To do so, modify the HitTriage package settings.
 
@@ -227,4 +227,4 @@ You can also modify the default sharing permissions for all newly created campai
 3. On the context panel, expand the `Settings` pane.
 4. Modify the `Default view permissions` and `Default edit permissions` fields to set the default permissions for all newly created campaigns.
 
-![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/edit-default-hd-sharing.gif?raw=true)
+![hitDesignReadmeImg](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/hittriage/edit-default-hd-sharing.gif)
