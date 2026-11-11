@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+* Plan, second pass (2026-11-11): the animals per group and the end of study leave the form: a click on the
+  Analyzable or End of study card sets them, the card says "set", and another click changes them or goes back to the
+  computed value. Multiple comparisons moves to Advanced (Holm by default, none needed with one arm; the protocol names
+  it). The calendar's instructions show while the pointer is on it, the first three times. When the controls may level
+  off below the endpoint and no lower endpoint avoids it (syngeneic lines), the warning says to plan to end on the
+  study's day instead of suggesting a lower endpoint.
 * Plan's arms (2026-11-11): each arm's name is its card's title, and under it, in grey, what Plan reads in it (drugs,
   dose, schedule, route) and the kind of treatment it takes, a click to change it. A name Plan cannot place says so;
   in immunocompetent mice (or before a line is chosen) the card asks whether the compound works on the tumor directly

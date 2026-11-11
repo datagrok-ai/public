@@ -6,8 +6,8 @@
    group size, by end of study (platform line charts) and by measurement schedule, and the study protocol. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {BasicTable, buttonWithIcon, ChoiceInput, computed, Dialog, div, divH, divV, dot, emptyState, loader, Reason,
-  signal, span, tableFromMap, TextInput, Tooltip} from '@datagrok-libraries/u2';
+import {BasicTable, buttonWithIcon, ChoiceInput, computed, Dialog, div, divH, divV, dot, emptyState, loader, Menu,
+  NumberInput, Reason, signal, span, tableFromMap, TextInput, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
@@ -16,8 +16,8 @@ import {PlanFrames, PlanInputs, WEEKDAY_NAMES, armColors, declarationOf, planFra
   weekdaysText} from './frames';
 import {Arm, ArmsInput, CorrectionInput, armsFrame} from './arms-input';
 import {ENDPOINT_RISK, MIN_GROUP, StudyDeclaration, diameterOf, finite, safeEndpoint} from './engine';
-import {askedOf, autoRun, callInputs, cardGrid, copyRow, hintLink, infoNote, notes, notesBox, num, pct, settleForm,
-  sized, markStage, statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
+import {askedOf, autoRun, callInputs, cardGrid, contextHint, copyRow, hintLink, infoNote, notes, notesBox, num, pct,
+  settleForm, sized, markStage, statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
 import {openStage, showStage} from './stages';
 import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
@@ -253,8 +253,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       stale.value = result.peek() !== undefined;
       auto.changed();
     }});
-  settleForm(form, {n: 'Auto (target power)', lastDay: 'Auto (endpoint reached)',
-    tgiScenarios: 'Off, or e.g. 30, 50, 70'});
+  settleForm(form, {tgiScenarios: 'Off, or e.g. 30, 50, 70'});
 
   // busy while the view plans (the first plan, a change of the form, a change of randomization day)
   const planning = signal(true);
@@ -305,24 +304,62 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const cell = <T = number>(name: string) => computed(() => (plan.value?.get(name, 0) ?? undefined) as T | undefined);
   const groups = computed(() => (cell('treated_arms').value ?? 1) + 1);
   // the animals in the order the study uses them, then its end; what each count covers in its tooltip
-  const card = (label: string, value: ReadonlySignal<StatValue | undefined>, tip: () => string,
-    format?: (x: StatValue) => string) => statCard(form, label, value, tip, format);
+  const card = (label: string | ReadonlySignal<string>, value: ReadonlySignal<StatValue | undefined>,
+    tip: () => string, format?: (x: StatValue) => string) => statCard(form, label, value, tip, format);
   // a count no group size reaches has no number (a column with no value reads as an empty string)
   const count = (name: string) => computed(() => plan.value ? finite(plan.value.get(name, 0)) ?? '—' : undefined);
+  // the animals per group and the end of study are computed, or set from their cards: a click asks the value; set,
+  // the card says so and a click offers to change it or go back to the computed one (the function's `n` and
+  // `lastDay`, not in the form)
+  const setParam = (name: string, value: number | null) => {
+    const field = form.getInput(name);
+    if (field)
+      field.value = value;
+    call.setParamValue(name, value);
+    void replan();
+  };
+  const settable = (el: HTMLElement, name: 'n' | 'lastDay', set: () => boolean, ask: {title: string, label: string,
+    now: () => number | undefined, min: number, max: number, back: string}) => {
+    el.classList.add('pmx-stat-settable');
+    const open = () => self.show(self.build(() => {
+      const input = new NumberInput({label: ask.label, value: ask.now() ?? ask.min, min: ask.min, max: ask.max,
+        nullable: false});
+      return new Dialog(ask.title).add(input).onOK(() => setParam(name, input.value), {text: 'Set'});
+    }));
+    el.addEventListener('click', (e) => {
+      if (!result.peek())
+        return;
+      if (!set())
+        return open();
+      Menu.popup().item('Change…', open).item(ask.back, () => setParam(name, null))
+        .show({anchor: e.currentTarget as HTMLElement});
+    });
+  };
+  const nSet = () => !!cell('n_fixed').peek();
+  const endSet = () => !!cell('last_day_chosen').peek();
   // each card by the plan column it shows, so a change made on the calendar can point at what it moved
   const cardOf: {[column: string]: HTMLElement} = {
     implant_total: card('Animals to implant', count('implant_total'), () => `Covers ${pct(cell('pre_loss').value)} ` +
       'that never reach randomization: no take, or out of the volume window'),
     randomise_total: card('To randomize', count('randomise_total'), () => `Covers ${pct(cell('post_loss').value)} ` +
       'lost after randomization: ulceration, deaths, technical failures'),
-    n_total: card('Analyzable', count('n_total'), () => cell('n_fixed').value ? `${groups.value} groups of the ` +
-      'animals per arm you set' : `${groups.value} groups, ${pct(cell('power_target').value)} power per comparison`),
-    study_end: card('End of study', cell('study_end'), () => cell('last_day_chosen').value ? 'Chosen; the median ' +
-      `control reaches the endpoint on day ${cell('endpoint_day').value}` :
-      cell('study_end').value === cell('endpoint_day').value ? 'When the median control reaches the endpoint' :
-        `The first measurement day after the median control reaches the endpoint (day ${cell('endpoint_day').value})`,
-    (x) => `Day ${x}`),
+    n_total: card(computed(() => cell('n_fixed').value ? 'Analyzable · set' : 'Analyzable'), count('n_total'),
+      () => cell('n_fixed').value ? `${groups.value} groups of the animals per arm you set. Click to change it, or ` +
+        'go back to what the power needs' : `${groups.value} groups, ${pct(cell('power_target').value)} power per ` +
+        'comparison. Click to set the animals per group yourself'),
+    study_end: card(computed(() => cell('last_day_chosen').value ? 'End of study · set' : 'End of study'),
+      cell('study_end'), () => cell('last_day_chosen').value ? 'Set by you; the median control reaches the ' +
+        `endpoint on day ${cell('endpoint_day').value}. Click to change it, or go back to the endpoint` :
+        (cell('study_end').value === cell('endpoint_day').value ? 'When the median control reaches the endpoint' :
+          'The first measurement day after the median control reaches the endpoint (day ' +
+          `${cell('endpoint_day').value})`) + '. Click to end on a day of your own',
+      (x) => `Day ${x}`),
   };
+  settable(cardOf.n_total, 'n', nSet, {title: 'Animals per group', label: 'Analyzable animals per group',
+    now: () => finite(result.peek()?.armResults.get('n', 0)) ?? undefined, min: 2, max: 100,
+    back: 'Back to what the power needs'});
+  settable(cardOf.study_end, 'lastDay', endSet, {title: 'End of study', label: 'Last day of study',
+    now: () => cell('study_end').peek(), min: 5, max: 120, back: 'Back to when the controls reach the endpoint'});
   const cards = cardGrid(Object.values(cardOf), 'pmx-plan-cards', 140);
 
   // the engine's warnings, each under the section it is about, one line each with the dot on the text's first line
@@ -343,6 +380,28 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // below the target (with the animals per arm fixed; else the animals grow to keep it)
   const calendarLoader = loader('Updating the plan…');
   const calendarStatus = divV([], 'pmx-calendar-status');
+  // how the calendar is edited, said while the pointer is on it, the first few times the user meets it
+  const hovering = signal(false);
+  const calendarHint = form.build(() => contextHint(() => hovering.value ? 'Click a weekday to measure on it or ' +
+    'not; double-click a day to note what happened, right-click it for more' : null));
+  const HINT_KEY = 'pmx-calendar-hint-views';
+  let hintViews = 0;
+  try {
+    hintViews = Number(localStorage.getItem(HINT_KEY) ?? 0);
+  } catch {} // no storage: the hint every time
+  let counted = false;
+  calendarBox.addEventListener('mouseenter', () => {
+    if (hintViews >= 3)
+      return;
+    hovering.value = true;
+    if (!counted) {
+      counted = true;
+      try {
+        localStorage.setItem(HINT_KEY, String(hintViews + 1));
+      } catch {}
+    }
+  });
+  calendarBox.addEventListener('mouseleave', () => hovering.value = false);
   Object.assign(calendarStatus.style, {gap: '4px', margin: '0 0 var(--dg-space-s)', lineHeight: '1.45'});
   const flash = (el: HTMLElement) => {
     Object.assign(el.style, {transition: 'box-shadow 0.4s', boxShadow: '0 0 0 2px var(--dg-accent, #2083d5)'});
@@ -758,9 +817,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     {id: 'growth', title: 'Predicted tumor growth', hint: 'Median and 90% range of each group\u2019s tumor volume, ' +
       'to the end of the study', content: [growthNotes, scaleRow, sized(growth, 380)]},
     {id: 'power', title: 'Power by group size', hint: 'With more or fewer animals', content: [sized(power, 280)]},
-    {id: 'calendar', title: 'Study calendar', hint: 'Week by week from randomization. Click a weekday to measure ' +
-      'on it or not; double-click a day to note what happened, right-click it for more', content: [calendarLoader,
-      calendarStatus, calendarBox]},
+    {id: 'calendar', title: 'Study calendar', hint: 'Week by week from randomization', content: [calendarLoader,
+      calendarStatus, calendarHint, calendarBox]},
     {id: 'end', title: 'Power by end of study', hint: 'Ending earlier or later', content: [endSummary,
       sized(byEnd, 280)]},
     {id: 'schedule', title: 'Measurement schedule', hint: 'Measuring more or less often', content: [scheduleBox]},
