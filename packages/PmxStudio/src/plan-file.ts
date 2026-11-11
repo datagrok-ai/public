@@ -15,6 +15,7 @@ export const PLAN_EXT = 'pmxplan';
 /** The tag of a study table that carries its plan (the plan's JSON). */
 export const PLAN_TAG = 'pmx.plan';
 const FORMAT = 'pmx-plan';
+export {FORMAT as PLAN_FORMAT};
 
 export interface SavedPlan {
   format: typeof FORMAT;

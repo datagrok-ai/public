@@ -72,7 +72,7 @@ category('Hub', () => {
   test('Your studies from the index: a study is read only when its row is missing or behind', async () => {
     // three plans of no study ID (each its own row: rows of one ID are one study)
     const plan = JSON.parse((await exampleStudy()).getTag(PLAN_TAG)!);
-    const files: {[name: string]: {text: string, updated: number | null}} = {
+    const files: {[name: string]: {text: string | null, updated: number | null}} = { // (text null: fails to read)
       'a.pmxplan': {text: JSON.stringify({...plan, name: 'Plan A', study: undefined}), updated: 1},
       'b.pmxplan': {text: JSON.stringify({...plan, name: 'Plan B', study: undefined}), updated: 1}};
     const store = new Map<string, string>();
@@ -93,7 +93,10 @@ category('Hub', () => {
           return store.get(f)!;
         }
         reads++;
-        return files[typeof f === 'string' ? f.split('/').pop()! : f.fileName].text;
+        const text = files[typeof f === 'string' ? f.split('/').pop()! : f.fileName].text;
+        if (text === null)
+          throw new Error('not now');
+        return text;
       },
       writeAsText: async (path, text) => {
         if (!writable)
@@ -143,6 +146,32 @@ category('Hub', () => {
     expect(reads, 2);
     expect('d.pmxplan' in indexed(), false);
     delete files['d.pmxplan'];
+    // a file that is no plan is read once and not again until it changes; one that fails to read, every time
+    files['e.pmxplan'] = {text: 'not a plan', updated: 5};
+    reads = 0;
+    expect((await myLibrary(fs)).length, 3);
+    await myLibrary(fs);
+    expect(reads, 1, 'a file that is no plan was read again');
+    files['e.pmxplan'].updated = 6;
+    await myLibrary(fs);
+    expect(reads, 2, 'a file that is no plan, changed, was not read again');
+    files['e.pmxplan'] = {text: null, updated: 7};
+    await myLibrary(fs);
+    await myLibrary(fs);
+    expect(reads, 4, 'a file that failed to read was not read again');
+    // one that was no plan and is now a valid one, at a new date, is listed
+    files['e.pmxplan'] = {text: 'not a plan', updated: 8};
+    await myLibrary(fs);
+    files['e.pmxplan'] = {text: JSON.stringify({...plan, name: 'Plan E', study: undefined}), updated: 9};
+    expect(rows(await myLibrary(fs)).includes('Plan E|'), true, 'a file become a plan was not listed');
+    // a plan of a future version (ours, unreadable here) leaves no row: the next version reads it, at the same date
+    files['e.pmxplan'] = {text: JSON.stringify({...plan, version: 99}), updated: 10};
+    reads = 0;
+    await myLibrary(fs);
+    await myLibrary(fs);
+    expect(reads, 2, 'a plan of a future version was not read again');
+    expect(indexed()['e.pmxplan']?.unreadable === true, false, 'a plan of a future version marked unreadable');
+    delete files['e.pmxplan'];
     // a deleted file's row leaves the index
     delete files['c.pmxplan'];
     expect((await myLibrary(fs)).length, 2);

@@ -7,8 +7,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {parsePlan, PLAN_EXT, plansFolder} from './plan-file';
-import {parseStudy, studiesFolder, STUDY_EXT} from './study-file';
+import {parsePlan, PLAN_EXT, PLAN_FORMAT, plansFolder} from './plan-file';
+import {parseStudy, studiesFolder, STUDY_EXT, STUDY_FORMAT} from './study-file';
 import {compoundsOf, parseMeta, treatmentOf} from './study-meta';
 import {futureDays} from './monitor';
 
@@ -85,11 +85,21 @@ export interface LibraryFiles {
 }
 
 /** Each file's row, by file name: its entry without the file and its text, and the file's date as the server lists
- *  it (a row whose date is not the file's is read again). */
-type Index = {[file: string]: Omit<LibraryEntry, 'file' | 'text'>};
+ *  it (a row whose date is not the file's is read again); a file read and found to be no PMX Studio file at all, its
+ *  date and `unreadable` (one of ours this version cannot read gets no row: the next version may read it). */
+type Index = {[file: string]: Omit<LibraryEntry, 'file' | 'text'> | {updated: number, unreadable: true}};
 
-/** The index file's format: another (or none) is rebuilt. Any change to entryOf or LibraryEntry raises it. */
+/** The index file's format: another (or none) is rebuilt. Any change to entryOf or LibraryEntry, or to what parsePlan
+ *  or parseStudy accept, raises it. */
 const INDEX_VERSION = 1;
+/** Whether a file's text is a PMX Studio plan or study, of any version. */
+const ours = (text: string): boolean => {
+  try {
+    return [PLAN_FORMAT, STUDY_FORMAT].includes(JSON.parse(text)?.format);
+  } catch {
+    return false;
+  }
+};
 export const indexPath = () => `${grok.shell.user.project.name}:Home/PMX Studio/library-index.json`;
 const readIndex = (fs: LibraryFiles): Promise<Index> => fs.readAsText(indexPath()).then((t) => {
   const x = JSON.parse(t);
@@ -149,11 +159,16 @@ export async function myLibrary(fs: LibraryFiles = grok.dapi.files, onListed = (
     const updated = dateOf(f);
     const dated = Number.isFinite(updated);
     const row = index[f.fileName];
+    if (dated && row?.updated === updated && (row as {unreadable?: unknown}).unreadable === true)
+      return null;
     if (dated && rowOk(row) && row.updated === updated)
       return {...row, file: f, text: ''} as LibraryEntry;
-    const e = await fs.readAsText(f).then((text) => entryOf(text, dated ? updated : 0, f), () => null);
-    if (e && dated) {
-      index[f.fileName] = rowOf(e, updated);
+    // (a file that fails to read, maybe in passing, is read again next time, and so is one of ours this version cannot
+    // read; one that is no PMX Studio file is not, until it changes)
+    const text = await fs.readAsText(f).catch(() => null);
+    const e = text === null ? null : entryOf(text, dated ? updated : 0, f);
+    if (text !== null && dated && (e || !ours(text))) {
+      index[f.fileName] = e ? rowOf(e, updated) : {updated, unreadable: true};
       changed = true;
     }
     return e && {...e, text: ''};

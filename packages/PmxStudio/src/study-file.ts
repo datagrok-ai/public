@@ -12,6 +12,7 @@ import {StudyMeta, metaOf, parseMeta, setMetaOn} from './study-meta';
 
 export const STUDY_EXT = 'pmxstudy';
 const FORMAT = 'pmx-study';
+export {FORMAT as STUDY_FORMAT};
 /** The tag with the columns' roles of a study table, as JSON ({animal, group, day, volume, bodyWeight}): what makes a
  *  table a study (study-table.ts writes it on every run; detectors.js reads it too). */
 export const STUDY_TAG = 'pmx.study';

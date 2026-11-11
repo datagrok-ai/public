@@ -7,7 +7,8 @@
   `files/example/README.md`).
 
 * The Overview's list (2026-11-12): a folder that fails to list keeps the list shown and says so, instead of an empty
-  list ("No studies yet").
+  list ("No studies yet"); a file in the plans or studies folder that is no PMX Studio file is read once, not on
+  every Overview (one of ours from a newer version is read each time: an update reads it).
 
 * The app starts clean (2026-11-11): the Overview lists only the user's own studies ("No studies yet" until there is
   one) and computes nothing when it opens; the demo studies are gone (the package's tests keep the simulated one, in
