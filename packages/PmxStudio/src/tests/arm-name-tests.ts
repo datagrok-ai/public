@@ -59,7 +59,8 @@ category('Arm names', () => {
     expect(kind('activated CD8+ T cells'), 'cell_therapy', 'the + of CD8+ joins nothing');
     expect(kind('Cpd-X neoantigen vaccine'), 'vaccine_peptide');
     expect(kind('siXyz8 5 nmol'), 'oligo_rna');
-    expect(kind('Cpd-X kinase inhibitor 30 mg/kg p.o.'), 'small_molecule');
+    expect(kind('gemcitabine 50 mg/kg i.p.'), 'small_molecule');
+    expect(kind('Cpd-X kinase inhibitor 30 mg/kg p.o.'), 'unknown', 'a small molecule, but how it acts the name does not say');
     expect(kind('Cpd-X 5 mg/kg'), 'unknown', 'a code: small molecule, and the app says it could not tell');
     expect(therapyOf('Cpd-X 5 mg/kg').therapy, 'small_molecule');
     // a combination takes its most variable drug

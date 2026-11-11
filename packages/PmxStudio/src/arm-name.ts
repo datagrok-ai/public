@@ -144,7 +144,8 @@ export function combinationHint(text: string, others: string[], detected: boolea
 // what kind of treatment a drug's name says, the most specific first. Plan's n depends on it, and reading an
 // immunotherapy as a small molecule gives fewer animals than it needs: an antibody the rules cannot place is read as
 // an immunotherapy (the wider spread), the directly acting biologics are the ones named. A name no rule reads is a
-// small molecule, and the app says it could not tell. Measured on the atlas's curated arms:
+// small molecule, and the app says it could not tell; so is a code with only "inhibitor" or "p.o." beside it, which
+// says a small molecule but not whether it acts on the tumour or through the immune system. Measured on the atlas's curated arms:
 // preclinical bundle analysis/therapy_from_name.mjs.
 const IMMUNE_TARGET = /(?:pd-?1|pd-?l[12]|ctla-?4|lag-?3|tim-?3|tigit|cd40|ox-?40|4-?1bb|cd137|gitr|cd47|sirp-?a|csf-?1r|cd73|cd39|cd27|cd28|icos|vista|nkg2a|nkp\d+|cd16|cd3|cd25|cd8|cd4|b7-?h3|il-?\d+[a-z]?r?|tgf-?b\w*|ifn\w*)/.source;
 const THERAPY_RULES: [Therapy, RegExp][] = [
@@ -162,7 +163,7 @@ const THERAPY_RULES: [Therapy, RegExp][] = [
     /interleukin|interferon|cytokine|gm-?csf|\btnf|/.source +
     // any other antibody
     /\banti-?\s?[a-z]|\balpha-[a-z]|mab\b|antibod|\big[gea]\d?\b|nanobod/.source)],
-  ['small_molecule', /(?:nib|lisib|ciclib|parib|platin|taxel|rubicin|mustine|tecan|citabine|uracil|trexate|mycin|zomib|sertib|stat|degrader|protac|phosphamide)\b|inhibitor|agonist|antagonist|chemo|5-?fu|gemcitabine|fluorouracil|temozolomide|dexamethasone|metformin|rapamycin|everolimus|tamoxifen|\bp\.?o\b|oral|gavage|\bi\.?g\b/],
+  ['small_molecule', /(?:nib|lisib|ciclib|parib|platin|taxel|rubicin|mustine|tecan|citabine|uracil|trexate|mycin|zomib|sertib|stat|phosphamide)\b|chemo|5-?fu|gemcitabine|fluorouracil|temozolomide|dexamethasone|metformin|rapamycin|everolimus|tamoxifen/],
 ];
 
 /** The kind of treatment an arm's name says, per drug: its own words first, then the whole name (a comment in
