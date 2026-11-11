@@ -68,6 +68,14 @@ export namespace funcs {
   }
 
   /**
+   * Load a saved workflow run without UI and return the state of every step, as RunWorkflow does.
+   * @param {string} id - Meta FuncCall id of the saved workflow run
+   */
+  export async function loadWorkflowRun(id: string ): Promise<any> {
+    return await grok.functions.call('Compute2:LoadWorkflowRun', { id });
+  }
+
+  /**
    * Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.
    * @param {string} id - Meta FuncCall id of the saved workflow run
    */

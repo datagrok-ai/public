@@ -82,6 +82,13 @@ export async function SaveWorkflowRun(nqName: string, version: string, state: an
   return await PackageFunctions.SaveWorkflowRun(nqName, version, state, metadata);
 }
 
+//description: Load a saved workflow run without UI and return the state of every step, as RunWorkflow does.
+//input: string id { description: Meta FuncCall id of the saved workflow run }
+//output: object result
+export async function LoadWorkflowRun(id: string) {
+  return await PackageFunctions.LoadWorkflowRun(id);
+}
+
 //description: Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.
 //input: string id { description: Meta FuncCall id of the saved workflow run }
 export async function OpenWorkflowRun(id: string) : Promise<void> {

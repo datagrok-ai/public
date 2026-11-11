@@ -89,27 +89,46 @@ export function reloadSpaces(index: SpaceIndex, spaceIds: string[],
   }));
 }
 
-export type LocatedRun = {run: DG.FuncCall, spaceId: string};
+/** A run with the space it is in, and the spaces down to it from where the search started. */
+export type LocatedRun = {run: DG.FuncCall, spaceId: string, path: string[]};
 
 /** The matching runs of the spaces and of everything below them, each run once, with the space it is in. */
 export function subtreeRuns(index: SpaceIndex, spaceIds: string[], filter: RunFilter): LocatedRun[] {
   const visited = new Set<string>();
   const seen = new Set<string>();
   const found: LocatedRun[] = [];
+  const visit = (id: string, above: string[]) => {
+    const node = index.nodes.get(id);
+    if (!node || visited.has(id))
+      return;
+    visited.add(id);
+    const path = [...above, id];
+    for (const run of node.runs) {
+      if (!seen.has(run.id) && filter(run)) {
+        seen.add(run.id);
+        found.push({run, spaceId: id, path});
+      }
+    }
+    node.children.forEach((child) => visit(child, path));
+  };
+  spaceIds.forEach((id) => visit(id, []));
+  return found;
+}
+
+/** The space and the spaces below it that couldn't be listed, so their runs are missing. */
+export function unlistedSpaces(index: SpaceIndex, spaceId: string): SpaceNode[] {
+  const visited = new Set<string>();
+  const found: SpaceNode[] = [];
   const visit = (id: string) => {
     const node = index.nodes.get(id);
     if (!node || visited.has(id))
       return;
     visited.add(id);
-    for (const run of node.runs) {
-      if (!seen.has(run.id) && filter(run)) {
-        seen.add(run.id);
-        found.push({run, spaceId: id});
-      }
-    }
+    if (node.error)
+      found.push(node);
     node.children.forEach(visit);
   };
-  spaceIds.forEach(visit);
+  visit(spaceId);
   return found;
 }
 

@@ -6,8 +6,11 @@ import {RUN_SAVED_EVENT, historyUtils} from '@datagrok-libraries/compute-utils/h
 import type {RunMetadata, SaveTarget} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
 import type {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
 import {
-  NESTED_ENTITY_OPTION, getRunAuthorId, getRunCreated, getRunName,
+  CUSTOM_VIEW_OPTION, NESTED_ENTITY_OPTION, getRunAuthorId, getRunCreated, getRunName,
 } from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {
+  CONFIG_PATH, OUTPUT_OUTDATED_PATH, readOutputOutdated, readRunCompleted,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 
 export const STEP_HISTORY_OPTION = 'compute2StepHistory';
 
@@ -17,6 +20,17 @@ export type Place = DG.Project | null;
 export const placeName = (place: Place) => place ? (place.friendlyName || place.name) : 'My runs';
 
 export const modelLabel = (func: DG.Func) => func.friendlyName || func.name;
+
+/** Whether a saved run is complete enough for its export menu: every step of a workflow, or a call itself, has
+ * current outputs; a call that never ran has no flag yet. Undefined when the run doesn't say: a workflow saved
+ * before the flag, or a run of a custom view. */
+export function runCompleted(run: DG.FuncCall): boolean | undefined {
+  if (run.options[CONFIG_PATH] != null)
+    return readRunCompleted(run);
+  if (run.options[CUSTOM_VIEW_OPTION] != null)
+    return undefined;
+  return run.options[OUTPUT_OUTDATED_PATH] != null && !readOutputOutdated(run);
+}
 
 export const formatSaved = (run: DG.FuncCall) => getRunCreated(run)?.format('YYYY-MM-DD HH:mm') ?? '';
 

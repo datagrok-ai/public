@@ -2,11 +2,16 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {IconFA} from '@datagrok-libraries/webcomponents-vue';
 import {getRunName} from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {RunAuthor, formatSaved, spaceListingError} from './run-storage';
+import {RunAuthor, formatSaved, runCompleted, spaceListingError} from './run-storage';
 import {Folder} from './space-index';
 import {Crumb} from './use-space-navigation';
 
-export type ListedRun = {run: DG.FuncCall, spaceId?: string};
+export type ListedRun = {run: DG.FuncCall, spaceId?: string, path?: string[]};
+
+/** Marks a run whose export menu offers nothing. */
+export const notCompletedMark = (run: DG.FuncCall) => runCompleted(run) === false &&
+  <IconFA name='hourglass-half' faStyle='fal' class='c2-runs-not-completed'
+    tooltip="Not completed: some outputs are outdated or missing, so the run can't be exported"/>;
 
 /** The way back up from the location: a link per level. */
 export const Breadcrumbs = Vue.defineComponent({
@@ -104,7 +109,7 @@ export const RunList = Vue.defineComponent({
           class={['c2-runs-row-icon', isFavorite ? 'c2-runs-star c2-runs-star-on' : 'c2-runs-star']}
           tooltip={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           onClick={(e: MouseEvent) => {e.stopPropagation(); emit('toggleFavorite', run);}}/>
-        <span class='c2-runs-row-name' title={getRunName(run)}>{getRunName(run)}</span>
+        <span class='c2-runs-row-name' title={getRunName(run)}>{notCompletedMark(run)}{getRunName(run)}</span>
         { props.modelOf && <span class='c2-runs-muted c2-runs-row-model'>{props.modelOf(run)}</span> }
         { props.resultsLabel && props.locationOf &&
           <span class='c2-runs-row-location' title={props.locationOf(spaceId)}>{props.locationOf(spaceId)}</span> }

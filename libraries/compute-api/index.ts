@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {
-  HeadlessResult, ItemMetadata, PipelineInstanceConfigInput, RunState, normalizePipelineInstanceConfig,
+  HeadlessResult, ItemMetadata, LoadedRun, PipelineInstanceConfigInput, RunState, normalizePipelineInstanceConfig,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
 
 type ConstructorTypeOf<T> = new (...args:any[]) => T;
@@ -87,6 +87,14 @@ export async function saveWorkflowRun(
 ): Promise<DG.FuncCall> {
   const saveFunc = DG.Func.find({package: 'Compute2', name: 'SaveWorkflowRun'})[0];
   const call = saveFunc.prepare({nqName, version, state, metadata});
+  await call.call();
+  return call.getOutputParamValue();
+}
+
+/** Loads a saved workflow run without UI and returns its state as {@link runWorkflow} does. */
+export async function loadWorkflowRun(id: string): Promise<LoadedRun> {
+  const loadFunc = DG.Func.find({package: 'Compute2', name: 'LoadWorkflowRun'})[0];
+  const call = loadFunc.prepare({id});
   await call.call();
   return call.getOutputParamValue();
 }

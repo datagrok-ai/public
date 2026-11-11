@@ -3,7 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {filter, take} from 'rxjs/operators';
+import {of} from 'rxjs';
+import {concatMap, filter, finalize, map, take} from 'rxjs/operators';
 
 import {ViewerTestApp as ViewerAppInstance} from './apps/ViewerTestApp';
 import {FormTestApp as FormAppInstance} from './apps/FormTestApp';
@@ -27,8 +28,9 @@ import type {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
-import {CUSTOM_VIEW_OPTION, getViewersHook} from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {runWorkflow, saveWorkflowRun} from
+import {CUSTOM_VIEW_OPTION} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {loadViewersHook} from './run-exports';
+import {loadSavedTree, readRun, runWorkflow, saveWorkflowRun} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 import type {RunState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 import type {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
@@ -183,11 +185,9 @@ export class PackageFunctions {
     const view = DG.toJs(DG.toDart(new DG.ViewBase())) as DG.View;
     setViewHierarchyData(call, view);
 
-    const viewersHookMakerName = getViewersHook(call.func);
     let viewersHook: ViewersHook | undefined;
     try {
-      if (viewersHookMakerName)
-        viewersHook = await DG.Func.byName(viewersHookMakerName).apply();
+      viewersHook = await loadViewersHook(call.func);
     } catch (e: any) {
       grok.shell.error(e);
     }
@@ -312,6 +312,19 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'object', options: {description: 'Optional title, description and tags'}})
       metadata?: ItemMetadata) {
     return saveWorkflowRun(providerOf(nqName), version, state, metadata);
+  }
+
+
+  @grok.decorators.func({
+    name: 'LoadWorkflowRun',
+    description: 'Load a saved workflow run without UI and return the state of every step, as RunWorkflow does.',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async LoadWorkflowRun(
+    @grok.decorators.param({options: {description: 'Meta FuncCall id of the saved workflow run'}}) id: string) {
+    return loadSavedTree(id).pipe(
+      concatMap(({tree}) => of(tree).pipe(map(readRun), finalize(() => tree.close()))),
+    ).toPromise();
   }
 
 

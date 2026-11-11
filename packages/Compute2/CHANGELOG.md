@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Runs: Export saves the runs of a space, with its subspaces or without, or of My runs into one zip, each run with the export picked for its model (the first one of its export menu by default); a search or filter narrows what is exported, and runs that aren't completed (outdated outputs or unrun workflow steps) are left out and marked in the run lists
+* Workflows: Added `LoadWorkflowRun`, which loads a saved workflow run without UI and returns its state as `RunWorkflow` does
 * Export: A custom export returns its file (`DG.FileInfo`) and Compute2 downloads it; the `startDownload` argument is removed, and an export that returns no file shows an error
 * Workflows: A step with inconsistent inputs shows a broken link icon in the steps tree, like the inputs themselves (needs WebComponents v.next)
 * Keyboard: Ctrl/Cmd+Enter presses Run, Ctrl/Cmd+Shift+Enter presses Update and Ctrl/Cmd+S saves the run, with the same checks as their buttons; a warning says why when the button is disabled. In a workflow Run and Update act on the step focused in the steps tree (Update on a workflow row updates its substeps), else on the open step

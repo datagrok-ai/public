@@ -123,7 +123,7 @@ export const RichFunctionView = Vue.defineComponent({
     const callMetaValues = useUnwrappedCallMeta(() => props.callMeta);
 
     const {
-      isSAenabled, isReportEnabled, isFittingEnabled, allowRerun, runLabel, customExports, dockSpawnConfig,
+      isSAenabled, isFittingEnabled, allowRerun, runLabel, dockSpawnConfig,
       formAsTab, autorun, inputToggles,
     } = useRfvFeatures(currentCall, Vue.toRef(props, 'standalone'));
 
@@ -199,7 +199,7 @@ export const RichFunctionView = Vue.defineComponent({
     const pressRun = () => pressControl(run.value, () => emit('runClicked'));
 
     const {exports, directExport, guardedExport, exportsVisible} = useRfvExports(currentCall, {
-      isReportEnabled, hideDefaultExport: () => props.hideDefaultExport, customExports, autorun,
+      hideDefaultExport: () => props.hideDefaultExport, autorun,
       callState: () => props.callState, isOutputOutdated, viewersHook, callMeta, validationState, consistencyState,
       collectDfExportEntries,
     });
