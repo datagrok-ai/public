@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#637](https://github.com/datagrok-ai/core/issues/637): PCA plot: Fixed confidence ellipses not being drawn: their colors were HTML strings with a near-zero opacity; they now take ARGB colors with a 15% fill
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Publish: no 100 ms waits between adding views and viewers, saving and reopening (eight of them)
 
 ## 1.3.0 (2026-07-13)
