@@ -99,14 +99,17 @@ function fencing(dir: string, open: string[] = []) {
   const shut = links.filter((p) => !open.includes(p) && !cloned(path.join(dir, p)));
   const want = ['/*', ...shut.map((p) => `!/${p.replace(/[*?[\\]/g, '\\$&')}`)];
   const sparse = git(dir, ['config', '--type=bool', 'core.sparseCheckout']).out === 'true';
-  return {sparse, want,
-    ok: !links.length || (sparse ? git(dir, ['sparse-checkout', 'list']).out : '/*') === want.join('\n')};
+  // A fetch that brings a new pin of a child with no folder fails: "Could not access submodule".
+  const quiet = git(dir, ['config', 'fetch.recurseSubmodules']).out === 'false';
+  return {sparse, want, quiet, ok: !links.length ||
+    ((sparse ? git(dir, ['sparse-checkout', 'list']).out : '/*') === want.join('\n') && (quiet || !shut.length))};
 }
 
 // Clones made before the patterns stay as they are unless `start`.
 function fence(dir: string, open: string[] = [], start = false): boolean {
   const f = fencing(dir, open);
-  return f.ok || (!f.sparse && !start) || step(dir, ['sparse-checkout', 'set', '--no-cone', ...f.want]);
+  return f.ok || (!f.sparse && !start) || (step(dir, ['sparse-checkout', 'set', '--no-cone', ...f.want]) &&
+    (f.quiet || step(dir, ['config', 'fetch.recurseSubmodules', 'false'])));
 }
 
 const modules = (owner: string, c: Child) => path.resolve(owner, git(owner, ['rev-parse', '--git-path', `modules/${c.name}`]).out);
@@ -419,7 +422,7 @@ function doctor(root: string, fix: boolean): boolean {
       problems.push(`${name}: ${local} commit(s) on no remote: ${at} push -u origin ${s.branch}`);
     const f = fencing(dir);
     if (!f.ok) {
-      problems.push(`${name}: ${f.sparse ? 'sparse patterns differ from the cloned children' :
+      problems.push(`${name}: ${f.sparse ? 'sparse checkout does not match the cloned children' :
         'empty folders for the children not cloned'}: grok src doctor --fix`);
       synced.push(!fix || fence(dir, [], true));
     }

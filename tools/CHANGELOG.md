@@ -3,7 +3,7 @@
 ## v.next
 
 * `grok src clone`: Clones the umbrella over HTTPS by default (`--url git@github.com:datagrok-ai/datagrok.git` for SSH)
-* `grok src`: A child that is not cloned gets no empty folder: the umbrella is a sparse checkout that leaves it out, `add` and `sparse` let it in, a failed clone is left out again; `grok src doctor --fix` converts an older clone
+* `grok src`: A child that is not cloned gets no empty folder: the umbrella is a sparse checkout that leaves it out, `add` and `sparse` let it in, a failed clone is left out again, and `fetch.recurseSubmodules=false` keeps a plain `git pull` of a new pin of a left-out child from failing; `grok src doctor --fix` converts an older clone
 * `grok <command> --help`, `grok src help` and `grok src` print the help and exit 0
 * `grok test`: Fixed finding DevTools when run from a core Dart library (d4, xamgle, ddt, dml): it is in the umbrella's `public/` next to core
 

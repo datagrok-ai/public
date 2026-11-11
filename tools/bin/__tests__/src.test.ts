@@ -86,6 +86,20 @@ describe('grok src: no empty folders for children not cloned', () => {
     expect(emptyDirs(c)).toEqual([]);
   });
 
+  it('a plain git pull takes a new pin of a child that is not cloned', () => {
+    const b = path.join(tmp, 'work', 'b');
+    git(b, 'commit', '-q', '--allow-empty', '-m', 'next');
+    git(b, 'push', '-q', path.join(tmp, 'b.git'), 'HEAD:main');
+    const u = path.join(tmp, 'work', 'u');
+    git(u, 'update-index', '--cacheinfo', `160000,${git(b, 'rev-parse', 'HEAD')},lib/b`);
+    git(u, 'commit', '-q', '-m', 'bump');
+    git(u, 'push', '-q', url, 'HEAD:main');
+    const c = path.join(tmp, 'c');
+    git(c, 'pull', '-q');
+    expect(git(c, 'rev-parse', 'HEAD')).toBe(git(u, 'rev-parse', 'HEAD'));
+    expect(fs.existsSync(path.join(c, 'lib', 'b'))).toBe(false);
+  });
+
   it('a child that fails to clone leaves no folder', () => {
     const c = path.join(tmp, 'c');
     const r = grok(c, 'add', 'bad');
