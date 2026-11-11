@@ -2,6 +2,7 @@
 
 ## v.next
 
+* core#239: Projects: A Flow view (a saved flow or an unsaved one) is saved with the project and reopens in its place in the dock layout
 * Auto-pin: Fixed an interaction while the flow view was not the current one disarming the auto-pin for good
 * [core#411](https://github.com/datagrok-ai/core/issues/411): Extract Rows, Delete Columns, Tag Columns, Aggregate and Unpivot: Accept their columns as a column list, which is what the platform passes for `column_list`
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Function editor: the dialog is taken when it is shown instead of polled every 100 ms

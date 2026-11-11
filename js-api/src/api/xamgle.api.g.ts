@@ -127,7 +127,6 @@ export interface SettingsInterface {
   enableBetaViewers: boolean;
 
   /** @Prop(editor: 'Beta') bool enableViewerFunctions = false; */
-  saveProjectWithViewLayout: boolean;
 
   allowWidgetsAsColumns: boolean;
 

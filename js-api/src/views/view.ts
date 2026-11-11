@@ -141,6 +141,14 @@ export class ViewBase extends Widget {
   get basePath(): string { return api.grok_View_Get_BasePath(this.dart); }
   set basePath(s: string) { api.grok_View_Set_BasePath(this.dart, s); }
 
+  /** Whether the view is saved with the project. Only views that can be reopened are saved: their type
+   * restores them from {@link saveStateMap}, or they belong to an app. Defaults to {@link saveToProjectByDefault}. */
+  get saveToProject(): boolean { return api.grok_View_Get_SaveToProject(this.dart); }
+  set saveToProject(x: boolean) { api.grok_View_Set_SaveToProject(this.dart, x); }
+
+  /** Override to keep views of this type out of projects unless the user adds them. */
+  get saveToProjectByDefault(): boolean { return true; }
+
   /** View toolbox.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/toolbox} */
   get toolbox(): HTMLElement { return api.grok_View_Get_Toolbox(this.dart); }

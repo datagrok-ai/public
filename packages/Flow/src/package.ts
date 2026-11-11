@@ -37,6 +37,17 @@ export async function flowScriptHandler(scriptCall: DG.FuncCall): Promise<void> 
   await FlowEntityHandler.instance.run(scriptCall);
 }
 
+//name: flowView
+//description: Reopens a Flow view saved in a project
+//tags: view
+//input: map params
+//input: string path
+//output: view result
+//meta.includeInFlow: false
+export function flowView(params: {[key: string]: string}, path: string): DG.ViewBase {
+  return new FuncFlowView();
+}
+
 //name: readUploadedFile
 //friendlyName: Uploaded File
 //description: Reads a file uploaded into a flow and parses it into a table
