@@ -38,13 +38,9 @@ const PLAN_LAYOUT: Slot[] = [{id: 'growth', span: 12}, {id: 'calendar', span: 12
   {id: 'power', span: 6}, {id: 'groups', span: 12}, {id: 'end', span: 6}, {id: 'schedule', span: 6},
   {id: 'protocol', span: 12}];
 
-/** Under the groups, always: the sizes are Monte Carlo estimates (another seed moves some by one animal). */
-const SIMULATION_NOTE = 'Group sizes come from simulation: a different run can give one animal more or fewer.';
-const simulationNote = () => {
-  const e = div([SIMULATION_NOTE]);
-  Object.assign(e.style, {color: 'var(--dg-grey-5, #717581)', fontSize: '12px', marginTop: 'var(--dg-space-s)'});
-  return e;
-};
+/** A sized group is a Monte Carlo estimate (another seed moves some by one animal): said in the protocol and in the
+ *  group size's header, not as a line of its own */
+const SIZED_BY_SIMULATION = 'estimated by simulation, accurate to about one animal';
 
 const monitorNote = () => infoNote('<b>From randomization on, in Monitor.</b> Follow this study to form the groups, ' +
   'balanced on tumor volume, and to see each session who needs attention and how the study is going.');
@@ -473,7 +469,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const headers = ['Group', 'Therapy', 'Expected effect', 'Analyzable', 'To randomize', 'Power',
       ...(fixed ? ['Smallest detectable effect'] : [])];
     const table = new BasicTable<Row>({items: rows, keyOf: (x) => x.name, columns: headers.map((header, j) => ({header,
-      render: (x: Row) => x.cells[j], align: j >= 2 ? 'center' : 'left'}))});
+      render: (x: Row) => x.cells[j], align: j >= 2 ? 'center' : 'left',
+      ...(header === 'Analyzable' && !fixed ? {tooltip: `Animals per group, ${SIZED_BY_SIMULATION}`} : {})}))});
     table.root.style.width = '100%';
     wrapCells(table.root);
     groupsTable.replaceChildren(table.root);
@@ -531,9 +528,9 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         `would be needed for ${x.effect}` : `${x.name}: ${x.n} analyzable animals per group give ${pct(x.power)} ` +
         `power for ${x.effect}`).join('; ') + `, two-sided α = ${num(v('alpha'), 2)}. ` +
         (v('n_fixed') ? 'The animals per group were set; the power is what they give' :
-          `Sized for ${pct(v('power_target'))} power`) + `, averaged over the growth of ${v('line')} controls in ` +
-        `${v('atlas_papers')} published studies (historical-control prior); at least ${MIN_GROUP} per group ` +
-        '(simulation-based; ±1 animal between runs)',
+          `Sized for ${pct(v('power_target'))} power (${SIZED_BY_SIMULATION})`) + `, averaged over the growth of ` +
+        `${v('line')} controls in ${v('atlas_papers')} published studies (historical-control prior); at least ` +
+        `${MIN_GROUP} per group`,
       'Animals': (finite(v('n_total')) === null ? 'Not sized: no group size up to 40 reaches the target power. ' :
         `${v('implant_total')} to implant, ${v('randomise_total')} to randomize, ${v('n_total')} analyzable. `) +
         `${pct(v('pre_loss'))} expected lost before randomization (no take, out of the volume ` +
@@ -717,7 +714,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // the figures answer the plan's question; each panel, one closer question
   const panels = panelGrid([
     {id: 'groups', title: 'Experimental groups', hint: 'The animals each group needs for its comparison with the ' +
-      'control', content: [groupsTable, simulationNote(), groupNotes, monitorNote()]},
+      'control', content: [groupsTable, groupNotes, monitorNote()]},
     {id: 'growth', title: 'Predicted tumor growth', hint: 'Median and 90% range of each group\u2019s tumor volume, ' +
       'to the end of the study', content: [growthNotes, scaleRow, sized(growth, 380)]},
     {id: 'power', title: 'Power by group size', hint: 'With more or fewer animals', content: [sized(power, 280)]},

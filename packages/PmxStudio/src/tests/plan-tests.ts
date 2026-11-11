@@ -73,12 +73,16 @@ category('Plan', () => {
         // each fit's own answer, the prior's first ('>40': none up to 40)
         const fits = String(o.armResults.get('n_fits', 0)).split(', ').map((x) => x === '>40' ? Infinity : Number(x));
         expect(fits.length, l.calibration!.identification!.solutions!.length, `${line}: ${fits}`);
-        // (one more than the most any needs: a fit's simulated power can dip under the target past its own n)
+        // (two more than the most any needs: a fit's simulated power can dip under the target past its own n, and the
+        // other fits' each come from a block of the studies, noisier)
         const needed = finite(o.armResults.get('n_needed', 0)) ?? Infinity;
-        expect(Math.min(...fits) <= needed && needed <= Math.max(...fits) + 1, true, `${line}: ${needed} of ${fits}`);
+        expect(Math.min(...fits) - 1 <= needed && needed <= Math.max(...fits) + 2, true,
+          `${line}: ${needed} of ${fits}`);
         expect(finite(o.armResults.get('n', 0)), Number.isFinite(needed) ? Math.max(needed, MIN_GROUP) : null);
+        // said only when they are more than one animal apart (one is a block's noise)
+        const sized = fits.map((x) => Math.max(x, MIN_GROUP));
         expect(String(o.plan.get('notes_groups', 0)).includes('do not pin down'),
-          new Set(fits.map((x) => Math.max(x, MIN_GROUP))).size > 1, `${line}: ${fits}`);
+          Math.max(...sized) - Math.min(...sized) > 1, `${line}: ${fits}`);
         // the advanced choice: the atlas's best fit alone, its own n and nothing said
         const best = await plan({line, arms: armsFrame([arm('Cpd-1')]), fits: 'Best fit only'});
         expect(String(best.armResults.get('n_fits', 0)), String(fits[0]), line);
@@ -129,6 +133,19 @@ category('Plan', () => {
       const unmarked = await designStudy(d);
       expect(unmarked.arms[0].fits.length, 1);
       expect(unmarked.arms[0].nAssurance, first);
+      // three identical fits: the two others share the studies (two blocks), and the average is the one fit's power
+      lp.calibration = {identification: {status: 'poorly_identified', rule: '', why: '',
+        solutions: [{...own, best: true}, own, own]}};
+      const [three, single] = [await designStudy({...d, n: 8, mde: false}),
+        await designStudy({...d, n: 8, mde: false, fits: false})];
+      expect(three.arms[0].fits.length, 3);
+      expect(Math.abs(three.arms[0].assurance! - single.arms[0].assurance!) < 0.05, true,
+        `${three.arms[0].assurance} vs ${single.arms[0].assurance}`);
+      const sized = await designStudy(d);
+      const each = sized.arms[0].fits as number[];
+      expect(Math.min(...each) - 1 <= sized.arms[0].nAssurance! && sized.arms[0].nAssurance! <= Math.max(...each) + 1,
+        true, `${sized.arms[0].nAssurance} of ${each}`);
+      expect(sized.notes.groups.some((x) => x.includes('do not pin down')), Math.max(...each) - Math.min(...each) > 1);
     } finally {
       lp.calibration = kept;
     }

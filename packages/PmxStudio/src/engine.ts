@@ -338,7 +338,10 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
   // effect, so a fixed n reads the same calls). The fits count only with the prior's own marked among them: without
   // it, which one the prior carries is not known. Every fit, not some: three of Panc02's eleven gave one animal more
   // than all of them in half the designs tried. Only their average is used, so the other fits share one design's
-  // studies: fit j simulates the j-th of their blocks (Crux's shard), disjoint, at one design's cost in all
+  // studies: fit j simulates the j-th of their blocks (Crux's shard), disjoint, at one design's cost in all (checked
+  // in Crux: the blocks are disjoint and a lone block's power table is its studies' mean). The average is per fit, not
+  // per study: a block one study short when the fits do not divide the studies weighs as much as the others, which
+  // only moves its own fit's noise, the same for every fit
   const fitted = lp.calibration?.identification?.solutions ?? [];
   const others = d.fits === false || !fitted.some((s) => s.best) ? [] : fitted.filter((s) => !s.best);
   const powerOnly = (p: Row, shard: number) => {
@@ -351,8 +354,8 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
       .catch(armError(arm)))),
     Promise.all(others.map(async (fit, j) => {
       const m = await lineModel(d.line, fit);
-      return Promise.all(d.arms.map((arm) => designArm(m.prior, powerOnly(armParams(arm, m.params), j), 1, d.power, null)
-        .catch(armError(arm))));
+      return Promise.all(d.arms.map((arm) =>
+        designArm(m.prior, powerOnly(armParams(arm, m.params), j), 1, d.power, null).catch(armError(arm))));
     }))]);
 
   // every arm with its own n (the treatments differ in what they need); the control as large as the largest arm,
@@ -467,11 +470,12 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
       notes.groups.push(`${a.declaration.name}: even 40 animals per group do not reach ${Math.round(d.power * 100)}% ` +
         'power; this effect is too small to detect reliably');
     }
-    // the line's other fits, said only where they disagree on the group: fits that agree need no words
+    // the line's other fits, said only where they disagree on the group: fits that agree need no words, and one animal
+    // apart is agreement (each other fit's own n comes from a block of the studies: one animal is its noise)
     if (!d.n && a.fits.length > 1) {
       const each = a.fits.map((x) => x === null ? Infinity : Math.max(x, MIN_GROUP));
       const [least, most] = [Math.min(...each), Math.max(...each)];
-      if (least < most) {
+      if (most - least > 1) {
         notes.groups.push(`${a.declaration.name}: the published ${d.line} controls do not pin down how much the ` +
           `animals of one study differ. Fits that describe them equally well need about ${least} to ` +
           `${Number.isFinite(most) ? most : 'more than 40'} animals per group each; the power here is their average`);
