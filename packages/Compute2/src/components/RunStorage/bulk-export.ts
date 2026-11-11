@@ -1,10 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import {zipSync, Zippable} from 'fflate';
-import {replaceForWindowsPath} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {loadViewersHook, replaceForWindowsPath} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {loadWorkflowConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 import {
-  ExportOption, callExports, configExports, exportSavedCall, exportSavedWorkflow, loadViewersHook,
+  ExportOption, callExports, configExports, exportSavedCall, exportSavedWorkflow,
 } from '../../run-exports';
 
 /** A run to export, with the folders it goes in: the spaces down to it from the exported space. */
@@ -38,13 +38,8 @@ export async function exportRuns(jobs: ExportJob[], {onProgress, isCancelled}: {
   const notCompleted: DG.FuncCall[] = [];
   const hooks = new Map<string, Promise<ViewersHook | undefined>>();
   const hookOf = (model: DG.Func) => {
-    // a broken hook leaves the viewers as they are, as when the model opens
-    if (!hooks.has(model.nqName)) {
-      hooks.set(model.nqName, loadViewersHook(model).catch((e) => {
-        console.error(`Couldn't load the viewers hook of ${model.nqName}`, e);
-        return undefined;
-      }));
-    }
+    if (!hooks.has(model.nqName))
+      hooks.set(model.nqName, loadViewersHook(model));
     return hooks.get(model.nqName)!;
   };
   for (const [idx, {item, kind, exportId}] of jobs.entries()) {

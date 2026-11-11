@@ -6,6 +6,7 @@ import wu from 'wu';
 import {VIEWER_PATH, viewerTypesMapping} from './consts';
 import {tryParseJson} from '@datagrok-libraries/utils/src/string-utils';
 import {readOutputOutdated} from '../reactive-tree-driver/src/runtime/funccall-utils';
+import type {ViewersHook} from '../reactive-tree-driver/src/config/PipelineConfiguration';
 import dayjs from 'dayjs';
 
 export const replaceForWindowsPath = (rawName: string, stringToInsert?: string) => {
@@ -117,6 +118,24 @@ export const getCustomExports = (func: DG.Func): {name: string, function: string
 export const getViewersHook = (func: DG.Func): string | undefined => {
   return func.options['viewersHook'];
 };
+
+/** The hook a function's `viewersHook` option makes; one that can't be made is reported, and the viewers go
+ * without it. */
+export async function loadViewersHook(func: DG.Func): Promise<ViewersHook | undefined> {
+  const maker = getViewersHook(func);
+  if (!maker)
+    return undefined;
+  try {
+    const makerFunc = DG.Func.byName(maker);
+    if (!makerFunc)
+      throw new Error(`${maker} not found`);
+    return await makerFunc.apply();
+  } catch (e: any) {
+    grok.shell.warning(`The viewers hook of ${func.friendlyName || func.name} failed, so it isn't applied: ` +
+      `${e?.message ?? e}`);
+    return undefined;
+  }
+}
 
 export const getFeature = (features: Record<string, boolean> | string[], featureName: string, defaultValue: boolean) => {
   if (features instanceof Array)

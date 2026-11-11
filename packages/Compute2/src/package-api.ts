@@ -123,6 +123,10 @@ export namespace funcs {
     return await grok.functions.call('Compute2:FormTestApp', {});
   }
 
+  export async function failingViewersHookMaker(): Promise<any> {
+    return await grok.functions.call('Compute2:FailingViewersHookMaker', {});
+  }
+
   export async function slowViewersHookMaker(): Promise<any> {
     return await grok.functions.call('Compute2:SlowViewersHookMaker', {});
   }

@@ -12,7 +12,7 @@ import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RFVApp} from './apps/RFVApp';
 import {provideDgViewService} from '@datagrok-libraries/webcomponents-vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
-import type {PipelineConfiguration, ViewersHook} from
+import type {PipelineConfiguration} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
 import './tailwind.css';
@@ -28,8 +28,7 @@ import type {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
-import {CUSTOM_VIEW_OPTION} from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {loadViewersHook} from './run-exports';
+import {CUSTOM_VIEW_OPTION, loadViewersHook} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {callExcelReport} from './components/TreeWizard/tree-export';
 import type {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import type {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
@@ -188,12 +187,7 @@ export class PackageFunctions {
     const view = DG.toJs(DG.toDart(new DG.ViewBase())) as DG.View;
     setViewHierarchyData(call, view);
 
-    let viewersHook: ViewersHook | undefined;
-    try {
-      viewersHook = await loadViewersHook(call.func);
-    } catch (e: any) {
-      grok.shell.error(e);
-    }
+    const viewersHook = await loadViewersHook(call.func);
 
     const app = Vue.createApp(RFVApp,
       {funcCall: Vue.markRaw(call), initialRunId: call.aux.initialRunId, viewersHook});
@@ -425,6 +419,12 @@ export class PackageFunctions {
     app.mount(view.root);
     view.name = 'FormTestApp';
     grok.shell.addView(view);
+  }
+
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'hook'}]})
+  static async FailingViewersHookMaker() {
+    throw new Error('broken hook');
   }
 
 

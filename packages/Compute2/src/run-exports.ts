@@ -73,11 +73,6 @@ export async function exportCall(
   return fileOf(`${call.func.nqName} - ${Utils.getStartedOrNull(call) ?? 'Not completed'}.xlsx`, blob);
 }
 
-export async function loadViewersHook(func: DG.Func): Promise<ViewersHook | undefined> {
-  const maker = Utils.getViewersHook(func);
-  return maker ? DG.Func.byName(maker).apply() : undefined;
-}
-
 /** The exports of a workflow, in the menu's order: the first is the default. */
 export const workflowExports = (node: {disableDefaultExport?: boolean, customExports?: CustomExport[]}) => [
   ...(node.disableDefaultExport ? [] : [DEFAULT_EXPORT_OPTION]),

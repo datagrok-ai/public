@@ -135,6 +135,11 @@ export async function FormTestApp() : Promise<void> {
 }
 
 //output: object hook
+export async function FailingViewersHookMaker() {
+  return await PackageFunctions.FailingViewersHookMaker();
+}
+
+//output: object hook
 export async function SlowViewersHookMaker() {
   return await PackageFunctions.SlowViewersHookMaker();
 }
