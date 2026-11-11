@@ -93,13 +93,19 @@ category('AI: Viewers: ScatterPlot extras', () => {
     expect(DG.Color.a(c.props.filteredRowsColor), 127);
   });
 
-  test('the opacity and transparencies are not viewer properties', async () => {
+  test('transparencies are not viewer properties; markerOpacity is a hidden marker color alpha', async () => {
     const c = v();
-    for (const removed of ['markerOpacity', 'regressionLineTransparency', 'movingAverageLineTransparency'])
+    for (const removed of ['regressionLineTransparency', 'movingAverageLineTransparency'])
       expect(removed in c.props, false);
     await expectExceptionAsync(async () => {
-      Reflect.set(c.props, 'markerOpacity', 40);
+      Reflect.set(c.props, 'regressionLineTransparency', 0.5);
     });
+    Reflect.set(c.props, 'markerOpacity', 40);
+    for (const color of markerColors)
+      expect(DG.Color.a(c.props[color]), 102);
+    expect(Reflect.get(c.props, 'markerOpacity'), 40);
+    expect(c.getProperties().find((p) => p.name === 'markerOpacity')?.userEditable, false);
+    expect('markerOpacity' in look(c), false);
   });
 
   test('zero opacity keeps alpha 1: alpha 0 means a color written without alpha', async () => {
