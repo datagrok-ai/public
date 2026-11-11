@@ -149,7 +149,8 @@ export async function savePlan(p: SavedPlan): Promise<string> {
   const path = planPath(p.name);
   const text = textOf(p);
   await grok.dapi.files.writeAsText(path, text);
-  await indexSaved(path, text).catch(() => {}); // (the next listing reads a file its row is missing for)
+  // not waited for: the plan is saved; a row lost here is read from its file at the next listing
+  void indexSaved(path, text).catch(() => {});
   return path;
 }
 

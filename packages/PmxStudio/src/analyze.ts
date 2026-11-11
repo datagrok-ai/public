@@ -311,8 +311,9 @@ async function stagedTwin(window: Window, params: {[k: string]: any}): Promise<T
  *  the staged twin on the workers. */
 async function fastTwin(window: Window, params: {[k: string]: any}): Promise<Twins> {
   if (await gpu()) {
-    // after the warm-up: the call then finds its set free and warm, and opens no other (cold) one
-    await warmTwin().catch(() => null);
+    // after the warm-up: the call then finds its set free and warm, and opens no other (cold) one; at most 5 s (a
+    // warm-up that hangs only leaves the twin slower)
+    await Promise.race([warmTwin().catch(() => null), new Promise((r) => setTimeout(r, 5000))]);
     try {
       const r = await crux('stats.tumor_twin', window, {...params, device: 'webgpu'});
       return {twins: rows(r.main as any), effects: named(r, 'effects'), checks: named(r, 'checks')};

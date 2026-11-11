@@ -88,13 +88,16 @@ export interface LibraryFiles {
  *  was saved (its date is the listing's, taken at the next one). */
 type Index = {[file: string]: Omit<LibraryEntry, 'file' | 'text' | 'updated'> & {updated: number | null}};
 
-/** The index file's format: another (or none) is rebuilt. */
+/** The index file's format: another (or none) is rebuilt. Any change to entryOf or LibraryEntry raises it. */
 const INDEX_VERSION = 1;
 export const indexPath = () => `${grok.shell.user.project.name}:Home/PMX Studio/library-index.json`;
 const readIndex = (fs: LibraryFiles): Promise<Index> => fs.readAsText(indexPath()).then((t) => {
   const x = JSON.parse(t);
-  return x?.version === INDEX_VERSION && x.rows && typeof x.rows === 'object' ? x.rows : {};
+  return x?.version === INDEX_VERSION && x.rows && typeof x.rows === 'object' && !Array.isArray(x.rows) ? x.rows : {};
 }).catch(() => ({}));
+/** A row as entryOf writes it (one that is not is read again from its file). */
+const rowOk = (r: any): boolean => !!r && typeof r === 'object' && typeof r.name === 'string' &&
+  typeof r.id === 'string' && Array.isArray(r.tags) && (r.updated === null || typeof r.updated === 'number');
 const writeIndex = (fs: LibraryFiles, rows: Index) =>
   fs.writeAsText(indexPath(), JSON.stringify({version: INDEX_VERSION, rows}));
 const rowOf = (e: LibraryEntry, updated: number | null): Index[string] => {
@@ -117,15 +120,22 @@ export async function indexSaved(path: string, text: string, fs: LibraryFiles = 
  *  has no row for, or an older one (saved before the index, or changed outside the app), is read once and its row
  *  kept. No study is read otherwise, and nothing is computed. */
 export async function myLibrary(fs: LibraryFiles = grok.dapi.files): Promise<LibraryEntry[]> {
-  const [plans, studies, index] = await Promise.all([
-    fs.list(plansFolder(), false, PLAN_EXT).catch(() => [] as DG.FileInfo[]),
-    fs.list(studiesFolder(), false, STUDY_EXT).catch(() => [] as DG.FileInfo[]), readIndex(fs)]);
+  // a folder that fails to list (a passing failure) lists nothing, and then no row is dropped
+  let listed = true;
+  const list = (folder: string, ext: string) => fs.list(folder, false, ext).catch(() => {
+    listed = false;
+    return [] as DG.FileInfo[];
+  });
+  const [plans, studies, index] = await Promise.all([list(plansFolder(), PLAN_EXT), list(studiesFolder(), STUDY_EXT),
+    readIndex(fs)]);
   const files = [...plans, ...studies];
   let changed = false;
   const entries = await Promise.all(files.map(async (f) => {
+    // (a file with no date is read every time: a change to it could not be seen)
+    const dated = f.updatedOn !== null && f.updatedOn !== undefined;
     const updated = f.updatedOn?.valueOf() ?? 0;
     const row = index[f.fileName];
-    if (row && (row.updated === null || row.updated >= updated)) {
+    if (dated && rowOk(row) && (row.updated === null || row.updated >= updated)) {
       if (row.updated === null) {
         row.updated = updated;
         changed = true;
@@ -133,16 +143,16 @@ export async function myLibrary(fs: LibraryFiles = grok.dapi.files): Promise<Lib
       return {...row, updated, file: f, text: ''} as LibraryEntry;
     }
     const e = await fs.readAsText(f).then((text) => entryOf(text, updated, f), () => null);
-    if (e) {
+    if (e && dated) {
       index[f.fileName] = rowOf(e, updated);
       changed = true;
     }
     return e && {...e, text: ''};
   }));
-  // rows of files no longer there leave the index
+  // rows of files no longer there leave the index (when both folders listed)
   const names = new Set(files.map((f) => f.fileName));
   for (const name of Object.keys(index)) {
-    if (!names.has(name)) {
+    if (listed && !names.has(name)) {
       delete index[name];
       changed = true;
     }

@@ -233,6 +233,7 @@ export async function saveStudy(s: SavedStudy): Promise<string> {
     throw new Error(`Another study (${other}) is saved as "${s.name}": rename this one to save it`);
   const text = JSON.stringify(s, null, 2);
   await grok.dapi.files.writeAsText(path, text);
-  await indexSaved(path, text).catch(() => {}); // (the next listing reads a file its row is missing for)
+  // not waited for: the study is saved; a row lost here is read from its file at the next listing
+  void indexSaved(path, text).catch(() => {});
   return path;
 }

@@ -77,19 +77,29 @@ category('Hub', () => {
       'b.pmxplan': {text: JSON.stringify({...plan, name: 'Plan B', study: undefined}), updated: 1}};
     const store = new Map<string, string>();
     let reads = 0;
+    let [writable, listable] = [true, true];
     const fs: LibraryFiles = {
-      list: async (_folder, _recursive, ext) => ext !== 'pmxplan' ? [] : Object.entries(files)
-        .map(([fileName, f]) => ({fileName, fullPath: fileName, updatedOn: {valueOf: () => f.updated}}) as any),
+      list: async (_folder, _recursive, ext) => {
+        if (!listable)
+          throw new Error('not now');
+        return ext !== 'pmxplan' ? [] : Object.entries(files)
+          .map(([fileName, f]) => ({fileName, fullPath: fileName, updatedOn: {valueOf: () => f.updated}}) as any);
+      },
+      // the index from the store; any study's file, by its info or by its path, counts as a read
       readAsText: async (f) => {
-        if (typeof f === 'string') {
+        if (f === indexPath()) {
           if (!store.has(f))
             throw new Error('no file');
           return store.get(f)!;
         }
         reads++;
-        return files[f.fileName].text;
+        return files[typeof f === 'string' ? f.split('/').pop()! : f.fileName].text;
       },
-      writeAsText: async (path, text) => void store.set(path, text),
+      writeAsText: async (path, text) => {
+        if (!writable)
+          throw new Error('read only');
+        store.set(path, text);
+      },
     };
     const rows = (es: {name: string, line: string, end: number | null}[]) =>
       es.map((e) => `${e.name}|${e.line}|${e.end}`).sort().join();
@@ -103,16 +113,36 @@ category('Hub', () => {
     await myLibrary(fs);
     expect(reads, 1);
     reads = 0;
-    // saved by the app: its row written as it is saved, the file not read to list it
+    // saved by the app: its row written as it is saved, the file not read to list it, then or after
     files['c.pmxplan'] = {text: JSON.stringify({...plan, name: 'Plan C', study: undefined}), updated: 3};
     await indexSaved('home:Home/PMX Studio/plans/c.pmxplan', files['c.pmxplan'].text, fs);
     expect((await myLibrary(fs)).length, 3);
+    expect((await myLibrary(fs)).length, 3);
     expect(reads, 0, 'a plan saved by the app was read to list it');
-    // a damaged index is rebuilt from the files
-    store.set(indexPath(), '{"version": 1, "rows": [');
-    expect(rows(await myLibrary(fs)).split(',').length, 3);
-    expect(reads, 3);
-    expect(JSON.parse(store.get(indexPath())!).version, 1);
+    // a folder that fails to list drops no row
+    listable = false;
+    await myLibrary(fs);
+    listable = true;
+    expect(Object.keys(JSON.parse(store.get(indexPath())!).rows).length, 3, 'rows dropped on a failed listing');
+    // a deleted file's row leaves the index
+    delete files['c.pmxplan'];
+    expect((await myLibrary(fs)).length, 2);
+    expect(Object.keys(JSON.parse(store.get(indexPath())!).rows).join(), 'a.pmxplan,b.pmxplan');
+    // a damaged index, or one of another version, is rebuilt from the files
+    for (const damaged of ['{"version": 1, "rows": [', '{"version": 1, "rows": []}', '{"version": 2, "rows": {}}',
+      JSON.stringify({version: 1, rows: {'a.pmxplan': {name: 'Plan A'}, 'b.pmxplan': {name: 'Plan B'}}})]) {
+      store.set(indexPath(), damaged);
+      reads = 0;
+      expect(rows(await myLibrary(fs)), rows(first), damaged);
+      expect(reads, 2, damaged);
+      expect(JSON.parse(store.get(indexPath())!).version, 1);
+    }
+    // an index that cannot be written: the list is read as before
+    store.clear();
+    writable = false;
+    reads = 0;
+    expect(rows(await myLibrary(fs)), rows(first));
+    expect(reads, 2);
   });
 
   test('the app opens on its home without the engine: no calculation, no workers', async () => {
@@ -122,6 +152,7 @@ category('Hub', () => {
       seen = cruxCalls();
       await delay(500);
     }
+    expect(cruxCalls() === seen, true, 'earlier engine calls never settled');
     const before = cruxCalls();
     // through the app's own function: what it starts beside the home counts too
     const root = (await PackageFunctions.pmxStudioApp()).root;
