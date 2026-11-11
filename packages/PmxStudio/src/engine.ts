@@ -323,10 +323,13 @@ function armCallParams(d: StudyDeclaration, arm: ArmDeclaration, model: Row): Ro
     responders: a.responders};
 }
 
+/** The share of studies whose controls may level off below the endpoint before Plan warns of it. */
+export const ENDPOINT_RISK = 0.02;
+
 /** The highest round endpoint below the declared one (50 mm³ steps, from 90 % of it down to 40 %) at which the
  *  controls of at most `limit` of the studies level off before reaching it; null: none. The share is the control's,
  *  whatever the arm: one call per candidate, the first arm's at a given n (no n search, no shards), in parallel. */
-export async function safeEndpoint(d: StudyDeclaration, limit = 0.02): Promise<number | null> {
+export async function safeEndpoint(d: StudyDeclaration, limit = ENDPOINT_RISK): Promise<number | null> {
   const step = 50;
   const xs = [...new Set([0.9, 0.8, 0.7, 0.6, 0.5, 0.4].map((f) => Math.floor(d.endpoint * f / step) * step))]
     .filter((x) => x > d.vRand && x < d.endpoint);
@@ -473,7 +476,7 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
       'removed before the median reaches it. Lower the endpoint');
   }
   const pNot = first['p_not_reached'];
-  if (pNot > 0.02) {
+  if (pNot > ENDPOINT_RISK) {
     notes.growth.push(`In ${Math.round(pNot * 100)}% of studies like this one the controls level off below ` +
       `${d.endpoint} mm³: a lower endpoint is safer`);
   }

@@ -8,8 +8,7 @@ import * as DG from 'datagrok-api/dg';
 import {BoolInput, buttonWithIcon, computed, Control, div, divH, Form, iconButton, Input, InputOptions, Menu,
   NumberInput, ReadonlySignal, Reason, Signal, signal, span, TextInput} from '@datagrok-libraries/u2';
 import {THERAPIES, Therapy} from './archetypes';
-import {describeArm, parseArmName, therapyOf} from './arm-name';
-import type {ModelClass} from './line-input';
+import {describeArm, moreVariable, parseArmName, therapyOf} from './arm-name';
 import {contextHint, hintLink} from './ui';
 
 /** `therapySource`: "name", Plan reads the kind from the name (and the host); "user", the one chosen (a table
@@ -25,18 +24,27 @@ const newArm = (k: number): Arm => ({name: `Treatment ${k}`, therapy: 'small_mol
 
 /** The kinds of treatment in plain words. */
 export const KIND_WORDS: {[t in Therapy]: string} = {
-  small_molecule: 'small molecule', biologic: 'biologic (antibody, ADC)',
-  immunotherapy: 'immunotherapy (antibody, protein)', immune_agonist: 'small molecule acting through the immune system',
-  cell_therapy: 'cell therapy', vaccine_peptide: 'vaccine or peptide', oligo_rna: 'oligonucleotide or RNA',
+  small_molecule: 'small molecule', biologic: 'antibody acting on the tumor',
+  immunotherapy: 'antibody or protein acting through the immune system',
+  immune_agonist: 'small molecule acting through the immune system', cell_therapy: 'cell therapy',
+  vaccine_peptide: 'vaccine', oligo_rna: 'RNA drug',
 };
 
-/** The kind of treatment Plan takes for an arm named `name` on a model of class `host`: the one its name says; else,
- *  in immunocompetent mice, a small molecule acting through the immune system (as 211 of the 310 single small
- *  molecules curated in the atlas's syngeneic lines, and the cautious n), in immunodeficient ones a small molecule.
- *  `known` false: the name does not say (in a syngeneic model the card then asks how it acts). */
-export function therapyFor(name: string, host: ModelClass | null): {therapy: Therapy, known: boolean} {
+/** Whether mice of this host class may answer through their immune system: all but immunodeficient ones, and the
+ *  unknown host too (no line chosen yet, the atlas still loading), the cautious n. */
+export const immuneHost = (host: string | null) => host !== 'immunodeficient';
+
+/** The kind of treatment Plan takes for an arm named `name` on a model whose host class is `host`: the one its name
+ *  says. A drug it does not place is, in mice that may answer through the immune system, a small molecule acting
+ *  through it (as 211 of the 310 single small molecules curated in the atlas's syngeneic lines, and the cautious n),
+ *  else a small molecule; a combination takes the more variable of that and its placed drugs. `known` false: the name
+ *  does not place every drug (with an immune host the card then asks how the rest acts). */
+export function therapyFor(name: string, host: string | null): {therapy: Therapy, known: boolean,
+  placed: Therapy | null} {
   const r = therapyOf(name);
-  return r.known ? r : {therapy: host === 'syngeneic' ? 'immune_agonist' : 'small_molecule', known: false};
+  if (r.known || !immuneHost(host))
+    return r;
+  return {...r, therapy: r.placed ? moreVariable(r.placed, 'immune_agonist') : 'immune_agonist'};
 }
 
 /** The arms as the table pmxPlanStudy takes: name, therapy, metric, effect (percent), and where the therapy came
@@ -68,7 +76,7 @@ export function armsOf(value: DG.DataFrame | null | undefined, fallback = true):
 }
 
 /** What the arms take from the study: the tumor model's class and whether effects are TGI or T/C. */
-interface StudyContext {host: ReadonlySignal<ModelClass | null>, metric: ReadonlySignal<'TGI' | 'TC'>}
+interface StudyContext {host: ReadonlySignal<string | null>, metric: ReadonlySignal<'TGI' | 'TC'>}
 
 /** One arm's card: its fields write through `onChange`; its control is disposed when the arm is removed. */
 class ArmCard extends Control {
@@ -118,16 +126,20 @@ class ArmCard extends Control {
           return [...said, kindLink(therapy.value, 'Chosen by you: click to change')];
         if (read.value.known)
           return [...said, kindLink(therapy.value, 'Read from the name: click to change')];
-        if (study.host.value === 'syngeneic') {
-          // the one question that changes the animals: how a compound the name does not place acts
+        if (immuneHost(study.host.value)) {
+          // the one question that changes the animals: how a compound the name does not place acts (with the drugs
+          // it places, in a combination)
           const way = (label: string, t: Therapy) => {
-            const l = hintLink(label, () => pick(t), 'The name does not say. Most small molecules tested in ' +
+            const taken = read.value.placed ? moreVariable(read.value.placed, t) : t;
+            const l = hintLink(label, () => pick(taken), 'The name does not say. Most small molecules tested in ' +
               'syngeneic models act through the immune system, and they need more animals: Plan assumes that until ' +
               'you say');
-            l.style.fontWeight = therapy.value === t ? '600' : '';
+            l.classList.toggle('pmx-hint-current', therapy.value === taken);
             return l;
           };
-          return [...said, 'Small molecule · works on the tumor ', way('directly', 'small_molecule'), ' / ',
+          const what = read.value.placed ? 'One drug not recognized · it works on the tumor ' :
+            'Small molecule · works on the tumor ';
+          return [...said, what, way('directly', 'small_molecule'), ' / ',
             way('through the immune system', 'immune_agonist')];
         }
         return [...said, 'Drug type not recognized: treated as a ',
@@ -151,8 +163,8 @@ class ArmCard extends Control {
 }
 
 export interface ArmsInputOptions extends InputOptions<DG.DataFrame | null> {
-  /** the tumor model's class (syngeneic, cdx, pdx; null: none chosen) */
-  host?: ReadonlySignal<ModelClass | null>;
+  /** the tumor model's host class (immunocompetent, immunodeficient; null: none chosen or not loaded yet) */
+  host?: ReadonlySignal<string | null>;
   /** TGI or T/C, the study's */
   metric?: ReadonlySignal<'TGI' | 'TC'>;
 }

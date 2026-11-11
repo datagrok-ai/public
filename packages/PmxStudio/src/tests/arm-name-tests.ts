@@ -22,6 +22,11 @@ category('Arm names', () => {
     expect(parseArmName('Cpd-Y + isotype IgG').length, 1);
     expect(parseArmName('Cpd-Y 20 ug i.t. + 8 Gy')[1].key, 'radiation');
     expect(parseArmName('anti-PD-1 in Rag1-/- hosts')[0].drug, 'anti-PD-1');
+    // the X1 of a compound's name is not a repeat count; the + after CD8 joins when another antibody follows
+    expect(parseArmName('Cpd-X1 5 mg/kg')[0].drug, 'Cpd-X1');
+    expect(parseArmName('Cpd-X1 5 mg/kg x3')[0].schedule, 'x3');
+    expect(findCombinations(['Cpd-X1', 'Cpd-X2', 'Cpd-X1 + Cpd-X2']).length, 1);
+    expect(parseArmName('anti-CD8+anti-PD-1').map((p) => p.drug).join(), 'anti-CD8,anti-PD-1');
   });
 
   test('an arm is the combination of two others whatever their doses and spellings', async () => {
@@ -69,8 +74,13 @@ category('Arm names', () => {
     expect(kind('Cpd-X kinase inhibitor 30 mg/kg p.o.'), 'unknown', 'a small molecule; how it acts, not said');
     expect(kind('Cpd-X 5 mg/kg'), 'unknown', 'a code: small molecule, and the app says it could not tell');
     expect(therapyOf('Cpd-X 5 mg/kg').therapy, 'small_molecule');
-    // a combination takes its most variable drug
+    // a combination takes its most variable drug; one drug not placed leaves it not known, with the placed one's kind
     expect(kind('cisplatin 5 mg/kg + anti-PD-1'), 'immunotherapy');
+    expect(kind('Cpd-X + cisplatin'), 'unknown');
+    expect(therapyOf('Cpd-X + anti-PD-1').placed, 'immunotherapy');
+    // whole words: "STING", and a "si" code with its number
+    expect(kind('Cpd-X testing dose'), 'unknown');
+    expect(kind('single dose 5 mg/kg'), 'unknown');
   });
 });
 
@@ -78,7 +88,7 @@ category('Arm cards', () => {
   test('the name is the title; the kind read from it, asked in a syngeneic model; TGI or T/C set once', async () => {
     const root = Scope.root('arm cards test');
     try {
-      const host = signal<'syngeneic' | 'cdx' | 'pdx' | null>('syngeneic');
+      const host = signal<string | null>('immunocompetent');
       const metric = signal<'TGI' | 'TC'>('TGI');
       const input = root.build(() => new ArmsInput({host, metric}));
       // in the document: a link outside it does not get clicks
@@ -93,7 +103,7 @@ category('Arm cards', () => {
       expect((cards[0].querySelector('.pmx-arm-title input') as HTMLInputElement).value, 'anti-PD-1 10 mg/kg');
       expect(cards[0].textContent!.includes('Arm 1'), false, 'no "Arm 1" over the name');
       expect(therapy(0), 'immunotherapy', 'read from the name');
-      expect(grey(cards[0]).textContent!.includes('immunotherapy'), true);
+      expect(grey(cards[0]).textContent!.includes('antibody or protein'), true);
       // a code in a syngeneic model: the question, through the immune system until answered
       expect(therapy(1), 'immune_agonist');
       expect(grey(cards[1]).textContent!.includes('works on the tumor'), true);
@@ -109,7 +119,7 @@ category('Arm cards', () => {
       expect(armsOf(input.value).map((a) => a.metric).join(), 'TC,TC');
       expect(cards[0].textContent!.includes('Expected T/C'), true);
       // in immunodeficient mice the code is a small molecule, said, not asked (the answer above stays the user's)
-      host.value = 'cdx';
+      host.value = 'immunodeficient';
       input.value = armsFrame([{name: 'Cpd-Y 5 mg/kg', therapy: 'immune_agonist', metric: 'TGI', effect: 50,
         therapySource: 'name'}]);
       await delay(50);
@@ -122,6 +132,47 @@ category('Arm cards', () => {
         DG.Column.fromFloat64Array('effect', Float64Array.from([50]))]);
       await delay(50);
       expect(therapy(0), 'cell_therapy');
+    } finally {
+      root.dispose();
+      document.querySelectorAll('[data-u2=pmx-arms-input]').forEach((e) => e.remove());
+    }
+  });
+
+  test('the answer the user gave outlives a new model and name; the reading follows the model', async () => {
+    const root = Scope.root('arm cards precedence test');
+    try {
+      const host = signal<string | null>(null);
+      const input = root.build(() => new ArmsInput({host}));
+      document.body.append(input.root);
+      input.value = armsFrame(['Cpd-X 5 mg/kg', 'Cpd-Y', 'Cpd-Z + cisplatin'].map((name) =>
+        ({name, therapy: 'small_molecule' as const, metric: 'TGI' as const, effect: 50,
+          therapySource: 'name' as const})));
+      await delay(50);
+      const cards = [...input.root.querySelectorAll<HTMLElement>('.pmx-arm')];
+      const grey = (c: HTMLElement) => c.querySelector<HTMLElement>('[data-pmx=understood]')!;
+      const therapy = (i: number) => armsOf(input.value)[i].therapy;
+      // no model yet (or the atlas loading): the cautious reading, and the question
+      expect(therapy(1), 'immune_agonist', 'no host: through the immune system');
+      // a combination with a drug not placed: the immune default for it, and the question
+      expect(therapy(2), 'immune_agonist');
+      expect(grey(cards[2]).textContent!.includes('works on the tumor'), true);
+      [...grey(cards[0]).querySelectorAll<HTMLElement>('.pmx-hint-link')].find((e) => e.textContent === 'directly')!
+        .click();
+      await delay(50);
+      host.value = 'immunodeficient';
+      await delay(50);
+      // the same cards, read again for the new model; the answer stays the user's
+      expect(input.root.querySelectorAll('.pmx-arm')[1] === cards[1], true, 'the card is not rebuilt');
+      expect(therapy(1), 'small_molecule', 'read again: immunodeficient');
+      expect(therapy(0), 'small_molecule');
+      host.value = 'immunocompetent';
+      const title = cards[0].querySelector<HTMLInputElement>('.pmx-arm-title input')!;
+      title.value = 'Cpd-X 10 mg/kg';
+      title.dispatchEvent(new Event('input', {bubbles: true}));
+      await delay(50);
+      expect(therapy(0), 'small_molecule', 'the answer the user gave through a new model and a new name');
+      expect(armsOf(input.value)[0].therapySource, 'user');
+      expect(therapy(1), 'immune_agonist', 'read again: immunocompetent');
     } finally {
       root.dispose();
       document.querySelectorAll('[data-u2=pmx-arms-input]').forEach((e) => e.remove());

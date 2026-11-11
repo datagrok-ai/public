@@ -13,15 +13,17 @@ const DOSE = new RegExp('(\\d+(?:[.,]\\d+)?(?:\\s*[x×]\\s*10\\^?\\d+|e\\d+)?)\\
   '(?![a-z])', 'i');
 const SCHEDULE = new RegExp('\\b(?:q\\d+(?:d|h|w)(?:\\s*[x×]\\s*\\d+)?|qd|bid|tid|qod|qw|biw|tiw|' +
   '(?:once|twice|three times|\\d+ times) (?:a |per )?(?:day|daily|week|weekly)|daily|weekly|every (?:other|\\d+) ' +
-  '(?:day|days|week|weeks)|[x×]\\s*\\d+(?:\\s*doses)?|\\d+\\s*doses)(?![a-z])', 'i');
+  '(?:day|days|week|weeks)|(?<![a-z-])[x×]\\s*\\d+(?:\\s*doses)?|\\d+\\s*doses)(?![a-z])', 'i');
 const ROUTE = new RegExp('(?:^|[\\s,;])(i\\.?p\\.?|i\\.?v\\.?|p\\.?o\\.?|s\\.?c\\.?|s\\.?q\\.?|i\\.?t\\.?|' +
   'i\\.?g\\.?|i\\.?m\\.?|oral(?:ly)?|intratumou?ral(?:ly)?|intraperitoneal(?:ly)?|intravenous(?:ly)?|' +
   'subcutaneous(?:ly)?|gavage|peritumou?ral(?:ly)?)(?=$|[\\s,;])', 'i');
 const ROUTES: [RegExp, string][] = [[/^i\.?p|intraperit/i, 'i.p.'], [/^i\.?v|intraven/i, 'i.v.'],
   [/^p\.?o|oral|gavage|^i\.?g/i, 'p.o.'], [/^s\.?[cq]|subcut/i, 's.c.'], [/^i\.?t|intratum|peritum/i, 'i.t.'],
   [/^i\.?m/i, 'i.m.']];
-// what joins two treatments in a name ("and" / "with" only between spaces; the + of "CD8+ T cells" does not)
-const JOIN = /(?<!\bcd\d{1,3})\s*\+\s*|\s+plus\s+|\s+and\s+|\s+with\s+|\s*;\s*|\s+&\s+/i;
+// what joins two treatments in a name ("and" / "with" only between spaces; the + of "CD8+ T cells" does not, that
+// of "anti-CD8+anti-PD-1" does). In SCHEDULE a repeat count ("x3") is a word of its own, not the X1 of "Cpd-X1".
+const JOIN =
+  /(?<!\bcd\d{1,3})\s*\+\s*|(?<=\bcd\d{1,3})\+\s*(?=anti|α)|\s+plus\s+|\s+and\s+|\s+with\s+|\s*;\s*|\s+&\s+/i;
 // words that are not a drug: the dose's companions
 const FILLER = new RegExp('\\b(?:each|both|alone|monotherapy|treatment|combination|combo|at|of|per|doses?|dosed|' +
   'then|supplementation|administration|injection|treated|given)\\b', 'gi');
@@ -155,8 +157,9 @@ const THERAPY_RULES: [Therapy, RegExp][] = [
   ['vaccine_peptide', /vaccin|neoantigen|neo-antigen|peptide|gvax|\bdcs?\b.*pulsed|pulsed.*\bdcs?\b/],
   ['cell_therapy', any(/\bcar[- ]?(?:t|nk|m)\b|\b(?:t|nk|til|cik|cd8\+?|cd4\+?|car)[- ]?cells?\b|adoptive|\btils?\b/,
     /ot-?i+\b|pmel|splenocytes|macrophages?\b|\bcell therapy/)],
-  ['oligo_rna', /sirna|\bsi-?[a-z]*\d|mrna|\basos?\b|antisense|oligonucleotide|\bmir-?\d|antagomir|aptamer/],
-  ['immune_agonist', any(/sting|cgamp|\bcdn|adu-?s100|dmxaa|msa-?2|diabzi|\btlr\d*|r848|resiquimod|imiquimod|cpg/,
+  // (a code that starts "si" and a digit reads as an oligo, "STING" only as a word: both lean to more animals)
+  ['oligo_rna', /sirna|\bsi-?[a-z]{0,6}\d|mrna|\basos?\b|antisense|oligonucleotide|\bmir-?\d|antagomir|aptamer/],
+  ['immune_agonist', any(/\bsting\b|cgamp|\bcdn|adu-?s100|dmxaa|msa-?2|diabzi|\btlr\d*|r848|resiquimod|imiquimod|cpg/,
     /poly ?\(?i:c|polyic|epacadostat|indoximod|\bido\d?\b/)],
   ['biologic', any(/\badcs?\b|vedotin|deruxtecan|\bt-?dxd\b|\bt-?dm1\b|emtansine|govitecan|mmae|ozogamicin/,
     /trastuzumab|cetuximab|bevacizumab|panitumumab|pertuzumab|zanidatamab|ramucirumab|necitumumab|amivantamab|dc101/,
@@ -174,18 +177,23 @@ const THERAPY_RULES: [Therapy, RegExp][] = [
     /metformin|rapamycin|everolimus|tamoxifen/)],
 ];
 
-/** The kind of treatment an arm's name says, per drug: its own words first, then the whole name (a comment in
- *  brackets, a route); a combination takes its drugs' most variable kind (the cautious n). `known` false: no rule read
- *  it, small molecule by default. */
-export function therapyOf(name: string): {therapy: Therapy, known: boolean} {
+/** The more variable of two kinds of treatment (the one that asks for more animals). */
+export function moreVariable(a: Therapy, b: Therapy): Therapy {
+  return ARCHETYPES[b].kappaSd > ARCHETYPES[a].kappaSd ? b : a;
+}
+
+/** The kind of treatment an arm's name says. One drug: its own words, else the whole name (a comment in brackets, a
+ *  route). A combination: each drug's own words, and the most variable kind (the cautious n). `placed`: that kind
+ *  among the drugs the rules place, null if none; `known`: every drug placed. Not known, `therapy` is `placed` or a
+ *  small molecule, and the caller decides the rest (arms-input's therapyFor). */
+export function therapyOf(name: string): {therapy: Therapy, known: boolean, placed: Therapy | null} {
   const parts = parseArmName(name);
   // a dose in cells is a cell therapy whatever the cells are called
   const own = (p: ArmPart) => kindOf(p.dose?.unit === 'cells' ? `${p.drug} cells` : p.drug);
   const kinds = parts.length > 1 ? parts.map(own) : [(parts[0] && own(parts[0])) ?? kindOf(name)];
-  const known = kinds.filter((k): k is Therapy => k !== null);
-  if (!known.length)
-    return {therapy: 'small_molecule', known: false};
-  return {therapy: known.reduce((a, b) => ARCHETYPES[b].kappaSd > ARCHETYPES[a].kappaSd ? b : a), known: true};
+  const found = kinds.filter((k): k is Therapy => k !== null);
+  const placed = found.length ? found.reduce(moreVariable) : null;
+  return {therapy: placed ?? 'small_molecule', known: placed !== null && found.length === kinds.length, placed};
 }
 
 function kindOf(text: string): Therapy | null {

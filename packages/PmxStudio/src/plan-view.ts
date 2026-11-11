@@ -15,7 +15,7 @@ import type {ViewContent} from '@datagrok-libraries/u2/dg';
 import {PlanFrames, PlanInputs, WEEKDAY_NAMES, armColors, declarationOf, planFrames, tgisOf, weekdaysOf,
   weekdaysText} from './frames';
 import {Arm, ArmsInput, CorrectionInput, armsFrame} from './arms-input';
-import {MIN_GROUP, diameterOf, finite, safeEndpoint} from './engine';
+import {ENDPOINT_RISK, MIN_GROUP, StudyDeclaration, diameterOf, finite, safeEndpoint} from './engine';
 import {askedOf, autoRun, callInputs, cardGrid, copyRow, hintLink, infoNote, notes, notesBox, num, pct, settleForm,
   sized, markStage, statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
 import {openStage, showStage} from './stages';
@@ -217,9 +217,14 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const call = DG.Func.byName('PmxStudio:pmxPlanStudy').prepare();
   // the engine itself on the form's inputs (with `extra` over them), not the registered function's FuncCall (see
   // callInputs); a wrong field rejects, as the call did
-  const designed = (extra: object = {}) => Promise.resolve().then(() => {
+  // each plan's declaration, for what is computed from it after it shows (the endpoint offered)
+  const declared = new WeakMap<PlanFrames, StudyDeclaration>();
+  const designed = (extra: object = {}) => Promise.resolve().then(async () => {
     const x = callInputs<PlanInputs & {tgiScenarios?: string | null}>(call, extra);
-    return planFrames(declarationOf(x), tgisOf(x.tgiScenarios));
+    const d = declarationOf(x);
+    const frames = await planFrames(d, tgisOf(x.tgiScenarios));
+    declared.set(frames, d);
+    return frames;
   });
   const result = signal<PlanFrames | undefined>(undefined);
   // the study's details (header's name, the calendar's dates, doses and notes); an ID once the plan leaves Plan
@@ -235,7 +240,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // the arms read the kind of treatment from their names and the model's host; TGI or T/C is the study's (Advanced)
   const effectAs = signal<'TGI' | 'TC'>('TGI');
   const armsInput = new ArmsInput({metric: effectAs,
-    host: computed(() => lineInput.models.value?.[lineInput.value ?? '']?.class ?? null)});
+    host: computed(() => lineInput.models.value?.[lineInput.value ?? '']?.host_class ?? null)});
   const correction = new CorrectionInput({label: 'Multiple comparisons', arms: armsInput.count});
   // a plan that no longer matches the form is dimmed until the next run
   const stale = signal(false);
@@ -435,6 +440,11 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         {meta: m, onMenu: dayMenu, onNote: addNote}));
     }
   });
+  // an offered endpoint is for the plan in view: an edit retires it
+  form.effect(() => {
+    if (stale.value)
+      growthNotes.querySelectorAll('.pmx-endpoint-offer').forEach((e) => e.remove());
+  });
   const detectable =signal<{of: PlanFrames, mde: Map<string, number | null>} | null>(null);
   const endSummary = div([], 'pmx-plan-end-summary');
   Object.assign(endSummary.style, {margin: '0 0 var(--dg-space-s)', lineHeight: '1.45'});
@@ -445,12 +455,14 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const v = (c: string) => r.plan.get(c, 0);
     groupNotes.replaceChildren(...notes(v('notes_groups')));
     growthNotes.replaceChildren(...notes(v('notes_growth')));
-    // the controls of some studies may level off below the endpoint: the warning offers the endpoint that avoids it,
-    // found behind the plan, and applies it on a click
-    if (v('p_endpoint_not_reached') > 0.02) {
-      const d = declarationOf(callInputs<PlanInputs>(call));
+    // the controls of some studies may level off below the endpoint: the warning (the engine's, same threshold) offers
+    // the endpoint that avoids it, found behind the plan for the plan's own declaration, and applies it on a click.
+    // Not with a last day fixed: there the controls are not followed to the endpoint
+    const d = declared.get(r);
+    if (d && !d.lastDay && v('p_endpoint_not_reached') > ENDPOINT_RISK) {
+      // ponytail: the calls of an offer a newer plan overtook are not cancelled, only ignored (cached by inputs)
       void safeEndpoint(d).then((x) => {
-        if (x === null || result.peek() !== r)
+        if (x === null || result.peek() !== r || stale.peek())
           return;
         const offer = div([`A ${x} mm³ endpoint avoids it: `, hintLink('use it', () => {
           const field = form.getInput('endpoint');
@@ -461,7 +473,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         }, `Sets the endpoint volume to ${x} mm³`)], 'ui-label-details pmx-endpoint-offer');
         offer.style.marginLeft = '16px';
         growthNotes.append(offer);
-      }, () => {});
+      }, () => {}); // no offer is all a failed search costs: the warning above still says to lower the endpoint
     }
 
     // the control first, then each arm: what it expects, the animals it gets and the power they give (a table built
@@ -858,7 +870,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const effects = saved && saved.effectAs === undefined && savedArms?.length ?
       {effectAs: savedArms[0].metric === 'TC' ? 'T/C' : 'TGI'} : {};
     for (const [name, value] of Object.entries(saved ? {...saved, ...effects} :
-      {arms: null, ...last ? {line: last} : {}, ...lab ? {humane: lab} : {}})) {
+      {arms: null, effectAs: 'TGI', ...last ? {line: last} : {}, ...lab ? {humane: lab} : {}})) {
       const v = name === 'arms' && value ? armsFrame(value as SavedPlan['inputs']['arms']) : value;
       const field = form.getInput(name);
       if (field)

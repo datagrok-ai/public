@@ -33,6 +33,9 @@
 }
 .pmx-head-name:not(:disabled) { cursor: pointer; text-decoration: underline dotted var(--dg-grey-4, #9aa5b1); text-underline-offset: 3px; }
 .pmx-head-name:not(:disabled):hover { color: var(--dg-accent, #2083D5); }
+.pmx-hint-link { cursor: pointer; text-decoration: underline dotted var(--dg-grey-4, #9aa5b1); text-underline-offset: 2px; }
+.pmx-hint-link:hover { color: var(--dg-accent, #2083D5); }
+.pmx-hint-current { font-weight: 600; }
 .pmx-head-name:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: 2px; border-radius: 3px; }
 .pmx-head-id:empty { display: none; }
 .pmx-head-id { flex: none; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--dg-grey-5, #717581); }

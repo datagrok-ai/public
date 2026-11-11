@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+* Plan's arms (2026-11-11): each arm's name is its card's title, and under it, in grey, what Plan reads in it (drugs,
+  dose, schedule, route) and the kind of treatment it takes, a click to change it. A name Plan cannot place says so;
+  in immunocompetent mice (or before a line is chosen) the card asks whether the compound works on the tumor directly
+  or through the immune system, and assumes the latter, which needs more animals, until answered. A combination with
+  a drug Plan cannot place asks the same for that drug. TGI or T/C is set once for the study (`effectAs`, Advanced;
+  TGI for a new plan). When the controls may level off below the endpoint, the warning offers a lower endpoint that
+  avoids it and applies it on a click.
 * Plan (2026-11-11): a line with several equally good fits (Panc02, PDX-PDAC) is designed in a fraction of the time
   (two arms: 2.7 s to 0.6 s on Panc02), the other fits sharing one design's simulated studies; the group size is
   stated as estimated by simulation, accurate to about one animal (protocol and the Analyzable header's tooltip).

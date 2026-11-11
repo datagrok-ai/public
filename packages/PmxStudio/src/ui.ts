@@ -286,7 +286,6 @@ export function contextHint(content: () => string | (string | HTMLElement)[] | n
 /** A word in a contextHint that does something on a click (opens a choice, applies a value). */
 export function hintLink(text: string, onClick: (e: MouseEvent) => void, tooltip?: string): HTMLElement {
   const a = span(text, 'pmx-hint-link');
-  Object.assign(a.style, {cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: '2px'});
   a.addEventListener('click', onClick);
   if (tooltip)
     a.title = tooltip;
