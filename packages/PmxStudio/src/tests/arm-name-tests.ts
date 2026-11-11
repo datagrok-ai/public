@@ -1,6 +1,6 @@
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {combinationHint, describeArm, findCombinations, parseArmName} from '../arm-name';
+import {combinationHint, describeArm, findCombinations, parseArmName, therapyOf} from '../arm-name';
 
 // invented names only: the curated labels the parser was measured on stay on the machine that holds them
 category('Arm names', () => {
@@ -44,5 +44,25 @@ category('Arm names', () => {
     expect(combinationHint('Cpd-Q 3 mg/kg', others, false), null);
     expect(combinationHint('Cpd-X + anti-PD-1', others, true), null, 'found: the checkbox says it');
     expect(combinationHint('Cpd-X +', ['Cpd-X'], false), null, 'one other arm: no pair to combine');
+  });
+
+  test('the kind of treatment read from the name; when in doubt, the one that asks for more animals', async () => {
+    const kind = (n: string) => { const r = therapyOf(n); return r.known ? r.therapy : 'unknown'; };
+    expect(kind('anti-PD-1 10 mg/kg i.p.'), 'immunotherapy');
+    expect(kind('aPD-L1'), 'immunotherapy');
+    expect(kind('rmIL-12 1 ug'), 'immunotherapy');
+    expect(kind('anti-Xyz1 mAb'), 'immunotherapy', 'an antibody nobody placed: the wider spread');
+    expect(kind('trastuzumab 10 mg/kg'), 'biologic');
+    expect(kind('Cpd-X ADC 3 mg/kg'), 'biologic');
+    expect(kind('Cpd-X STING agonist i.t.'), 'immune_agonist');
+    expect(kind('CAR-T 1e6 cells i.v.'), 'cell_therapy');
+    expect(kind('activated CD8+ T cells'), 'cell_therapy', 'the + of CD8+ joins nothing');
+    expect(kind('Cpd-X neoantigen vaccine'), 'vaccine_peptide');
+    expect(kind('siXyz8 5 nmol'), 'oligo_rna');
+    expect(kind('Cpd-X kinase inhibitor 30 mg/kg p.o.'), 'small_molecule');
+    expect(kind('Cpd-X 5 mg/kg'), 'unknown', 'a code: small molecule, and the app says it could not tell');
+    expect(therapyOf('Cpd-X 5 mg/kg').therapy, 'small_molecule');
+    // a combination takes its most variable drug
+    expect(kind('cisplatin 5 mg/kg + anti-PD-1'), 'immunotherapy');
   });
 });
