@@ -326,9 +326,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     if (field)
       field.value = r.value;
     call.setParamValue(name, r.value);
-    // one plan: the field's own change would plan again after its pause
-    auto.cancel();
-    void replan();
+    // one plan, now, and only with every field of the form valid (the deferred run's own gate)
+    auto.changed(0);
   };
   const settable = (el: HTMLElement, name: 'n' | 'lastDay', set: () => boolean, ask: {title: string, label: string,
     now: () => number | undefined, min: number, max: number, back: string}) => {
@@ -336,7 +335,9 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     Object.assign(el, {tabIndex: 0, role: 'button'});
     el.style.cursor = 'pointer';
     const open = () => self.show(self.build(() => {
-      const input = new NumberInput({label: ask.label, value: ask.now() ?? ask.min, min: ask.min, max: ask.max,
+      // the computed value as the start, within the field's range (a computed end past it would block OK)
+      const start = Math.min(ask.max, Math.max(ask.min, ask.now() ?? ask.min));
+      const input = new NumberInput({label: ask.label, value: start, min: ask.min, max: ask.max,
         mode: 'int', nullable: false});
       // in a form: OK waits while the number is not valid; the check again on OK, empty is not "back" here
       return new Dialog(ask.title).add(new Form().add(input)).onOK(() => {
@@ -550,8 +551,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
           if (field)
             field.value = x;
           call.setParamValue('endpoint', x);
-          auto.cancel();
-          void replan();
+          auto.changed(0);
         };
         const offer = div(x === null ?
           [`No lower endpoint avoids it: plan to end on day ${v('study_end')} even if they have not reached it`] :
