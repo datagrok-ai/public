@@ -130,8 +130,6 @@ export interface SettingsInterface {
 
   enableBetaViewers: boolean;
 
-  /** @Prop(editor: 'Beta') bool enableViewerFunctions = false; */
-
   allowWidgetsAsColumns: boolean;
 
   allowEventScripts: boolean;
