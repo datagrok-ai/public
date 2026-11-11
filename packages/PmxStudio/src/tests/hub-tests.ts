@@ -5,7 +5,7 @@ import {PLAN_TAG} from '../plan-file';
 import {cruxCalls} from '../crux';
 import {PackageFunctions} from '../package';
 import {hubView} from '../hub-view';
-import {LibraryFiles, indexPath, indexSaved, myLibrary} from '../library';
+import {LibraryFiles, indexPath, myLibrary} from '../library';
 import {bring, readFile, suggestedStage} from '../open-study';
 import {gpu} from '../gpu';
 
@@ -114,14 +114,15 @@ category('Hub', () => {
     await myLibrary(fs);
     expect(reads, 1);
     reads = 0;
-    // saved by the app: its row written as it is saved, with the file's date, the file not read to list it
+    // a new save: the next listing reads it once, dated as its file, and the one after none
     files['c.pmxplan'] = {text: JSON.stringify({...plan, name: 'Plan C', study: undefined}), updated: 3};
-    await indexSaved('home:Home/PMX Studio/plans/c.pmxplan', files['c.pmxplan'].text, fs);
-    expect(indexed()['c.pmxplan'].updated, 3, 'the saved row is not dated as its file');
     expect((await myLibrary(fs)).length, 3);
+    expect(reads, 1);
+    expect(indexed()['c.pmxplan'].updated, 3, 'the row is not dated as its file');
+    reads = 0;
     expect((await myLibrary(fs)).length, 3);
-    expect(reads, 0, 'a plan saved by the app was read to list it');
-    // saved again, and that row's write lost: the old row is older than the file, which is read
+    expect(reads, 0, 'a listed plan was read again');
+    // saved again: its row is older than the file, which is read
     files['c.pmxplan'] = {text: JSON.stringify({...plan, name: 'Plan C2', study: undefined}), updated: 4};
     expect(rows(await myLibrary(fs)).includes('Plan C2|'), true, 'an old row taken for a newer file');
     expect(reads, 1);

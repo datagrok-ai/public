@@ -9,7 +9,6 @@ import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
 import {_package} from './package';
 import {PLAN_TAG, SavedPlan, fileNameOf, parsePlan} from './plan-file';
 import {StudyMeta, metaOf, parseMeta, setMetaOn} from './study-meta';
-import {indexSaved} from './library';
 
 export const STUDY_EXT = 'pmxstudy';
 const FORMAT = 'pmx-study';
@@ -231,9 +230,6 @@ export async function saveStudy(s: SavedStudy): Promise<string> {
     await grok.dapi.files.readAsText(path).then((t) => JSON.parse(t)?.meta?.id ?? null).catch(() => null) : null;
   if (other && s.meta?.id && other !== s.meta.id)
     throw new Error(`Another study (${other}) is saved as "${s.name}": rename this one to save it`);
-  const text = JSON.stringify(s, null, 2);
-  await grok.dapi.files.writeAsText(path, text);
-  // not waited for: the study is saved; a row this misses is older than the file, which the next listing reads
-  void indexSaved(path, text);
+  await grok.dapi.files.writeAsText(path, JSON.stringify(s, null, 2)); // (its index row, now older, is read again)
   return path;
 }

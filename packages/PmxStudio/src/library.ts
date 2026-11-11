@@ -107,27 +107,6 @@ const rowOf = (e: LibraryEntry, updated: number): Index[string] => {
 };
 const dateOf = (f: DG.FileInfo) => f.updatedOn?.valueOf() ?? NaN;
 
-/** This tab's index writes, one after another (a write never starts from a picture of the index taken before
- *  another's). */
-let indexing: Promise<void> = Promise.resolve();
-
-/** Writes the row of a plan or study just saved at `path` (its text as written) into the index, with the file's date
- *  as the server lists it. A row this misses (a failure, a write from another tab landing last) is older than its
- *  file, or absent, and the next listing reads the file. */
-export function indexSaved(path: string, text: string, fs: LibraryFiles = grok.dapi.files): Promise<void> {
-  const write = async () => {
-    const e = entryOf(text, 0);
-    const [folder, name] = [path.slice(0, path.lastIndexOf('/') + 1), path.split('/').pop()!];
-    const file = e && (await fs.list(folder, false, name.split('.').pop()!)).find((f) => f.fileName === name);
-    if (!e || !file || !Number.isFinite(dateOf(file)))
-      return;
-    const index = await readIndex(fs);
-    index[name] = rowOf(e, dateOf(file));
-    await writeIndex(fs, index);
-  };
-  return indexing = indexing.then(write).catch(() => {});
-}
-
 /** The user's plans and studies: listed (names and dates only) and each one's row from the index; a file the index
  *  has no row for, or an older one (saved before the index, or changed outside the app), is read once and its row
  *  kept. No study is read otherwise, and nothing is computed. */

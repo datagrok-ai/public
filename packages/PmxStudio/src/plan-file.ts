@@ -10,7 +10,6 @@ import {PlanFrames, PlanInputs, declarationOf} from './frames';
 import {PlanChecks, planChecks} from './plan-checks';
 import {finite, isFiniteNumber as fin} from './engine';
 import {StudyMeta, parseMeta} from './study-meta';
-import {indexSaved} from './library';
 
 export const PLAN_EXT = 'pmxplan';
 /** The tag of a study table that carries its plan (the plan's JSON). */
@@ -147,10 +146,7 @@ export const planSaved = (name: string) => grok.dapi.files.exists(planPath(name)
 /** Saves the plan to the user's plans folder (replacing one of the same name); returns its path. */
 export async function savePlan(p: SavedPlan): Promise<string> {
   const path = planPath(p.name);
-  const text = textOf(p);
-  await grok.dapi.files.writeAsText(path, text);
-  // not waited for: the plan is saved; a row this misses is older than the file, which the next listing reads
-  void indexSaved(path, text);
+  await grok.dapi.files.writeAsText(path, textOf(p)); // (its index row, now older than the file, is read again)
   return path;
 }
 
