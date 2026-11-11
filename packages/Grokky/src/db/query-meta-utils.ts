@@ -95,12 +95,44 @@ class BuiltinRelationMeta implements DG.DbRelationInfo {
   }
 }
 
+const numericAnnotations = new Set(['rowCount', 'min', 'max', 'uniqueCount']);
+const listAnnotations = new Set(['values', 'sampleValues']);
+
+/** DB annotations come back as tag text: a number as it reads, a list as JSON (or `[a, b]` as saved before). */
+function annotationValue(key: string, value: any): any {
+  if (value == null || typeof value !== 'string')
+    return value ?? undefined;
+  if (key === 'isUnique')
+    return value === 'true';
+  if (numericAnnotations.has(key))
+    return value.trim() !== '' && !isNaN(Number(value)) ? Number(value) : value;
+  if (listAnnotations.has(key)) {
+    const list = parseJsonList(value);
+    if (list)
+      return list.map((v) => `${v}`);
+    const text = value.trim();
+    return (text.startsWith('[') && text.endsWith(']') ? text.substring(1, text.length - 1) : text)
+      .split(',').map((s) => s.trim()).filter((s) => s !== '');
+  }
+  return value;
+}
+
+function parseJsonList(text: string): any[] | null {
+  try {
+    const list = JSON.parse(text);
+    return Array.isArray(list) ? list : null;
+  }
+  catch (_) {
+    return null;
+  }
+}
+
 export function getDBTableMetaData(table: DG.TableInfo): DG.DbTableProperties {
   const props: (keyof DG.DbTableProperties)[] = ['comment', 'llmComment', 'domains', 'rowCount'];
-  return Object.fromEntries(props.map((key) => ([key, table.tags.get(key) ?? undefined])));
+  return Object.fromEntries(props.map((key) => ([key, annotationValue(key, table.tags.get(key))])));
 }
 
 export function getDBColumnMetaData(column: DG.ColumnInfo): DG.DbColumnProperties {
   const props: (keyof DG.DbColumnProperties)[] = ['comment', 'llmComment', 'isUnique', 'min', 'max', 'values', 'sampleValues', 'uniqueCount'];
-  return Object.fromEntries(props.map((key) => ([key, column.tags.get(key) ?? undefined])));
+  return Object.fromEntries(props.map((key) => ([key, annotationValue(key, column.tags.get(key))])));
 }

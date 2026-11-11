@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Run comparison: Date, time and big integer columns are compared by their values, not as platform objects
+* core#1407: Run comparison: Fixed date, time and big integer columns compared as platform objects instead of by their values
 * Workflows: A step with inconsistent inputs shows a broken link icon in the steps tree, like the inputs themselves (needs WebComponents v.next)
 * Keyboard: Ctrl/Cmd+Enter presses Run, Ctrl/Cmd+Shift+Enter presses Update and Ctrl/Cmd+S saves the run, with the same checks as their buttons; a warning says why when the button is disabled. In a workflow Run and Update act on the step focused in the steps tree (Update on a workflow row updates its substeps), else on the open step
 * RFV, Workflows: Tab and Shift+Tab go round the form and the steps tree (outputs, run history and the ribbon are left to the pointer) instead of leaving for the page, buttons show the keyboard focus, and the Keyboard shortcuts ribbon icon lists the keys; Tab does nothing in the Update confirmation, where Enter confirms and Esc cancels

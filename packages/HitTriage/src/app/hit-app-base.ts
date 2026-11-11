@@ -169,6 +169,7 @@ export abstract class HitAppBase<T> {
   }
 
   protected async releaseCampaignLock(campaignId: string): Promise<string | null> {
-    return (await api.queries.releaseCampaignLock(this.appName, campaignId))?.col('updated_at')?.getString(0) || null;
+    const df = await api.queries.releaseCampaignLock(this.appName, campaignId);
+    return df?.rowCount ? df.col('updated_at')?.getString(0) || null : null;
   }
 }
