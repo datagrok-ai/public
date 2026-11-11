@@ -13,7 +13,7 @@ import {METRIC_LABELS} from '../metrics/metrics';
 import {datasetRefCaption, storedDatasetRef} from '../storage/dataset-ref';
 import {tagsOf, tagsText} from '../storage/model-fields';
 import {ownBlob} from '../storage/model-store';
-import {budgetCaption, SEARCH_CAPTIONS, searchRecordOf} from '../training/search';
+import {limitCaption, SEARCH_CAPTIONS, searchRecordOf} from '../training/search';
 import {readOnlyGrid} from './data-grid';
 import {runEvaluation} from './evaluation-view';
 import {MetricsTable, storedSummary} from './metrics-table';
@@ -184,7 +184,7 @@ function fillDetails(host: HTMLElement, model: ModelRow, activity: () => Promise
   const search = searchRecordOf(model.search);
   if (search !== undefined) {
     details['Search'] = `${SEARCH_CAPTIONS[search.mode]} (${METRIC_LABELS[search.metric]}, ` +
-      `${budgetCaption(search.budgetSeconds)}, ${search.trials} trials)`;
+      `${limitCaption(search)}${search.budgetSeconds === undefined ? '' : `, ${search.trials} trials`})`;
   }
   if (facts.applicableTo !== '')
     details['Applicable to'] = facts.applicableTo;

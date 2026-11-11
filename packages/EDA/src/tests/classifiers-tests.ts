@@ -17,6 +17,7 @@ const MIN_COLS = 2;
 const COLS = 100;
 const TIMEOUT = 60000;
 const MIN_ACCURACY = 0.9;
+const MAX_CAPPED_FIT_MS = 30000;
 /** Fixed seed so the Correctness datasets are reproducible (no random flakiness) */
 const CORRECTNESS_SEED = 42;
 
@@ -407,6 +408,23 @@ category('SVM', () => {
     const t0 = Date.now();
     await svm(DG.DataFrame.fromColumns(features.toList()), target);
     console.log(`winequality classification fit: ${Date.now() - t0} ms`);
+  }, {timeout: TIMEOUT});
+
+  test('Max iterations stops a non-converging fit', async () => {
+    const {df, target} = await demogFrame('SEX', ['AGE', 'HEIGHT', 'WEIGHT'], true);
+    const head = DG.BitSet.create(df.rowCount, (i) => i < 2000);
+    const features = df.clone(head);
+    const sex = target.dataFrame.clone(head, ['SEX']).col('SEX')!;
+
+    const t0 = Date.now();
+    const bytes = await trainSvm(features, sex, 'Polynomial', 56.5, 5.22, 3, 0, 0.1);
+    const ms = Date.now() - t0;
+    console.log(`SVM Polynomial C=56.5 gamma=5.22 degree 3 on ${features.rowCount} rows: ${ms} ms`);
+    expect(ms < MAX_CAPPED_FIT_MS, true, `the capped fit took ${ms} ms`);
+    expect(readCruxManifest(bytes).params.max_iter, 1000000);
+    const prediction = await predictColumn(features, bytes);
+    expect(prediction.length, features.rowCount);
+    expect(prediction.stats.missingValueCount, 0, 'the capped model must predict every row');
   }, {timeout: TIMEOUT});
 
   test('Class probabilities only with the Class probabilities input', async () => {

@@ -14,22 +14,24 @@ import {enabledRules, hyperparametersOf, isEnabled} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
 import {forgeDb, ModelStorageMode} from '../generated/db';
-import {BestThresholdMetric, METRIC_DESCRIPTIONS} from '../metrics/metrics';
+import {BestThresholdMetric, METRIC_DESCRIPTIONS, METRIC_LABELS} from '../metrics/metrics';
 import {preparationOptionsOf} from '../preparation/preparation-options';
 import {datasetRefOf, storedDatasetRef} from '../storage/dataset-ref';
 import {deleteModel, modelsChanged} from '../storage/model-store';
-import {FROM_BELOW_TO, SearchRecord, tuneCandidate} from '../training/search';
+import {COST_RANK, FROM_BELOW_TO, Leader, SearchRecord, tuneCandidate} from '../training/search';
 import {bestThresholdOf, metricsRecordOf, trainPredictionOf} from '../training/train-model';
 import {applyModelDialog, ApplyDialogOptions, isOpen, modelLabels} from '../ui/apply-model-dialog';
 import {ButtonGate} from '../ui/button-gate';
 import {gridTooltip} from '../ui/data-grid';
 import {editModelDialog} from '../ui/edit-model-dialog';
+import {FIND_KEY, FindSettings} from '../ui/find-settings';
+import {LimitInputs, TIME, TRIALS} from '../ui/limit-inputs';
 import {EvaluationView, runEvaluation} from '../ui/evaluation-view';
 import {ForgeApp} from '../ui/forge-app';
 import {CATALOG_ACTIONS, MODEL_ACTIONS, openShareDialog} from '../ui/model-actions';
 import {hasFormsViewer, ModelComparison} from '../ui/model-comparison';
 import {ForgeModelHandler} from '../ui/model-handler';
-import {MetricsTable, storedSummary} from '../ui/metrics-table';
+import {metricIdsOf, MetricsTable, storedSummary} from '../ui/metrics-table';
 import {modelAccordion, refreshSharing} from '../ui/model-panes';
 import {PanelKey, resultsLayout} from '../ui/results-layout';
 import {saveModelDialog} from '../ui/save-model-dialog';
@@ -494,7 +496,7 @@ category('UI', () => {
       await awaitCheck(() => view.featuresInput.validity === null, 'Features stays marked', WAIT_MS);
       await awaitTrained(view);
       expect(view.methodInput.value, 'Linear Regression');
-      expectArray([...view.methodInput.items].sort(), IRIS_REGRESSORS);
+      expectArray(view.methodInput.items.slice(1).sort(), IRIS_REGRESSORS);
       expect(view.lastTraining?.engine.name, 'Linear Regression');
     } finally {
       await closeTrainView(view, [iris]);
@@ -566,7 +568,7 @@ category('UI', () => {
     const tables = [grok.shell.addTable(iris), grok.shell.addTable(other)];
     const view = await openTrainView(iris);
     try {
-      expectArray([...view.methodInput.items].sort(), IRIS_CLASSIFIERS);
+      expectArray(view.methodInput.items.slice(1).sort(), IRIS_CLASSIFIERS);
       expect(view.methodInput.value, 'XGBoost');
       const iterations = () => view.hyperparameterInputs.get('iterations');
       setHyperparameter(view, 'iterations', 25);
@@ -4003,6 +4005,26 @@ function rowOf(tune: TuneSettings, name: string): TuneRow {
   return row;
 }
 
+/** The shown Max time of [limit] has the unit `min` and one underline: the editor's and its options' (the clicker and
+ * the unit) at one height, the editor's as long as theirs. */
+function expectOneUnderline(limit: LimitInputs): void {
+  expect(limit.minutes.root.querySelector('.ui-input-description')?.textContent, 'min');
+  const [editor, unit] = [limit.minutes.input, limit.minutes.root.querySelector('.ui-input-options')!]
+    .map((e) => e.getBoundingClientRect());
+  expect(Math.abs(editor.bottom - unit.bottom) < 0.5 && editor.right >= unit.right - 1, true,
+    `Two underlines: the editor's at ${editor.bottom} to ${editor.right}, the unit's at ${unit.bottom} to ` +
+    `${unit.right}`);
+}
+
+/** The platform's message of an int input below its `min` of 1 (its wording, 1 itself being valid). */
+const MORE_THAN_1 = 'Value must be greater than 1';
+
+/** Limit Trials, [n] of them. */
+function stopAfterTrials(limit: LimitInputs, n: number): void {
+  limit.kind.value = TRIALS;
+  limit.trials.value = n;
+}
+
 /** Types [text] into [field], as the user does. */
 function typeInto(field: HTMLInputElement, text: string): void {
   field.value = text;
@@ -4032,7 +4054,7 @@ const checkedChoices = (row: TuneRow) =>
 /** Checks the layout of [view]'s Auto-tune block on the range [row], in the form's current layout (labels beside or
  * above the inputs): the row on one line, its label beside it in the Settings label's column (or above it), the
  * chevron under the Method header's text, the status as far from Settings as from Search options (beside only), no
- * overflow, and the reset button, the pin, Metric and the time ending at Tune's right edge. */
+ * overflow, and the reset button, the pin, Metric and the shown limit ending at Tune's right edge. */
 function expectTuneLayout(view: TrainView, row: TuneRow): void {
   const tune = view.tuneSettings;
   const pane = view.root.querySelector<HTMLElement>('.forge-train-form')!;
@@ -4075,10 +4097,10 @@ function expectTuneLayout(view: TrainView, row: TuneRow): void {
     true, `Settings ${tune.root.scrollWidth} wide in ${tune.root.clientWidth}; Tune ends at ${button.right}`);
   // The ink's right edges: the reset and pin glyphs, the selects' underlines, Tune's letters.
   const tuneText = textRect(view.tuneButton).right;
-  const rights = [tune.resetButton.querySelector('i')!, row.pin.querySelector('i')!, tune.metric, tune.time]
-    .map((e) => e.getBoundingClientRect().right);
+  const rights = [tune.resetButton.querySelector('i')!, row.pin.querySelector('i')!, tune.metric,
+    (tune.limit.isTime ? tune.limit.minutes : tune.limit.trials).input].map((e) => e.getBoundingClientRect().right);
   expect(rights.every((right) => Math.abs(right - tuneText) <= 1), true, `Condensed ${isCondensed}: Tune's ` +
-    `letters end at ${tuneText}; the reset and pin glyphs, Metric and the time at ${rights.join(', ')}`);
+    `letters end at ${tuneText}; the reset and pin glyphs, Metric and the limit at ${rights.join(', ')}`);
 }
 
 /** The box of the text inside [element], as a DOM Range over its text nodes gives it (not the boxes around them). */
@@ -4095,9 +4117,68 @@ function textRect(element: HTMLElement): DOMRect {
   return range.getBoundingClientRect();
 }
 
+/** The font, color and alignment of [e]'s text. */
+function textStyleOf(e: Element): string {
+  const s = getComputedStyle(e);
+  return [s.font, s.color, s.textAlign].join(' ');
+}
+
+/** The label [text] of a Search options [grid]. */
+const gridLabelOf = (grid: HTMLElement, text: string) =>
+  Array.from(grid.querySelectorAll<HTMLElement>('.forge-tune-label')).find((l) => l.textContent === text)!;
+
+/** What the user sees of a Search options block's status line, toggle, Metric, Limit and Max time rows (and Max trials
+ * once switched) and its [button]'s bar; the rows' heights and the gaps between them. Leaves the limit at Time. */
+function searchBlockLines(block: {statusText: HTMLElement; toggle: HTMLElement; grid: HTMLElement; limit: LimitInputs},
+  button: HTMLElement): string[] {
+  const at = (n: number) => Math.round(n);
+  block.limit.kind.value = TIME;
+  const [status, toggleText] = [block.statusText, block.toggle.querySelector('span')!].map(textRect);
+  const chevron = Array.from(block.toggle.querySelectorAll<HTMLElement>('.grok-icon')).find(isShown)!;
+  const [metric, stop, time] = ['Metric', 'Limit', 'Max time'].map((text) => gridLabelOf(block.grid, text));
+  const {kind, minutes, trials} = block.limit;
+  const [radios, field] = [kind.input, minutes.input].map((e) => e.getBoundingClientRect());
+  const lines = [
+    `status ${textStyleOf(block.statusText)} at ${at(status.left)}`,
+    `toggle ${textStyleOf(block.toggle)}, chevron at ${at(chevron.getBoundingClientRect().left)}, ` +
+    `${at(toggleText.top - status.bottom)} px under the status`,
+    ...[metric, stop, time].map((label) => `${label.textContent} ${textStyleOf(label)} ending at ` +
+      `${at(label.getBoundingClientRect().right)}, ${at(label.getBoundingClientRect().height)} high`),
+    `Limit ${at(radios.top - stop.getBoundingClientRect().top)} below its label, ${at(radios.left)}-` +
+    `${at(radios.right)}, ${at(time.getBoundingClientRect().top - stop.getBoundingClientRect().bottom)} px ` +
+    'above Max time',
+    `Max time ${textStyleOf(minutes.input)} at ${at(field.left)}-${at(field.right)}, ${at(field.height)} high`,
+    `bar ${button.className} ${textStyleOf(button)} ending at ${at(textRect(button).right)}`];
+  kind.value = TRIALS;
+  const trialsField = trials.input.getBoundingClientRect();
+  lines.push(`Max trials ${textStyleOf(trials.input)} at ${at(trialsField.left)}-${at(trialsField.right)}, ` +
+    `${at(trialsField.height)} high`);
+  kind.value = TIME;
+  return lines;
+}
+
 /** The option [caption] of the radio [input]. */
 const radioOption = (input: DG.InputBase, caption: string) =>
   Array.from(input.root.querySelectorAll<HTMLElement>('.ui-radio-button')).find((o) => o.textContent === caption);
+
+/** Starts a search of 1000 trials with [start] and cancels it from its own task-bar entry (`<action> (<n>/1000)`, n
+ * the finished trials) once more than five finished, so some completed; checks the best so far trains. */
+async function cancelSearchOnceSettled(view: TrainView, action: string,
+  start: (maxTrials: number) => Promise<void>): Promise<void> {
+  // Only the search's own entry counts, as an earlier one may still be in the task bar.
+  const entries = () => Array.from(document.querySelectorAll('.d4-task-bar-entry'));
+  const earlier = new Set(entries());
+  const searching = start(1000);
+  const pattern = new RegExp(`${action} \\((\\d+)/1000\\)`);
+  const launched = (e: Element) => Number(pattern.exec(e.textContent ?? '')?.[1] ?? 0);
+  const entry = () => entries().find((e) => !earlier.has(e) && launched(e) > 5);
+  await awaitCheck(() => entry() !== undefined, 'The search launches no trial after its first ones', TIMEOUT);
+  cancelTaskBarEntry(entry());
+  await awaitCheck(() => !view.isTraining, 'The cancelled search does not end', TIMEOUT);
+  await searching;
+  expect(view.lastTraining?.result.search?.stopped, 'cancelled');
+  expect(balloonWith('Search cancelled') !== null, true, 'No balloon on a cancel');
+}
 
 /** The **Search** grid of [view]; fails without one. */
 function searchGrid(view: TrainView): DG.Grid {
@@ -4105,6 +4186,33 @@ function searchGrid(view: TrainView): DG.Grid {
   if (grid === null)
     throw new Error('No Search grid');
   return grid;
+}
+
+/** The bars of [chart], top to bottom, are [grid]'s rows: the top one the chosen method's. */
+function expectChartOrder(chart: DG.Viewer, grid: DG.Grid): void {
+  const {hitAreas} = chart.getWidgetStatus();
+  const bars = Object.keys(hitAreas).filter((k) => k.startsWith('bar ')).sort((a, b) => hitAreas[a].y - hitAreas[b].y);
+  expectArray(bars, grid.dataFrame.getCol('Method').toList().slice(0, bars.length).map((m) => `bar ${m}`));
+  expect(grid.dataFrame.get('Chosen', 0), true, 'The top bar is not the chosen method\'s');
+}
+
+/** [grid] ranks [leaders] (of a Find best model by accuracy) as the chart: by the score less its SE as stored, best
+ * first, a tie by the method's name; the chosen one first and current; the tooltips name the rule. */
+function expectSearchOrder(grid: DG.Grid, leaders: Leader[]): void {
+  const frame = grid.dataFrame;
+  const shown = (l: Leader) => Math.fround(l.score - l.se);
+  const sorted = [...leaders].sort((a, b) => shown(b) - shown(a) ||
+    (a.method < b.method ? -1 : a.method > b.method ? 1 : 0));
+  expectArray(frame.getCol('Method').toList().slice(0, sorted.length), sorted.map((l) => l.method));
+  expectArray(frame.getCol('#').toList(), Array.from({length: frame.rowCount}, (_, i) => i + 1));
+  const cautious = frame.getCol('Accuracy − SE');
+  expectArray(sorted.map((l, i) => Math.abs(cautious.get(i) - (l.score - l.se)) < 1e-6), sorted.map(() => true));
+  expect(`${sorted[0].chosen} ${frame.getCol('Chosen').get(0)} ${frame.currentRowIdx}`, 'true true 0',
+    'The chosen one is not first');
+  expectArray([headerTooltip(grid, '#'), headerTooltip(grid, 'Accuracy − SE'), headerTooltip(grid, 'Chosen'),
+    gridTooltip(grid, grid.cell('Chosen', 0))], ['Rank by Accuracy − SE.', 'Accuracy minus its standard error ' +
+    'over the folds: a cautious estimate of Accuracy. The method with the highest value is chosen.',
+  'The method with the highest Accuracy − SE.', 'Chosen: the highest Accuracy − SE.']);
 }
 
 const searchRecord = (holdOut?: {rows: number; fraction: number}): SearchRecord => ({mode: 'tune',
@@ -4125,7 +4233,11 @@ function currentCard(view: TrainView): HTMLElement {
 const pinnedCards = (view: TrainView) =>
   Array.from(view.modelCards.root.querySelectorAll<HTMLElement>('.forge-card:not(.forge-card-current)'));
 const cardNumbers = (cards: HTMLElement[]) => cards.map((card) => card.dataset.forgeRun ?? '');
-const cardLine = (card: HTMLElement) => card.querySelector('.forge-card-line')?.textContent ?? '';
+/** The classes of [card]'s children: the header, the caption after a search, the tabs. */
+const cardParts = (card: HTMLElement) => Array.from(card.children,
+  (e) => Array.from(e.classList).find((c) => c.startsWith('forge-card-')) ?? '');
+/** The italic line under [card]'s title after a search; null without one. */
+const cardCaption = (card: HTMLElement) => card.querySelector('.forge-card-caption')?.textContent ?? null;
 const pinIcon = (card: HTMLElement) => card.querySelector<HTMLElement>('.forge-card-pin')!;
 const unpinIcon = (card: HTMLElement) => card.querySelector<HTMLElement>('.forge-card-unpin')!;
 /** The icons [card] shows, as "+" and "trash". */
@@ -4167,8 +4279,15 @@ const notRightAligned = (table: HTMLTableElement) =>
   valueCells(table).filter((cell) => getComputedStyle(cell).textAlign !== 'right').length;
 
 /** Each row of [table] as its cells' texts. */
-const tableText = (table: HTMLTableElement) =>
-  Array.from(table.rows, (row) => Array.from(row.cells, (cell) => cell.textContent ?? ''));
+/** The text of [table]'s shown rows. */
+const tableText = (table: HTMLTableElement) => Array.from(table.rows).filter((row) => row.style.display !== 'none')
+  .map((row) => Array.from(row.cells, (cell) => cell.textContent ?? ''));
+
+/** The metric names of [card]'s Performance table. */
+const cardMetrics = (view: TrainView, card: HTMLElement) =>
+  tableText(paneTable(view, card, 'Performance')).slice(1).map((row) => row[0]);
+/** Show more / Show less of [card]'s Performance; null without one. */
+const moreLink = (card: HTMLElement) => card.querySelector<HTMLElement>('.forge-card-more');
 
 category('UI: Search', () => {
   test('Tune keeps Predict probability; the Metric lists Log loss and Brier score last', async () => {
@@ -4196,7 +4315,7 @@ category('UI: Search', () => {
       predictProbability.value = true;
       await awaitCheck(() => options()?.thresholdMetric === 'f1', 'Checking does not optimize', WAIT_MS);
       thresholdMetric.value = 'MCC';
-      await view.startSearch('tune', {metric: 'accuracy', budgetSeconds: 60, maxTrials: 2});
+      await view.startSearch('tune', {metric: 'accuracy', maxTrials: 2});
       await awaitTrained(view);
       const best = bestThresholdOf(view.lastTraining!.result, 'mcc');
       expect(view.lastTraining?.request.search !== undefined, true, 'The winner is not the shown training');
@@ -4210,7 +4329,7 @@ category('UI: Search', () => {
       threshold.value = 0.65;
       await awaitCheck(() => options()?.binaryClassificationThreshold === 0.65, 'The hand edit does not re-cut',
         WAIT_MS);
-      await view.startSearch('tune', {metric: 'accuracy', budgetSeconds: 60, maxTrials: 2});
+      await view.startSearch('tune', {metric: 'accuracy', maxTrials: 2});
       await awaitTrained(view);
       expect(threshold.value, 0.65, 'A search replaced the hand edit');
       expect(options()?.binaryClassificationThreshold, 0.65);
@@ -4265,13 +4384,14 @@ category('UI: Search', () => {
         expect(tune.mode.root.querySelector('.ui-input-options')?.contains(tune.resetButton), true,
           'The reset button is not on the Settings row');
         expect(`${statusOf(view)} ${tune.resetButton.getAttribute('aria-disabled')}`, 'Default true');
+        expect(await enterTooltip(tune.statusText), 'The method\'s recommended settings');
         expect(await enterTooltip(tune.resetButton), 'SVM settings are already default');
         expect(tune.resetButton.getAttribute('aria-label'), 'SVM settings are already default');
         setHyperparameter(view, 'cost', 2);
         expect(`${statusOf(view)} ${tune.resetButton.getAttribute('aria-disabled')}`, 'Customized false');
         expect(await enterTooltip(tune.resetButton), 'Reset SVM settings to defaults');
         expect(tune.resetButton.getAttribute('aria-label'), 'Reset SVM settings to defaults');
-        expect(await enterTooltip(tune.statusText), 'Changed by hand');
+        expect(await enterTooltip(tune.statusText), 'Changed by you');
         tune.resetButton.click();
         expect(view.hyperparameterInputs.get('cost')?.value, 1);
         expect(statusOf(view), 'Default');
@@ -4402,12 +4522,19 @@ category('UI: Search', () => {
       const settingsTooltip = 'How the settings are chosen: by hand or by a search on this data';
       expectArray([await enterTooltip(tune.mode.captionLabel), await enterTooltip(radioOption(tune.mode, MANUAL)!),
         await enterTooltip(radioOption(tune.mode, AUTO_TUNE)!)], [settingsTooltip, settingsTooltip, settingsTooltip]);
+      const {limit} = tune;
+      limit.kind.value = TIME;
       const tooltips = [await enterTooltip(label('Metric')), await enterTooltip(tune.metric),
-        await enterTooltip(label('Budget')), await enterTooltip(tune.trials), await enterTooltip(tune.time),
-        await enterTooltip(tune.toggle)];
-      expectArray(tooltips, ['Metric the search optimizes', 'Metric the search optimizes',
-        'The search stops at the trial limit or the time limit, whichever comes first',
-        'Maximum number of completed trials', 'Maximum search time', 'Hide search options']);
+        await enterTooltip(label('Limit')), await enterTooltip(radioOption(limit.kind, TIME)!),
+        await enterTooltip(radioOption(limit.kind, TRIALS)!), await enterTooltip(label('Max time')),
+        await enterTooltip(limit.minutes.input), await enterTooltip(tune.toggle)];
+      limit.kind.value = TRIALS;
+      tooltips.push(await enterTooltip(label('Max trials')), await enterTooltip(limit.trials.input));
+      const limitTooltip = 'What ends the search: a time or a trial limit';
+      expectArray(tooltips, ['Metric the search optimizes', 'Metric the search optimizes', limitTooltip,
+        limitTooltip, limitTooltip, 'Minutes the search may run', 'Minutes the search may run',
+        'Hide search options', 'Maximum number of trials, pruned and failed ones included',
+        'Maximum number of trials, pruned and failed ones included']);
 
       const [rate, depth] = [rowOf(tune, 'eta').label, rowOf(tune, 'maxDepth').label];
       rate.dispatchEvent(new MouseEvent('mouseenter'));
@@ -4422,8 +4549,9 @@ category('UI: Search', () => {
       tune.togglePin('eta');
       expect(ui.tooltip.isVisible, false, 'A re-layout leaves the tooltip of a hovered row');
     } finally {
-      grok.userSettings.delete(TuneSettings.storage, 'XGBoost');
+      // Closing writes the pending save first.
       await closeTrainView(view, [iris]);
+      grok.userSettings.delete(TuneSettings.storage, 'XGBoost');
     }
   }, {timeout: 120000});
 
@@ -4434,37 +4562,50 @@ category('UI: Search', () => {
       const tune = autoTune(view);
       tune.togglePin('maxDepth');
       typeInto(rowOf(tune, 'iterations').from!, '15');
-      typeInto(tune.trials, '20');
-      pick(tune.time, '300');
+      tune.limit.minutes.value = 5;
+      stopAfterTrials(tune.limit, 20);
       pick(tune.metric, 'f1');
-      const stored = JSON.parse(grok.userSettings.getValue(TuneSettings.storage, 'XGBoost') ?? '{}');
+      tune.flushSave();
+      const stored = TuneSettings.storedRecord('XGBoost') as {[key: string]: any};
       expect(JSON.stringify([stored.mode, stored.expanded, stored.pinned, stored.ranges.iterations, stored.metric,
-        stored.trials, stored.seconds]), JSON.stringify([AUTO_TUNE, true, ['maxDepth'], {low: 15, high: 100}, 'f1',
-        20, 300]));
+        stored.limit, stored.minutes, stored.trials]), JSON.stringify([AUTO_TUNE, true, ['maxDepth'],
+        {low: 15, high: 100}, 'f1', TRIALS, 5, 20]));
       await closeTrainView(view, [iris]);
 
       view = await openTrainView(iris);
       const again = view.tuneSettings;
       expectArray([again.isAuto, again.isExpanded, rowOf(again, 'maxDepth').pin.getAttribute('aria-pressed'),
-        rowOf(again, 'iterations').from!.value, again.trials.value, again.time.value, again.metric.value],
-      [true, true, 'true', '15', '20', '300', 'f1']);
+        rowOf(again, 'iterations').from!.value, again.limit.kind.value, again.limit.minutes.value,
+        again.limit.trials.value, again.metric.value], [true, true, 'true', '15', TRIALS, 5, 20, 'f1']);
       await closeTrainView(view, [iris]);
 
+      // The old time select's seconds: whole minutes, rounded up.
       grok.userSettings.add(TuneSettings.storage, 'XGBoost', JSON.stringify({mode: AUTO_TUNE,
         pinned: ['speed', 'eta'], ranges: {iterations: {low: 5, high: 500}, eta: {low: 0.1, high: 0.2}}, metric: 'r2',
-        trials: 0, seconds: 7}));
+        trials: 0, seconds: 90}));
       view = await openTrainView(iris);
       const stale = view.tuneSettings;
       expectArray([stale.isAuto, stale.isExpanded, rowOf(stale, 'eta').pin.getAttribute('aria-pressed'),
-        rowOf(stale, 'iterations').from!.value, rowOf(stale, 'eta').from!.value, stale.trials.value, stale.time.value,
-        stale.metric.value], [true, false, 'true', '10', '0.1', '50', '60', 'balancedAccuracy']);
-      grok.userSettings.add(TuneSettings.storage, 'XGBoost', '{not json');
+        rowOf(stale, 'iterations').from!.value, rowOf(stale, 'eta').from!.value, stale.limit.kind.value,
+        stale.limit.minutes.value, stale.limit.trials.value, stale.metric.value],
+      [true, false, 'true', '10', '0.1', TIME, 2, 50, 'balancedAccuracy']);
       const engine = view.lastTraining!.engine;
+      const loaded = (value: unknown) => {
+        grok.userSettings.add(TuneSettings.storage, 'XGBoost', JSON.stringify(value));
+        const {limit, minutes, trials} = TuneSettings.load(engine, stale.space, hyperparametersOf(engine));
+        return `${limit} ${minutes} ${trials}`;
+      };
+      expectArray([loaded({seconds: 30}), loaded({seconds: 900, trials: 70}), loaded({seconds: 7200}),
+        loaded({limit: TRIALS, minutes: 61, trials: 10001}), loaded({limit: TRIALS, minutes: 3, trials: 9}),
+        loaded({limit: TIME, minutes: 4}), loaded({mode: AUTO_TUNE}), loaded({limit: 'Steps'})],
+      [`${TIME} 1 50`, `${TIME} 15 70`, `${TIME} 60 50`, `${TRIALS} 1 50`, `${TRIALS} 3 9`, `${TIME} 4 50`,
+        `${TRIALS} 1 50`, `${TRIALS} 1 50`]);
+      grok.userSettings.add(TuneSettings.storage, 'XGBoost', '{not json');
       expect(JSON.stringify(TuneSettings.load(engine, stale.space, hyperparametersOf(engine))),
-        JSON.stringify({mode: MANUAL, expanded: false, pinned: [], ranges: {}, trials: 50, seconds: 60}));
+        JSON.stringify({mode: MANUAL, expanded: false, pinned: [], ranges: {}, limit: TRIALS, minutes: 1, trials: 50}));
     } finally {
-      grok.userSettings.delete(TuneSettings.storage, 'XGBoost');
       await closeTrainView(view, [iris]);
+      grok.userSettings.delete(TuneSettings.storage, 'XGBoost');
     }
   }, {timeout: 120000});
 
@@ -4480,8 +4621,7 @@ category('UI: Search', () => {
       await awaitCheck(() => !view.tuneSettings.isAuto, 'A Runs row click stays in Auto-tune', WAIT_MS);
       await awaitTrained(view);
       autoTune(view);
-      view.restoreLeader({method: 'XGBoost', hyperparameters: {iterations: 11}, score: 0, se: 0, foldScores: [],
-        trials: 1, chosen: false});
+      view.restoreLeader({method: 'XGBoost', hyperparameters: {iterations: 11}});
       expect(view.tuneSettings.isAuto, false, 'A Search row click stays in Auto-tune');
       await awaitTrained(view);
     } finally {
@@ -4489,7 +4629,7 @@ category('UI: Search', () => {
     }
   }, {timeout: TIMEOUT});
 
-  test('Tune trains the chosen settings in Manual as Auto-tuned and fills the Search panel', async () => {
+  test('Tune trains the chosen settings in Manual as Auto-tuned, without the Search panel of one method', async () => {
     const iris = await openIris();
     const demog = grok.shell.addTable(await openDemog());
     const view = await openTrainView(iris);
@@ -4499,7 +4639,7 @@ category('UI: Search', () => {
       const [cardRight, tuneRight] = [currentCard(view), view.tuneButton].map((e) => e.getBoundingClientRect().right);
       expect(tuneRight > 0 && cardRight <= tuneRight + 1, true, `The card ends at ${cardRight}, Tune at ${tuneRight}`);
       tune.togglePin('maxDepth');
-      typeInto(tune.trials, '6');
+      stopAfterTrials(tune.limit, 6);
       pick(tune.metric, 'accuracy');
       await view.startSearch('tune', tune.choice());
       expect(view.isTraining, false);
@@ -4508,25 +4648,16 @@ category('UI: Search', () => {
       expect(`${view.tuneSettings.isAuto} ${statusOf(view)}`, 'false Auto-tuned');
       expect(view.runs[0].settingsStatus, 'Auto-tuned');
       const card = currentCard(view);
-      expect(cardLine(card).startsWith('4 features'), true, cardLine(card));
+      expect(cardCaption(card), 'Auto-tuned settings');
+      expectArray(cardParts(card).slice(0, 2), ['forge-card-header', 'forge-card-caption']);
+      expect(cardParts(card).length, 3);
       tabHeader(card, 'Settings').click();
-      const cardStatus = card.querySelector<HTMLElement>('.forge-tune-status-text')!;
-      expect(cardStatus.textContent, 'Auto-tuned');
-      expect(await enterTooltip(cardStatus),
-        `Found by Auto-tune; pinned values kept. Found by Tune: ${search!.trials} trials`);
+      expect(card.querySelector('.forge-tune-status-text'), null, 'The Settings tab shows a status');
       expectArray(search?.space?.pinned ?? [], ['maxDepth']);
       expect(search?.space?.searched.some((d) => d.name === 'maxDepth'), false, 'A pinned setting was searched');
-      expect(isShown(view.searchPanel.root), true, 'Search is hidden after a search');
-      const grid = searchGrid(view);
-      expectArray(grid.dataFrame.columns.names(), ['#', 'Method', 'Accuracy (CV)', 'SE', 'Trials', 'Chosen']);
-      expectArray([grid.dataFrame.rowCount, grid.dataFrame.get('Method', 0), grid.dataFrame.get('Chosen', 0)],
-        [1, 'XGBoost', true]);
-      expect(gridTooltip(grid, grid.cell('Accuracy (CV)', 0)).startsWith('Folds: '), true,
-        gridTooltip(grid, grid.cell('Accuracy (CV)', 0)));
-      expect(headerTooltip(grid, 'Accuracy (CV)').includes('By cross-validation'), true,
-        headerTooltip(grid, 'Accuracy (CV)'));
-      expect(headerTooltip(grid, 'SE').startsWith('The standard error'), true, headerTooltip(grid, 'SE'));
+      expect(isShown(view.searchPanel.root) || view.searchPanel.grid !== null, false, 'Search shows one method');
       const leader = search!.leaders[0];
+      expect(`${search!.leaders.length} ${leader.method} ${leader.chosen}`, '1 XGBoost true');
       expectFloat(view.lastTraining!.result.metrics.validation.accuracy!, leader.score, 1e-9);
       for (const [name, value] of Object.entries(leader.hyperparameters)) {
         const shown: unknown = view.hyperparameterInputs.get(name)?.value;
@@ -4542,9 +4673,6 @@ category('UI: Search', () => {
       expect(shownRun(view) !== null && shownRun(view) === view.lastTraining?.runId, true, 'The shown run');
       const runTooltip = gridTooltip(runsGrid(view), runsGrid(view).cell('Method', 0));
       expect(runTooltip.startsWith(`Found by Tune: ${search!.trials} trials`), true, runTooltip);
-      const methodTooltip = gridTooltip(grid, grid.cell('Method', 0));
-      expect(methodTooltip.includes('Searched: iterations ') && methodTooltip.includes('Pinned: maxDepth'), true,
-        methodTooltip);
 
       const tuned = view.hyperparameterInputs.get('iterations')!;
       const value = tuned.value;
@@ -4562,11 +4690,81 @@ category('UI: Search', () => {
     }
   }, {timeout: SEARCH_TIMEOUT});
 
+  test('Tune again continues the search: Tune says so, the trials and the limit add up; a change starts afresh',
+    async () => {
+      const iris = await openIris();
+      const view = await openTrainView(iris);
+      try {
+        let tune = autoTune(view);
+        stopAfterTrials(tune.limit, 3);
+        await awaitCheck(() => !isDisabled(view.tuneButton), 'Tune stays disabled', WAIT_MS);
+        expect(await enterTooltip(view.tuneButton), 'Find the best settings');
+        await view.startSearch('tune', tune.choice());
+        const first = view.lastTraining!.result.search!;
+        tune = autoTune(view);
+        await awaitCheck(() => !isDisabled(view.tuneButton), 'Tune stays disabled after a tune', WAIT_MS);
+        expect(await enterTooltip(view.tuneButton), `Continue the search: ${first.trials} trials so far`);
+        await view.startSearch('tune', tune.choice());
+        const second = view.lastTraining!.result.search!;
+        expect(`${second.trials > first.trials} ${second.trials <= first.trials + 3} ${second.maxTrials}`,
+          'true true 6', `${first.trials} trials, then ${second.trials}`);
+
+        tune = autoTune(view);
+        const metric = tune.metric.value === 'f1' ? 'mcc' : 'f1';
+        pick(tune.metric, metric);
+        await awaitCheck(() => !isDisabled(view.tuneButton), 'Tune stays disabled with another metric', WAIT_MS);
+        expect(await enterTooltip(view.tuneButton), 'Find the best settings');
+        await view.startSearch('tune', tune.choice());
+        const fresh = view.lastTraining!.result.search!;
+        expect(`${fresh.trials <= 3} ${fresh.maxTrials} ${fresh.metric}`, `true 3 ${metric}`);
+      } finally {
+        await closeTrainView(view, [iris]);
+        clearTestTuneStorage();
+      }
+    }, {timeout: SEARCH_TIMEOUT});
+
+  test('a search after the threshold moved starts afresh, and neither Tune nor the task bar promises to continue',
+    async () => {
+      const iris = await twoSpeciesIris();
+      const view = await openTrainView(iris);
+      const {predictProbability, threshold} = view.preparationInputs;
+      const texts = new Set<string>();
+      const observer = new MutationObserver(() => {
+        for (const entry of Array.from(document.querySelectorAll('.d4-task-bar-entry')))
+          texts.add(entry.textContent ?? '');
+      });
+      try {
+        predictProbability.value = true;
+        await awaitCheck(() => view.lastTraining?.result.options.thresholdMetric === 'f1', 'Checking does not optimize',
+          WAIT_MS);
+        const tune = autoTune(view);
+        stopAfterTrials(tune.limit, 2);
+        await view.startSearch('tune', tune.choice());
+        await awaitTrained(view);
+        const moved = threshold.value === 0.3 ? 0.35 : 0.3;
+        threshold.value = moved;
+        await awaitCheck(() => view.lastTraining?.result.options.binaryClassificationThreshold === moved,
+          'The threshold does not re-cut', WAIT_MS);
+        const again = autoTune(view);
+        await awaitCheck(() => !isDisabled(view.tuneButton), 'Tune stays disabled', WAIT_MS);
+        expect(await enterTooltip(view.tuneButton), 'Find the best settings');
+        observer.observe(document.body, {subtree: true, childList: true, characterData: true});
+        await view.startSearch('tune', again.choice());
+        const fresh = view.lastTraining!.result.search!;
+        expect(`${fresh.trials <= 2} ${fresh.maxTrials}`, 'true 2', 'The search was continued');
+        expect([...texts].some((t) => t.startsWith('Continuing')), false, [...texts].join('; '));
+      } finally {
+        observer.disconnect();
+        await closeTrainView(view, [iris]);
+        clearTestTuneStorage();
+      }
+    }, {timeout: SEARCH_TIMEOUT});
+
   test('the status reads Auto-tuned only on the table, target and features of the last tune', async () => {
     const iris = await openIris();
     const view = await openTrainView(iris);
     try {
-      await view.startSearch('tune', {metric: 'accuracy', budgetSeconds: 60, maxTrials: 2});
+      await view.startSearch('tune', {metric: 'accuracy', maxTrials: 2});
       const tune = view.tuneSettings;
       expect(statusOf(view), 'Auto-tuned');
       const species = view.targetInput.value!;
@@ -4576,7 +4774,7 @@ category('UI: Search', () => {
       expect(await enterTooltip(tune.statusText), `Tuned for Species on ${iris.name}; tune again for this data`);
       view.targetInput.value = species;
       expect(statusOf(view), 'Auto-tuned');
-      expect(await enterTooltip(tune.statusText), 'Found by Auto-tune; pinned values kept');
+      expect(await enterTooltip(tune.statusText), 'Found by the search');
       const features = view.featuresInput.value;
       view.featuresInput.value = [...features].reverse();
       expect(statusOf(view), 'Auto-tuned', 'The order of the features counts');
@@ -4595,11 +4793,17 @@ category('UI: Search', () => {
     try {
       view.validationInputs.scheme.value = 'Hold-out';
       await awaitTrained(view);
-      await view.startSearch('tune', {metric: 'accuracy', budgetSeconds: 60, maxTrials: 2});
+      await chooseAuto(view);
+      await view.startSearch('best', {metric: 'accuracy', maxTrials: 4, methods: ['LDA', 'Decision Tree']});
       const grid = searchGrid(view);
-      expectArray(grid.dataFrame.columns.names(), ['#', 'Method', 'Accuracy (hold-out)', 'SE', 'Trials', 'Chosen']);
+      expectArray(grid.dataFrame.columns.names(), ['#', 'Method', 'Accuracy (hold-out)', 'SE', 'Accuracy − SE',
+        'Trials', 'Chosen']);
       expect(headerTooltip(grid, 'Accuracy (hold-out)').includes('On the hold out'), true,
         headerTooltip(grid, 'Accuracy (hold-out)'));
+      expect(gridTooltip(grid, grid.cell('Accuracy (hold-out)', 0)).startsWith('Folds: '), true,
+        gridTooltip(grid, grid.cell('Accuracy (hold-out)', 0)));
+      expectArray([headerTooltip(grid, 'SE').startsWith('The standard error'), headerTooltip(grid, 'Trials')],
+        [true, 'Every trial of the method, pruned and failed ones included.']);
     } finally {
       await closeTrainView(view, [iris]);
     }
@@ -4609,18 +4813,9 @@ category('UI: Search', () => {
     const iris = await openIris();
     const view = await openTrainView(iris);
     try {
-      // Only the search's own entry counts, as an earlier one may still be in the task bar.
-      const entries = () => Array.from(document.querySelectorAll('.d4-task-bar-entry'));
-      const earlier = new Set(entries());
-      const searching = view.startSearch('tune', {metric: 'accuracy', budgetSeconds: 900});
-      const entry = () => entries().find((e) => !earlier.has(e) && (e.textContent ?? '').includes(' trials'));
-      await awaitCheck(() => entry() !== undefined, 'The search reports no trials', TIMEOUT);
-      cancelTaskBarEntry(entry());
-      await awaitCheck(() => !view.isTraining, 'The cancelled search does not end', TIMEOUT);
-      await searching;
-      expect(view.lastTraining?.result.search?.stopped, 'cancelled');
-      expect(balloonWith('Search cancelled') !== null, true, 'No balloon on a cancel');
-      expect(searchGrid(view).dataFrame.rowCount, 1);
+      await cancelSearchOnceSettled(view, 'Tuning XGBoost',
+        (maxTrials) => view.startSearch('tune', {metric: 'accuracy', maxTrials}));
+      expect(view.lastTraining?.result.search?.leaders.length, 1);
     } finally {
       await closeTrainView(view, [iris]);
     }
@@ -4638,15 +4833,14 @@ category('UI: Search', () => {
         const before = states();
         expect(before.includes('Split seed false'), true, before.join(', '));
         const count = view.runs.length;
-        const searching = view.startSearch('tune', {metric: 'accuracy', budgetSeconds: 60, maxTrials: 6});
+        const searching = view.startSearch('tune', {metric: 'accuracy', maxTrials: 6});
         expectArray(enabledInputs(view), []);
         // Tune is gated only in Auto-tune: in Manual it is hidden.
         expect(isDisabled(view.tuneButton) || view.tuneButton.offsetParent === null, true,
           'Tune is shown and enabled during the search');
         view.restoreRun(view.runs[1]);
         clickRunsRow(runsGrid(view), 1);
-        view.restoreLeader({method: 'XGBoost', hyperparameters: {iterations: 11}, score: 0, se: 0, foldScores: [],
-          trials: 1, chosen: false});
+        view.restoreLeader({method: 'XGBoost', hyperparameters: {iterations: 11}});
         expectArray(enabledInputs(view), []);
         await searching;
         expect(view.lastTraining?.result.search?.mode, 'tune', 'The search was superseded');
@@ -4676,15 +4870,22 @@ category('UI: Search', () => {
       expect(headerTooltip(grid, 'Test').startsWith('Value on the rows held out before the search'), true,
         headerTooltip(grid, 'Test'));
       const lines = Array.from(table.root.querySelectorAll('ul > li'), (li) => li.textContent ?? '');
-      expect(lines.includes('Search: Tune by Accuracy, 1 minute: 12 trials of 1 method, chosen by the ' +
+      expect(lines.includes('Search: Tune by Accuracy, limit 1 min: 12 trials of 1 method, chosen by the ' +
         'one-standard-error rule'), true, lines.join(' | '));
+      const halving = new MetricsTable({...summary!, search: {...searchRecord(), mode: 'best', budgetSeconds: undefined,
+        maxTrials: 100, strategy: 'halving'}});
+      expect((halving.root.textContent ?? '').includes('Search: Find best model by Accuracy, limit 100 trials, Focus ' +
+        'on leaders: 1 method, chosen by the highest Accuracy − SE'), true, halving.root.textContent ?? '');
+      const continued = new MetricsTable({...summary!, search: {...searchRecord(), maxTrials: 50}});
+      expect((continued.root.textContent ?? '').includes('Search: Tune by Accuracy, limit 1 min + 50 trials: 12 ' +
+        'trials of 1 method'), true, continued.root.textContent ?? '');
       expect(lines.includes('Test: 1170 rows held out before the search'), true, lines.join(' | '));
       const optimistic = new MetricsTable({...summary!, search: searchRecord()});
       expect((optimistic.root.textContent ?? '').includes('Validation after a search is optimistic'), true,
         optimistic.root.textContent ?? '');
 
       const accordion = modelAccordion(ForgeModelHandler.rowOf(model), model);
-      await expectPaneText(accordion, 'Details', ['Search', 'Tune (Accuracy, 1 minute, 12 trials)']);
+      await expectPaneText(accordion, 'Details', ['Search', 'Tune (Accuracy, limit 1 min, 12 trials)']);
     } finally {
       await deleteModel(id);
     }
@@ -4692,8 +4893,8 @@ category('UI: Search', () => {
 });
 
 category('UI: Cards', () => {
-  test('the current card is the newest completed training: title, line, Performance as the grid, the status; a ' +
-    'Table change empties it', async () => {
+  test('the current card is the newest completed training: title, nothing under it, Performance as the grid, ' +
+    'Settings without a status; a Table change empties it', async () => {
     const iris = await openIris();
     const demog = grok.shell.addTable(await openDemog());
     const view = await openTrainView(iris);
@@ -4702,22 +4903,24 @@ category('UI: Cards', () => {
       expect(cards.current === view.runs[0], true, 'The current card is not the newest run');
       const first = currentCard(view);
       expect(isShown(cards.root) && isShown(first), true, 'The current card is hidden');
-      expectArray([first.dataset.forgeRun ?? '', first.querySelector('.forge-card-title')?.textContent ?? '',
-        cardLine(first)], ['1', 'XGBoost', '4 features']);
-      expect(await enterTooltip(first.querySelector<HTMLElement>('.forge-card-line')!),
-        `Features: ${MEASUREMENTS.join(', ')}Preparation: none`);
+      expectArray([first.dataset.forgeRun ?? '', first.querySelector('.forge-card-title')?.textContent ?? ''],
+        ['1', 'XGBoost']);
+      expect(`${cardCaption(first)} ${cardParts(first).length} ${cardParts(first)[0]}`, 'null 2 forge-card-header',
+        'Something between the header and the tabs');
       expectArray(visibleIcons(first), ['+']);
       expect(pinIcon(first).getAttribute('aria-label'), 'Pin to compare with other models');
       expect(cardTabs(view, first).currentPane.name, 'Performance');
 
       const grid = gridWith(view.resultsPane.root, 'Metric').dataFrame;
+      const gridMetrics: string[] = grid.getCol('Metric').toList();
+      const ordered = ['Balanced accuracy', ...gridMetrics.filter((m) => m !== 'Balanced accuracy')];
       const performance = paneTable(view, first, 'Performance');
       const rows = tableText(performance);
       expectArray(rows[0], ['Metric', 'Train', 'Validation']);
-      expectArray(rows.slice(1).map((row) => row[0]), grid.getCol('Metric').toList());
-      for (const [i, row] of rows.slice(1).entries()) {
+      expectArray(rows.slice(1).map((row) => row[0]), ordered.slice(0, 3));
+      for (const row of rows.slice(1)) {
         expectArray(row.slice(1), ['Train', 'Validation'].map((column) => {
-          const value: number | null = grid.get(column, i);
+          const value: number | null = grid.get(column, gridMetrics.indexOf(row[0]));
           return value === null ? '' : value.toFixed(3);
         }));
       }
@@ -4725,10 +4928,12 @@ category('UI: Cards', () => {
       const valueColors = new Set(valueCells(performance).slice(performance.rows[0].cells.length - 1)
         .map((cell) => getComputedStyle(cell.firstElementChild ?? cell).color));
       expect(valueColors.size, 1, `The values of Performance have the colors ${[...valueColors].join(', ')}`);
-      expect(Math.abs(spaceUnder(first, performance)) <= 1, true,
-        `${spaceUnder(first, performance)} px under Performance`);
+      const more = moreLink(first)!;
+      expect(more.textContent, 'Show more');
+      expect(Math.abs(spaceUnder(first, more)) <= 1, true, `${spaceUnder(first, more)} px under Show more`);
 
       expect(view.runs[0].settingsStatus, 'Default');
+      expect(cardCaption(first), null, 'A card of the default settings has a caption');
       tabHeader(first, 'Settings').click();
       const settingsTable = paneTable(view, first, 'Settings');
       const settings = tableText(settingsTable);
@@ -4737,17 +4942,10 @@ category('UI: Cards', () => {
         [...view.hyperparameterInputs.values()].map((input) => input.caption));
       const iterations = view.hyperparameterInputs.get('iterations')!.caption;
       expect(settings.find((row) => row[0] === iterations)?.[1], '20');
-      const status = first.querySelector<HTMLElement>('.forge-tune-status-text')!;
-      expect(status.textContent, 'Default');
+      expect(first.querySelector('.forge-tune-status-text'), null, 'The Settings tab shows a status');
       expect(notRightAligned(settingsTable), 0, 'A value of Settings is not right-aligned');
       expect(Math.abs(spaceUnder(first, settingsTable)) <= 1, true,
         `${spaceUnder(first, settingsTable)} px under Settings`);
-      const [statusBox, keyBox] = [status, settingsTable.rows[1].cells[0].firstElementChild!]
-        .map((e) => e.getBoundingClientRect());
-      expect(statusBox.bottom <= settingsTable.getBoundingClientRect().top + 1, true,
-        'The status is not above the Settings table');
-      expect(Math.abs(statusBox.left - keyBox.left) <= 1, true,
-        `The status starts at ${statusBox.left}, the settings at ${keyBox.left}`);
       const form = view.root.querySelector<HTMLElement>('.forge-train-form')!;
       expect(form.scrollWidth <= form.clientWidth, true, `${form.scrollWidth} > ${form.clientWidth}`);
 
@@ -4760,7 +4958,8 @@ category('UI: Cards', () => {
       expect(cards.root.querySelectorAll('.forge-card').length, 1);
       expect(cards.root.querySelectorAll('.d4-tab-host').length, 1);
       expect(cardTabs(view, second).currentPane.name, 'Settings', 'The new card is not on the shared tab');
-      expect(second.querySelector('.forge-tune-status-text')?.textContent, 'Customized');
+      expect(`${cardCaption(second)} ${second.querySelector('.forge-card-settings') !== null}`, 'null true',
+        'A card of customized settings has a caption, or no Settings tab');
 
       view.tableInput.value = demog;
       expect(cards.current === undefined && cards.pinned.length === 0, true, 'A Table change keeps the cards');
@@ -4810,14 +5009,14 @@ category('UI: Cards', () => {
         const third = currentCard(view);
         expect(third.dataset.forgeRun, '3');
         expectArray(visibleIcons(third), []);
-        expect(third.querySelector('.forge-tune-status-text') === null, true, 'Settings built before a switch');
+        expect(third.querySelector('.forge-card-settings') === null, true, 'Settings built before a switch');
 
         tabHeader(pinnedCards(view)[0], 'Settings').click();
         await delay(CHECK_DELAY_MS * 3);
         expect(!view.isTraining && view.runs.length === 3, true, 'A tab header click trained');
         expectArray([third, ...pinnedCards(view)].map((card) => cardTabs(view, card).currentPane.name),
           ['Settings', 'Settings', 'Settings']);
-        expect(third.querySelector('.forge-tune-status-text')?.textContent, 'Default');
+        expect(third.querySelector('.forge-card-settings') !== null, true, 'The Settings tab is not built on a switch');
 
         const other = pinnedCards(view)[0];
         unpinIcon(other).click();
@@ -4831,6 +5030,45 @@ category('UI: Cards', () => {
         unpinIcon(pinnedCards(view)[0]).click();
         expect(cards.pinned.length, 0);
         expectArray(visibleIcons(third), ['+']);
+      } finally {
+        await closeTrainView(view, [iris]);
+      }
+    }, {timeout: TIMEOUT});
+
+  test('Performance shows three metrics, the default one first; Show more / Show less applies to its own card',
+    async () => {
+      const iris = await openIris();
+      const view = await openTrainView(iris);
+      try {
+        pinIcon(currentCard(view)).click();
+        setHyperparameter(view, 'iterations', 30);
+        await awaitTrained(view);
+        const cards = [currentCard(view), ...pinnedCards(view)];
+        const all = metricIdsOf({metrics: view.runs[0].metrics!}).map((id) => METRIC_LABELS[id]);
+        const ordered = ['Balanced accuracy', ...all.filter((m) => m !== 'Balanced accuracy')];
+        expect(ordered.length > 3, true, `Only ${ordered.join(', ')}`);
+        expectArray(cards.map((card) => cardMetrics(view, card).join(', ')),
+          cards.map(() => ordered.slice(0, 3).join(', ')));
+        const shown = () => cards.map((card) => `${cardMetrics(view, card).length} ${moreLink(card)?.textContent}`);
+        expect(await enterTooltip(moreLink(cards[0])!), 'Show all metrics');
+        moreLink(cards[0])!.click();
+        expect(cardMetrics(view, cards[0]).join(', '), ordered.join(', '));
+        expectArray(shown(), [`${ordered.length} Show less`, '3 Show more']);
+        expect(await enterTooltip(moreLink(cards[0])!), 'Show fewer metrics');
+        const runs = view.runs.length;
+        moreLink(cards[1])!.click();
+        await delay(CHECK_DELAY_MS * 3);
+        expect(`${view.runs.length} ${view.isTraining}`, `${runs} false`, 'Show more on a pinned card trained');
+        expectArray(shown(), [`${ordered.length} Show less`, `${ordered.length} Show less`]);
+        moreLink(cards[0])!.click();
+        expectArray(shown(), ['3 Show more', `${ordered.length} Show less`]);
+        moreLink(cards[0])!.click();
+        setHyperparameter(view, 'iterations', 40);
+        await awaitTrained(view);
+        const current = currentCard(view);
+        expect(`${cardMetrics(view, current).length} ${moreLink(current)?.textContent}`, '3 Show more',
+          'A new current card is expanded');
+        expect(cardMetrics(view, cards[1]).length, ordered.length, 'The pinned card collapsed');
       } finally {
         await closeTrainView(view, [iris]);
       }
@@ -4852,8 +5090,7 @@ category('UI: Cards', () => {
       await awaitTrained(view);
       const regression = currentCard(view);
       expect(isShown(regression) && !isShown(pinned), true, 'The regression card is hidden or the pinned one shown');
-      expectArray(tableText(paneTable(view, regression, 'Performance')).slice(1).map((row) => row[0]),
-        ['MSE', 'RMSE', 'MAE', 'R2']);
+      expectArray(cardMetrics(view, regression), ['R2', 'MSE', 'RMSE']);
 
       view.targetInput.value = species;
       expect(isShown(pinned) && !isShown(regression), true, 'The pinned card is not back at once');
@@ -4873,10 +5110,516 @@ category('UI: Cards', () => {
   }, {timeout: TIMEOUT});
 });
 
+/** Chooses Auto in [view]'s Method and waits until the check has listed the methods. */
+async function chooseAuto(view: TrainView): Promise<FindSettings> {
+  view.methodInput.value = 'Auto';
+  await awaitCheck(() => view.findSettings.checkedMethods.length > 0 && resultsState(view) === 'false/false',
+    'Auto lists no checked method', TIMEOUT);
+  return view.findSettings;
+}
+
+/** The Find best model settings [view] remembers, its pending save written first. */
+function storedFind(view: TrainView): {[key: string]: any} {
+  view.findSettings.flushSave();
+  return TuneSettings.storedRecord(FIND_KEY);
+}
+
+/** The items of the Candidates of [find]: each listed method's name and check. */
+const findItems = (find: FindSettings) =>
+  Array.from(find.candidates.root.querySelectorAll<HTMLElement>('.ui-input-multi-choice-checks > div'),
+    (item) => ({name: item.textContent ?? '', check: item.querySelector('input')!}));
+const listedMethods = (find: FindSettings) => findItems(find).map((i) => i.name);
+
+function findItem(find: FindSettings, name: string): {check: HTMLInputElement} {
+  const found = findItems(find).find((i) => i.name === name);
+  if (found === undefined)
+    throw new Error(`No method ${name} in Candidates`);
+  return found;
+}
+
+/** Toggles the method [name] of the Candidates of [find], as a click does. */
+const clickMethod = (find: FindSettings, name: string) => findItem(find, name).check.click();
+
+category('UI: Find best', () => {
+  test('Auto is the first Method item; choosing it shows the Find block, keeps the model shown and runs nothing',
+    async () => {
+      const iris = await openIris();
+      const view = await openTrainView(iris);
+      try {
+        expect(view.methodInput.items[0], 'Auto');
+        const trained = `${view.runs.length} ${shownRun(view)} ${view.resultsPane.frames.length}`;
+        const training = view.lastTraining;
+        const find = await chooseAuto(view);
+        expect(view.isAutoMethod, true);
+        expect(`${isShown(view.tuneSettings.root)} ${isShown(find.root)} ${isTrainShown(view)}`, 'false true false',
+          'Tune, Find, Train shown');
+        expect([...view.hyperparameterInputs.values()].every((i) => i.root.offsetParent === null), true,
+          'A setting of the method is shown under Auto');
+        expect(await enterTooltip(view.methodInput.captionLabel),
+          'Auto: Find tries every checked method and trains the best one');
+        await delay(CHECK_DELAY_MS * 3);
+        expect(`${view.runs.length} ${shownRun(view)} ${view.resultsPane.frames.length}`, trained,
+          'Auto trained or hid the model\'s results');
+        expect(view.lastTraining === training && !view.isTraining, true, 'Auto dropped or retrained the model');
+        expect(resultsText(view).includes('Click Find'), false, resultsText(view));
+        view.featuresInput.value = view.featuresInput.value.slice(1);
+        await awaitCheck(() => resultsText(view).includes('Click Find'), 'No Click Find without a model', WAIT_MS);
+        expect(shownRun(view), null, 'A model is shown after a Features change');
+        expect(find.statusText.textContent, 'Not searched');
+        expect(await enterTooltip(find.statusText), 'Click Find to search');
+        const classifiers = COST_RANK.filter((name) => CLASSIFIERS.includes(name));
+        expectArray(listedMethods(find), classifiers);
+        expectArray(find.checkedMethods, classifiers.filter((name) => name !== 'RealMLP'));
+        find.limit.kind.value = TIME;
+        find.limit.minutes.value = 5;
+        expect(findItem(find, 'RealMLP').check.checked, true, 'RealMLP unchecked at 5 minutes');
+        find.limit.minutes.value = 1;
+        expect(findItem(find, 'RealMLP').check.checked, false, 'RealMLP checked at 1 minute');
+        const runs = view.runs.length;
+        clickMethod(find, 'XGBoost');
+        expect(storedFind(view).methods?.XGBoost, false, 'The toggle is not remembered');
+        await delay(CHECK_DELAY_MS * 3);
+        expect(`${view.runs.length} ${view.isTraining}`, `${runs} false`, 'Auto trained');
+        for (const name of find.checkedMethods)
+          clickMethod(find, name);
+        expect(await hoverText(view.findButton), 'Check at least one method');
+        view.methodInput.value = 'XGBoost';
+        expect(`${isShown(view.tuneSettings.root)} ${isShown(find.root)}`, 'true false', 'Tune, Find shown');
+        await awaitTrained(view);
+      } finally {
+        await closeTrainView(view, [iris]);
+        clearTestTuneStorage();
+      }
+    }, {timeout: TIMEOUT});
+
+  test('Limit shows Max time in minutes with a clicker or Max trials; each validator disables Tune or Find with its ' +
+    'reason and starts no search', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      const tune = autoTune(view);
+      const {limit} = tune;
+      const shown = (l: LimitInputs) => [l.minutes, l.trials].filter((i) => i.root.offsetParent !== null)
+        .map((i) => i.caption).join(',');
+      expectArray(optionsOfRadio(limit.kind), [TIME, TRIALS]);
+      expect(`${limit.kind.value} ${limit.minutes.value} ${limit.trials.value} ${shown(limit)}`,
+        `${TRIALS} 1 50 Max trials`);
+      limit.kind.value = TIME;
+      expect(shown(limit), 'Max time');
+      expectOneUnderline(limit);
+      limit.minutes.root.querySelector<HTMLElement>('.ui-input-plus')!.click();
+      expect(limit.minutes.value, 2, 'The clicker does not step by 1');
+      expect(tune.choice().budgetSeconds, 120);
+      limit.kind.value = TRIALS;
+      expect(`${shown(limit)} ${tune.choice().maxTrials} ${tune.choice().budgetSeconds}`, 'Max trials 50 undefined');
+      await awaitCheck(() => !isDisabled(view.tuneButton), 'Tune stays disabled', WAIT_MS);
+      const runs = view.runs.length;
+      const blocked = async (button: HTMLElement, reason: string, start: () => Promise<void>) => {
+        expect(await hoverText(button), reason);
+        await start();
+        expect(`${view.runs.length} ${view.isTraining} ${isShown(view.searchPanel.root)}`, `${runs} false false`,
+          `A search started with ${reason}`);
+      };
+      const tuneReason = (problem: string) => blocked(view.tuneButton, problem,
+        () => view.startSearch('tune', tune.choice()));
+      for (const [n, message] of [[0, MORE_THAN_1], [10001, 'Value must be less than 10000']] as const) {
+        limit.trials.value = n;
+        expect(limit.trials.validity !== null && tune.isExpanded, true, `Trials ${n} is not marked`);
+        await tuneReason(`Max trials: ${message}`);
+      }
+      limit.trials.stringValue = 'abc';
+      expect(tune.problem(), 'Max trials: \'abc\' is not an integer.');
+      limit.trials.value = 50;
+      limit.kind.value = TIME;
+      for (const [n, message] of [[0, MORE_THAN_1], [61, 'Value must be less than 60']] as const) {
+        limit.minutes.value = n;
+        expect(limit.minutes.validity, message);
+        await tuneReason(`Max time: ${message}`);
+      }
+      limit.minutes.value = 1;
+      expect(limit.trials.validity, null, 'The hidden Trials is validated');
+
+      const find = await chooseAuto(view);
+      find.setExpanded(true);
+      expectArray(optionsOfRadio(find.strategy), ['Equal', 'Leaders']);
+      expect(`${find.strategy.value} ${find.limit.kind.value} ${find.limit.minutes.value} ${find.limit.trials.value}`,
+        `Equal ${TRIALS} 1 100`);
+      find.limit.kind.value = TIME;
+      const options = Array.from(find.strategy.root.querySelectorAll<HTMLElement>('.ui-radio-button'));
+      expect(new Set(options.map((o) => Math.round(o.getBoundingClientRect().top))).size, 1, 'Strategy wraps');
+      expectArray([await enterTooltip(radioOption(find.strategy, 'Equal')!),
+        await enterTooltip(radioOption(find.strategy, 'Leaders')!)],
+      ['Every method gets an equal share of the limit: a fair comparison',
+        'Each round the worse half drops out; the rest get more trials']);
+      const findReason = (problem: string) => blocked(view.findButton, problem,
+        () => view.startSearch('best', find.choice()));
+      expectOneUnderline(find.limit);
+      find.limit.minutes.value = 61;
+      await findReason('Max time: Value must be less than 60');
+      find.limit.minutes.value = 1;
+      const checked = find.checkedMethods.length;
+      stopAfterTrials(find.limit, checked - 1);
+      await findReason(`Max trials: At least one trial per checked method: ${checked}`);
+      expect(find.limit.trials.validity, `At least one trial per checked method: ${checked}`);
+      find.strategy.value = 'Leaders';
+      expect(`${find.problem()} ${find.choice().strategy}`, 'null halving');
+      find.strategy.value = 'Equal';
+      clickMethod(find, find.checkedMethods[0]);
+      expect(find.problem(), null, 'A trial per checked method still blocks Find');
+      find.limit.trials.value = 0;
+      await findReason(`Max trials: ${MORE_THAN_1}`);
+    } finally {
+      await closeTrainView(view, [iris]);
+      clearTestTuneStorage();
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Find remembers Strategy and the limit; an old stored time becomes whole minutes', async () => {
+    const iris = await openIris();
+    grok.userSettings.add(TuneSettings.storage, FIND_KEY, JSON.stringify({seconds: 30, trials: 70}));
+    let view = await openTrainView(iris);
+    try {
+      let find = await chooseAuto(view);
+      expect(`${find.strategy.value} ${find.limit.kind.value} ${find.limit.minutes.value} ${find.limit.trials.value}`,
+        `Equal ${TIME} 1 70`);
+      find.strategy.value = 'Leaders';
+      find.limit.minutes.value = 7;
+      stopAfterTrials(find.limit, 40);
+      const stored = storedFind(view);
+      expect(`${stored.strategy} ${stored.limit} ${stored.minutes} ${stored.trials} ${stored.seconds}`,
+        `halving ${TRIALS} 7 40 undefined`);
+      await closeTrainView(view, [iris]);
+      view = await openTrainView(iris);
+      find = await chooseAuto(view);
+      expect(`${find.strategy.value} ${find.limit.kind.value} ${find.limit.minutes.value} ${find.limit.trials.value}`,
+        `Leaders ${TRIALS} 7 40`);
+      grok.userSettings.add(TuneSettings.storage, FIND_KEY, JSON.stringify({strategy: 'fast', seconds: 3600.5}));
+      const {strategy, limit, minutes, trials} = FindSettings.load();
+      expect(`${strategy} ${limit} ${minutes} ${trials}`, `equal ${TIME} 60 100`);
+    } finally {
+      await closeTrainView(view, [iris]);
+      clearTestTuneStorage();
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Find\'s Search options starts collapsed with Find shown, its state is remembered, a problem opens it',
+    async () => {
+      const iris = await openIris();
+      let view = await openTrainView(iris);
+      try {
+        let find = await chooseAuto(view);
+        expect(`${find.isExpanded} ${isShown(find.grid)}`, 'false false', 'Search options starts expanded');
+        expect(view.findButton.offsetParent !== null, true, 'Find is hidden while Search options is collapsed');
+        expect(await enterTooltip(find.toggle), 'Show search options');
+        find.toggle.click();
+        expect(`${find.isExpanded} ${isShown(find.grid)}`, 'true true');
+        expect(storedFind(view).expanded, true, 'The expanded state is not stored');
+        await closeTrainView(view, [iris]);
+
+        view = await openTrainView(iris);
+        find = await chooseAuto(view);
+        expect(find.isExpanded, true, 'The expanded state is not restored');
+        find.toggle.click();
+        expect(find.isExpanded, false);
+        find.limit.kind.value = TIME;
+        find.limit.minutes.value = 0;
+        expect(find.isExpanded, true, 'An invalid time leaves Search options collapsed');
+      } finally {
+        await closeTrainView(view, [iris]);
+        clearTestTuneStorage();
+      }
+    }, {timeout: TIMEOUT});
+
+  test('Find trains the best method and sets Method to it in Manual as Auto-tuned; Search lists every method; a ' +
+    'Search row trains its method; Find again continues the search', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      await chooseAuto(view);
+      const choice = {metric: 'accuracy' as const, maxTrials: 8, methods: ['XGBoost', 'Decision Tree', 'Softmax']};
+      await view.startSearch('best', choice);
+      const search = view.lastTraining?.result.search;
+      expect(search?.mode, 'best');
+      const chosen = search!.leaders.find((l) => l.chosen)!;
+      expect(view.methodInput.value, chosen.method);
+      expect(view.lastTraining?.engine.name, chosen.method);
+      expect(`${view.isAutoMethod} ${view.tuneSettings.isAuto}`, 'false false', 'Auto, Auto-tune');
+      // Auto-tuned even when the winner's settings are its defaults.
+      expect(statusOf(view), 'Auto-tuned');
+      expect(view.runs[0].settingsStatus, 'Auto-tuned');
+      const found = `Found by Find best model: ${search!.trials} trials`;
+      const runTooltip = gridTooltip(runsGrid(view), runsGrid(view).cell('Method', 0));
+      expect(runTooltip.startsWith(found), true, runTooltip);
+      const card = currentCard(view);
+      expect(cardMetrics(view, card)[0], 'Accuracy', 'The optimized metric is not first');
+      expect(cardCaption(card), 'Auto-tuned model');
+      const grid = searchGrid(view);
+      expect(grid.dataFrame.rowCount, 3);
+      expect(grid.dataFrame.getCol('Chosen').toList().filter((c) => c === true).length, 1);
+      expectSearchOrder(grid, search!.leaders);
+      expect(headerTooltip(grid, 'Accuracy (CV)').includes('By cross-validation'), true, 'The CV header');
+      expectChartOrder(view.searchPanel.chart!, grid);
+      expect(resultsText(view).includes('Search: Find best model by Accuracy, limit 8 trials: ' +
+        `${search!.leaders.length} method`), true, resultsText(view));
+      expect(balloonWith('Best model:') !== null, true, 'No balloon after Find');
+      // An equal split: each method's count is its share, unless its space ran out.
+      const notes = grid.dataFrame.getCol('Method').toList()
+        .map((_, row) => gridTooltip(grid, grid.cell('Trials', row)));
+      expectArray(notes.filter((n) => n !== 'Its share of the limit ran out' && n !== 'Its space was exhausted'), []);
+      const other = search!.leaders[1];
+      view.restoreLeader(other);
+      await awaitTrained(view);
+      expect(view.methodInput.value, other.method);
+      expect(isShown(view.searchPanel.root), true, 'A Search row click hid Search');
+      expect(view.methodInput.items[0], 'Auto');
+
+      await chooseAuto(view);
+      await view.startSearch('best', choice);
+      const again = view.lastTraining!.result.search!;
+      expect(`${again.trials > search!.trials} ${again.trials <= search!.trials + 8} ${again.maxTrials}`,
+        'true true 16', `${search!.trials} trials, then ${again.trials}`);
+      const trials: number[] = searchGrid(view).dataFrame.getCol('Trials').toList();
+      expect(trials.reduce((sum, n) => sum + n, 0), again.trials, 'Search does not count every trial');
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: SEARCH_TIMEOUT});
+
+  test('Search: the cautious scores as a bar chart left of the grid over its frame, described, no title, line, ' +
+    'coloring or selectors; splitters between the blocks; a halving round in the tooltips; a bar click trains its ' +
+    'method',
+  async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      await chooseAuto(view);
+      await view.startSearch('best', {metric: 'accuracy', maxTrials: 16, strategy: 'halving',
+        methods: ['Naive Bayes', 'Decision Tree', 'k-Nearest Neighbors', 'XGBoost', 'Extra Trees', 'Random Forest']});
+      const search = view.lastTraining!.result.search!;
+      expect(`${search.strategy} ${search.maxTrials}`, 'halving 16');
+      const naiveBayes = searchGrid(view).dataFrame.getCol('Method').toList().indexOf('Naive Bayes');
+      expect(gridTooltip(searchGrid(view), searchGrid(view).cell('Trials', naiveBayes)), 'No settings to tune');
+      expect(resultsText(view).includes('Search: Find best model by Accuracy, limit 16 trials, Focus on leaders: ' +
+        `${search.leaders.length} method`), true, resultsText(view));
+      const chart = view.searchPanel.chart!;
+      const grid = searchGrid(view);
+      await delay(500);
+      const [chartBox, gridBox] = [chart.root, grid.root].map((e) => e.getBoundingClientRect());
+      const share = chartBox.width / (chartBox.width + gridBox.width);
+      expect(chartBox.right <= gridBox.left + 1 && Math.abs(share - 2 / 3) < 0.03 &&
+        Math.abs(chartBox.top - gridBox.top) <= 1 && Math.abs(chartBox.height - gridBox.height) <= 1, true,
+      `The chart at ${chartBox.left}-${chartBox.right} (${share} of the width), ${chartBox.height} px high at ` +
+        `${chartBox.top}; the grid at ${gridBox.left}, ${gridBox.height} px at ${gridBox.top}`);
+      const splitOf = (root: HTMLElement) => root.parentElement?.parentElement;
+      expect(splitOf(chart.root) === splitOf(grid.root) && splitOf(chart.root)?.classList.contains('ui-split-h'), true,
+        'The chart and the grid share no splitter');
+      // Wrong predictions, Search and Runs in one vertical splitter.
+      const split = view.searchPanel.root.closest('.ui-split-v');
+      const wrong = Array.from(view.resultsPane.root.querySelectorAll<HTMLElement>('.forge-results-title'))
+        .find((t) => t.textContent === 'Wrong predictions');
+      expect(split !== null && split.contains(view.runsPanel.root) && wrong !== undefined && split.contains(wrong),
+        true, 'Wrong predictions, Search and Runs are not in one splitter');
+      const {props} = chart;
+      expectArray([props.showValueSelector, props.showCategorySelector, props.showStackSelector, props.legendVisibility,
+        props.showTitle, props.description, props.descriptionVisibilityMode, props.stackColumnName ?? '',
+        props.colorColumnName ?? '', props.showSelectedRows, props.barSortType, props.barSortOrder,
+        props.valueColumnName],
+      [false, false, false, 'Never', false, 'Accuracy minus its standard error: a cautious estimate', 'Always', '', '',
+        false, 'by value', 'desc', 'Accuracy − SE']);
+      const title = view.searchPanel.root.querySelector<HTMLElement>('.forge-results-title span')!;
+      expect(await enterTooltip(title), 'Each method\'s best settings, ranked by Accuracy − SE.');
+      const frame = chart.dataFrame;
+      expect(frame === grid.dataFrame, true, 'The chart and the grid show different frames');
+      expect(frame.meta.formulaLines.items.length, 0);
+      const leaders = search.leaders;
+      expectSearchOrder(grid, leaders);
+      const bars = Object.keys(chart.getWidgetStatus().hitAreas).filter((k) => k.startsWith('bar '));
+      expectArray(bars.sort(), leaders.map((l) => `bar ${l.method}`).sort());
+      expectChartOrder(chart, grid);
+      const eliminated = (search.methods ?? []).filter((m) => m.eliminatedRound !== undefined);
+      expect(eliminated.length > 0, true, 'No method was eliminated by the halving');
+      const row = grid.dataFrame.getCol('Method').toList().indexOf(eliminated[0].method);
+      const round = `Eliminated in round ${eliminated[0].eliminatedRound! + 1}`;
+      expect(gridTooltip(grid, grid.cell('Trials', row)), round);
+      const methodTooltip = gridTooltip(grid, grid.cell('Method', row));
+      expect(methodTooltip.includes(round), true, methodTooltip);
+
+      const other = search.leaders.find((l) => !l.chosen)!;
+      const area = chart.getWidgetStatus().hitAreas[`bar ${other.method}`];
+      expect(area !== undefined, true, `No bar of ${other.method}`);
+      const canvas = chart.getInfo()['canvas'] as HTMLCanvasElement;
+      const rect = canvas.getBoundingClientRect();
+      const at = {clientX: rect.left + area.x + area.width / 2, clientY: rect.top + area.y + area.height / 2,
+        bubbles: true};
+      canvas.dispatchEvent(new MouseEvent('mousemove', at));
+      canvas.dispatchEvent(new MouseEvent('click', at));
+      await awaitCheck(() => view.methodInput.value === other.method, 'A bar click does not set its method', WAIT_MS);
+      await awaitTrained(view);
+      expect(view.lastTraining?.engine.name, other.method);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: SEARCH_TIMEOUT});
+
+  test('Find with a cancel trains the best so far and the form is locked meanwhile', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      const find = await chooseAuto(view);
+      await cancelSearchOnceSettled(view, 'Finding best model', (maxTrials) => {
+        const searching = view.startSearch('best', {metric: 'accuracy', maxTrials,
+          methods: ['XGBoost', 'Decision Tree', 'Softmax']});
+        expectArray(enabledInputs(view), []);
+        expect(find.inputs.every((i) => !i.enabled) && find.metric.disabled &&
+          findItems(find).every((i) => i.check.disabled), true, 'The Find block is not locked');
+        return searching;
+      });
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: SEARCH_TIMEOUT});
+
+  test('Candidates lists only the methods the server, Predict probability and metric rules allow', async () => {
+    const find = new FindSettings(ui.button('Find', () => {}), ui.label('Method'), {onChanged: () => {}});
+    const form = ui.form([]);
+    form.append(find.root);
+    document.body.append(form);
+    const notListed = (reason: string) => `Not listed: ${reason}`;
+    try {
+      find.setMethods([{name: 'XGBoost', isLive: true, isServer: false, probabilities: 'always'},
+        {name: 'SVM', isLive: true, isServer: false, probabilities: 'input'},
+        {name: 'Chemprop', isLive: false, isServer: true, probabilities: 'none'},
+        {name: 'Plain', isLive: false, isServer: false, probabilities: 'none'},
+        {name: 'RealMLP', isLive: false, isServer: false, probabilities: 'always'}]);
+      expectArray(listedMethods(find), ['XGBoost', 'SVM', 'Plain', 'RealMLP']);
+      expect(await enterTooltip(find.candidatesLabel), 'The methods to try, each with its defaults first' +
+        notListed('Chemprop: Runs on the server; not searched in the browser'));
+      expectArray(find.checkedMethods, ['XGBoost', 'SVM']);
+      expect(find.problem(), null);
+      pick(find.metric, 'auc');
+      expectArray(listedMethods(find), ['XGBoost', 'RealMLP']);
+      const tooltip = await enterTooltip(find.candidatesLabel);
+      expect(tooltip.includes(notListed('SVM gives no class probabilities, which AUC-ROC needs')), true, tooltip);
+      expectArray(find.checkedMethods, ['XGBoost']);
+      find.setPredictProbability(true);
+      expectArray(listedMethods(find), ['XGBoost', 'SVM', 'RealMLP']);
+      expect(findItem(find, 'SVM').check.checked, false, 'SVM checked at the quick budget');
+      const probabilityTooltip = await enterTooltip(find.candidatesLabel);
+      expect(probabilityTooltip.includes(notListed('Plain gives no class probabilities')), true, probabilityTooltip);
+      find.limit.kind.value = TIME;
+      find.limit.minutes.value = 5;
+      expectArray(find.checkedMethods, ['XGBoost', 'SVM', 'RealMLP']);
+      expectArray(find.choice().methods ?? [], find.checkedMethods);
+      expect(find.probabilityReason, null);
+      for (const name of ['XGBoost', 'SVM', 'RealMLP'])
+        clickMethod(find, name);
+      expect(`${find.probabilityReason} ${find.problem()}`, 'null Check at least one method');
+      find.setPredictProbability(false);
+      pick(find.metric, 'accuracy');
+      expectArray(find.checkedMethods, ['Plain']);
+      expect(find.probabilityReason, 'No checked method gives class probabilities');
+      find.setLocked(true);
+      expect(find.inputs.every((i) => !i.enabled) && find.metric.disabled &&
+        findItems(find).every((i) => i.check.disabled), true, 'A control is enabled while locked');
+    } finally {
+      for (const sub of find.subs)
+        sub.unsubscribe();
+      form.remove();
+      clearTestTuneStorage();
+    }
+  }, {timeout: TIMEOUT});
+
+  test('the Find block looks like the Auto-tune block', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      // The platform sets the form's label width a while after an input shows (the block's Time among them).
+      const labelWidths = () => Array.from(view.root.querySelectorAll<HTMLElement>('label.ui-input-label'))
+        .filter((l) => l.offsetParent !== null).map((l) => l.style.minWidth).join(',');
+      const settle = async () => {
+        for (let last = '', i = 0; i < 20 && labelWidths() !== last; i++) {
+          last = labelWidths();
+          await delay(600);
+        }
+      };
+      autoTune(view);
+      await awaitCheck(() => !isDisabled(view.tuneButton), 'Tune stays disabled', WAIT_MS);
+      await settle();
+      const tune = searchBlockLines(view.tuneSettings, view.tuneButton);
+      const find = await chooseAuto(view);
+      await awaitCheck(() => !isDisabled(view.findButton), 'Find stays disabled', WAIT_MS);
+      expect(find.isExpanded, false, 'Search options is expanded by default');
+      find.setExpanded(true);
+      expect(find.statusText.textContent, 'Not searched');
+      await settle();
+      expectArray(searchBlockLines(find, view.findButton), tune);
+      const methodLabel = view.methodInput.captionLabel.getBoundingClientRect();
+      const status = textRect(find.statusText);
+      expect(status.top >= methodLabel.bottom - 1 &&
+        (find.statusText.parentElement!.compareDocumentPosition(find.toggle) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+      true, 'The status is not between Method and Search options');
+      expectArray(Array.from(find.grid.querySelectorAll('.forge-tune-label'), (l) => l.textContent ?? ''),
+        ['Metric', 'Strategy', 'Limit', 'Max time', 'Max trials', 'Candidates']);
+      const settings = [...view.hyperparameterInputs.values()].map((i) => i.caption);
+      expectArray(Array.from(view.tuneSettings.grid.querySelectorAll('.forge-tune-label'), (l) => l.textContent ?? ''),
+        ['Metric', 'Limit', 'Max time', 'Max trials', ...settings]);
+      expect((find.grid.compareDocumentPosition(view.findButton) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0, true,
+        'Find is not after Search options');
+      expect(view.findButton.parentElement!.classList.contains('forge-tune-bar'), true, 'Find is not in a Tune bar');
+      const [candidates, metric] = [find.candidatesLabel, gridLabelOf(find.grid, 'Metric')]
+        .map((e) => e.getBoundingClientRect());
+      // Labels beside the inputs: the first check level with Candidates; above them: under it.
+      const isCondensed = find.root.closest('.ui-form-condensed') !== null;
+      const firstCheck = findItems(find)[0].check.getBoundingClientRect();
+      const middle = (r: DOMRect) => r.top + r.height / 2;
+      const isPlaced = isCondensed ? firstCheck.top >= candidates.bottom - 1 :
+        Math.abs(middle(firstCheck) - middle(candidates)) < 4;
+      expect(Math.abs(candidates.right - metric.right) <= 1 && isPlaced &&
+        textStyleOf(find.candidatesLabel) === textStyleOf(gridLabelOf(find.grid, 'Metric')), true,
+      `Condensed ${isCondensed}: Candidates ends at ${candidates.right}, Metric at ${metric.right}; the first check ` +
+        `at ${firstCheck.top}-${firstCheck.bottom}, the label at ${candidates.top}-${candidates.bottom}`);
+    } finally {
+      await closeTrainView(view, [iris]);
+      clearTestTuneStorage();
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Predict probability under Auto follows the checked methods; SVM is unchecked by default while it is on',
+    async () => {
+      const iris = await twoSpeciesIris();
+      const view = await openTrainView(iris);
+      const {predictProbability} = view.preparationInputs;
+      try {
+        const find = await chooseAuto(view);
+        expect(predictProbability.enabled, true, 'Predict probability is disabled under Auto');
+        predictProbability.value = true;
+        expect(`${findItem(find, 'SVM').check.checked} ${findItem(find, 'XGBoost').check.checked}`, 'false true',
+          'SVM, XGBoost checked');
+        find.limit.kind.value = TIME;
+        find.limit.minutes.value = 5;
+        expect(findItem(find, 'SVM').check.checked, true, 'SVM unchecked at 5 minutes');
+        find.limit.minutes.value = 1;
+        expect(findItem(find, 'SVM').check.checked, false, 'SVM checked at 1 minute');
+        pick(find.metric, 'auc');
+        predictProbability.value = false;
+        expect(listedMethods(find).includes('SVM'), false, 'SVM is listed under AUC-ROC without probabilities');
+        const tooltip = await enterTooltip(find.candidatesLabel);
+        expect(tooltip.includes('Not listed: SVM gives no class probabilities, which AUC-ROC needs'), true, tooltip);
+        for (const name of find.checkedMethods)
+          clickMethod(find, name);
+        expect(predictProbability.enabled, true, 'Unchecking every method disabled Predict probability');
+        expect(await hoverText(view.findButton), 'Check at least one method');
+      } finally {
+        await closeTrainView(view, [iris]);
+        clearTestTuneStorage();
+      }
+    }, {timeout: TIMEOUT});
+});
+
 // After the categories, so their order stays: the Train views of these keep their tune settings in the tests' storage
 // ('UI: Table panel' uses it in its own hooks).
 for (const name of ['UI', 'UI: Train', 'UI: Preparation', 'UI: Results', 'UI: Save model', 'UI: Runs', 'UI: Search',
-  'UI: Cards']) {
+  'UI: Cards', 'UI: Find best']) {
   category(name, () => {
     before(async () => useTestTuneStorage());
     after(async () => clearTestTuneStorage());

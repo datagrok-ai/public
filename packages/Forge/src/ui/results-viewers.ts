@@ -46,8 +46,7 @@ export const PANEL_TEXTS: {[key in PanelText]: [title: string, tooltip: string]}
   classBalance: ['Class balance', 'How many rows each class has.'],
   visualize: ['<name>', 'The method\'s own view of the model.'],
   runs: ['Runs', 'The trainings of this view, newest first; click one to set its inputs again.'],
-  search: ['Search', 'Per method, the simplest settings within one standard error of its best, best first; the ' +
-    'chosen one is marked. Click a row to set its method and settings.'],
+  search: ['Search', 'Each method\'s best settings, ranked by the metric minus its standard error.'],
 };
 const STATISTICS_HEADERS: {[column: string]: string} = {
   'Statistic': 'Summary statistic of the column.',
@@ -373,8 +372,9 @@ function copyValues(to: DG.Column, from: DG.Column): void {
 /** The core's widget title (`d4-dialog-header`) of the panel [key], [name] in place of `<name>`, with what the
  * panel shows as the tooltip of its text, [span]. */
 export function resultsTitle(key: PanelText, name = '',
-  span = ui.span([PANEL_TEXTS[key][0].replace('<name>', () => name)])): HTMLElement {
-  ui.tooltip.bind(span, PANEL_TEXTS[key][1]);
+  span = ui.span([PANEL_TEXTS[key][0].replace('<name>', () => name)]),
+  tooltip: string | (() => string) = PANEL_TEXTS[key][1]): HTMLElement {
+  ui.tooltip.bind(span, tooltip);
   return ui.div([span], 'd4-dialog-header d4-dialog-title forge-results-title');
 }
 

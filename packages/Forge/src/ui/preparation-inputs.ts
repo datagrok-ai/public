@@ -174,13 +174,12 @@ export class PreparationInputs {
     this.updateVisibility();
   }
 
-  /** Enables Predict probability for a method that gives class probabilities ([gives]); otherwise unchecks and
-   * disables it, its tooltip saying why. */
-  setMethod(name: string, gives: boolean): void {
-    this.probabilityReason = gives ? null : `${name} gives no class probabilities`;
-    if (!gives && this.predictProbability.value)
+  /** Disables and unchecks Predict probability with [reason] as its tooltip; null enables it. */
+  setProbabilityReason(reason: string | null): void {
+    this.probabilityReason = reason;
+    if (reason !== null && this.predictProbability.value)
       this.predictProbability.value = false;
-    this.predictProbability.enabled = gives;
+    this.predictProbability.enabled = reason === null;
     this.updateProbabilityTooltip();
   }
 

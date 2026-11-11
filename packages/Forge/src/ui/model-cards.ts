@@ -4,16 +4,19 @@ import * as rxjs from 'rxjs';
 import {visibleHyperparametersOf} from '../engines/engine';
 import {METRIC_DESCRIPTIONS, METRIC_LABELS, metricFindings} from '../metrics/metrics';
 import {ValidationSettings} from '../training/k-fold';
-import {findingsOf, holdOutLine, METRIC_HEADERS, metricIdsOf, metricTooltip, valueColumns} from './metrics-table';
-import {ForgeModelHandler} from './model-handler';
-import {isSameInputs, RunsPanel, SessionRun} from './runs-panel';
-import {STATUS_TOOLTIPS} from './tune-settings';
+import {defaultMetric, SearchMode} from '../training/search';
+import {findingsOf, METRIC_HEADERS, metricIdsOf, metricTooltip, valueColumns} from './metrics-table';
+import {isSameInputs, SessionRun} from './runs-panel';
 
 const PERFORMANCE = 'Performance';
 const SETTINGS = 'Settings';
 const PIN_TOOLTIP = 'Pin to compare with other models';
 const UNPIN_TOOLTIP = 'Remove from the comparison';
 const NO_SETTINGS = 'No settings';
+/** The card's caption after a search: what it chose. */
+const CARD_CAPTIONS: Record<SearchMode, string> = {best: 'Auto-tuned model', tune: 'Auto-tuned settings'};
+/** The metric rows a card shows until Show more. */
+const SHOWN_METRICS = 3;
 
 interface Card {
   run: SessionRun;
@@ -26,8 +29,9 @@ interface Card {
 }
 
 /** The cards under the form: the current model (the newest completed training of the table) first, then the pinned
- * ones, newest first; each with its Performance and Settings tabs, switched together. A card is shown only
- * while the form's target, validation and split seed are its own ({@link keyOf}). Hidden without a card. */
+ * ones, newest first; each with its Performance and Settings tabs, switched together, and Performance's own Show more /
+ * Show less. A card is shown only while the form's target, validation and split seed are its own ({@link keyOf}).
+ * Hidden without a card. */
 export class ModelCards {
   readonly root = ui.divV([], 'forge-cards');
   private currentCard: Card | undefined;
@@ -129,8 +133,8 @@ export class ModelCards {
     ui.setDisplay(this.root, cards.length > 0);
   }
 
-  /** A card of [run]: the method and the icon ("+" on the current card, the trash on a pinned one), the line of the
-   * features and the preparation, then the tabs. A click on a pinned card, but on its tab headers or its icon,
+  /** A card of [run]: the method and the icon ("+" on the current card, the trash on a pinned one), after a search what
+   * it chose ({@link CARD_CAPTIONS}), then the tabs. A click on a pinned card, but on its tab headers or its icon,
    * restores its run. */
   private build(run: SessionRun, isPinned: boolean): Card {
     // Not a ui.div: ui.css gives a box in a ui-div 400 x 300 px, and the tabs are as tall as the shown pane.
@@ -142,21 +146,45 @@ export class ModelCards {
       ui.icons.add(() => this.pin(run), PIN_TOOLTIP);
     icon.classList.add('forge-card-icon', isPinned ? 'forge-card-unpin' : 'forge-card-pin');
     const header = ui.divH([ui.divText(run.engine.name, 'forge-card-title'), icon], 'forge-card-header');
-    const line = ui.divText(ModelCards.lineText(run), 'forge-card-line');
-    ui.tooltip.bind(line, () => ModelCards.lineTooltip(run));
-    const tabs = ui.tabControl({[PERFORMANCE]: () => ModelCards.performanceTable(run),
-      [SETTINGS]: () => ModelCards.settingsTable(run)});
+    const caption = run.search === undefined ? [] :
+      [ui.divText(CARD_CAPTIONS[run.search.mode], 'forge-card-caption')];
+    const performance = ModelCards.performance(run);
+    const tabs = ui.tabControl({[PERFORMANCE]: performance, [SETTINGS]: () => ModelCards.settingsTable(run)});
     tabs.currentPane = tabs.getPane(this.tab);
     const sub = tabs.onTabChanged.subscribe(() => this.syncTabs(tabs));
-    root.append(header, line, tabs.root);
+    root.append(header, ...caption, tabs.root);
     if (isPinned) {
       root.addEventListener('click', (e) => {
-        if (e.target instanceof Node && !tabs.header.contains(e.target) && !icon.contains(e.target))
+        if (e.target instanceof Element && !tabs.header.contains(e.target) && !icon.contains(e.target) &&
+          e.target.closest('.forge-card-more') === null)
           this.onRestore(run);
       });
     }
     return {run, key: ModelCards.keyOf(run.targetName, run.validation, run.seed), root, tabs, sub,
       pin: isPinned ? undefined : icon};
+  }
+
+  /** The Performance pane of [run]: its metrics table, the rows after the first {@link SHOWN_METRICS} hidden, and with
+   * more metrics than that Show more, which shows them and turns into Show less, and back. */
+  private static performance(run: SessionRun): HTMLElement {
+    const table = ModelCards.performanceTable(run);
+    if (!(table instanceof HTMLTableElement) || table.rows.length <= SHOWN_METRICS + 1)
+      return ui.divV([table]);
+    const extra = Array.from(table.rows).slice(SHOWN_METRICS + 1);
+    let showsAll = false;
+    const more = ui.link('', () => {
+      ui.tooltip.hide();
+      showsAll = !showsAll;
+      show();
+    }, undefined, 'forge-card-more');
+    ui.tooltip.bind(more, () => showsAll ? 'Show fewer metrics' : 'Show all metrics');
+    const show = () => {
+      for (const row of extra)
+        ui.setDisplay(row, showsAll);
+      more.textContent = showsAll ? 'Show less' : 'Show more';
+    };
+    show();
+    return ui.divV([table, more]);
   }
 
   /** A click on a tab of [source] switches every other card to it. */
@@ -173,27 +201,19 @@ export class ModelCards {
     ui.remove(card.root);
   }
 
-  private static lineText(run: SessionRun): string {
-    return [ForgeModelHandler.featureCount(run.featureNames.length), ...RunsPanel.preparationItems(run)].join(' · ');
-  }
-
-  /** The feature names, the preparation and, after a search with a hold out, the rows it held out. */
-  private static lineTooltip(run: SessionRun): HTMLElement {
-    const holdOut = run.search?.holdOut;
-    const lines = [`Features: ${run.featureNames.join(', ')}`,
-      `Preparation: ${RunsPanel.preparationItems(run).join(', ') || 'none'}`,
-      ...(holdOut === undefined ? [] : [holdOutLine(holdOut.rows)])];
-    return ui.divV(lines.map((text) => ui.divText(text)), 'forge-tooltip');
-  }
-
-  /** The run's metrics as the Performance grid shows them: the same rows and value columns, three decimals, uncolored;
-   * hover a header, a metric or a value as there (a value's tooltip names its findings). */
-  private static performanceTable({metrics}: SessionRun): HTMLElement {
+  /** The run's metrics as the Performance grid shows them: the same value columns, three decimals, uncolored; hover a
+   * header, a metric or a value as there (a value's tooltip names its findings). The first row is the metric the run's
+   * search optimized, else the task's default one; then the others in the grid's order. */
+  private static performanceTable({metrics, search}: SessionRun): HTMLElement {
     if (metrics === undefined)
       return ui.divText('No metrics', 'forge-note');
     const columns = valueColumns({metrics});
     const findings = metricFindings(metrics);
-    const table = ui.table(metricIdsOf({metrics}), (id) => [
+    const ids = metricIdsOf({metrics});
+    const first = [search?.metric, defaultMetric('classification'), defaultMetric('regression')]
+      .find((id) => id !== undefined && ids.includes(id)) ?? ids[0];
+    const ordered = [first, ...ids.filter((id) => id !== first)];
+    const table = ui.table(ordered, (id) => [
       ModelCards.described(ui.span([METRIC_LABELS[id]]), METRIC_DESCRIPTIONS[id]),
       ...columns.map(([column, values]) => {
         const value = values[id];
@@ -207,22 +227,18 @@ export class ModelCards {
     return table;
   }
 
-  /** The settings status recorded with the run (hover it for its meaning and the search that found the settings), then
-   * every setting of the method as trained, captioned as its Manual input (hover a row for its meaning), in a table
+  /** Every setting of the method as trained, captioned as its Manual input (hover a row for its meaning), in a table
    * styled as Performance's. */
   private static settingsTable(run: SessionRun): HTMLElement {
     const properties = visibleHyperparametersOf(run.engine);
-    const status = ui.span([run.settingsStatus], 'forge-tune-status-text');
-    ui.tooltip.bind(status, () =>
-      [STATUS_TOOLTIPS[run.settingsStatus], ...RunsPanel.searchLines(run.search)].join('. '));
     if (properties.length === 0)
-      return ui.divV([status, ui.divText(NO_SETTINGS, 'forge-note')], 'forge-card-settings');
+      return ui.divV([ui.divText(NO_SETTINGS, 'forge-note')], 'forge-card-settings');
     const table = ui.table(properties, (p) => [ui.span([DG.StringUtils.camelCaseToSentence(p.caption || p.name)]),
       ui.span([String(run.hyperparameters[p.name] ?? '')])], ['Setting', 'Value']);
     table.classList.add('forge-card-table');
     for (const [i, p] of properties.entries())
       ModelCards.described(table.rows[i + 1], p.description ?? '');
-    return ui.divV([status, table], 'forge-card-settings');
+    return ui.divV([table], 'forge-card-settings');
   }
 
   private static described<T extends HTMLElement>(element: T, text: string): T {

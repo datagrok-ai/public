@@ -1,11 +1,11 @@
 import * as DG from 'datagrok-api/dg';
 import {boolColumn} from '../columns';
-import {defaultHyperparameters, defaultValuesOf, Engine, givesProbabilities, Hyperparameters, NUMBER_TYPES,
-  visibleHyperparametersOf, withProbabilityInput} from '../engines/engine';
+import {defaultHyperparameters, defaultValuesOf, Engine, givesProbabilities, Hyperparameters, isServerEngine,
+  NUMBER_TYPES, visibleHyperparametersOf, withProbabilityInput} from '../engines/engine';
 import {methodList} from '../engines/method-list';
 import {errorMessage, ForgeError} from '../forge-error';
 import {ModelStorageMode, ModelTask, TrainingRunStatus} from '../generated/db';
-import {BEST_THRESHOLD_METRICS} from '../metrics/metrics';
+import {BEST_THRESHOLD_METRICS, METRIC_LABELS, taskOf} from '../metrics/metrics';
 import {imputeFunction, imputeSettings, imputeSettingsOf, MISSING_VALUES_MODES, MissingValuesSettings}
   from '../preparation/missing-values';
 import {DEFAULT_STEPS, DEFAULT_THRESHOLD, DEFAULT_THRESHOLD_METRIC, defaultOneHot, PreparationSteps, thresholdProblem,
@@ -19,8 +19,9 @@ import {recordTrainingRun} from '../storage/training-run-store';
 import {browserSearch} from './browser-search';
 import {defaultFeatures} from './default-features';
 import {DEFAULT_SEED, DEFAULT_VALIDATION, TEST_FRACTION_RANGE, ValidationScheme, ValidationSettings} from './k-fold';
-import {DEFAULT_BUDGET_SECONDS, failedSearchMessage, NO_PROGRESS, SEARCH_METRICS, SearchChoice, SearchRecord,
-  tuneSearch} from './search';
+import {bestCandidates, bestSearch, COMBINED_LIMITS, DEFAULT_BUDGET_SECONDS, defaultMetric, exclusionOf,
+  failedSearchMessage, isQuickLimit, NO_PROGRESS, probabilitiesOf, quickEngines, SEARCH_METRICS, SEARCH_STRATEGIES,
+  SearchCandidate, SearchChoice, searchableEngines, SearchRecord, searchTitle, TOP_K, tuneSearch} from './search';
 import {checkSelection, hasDataProblems, MAX_SEED, MetricsRecord, prepareTraining, problemMessages,
   SelectionCheck, trainingEngines, TrainingRequest, TrainingResult, TrainingSelection, trainModel}
   from './train-model';
@@ -29,7 +30,7 @@ const OPTION_NAMES = ['missingValues', 'neighbors', 'distance', 'oneHot', 'skipU
   'predictProbability', 'threshold', 'thresholdMetric', 'seed', 'scheme', 'folds', 'testFraction', 'stratified',
   'shuffle', 'search'];
 const SCHEMES: ValidationScheme[] = ['kfold', 'holdout'];
-const SEARCH_OPTION_NAMES = ['metric', 'budgetSeconds', 'maxTrials'];
+const SEARCH_OPTION_NAMES = ['metric', 'budgetSeconds', 'maxTrials', 'strategy', 'methods', 'topK'];
 const SEARCH_METRIC_IDS = [...new Set([...SEARCH_METRICS.regression, ...SEARCH_METRICS.classification])];
 const STORAGE_MODES: ModelStorageMode[] = ['none', 'reference', 'copy'];
 const NO_SOURCE = 'The table has no known source, so the model cannot keep a reference to it. ' +
@@ -89,23 +90,67 @@ export async function runTrainModel(input: TrainModelInput): Promise<TrainModelR
   const features = featuresOf(table, target, input.features);
   const {engines, engine: preferred} = trainingEngines();
   const method = input.method || null;
-  const chosen = method !== null ? engineNamed(engines, method) : preferred;
-  const options = optionsOf(input.options ?? {}, features, target);
+  const isAuto = method === 'auto';
+  const chosen = method !== null && !isAuto ? engineNamed(engines, method) : preferred;
+  const options = optionsOf(input.options ?? {}, features, target, isAuto);
+  if (isAuto && Object.keys(input.hyperparameters ?? {}).length > 0) {
+    throw new ForgeError('The hyperparameters cannot be given with method auto: ' +
+      'every method starts from its defaults.');
+  }
   const save = modelSaveOf(input, table);
   const selection: TrainingSelection = {engine: chosen, features, target, hyperparameters: {}, seed: options.seed,
     validation: options.validation, missingValues: options.missingValues, steps: options.steps};
-  const engine = engineOf(await checkSelection(selection, engines), chosen, method !== null);
+  const check = await checkSelection(selection, engines);
+  const engine = engineOf(check, chosen, method !== null && !isAuto);
   // A suggested method has its own rules (an explicit keep, for one): they are checked against it.
   if (engine !== chosen)
     engineOf(await checkSelection({...selection, engine}, [engine]), engine, true);
   const {predictProbability} = options.steps;
-  if (predictProbability && !givesProbabilities(engine))
+  if (!isAuto && predictProbability && !givesProbabilities(engine))
     throw new ForgeError(`${engine.name} gives no class probabilities, so Predict probability cannot be used with it.`);
-  const hyperparameters = withProbabilityInput(engine, hyperparametersFor(engine, input.hyperparameters ?? {}),
-    predictProbability);
   const progressOf = (text: string) => input.showProgress === false ? undefined :
     DG.TaskBarProgressIndicator.create(text, {cancelable: true});
-  return await trainAndSave({...selection, engine, hyperparameters}, table.name, save, progressOf, options.search);
+  if (!isAuto) {
+    const hyperparameters = withProbabilityInput(engine, hyperparametersFor(engine, input.hyperparameters ?? {}),
+      predictProbability);
+    return await trainAndSave({...selection, engine, hyperparameters}, table.name, save, progressOf, options.search);
+  }
+  const search = options.search!;
+  const candidates = bestCandidates(await autoEngines(check, engines, search, predictProbability), engines,
+    predictProbability);
+  const hyperparameters = withProbabilityInput(engine, defaultHyperparameters(engine), predictProbability);
+  return await trainAndSave({...selection, engine, hyperparameters}, table.name, save, progressOf, search, candidates);
+}
+
+/** The methods of method auto: the browser methods of [check] named by the search's `methods`, each refused when it
+ * cannot take part; by default the ones that fit Predict probability and the metric, at a quick time limit or a trial
+ * limit only those that retrain live. */
+async function autoEngines(check: SelectionCheck, engines: Engine[], search: SearchChoice,
+  predictProbability: boolean): Promise<Engine[]> {
+  const pool = searchableEngines(check.engines, engines);
+  // Defined: the check's data problems were thrown.
+  const {columns, target} = check.prepared!;
+  const metric = search.metric ?? defaultMetric(taskOf(target));
+  const exclusion = (e: Engine) => exclusionOf(probabilitiesOf(e), predictProbability, metric);
+  for (const name of search.methods ?? []) {
+    const e = engineNamed(engines, name);
+    if (!pool.includes(e)) {
+      throw new ForgeError(`${name} cannot take part in the search: ` +
+        `${isServerEngine(e) ? 'it runs on the server' : 'it cannot learn from this selection'}.`);
+    }
+    const reason = exclusion(e);
+    if (reason === 'predictProbability')
+      throw new ForgeError(`${name} gives no class probabilities, so Predict probability cannot be used with it.`);
+    if (reason === 'metric') {
+      throw new ForgeError(`${name} cannot take part in the search: it gives no class probabilities, which ` +
+        `${METRIC_LABELS[metric]} needs.`);
+    }
+  }
+  if (search.methods !== undefined)
+    return pool.filter((e) => search.methods!.includes(e.name));
+  const eligible = pool.filter((e) => exclusion(e) === null);
+  return isQuickLimit(search.budgetSeconds) ? await quickEngines(eligible, columns, target, predictProbability) :
+    eligible;
 }
 
 /** The body of `Forge:listMethods`: {@link methodList}; with a table, **Applicable** and **Suggested** as `trainModel`
@@ -141,19 +186,20 @@ function engineOf(check: SelectionCheck, chosen: Engine, isChosen: boolean): Eng
 }
 
 async function trainAndSave(selection: TrainingSelection, datasetName: string, save: ModelSave | null,
-  progressOf: (text: string) => DG.TaskBarProgressIndicator | undefined, search?: SearchChoice):
-  Promise<TrainModelResult> {
+  progressOf: (text: string) => DG.TaskBarProgressIndicator | undefined, search?: SearchChoice,
+  candidates?: SearchCandidate[]): Promise<TrainModelResult> {
   const startedOn = Date.now();
-  const training = `Training ${selection.engine.name} model`;
-  let progress = progressOf(search === undefined ? training : `Tuning ${selection.engine.name}`);
+  const training = (engine: Engine) => `Training ${engine.name} model`;
+  let progress = progressOf(search === undefined ? training(selection.engine) :
+    searchTitle(candidates === undefined ? 'tune' : 'best', selection.engine.name));
   try {
     const prepared = await prepareTraining(selection);
     const fingerprint = datasetFingerprint(prepared.features, prepared.target);
     let request = prepared;
     if (search !== undefined) {
-      request = await tuned(selection, prepared, search, progress);
+      request = await searched(selection, prepared, search, candidates, progress);
       progress?.close();
-      progress = progressOf(training);
+      progress = progressOf(training(request.engine));
     }
     const run = trainingRunOf({request, datasetName, fingerprint, status: 'completed', source: 'api',
       startedOn: new Date(startedOn).toISOString(), durationMs: 0});
@@ -170,7 +216,8 @@ async function trainAndSave(selection: TrainingSelection, datasetName: string, s
     }
     const runId = await recordTrainingRun({...run, options: result.options, status: 'completed',
       metrics: result.metrics, duration_ms: Date.now() - startedOn});
-    const {engine, features, target} = selection;
+    const {engine} = request;
+    const {features, target} = selection;
     const modelId = save === null ? null : await saveTrainedModel({...save, engine, datasetName, result, fingerprint,
       columns: [...features, target], runId});
     return {modelId, runId, name: save?.name ?? null, method: engine.name, task: result.task, target: target.name,
@@ -182,19 +229,22 @@ async function trainAndSave(selection: TrainingSelection, datasetName: string, s
   }
 }
 
-/** Tune: the selection's method searched from its settings on [request] without the held out rows; the request of
- * the winner's training, with the hold out and the search record. A search without a complete trial records
- * nothing. */
-async function tuned(selection: TrainingSelection, request: TrainingRequest, choice: SearchChoice,
-  progress?: DG.TaskBarProgressIndicator): Promise<TrainingRequest> {
+/** Tune (the selection's method searched from its settings) or, with [candidates], Find best model, on [request]
+ * without the held out rows; the request of the winner's training, with its method, the hold out and the search
+ * record. A search without a complete trial records nothing. */
+async function searched(selection: TrainingSelection, request: TrainingRequest, choice: SearchChoice,
+  candidates?: SearchCandidate[], progress?: DG.TaskBarProgressIndicator): Promise<TrainingRequest> {
   const {engine, hyperparameters, seed} = selection;
-  const {plan, holdOut, outcome, chosen, record} = await tuneSearch(request, engine, hyperparameters, choice, seed,
-    progress ?? NO_PROGRESS, browserSearch);
+  const loop = progress ?? NO_PROGRESS;
+  const {plan, holdOut, outcome, chosen, record} = candidates === undefined ?
+    await tuneSearch(request, engine, hyperparameters, choice, seed, loop, browserSearch) :
+    await bestSearch(request, candidates, choice, seed, loop, browserSearch);
   if (chosen === undefined) {
     throw new ForgeError(progress?.canceled ? 'The search was cancelled before a trial completed.' :
       failedSearchMessage(outcome) ?? 'No trial completed within the budget. Give the search more time.');
   }
-  return {...plan.request, hyperparameters: {...chosen.hyperparameters}, holdOut, search: record};
+  const winner = plan.candidates.find((c) => c.engine.name === chosen.method)!.engine;
+  return {...plan.request, engine: winner, hyperparameters: {...chosen.hyperparameters}, holdOut, search: record};
 }
 
 /** The [names] columns of [table]; without names, the view's default features. */
@@ -232,7 +282,8 @@ function hyperparametersFor(engine: Engine, given: {[name: string]: unknown}): H
 }
 
 /** The preparation, the split seed and the validation of [options], with the Train view's defaults. */
-function optionsOf(input: {[name: string]: unknown}, features: DG.Column[], target: DG.Column): TrainingOptions {
+function optionsOf(input: {[name: string]: unknown}, features: DG.Column[], target: DG.Column,
+  isAuto = false): TrainingOptions {
   const unknown = firstUnknown(input, [...OPTION_NAMES, 'cutoff']);
   if (unknown !== undefined)
     throw new ForgeError(`Unknown option '${unknown}'. The options are: ${OPTION_NAMES.join(', ')}.`);
@@ -245,8 +296,11 @@ function optionsOf(input: {[name: string]: unknown}, features: DG.Column[], targ
     throw new ForgeError(`The option 'missingValues' needs ${MISSING_VALUES_MODES.join(', ')} ` +
       '(keep: only for a method that handles missing values).');
   }
+  if (isAuto && modeName === 'keep')
+    throw new ForgeError('The option \'missingValues\' keep cannot be used with method auto. Use skip or impute.');
   const skipUniqueCategories = boolOption(options, 'skipUniqueCategories', DEFAULT_STEPS.skipUniqueCategories);
-  const search = options.search === undefined ? undefined : searchChoiceOf(options.search);
+  const search = options.search === undefined ? (isAuto ? {budgetSeconds: DEFAULT_BUDGET_SECONDS} : undefined) :
+    searchChoiceOf(options.search, isAuto);
   const predictProbability = boolOption(options, 'predictProbability', DEFAULT_STEPS.predictProbability);
   if (predictProbability && target.matches(DG.COLUMN_TYPE_FILTER.NUMERICAL_NO_DATE_TIME))
     throw new ForgeError('Predict probability needs a text or boolean target.');
@@ -272,13 +326,15 @@ function optionsOf(input: {[name: string]: unknown}, features: DG.Column[], targ
   const validation: ValidationSettings = {scheme, folds: wholeOption(options, 'folds', DEFAULT_VALIDATION.folds, 2),
     testFraction, stratified: boolOption(options, 'stratified', DEFAULT_VALIDATION.stratified),
     shuffle: boolOption(options, 'shuffle', DEFAULT_VALIDATION.shuffle)};
-  return {missingValues: modeName === null ? undefined : modeName === 'impute' ? imputeOf(options) : {mode: modeName},
-    steps, seed, validation, search};
+  const missingValues: MissingValuesSettings | undefined = modeName === null ? (isAuto ? {mode: 'skip'} : undefined) :
+    modeName === 'impute' ? imputeOf(options) : {mode: modeName};
+  return {missingValues, steps, seed, validation, search};
 }
 
-/** The `search` option: a metric of either task (the task's check is the plan's), a whole budget in seconds of at
- * least 1 and an optional whole trial cap. */
-function searchChoiceOf(value: unknown): SearchChoice {
+/** The `search` option: a metric of either task (the task's check is the plan's), one limit, a whole time in seconds
+ * or a whole trial count, each of at least 1 (neither: the default time) and, with method auto only ([isAuto]), the
+ * strategy, the method names and the top count. */
+function searchChoiceOf(value: unknown, isAuto: boolean): SearchChoice {
   if (!isRecord(value) || firstUnknown(value, SEARCH_OPTION_NAMES) !== undefined)
     throw new ForgeError(`The option 'search' needs an object with ${SEARCH_OPTION_NAMES.join(', ')}.`);
   const metric = value.metric === undefined ? undefined : SEARCH_METRIC_IDS.find((id) => id === value.metric);
@@ -286,9 +342,23 @@ function searchChoiceOf(value: unknown): SearchChoice {
     throw new ForgeError(`The search metric '${String(value.metric)}' is not one of: ` +
       `${SEARCH_METRIC_IDS.join(', ')}.`);
   }
-  const budgetSeconds = wholeOption(value, 'budgetSeconds', DEFAULT_BUDGET_SECONDS, 1);
+  if (value.budgetSeconds !== undefined && value.maxTrials !== undefined)
+    throw new ForgeError(COMBINED_LIMITS);
   const maxTrials = value.maxTrials === undefined ? undefined : wholeOption(value, 'maxTrials', 0, 1);
-  return {metric, budgetSeconds, maxTrials};
+  const budgetSeconds = maxTrials !== undefined ? undefined :
+    wholeOption(value, 'budgetSeconds', DEFAULT_BUDGET_SECONDS, 1);
+  const strategy = value.strategy === undefined ? undefined : SEARCH_STRATEGIES.find((s) => s === value.strategy);
+  if (value.strategy !== undefined && strategy === undefined)
+    throw new ForgeError(`The search option 'strategy' needs ${SEARCH_STRATEGIES.join(' or ')}.`);
+  const {methods} = value;
+  if (methods !== undefined && !(Array.isArray(methods) && methods.every((m) => typeof m === 'string' && m !== '')))
+    throw new ForgeError('The search option \'methods\' needs a list of method names.');
+  const topK = value.topK === undefined ? undefined : wholeOption(value, 'topK', TOP_K, 1);
+  if (!isAuto && (strategy !== undefined || methods !== undefined || topK !== undefined))
+    throw new ForgeError('The search options \'strategy\', \'methods\' and \'topK\' need method auto.');
+  return {metric, ...(budgetSeconds === undefined ? {} : {budgetSeconds}),
+    ...(maxTrials === undefined ? {} : {maxTrials}), ...(strategy === undefined ? {} : {strategy}),
+    ...(methods === undefined ? {} : {methods: methods as string[]}), ...(topK === undefined ? {} : {topK})};
 }
 
 /** Impute with the imputer's defaults overlaid with the `neighbors` and `distance` of [options]; without the

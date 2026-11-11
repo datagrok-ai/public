@@ -8,7 +8,8 @@ import {ClassValues, METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricFindi
 import {CLASS_PROBABILITIES, preparationOptionsOf} from '../preparation/preparation-options';
 import {featuresHadGaps} from '../storage/dataset-fingerprint';
 import {heldOutCount} from '../training/k-fold';
-import {budgetCaption, SEARCH_CAPTIONS, SearchRecord, searchRecordOf} from '../training/search';
+import {cautiousCaption, directionOf, limitCaption, SEARCH_CAPTIONS, SearchRecord, searchRecordOf}
+  from '../training/search';
 import {MetricsRecord, metricsRecordOf, Splitting, splittingOf} from '../training/train-model';
 import {numberColumn, readOnlyGrid} from './data-grid';
 import {reportError} from './report-error';
@@ -175,10 +176,13 @@ export class MetricsTable {
         items.push(seedLine(seed));
     }
     if (search !== undefined) {
-      const methods = search.leaders.length === 1 ? 'method' : 'methods';
-      items.push([`Search: ${SEARCH_CAPTIONS[search.mode]} by ${METRIC_LABELS[search.metric]}, ` +
-        `${budgetCaption(search.budgetSeconds)}: ${search.trials} trials of ${search.leaders.length} ${methods}, ` +
-        'chosen by the one-standard-error rule']);
+      const methods = `${search.leaders.length} ${search.leaders.length === 1 ? 'method' : 'methods'}`;
+      const label = METRIC_LABELS[search.metric];
+      const rule = search.mode === 'best' ? `the ${directionOf(search.metric) === 1 ? 'highest' : 'lowest'} ` +
+        cautiousCaption(search.metric) : 'the one-standard-error rule';
+      items.push([`Search: ${SEARCH_CAPTIONS[search.mode]} by ${label}, ` +
+        `${limitCaption(search)}: ${search.budgetSeconds === undefined ? '' : `${search.trials} trials of `}` +
+        `${methods}, chosen by ${rule}`]);
       items.push([search.holdOut !== undefined ? holdOutLine(search.holdOut.rows) :
         'Validation after a search is optimistic: the best of the trials was chosen on it']);
     }

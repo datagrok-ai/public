@@ -23,6 +23,7 @@ two do not share models.
 | Tell me about this model, what does it need, is it any good | `Forge:getModel` (`findings` for what is worth a look) |
 | Compare models | `Forge:listModels` (validation metrics per row) or two `Forge:getModel` results |
 | Train a model, predict X from Y | `Forge:trainModel`: without `name` it trains and measures only; with `name` it saves, keeping no training data (`storage` `none`) unless the user asks for a copy |
+| Find the best method / model for my table | `Forge:trainModel` with `method: 'auto'`: tries the methods, each with an equal share of the limit (or, with `search.strategy: 'halving'`, successive halving down to the best three, tuned), trains the best one (`result.method`, `search.leaders`, `search.methods`) |
 | Apply a model to a table | `Forge:applyModel`, after `getModel` (`applicableTo`) or `listModels` with `table` says the model fits; map a feature whose column has a close name in `columnNamesMap` |
 | How good is the model on this data | `Forge:evaluateModel` |
 | Rename a model, change its description or tags | `Forge:updateModel` |
@@ -142,14 +143,21 @@ Trains as the Predictive model view does, with its defaults (5-fold cross-valida
   without empty cells whose values are all different (row numbers, ids)
 - `method`: `CatBoost`, `Decision Tree`, `Extra Trees`, `Hist Gradient Boosting`, `k-Nearest Neighbors`, `LDA`,
   `Linear Regression`, `Naive Bayes`, `Neural Network`, `PLS Regression`, `Random Forest`, `RealMLP`, `Softmax`,
-  `SVM`, `TabM`, `XGBoost` (the installed methods, `listMethods`); by default the method the view suggests for the data
+  `SVM`, `TabM`, `XGBoost` (the installed methods, `listMethods`), or `auto`: Find best model, every method that can
+  learn from the data and runs in the browser tried with its defaults (cheapest first), then by `search.strategy`:
+  `equal` (the default) gives every method an equal share of the limit, one method after another (the time a method
+  leaves unused goes to the ones after it); `halving` runs successive halving (each round the better half by their
+  best value so far gets twice as many new trials, never fewer than three kept), the last three or fewer tuned; the
+  method with the best score less its standard error (score plus it for `rmse`, `mae`, `logLoss`, `brier`; a tie by
+  the method name, capitals first) is trained (`search` defaults to `{budgetSeconds: 60}`,
+  `missingValues` to `skip`); by default the method the view suggests for the data
 - `hyperparameters`: the method's settings by name, for example `{iterations: 50}`; settings not named keep their
-  defaults
+  defaults; not with `auto` (every method starts from its defaults)
 - `options`: the preparation and the validation, each key optional:
 
   | Key | Default | Meaning |
   |---|---|---|
-  | `missingValues` | `skip`; `keep` for a method that handles missing values (XGBoost, Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost, Decision Tree, TabM) | `skip` leaves out the rows with empty cells; `impute` fills the features' empty cells; `keep` gives the rows with empty cells to the method as they are, only for a method that handles missing values (rows without a target are always left out) |
+  | `missingValues` | `skip`; `keep` for a method that handles missing values (XGBoost, Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost, Decision Tree, TabM) | `skip` leaves out the rows with empty cells; `impute` fills the features' empty cells; `keep` gives the rows with empty cells to the method as they are, only for a method that handles missing values and not with method `auto` (rows without a target are always left out) |
   | `neighbors`, `distance` | the EDA imputer's (`4`, `Euclidean`) | the settings of `impute` |
   | `oneHot` | on when every text or yes/no feature has at most 20 categories (while `skipUniqueCategories` is on, features whose values are all different do not count) | One-hot encoding of text and yes/no features |
   | `skipUniqueCategories` | `true` | leaves out text features whose values are all different |
@@ -162,14 +170,15 @@ Trains as the Predictive model view does, with its defaults (5-fold cross-valida
   | `stratified` | `true` | each class keeps its share in every part or in the hold out; ignored for a regression |
   | `shuffle` | `true` | shuffles the rows by `seed` before the split; `false`: blocks of consecutive rows, or the last rows held out |
   | `seed` | `42` | the split seed, a whole number from 0 to 2147483647 (with `search`, also of the search's hold out and of the trials' settings) |
-  | `search` | none | `{metric, budgetSeconds, maxTrials}`, each key optional: tunes the method's settings first (a seeded random search of the space the method declares, validated as the options above say on a split every trial shares; with 500 rows or more a fifth, rounded and kept between 100 and 2000 rows, stratified for a classifier, is held out first), then trains the chosen ones. `metric`: `r2` (regression default), `rmse`, `mae`, `balancedAccuracy` (classifier default), `accuracy`, `f1`, `mcc`, `auc`, `logLoss`, `brier` (these two minimized; `auc`, `logLoss` and `brier` need class probabilities); `budgetSeconds`: a whole number, at least 1 (default `60`); `maxTrials`: stops after that many completed trials |
+  | `search` | none (`{budgetSeconds: 60}` with `auto`) | `{metric, budgetSeconds, maxTrials, strategy, methods, topK}`, each key optional, but ONE limit: `budgetSeconds` or `maxTrials`, never both (neither: `budgetSeconds: 60`); `strategy` (`equal`, the default, or `halving`; with `equal` and `maxTrials`, at least one trial per method), `methods` (the method names to try; by default every browser method that can learn from the data, without the ones lacking class probabilities while `predictProbability` is on or under `auc`, `logLoss`, `brier`, at 60 seconds or less or with `maxTrials` only those that retrain live, not SVM with `predictProbability`) and `topK` (how many methods successive halving keeps to tune, default `3`) only with `auto`, which finds the best model; with a method it tunes the method's settings first (a seeded random search of the space the method declares, validated as the options above say on a split every trial shares; with 500 rows or more a fifth, rounded and kept between 100 and 2000 rows, stratified for a classifier, is held out first), then trains the chosen ones. `metric`: `r2` (regression default), `rmse`, `mae`, `balancedAccuracy` (classifier default), `accuracy`, `f1`, `mcc`, `auc`, `logLoss`, `brier` (these two minimized; `auc`, `logLoss` and `brier` need class probabilities); `budgetSeconds`: a whole number, at least 1; `maxTrials`: starts no more than that many trials (of all methods; completed, pruned and failed ones alike) |
 
 - `name`: saves the model under this name; without a name the model is trained and measured but not saved.
   `description` and `tags` (comma-separated) go with it
 - `storage`: what the saved model keeps of its training data: `none`, `reference` (the table must come from a file,
   a query or a script) or `copy` (uploads the feature and target columns). Nothing is uploaded unless `copy` is asked
   for
-- `showProgress`: the task-bar progress `Training <method> model` (with `search`, first `Tuning <method>`);
+- `showProgress`: the task-bar progress `Training <method> model` (with `search`, first `Tuning <method>`; with
+  `auto`, first `Finding best model`);
   cancelling it fails the call with `Training was cancelled.` (a search cancelled after a completed trial trains the
   best so far)
 
@@ -177,13 +186,20 @@ Returns `modelId` (null when not saved), `runId`, `name`, `method`, `task`, `tar
 rows trained on; after a search with a hold out, without the held out rows), `skippedRows`, `seed`, `metrics`
 (`train`, `validation`, `test` (after a search with a hold out: the final model on the held out rows), each with the
 metric keys above (`logLoss` and `brier` for a method with class probabilities), for two classes `positiveClass` and,
-for a classifier, `classes`) and, after a search, `search`: `mode` (`tune`), `metric`,
-`budgetSeconds`, `seed`, `trials`, `completed`, `pruned`, `failed`, `elapsedMs`, `stopped` (`budget`, `cancelled`,
+for a classifier, `classes`) and, after a search, `search`: `mode` (`tune`, or `best` with `auto`; `method` is then
+the chosen leader's), `metric`,
+`budgetSeconds` or `maxTrials` (the limit; a continued search in the view sums its runs'), `strategy` (`best`:
+`equal` or `halving`), `seed`, `trials`, `completed`, `pruned`, `failed`, `elapsedMs`, `stopped` (`budget`, `cancelled`,
 `exhausted`, `trials`, `failed`: 10 trials failed and none completed), `holdOut` (`rows`, `fraction`; absent below
-500 rows), `space` (`searched`: the dimensions searched, `pinned`: the settings kept at their values, none from the
-API), `leaders` (per method, the simplest trial within one standard error of its best: `method`,
+500 rows), `space` (Tune: `searched`: the dimensions searched, `pinned`: the settings kept at their values, none from
+the API), `methods` (`best`: every method tried, in cost order, `{method, trials, outcome, note?, eliminatedRound?}`, `outcome`
+`complete`, `failed` (`note` its first error), `abandoned` (only abandoned or pruned trials) or `unstarted`;
+`eliminatedRound` the round of successive halving it dropped out after, from 0; `halving` only),
+`leaders` (per method, the simplest trial within one standard error of its best: `method`,
 `hyperparameters`, `score` (the metric by the chosen validation on the search rows), `se`, `foldScores`, `trials`,
-`chosen`). Nothing is added to the table.
+`chosen`: the one trained, across methods the best `score` − `se`, `score` + `se` for a minimized metric, a tie by the
+method name, capitals first). Nothing is added to
+the table.
 
 Errors, for example:
 
@@ -195,20 +211,33 @@ Errors, for example:
 - `The option 'thresholdMetric' needs one of: f1, balancedAccuracy, mcc, accuracy.`
 - `The option 'scheme' needs kfold or holdout.`, `The option 'testFraction' needs a number from 0.05 to 0.5.`,
   `The option 'shuffle' needs true or false.`
-- `The option 'search' needs an object with metric, budgetSeconds, maxTrials.`,
+- `The option 'search' needs an object with metric, budgetSeconds, maxTrials, strategy, methods, topK.`,
   `The search metric 'r3' is not one of: r2, rmse, mae, balancedAccuracy, accuracy, f1, mcc, auc, logLoss, brier.`,
   `The search metric 'r2' does not apply to a classification. Choose one of: balancedAccuracy, accuracy, f1, mcc, auc,
   logLoss, brier.`,
-  `The option 'budgetSeconds' needs a whole number of at least 1.`
+  `The option 'budgetSeconds' needs a whole number of at least 1.`,
+  `The search options 'budgetSeconds' and 'maxTrials' cannot be combined: choose one limit.`,
+  `The search option 'strategy' needs equal or halving.`,
+  `At least one trial per method: 3.` (`strategy` `equal` with fewer `maxTrials` than methods)
 - `Naive Bayes declares no search space, so it cannot be tuned.`,
   `No trial completed within the budget. Give the search more time.`,
   `No trial completed: <the first failed trial's error>` (e.g. `No trial completed: The metric AUC-ROC needs class
   probabilities; SVM gives none.`),
   `The search was cancelled before a trial completed.`
+- with `auto`: `The search option 'methods' needs a list of method names.`,
+  `The option 'topK' needs a whole number of at least 1.`,
+  `The option 'missingValues' keep cannot be used with method auto. Use skip or impute.`,
+  `The hyperparameters cannot be given with method auto: every method starts from its defaults.`,
+  `Linear Regression cannot take part in the search: it cannot learn from this selection.` (`...: it runs on the
+  server.` for a server method),
+  `<Method> gives no class probabilities, so Predict probability cannot be used with it.`,
+  `SVM cannot take part in the search: it gives no class probabilities, which AUC-ROC needs.`,
+  `No method can take part in the search. Check the features and the target.`;
+  with a method: `The search options 'strategy', 'methods' and 'topK' need method auto.`
 - `Predict probability needs a text or boolean target.`,
   `Chemprop gives no class probabilities, so Predict probability cannot be used with it.`,
   `Enter a number from 0 to 1.` (a two-class `threshold` outside 0..1),
-  `The method SVM has no setting 'probability'. Its settings are: kernel, cost, gamma, degree, coef0, epsilon.`
+  `The method SVM has no setting 'probability'. Its settings are: kernel, cost, gamma, degree, coef0, epsilon, maxIterations.`
   (`predictProbability` sets it)
 - `The option 'missingValues' needs skip, impute, keep (keep: only for a method that handles missing values).`,
   `SVM needs rows without missing values. Choose Skip rows or Impute.`
@@ -326,6 +355,15 @@ const result = await grok.functions.call('Forge:trainModel', {table: t, target: 
 const chosen = result.search.leaders.find((l) => l.chosen);
 return {trials: result.search.trials, score: chosen.score, settings: chosen.hyperparameters,
   validation: result.metrics.validation.accuracy, test: result.metrics.test?.accuracy};
+```
+
+Find the best model for the table and read what each method reached:
+
+```js
+const result = await grok.functions.call('Forge:trainModel', {table: t, target: 'Species', method: 'auto',
+  options: {search: {metric: 'accuracy', budgetSeconds: 60}}});
+return {method: result.method, leaders: result.search.leaders.map((l) => ({method: l.method, score: l.score,
+  chosen: l.chosen})), methods: result.search.methods, validation: result.metrics.validation.accuracy};
 ```
 
 The models that fit the current table, as a grid in the chat:

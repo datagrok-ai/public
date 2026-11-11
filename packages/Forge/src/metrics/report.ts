@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {ModelTask} from '../generated/db';
 import {onFrame} from '../preparation/shared-frame';
 import {aucOf, aucOfProbabilities, CLASS_METRIC_IDS, ClassMetrics, classesOf, ClassProbabilities, ClassValues, Curves,
-  MetricValues, metricsOf, probabilityMetrics} from './metrics';
+  MetricId, MetricValues, metricsOf, probabilityMetrics} from './metrics';
 
 /** Mirrors `ClassReport` of EDA's `src/crux/crux-metrics.ts`: one class against the rest. */
 export interface ClassReport {
@@ -63,6 +63,11 @@ export interface Measured { values: MetricValues; report?: ClassificationReport 
 
 /** The metrics of the class probabilities (or scores), which no threshold changes. */
 export const SCORE_METRIC_IDS = ['auc', 'averagePrecision', 'logLoss', 'brier'] as const;
+
+/** Whether [id] is one of {@link SCORE_METRIC_IDS}: it needs class probabilities (or scores). */
+export function isScoreMetric(id: MetricId): boolean {
+  return (SCORE_METRIC_IDS as readonly MetricId[]).includes(id);
+}
 
 /** The metrics of [predicted] ({@link metricsOf}) and, with [probabilities], log loss and Brier
  * ({@link probabilityMetrics}); for a classifier with the report, AUC-ROC and average precision are the report's (with

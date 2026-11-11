@@ -422,6 +422,7 @@ export function isApplicableXGBooster(df: DG.DataFrame, predictColumn: DG.Column
 //input: int degree = 3 { min: 1; max: 10; description: Degree of the polynomial kernel. Higher values give a more flexible, curved decision boundary. Used by the polynomial kernel only. }
 //input: double coef0 = 0 { caption: Offset; min: -100; max: 100; description: Constant added inside the kernel before the polynomial power or the sigmoid. Used by the polynomial and sigmoid kernels only. }
 //input: double epsilon = 0.1 { min: 0; max: 10; description: Width of the error-insensitive tube in SVR regression. Training errors smaller than this are not penalized, so larger values give a smoother model with fewer support vectors. Used for regression targets only. }
+//input: int maxIterations = 1000000 { caption: Max iterations; min: 1; max: 1000000000; description: Solver iterations before it stops unconverged. The model is still returned, so a slow fit cannot hang. }
 //input: bool probability = false { caption: Class probabilities; description: Also estimates the probability of each class (Platt scaling: an internal 5-fold cross-validation, about 5 times the training time). Classification targets only. }
 //output: dynamic model
 //meta.mlname: SVM
@@ -431,8 +432,8 @@ export function isApplicableXGBooster(df: DG.DataFrame, predictColumn: DG.Column
 //meta.mlspace: {"kernel": {"type": "categorical", "choices": ["Linear", "RBF", "Polynomial"], "simpler": "first"}, "cost": {"type": "float", "low": 0.01, "high": 100, "log": true, "simpler": "low"}, "gamma": {"type": "float", "low": 0.001, "high": 10, "log": true, "simpler": "low"}, "degree": {"type": "int", "low": 2, "high": 4, "simpler": "low"}, "epsilon": {"type": "float", "low": 0.01, "high": 1, "log": true, "simpler": "high"}}
 //meta.mlenabled: {"gamma": {"kernel": ["RBF", "Polynomial", "Sigmoid"]}, "degree": {"kernel": ["Polynomial"]}, "coef0": {"kernel": ["Polynomial", "Sigmoid"]}, "epsilon": {"task": ["regression"]}}
 //meta.mlprobabilities: probability
-export async function trainSVM(df: DG.DataFrame, predictColumn: DG.Column, kernel: string, cost: number, gamma: number, degree: number, coef0: number, epsilon: number, probability: boolean) : Promise<Uint8Array> {
-  return await PackageFunctions.trainSVM(df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon, probability);
+export async function trainSVM(df: DG.DataFrame, predictColumn: DG.Column, kernel: string, cost: number, gamma: number, degree: number, coef0: number, epsilon: number, maxIterations: number, probability: boolean) : Promise<Uint8Array> {
+  return await PackageFunctions.trainSVM(df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon, maxIterations, probability);
 }
 
 //name: Apply SVM

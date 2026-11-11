@@ -71,12 +71,12 @@ export function isSameInputs(a: RunInputs, b: RunInputs): boolean {
  * run to [onRestore]. Hidden while there is no run. */
 export class RunsPanel {
   readonly root: HTMLElement;
-  private readonly host = ui.div([]);
+  private readonly host = ui.div([], 'forge-panel-fill');
   private currentGrid: DG.Grid | null = null;
   private sub: rxjs.Subscription | null = null;
 
   constructor(private readonly onRestore: (run: SessionRun) => void) {
-    this.root = ui.divV([resultsTitle('runs'), this.host], 'forge-runs');
+    this.root = ui.divV([resultsTitle('runs'), this.host], 'forge-results-panel forge-runs');
     ui.setDisplay(this.root, false);
   }
 

@@ -799,8 +799,9 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'int', 'options': {'min': '1', 'max': '10', 'initialValue': '3', 'description': 'Degree of the polynomial kernel. Higher values give a more flexible, curved decision boundary. Used by the polynomial kernel only.'}}) degree: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'Offset', 'min': '-100', 'max': '100', 'initialValue': '0', 'description': 'Constant added inside the kernel before the polynomial power or the sigmoid. Used by the polynomial and sigmoid kernels only.'}}) coef0: number,
     @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '10', 'initialValue': '0.1', 'description': 'Width of the error-insensitive tube in SVR regression. Training errors smaller than this are not penalized, so larger values give a smoother model with fewer support vectors. Used for regression targets only.'}}) epsilon: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Max iterations', 'min': '1', 'max': '1000000000', 'initialValue': '1000000', 'description': 'Solver iterations before it stops unconverged. The model is still returned, so a slow fit cannot hang.'}}) maxIterations: number,
     @grok.decorators.param({'type': 'bool', 'options': {'caption': 'Class probabilities', 'initialValue': 'false', 'description': 'Also estimates the probability of each class (Platt scaling: an internal 5-fold cross-validation, about 5 times the training time). Classification targets only.'}}) probability: boolean): Promise<Uint8Array> {
-    return trainSvm(df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon, probability);
+    return trainSvm(df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon, probability, maxIterations);
   }
 
 

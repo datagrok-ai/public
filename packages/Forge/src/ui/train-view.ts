@@ -4,13 +4,13 @@ import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {ModelInfo} from '../catalog/model-edit';
 import {defaultHyperparameters, enabledRules, EnabledRules, Engine, givesProbabilities, handlesMissingValues,
-  Hyperparameters, isEnabled, probabilityInput, visibleHyperparametersOf, withProbabilityInput}
+  Hyperparameters, isEnabled, isServerEngine, probabilityInput, visibleHyperparametersOf, withProbabilityInput}
   from '../engines/engine';
 import {errorMessage} from '../forge-error';
 import {ModelTask, TrainingRunStatus} from '../generated/db';
-import {BestThresholdMetric, taskOf} from '../metrics/metrics';
+import {BestThresholdMetric, METRIC_LABELS, taskOf} from '../metrics/metrics';
 import {_package} from '../package';
-import {missingColumnsOf} from '../preparation/missing-values';
+import {missingColumnsOf, MissingValuesSettings} from '../preparation/missing-values';
 import {twoClasses} from '../preparation/pipeline';
 import {DatasetFingerprint, datasetFingerprint, featuresHadGaps} from '../storage/dataset-fingerprint';
 import {datasetRefOf} from '../storage/dataset-ref';
@@ -19,7 +19,9 @@ import {saveTrainedModel} from '../storage/model-store';
 import {recordTrainingRun} from '../storage/training-run-store';
 import {browserSearch} from '../training/browser-search';
 import {defaultFeatures} from '../training/default-features';
-import {failedSearchMessage, Leader, SearchChoice, tuneSearch} from '../training/search';
+import {bestCandidates, bestSearchPlan, canContinue, failedSearchMessage, quickEngines, requestFingerprint,
+  runPlanned, SearchChoice, SearchMode, searchableEngines, SearchState, searchTitle, tuneSearchPlan}
+  from '../training/search';
 import {bestThresholdOf, checkSelection, failedCheck, hasDataProblems, MetricsRecord, prepareTraining,
   problemMessages, recutResult, retrainsLive, selectedMissingValues, SelectionCheck, trainingEngines, TrainingRequest,
   TrainingResult, TrainingSelection, trainModel, trainPredictionOf} from '../training/train-model';
@@ -27,6 +29,7 @@ import {TrainingQueue} from '../training/training-queue';
 import {openApplyDialog} from './apply-model-dialog';
 import {ButtonGate} from './button-gate';
 import {CollapsibleGroup} from './collapsible-group';
+import {FindSettings} from './find-settings';
 import {ForgeApp} from './forge-app';
 import {MissingValuesInputs} from './missing-values-inputs';
 import {ModelCards} from './model-cards';
@@ -35,7 +38,7 @@ import {reportError} from './report-error';
 import {ResultsPane} from './results-pane';
 import {isSameInputs, RunInputs, RunsPanel, SessionRun} from './runs-panel';
 import {saveModelDialog} from './save-model-dialog';
-import {SearchPanel} from './search-panel';
+import {Restored, SearchPanel} from './search-panel';
 import {MANUAL, TuneContext, TuneSettings, TuneStatus} from './tune-settings';
 import {ValidationInputs} from './validation-inputs';
 
@@ -47,6 +50,13 @@ const FIX_SETTINGS = 'Fix the settings.';
 const FORM_WIDTH = 400;
 const TRAIN_TOOLTIP = 'Train the model on the current selection.';
 const TUNE_TOOLTIP = 'Find the best settings';
+const FIND_TOOLTIP = 'Find the best model';
+/** The first **Method** item: Find best model. */
+const AUTO = 'Auto';
+const METHOD_TOOLTIP = 'The machine learning method that builds the model.';
+const AUTO_TOOLTIP = 'Auto: Find tries every checked method and trains the best one';
+const AUTO_HINT = 'Click Find to try every checked method on this data and train the best one.';
+const CONTINUE_TOOLTIP = 'Continue the search';
 const CHECKING = 'Checking the selection...';
 const TRAINING = 'Training is in progress.';
 const TRAINED = 'The model is trained on this selection. Change an input to train again.';
@@ -67,6 +77,8 @@ interface TrainForm {
   hyperparameters: Map<string, DG.InputBase>;
   /** Settings (Manual / Auto-tune) and Search options of the method: rebuilt with the method. */
   tune: TuneSettings;
+  /** The Find best model block: shown while Method is Auto. */
+  find: FindSettings;
   /** The Method group's content: rebuilt with the method. */
   methodBody: HTMLDivElement;
   groups: CollapsibleGroup[];
@@ -93,13 +105,17 @@ export class TrainView extends DG.ViewBase {
   readonly saveButton: HTMLButtonElement;
   /** **Tune** under Search options in Auto-tune: searches the method's settings as they ask. */
   readonly tuneButton: HTMLButtonElement;
+  /** **Find** under the Find best model block while Method is Auto: searches the checked methods. */
+  readonly findButton: HTMLButtonElement;
   private readonly resultsStatus = ui.div([], 'forge-results-status');
-  /** The results: the **Performance** panel with the training loader in its header, the insights and the viewers. */
-  readonly resultsPane = new ResultsPane(this.resultsStatus);
   /** **Runs** under the results: the recorded trainings of this table in this view. */
   readonly runsPanel = new RunsPanel((run) => this.restoreRun(run));
   /** **Search** above **Runs**: the leaders of the last search of this table. */
   readonly searchPanel = new SearchPanel((leader) => this.restoreLeader(leader));
+  /** The results: the **Performance** panel with the training loader in its header, the insights and the viewers; then
+   * Search and Runs, all in one vertical splitter. */
+  readonly resultsPane = new ResultsPane(this.resultsStatus, [{block: this.searchPanel.root, height: 320},
+    {block: this.runsPanel.root, height: 260}]);
   /** The model cards under the form: the current model and the pinned ones (same data only). */
   readonly modelCards = new ModelCards((run) => this.restoreRun(run));
   lastTraining: Training | undefined;
@@ -109,6 +125,7 @@ export class TrainView extends DG.ViewBase {
   private readonly trainRow: HTMLDivElement;
   private readonly trainGate: ButtonGate;
   private readonly tuneGate: ButtonGate;
+  private readonly findGate: ButtonGate;
   /** The complete methods discovered when the view opened, in discovery order. */
   private readonly engines: Engine[];
   private readonly formPane: HTMLDivElement;
@@ -116,15 +133,19 @@ export class TrainView extends DG.ViewBase {
   private readonly queue = new TrainingQueue();
   /** Hyperparameter values per method name, kept for the session of the view (a Table change keeps them). */
   private readonly hyperparameterValues = new Map<string, Hyperparameters>();
-  /** The values the last tune of each method set and the data it ran on, kept as {@link hyperparameterValues}: they
-   * read Auto-tuned on that data. */
-  private readonly lastTuned = new Map<string, {values: Hyperparameters; context: TuneContext}>();
+  /** The values the last tune of each method set, the data it ran on and whether Find best model set them, kept as
+   * {@link hyperparameterValues}: they read Auto-tuned on that data. */
+  private readonly lastTuned = new Map<string, {values: Hyperparameters; context: TuneContext; isFound: boolean}>();
+  /** The last search of each mode on this table (Tune's per method, {@link searchKey}) with the inputs it ran on
+   * ({@link searchInputs}): **Tune** or **Find** continues it while they stay. In memory only: its plan holds the
+   * columns. */
+  private readonly searches = new Map<string, {state: SearchState; inputs: string}>();
   /** Methods whose check failed, logged once per view. */
   private readonly loggedFailures = new Set<string>();
   /** Whether each method retrains on every change, as the last check of this table that could ask said. */
   private readonly interactivity = new Map<string, boolean>();
   private engine: Engine;
-  /** The method the user picked; null while the suggested one applies. */
+  /** The method the user picked, or {@link AUTO}; null while the suggested one applies. */
   private userChoice: string | null = null;
   private form: TrainForm;
   // The current form's subscriptions: a Table change rebuilds the form and drops the old ones.
@@ -161,12 +182,13 @@ export class TrainView extends DG.ViewBase {
     this.trainRow.classList.add('forge-train-row');
     this.trainGate = new ButtonGate(this.trainButton, () => this.blocker(), TRAIN_TOOLTIP);
     this.tuneButton = ui.button('Tune', () => void this.startSearch('tune', this.form.tune.choice()));
-    this.tuneGate = new ButtonGate(this.tuneButton, () => this.tuneBlocker(), TUNE_TOOLTIP);
+    this.tuneGate = new ButtonGate(this.tuneButton, () => this.tuneBlocker(), () => this.searchTooltip('tune'));
+    this.findButton = ui.button('Find', () => void this.startSearch('best', this.form.find.choice()));
+    this.findGate = new ButtonGate(this.findButton, () => this.findBlocker(), () => this.searchTooltip('best'));
     this.saveButton = ui.bigButton('Save', () => this.save());
     this.setRibbonPanels([[this.saveButton]]);
     this.formPane = ui.panel([], 'forge-train-form');
-    this.results = ui.panel([this.resultsPane.root, this.searchPanel.root, this.runsPanel.root],
-      'forge-train-results');
+    this.results = ui.panel([this.resultsPane.root], 'forge-train-results');
     this.subs.push(DG.debounce(this.changes, CHECK_DELAY_MS).subscribe(() => {
       if (this.isCheckRequested || (this.lastTraining === undefined && !this.isTraining && !this.isTrained)) {
         this.isCheckRequested = false;
@@ -217,6 +239,16 @@ export class TrainView extends DG.ViewBase {
 
   get tuneSettings(): TuneSettings {
     return this.form.tune;
+  }
+
+  /** The Find best model block of the form. */
+  get findSettings(): FindSettings {
+    return this.form.find;
+  }
+
+  /** **Method** is Auto: the Find best model block replaces the method's settings. */
+  get isAutoMethod(): boolean {
+    return this.userChoice === AUTO;
   }
 
   get missingValuesInputs(): MissingValuesInputs {
@@ -338,10 +370,15 @@ export class TrainView extends DG.ViewBase {
         if (t !== null)
           this.form = this.createForm(t, this.form.validation);
       }});
-    const methodInput = ui.input.choice<string | null>('Method', {items: [this.engine.name], value: this.engine.name,
-      nullable: false, tooltipText: 'The machine learning method that builds the model.',
+    const methodInput = ui.input.choice<string | null>('Method', {items: [AUTO, this.engine.name],
+      value: this.isAutoMethod ? AUTO : this.engine.name, nullable: false, tooltipText: METHOD_TOOLTIP,
       onValueChanged: (name) => this.chooseMethod(name)});
     methodInput.addValidator(() => TrainView.messageOf(this.check?.problems.method));
+    const find = new FindSettings(this.findButton, methodInput.captionLabel, {onChanged: () => {
+      if (this.isAutoMethod)
+        preparation.setProbabilityReason(find.probabilityReason);
+      this.updateControls();
+    }});
 
     const dataInputs = [tableInput, targetInput, featuresInput];
     const methodBody = ui.div([]);
@@ -351,7 +388,8 @@ export class TrainView extends DG.ViewBase {
     this.interactivity.clear();
     ui.setDisplay(this.trainRow, false);
     this.formSubs = [...groups[0].expandOnError(dataInputs), ...groups[1].expandOnError(preparation.inputs),
-      ...groups[2].expandOnError([methodInput]), ...groups[3].expandOnError(validation.inputs),
+      ...groups[2].expandOnError([methodInput, ...find.inputs]), ...groups[3].expandOnError(validation.inputs),
+      ...find.subs,
       // The platform's column inputs keep a removed column until their dialog is opened again.
       table.onColumnsRemoved.subscribe(() => TrainView.dropRemovedColumns(table, targetInput, featuresInput)),
       // The task the method trains decides some of its settings' rules.
@@ -365,13 +403,15 @@ export class TrainView extends DG.ViewBase {
     this.formPane.append(formRoot);
     this.lastTraining = undefined;
     this.runs = [];
+    this.searches.clear();
     this.runsPanel.update(this.runs);
     this.searchPanel.update(undefined);
     this.resultsPane.clear();
+    this.resultsPane.layout();
     this.showHint(RESULTS_HINT);
     // fillMethod adds the tune settings.
     const form = {table, tableInput, target: targetInput, features: featuresInput, preparation, validation,
-      method: methodInput, hyperparameters: new Map(), methodBody, groups} as TrainForm;
+      method: methodInput, hyperparameters: new Map(), find, methodBody, groups} as TrainForm;
     this.fillMethod(form);
     this.requestCheck();
     return form;
@@ -389,9 +429,12 @@ export class TrainView extends DG.ViewBase {
         'every setting stays enabled.');
     }
     this.rules = rules ?? {};
-    form.preparation.setKeepsMissingValues(handlesMissingValues(engine));
+    // Under Auto the search never keeps the rows with missing values, whatever the suggested method could.
+    form.preparation.setKeepsMissingValues(!this.isAutoMethod && handlesMissingValues(engine));
     const {predictProbability} = form.preparation;
-    form.preparation.setMethod(engine.name, givesProbabilities(engine));
+    form.find.setPredictProbability(predictProbability.value);
+    form.preparation.setProbabilityReason(this.probabilityReason(form));
+    form.method.setTooltip(this.isAutoMethod ? AUTO_TOOLTIP : METHOD_TOOLTIP);
     if (this.locked !== null) {
       this.locked.set(predictProbability, predictProbability.enabled);
       predictProbability.enabled = false;
@@ -425,10 +468,21 @@ export class TrainView extends DG.ViewBase {
     const inputs = [...form.hyperparameters.values()];
     this.methodSubs.push(...form.tune.subs, ...form.groups[2].expandOnError([...inputs, ...form.tune.inputs]));
     ui.empty(form.methodBody);
-    form.methodBody.append(form.method.root, form.tune.root);
-    if (this.locked !== null)
+    form.methodBody.append(form.method.root, form.tune.root, form.find.root);
+    ui.setDisplay(form.tune.root, !this.isAutoMethod);
+    ui.setDisplay(form.find.root, this.isAutoMethod);
+    if (this.locked !== null) {
       form.tune.setLocked(true);
+      form.find.setLocked(true);
+    }
     this.applyRules(form);
+  }
+
+  /** Why Predict probability cannot be used: under Auto no checked method gives class probabilities, else the method
+   * gives none; null when it can. */
+  private probabilityReason(form: TrainForm): string | null {
+    return this.isAutoMethod ? form.find.probabilityReason : givesProbabilities(this.engine) ? null :
+      `${this.engine.name} gives no class probabilities`;
   }
 
   /** Disables the settings of [form] the method ignores with its values and task (`meta.mlenabled`) and enables the
@@ -439,6 +493,7 @@ export class TrainView extends DG.ViewBase {
     const target = form.target.value;
     const task: ModelTask | undefined = target === null ? undefined : taskOf(target);
     tune.setTask(task);
+    form.find.setTask(task);
     const free = tune.isAuto ? tune.tunedNames : undefined;
     const values = TrainView.valuesOf(form.hyperparameters);
     const inactive = new Set<string>();
@@ -454,13 +509,24 @@ export class TrainView extends DG.ViewBase {
     tune.setInactive(inactive);
   }
 
-  /** The user picked [name] in **Method**. */
+  /** The user picked [name] in **Method**: a method, or Auto, which shows the Find best model block and keeps the
+   * shown model. */
   private chooseMethod(name: string | null): void {
+    if (this.isSettingMethod)
+      return;
+    const wasAuto = this.isAutoMethod;
+    if (name === AUTO) {
+      this.userChoice = AUTO;
+      if (!wasAuto)
+        this.fillMethod(this.form);
+      this.requestCheck(true);
+      return;
+    }
     const engine = this.engines.find((e) => e.name === name);
-    if (this.isSettingMethod || engine === undefined)
+    if (engine === undefined)
       return;
     this.userChoice = engine.name;
-    if (engine !== this.engine) {
+    if (engine !== this.engine || wasAuto) {
       this.engine = engine;
       this.fillMethod(this.form);
     }
@@ -491,10 +557,13 @@ export class TrainView extends DG.ViewBase {
       validation: validation.settings(), missingValues: this.form.preparation.missingValues.settings(), steps};
   }
 
-  /** Predict probability changed: a method whose probabilities are a setting trains again, any other re-cuts the
-   * result. */
+  /** Predict probability changed: under Auto the Candidates list follows it and nothing trains; else a method whose
+   * probabilities are a setting trains again, any other re-cuts the result. */
   private onProbabilityToggled(): void {
-    if (probabilityInput(this.engine) !== undefined)
+    if (this.isAutoMethod) {
+      this.form.find.setPredictProbability(this.form.preparation.steps().predictProbability);
+      this.updateControls();
+    } else if (probabilityInput(this.engine) !== undefined)
       this.requestCheck();
     else
       this.requestRecut();
@@ -513,16 +582,18 @@ export class TrainView extends DG.ViewBase {
     return result === undefined ? undefined : bestThresholdOf(result, metric);
   }
 
-  /** Every change: the training of the old selection stops, its result goes, and the selection is checked again
-   * [CHECK_DELAY_MS] after the last change. */
-  private requestCheck(): void {
+  /** Every change: the training of the old selection stops, its result goes unless [keepsResult] (choosing Auto keeps
+   * the selection), and the selection is checked again [CHECK_DELAY_MS] after the last change. */
+  private requestCheck(keepsResult = false): void {
     this.checkNumber++;
     this.isCheckRequested = true;
     this.check = undefined;
     this.queue.supersede();
-    this.lastTraining = undefined;
-    this.isTrained = false;
-    this.isFailed = false;
+    if (!keepsResult) {
+      this.lastTraining = undefined;
+      this.isTrained = false;
+      this.isFailed = false;
+    }
     this.updateControls();
     this.changes.next();
   }
@@ -560,13 +631,28 @@ export class TrainView extends DG.ViewBase {
           return;
         check = {...check, problems: {...check.problems, method: []}, isInteractive};
       }
+      // Under Auto the suggested method is not trained: its "cannot learn" is no problem while another method can.
+      if (this.isAutoMethod && check.engines.length > 0)
+        check = {...check, problems: {...check.problems, method: []}};
+      if (this.isAutoMethod && check.prepared !== undefined) {
+        const {columns, target} = check.prepared;
+        const browser = searchableEngines(check.engines, this.engines);
+        const live = await quickEngines(browser, columns, target, false);
+        if (checkNumber !== this.checkNumber)
+          return;
+        for (const e of browser)
+          this.interactivity.set(e.name, live.includes(e));
+        this.form.find.setMethods([...browser.map((e) => FindSettings.entryOf(e, live.includes(e))),
+          ...check.engines.filter(isServerEngine).map((e) => FindSettings.entryOf(e, false))]);
+        this.form.preparation.setProbabilityReason(this.probabilityReason(this.form));
+      }
       // The prepared columns (one-hot copies of the whole table) are not kept beyond this check.
       this.check = {...check, prepared: undefined};
       this.resultsPane.setDataInsights(check.insights);
       this.showMethods(check);
       const settings = this.form.preparation.missingValues.visibleInputs;
       for (const input of [this.form.target, this.form.features, this.form.method, this.form.preparation.threshold,
-        ...settings, ...this.form.validation.usedInputs, ...this.activeHyperparameters()])
+        ...settings, ...this.form.validation.usedInputs, ...this.activeHyperparameters(), ...this.form.find.inputs])
         input.validate();
       if (check.engines.length > 0)
         this.interactivity.set(this.engine.name, check.isInteractive);
@@ -574,7 +660,10 @@ export class TrainView extends DG.ViewBase {
       this.updateControls();
       if (this.problem() !== null)
         this.showHint(TrainView.dataProblems(check).length === 0 ? FIX_SETTINGS : RESULTS_HINT);
-      else if (check.isInteractive)
+      else if (this.isAutoMethod) {
+        if (this.lastTraining === undefined)
+          this.showHint(AUTO_HINT);
+      } else if (check.isInteractive)
         await this.startTraining(true);
       else
         this.showHint(this.notInteractiveHint());
@@ -590,17 +679,21 @@ export class TrainView extends DG.ViewBase {
   }
 
   /** **Train** is shown in Manual for a method known not to retrain on every change, never for an interactive or an
-   * unknown one: the data checks that fail leave the method's last interactivity on this table. */
+   * unknown one, nor under Auto: the data checks that fail leave the method's last interactivity on this table. */
   private showTrainRow(): void {
-    ui.setDisplay(this.trainRow, this.interactivity.get(this.engine.name) === false && !this.form.tune.isAuto);
+    ui.setDisplay(this.trainRow, this.interactivity.get(this.engine.name) === false && !this.form.tune.isAuto &&
+      !this.isAutoMethod);
   }
 
-  /** The method for [check]: the current one while a target or features rule fails or nothing can learn; the user's
-   * choice while it is listed; the suggested one otherwise, with a balloon when it replaces the user's choice. */
+  /** The method for [check]: the current one while a target or features rule fails or nothing can learn; the
+   * suggested one under Auto; the user's choice while it is listed; the suggested one otherwise, with a balloon when it
+   * replaces the user's choice. */
   private methodOf(check: SelectionCheck): Engine {
     const {problems, engines, best} = check;
     if (hasDataProblems(problems) || engines.length === 0)
       return this.engine;
+    if (this.isAutoMethod)
+      return best ?? engines[0];
     const chosen = engines.find((e) => e.name === this.userChoice);
     if (chosen !== undefined)
       return chosen;
@@ -619,8 +712,8 @@ export class TrainView extends DG.ViewBase {
       return;
     this.isSettingMethod = true;
     try {
-      this.form.method.items = engines.map((e) => e.name);
-      this.form.method.value = engines.includes(this.engine) ? this.engine.name : null;
+      this.form.method.items = [AUTO, ...engines.map((e) => e.name)];
+      this.form.method.value = this.isAutoMethod ? AUTO : engines.includes(this.engine) ? this.engine.name : null;
     } finally {
       this.isSettingMethod = false;
     }
@@ -638,8 +731,13 @@ export class TrainView extends DG.ViewBase {
     return problem ?? (this.isTraining ? TRAINING : this.form.tune.noSpaceReason ?? this.form.tune.problem());
   }
 
+  /** Why **Find** is unavailable: as **Tune**, or the Find best model block's problem. */
+  private findBlocker(problem: string | null = this.problem()): string | null {
+    return problem ?? (this.isTraining ? TRAINING : this.form.find.problem());
+  }
+
   /** The pending check or the selection's first problem, an invalid validation input or hyperparameter included (one
-   * the method ignores is not checked); null when the selection can be trained. */
+   * the method ignores is not checked; none under Auto); null when the selection can be trained. */
   private problem(): string | null {
     if (this.check === undefined)
       return CHECKING;
@@ -649,7 +747,7 @@ export class TrainView extends DG.ViewBase {
       .filter((v): v is string => v !== null);
     const threshold = this.form.preparation.thresholdProblem;
     return [...TrainView.dataProblems(this.check), ...settings, ...captioned(this.form.validation.usedInputs),
-      ...captioned(this.activeHyperparameters()),
+      ...(this.isAutoMethod ? [] : captioned(this.activeHyperparameters())),
       ...(threshold === null ? [] : [`Classification threshold: ${threshold}`])][0] ?? null;
   }
 
@@ -658,13 +756,18 @@ export class TrainView extends DG.ViewBase {
     return [...this.form.hyperparameters].filter(([name]) => this.form.tune.isActive(name)).map(([, input]) => input);
   }
 
-  /** **Train**, **Tune** (in Auto-tune only: a hidden one keeps no disabled state), **Save** and the Results hint
-   * follow the check, the training and the last result. */
+  /** **Train**, **Tune** (in Auto-tune only: a hidden one keeps no disabled state), **Find** (under Auto only),
+   * **Save** and the Results hint follow the check, the training and the last result. */
   private updateControls(): void {
     const problem = this.problem();
     this.trainGate.update(this.blocker(problem));
-    // The first form is still being built while its check is requested: there is no form yet.
-    if (this.form?.tune.isAuto)
+    // The first form is still being built while its check is requested: there is no form yet, and no Auto.
+    const isTune = !this.isAutoMethod && this.form?.tune.isAuto === true;
+    if (this.isAutoMethod)
+      this.findGate.update(this.findBlocker(problem));
+    else
+      this.findGate.release();
+    if (isTune)
       this.tuneGate.update(this.tuneBlocker(problem));
     else
       this.tuneGate.release();
@@ -793,6 +896,7 @@ export class TrainView extends DG.ViewBase {
       featureGaps: missingColumnsOf(selection.features).length > 0, rowCount: record?.row_count ?? 0,
       search: record?.search, settingsStatus, ...outcome});
     this.runsPanel.update(this.runs);
+    this.resultsPane.layout();
     if (status === 'completed')
       this.modelCards.setCurrent(this.runs[0]);
   }
@@ -832,22 +936,30 @@ export class TrainView extends DG.ViewBase {
     this.requestCheck();
   }
 
-  /** Searches the current method's settings on the selection as [choice] asks (**Tune**: as Search options set it)
-   * through the queue with a task-bar progress, shows the leaders in **Search**, sets the form to the chosen settings,
-   * which read Auto-tuned in Manual, and trains them as a regular training on the search rows, with the hold out
-   * measured as Test. Meanwhile the form is locked: its inputs are disabled, and a click on a **Runs** or **Search**
-   * row sets nothing. */
-  async startSearch(mode: 'tune', choice: SearchChoice): Promise<void> {
-    const selection = this.selection();
-    if (selection === null || this.tuneBlocker() !== null)
+  /** Searches on the selection as [choice] asks, through the queue with a task-bar progress: [mode] `tune` the current
+   * method's settings (**Tune**: as Search options set it), `best` the methods [choice] names (**Find**: as the Find
+   * best model block sets it; the rows with missing values skipped unless imputed). Shows the leaders in **Search**,
+   * sets the form to the chosen method and settings, which read Auto-tuned in Manual, and trains them as a regular
+   * training on the search rows, with the hold out measured as Test. The kept search of [mode] on the same inputs
+   * ({@link keptSearch}) is continued when its plan allows ({@link canContinue}): the new budget on top of its trials;
+   * otherwise the search starts afresh; either way it becomes the kept one. Meanwhile the form is locked: its inputs
+   * are disabled, and a click on a **Runs** or **Search** row sets nothing. */
+  async startSearch(mode: SearchMode, choice: SearchChoice): Promise<void> {
+    const selection = this.searchSelection(mode);
+    if (selection === null || (mode === 'tune' ? this.tuneBlocker() : this.findBlocker()) !== null)
       return;
     const {engine} = this;
     const {space} = this.form.tune;
     const {seed} = selection;
+    const key = this.searchKey(mode);
+    const inputs = this.searchInputs(mode, selection, choice);
+    const previous = this.keptSearch(mode, selection, choice);
+    const title = searchTitle(mode, engine.name);
     const checkNumber = this.checkNumber;
     this.activeTrainings++;
     this.showTraining(false);
     this.searchPanel.update(undefined);
+    this.resultsPane.layout();
     this.lockForm();
     let indicator: DG.TaskBarProgressIndicator | undefined;
     try {
@@ -857,10 +969,18 @@ export class TrainView extends DG.ViewBase {
         queued = await this.queue.run(async (loop) => {
           const request = await prepareTraining(selection);
           const fingerprint = datasetFingerprint(request.features, request.target);
-          return {fingerprint, ...await tuneSearch(request, engine, selection.hyperparameters, choice, seed, loop,
-            browserSearch, space)};
+          const planned = mode === 'tune' ?
+            tuneSearchPlan(request, engine, selection.hyperparameters, choice, seed, space) :
+            bestSearchPlan(request, bestCandidates(this.candidateEngines(choice.methods ?? []), this.engines,
+              selection.steps.predictProbability), choice, seed);
+          const requestKey = requestFingerprint(planned.plan.request);
+          const continued = previous !== undefined && canContinue(previous, planned.plan, requestKey) ? previous :
+            undefined;
+          if (continued !== undefined)
+            loop.update(0, `Continuing: ${title}`);
+          return {fingerprint, ...await runPlanned(planned, loop, browserSearch, continued, requestKey)};
         }, () => {
-          indicator = DG.TaskBarProgressIndicator.create(`Tuning ${engine.name}`, {cancelable: true});
+          indicator = DG.TaskBarProgressIndicator.create(title, {cancelable: true});
           return indicator;
         });
       } finally {
@@ -875,26 +995,32 @@ export class TrainView extends DG.ViewBase {
         reportError(queued.error);
         return;
       }
-      const {plan, holdOut, outcome, leaders, chosen, record, fingerprint} = queued.result;
+      const {plan, holdOut, outcome, leaders, chosen, record, fingerprint, state} = queued.result;
       if (!isCurrent)
         return;
-      this.searchPanel.update({plan, leaders});
+      this.searches.set(key, {state, inputs});
+      this.searchPanel.update({plan, leaders, outcome});
+      this.resultsPane.layout();
       if (chosen === undefined) {
         grok.shell.warning(failedSearchMessage(outcome) ?? 'No trial completed.');
         this.idleHint();
         return;
       }
-      this.setWinner(engine, chosen.hyperparameters);
-      this.lastTuned.set(engine.name, {values: TrainView.valuesOf(this.form.hyperparameters), context: {
-        table: this.form.table, target: selection.target.name, features: selection.features.map((c) => c.name)}});
+      const winner = plan.candidates.find((c) => c.engine.name === chosen.method)!.engine;
+      this.setWinner(winner, chosen.hyperparameters);
+      this.lastTuned.set(winner.name, {values: TrainView.valuesOf(this.form.hyperparameters), context: {
+        table: this.form.table, target: selection.target.name, features: selection.features.map((c) => c.name)},
+      isFound: mode === 'best'});
       this.form.tune.updateStatus();
       if (outcome.stopped === 'cancelled')
         grok.shell.warning('Search cancelled; the best so far is trained.');
-      else
+      else if (mode === 'tune')
         grok.shell.info(`Optimal settings for ${chosen.method} found.`);
+      else
+        grok.shell.info(`Best model: ${chosen.method} (${METRIC_LABELS[plan.metric]} ${chosen.score.toFixed(3)}).`);
       const hyperparameters = {...chosen.hyperparameters};
-      await this.startTraining(false, {selection: {...selection, hyperparameters},
-        request: {...plan.request, hyperparameters, holdOut, search: record}, fingerprint});
+      await this.startTraining(false, {selection: {...selection, engine: winner, hyperparameters},
+        request: {...plan.request, engine: winner, hyperparameters, holdOut, search: record}, fingerprint});
     } catch (e) {
       reportError(e);
     } finally {
@@ -906,11 +1032,65 @@ export class TrainView extends DG.ViewBase {
     }
   }
 
-  /** Every input of the form: the data, the preparation, the validation, the method and its settings. */
+  /** The selection a search of [mode] runs on: Find best model's with its missing values ({@link searchMissingValues});
+   * null without a target. */
+  private searchSelection(mode: SearchMode): TrainingSelection | null {
+    const base = this.selection();
+    return base === null || mode === 'tune' ? base : {...base, missingValues: TrainView.searchMissingValues(base)};
+  }
+
+  /** The key of the kept search of [mode]: Tune's per method. */
+  private searchKey(mode: SearchMode): string {
+    return mode === 'tune' ? `tune ${this.engine.name}` : 'best';
+  }
+
+  /** What a search of [mode] on [selection] as [choice] asks continues only while it stays the same: the target, the
+   * features, the preparation (the threshold too, which the trials score with: {@link requestFingerprint}), the missing
+   * values, the validation and its seed, the metric, the strategy and the methods (Find best model), the space and the
+   * values of the settings not tuned (Tune). The limit is not part of it: a continuation adds it. */
+  private searchInputs(mode: SearchMode, selection: TrainingSelection, choice: SearchChoice): string {
+    const {target, features, hyperparameters, steps, validation, seed} = selection;
+    const tuned = this.form.tune.tunedNames;
+    const fixed = mode === 'tune' ? Object.entries(hyperparameters).filter(([name]) => !tuned.has(name)) : [];
+    return JSON.stringify([target.name, features.map((c) => c.name), steps, selectedMissingValues(selection),
+      validation, seed, choice.metric ?? null, choice.strategy ?? null, choice.methods ?? [], choice.space ?? null,
+      fixed]);
+  }
+
+  /** The kept search of [mode] when [selection] and [choice] ask what it ran on ({@link searchInputs}). */
+  private keptSearch(mode: SearchMode, selection: TrainingSelection, choice: SearchChoice): SearchState | undefined {
+    const kept = this.searches.get(this.searchKey(mode));
+    return kept !== undefined && kept.inputs === this.searchInputs(mode, selection, choice) ? kept.state : undefined;
+  }
+
+  /** The tooltip of **Tune** ([mode] `tune`) or **Find**: the trials so far of the search it would continue, else what
+   * it does. */
+  private searchTooltip(mode: SearchMode): string {
+    const selection = this.searches.size === 0 ? null : this.searchSelection(mode);
+    const kept = selection === null ? undefined :
+      this.keptSearch(mode, selection, mode === 'tune' ? this.form.tune.choice() : this.form.find.choice());
+    return kept !== undefined ? `${CONTINUE_TOOLTIP}: ${kept.outcome.trials.length} trials so far` :
+      mode === 'tune' ? TUNE_TOOLTIP : FIND_TOOLTIP;
+  }
+
+  /** The browser methods of the last check named in [names], cheapest first. */
+  private candidateEngines(names: string[]): Engine[] {
+    return searchableEngines(this.check?.engines ?? [], this.engines).filter((e) => names.includes(e.name));
+  }
+
+  /** Find best model's missing values: imputed when the form imputes, else skipped; never kept, as every method
+   * gets the same folds. */
+  private static searchMissingValues(selection: TrainingSelection): MissingValuesSettings {
+    const chosen = selectedMissingValues(selection);
+    return chosen.mode === 'impute' ? chosen : {mode: 'skip'};
+  }
+
+  /** Every input of the form: the data, the preparation, the validation, the method, its settings and the Find best
+   * model block. */
   private formInputs(): DG.InputBase[] {
-    const {tableInput, target, features, preparation, validation, method, hyperparameters} = this.form;
+    const {tableInput, target, features, preparation, validation, method, hyperparameters, find} = this.form;
     return [tableInput, target, features, ...preparation.inputs, ...validation.inputs, method,
-      ...hyperparameters.values()];
+      ...hyperparameters.values(), ...find.inputs];
   }
 
   /** Disables every input of the form, Settings and the controls of Search options, keeping each input's own enabled
@@ -923,6 +1103,7 @@ export class TrainView extends DG.ViewBase {
     }
     this.locked = locked;
     this.form.tune.setLocked(true);
+    this.form.find.setLocked(true);
   }
 
   /** Gives each input of the form its enabled state back, the method's settings by their rules. */
@@ -932,6 +1113,7 @@ export class TrainView extends DG.ViewBase {
     for (const [input, enabled] of locked ?? [])
       input.enabled = enabled;
     this.form.tune.setLocked(false);
+    this.form.find.setLocked(false);
     this.applyRules(this.form);
   }
 
@@ -951,7 +1133,7 @@ export class TrainView extends DG.ViewBase {
 
   /** A click on a **Search** row: sets its method and settings in Manual; the view then checks and trains as after
    * any change. Nothing is set while the form is locked. */
-  restoreLeader(leader: Leader): void {
+  restoreLeader(leader: Restored): void {
     const engine = this.engines.find((e) => e.name === leader.method);
     if (engine === undefined || this.locked !== null)
       return;
@@ -968,9 +1150,15 @@ export class TrainView extends DG.ViewBase {
     this.form.tune.setMode(MANUAL);
   }
 
-  /** The Results hint while nothing is shown: Click Train for a method that does not retrain live. */
+  /** The Results hint while nothing is shown: under Auto the last training when there is one, else Click Find; Click
+   * Train for a method that does not retrain live. */
   private idleHint(): void {
-    this.showHint(this.check?.isInteractive === false ? this.notInteractiveHint() : RESULTS_HINT);
+    if (this.isAutoMethod && this.lastTraining !== undefined)
+      this.showResults(this.lastTraining);
+    else {
+      this.showHint(this.isAutoMethod ? AUTO_HINT : this.check?.isInteractive === false ? this.notInteractiveHint() :
+        RESULTS_HINT);
+    }
   }
 
   private notInteractiveHint(): string {

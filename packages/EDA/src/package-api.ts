@@ -301,10 +301,11 @@ export namespace funcs {
    * @param {number} degree - Degree of the polynomial kernel. Higher values give a more flexible, curved decision boundary. Used by the polynomial kernel only.
    * @param {number} coef0 - Constant added inside the kernel before the polynomial power or the sigmoid. Used by the polynomial and sigmoid kernels only.
    * @param {number} epsilon - Width of the error-insensitive tube in SVR regression. Training errors smaller than this are not penalized, so larger values give a smoother model with fewer support vectors. Used for regression targets only.
+   * @param {number} maxIterations - Solver iterations before it stops unconverged. The model is still returned, so a slow fit cannot hang.
    * @param {boolean} probability - Also estimates the probability of each class (Platt scaling: an internal 5-fold cross-validation, about 5 times the training time). Classification targets only.
    */
-  export async function trainSVM(df: DG.DataFrame , predictColumn: DG.Column , kernel: string , cost: number , gamma: number , degree: number , coef0: number , epsilon: number , probability: boolean ): Promise<any> {
-    return await grok.functions.call('EDA:TrainSVM', { df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon, probability });
+  export async function trainSVM(df: DG.DataFrame , predictColumn: DG.Column , kernel: string , cost: number , gamma: number , degree: number , coef0: number , epsilon: number , maxIterations: number , probability: boolean ): Promise<any> {
+    return await grok.functions.call('EDA:TrainSVM', { df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon, maxIterations, probability });
   }
 
   /**

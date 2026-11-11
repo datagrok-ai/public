@@ -10,11 +10,17 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
   `get-model.ts`, `model-edit.ts`), `evaluateModel` (`training/evaluate-api.ts`), `shareModel` (`openShareDialog` in
   `ui/model-actions.ts`), `_initForge` (autostart), the column panel
   **Predicted by** and the table panel **Forge models** (`ui/table-models-panel.ts`).
-- `src/ui/`: `train-view.ts` (+ `runs-panel.ts`, `tune-settings.ts`: Settings and Search options, `search-panel.ts`:
-  the Search leaderboard, `validation-inputs.ts`: the Validation group, `model-cards.ts`: the cards under the form), `evaluation-view.ts` (on `results-*.ts`), `forge-app.ts` (catalog),
+- `src/ui/`: `train-view.ts` (+ `runs-panel.ts`, `tune-settings.ts`: Settings and Search options, `find-settings.ts`:
+  the Find best model block of Method Auto, built from Tune's static builders (status line, Search options toggle,
+  Metric row) plus the platform radio Strategy and multi-choice Candidates, `limit-inputs.ts`: both blocks' Limit
+  and Max time / Max trials rows (platform int inputs with `min`/`max`, the platform's validation) and the
+  stored-limit migration, `search-panel.ts`: the Search bar chart
+  and leaderboard in a splitter, `validation-inputs.ts`: the Validation group, `model-cards.ts`: the cards under the form), `evaluation-view.ts` (on `results-*.ts`), `forge-app.ts` (catalog),
   `apply-model-dialog.ts`, `model-*.ts`; their readiness attributes: ARCHITECTURE.md, "Automation surface".
-- `src/training/` (`train-api.ts`: `Forge:trainModel`; `training-queue.ts`: one at a time; `search.ts`: the Tune search
-  and its record; `browser-search.ts`: its trials; `evaluation.ts`: records
+- `src/training/` (`train-api.ts`: `Forge:trainModel`; `training-queue.ts`: one at a time; `search.ts`: the Tune and
+  Find best model (equal split or successive halving) searches, their record and continuation (`canContinue`,
+  `continueSearch`);
+  `browser-search.ts`: its trials; `evaluation.ts`: records
   nothing, `storedTrainingTable` is the data Run Evaluation and `evaluateModel` default to), `src/apply/`, `src/preparation/` (`pipeline.ts`: steps and their replay; `Eda:knnImpute`), `src/catalog/`.
 - `databases/forge/schema.json` — the EMS schema; `src/generated/db.ts` is its generated typed client `forgeDb`.
 - `agents/` — Datagrok AI (Grokky) knowledge, published with the package: `package-knowledge.yaml` and the
@@ -49,6 +55,12 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
   probability input (`meta.mlprobabilities` naming a `train` input: SVM's `probability`) is hidden from the form
   (`visibleHyperparametersOf`) and set from the checkbox (`withProbabilityInput`), so toggling it retrains.
   `binary-classification` is the former regression mode: replayed for old models, never recorded.
+- A plan has ONE limit, `budgetMs` or `maxTrials` (`searchPlanOf` refuses both). The trial cap counts every trial
+  launched. An equal split runs the methods one after another and waits for a method's trials before the next share
+  starts. A search is continued only through its `SearchResult.state`
+  (in memory: its plan holds the columns); the executor's `resume` keeps each candidate's stream position, so a
+  continued Tune or halving search draws the points one longer run would (an equal split splits the new limit
+  equally again).
 - A loop of awaited engine calls must `yieldToEventLoop` (microtasks hold back a cancel click and the repaint).
 - `ignore-missing` / `impute-missing` are recorded in `options`, never replayed. Prediction columns carry `forge.model`
   (`PREDICTION_TAG`; `predictRows` adds none). Inserts of applications and runs need explicit `source`, `status`.
@@ -83,7 +95,20 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
 - A row reaches a Space only by the platform's drag of a model element (`ui.bind` / `ui.makeDraggable` with the row).
   Column inputs keep a removed column: the Train view drops it on `onColumnsRemoved`.
 - UI tests switch `TuneSettings.storage` to `Forge Tune tests` in the hooks loop at the end of `ui-tests.ts`: a new UI
-  category that opens a Train view must be added there.
+  category that opens a Train view must be added there. The storage holds one key per method and `Find best` (the
+  Find best model block); a test that toggles its methods clears the storage in `finally`.
+- Method `Auto` is a view state (`userChoice`), not an engine: `this.engine` stays the suggested method, and
+  `Forge:trainModel` takes `method: 'auto'`; the winner's engine must reach both the selection and the request.
+  Choosing it keeps `lastTraining` (`requestCheck(true)`): nothing retrains, the results stay.
+- The view continues a search only through its kept `SearchState` (`searches`, per mode, Tune per method) while
+  `searchInputs` match; a repeated `startSearch` in a test continues the earlier one (the limit adds up). It starts
+  nothing while Tune's or Find's problem holds (an invalid limit included), whatever `choice` it is given.
+- The bar chart fires `onCategoryClicked` only for a stack segment: the Search chart (no stack) selects its row
+  (`onClick: 'Select'`) and the panel restores on a one-row selection of the shared frame. `ui.box` returns a viewer's
+  root itself (it is a box), and ui.css `div.ui-div > div.ui-box` is 400 x 300 px: a fill rule must be more specific
+  (`div.ui-div.forge-panel-fill > div.ui-box`); a grid keeps its own inline height unless a flex column sizes it.
+- Search and Runs are bottom blocks of `ResultsPane` (one `splitV` with the result rows): after showing or hiding one,
+  call `resultsPane.layout()`; never `ui.empty` the rows host without taking those boxes out first.
 - Test rows are `forge-test-*`, deleted in `finally`; `expect(x, undefined)` checks against `true`; close a Train view
   with `closeTrainView` (waits for `isTraining`); `openTable` records no creation script (use `openIrisFromFile`).
 
@@ -93,6 +118,6 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
 grok build --typecheck   # runs `grok api` first: regenerates src/generated/db.ts and package-api.ts
 pnpm run lint            # excludes src/generated/
 grok publish local       # debug publish; deploys the schema
-grok test --host local   # --category <Area> --skip-build
+grok test --host local   # --category <Area> --skip-build (publishes the last build: `grok publish local` first)
 npx grok-bdd run         # bdd/: the user flows (login env: bdd/README.md); bdd/generated/ comes from `grok-bdd compile`
 ```

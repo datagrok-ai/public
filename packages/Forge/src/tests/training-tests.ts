@@ -20,7 +20,7 @@ import {forgeDb} from '../generated/db';
 import {deleteModel} from '../storage/model-store';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {dataInsights, metricInsights, resultInsights, summaryInsight} from '../training/insights';
-import {searchRecordOf} from '../training/search';
+import {quickEngines, searchableEngines, searchRecordOf} from '../training/search';
 import {runTrainModel, TrainModelInput} from '../training/train-api';
 import {bestThresholdOf, checkSelection, foldMasks, foldPrediction, needsRowsWithoutGaps, outOfFoldProbabilities,
   prepareTraining, recutResult, TrainingProblems, TrainingRequest, TrainingResult, TrainingSelection, trainingEngines,
@@ -1388,7 +1388,7 @@ category('Training', () => {
       [{target: 'Petal.Length', options: {predictProbability: true}}, 'Predict probability needs a text or boolean ' +
         'target.'],
       [{method: 'SVM', hyperparameters: {probability: true}}, 'The method SVM has no setting \'probability\'. Its ' +
-        'settings are: kernel, cost, gamma, degree, coef0, epsilon.'],
+        'settings are: kernel, cost, gamma, degree, coef0, epsilon, maxIterations.'],
       [{options: {missingValues: 'fill'}}, 'The option \'missingValues\' needs skip, impute, keep ' +
         '(keep: only for a method that handles missing values).'],
       [{name: 'forge-test-api-ref', storage: 'reference'}, 'The table has no known source, so the model cannot ' +
@@ -1460,14 +1460,15 @@ category('Training', () => {
     const iris = await apiTable();
     try {
       const value: unknown = await grok.functions.call('Forge:trainModel', {table: iris, target: 'Species',
-        method: 'XGBoost', options: {seed: 11, search: {metric: 'accuracy', budgetSeconds: 20, maxTrials: 10}},
+        method: 'XGBoost', options: {seed: 11, search: {metric: 'accuracy', maxTrials: 10}},
         showProgress: false});
       const result = isRecord(value) ? value : {};
       const search = searchRecordOf(result.search);
       if (search === undefined)
         throw new Error(`No search in ${JSON.stringify(result)}`);
-      expect(`${search.mode} ${search.metric} ${search.budgetSeconds} ${search.seed}`, 'tune accuracy 20 11');
-      expect(search.completed <= 10 && search.completed >= 1, true, `${search.completed} trials completed`);
+      expect(`${search.mode} ${search.metric} ${search.maxTrials} ${search.budgetSeconds} ${search.strategy} ` +
+        `${search.seed}`, 'tune accuracy 10 undefined undefined 11');
+      expect(search.completed >= 1 && search.trials <= 10, true, `${search.completed} of ${search.trials} completed`);
       expectArray(search.leaders.map((l) => `${l.method} ${l.chosen}`), ['XGBoost true']);
       expect(search.holdOut === undefined, true, 'A hold out on 150 rows');
       const metrics = isRecord(result.metrics) ? result.metrics : {};
@@ -1509,10 +1510,13 @@ category('Training', () => {
   test('Forge:trainModel refuses a bad search option', async () => {
     const iris = await apiTable();
     const refusals: [{[name: string]: unknown}, string][] = [
-      [{budget: 1}, 'The option \'search\' needs an object with metric, budgetSeconds, maxTrials.'],
+      [{budget: 1}, 'The option \'search\' needs an object with metric, budgetSeconds, maxTrials, strategy, methods, ' +
+        'topK.'],
       [{metric: 'speed'}, 'The search metric \'speed\' is not one of: r2, rmse, mae, balancedAccuracy, accuracy, f1, ' +
         'mcc, auc, logLoss, brier.'],
       [{maxTrials: 0}, 'The option \'maxTrials\' needs a whole number of at least 1.'],
+      [{budgetSeconds: 60, maxTrials: 10}, 'The search options \'budgetSeconds\' and \'maxTrials\' cannot be ' +
+        'combined: choose one limit.'],
       [{metric: 'r2'}, 'The search metric \'r2\' does not apply to a classification. Choose one of: ' +
         'balancedAccuracy, accuracy, f1, mcc, auc, logLoss, brier.'],
     ];
@@ -1530,6 +1534,92 @@ category('Training', () => {
       await deleteRunsOf([iris]);
     }
   }, {timeout: TIMEOUT});
+
+  test('Forge:trainModel with method auto returns the leaderboard and trains the chosen method', async () => {
+    const iris = await apiTable();
+    try {
+      const value: unknown = await grok.functions.call('Forge:trainModel', {table: iris, target: 'Species',
+        method: 'auto', options: {seed: 11, search: {maxTrials: 8, strategy: 'halving',
+          methods: ['XGBoost', 'Decision Tree', 'Naive Bayes']}}, showProgress: false});
+      const result = isRecord(value) ? value : {};
+      const search = searchRecordOf(result.search);
+      if (search === undefined)
+        throw new Error(`No search in ${JSON.stringify(result)}`);
+      expect(`${search.mode} ${search.strategy} ${search.maxTrials}`, 'best halving 8');
+      expectArray(search.methods?.map((m) => m.method) ?? [], ['Naive Bayes', 'Decision Tree', 'XGBoost']);
+      // Three methods, not above the top three: none is eliminated; every trial counts against the cap.
+      expectArray(search.methods?.map((m) => m.eliminatedRound) ?? [], [undefined, undefined, undefined]);
+      expect(search.methods?.reduce((sum, m) => sum + m.trials, 0), search.trials);
+      expect(search.trials <= 8, true, `${search.trials} trials`);
+      expect(search.leaders.length, 3);
+      const chosen = search.leaders.filter((l) => l.chosen);
+      expect(chosen.length, 1);
+      expect(result.method, chosen[0].method);
+      const metrics = isRecord(result.metrics) ? result.metrics : {};
+      expect(metrics.test === undefined, true, 'A test without a hold out');
+      const runs = await runsOf([iris]);
+      expectArray(runs.map((r) => `${r.engine_name} ${searchRecordOf(r.search)?.mode}`), [`${result.method} best`]);
+    } finally {
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: ENGINE_TIMEOUT});
+
+  test('Forge:trainModel refuses bad auto options', async () => {
+    const iris = await apiTable();
+    const installed = trainingEngines().engines.map((e) => e.name).join(', ');
+    const auto = (input: Partial<TrainModelInput>): Partial<TrainModelInput> => ({method: 'auto', ...input});
+    const refusals: [Partial<TrainModelInput>, string][] = [
+      [auto({options: {search: {methods: ['Nope']}}}), `No method 'Nope' is installed. The methods are: ${installed}.`],
+      [auto({options: {search: {methods: 'XGBoost'}}}), 'The search option \'methods\' needs a list of method names.'],
+      [auto({options: {search: {topK: 0}}}), 'The option \'topK\' needs a whole number of at least 1.'],
+      [auto({options: {missingValues: 'keep'}}),
+        'The option \'missingValues\' keep cannot be used with method auto. Use skip or impute.'],
+      [auto({hyperparameters: {iterations: 5}}),
+        'The hyperparameters cannot be given with method auto: every method starts from its defaults.'],
+      [auto({options: {search: {metric: 'auc', methods: ['SVM']}}}),
+        'SVM cannot take part in the search: it gives no class probabilities, which AUC-ROC needs.'],
+      [auto({options: {search: {methods: ['Linear Regression']}}}),
+        'Linear Regression cannot take part in the search: it cannot learn from this selection.'],
+      [{method: 'XGBoost', options: {search: {methods: ['XGBoost']}}},
+        'The search options \'strategy\', \'methods\' and \'topK\' need method auto.'],
+      [{method: 'XGBoost', options: {search: {strategy: 'equal'}}},
+        'The search options \'strategy\', \'methods\' and \'topK\' need method auto.'],
+      [auto({options: {search: {strategy: 'fast'}}}), 'The search option \'strategy\' needs equal or halving.'],
+      [auto({options: {search: {maxTrials: 2, methods: ['XGBoost', 'Decision Tree', 'Naive Bayes']}}}),
+        'At least one trial per method: 3.'],
+    ];
+    try {
+      const wrong: string[] = [];
+      for (const [input, message] of refusals) {
+        const error = await runTrainModel({table: iris, target: 'Species', showProgress: false, ...input})
+          .then(() => null, (e: unknown) => e);
+        if (!(error instanceof ForgeError) || error.message !== message)
+          wrong.push(`${JSON.stringify(input)}: ${String(error)}`);
+      }
+      expectArray(wrong, []);
+      expect((await runsOf([iris])).length, 0, 'A refused search was recorded');
+    } finally {
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('quickEngines on demog leaves out the slow methods and SVM with Predict probability', async () => {
+    const demog = await apiTable('System:DemoFiles/demog.csv');
+    const {engines} = trainingEngines();
+    const check = await checkSelection(selectionOf(columnsOf(demog, ['AGE', 'HEIGHT', 'WEIGHT']), demog.getCol('SEX')),
+      engines);
+    if (check.prepared === undefined)
+      throw new Error('The check prepared nothing');
+    const {columns, target} = check.prepared;
+    const browser = searchableEngines(check.engines, engines);
+    for (const predictProbability of [false, true]) {
+      const quick = (await quickEngines(browser, columns, target, predictProbability)).map((e) => e.name);
+      const shown = `${predictProbability}: ${quick.join(', ')}`;
+      expect(['RealMLP', 'TabM', 'Neural Network'].some((name) => quick.includes(name)), false, shown);
+      expect(['XGBoost', 'LDA'].every((name) => quick.includes(name)), true, shown);
+      expect(quick.includes('SVM'), !predictProbability, shown);
+    }
+  }, {timeout: ENGINE_TIMEOUT});
 
   test('Forge:trainModel names the first failure of a search where every trial fails', async () => {
     const iris = await apiTable();
@@ -1550,7 +1640,7 @@ category('Training', () => {
     const name = `forge-test-search-${Date.now()}`;
     try {
       const result = await runTrainModel({table: demog, target: 'SEX', features: ['AGE', 'HEIGHT', 'WEIGHT'],
-        method: 'XGBoost', options: {seed: 5, search: {maxTrials: 3, budgetSeconds: 60}}, name, showProgress: false});
+        method: 'XGBoost', options: {seed: 5, search: {maxTrials: 3}}, name, showProgress: false});
       expect(typeof result.metrics.test?.accuracy, 'number');
       const rows = result.search?.holdOut?.rows ?? 0;
       expect(rows >= 1100 && rows <= 1200, true, `${rows} rows held out`);

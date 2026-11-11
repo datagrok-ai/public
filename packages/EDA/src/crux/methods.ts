@@ -127,12 +127,14 @@ export function isSvmInteractive(features: DG.ColumnList, target: DG.Column): bo
 
 /** libsvm's C-SVC / epsilon-SVR; `gamma = 0` keeps libsvm's 1 / n_features */
 export function trainSvm(df: DG.DataFrame, target: DG.Column, kernel: string, cost: number, gamma: number,
-  degree: number, coef0: number, epsilon: number, probability: boolean = false): Promise<Uint8Array> {
+  degree: number, coef0: number, epsilon: number, probability: boolean = false, maxIterations: number = 1000000):
+  Promise<Uint8Array> {
   validate('SVM', [positiveInt(degree, 'degree')]);
   const classification = isClassTarget(target);
   const probabilities = classification && probability;
   const estimator = {kernel: SVM_KERNELS[kernel] ?? 'rbf', C: cost, gamma: gamma === 0 ? 1 / df.columns.length : gamma,
-    degree, coef0, ...(classification ? {} : {svr_epsilon: epsilon}), ...(probabilities ? {probability: true} : {})};
+    degree, coef0, max_iter: maxIterations, ...(classification ? {} : {svr_epsilon: epsilon}),
+    ...(probabilities ? {probability: true} : {})};
   return cruxFit(taskOf(target), classification ? 'svc' : 'svr', df, target,
     {estimator, preprocess: 'standard', ...(probabilities ? {seed: 0} : {})});
 }

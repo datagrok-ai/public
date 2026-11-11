@@ -64,6 +64,12 @@ export function withProbabilityInput(engine: Engine, hyperparameters: Hyperparam
   return name === undefined ? hyperparameters : {...hyperparameters, [name]: on};
 }
 
+/** Whether the method's trials carry class probabilities with Predict probability [on]: always for
+ * `mlprobabilities: 'true'`, only when on for a method whose probabilities are a train input. */
+export function hasProbabilities(engine: Engine, on: boolean): boolean {
+  return probabilityInput(engine) === undefined ? givesProbabilities(engine) : on;
+}
+
 /** The method accepts concurrent train and apply calls (`meta.mlparallel: true` on `train`): a search runs its fits
  * in parallel. */
 export function isParallel(engine: Engine): boolean {

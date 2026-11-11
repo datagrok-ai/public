@@ -185,9 +185,12 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   table (the boundary of the table pane's **Train**); `TrainView.open()` (`ML | Forge | Train...`) calls it with the
   current table, or says "Open a table first.". The form is one `ui.form`, so the platform
   aligns every label in it: the group **Data** (Table, Target, Features), the group **Preparation**
-  (`PreparationInputs`, below; hidden while none of its inputs applies), the group **Method** (Method and the method's
-  `TuneSettings`, see "Search": **Settings**, its status, then the hyperparameters in Manual or **Search options** and
-  the Tune bar with `tuneButton` in Auto-tune) and the group **Validation** (`ValidationInputs`, below; collapsed
+  (`PreparationInputs`, below; hidden while none of its inputs applies), the group **Method** (Method, whose first item
+  is `Auto`, and the method's `TuneSettings`, see "Search": **Settings**, its status, then the hyperparameters in
+  Manual or **Search options** and the Tune bar with `tuneButton` in Auto-tune; under Auto the form's `FindSettings`,
+  `form.find`, instead: the status `Not searched`, **Search options** with Metric, Strategy, Limit, Max time or
+  Max trials and Candidates, and the bar
+  with `findButton`) and the group **Validation** (`ValidationInputs`, below; collapsed
   at the start), the others expanded at the start, and last the row `trainRow` (`forge-train-row`, a
   `ui.buttonsInput` with `trainButton` at its right; `position: sticky; bottom: 0` on the `--white` background, so it
   sits right under Validation on a short form and stays at the bottom edge while a taller form scrolls). The view is a
@@ -231,7 +234,11 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   false; an older splitting without it counts as shuffled) with the seed in a selectable
   `forge-seed` span and the copy icon right after it (**Copy the seed**, balloon `Split seed <seed> copied.`),
   then, with `MetricsSummary.search` (the training's `search`, or `storedSummary`'s `searchRecordOf(model.search)`),
-  `Search: <Tune> by <metric>, <budget>: <N> trials of <M> method(s), chosen by the one-standard-error rule` and either
+  `Search: <Tune> by <metric>, <limit>: <N> trials of <M> method(s), chosen by the one-standard-error rule` (Find
+  best model: `chosen by the highest <metric> − SE`, `the lowest <metric> + SE` for a minimized one)
+  (`limitCaption`: `limit 5 min` (`<n> s` for seconds that are not whole minutes) or `limit 100 trials`, both joined
+  by ` + ` for a continued search of both kinds, then `, Focus on leaders` for successive halving; `<N> trials of ` is
+  left out without a time in the limit, as the limit gives the count: `limit 100 trials: 3 methods`) and either
   `Test: <rows> rows held out before the search` or `Validation after a search is optimistic: the best of the trials
   was chosen on it`, `Positive class: <class>` (two classes only), `Classification threshold: <t>`
   (`MetricsSummary.threshold`: the result's `binaryClassificationThreshold` in the view, `storedSummary`'s for a
@@ -263,8 +270,10 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   built-in tool, which always starts unchecked; it follows that default until the user toggles it, `isOneHotChosen`,
   and hiding resets it), **Skip unique categories** (checked; shown while a checked feature has `hasUniqueCategories`),
   **Predict probability** (unchecked; shown while the target is categorical with two or more `classesOf` classes;
-  `setMethod(name, gives)` from `fillMethod` with `givesProbabilities(engine)`: without them it is unchecked,
-  `enabled = false` and its tooltip `<Method> gives no class probabilities`, otherwise `Adds the probability of each
+  `setProbabilityReason(reason)` from the view's `probabilityReason(form)` (`<Method> gives no class probabilities`
+  when the method gives none; under Auto the Find block's reason, `No checked method gives class
+  probabilities`, see "Search"): with a reason it is unchecked, `enabled = false` and the reason is its tooltip,
+  otherwise `Adds the probability of each
   class when the model is applied` plus, for two classes, `; for two classes, lets you choose the classification
   threshold of <positive>.`; while the form is locked `fillMethod` keeps that `enabled` for the unlock and disables
   it again; its own callback `onProbabilityChanged`), under it **Classification threshold**
@@ -572,15 +581,21 @@ pane.
 `addRun` of a completed run calls `setCurrent(run)`: the current card (`forge-card-current`) is
 built from the same `SessionRun` as the Runs row, and the previous current card is disposed; a failed or cancelled run
 leaves it. A card is a header (the method in a bold `forge-card-title`, then its icon: the current card's "+", a
-pinned card's trash), a line (`ForgeModelHandler.featureCount` and `RunsPanel.preparationItems`, joined by ` · `; its
-tooltip the feature names, the preparation and the search's hold out) and a `ui.tabControl` with two lazy panes:
-**Performance**, a `ui.table` of the run's metrics with the rows (`metricIdsOf`), the value columns (`valueColumns`),
+pinned card's trash), for a run with a `search` its caption (`CARD_CAPTIONS` by `search.mode`: `Auto-tuned model`
+after Find best model, `Auto-tuned settings` after Tune, in `forge-card-caption`, the italic look of
+`forge-tune-status-text`; nothing for a run without a search; the user's decision of 2026-11-10 dropped the line of
+the features and the preparation, which Runs shows) and a `ui.tabControl` with two panes:
+**Performance** (`performance`, built once with the card), a `ui.table` of the
+run's metrics: the first row the run's `search.metric`, else `defaultMetric` of the task (Balanced accuracy, R2), then
+the rest of `metricIdsOf` in its order, the rows after the first `SHOWN_METRICS` (3) hidden until **Show more**
+(`forge-card-more`, a `ui.link` with the tooltip `Show all metrics`; `Show less`, `Show fewer metrics`, while expanded;
+none with 3 metrics or fewer) shows them; the state is the card's own (the user's decision: unlike the tab, not
+shared), collapsed on a new card, and a click only shows or hides those rows and relabels the link; a pinned card's
+click on it restores nothing. The value columns (`valueColumns`),
 the findings (`findingsOf` over `metricFindings`) and the tooltips (`METRIC_HEADERS`, `metricTooltip`;
 `METRIC_DESCRIPTIONS` of `metrics/`) that `ui/metrics-table.ts` shares with `MetricsTable`, values `toFixed(3)`, uncolored (the
-user's decision: no failure color on a card; a value's findings stay in its tooltip); **Settings**, the run's
-`settingsStatus` in `forge-tune-status-text` with `STATUS_TOOLTIPS` and `RunsPanel.searchLines` as its tooltip, indented
-as the tables' text (`--forge-card-indent`, the cells' left padding) and placed where Performance's header row is, then
-a `ui.table` (**Setting**, **Value**) of every setting of `visibleHyperparametersOf(run.engine)` (captioned as
+user's decision: no failure color on a card; a value's findings stay in its tooltip); **Settings** (lazy), a
+`ui.table` (**Setting**, **Value**; `No settings` without one) of every setting of `visibleHyperparametersOf(run.engine)` (captioned as
 `ui.input.forProperty` captions it: `camelCaseToSentence` of the caption or name; the description as the row
 tooltip). Both tables are `forge-card-table`: one row height and padding, the names in `--text-color-light`, the
 values in `--grey-5` (as the platform's key-value tables) and right-aligned with their headers, the header row in
@@ -675,11 +690,12 @@ the steps it was started with; its Preparation text shows no metric).
 
 ## Search
 
-**Tune** searches the settings of the current method; the search is Forge's own loop and every trial is a regular
+**Tune** searches the settings of the current method, **Find best model** (mode `best`: **Method** Auto, or
+`Forge:trainModel` with `method: 'auto'`) several methods; the search is Forge's own loop and every trial is a regular
 fold training (`foldPrediction` through the method's `train` / `apply`), so a trial sees the same preparation, split
-and metrics as a training. The logic is `training/search.ts` (types, spaces, sampling, hold out, plan, leaders, record)
-and `training/browser-search.ts` (the executor); the UI is `ui/tune-settings.ts` (Settings and Search options),
-`ui/search-panel.ts` and `TrainView`.
+and metrics as a training. The logic is `training/search.ts` (types, spaces, sampling, hold out, candidates, plan,
+leaders, record) and `training/browser-search.ts` (the executor); the UI is `ui/tune-settings.ts` (Settings and Search
+options), `ui/find-settings.ts` (the Find best model block), `ui/search-panel.ts` and `TrainView`.
 
 **Spaces.** `searchSpaceOf(engine)` reads `meta.mlspace` of the method's `train` function (`searchSpaceText`; see
 "Engine contract"): the `ml.tune` `space` JSON (`{"<input>": {"type": "int" | "float" | "categorical", "low", "high",
@@ -726,9 +742,12 @@ search request holds masked clones of the rest with the whole table's preparatio
 rows the request is returned as it is.
 
 **Plan and executor.** `searchPlanOf(mode, request, candidates, choice, seed)` checks the metric against the task
-(`SEARCH_METRICS`: regression `r2`, `rmse`, `mae`; classification `balancedAccuracy`, `accuracy`, `f1`, `mcc`, `auc`;
+(`SEARCH_METRICS`: regression `r2`, `rmse`, `mae`; classification `balancedAccuracy`, `accuracy`, `f1`, `mcc`, `auc`, `logLoss`, `brier`;
 the first is the default; `The search metric '<id>' does not apply to a <task>. Choose one of: ...`), sets the
-direction (`METRIC_DIRECTIONS`: -1 for errors), the budget, `maxTrials` and the split (`validationSplit` of the
+direction (`METRIC_DIRECTIONS`: -1 for errors), the ONE limit (`budgetMs` from `budgetSeconds`, or `maxTrials`;
+both throw `COMBINED_LIMITS`, `The search options 'budgetSeconds' and 'maxTrials' cannot be combined: choose one
+limit.`; neither gives `DEFAULT_BUDGET_SECONDS`, 60), for `best` the `strategy` (`equal` by default, `halving`; an
+equal split by fewer trials than candidates throws `At least one trial per method: <N>.`) and the split (`validationSplit` of the
 request with the plan's seed: the **Validation** group's folds, stratification and shuffle, or its one hold out; the
 same split the winner's training gets), and `parallelism = PARALLEL_FITS` (`max(1, min(4,
 floor(hardwareConcurrency / 2)))`, EDA's pool size) when every candidate's `train` declares `meta.mlparallel: 'true'`
@@ -739,17 +758,20 @@ trials while slots are free (a `Semaphore(parallelism)` gates fold fits; each fi
 concurrent fits never share a column): a trial runs folds 0-1 together, then the checks, then the other folds
 together; each wave waits for all its fits (`Promise.allSettled`) before its first error is rethrown, so `run()` never
 returns with a fit in flight; once a fold of a trial fails, its folds still waiting for a slot skip their fits. The
-fold masks (`foldMasks`) and the held out targets are built once per search. Abandon: once a trial has completed, a trial whose first two folds forecast `elapsed +
-forecast > budgetMs` stops (`abandoned`), where `forecast = fitMs / 2 * rest / min(parallelism, rest)` (`fitMs`: the
+fold masks (`foldMasks`) and the held out targets are built once per search. Abandon (a time limit only): once a
+trial has completed (an equal split: once a trial of its own candidate has), a trial whose first two folds forecast
+`elapsed + forecast` past the deadline (`budgetMs`; an equal split: its candidate's share end) stops (`abandoned`), where `forecast = fitMs / 2 * rest / min(parallelism, rest)` (`fitMs`: the
 sum of the first two fits' times, `rest`: the other folds, fitted up to the parallelism at once; other trials' fits
-sharing the slots are not counted). Pruning (as `ml.tune`'s median pruner): trial `n` is judged only against the
-trials numbered below `n` that passed their first folds: each trial publishes `early[n]`, a promise of its first
+sharing the slots are not counted). Pruning (as `ml.tune`'s median pruner), per candidate: trial `n` of a candidate
+(`Trial.number`, the candidate's own count; 0 is its first trial, never pruned) is judged only against the
+candidate's trials numbered below `n` that passed their first folds: each trial publishes `early[candidate][n]`, a promise of its first
 `PRUNE_AFTER_FOLDS` (2) fold scores once it goes on to its other folds, or undefined when it was pruned, abandoned or
-failed there (resolved in `finally`, so it always settles); from trial 5 on a trial waits only for the earlier
-trials' `early` (not for them to complete), and with at least `PRUNE_MIN_TRIALS` (5) of them passed, a trial whose
+failed there (resolved in `finally`, so it always settles), and keeps the passed scores in `passedScores`; from
+trial 5 on a trial waits only for the `early` of the earlier trials still in flight (`inFlight`; not for them to
+complete), then reads the passed ones' scores from `passedScores`, and with at least `PRUNE_MIN_TRIALS` (5) of them passed, a trial whose
 mean of its first two fold scores (signed by the direction) is below their median is `pruned`. So the prune decisions
-do not depend on the finish order, and a parallel search gives the same trial states and leaderboard as a sequential
-one (it may launch a few more trials after the last complete one); the 30-trial iris test runs in about 1160 ms one
+do not depend on the finish order, and a parallel search gives the same trials, states and leaderboard as a sequential
+one; the 30-trial iris test runs in about 1160 ms one
 fit at a time and 480 ms with four. With no folds left after the first ones (a hold out, or 2 folds) nothing is
 pruned. A complete trial's `score` is the metric of the pooled out-of-fold predictions (as
 `trainModel`'s Validation, with the out-of-fold probabilities for `auc`, `logLoss`, `brier`, passed to `metricsOf`
@@ -762,27 +784,115 @@ optimizes the threshold again through its prepared options' `thresholdMetric` (a
 metric the method cannot give (`auc`, `logLoss` or `brier` without probabilities) fails the trial (`The metric <label> needs class
 probabilities; <Method> gives none.`), and so does any error of a fit (`failed`, with `error`). Stops: `cancelled`
 (`progress.canceled`, read before every fit: fits in flight finish, nothing new starts, a cancel between fits marks
-the trial `abandoned`), `budget` (checked before every launch), `trials` (`maxTrials` complete trials; launches are
-capped so parallel and sequential runs give the same leaderboard), `failed` (`MAX_FAILED_WITHOUT_COMPLETE` (10)
-failed trials while none has completed; launches are capped meanwhile, so such a search has exactly 10 trials) and
-`exhausted`. Trials are kept in launch order;
-`progress.update(percent of the budget, '<N> trials, best <Metric> 0.000 (<Method>)')` follows every settled trial
-(a running best and counts, not a pass over the trials).
+the trial `abandoned`), `budget` (checked before every launch), `trials` (`maxTrials` trials launched, whatever their
+state: complete, pruned, failed or abandoned, so the candidates' trials never add up to more and parallel and
+sequential runs launch the same trials), `failed` (`MAX_FAILED_WITHOUT_COMPLETE` (10)
+failed trials while none has completed; launches are capped meanwhile, so such a search has exactly 10 trials; not
+for an equal split, where the same count of one candidate's own failures ends its share, and a split where every
+share ended without a complete trial stops `failed`) and `exhausted`. Trials are kept in launch order;
+`progress.update(percent of the time, or of the trials settled in this run, text)` follows every launch and every
+settled trial (counts, not a pass over the trials), at most once per `REPORT_MS` (250 ms; one within it is sent when
+it ends), and once more when the last trial settled. The text is short so the task bar never cuts it: `Finding best
+model` (`mode: 'best'`) or `Tuning <Method>` (the candidate's `engine.name`), then in parentheses, with a trial limit,
+`settled/maxTrials` (this run's finished trials, as the bar's share, so it moves until the last running trial
+settles), with a time limit `N s left` (whole seconds, under a minute) or `N min left` (rounded up), and once the time
+is up while trials still run `finishing N trials` (`finishing 1 trial`; launched minus settled, falling as they
+settle); no score and no mark of a continued search. The first update replaces the indicator's title (`searchTitle`: `Tuning <Method>` or
+`Finding best model`, the executor's action too; `Continuing: …` set by the view).
+
+**Continuing.** `run(plan, progress, previous?)` continues `previous` (an outcome of a plan `canContinue` accepts):
+its trials come first in `trials`, `elapsedMs` adds up, and the limit and the failed-trials count
+apply to the new trials only, while `completed` (for the abandon rule) counts all. The
+outcome's `resume` (`ExecutorState`) is what the executor needs for that, per candidate: `drawn` (the points taken
+from its stream, duplicates too, so a continued stream goes on where it stopped), `exhausted`, and `passed` (each
+trial's first fold scores when it passed them, else null: the pruning's `passedScores`); with
+successive halving also `halving` (an equal split keeps nothing more: a continued one splits its new limit equally
+again over the candidates not exhausted). The tried keys and each candidate's trial count come from the trials. So a
+halving or Tune search
+continued after N trials with a cap of M launches the same trials, states and points as one run with a cap of N + M
+(a trial abandoned at the end leaves its point tried and its halving slot free).
 
 **Leaders and the choice.** `leadersOf` applies the one-standard-error rule within each candidate: among its complete
 trials whose score is within one SE of its best trial's (`se` = the sample standard deviation of `foldScores` over
 `sqrt(folds)`), the smallest `simplicityOf` its point (the distance from each `simpler` end, 0..1 per dimension, in log
 space for a log dimension, index / (n - 1) for a categorical `first`; dimensions without one count 0), then the
 earlier trial. That trial is the leader (its `hyperparameters`, `score`, `se`, `foldScores`; `trials` counts all of
-the candidate's, pruned and failed ones too); leaders best first. `chooseLeader` applies the rule again across the
-leaders (the lowest `costRank`, then the smallest `simplicityOf`, among the leaders within one SE of the best) and
-marks it `chosen`; with one candidate (Tune) its leader is chosen. `searchRecordFrom` makes the `SearchRecord` saved with the run and the model (`search`, see "JSON column
+the candidate's, pruned and failed ones too); leaders best first. `chooseLeader` takes, across the leaders, the
+first by `isRankedBefore`: the best `cautiousScore` (`score − direction · se`: the highest score − SE, the lowest
+score + SE for a minimized metric) as a frame stores it (`Math.fround`), a tie by the method's name in code-unit order
+(capitals first), exactly the order the Search bar chart sorts its bars in (measured 2026-11-10; the user's decision of
+that day, replacing the one-SE rule between methods, so the chosen one is always the top bar and the grid's first row)
+and marks it `chosen`; with one candidate (Tune)
+its leader, the one-SE rule's within the method, is chosen. A continued search chooses again over all its trials. `searchRecordFrom` makes the `SearchRecord` saved with the run and the model (`search`, see "JSON column
 shapes"); for Tune it keeps `space: {searched, pinned}` (the candidate's dimensions as searched and its pinned
 settings). `searchRecordOf` narrows a stored value (undefined for anything malformed; a malformed `space` alone is
-dropped, as is a missing one). `tuneSearch(request, engine,
-start, choice, seed, progress, executor, space?)` is Tune for the view and the API: `holdOutSplit`, `searchPlanOf('tune', ...)`
-with `tuneCandidate`, `runSearch`, and the record; `failedSearchMessage` gives `No trial completed: <the first failed
-trial's error>` when a trial failed.
+dropped, as is a missing one). `tuneSearchPlan(request, engine, start, choice, seed, space?)` gives Tune's
+`PlannedSearch {plan, holdOut?}` (`holdOutSplit`, `searchPlanOf('tune', ...)` with `tuneCandidate`) and
+`bestSearchPlan(request, candidates, choice, seed)` Find best model's; `tuneSearch(request, engine, start, choice,
+seed, progress, executor, space?)` and `bestSearch(request, candidates, choice, seed, progress, executor)` run them
+(`runSearch`) for the view and the API and make the record; `failedSearchMessage` gives `No trial completed: <the
+first failed trial's error>` when a trial failed. Both return a `SearchResult {plan, holdOut?, outcome, leaders,
+chosen?, record, state}`; `state` (`SearchState {plan, holdOut?, outcome, fingerprint}`, in memory: the plan holds
+the columns) is what continuing needs. `canContinue(previous, plan)` (pure) accepts a plan of the same mode, strategy, seed,
+metric and validation, the same candidates in order (each its engine name, space, pinned names and its start's values
+outside the space: Tune's searched values may differ, as the form shows the last winner) and the same search rows
+(`requestFingerprint`: the selection's feature and target names, the prepared columns' and target's
+`datasetFingerprint` hash, the row count and the prepared options); the limit (its kind too), `topK` and the
+parallelism may differ. `continueSearch(previous, planned, progress, executor)` refuses another plan (`The search
+cannot be continued: the data, the validation or the search settings changed.`) and runs `planned` on top of
+`previous.outcome`: the leaders, the choice and the record over all trials, the record's `budgetSeconds` and
+`maxTrials` each the sum of the runs' of that kind (so are the state's `plan.budgetMs` and `plan.maxTrials`; a record
+of runs of both kinds holds both), `trials`, `completed`, `pruned`, `failed` and `elapsedMs` cumulative.
+`Forge:trainModel` does not continue searches.
+
+**Find best model.** The candidates: `searchableEngines(applicable, discovery)` keeps the browser methods of a check
+(`!isServerEngine`) sorted by `costRankOf` (the place in `COST_RANK`, from Linear Regression to RealMLP, the cost order
+of fitting; an unknown method after it in discovery order); `quickEngines(engines, columns, target,
+predictProbability)` asks each `retrainsLive` at once and drops a method whose probabilities are a train input
+(`probabilityInput`: SVM) while Predict probability is on, as its fits are several times slower; at a time limit of
+`QUICK_BUDGET_SECONDS` (60) or less, or with a trial limit, the default methods are the quick ones, above it every
+searchable one.
+`hasProbabilities(engine, on)` (`engines/engine.ts`) tells whether a method's trials carry class probabilities with
+Predict probability `on` (always for `mlprobabilities: 'true'`, only when on for a probability input).
+`bestCandidates(engines, discovery, predictProbability)` gives each method its full space (`searchSpaceOf`; a
+malformed one becomes `note` and the method is tried with its defaults only), `start` = its defaults with the
+probability input set from Predict probability (`withProbabilityInput`; the input is outside the visible space, so every
+drawn point keeps it) and `costRank`, cheapest first; no method throws `No method can take part in the search. Check
+the features and the target.` `bestSearch(request, candidates, choice, seed, progress, executor)` is `tuneSearch`'s
+sibling with `searchPlanOf('best', ...)` (`topK` = `choice.topK ?? TOP_K`, 3). With `strategy: 'equal'` the
+executor runs the candidates not exhausted one after another in plan (cost) order, each from its first point (its
+defaults when inside its space): with `maxTrials`, a quota set when the candidate starts, `ceil((cap - launched) /
+(candidates left))` (so the remainder goes to the first ones, and the sum reaches the cap while any candidate has
+points: `trials` stops it); with `budgetMs`, a share that starts when the candidate does and lasts `(budgetMs -
+elapsed) / (candidates left)`; so trials or time a candidate leaves unused (exhausted, finished, failed) go to the
+ones after it, and a trial of it forecast past its share end is abandoned (never its candidate's first
+complete one). A share also ends after `MAX_FAILED_WITHOUT_COMPLETE` own failures without a complete trial; the next
+share starts only once the current candidate's trials settled (`nextTrial` returns null meanwhile, a wait). With
+`strategy: 'halving'` the executor runs successive halving
+(`Halving {round, pool, given, eliminated, finalists?, next}`, part of `resume`): round `r` gives each candidate of
+the pool `2^r` trials, round 0 (the pool: every candidate in the plan's cost order) one each, its first point;
+`nextTrial` serves the pool member with the fewest trials of the round below the quota (ties in pool order, so a
+round goes round-robin), each its next untried point from its own stream (`drawOf` over its state: `trialPoints`, the
+tried keys, its own counter); `given` counts a member's trials of the round (an abandoned one gives its slot back).
+Once every member has its quota or is exhausted, nothing (`null`, the loop awaits a running trial) until the round's
+trials have settled (`pending`); then `closeRound` ranks the pool members that have a non-empty space, are not
+exhausted and have a complete trial by their best complete score so far (ties by index), keeps `min(n, max(topK,
+ceil(n / 2)))` of them as the next round's pool, best first, records the round in `eliminated` for the others and
+starts the next round. A member without a space (it gets its one start), exhausted, or without a complete trial (all
+failed) leaves without being ranked or eliminated. A pool of `topK` or fewer becomes `finalists`, tuned in turn from
+`next` as before (a candidate whose stream is exhausted leaving the cycle). A null while a round's trial is in flight
+is a wait, never exhaustion (the loop stops with `exhausted` only when nothing runs). One candidate (Tune) draws in
+turn and never waits. The budget, the abandon rule (every trial, round 0's too, once any trial completed), `maxTrials`
+(the trials of all methods launched) and `MAX_FAILED_WITHOUT_COMPLETE` are global and stop the search in any round;
+the choice is then made over the leaders as always. The trials are scored at the prepared request's threshold as
+Tune's; the needs-probabilities failure names the trial's method. The order inside a round is fixed, a round is
+closed only after all its trials settled and each candidate draws and prunes on its own, so a parallel search gives
+the trials and leaderboard of a sequential one. The record's `methods` (`best` only, `candidateOutcomes(plan,
+outcome)`): per candidate in cost order `{method, trials, outcome, note?, eliminatedRound?}`, `complete` when one of
+its trials completed, `failed` when none did and one failed (`note` its first error), `abandoned` when its trials were
+abandoned or pruned only, `unstarted` without a trial; a malformed-space note is kept otherwise; `eliminatedRound` the
+round it was eliminated after (from `resume.halving.eliminated`), absent for a finalist or a candidate that left
+otherwise; `searchRecordOf` drops a malformed `methods` list alone.
 
 **Settings and Search options.** `fillMethod` builds a `TuneSettings` (`ui/tune-settings.ts`, `form.tune`) per method
 over the method's own hyperparameter inputs. **Settings** is a `ui.input.radio` (`forge-inline-radio`; Manual / Auto-tune,
@@ -790,12 +900,16 @@ Manual by default; a change runs no check and no training: it shows the mode's l
 `onChanged(true)`: `applyRules`, `showTrainRow`, which shows **Train** in Manual only, and `updateControls`); the reset
 button (`resetButton`, a native `button` with `fa-undo`) sits in its options, the status row (`forge-tune-status`,
 30 px, a label column and the italic text, `aria-live`) under it. The status is computed from the values (`status`):
-the method's defaults (their text kept from the constructor) -> `Default`, else the view's `lastTuned` of the method
-(the values a tune set with its `TuneContext`, the table, the target's and the features' names, in memory like
-`hyperparameterValues`) when the host's `context()` is the same (`isSameContext`: the table by `dart`, the target by
-name, the features as a set of names; the preparation and the validation are not part of it) -> `Auto-tuned`, else
-`Customized`, the values compared as text over every setting. The status's tooltip (`statusTooltip`) is its
-`STATUS_TOOLTIPS` entry, except for the tuned values on other data: `Tuned for <target> on <table name>; tune again for
+the view's `lastTuned` of the method (the values a tune set with its `TuneContext`, the table, the target's and the
+features' names, and `isFound` for Find best model's, in memory like `hyperparameterValues`) when the host's
+`context()` is the same (`isSameContext`: the table by `dart`, the target by name, the features as a set of names; the
+preparation and the validation are not part of it) -> `Auto-tuned`, unless the values are the method's defaults
+(`isDefault`, their text kept from the constructor) and a Tune set them; else the defaults -> `Default`, else
+`Customized`, the values compared as text over every setting. A Find winner thus reads `Auto-tuned` even on its
+defaults; the reset button follows `isDefault`, not the status. The status's tooltip (`statusTooltip`) is its
+`STATUS_TOOLTIPS` entry (`Default`: `The method's recommended settings`, `Auto-tuned`: `Found by the search`,
+`Customized`: `Changed by you`, `Not searched`: `Click Find to search`; no search lines are appended, those stay in
+the Runs and Search panels), except for the tuned values on other data: `Tuned for <target> on <table name>; tune again for
 this data`. Each hyperparameter change calls `updateStatus` from the settings' own `onChanged` subscription, a Target or
 Features change from the view's form subscription (a Table change builds new settings)
 (the status read once: text, the reset button's `aria-disabled` and label, the same as its tooltip: `<Method> settings
@@ -807,7 +921,8 @@ every `setLocked` (the lock owns the mode: `mode.enabled` re-enables its options
 are chosen: by hand or by a search on this data`. A method without settings (no hyperparameter inputs: Naive Bayes)
 lays out no Settings row at all (no radio, reset or status) and is always Manual (`load` refuses a stored Auto-tune
 for it), so its Train shows as for any method. Both layouts are built once in the constructor (the radio, the status
-row, the own inputs, the Search options block `forge-tune-auto` with one `forge-tune-cell` per row, and the Tune bar
+row, the own inputs, the Search options block `forge-tune-auto` with one `forge-tune-cell` per row: Metric, Limit,
+Max time and Max trials first, then the settings' rows in the method's order; and the Tune bar
 `forge-tune-bar`, `tuneButton` at the right); a mode switch only shows Manual's own inputs or Auto-tune's block and
 Tune bar (`showMode`, `ui.setDisplay`). The Tune bar stays in the document in Manual, so a disabled Tune's tooltip
 overlay lives on in Auto-tune; in Manual the view releases Tune (`ButtonGate.release`), so a hidden Tune keeps no
@@ -820,8 +935,23 @@ for its options (the reset button follows the radios in the row), so Auto-tune s
 wrongly by the platform form (it measures every `ui-input-root` for its label width and its switch to labels above the
 inputs, and nested inputs broke both), so the block follows the reference prototype
 with native controls in its own CSS grid (`forge-tune-grid`: the label column, then `minmax(0, 1fr)`, so nothing
-overflows at any width). The label column is the form's: `alignLabels` copies the width the platform gave the Settings
-label (`captionLabel`, followed by `ui.onSizeChanged`) into `--forge-tune-label`, with the labels' 8 px gap; when the
+overflows at any width). The label column is the form's: `TuneSettings.alignLabels` copies the width the platform
+gave the Settings label (`captionLabel`, followed by `ui.onSizeChanged`; Find best model's block follows **Method**'s)
+into `--forge-tune-label`, with the labels' 8 px gap. The toggle (`optionsToggle`) and the Metric row (`metricRow`,
+`setMetrics`) are static builders that `FindSettings` shares, and so are the limit rows (`LimitInputs`,
+`ui/limit-inputs.ts`): **Limit** (`ui.input.radio`, `Time` / `Trials`, `forge-inline-radio`), then **Max time**
+(`ui.input.int` in whole minutes, `min: 1`, `max: 60`, `nullable: false`, `step: 1`, `showPlusMinus`,
+`addPostfix('min')`, the platform's unit) or **Max trials** (`ui.input.int`, `min: 1`, `max: 10000`, `nullable:
+false`, `showPlusMinus: false`, since a range would add the clicker); the platform validates both (an integer, the range, not
+empty: `'abc' is not an integer.`, `Value must be greater than 1`, `Value must be less than 60`, `Can't be empty`), marks
+an invalid editor `d4-invalid` (a red underline) and shows its messages in the input's tooltip under its description
+(`tooltipText`; a `ui.tooltip.bind` on the editor would hide them). Find's own rule is one `addValidator` on Max
+trials, run only on a count in range; these platform inputs (and Find's Strategy and Candidates) sit in grid cells with
+`forge-tune-input`: their own labels hidden, the caption a `forge-tune-label` in the grid's label column
+(`LimitInputs.row`), an int editor as wide as its cell (ui.css caps it at 150 px) and at the bottom of the 30 px row
+(`align-self: flex-end`): ui.css puts the options (clicker and unit) there, each with its own underline, so the
+editor at the top drew a second line 2 px above theirs. The platform form sets its label width a while after such an input shows, so a test
+that measures the labels waits for them to settle; when the
 platform switches the form to `ui-form-condensed` (a form narrower than its labels and widest input: the Train form at
 400 px sits near that line, so a resize such as opening Search options can switch it), the grid puts its labels above
 the fields too. The toggle (`toggle`, `forge-tune-toggle`, a `button`: an empty `forge-group-chevron` box and the
@@ -831,8 +961,8 @@ status line as the status is under Settings) shows or hides the grid (`setExpand
 setting's Manual tooltip exactly, its `Property.description` (nothing without one): the label, the range fields, the
 pinned / fixed value, the choices button and its checkboxes. A pin's tooltip is `Pin to exclude from tuning. <its
 aria-label>` (a fixed one `<Caption>: Fixed, can’t be tuned`); the Metric label and select `Metric the search
-optimizes`, the Budget label `The search stops at the trial limit or the time limit, whichever comes first`, the trials
-`Maximum number of completed trials`, the time `Maximum search time`, the toggle `Show / Hide search options`. What
+optimizes`, Limit (label and options) `What ends the search: a time or a trial limit`, Max time (label and field)
+`Minutes the search may run`, Max trials `Maximum number of trials, pruned and failed ones included`, the toggle `Show / Hide search options`. What
 the user sees ends on one vertical line, the block's right edge: the reset and pin glyphs (their 30 px buttons put the
 glyph at the right, `justify-content: flex-end`, the hit area extending left), the selects' underlines with their
 chevrons, and Tune's letters (no right margin or padding). The toggle (`margin-top: -3px`) puts the Search options text
@@ -855,42 +985,57 @@ choice setting, a checkbox for a yes/no, a field otherwise) kept in step with th
 Each line ends with its pin, a native `button` (`forge-tune-icon forge-tune-pin`, `fa-thumbtack`: `fal` `--grey-4`
 when tuned, `fas` `--blue-1` with `forge-tune-pinned` when pinned, `fas` `--grey-3` and `aria-disabled` outside the
 space; `aria-pressed`, `aria-label` `<Caption>: will be tuned` / `<Caption>: pinned,
-excluded from tuning` / `<Caption>: Fixed, can’t be tuned`). Then **Metric** (a native `select` of the
+excluded from tuning` / `<Caption>: Fixed, can’t be tuned`). Before them, first in the grid, **Metric** (a native `select` of the
 task's `SEARCH_METRICS`, values the metric ids, set by `setTask` from `applyRules`; the chosen one kept while it
-applies, else the stored one, else the default) and **Budget** (`forge-tune-budget`: the trials field, `trials or`,
-the time `select` of `BUDGETS_SECONDS`). The colours are the platform tokens (`--text-color`, `--text-color-light`,
+applies, else the stored one, else the default) and the limit rows (`limit`; only the input Limit chooses is
+shown; both are validated, only the shown one counts). The colours are the platform tokens (`--text-color`, `--text-color-light`,
 `--grey-1..5`, `--blue-1`, `--red-3`), 13 / 12 px. `updateErrors` (after every change, in Auto-tune only; entering
 Auto-tune runs it) writes each row's problem (`rowProblem`: the tuned range by `rangeProblem`, `Choose at least one`,
-or a pinned / fixed value's own `validity`; none for a setting the method ignores), keeps it on the row, writes the
-trials' under Budget, marks the fields `aria-invalid`, and opens the grid on a problem. `setInactive` (one set, from
+or a pinned / fixed value's own `validity`; none for a setting the method ignores), keeps it on the row, validates
+the limit (`LimitInputs.validate`: `validate()` of both inputs, the shown one's result; `problem()` is the shown
+input's first `validationResults` message captioned, `Max trials: Value must be greater than 1`), marks the fields
+`aria-invalid`, and opens the grid on a problem. `setInactive` (one set, from
 `applyRules`, which the view's `activeHyperparameters` reads too through `isActive`) disables the value controls of a
 setting the method ignores, so it is not checked; `setLocked` disables every control and the mode. In Auto-tune
 `applyRules` evaluates the rules with the tuned settings free and the target's task. `TuneSettings` reads
 `visibleHyperparametersOf(engine)`, so SVM's hidden `probability` neither shows nor makes it read `Customized`.
 The view's `applyRules` runs only when the values, the task, the mode or the pins change (`onChanged(affectsRules)`),
-not on a range, the choices, Metric or Budget, and sets an input's `enabled` only when it differs; the rules are read
+not on a range, the choices, Metric or the limit, and sets an input's `enabled` only when it differs; the rules are read
 once per method (`fillMethod`). `problem()` is the Tune part of `tuneBlocker`, from the rows' problems as
 `updateErrors` left them: `Fix the highlighted range`, `All settings are fixed` (no tuned setting the method uses),
-`Budget: Enter a whole number of trials, at least 1`. `choice()` is the `SearchChoice` (metric, `budgetSeconds`,
-`maxTrials` = the trials, `space` = pins and ranges). Everything but the values is saved on every change in
-`grok.userSettings` (storage `TuneSettings.storage`, `Forge Tune`; the UI tests set their own, `Forge Tune tests`, and
-empty it after each category, so the user's settings stay as they are; key = method name, JSON `{mode, expanded,
-pinned, ranges, metric, trials, seconds}`); `TuneSettings.load` checks each item (a pin or a range of a
-setting no longer in the space, a range `rangeProblem` refuses, a choice subset that is empty, trials not whole >= 1,
-seconds not a budget, a mode the method cannot have) and falls back to its default; a metric of the other task falls
-back in `setTask`.
+the limit's (`Max time: <problem>` / `Max trials: <problem>`). `choice()` is the `SearchChoice` (metric, the one limit:
+`budgetSeconds` = the minutes · 60 or `maxTrials`, `space` = pins and ranges). Everything but the values is saved after
+every change, debounced (`TuneSettings.saver`, see the Find block), in `grok.userSettings` (storage `TuneSettings.storage`, `Forge Tune`; the UI tests set their own, `Forge
+Tune tests`, and empty it after each category, so the user's settings stay as they are; key = method name, JSON
+`{mode, expanded, pinned, ranges, metric, limit, minutes, trials}`, an invalid value saved as its default);
+`TuneSettings.load` checks each item (a pin or a range of a setting no longer in the space, a range `rangeProblem`
+refuses, a choice subset that is empty, a mode the method cannot have) and falls back to its default;
+`LimitInputs.load` reads the limit: the kind (`Time` or `Trials` as stored; an old record's `seconds` is `Time`; else
+the default, `Trials`), the minutes (1..60) or else an old record's `seconds` as whole minutes rounded up and clamped to
+1..60, the trials (1..10000), else the defaults (Trials, 1 min, 50 trials; Find best model's 100); a metric of the other task falls back in `setTask`.
 
 **In the view.** The **Tune** button (`startSearch('tune', form.tune.choice())`, gated by `tuneBlocker`: the
 selection's problem, a training, `noSpaceReason`, or `TuneSettings.problem()`; a trained selection can be tuned; its
-tooltip `Find the best settings`). `startSearch(mode, choice)` runs through the view's `TrainingQueue` like a training (it counts in `activeTrainings`, so **Train**,
+tooltip `searchTooltip('tune')`: `Find the best settings`, or `Continue the search: <N> trials so far` while a kept
+search would be continued). `startSearch(mode, choice)` runs through the view's `TrainingQueue` like a training (it counts in `activeTrainings`, so **Train**,
 **Save** and `aria-busy` behave as during one; `SHOWN_RUN` goes with the hint), on the selection as the form has it
-(Predict probability and its threshold included) and the form's missing-values setting: `prepareTraining`, the `datasetFingerprint` of all its rows,
-`tuneSearch` with the queue's progress (`Tuning <Method>`, cancelable, closed in a `finally` before the winner's
-training starts). The split seed is the form's **Split seed**. Until the search and the winner's training end, the
+(`searchSelection`: Predict probability and its threshold included) and the form's missing-values setting: `prepareTraining`, the `datasetFingerprint` of all its rows,
+the search with the queue's progress (`Tuning <Method>`, cancelable, closed in a `finally` before the winner's
+training starts). **Continuing.** The view keeps the last `SearchState` of each mode (`searches`, keyed by
+`searchKey`: `best`, or `tune <Method>`; in memory, as the plan holds the columns; a Table change clears it) with the
+`searchInputs` it ran on (JSON of the target, the feature names, the preparation steps with the threshold and its
+metric, as `requestFingerprint` keeps them in the options, `selectedMissingValues`, the validation, the seed, the
+metric, the strategy, the checked methods, Tune's space and the values of the settings not tuned; not the limit), so
+the tooltip promises a continuation only for a search `canContinue` accepts (a Predict-probability threshold moved by
+the winner's training starts the next search afresh). `startSearch` starts nothing while `tuneBlocker` / `findBlocker`
+holds (an invalid limit included), whatever `choice` it is given. `keptSearch` gives the state while the inputs are the
+same; the run plans the search once (`tuneSearchPlan` / `bestSearchPlan`) and calls `continueSearch` when
+`canContinue(state, plan)`, the progress then reading `Continuing: <title>`, else `runPlanned` starts it afresh. Either way the result's `state` replaces the kept one for its key. The leaders, the trials
+and the record are cumulative (the record's limits the sums), so **Search** shows them all. The split seed is the form's **Split seed**. Until the search and the winner's training end, the
 form is locked: `lockForm()` keeps each form input's `enabled` (Table, Target, Features, the Preparation and
 Validation inputs, Method and the hyperparameters) in `locked` and disables it, and `TuneSettings.setLocked(true)`
 disables Settings and every Search options control (`controls`: the reset button, the fields,
-choices, values and pins, Metric, Budget; not the toggle, which only shows and hides, as the group headers) until
+choices, values and pins, Metric; and the limit's inputs; not the toggle, which only shows and hides, as the group headers) until
 `setLocked(false)` (`fillMethod` under the lock locks the new settings too), **Train** and **Tune** wait as during a
 training, `restoreRun` / `restoreLeader` (the **Runs** and **Search** row clicks) set nothing, and `applyRules` under
 the lock records a rebuilt input's state (`setWinner`) instead of enabling it; `unlockForm()` in the `finally` gives
@@ -898,7 +1043,7 @@ every input its state back and applies the rules again, whatever the end (comple
 Cancel stays in the task bar. `train()` (the **Train** button) takes the same lock around its `startTraining(false)`
 and gives it back in its `finally`; a live retrain (`startTraining(true)`) does not lock the form. Locks never nest:
 both callers start only while nothing trains (`isTraining`, `tuneBlocker`). Then
-`SearchPanel.update({plan, leaders})`; without a chosen leader the warning `No trial completed: <error>` when a trial
+`SearchPanel.update({plan, leaders, outcome})`; without a chosen leader the warning `No trial completed: <error>` when a trial
 failed, else `No trial completed.`, and the hint (`idleHint`); else `setWinner` (`setMethod`: the method's values set to the chosen ones,
 the inputs rebuilt by `fillMethod` and **Settings** to Manual; **Method** set under `isSettingMethod`: no check is
 requested), `lastTuned` of the method = the form's values with the search's table, target and features (the status
@@ -907,21 +1052,118 @@ then reads `Auto-tuned`), the balloon (`Optimal settings for <Method> found.` or
 override skips `prepareTraining`, records the fingerprint of all the selection's rows (as the API) and trains the search request with the chosen hyperparameters, `holdOut` and `search`, with the
 search's seed and split, so the model's Validation equals the leader's score. `trainModel` measures `metrics.test` on
 the hold out and returns `search`; the run record, the `SessionRun` (`Found by Tune: <N> trials` in the Runs Method
-tooltip), the Performance bullets and the saved model carry it. `SearchPanel` (`forge-search`, between the results and
-**Runs**) is a `readOnlyGrid` of `#`, `Method`, `<Metric> (CV)` (`<Metric> (hold-out)` when the search request's
-validation is a hold out), `SE`, `Trials`, `Chosen` with header and cell tooltips
+tooltip), the Performance bullets and the saved model carry it. `SearchPanel` (`forge-results-panel forge-search`,
+a bottom block of the results pane, see below; its title's tooltip `Each method's best settings, ranked by <Metric> −
+SE.` once a search is shown, through `resultsTitle`'s `tooltip`) shows only a search of two rows or more, so never
+after Tune or a Find of one method (`update` hides it; Performance and the Runs tooltip describe such a search). It is
+a `readOnlyGrid`, its leaders sorted by `isRankedBefore`, as
+the chart sorts its bars (the bar chart ignores a column's category order, measured 2026-11-10), so the chosen one is
+the first row and the top bar; its own copy:
+`result.search.leaders` keeps its order for the record, Runs and the cards), of
+`#` (header `Rank by <Metric> − SE.`), `Method`, `<Metric> (CV)` (`<Metric>
+(hold-out)` when the search request's validation is a hold out), `SE`, `<Metric> − SE` (`cautiousScore`, so
+`<Metric> + SE` for a minimized metric, empty without a score; header `<Metric> minus its standard error over the
+folds: a cautious estimate of <Metric>.` (`plus` for a minimized one; `(0 on a hold out: one score)` for a hold out),
+then ` The method with the highest value is chosen.` (`lowest`)), `Trials` (header: `Every trial
+of the method, pruned and failed ones included.`), `Chosen` with header and cell tooltips
 (the settings, then `Searched: <name> <low>–<high>, <name> (<choices>), ...` and `Pinned: ...` from the plan's
-candidate; `Folds: ...`, `Chosen by the one-standard-error rule.`), the chosen row current; a click calls
-`restoreLeader` (`setMethod`: the method and its values set, **Settings** to Manual, then a check, as after any
-change; a `restoreRun` switches to Manual first, whatever it then sets). `createForm` (a Table change) and
-`detach` hide it.
+candidate; `Folds: ...`; Chosen: `The method with the highest <Metric> − SE.` / `Chosen: the highest
+<Metric> − SE.`), the chosen row current; with the `outcome`, the
+candidates without a leader (`candidateOutcomes`) follow in candidate order with an empty value and SE, their trials
+and the Method tooltip `No completed trial: <note>` / `Abandoned: the budget ran out` / `Not started: the budget ran
+out` above `spaceLines`; a method the halving dropped (`CandidateRecord.eliminatedRound` r) reads `Eliminated in round
+<r + 1>` as its Trials tooltip and in its Method tooltip, one without a space (which leaves the pool after round 0,
+`closeRound`) `No settings to tune` as its Trials tooltip; under an equal split the Trials tooltip explains the count
+(`Its space was exhausted` from `outcome.resume.exhausted`, else `Its share of the limit ran out`; nothing for a
+failed method). With a leader, a `DG.Viewer.barChart` over the grid's own frame (so the current row and the selection
+are shared) sits left of the grid in a `ui.splitH` (`forge-results-row`; each viewer in a `forge-panel-fill` box, as
+the splitter wraps anything but a box and a grid root as the pane would keep its own height; preset widths 200 / 100
+px, then growth 2 / 1: two thirds for the chart). The chart: split `Method`, value `<Metric> − SE`, `valueAggrType`
+sum (one row per bar), `filter` `IsNotEmpty(${<Metric> − SE})` (the methods without a score have no bar), sorted by
+value, best first (`desc`, `asc` for a minimized metric), the value labels on, no title, the
+`description` `<Metric> minus its standard error: a cautious estimate` (`plus` for a minimized one;
+`descriptionVisibilityMode: 'Always'`), no formula line, stack, color column, legend, value, category or stack selector, `showSelectedRows` and `showFilteredRows` off (one bar color).
+`onClick: 'Select'`: a bar click selects its method's row, and the panel restores the method of a one-row selection
+(`frame.onSelectionChanged`), as a row click does (the bar chart fires `onCategoryClicked` only for a stack segment).
+A click calls `restoreLeader` (`onRestore` takes `Pick<Leader, 'method' | 'hyperparameters'>`:
+a candidate row passes its `start`; `setMethod`: the method and its values set, **Settings** to Manual, then a check,
+as after any change; a `restoreRun` switches to Manual first, whatever it then sets). `createForm` (a Table change)
+and `detach` hide it. **Search** and **Runs** (`forge-results-panel`, their grid hosts `forge-panel-fill`) are the
+`ResultsPane`'s bottom blocks (its constructor's `bottom`, each in its own box, 320 / 260 px at first): `layout()`
+mounts the result rows and the shown bottom blocks in ONE `ui.splitV` (a single box as is), rebuilt only when the
+sequence of boxes changes; the view calls it after every `searchPanel.update` / `runsPanel.update`. A hidden block's
+box is taken out before the old splitter is emptied, so it leaves no pane or divider and keeps its widgets; the size
+keeper notes and restores the bottom boxes' heights as the rows'.
 
-**API.** `Forge:trainModel` with `options.search` (`searchChoiceOf`: keys `metric`, `budgetSeconds` (whole, >= 1,
-default 60), `maxTrials` (whole, >= 1)) tunes the chosen or suggested method in `trainAndSave` before its training,
+**Find best model in the view.** `AUTO` (`Auto`) is the first **Method** item (`createForm`, `showMethods`);
+`userChoice` holds it while chosen (`isAutoMethod`), and `this.engine` stays a real method, the suggestion (`methodOf`
+returns `best ?? engines[0]` under Auto, with no balloon), so the hidden settings belong to it. `chooseMethod(AUTO)`
+refills the Method group on entering Auto and requests a check with `requestCheck(true)`, which keeps `lastTraining`
+(and `isTrained` / `isFailed`): the selection is the same, so the results pane keeps the model's viewers, metrics and
+insights, and nothing trains; a method name leaves it. `fillMethod` appends `form.method`, `form.tune` and
+`form.find` and shows the tune root or, under Auto, the find root; under Auto **Missing values** never hides
+(`setKeepsMissingValues(false)`), Predict probability follows `probabilityReason(form)` (`form.find.probabilityReason`
+under Auto, else whether the method gives probabilities, through `PreparationInputs.setProbabilityReason`) and the Method tooltip is `AUTO_TOOLTIP`. `form.find` is one `FindSettings` per form
+(`ui/find-settings.ts`), laid out as Auto-tune's block from the same builders (requirement: switching between a method
+and Auto changes nothing visible but the rows): `TuneSettings.statusLine()` reading `Not searched` (`NOT_SEARCHED`,
+tooltip from `STATUS_TOOLTIPS`) right under **Method**, then `forge-tune-auto` with the `optionsToggle` (collapsed at
+first; `setExpanded` saves the state, `expanded` in the stored settings, restored; an invalid limit opens it;
+the Find bar stays shown while it is collapsed) and the `forge-tune-grid` (label column aligned to **Method**'s caption through `alignLabels`, its
+subscription in `find.subs`, which the view keeps in `formSubs`): `metricRow`, **Strategy** (`ui.input.radio` of
+`STRATEGY_LABELS`, `Equal` / `Leaders` (short, so the row fits the 400 px form on one line; the printed name of
+halving stays `limitCaption`'s `Focus on leaders`), Equal by default; option tooltips `Every method gets
+an equal share of the limit: a fair comparison` / `Each round the worse half drops out; the rest get more trials`,
+label `How the checked methods share the limit`), the limit rows (`LimitInputs`: 100 trials by default, Max time 1
+min; its `trialsProblem` validator of Max trials, under Equal, `At least one trial per checked method: <N>` while the
+trials are fewer than the checked methods, re-validated through `updateErrors` on every change of the methods
+(`rebuild` ends with it) or the strategy) and **Candidates**,
+a `forge-tune-label` and the platform `ui.input.multiChoice<string>('Candidates')` (`forge-tune-input
+forge-find-candidates`: its own label hidden, every check shown, the first level with the caption), then the
+`forge-tune-bar` with **Find** (`findButton`, gated by `findGate` / `findBlocker`: the selection's problem, a training,
+or `FindSettings.problem()`: `Check at least one method`, else the limit's (`Max time: ...`, `Max trials: ...`); tooltip
+`searchTooltip('best')`: `Find the best model`, or `Continue the search: <N> trials so far`).
+`setMethods(entries)` takes `MethodEntry {name, isLive, isServer, probabilities: always | input | none}`; `rebuild`
+lists only the entries without a reason (`reasonOf`: a server method, `<Method>: Runs on the server; not searched in
+the browser`; one with `none` while Predict probability is on, `<Method> gives no class probabilities`; one without
+probabilities now under a score metric, `<Method> gives no class probabilities, which <Metric> needs`: `exclusionOf`,
+shared with `Forge:trainModel`), the
+reasons going to the Candidates caption's tooltip as `Not listed: <reason>` lines after `METHODS_TOOLTIP`, and checks
+them by the user's toggle (`overrides`, kept only against the default) or the default (not a quick limit,
+`isQuickLimit`, or a quick method, `isQuickMethod`: live and not a probability input while Predict probability is on);
+it clears the value first (the platform keeps a checked item it no longer lists) and ignores its own value changes
+(`isRebuilding`). A change of the metric rebuilds, validates, saves and tells the view; one of the limit rebuilds only
+when the limit becomes quick or stops being quick (`isQuick`), one of the strategy only validates, saves and tells it.
+Stored in `grok.userSettings` (`TuneSettings.storage`, key `Find best` = `FIND_KEY`; Tune's and Find's saves go
+through `TuneSettings.saver`, written 300 ms after the last change into the storage of that change, and at once by
+`flushSave`, which the settings' `subs` call when the view drops them): `{expanded, metric, strategy, limit,
+minutes, trials, methods}`, each item checked by `FindSettings.load` over `TuneSettings.storedRecord` (the limit by
+`LimitInputs.load`, an old `seconds` migrated as Tune's). The Candidates caption's `METHODS_TOOLTIP`: `The methods to try, each with its
+defaults first`. `inputs` (Strategy, Limit, Max time, Max trials, Candidates) join `formInputs()` (the lock) and
+`expandOnError`; `setLocked` disables them and Metric. `revalidate` under Auto clears `problems.method` while
+a method can learn, asks the browser methods `quickEngines(..., false)` at once (into `interactivity`), lists them
+(cost order) then the server ones, sets Predict probability's reason, validates the find inputs and, instead of
+training, shows `AUTO_HINT` only without a `lastTraining` (`idleHint` under Auto shows the kept training again after a
+search that trained nothing); `showTrainRow` hides **Train**, `problem()` skips the hidden settings, `updateControls` gates
+**Find** and releases **Tune** (and the other way round outside Auto); `onProbabilityToggled` only tells `form.find`
+(`setPredictProbability`). `startSearch('best', form.find.choice())` (`choice()`: metric, strategy, the one limit,
+`methods` the checked names; the plan's `topK` is `TOP_K`) runs the same flow as Tune with the selection's missing
+values by `searchMissingValues` (`impute` kept, else `skip`: every method gets the same folds), `bestSearchPlan` over
+`bestCandidates(candidateEngines(choice.methods), ...)` (the last check's browser methods so named) and the progress
+`Finding best model`; the winner (`plan.candidates`' engine of the chosen leader) goes to `setWinner` (Method
+leaves Auto), `lastTuned`, the balloon `Best model: <Method> (<Metric> 0.000).` and `startTraining` with `engine:
+winner` in both the selection and the request (what `trainModel` trains and `trainingRunOf` records).
+
+**API.** `Forge:trainModel` with `options.search` (`searchChoiceOf`: keys `metric`, ONE limit `budgetSeconds` (whole,
+>= 1) or `maxTrials` (whole, >= 1), both refused with `COMBINED_LIMITS`, neither: `budgetSeconds` 60; with `method:
+'auto'` only `strategy` (`equal` or `halving`, else `The search option 'strategy' needs equal or halving.`), `methods`
+(a list of names) and `topK` (whole, >= 1); any of the three with a method: `The search options 'strategy', 'methods'
+and 'topK' need method auto.`; `searchPlanOf` refuses an equal split by fewer trials than methods) tunes the chosen or suggested method in `trainAndSave` before its training,
 with Predict probability as the call sets it, as in the view (the trials score the labels its threshold gives, and
-the winner's threshold is optimized for `thresholdMetric` unless `threshold` was given; the selection's `hyperparameters` carry the method's probability input): `tuned` runs the same `tuneSearch` with `browserSearch` and the call's progress
-(`Tuning <Method>`, then a new `Training <Method> model`), and trains the request with the chosen settings, the hold
-out and the record; no completed trial throws `No trial completed: <the first failed trial's error>` when a trial
+the winner's threshold is optimized for `thresholdMetric` unless `threshold` was given; the selection's `hyperparameters` carry the method's probability input): `searched` runs the same `tuneSearch` (or, with `method: 'auto'`,
+`bestSearch` over the candidates of `autoEngines`, see "`Forge:trainModel`") with `browserSearch` and the call's progress
+(`searchTitle`: `Tuning <Method>` or `Finding best model`, then a new `Training <Method> model`), and trains the request with the
+winner's method (`request.engine`, which also names the saved model and the result's `method`), the chosen settings,
+the hold out and the record; no completed trial throws `No trial completed: <the first failed trial's error>` when a trial
 failed, else `No trial completed within the budget. Give the search more time.` (or `The search was cancelled before a
 trial completed.` first), and records nothing. `options.seed` (42 by default) is the one seed (the split, the
 search's hold out, sampling); `options.scheme`, `folds`, `testFraction`, `stratified` (ignored for a regression) and
@@ -1582,6 +1824,9 @@ without the view (`runTrainModel` in `training/train-api.ts`; the view and the f
    `features`, `defaultFeatures`.
 2. The method by name among the complete methods ("No method 'x' is installed. The methods are: ..."); without one,
    the check starts with XGBoost (`PREFERRED_ENGINE` in `train-model.ts`) and takes the method it suggests (`best`), as the view does.
+   `auto` (`isAuto`) does the same for the selection's checks; the suggestion is not trained: Find best model
+   chooses the method (steps 6-7). `hyperparameters` with `auto` are refused (`The hyperparameters cannot be given
+   with method auto: every method starts from its defaults.`).
 3. `options`, narrowed key by key (`OPTION_NAMES`; an unknown key is refused with the list) to the view's defaults:
    `missingValues` left unset when not given (the selection's `missingValues` is then undefined and
    `selectedMissingValues` gives the training method's `defaultMissingValues`: `keep` for a method that handles
@@ -1598,21 +1843,35 @@ without the view (`runTrainModel` in `training/train-api.ts`; the view and the f
    the steps carry it only when neither `threshold` nor `cutoff` is given, so the training optimizes the threshold and
    the run and the model store the metric; a completed run's record takes the result's options), `seed` 42 (`DEFAULT_SEED`), `scheme` `kfold`, `folds` 5, `testFraction` 0.2 (0.05..0.5),
    `stratified` `true`, `shuffle` `true` (`DEFAULT_VALIDATION`), `search` none (`searchChoiceOf`:
-   an object of `metric` (a search metric of either task; the task's check is `searchPlanOf`'s), `budgetSeconds` (whole,
-   >= 1, default 60) and `maxTrials` (whole, >= 1), anything else refused with that key list).
+   an object of `metric` (a search metric of either task; the task's check is `searchPlanOf`'s), one limit:
+   `budgetSeconds` (whole, >= 1) or `maxTrials` (whole, >= 1), never both (`The search options 'budgetSeconds' and
+   'maxTrials' cannot be combined: choose one limit.`; neither: 60 s), `strategy` (`equal` or `halving`), `methods`
+   (`The search option 'methods' needs a list of method names.`) and `topK` (whole, >= 1), anything else refused with
+   that key list; `strategy`, `methods` or `topK` without `auto`: `The search options 'strategy', 'methods' and 'topK'
+   need method auto.`). With `auto`: `search` defaults to `{budgetSeconds: 60}`, `missingValues` to `skip`, and `keep` is refused (`The option 'missingValues'
+   keep cannot be used with method auto. Use skip or impute.`).
 4. The save, checked before any work: a blank name ("Enter a name for the model."), an unknown storage, `reference`
    without `datasetRefOf(table)`.
 5. `checkSelection`; every problem goes into one `ForgeError`, target and features first.
 6. With `predictProbability`, a final method without `givesProbabilities` is refused (`<Method> gives no class
-   probabilities, so Predict probability cannot be used with it.`). The hyperparameters: `defaultHyperparameters`
+   probabilities, so Predict probability cannot be used with it.`; not under `auto`). Under `auto`, `autoEngines`
+   picks the methods: the pool is `searchableEngines(check.engines)`; each name of `search.methods` must be installed
+   (`engineNamed`), in the pool (`<Method> cannot take part in the search: it runs on the server.` / `...: it cannot
+   learn from this selection.`), and pass `exclusionOf` (`search.ts`, the rule the Find block's Candidates use, each
+   caller with its own words): give probabilities while `predictProbability` is on (the sentence above) and have
+   them under a score metric (`isScoreMetric`: `<Method> cannot take part in the search: it gives no class
+   probabilities, which <Metric> needs.`); without `methods`, the pool minus those two kinds, and under a quick limit
+   (`isQuickLimit`: a trial limit or `QUICK_BUDGET_SECONDS` or less) `quickEngines` of it (`isQuickMethod`);
+   `bestCandidates` of the result. The hyperparameters: `defaultHyperparameters`
    overlaid with the given ones, each checked against its `train` input of `visibleHyperparametersOf` (an unknown
    name with the list of settings, so SVM's `probability` is refused; the kind, a whole number for an int,
-   `min`/`max`, `choices`), then `withProbabilityInput(engine, ..., predictProbability)`, so the training, `tuned`
+   `min`/`max`, `choices`), then `withProbabilityInput(engine, ..., predictProbability)`, so the training, `searched`
    and the run record carry the method's probability input.
 7. With `showProgress`, the task-bar indicator `Training <Method> model` (cancellable) is the `LoopProgress` of
-   `trainModel`; `prepareTraining`, then `trainModel`. With `search`, `tuned` first runs the search on the prepared
-   request (see "Search": the indicator `Tuning <Method>`, then a new `Training <Method> model`) and `trainModel` gets
-   the search rows with the chosen settings, `holdOut` and `search`.
+   `trainModel`; `prepareTraining`, then `trainModel`. With `search`, `searched` first runs the search on the prepared
+   request (see "Search": the indicator `Tuning <Method>` or, with candidates, `Finding best model`, then a new
+   `Training <Method> model` of the winner) and `trainModel` gets the search rows with the winner's method
+   (`request.engine`: also the saved model's and the result's `method`), its settings, `holdOut` and `search`.
 8. The `training_run` row (`source: api`): `completed` with the metrics; `cancelled` or `failed` (with the error)
    before the error is rethrown. A refused input or a failed preparation records nothing.
 9. With a name, `saveTrainedModel` with the user's feature and target columns, which links the run; nothing is
@@ -2057,7 +2316,11 @@ and its **MLFlow** node stay the built-in tool's until the switchover. The Domai
 
 **Tune** is new (the built-in tool had no tuning or method search): a seeded random search of the method's
 declared settings, set in **Settings** (Manual / Auto-tune) with per-setting ranges, choices and pins, a
-trials-or-time budget, the **Search** leaderboard and a held out **Test** measurement. The **Validation** group is new
+one limit (time or trials), the **Search** leaderboard and a held out **Test** measurement. **Find best model** (Method
+**Auto**, `Forge:trainModel` with `method: 'auto'`) is new too: where the built-in tool guessed a method from the data
+(`selectBestModelEngine`, ported as Forge's suggestion), it measures the checked methods on the data, trying each
+with its defaults, then an equal share of the limit each (or successive halving down to the best three, tuning
+those), and trains the one with the best score less its standard error. The **Validation** group is new
 too (the built-in tool always validated on five overlapping random samples): the scheme (stratified K-fold by default for a classifier, K-fold, Hold-out), the folds or the test fraction,
 the shuffle and a split seed (42 by default); settings a method ignores are disabled (`meta.mlenabled`).
 
@@ -2098,8 +2361,14 @@ The views publish their state in the DOM, so a test waits on what a view says in
   run's number in the view; a pinned card has its run's number), the current one also `forge-card-current`; a card
   of other data has `style.display` `none`. The current card has `.forge-card-pin` ("+") only, with `style.visibility`
   `hidden` while a pinned card has its inputs; a pinned card has `.forge-card-unpin` (its trash) only; each icon carries its tooltip as
-  `aria-label`. The tabs' headers are the platform's `.d4-tab-header[data-source="tab-pane-<name>"]` (`Performance`,
-  `Settings`); both panes' tables are `.forge-card-table` (`tr.header` the header row).
+  `aria-label`. A search's winner has `.forge-card-caption` under the header (`Auto-tuned model` / `Auto-tuned
+  settings`). The tabs' headers are the platform's `.d4-tab-header[data-source="tab-pane-<name>"]` (`Performance`,
+  `Settings`); both panes' tables are `.forge-card-table` (`tr.header` the header row), the Settings pane's root
+  `.forge-card-settings` (built on its first show).
+- **Search** (`.forge-search`): `SearchPanel.grid` (the leaderboard) and `SearchPanel.chart` (the bar chart, null
+  without a leader), each in a `.forge-panel-fill` box of one `.ui-split-h`; the chart's frame is the grid's
+  (`chart.dataFrame === grid.dataFrame`), its widget status has a hit area `bar <Method>` per bar. Search and Runs
+  sit with the result rows in the results pane's `.ui-split-v`.
 - Preparation's probability inputs: the captions **Predict probability** (disabled, `enabled` false, for a method
   without class probabilities), **Classification threshold** (its editor's text has 3 significant digits, its `value`
   the full threshold), its status (`PreparationInputs.thresholdStatus`, a `.forge-tune-status-text` span with
@@ -2110,6 +2379,17 @@ The views publish their state in the DOM, so a test waits on what a view says in
   `.forge-threshold-metric`, after the select and outside `.ui-input-options`; `style.display` `none` while the
   threshold is the chosen metric's best or no best exists); the inputs hide together (`style.display` `none` on their
   roots), the status with them.
+- Find best model: **Method**'s first item is `Auto` (`TrainView.isAutoMethod` while it is chosen; `findSettings` is
+  the form's `FindSettings`, `findButton` its **Find**). The block is `.forge-find` (`style.display` `none` outside
+  Auto, as the method's `.forge-tune` root is under Auto): the `.forge-tune-status` row (`statusText`, `Not searched`),
+  the `.forge-tune-toggle` (`toggle`, `aria-expanded`, `false` at first), the `.forge-tune-grid` (`grid`) with the `.forge-tune-label`s
+  `Metric`, `Strategy`, `Limit`, `Max time`, `Max trials`, `Candidates` (`candidatesLabel`, the reasons of the
+  unlisted methods in its tooltip; `Max time` or `Max trials` hidden by Limit), the select `metric`, the platform radios
+  `strategy` and `limit.kind`, the int inputs `limit.minutes` and `limit.trials` (an invalid one has a `validity` and
+  its editor the platform's `d4-invalid`) and the platform multi-choice `candidates`
+  (`.forge-find-candidates`, one `.ui-input-multi-choice-checks > div` with its checkbox per listed method), then the
+  `.forge-tune-bar` with **Find**. A card's Performance has `.forge-card-more` (Show more / Show less) when the run has
+  more than three metrics.
 - `CollapsibleGroup`: `aria-expanded` on `.forge-group-header` follows `setExpanded`; `aria-invalid` on
   `.forge-group-summary` follows `setSummary` (the Apply dialog's red `N of M matched`).
 - Every table of data but the model cards' is the platform's grid, whose widget status publishes the hit areas `cell <row> of <column>`,
@@ -2134,10 +2414,12 @@ nothing trained reads once the view is settled (`aria-busy` not true).
 
 ## EMS schema `forge`
 
-Manifest: `databases/forge/schema.json`, version `0.1.20` (0.1.17 added the `search` json column to `model` and
-`training_run`; 0.1.18 describes the current `splitting` shape, 0.1.19 the `space` of a Tune `search`, and 0.1.20 the
+Manifest: `databases/forge/schema.json`, version `0.1.24` (0.1.17 added the `search` json column to `model` and
+`training_run`; 0.1.18 describes the current `splitting` shape, 0.1.19 the `space` of a Tune `search`, 0.1.20 the
 `postprocessingInfo` ids of `options` (`class-probabilities`), the `metrics` ids `logLoss` and `brier` and the
-`search` score "by the chosen validation", description changes that need only the bump; a description stays under
+`search` score "by the chosen validation", and 0.1.21 the `methods` of a Find best model `search` and its `test`
+(listed ahead of the Test setting that will write it), 0.1.22 the `eliminatedRound` of those `methods`, 0.1.23 the `strategy`, 0.1.24 the `chosen` of Find best model by
+the best score - se, description changes that need only the bump; a description stays under
 the 1024 characters of its column). `grok publish` deploys it; a debug publish applies
 destructive changes without migration scripts, except a `promotion` change on a row table, which is always refused
 (`[promotion-change]`). To change it, publish a manifest with only a placeholder table, then the real one, bumping
@@ -2174,7 +2456,7 @@ EMS `json` columns hold objects only; a list is wrapped in an object. TS types: 
 | `hyperparameters` | `Hyperparameters` | `{<train function input>: value}` |
 | `metrics` | `MetricsRecord` | `{train: {<metric id>: number}, validation: {<metric id>: number}, test?: {<metric id>: number} (the final model on the rows held out before a search), positiveClass?, classes?: [{label, rows, train, validation}]}`; ids `mse`, `rmse`, `mae`, `r2`, `accuracy`, `f1`, `sensitivity`, `specificity`, `precision`, `npv`, `auc`, `balancedAccuracy`, `mcc`, `averagePrecision`, `logLoss`, `brier` (`auc`, `averagePrecision`, `logLoss` and `brier` for classifiers whose method returns probabilities; a model of the former regression mode has `auc` and `averagePrecision` of its scores; `balancedAccuracy` and `mcc` for every classifier; `classes` from Crux through `Eda:classificationReport`); class ids `precision`, `sensitivity`, `f1`, `auc`, `averagePrecision` |
 | `splitting` | `Splitting` | `{scheme: none \| kfold \| holdout, folds?, trainFraction?, isStratified?, isShuffled?}` (`folds` for kfold, `trainFraction` for holdout; `isStratified` when the split kept each class's share; `isShuffled` false for a split in row order, absent in older models: shuffled; read by `splittingOf`); `none` only in older models |
-| `search` (`model`, `training_run`) | `SearchRecord` | `{mode: tune \| best, metric, budgetSeconds, seed, trials, completed, pruned, failed, elapsedMs, stopped: budget \| cancelled \| exhausted \| trials \| failed, holdOut?: {rows, fraction}, space?: {searched: [{name, type, low?, high?, log?, step?, choices?, simpler?}], pinned: [names]}, leaders: [{method, hyperparameters, score, se, foldScores, trials, chosen, note?}]}`; absent without a search (`mode` `best` is reserved for a search over several methods); `space` (Tune) is in the schema's description since 0.1.19 |
+| `search` (`model`, `training_run`) | `SearchRecord` | `{mode: tune \| best, metric, budgetSeconds?, maxTrials? (the limit; a continued one sums its runs'), strategy?: equal \| halving (best), seed, trials, completed, pruned, failed, elapsedMs, stopped: budget \| cancelled \| exhausted \| trials \| failed, holdOut?: {rows, fraction}, space?: {searched: [{name, type, low?, high?, log?, step?, choices?, simpler?}], pinned: [names]}, methods?: [{method, trials, outcome: complete \| failed \| abandoned \| unstarted, note?, eliminatedRound?}], leaders: [{method, hyperparameters, score, se, foldScores, trials, chosen, note?}]}`; absent without a search (`mode` `best` is Find best model, `methods` its candidates in cost order, `eliminatedRound` the round of successive halving one was dropped after); `space` (Tune) is in the schema's description since 0.1.19, `methods` and `test?: auto \| off \| <fraction>` (not written yet) since 0.1.21, `eliminatedRound` since 0.1.22, strategy and the one limit (budgetSeconds or maxTrials) since 0.1.23, chosen by the best score − se (score + se if minimized) for Find since 0.1.24 |
 | `model.dataset_ref` | `DatasetRef` | Reference mode: `{kind: file \| query \| script, script, path?, id?, name?}`, see "Storage modes" |
 | `dataset_fingerprint` | `DatasetFingerprint` | `{rowCount, columnCount, hash, columns: [{name, type, missingCount, min?, max?, mean?, categories?}]}` |
 
@@ -2282,7 +2564,8 @@ An engine is the set of functions that share `meta.mlname` (the engine id). `met
 | `visualize` | `(df, targetColumn, predictColumn, model)` | Optional |
 
 Three more `meta` keys on `train`: `mlhasrows: 'true'` (the model file embeds training rows; EDA's SVM and
-k-Nearest Neighbors), `mlserver: 'true'` (the method runs on the server) and `mlnativenans: 'true'` (the method takes
+k-Nearest Neighbors), `mlserver: 'true'` (the method runs on the server: `isServerEngine`, which also keeps a script
+in another language than JavaScript and Chemprop out of Find best model) and `mlnativenans: 'true'` (the method takes
 rows with missing feature values as they are; EDA's XGBoost, Random Forest, Extra Trees, Hist Gradient Boosting,
 CatBoost, Decision Tree and TabM; see "Missing values"). Two optional keys serve the search (see "Search"):
 `mlspace` (the JSON search space over the `train` inputs, read by `searchSpaceText` / `searchSpaceOf`; without it the
@@ -2298,7 +2581,8 @@ default (see "Search"). EDA declares it for SVM (gamma, degree, coef0 by kernel,
 The optional `mlprobabilities` says the method returns class probabilities (`proba_<class>` from `apply`): `'true'`,
 or the name of a bool `train` input that turns them on (EDA: `'true'` on every classifier but SVM, whose `probability`
 input it names; none on Linear and PLS Regression). In `engines/engine.ts`: `givesProbabilities(engine)` (the meta is
-`'true'` or names such an input), `probabilityInput(engine)` (that input's name when the meta names a `train` input of
+`'true'` or names such an input), `hasProbabilities(engine, on)` (whether its trials carry them with Predict
+probability `on`: Find best model's metric and probability rules), `probabilityInput(engine)` (that input's name when the meta names a `train` input of
 type `DG.TYPE.BOOL`, else undefined), `withProbabilityInput(engine, hyperparameters, on)` (the hyperparameters with
 the input set to `on`; unchanged without one) and `visibleHyperparametersOf(engine)` (`hyperparametersOf` without the
 input: the form, `TuneSettings`, the cards' Settings tab, the API's `hyperparametersFor`, `methodColumns`,

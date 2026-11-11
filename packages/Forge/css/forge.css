@@ -329,22 +329,6 @@
   color: var(--text-color-light);
 }
 
-.forge-tune-budget {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 30px;
-}
-
-.forge-tune-budget > .forge-tune-field {
-  flex: none;
-  width: 48px;
-}
-
-.forge-tune-budget > .forge-tune-select {
-  flex: 1 1 0;
-}
-
 /* The pins and the reset: native buttons, 30 px, the icon in the button's colour at its right edge, so the glyphs end
    on the block's right edge with Tune's letters and the selects' underlines; the hit area extends to the left. */
 .forge-tune-icon {
@@ -405,6 +389,33 @@
 .ui-input-root.forge-threshold-metric > button.ui-btn {
   margin-right: 0;
   padding-right: 0;
+}
+
+/* A platform input in a Search options cell (Strategy, Limit, Max time, Max trials, Candidates): its caption is in the
+   grid's label column, so its own label is hidden. */
+.ui-form .forge-tune-grid .ui-input-root.forge-tune-input {
+  padding: 0;
+  min-height: 30px;
+}
+
+.forge-tune-input > label.ui-input-label {
+  display: none;
+}
+
+/* Max time and Max trials as wide as the cell, as the selects are (ui.css caps an editor at 150 px), at the bottom of
+   the 30 px row, where ui.css puts the options (the clicker and `min`): the editor's underline and theirs are then one
+   line, not two 2 px apart. */
+.forge-tune-grid .forge-tune-input > input.ui-input-editor {
+  max-width: none;
+  align-self: flex-end;
+}
+
+/* Candidates: every check shown (ui.css scrolls the list at 155 px), the first one level with the caption's 30 px
+   line. */
+.forge-find-candidates > .ui-input-multi-choice-checks {
+  max-height: none;
+  overflow-y: visible;
+  padding: 5px 0 0 !important;
 }
 
 /* The model cards at the end of the form, so they span its width; a pinned card is a click target, so it darkens while
@@ -485,11 +496,10 @@
   cursor: pointer;
 }
 
-.forge-card-line {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* After a search, what it chose: the italic status look of the form (.forge-tune-status-text). */
+.forge-card-caption {
   font-size: 12px;
+  font-style: italic;
   color: var(--text-color-light);
 }
 
@@ -497,17 +507,16 @@
   align-items: flex-start;
 }
 
-/* The status and a note start where the tables' text does; the status is where Performance's header row is. */
+/* A note starts where the tables' text does. */
 .forge-card .forge-note {
   margin-left: var(--forge-card-indent);
 }
 
-.forge-card-settings > .forge-tune-status-text {
-  margin: 6px 0 0 var(--forge-card-indent);
-}
-
-.forge-card-settings > .forge-card-table {
-  margin-top: 2px;
+/* Show more / Show less under Performance, where the table's text starts. */
+.forge-card-more {
+  align-self: flex-start;
+  margin: 4px 0 0 var(--forge-card-indent);
+  font-size: 12px;
 }
 
 .forge-train-results {
@@ -560,10 +569,25 @@ div.ui-box > div.ui-div.forge-results-panel {
   background-color: transparent;
 }
 
-.forge-results-rows,
-.forge-search,
-.forge-runs {
+.forge-results-rows {
   margin-top: 12px;
+}
+
+/* A box whose one child (a grid, a viewer, a splitter) fills it: a flex column, so a grid starts at its top, and the
+   flex basis overrides the inline height a grid gives itself. */
+.forge-panel-fill {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* More specific than ui.css div.ui-div > div.ui-box, which gives a box 400 x 300 px. */
+div.ui-div.forge-panel-fill > div.ui-box,
+div.ui-box.forge-panel-fill > div.ui-box {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  height: auto;
 }
 
 /* The panels share a row by their growth alone (set from the weights, re-split by a drag); the widths the splitter

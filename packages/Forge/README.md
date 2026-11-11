@@ -31,12 +31,20 @@ only while one of its inputs applies), **Method** (Method, **Settings** and the 
   installed). The method you choose stays while it can learn from the data; when a change rules it out, a balloon
   says `<Method> cannot be used with this selection; <suggested> is chosen.` When no method can learn from the
   data, **Method** is empty and red: `No method can learn from this selection. Check the features and the target.`
+  The first item, **Auto**, finds the best model instead of training one method (see "Find best model"): its
+  tooltip reads `Auto: Find tries every checked method and trains the best one`, nothing trains while it is chosen,
+  **Train** is hidden, the results of the model shown stay, and when no model is shown (after a change of the data)
+  **Performance** reads `Click Find to try every checked method on this data and train the best one.`; the current
+  model card stays the last completed training
 * the method's settings (hyperparameters), with their default values. Values you change are kept per method while
   the view is open, also when you switch the method or the table. A setting the method does not use with the other
   values or the task is disabled (SVM: **Gamma** for the Linear kernel, **Degree** for any kernel but Polynomial,
   **Offset** for Linear and RBF, **Epsilon** for a classifier; see "Methods"); it keeps its value, is not checked, and goes to the method, which
   ignores it. **Settings** above them is **Manual** (the default: the settings as inputs) or **Auto-tune** (Search
-  options and **Tune**, which searches better values on this data; see "Search")
+  options and **Tune**, which searches better values on this data; see "Search"); with **Auto** the group shows
+  the status `Not searched`, **Search options** (**Metric**, **Strategy**, **Limit**, **Max time** or **Max trials**,
+  **Candidates**) and **Find** instead (see
+  "Search")
 
 Hover an input to see what it is for. The inputs are checked as you change them. A problem is shown on the input it
 concerns: the input turns red and its tooltip says what to fix, for example that the target is also checked as a
@@ -56,7 +64,8 @@ after a training until you change an input. When the problem is a setting out of
 missing-values setting), **Performance** reads `Fix the settings.` A progress bar `Training <Method> model` shows each
 training in the task bar; you can cancel it there (`Training was cancelled.`). A training started by **Train** locks
 the form, as a search does (see "Search"): until it ends (completed, failed, cancelled or superseded), every input of the
-form is disabled (Settings, its reset button, the pins and Search options too), **Train** and **Tune** wait and a click on
+form is disabled (Settings, its reset button, the pins and Search options too, the Find best model block under
+**Auto**), **Train**, **Tune** and **Find** wait and a click on
 a **Runs** or **Search** row or on a pinned model card does nothing; afterwards each input is as it was. A method that retrains by itself does not lock the form. While a training runs, a small loader is
 shown next to the **Performance** header (the previous results stay while the model retrains by itself). The
 **Performance** panel then shows a grid of metrics with a **Metric**, a **Train** and a **Validation** column:
@@ -75,7 +84,12 @@ cells of the training features, `Rows: <used> used, <skipped> skipped (missing v
 because of missing values, `Validation: 5-fold cross-validation on <rows> rows` (or `Validation: hold out of 20% (<N>
 rows)`; `, stratified` after it when the split was), `Split seed: <seed>` (only when the rows were shuffled; the seed
 can be selected, and the copy icon right after it, **Copy the seed**, copies it), after a search `Search: Tune by <metric>,
-<budget>: <N> trials of 1 method, chosen by the one-standard-error rule` with either `Test: <N> rows held out before
+limit 5 min: <N> trials of 1 method, chosen by the one-standard-error rule` (with a trial limit `limit 100 trials: 1
+method, ...`; a search continued with the other kind `limit 1 min + 50 trials: <N> trials of ...`; after Find
+best model `Search: Find best model by <metric>, limit 5 min: <N> trials of <M> methods, chosen by the highest <metric>
+− SE` (`the lowest <metric> + SE` for an error) or `..., limit 100 trials: <M> methods, ...`, M the methods with a
+completed trial, the limit followed by `, Focus on leaders` for that strategy)
+with either `Test: <N> rows held out before
 the search` or, when nothing was held out, `Validation after a search is optimistic: the best of the trials was chosen
 on it`, for two classes, `Positive class: <class>`, and, with **Predict probability** on two classes,
 `Classification threshold: <t>` (`Classification threshold: <t>, the best F1 on the validation rows: its validation
@@ -208,22 +222,23 @@ the table no longer has a column of that run, a warning says `The table no longe
 Under the inputs (and **Train** when shown), a card shows the current model: the newest completed training of the
 table in this view, on a light blue background. The cards are as wide as the inputs (their right edge is **Tune**'s)
 and as tall as their content. A failed or cancelled training, or an input changed before the next
-training, leaves it as it is. Its header is the method in bold; under it a line reads `<n> features` followed by the
-preparation steps as **Runs** lists them (`4 features · impute (4 neighbors, Euclidean) · one-hot`); hover the line
-for the feature names, the preparation (`none` when there is none) and, after a search with a hold out, `Test: <n>
-rows held out before the search`. Two tabs follow, both small tables of one look (the header row darker than the
+training, leaves it as it is. Its header is the method in bold; under it, for the winner of a search, an italic line
+reads `Auto-tuned model` (Find best model) or `Auto-tuned settings` (Tune); other cards show nothing between the
+header and the tabs (the features and the preparation are in **Runs**). Two tabs follow, both small tables of one look (the header row darker than the
 rows, the names light grey, the values a shade darker and right-aligned, no colored values):
 
-* **Performance** (open at first): the metrics of that training in the rows and columns of the **Performance** grid
-  (**Metric**, **Train**, **Validation**, and **Test** after a search with a hold out), with three decimals;
+* **Performance** (open at first): the metrics of that training in the columns of the **Performance** grid
+  (**Metric**, **Train**, **Validation**, and **Test** after a search with a hold out), with three decimals; three
+  rows: first the metric its search optimized (Tune or Find best model), else `Balanced accuracy` for a classifier and
+  `R2` for a regressor, then the next metrics in the grid's order. **Show more** under the table (`Show all metrics`)
+  lists every metric, the first one still first, and turns into **Show less** (`Show fewer metrics`), on that card
+  only (a new current card starts with three rows);
   hovering a value shows it in full with what the column measures and, for a value **Performance** marks, the
   finding; hover a header or a metric for its meaning. The values are the ones recorded with the training: a later
   change of **Predict probability** or **Classification threshold** re-cuts **Performance**, not the card.
-* **Settings**: first, in italics and aligned with the table's text, `Default`, `Customized` or `Auto-tuned` as
-  **Settings** read when the training started (hover it for its meaning, followed by `Found by Tune: <n> trials` for
-  a search's winner); then every setting of the method (**Setting**, **Value**) with its value as trained, the ones
-  the method ignored included, but not SVM's **Class probabilities**, which **Predict probability** sets (hover a row
-  for its meaning; `No settings` for a method without any).
+* **Settings**: every setting of the method (**Setting**, **Value**) with its value as trained, the ones the method
+  ignored included, but not SVM's **Class probabilities**, which **Predict probability** sets (hover a row for its
+  meaning; `No settings` for a method without any).
 
 The tabs switch together: a click on a tab of one card shows that tab on every card, and a new card opens on it.
 
@@ -245,20 +260,33 @@ scroll; once the cards come into view, it scrolls up with the end of the inputs.
 
 **Settings** under **Method** (a radio, **Manual** by default; hover: `How the settings are chosen: by hand or by a
 search on this data`) chooses how the method's settings are set; switching it runs nothing. **Manual** shows the
-settings as inputs. Under the radio a status reads `Default` (the method's defaults; hover: `Recommended values for this
-method`), `Auto-tuned` (the values the last tune of this method set in this view, on the table, target and features
-it ran on, in any order: `Found by Auto-tune; pinned values kept`) or `Customized` (`Changed by hand`; the tuned values
+settings as inputs. Under the radio a status reads `Default` (the method's defaults; hover: `The method's recommended
+settings`), `Auto-tuned` (the values the last tune of this method set in this view, on the table, target and features
+it ran on, in any order: `Found by the search`) or `Customized` (`Changed by you`; the tuned values
 on other data: `Tuned for <target> on <table>; tune again for this data`); it follows the values and the data, so a
 value or a target changed back reads as before. The reset
 button at the right of the radio sets the method's defaults at once (`Reset <Method> settings to defaults`; grey with
-`<Method> settings are already default` when they are); the mode, the pins, the ranges, the metric and the budget stay.
+`<Method> settings are already default` when they are); the mode, the pins, the ranges, the metric and the limit stay.
 A method with settings but without a search space (Chemprop, scripts) has its **Auto-tune** disabled (`<Method>
 declares no search space.`); a method without settings (Naive Bayes) has no Settings row at all: no radio, reset or
 status, and no **Tune**.
 
 **Auto-tune** hides **Train** and shows **Search options** (folded at first, its chevron under the **Method** header's
-text; a click on it opens it) and **Tune** at the right under it. **Search options** lists the settings in the same order, each on one line
-with a pin button at the right:
+text; a click on it opens it) and **Tune** at the right under it. **Search options** lists first the search's own rows:
+
+* **Metric**: what the search maximizes (or minimizes for an error), measured by the validation the **Validation**
+  group sets: `Balanced accuracy` (the default), `Accuracy`, `F1`, `MCC`, `AUC-ROC`, `Log loss`, `Brier score`
+  (these two minimized) for a classifier (`AUC-ROC`, `Log loss` and `Brier score` need a method that returns class
+  probabilities: with SVM without **Predict probability** every trial fails), `R2` (the default), `RMSE`, `MAE` for a
+  regression
+* **Limit**: what ends the search, one limit (a radio, hover: `What ends the search: a time or a trial limit`):
+  **Time** or **Trials** (the default); under it the one input it chooses:
+* **Max time**: whole minutes, `1` by default, with the unit `min` and a plus/minus clicker (step 1) on one underline
+  (hover: `Minutes the search may run`)
+* **Max trials**: the search starts no more than this many trials (completed, pruned and failed ones alike; 50 by default;
+  hover: `Maximum number of trials, pruned and failed ones included`)
+
+then the settings in the same order, each on one line with a pin button at the right:
 
 * a setting the search tunes: its range, two fields `<from> – <to>` (a choice setting, such as SVM's **Kernel**: a field
   listing the checked choices, all at first, that opens a list of checkboxes); the ranges are the ones the method
@@ -271,28 +299,26 @@ with a pin button at the right:
   `<Setting>: Fixed, can’t be tuned`
 * a setting the method ignores with the pinned values or the task (SVM: **Gamma** with **Kernel** pinned to Linear,
   **Epsilon** for a classifier) is disabled and not searched; one whose use depends on a tuned setting is searched
-* **Metric**: what the search maximizes (or minimizes for an error), measured by the validation the **Validation**
-  group sets: `Balanced accuracy` (the default), `Accuracy`, `F1`, `MCC`, `AUC-ROC`, `Log loss`, `Brier score`
-  (these two minimized) for a classifier (`AUC-ROC`, `Log loss` and `Brier score` need a method that returns class
-  probabilities: with SVM without **Predict probability** every trial fails), `R2` (the default), `RMSE`, `MAE` for a
-  regression
-* **Budget**: `<N> trials or <time>`: the search stops after N completed trials (pruned and failed ones do not count;
-  50 by default) or at the time limit (`1 minute`, the default, `5 minutes` or `15 minutes`), whichever comes first
 
 The ranges are checked as you type, and a problem turns the fields red with its text on a line under the row:
 `“From” must be less than “to”`, `“From” must be at least <min>`, `“To” must be at most <max>`, `The bounds must be
 whole numbers` for a whole setting, `“From” must be above 0` where the method searches on a log scale (`“From” must be
 at least 1` for a whole setting), `Enter both
-bounds`, `Choose at least one` for a choice setting; a pinned value out of its range shows the setting's own message,
-and a trial count that is not a whole number of 1 or more `Enter a whole number of trials, at least 1`. **Search
-options** opens on a problem. The pins and the reset are buttons, so the keyboard reaches them. Each user keeps the mode, the folded
-state, the pins, the ranges, the metric and the budget per method (an entry that no longer fits the method falls back
-to its default).
+bounds`, `Choose at least one` for a choice setting; a pinned value out of its range shows the setting's own message.
+**Max time** (1 to 60) and **Max trials** (1 to 10000) are checked by the platform as any whole-number input with a
+range: a wrong value gets a red underline, and hovering the field shows its description with the platform's message
+under it (`Value must be greater than 1` below the range, `Value must be less than 60` or `Value must be less than
+10000` above it, `'abc' is not an integer.`, `Can't be empty`); only the shown one counts. **Search options** opens on a
+problem. The pins and the reset are buttons, so the keyboard reaches them. Each user
+keeps the mode, the folded state, the pins, the ranges, the metric and the limit (its kind, the minutes and the trials)
+per method (an entry that no longer fits the method falls back to its default; a time stored in seconds by an earlier
+version becomes whole minutes, rounded up, 1 to 60).
 
 **Tune** (its tooltip: `Find the best settings`) searches better values of the tuned settings on the current
 selection. It is disabled, with the reason as its tooltip, while the selection has a problem or is checked, while a
 training runs, while a range has a problem (`Fix the highlighted range`), when nothing is left to tune (`All
-settings are fixed`) and while the trial count is invalid (`Budget: Enter a whole number of trials, at least 1`).
+settings are fixed`) and while the limit is invalid (the field's first message, captioned: `Max time: Value must be
+less than 60`, `Max trials: Value must be greater than 1`); a search never starts with one of these problems.
 **Predict probability** stays as the form has it: the trials score the labels its threshold gives (for SVM, every
 trial fits with **Class probabilities**, about five times slower); the winner's training then optimizes the threshold
 for **Best threshold by** again, unless the threshold was edited by hand. **Missing values** stays as the form has it.
@@ -308,9 +334,13 @@ shows the default. After five trials that passed their first two folds, a trial 
 first two folds score below the median of those earlier trials (the ones started before it that were not pruned there)
 stops there (pruned), so parallel fits give the same result as one at a time; a hold out prunes nothing.
 EDA's methods run up to four fold fits at a time (half the processor's threads, at most four), each in its own Crux
-worker. The budget is checked between fits: no new trial starts after it, and a trial whose first two folds forecast an
-overrun stops (the first trial always completes); one fit of a slow method can run past the budget. The task bar shows
-`Tuning <Method>` with the trials so far and the best value (`12 trials, best Balanced accuracy 0.960 (XGBoost)`);
+worker. The time limit is checked between fits: no new trial starts after it, and a trial whose first two folds
+forecast an overrun stops (the first trial always completes); one fit of a slow method can run past it. The task bar
+shows
+the method and what is left of the limit: the trials finished (completed, pruned or failed) of this run's limit,
+`Tuning CatBoost (12/50)`, or the time left, `Tuning CatBoost (42 s left)`, `Tuning CatBoost (2 min left)`, and once
+the time is up the trials still running, `Tuning CatBoost (finishing 3 trials)`; a continued search the same, counting
+this run's trials;
 **Save**, **Train** and **Tune** wait, and the loader is next to the **Performance** header. Until the search and the
 training of its winner end, every input of the form is disabled and a click on a **Runs** or **Search** row or on a
 pinned model card does nothing; afterwards each input is as it was (a setting the method ignores stays disabled). To stop the search, cancel
@@ -331,13 +361,111 @@ chosen trial's value. That training is a regular run: **Runs** gets its row (hov
 trials` above the settings) and **Save** saves it with the search. When no trial completed, a warning says `No trial
 completed.`, or `No trial completed: <the first failed trial's error>` when a trial failed, and nothing changes.
 
-The panel **Search** (above **Runs**; hover its title: `Per method, the simplest settings within one standard error of
-its best, best first; the chosen one is marked. Click a row to set its method and settings.`) shows the leaderboard:
-**#**, **Method** (hover for the chosen settings, then `Searched: <setting> <from>–<to>, <setting> (<choices>), ...` and
+**Tune** again continues the last search of the method on this table while nothing it depends on changed (the
+target, the features, the preparation with its threshold (the trials score the labels it gives; with **Predict
+probability** the winner's training usually moves it, so the next search starts anew), the missing values, the validation and its seed, the metric,
+the ranges, the pins and the values of the settings not tuned): the new limit is added on top, the earlier trials
+count (none is tried twice), and the leaderboard, the counts and the choice cover all of them; its tooltip then reads
+`Continue the search: <N> trials so far` and the task bar `Continuing: Tuning <Method>`. A change of any of these, or
+of the table, starts a new search. The search is kept in memory only, for the session of the view.
+
+The panel **Search** (above **Runs**; hover its title: `Each method's best settings, ranked by <Metric> − SE.`) appears
+after a search of two methods or more (Find best model); after Tune, or a Find of one method, it is not shown, as
+Performance and the run's tooltip describe that search. It shows, in a splitter, a bar chart (two thirds of the width at first) left of the
+leaderboard, both over one table, so the current row and the selection are shared: one bar per method with a completed
+trial, its **<Metric> − SE** (the grid's column), best first, with the value labels, in one color, with the description
+`<Metric> minus its standard error: a cautious estimate` (`plus` for an error) above it, without a title, a line, a
+legend or selectors. Draggable splitters separate the last results row (**Wrong predictions**), **Search** and
+**Runs**; a block not shown leaves no gap. The leaderboard, in the chart's order (by **<Metric> − SE**, best first, equal
+values by the method's name, capitals first; the chosen one is always first and the top bar; the methods
+without a completed trial last):
+**#** (hover the header: `Rank by <Metric> − SE.`), **Method** (hover for the chosen settings, then `Searched: <setting> <from>–<to>, <setting> (<choices>), ...` and
 `Pinned: <settings>`), **<Metric> (CV)**, or **<Metric> (hold-out)** with **Hold-out**
 (hover for the fold values; one value with a hold out), **SE** (the standard error of the metric over the folds; 0 with a hold out),
-**Trials** (pruned and failed ones included) and **Chosen**. A click on its row sets the method and those settings in
+**<Metric> − SE** (the score less its standard error, plus for an error minimized: **<Metric> + SE**; hover the
+header, e.g. for F1: `F1 minus its standard error over the folds: a cautious estimate of F1. The method with the
+highest value is chosen.`, for RMSE `RMSE plus its standard error ... The method with the lowest value is chosen.`;
+with a hold out `(0 on a hold out: one score)` instead of `over the folds`),
+**Trials** (hover the header: `Every trial of the method, pruned and failed ones included.`) and **Chosen** (hover
+the header: `The method with the highest <Metric> − SE.`, the chosen cell: `Chosen: the highest <Metric> − SE.`). A
+click on
+its row or its bar sets the method and those settings in
 **Manual**, and the view trains as after any change (a click on a **Runs** row switches to **Manual** too). The panel stays until the next search or a **Table** change.
+
+#### Find best model
+
+With **Auto** chosen in **Method**, the **Method** group shows, instead of **Settings** and the method's settings, a
+block in the look of **Auto-tune** (the same captions column, fonts, row heights and spacing): under **Method** the
+italic status `Not searched` (hover: `Click Find to search`), then the **Search options** toggle (folded at first;
+each user keeps it open or folded, and it opens on an invalid limit) over these rows:
+
+* **Metric**: as in Tune's Search options (`Balanced accuracy` or `R2` by default)
+* **Strategy**: **Equal**, the equal split (the default; hover: `Every method gets an equal share of the limit: a fair
+  comparison`) or **Leaders**, focus on leaders (`Each round the worse half drops out; the rest get more trials`)
+* **Limit**, then **Max time** or **Max trials**: as in Tune's Search options (**Trials**, 100 of them, by default;
+  **Max time** 1 minute):
+  the trials of all methods together, completed, pruned and failed alike, so the methods' **Trials** never add up to
+  more. With **Equal** and **Trials**, fewer trials than checked methods are a problem of the field, shown the same
+  way (`At least one trial per checked method: <N>`), checked again when the methods or the strategy change
+* **Candidates** (hover the caption: `The methods to try, each with its defaults first`,
+  followed by one `Not listed: <reason>` line per method left out): a checkbox per method that can learn from the
+  selection and run in the browser, cheapest first (Linear Regression, PLS Regression, Softmax, Naive Bayes, LDA,
+  Decision Tree, k-Nearest Neighbors, XGBoost, Hist Gradient Boosting, CatBoost, Extra Trees, Random Forest, SVM,
+  Neural Network, TabM, RealMLP, then the others). A server method is not listed (`Not listed: <Method>: Runs on the
+  server; not searched in the browser`), nor, while **Predict probability** is on, a method without class
+  probabilities (`Not listed: <Method> gives no class probabilities`), nor, under **AUC-ROC**, **Log loss** or **Brier
+  score**, a method without them with the current settings (SVM with **Predict probability** off: `Not listed: SVM
+  gives no class probabilities, which AUC-ROC needs`). Above 1 minute every method is checked; at 1 minute, or with
+  **Trials**, only the ones that retrain by themselves on this data (not RealMLP, nor TabM above 200 rows, Neural Network above 2000 rows,
+  Random Forest above 20000 cells), and not SVM while **Predict probability** is on (its fits are about five times
+  slower). A method you check or uncheck keeps your choice; the others follow the time limit, the metric and
+  **Predict probability**
+
+**Find** sits at the right under Search options, where **Tune** does, also while Search options is folded. Each user
+keeps the metric, the strategy, the limit and the methods they toggled. Choosing **Auto** runs nothing and keeps the
+results of
+the model shown.
+**Predict probability** stays enabled while a checked method gives class probabilities, or while none is checked (Find
+is then disabled); otherwise it is unchecked and disabled: `No checked method gives class probabilities`; toggling it changes the list's defaults and trains nothing.
+**Missing values** shows for features with empty cells even when the suggested method could keep them: the search
+skips those rows, or imputes them with **Impute**, and never keeps them, as every method gets the same folds; the run,
+the card and a saved model record that.
+
+**Find** (its tooltip: `Find the best model`) is disabled, with the reason as its tooltip, as **Tune** is, when no
+method is checked (`Check at least one method`) and while the limit is invalid (`Max time: ...`, `Max trials: ...`, `Max
+trials: At least one trial per checked method: <N>`). The search holds out the same rows as Tune and validates each trial as
+the **Validation** group says. With **Equal** the checked methods run one after another, cheapest first, each
+with its defaults first and then its own random draws: each gets an equal share of the trials (rounded up) or the
+time left when it starts, so what a method does not use (it finished early, its ranges were used up or its trials kept
+failing) goes to the methods after it. **Search**
+then explains a short **Trials** count in its tooltip: `Its share of the limit ran out` or `Its space was exhausted`.
+With **Leaders** it runs successive halving: first every checked method once with its defaults, cheapest
+first (several at a time); then, round by round, the better half of the methods with a search space (by their best value so far) get
+twice as many new trials as in the round before (2, 4, ...), each over its whole declared ranges from its own random
+draws, and the worse half drops out, but never down to fewer than three; the last three or fewer are then tuned in
+turn until the limit ends. A method without a search space (Naive Bayes) is tried with its defaults only (its
+**Trials** tooltip in **Search**: `No settings to tune`), and a
+method whose trials all failed or whose ranges are used up leaves without counting against the others. One limit
+covers all the methods; a trial whose first two folds
+forecast an overrun stops (abandoned), so a slow method may be left without a completed trial. The trials score the
+labels the form's threshold gives, and the winner's training optimizes the threshold for **Best threshold by** again.
+The task bar shows the same progress as Tune's (`Finding best model (79/100)`, `Finding best model (finishing 2
+trials)`, `Finding best model (42 s left)`,
+`Finding best model (2 min left)`). Each method's best settings follow the one-standard-error rule as Tune's;
+across the methods the one with the highest **<Metric> − SE** (the lowest **<Metric> + SE** for an error) wins, a tie
+(the same value as the chart shows it) to the method whose name comes first, capitals first, as the chart orders its
+bars.
+
+The winner trains as Tune's does: the balloon reads `Best model: <Method> (<Metric> <value>).` (cancelled: `Search
+cancelled; the best so far is trained.`), **Method** is set to it with **Settings** in **Manual** (`Auto-tuned`, also
+when its defaults won; `Customized` once you change a setting) and the model trains on the search rows (`Training <Method> model`); its **Runs** row
+reads `Found by Find best model: <N> trials`. To search again, choose **Auto** again: **Find** then continues the last
+search as **Tune** does (the same data, validation, metric, strategy and checked methods; the limit added on top, an
+equal split splitting the new limit equally again). **Search**
+lists the leaders, then every method without a completed trial with an empty value, its trials and the reason as the
+**Method** tooltip (`No completed trial: <error>`, `Abandoned: the budget ran out`, `Not started: the budget ran
+out`); a click on such a row sets that method with its defaults. A method the halving dropped reads `Eliminated in
+round <N>` in its **Trials** and **Method** tooltips (round 1 is the defaults).
 
 ### Preparation
 
@@ -616,13 +744,19 @@ seed 42):
   without empty cells whose values are all different (row numbers, ids)
 * `method`: `CatBoost`, `Decision Tree`, `Extra Trees`, `Hist Gradient Boosting`, `k-Nearest Neighbors`, `LDA`,
   `Linear Regression`, `Naive Bayes`, `Neural Network`, `PLS Regression`, `Random Forest`, `RealMLP`, `Softmax`,
-  `SVM`, `TabM`, `XGBoost` (the installed methods); by default the method the view suggests for the data
-* `hyperparameters`: the method's settings by name; settings not named keep their defaults
+  `SVM`, `TabM`, `XGBoost` (the installed methods), or `auto`: Find best model (see "Search"), every method that can
+  learn from the data and runs in the browser tried with its defaults, then an equal share of the limit each (or,
+  with `options.search.strategy: 'halving'`, the better half kept by successive halving down to the best three,
+  those tuned), the best one trained (`options.search` defaults to `{budgetSeconds: 60}`; `missingValues` defaults to
+  `skip`);
+  by default the method the view suggests for the data
+* `hyperparameters`: the method's settings by name; settings not named keep their defaults (not with `auto`: every
+  method starts from its defaults)
 * `options`: the preparation and the validation, each key optional:
 
   | Key | Default | Meaning |
   |---|---|---|
-  | `missingValues` | `skip`; `keep` for a method that handles missing values | `skip` leaves out the rows with empty cells; `impute` fills the features' empty cells; `keep` gives the rows with empty cells to the method as they are, only for a method that handles missing values (rows without a target are always left out) |
+  | `missingValues` | `skip`; `keep` for a method that handles missing values (never with `auto`) | `skip` leaves out the rows with empty cells; `impute` fills the features' empty cells; `keep` gives the rows with empty cells to the method as they are, only for a method that handles missing values and not with method `auto` (rows without a target are always left out) |
   | `neighbors`, `distance` | the EDA imputer's (`4`, `Euclidean`) | the settings of `impute` |
   | `oneHot` | on when every text or yes/no feature has at most 20 categories (while `skipUniqueCategories` is on, features whose values are all different do not count) | One-hot encoding of text and yes/no features |
   | `skipUniqueCategories` | `true` | leaves out text features whose values are all different |
@@ -635,7 +769,7 @@ seed 42):
   | `stratified` | `true` | each class keeps its share in every part or in the hold out; ignored for a regression |
   | `shuffle` | `true` | shuffles the rows by `seed` before the split; `false`: blocks of consecutive rows, or the last rows held out |
   | `seed` | `42` | the split seed, a whole number from 0 to 2147483647 (with `search`, also of the search's hold out and of the trials' settings) |
-  | `search` | none | `{metric, budgetSeconds, maxTrials}`, each key optional: tunes the method's settings first, as **Tune** does (see "Search"), then trains the chosen ones. `metric`: `r2` (regression default), `rmse`, `mae`, `balancedAccuracy` (classifier default), `accuracy`, `f1`, `mcc`, `auc`, `logLoss`, `brier` (these two minimized); `budgetSeconds`: a whole number of seconds, at least 1 (default `60`); `maxTrials`: stops after that many completed trials |
+  | `search` | none (`{budgetSeconds: 60}` with `auto`) | `{metric, budgetSeconds, maxTrials, strategy, methods, topK}`, each key optional, but one limit, `budgetSeconds` or `maxTrials`, never both (neither: `budgetSeconds: 60`): with a method, tunes its settings first, as **Tune** does, with `auto` finds the best model, as **Find** does (see "Search"), then trains the chosen ones. `metric`: `r2` (regression default), `rmse`, `mae`, `balancedAccuracy` (classifier default), `accuracy`, `f1`, `mcc`, `auc`, `logLoss`, `brier` (these two minimized); `budgetSeconds`: a whole number of seconds, at least 1; `maxTrials`: starts no more than that many trials (of all methods; completed, pruned and failed ones alike); only with `auto`: `strategy`, `equal` (the default: each method an equal share of the limit, at least one trial each) or `halving` (successive halving, as **Leaders**), `methods`, the method names to try (by default every browser method that can learn from the data, without the ones lacking class probabilities while `predictProbability` is on or under `auc`, `logLoss`, `brier`, and at 60 seconds or less or with `maxTrials` only the ones that retrain by themselves, not SVM with `predictProbability`), and `topK`, how many methods successive halving keeps to tune (default `3`) |
 
 * `name`: saves the model under this name; without a name the model is trained and measured but not saved.
   `description` and `tags` (comma-separated) go with it
@@ -643,13 +777,17 @@ seed 42):
   `reference` (the table must come from a file, a query or a script) or `copy` (uploads the feature and target
   columns). Nothing is uploaded unless you ask for `copy`
 * `showProgress` (`true` by default): the task-bar progress `Training <method> model` (with `search`, first `Tuning
-  <method>`); cancel it there to stop the training, which fails the call with `Training was cancelled.` (a search
+  <method>`, with `auto` first `Finding best model`); cancel it there to stop the training, which fails the call with `Training was cancelled.` (a search
   cancelled after a completed trial trains the best so far)
 
 ```javascript
 // Tune XGBoost's settings for at most 30 seconds, then train and save the chosen ones
 await grok.functions.call('Forge:trainModel', {table: grok.shell.t, target: 'Species', method: 'XGBoost',
   options: {seed: 7, search: {metric: 'accuracy', budgetSeconds: 30}}, name: 'Iris species tuned'});
+
+// Find the best of three methods within 30 seconds; result.method is the one trained
+await grok.functions.call('Forge:trainModel', {table: grok.shell.t, target: 'Species', method: 'auto',
+  options: {search: {budgetSeconds: 30, methods: ['XGBoost', 'Decision Tree', 'Naive Bayes']}}});
 ```
 
 The result: `modelId` (null when not saved), `runId`, `name`, `method`, `task`, `target`, `features`, `rowCount` (the
@@ -659,11 +797,18 @@ metric ids: `mse`, `rmse`, `mae`, `r2` for a regression; `accuracy`, `f1`, `bala
 `sensitivity`, `specificity`, `precision`, `npv`, and, for a method with class probabilities, `auc`,
 `averagePrecision`, `logLoss`, `brier`), for two classes
 `positiveClass` and, for a classifier, `classes`, the per-class values as `getModel` gives them) and, after a search,
-`search`: `mode` (`tune`), `metric`, `budgetSeconds`, `seed`, `trials`, `completed`, `pruned`, `failed`, `elapsedMs`,
+`search`: `mode` (`tune`, or `best` with `auto`; `method` is then the chosen leader's), `metric`, `budgetSeconds` or
+`maxTrials` (the limit; a search continued in the view sums its runs'), `strategy` (`best`: `equal` or `halving`),
+`seed`, `trials`, `completed`, `pruned`, `failed`, `elapsedMs`,
 `stopped` (`budget`, `cancelled`, `exhausted`, `trials` or `failed`), `holdOut` (`rows`, `fraction`; absent below 500
 rows), `space` (`searched`: the dimensions searched, each `{name, type, low?, high?, log?, step?, choices?, simpler?}` (a categorical dimension has no bounds);
-`pinned`: the settings kept at their values, none from the API) and `leaders` (per method, its trial chosen by the one-standard-error rule: `method`, `hyperparameters`, `score`
-(the metric by the chosen validation on the search rows), `se`, `foldScores`, `trials`, `chosen`).
+`pinned`: the settings kept at their values, none from the API; Tune only), `methods` (`best` only: every method tried,
+in cost order, `{method, trials, outcome, note?, eliminatedRound?}` with `outcome` `complete`, `failed` (`note`: its
+first error), `abandoned` (only abandoned or pruned trials) or `unstarted`, and `eliminatedRound` the round of successive halving
+after which it dropped out, from 0, absent for a method tuned to the end or one that left otherwise, and under an
+equal split) and `leaders` (per method, its trial chosen by the one-standard-error rule: `method`, `hyperparameters`, `score`
+(the metric by the chosen validation on the search rows), `se`, `foldScores`, `trials`, `chosen`, marking the one
+trained: across methods the highest `score` − `se`, the lowest `score` + `se` for an error, a tie by the method name, capitals first).
 Nothing is added to the table. Every training that runs is recorded as a training run with the source `api`, saved or
 not, cancelled and failed ones too (after a search, the chosen settings' training, with `search`); a call refused for
 its inputs, whose data preparation fails or whose search completes no trial records nothing. The errors a call gets, for example:
@@ -678,14 +823,23 @@ its inputs, whose data preparation fails or whose search completes no trial reco
 * `The option 'scheme' needs kfold or holdout.`, `The option 'testFraction' needs a number from 0.05 to 0.5.`,
   `The option 'shuffle' needs true or false.`, `Training needs at least 10 rows; the table has 8.` (two rows per
   part, or two held out rows)
-* `The option 'search' needs an object with metric, budgetSeconds, maxTrials.`, `The search metric 'r3' is not one
-  of: r2, rmse, mae, balancedAccuracy, accuracy, f1, mcc, auc, logLoss, brier.`, `The search metric 'r2' does not
-  apply to a classification. Choose one of: balancedAccuracy, accuracy, f1, mcc, auc, logLoss, brier.`, `The option
-  'budgetSeconds' needs a
-  whole number of at least 1.`
+* `The option 'search' needs an object with metric, budgetSeconds, maxTrials, strategy, methods, topK.`, `The search
+  metric 'r3' is not one of: r2, rmse, mae, balancedAccuracy, accuracy, f1, mcc, auc, logLoss, brier.`, `The search
+  metric 'r2' does not apply to a classification. Choose one of: balancedAccuracy, accuracy, f1, mcc, auc, logLoss,
+  brier.`, `The option 'budgetSeconds' needs a whole number of at least 1.`, `The search options 'budgetSeconds' and
+  'maxTrials' cannot be combined: choose one limit.`
 * `Naive Bayes declares no search space, so it cannot be tuned.`, `No trial completed within the budget. Give the
   search more time.`, `No trial completed: <the first failed trial's error>` (for example `No trial completed: The
   metric AUC-ROC needs class probabilities; SVM gives none.`), `The search was cancelled before a trial completed.`
+* with `auto`: `The search option 'methods' needs a list of method names.`, `The option 'topK' needs a whole number of
+  at least 1.`, `The option 'missingValues' keep cannot be used with method auto. Use skip or impute.`, `The
+  hyperparameters cannot be given with method auto: every method starts from its defaults.`, `Linear Regression cannot
+  take part in the search: it cannot learn from this selection.` (`...: it runs on the server.` for a server method),
+  `<Method> gives no class probabilities, so Predict probability cannot be used with it.`, `SVM cannot take part in
+  the search: it gives no class probabilities, which AUC-ROC needs.`, `No method can take part in the search. Check
+  the features and the target.`, `The search option 'strategy' needs equal or halving.`, `At least one trial per
+  method: <N>.` (`equal` with fewer `maxTrials` than methods); with a method: `The search options 'strategy',
+  'methods' and 'topK' need method auto.`
 * `Predict probability needs a text or boolean target.`, `Chemprop gives no class probabilities, so Predict
   probability cannot be used with it.`, `Enter a number from 0 to 1.` (a two-class `threshold` outside 0..1)
 * `The option 'missingValues' needs skip, impute, keep (keep: only for a method that handles missing values).`,
@@ -817,7 +971,8 @@ model's commands, then come the panes:
   **Data storage** (`None`, `Reference` or `Copy`), **Data source** (with a reference: the file path, the query name
   or `a script`), **Data copy** (with a copy: the uploaded table, or `missing` when it is gone), **Last run** (the newest application, with `(failed)` or `(cancelled)` when it did not complete; `Never` before the
   first one), **Applications**, **Features**, **Target**, **Method**, **Task**, **Search** (for a model whose settings a
-  search chose: `Tune (Balanced accuracy, 1 minute, 120 trials)`), **Applicable to** (the open tables that fit), and
+  search chose: `Tune (Balanced accuracy, limit 1 min, 120 trials)`, with a trial limit `Find best model (Balanced
+  accuracy, limit 100 trials)`), **Applicable to** (the open tables that fit), and
   **Tags**, which you can edit right there
 * **Performance**: the metrics saved with the model (the **Metric / Train / Validation** grid of the training, with
   **Test** after a search that held rows out, a value below its threshold or far from the training one in red, as in
@@ -906,7 +1061,8 @@ view. Forge passes an empty cell only to a method that handles missing values (X
 Hist Gradient Boosting, CatBoost, Decision Tree, TabM): it gets the rows with gaps as they are, and **Missing values** is
 not shown for it. For every other method, **Missing values** skips or fills them first. Methods
 that run in the browser (all of EDA's) keep the training data there; a method that runs on the server (a Python or R
-script, a function marked `meta.mlserver: true`, or Chemprop) receives it. Chemprop and script
+script, a function marked `meta.mlserver: true`, or Chemprop) receives it, and takes no part in Find best model (see
+"Search"). Chemprop and script
 methods follow the same contract but were not available to test on this version's server. **Impute** uses the EDA package's `knnImpute` function; without it, **Missing values**
 offers **Skip rows** only. Imputing a large table takes a while.
 

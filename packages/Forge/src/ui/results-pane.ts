@@ -24,12 +24,20 @@ interface RowRecord {
   height: string;
 }
 
+/** A block under the rows: [block] in its box [root], which keeps the height the user dragged. */
+interface BottomRecord {
+  block: HTMLElement;
+  root: HTMLElement;
+  height: string;
+}
+
 /** The results of the Train view and the evaluation. Before a result: the **Performance** panel (its header, a hint)
  * and **Insights & Tips** under it. With a result: rows of panels in the platform's splitters (`results-layout.ts`),
  * the two panels among them (**Insights & Tips** never hidden); the metrics grid kept in place while the metric rows
  * stay; the viewers of `results-viewers.ts` over one frame of the user's columns and Forge's own (no copies), linked
  * to the table by the hovered row. A result of the same data keeps the viewers and refills the model's columns; a row
- * whose panels stay the same keeps the sizes the user gave it. */
+ * whose panels stay the same keeps the sizes the user gave it. The blocks given for the bottom (the Train view's Search
+ * and Runs) follow the rows in the same vertical splitter while they are shown, with or without a result. */
 export class ResultsPane {
   readonly root: HTMLElement;
   private readonly insightsList = ui.element('ul');
@@ -40,6 +48,9 @@ export class ResultsPane {
   private readonly hintHost: HTMLElement;
   private readonly rowsHost = ui.divV([], 'forge-results-rows');
   private rows: RowRecord[] = [];
+  private readonly bottom: BottomRecord[];
+  /** The boxes in the vertical splitter, in order. */
+  private sequence: HTMLElement[] = [];
   /** The panels of the mounted rows. */
   private mounted = new Set<PanelKey>();
   /** The splitters measure their boxes whenever their size changes, and a hidden view measures 0 px: the rows get back
@@ -57,8 +68,14 @@ export class ResultsPane {
   /** Counts the shows and hints: a show that a newer call outdated while `visualize` ran mounts nothing. */
   private version = 0;
 
-  /** [status] is shown next to the **Performance** title (the Train view's loader). */
-  constructor(status?: HTMLElement) {
+  /** [status] is shown next to the **Performance** title (the Train view's loader); [bottom] are the blocks under the
+   * rows with their initial heights in px, mounted while shown ({@link layout}). */
+  constructor(status?: HTMLElement, bottom: {block: HTMLElement; height: number}[] = []) {
+    this.bottom = bottom.map(({block, height}) => {
+      const root = ui.box(block);
+      root.style.height = `${height}px`;
+      return {block, root, height: root.style.height};
+    });
     const header = resultsTitle('metrics');
     header.classList.add('forge-results-header');
     if (status !== undefined)
@@ -68,6 +85,34 @@ export class ResultsPane {
     this.hintHost = ui.divV([this.metricsPanel, this.insightsPanel]);
     this.root = ui.divV([this.hintHost, this.rowsHost], 'forge-results');
     this.fillInsights();
+  }
+
+  /** Mounts the rows and the shown bottom blocks in one vertical splitter, rebuilt only when the sequence of boxes
+   * changes; a hidden block leaves it. */
+  layout(): void {
+    const shown = this.bottom.filter((b) => b.block.style.display !== 'none');
+    const roots = [...this.rows.map((r) => r.root), ...shown.map((b) => b.root)];
+    if (roots.length === this.sequence.length && roots.every((root, i) => root === this.sequence[i]))
+      return;
+    this.observe();
+    this.sequence = roots;
+    // Every box out of the old splitter before it is disposed: a hidden block is kept for later.
+    for (const b of this.bottom)
+      b.root.remove();
+    // A lone box in a vertical splitter would get half the height: a single box is mounted as is.
+    const host = roots.length > 1 ? ui.splitV(roots, null, true) : roots[0];
+    // A lone row may sit in the old splitter, which emptying disposes.
+    host?.remove();
+    ui.empty(this.rowsHost);
+    if (host !== undefined)
+      this.rowsHost.append(host);
+  }
+
+  /** The size keeper watches the rows, their slots and the bottom boxes. */
+  private observe(): void {
+    this.sizeKeeper.disconnect();
+    for (const element of [...this.rows.flatMap((row) => [row.root, ...row.slots]), ...this.bottom.map((b) => b.root)])
+      this.sizeKeeper.observe(element, {attributes: true, attributeFilter: ['style']});
   }
 
   /** The shared frames of the shown result: the viewers' and the wrong predictions'. */
@@ -191,13 +236,14 @@ export class ResultsPane {
     this.metricsTable = undefined;
   }
 
-  /** The two kept panels back under the hint, the rows removed (`ui.empty` detaches their viewers) and no longer
-   * observed, the frames given back. */
+  /** The two kept panels back under the hint, the rows removed (`ui.empty` detaches their viewers; the bottom blocks
+   * stay) and no longer observed, the frames given back. */
   private unmount(): void {
     this.hintHost.append(this.metricsPanel, this.insightsPanel);
-    this.sizeKeeper.disconnect();
-    ui.empty(this.rowsHost);
+    for (const row of this.rows)
+      ui.empty(row.root);
     this.rows = [];
+    this.layout();
     this.mounted = new Set();
     if (this.shown !== undefined)
       releaseShown(this.shown);
@@ -238,57 +284,57 @@ export class ResultsPane {
         return reused;
       }
       // The splitter's dividers bind the slots themselves, so a reused slot takes new content.
-      const slots = contents.map((content) => ui.box(content));
-      for (const [i, slot] of slots.entries())
-        slot.style.width = `${weights[i] * SLOT_WIDTH}px`;
-      const root = ui.splitH(slots, null, true);
-      root.classList.add('forge-results-row');
+      const {root, slots} = ResultsPane.weightedRow(contents, weights);
       root.style.height = `${height}px`;
-      const row = {signature, root, slots, weights, height: root.style.height};
-      ResultsPane.grow(row);
-      return row;
+      return {signature, root, slots, weights, height: root.style.height};
     });
     for (const row of this.rows.filter((r) => !kept.has(r))) {
       for (const slot of row.slots)
         this.emptySlot(slot, wanted);
       ui.empty(row.root);
     }
-    const roots = rows.map((r) => r.root);
-    const isSameSequence = roots.length === this.rows.length && roots.every((root, i) => root === this.rows[i].root);
     this.rows = rows;
     this.mounted = new Set(layout.flatMap((row) => row.panels));
-    this.sizeKeeper.disconnect();
-    for (const row of rows) {
-      for (const element of [row.root, ...row.slots])
-        this.sizeKeeper.observe(element, {attributes: true, attributeFilter: ['style']});
-    }
-    if (isSameSequence)
-      return;
-    // A lone box in a vertical splitter would get half the height: a single row is mounted as is.
-    const host = roots.length > 1 ? ui.splitV(roots, null, true) : roots[0];
-    host.remove();
-    ui.empty(this.rowsHost);
-    this.rowsHost.append(host);
+    this.layout();
   }
 
-  /** While the rows are shown their heights are noted (a drag, a resize); while hidden, a changed height goes back. A
-   * row whose slots all lost their growth (measured while hidden) gets its weights back. */
+  /** While the rows and the bottom blocks are shown their heights are noted (a drag, a resize); while hidden, a changed
+   * height goes back. A row whose slots all lost their growth (measured while hidden) gets its weights back. */
   private keepSizes(): void {
     const isShown = this.rowsHost.getClientRects().length > 0;
-    for (const row of this.rows) {
+    for (const box of [...this.rows, ...this.bottom]) {
       if (isShown)
-        row.height = row.root.style.height;
-      else if (row.root.style.height !== row.height)
-        row.root.style.height = row.height;
+        box.height = box.root.style.height;
+      else if (box.root.style.height !== box.height)
+        box.root.style.height = box.height;
+    }
+    for (const row of this.rows) {
       if (row.slots.every((slot) => !(Number(slot.style.flexGrow) > 0)))
         ResultsPane.grow(row);
     }
   }
 
   /** The slots of [row] share it in the ratio of its weights. */
-  private static grow({slots, weights}: RowRecord): void {
+  private static grow({slots, weights}: Pick<RowRecord, 'slots' | 'weights'>): void {
     for (const [i, slot] of slots.entries())
       slot.style.flexGrow = `${weights[i]}`;
+  }
+
+  /** A row of results (`forge-results-row`): a horizontal splitter of [contents], each in its box (of [boxClass]), the
+   * boxes sharing the width in the ratio of [weights]: preset widths, from which the splitter derives their growth,
+   * then the growth set after it. */
+  static weightedRow(contents: HTMLElement[], weights: number[], boxClass?: string):
+    {root: HTMLElement; slots: HTMLElement[]} {
+    const slots = contents.map((content, i) => {
+      const slot = ui.box(null, boxClass);
+      slot.append(content);
+      slot.style.width = `${weights[i] * SLOT_WIDTH}px`;
+      return slot;
+    });
+    const root = ui.splitH(slots, null, true);
+    root.classList.add('forge-results-row');
+    ResultsPane.grow({slots, weights});
+    return {root, slots};
   }
 
   /** The method's own views; a failure is reported and gives none. */
