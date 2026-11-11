@@ -317,18 +317,23 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // the animals per group and the end of study are computed, or set from their cards (a click asks the value); set,
   // the card says so and a click offers to change it or go back to the computed one (the function's `n` and
   // `lastDay`, not in the form)
-  // (checked again here, whatever called it, since it is the number of animals a study uses)
-  const setParam = (name: string, raw: number | null, min: number, max: number) => {
-    const r = fixedValue(raw, min, max);
-    if ('error' in r)
-      throw new Error(r.error);
+  const apply = (name: string, value: number | null) => {
     const field = form.getInput(name);
     if (field)
-      field.value = r.value;
-    call.setParamValue(name, r.value);
+      field.value = value;
+    call.setParamValue(name, value);
     // one plan, now, and only with every field of the form valid (the deferred run's own gate)
     auto.changed(0);
   };
+  // a value (checked again here, whatever called it, since it is the number of animals a study uses; empty is an
+  // error here, going back is back's)
+  const setParam = (name: string, raw: number, min: number, max: number) => {
+    const r = fixedValue(raw, min, max);
+    if ('error' in r || r.value === null)
+      throw new Error('error' in r ? r.error : 'Enter a number');
+    apply(name, r.value);
+  };
+  const back = (name: string) => apply(name, null);
   const settable = (el: HTMLElement, name: 'n' | 'lastDay', set: () => boolean, ask: {title: string, label: string,
     now: () => number | undefined, min: number, max: number, back: string}) => {
     // a button for the keyboard too
@@ -351,7 +356,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         return;
       if (!set())
         return open();
-      Menu.popup().item('Change…', open).item(ask.back, () => setParam(name, null, ask.min, ask.max))
+      Menu.popup().item('Change…', open).item(ask.back, () => back(name))
         .show({anchor});
     };
     el.addEventListener('click', () => act(el));
@@ -410,7 +415,10 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // how the calendar is edited, said while the pointer is on it, the first three plans the user opens: its line
   // keeps its place hidden, so nothing under the pointer moves when it shows
   const HINT_KEY = 'calendarHintViews';
-  const views = Number(grok.userSettings.getValue('PmxStudio', HINT_KEY));
+  let views = 0;
+  try {
+    views = Number(grok.userSettings.getValue('PmxStudio', HINT_KEY));
+  } catch {} // the settings unreadable: the hint, as for a new user
   const hintViews = Number.isFinite(views) && views > 0 ? views : 0;
   const calendarHint = div(['Click a weekday to measure on it, or skip it; double-click a day to note what ' +
     'happened, right-click it for more'], 'ui-label-details pmx-context-hint');
@@ -418,8 +426,10 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   if (hintViews >= 3)
     calendarHint.style.display = 'none';
   else {
-    grok.userSettings.add('PmxStudio', HINT_KEY, String(hintViews + 1));
-    void grok.userSettings.flush();
+    try {
+      grok.userSettings.add('PmxStudio', HINT_KEY, String(hintViews + 1));
+      void grok.userSettings.flush();
+    } catch {} // not counted: the hint once more next time
   }
   calendarBox.addEventListener('mouseenter', () => calendarHint.style.visibility = 'visible');
   calendarBox.addEventListener('mouseleave', () => calendarHint.style.visibility = 'hidden');

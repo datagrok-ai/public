@@ -23,7 +23,9 @@ category('Plan', () => {
     const v = (raw: unknown) => JSON.stringify(fixedValue(raw, 2, 100));
     expect(v(12), JSON.stringify({value: 12}));
     expect(v(null), JSON.stringify({value: null}), 'back to the computed value: empty, not 0');
-    for (const bad of [7.5, 1, 1000, NaN, 0, 'abc'])
+    expect(v(''), JSON.stringify({value: null}));
+    expect(v(undefined), JSON.stringify({value: null}));
+    for (const bad of [7.5, 1, 1000, NaN, 0, -0, Infinity, -Infinity, 'abc'])
       expect('error' in fixedValue(bad, 2, 100), true, `${bad} accepted`);
   });
 

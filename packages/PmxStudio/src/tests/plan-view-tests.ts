@@ -9,7 +9,12 @@ import {emptyMeta} from '../study-meta';
 // animals a study uses, so these tests click the cards and read the call the next plan takes
 const arms = [{name: 'Cpd-A', therapy: 'small_molecule', metric: 'TGI', effect: 60}];
 
+// the calendar hint counts the plans a user opens: these tests leave the tester's count as it was
+const HINT = 'calendarHintViews';
+let hintCount: string | null | undefined;
+
 async function opened(inputs: {[param: string]: unknown}): Promise<DG.ViewBase> {
+  hintCount = grok.userSettings.getValue('PmxStudio', HINT);
   const view = await planView({name: 'Card test', study: emptyMeta(),
     inputs: {line: 'MC38', endpoint: 1000, arms, power: 80, correction: 'holm', ...inputs}});
   grok.shell.addView(view);
@@ -44,6 +49,21 @@ async function backOn(view: DG.ViewBase, name: string, item: string): Promise<vo
   [...document.querySelectorAll<HTMLElement>('.u2-menu-item')].find((e) => e.textContent!.includes(item))!.click();
 }
 
+/** Closes what a test left open (a dialog, a menu, when it failed half way) and the view; the hint count back. */
+function closed(view: DG.ViewBase): void {
+  document.querySelectorAll<HTMLButtonElement>('.u2-dialog-buttons button').forEach((b) => {
+    if (b.textContent!.trim().toLowerCase() === 'cancel')
+      b.click();
+  });
+  document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}));
+  view.close();
+  if (hintCount)
+    grok.userSettings.add('PmxStudio', HINT, hintCount);
+  else
+    grok.userSettings.delete('PmxStudio', HINT);
+  void grok.userSettings.flush();
+}
+
 category('Plan view', () => {
   test('the animals per group and the end of study, set from their cards and back to the computed ones', async () => {
     const view = await opened({});
@@ -65,7 +85,7 @@ category('Plan view', () => {
       await awaitCheck(() => !label(view, 'End of study'), 'the end card still says set', 60000);
       expect(param(view, 'lastDay') == null, true, `lastDay is ${param(view, 'lastDay')}`);
     } finally {
-      view.close();
+      closed(view);
     }
   }, {timeout: 240000});
 
@@ -76,7 +96,7 @@ category('Plan view', () => {
       expect(param(view, 'n'), 6);
       expect(param(view, 'lastDay'), 18);
     } finally {
-      view.close();
+      closed(view);
     }
   }, {timeout: 120000});
 });
