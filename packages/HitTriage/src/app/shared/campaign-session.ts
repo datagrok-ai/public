@@ -442,8 +442,7 @@ export function openCampaignSession(app: HitDesignApp, view: DG.TableView,
       host.task(async (t) => {
         try {
           const known = lastModified;
-          const time = (await api.queries.getLastModified(app.appName, campaignId))
-            ?.col('updated_at')?.getString(0) ?? null;
+          const time = await lastSaved(campaignId);
           // a save of this session that ended meanwhile told a later time
           if (lastModified === known)
             lastModified = time;
@@ -455,6 +454,12 @@ export function openCampaignSession(app: HitDesignApp, view: DG.TableView,
       });
     }
 
+    /** The time of the campaign's last save in the save log, null while it has none. */
+    async function lastSaved(campaignId: string): Promise<string | null> {
+      const df = await api.queries.getLastModified(app.appName, campaignId);
+      return df.rowCount > 0 ? df.col('updated_at')?.getString(0) ?? null : null;
+    }
+
     async function checkForChanges(): Promise<void> {
       if (checking || needsRefresh.peek() || !signals.isCurrent.peek() || app.isSaving || app.joining > 0 ||
         !app.campaignId)
@@ -462,7 +467,7 @@ export function openCampaignSession(app: HitDesignApp, view: DG.TableView,
       checking = true;
       try {
         const known = lastModified;
-        const time = (await api.queries.getLastModified(app.appName, app.campaignId))?.col('updated_at')?.getString(0);
+        const time = await lastSaved(app.campaignId);
         // a save of this session that started or ended meanwhile logs its own time
         if (time && time !== known && lastModified === known && !app.isSaving && !host.scope.isDisposed) {
           lastModified = time;
