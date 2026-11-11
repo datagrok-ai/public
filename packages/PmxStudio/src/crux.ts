@@ -14,14 +14,63 @@ export interface CruxResult {
   named?: {[name: string]: any};
 }
 
-interface CruxModules {
+export interface CruxModules {
   call(name: string, table: {[col: string]: any}, params?: object): Promise<CruxResult>;
+  /** the modules loaded so far, by name; `load` loads one without calling it; `terminate` stops their workers */
+  loaded(): string[];
+  load(module: string): Promise<void>;
+  terminate(): Promise<void>;
 }
 
-/** Sets of workers, opened as calls overlap: a set's module runs one call at a time, and every call is seeded, so
- *  which set runs it changes nothing. Each set costs its modules' memory, hence the cap. */
-const pool: {modules: Promise<CruxModules>, busy: number}[] = [];
 export const MAX_SETS = Math.max(1, Math.min(15, (navigator.hardwareConcurrency ?? 2) - 1));
+/** How long the engine stays idle before letting its sets of workers go. */
+export const IDLE_MS = 30000;
+
+/** Sets of workers, opened as calls overlap: a set's module runs one call at a time, and every call is seeded, so
+ *  which set runs it changes nothing. A module's wasm memory never shrinks (it keeps what its largest call took),
+ *  so after `idleMs` with no call every set is stopped and one new one is opened, its modules loaded again: the
+ *  next call starts warm, the memory of the calls before is given back. */
+export function cruxPool(open: () => Promise<CruxModules>, maxSets: number, idleMs: number) {
+  const pool: {modules: Promise<CruxModules>, busy: number}[] = [];
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const fresh = (modules: string[]) => ({busy: 0, modules: open().then(async (m) => {
+    await Promise.all(modules.map((x) => m.load(x).catch(() => {}))); // (a module that fails loads on its call)
+    return m;
+  })});
+  const rest = async () => {
+    if (pool.some((s) => s.busy > 0))
+      return;
+    const modules = (await Promise.all(pool.map((s) => s.modules.then((m) => m.loaded(), () => []))));
+    if (pool.some((s) => s.busy > 0)) // (a call came in meanwhile: the next pause)
+      return;
+    const old = pool.splice(0, pool.length, fresh([...new Set(modules.flat())]));
+    old.forEach((s) => s.modules.then((m) => m.terminate(), () => {}));
+  };
+  return {
+    sets: () => pool.length,
+    async call(name: string, table: {[col: string]: any}, params: object = {}): Promise<CruxResult> {
+      clearTimeout(timer);
+      let set = pool.find((s) => s.busy === 0);
+      if (!set && pool.length < maxSets) {
+        const opened = fresh([]);
+        pool.push(opened);
+        opened.modules.catch(() => pool.splice(pool.indexOf(opened), 1)); // the next call retries
+        set = opened;
+      }
+      set ??= pool.reduce((a, b) => b.busy < a.busy ? b : a);
+      set.busy++;
+      try {
+        return await (await set.modules).call(name, table, params);
+      } finally {
+        set.busy--;
+        if (pool.every((s) => s.busy === 0)) {
+          clearTimeout(timer);
+          timer = setTimeout(() => void rest(), idleMs);
+        }
+      }
+    },
+  };
+}
 
 let first: Promise<CruxModules> | null = null;
 
@@ -63,20 +112,8 @@ export const rows = (t: {rows: number, columns: any[]}) => Array.from({length: t
 /** A result's named output table as row objects. */
 export const named = (r: CruxResult, name: string) => rows(r.named![name].table);
 
+const engine = cruxPool(load, MAX_SETS, IDLE_MS);
+
 /** Calls the crux-fn `name` (e.g. 'stats.map_prior') on `table` (column name -> values) with `params`. */
-export async function crux(name: string, table: {[col: string]: any}, params: object = {}): Promise<CruxResult> {
-  let set = pool.find((s) => s.busy === 0);
-  if (!set && pool.length < MAX_SETS) {
-    const opened = {modules: load(), busy: 0};
-    pool.push(opened);
-    opened.modules.catch(() => pool.splice(pool.indexOf(opened), 1)); // the next call retries
-    set = opened;
-  }
-  set ??= pool.reduce((a, b) => b.busy < a.busy ? b : a);
-  set.busy++;
-  try {
-    return await (await set.modules).call(name, table, params);
-  } finally {
-    set.busy--;
-  }
-}
+export const crux = (name: string, table: {[col: string]: any}, params: object = {}): Promise<CruxResult> =>
+  engine.call(name, table, params);
