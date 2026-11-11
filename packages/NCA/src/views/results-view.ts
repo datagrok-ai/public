@@ -3075,7 +3075,8 @@ type FixedGridSpec = Readonly<Record<string,
 const DOSE_PROP_FIXED: FixedGridSpec = {
   ROUTE: {header: 'Route', width: 72, desc: 'Route of administration.'},
   SEX: {header: 'Sex', width: 44, desc: 'Sex stratum.'},
-  PARAMETER: {header: 'Parameter', width: 84, desc: 'Exposure metric: AUC or Cmax.'},
+  PARAMETER: {header: 'Parameter', width: 84,
+    desc: 'Exposure metric: AUC or Cmax. Per study day, the AUC basis itself (AUC∞, AUC0–τ, AUClast).'},
   BASIS: {header: 'AUC basis', width: 70,
     desc: 'AUC integration basis (AUCinf default, AUClast fallback). Blank for Cmax.'},
   BETA: {header: 'β', width: 52, format: '0.000',
@@ -3104,12 +3105,55 @@ const DOSE_PROP_FIXED: FixedGridSpec = {
   MIN_N_PER_GROUP: {header: 'Min n/group', width: 92, format: '0',
     desc: 'Smallest animals/group for a conclusive verdict at this IIV. ' +
       'Blank if already conclusive or infeasible (> 50/group).'},
+  // Per-occasion mode (tk-study-day-stratification F2 / F4) — present only on a repeat-dose frame.
+  OCCASION: {header: 'Day', width: 52,
+    desc: 'Study day (occasion). Single-dose and repeated-dose exposure are analysed separately ' +
+      '(ICH S3A); each day has its own fit.'},
+  N_BY_DOSE: {header: 'N per dose', width: 80,
+    desc: 'Animals in the fit per dose level, lowest dose first.'},
+  NOTE: {header: 'Note', width: 260,
+    desc: 'Basis fallback, a verdict that differs on the other AUC basis, or attrition. ' +
+      'Parameter is the AUC basis: AUC∞ carries the Day-1 verdict only when it is valid for every animal ' +
+      '(%AUCextrap ≤ 20 %, λz within τ); AUC0–τ carries it otherwise and on later days. A row with an empty ' +
+      'Verdict is shown beside the verdict row (β and CI only).'},
+};
+
+/** Δβ across occasions (the "Dose Proportionality over time" tab, F3a). No colour, flag or
+ *  p-value: a CI that excludes 0 is not shown as a cue until its false-alarm rate is known. */
+const DOSE_PROP_DELTA_FIXED: FixedGridSpec = {
+  ROUTE: {header: 'Route', width: 72, desc: 'Route of administration.'},
+  SEX: {header: 'Sex', width: 44, desc: 'Sex stratum.'},
+  OCCASION_FIRST: {header: 'First day', width: 72, desc: 'The reference occasion.'},
+  OCCASION_LATER: {header: 'Later day', width: 72, desc: 'The occasion compared with the first one.'},
+  PARAMETER: {header: 'Parameter', width: 84,
+    desc: 'The ONE AUC basis both slopes use (AUC0–τ; AUClast only when both days have equal sampling spans).'},
+  METHOD: {header: 'Method', width: 76,
+    desc: 'paired: regression of the per-animal log-AUC difference on log dose (exact CI, df = paired − 2). ' +
+      'two-fits: no animal key — two independent fits, Welch–Satterthwaite df (conservative). ' +
+      'suppressed: no common AUC basis.'},
+  DELTA_BETA: {header: 'Δβ', width: 60, format: '0.000',
+    desc: 'β(later) − β(first). A change of the power slope between occasions can come from saturation of ' +
+      'clearance or absorption, enzyme induction or inhibition, or accumulation (ICH S3A Note 3).'},
+  CI_LOW: {header: '90% CI low', width: 82, format: '0.000', desc: 'Lower bound of the 90% CI on Δβ.'},
+  CI_HIGH: {header: '90% CI high', width: 86, format: '0.000', desc: 'Upper bound of the 90% CI on Δβ.'},
+  DF: {header: 'df', width: 52, format: '0.0', desc: 'Degrees of freedom of the CI.'},
+  N_FIRST: {header: 'N first', width: 56, format: '0', desc: 'Animals with the AUC on the first day.'},
+  N_LATER: {header: 'N later', width: 56, format: '0', desc: 'Animals with the AUC on the later day.'},
+  N_PAIRED: {header: 'N paired', width: 64, format: '0', desc: 'Animals observed on both days (paired method).'},
+  N_BY_DOSE_FIRST: {header: 'N per dose (first)', width: 96,
+    desc: 'Profiles per dose group on the first day, ascending dose.'},
+  N_BY_DOSE_LATER: {header: 'N per dose (later)', width: 96,
+    desc: 'Profiles per dose group on the later day, ascending dose.'},
+  NOTE: {header: 'Note', width: 260, desc: 'Attrition, basis and method notes.'},
 };
 
 /** Per-subject dose-normalized exposure (the "Dose-Normalized" tab). */
 const DOSE_PROP_DN_FIXED: FixedGridSpec = {
   ROUTE: {header: 'Route', width: 72, desc: 'Route of administration.'},
   SEX: {header: 'Sex', width: 44, desc: 'Sex stratum.'},
+  OCCASION: {header: 'Day', width: 52, desc: 'Study day (occasion).'},
+  SUBJECT: {header: 'Subject', width: 84, desc: 'The profile this row comes from.'},
+  ANIMAL: {header: 'Animal', width: 72, desc: 'The animal the profile belongs to.'},
   DOSE: {header: 'Dose', width: 64, format: '0.###', desc: 'Dose level (per subject), in the mapped units.'},
   DN_AUC: {header: 'AUC/Dose', width: 96, format: '0.000',
     desc: 'Dose-normalized AUC. Flat across doses ⇒ dose-proportional.'},
@@ -3197,6 +3241,11 @@ export function configureDoseProportionalityGrid(grid: DG.Grid): void {
 /** Friendly headers + tooltips for the "Dose-Normalized" exposure grid. */
 export function configureDoseProportionalityDnGrid(grid: DG.Grid): void {
   applyFixedGridSpec(grid, DOSE_PROP_DN_FIXED);
+}
+
+/** Friendly headers + tooltips for the "Dose Proportionality over time" (Δβ) grid. */
+export function configureDoseProportionalityDeltaGrid(grid: DG.Grid): void {
+  applyFixedGridSpec(grid, DOSE_PROP_DELTA_FIXED);
 }
 
 // ── UC-04 sparse panels — friendly headers + tooltips ──────────────────────

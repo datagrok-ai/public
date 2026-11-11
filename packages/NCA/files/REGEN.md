@@ -248,3 +248,75 @@ on the shipped engine. It checks:
 The seed types the `SMILES` column as a molecule itself, so the demo installs without the Chem
 package. Chem's detector types a SMILES column asynchronously, so a detect-then-check guard would
 refuse every study.
+
+## Occasion fixtures (`occasion/`)
+
+Test fixtures for study-day (occasion) stratification: occasion and animal resolution, design
+classification, per-occasion dose proportionality, Δβ and the attrition note, the AUC0–τ window on a
+cumulative time axis. **All data are simulated** with the demo-study model above (lead DGK-0007,
+rat, TK schedule, τ = 24 h, LLOQ 1 ng/mL, 3 animals / sex / dose group). They are not Hub demos; the
+demo studies and their seeds are unchanged.
+
+Both scripts are maintained outside this repository, in the PKNCA validation corpus:
+
+- `gen_occasion_fixtures.py` writes the inputs. It is deterministic (stdlib only, one fixed seed per
+  fixture family, `20261111`–`20261118`) and imports the model from the demo-study generator.
+- `demo_study4_tk28d_dose_proportionality.R` (PKNCA 0.12.1, the Datagrok-match options) writes the
+  references. It is the demo-study-4 per-occasion oracle, generalised with options for the occasion
+  column, the animal rule, the input format and the outputs. With no options it reproduces the
+  demo-study-4 references unchanged.
+
+| Fixture | Input | Design | References |
+|---|---|---|---|
+| (c) | `occasion_c_attrition.csv` | PO 10 / 30 / 100, Day 1 + Day 28; 2 M animals (10 and 100 mg/kg) have no Day 28. Subject `<animal>_D<day>` (rule iii) | per profile, DP per day, Δβ, cells |
+| (c′) | `occasion_c2_attrition_topdose.csv` | the same data; the 2 missing animals are both M 100 mg/kg | per profile, DP per day, Δβ, cells |
+| (d) | `occasion_d_repeated_subject.csv` | the same data, complete; `SubjectID` = animal on both days (rule ii), `StudyDay` column | per profile, DP per day, Δβ, cells |
+| (e) | `occasion_e_iv_day1_only.csv` | PO 10 / 30 / 100 on Day 1 + Day 28, and separate IV-bolus animals (1 mg/kg, `V…`) on Day 1 only | per profile (IV rows with `c0`), DP per day, Δβ, cells (PO only) |
+| (f) | `occasion_f_dose_escalation.csv` | PO 10 → 30 → 100 mg/kg in each animal on `StudyDay` 1 / 8 / 15 (single doses) | per profile, pooled DP |
+| (g) | `occasion_g_crossover_iv_po.csv` | IV / PO crossover, `Period` 1 / 2, 3 mg/kg both, alternating sequence; `SubjectID` repeats | per profile |
+| (h) | `occasion_h_tad.csv` | PO 10 / 30 / 100, Day 1 + Day 28, time after dose | per profile, DP per day, Δβ, cells |
+| (h) | `occasion_h_cumulative_nonmem.csv` | the same concentrations in NONMEM event format: `TIME` cumulative (Day 28 samples at 648 + t h); dose records `EVID = 1`, `AMT` in mg, `II = 24` (Day 1: `ADDL = 26`; Day 28: an explicit record at 648) | per profile (with `dose_time`), DP per day, Δβ, cells |
+| (i) | `occasion_i_crossover_po_po.csv` | PO / PO, `Period` 1 / 2, same route and same dose (10 mg/kg): the design must stay `unknown` | per profile |
+| (j) | `occasion_j_escalation_crossover.csv` | PO, `Period` 1 / 2 / 3, dose 10 / 30 / 100 rotated per animal | per profile, pooled DP |
+| (k) | `occasion_k_daily_profile.csv` | ONE profile per animal: PO 30 mg/kg once daily on days 1–7, one sample per day at `Time_hr` = 24 (Day − 1) + 23; `Day` varies inside the profile and must not become an occasion | none (structure only) |
+
+Reference files are `<input stem>_per_profile.csv`, `_dp_per_day.csv`, `_dp_pooled.csv`,
+`_delta_beta.csv` and `_cell_summary.csv`, with PKNCA dot-named columns as in the other CSV
+references. Profiles are keyed on (subject, occasion), and the occasion column keeps its source name.
+
+- **Per profile:** `cmax`, `tmax`, `tlast`, `auclast`, `aucinf.obs`, `aucpext.obs`, `lambda.z`,
+  `adj.r.squared`, `lambda.z.n.points`, …, and `auc0tau` (PKNCA `aucint.last` on [t_dose, t_dose + 24]),
+  plus the Day-1 AUC∞ validity flags `lz_within_tau` and `aucinf_valid`.
+- **IV bolus:** PKNCA 0.12.1 has no back-extrapolating start imputation, so the script runs twice.
+  The second pass inserts PKNCA's own `c0` at the dose time (excluded from λz), and the IV AUCs
+  come from that pass. λz, Cmax and Tmax are the observed-data values; the script stops if the
+  inserted point moves λz.
+- **DP:** Smith power model per (Sex, occasion, basis), or pooled across occasions for (f) and (j),
+  with the label `within-animal dependence not modelled; CI anti-conservative`. Intravascular
+  profiles are left out.
+- **Δβ:** each later occasion against the first, on AUC0–τ. The file has the paired fit, the
+  `nlme` cross-check and the two-fit Welch version. The attrition columns are `n_by_dose_first`,
+  `n_by_dose_later`, `n_by_dose_paired` and `dropped_by_dose`: (c) drops `1/0/1` (spread) and (c′)
+  drops `0/0/2` (concentrated), both in M.
+- **(h) twin check (measured):** the two (h) files give identical `cmax`, `auclast`, `aucinf.obs`,
+  `aucpext.obs`, `lambda.z`, `adj.r.squared`, `lambda.z.n.points` and `auc0tau` for all 36 profiles.
+  `tmax` and `tlast` differ by exactly the dose time.
+
+Regenerate from the corpus `scripts/` directory, then copy every `occasion_*` input and reference
+into `packages/NCA/files/occasion/`:
+
+```bash
+python -I gen_occasion_fixtures.py          # writes ../inputs/occasion_*.csv
+R="Rscript demo_study4_tk28d_dose_proportionality.R"; C="--per-profile-suffix=_per_profile --exclude="
+run() { n=$1; shift; $R ../inputs/occasion_$n.csv ../references --prefix=occasion_$n $C "$@"; }
+run c_attrition
+run c2_attrition_topdose
+run d_repeated_subject --animal=subject
+run e_iv_day1_only
+run h_tad
+run h_cumulative_nonmem --format=nonmem
+run f_dose_escalation --dp=pooled --delta-beta=no --cells=no
+run g_crossover_iv_po --occasion=Period --animal=subject --dp=none --delta-beta=no --cells=no
+run i_crossover_po_po --occasion=Period --animal=subject --dp=none --delta-beta=no --cells=no
+run j_escalation_crossover --occasion=Period --animal=subject --dp=pooled --delta-beta=no --cells=no
+```

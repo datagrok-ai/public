@@ -88,10 +88,12 @@ import {
   toPlatformNull, log10OrNull, finiteMinMax, numAt, f64Column,
   formatOverrideTimestamp, AuditLog, countDoseClusters,
   findColByPattern, computeSparseForRecipe, sparseCompositeUnits, sparseDoseSource, groupByCandidates,
+  detectOccasionColumn, resolveOccasion, profileRowsOf, occasionNotices, appendAucTauColumn, AUC_TAU_COL,
+  isOccasionName, OCCASION_DESIGNS,
 } from '../adapter';
 import type {
   RouteColumnResult, BioavailabilityResult, ProfileIndex, AccumulationResult,
-  DoseProportionalityResult, SparseNcaResult, AucBasis,
+  DoseProportionalityResult, SparseNcaResult, AucBasis, OccasionResolution, DerivedChoices, OccasionDesign,
   EventDrivenDetection, EventContract, ParameterWarning, SexCode, AcceptanceThresholds,
   ObservationsCtx, SparseComputeMapping,
 } from '../adapter';
@@ -108,7 +110,7 @@ import {
   buildHeaderTooltips, buildAcceptanceTooltipSpec, paramValueTooltipSpec,
   RESULTS_EXTENDED_TAG,
   configureBioavailabilityGrid,
-  configureDoseProportionalityGrid, configureDoseProportionalityDnGrid,
+  configureDoseProportionalityGrid, configureDoseProportionalityDnGrid, configureDoseProportionalityDeltaGrid,
   configureSparseNcaGrid, configureSparseCompositeGrid,
   PIPELINE_COL, writePipelineColumns, pipelineReasonsLine,
   REASON_PILLS_TAG, applySparseReasonPills,
@@ -900,6 +902,8 @@ const DP_GRID_TAG = 'ncaDosePropGrid';
 const DP_NODE_TAG = 'ncaDosePropNode';
 const DPDN_GRID_TAG = 'ncaDosePropDnGrid';
 const DPDN_NODE_TAG = 'ncaDosePropDnNode';
+const DPDB_GRID_TAG = 'ncaDosePropDeltaGrid';
+const DPDB_NODE_TAG = 'ncaDosePropDeltaNode';
 /** `view.temp` keys for the sparse / destructive-sampling panels (UC-04). The
  *  honest-uncertainty parameter grid, the composite-profile grid, and the VR-07
  *  composite scatter (raw individuals + mean overlay). */
@@ -1522,6 +1526,12 @@ export function mountMappingPane(
   // (fired by setting `sexColInput.value`) pre-fills each per-value input from the
   // recipe instead of the name heuristic. Null in the normal (non-replay) path.
   let pendingSexMap: Readonly<Record<string, string>> | null = null;
+  // tk-study-day-stratification: the analyst's occasion / animal / design / τ choices for the
+  // derived analyses (recipe `derived`, outside the Setup fingerprint). Empty = automatic.
+  let derivedChoices: DerivedChoices = {};
+  // The last Compute's occasion resolution + carried columns — the Settings pickers' options.
+  let lastOcc: OccasionCtx | null = null;
+  let lastCarried: string[] = [];
   // Last successful compute's per-profile results — kept so "Save to project" can
   // build the summary cache without re-running the math (thesis #1). Null until
   // the first successful Compute.
@@ -1600,6 +1610,13 @@ export function mountMappingPane(
       'sampling topology.',
     def: 'Subject column',
   }));
+  // tk-study-day-stratification F1b: in sparse mode the animal IS the sparse `Animal ID` (one
+  // role, one picker) — used as rule (i) when the Settings Animal picker is left on auto.
+  const occasionChoices = (): DerivedChoices => {
+    const sparseAnimal = (sparseToggleInput.value ?? false) ? animalIdColInput.value?.name : undefined;
+    return derivedChoices.animalCol === undefined && sparseAnimal !== undefined ?
+      {...derivedChoices, animalCol: sparseAnimal} : derivedChoices;
+  };
   // Declared sampling topology. `(auto)` (default) keeps today's behaviour: the
   // topology is derived from the data (and cross-checked against a detected
   // SamplingType column). A non-auto choice DECLARES the topology study-wide; it
@@ -2375,6 +2392,9 @@ export function mountMappingPane(
       // R_acc rides the recipe as its own field (NOT part of NcaRules — SAP/presentation,
       // thesis #1) so save/load locks the acceptance threshold with the analysis (§7).
       acceptanceRSquared: adjRSqAcceptanceInput.value ?? DEFAULT_ACCEPTANCE_RSQUARED,
+      // tk-study-day-stratification: emitted only when the analyst picked something, so an
+      // untouched analysis keeps its recipe hash (absent = automatic).
+      ...(Object.keys(derivedChoices).length > 0 ? {derived: derivedChoices} : {}),
     };
   };
 
@@ -2432,6 +2452,7 @@ export function mountMappingPane(
     // R_acc lives on the recipe itself (not in NcaRules). `?? default` keeps a pre-persistence
     // recipe (or a hand-edited file) loading at the nca-studio default rather than blank.
     adjRSqAcceptanceInput.value = recipe.acceptanceRSquared ?? DEFAULT_ACCEPTANCE_RSQUARED;
+    derivedChoices = recipe.derived ?? {};
     lambdaExcludeCmaxInput.value = r.lambdaZ.excludeCmax;
     if (r.lambdaZ.adjRSquaredFactor !== undefined && r.lambdaZ.adjRSquaredFactor !== null)
       lambdaAdjRSqFactorInput.value = r.lambdaZ.adjRSquaredFactor;
@@ -3133,8 +3154,21 @@ export function mountMappingPane(
         const designatedSex = getSexColumnName();
         const sexForDecorators =
         (designatedSex !== null && carried.includes(designatedSex)) ? designatedSex : null;
+        // tk-study-day-stratification F1: ONE occasion / animal / design resolution per Compute,
+        // read by every derived analysis below (DP, F%, sex comparison, accumulation) and by the
+        // study-grid cache. TLAST and AUC0–τ are written onto the results frame first so the
+        // reportable clones carry them.
+        const occ = buildOccasionCtx(view, outcome.results, carried, sexForDecorators, nmDoseName,
+          occasionChoices(), denseDf, profiles, nmTimeName, controller);
+        lastOcc = occ;
+        lastCarried = [...carried];
+        // Persisted-shape parity (EMS goldens): before this change the TK applier wrote TLAST onto
+        // the results frame itself on a repeat-dose frame with Dose + Sex; keep exactly that.
+        if (denseViable && occ.res.stratify && nmDoseName !== null && sexForDecorators !== null &&
+            nmTimeName !== null)
+          appendTlastColumn(outcome.results, denseDf, profiles, nmTimeName);
         if (denseViable)
-          applyBioavailability(view, reportable(), sexForDecorators, nmDoseName, hasRoute);
+          applyBioavailability(view, reportable(), sexForDecorators, nmDoseName, hasRoute, occ);
         else closeBioavailability(view);
         // Dose proportionality (Smith power model, FR-410..413 / UC-03). Docks
         // "Dose Proportionality" (per-Route×Sex β / 90% CI / verdict) + "Dose-
@@ -3143,8 +3177,8 @@ export function mountMappingPane(
         // Consumes the post-appendGroupingColumns frame (Sex / Dose / ROUTE). The
         // P4 charts (log-log scatter + CI band, dn bar) are a design-gated follow-up.
         if (denseViable) {
-          applyDoseProportionality(view, reportable(), sexForDecorators, nmDoseName, resultsNode,
-            nmComposite ? 'auclast' : 'aucinf');
+          applyDoseProportionality(view, occ.withTau(reportable()), sexForDecorators, nmDoseName, resultsNode,
+            nmComposite ? 'auclast' : 'aucinf', occ);
         } else closeDoseProportionality(view);
         let sparseResult: SparseNcaResult | null = null;
         // UC-04 sparse / destructive-sampling NCA. Docks "Sparse NCA" (closed-form
@@ -3167,8 +3201,8 @@ export function mountMappingPane(
         // FIRST-COMPUTE note for the null-vs-undefined guard fix).
         if (denseViable) {
           applyToxicokinetics(
-            view, reportable(), carried, sexForDecorators, nmDoseName,
-            denseDf, profiles, nmSubjectName, nmTimeName, resultsNode);
+            view, occ.withTau(reportable()), sexForDecorators, nmDoseName, nmSubjectName, nmTimeName, resultsNode,
+            occ);
         } else closeToxicokinetics(view);
         // Sparse-composite review units (UC-04, SF-3): their decisions reconcile against the
         // composite's own fingerprint (members + fit summary + verdict), once the panel computed.
@@ -3220,13 +3254,19 @@ export function mountMappingPane(
           applyGrouping(); // By-group aggregate — in-place swap + its own refreshNotices banner
           if (denseViable) {
           // Same exclusion feed as the Compute pass (AD-6): a decision made since then counts.
-            const rep = reportableFrameOf(view, r);
             const collected = collectNoticesFrom(view, () => {
-              applyBioavailability(view, rep, sexForDecorators, nmDoseName, hasRoute);
+              // Re-resolved here, not captured: a Settings pick (occasion / animal / design / τ)
+              // re-runs exactly this refresh (tk-study-day-stratification F2-D). Before the
+              // reportable clone, so the clone carries the re-written AUC_TAU.
+              const occNow = buildOccasionCtx(view, r, carried, sexForDecorators, nmDoseName,
+                occasionChoices(), denseDf, profiles, nmTimeName, controller);
+              lastOcc = occNow;
+              const rep = occNow.withTau(reportableFrameOf(view, r));
+              applyBioavailability(view, rep, sexForDecorators, nmDoseName, hasRoute, occNow);
               applyDoseProportionality(view, rep, sexForDecorators, nmDoseName, resultsNode,
-                nmComposite ? 'auclast' : 'aucinf');
-              applyToxicokinetics(view, rep, carried, sexForDecorators, nmDoseName,
-                denseDf, profiles, nmSubjectName, nmTimeName, resultsNode);
+                nmComposite ? 'auclast' : 'aucinf', occNow);
+              applyToxicokinetics(view, rep, sexForDecorators, nmDoseName, nmSubjectName, nmTimeName,
+                resultsNode, occNow);
             });
             refreshDependentPanelBanners(view, collected);
           }
@@ -4407,6 +4447,69 @@ export function mountMappingPane(
   // clicks can never stack a second dialog. No `await` here (nothing to load), so the
   // add-to-study `.catch` re-enable path is unnecessary — the flag is set immediately
   // before `.show()` and cleared on any dismissal (OK / Cancel / ×).
+  /** Apply a change of the derived choices: store, mark dirty, re-run the derived panels. */
+  const setDerived = (next: DerivedChoices): void => {
+    const clean: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(next)) if (v !== undefined) clean[k] = v;
+    derivedChoices = clean as DerivedChoices;
+    markAnalysisDirty(view);
+    ((view.temp as Record<string, unknown>)[AGG_REFRESH_TAG] as (() => void) | null | undefined)?.();
+  };
+
+  /**
+   * The Settings rows for the derived analyses (F2-D). Built fresh on each open from the last
+   * Compute's resolution: `Study day` (the occasion-named per-profile columns, or none), and — once
+   * a study day with ≥ 2 values resolves — `Animal`, `Design` (the proposal pre-selected with its
+   * evidence; picking a design confirms it) and `Dosing interval τ (h)`. Empty before the first
+   * Compute.
+   */
+  const occasionSettingsInputs = (): HTMLElement[] => {
+    if (lastOcc === null) return [];
+    const res = lastOcc.res;
+    const out: HTMLElement[] = [];
+    const candidates = lastCarried.filter((c) => isOccasionName(c));
+    if (candidates.length > 0) {
+      const NONE = '(none)';
+      const dayInput = ui.input.choice('Study day', {
+        items: [NONE, ...candidates], value: res.col ?? NONE, nullable: false,
+        tooltipText: 'The per-profile column that numbers the dosing occasion (Day 1, Day 28, period). ' +
+          'Dose proportionality, %F, the sex comparison and Day N / Day 1 are reported per study day. ' +
+          '(none) pools the days.',
+        onValueChanged: (v) => setDerived({...derivedChoices, occasionCol: v === NONE ? '' : (v ?? undefined)}),
+      });
+      out.push(dayInput.root);
+    }
+    if (res.col !== null && res.levels.length >= 2) {
+      const AUTO = '(auto)';
+      const ruleText: Record<string, string> = {'mapped': 'the picked column',
+        'repeated-subject': 'the subject id repeats across days', 'day-coded-id': 'the day suffix of the subject id'};
+      const animalInput = ui.input.choice('Animal', {
+        items: [AUTO, ...lastCarried.filter((c) => c !== res.col)], value: derivedChoices.animalCol ?? AUTO,
+        nullable: false,
+        tooltipText: 'Links the profiles of one animal across study days (paired Δβ, design check). ' +
+          `Automatic: ${res.animal.rule !== null ? ruleText[res.animal.rule] : 'no rule applies — N counts profiles'}.`,
+        onValueChanged: (v) => setDerived({...derivedChoices, animalCol: v === AUTO ? undefined : (v ?? undefined)}),
+      });
+      const proposed = `proposed: ${res.proposal.design}`;
+      const designInput = ui.input.choice('Design', {
+        items: [proposed, ...OCCASION_DESIGNS], value: res.confirmed ?? proposed, nullable: false,
+        tooltipText: `${res.proposal.evidence}. Only %F pairing depends on the design: a confirmed repeat-dose ` +
+          'design pairs IV and extravascular profiles within each study day; otherwise across days (crossover).',
+        onValueChanged: (v) => setDerived({...derivedChoices,
+          occasionDesign: v === null || v === proposed ? undefined : v as OccasionDesign}),
+      });
+      out.push(animalInput.root, designInput.root);
+    }
+    const tauInput = ui.input.float('Dosing interval τ (h)', {
+      value: derivedChoices.tauH, nullable: true, min: 0,
+      tooltipText: 'Time after dose: AUC0–τ is the AUC over [0, τ] of each profile. Used for dose ' +
+        'proportionality and Day N / Day 1. Empty: AUClast, labelled.',
+      onValueChanged: (v) => setDerived({...derivedChoices, tauH: v !== null && v > 0 ? v : undefined}),
+    });
+    out.push(tauInput.root);
+    return out;
+  };
+
   let settingsDialogOpen = false;
   const settingsBtn = ui.iconFA('cog', () => {
     if (settingsDialogOpen) return; // a dialog is already open — do not stack a second
@@ -4415,6 +4518,10 @@ export function mountMappingPane(
     // no custom form styling — DG sizes the dialog to its content).
     const form = ui.form([]);
     form.append(semiLogToggleInput.root, compactToggleInput.root, violatedToggleInput.root);
+    // tk-study-day-stratification F2-D (user-approved 2026-11-11): the occasion / animal / design /
+    // τ choices for the derived analyses. Outside the Setup fingerprint — a pick needs no Confirm;
+    // it re-runs the derived panels at once and makes the analysis dirty (recipe `derived`).
+    for (const el of occasionSettingsInputs()) form.append(el);
     // onOK adds the OK button (changes already applied live, so it just closes).
     // Subscribe onClose BEFORE show() so no dismissal is missed (nca-add-to-study.ts).
     const dlg = ui.dialog('Settings').add(form).onOK(() => {});
@@ -4867,6 +4974,7 @@ function applyBioavailability(
   sexName: string | null,
   doseColName: string | null,
   hasRouteColumn: boolean,
+  occ: OccasionCtx | null = null,
 ): void {
   if (!hasRouteColumn || doseColName === null || sexName === null) {
     // Distinguish the suppression reasons so a scientist with a mixed-route frame
@@ -4895,7 +5003,12 @@ function applyBioavailability(
   }
   let result: BioavailabilityResult;
   try {
-    result = computeBioavailability(results, {doseCol: doseColName, stratifyCols: [sexName]});
+    // SF-FPCT-VIEW: same-occasion pairing only for a CONFIRMED repeat-dose design; otherwise
+    // the occasion is not a stratum (today's behaviour; the unknown-design notice says so).
+    const sameOcc = occ !== null && occ.res.fPctPairing === 'same-occasion' && occ.res.col !== null;
+    result = computeBioavailability(results, sameOcc ?
+      {doseCol: doseColName, stratifyCols: [occ.res.col!, sexName], occasionCol: occ.res.col!} :
+      {doseCol: doseColName, stratifyCols: [sexName]});
   } catch (e) {
     // Surface WHY F% didn't appear instead of failing silently (Ed BUG-06
     // secondary defect) — the route+dose+Sex preconditions held, so a failure here
@@ -4984,6 +5097,7 @@ function applyDoseProportionality(
   doseColName: string | null,
   resultsNode: DG.DockNode | null,
   aucBasis: AucBasis = 'aucinf',
+  occ: OccasionCtx | null = null,
 ): void {
   const doseCol = doseColName !== null ? results.col(doseColName) : null;
   // Dose proportionality needs a per-subject dose, a Sex stratifier (the headline
@@ -5018,6 +5132,16 @@ function applyDoseProportionality(
       // though valid AUClast exists. Caller passes 'auclast' there — the TK
       // convention (AUCτ basis) for repeat-dose dose-proportionality.
       basis: aucBasis,
+      // SF-DP-PER-OCCASION / SF-DP-AUC-BASIS: per occasion whenever ≥ 2 occasions resolve (any
+      // design but an escalation), with the occasion basis rule (F4) and the Δβ (F3a).
+      ...(occ !== null && occ.res.stratify && occ.res.col !== null ? {
+        occasionCol: occ.res.col, occasionLevels: occ.res.levels,
+        ...(occ.aucTau ? {aucTauCol: AUC_TAU_COL} : {}),
+        tauH: occ.tauH,
+        singleDoseOccasions: occ.res.confirmed === 'crossover',
+        animals: occ.res.animal.animals,
+        excludedAnimals: new Set(occ.res.animal.failing.map((f) => f.animal)),
+      } : {}),
     });
   } catch (e) {
     grok.shell.warning(`Dose proportionality could not be computed: ${(e as Error)?.message ?? e}`);
@@ -5045,7 +5169,7 @@ function applyDoseProportionality(
       text: `Dose proportionality · ${parts.join(', ')}`,
     });
   }
-  swapOrDockDoseProportionality(view, result.table, result.dnTable, resultsNode);
+  swapOrDockDoseProportionality(view, result.table, result.dnTable, resultsNode, result.deltaTable);
 }
 
 /** Dock (or swap in place) the dose-proportionality verdict + dn grids as
@@ -5055,6 +5179,7 @@ function swapOrDockDoseProportionality(
   verdict: DG.DataFrame,
   dn: DG.DataFrame,
   resultsNode: DG.DockNode | null,
+  delta: DG.DataFrame | null = null,
 ): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tempBag = view.temp as Record<string, any>;
@@ -5067,6 +5192,7 @@ function swapOrDockDoseProportionality(
     existingVerdict.dataFrame = verdict;
     configureDoseProportionalityGrid(existingVerdict);
     if (existingDn != null) {existingDn.dataFrame = dn; configureDoseProportionalityDnGrid(existingDn);}
+    swapOrDockDeltaBeta(view, delta, tempBag[DPDN_NODE_TAG] as DG.DockNode | null);
     return;
   }
   const anchor = resultsAnchor(view, resultsNode);
@@ -5083,12 +5209,37 @@ function swapOrDockDoseProportionality(
     dnGrid.root, DGNS.DOCK_TYPE.FILL, verdictNode ?? anchor, 'Dose-Normalized');
   tempBag[DPDN_GRID_TAG] = dnGrid;
   tempBag[DPDN_NODE_TAG] = dnNode;
+  swapOrDockDeltaBeta(view, delta, dnNode);
+}
+
+/** Dock (or swap in place, or close) the Δβ grid — "Dose Proportionality over time" (F3a; F2-D,
+ *  user-approved 2026-11-11) — as a FILL-tab beside "Dose-Normalized". Present only per occasion. */
+function swapOrDockDeltaBeta(view: DG.TableView, delta: DG.DataFrame | null, anchor: DG.DockNode | null): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tempBag = view.temp as Record<string, any>;
+  const existing = tempBag[DPDB_GRID_TAG] as DG.Grid | null;
+  if (delta === null || delta.rowCount === 0) {
+    const node = tempBag[DPDB_NODE_TAG] as DG.DockNode | null;
+    if (node != null)
+      try {view.dockManager.close(node);} catch {/* already gone */}
+    tempBag[DPDB_GRID_TAG] = undefined;
+    tempBag[DPDB_NODE_TAG] = undefined;
+    return;
+  }
+  if (existing != null) {existing.dataFrame = delta; configureDoseProportionalityDeltaGrid(existing); return;}
+  const grid = DGNS.Viewer.grid(delta);
+  configureDoseProportionalityDeltaGrid(grid);
+  const node = view.dockManager.dock(grid.root, DGNS.DOCK_TYPE.FILL, anchor ?? resultsAnchor(view),
+    'Dose Proportionality over time');
+  tempBag[DPDB_GRID_TAG] = grid;
+  tempBag[DPDB_NODE_TAG] = node;
 }
 
 /** Close and forget the dose-proportionality grid tabs. No-op when none docked. */
 function closeDoseProportionality(view: DG.TableView): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tempBag = view.temp as Record<string, any>;
+  swapOrDockDeltaBeta(view, null, null);
   for (const nodeTag of [DP_NODE_TAG, DPDN_NODE_TAG]) {
     const node = tempBag[nodeTag] as DG.DockNode | null;
     if (node != null) {
@@ -5943,6 +6094,77 @@ function closeToxicokinetics(view: DG.TableView): void {
   tempBag[TK_OVERLAY_SUB_TAG] = undefined;
 }
 
+/** The per-Compute occasion context every derived analysis reads (tk-study-day-stratification). */
+interface OccasionCtx {
+  readonly res: OccasionResolution;
+  /** The declared dosing interval τ (h), NaN when unknown. */
+  readonly tauH: number;
+  /** True when the results frame carries a usable `AUC_TAU` column. */
+  readonly aucTau: boolean;
+  /** Today's τ guess (the largest sampling time), kept for accumulation when τ is undeclared. */
+  readonly legacyTauH: number;
+  /** Write TLAST + AUC_TAU onto a derived-analysis frame (a reportable clone); returns it. */
+  readonly withTau: (frame: DG.DataFrame) => DG.DataFrame;
+}
+
+/**
+ * Resolve the occasion, the animal and the design ONCE per Compute (F1) and write TLAST and
+ * AUC0–τ onto the results frame (F4). All logic lives in `adapter/occasion.ts`; this only wires
+ * the view's inputs (architect S8). AUC0–τ is the engine's AUClast where sampling ends at τ and
+ * sci-comp's interval AUC where it runs past τ; a profile whose first sample sits well after the
+ * dose (cumulative study time, no dose record) gets none — the labelled AUClast fallback (R1 F8).
+ */
+function buildOccasionCtx(
+  view: DG.TableView, results: DG.DataFrame, carried: ReadonlyArray<string>, sexName: string | null,
+  doseName: string | null, choices: DerivedChoices, df: DG.DataFrame, profiles: ReadonlyArray<ProfileIndex>,
+  timeName: string | null, controller: NcaController,
+): OccasionCtx {
+  const occasionName = detectOccasionColumn(carried, choices.occasionCol ?? null);
+  const animalName = choices.animalCol !== undefined && carried.includes(choices.animalCol) ? choices.animalCol : null;
+  const res = resolveOccasion(occasionName, profileRowsOf(results, {
+    subject: 'SUBJECT', occasion: occasionName, sex: sexName, dose: doseName, route: 'ROUTE', animal: animalName,
+  }), choices);
+  // Anchored to the panels they explain, NOT to `results`: a Settings pick re-runs the derived
+  // panels and live-replaces THEIR banners (`refreshDependentPanelBanners`); a `results` banner
+  // would go stale (manual QA 2026-11-11: the τ notice outlived the τ pick). The design notices
+  // concern F% pairing only; the rest concern dose proportionality / Day N / Day 1.
+  for (const n of occasionNotices(res)) {
+    const anchor = n.key.startsWith('OCCASION_DESIGN') ? 'bioavailability' : 'doseProp';
+    collectNotice(view, {key: n.key, anchor, severity: n.severity, text: n.text});
+  }
+  const tauH = choices.tauH !== undefined && choices.tauH > 0 ? choices.tauH : NaN;
+  const aucTau = tauH > 0;
+  if (res.stratify && !aucTau) {
+    collectNotice(view, {key: 'TAU_UNKNOWN', anchor: 'doseProp', severity: 'info',
+      text: `Dosing interval τ is not declared: per-${res.col} dose proportionality and accumulation use ` +
+        'AUClast, labelled. Declare τ (time after dose) to report AUC0–τ.'});
+  }
+  // TLAST and AUC0–τ are written onto the derived analyses' frame ONLY (the reportable clone),
+  // never onto the persisted results frame — its column set is an EMS golden contract.
+  const subjectOf = (frame: DG.DataFrame, row: number): string => frame.col('SUBJECT')?.getString(row) ?? '';
+  const timeCol = timeName !== null ? df.col(timeName) : null;
+  const timeRange = (row: number): [number, number] => {
+    if (timeCol === null || row >= profiles.length) return [NaN, NaN];
+    let mn = Infinity;
+    let mx = -Infinity;
+    for (const r of profiles[row].observationRows) {
+      const t = numAt(timeCol, r);
+      if (t < mn) mn = t;
+      if (t > mx) mx = t;
+    }
+    return Number.isFinite(mn) ? [mn, mx] : [NaN, NaN];
+  };
+  const withTau = (src: DG.DataFrame): DG.DataFrame => {
+    // A clone: `reportableFrameOf` returns the results frame ITSELF when nothing is excluded.
+    const frame = src.clone();
+    if (timeName !== null) appendTlastColumn(frame, df, profiles, timeName);
+    appendAucTauColumn(frame, tauH, (row) => timeRange(row)[0] > 0.1 * tauH ? NaN :
+      controller.intervalAuc(subjectOf(frame, row), 0, tauH), (row) => timeRange(row)[1]);
+    return frame;
+  };
+  return {res, tauH, aucTau, legacyTauH: timeName !== null ? maxFiniteInColumn(df, timeName) : NaN, withTau};
+}
+
 /** Compute and dock the TK aggregates when the results frame is repeat-dose
  *  (a carried StudyDay column with ≥ 2 distinct days) + Dose, else close them.
  *  Sex is mandatory (sex-stratified accumulation / fold); a repeat-dose frame
@@ -5951,30 +6173,22 @@ function closeToxicokinetics(view: DG.TableView): void {
 function applyToxicokinetics(
   view: DG.TableView,
   results: DG.DataFrame,
-  carried: ReadonlyArray<string>,
   sexName: string | null,
   doseColName: string | null,
-  df: DG.DataFrame,
-  profiles: ReadonlyArray<ProfileIndex>,
   subjectName: string,
   timeName: string | null,
   resultsNode: DG.DockNode | null,
+  occ: OccasionCtx,
 ): void {
-  const studyDayName = carried.find((c) => /^study_?day$/i.test(c)) ?? null;
-  // Not a repeat-dose frame → silently inapplicable (like F% on a single route).
-  if (studyDayName === null || doseColName === null) {
-    closeToxicokinetics(view);
-    return;
-  }
-  const dayCol = results.col(studyDayName);
-  if (dayCol === null) {closeToxicokinetics(view); return;}
-  const days = new Set<string>();
-  for (let i = 0; i < results.rowCount; i++) if (!dayCol.isNone(i)) days.add(dayCol.getString(i));
-  if (days.size < 2) {closeToxicokinetics(view); return;} // single-day study: no accumulation
+  if (doseColName === null) {closeToxicokinetics(view); return;}
+  // The occasion comes from the ONE resolution (F1), never a local name test. Accumulation and
+  // the exposure margin need ≥ 2 occasions; the sex comparison does not (G3b, ICH S3A §3.5).
+  const studyDayName = occ.res.stratify ? occ.res.col : null;
 
-  // Repeat-dose frame confirmed; Sex is mandatory for the aggregates (AC-14).
-  // `sexName` is the designated (and carried) sex column, resolved by the caller.
+  // Sex is mandatory for the aggregates (AC-14). `sexName` is the designated (and carried) sex
+  // column, resolved by the caller. The notice fires only where an accumulation would exist.
   if (sexName === null) {
+    if (studyDayName === null) {closeToxicokinetics(view); return;}
     // TK tabs are not docked here (no Sex → no aggregates) → banner over the
     // results grid (B3). Anchored to 'accumulation', the primary TK panel.
     collectNotice(view, {
@@ -5990,30 +6204,37 @@ function applyToxicokinetics(
     return;
   }
 
-  const tau = timeName !== null ? maxFiniteInColumn(df, timeName) : NaN;
-  if (timeName !== null) appendTlastColumn(results, df, profiles, timeName);
   const warnMsgs: string[] = [];
 
-  // --- AD-1 / AD-2: accumulation ratio + theoretical ceiling.
+  // --- AD-1 / AD-2: accumulation ratio + theoretical ceiling. SF-RAC-TAU-AND-BASIS: τ is the
+  // DECLARED interval and AUCτ the interval AUC (AUC_TAU); with τ undeclared, today's τ (the
+  // largest sampling time) and the AUClast basis stay, and the TAU_UNKNOWN notice labels them.
   let acc: AccumulationResult | null = null;
-  try {
-    acc = computeAccumulationRatios(results, {
-      tau, doseCol: doseColName, studyDayCol: studyDayName, stratifyCols: [sexName],
-      tlastCol: results.col('TLAST') !== null ? 'TLAST' : undefined,
-    });
-    for (const w of acc.warnings) warnMsgs.push(w.message);
-    if (acc.table.rowCount > 0)
-      swapOrDockToxGrid(view, acc.table, ACC_GRID_TAG, ACC_NODE_TAG, 'Accumulation', resultsNode);
-    else closeToxGrid(view, ACC_GRID_TAG, ACC_NODE_TAG);
-  } catch {
-    closeToxGrid(view, ACC_GRID_TAG, ACC_NODE_TAG);
+  if (studyDayName === null) closeToxGrid(view, ACC_GRID_TAG, ACC_NODE_TAG);
+  else {
+    try {
+      const tau = occ.aucTau ? occ.tauH : occ.legacyTauH;
+      acc = computeAccumulationRatios(results, {
+        tau, doseCol: doseColName, studyDayCol: studyDayName, stratifyCols: [sexName],
+        tlastCol: results.col('TLAST') !== null ? 'TLAST' : undefined,
+        ...(occ.aucTau ? {aucTauCol: AUC_TAU_COL} : {}),
+      });
+      for (const w of acc.warnings) warnMsgs.push(w.message);
+      if (acc.table.rowCount > 0)
+        // F2-D (user-approved 2026-11-11, R2 F5): "Day N / Day 1", not "Accumulation" — no
+        // steady-state check exists yet (tk-aggregates G3), so the tab says what is compared.
+        swapOrDockToxGrid(view, acc.table, ACC_GRID_TAG, ACC_NODE_TAG, 'Day N / Day 1', resultsNode);
+      else closeToxGrid(view, ACC_GRID_TAG, ACC_NODE_TAG);
+    } catch {
+      closeToxGrid(view, ACC_GRID_TAG, ACC_NODE_TAG);
+    }
   }
 
   // --- AD-3: NOAEL exposure/safety margin (when NOAEL + human dose are carried).
   const noael = readStudyConstant(results, 'NOAEL_mg_kg');
   const humanDoseMg = readStudyConstant(results, 'HumanDose_mg');
   const humanBw = readStudyConstant(results, 'HumanBodyWeight_kg');
-  if (noael !== null && humanDoseMg !== null && humanBw !== null) {
+  if (studyDayName !== null && noael !== null && humanDoseMg !== null && humanBw !== null) {
     try {
       const margin = computeExposureMargin(results, {
         noaelMgKg: noael, humanDoseMg, humanBodyWeightKg: humanBw,
@@ -6030,9 +6251,11 @@ function applyToxicokinetics(
     closeToxGrid(view, MARGIN_GRID_TAG, MARGIN_NODE_TAG);
 
 
-  // --- AD-4: sex fold-difference over a (Dose × Sex) aggregate.
+  // --- AD-4: sex fold-difference over a (Dose × Sex [× occasion]) aggregate — per occasion when
+  // there are occasions (SF-SEX-FOLD), and no longer gated on ≥ 2 study days (G3b).
   try {
-    const agg = aggregateNcaResults(results, [doseColName, sexName]);
+    const agg = aggregateNcaResults(results,
+      studyDayName !== null ? [doseColName, sexName, studyDayName] : [doseColName, sexName]);
     const fold = computeSexFold(agg, {sexCol: sexName});
     if (fold.table.rowCount > 0)
       swapOrDockToxGrid(view, fold.table, SEXFOLD_GRID_TAG, SEXFOLD_NODE_TAG, 'Sex Comparison', resultsNode);

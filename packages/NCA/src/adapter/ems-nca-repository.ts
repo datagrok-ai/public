@@ -23,7 +23,7 @@ import {ncaDb} from '../generated/db';
 import type {AnalysisColumn, AnalysisResultColumn} from '../generated/db';
 import {INSTALLED_ENGINE_VERSION} from './engine-version';
 import {RESULTS_BASIS} from './unit-conversion';
-import {recipeOf} from './study-schema';
+import {recipeOf, DERIVED_BASIS} from './study-schema';
 import type {
   NcaStudy, AnalysisEntry, AnalysisRecipe, SourcePointer, SourceSignature, SummaryCache, CompoundCurve,
   LzOverride, ReviewLedger, PipelineFlag, PipelineOrigin,
@@ -151,6 +151,7 @@ function entryFromInput(id: string, input: NewAnalysisInput & {label: string}, s
     summaryCache: input.summaryCache,
     engineVersion: input.summaryCache === null ? null : INSTALLED_ENGINE_VERSION,
     resultsBasis: input.summaryCache === null ? null : RESULTS_BASIS,
+    derivedBasis: input.summaryCache === null ? null : DERIVED_BASIS,
     confirmed: w.confirmed, lzOverrides: w.lzOverrides, reviewDecisions: w.reviewDecisions, stageCache: w.stageCache,
     origin: input.origin ?? null,
     ...(input.pipelineFlags !== undefined ? {pipelineFlags: input.pipelineFlags} : {}),
@@ -648,6 +649,7 @@ export class EmsNcaRepository implements NcaRepository {
           summaryCache: input.summaryCache,
           engineVersion: input.summaryCache === null ? null : INSTALLED_ENGINE_VERSION,
           resultsBasis: input.summaryCache === null ? null : RESULTS_BASIS,
+          derivedBasis: input.summaryCache === null ? null : DERIVED_BASIS,
           confirmed: input.workflow.confirmed, lzOverrides: input.workflow.lzOverrides,
           reviewDecisions: input.workflow.reviewDecisions, stageCache: input.workflow.stageCache,
         };
@@ -707,6 +709,7 @@ export class EmsNcaRepository implements NcaRepository {
     const x: ChildInput = {summaryCache: write.summaryCache, lzOverrides: w.lzOverrides,
       reviewDecisions: w.reviewDecisions, engineVersion: INSTALLED_ENGINE_VERSION, resultsBasis: RESULTS_BASIS};
     const cols: Bag = {engine_version: INSTALLED_ENGINE_VERSION, results_basis: RESULTS_BASIS,
+      derived_basis: DERIVED_BASIS,
       ...tierCols(write.summaryCache), results_snapshot_hash: t.hash,
       ...confirmedCols(w.confirmed, t.recipeFingerprint), ...stageCols(w.stageCache)};
     const values = changedCols(cols, t);
@@ -830,7 +833,7 @@ export class EmsNcaRepository implements NcaRepository {
     if (opts.summaryCache !== undefined) {
       const stamps = {engineVersion: INSTALLED_ENGINE_VERSION, resultsBasis: RESULTS_BASIS};
       const cols: Bag = {...tierCols(opts.summaryCache), engine_version: stamps.engineVersion,
-        results_basis: stamps.resultsBasis, results_snapshot_hash: r.source_hash ?? null};
+        results_basis: stamps.resultsBasis, derived_basis: DERIVED_BASIS, results_snapshot_hash: r.source_hash ?? null};
       const before = canonicalColumns(r, Object.keys(cols));
       const after = canonicalColumns(cols, Object.keys(cols));
       const same = (x: Bag): string => canonicalRow({...x, study_id: ''}, RESULT_COLUMNS);

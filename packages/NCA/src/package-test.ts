@@ -71,6 +71,7 @@ import './tests/ems-nca-rows-tests';
 import './tests/nca-repository-contract-tests';
 import './tests/shared-stand-guard-tests';
 import './tests/demo-studies-tests';
+import './tests/occasion-tests';
 import {skipStoreWritingTestsOnSharedStand, isLoopbackServer, refuseStoreWrites} from './tests/shared-stand-guard';
 
 // After every category registered: the store-writing tests run only against a local / CI server.
