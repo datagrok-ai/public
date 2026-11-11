@@ -8,7 +8,8 @@
 
 ## Still open
 
-- **public#576**: a click after a custom category order; needs a step that drags an item of the Sort > Custom... list.
+- **public#576**: a click after a custom category order; the Sort > Custom... drag exists now
+  (`category-order/category-order-across-viewers.feature`), the scenario that clicks a filter category after it does not.
 - **public#2344**: a hovered category's rows in a scatter plot; needs a `mouse-over rows` count computed from
   `rows.mouseOverRowFunc` when asked.
 - **public#605**: the add-filter column picker narrows as you type; needs a step that types into an open picker and

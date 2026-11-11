@@ -167,6 +167,26 @@ category('calculate', () => {
   });
 
 
+  test('molecular property: a category orderer key for every choice', async () => {
+    const f = DG.Func.find({package: 'Chem', name: 'MolecularProperty', meta: {role: 'categoryOrderer'}})[0];
+    expect(f != null, true, 'Chem:MolecularProperty with the categoryOrderer role');
+    const choices: string[] = f.inputs[1].choices;
+    const col = DG.Column.fromStrings('smiles', ['CN1CCC(CC1)Oc2ccc(cc2)C(F)(F)F', 'NCc1cnn(O)c1Br', '', 'C1CC(']);
+    col.semType = DG.SEMTYPE.MOLECULE;
+    for (const engine of [ChemicalEngine.RDKit, ChemicalEngine.Crux]) {
+      await inEngine(engine, async () => {
+        for (const property of choices) {
+          const keys: DG.Column = await f.apply({molecules: col, property: property});
+          expect(keys.length, 4, `${engine}, ${property}`);
+          expect(keys.type === DG.TYPE.FLOAT || keys.type === DG.TYPE.INT, true,
+            `${engine}, ${property}: ${keys.type} keys`);
+          expect([2, 3].every((i) => keys.isNone(i)), true, `${engine}, ${property}: empty where no molecule is read`);
+        }
+        expectFloat((await f.apply({molecules: col, property: 'MW'})).get(0), 259.271, 1e-3, `${engine}, MW`);
+      });
+    }
+  });
+
   test('structural alerts', async () => {
     smiles = grok.data.demo.molecules(20);
     await grok.data.detectSemanticTypes(smiles);

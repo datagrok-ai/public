@@ -802,13 +802,17 @@ export interface IBarChartSettings {
    * when the *Split* value is not present. */
   includeNulls: boolean;
 
-  /** Whether to sort bars *by category* or *by value*.
+  /** Whether to sort bars *by category*, *by value*, or in a *custom* order (see *Category Order*).
    * See also *Bar Sort Order* */
   barSortType: string;
 
   /** Whether the bars should be sorted in ascending or descending order.
    * See also *Bar Sort Type*. */
   barSortOrder: string;
+
+  /** How the categories are ordered under the *custom* sort type: by name, row count, an aggregated value, or manually;
+   * by default, in the column's own order. */
+  categoryOrder: string;
 
   axisType: keyof typeof AxisType;
 
@@ -1025,6 +1029,10 @@ export interface IPieChartSettings {
   pieSortType: string;
 
   pieSortOrder: string;
+
+  /** How the categories are ordered under the *custom* sort type: by name, row count, an aggregated value, or manually;
+   * by default, in the column's own order. */
+  categoryOrder: string;
 
   includeNulls: boolean;
 
@@ -1889,6 +1897,15 @@ export interface IScatterPlot3dSettings {
 
   showZSelector: boolean;
 
+  /** How the X axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  xCategoryOrder: string;
+
+  /** How the Y axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  yCategoryOrder: string;
+
+  /** How the Z axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  zCategoryOrder: string;
+
   color: string;
   colorColumnName: string;
 
@@ -2055,6 +2072,12 @@ export interface IScatterPlotSettings {
   showXSelector: boolean;
 
   showYSelector: boolean;
+
+  /** How the X axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  xCategoryOrder: string;
+
+  /** How the Y axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  yCategoryOrder: string;
 
   /** Shows a distribution histogram along the X axis (at the top) */
   showXHistogram: boolean;
@@ -2526,6 +2549,9 @@ export interface IBoxPlotSettings {
   /** Display subcategories - category combinations in the x axis table. */
   showMinorCategories: boolean;
 
+  /** How the categories are ordered: by name, row count, an aggregated value, or manually. */
+  categoryOrder: string;
+
   value: string;
   valueColumnName: string;
 
@@ -2902,6 +2928,9 @@ export interface ILineChartSettings {
    * Example: time series data with the "stimuli" column */
   segment: string;
   segmentColumnName: string;
+
+  /** How the X axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  xCategoryOrder: string;
 
   invertXAxis: boolean;
 

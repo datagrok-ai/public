@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [#3924](https://github.com/datagrok-ai/public/issues/3924): Scatter plot: Switched to the canvas renderer while a string axis has a category order (`xCategoryOrder`, `yCategoryOrder`)
 * WebGPU: On Windows, when the browser computes on an integrated GPU, a one-time tip says how to move it to a dedicated GPU, if the computer has one (Windows Settings > System > Display > Graphics > High performance): Chrome ignores WebGPU's high-performance request there
 * Tests: Added `Forms viewer` 'A pinned row stays pinned under a filter that hides it and leaves the pinned pane once deleted', moved from BDD
 * [public#4452](https://github.com/datagrok-ai/public/issues/4452): Forms: Fixed a layout naming a removed column throwing an error on every render

@@ -2538,6 +2538,23 @@ export class PackageFunctions {
     return DG.DataFrame.fromColumns(cols);
   }
 
+  @grok.decorators.func({
+    name: 'Molecular Property',
+    description: 'Computes one chemical property for a column of molecules so that the platform can sort and order them by it.',
+    meta: {role: 'categoryOrderer'},
+  })
+  static async molecularProperty(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({options: {choices: ['MW', 'HBA', 'HBD', 'LogP', 'LogS', 'PSA',
+      'Rotatable bonds', 'Stereo centers', 'Molecule charge']}}) property: string): Promise<DG.Column> {
+    const keys = (await getPropertiesAsColumns(molecules, [property]))[0];
+    // OpenChemLib reads an empty cell as an empty molecule, which would rank first instead of last
+    for (let i = 0; i < molecules.length; i++) {
+      if (molecules.isNone(i))
+        keys.set(i, null, false);
+    }
+    return keys;
+  }
 
   @grok.decorators.func({
     'top-menu': 'Chem | Calculate | Toxicity Risks...',
