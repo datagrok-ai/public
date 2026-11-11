@@ -29,7 +29,7 @@
             "args": [
                 "--all",
                 "C:\\datagrok\\public\\packages",
-                "c:/datagrok/public/help/datagrok/plugins"
+                "c:/datagrok/help/datagrok/plugins"
             ],
             "sourceMaps": true,
             "console": "integratedTerminal",

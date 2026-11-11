@@ -48,7 +48,7 @@ const getNoDataStub = () => ui.divText('[No data to display]', {style: {
 }});
 
 /**
- * Class for handling Compute models (see https://github.com/datagrok-ai/public/blob/master/help/compute/compute.md)
+ * Class for handling Compute models (see https://github.com/datagrok-ai/help/blob/master/compute/compute.md)
  *
  * It provides the following functionality out-of-the-box, where each section could be customized:
  * - a structured way to represent input and output parameters: {@link parameters}

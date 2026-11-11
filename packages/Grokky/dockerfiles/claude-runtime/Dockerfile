@@ -71,7 +71,7 @@ COPY --from=hermes /opt/hermes /opt/hermes
 COPY plugin /app/plugin
 COPY agent /app/agent
 COPY entrypoint.sh /app/entrypoint.sh
-RUN chmod 0755 /app/entrypoint.sh && \
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod 0755 /app/entrypoint.sh && \
     node --version && python3 --version && pip3 --version && rg --version && git --version && \
     PYTHONPATH=/app/agent /opt/hermes/.venv/bin/python -c \
       "import run_agent, anthropic, mcp, jsonschema, ruamel.yaml, PIL.Image, jwt, grokky_agent.session"

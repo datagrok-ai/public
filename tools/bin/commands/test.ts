@@ -185,7 +185,7 @@ export async function test(args: TestArgs): Promise<boolean> {
     if (detectedCategory) {
       const category = args.category ?? detectedCategory;
       const gitRoot = findGitRoot(curDir);
-      const devToolsDir = gitRoot ? path.join(gitRoot, 'public', 'packages', 'DevTools') : undefined;
+      const devToolsDir = gitRoot ? path.join(gitRoot, '..', 'public', 'packages', 'DevTools') : undefined;
       if (!devToolsDir || !fs.existsSync(devToolsDir)) {
         color.error(`Cannot run core tests from this directory: DevTools package not found.`);
         color.error(`Run 'grok test --category="${category}"' from 'public/packages/DevTools' instead.`);

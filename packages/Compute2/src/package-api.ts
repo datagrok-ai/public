@@ -126,6 +126,17 @@ export namespace funcs {
     return await grok.functions.call('Compute2:MockKeyboardPipeline', { params });
   }
 
+  export async function mockTreeWizardPipeline(params: any ): Promise<any> {
+    return await grok.functions.call('Compute2:MockTreeWizardPipeline', { params });
+  }
+
+  /**
+   * Nested workflow of the Mock Tree Wizard Pipeline.
+   */
+  export async function mockTreeWizardGroup(params: any ): Promise<any> {
+    return await grok.functions.call('Compute2:MockTreeWizardGroup', { params });
+  }
+
   /**
    * Single-step workflow used for testing the compact Tree Wizard view.
    */
@@ -174,6 +185,10 @@ export namespace funcs {
 
   export async function testCustomExportRecorder(funcCall: any , startDownload: boolean ): Promise<string> {
     return await grok.functions.call('Compute2:TestCustomExportRecorder', { funcCall, startDownload });
+  }
+
+  export async function testRfvTabs(rows: number ): Promise<{first: DG.DataFrame, middle: DG.DataFrame, last: DG.DataFrame}> {
+    return await grok.functions.call('Compute2:TestRfvTabs', { rows });
   }
 
   export async function testProjectExportSingleOut(x: number ): Promise<DG.DataFrame> {

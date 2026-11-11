@@ -646,7 +646,7 @@ tune the pace when run by hand on a `steps.json` directory.
 
 A feature tagged `@help:<page dir>` (`@help:access/files`) illustrates a help page:
 `grok-bdd guide --help-pages` films every such feature and copies each scenario's GIF and thumb
-into `<public>/help/<page dir>/img/<scenario slug>.gif` (`BDD_HELP_ROOT` names another tree), so
+into `help/<page dir>/img/<scenario slug>.gif` (`BDD_HELP_ROOT` names another tree), so
 the walkthroughs on the docs site are regenerated from features rather than recorded by hand.
 Guides live under `features/guides/` and run with the rest of the suite, in the full shell: an
 answer that stops being true fails a test.
@@ -688,7 +688,7 @@ custom types are read from the glue). A step shown as undefined while `grok-bdd 
 means the settings file is not valid JSON or the glue globs miss the tier directories.
 
 Settings are relative to the folder opened in VS Code; nested `.vscode/settings.json` files
-are not inherited. With the core repository open, use `public/packages/*/bdd/features/**/*.feature`
+are not inherited. With the datagrok umbrella open, use `public/packages/*/bdd/features/**/*.feature`
 for features, and `public/libraries/bdd/bindings/**/*.ts` plus
 `public/packages/*/bdd/bindings/**/*.ts` for glue in the root `.vscode/settings.json`.
 Include the same `state` parameter type there. With `public/` open, omit the `public/` prefix.
