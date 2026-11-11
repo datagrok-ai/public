@@ -92,7 +92,7 @@ function locate(root: string, rel: string): Child[] | undefined {
   }
 }
 
-// Git makes an empty folder for every gitlink it checks out: sparse patterns leave out those not cloned.
+// Git makes an empty folder for every gitlink it checks out.
 function fencing(dir: string, open: string[] = []) {
   const links = !cloned(dir) ? [] : git(dir, ['ls-tree', '-r', '-z', '--full-tree', 'HEAD']).out.split('\0')
     .filter((l) => l.startsWith('160000 ')).map((l) => l.slice(l.indexOf('\t') + 1));
@@ -100,15 +100,14 @@ function fencing(dir: string, open: string[] = []) {
   const exclude = (p: string) => `!/${p.replace(/[*?[\\]/g, '\\$&')}`;
   const sparse = git(dir, ['config', '--type=bool', 'core.sparseCheckout']).out === 'true';
   const now = sparse ? git(dir, ['sparse-checkout', 'list']).out : '/*';
-  // Children of other commits stay left out, so a plain checkout of one makes no empty folder.
+  // Kept so a plain checkout of another commit makes no empty folder.
   const gone = now.split('\n').filter((l) => l.startsWith('!/') && !links.some((p) => exclude(p) === l));
   const want = ['/*', ...[...shut.map(exclude), ...gone].sort()];
-  // A fetch that brings a new pin of a child with no folder fails: "Could not access submodule".
+  // Else a fetch of a new pin of a child with no folder fails: "Could not access submodule".
   const quiet = git(dir, ['config', 'fetch.recurseSubmodules']).out === 'false';
   return {sparse, want, quiet, ok: !links.length || (now === want.join('\n') && (quiet || !shut.length))};
 }
 
-// Clones made before the patterns stay as they are unless `start`.
 function fence(dir: string, open: string[] = [], start = false): boolean {
   const f = fencing(dir, open);
   return f.ok || (!f.sparse && !start) || (step(dir, ['sparse-checkout', 'set', '--no-cone', ...f.want]) &&
