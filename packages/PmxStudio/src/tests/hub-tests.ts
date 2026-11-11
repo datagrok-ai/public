@@ -127,11 +127,12 @@ category('Hub', () => {
     expect(rows(await myLibrary(fs)).includes('Plan C2|'), true, 'an old row taken for a newer file');
     expect(reads, 1);
     reads = 0;
-    // a folder that fails to list drops no row, one or both
+    // a folder that fails to list fails the reading and drops no row, one or both
     for (const failing of [['pmxstudy'], ['pmxplan', 'pmxstudy']]) {
       failing.forEach((x) => listable[x] = false);
-      await myLibrary(fs);
+      const failed = await myLibrary(fs).then(() => false, () => true);
       failing.forEach((x) => listable[x] = true);
+      expect(failed, true, `read as if listed when ${failing} failed to list`);
       expect(Object.keys(indexed()).length, 3, `rows dropped when ${failing} failed to list`);
     }
     // a file with no date is read every time, and leaves no row
@@ -188,18 +189,20 @@ category('Hub', () => {
   });
 
   test('Your studies are read once when asked twice, and again when asked after the folders were listed', async () => {
-    let [listings, shown] = [0, 0];
+    let [listings, shown, warned, listable] = [0, 0, 0, true];
     let open = () => {}; // holds the one file's read: the reading has listed the folders and not ended
     const fs: LibraryFiles = {
       list: async (_folder, _recursive, ext) => {
         listings++;
+        if (!listable)
+          throw new Error('not now');
         return ext !== 'pmxplan' ? [] : [{fileName: 'a.pmxplan', fullPath: 'a.pmxplan', updatedOn: null} as any];
       },
       readAsText: (f) => typeof f === 'string' ? Promise.reject(new Error('no index')) :
         new Promise((r) => open = () => r('{}')),
       writeAsText: async () => {},
     };
-    const read = libraryReader(() => shown++, fs);
+    const read = libraryReader(() => shown++, fs, () => warned++);
     read();
     read(); // as the Overview opens: before the folders are listed
     await delay(20);
@@ -218,5 +221,18 @@ category('Hub', () => {
     await delay(20);
     expect(shown, 3);
     expect(listings, 6);
+    // a reading that fails to list keeps the list shown, says so, and the next ask reads again
+    listable = false;
+    read();
+    await delay(20);
+    expect(shown, 3, 'a failed reading replaced the list');
+    expect(warned, 1);
+    listable = true;
+    read();
+    await delay(20);
+    open();
+    await delay(20);
+    expect(shown, 4);
+    expect(warned, 1);
   });
 });

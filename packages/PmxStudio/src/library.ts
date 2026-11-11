@@ -108,8 +108,10 @@ const rowOf = (e: LibraryEntry, updated: number): Index[string] => {
 const dateOf = (f: DG.FileInfo) => f.updatedOn?.valueOf() ?? NaN;
 
 /** Reads the library for `show`, one reading at a time. Asked again before the reading has listed the folders, it
- *  joins it (the listing sees whatever changed); asked once they are listed, it reads again once that reading ends. */
-export function libraryReader(show: (entries: LibraryEntry[]) => void, fs: LibraryFiles = grok.dapi.files) {
+ *  joins it (the listing sees whatever changed); asked once they are listed, it reads again once that reading ends.
+ *  A reading that fails keeps the list shown and says so (`warn`). */
+export function libraryReader(show: (entries: LibraryEntry[]) => void, fs: LibraryFiles = grok.dapi.files,
+  warn: (message: string) => unknown = (message) => grok.shell.warning(message)) {
   let [reading, listing, again] = [false, false, false];
   const read = (): void => {
     if (listing)
@@ -119,7 +121,8 @@ export function libraryReader(show: (entries: LibraryEntry[]) => void, fs: Libra
       return;
     }
     reading = listing = true;
-    void myLibrary(fs, () => listing = false).catch(() => [] as LibraryEntry[]).then(show).finally(() => {
+    void myLibrary(fs, () => listing = false).then(show, () =>
+      warn('Your studies could not be listed just now: open the Overview again in a moment.')).finally(() => {
       reading = listing = false;
       if (again) {
         again = false;
@@ -132,16 +135,11 @@ export function libraryReader(show: (entries: LibraryEntry[]) => void, fs: Libra
 
 /** The user's plans and studies: listed (names and dates only) and each one's row from the index; a file the index
  *  has no row for, or an older one (saved before the index, or changed outside the app), is read once and its row
- *  kept. No study is read otherwise, and nothing is computed. */
+ *  kept. No study is read otherwise, and nothing is computed. A folder that fails to list fails the reading (a
+ *  missing one lists nothing), and no row is dropped. */
 export async function myLibrary(fs: LibraryFiles = grok.dapi.files, onListed = () => {}): Promise<LibraryEntry[]> {
-  // a folder that fails to list (a passing failure) lists nothing, and then no row is dropped
-  let listed = true;
-  const list = (folder: string, ext: string) => fs.list(folder, false, ext).catch(() => {
-    listed = false;
-    return [] as DG.FileInfo[];
-  });
-  const [plans, studies, index] = await Promise.all([list(plansFolder(), PLAN_EXT), list(studiesFolder(), STUDY_EXT),
-    readIndex(fs)]);
+  const [plans, studies, index] = await Promise.all([fs.list(plansFolder(), false, PLAN_EXT),
+    fs.list(studiesFolder(), false, STUDY_EXT), readIndex(fs)]);
   onListed();
   const files = [...plans, ...studies];
   let changed = false;
@@ -160,10 +158,10 @@ export async function myLibrary(fs: LibraryFiles = grok.dapi.files, onListed = (
     }
     return e && {...e, text: ''};
   }));
-  // rows of files no longer there leave the index (when both folders listed)
+  // rows of files no longer there leave the index
   const names = new Set(files.map((f) => f.fileName));
   for (const name of Object.keys(index)) {
-    if (listed && !names.has(name)) {
+    if (!names.has(name)) {
       delete index[name];
       changed = true;
     }
