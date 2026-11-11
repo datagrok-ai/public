@@ -278,7 +278,10 @@ function yourStudies(): {root: HTMLElement, reload: () => void} {
     drawChips();
     showNone();
   };
-  const reload = () => void myLibrary().catch(() => [] as LibraryEntry[]).then(show);
+  // one reading at a time: the Overview asks as it is built and again as it becomes the current view
+  let reading: Promise<void> | null = null;
+  const reload = () => void (reading ??= myLibrary().catch(() => [] as LibraryEntry[]).then(show)
+    .finally(() => reading = null));
   reload();
   // a row opens its file as it is now, not as it was when the list was read (the study may have been saved since),
   // and once: a second click while it opens would open it twice
