@@ -236,16 +236,21 @@ export async function TestCustomView() {
 
 //input: double a 
 //output: double result
-//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]
+//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"},{"name":"none","function":"Compute2:TestCustomExportNoFile"}]
 export async function TestCustomExportModel(a: number) : Promise<number> {
   return await PackageFunctions.TestCustomExportModel(a);
 }
 
 //input: funccall funcCall 
-//input: bool startDownload 
+//output: file result
+export async function TestCustomExportRecorder(funcCall: DG.FuncCall) : Promise<any> {
+  return await PackageFunctions.TestCustomExportRecorder(funcCall);
+}
+
+//input: funccall funcCall 
 //output: string result
-export async function TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean) : Promise<string> {
-  return await PackageFunctions.TestCustomExportRecorder(funcCall, startDownload);
+export async function TestCustomExportNoFile(funcCall: DG.FuncCall) : Promise<string> {
+  return await PackageFunctions.TestCustomExportNoFile(funcCall);
 }
 
 //input: int rows 

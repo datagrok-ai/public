@@ -10,7 +10,9 @@ import {CustomExport, ExportCbInput, ViewersHook} from '@datagrok-libraries/comp
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {richFunctionViewReport} from '@datagrok-libraries/compute-utils/shared-utils/export';
 import {disposeViewers, getViewers} from '../../utils';
-import {applyCustomExport, reportTree, getExportSummary, reportSummary} from './tree-export';
+import {
+  applyCustomExport, downloadFile, exportedFile, reportTree, getExportSummary, reportSummary,
+} from './tree-export';
 import type {DriverAPI} from '../../composables/use-reactive-tree-driver';
 
 export function useTreeExport({treeState, states, currentMetaCallData, hasNotSavedEdits}: DriverAPI) {
@@ -30,14 +32,16 @@ export function useTreeExport({treeState, states, currentMetaCallData, hasNotSav
       const defaultExport: CustomExport = {
         id: 'default',
         friendlyName: 'Default Excel',
-        handler: () => reportTree({
-          startDownload: true,
-          treeState: treeState.value!,
-          meta: currentMetaCallData.value,
-          ...exportStates(),
-          metaStates: states.meta,
-          hasNotSavedEdits: hasNotSavedEdits.value,
-        }),
+        handler: async () => {
+          const [blob, , fileName] = await reportTree({
+            treeState: treeState.value!,
+            meta: currentMetaCallData.value,
+            ...exportStates(),
+            metaStates: states.meta,
+            hasNotSavedEdits: hasNotSavedEdits.value,
+          });
+          return DG.FileInfo.fromBytes(fileName, new Uint8Array(await blob.arrayBuffer()));
+        },
       };
       activeExports.push(defaultExport);
     }
@@ -64,7 +68,6 @@ export function useTreeExport({treeState, states, currentMetaCallData, hasNotSav
       },
       reportStateExcel: async (state: PipelineState, cb?: (input: ExportCbInput) => Promise<void>) => {
         return reportTree({
-          startDownload: false,
           treeState: state,
           meta: currentMetaCallData.value,
           ...exportStates(),
@@ -80,7 +83,6 @@ export function useTreeExport({treeState, states, currentMetaCallData, hasNotSav
       },
       runFuncCallCustomExport: async (fc: DG.FuncCall, uuid: string, exportName: string) => {
         return applyCustomExport(fc, exportName, {
-          startDownload: false,
           validationState: states.validations?.[uuid],
           consistencyState: states.consistency?.[uuid],
           isOutputOutdated: states.calls?.[uuid]?.isOutputOutdated,
@@ -89,7 +91,8 @@ export function useTreeExport({treeState, states, currentMetaCallData, hasNotSav
       },
     };
     try {
-      return await exportData.handler(treeState.value!, utils);
+      downloadFile(exportedFile(await exportData.handler(treeState.value!, utils),
+        exportData.friendlyName ?? exportData.id));
     } catch (e: any) {
       grok.shell.error(e);
     }

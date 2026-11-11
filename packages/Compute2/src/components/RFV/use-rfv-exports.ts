@@ -9,6 +9,7 @@ import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-drive
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {canUseResults, disposeViewers, getViewers} from '../../utils';
 import {saveCallToProject, DfExportEntry} from '../../project-export';
+import {applyCustomExport, downloadFile} from '../TreeWizard/tree-export';
 
 interface ExportItem {
   name: string,
@@ -30,15 +31,13 @@ export function useRfvExports(currentCall: Readonly<Vue.Ref<DG.FuncCall>>, deps:
 }) {
   const {isOutputOutdated, viewersHook, callMeta, validationState, consistencyState} = deps;
 
-  const reportHandler = async (nqName: string) => {
+  const reportHandler = async (exportName: string) => {
     try {
-      await DG.Func.byName(nqName).apply({
-        startDownload: true,
-        funcCall: currentCall.value,
+      downloadFile(await applyCustomExport(currentCall.value, exportName, {
         validationState: validationState.value,
         consistencyState: consistencyState.value,
         isOutputOutdated: isOutputOutdated.value,
-      });
+      }));
     } catch (e: any) {
       grok.shell.error(e);
     }
@@ -67,7 +66,7 @@ export function useRfvExports(currentCall: Readonly<Vue.Ref<DG.FuncCall>>, deps:
       activeExports.push({name, handler});
     }
     activeExports.push(...deps.customExports.value.filter((x) => x.function && x.name)
-      .map((x) => ({...x, handler: () => reportHandler(x.function)})));
+      .map((x) => ({...x, handler: () => reportHandler(x.name)})));
     activeExports.push({
       name: 'Save as project...',
       handler: () => saveCallToProject(currentCall.value, deps.collectDfExportEntries()),

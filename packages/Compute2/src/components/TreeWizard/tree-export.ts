@@ -105,7 +105,6 @@ export async function reportSummary(items: ExportSummaryItem[]) {
 
 export async function reportTree(
   {
-    startDownload,
     treeState,
     meta = {},
     callInfoStates,
@@ -117,7 +116,6 @@ export async function reportTree(
     hasNotSavedEdits,
     cb,
   }: {
-    startDownload: boolean;
     treeState: PipelineState;
     meta?: MetaCallInfo;
     metaStates?: Record<string, Record<string, BehaviorSubject<any>> | undefined>,
@@ -186,8 +184,6 @@ export async function reportTree(
   const rawFileName = getExportName(treeState, !!hasNotSavedEdits, meta.title, meta.started);
   const fileName = replaceForWindowsPath(`${rawFileName}.zip`);
   const blob = new Blob([zipSync(zipConfig) as any]);
-  if (startDownload)
-    DG.Utils.download(fileName, blob);
   return [blob, zipConfig, fileName, summary] as const;
 }
 
@@ -205,15 +201,23 @@ function getExportName(
 }
 
 
+export function exportedFile(result: unknown, exportName: string): DG.FileInfo {
+  if (!(result instanceof DG.FileInfo))
+    throw new Error(`Export ${exportName} returned no file`);
+  return result;
+}
+
+export const downloadFile = (file: DG.FileInfo) => DG.Utils.download(file.fileName, new Blob([file.data as any]));
+
 /** Resolves the custom export named `exportName` declared on the funcCall's function
  *  (via `meta.customExports`) and applies it, passing the funcCall through. */
 export async function applyCustomExport(
   fc: DG.FuncCall,
   exportName: string,
   args: Record<string, unknown> = {},
-): Promise<unknown> {
+): Promise<DG.FileInfo> {
   const item = getCustomExports(fc.func).find((x) => x.name === exportName);
   if (!item)
     throw new Error(`No export named ${exportName} is defined for ${fc.func.nqName}`);
-  return DG.Func.byName(item.function).apply({funcCall: fc, ...args});
+  return exportedFile(await DG.Func.byName(item.function).apply({funcCall: fc, ...args}), exportName);
 }

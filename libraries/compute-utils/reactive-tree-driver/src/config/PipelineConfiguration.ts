@@ -112,10 +112,10 @@ export type ExportUtils = {
   reportSummaryExcel: (pipelineState: PipelineState) => Promise<readonly [Blob, ExcelJS.Workbook]>;
   reportFuncCallExcel: (fc: DG.FuncCall, uuid: string) => Promise<readonly [Blob, ExcelJS.Workbook]>;
   getFuncCallCustomExports: (fc: DG.FuncCall) => string[];
-  runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) => Promise<any>;
+  runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) => Promise<DG.FileInfo>;
 
 }
-export type PipelineExport = (pipelineState: PipelineState, utils: ExportUtils) => Promise<any>;
+export type PipelineExport = (pipelineState: PipelineState, utils: ExportUtils) => Promise<DG.FileInfo>;
 export type ViewersHook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void;
 
 // link-like

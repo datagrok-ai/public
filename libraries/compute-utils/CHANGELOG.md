@@ -2,6 +2,7 @@
 
 ## v.next
 
+* RTD: A workflow custom export handler and `ExportUtils.runFuncCallCustomExport` return the exported file (`DG.FileInfo`)
 * RTD: Fixed the workflow `disableDefaultExport` option being ignored: it never reached the workflow state, so the default export stayed in the Export menu and in a compact view's step
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Export: Fixed a failing Excel report rejecting with "Format is not supported" instead of its own error

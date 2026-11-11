@@ -236,7 +236,7 @@ category('RFV: exports', () => {
     await run(view);
     await waitUntil(() => ribbonIcons(view, 'arrow-to-bottom').length === 1, 'The report icon should show', 5000);
     await waitUntil(() => menuItems(view, 'Step exports') !== null, 'The exports should show', 5000);
-    expectDeepEqual(menuItems(view, 'Step exports'), ['Default Excel', 'rec', 'Save as project...']);
+    expectDeepEqual(menuItems(view, 'Step exports'), ['Default Excel', 'rec', 'none', 'Save as project...']);
   });
 
   test('Fitting and sensitivity analysis icons follow the function features', async () => {

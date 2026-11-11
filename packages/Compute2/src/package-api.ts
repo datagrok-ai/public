@@ -187,8 +187,12 @@ export namespace funcs {
     return await grok.functions.call('Compute2:TestCustomExportModel', { a });
   }
 
-  export async function testCustomExportRecorder(funcCall: any , startDownload: boolean ): Promise<string> {
-    return await grok.functions.call('Compute2:TestCustomExportRecorder', { funcCall, startDownload });
+  export async function testCustomExportRecorder(funcCall: any ): Promise<DG.FileInfo> {
+    return await grok.functions.call('Compute2:TestCustomExportRecorder', { funcCall });
+  }
+
+  export async function testCustomExportNoFile(funcCall: any ): Promise<string> {
+    return await grok.functions.call('Compute2:TestCustomExportNoFile', { funcCall });
   }
 
   export async function testRfvTabs(rows: number ): Promise<{first: DG.DataFrame, middle: DG.DataFrame, last: DG.DataFrame}> {

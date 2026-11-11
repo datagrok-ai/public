@@ -757,8 +757,8 @@ export class PackageFunctions {
       customExports: [{
         id: 'recorder',
         friendlyName: 'Record export',
-        handler: async (state, utils) =>
-          grok.shell.info(`Exported ${state.configId} with ${Object.keys(utils).sort().join(', ')}`),
+        handler: async (state, utils) => DG.FileInfo.fromString('recorder.txt',
+          `Exported ${state.configId} with ${Object.keys(utils).sort().join(', ')}`),
       }],
     };
     return c;
@@ -1042,15 +1042,21 @@ export class PackageFunctions {
 
   // Fixtures for the custom-export report-handler test (see test/custom-export.ts).
   @grok.decorators.func({
-    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]'},
+    // eslint-disable-next-line max-len
+    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"},{"name":"none","function":"Compute2:TestCustomExportNoFile"}]'},
   })
   static async TestCustomExportModel(a: number): Promise<number> {
     return a;
   }
 
   @grok.decorators.func()
-  static async TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean): Promise<string> {
-    return `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}|${startDownload}`;
+  static async TestCustomExportRecorder(funcCall: DG.FuncCall): Promise<DG.FileInfo> {
+    return DG.FileInfo.fromString('recorded.txt', `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}`);
+  }
+
+  @grok.decorators.func()
+  static async TestCustomExportNoFile(funcCall: DG.FuncCall): Promise<string> {
+    return funcCall.func.nqName;
   }
 
   // Fixture for the RFV tab tests (see test/rfv-view.ts): empty outputs get no tab, so `last` has one only

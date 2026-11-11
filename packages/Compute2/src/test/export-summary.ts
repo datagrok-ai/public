@@ -136,7 +136,7 @@ category('Export: workflow summary', () => {
   test('Tree export adds the summary file next to the step files', async () => {
     const cbInputs: ExportCbInput[] = [];
     const [, zip, , summary] = await reportTree({
-      startDownload: false, treeState, ...states, cb: async (input) => {cbInputs.push(input);},
+      treeState, ...states, cb: async (input) => {cbInputs.push(input);},
     });
     const stepFiles = summary.filter((item) => item.fileName).map((item) => [...item.path, item.fileName].join('/'));
     expectDeepEqual(Object.keys(zip).sort(), [SUMMARY_FILE_NAME, ...stepFiles].sort());
@@ -146,7 +146,7 @@ category('Export: workflow summary', () => {
   });
 
   test('Summary workbook has one row per item', async () => {
-    const [, zip] = await reportTree({startDownload: false, treeState, ...states});
+    const [, zip] = await reportTree({treeState, ...states});
     const rows = sheetRows(await loadWorkbook((zip[SUMMARY_FILE_NAME] as [Uint8Array, any])[0]));
     expectDeepEqual(rows.length, 9);
     expectDeepEqual(rows[0].slice(0, 6), ['Path', 'Type', 'Name', 'File', 'Status', 'Run error']);
@@ -162,7 +162,7 @@ category('Export: workflow summary', () => {
   test('Standalone summary workbook matches the exported one', async () => {
     const items: ExportSummaryItem[] = getExportSummary(treeState, states);
     const [blob] = await reportSummary(items);
-    const [, zip] = await reportTree({startDownload: false, treeState, ...states});
+    const [, zip] = await reportTree({treeState, ...states});
     const standalone = sheetRows(await loadWorkbook(new Uint8Array(await blob.arrayBuffer())));
     const exported = sheetRows(await loadWorkbook((zip[SUMMARY_FILE_NAME] as [Uint8Array, any])[0]));
     expectDeepEqual(standalone, exported);
