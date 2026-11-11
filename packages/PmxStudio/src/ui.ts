@@ -5,7 +5,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {buttonWithIcon, computed, div, divH, divV, dot, effect, icon, loader, RadioInput, Section, signal, span,
-  Splitter, StatCard, Tooltip} from '@datagrok-libraries/u2';
+  link, Splitter, StatCard, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
 
@@ -284,9 +284,11 @@ export function contextHint(content: () => string | (string | HTMLElement)[] | n
 }
 
 /** A word in a contextHint that does something on a click (opens a choice, applies a value). */
-export function hintLink(text: string, onClick: (e: MouseEvent) => void, tooltip?: string): HTMLElement {
-  const a = span(text, 'pmx-hint-link');
-  a.addEventListener('click', onClick);
+export function hintLink(text: string, onClick: (e: MouseEvent | KeyboardEvent) => void, tooltip?: string):
+  HTMLElement {
+  // u2's link: its look, and Enter as a click
+  const a = link(text, onClick);
+  a.classList.add('pmx-hint-link');
   if (tooltip)
     a.title = tooltip;
   return a;

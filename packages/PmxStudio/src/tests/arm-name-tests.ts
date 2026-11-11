@@ -93,12 +93,13 @@ category('Arm names', () => {
 category('Arm cards', () => {
   test('the name is the title; the kind read from it, asked in a syngeneic model; TGI or T/C set once', async () => {
     const root = Scope.root('arm cards test');
+    let shown: HTMLElement | undefined;
     try {
       const host = signal<string | null>('immunocompetent');
       const metric = signal<'TGI' | 'TC'>('TGI');
       const input = root.build(() => new ArmsInput({host, metric}));
       // in the document: a link outside it does not get clicks
-      document.body.append(input.root);
+      document.body.append(shown = input.root);
       input.value = armsFrame(['anti-PD-1 10 mg/kg', 'Cpd-X 5 mg/kg p.o.'].map((name) =>
         ({name, therapy: 'small_molecule' as const, metric: 'TGI' as const, effect: 50,
           therapySource: 'name' as const})));
@@ -140,16 +141,17 @@ category('Arm cards', () => {
       expect(therapy(0), 'cell_therapy');
     } finally {
       root.dispose();
-      document.querySelectorAll('[data-u2=pmx-arms-input]').forEach((e) => e.remove());
+      shown?.remove();
     }
   });
 
   test('the answer the user gave outlives a new model and name; the reading follows the model', async () => {
     const root = Scope.root('arm cards precedence test');
+    let shown: HTMLElement | undefined;
     try {
       const host = signal<string | null>(null);
       const input = root.build(() => new ArmsInput({host}));
-      document.body.append(input.root);
+      document.body.append(shown = input.root);
       input.value = armsFrame(['Cpd-X 5 mg/kg', 'Cpd-Y', 'Cpd-Z + cisplatin'].map((name) =>
         ({name, therapy: 'small_molecule' as const, metric: 'TGI' as const, effect: 50,
           therapySource: 'name' as const})));
@@ -181,7 +183,7 @@ category('Arm cards', () => {
       expect(therapy(1), 'immune_agonist', 'read again: immunocompetent');
     } finally {
       root.dispose();
-      document.querySelectorAll('[data-u2=pmx-arms-input]').forEach((e) => e.remove());
+      shown?.remove();
     }
   });
 });

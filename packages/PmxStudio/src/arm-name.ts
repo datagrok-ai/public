@@ -1,7 +1,3 @@
-/* What an arm's free-text name says: its drugs, each with the dose, schedule and route written beside it
-   ("Cisplatin 5 mg/kg Q7D i.p. + anti-PD-1 10 mg/kg"), and which arms are the combination of two others.
-   Plain functions on strings, no platform: the arms input reads them, and later the PK bridge (dose, schedule). */
-
 import {ARCHETYPES, Therapy} from './archetypes';
 
 export interface Dose {value: number, unit: string}

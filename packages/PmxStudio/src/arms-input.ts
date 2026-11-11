@@ -107,7 +107,7 @@ class ArmCard extends Control {
         picked.value = t;
         source.value = 'user';
       };
-      const choose = (e: MouseEvent) => {
+      const choose = (e: MouseEvent | KeyboardEvent) => {
         const menu = Menu.popup();
         for (const t of THERAPIES)
           menu.item(KIND_WORDS[t], () => pick(t), {check: t === therapy.peek()});
@@ -137,7 +137,12 @@ class ArmCard extends Control {
             const l = hintLink(label, () => pick(taken), 'The name does not say. Most small molecules tested in ' +
               'syngeneic models act through the immune system, and they need more animals: Plan assumes that until ' +
               'you say');
-            l.classList.toggle('pmx-hint-current', therapy.value === taken);
+            // the reading Plan takes now, in bold
+            if (therapy.value === taken) {
+              const b = document.createElement('b');
+              b.append(...l.childNodes);
+              l.append(b);
+            }
             return l;
           };
           const what = read.value.placed ? 'One drug not recognized · it works on the tumor ' :
