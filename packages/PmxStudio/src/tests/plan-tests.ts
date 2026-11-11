@@ -79,6 +79,11 @@ category('Plan', () => {
         expect(finite(o.armResults.get('n', 0)), Number.isFinite(needed) ? Math.max(needed, MIN_GROUP) : null);
         expect(String(o.plan.get('notes_groups', 0)).includes('do not pin down'),
           new Set(fits.map((x) => Math.max(x, MIN_GROUP))).size > 1, `${line}: ${fits}`);
+        // the advanced choice: the atlas's best fit alone, its own n and nothing said
+        const best = await plan({line, arms: armsFrame([arm('Cpd-1')]), fits: 'Best fit only'});
+        expect(String(best.armResults.get('n_fits', 0)), String(fits[0]), line);
+        expect(finite(best.armResults.get('n_needed', 0)), Number.isFinite(fits[0]) ? fits[0] : null, line);
+        expect(String(best.plan.get('notes_groups', 0)).includes('do not pin down'), false, line);
       }
       // a line with one fit: its own n, and nothing said
       const one = await plan({arms: armsFrame([arm('Cpd-1')])});

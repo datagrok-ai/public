@@ -172,10 +172,11 @@ export class PackageFunctions {
     // set by the Plan view, which shows the plan first and fills the smallest detectable effects in afterwards
     // @ts-expect-error (as above)
     @grok.decorators.param({type: 'bool', options: {category: 'Advanced', caption: 'Smallest detectable effect', optional: true, visible: 'false', initialValue: 'true', description: 'With the animals per arm set, also search each arm’s smallest detectable effect (off: left empty and the plan several times faster).'}}) detectableEffect?: boolean,
+    @grok.decorators.param({options: {category: 'Advanced', caption: 'Equally good fits', optional: true, choices: ['Average their power', 'Best fit only'], initialValue: 'Average their power', description: 'For a tumor model whose published controls several fits describe equally well (Panc02, PDX-PDAC; the plan says so when they disagree): size the groups for the power averaged over those fits, or for the atlas’s best fit alone. It changes nothing for the other models.'}}) fits?: string,
   ): Promise<PlanFrames> {
     return planFrames(declarationOf({line, endpoint, arms, power, correction, measurementDays, n, lastDay, alpha,
-      preLoss, postLoss, lossRule, confidence, vRand, startWeekday, humane, compareSchedules, detectableEffect}),
-    tgisOf(tgiScenarios));
+      preLoss, postLoss, lossRule, confidence, vRand, startWeekday, humane, compareSchedules, detectableEffect,
+      fits}), tgisOf(tgiScenarios));
   }
 
   @grok.decorators.func({

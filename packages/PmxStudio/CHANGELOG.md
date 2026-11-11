@@ -27,7 +27,7 @@
   agree. The power by measurements per week carries what the other fits move the group by at the study's own
   schedule (they are not designed again per schedule), and the power by last day and the smallest detectable
   effect stay the prior's own fit's. `pmxPlanStudy`: `armResults` has `n_fits`, what each fit needs alone (the
-  prior's own first).
+  prior's own first), and **Equally good fits** (Advanced) sizes for the atlas's best fit alone when asked.
 * Defaults (2026-11-10):
   * A new plan or study starts from a humane limit of 1500 mm³ and an endpoint of 1000 mm³ (2000 and 1500 before):
     the limit is under the 1.5 cm mean diameter that Workman et al. 2010 advise for therapy studies, a default study

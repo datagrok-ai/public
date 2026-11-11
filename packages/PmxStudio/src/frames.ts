@@ -43,7 +43,7 @@ export interface PlanInputs {
   measurementDays?: string; n?: number; lastDay?: number; alpha?: number; preLoss?: number; postLoss?: number;
   lossRule?: string;
   confidence?: number; vRand?: number; startWeekday?: string; humane?: number; compareSchedules?: boolean;
-  detectableEffect?: boolean;
+  detectableEffect?: boolean; fits?: string;
 }
 
 /** The declaration the engine reads: each empty optional at its default, percentages as shares, counts rounded and
@@ -61,7 +61,7 @@ export function declarationOf(x: PlanInputs): StudyDeclaration {
     humane: ok(x.humane) && x.humane > 0 ? x.humane : HUMANE,
     preLoss: share(x.preLoss, 20), postLoss: share(x.postLoss, 10), confidence: share(x.confidence, 90),
     lossRule: x.lossRule === 'Average loss only' ? 'expected' : 'confident',
-    schedules: x.compareSchedules !== false, mde: x.detectableEffect !== false,
+    schedules: x.compareSchedules !== false, mde: x.detectableEffect !== false, fits: x.fits !== 'Best fit only',
   };
 }
 
