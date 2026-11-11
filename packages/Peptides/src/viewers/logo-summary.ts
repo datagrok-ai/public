@@ -857,7 +857,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
               showColumnSelector: false,
               showRangeSlider: false,
               showBinSelector: false,
-              backColor: DG.Color.toHtml(DG.Color.white),
+              backColor: DG.Color.white,
               xAxisHeight: 1,
               showSplitSelector: false,
             });
