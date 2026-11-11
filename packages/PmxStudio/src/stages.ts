@@ -9,6 +9,7 @@ import {monitorView} from './monitor-view';
 import {hubView} from './hub-view';
 import {STAGES, stageOf} from './ui';
 import type {Stage} from './ui';
+import {cruxWake} from './crux';
 
 /** The URL path of a stage's view; the home's is the app's own. */
 export const pathOf = (stage: Stage) => stage === 'home' ? '/apps/PmxStudio' : `/apps/PmxStudio/${stage}`;
@@ -84,9 +85,12 @@ export function quietContextPanel(): void {
   if (watching)
     return;
   watching = true;
+  const computes = (v: DG.ViewBase | null) => !!stageOf(v) && stageOf(v) !== 'home'; // (Plan, Monitor, Analyze)
   const apply = () => {
     const w = grok.shell.windows;
     const stage = stageOf(grok.shell.v);
+    if (computes(grok.shell.v)) // a stage opened or come back to: the engine at rest wakes
+      cruxWake();
     const hide = stage === 'home' ? QUIET_OVERVIEW : stage ? QUIET : [];
     for (const [p, on] of [...before]) {
       if (!hide.includes(p)) {
@@ -101,6 +105,11 @@ export function quietContextPanel(): void {
     }
   };
   grok.events.onCurrentViewChanged.subscribe(apply);
+  // the tab back on a stage that computes: the engine at rest wakes
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && computes(grok.shell.v))
+      cruxWake();
+  });
   // the app's first view may already be current when this runs
   setTimeout(apply);
 }

@@ -3,21 +3,21 @@ import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {cruxPool} from '../crux';
 import type {CruxModules, CruxResult} from '../crux';
 
-/** Sets of workers that answer when told: `go()` resolves a set's pending calls; `ended` counts its terminations.
- *  From the `failFrom`-th set on, opening fails. `loaded` answers the pool's question of what a set has loaded (the
- *  pause waits on it). */
+/** Sets of workers that answer when told: `go()` resolves a set's pending calls; `ended` counts its terminations,
+ *  `loads` the modules the pool had it load. From the `failFrom`-th set on, opening fails. `loaded` answers the
+ *  pool's question of what a set has loaded (the pause waits on it). */
 function fakeSets(failFrom = Infinity, loaded: () => Promise<string[]> = async () => ['stats']) {
-  const made: {ended: number, go: () => void}[] = [];
+  const made: {ended: number, loads: string[], go: () => void}[] = [];
   let opened = 0;
   const open = (): Promise<CruxModules> => {
     if (opened++ >= failFrom)
       return Promise.reject(new Error('no workers'));
     const waiting: (() => void)[] = [];
-    const s = {ended: 0, go: () => waiting.splice(0).forEach((f) => f())};
+    const s = {ended: 0, loads: [] as string[], go: () => waiting.splice(0).forEach((f) => f())};
     made.push(s);
     return Promise.resolve({
       call: () => new Promise<CruxResult>((r) => waiting.push(() => r({} as CruxResult))),
-      loaded: loaded as any, load: async () => {}, terminate: async () => void s.ended++,
+      loaded: loaded as any, load: async (m: string) => void s.loads.push(m), terminate: async () => void s.ended++,
     });
   };
   return {made, open, opens: () => opened};
@@ -76,6 +76,56 @@ category('Crux pool', () => {
     answer();
     await delay(0);
     expect(made[0].ended, 0, 'swapped although a call came in during the pause');
+  });
+
+  test('wake reopens the sets a pause closed, with their modules, and never opens what was not', async () => {
+    const {made, open} = fakeSets();
+    const pool = cruxPool(open, 4, IDLE);
+    pool.wake(); // never opened: nothing to reopen
+    expect(pool.sets(), 0);
+    const calls = [pool.call('f', {}), pool.call('f', {}), pool.call('f', {})];
+    await delay(0);
+    made.forEach((s) => s.go());
+    await Promise.all(calls);
+    pool.wake(); // open: nothing opened
+    expect(made.length, 3, 'a wake opened sets on an open pool');
+    await delay(IDLE * 3);
+    expect(pool.sets(), 1, 'the pause kept more than one set');
+    pool.wake(); // at rest: back to three, each with the modules the sets had
+    expect(pool.sets(), 3);
+    expect(made.length, 4 + 2);
+    await delay(0);
+    expect(made.slice(3).map((s) => s.loads.join()).join('|'), 'stats|stats|stats', 'reopened without the modules');
+    pool.wake(); // just woken: nothing
+    expect(pool.sets(), 3);
+    await delay(IDLE * 3);
+    expect(pool.sets(), 1, 'no pause after a wake with no call');
+    // at rest, a call, then a wake: the call took the warm set, the wake opens nothing
+    const after = pool.call('f', {});
+    await delay(0);
+    made[made.length - 1].go();
+    await after;
+    const opened = made.length;
+    pool.wake();
+    expect(made.length, opened, 'a wake after a call reopened sets');
+  });
+
+  test('a wake with nothing to reopen does not cycle the set; open, it starts the countdown again', async () => {
+    const {made, open} = fakeSets();
+    const pool = cruxPool(open, 4, 100);
+    const one = pool.call('f', {});
+    await delay(0);
+    made[0].go();
+    await one;
+    await delay(70);
+    pool.wake(); // a gesture: someone is there
+    await delay(60);
+    expect(made.length, 1, 'rested although a gesture came 60 ms ago');
+    await delay(150);
+    expect(made.length, 2, 'never rested after the wake'); // (the pause swaps the set for a fresh one)
+    pool.wake(); // at rest with the one set it had: nothing to reopen, no countdown
+    await delay(250);
+    expect(made.length, 2, 'a wake at rest with one set swapped it again');
   });
 
   test('a call that fails with no set open leaves no set opened after the pause', async () => {

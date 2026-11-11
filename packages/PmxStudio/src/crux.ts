@@ -23,18 +23,26 @@ export interface CruxModules {
 }
 
 export const MAX_SETS = Math.max(1, Math.min(15, (navigator.hardwareConcurrency ?? 2) - 1));
-/** How long the engine stays idle before letting its sets of workers go. */
-export const IDLE_MS = 30000;
+/** How long the engine stays idle before letting its sets of workers go: longer than a pause to read, so only a user
+ *  who has gone (another tab, a meeting) pays the reopening, and a gesture that wakes it (`cruxWake`) hides that. */
+export const IDLE_MS = 180000;
 
 /** Sets of workers, opened as calls overlap: a set's module runs one call at a time, and every call is seeded, so
  *  which set runs it changes nothing. A module's wasm memory never shrinks (it keeps what its largest call took),
  *  so after `idleMs` with no call every set is stopped and one new one is opened, its modules loaded again: the
- *  next call starts warm, the memory of the calls before is given back. */
+ *  next call starts warm, the memory of the calls before is given back. `wake` (a gesture: someone is there) reopens,
+ *  at rest, as many sets as there were, so the calls the gesture is about to make find them open; open, it starts the
+ *  countdown again. */
 export function cruxPool(open: () => Promise<CruxModules>, maxSets: number, idleMs: number) {
   type Set = {modules: Promise<CruxModules>, busy: number};
   const pool: Set[] = [];
   let timer: ReturnType<typeof setTimeout> | undefined;
   let generation = 0; // a call since the pause began: the pause is not over
+  let rested: {sets: number, modules: string[]} | null = null; // what the last pause closed, until a call or a wake
+  const countdown = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => void rest(), idleMs);
+  };
   const fresh = (modules: string[]): Set => {
     const set: Set = {busy: 0, modules: open().then(async (m) => {
       await Promise.all(modules.map((x) => m.load(x).catch(() => {}))); // (a module that fails loads on its call)
@@ -55,14 +63,27 @@ export function cruxPool(open: () => Promise<CruxModules>, maxSets: number, idle
     const modules = (await Promise.all(pool.map((s) => s.modules.then((m) => m.loaded(), () => []))));
     if (generation !== at || pool.some((s) => s.busy > 0)) // (a call came in meanwhile: the next pause)
       return;
-    const old = pool.splice(0, pool.length, fresh([...new Set(modules.flat())]));
+    rested = {sets: pool.length, modules: [...new Set(modules.flat())]};
+    const old = pool.splice(0, pool.length, fresh(rested.modules));
     old.forEach((s) => s.modules.then((m) => m.terminate(), () => {}));
   };
   return {
     sets: () => pool.length, // (for the package's tests)
+    wake(): void {
+      // (never opened, or calculating: the calculation's end counts down; at rest with nothing to reopen, a countdown
+      // would only swap the one set for the same)
+      if (!pool.length || pool.some((s) => s.busy > 0) || (rested && pool.length >= rested.sets))
+        return;
+      generation++;
+      while (rested && pool.length < rested.sets)
+        pool.push(fresh(rested.modules));
+      rested = null;
+      countdown();
+    },
     async call(name: string, table: {[col: string]: any}, params: object = {}): Promise<CruxResult> {
       clearTimeout(timer);
       generation++;
+      rested = null;
       let set = pool.find((s) => s.busy === 0);
       if (!set && pool.length < maxSets) {
         set = fresh([]);
@@ -74,10 +95,8 @@ export function cruxPool(open: () => Promise<CruxModules>, maxSets: number, idle
         return await (await set.modules).call(name, table, params);
       } finally {
         set.busy--;
-        if (pool.every((s) => s.busy === 0)) {
-          clearTimeout(timer);
-          timer = setTimeout(() => void rest(), idleMs);
-        }
+        if (pool.every((s) => s.busy === 0))
+          countdown();
       }
     },
   };
@@ -133,3 +152,7 @@ export const crux = (name: string, table: {[col: string]: any}, params: object =
   calls++;
   return engine.call(name, table, params);
 };
+
+/** A gesture that will compute (a field changed, a stage opened, the tab back): the engine at rest reopens its sets
+ *  now, not on the first call. Nothing when it is open, or never was. */
+export const cruxWake = () => engine.wake();

@@ -10,6 +10,7 @@ import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
 
 import {_package} from './package';
+import {cruxWake} from './crux';
 
 /** A fraction as a whole percent: 0.734 → "73%". */
 export const pct = (x: unknown) => typeof x === 'number' && Number.isFinite(x) ? `${Math.round(x * 100)}%` : '—';
@@ -118,6 +119,7 @@ export function autoRun(form: () => FuncCallForm, run: () => unknown):
   let timer = 0;
   const cancel = () => window.clearTimeout(timer);
   const changed = (wait = DEBOUNCE) => {
+    cruxWake(); // (the engine at rest reopens during the pause, not after it)
     cancel();
     timer = window.setTimeout(() => {
       const f = form();
