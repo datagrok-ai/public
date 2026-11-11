@@ -371,11 +371,14 @@ const dfToSheet = (
     columns: df.columns.toList().map((col) => ({name: col.name, filterButton: false})),
     rows,
   };
-  sheet.addTable(tableConfig);
-  sheet.columns.forEach((col) => {
-    col.width = 25;
-    col.alignment = {wrapText: true};
-  });
+  // Excel has no table without columns, so a table with none leaves the sheet empty
+  if (nCols > 0) {
+    sheet.addTable(tableConfig);
+    sheet.columns.forEach((col) => {
+      col.width = 25;
+      col.alignment = {wrapText: true};
+    });
+  }
   const metaCol = nCols + 1;
   sheet.getColumn(metaCol).width = 100;
   sheet.getCell(1, metaCol).value = 'Validation and Consistency';

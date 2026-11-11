@@ -7,7 +7,7 @@ import {
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {
-  CONFIG_PATH, OUTPUT_OUTDATED_PATH, loadFuncCall, readOutputOutdated,
+  CONFIG_PATH, OUTPUT_OUTDATED_PATH, loadFuncCall, readOutputOutdated, readRunCompleted,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {
   StateSnapshot, StepSnapshot, loadStateSnapshot, saveStateSnapshot, snapshotCall, snapshotState,
@@ -121,6 +121,26 @@ category('ComputeUtils: Driver state snapshots', async () => {
         {prefix: 'Workflow runs not nested'});
     } finally {
       await deleteRuns([metaCall?.id, ...callIds(snapshot), treeCall?.id, ...savedCallIds(tree.toSerializedState())]);
+      tree.close();
+    }
+  });
+
+  test('A saved snapshot records whether every step is completed', async () => {
+    const {tree} = await liveTree();
+    const ids: (string | undefined)[] = [];
+    const savedCompleted = async () => {
+      const snapshot = snapshotOf(tree);
+      const metaCall = await saveStateSnapshot(snapshot);
+      ids.push(metaCall.id, ...callIds(snapshot));
+      return readRunCompleted(await historyUtils.shallowLoadRun(metaCall.id));
+    };
+    try {
+      expectDeepEqual(await savedCompleted(), false, {prefix: 'A step never ran'});
+      await tree.runStep((tree.nodeTree.getItem([{idx: 1}]) as FuncCallNode).uuid).toPromise();
+      await tree.linksState.waitForLinks().toPromise();
+      expectDeepEqual(await savedCompleted(), true, {prefix: 'Every step ran'});
+    } finally {
+      await deleteRuns(ids);
       tree.close();
     }
   });

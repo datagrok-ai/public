@@ -1,4 +1,4 @@
-[//]: # (doc max 10 lines: public/help/visualize/viewers/grid#summary-columns: confidence interval)
+[//]: # (doc max 10 lines: help/visualize/viewers/grid#summary-columns: confidence interval)
 
 # Confidence Interval Bar
 

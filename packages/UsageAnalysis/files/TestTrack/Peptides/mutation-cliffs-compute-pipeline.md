@@ -96,4 +96,4 @@ Expected (assertion summary):
 
 - **Why indirect assertions.** Neither compute pipeline has a direct user-facing trigger or return value to check — both run as a side effect of the SAR launch. So correctness is verified through their rendered consumers (cell glyphs, dedicated viewers, exported tables, panel summaries) rather than by calling the compute functions directly.
 - **No related bugs.** No curated bug currently anchors these compute paths specifically.
-- **See:** `public/help/visualize/viewers/sequence-mutation-cliffs.md`.
+- **See:** `help/visualize/viewers/sequence-mutation-cliffs.md`.

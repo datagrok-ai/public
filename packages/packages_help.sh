@@ -22,7 +22,7 @@ IFS=$'\n'
 for f in $(echo -e "$targetFiles"); do
     file=$(awk -F' ' '{print $1}' <<<"$f")
     link=$(awk -F' ' '{print $2}' <<<"$f")
-    dir="$packages_dir/../"
+    dir="$packages_dir/../.."
     if [[ $link == "http"* ]]; then
         if ! wget -T1 -t3 --spider -q "$link" ; then
             echo "$file: helpUrl $link is unavailable"

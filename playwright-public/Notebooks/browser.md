@@ -72,7 +72,7 @@ creation from the browser ribbon.
 (produced by `create.md`). Step 4 (Apply to) additionally requires `demog.csv` to be
 open in the platform before navigating to the Notebooks browser.
 
-See: `public/help/compute/jupyter-notebook.md#Notebooks browser`
+See: `help/compute/jupyter-notebook.md#Notebooks browser`
 
 ## Setup
 
@@ -199,7 +199,7 @@ See: `public/help/compute/jupyter-notebook.md#Notebooks browser`
   `pyramid_layer: integration`.
 - **GROK-11693** (Sharing tab NullError for notebook created via Open in Notebook) is
   directly exercised in Step 3. This scenario is the primary regression guard for that bug.
-- See `public/help/compute/jupyter-notebook.md` for the help-page navigation reference.
+- See `help/compute/jupyter-notebook.md` for the help-page navigation reference.
 
 ---
 {

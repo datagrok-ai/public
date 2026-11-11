@@ -71,10 +71,9 @@ for (const [flag, owners] of Object.entries(commandBooleans))
     delete argv[flag];
 if (command in commands) {
   try {
-    if (argv['help']) {
+    if (argv['help'])
       console.log(help[command]);
-      exitWithCode(1);
-    } else if (argv.all && onPackageCommandNames.includes(command)) {
+    else if (argv.all && onPackageCommandNames.includes(command)) {
       runAllCommand(process.cwd(),
         `grok ${process.argv.slice(2).join(' ')}`.replace('--all', ''), {});
     } else {

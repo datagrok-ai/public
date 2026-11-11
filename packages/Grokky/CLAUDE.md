@@ -1,6 +1,6 @@
 # Grokky
 
-Grokky is the [AI for Datagrok](../../help/explore/ai/ai.md), enabling the following:
+Grokky is the [AI for Datagrok](../../../help/explore/ai/ai.md), enabling the following:
 1. A generic AI JS API for core and other plugins to use LLMs
 2. [Datagrok MCP server](dockerfiles/mcp-server/) so that Datagrok can be used by others
 3. [AI runtime](dockerfiles/claude-runtime) for

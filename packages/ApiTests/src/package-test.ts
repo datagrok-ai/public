@@ -94,6 +94,7 @@ import './grid/filterGroup';
 import './shell/events';
 import './grid/color-coding';
 import './grid/viewer-set-property';
+import './grid/category-order';
 import './grid/multi-value-column';
 import './stats/stats';
 import './stats/window-functions';

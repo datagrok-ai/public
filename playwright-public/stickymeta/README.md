@@ -10,7 +10,7 @@ Manual test scenarios for the **Sticky Meta** feature (Browse > Platform > Stick
 
 Sticky Meta lets you attach custom metadata ("sticky meta") to any object in Datagrok.
 Metadata is stored in Postgres and shared instantly across all contexts. The feature is
-in **Beta**. Wiki: `public/help/govern/catalog/sticky-meta.md`.
+in **Beta**. Wiki: `help/govern/catalog/sticky-meta.md`.
 
 These docs are written first as **manual** scenarios. After review they are rewritten as
 Playwright autotests under this folder (`*.test.ts`), exercising the UI as much as possible
