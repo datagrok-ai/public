@@ -15,6 +15,10 @@ export interface MixtureComponent {kind: string, w: number, a: number, b: number
 
 export interface Study {studyid: string, mean: number, se: number, n: number}
 
+/** One fit of a line's growth spreads, as the fields it puts in the line's prior. */
+export interface PriorFit {sd_within: {log_alpha: number, log_beta: number},
+  study_prior: {sd_log_alpha: number, sd_log_beta: number}, distance_mean6: number, best?: boolean}
+
 export interface LinePrior {
   papers: number;
   animals: number;
@@ -37,12 +41,22 @@ export interface LinePrior {
   twin?: {sd_log_alpha: number, sd_log_beta: number, sd_process: number, first_factor: number, start_df: number,
     slow_share: number, slow_shift: number, skew: number,
     validation: {loo_coverage_90: number, measurements: number, below: number, above: number},
-    /** Monitor's next-measurement ranges, calibrated on published controls one session ahead: the probability
-     *  levels to ask Crux stats.tumor_monitor for ("90": next expected, "99": measure again), and how often a
-     *  correct value fell below and above each on studies left out (false: not measured for this line) */
+    /** The probability levels at which the predictive of an animal's last value, built after its session (Crux
+     *  stats.tumor_monitor's last_flag), covers 90% and 99% of published controls, and how often a correct value
+     *  fell below and above each on studies left out (an average per study; false: not confirmed). Not applied by
+     *  the package: Crux takes one pair of levels for that flag and for the ranges shown before measuring
+     *  (monitor.ts checkChance) */
     conformal?: {levels: {[level: string]: {lo: number, hi: number}}, papers: number, points: number,
       pooled: boolean, validated: {[level: string]: {miss_lo: number, miss_hi: number, cover: number}} | false,
-      source: string}};
+      source: string},
+    /** How often a correct value fell below and above the ranges Monitor shows before measuring ("90": next
+     *  expected, "99": measure again), at Crux's own levels on the atlas's published controls: an average per study */
+    next_ranges?: {levels: {[level: string]: {lo: number, hi: number}},
+      observed: {[level: string]: {miss_lo: number, miss_hi: number}}, papers: number, points: number,
+      pooled: boolean, source: string}};
+  /** v3: `identification` on a line whose growth spreads the atlas's controls do not pin down: the fits that
+   *  describe them equally well (calibrate_v2.py's starts within the rule), the one this prior carries marked */
+  calibration?: {identification?: {status: string, rule: string, why: string, solutions?: PriorFit[]}};
   /** sd of log V between a study's animals at randomisation, measured in the atlas (measurement_error.py) */
   start_sd: number;
   sd_residual_log_v: number;

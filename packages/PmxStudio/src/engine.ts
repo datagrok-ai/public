@@ -9,7 +9,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import {crux, CruxResult, MAX_SETS, named, rows} from './crux';
-import {MeasurementError, enginePriors, linePrior} from './priors';
+import {MeasurementError, PriorFit, enginePriors, linePrior} from './priors';
 import {ARCHETYPES, Archetype, Therapy} from './archetypes';
 
 export type EffectMetric = 'TGI' | 'TC';
@@ -85,6 +85,8 @@ export interface StudyDeclaration {
   schedules: boolean;
   /** false: no search of the minimum detectable effect at a fixed n (the costliest step; none, the rest the same) */
   mde?: boolean;
+  /** false: the groups are not sized under the line's other fits (a caller that reads the kill rates alone) */
+  fits?: boolean;
 }
 
 /** The pools the trials draw from: 100 animals per arm and study (Crux's defaults: 1000, and 300 by last day and
@@ -103,9 +105,14 @@ export interface ArmDesign {
   killRate: number;
   /** the effect the kill rate gives (percent, as declared) */
   effect: number;
-  /** analysable animals this arm needs for the target assurance (null: not up to 40) */
+  /** analysable animals this arm needs for the target assurance (null: not up to 40); on a line with several fits
+   *  of its growth spreads, for the assurance averaged over them */
   nAssurance: number | null;
-  /** the arm's analysable animals (the user's n when given, else nAssurance) and the animals to randomise for them */
+  /** what each fit that describes the atlas's controls as well needs alone: the prior's own first, alone unless the
+   *  line has several (the engine priors' calibration.identification) */
+  fits: (number | null)[];
+  /** the arm's analysable animals (the user's n when given, else nAssurance, at least MIN_GROUP) and the animals to
+   *  randomise for them */
   n: number | null;
   randomise: number | null;
   /** at the arm's n */
@@ -199,18 +206,20 @@ async function enough(n: number | null, keep: number, confidence: number,
 }
 
 /** A line's growth model as Crux stats.tumor_study_design / tumor_study_simulate take it: the table of a new study's
- *  log alpha (one component, the labs' bivariate normal) and the model parameters. */
-export async function lineModel(line: string) {
+ *  log alpha (one component, the labs' bivariate normal) and the model parameters. `fit`: another fit of the line's
+ *  growth spreads in place of the prior's own (a line the atlas's controls do not pin down has several). */
+export async function lineModel(line: string, fit?: PriorFit) {
   const [lp, atlasMe] = [await linePrior(line), (await enginePriors()).measurement_error];
-  const [sp, nz] = [lp.study_prior, lp.noise];
-  if (!sp || !nz)
+  const nz = lp.noise;
+  if (!lp.study_prior || !nz)
     throw new Error(`The engine priors have no study prior for ${line}`);
+  const [sp, within] = [{...lp.study_prior, ...fit?.study_prior}, fit?.sd_within ?? lp.sd_within];
   const prior = {w: Float64Array.of(1), a: Float64Array.of(sp.mean_log_alpha), b: Float64Array.of(sp.sd_log_alpha)};
   const me: MeasurementError = {...atlasMe, model: `${atlasMe.model}, Student t (df ${nz.df.toFixed(1)})`,
     c0: nz.c0, c1: nz.c1};
   const params = {
-    log_beta: sp.mean_log_beta, log_v_ref: lp.log_v_ref, sd_log_alpha: lp.sd_within.log_alpha,
-    sd_log_beta: lp.sd_within.log_beta, sd_study_log_beta: sp.sd_log_beta,
+    log_beta: sp.mean_log_beta, log_v_ref: lp.log_v_ref, sd_log_alpha: within.log_alpha,
+    sd_log_beta: within.log_beta, sd_study_log_beta: sp.sd_log_beta,
     rho_study: sp.rho, start_sd: lp.start_sd, nonprogressing: lp.take.nonprogressing_map,
     me_c0: me.c0, me_c1: me.c1, noise_df: nz.df, sd_process: 0,
   };
@@ -247,7 +256,9 @@ function designArm(prior: object, params: Row, shards: number, power: number,
   else {
     const mine = r = designArmNow(prior, params, shards, power, nFixed);
     r.catch(() => armCache.get(key) === mine && armCache.delete(key));
-    if (armCache.size >= 64) // ponytail: oldest-used out at 64 arms; a few MB of tables at most
+    // ponytail: oldest-used out at 512 arms (three arms on a line with eleven fits, in a plan and its eight
+    // scenarios, are 3 x 11 x 9 = 297); some MB of tables at most
+    if (armCache.size >= 512)
       armCache.delete(armCache.keys().next().value!);
   }
   armCache.set(key, r);
@@ -300,8 +311,7 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
   if (d.arms.length === 0)
     throw new Error('Add at least one treatment arm');
   const {lp, me, prior, params} = await lineModel(d.line);
-  const shared = {
-    ...params,
+  const study = {
     v_rand: d.vRand,
     endpoint: d.endpoint, power: d.power, alpha: d.alpha, treated_arms: d.treatedArms ?? d.arms.length,
     correction: d.correction, test: TEST,
@@ -312,31 +322,61 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     seed: SEED,
     ...POOLS, ...(d.n ? {n: d.n} : {}), ...(d.lastDay ? {last_day: d.lastDay} : {}),
   };
+  const armParams = (arm: ArmDeclaration, model: Row) => {
+    const a = ARCHETYPES[arm.therapy];
+    return {...model, ...study, metric: arm.metric.toLowerCase(), effect: arm.effect, onset: a.onsetDays,
+      kappa_sd: a.kappaSd, responders: a.responders};
+  };
+  const armError = (arm: ArmDeclaration) => (e: any) => {
+    throw new Error(`${arm.name}: ${e?.message ?? e}`);
+  };
   // the minimum detectable effect searches over every study at once: such a design is one call; else the worker sets
   // shared out over the arms (each shard repeats its arm's calibration: more shards than sets only queue)
   const shards = d.n && d.mde !== false ? 1 : Math.max(1, Math.floor(SHARDS / d.arms.length));
-  const results: ArmTables[] = await Promise.all(d.arms.map((arm) => {
-    const a = ARCHETYPES[arm.therapy];
-    return designArm(prior, {...shared, metric: arm.metric.toLowerCase(), effect: arm.effect, onset: a.onsetDays,
-      kappa_sd: a.kappaSd, responders: a.responders}, shards, d.power, d.n).catch((e: any) => {
-      throw new Error(`${arm.name}: ${e?.message ?? e}`);
-    });
-  }));
+  // a line whose growth spreads the published controls do not pin down: each arm is also designed under every other
+  // fit that describes them as well, for its power by n alone (one call each: no schedules, no n, no detectable
+  // effect, so a fixed n reads the same calls). The fits count only with the prior's own marked among them: without
+  // it, which one the prior carries is not known. Every fit, not some: three of Panc02's eleven gave one animal more
+  // than all of them in half the designs tried, and all cost it about a second (two arms, fifteen worker sets)
+  const fitted = lp.calibration?.identification?.solutions ?? [];
+  const others = d.fits === false || !fitted.some((s) => s.best) ? [] : fitted.filter((s) => !s.best);
+  const powerOnly = (p: Row) => {
+    const q: Row = {...p, schedules: false, mde: false};
+    delete q.n;
+    return q;
+  };
+  const [results, underOthers]: [ArmTables[], ArmTables[][]] = await Promise.all([
+    Promise.all(d.arms.map((arm) => designArm(prior, armParams(arm, params), shards, d.power, d.n)
+      .catch(armError(arm)))),
+    Promise.all(others.map(async (fit) => {
+      const m = await lineModel(d.line, fit);
+      return Promise.all(d.arms.map((arm) => designArm(m.prior, powerOnly(armParams(arm, m.params)), 1, d.power, null)
+        .catch(armError(arm))));
+    }))]);
 
   // every arm with its own n (the treatments differ in what they need); the control as large as the largest arm,
   // so each comparison has at least the control its own design assumed (equal groups): conservative
   const plans = results.map((r) => r.plan);
-  const powers = results.map((r) => r.power.map((x) => ({n: x.n, implant: x.implant,
-    assurance: finite(x.assurance)})));
   const arms: ArmDesign[] = d.arms.map((decl, k) => {
     const p = plans[k];
-    const nAssurance = finite(p['n_assurance']);
+    const under = underOthers.map((f) => f[k]);
+    const curves = under.map((t) => new Map(t.power.map((x) => [x.n as number, finite(x.assurance)])));
+    // the power at each n, averaged over the fits as it already is over the atlas's labs: which fit is the true one
+    // is one more thing not known (the mean, not the most any needs: that would grow with the fits tried)
+    const power = results[k].power.map((x) => {
+      const each = [finite(x.assurance), ...curves.map((c) => c.get(x.n) ?? null)];
+      return {n: x.n as number, implant: x.implant as number, assurance: each.some((a) => a === null) ? null :
+        (each as number[]).reduce((t, a) => t + a, 0) / each.length};
+    });
+    const fits = [finite(p['n_assurance']), ...under.map((t) => finite(t.plan['n_assurance']))];
+    const nAssurance = under.length ? power.find((r) => (r.assurance ?? -1) >= d.power)?.n ?? null : fits[0];
     const n = d.n ?? (nAssurance === null ? null : Math.max(nAssurance, MIN_GROUP));
-    const row = n === null ? undefined : powers[k].find((r) => r.n === n);
+    const row = n === null ? undefined : power.find((r) => r.n === n);
     return {declaration: decl, archetype: ARCHETYPES[decl.therapy], killRate: p['kill_rate'], effect: p['effect'],
-      nAssurance, n, randomise: null,
-      assurance: d.n ? finite(p['assurance_at_n']) : row?.assurance ?? null,
-      mde: d.n ? finite(p['mde']) : null, power: powers[k]};
+      nAssurance, fits, n, randomise: null,
+      // (a given n the averaged table has no power for, as one over 40: the prior's own fit's, as its α)
+      assurance: d.n ? (under.length ? row?.assurance : null) ?? finite(p['assurance_at_n']) : row?.assurance ?? null,
+      mde: d.n ? finite(p['mde']) : null, power};
   });
   const sizes = arms.map((a) => a.n);
   const nControl = sizes.some((x) => x === null) ? null : Math.max(...(sizes as number[]));
@@ -370,7 +410,8 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     .map((x) => ({...x, arm: d.arms[k].name}) as Curve)));
 
   // by last day: each arm's power at Crux's n for it (the user's n, else its n_assurance, which the minimum group can
-  // raise) and the controls' state, from the first call (its shares move a little between calls: simulation)
+  // raise and a line's other fits move: this table and the schedules' are the prior's own fit's) and the controls'
+  // state, from the first call (its shares move a little between calls: simulation)
   const byDay = results.map((r) => r.duration);
   // each arm's value in row i of its own table, for the arms designed (an arm with no n has none)
   const perArm = (tables: {[k: string]: any}[][], i: number) =>
@@ -380,10 +421,14 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
 
   // by measurements a week: each arm's power as above, and the study's animals by the same rules as the design's
   const bySchedule = results.map((r) => r.schedules);
+  // ponytail: what the other fits move an arm by at the study's own schedule is carried to every schedule; exact
+  // would be every fit designed with its schedules (the costliest part, once per fit)
+  const moved = arms.map((a) => d.n || a.n === null || a.fits[0] === null ? 0 :
+    a.n - Math.max(a.fits[0], MIN_GROUP));
   const schedules = bySchedule[0].map((row, i) => {
-    const each = bySchedule.map((t) => {
+    const each = bySchedule.map((t, k) => {
       const needed = finite(t[i].n_assurance);
-      return d.n ?? (needed === null ? null : Math.max(needed, MIN_GROUP));
+      return d.n ?? (needed === null ? null : Math.max(Math.max(needed, MIN_GROUP) + moved[k], MIN_GROUP));
     });
     return {perWeek: row.per_week, measurements: row.measurements,
       assurance: perArm(bySchedule, i),
@@ -420,6 +465,16 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     if (a.n === null) {
       notes.groups.push(`${a.declaration.name}: even 40 animals per group do not reach ${Math.round(d.power * 100)}% ` +
         'power; this effect is too small to detect reliably');
+    }
+    // the line's other fits, said only where they disagree on the group: fits that agree need no words
+    if (!d.n && a.fits.length > 1) {
+      const each = a.fits.map((x) => x === null ? Infinity : Math.max(x, MIN_GROUP));
+      const [least, most] = [Math.min(...each), Math.max(...each)];
+      if (least < most) {
+        notes.groups.push(`${a.declaration.name}: the published ${d.line} controls do not pin down how much the ` +
+          `animals of one study differ. Fits that describe them equally well need ${least} to ` +
+          `${Number.isFinite(most) ? most : 'more than 40'} animals per group each; the power here is their average`);
+      }
     }
   }
   for (const a of arms) {

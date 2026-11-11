@@ -262,12 +262,20 @@ category('Analyze', () => {
     // a plan saved before it kept the arms' power
     expect(noEffectNote(row({group: 'A', activity: 'No clear effect', p_value: 0.4, n: 8}), row({plan: 'P'}))!
       .includes('cannot tell this group from the control'), true);
-    // no plan: a sham group, half of the example's controls, against the other half
+    // no plan: a sham group, half of the example's controls, against the other half: every other animal by its last
+    // volume, so the halves are alike whatever example the atlas gives (every other by id is a chance split, and
+    // one in twenty of those is significant)
     const study = await exampleStudy();
     study.setTag(PLAN_TAG, '');
     const sham = study.clone(DG.BitSet.create(study.rowCount, (i) => study.get('group', i) === 'Vehicle'));
     sham.setTag(PLAN_TAG, '');
-    const ids = [...new Set(sham.col('animal')!.toList())];
+    const last = new Map<string, {day: number, volume: number}>();
+    for (let i = 0; i < sham.rowCount; i++) {
+      const [a, day] = [sham.get('animal', i) as string, sham.get('day', i) as number];
+      if (!(last.get(a)?.day! >= day))
+        last.set(a, {day, volume: sham.get('volume', i)});
+    }
+    const ids = [...last.keys()].sort((a, b) => last.get(a)!.volume - last.get(b)!.volume);
     for (let i = 0; i < sham.rowCount; i++) {
       if (ids.indexOf(sham.get('animal', i)) % 2)
         sham.set('group', i, 'Sham');

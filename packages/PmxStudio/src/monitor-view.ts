@@ -390,8 +390,11 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     // sessions, which would let a mistyped value through)
     const chance: number | null = r.status.col('check_chance')?.isNone(0) === false ?
       r.status.get('check_chance', 0) : null;
-    sheet.append(infoNote((chance ? `A correct value falls outside its range about 1 time in ` +
-      `${Math.round(1 / chance)} (measured on published controls left out of the fit): with ${all.length} animals, ` +
+    const above: number = chance && r.status.col('check_above')?.isNone(0) === false ?
+      r.status.get('check_above', 0) : 0.5;
+    const side = above > 2 / 3 ? ', mostly above it' : above < 1 / 3 ? ', mostly below it' : '';
+    sheet.append(infoNote((chance ? `In the atlas's published controls a correct value fell outside its range about ` +
+      `1 time in ${Math.round(1 / chance)} (the average over studies)${side}: with ${all.length} animals, ` +
       `${promptsByChance(all.length, chance)} by chance. ` :
       `How often a correct value falls outside its range is not measured for ${r.status.get('line', 0)} yet. `) +
       `Measure again; a second reading that agrees stands.`));

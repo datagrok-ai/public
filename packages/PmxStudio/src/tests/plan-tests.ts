@@ -2,8 +2,9 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {armsFrame} from '../arms-input';
-import {MIN_GROUP, finite} from '../engine';
+import {ENDPOINT, HUMANE, LAB_WEEKDAYS, MIN_GROUP, StudyDeclaration, designStudy, finite} from '../engine';
 import {tgisOf} from '../frames';
+import {enginePriors} from '../priors';
 
 /** pmxPlanStudy as the Plan view calls it: the outputs by name. */
 async function plan(params: {[k: string]: any}): Promise<{[k: string]: DG.DataFrame}> {
@@ -62,6 +63,71 @@ category('Plan', () => {
     expect(o.armResults.get('n', 0), MIN_GROUP);
     expect(String(o.plan.get('notes_groups', 0)).includes('minimum per group'), true);
   }, {timeout: 120000});
+
+  test('a line the atlas does not pin down: sized for the power averaged over its fits, said when they differ',
+    async () => {
+      const marked = Object.entries((await enginePriors()).lines)
+        .filter(([, l]) => (l.calibration?.identification?.solutions?.length ?? 0) > 1);
+      for (const [line, l] of marked) {
+        const o = await plan({line, arms: armsFrame([arm('Cpd-1')])});
+        // each fit's own answer, the prior's first ('>40': none up to 40)
+        const fits = String(o.armResults.get('n_fits', 0)).split(', ').map((x) => x === '>40' ? Infinity : Number(x));
+        expect(fits.length, l.calibration!.identification!.solutions!.length, `${line}: ${fits}`);
+        // (one more than the most any needs: a fit's simulated power can dip under the target past its own n)
+        const needed = finite(o.armResults.get('n_needed', 0)) ?? Infinity;
+        expect(Math.min(...fits) <= needed && needed <= Math.max(...fits) + 1, true, `${line}: ${needed} of ${fits}`);
+        expect(finite(o.armResults.get('n', 0)), Number.isFinite(needed) ? Math.max(needed, MIN_GROUP) : null);
+        expect(String(o.plan.get('notes_groups', 0)).includes('do not pin down'),
+          new Set(fits.map((x) => Math.max(x, MIN_GROUP))).size > 1, `${line}: ${fits}`);
+      }
+      // a line with one fit: its own n, and nothing said
+      const one = await plan({arms: armsFrame([arm('Cpd-1')])});
+      expect(String(one.armResults.get('n_fits', 0)), String(one.armResults.get('n_needed', 0)));
+      expect(String(one.plan.get('notes_groups', 0)).includes('do not pin down'), false);
+    }, {timeout: 300000});
+
+  test('several equally good fits: the power is their average, at the n found or set', async () => {
+    const d: StudyDeclaration = {line: 'MC38', vRand: 100, endpoint: ENDPOINT, humane: HUMANE, lastDay: null,
+      weekdays: LAB_WEEKDAYS, startWeekday: 0, power: 0.8, alpha: 0.05, correction: 'holm', n: null,
+      arms: [arm('Cpd-1')], preLoss: 0.2, postLoss: 0.1, confidence: 0.9, lossRule: 'confident', schedules: false};
+    const lp = (await enginePriors()).lines['MC38'];
+    const own = {sd_within: {log_alpha: lp.sd_within.log_alpha, log_beta: lp.sd_within.log_beta},
+      study_prior: {sd_log_alpha: lp.study_prior!.sd_log_alpha, sd_log_beta: lp.study_prior!.sd_log_beta},
+      distance_mean6: 1};
+    // a second fit with a study's animals twice as far apart: it needs more of them
+    const wider = {...own, sd_within: {log_alpha: 2 * own.sd_within.log_alpha, log_beta: 2 * own.sd_within.log_beta}};
+    const kept = lp.calibration;
+    try {
+      lp.calibration = {identification: {status: 'poorly_identified', rule: '', why: '',
+        solutions: [{...own, best: true}, wider]}};
+      const s = await designStudy(d);
+      const [first, second] = s.arms[0].fits as number[];
+      expect(s.arms[0].fits.length, 2);
+      expect(second > first, true, `${s.arms[0].fits}`);
+      // sized for the power averaged over the two: between what each needs alone
+      const needed = s.arms[0].nAssurance!;
+      expect(first <= needed && needed <= second, true, `${needed} of ${s.arms[0].fits}`);
+      expect(s.arms[0].n, Math.max(needed, MIN_GROUP));
+      expect(s.arms[0].assurance! >= d.power, true, `${s.arms[0].assurance}`);
+      expect(s.nControl, s.arms[0].n);
+      expect(s.notes.groups.some((x) => x.includes('do not pin down') &&
+        x.includes(`need ${Math.max(first, MIN_GROUP)} to ${second}`)), true, s.notes.groups.join(' | '));
+      // a set number of animals: its power is the two fits' average too, below the prior's own fit's
+      const [both, alone] = [await designStudy({...d, n: 8, mde: false}),
+        await designStudy({...d, n: 8, mde: false, fits: false})];
+      expect(both.arms[0].fits.length, 2);
+      expect(alone.arms[0].fits.length, 1);
+      expect(both.arms[0].assurance! < alone.arms[0].assurance!, true,
+        `${both.arms[0].assurance} vs ${alone.arms[0].assurance}`);
+      // the prior's own fit not marked: which one it carries is not known, and none counts
+      lp.calibration = {identification: {status: 'poorly_identified', rule: '', why: '', solutions: [own, wider]}};
+      const unmarked = await designStudy(d);
+      expect(unmarked.arms[0].fits.length, 1);
+      expect(unmarked.arms[0].nAssurance, first);
+    } finally {
+      lp.calibration = kept;
+    }
+  }, {timeout: 300000});
 
   test('no losses: as many to randomize and implant as analyzable; 10 at 20% loss need 15 (90% sure)', async () => {
     const none = await plan({arms: armsFrame([arm('Cpd-1')]), preLoss: 0, postLoss: 0});

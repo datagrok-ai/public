@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+* Atlas (2026-11-11): the engine priors are the atlas sealed that day (`files/engine_priors_v3.json`, sha256
+  `e2c069fe…d605`), in place of the export of 2026-11-06: the curation notes applied and three exclusions of
+  non-volume or misaligned rows (Panc02, Hepa1-6), the measurement error recalibrated (4T1's tails), the digital
+  twin refitted on the final data, each line's `twin.conformal` and `twin.next_ranges` (Monitor), and
+  `calibration.identification` on the lines whose spreads the controls do not pin down. `files/SOURCES.md` lists
+  every paper behind the twelve lines (219: each with a control in a line's pool or a treated arm behind an
+  archetype); two papers were attributed to the wrong PDX line and one had no DOI. Known issue: a line's
+  non-progressing share (`take`) is 6 to 12% low, relatively (0.03 to 0.1 points), from Crux's binomial
+  `stats.map_prior` on tables with few events; no group size depends on it.
 * The test (2026-11-10): each treated group is compared with the control with their own variances (Welch's t test
   on the per-animal slopes) and Holm's correction, in Plan (Crux `stats.tumor_study_design`, `test: welch`,
   `correction: holm`), Monitor (`stats.tumor_monitor`) and Analyze (Crux `stats.posthoc`; each difference's interval
@@ -11,6 +20,14 @@
     variance for every group, is no longer a choice.
   * Analyze: beside each p-value, the one a common variance gives (`p_common_variance`: Dunnett's), and a note when
     the two disagree at α.
+* Plan, lines the atlas does not pin down (2026-11-11): where the published controls are described equally well by
+  several fits of how much animals and studies differ (the engine priors' `calibration.identification`: today
+  Panc02 and PDX-PDAC), an arm's power is the average over those fits, as it already is over the atlas's labs, and
+  the group is sized for it; a note gives what each fit needs alone when they differ, and says nothing when they
+  agree. The power by measurements per week carries what the other fits move the group by at the study's own
+  schedule (they are not designed again per schedule), and the power by last day and the smallest detectable
+  effect stay the prior's own fit's. `pmxPlanStudy`: `armResults` has `n_fits`, what each fit needs alone (the
+  prior's own first).
 * Defaults (2026-11-10):
   * A new plan or study starts from a humane limit of 1500 mm³ and an endpoint of 1000 mm³ (2000 and 1500 before):
     the limit is under the 1.5 cm mean diameter that Workman et al. 2010 advise for therapy studies, a default study
@@ -25,11 +42,13 @@
   expected range and the flag on an animal's last value all come from one forecast of its next measurement (Crux
   `stats.tumor_monitor`: `check_lower`/`check_upper`, `band_lower`/`band_upper`, `last_flag`), so the attention list
   and the sheet no longer disagree. Before, the flag ran at 3.7% and the range beside it at 2.6% for a nominal 1%.
-  * The ranges' levels are the line's own when the engine priors carry them (`twin.conformal`), and the note under
-    the sheet quotes how often a correct value fell outside on published controls left out of the fit; a line
-    without that says so instead of quoting a number.
+  * The note under the sheet quotes how often a correct value fell outside the range shown before measuring, on the
+    atlas's published controls (the engine priors' `twin.next_ranges`, an average per study), and on which side.
+    The ranges' levels are Crux's own: the levels fitted per line (`twin.conformal`) are those of the flag on a last
+    value, whose forecast is built after the session, and Crux takes one pair of levels for both; applied to the
+    ranges shown before measuring they would leave a correct value outside twice as often as asked.
   * `pmxMonitorStudy`: `animals` has `last_flag` (-1 below, 0 inside, 1 above; empty on a first value) in place of
-    `last_pit`, and `status` has `check_chance`.
+    `last_pit`, and `status` has `check_chance` and `check_above` (the share of those values above the range).
 * Review fixes (2026-11-10):
   * A study's details: saving them from the header no longer drops the notebook's notes, an ID given on saving, or a
     date of day 0 set from the calendar.

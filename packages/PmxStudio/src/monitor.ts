@@ -50,20 +50,26 @@ function monitorOf(study: Study, params: {[k: string]: any}): Promise<CruxResult
 /** Chance of passing the limit by the next measurement from which an animal is listed. */
 export const LIMIT_ALERT = 0.2;
 /** How often a session of `n` animals asks to measure a correct value again, in words. `rate`: the share of correct
- *  values outside the "measure again" range, as measured for the line (the engine priors' twin.conformal). */
+ *  values outside the "measure again" range (checkChance). */
 export function promptsByChance(n: number, rate: number): string {
   const each = Math.max(n, 1) * rate;
-  return each >= 0.75 ? `about ${Math.round(each)} a session` : `about one every ${Math.round(1 / each)} sessions`;
+  // (from two thirds of a prompt a session, "one every 1 sessions" is one a session)
+  return Math.round(1 / each) < 2 ? `about ${Math.max(1, Math.round(each))} a session` :
+    `about one every ${Math.round(1 / each)} sessions`;
 }
 
-/** The line's calibrated ranges as Crux stats.tumor_monitor's levels, and what "measure again" costs by chance
- *  (null: not measured for the line). No calibration: Crux's own levels. */
-export function checkLevels(conformal: NonNullable<LinePrior['twin']>['conformal']):
-  {levels: {[k: string]: number}, chance: number | null} {
-  const [band, check] = [conformal?.levels['90'], conformal?.levels['99']];
-  const v = conformal?.validated ? conformal.validated['99'] : null;
-  return {levels: {...band ? {band_lo: band.lo, band_hi: band.hi} : {},
-    ...check ? {check_lo: check.lo, check_hi: check.hi} : {}}, chance: v ? v.miss_lo + v.miss_hi : null};
+/** What "measure again" costs by chance: how often a correct value fell outside the range shown before it was
+ *  measured, on the atlas's published controls at Crux's own levels, and the share of those above the range (the
+ *  engine priors' twin.next_ranges, an average per study; null: not measured).
+ *  The line's fitted levels (twin.conformal) are not passed to Crux: they were fitted on the predictive of an animal's
+ *  last value, built after its session, and Crux takes one pair of levels for that flag and for the ranges shown
+ *  before measuring, which they would leave too narrow (a correct value outside 2.1% of the time for the 1% asked,
+ *  on the same controls). */
+export function checkChance(ranges: NonNullable<LinePrior['twin']>['next_ranges']):
+  {chance: number, above: number} | null {
+  const v = ranges?.observed['99'];
+  return v && v.miss_lo + v.miss_hi > 0 ? {chance: v.miss_lo + v.miss_hi, above: v.miss_hi / (v.miss_lo + v.miss_hi)} :
+    null;
 }
 /** The share of the weight-loss limit from which an animal is listed (15% for the usual 20%). Our criterion, not a
  *  published one: a margin to act before the limit. */
@@ -132,7 +138,7 @@ async function armsOf(plan: SavedPlan | null, treated: string[], notes: string[]
     const d = await designStudy({line: plan.predicted.line, vRand: plan.predicted.vRand,
       endpoint: plan.predicted.endpoint, power: 0.8, alpha: 0.05, correction: 'holm', n: null, arms, preLoss: 0,
       postLoss: 0, lossRule: 'expected', confidence: 0.9, weekdays: LAB_WEEKDAYS, startWeekday: 0,
-      humane: finite(plan.inputs.humane) ?? HUMANE, schedules: false, lastDay: null});
+      humane: finite(plan.inputs.humane) ?? HUMANE, schedules: false, lastDay: null, fits: false});
     d.arms.forEach((a) => kill.set(a.declaration.name, a.killRate));
   }
   return treated.map((g) => {
@@ -194,13 +200,13 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
     throw new Error(`No group "${d.control}" in the study: the control must be one of ${names.join(', ')}`);
   const notes: string[] = [];
   // the plan's arms, the line's twin and the body weights do not wait for one another
-  const [arms, model, {tolerability, weights, animals: weighed}, calibrated] = await Promise.all([
+  const [arms, model, {tolerability, weights, animals: weighed}, byChance] = await Promise.all([
     armsOf(d.plan, names.filter((g) => g !== d.control), notes), twinModel(d.line),
-    tolerabilityFrames(d), linePrior(d.line).then((lp) => checkLevels(lp.twin?.conformal))]);
+    tolerabilityFrames(d), linePrior(d.line).then((lp) => checkChance(lp.twin?.next_ranges))]);
   const latest = Math.max(...day);
   const future = futureDays(day, d.plan, metaOf(x.study)?.start);
   const r = await monitorOf({animal, group, day: Float64Array.from(day),
-    volume: Float64Array.from(volume)}, {...model, ...calibrated.levels, control: d.control,
+    volume: Float64Array.from(volume)}, {...model, control: d.control,
     ...arms.length ? {arms: JSON.stringify(arms)} : {}, future: future.join(','), endpoint: d.endpoint,
     humane: d.humane, alpha: d.alpha, correction: d.correction, test: TEST,
     ...d.day === null ? {} : {last_day: d.day}});
@@ -274,7 +280,7 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
       planned_end: d.plan?.predicted.studyEnd ?? null, plan: d.plan?.name ?? null,
       attention: animals.filter((a) => a.attention).length, animals: animals.length,
       next_look: looks.find((l) => l > latest) ?? null, at_look: atLook, looks: looks.join(', '), humane: d.humane,
-      check_chance: calibrated.chance, notes: notes.join(' | ')}])!,
+      check_chance: byChance?.chance ?? null, check_above: byChance?.above ?? null, notes: notes.join(' | ')}])!,
     animals: animalsDf,
     days,
     decisions: atLook && decisions.length ? DG.DataFrame.fromObjects(decisions)! : emptyDecisions(),

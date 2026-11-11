@@ -149,6 +149,9 @@ export async function planFrames(d: StudyDeclaration, tgis: number[] = []): Prom
     // (not Crux's power at its "median study": that lab is median in time, not in effect, so its power is not a
     // typical lab's; decision tumor-plan-checks, Revisit)
     n_needed: a.nAssurance, n: a.n, randomise: a.randomise, assurance: a.assurance, mde: a.mde,
+    // what each fit of the line's spreads needs alone, the prior's own first (several only on a line the atlas's
+    // controls do not pin down, where n_needed is for the power averaged over them)
+    n_fits: a.fits.map((x) => x ?? '>40').join(', '),
     responders: a.archetype.responders, onset_day: a.archetype.onsetDays,
     translation: a.archetype.translation, archetype_basis: a.archetype.basis,
   })))!;

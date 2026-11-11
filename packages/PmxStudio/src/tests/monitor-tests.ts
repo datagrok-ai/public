@@ -3,7 +3,7 @@ import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/
 import {Scope} from '@datagrok-libraries/u2';
 
 import {exampleStudy} from '../analyze';
-import {allocateGroups, checkLevels, futureDays, outsideBand, parseLooks, promptsByChance, reasonsOf,
+import {allocateGroups, checkChance, futureDays, outsideBand, parseLooks, promptsByChance, reasonsOf,
   weightReasons} from '../monitor';
 import {PLAN_TAG, parsePlan} from '../plan-file';
 import {LIMITS_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseStudy, studyOf, tableOf}
@@ -32,13 +32,17 @@ category('Monitor', () => {
   test('measure again by chance, in the words of a session', async () => {
     expect(promptsByChance(30, 0.037), 'about 1 a session');
     expect(promptsByChance(8, 0.037), 'about one every 3 sessions');
-    // a line's calibrated levels go to Crux as they are; what they cost by chance is both tails of the 99% range
-    const c = checkLevels({levels: {'90': {lo: 0.04, hi: 0.97}, '99': {lo: 0.002, hi: 0.998}}, papers: 12,
-      points: 900, pooled: false, validated: {'99': {miss_lo: 0.004, miss_hi: 0.007, cover: 0.989}}, source: ''});
-    expect(JSON.stringify(c.levels), '{"band_lo":0.04,"band_hi":0.97,"check_lo":0.002,"check_hi":0.998}');
-    expect(Math.abs(c.chance! - 0.011) < 1e-12, true);
-    // no calibration: Crux's own levels, and no rate to quote
-    expect(JSON.stringify(checkLevels(undefined)), '{"levels":{},"chance":null}');
+    expect(promptsByChance(18, 0.0395), 'about 1 a session');
+    expect(promptsByChance(30, 0.0125), 'about one every 3 sessions');
+    // what the range shown before measuring costs by chance: both tails of the 99% one, and the share above it
+    const ranges = (lo: number, hi: number) => ({levels: {'99': {lo: 0.005, hi: 0.995}},
+      observed: {'90': {miss_lo: 0.03, miss_hi: 0.07}, '99': {miss_lo: lo, miss_hi: hi}}, papers: 242, points: 24219,
+      pooled: true, source: ''});
+    const c = checkChance(ranges(0.002, 0.0105))!;
+    expect(Math.abs(c.chance - 0.0125) < 1e-12 && Math.abs(c.above - 0.84) < 1e-12, true, JSON.stringify(c));
+    // not measured, or nothing ever outside: no rate to quote
+    expect(checkChance(undefined), null);
+    expect(checkChance(ranges(0, 0)), null);
   });
 
   test('reviews and days to come', async () => {
@@ -150,7 +154,7 @@ category('Monitor', () => {
       expect([-1, 0, 1].includes(a('last_flag')), true, `flag ${a('last_flag')}`);
     }
     expect(forecast > 0, true);
-    // what "measure again" costs by chance is quoted only where the line's ranges were validated
+    // what "measure again" costs by chance is quoted only where the atlas measured it
     const chance = onReview.status.col('check_chance');
     expect(!chance || chance.isNone(0) || (chance.get(0) > 0 && chance.get(0) < 0.2), true);
     const between = await monitor(study, '14');
