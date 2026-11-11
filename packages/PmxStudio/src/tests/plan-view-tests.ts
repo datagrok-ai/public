@@ -49,9 +49,9 @@ category('Plan view', () => {
     const view = await opened({});
     try {
       expect(label(view, 'Analyzable'), false);
-      await setOn(view, 'Analyzable', 7);
+      await setOn(view, 'Analyzable', 12);
       await awaitCheck(() => label(view, 'Analyzable'), 'the card does not say set', 60000);
-      expect(param(view, 'n'), 7);
+      expect(param(view, 'n'), 12);
       await backOn(view, 'Analyzable', 'Back to what the power needs');
       await awaitCheck(() => !label(view, 'Analyzable'), 'the card still says set', 60000);
       // empty, not 0: the target power sizes the groups again

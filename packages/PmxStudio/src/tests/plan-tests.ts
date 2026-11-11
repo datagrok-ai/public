@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {armsFrame} from '../arms-input';
+import {fixedValue} from '../ui';
 import {ENDPOINT, HUMANE, LAB_WEEKDAYS, MIN_GROUP, StudyDeclaration, designStudy, finite} from '../engine';
 import {declarationOf, tgisOf} from '../frames';
 import {enginePriors} from '../priors';
@@ -18,6 +19,20 @@ async function plan(params: {[k: string]: any}): Promise<{[k: string]: DG.DataFr
 const arm = (name: string, effect = 60) => ({name, therapy: 'small_molecule' as const, metric: 'TGI' as const, effect});
 
 category('Plan', () => {
+  test('a value set from a card is checked as its field was: whole, in range; empty goes back', async () => {
+    const v = (raw: unknown) => JSON.stringify(fixedValue(raw, 2, 100));
+    expect(v(12), JSON.stringify({value: 12}));
+    expect(v(null), JSON.stringify({value: null}), 'back to the computed value: empty, not 0');
+    for (const bad of [7.5, 1, 1000, NaN, 0, 'abc'])
+      expect('error' in fixedValue(bad, 2, 100), true, `${bad} accepted`);
+  });
+
+  test('one treated arm: Holm and no correction size it alike', async () => {
+    const n = async (correction: string) => (await plan({arms: armsFrame([arm('Cpd-A')]), correction}))
+      .armResults.get('n', 0);
+    expect(await n('holm'), await n('none'));
+  });
+
   test('TGI or T/C is set for the study: it sets every arm; left empty, each arm keeps its own', async () => {
     const arms = armsFrame([{name: 'Cpd-1', therapy: 'small_molecule', metric: 'TGI', effect: 40},
       {name: 'Cpd-2', therapy: 'small_molecule', metric: 'TC', effect: 40}]);

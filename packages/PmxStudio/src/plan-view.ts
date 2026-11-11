@@ -7,7 +7,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {BasicTable, buttonWithIcon, ChoiceInput, computed, Dialog, div, divH, divV, dot, emptyState, loader, Menu,
-  NumberInput, Reason, signal, span, tableFromMap, TextInput, Tooltip} from '@datagrok-libraries/u2';
+  NumberInput, Reason, Form, signal, span, tableFromMap, TextInput, Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
@@ -16,7 +16,7 @@ import {PlanFrames, PlanInputs, WEEKDAY_NAMES, armColors, declarationOf, planFra
   weekdaysText} from './frames';
 import {Arm, ArmsInput, CorrectionInput, armsFrame} from './arms-input';
 import {ENDPOINT_RISK, MIN_GROUP, StudyDeclaration, diameterOf, finite, safeEndpoint} from './engine';
-import {askedOf, autoRun, callInputs, cardGrid, contextHint, copyRow, hintLink, infoNote, notes, notesBox, num, pct,
+import {askedOf, autoRun, callInputs, cardGrid, copyRow, fixedValue, hintLink, infoNote, notes, notesBox, num, pct,
   settleForm, sized, markStage, statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
 import {openStage, showStage} from './stages';
 import {editLayout, panelGrid, Slot} from './panels';
@@ -314,31 +314,51 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     tip: () => string, format?: (x: StatValue) => string) => statCard(form, label, value, tip, format);
   // a count no group size reaches has no number (a column with no value reads as an empty string)
   const count = (name: string) => computed(() => plan.value ? finite(plan.value.get(name, 0)) ?? '—' : undefined);
-  // the animals per group and the end of study are computed, or set from their cards: a click asks the value; set,
+  // the animals per group and the end of study are computed, or set from their cards (a click asks the value); set,
   // the card says so and a click offers to change it or go back to the computed one (the function's `n` and
   // `lastDay`, not in the form)
-  const setParam = (name: string, value: number | null) => {
+  // (checked again here, whatever called it, since it is the number of animals a study uses)
+  const setParam = (name: string, raw: number | null, min: number, max: number) => {
+    const r = fixedValue(raw, min, max);
+    if ('error' in r)
+      throw new Error(r.error);
     const field = form.getInput(name);
     if (field)
-      field.value = value;
-    call.setParamValue(name, value);
+      field.value = r.value;
+    call.setParamValue(name, r.value);
+    // one plan: the field's own change would plan again after its pause
+    auto.cancel();
     void replan();
   };
   const settable = (el: HTMLElement, name: 'n' | 'lastDay', set: () => boolean, ask: {title: string, label: string,
     now: () => number | undefined, min: number, max: number, back: string}) => {
-    el.classList.add('pmx-stat-settable');
+    // a button for the keyboard too
+    Object.assign(el, {tabIndex: 0, role: 'button'});
+    el.style.cursor = 'pointer';
     const open = () => self.show(self.build(() => {
       const input = new NumberInput({label: ask.label, value: ask.now() ?? ask.min, min: ask.min, max: ask.max,
-        nullable: false});
-      return new Dialog(ask.title).add(input).onOK(() => setParam(name, input.value), {text: 'Set'});
+        mode: 'int', nullable: false});
+      // in a form: OK waits while the number is not valid; the check again on OK, empty is not "back" here
+      return new Dialog(ask.title).add(new Form().add(input)).onOK(() => {
+        if (input.value === null)
+          throw new Error('Enter a number');
+        setParam(name, input.value, ask.min, ask.max);
+      }, {text: 'Set'});
     }));
-    el.addEventListener('click', (e) => {
+    const act = (anchor: HTMLElement) => {
       if (!result.peek())
         return;
       if (!set())
         return open();
-      Menu.popup().item('Change…', open).item(ask.back, () => setParam(name, null))
-        .show({anchor: e.currentTarget as HTMLElement});
+      Menu.popup().item('Change…', open).item(ask.back, () => setParam(name, null, ask.min, ask.max))
+        .show({anchor});
+    };
+    el.addEventListener('click', () => act(el));
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        act(el);
+      }
     });
   };
   const nSet = () => !!cell('n_fixed').peek();
@@ -386,28 +406,22 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // below the target (with the animals per arm fixed; else the animals grow to keep it)
   const calendarLoader = loader('Updating the plan…');
   const calendarStatus = divV([], 'pmx-calendar-status');
-  // how the calendar is edited, said while the pointer is on it, the first few times the user meets it
-  const hovering = signal(false);
-  const calendarHint = form.build(() => contextHint(() => hovering.value ? 'Click a weekday to measure on it or ' +
-    'not; double-click a day to note what happened, right-click it for more' : null));
-  const HINT_KEY = 'pmx-calendar-hint-views';
-  let hintViews = 0;
-  try {
-    hintViews = Number(localStorage.getItem(HINT_KEY) ?? 0);
-  } catch {} // no storage: the hint every time
-  let counted = false;
-  calendarBox.addEventListener('mouseenter', () => {
-    if (hintViews >= 3)
-      return;
-    hovering.value = true;
-    if (!counted) {
-      counted = true;
-      try {
-        localStorage.setItem(HINT_KEY, String(hintViews + 1));
-      } catch {}
-    }
-  });
-  calendarBox.addEventListener('mouseleave', () => hovering.value = false);
+  // how the calendar is edited, said while the pointer is on it, the first three plans the user opens: its line
+  // keeps its place hidden, so nothing under the pointer moves when it shows
+  const HINT_KEY = 'calendarHintViews';
+  const views = Number(grok.userSettings.getValue('PmxStudio', HINT_KEY));
+  const hintViews = Number.isFinite(views) && views > 0 ? views : 0;
+  const calendarHint = div(['Click a weekday to measure on it, or skip it; double-click a day to note what ' +
+    'happened, right-click it for more'], 'ui-label-details pmx-context-hint');
+  calendarHint.style.visibility = 'hidden';
+  if (hintViews >= 3)
+    calendarHint.style.display = 'none';
+  else {
+    grok.userSettings.add('PmxStudio', HINT_KEY, String(hintViews + 1));
+    void grok.userSettings.flush();
+  }
+  calendarBox.addEventListener('mouseenter', () => calendarHint.style.visibility = 'visible');
+  calendarBox.addEventListener('mouseleave', () => calendarHint.style.visibility = 'hidden');
   Object.assign(calendarStatus.style, {gap: '4px', margin: '0 0 var(--dg-space-s)', lineHeight: '1.45'});
   const flash = (el: HTMLElement) => {
     Object.assign(el.style, {transition: 'box-shadow 0.4s', boxShadow: '0 0 0 2px var(--dg-accent, #2083d5)'});
@@ -536,6 +550,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
           if (field)
             field.value = x;
           call.setParamValue('endpoint', x);
+          auto.cancel();
           void replan();
         };
         const offer = div(x === null ?

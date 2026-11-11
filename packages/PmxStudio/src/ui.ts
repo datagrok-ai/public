@@ -283,6 +283,21 @@ export function contextHint(content: () => string | (string | HTMLElement)[] | n
   return e;
 }
 
+/** A value typed for a parameter a card sets, checked as its field did: a whole number from `min` to `max` (the
+ *  value), or null (back to the computed one), else what is wrong with it. */
+export function fixedValue(raw: unknown, min: number, max: number): {value: number | null} | {error: string} {
+  if (raw === null || raw === undefined || raw === '')
+    return {value: null};
+  const x = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(x))
+    return {error: 'Enter a number'};
+  if (!Number.isInteger(x))
+    return {error: 'Enter a whole number'};
+  if (x < min || x > max)
+    return {error: `Enter a number from ${min} to ${max}`};
+  return {value: x};
+}
+
 /** A word in a contextHint that does something on a click (opens a choice, applies a value). */
 export function hintLink(text: string, onClick: (e: MouseEvent | KeyboardEvent) => void, tooltip?: string):
   HTMLElement {
