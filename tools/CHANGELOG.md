@@ -2,6 +2,7 @@
 
 ## v.next
 
+* `grok src`: Clones over HTTPS by default, leaves no empty folders for children not cloned; `grok src --help` prints the help
 * `grok test`: Fixed finding DevTools when run from a core Dart library (d4, xamgle, ddt, dml): it is in the umbrella's `public/` next to core
 
 ## 6.7.10 (2026-11-06)
