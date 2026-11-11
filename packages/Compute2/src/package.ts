@@ -11,7 +11,7 @@ import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RFVApp} from './apps/RFVApp';
 import {provideDgViewService} from '@datagrok-libraries/webcomponents-vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
-import type {PipelineConfiguration} from
+import type {PipelineConfiguration, ViewersHook} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
 import './tailwind.css';
@@ -27,7 +27,7 @@ import type {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
-import {CUSTOM_VIEW_OPTION} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {CUSTOM_VIEW_OPTION, getViewersHook} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {runWorkflow, saveWorkflowRun} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 import type {RunState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
@@ -183,8 +183,17 @@ export class PackageFunctions {
     const view = DG.toJs(DG.toDart(new DG.ViewBase())) as DG.View;
     setViewHierarchyData(call, view);
 
+    const viewersHookMakerName = getViewersHook(call.func);
+    let viewersHook: ViewersHook | undefined;
+    try {
+      if (viewersHookMakerName)
+        viewersHook = await DG.Func.byName(viewersHookMakerName).apply();
+    } catch (e: any) {
+      grok.shell.error(e);
+    }
+
     const app = Vue.createApp(RFVApp,
-      {funcCall: Vue.markRaw(call), initialRunId: call.aux.initialRunId});
+      {funcCall: Vue.markRaw(call), initialRunId: call.aux.initialRunId, viewersHook});
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
@@ -383,6 +392,15 @@ export class PackageFunctions {
     app.mount(view.root);
     view.name = 'FormTestApp';
     grok.shell.addView(view);
+  }
+
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'hook'}]})
+  static async SlowViewersHookMaker() {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    grok.events.fireCustomEvent('compute2-test-viewers-hook-made', null);
+    return (ioName: string, type: string) =>
+      grok.events.fireCustomEvent('compute2-test-viewers-hook-applied', {ioName, type});
   }
 
 

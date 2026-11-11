@@ -105,6 +105,10 @@ export namespace funcs {
     return await grok.functions.call('Compute2:FormTestApp', {});
   }
 
+  export async function slowViewersHookMaker(): Promise<any> {
+    return await grok.functions.call('Compute2:SlowViewersHookMaker', {});
+  }
+
   /**
    * Sample static two-step workflow configuration used for testing the workflow engine.
    */

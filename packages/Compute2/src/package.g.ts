@@ -118,6 +118,11 @@ export async function FormTestApp() : Promise<void> {
   await PackageFunctions.FormTestApp();
 }
 
+//output: object hook
+export async function SlowViewersHookMaker() {
+  return await PackageFunctions.SlowViewersHookMaker();
+}
+
 //name: Mock Pipeline 1
 //description: Sample static two-step workflow configuration used for testing the workflow engine.
 //input: object params 
