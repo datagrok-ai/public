@@ -253,7 +253,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // captions above every field: the panel reads top to bottom, left-aligned, at any width
   // no Run: each change replans once the changes stop
   const auto = autoRun(() => form, () => replan());
-  const form = funcForm(call, {layout: 'tall',
+  // (no table fills the arms: a study table open in the workspace, as when coming from Analyze, is not a plan's)
+  const form = funcForm(call, {layout: 'tall', skipTableAutoFill: true,
     overrides: {arms: {input: armsInput}, correction: {input: correction}, line: {input: lineInput}},
     onInputChanged: () => {
       stale.value = result.peek() !== undefined;
