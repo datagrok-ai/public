@@ -311,8 +311,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const groups = computed(() => (cell('treated_arms').value ?? 1) + 1);
   // the animals in the order the study uses them, then its end; what each count covers in its tooltip
   const card = (label: string | ReadonlySignal<string>, value: ReadonlySignal<StatValue | undefined>,
-    tip: () => string, format?: (x: StatValue) => string, icon?: string) =>
-    statCard(form, label, value, tip, format, icon);
+    tip: () => string, format?: (x: StatValue) => string) => statCard(form, label, value, tip, format);
   // a count no group size reaches has no number (a column with no value reads as an empty string)
   const count = (name: string) => computed(() => plan.value ? finite(plan.value.get(name, 0)) ?? '—' : undefined);
   // the animals per group and the end of study are computed, or set from their cards (a click asks the value); set,
@@ -340,6 +339,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     // a button for the keyboard too
     Object.assign(el, {tabIndex: 0, role: 'button'});
     el.style.cursor = 'pointer';
+    // its label underlined in dots, the app's one mark of what can be changed (the study's name, the arms' hints)
+    el.classList.add('pmx-stat-settable');
     const open = () => self.show(self.build(() => {
       // the computed value as the start, within the field's range (a computed end past it would block OK)
       const start = Math.min(ask.max, Math.max(ask.min, ask.now() ?? ask.min));
@@ -379,14 +380,14 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     n_total: card(computed(() => cell('n_fixed').value ? 'Analyzable · set' : 'Analyzable'), count('n_total'),
       () => cell('n_fixed').value ? `${groups.value} groups of the animals per arm you set. Click to change it, or ` +
         'go back to what the power needs' : `${groups.value} groups, ${pct(cell('power_target').value)} power per ` +
-        'comparison. Click to set the animals per group yourself', undefined, 'pen'),
+        'comparison. Click to set the animals per group yourself'),
     study_end: card(computed(() => cell('last_day_chosen').value ? 'End of study · set' : 'End of study'),
       cell('study_end'), () => cell('last_day_chosen').value ? 'Set by you; the median control reaches the ' +
         `endpoint on day ${cell('endpoint_day').value}. Click to change it, or go back to the endpoint` :
         (cell('study_end').value === cell('endpoint_day').value ? 'When the median control reaches the endpoint' :
           'The first measurement day after the median control reaches the endpoint (day ' +
           `${cell('endpoint_day').value})`) + '. Click to end on a day of your own',
-      (x) => `Day ${x}`, 'pen'),
+      (x) => `Day ${x}`),
   };
   settable(cardOf.n_total, 'n', nSet, {title: 'Animals per group', label: 'Analyzable animals per group',
     now: () => finite(result.peek()?.armResults.get('n', 0)) ?? undefined, min: 2, max: 100,

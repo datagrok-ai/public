@@ -43,8 +43,7 @@ export function guide(x: number, lo: number): HTMLElement {
 
 /** A figure of the results with what it covers in its tooltip, owned by `owner` (the view's form). */
 export function statCard(owner: {build: <T>(f: () => T) => T}, label: string | ReadonlySignal<string>,
-  value: ReadonlySignal<StatValue | undefined>, tip: () => string, format?: (x: StatValue) => string,
-  glyph?: string): HTMLElement {
+  value: ReadonlySignal<StatValue | undefined>, tip: () => string, format?: (x: StatValue) => string): HTMLElement {
   return owner.build(() => {
     // the change from the previous result, or from the figures pinned (cardGrid's right click): u2's delta, as a
     // number (a percent when the card shows one), in one colour (more animals is not better, more power is)
@@ -68,7 +67,7 @@ export function statCard(owner: {build: <T>(f: () => T) => T}, label: string | R
       last = x;
     });
     const percent = !!format && /%$/.test(format(1));
-    const c = new StatCard({label, value, format, icon: glyph, delta, deltaFormat: (d) =>
+    const c = new StatCard({label, value, format, delta, deltaFormat: (d) =>
       `${d > 0 ? '+' : '−'}${percent ? format!(Math.abs(d)) : +Math.abs(d).toFixed(2)}`});
     c.root.classList.add('pmx-stat');
     c.root.addEventListener('pmx-pin', (e) => pinned.value = (e as CustomEvent<boolean>).detail);

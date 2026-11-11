@@ -954,8 +954,8 @@
       "subclassEms": 0,
       "classBuildsUi": 0,
       "cssFiles": 2,
-      "cssLines": 470,
-      "cssInternalLines": 4,
+      "cssLines": 472,
+      "cssInternalLines": 5,
       "cssImportant": 11,
       "commentLines": 1694,
       "fileHeaders": 41,
@@ -1415,6 +1415,14 @@
         "packages/PmxStudio u2/comments: 0 → 18",
         "packages/PmxStudio u2/no-raw-column-list: 0 → 1",
         "packages/PmxStudio u2/no-unowned-root: 0 → 1"
+      ]
+    },
+    {
+      "date": "2026-11-11",
+      "reason": "PmxStudio: one look for 'you can change this' across the app (a discreet dotted underline on hint links and on settable StatCard labels), until u2 offers a quiet link variant and a StatCard label class",
+      "grown": [
+        "packages/PmxStudio cssLines: 470 → 472",
+        "packages/PmxStudio cssInternalLines: 4 → 5"
       ]
     }
   ]
