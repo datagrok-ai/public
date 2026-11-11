@@ -130,7 +130,7 @@ class ArmCard extends Control {
         if (read.value.known)
           return [...said, kindLink(therapy.value, 'Read from the name: click to change')];
         if (immuneHost(study.host.value)) {
-          // the one question that changes the animals: how a compound the name does not place acts (with the drugs
+          // the one question that changes the animals, how a compound the name does not place acts (with the drugs
           // it places, in a combination)
           const way = (label: string, t: Therapy) => {
             const taken = read.value.placed ? moreVariable(read.value.placed, t) : t;

@@ -88,7 +88,7 @@ export interface Combination {ab: number, a: number, b: number}
 /** Two writings of one drug: the same key, one the start of the other ("antipd1" of "antipd1antibody"), or the same
  *  first word ("siCBX8 knockdown", "caffeine 0.1% drinking water" beside "siCBX8", "caffeine"). */
 export function sameDrug(x: ArmPart, y: ArmPart): boolean {
-  // the first word, with the next when it is an identifier ("Compound 1", "Drug B": not one drug)
+  // the first word, with the next when it is an identifier ("Compound 1" and "Drug B" are not one drug)
   const head = (p: ArmPart) => {
     const w = p.drug.split(' ');
     const id = w.length > 1 && w[1].length <= 3 && /^[A-Za-z]?\d{0,2}[A-Za-z]?$/.test(w[1]);
@@ -140,11 +140,11 @@ export function combinationHint(text: string, others: string[], detected: boolea
 }
 
 // what kind of treatment a drug's name says, the most specific first. Plan's n depends on it, and reading an
-// immunotherapy as a small molecule gives fewer animals than it needs: an antibody the rules cannot place is read as
+// immunotherapy as a small molecule gives fewer animals than it needs, so an antibody the rules cannot place is read as
 // an immunotherapy (the wider spread), the directly acting biologics are the ones named. A name no rule reads is a
 // small molecule, and the app says it could not tell; so is a code with only "inhibitor" or "p.o." beside it, which
 // says a small molecule but not whether it acts on the tumour or through the immune system. Measured on the atlas's
-// curated arms: preclinical bundle analysis/therapy_from_name.mjs.
+// curated arms by the preclinical bundle's analysis/therapy_from_name.mjs.
 const any = (...rs: RegExp[]) => new RegExp(rs.map((r) => r.source).join('|'));
 const IMMUNE_TARGET = any(/pd-?1|pd-?l[12]|ctla-?4|lag-?3|tim-?3|tigit|cd40|ox-?40|4-?1bb|cd137|gitr|cd47|sirp-?a/,
   /csf-?1r|cd73|cd39|cd27|cd28|icos|vista|nkg2a|nkp\d+|cd16|cd3|cd25|cd8|cd4|b7-?h3|il-?\d+[a-z]?r?|tgf-?b\w*|ifn\w*/)
