@@ -107,10 +107,33 @@ const rowOf = (e: LibraryEntry, updated: number): Index[string] => {
 };
 const dateOf = (f: DG.FileInfo) => f.updatedOn?.valueOf() ?? NaN;
 
+/** Reads the library for `show`, one reading at a time. Asked again before the reading has listed the folders, it
+ *  joins it (the listing sees whatever changed); asked once they are listed, it reads again once that reading ends. */
+export function libraryReader(show: (entries: LibraryEntry[]) => void, fs: LibraryFiles = grok.dapi.files) {
+  let [reading, listing, again] = [false, false, false];
+  const read = (): void => {
+    if (listing)
+      return;
+    if (reading) {
+      again = true;
+      return;
+    }
+    reading = listing = true;
+    void myLibrary(fs, () => listing = false).catch(() => [] as LibraryEntry[]).then(show).finally(() => {
+      reading = listing = false;
+      if (again) {
+        again = false;
+        read();
+      }
+    });
+  };
+  return read;
+}
+
 /** The user's plans and studies: listed (names and dates only) and each one's row from the index; a file the index
  *  has no row for, or an older one (saved before the index, or changed outside the app), is read once and its row
  *  kept. No study is read otherwise, and nothing is computed. */
-export async function myLibrary(fs: LibraryFiles = grok.dapi.files): Promise<LibraryEntry[]> {
+export async function myLibrary(fs: LibraryFiles = grok.dapi.files, onListed = () => {}): Promise<LibraryEntry[]> {
   // a folder that fails to list (a passing failure) lists nothing, and then no row is dropped
   let listed = true;
   const list = (folder: string, ext: string) => fs.list(folder, false, ext).catch(() => {
@@ -119,6 +142,7 @@ export async function myLibrary(fs: LibraryFiles = grok.dapi.files): Promise<Lib
   });
   const [plans, studies, index] = await Promise.all([list(plansFolder(), PLAN_EXT), list(studiesFolder(), STUDY_EXT),
     readIndex(fs)]);
+  onListed();
   const files = [...plans, ...studies];
   let changed = false;
   const entries = await Promise.all(files.map(async (f) => {

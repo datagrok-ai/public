@@ -18,7 +18,7 @@ import {analyzeView} from './analyze-view';
 import {monitorView, openStudyFile} from './monitor-view';
 import {newStudyTable, parseStudy, tableOf} from './study-file';
 import {PLAN_TAG, myPlans, parsePlan} from './plan-file';
-import {LibraryEntry, matches, myLibrary} from './library';
+import {LibraryEntry, libraryReader, matches} from './library';
 import {dayToday} from './calendar';
 import {Brought, OPENED_EXTS, OpenStage, bring, readFile, suggestedStage} from './open-study';
 
@@ -278,10 +278,8 @@ function yourStudies(): {root: HTMLElement, reload: () => void} {
     drawChips();
     showNone();
   };
-  // one reading at a time: the Overview asks as it is built and again as it becomes the current view
-  let reading: Promise<void> | null = null;
-  const reload = () => void (reading ??= myLibrary().catch(() => [] as LibraryEntry[]).then(show)
-    .finally(() => reading = null));
+  // (asked as the Overview is built and again as it becomes the current view: one reading)
+  const reload = libraryReader(show);
   reload();
   // a row opens its file as it is now, not as it was when the list was read (the study may have been saved since),
   // and once: a second click while it opens would open it twice

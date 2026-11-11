@@ -5,7 +5,7 @@ import {PLAN_TAG} from '../plan-file';
 import {cruxCalls} from '../crux';
 import {PackageFunctions} from '../package';
 import {hubView} from '../hub-view';
-import {LibraryFiles, indexPath, myLibrary} from '../library';
+import {LibraryFiles, indexPath, libraryReader, myLibrary} from '../library';
 import {bring, readFile, suggestedStage} from '../open-study';
 import {gpu} from '../gpu';
 
@@ -185,5 +185,38 @@ category('Hub', () => {
     await delay(500);
     expect(studies.hidden, false);
     expect(cruxCalls() - before, 0);
+  });
+
+  test('Your studies are read once when asked twice, and again when asked after the folders were listed', async () => {
+    let [listings, shown] = [0, 0];
+    let open = () => {}; // holds the one file's read: the reading has listed the folders and not ended
+    const fs: LibraryFiles = {
+      list: async (_folder, _recursive, ext) => {
+        listings++;
+        return ext !== 'pmxplan' ? [] : [{fileName: 'a.pmxplan', fullPath: 'a.pmxplan', updatedOn: null} as any];
+      },
+      readAsText: (f) => typeof f === 'string' ? Promise.reject(new Error('no index')) :
+        new Promise((r) => open = () => r('{}')),
+      writeAsText: async () => {},
+    };
+    const read = libraryReader(() => shown++, fs);
+    read();
+    read(); // as the Overview opens: before the folders are listed
+    await delay(20);
+    open();
+    await delay(20);
+    expect(shown, 1);
+    expect(listings, 2, 'read twice for two asks before the listing'); // (two folders a reading)
+    read();
+    await delay(20);
+    read(); // a save meanwhile: the folders are listed already
+    open();
+    await delay(20);
+    expect(shown, 2);
+    expect(listings, 6, 'an ask after the listing was lost');
+    open();
+    await delay(20);
+    expect(shown, 3);
+    expect(listings, 6);
   });
 });
