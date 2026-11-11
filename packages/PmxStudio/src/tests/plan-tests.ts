@@ -146,6 +146,29 @@ category('Plan', () => {
       expect(Math.min(...each) - 1 <= sized.arms[0].nAssurance! && sized.arms[0].nAssurance! <= Math.max(...each) + 1,
         true, `${sized.arms[0].nAssurance} of ${each}`);
       expect(sized.notes.groups.some((x) => x.includes('do not pin down')), Math.max(...each) - Math.min(...each) > 1);
+      // three different fits: the averaged power is the plain mean of each fit's own, so a fit weighed more than
+      // another, or a block that is not its studies' mean, fails here. Not guarded: how many blocks, or the blocks
+      // lost (each fit on every study): both give the same mean, only slower, which the timings show.
+      // (0.05: a block of half Crux's 400 studies; the power varies across them by about 0.25, so its Monte Carlo error
+      // is about 0.25 / sqrt(200) = 0.018, and 0.05 is under three of it)
+      const mid = {...own,
+        sd_within: {log_alpha: 1.5 * own.sd_within.log_alpha, log_beta: 1.5 * own.sd_within.log_beta}};
+      lp.calibration = {identification: {status: 'poorly_identified', rule: '', why: '',
+        solutions: [{...own, best: true}, wider, mid]}};
+      const mixed = await designStudy({...d, n: 8, mde: false});
+      expect(mixed.arms[0].fits.length, 3);
+      const shipped = lp.sd_within;
+      const byFit: number[] = [];
+      try {
+        for (const fit of [own, wider, mid]) {
+          lp.sd_within = {...shipped, ...fit.sd_within};
+          byFit.push((await designStudy({...d, n: 8, mde: false, fits: false})).arms[0].assurance!);
+        }
+      } finally {
+        lp.sd_within = shipped;
+      }
+      const mean = byFit.reduce((t, x) => t + x, 0) / byFit.length;
+      expect(Math.abs(mixed.arms[0].assurance! - mean) < 0.05, true, `${mixed.arms[0].assurance} vs ${byFit}`);
     } finally {
       lp.calibration = kept;
     }

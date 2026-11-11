@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+* Plan (2026-11-11): a line with several equally good fits (Panc02, PDX-PDAC) is designed in a fraction of the time
+  (two arms: 2.7 s to 0.6 s on Panc02), the other fits sharing one design's simulated studies; the group size is
+  stated as estimated by simulation, accurate to about one animal (protocol and the Analyzable header's tooltip).
 * Atlas (2026-11-11): the engine priors are the atlas sealed that day (`files/engine_priors_v3.json`, sha256
   `e2c069fe…d605`), in place of the export of 2026-11-06: the curation notes applied and three exclusions of
   non-volume or misaligned rows (Panc02, Hepa1-6), the measurement error recalibrated (4T1's tails), the digital
