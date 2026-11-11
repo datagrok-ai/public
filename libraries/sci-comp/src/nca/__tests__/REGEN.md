@@ -242,6 +242,44 @@ and `07_iv_bolus_sparse-reference.json`.
 Rscript src/nca/__tests__/regen-sparse-fixture.R   # 05_mouse_sparse.json + 07_iv_bolus_sparse.json
 ```
 
+## The interval-AUC fixture (08) — `aucint.last` oracle
+
+```bash
+# from libraries/sci-comp/
+Rscript src/nca/__tests__/regen-aucint-fixture.R   # fixtures/08_aucint.json
+```
+
+A separate script, so the existing fixtures are not rewritten. For every profile of 01
+theoph, 02 indometh and 03 rat_simple it runs `pk.nca` with `aucint.last` over
+`[0, 12]`, `[0, 24]` (the TK study-day windows) and `[2, 10]` (a start bound between
+samples on a descending interval), under `auc.method = "lin up/log down"` and `"linear"`:
+156 rows. The profiles are the ones the reference suite integrates: a predose `(0, 0)`
+prepended for theoph / rat, and the core's `c0_extrapolated` inserted at `t = 0` for
+indometh. The script self-checks that, under lin-up/log-down, its `auclast` on
+`[0, Inf)` reproduces the committed 01/02/03 `auclast` (measured: ≤ 1.4e-11 relative)
+and stops otherwise. `core/__tests__/auc-interval.test.ts` asserts every row in both
+summation modes within 0.1 % (measured max: theoph 1.1e-14, indometh 1.3e-12 (the
+12-digit c0 in the fixture), rat 6.5e-14).
+
+The PKNCA rules `aucInterval` mirrors (0.12.1 source, `pk.calc.aucint` with
+`auc.type = "AUClast"`):
+
+- A bound that is not a sample time is filled by `interp.extrap.conc.dose`. Between two
+  concentrations it calls `interpolate.conc`, which takes that interval's method from
+  `choose_interval_method` on the whole profile: `interpolate_conc_log`
+  (`exp(log(c1) + f·(log(c2) − log(c1)))`) on a `"log"` interval (lin-up/log-down: `c2 < c1`
+  and `c2 ≠ 0`), `interpolate_conc_linear` otherwise.
+- After tlast, `extrapolate.conc` with `auc.type = "auclast"` returns 0, and
+  `pk.calc.aucint` marks the segment from tlast as `"log"`, which integrates to 0. So
+  an `end` past tlast gives the AUC to tlast. Indometh is sampled to 8 h and rat to
+  12 h, so `[0, 24]` there equals AUClast.
+- `choose_interval_method` is then re-run on the interpolated times, so each
+  sub-interval gets its method again. `aucInterval` does the same by passing the
+  sub-profile to the existing kernel.
+
+Not covered by the oracle: `log-linear` (PKNCA has no such method; its `lin-log` is
+linear before tmax), and an interval wholly past tlast (defined as 0 in sci-comp).
+
 ## PKNCA configuration (matches each fixture's `config` block)
 
 ```r

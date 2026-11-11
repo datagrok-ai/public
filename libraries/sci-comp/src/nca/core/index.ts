@@ -24,6 +24,8 @@ export {
   tlag,
 } from './derived';
 export {computeNca} from './compute-nca';
+export {aucInterval} from './auc-interval';
+export type {AucIntervalResult} from './auc-interval';
 export {
   aucLinearNaive,
   aucLogLinearNaive,

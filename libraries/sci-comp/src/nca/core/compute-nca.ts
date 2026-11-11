@@ -21,12 +21,14 @@ import {
   meanResidenceTime, volumeSteadyState, pctExtrapolatedAumc, tlag as tlagOf,
 } from './derived';
 
-type AucFn = (
+export type AucFn = (
   time: Float64Array, conc: Float64Array,
   startIdx: number, endIdx: number,
 ) => number;
 
-function pickAucFn(method: AucMethod, compensated: boolean): AucFn {
+/** AUC kernel for a method/summation choice. Module-internal (shared with
+ *  `auc-interval.ts`); not re-exported from the namespace. */
+export function pickAucFn(method: AucMethod, compensated: boolean): AucFn {
   if (compensated) {
     if (method === 'linear') return aucLinearCompensated;
     if (method === 'log-linear') return aucLogLinearCompensated;
@@ -385,8 +387,10 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
   };
 }
 
-/** Build dense Float64Arrays of (time, conc) skipping the drop set and NaN entries. */
-function collectMeasurable(
+/** Build dense Float64Arrays of (time, conc) skipping the drop set and NaN entries.
+ *  Module-internal (shared with `auc-interval.ts`, so an interval AUC integrates
+ *  exactly the profile AUClast does); not re-exported from the namespace. */
+export function collectMeasurable(
   time: Float64Array, conc: Float64Array, dropMask: Uint8Array,
 ): {time: Float64Array; conc: Float64Array; idx: Int32Array} {
   const tBuf: number[] = [];

@@ -1,5 +1,31 @@
 # sci-comp changelog
 
+## 0.13.0 (2026-11-11)
+
+NCA — interval AUC. **Additive only: no existing function, type or computed value
+changes** (the full suite, including the 27-profile `computeNca` snapshot, is unchanged).
+
+Runtime:
+
+* **New `nca.aucInterval(inputs, rules, start, end)`**: the AUC of one profile over
+  `[start, end]`, with PKNCA `aucint.last` semantics (`pk.calc.aucint`,
+  `auc.type = "AUClast"`). It integrates the profile `computeNca` integrates for AUClast
+  (`augmentProfile`: BLQ rules, IV-bolus c0; the same measurable-point collection) with the
+  same trapezoid kernel. A bound between two samples is interpolated with that interval's
+  method: log on a log interval, linear otherwise. Past tlast the concentration is 0, so
+  an `end` beyond tlast integrates to tlast only (`truncatedAtTlast`); a `start` before
+  the dose time adds no area. `[0, Infinity]` equals `aucLast` exactly. Validated against
+  PKNCA 0.12.1 `aucint.last` on every profile of theoph, indometh and rat_simple over
+  [0, 12], [0, 24] and [2, 10], for `linear` and `linear-up-log-down`, in both summation
+  modes (156 oracle rows; max relative error 1.3e-12, tolerance 0.1 %). `log-linear`
+  has no PKNCA counterpart and is not oracle-validated.
+
+Compile time (all additive):
+
+* New exports `aucInterval` and type `AucIntervalResult`
+  (`{value, startUsed, endUsed, tLast, truncatedAtTlast}`).
+* Fixture `08_aucint.json` from the new `regen-aucint-fixture.R`.
+
 ## 0.12.0 (2026-11-10)
 
 Sparse NCA — an IV-bolus composite is integrated from its dose-time concentration.
