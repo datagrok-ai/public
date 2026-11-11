@@ -12,6 +12,7 @@ import './tests/explore-tests';
 import './tests/study-table-tests';
 import './tests/line-input-tests';
 import './tests/arm-name-tests';
+import './tests/plan-view-tests';
 
 // the platform initialises the _package this bundle exports: the same object priors.ts and crux.ts read
 export {_package};

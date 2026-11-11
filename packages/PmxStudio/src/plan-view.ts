@@ -205,6 +205,11 @@ export async function openPlanFile(content: string): Promise<DG.DataFrame[]> {
 /** What Plan opens with: a saved plan, or only its name, details and form (a demo's). */
 export type PlanStart = Pick<SavedPlan, 'name' | 'study'> & {inputs: {[param: string]: unknown}};
 
+// each Plan view's call (its form's inputs, hidden ones too), by its host: what the package's tests read
+const planCalls = new WeakMap<ViewHost, DG.FuncCall>();
+/** The call behind a Plan view: its inputs as the next plan takes them (for the package's tests). */
+export const planCallOf = (view: DG.ViewBase): DG.FuncCall | undefined => planCalls.get(ViewHost.of(view));
+
 export async function planView(initial?: PlanStart): Promise<DG.ViewBase> {
   const exports: Exports = [];
   const host = ViewHost.create({name: 'PMX Studio', content: (self) => planContent(self, initial, exports)});
@@ -215,6 +220,7 @@ export async function planView(initial?: PlanStart): Promise<DG.ViewBase> {
 /** What the view shows, built under its host, which owns it all. */
 function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Exports): ViewContent {
   const call = DG.Func.byName('PmxStudio:pmxPlanStudy').prepare();
+  planCalls.set(self, call);
   // the engine itself on the form's inputs (with `extra` over them), not the registered function's FuncCall (see
   // callInputs); a wrong field rejects, as the call did
   // each plan's declaration, for what is computed from it after it shows (the endpoint offered)
