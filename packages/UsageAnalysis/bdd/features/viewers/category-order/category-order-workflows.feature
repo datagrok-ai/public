@@ -2,14 +2,15 @@
 Feature: Category order in everyday workflows
   What a user meets when they try things out: switching an axis to another column takes along an
   order that fits the new column (an aggregate of another column) and drops one that does not (the
-  old column's names or counts), so the property and the dialog always show the order the axis has;
-  the dialog of the column switched away from closes, a renamed column keeps its order, and a date
-  shown by month can be ordered by an aggregate (it has no names or counts of its own). Several
-  viewers on one column keep their own orders (APPLY TO ALL VIEWERS and Reset are in
-  category-order-across-viewers.feature). Trying modes out in the
-  dialog leaves the plot as the dialog shows it, Manual starts from the order shown, an order set
-  elsewhere closes the dialog, and the order survives a layout round trip and a filter, while the
-  removal of the column it sorts by ends it.
+  old column's names or counts), so the property and the dialog always show the order the axis has
+  (the rule for every kind of order, and a renamed column keeping its order, are the Dart test
+  `d4 | Axes | Category Order Property`); the dialog of the column switched away from closes, the
+  box plot drops an order that does not fit its new category column, and a date shown by month can
+  be ordered by an aggregate (it has no names or counts of its own). Several viewers on one column
+  keep their own orders (APPLY TO ALL VIEWERS and Reset are in category-order-across-viewers.feature).
+  Trying modes out in the dialog leaves the plot as the dialog shows it, Manual starts from the
+  order shown, an order set elsewhere closes the dialog, and the order survives a layout round trip
+  and a filter, while the removal of the column it sorts by ends it.
   demog-1000: row 1 is F / Caucasian, row 2 F / Other, row 4 M / Caucasian, row 10 M / Asian. RACE rows
   Asian 15, Black 27, Caucasian 896, Other 62; average WEIGHT Asian 70.52, Other 74.16, Caucasian
   79.49, Black 88.23; SEX rows F 553, M 447, average WEIGHT F 72.50, M 87.62. The dialog keeps the
@@ -52,18 +53,7 @@ Feature: Category order in everyday workflows
     Then the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 1" area
     And the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 10" area
     When user clicks on "CLOSE" button in "Order categories: RACE" dialog
-    And user renames "RACE" column to "ETHNICITY"
-    Then "X Category Order" property of scatter plot viewer should contain "ETHNICITY"
-    And the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 1" area
-    When user renames "ETHNICITY" column to "RACE"
-    And user picks "SEX" in the "x" column selector of scatter plot viewer
-    Then "X Category Order" property of scatter plot viewer should be ""
-    And the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 4" area
-    When user picks "RACE" in the "x" column selector of scatter plot viewer
-    Then "X Category Order" property of scatter plot viewer should be ""
-    And the "marker of row 10" area of scatter plot viewer should lie to the left of the "marker of row 1" area
-    And the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 2" area
-    When user sets properties of scatter plot viewer:
+    And user sets properties of scatter plot viewer:
       | X    | STARTED |
       | xMap | month   |
     And user picks "Order..." from the context menu of the "left edge of x axis" area of scatter plot viewer
@@ -98,6 +88,12 @@ Feature: Category order in everyday workflows
     And the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 1" area
     And the "categories of RACE" reading of filter panel should be "Asian, Black, Caucasian, Other"
     And the "x categories" reading of line chart viewer should be 4
+    When user picks "Order..." from the context menu of the "x axis" area of box plot viewer
+    And user selects "Row count" in "Order by" input in "Order categories: RACE" dialog
+    Then the "category Caucasian" area of box plot viewer should lie to the left of the "category Black" area
+    When user clicks on "CLOSE" button in "Order categories: RACE" dialog
+    And user picks "SEX" in the "Category 1" column selector of box plot viewer
+    Then "Category Order" property of box plot viewer should be ""
     When user sets properties of line chart viewer:
       | X    | STARTED |
       | xMap | month   |
@@ -143,23 +139,4 @@ Feature: Category order in everyday workflows
     And "X Category Order" property of scatter plot viewer should be ""
     And the "marker of row 10" area of scatter plot viewer should lie to the left of the "marker of row 1" area
     And the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 2" area
-    And no errors should have been logged
-
-  Scenario: The box plot takes an order along to a category column it fits, and drops one it does not
-    Given user adds a box plot viewer with:
-      | Value      | AGE  |
-      | Category 1 | RACE |
-    When user sets "categoryOrder" property of box plot viewer to '{"column":"WEIGHT","aggr":"avg","order":"desc"}'
-    And user picks "SEX" in the "Category 1" column selector of box plot viewer
-    Then "Category Order" property of box plot viewer should contain "WEIGHT"
-    And the "category M" area of box plot viewer should lie to the left of the "category F" area
-    When user picks "Order..." from the context menu of the "x axis" area of box plot viewer
-    And user selects "Row count" in "Order by" input in "Order categories: SEX" dialog
-    Then the "category F" area of box plot viewer should lie to the left of the "category M" area
-    When user selects "Ascending" in "Direction" input in "Order categories: SEX" dialog
-    Then the "category M" area of box plot viewer should lie to the left of the "category F" area
-    When user clicks on "CLOSE" button in "Order categories: SEX" dialog
-    And user picks "RACE" in the "Category 1" column selector of box plot viewer
-    Then "Category Order" property of box plot viewer should be ""
-    And the "category Asian" area of box plot viewer should lie to the left of the "category Black" area
     And no errors should have been logged

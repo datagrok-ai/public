@@ -24,7 +24,7 @@ import {pickColumnInDialog} from '../../../bindings/filter-panel.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, selectIn, shouldBe, shouldContainText, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset, packageInstalled} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, noBalloons, noErrors, pickFromAreaContextMenu, propertyShouldContain} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, noBalloons, noErrors, pickFromAreaContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {areaLiesBeside} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -39,7 +39,7 @@ test.describe("Scatter plot molecule categories ordered by a computed property",
     await session.step(21, "And user adds a scatter plot viewer with:", () => addViewerWith(page, "scatter plot", [["X","Core"],["Y","Series"]]), [["X","Core"],["Y","Series"]]);
     await session.step(24, "Then the \"marker of row 2\" area of scatter plot viewer should lie to the left of the \"marker of row 1\" area", () => areaLiesBeside(page, "marker of row 2", el("scatter plot viewer"), "left", "marker of row 1"));
     await session.step(25, "And the \"marker of row 1\" area of scatter plot viewer should lie to the left of the \"marker of row 8\" area", () => areaLiesBeside(page, "marker of row 1", el("scatter plot viewer"), "left", "marker of row 8"));
-    await run.scenario("Molecular weight orders the cores, in both directions", async () => {
+    await run.scenario("Molecular weight orders the cores", async () => {
       await session.step(28, "When user picks \"Order...\" from the context menu of the \"left edge of x axis\" area of scatter plot viewer", () => pickFromAreaContextMenu(page, "Order...", "left edge of x axis", el("scatter plot viewer")));
       await session.step(29, "Then \"Order categories: Core\" dialog should be visible", () => shouldBe(page, el("\"Order categories: Core\" dialog"), "visible"));
       await session.step(30, "When user selects \"Aggregated value\" in \"Order by\" input in \"Order categories: Core\" dialog", () => selectIn(page, "Aggregated value", el("\"Order by\" input in \"Order categories: Core\" dialog")));
@@ -51,15 +51,11 @@ test.describe("Scatter plot molecule categories ordered by a computed property",
       await session.step(36, "When user selects \"Ascending\" in \"Direction\" input in \"Order categories: Core\" dialog", () => selectIn(page, "Ascending", el("\"Direction\" input in \"Order categories: Core\" dialog")));
       await session.step(37, "Then the \"marker of row 8\" area of scatter plot viewer should lie to the left of the \"marker of row 1\" area", () => areaLiesBeside(page, "marker of row 8", el("scatter plot viewer"), "left", "marker of row 1"));
       await session.step(38, "And the \"marker of row 1\" area of scatter plot viewer should lie to the left of the \"marker of row 2\" area", () => areaLiesBeside(page, "marker of row 1", el("scatter plot viewer"), "left", "marker of row 2"));
-      await session.step(39, "When user selects \"Descending\" in \"Direction\" input in \"Order categories: Core\" dialog", () => selectIn(page, "Descending", el("\"Direction\" input in \"Order categories: Core\" dialog")));
-      await session.step(40, "Then \"X Category Order\" property of scatter plot viewer should contain '\"order\":\"desc\"'", () => propertyShouldContain(page, "X Category Order", el("scatter plot viewer"), "\"order\":\"desc\""));
-      await session.step(41, "And the \"marker of row 2\" area of scatter plot viewer should lie to the left of the \"marker of row 1\" area", () => areaLiesBeside(page, "marker of row 2", el("scatter plot viewer"), "left", "marker of row 1"));
-      await session.step(42, "And the \"marker of row 1\" area of scatter plot viewer should lie to the left of the \"marker of row 8\" area", () => areaLiesBeside(page, "marker of row 1", el("scatter plot viewer"), "left", "marker of row 8"));
-      await session.step(43, "When user selects \"Default\" in \"Order by\" input in \"Order categories: Core\" dialog", () => selectIn(page, "Default", el("\"Order by\" input in \"Order categories: Core\" dialog")));
-      await session.step(44, "And user clicks on \"CLOSE\" button in \"Order categories: Core\" dialog", () => clickOn(page, el("\"CLOSE\" button in \"Order categories: Core\" dialog")));
-      await session.step(45, "Then the \"marker of row 2\" area of scatter plot viewer should lie to the left of the \"marker of row 1\" area", () => areaLiesBeside(page, "marker of row 2", el("scatter plot viewer"), "left", "marker of row 1"));
-      await session.step(46, "And no error or warning balloon should have been shown", () => noBalloons(page));
-      await session.step(47, "And no errors should have been logged", () => noErrors(page));
+      await session.step(39, "When user selects \"Default\" in \"Order by\" input in \"Order categories: Core\" dialog", () => selectIn(page, "Default", el("\"Order by\" input in \"Order categories: Core\" dialog")));
+      await session.step(40, "And user clicks on \"CLOSE\" button in \"Order categories: Core\" dialog", () => clickOn(page, el("\"CLOSE\" button in \"Order categories: Core\" dialog")));
+      await session.step(41, "Then the \"marker of row 2\" area of scatter plot viewer should lie to the left of the \"marker of row 1\" area", () => areaLiesBeside(page, "marker of row 2", el("scatter plot viewer"), "left", "marker of row 1"));
+      await session.step(42, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(43, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

@@ -2,9 +2,9 @@
 Feature: Scatter plot molecule categories ordered by a computed property
   A categorical axis of molecules is ordered by a property a package computes for them: Aggregated
   value on the molecule column itself offers Chem's Molecular Property choices (MW first), and the
-  markers move to their core's place by molecular weight once the values arrive, in either direction.
-  Ascending MW is the claim that the computed order is not the by-name one; descending MW gives the
-  by-name places, so its claim is the order the X Category Order property holds.
+  markers move to their core's place by molecular weight once the values arrive. Ascending MW is the
+  claim that the computed order is not the by-name one (descending MW gives the by-name places; the
+  direction is the Dart test `d4 | Axes | Semantic Category Order`).
   The plot reports a render pending while Chem computes the values (about a second for the seven
   cores), so the claims after the pick wait for them.
   spgi-100 with Core (six scaffolds with R-group attachment points, seven rows without one) on X and
@@ -24,7 +24,7 @@ Feature: Scatter plot molecule categories ordered by a computed property
     Then the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 1" area
     And the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 8" area
 
-  Scenario: Molecular weight orders the cores, in both directions
+  Scenario: Molecular weight orders the cores
     When user picks "Order..." from the context menu of the "left edge of x axis" area of scatter plot viewer
     Then "Order categories: Core" dialog should be visible
     When user selects "Aggregated value" in "Order by" input in "Order categories: Core" dialog
@@ -36,10 +36,6 @@ Feature: Scatter plot molecule categories ordered by a computed property
     When user selects "Ascending" in "Direction" input in "Order categories: Core" dialog
     Then the "marker of row 8" area of scatter plot viewer should lie to the left of the "marker of row 1" area
     And the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 2" area
-    When user selects "Descending" in "Direction" input in "Order categories: Core" dialog
-    Then "X Category Order" property of scatter plot viewer should contain '"order":"desc"'
-    And the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 1" area
-    And the "marker of row 1" area of scatter plot viewer should lie to the left of the "marker of row 8" area
     When user selects "Default" in "Order by" input in "Order categories: Core" dialog
     And user clicks on "CLOSE" button in "Order categories: Core" dialog
     Then the "marker of row 2" area of scatter plot viewer should lie to the left of the "marker of row 1" area

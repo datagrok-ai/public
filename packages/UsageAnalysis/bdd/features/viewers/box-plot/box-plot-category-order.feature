@@ -2,22 +2,24 @@
 Feature: Box plot category order
   The X axis menu's Order... opens "Order categories: <column>", whose every change the boxes show at
   once: Default, Alphabetical, Row count, Aggregated value (a column and its aggregation) and Manual
-  (the categories dragged into place), each in either direction; CLOSE keeps the order, Default
+  (the categories dragged into place), with a Direction; CLOSE keeps the order, Default
   gives the column's own order back, and APPLY TO ALL VIEWERS is off while nothing orders the
-  categories. The Category Order property opens the same dialog from the context panel, an order by
-  another column survives that column's rename, a Bin Color keeps each box's color through a reorder,
-  and with two category levels the dialog orders the boxes inside each outer group, which keeps its place
-  also when a filter leaves fewer boxes than the combinations the order ranks.
+  categories. The Category Order property opens the same dialog from the context panel, a Bin Color
+  keeps each box's color through a reorder, and with two category levels the dialog orders the boxes
+  inside each outer group, which keeps its place also when a filter leaves fewer boxes than the
+  combinations the order ranks.
   The order of the boxes is claimed through the `category <label>` areas the box plot draws under
   them. demog-1000, AGE by RACE: Asian 15 rows, Black 27, Caucasian 896, Other 62; average WEIGHT
   Asian 70.52, Other 74.16, Caucasian 79.49, Black 88.23 (as bin colors: Other light blue #6868ff,
   Caucasian near white). With SEX first, median AGE orders the
   women Asian 44, Caucasian 47, Other 48, Black 49.5 (the men keep the alphabetical order); with RACE filtered
   to Asian and Other, four boxes stay of the eight combinations ranked.
-  How each mode ranks the categories (ties, missing values, the semantic properties) is the Dart
-  test `d4 | Axes | Category Order`; ApiTests `Viewers: category order` holds the settings' round trip
-  and a categoryOrderer call; APPLY TO ALL VIEWERS is in category-order/category-order-across-viewers.feature. One journey; every scenario puts the
-  order back to Default.
+  How each mode ranks the categories in either direction (ties, missing values, the semantic
+  properties) is the Dart test `d4 | Axes | Category Order`, an order by another column following
+  that column's rename `d4 | Axes | Category Order Property`; ApiTests `Viewers: category order`
+  holds the settings' round trip and a categoryOrderer call; APPLY TO ALL VIEWERS is in
+  category-order/category-order-across-viewers.feature. One journey; every scenario puts the order
+  back to Default.
 
   Background:
     Given user is logged in
@@ -41,7 +43,7 @@ Feature: Box plot category order
     Then "Order categories: RACE" dialog should be absent
     And no errors should have been logged
 
-  Scenario: Row count in both directions, then Alphabetical, previewed at once; CLOSE keeps the order
+  Scenario: Row count, then Alphabetical descending, previewed at once; CLOSE keeps the order
     When user picks "Order..." from the context menu of the "x axis" area of box plot viewer
     And user selects "Row count" in "Order by" input in "Order categories: RACE" dialog
     Then the "category Other" area of box plot viewer should lie to the left of the "category Caucasian" area
@@ -49,9 +51,7 @@ Feature: Box plot category order
     And "Direction" input in "Order categories: RACE" dialog should be visible
     And "APPLY TO ALL VIEWERS" button in "Order categories: RACE" dialog should be enabled
     When user selects "Descending" in "Direction" input in "Order categories: RACE" dialog
-    Then the "category Caucasian" area of box plot viewer should lie to the left of the "category Other" area
-    And the "category Black" area of box plot viewer should lie to the left of the "category Asian" area
-    When user selects "Alphabetical" in "Order by" input in "Order categories: RACE" dialog
+    And user selects "Alphabetical" in "Order by" input in "Order categories: RACE" dialog
     Then the "category Other" area of box plot viewer should lie to the left of the "category Caucasian" area
     And the "category Black" area of box plot viewer should lie to the left of the "category Asian" area
     When user clicks on "CLOSE" button in "Order categories: RACE" dialog
@@ -59,8 +59,7 @@ Feature: Box plot category order
     When user picks "Order..." from the context menu of the "x axis" area of box plot viewer
     Then "Order by" input in "Order categories: RACE" dialog should have value "Alphabetical"
     And "Direction" input in "Order categories: RACE" dialog should have value "Descending"
-    When user selects "Ascending" in "Direction" input in "Order categories: RACE" dialog
-    And user selects "Default" in "Order by" input in "Order categories: RACE" dialog
+    When user selects "Default" in "Order by" input in "Order categories: RACE" dialog
     Then the "category Asian" area of box plot viewer should lie to the left of the "category Black" area
     And the "category Caucasian" area of box plot viewer should lie to the left of the "category Other" area
     And "APPLY TO ALL VIEWERS" button in "Order categories: RACE" dialog should be disabled
@@ -78,11 +77,8 @@ Feature: Box plot category order
     Then the "category Asian" area of box plot viewer should lie to the left of the "category Other" area
     And the "category Other" area of box plot viewer should lie to the left of the "category Caucasian" area
     And the "category Caucasian" area of box plot viewer should lie to the left of the "category Black" area
-    When user selects "Descending" in "Direction" input in "Order categories: RACE" dialog
-    Then the "category Black" area of box plot viewer should lie to the left of the "category Caucasian" area
-    And the "category Other" area of box plot viewer should lie to the left of the "category Asian" area
     When user selects "Default" in "Order by" input in "Order categories: RACE" dialog
-    Then the "category Asian" area of box plot viewer should lie to the left of the "category Black" area
+    Then the "category Black" area of box plot viewer should lie to the left of the "category Caucasian" area
     When user clicks on "CLOSE" button in "Order categories: RACE" dialog
     Then no errors should have been logged
 
@@ -110,22 +106,12 @@ Feature: Box plot category order
     Then "Order categories: RACE" dialog should be visible
     When user selects "Row count" in "Order by" input in "Order categories: RACE" dialog
     Then the "category Other" area of box plot viewer should lie to the left of the "category Caucasian" area
-    And "Category Order" property in context panel should have value '{"column":"RACE","aggr":"values","property":"","order":"asc","manual":[]}'
+    And "Category Order" property in context panel should not have value ""
+    And "Category Order" property of box plot viewer should contain "values"
     When user selects "Default" in "Order by" input in "Order categories: RACE" dialog
     And user clicks on "CLOSE" button in "Order categories: RACE" dialog
     Then the "category Caucasian" area of box plot viewer should lie to the left of the "category Other" area
     And "Category Order" property in context panel should have value ""
-    And no errors should have been logged
-
-  Scenario: An order by another column survives that column's rename
-    When user sets "categoryOrder" property of box plot viewer to '{"column":"WEIGHT","aggr":"avg","order":"asc"}'
-    Then the "category Caucasian" area of box plot viewer should lie to the left of the "category Black" area
-    When user renames "WEIGHT" column to "BODY WEIGHT"
-    Then the "category Caucasian" area of box plot viewer should lie to the left of the "category Black" area
-    And the "category Asian" area of box plot viewer should lie to the left of the "category Other" area
-    When user renames "BODY WEIGHT" column to "WEIGHT"
-    And user sets "categoryOrder" property of box plot viewer to ""
-    Then the "category Black" area of box plot viewer should lie to the left of the "category Caucasian" area
     And no errors should have been logged
 
   Scenario: Bin colors stay with their boxes when the boxes are reordered
