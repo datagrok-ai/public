@@ -31,31 +31,42 @@ export const IDLE_MS = 30000;
  *  so after `idleMs` with no call every set is stopped and one new one is opened, its modules loaded again: the
  *  next call starts warm, the memory of the calls before is given back. */
 export function cruxPool(open: () => Promise<CruxModules>, maxSets: number, idleMs: number) {
-  const pool: {modules: Promise<CruxModules>, busy: number}[] = [];
+  type Set = {modules: Promise<CruxModules>, busy: number};
+  const pool: Set[] = [];
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const fresh = (modules: string[]) => ({busy: 0, modules: open().then(async (m) => {
-    await Promise.all(modules.map((x) => m.load(x).catch(() => {}))); // (a module that fails loads on its call)
-    return m;
-  })});
+  let generation = 0; // a call since the pause began: the pause is not over
+  const fresh = (modules: string[]): Set => {
+    const set: Set = {busy: 0, modules: open().then(async (m) => {
+      await Promise.all(modules.map((x) => m.load(x).catch(() => {}))); // (a module that fails loads on its call)
+      return m;
+    })};
+    set.modules.catch(() => { // a set that fails to open leaves the pool: the next call opens another
+      const i = pool.indexOf(set);
+      if (i >= 0)
+        pool.splice(i, 1);
+    });
+    return set;
+  };
   const rest = async () => {
+    const at = generation;
     if (pool.some((s) => s.busy > 0))
       return;
+    // the modules the sets had loaded, read before the swap: the new set loads them, so the next call finds them
     const modules = (await Promise.all(pool.map((s) => s.modules.then((m) => m.loaded(), () => []))));
-    if (pool.some((s) => s.busy > 0)) // (a call came in meanwhile: the next pause)
+    if (generation !== at || pool.some((s) => s.busy > 0)) // (a call came in meanwhile: the next pause)
       return;
     const old = pool.splice(0, pool.length, fresh([...new Set(modules.flat())]));
     old.forEach((s) => s.modules.then((m) => m.terminate(), () => {}));
   };
   return {
-    sets: () => pool.length,
+    sets: () => pool.length, // (for the package's tests)
     async call(name: string, table: {[col: string]: any}, params: object = {}): Promise<CruxResult> {
       clearTimeout(timer);
+      generation++;
       let set = pool.find((s) => s.busy === 0);
       if (!set && pool.length < maxSets) {
-        const opened = fresh([]);
-        pool.push(opened);
-        opened.modules.catch(() => pool.splice(pool.indexOf(opened), 1)); // the next call retries
-        set = opened;
+        set = fresh([]);
+        pool.push(set);
       }
       set ??= pool.reduce((a, b) => b.busy < a.busy ? b : a);
       set.busy++;
