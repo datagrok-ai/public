@@ -24,7 +24,7 @@ const newArm = (k: number): Arm => ({name: `Treatment ${k}`, therapy: 'small_mol
 
 /** The kinds of treatment in plain words. */
 export const KIND_WORDS: {[t in Therapy]: string} = {
-  small_molecule: 'small molecule', biologic: 'antibody acting on the tumor',
+  small_molecule: 'small molecule', biologic: 'antibody or protein acting on the tumor',
   immunotherapy: 'antibody or protein acting through the immune system',
   immune_agonist: 'small molecule acting through the immune system', cell_therapy: 'cell therapy',
   vaccine_peptide: 'vaccine', oligo_rna: 'RNA drug',
@@ -39,8 +39,7 @@ export const immuneHost = (host: string | null) => host !== 'immunodeficient';
  *  through it (as 211 of the 310 single small molecules curated in the atlas's syngeneic lines, and the cautious n),
  *  else a small molecule; a combination takes the more variable of that and its placed drugs. `known` false: the name
  *  does not place every drug (with an immune host the card then asks how the rest acts). */
-export function therapyFor(name: string, host: string | null): {therapy: Therapy, known: boolean,
-  placed: Therapy | null} {
+export function therapyFor(name: string, host: string | null): ReturnType<typeof therapyOf> {
   const r = therapyOf(name);
   if (r.known || !immuneHost(host))
     return r;
@@ -124,6 +123,10 @@ class ArmCard extends Control {
           [describeArm(parts), ' · '] : [];
         if (source.value === 'user')
           return [...said, kindLink(therapy.value, 'Chosen by you: click to change')];
+        if (read.value.radiation) {
+          return ['Radiation · treated as ', hintLink('acting on the tumor directly', choose,
+            'As a small molecule: click to change')];
+        }
         if (read.value.known)
           return [...said, kindLink(therapy.value, 'Read from the name: click to change')];
         if (immuneHost(study.host.value)) {

@@ -78,6 +78,12 @@ category('Arm names', () => {
     expect(kind('cisplatin 5 mg/kg + anti-PD-1'), 'immunotherapy');
     expect(kind('Cpd-X + cisplatin'), 'unknown');
     expect(therapyOf('Cpd-X + anti-PD-1').placed, 'immunotherapy');
+    // radiation is no drug: its companions give the kind; alone, it acts on the tumor
+    expect(kind('cisplatin 5 mg/kg + 8 Gy'), 'small_molecule');
+    expect(kind('anti-PD-1 + 8 Gy'), 'immunotherapy');
+    expect(kind('Cpd-A + RT'), 'unknown');
+    expect(kind('8 Gy'), 'small_molecule');
+    expect(therapyOf('8 Gy').radiation, true);
     // whole words: "STING", and a "si" code with its number
     expect(kind('Cpd-X testing dose'), 'unknown');
     expect(kind('single dose 5 mg/kg'), 'unknown');

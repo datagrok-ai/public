@@ -185,15 +185,21 @@ export function moreVariable(a: Therapy, b: Therapy): Therapy {
 /** The kind of treatment an arm's name says. One drug: its own words, else the whole name (a comment in brackets, a
  *  route). A combination: each drug's own words, and the most variable kind (the cautious n). `placed`: that kind
  *  among the drugs the rules place, null if none; `known`: every drug placed. Not known, `therapy` is `placed` or a
- *  small molecule, and the caller decides the rest (arms-input's therapyFor). */
-export function therapyOf(name: string): {therapy: Therapy, known: boolean, placed: Therapy | null} {
-  const parts = parseArmName(name);
+ *  small molecule, and the caller decides the rest (arms-input's therapyFor). Radiation is no drug: beside drugs
+ *  their kind is the arm's; alone (`radiation`) it acts on the tumor directly, as a small molecule. */
+export function therapyOf(name: string): {therapy: Therapy, known: boolean, placed: Therapy | null,
+  radiation: boolean} {
+  const all = parseArmName(name);
+  const parts = all.filter((p) => p.key !== 'radiation');
+  if (all.length && !parts.length)
+    return {therapy: 'small_molecule', known: true, placed: 'small_molecule', radiation: true};
   // a dose in cells is a cell therapy whatever the cells are called
   const own = (p: ArmPart) => kindOf(p.dose?.unit === 'cells' ? `${p.drug} cells` : p.drug);
   const kinds = parts.length > 1 ? parts.map(own) : [(parts[0] && own(parts[0])) ?? kindOf(name)];
   const found = kinds.filter((k): k is Therapy => k !== null);
   const placed = found.length ? found.reduce(moreVariable) : null;
-  return {therapy: placed ?? 'small_molecule', known: placed !== null && found.length === kinds.length, placed};
+  return {therapy: placed ?? 'small_molecule', known: placed !== null && found.length === kinds.length, placed,
+    radiation: false};
 }
 
 function kindOf(text: string): Therapy | null {

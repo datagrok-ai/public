@@ -462,7 +462,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     if (d && !d.lastDay && v('p_endpoint_not_reached') > ENDPOINT_RISK) {
       // ponytail: the calls of an offer a newer plan overtook are not cancelled, only ignored (cached by inputs)
       void safeEndpoint(d).then((x) => {
-        if (x === null || result.peek() !== r || stale.peek())
+        // (a plan's effect runs again when its smallest detectable effects arrive: one offer)
+        if (x === null || result.peek() !== r || stale.peek() || growthNotes.querySelector('.pmx-endpoint-offer'))
           return;
         const offer = div([`A ${x} mm³ endpoint avoids it: `, hintLink('use it', () => {
           const field = form.getInput('endpoint');
