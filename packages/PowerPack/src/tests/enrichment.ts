@@ -80,6 +80,10 @@ async function expectJoined(df: DG.DataFrame, column: string, key: string, sql: 
   }
 }
 
+// Development only: needs a CatalogsDemo connection over the SQL Server fixture of
+// bdd/features/identifiers/catalogs-fixture.sql, with `archive` as its own database. Stays skipped in CI.
+const DEV_ONLY = {skipReason: 'Development only: needs the CatalogsDemo SQL Server fixture'};
+
 category('Enrichment', () => {
   let events: () => Promise<DG.DataFrame>;
   let db: string | null;
@@ -200,4 +204,32 @@ category('Enrichment', () => {
       await cleanUp(sessions, sibling);
     }
   });
+
+  /** Both catalogs of CatalogsDemo have chem.compounds and core.projects; the leads of the projects differ. */
+  const joinsTheLeadsOf = (catalog: string) => async () => {
+    const demo = (await grok.dapi.connections.filter('shortName = "CatalogsDemo"').list())[0];
+    expect(demo != null, true, 'the CatalogsDemo connection');
+    const system = conn;
+    conn = demo;
+    const e: Enrichment = {name: `test-catalog-${Date.now()}`, keyDb: catalog, keySchema: 'chem',
+      keyTable: 'compounds', keyColumn: 'project_id', fields: ['chem.compounds.project_id', 'core.projects.lead'],
+      joins: [{leftTableName: 'chem.compounds', rightTableName: 'core.projects', joinType: DG.JOIN_TYPE.LEFT,
+        leftTableKeys: ['project_id'], rightTableKeys: ['project_id']}]};
+    try {
+      await saveEnrichment(e, conn.nqName);
+      const df = await queryTable(`select compound_id, project_id from ${catalog}.chem.compounds`);
+      await apply(e, df);
+      await expectJoined(df, 'lead', 'project_id',
+        `select project_id as "key", lead as value from ${catalog}.core.projects where project_id in (KEYS)`);
+    }
+    finally {
+      await cleanUp(e).finally(() => conn = system);
+    }
+  };
+
+  test('An enrichment saved for another catalog joins the rows of that catalog', joinsTheLeadsOf('research'),
+    DEV_ONLY);
+
+  test('An enrichment saved for the connection\'s own catalog joins the rows of that catalog',
+    joinsTheLeadsOf('archive'), DEV_ONLY);
 });
