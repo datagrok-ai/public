@@ -337,20 +337,21 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
   // fit that describes them as well, for its power by n alone (one call each: no schedules, no n, no detectable
   // effect, so a fixed n reads the same calls). The fits count only with the prior's own marked among them: without
   // it, which one the prior carries is not known. Every fit, not some: three of Panc02's eleven gave one animal more
-  // than all of them in half the designs tried, and all cost it about a second (two arms, fifteen worker sets)
+  // than all of them in half the designs tried. Only their average is used, so the other fits share one design's
+  // studies: fit j simulates the j-th of their blocks (Crux's shard), disjoint, at one design's cost in all
   const fitted = lp.calibration?.identification?.solutions ?? [];
   const others = d.fits === false || !fitted.some((s) => s.best) ? [] : fitted.filter((s) => !s.best);
-  const powerOnly = (p: Row) => {
-    const q: Row = {...p, schedules: false, mde: false};
+  const powerOnly = (p: Row, shard: number) => {
+    const q: Row = {...p, schedules: false, mde: false, ...(others.length > 1 ? {shard, shards: others.length} : {})};
     delete q.n;
     return q;
   };
   const [results, underOthers]: [ArmTables[], ArmTables[][]] = await Promise.all([
     Promise.all(d.arms.map((arm) => designArm(prior, armParams(arm, params), shards, d.power, d.n)
       .catch(armError(arm)))),
-    Promise.all(others.map(async (fit) => {
+    Promise.all(others.map(async (fit, j) => {
       const m = await lineModel(d.line, fit);
-      return Promise.all(d.arms.map((arm) => designArm(m.prior, powerOnly(armParams(arm, m.params)), 1, d.power, null)
+      return Promise.all(d.arms.map((arm) => designArm(m.prior, powerOnly(armParams(arm, m.params), j), 1, d.power, null)
         .catch(armError(arm))));
     }))]);
 
@@ -472,7 +473,7 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
       const [least, most] = [Math.min(...each), Math.max(...each)];
       if (least < most) {
         notes.groups.push(`${a.declaration.name}: the published ${d.line} controls do not pin down how much the ` +
-          `animals of one study differ. Fits that describe them equally well need ${least} to ` +
+          `animals of one study differ. Fits that describe them equally well need about ${least} to ` +
           `${Number.isFinite(most) ? most : 'more than 40'} animals per group each; the power here is their average`);
       }
     }

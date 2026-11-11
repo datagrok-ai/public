@@ -116,7 +116,7 @@ category('Plan', () => {
       expect(s.arms[0].assurance! >= d.power, true, `${s.arms[0].assurance}`);
       expect(s.nControl, s.arms[0].n);
       expect(s.notes.groups.some((x) => x.includes('do not pin down') &&
-        x.includes(`need ${Math.max(first, MIN_GROUP)} to ${second}`)), true, s.notes.groups.join(' | '));
+        x.includes(`need about ${Math.max(first, MIN_GROUP)} to ${second}`)), true, s.notes.groups.join(' | '));
       // a set number of animals: its power is the two fits' average too, below the prior's own fit's
       const [both, alone] = [await designStudy({...d, n: 8, mde: false}),
         await designStudy({...d, n: 8, mde: false, fits: false})];
