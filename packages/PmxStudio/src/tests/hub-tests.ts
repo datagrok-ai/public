@@ -72,18 +72,18 @@ category('Hub', () => {
   test('Your studies from the index: a study is read only when its row is missing or behind', async () => {
     // three plans of no study ID (each its own row: rows of one ID are one study)
     const plan = JSON.parse((await exampleStudy()).getTag(PLAN_TAG)!);
-    const files: {[name: string]: {text: string, updated: number}} = {
+    const files: {[name: string]: {text: string, updated: number | null}} = {
       'a.pmxplan': {text: JSON.stringify({...plan, name: 'Plan A', study: undefined}), updated: 1},
       'b.pmxplan': {text: JSON.stringify({...plan, name: 'Plan B', study: undefined}), updated: 1}};
     const store = new Map<string, string>();
     let reads = 0;
-    let [writable, listable] = [true, true];
+    let [writable, listable] = [true, {pmxplan: true, pmxstudy: true} as {[ext: string]: boolean}];
     const fs: LibraryFiles = {
       list: async (_folder, _recursive, ext) => {
-        if (!listable)
+        if (!listable[ext])
           throw new Error('not now');
-        return ext !== 'pmxplan' ? [] : Object.entries(files)
-          .map(([fileName, f]) => ({fileName, fullPath: fileName, updatedOn: {valueOf: () => f.updated}}) as any);
+        return ext !== 'pmxplan' ? [] : Object.entries(files).map(([fileName, f]) => ({fileName, fullPath: fileName,
+          updatedOn: f.updated === null ? null : {valueOf: () => f.updated}}) as any);
       },
       // the index from the store; any study's file, by its info or by its path, counts as a read
       readAsText: async (f) => {
@@ -103,6 +103,7 @@ category('Hub', () => {
     };
     const rows = (es: {name: string, line: string, end: number | null}[]) =>
       es.map((e) => `${e.name}|${e.line}|${e.end}`).sort().join();
+    const indexed = () => JSON.parse(store.get(indexPath())!).rows;
     const first = await myLibrary(fs);
     expect(reads, 2);
     expect(rows(first), `Plan A|MC38|${plan.predicted.studyEnd},Plan B|MC38|${plan.predicted.studyEnd}`);
@@ -113,29 +114,50 @@ category('Hub', () => {
     await myLibrary(fs);
     expect(reads, 1);
     reads = 0;
-    // saved by the app: its row written as it is saved, the file not read to list it, then or after
+    // saved by the app: its row written as it is saved, with the file's date, the file not read to list it
     files['c.pmxplan'] = {text: JSON.stringify({...plan, name: 'Plan C', study: undefined}), updated: 3};
     await indexSaved('home:Home/PMX Studio/plans/c.pmxplan', files['c.pmxplan'].text, fs);
+    expect(indexed()['c.pmxplan'].updated, 3, 'the saved row is not dated as its file');
     expect((await myLibrary(fs)).length, 3);
     expect((await myLibrary(fs)).length, 3);
     expect(reads, 0, 'a plan saved by the app was read to list it');
-    // a folder that fails to list drops no row
-    listable = false;
+    // saved again, and that row's write lost: the old row is older than the file, which is read
+    files['c.pmxplan'] = {text: JSON.stringify({...plan, name: 'Plan C2', study: undefined}), updated: 4};
+    expect(rows(await myLibrary(fs)).includes('Plan C2|'), true, 'an old row taken for a newer file');
+    expect(reads, 1);
+    reads = 0;
+    // a folder that fails to list drops no row, one or both
+    for (const failing of [['pmxstudy'], ['pmxplan', 'pmxstudy']]) {
+      failing.forEach((x) => listable[x] = false);
+      await myLibrary(fs);
+      failing.forEach((x) => listable[x] = true);
+      expect(Object.keys(indexed()).length, 3, `rows dropped when ${failing} failed to list`);
+    }
+    // a file with no date is read every time, and leaves no row
+    files['d.pmxplan'] = {text: JSON.stringify({...plan, name: 'Plan D', study: undefined}), updated: null};
+    reads = 0;
     await myLibrary(fs);
-    listable = true;
-    expect(Object.keys(JSON.parse(store.get(indexPath())!).rows).length, 3, 'rows dropped on a failed listing');
+    await myLibrary(fs);
+    expect(reads, 2);
+    expect('d.pmxplan' in indexed(), false);
+    delete files['d.pmxplan'];
     // a deleted file's row leaves the index
     delete files['c.pmxplan'];
     expect((await myLibrary(fs)).length, 2);
-    expect(Object.keys(JSON.parse(store.get(indexPath())!).rows).join(), 'a.pmxplan,b.pmxplan');
+    expect(Object.keys(indexed()).join(), 'a.pmxplan,b.pmxplan');
     // a damaged index, or one of another version, is rebuilt from the files
     for (const damaged of ['{"version": 1, "rows": [', '{"version": 1, "rows": []}', '{"version": 2, "rows": {}}',
-      JSON.stringify({version: 1, rows: {'a.pmxplan': {name: 'Plan A'}, 'b.pmxplan': {name: 'Plan B'}}})]) {
+      JSON.stringify({version: 1, rows: {'a.pmxplan': {name: 'Plan A', updated: 1}, 'b.pmxplan': {name: 'Plan B',
+        updated: 2}}})]) {
       store.set(indexPath(), damaged);
       reads = 0;
       expect(rows(await myLibrary(fs)), rows(first), damaged);
       expect(reads, 2, damaged);
       expect(JSON.parse(store.get(indexPath())!).version, 1);
+      // and rebuilt for good: the next load reads nothing
+      reads = 0;
+      await myLibrary(fs);
+      expect(reads, 0, `not rebuilt: ${damaged}`);
     }
     // an index that cannot be written: the list is read as before
     store.clear();

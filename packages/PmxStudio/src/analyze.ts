@@ -309,11 +309,18 @@ async function stagedTwin(window: Window, params: {[k: string]: any}): Promise<T
 /** The twin on the browser's WebGPU (Crux's variant webgpu, one call: the likelihoods, convolutions and draws on the
  *  device, the same posterior, the bands within Monte Carlo error); where there is no WebGPU or the device fails,
  *  the staged twin on the workers. */
+let warmLate = false;
+
 async function fastTwin(window: Window, params: {[k: string]: any}): Promise<Twins> {
+  // after the warm-up: the call then finds its set free and warm, and opens no other (cold) one; at most 5 s, once a
+  // page (a warm-up that hangs only leaves the twin slower). The device's question is the warm-up's first step, so it
+  // is under the same limit
+  if (!warmLate) {
+    const late = new Promise<'late'>((r) => setTimeout(() => r('late'), 5000));
+    if (await Promise.race([warmTwin().catch(() => null), late]) === 'late')
+      warmLate = true;
+  }
   if (await gpu()) {
-    // after the warm-up: the call then finds its set free and warm, and opens no other (cold) one; at most 5 s (a
-    // warm-up that hangs only leaves the twin slower)
-    await Promise.race([warmTwin().catch(() => null), new Promise((r) => setTimeout(r, 5000))]);
     try {
       const r = await crux('stats.tumor_twin', window, {...params, device: 'webgpu'});
       return {twins: rows(r.main as any), effects: named(r, 'effects'), checks: named(r, 'checks')};

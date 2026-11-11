@@ -84,9 +84,9 @@ export interface LibraryFiles {
   writeAsText(path: string, text: string): Promise<void>;
 }
 
-/** Each file's row, by file name: its entry without the file and its text; `updated` null when written as the file
- *  was saved (its date is the listing's, taken at the next one). */
-type Index = {[file: string]: Omit<LibraryEntry, 'file' | 'text' | 'updated'> & {updated: number | null}};
+/** Each file's row, by file name: its entry without the file and its text, and the file's date as the server lists
+ *  it (a row whose date is not the file's is read again). */
+type Index = {[file: string]: Omit<LibraryEntry, 'file' | 'text'>};
 
 /** The index file's format: another (or none) is rebuilt. Any change to entryOf or LibraryEntry raises it. */
 const INDEX_VERSION = 1;
@@ -97,23 +97,35 @@ const readIndex = (fs: LibraryFiles): Promise<Index> => fs.readAsText(indexPath(
 }).catch(() => ({}));
 /** A row as entryOf writes it (one that is not is read again from its file). */
 const rowOk = (r: any): boolean => !!r && typeof r === 'object' && typeof r.name === 'string' &&
-  typeof r.id === 'string' && Array.isArray(r.tags) && (r.updated === null || typeof r.updated === 'number');
+  typeof r.id === 'string' && Array.isArray(r.tags) && Number.isFinite(r.updated) &&
+  (r.kind === 'plan' || r.kind === 'study') && [1, 2, 3].includes(r.stage);
 const writeIndex = (fs: LibraryFiles, rows: Index) =>
   fs.writeAsText(indexPath(), JSON.stringify({version: INDEX_VERSION, rows}));
-const rowOf = (e: LibraryEntry, updated: number | null): Index[string] => {
+const rowOf = (e: LibraryEntry, updated: number): Index[string] => {
   const {file: _f, text: _t, ...row} = e;
   return {...row, updated};
 };
+const dateOf = (f: DG.FileInfo) => f.updatedOn?.valueOf() ?? NaN;
 
-/** Writes the row of a plan or study just saved at `path` (its text as written) into the index. ponytail: two tabs
- *  saving at once, the last write wins; the next listing reads again a file its row is behind of. */
-export async function indexSaved(path: string, text: string, fs: LibraryFiles = grok.dapi.files): Promise<void> {
-  const e = entryOf(text, 0);
-  if (!e)
-    return;
-  const index = await readIndex(fs);
-  index[path.split('/').pop()!] = rowOf(e, null);
-  await writeIndex(fs, index);
+/** This tab's index writes, one after another (a write never starts from a picture of the index taken before
+ *  another's). */
+let indexing: Promise<void> = Promise.resolve();
+
+/** Writes the row of a plan or study just saved at `path` (its text as written) into the index, with the file's date
+ *  as the server lists it. A row this misses (a failure, a write from another tab landing last) is older than its
+ *  file, or absent, and the next listing reads the file. */
+export function indexSaved(path: string, text: string, fs: LibraryFiles = grok.dapi.files): Promise<void> {
+  const write = async () => {
+    const e = entryOf(text, 0);
+    const [folder, name] = [path.slice(0, path.lastIndexOf('/') + 1), path.split('/').pop()!];
+    const file = e && (await fs.list(folder, false, name.split('.').pop()!)).find((f) => f.fileName === name);
+    if (!e || !file || !Number.isFinite(dateOf(file)))
+      return;
+    const index = await readIndex(fs);
+    index[name] = rowOf(e, dateOf(file));
+    await writeIndex(fs, index);
+  };
+  return indexing = indexing.then(write).catch(() => {});
 }
 
 /** The user's plans and studies: listed (names and dates only) and each one's row from the index; a file the index
@@ -131,18 +143,14 @@ export async function myLibrary(fs: LibraryFiles = grok.dapi.files): Promise<Lib
   const files = [...plans, ...studies];
   let changed = false;
   const entries = await Promise.all(files.map(async (f) => {
-    // (a file with no date is read every time: a change to it could not be seen)
-    const dated = f.updatedOn !== null && f.updatedOn !== undefined;
-    const updated = f.updatedOn?.valueOf() ?? 0;
+    // (a file with no date is read every time: a change to it could not be seen; one of another date than its row,
+    // a copy restored too, is read again)
+    const updated = dateOf(f);
+    const dated = Number.isFinite(updated);
     const row = index[f.fileName];
-    if (dated && rowOk(row) && (row.updated === null || row.updated >= updated)) {
-      if (row.updated === null) {
-        row.updated = updated;
-        changed = true;
-      }
-      return {...row, updated, file: f, text: ''} as LibraryEntry;
-    }
-    const e = await fs.readAsText(f).then((text) => entryOf(text, updated, f), () => null);
+    if (dated && rowOk(row) && row.updated === updated)
+      return {...row, file: f, text: ''} as LibraryEntry;
+    const e = await fs.readAsText(f).then((text) => entryOf(text, dated ? updated : 0, f), () => null);
     if (e && dated) {
       index[f.fileName] = rowOf(e, updated);
       changed = true;
