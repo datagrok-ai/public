@@ -44,4 +44,24 @@ category('App', () => {
     const rows = await grok.dapi.log.getTimeline({session, from: new Date(Date.now() - 3600000), to: new Date(), limit: 5});
     expect(Array.isArray(rows), true);
   });
+  test('a project reopens the tab, its sub-view and the filters', async () => {
+    handler.changeTab('Functions');
+    await handler.getCurrentView().viewersReady;
+    await handler.loadState({tab: 'Functions', rout: '/ExecutionTime', filters: {date: 'this month'}});
+    const saved = handler.saveState()!;
+    expect(saved.rout, '/ExecutionTime');
+
+    const reopened = new ViewHandler();
+    reopened.view.loadStateMap(saved);
+    grok.shell.addView(reopened.view);
+    try {
+      await reopened.init();
+      await waitUntil(() => reopened.saveState()?.rout === '/ExecutionTime', 'the sub-view was not restored', 30000);
+      const state = reopened.saveState()!;
+      expect(state.tab, 'Functions');
+      expect(state.filters?.date, 'this month');
+    } finally {
+      reopened.view.close();
+    }
+  });
 }, {clear: false, timeout: 60000});

@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {UaView} from './tabs/ua';
-import {UaToolbox} from './ua-toolbox';
+import {UaToolbox, UaViewState} from './ua-toolbox';
 import {EventsView} from './tabs/events';
 import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
@@ -23,12 +23,44 @@ export class ViewHandler {
   private static noPackagesTabs = ['Projects', 'Metrics', 'Stress', 'Vulnerabilities', 'System Activity', 'AI Usage'];
   private urlParams: Map<string, string> = new Map<string, string>();
   public view: DG.MultiView;
+  private toolbox?: UaToolbox;
+  private pendingState?: UaViewState;
+  /** The buttons that switch a tab between its sub-views, by tab name and route. */
+  private routButtons: {[tab: string]: {[rout: string]: HTMLButtonElement}} = {};
 
   /** [appTab]: the tab an app of its own opens (`metrics`); under that app's URL the tab needs no path segment. */
   constructor(private appTab?: string) {
     this.view = new DG.MultiView({viewFactories: {}});
     this.view.name = ViewHandler.UA_NAME;
     this.view.box = true;
+    // A project saves the open tab, its sub-view and the filters with the view and hands them back after
+    // reopening the app.
+    this.view.saveStateMap = () => this.saveState();
+    this.view.loadStateMap = (state: object) => void this.loadState(state as UaViewState);
+  }
+
+  saveState(): UaViewState | null {
+    if (!this.toolbox)
+      return null;
+    const v = this.getCurrentView();
+    return {tab: v.name, rout: v.rout ?? null, filters: this.toolbox.getState()};
+  }
+
+  async loadState(state: UaViewState): Promise<void> {
+    if (!this.toolbox) {
+      this.pendingState = state;
+      return;
+    }
+    if (state.tab)
+      this.changeTab(state.tab);
+    if (state.filters) {
+      this.toolbox.setState(state.filters);
+      this.toolbox.applyFilter();
+    }
+    const v = this.getCurrentView();
+    await v.viewersReady;
+    if (state.rout && v.rout !== state.rout)
+      this.routButtons[v.name]?.[state.rout]?.click();
   }
 
   async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
@@ -40,7 +72,7 @@ export class ViewHandler {
       const currentView = new viewClasses[i]();
       views.push(currentView);
       this.view.addView(currentView.name, () => {
-        currentView.tryToInitViewers(path);
+        currentView.viewersReady = currentView.tryToInitViewers(path);
         return currentView;
       }, false);
     }
@@ -111,6 +143,7 @@ export class ViewHandler {
       piButton.disabled = true;
     });
     puButton.disabled = true;
+    this.routButtons['Packages'] = {'/Usage': puButton, '/InstallationTime': piButton};
     const pButtons = ui.divH([puButton, piButton], 'ua-packages-buttons');
     pButtons.style.display = 'none';
     toolbox.filters.root.before(pButtons);
@@ -134,6 +167,7 @@ export class ViewHandler {
       feButton.disabled = true;
     });
     fuButton.disabled = true;
+    this.routButtons['Functions'] = {'/Usage': fuButton, '/ExecutionTime': feButton};
     const fButtons = ui.divH([fuButton, feButton], 'ua-packages-buttons');
     fButtons.style.display = 'none';
     toolbox.filters.root.before(fButtons);
@@ -178,6 +212,11 @@ export class ViewHandler {
         fButtons.style.display = 'none';
     });
     this.changeTab(urlTab);
+    this.toolbox = toolbox;
+    if (this.pendingState) {
+      void this.loadState(this.pendingState);
+      this.pendingState = undefined;
+    }
   }
 
   static urlName(view: DG.ViewBase): string {
