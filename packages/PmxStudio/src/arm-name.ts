@@ -145,25 +145,33 @@ export function combinationHint(text: string, others: string[], detected: boolea
 // immunotherapy as a small molecule gives fewer animals than it needs: an antibody the rules cannot place is read as
 // an immunotherapy (the wider spread), the directly acting biologics are the ones named. A name no rule reads is a
 // small molecule, and the app says it could not tell; so is a code with only "inhibitor" or "p.o." beside it, which
-// says a small molecule but not whether it acts on the tumour or through the immune system. Measured on the atlas's curated arms:
-// preclinical bundle analysis/therapy_from_name.mjs.
-const IMMUNE_TARGET = /(?:pd-?1|pd-?l[12]|ctla-?4|lag-?3|tim-?3|tigit|cd40|ox-?40|4-?1bb|cd137|gitr|cd47|sirp-?a|csf-?1r|cd73|cd39|cd27|cd28|icos|vista|nkg2a|nkp\d+|cd16|cd3|cd25|cd8|cd4|b7-?h3|il-?\d+[a-z]?r?|tgf-?b\w*|ifn\w*)/.source;
+// says a small molecule but not whether it acts on the tumour or through the immune system. Measured on the atlas's
+// curated arms: preclinical bundle analysis/therapy_from_name.mjs.
+const any = (...rs: RegExp[]) => new RegExp(rs.map((r) => r.source).join('|'));
+const IMMUNE_TARGET = any(/pd-?1|pd-?l[12]|ctla-?4|lag-?3|tim-?3|tigit|cd40|ox-?40|4-?1bb|cd137|gitr|cd47|sirp-?a/,
+  /csf-?1r|cd73|cd39|cd27|cd28|icos|vista|nkg2a|nkp\d+|cd16|cd3|cd25|cd8|cd4|b7-?h3|il-?\d+[a-z]?r?|tgf-?b\w*|ifn\w*/)
+  .source;
 const THERAPY_RULES: [Therapy, RegExp][] = [
   ['vaccine_peptide', /vaccin|neoantigen|neo-antigen|peptide|gvax|\bdcs?\b.*pulsed|pulsed.*\bdcs?\b/],
-  ['cell_therapy', /\bcar[- ]?(?:t|nk|m)\b|\b(?:t|nk|til|cik|cd8\+?|cd4\+?|car)[- ]?cells?\b|adoptive|\btils?\b|ot-?i+\b|pmel|splenocytes|macrophages?\b|\bcell therapy/],
+  ['cell_therapy', any(/\bcar[- ]?(?:t|nk|m)\b|\b(?:t|nk|til|cik|cd8\+?|cd4\+?|car)[- ]?cells?\b|adoptive|\btils?\b/,
+    /ot-?i+\b|pmel|splenocytes|macrophages?\b|\bcell therapy/)],
   ['oligo_rna', /sirna|\bsi-?[a-z]*\d|mrna|\basos?\b|antisense|oligonucleotide|\bmir-?\d|antagomir|aptamer/],
-  ['immune_agonist', /sting|cgamp|\bcdn|adu-?s100|dmxaa|msa-?2|diabzi|\btlr\d*|r848|resiquimod|imiquimod|cpg|poly ?\(?i:c|polyic|epacadostat|indoximod|\bido\d?\b/],
-  ['biologic', new RegExp(/\badcs?\b|vedotin|deruxtecan|\bt-?dxd\b|\bt-?dm1\b|emtansine|govitecan|mmae|ozogamicin|/.source +
-    /trastuzumab|cetuximab|bevacizumab|panitumumab|pertuzumab|zanidatamab|ramucirumab|necitumumab|amivantamab|dc101|/.source +
-    /(?:anti|α|\ba)-?\s?(?:vegf\w*|her2|erbb\d|egfr|ceacam\d*|trop-?2|cd20|cd19|cd38|cd33|gd2|igf-?1r|met|dll3|nectin-?4|lcn2)\b|/.source +
-    /fusion protein|\btrap\b|asparaginase|asnase|glucose oxidase/.source)],
-  ['immunotherapy', new RegExp(String.raw`(?<![a-z0-9])(?:anti-?\s?|alpha-?|α-?|m?pro-?|r[mh]|a-?|m)?${IMMUNE_TARGET}(?![a-z0-9])|` +
-    /pembrolizumab|nivolumab|ipilimumab|atezolizumab|durvalumab|avelumab|cemiplimab|tremelimumab|tislelizumab|/.source +
-    /toripalimab|camrelizumab|sintilimab|relatlimab|magrolimab|abatacept|checkpoint|bispecific|probody|/.source +
-    /interleukin|interferon|cytokine|gm-?csf|\btnf|/.source +
+  ['immune_agonist', any(/sting|cgamp|\bcdn|adu-?s100|dmxaa|msa-?2|diabzi|\btlr\d*|r848|resiquimod|imiquimod|cpg/,
+    /poly ?\(?i:c|polyic|epacadostat|indoximod|\bido\d?\b/)],
+  ['biologic', any(/\badcs?\b|vedotin|deruxtecan|\bt-?dxd\b|\bt-?dm1\b|emtansine|govitecan|mmae|ozogamicin/,
+    /trastuzumab|cetuximab|bevacizumab|panitumumab|pertuzumab|zanidatamab|ramucirumab|necitumumab|amivantamab|dc101/,
+    /(?:anti|α|\ba)-?\s?(?:vegf\w*|her2|erbb\d|egfr|ceacam\d*|trop-?2|cd20|cd19|cd38|cd33|gd2|igf-?1r|met|dll3)\b/,
+    /(?:anti|α|\ba)-?\s?(?:nectin-?4|lcn2)\b|fusion protein|\btrap\b|asparaginase|asnase|glucose oxidase/)],
+  ['immunotherapy', any(
+    new RegExp(String.raw`(?<![a-z0-9])(?:anti-?\s?|alpha-?|α-?|m?pro-?|r[mh]|a-?|m)?(?:${IMMUNE_TARGET})(?![a-z0-9])`),
+    /pembrolizumab|nivolumab|ipilimumab|atezolizumab|durvalumab|avelumab|cemiplimab|tremelimumab|tislelizumab/,
+    /toripalimab|camrelizumab|sintilimab|relatlimab|magrolimab|abatacept|checkpoint|bispecific|probody/,
+    /interleukin|interferon|cytokine|gm-?csf|\btnf/,
     // any other antibody
-    /\banti-?\s?[a-z]|\balpha-[a-z]|mab\b|antibod|\big[gea]\d?\b|nanobod/.source)],
-  ['small_molecule', /(?:nib|lisib|ciclib|parib|platin|taxel|rubicin|mustine|tecan|citabine|uracil|trexate|mycin|zomib|sertib|stat|phosphamide)\b|chemo|5-?fu|gemcitabine|fluorouracil|temozolomide|dexamethasone|metformin|rapamycin|everolimus|tamoxifen/],
+    /\banti-?\s?[a-z]|\balpha-[a-z]|mab\b|antibod|\big[gea]\d?\b|nanobod/)],
+  ['small_molecule', any(/(?:nib|lisib|ciclib|parib|platin|taxel|rubicin|mustine|tecan|citabine|uracil|trexate)\b/,
+    /(?:mycin|zomib|sertib|stat|phosphamide)\b|chemo|5-?fu|gemcitabine|fluorouracil|temozolomide|dexamethasone/,
+    /metformin|rapamycin|everolimus|tamoxifen/)],
 ];
 
 /** The kind of treatment an arm's name says, per drug: its own words first, then the whole name (a comment in
