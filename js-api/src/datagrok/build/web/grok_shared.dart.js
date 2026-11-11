@@ -199398,8 +199398,8 @@
     call$0() {
       var t1 = new self.DG.ComponentBuildInfo();
       t1.branch = "master";
-      t1.commit = "09842825a746fddb942efece212c1bf0a5270051";
-      t1.date = "2026-11-10T23:45:47.423Z";
+      t1.commit = "8ec48c7e7bce4a02240557ab429493b5c0c0601c";
+      t1.date = "2026-11-11T12:05:31.610Z";
       t1.version = "1.27.12";
       return t1;
     },
@@ -222904,7 +222904,7 @@
     _lazyFinal($, "$UsersServiceSettings_$openIdKeepToken", "$get$$UsersServiceSettings_$openIdKeepToken", () => {
       var _null = null,
         t1 = A.Property$("openIdKeepToken", "bool", new A.$UsersServiceSettings_$openIdKeepToken_closure(), true, _null, new A.$UsersServiceSettings_$openIdKeepToken_closure0(), type$.bool);
-      t1.description = "Datagrok will add offline_access scope, periodically refresh token and use it to access services";
+      t1.description = "Datagrok will add offline_access scope, periodically refresh token and use it to access services.\n Each refresh re-checks the user with the Authentication Provider and ends the session it refuses.";
       t1.set$info(A.Prop$("OpenID", _null, _null, "openIdAuthentication = true", _null, _null, _null, _null, _null, false, _null, _null, _null, _null, _null, "Keep Token", false, _null, _null, _null, _null, _null, _null));
       return t1;
     });
@@ -222976,7 +222976,7 @@
     _lazyFinal($, "$UsersServiceSettings_$openIdSyncGroups", "$get$$UsersServiceSettings_$openIdSyncGroups", () => {
       var _null = null,
         t1 = A.Property$("openIdSyncGroups", "bool", new A.$UsersServiceSettings_$openIdSyncGroups_closure(), true, _null, new A.$UsersServiceSettings_$openIdSyncGroups_closure0(), type$.bool);
-      t1.description = "Mirror identity-provider groups into Datagrok groups, on login and on a schedule.";
+      t1.description = "Mirror identity-provider groups into Datagrok groups, on login, on token refresh and on a schedule.\n Requires OpenID login with Keep Token.";
       t1.set$info(A.Prop$("Group Sync", _null, _null, _null, _null, _null, _null, _null, _null, false, _null, _null, _null, _null, _null, "Sync Groups", false, _null, _null, _null, _null, _null, _null));
       return t1;
     });
