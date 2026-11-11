@@ -1,6 +1,6 @@
 # Datagrok-tools changelog
 
-## v.next
+## 6.7.11 (2026-11-11)
 
 * `grok src`: Clones over HTTPS by default, leaves no empty folders for children not cloned; `grok src --help` prints the help
 * `grok test`: Fixed finding DevTools when run from a core Dart library (d4, xamgle, ddt, dml): it is in the umbrella's `public/` next to core
