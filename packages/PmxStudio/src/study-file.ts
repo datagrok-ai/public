@@ -9,6 +9,7 @@ import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
 import {_package} from './package';
 import {PLAN_TAG, SavedPlan, fileNameOf, parsePlan} from './plan-file';
 import {StudyMeta, metaOf, parseMeta, setMetaOn} from './study-meta';
+import {indexSaved} from './library';
 
 export const STUDY_EXT = 'pmxstudy';
 const FORMAT = 'pmx-study';
@@ -230,6 +231,8 @@ export async function saveStudy(s: SavedStudy): Promise<string> {
     await grok.dapi.files.readAsText(path).then((t) => JSON.parse(t)?.meta?.id ?? null).catch(() => null) : null;
   if (other && s.meta?.id && other !== s.meta.id)
     throw new Error(`Another study (${other}) is saved as "${s.name}": rename this one to save it`);
-  await grok.dapi.files.writeAsText(path, JSON.stringify(s, null, 2));
+  const text = JSON.stringify(s, null, 2);
+  await grok.dapi.files.writeAsText(path, text);
+  await indexSaved(path, text).catch(() => {}); // (the next listing reads a file its row is missing for)
   return path;
 }

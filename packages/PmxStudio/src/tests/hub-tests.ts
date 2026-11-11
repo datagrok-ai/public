@@ -4,6 +4,7 @@ import {exampleStudy} from './example-study';
 import {PLAN_TAG} from '../plan-file';
 import {cruxCalls} from '../crux';
 import {hubView} from '../hub-view';
+import {LibraryFiles, indexPath, indexSaved, myLibrary} from '../library';
 import {bring, readFile, suggestedStage} from '../open-study';
 import {gpu} from '../gpu';
 
@@ -65,6 +66,52 @@ category('Hub', () => {
     expect(cards.map((c) => c.dataset.stage).join(), 'plan,monitor,analyze');
     expect(cards.some((c) => c.disabled), false);
     expect(root.querySelectorAll('.pmx-link, .pmx-arc').length, 3);
+  });
+
+  test('Your studies from the index: a study is read only when its row is missing or behind', async () => {
+    // three plans of no study ID (each its own row: rows of one ID are one study)
+    const plan = JSON.parse((await exampleStudy()).getTag(PLAN_TAG)!);
+    const files: {[name: string]: {text: string, updated: number}} = {
+      'a.pmxplan': {text: JSON.stringify({...plan, name: 'Plan A', study: undefined}), updated: 1},
+      'b.pmxplan': {text: JSON.stringify({...plan, name: 'Plan B', study: undefined}), updated: 1}};
+    const store = new Map<string, string>();
+    let reads = 0;
+    const fs: LibraryFiles = {
+      list: async (_folder, _recursive, ext) => ext !== 'pmxplan' ? [] : Object.entries(files)
+        .map(([fileName, f]) => ({fileName, fullPath: fileName, updatedOn: {valueOf: () => f.updated}}) as any),
+      readAsText: async (f) => {
+        if (typeof f === 'string') {
+          if (!store.has(f))
+            throw new Error('no file');
+          return store.get(f)!;
+        }
+        reads++;
+        return files[f.fileName].text;
+      },
+      writeAsText: async (path, text) => void store.set(path, text),
+    };
+    const rows = (es: {name: string, line: string, end: number | null}[]) =>
+      es.map((e) => `${e.name}|${e.line}|${e.end}`).sort().join();
+    const first = await myLibrary(fs);
+    expect(reads, 2);
+    expect(rows(first), `Plan A|MC38|${plan.predicted.studyEnd},Plan B|MC38|${plan.predicted.studyEnd}`);
+    reads = 0;
+    expect(rows(await myLibrary(fs)), rows(first), 'the index gives other rows than the files');
+    expect(reads, 0, 'a study was read with its row in the index');
+    files['b.pmxplan'].updated = 2; // changed outside the app
+    await myLibrary(fs);
+    expect(reads, 1);
+    reads = 0;
+    // saved by the app: its row written as it is saved, the file not read to list it
+    files['c.pmxplan'] = {text: JSON.stringify({...plan, name: 'Plan C', study: undefined}), updated: 3};
+    await indexSaved('home:Home/PMX Studio/plans/c.pmxplan', files['c.pmxplan'].text, fs);
+    expect((await myLibrary(fs)).length, 3);
+    expect(reads, 0, 'a plan saved by the app was read to list it');
+    // a damaged index is rebuilt from the files
+    store.set(indexPath(), '{"version": 1, "rows": [');
+    expect(rows(await myLibrary(fs)).split(',').length, 3);
+    expect(reads, 3);
+    expect(JSON.parse(store.get(indexPath())!).version, 1);
   });
 
   test('the home opens without the engine: no calculation, no workers', async () => {

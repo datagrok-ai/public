@@ -1,11 +1,13 @@
-/* The user's studies, as the Overview lists them: each saved plan and followed study in their Home, read for its
-   details (ID, line, what the groups receive, owner, tags) and how far it has gone. A study followed from a plan
-   is listed once, at its furthest stage. Datagrok projects are not listed: a study shared as a project keeps its
+/* The user's studies, as the Overview lists them: each saved plan and followed study in their Home, by its details
+   (ID, line, what the groups receive, owner, tags) and how far it has gone, kept in a small index beside them (each
+   file's row, written as it is saved): the list reads the index, not the studies, and a study is read when opened.
+   The index is a cache: missing, damaged or of another format, it is rebuilt from the files. A study followed from
+   a plan is listed once, at its furthest stage. Datagrok projects are not listed: a study shared as a project keeps its
    tags and marks in its table, and opens from Browse. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {myPlans, parsePlan} from './plan-file';
+import {parsePlan, PLAN_EXT, plansFolder} from './plan-file';
 import {parseStudy, studiesFolder, STUDY_EXT} from './study-file';
 import {compoundsOf, parseMeta, treatmentOf} from './study-meta';
 import {futureDays} from './monitor';
@@ -75,11 +77,77 @@ export function matches(e: LibraryEntry, query: string): boolean {
   return query.toLowerCase().split(/\s+/).filter((w) => w).every((w) => text.includes(w));
 }
 
-/** The user's plans and studies, read. ponytail: every file is read to list it; an index file once there are
- *  hundreds. */
-export async function myLibrary(): Promise<LibraryEntry[]> {
-  const studies = grok.dapi.files.list(studiesFolder(), false, STUDY_EXT).catch(() => [] as DG.FileInfo[]);
-  const files = [...await myPlans().catch(() => [] as DG.FileInfo[]), ...await studies];
-  return libraryOf(await Promise.all(files.map((f) => grok.dapi.files.readAsText(f)
-    .then((text) => entryOf(text, f.updatedOn?.valueOf() ?? 0, f), () => null))));
+/** What the library needs of the files API (the package's tests give a fake one). */
+export interface LibraryFiles {
+  list(folder: string, recursive: boolean, ext: string): Promise<DG.FileInfo[]>;
+  readAsText(file: DG.FileInfo | string): Promise<string>;
+  writeAsText(path: string, text: string): Promise<void>;
+}
+
+/** Each file's row, by file name: its entry without the file and its text; `updated` null when written as the file
+ *  was saved (its date is the listing's, taken at the next one). */
+type Index = {[file: string]: Omit<LibraryEntry, 'file' | 'text' | 'updated'> & {updated: number | null}};
+
+/** The index file's format: another (or none) is rebuilt. */
+const INDEX_VERSION = 1;
+export const indexPath = () => `${grok.shell.user.project.name}:Home/PMX Studio/library-index.json`;
+const readIndex = (fs: LibraryFiles): Promise<Index> => fs.readAsText(indexPath()).then((t) => {
+  const x = JSON.parse(t);
+  return x?.version === INDEX_VERSION && x.rows && typeof x.rows === 'object' ? x.rows : {};
+}).catch(() => ({}));
+const writeIndex = (fs: LibraryFiles, rows: Index) =>
+  fs.writeAsText(indexPath(), JSON.stringify({version: INDEX_VERSION, rows}));
+const rowOf = (e: LibraryEntry, updated: number | null): Index[string] => {
+  const {file: _f, text: _t, ...row} = e;
+  return {...row, updated};
+};
+
+/** Writes the row of a plan or study just saved at `path` (its text as written) into the index. ponytail: two tabs
+ *  saving at once, the last write wins; the next listing reads again a file its row is behind of. */
+export async function indexSaved(path: string, text: string, fs: LibraryFiles = grok.dapi.files): Promise<void> {
+  const e = entryOf(text, 0);
+  if (!e)
+    return;
+  const index = await readIndex(fs);
+  index[path.split('/').pop()!] = rowOf(e, null);
+  await writeIndex(fs, index);
+}
+
+/** The user's plans and studies: listed (names and dates only) and each one's row from the index; a file the index
+ *  has no row for, or an older one (saved before the index, or changed outside the app), is read once and its row
+ *  kept. No study is read otherwise, and nothing is computed. */
+export async function myLibrary(fs: LibraryFiles = grok.dapi.files): Promise<LibraryEntry[]> {
+  const [plans, studies, index] = await Promise.all([
+    fs.list(plansFolder(), false, PLAN_EXT).catch(() => [] as DG.FileInfo[]),
+    fs.list(studiesFolder(), false, STUDY_EXT).catch(() => [] as DG.FileInfo[]), readIndex(fs)]);
+  const files = [...plans, ...studies];
+  let changed = false;
+  const entries = await Promise.all(files.map(async (f) => {
+    const updated = f.updatedOn?.valueOf() ?? 0;
+    const row = index[f.fileName];
+    if (row && (row.updated === null || row.updated >= updated)) {
+      if (row.updated === null) {
+        row.updated = updated;
+        changed = true;
+      }
+      return {...row, updated, file: f, text: ''} as LibraryEntry;
+    }
+    const e = await fs.readAsText(f).then((text) => entryOf(text, updated, f), () => null);
+    if (e) {
+      index[f.fileName] = rowOf(e, updated);
+      changed = true;
+    }
+    return e && {...e, text: ''};
+  }));
+  // rows of files no longer there leave the index
+  const names = new Set(files.map((f) => f.fileName));
+  for (const name of Object.keys(index)) {
+    if (!names.has(name)) {
+      delete index[name];
+      changed = true;
+    }
+  }
+  if (changed) // (an index that cannot be written leaves the list as read)
+    await writeIndex(fs, index).catch(() => {});
+  return libraryOf(entries);
 }
