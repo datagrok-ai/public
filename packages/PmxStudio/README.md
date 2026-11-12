@@ -171,6 +171,10 @@ completed with dose, route and schedule from the article's Methods (µg written 
 tumor volume in the same column position of its group (the article gives no animal identifiers). Volumes and weights
 unchanged. Its control group is also among the MC38 studies the growth model was built from (`files/SOURCES.md`).
 
+What it shows: in Analyze the median control stays below the 1000 mm³ endpoint, so the groups are compared on the
+last day, day 12, and the app says so; the combination slows growth (TGI 79%, p = 0.013) while neither drug alone has
+a clear effect; the body weights stay within the NCI limits (Monitor's Welfare, Analyze's Tolerability).
+
 ## Crux modules
 
 The two Crux modules the package's functions are routed to (`nonclinical`: crate tgi's `stats.tumor_*`; `stats`:

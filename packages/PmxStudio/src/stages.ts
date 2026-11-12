@@ -110,6 +110,11 @@ export function quietContextPanel(): void {
     if (!document.hidden && computes(grok.shell.v))
       cruxWake();
   });
+  // a field of a stage that computes taken in hand: the value follows a second or more later, the sets open meanwhile
+  document.addEventListener('focusin', (e) => {
+    if (computes(grok.shell.v) && grok.shell.v!.root.contains(e.target as Node))
+      cruxWake();
+  });
   // the app's first view may already be current when this runs
   setTimeout(apply);
 }

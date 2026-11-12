@@ -21,6 +21,14 @@ This is the one study the package distributes animal by animal, under its licenc
 the MC38 studies the package's growth model was built from (`files/SOURCES.md`): for the control band it is not a new
 study.
 
+## What it shows
+
+Opened in Monitor, the columns are recognized (body weight included) and the last day measured, day 12, is taken
+as today. In Analyze (MC38, endpoint 1000 mm³), the median control stays below the endpoint, so the groups are
+compared on day 12, and the app says so. The combination slows growth (TGI 79%, T/C 37%, p = 0.013), while neither
+drug alone has a clear effect (TGI 17% and 18%). The body weights stay within the NCI limits in every group (mean
+nadir −3% at worst).
+
 ## Changes made
 
 - Reshaped to long format: one row per animal and day (`animal`, `group`, `day`, `volume`, `body_weight`).

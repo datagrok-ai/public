@@ -13,7 +13,7 @@
 * The app starts clean (2026-11-11): the Overview lists only the user's own studies ("No studies yet" until there is
   one) and computes nothing when it opens; the demo studies are gone (the package's tests keep the simulated one, in
   tests/). The engine's workers close after 3 minutes without a calculation, one set kept ready with the modules
-  used, and reopen at the first gesture (a field changed, a stage made current, the tab back on one); the twin's
+  used, and reopen at the first gesture (a field clicked into or changed, a stage made current, the tab back on one); the twin's
   shaders are compiled when Analyze opens, not when the app does.
 
 * Plan, second pass (2026-11-11): the animals per group and the end of study leave the form: a click on the

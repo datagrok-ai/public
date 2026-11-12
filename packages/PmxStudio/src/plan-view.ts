@@ -639,9 +639,9 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       const last = rowsOf[rowsOf.length - 1];
       const removedAt = (day: number) => Math.round(100 * (rowsOf.find((x) => x.day === day)?.removed ?? 0));
       const points = Math.round(100 * gain);
-      endSummary.textContent = `Ending after day ${e} ${points < 1 ? 'adds no power' : `adds at most ${points} ` +
-        `points of power`}, while the controls removed at ${v('humane_limit')} mm³ go from ${removedAt(e)}% on day ` +
-        `${e} to ${removedAt(last.day)}% on day ${last.day}.`;
+      const adds = points < 1 ? 'adds no power' : `adds at most ${points} point${points === 1 ? '' : 's'} of power`;
+      endSummary.textContent = `Ending after day ${e} ${adds}, while the controls removed at ` +
+        `${v('humane_limit')} mm³ go from ${removedAt(e)}% on day ${e} to ${removedAt(last.day)}% on day ${last.day}.`;
     }
 
 
