@@ -31,9 +31,10 @@ export async function sha256Hex(text: string): Promise<string> {
 
 let atlasHash: Promise<string> | null = null;
 
-/** The current atlas and app, the hash computed once; a failed read is not kept. */
+/** The current atlas and app, the hash computed once; a failed read is not kept. The atlas is hashed with LF line
+ *  ends, as git stores it, so a package built on Windows (CRLF checkout) gives the same hash. */
 export async function provenance(): Promise<Provenance> {
-  atlasHash ??= _package.files.readAsText(PRIORS_FILE).then(sha256Hex).catch((e) => {
+  atlasHash ??= _package.files.readAsText(PRIORS_FILE).then((t) => sha256Hex(t.replace(/\r\n/g, '\n'))).catch((e) => {
     atlasHash = null;
     throw e;
   });
