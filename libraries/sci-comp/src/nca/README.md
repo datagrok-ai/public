@@ -6,7 +6,7 @@ Operates on plain `Float64Array` / `Uint8Array` inputs.
 | Capability | Scope |
 |---|---|
 | **Parameters** | Cmax, Tmax, AUClast, AUCinf, %AUCextrap, λz, t½, CL (or CL/F), Vz (or Vz/F), AUMClast, AUMCinf, MRT, Vss (IV only), Tlag (extravascular only), %AUMCextrap |
-| **Routes**     | IV bolus (with `c0` back-extrapolation), IV infusion (with the `T_inf/2` MRT correction), extravascular (PO/SC/IM treated uniformly) |
+| **Routes**     | IV bolus (with `c0` back-extrapolation), IV infusion (with the `T_inf/2` MRT correction), extravascular (PO/SC/IM/IP/other treated uniformly) |
 | **AUC / AUMC methods** | linear, log-linear, linear-up/log-down — each as both naive Float64 and Neumaier-compensated summation |
 | **Interval AUC** | `aucInterval(inputs, rules, start, end)` — AUC over `[start, end]` with PKNCA `aucint.last` semantics: bounds interpolated (log on a log interval), no extrapolation past tlast (`truncatedAtTlast`) |
 | **BLQ rules**  | `set-zero`, `set-half-lloq`, `exclude`, `missing` — per-phase configurable (`preFirstMeasurable`, `embedded`, `afterLast`, `consecutiveAfterLast`). Substituted values reach AUC/AUMC and the λz filter; Cmax and Tlag read the BLQ mask under every rule — the per-rule table is on the `BlqRule` TSDoc |
