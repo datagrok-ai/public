@@ -28,9 +28,11 @@ export function pastedNumber(cell: string): number | null {
   return /^[+-]?\d+,\d+$/.test(v) && !/,\d{3}$/.test(v) ? Number(v.replace(',', '.')) : NaN;
 }
 
-/** A day written as a number: 0, 7, D7, Day 14, day_21, -1, Day 7 (mm3). Dates are not read. */
+/** A day written as a number: 0, 7, D7, Day 14, day_21, -1, Day 7 (mm3). A unit in brackets is a volume's only
+ *  (mm3, vol, TV): Day 7 (g) is a weight. Dates are not read. */
 export function dayOf(cell: string): number | null {
-  const m = /^(?:d|day|days|study day)?[\s_]*(-?\d+(?:\.\d+)?)\s*(?:\([^)]*\))?$/i.exec(cell.trim());
+  const m = /^(?:d|day|days|study day)?[\s_]*(-?\d+(?:\.\d+)?)\s*(?:\(\s*(?:mm3|mm³|mm\^3|vol|tv)\s*\))?$/i
+    .exec(cell.trim());
   return m ? Number(m[1]) : null;
 }
 
@@ -42,10 +44,13 @@ export function separatorOf(text: string): string {
 }
 
 /** A cell as a number (pastedNumber); where semicolons separate the cells, a comma in a number is its decimals, so
- *  "100,512" is 100.512 there (and refused in a comma file, where it reads as thousands just as well). */
+ *  "100,512" is 100.512 there (and refused in a comma file, where it reads as thousands just as well); and there
+ *  "1.234" is refused, a dot that may mark the thousands. */
 export function numberOf(cell: string, decimalComma: boolean): number | null {
-  return decimalComma && /^[+-]?\d+,\d+$/.test(cell.trim()) ? Number(cell.trim().replace(',', '.')) :
-    pastedNumber(cell);
+  const v = cell.trim();
+  if (decimalComma && /^[+-]?\d{1,3}(\.\d{3})+$/.test(v))
+    return NaN;
+  return decimalComma && /^[+-]?\d+,\d+$/.test(v) ? Number(v.replace(',', '.')) : pastedNumber(cell);
 }
 
 /** The cells of a delimited text (tabs, commas or semicolons, quotes as a spreadsheet writes them), trimmed. */
@@ -103,8 +108,17 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const isValue = (s: string) => /^[+-]?\d[\d.,]*$/.test(s);
 /** A cell that names a role by its word (a name with a number in it is a value, "Mouse 1"). */
 const names = (s: string, ...roles: string[]) => !/\d/.test(s) && roles.some((r) => role(r).test(s));
-/** A row of the CRO's own statistics, by its label: left out, never an animal. */
-const SUMMARY = /^(mean|average|sem|se|sd|std|total|n|median)(\b|=|$)/i;
+/** A row of the CRO's own statistics, by its label, the word alone: left out, never an animal. */
+const SUMMARY = /^(mean|average|sem|se|sd|std|total|n|median)\s*=?\s*$/i;
+/** A label that starts as a summary's and goes on ("Mean Vehicle", "n=5"): neither an animal nor read as a summary. */
+const SUMMARY_LIKE = /^((mean|average|median|total|sem|sd|std)[\s(:=]|(n|se)\s*[(:=])/i;
+const summaryWord = (s: string) => s.replace(/[\s=]+$/, '');
+/** A row that names the columns of a long table (animal, group, volume, day) without a day in it. */
+const LONG_ROLES = [/^(animal|mouse|subject)\b|^id$/i, role('Group'), /^(tumou?r )?vol|^tv$/i,
+  /^(day|days|study day|time|timepoint|visit|week)s?\b/i];
+/** A group's name that is a measurement instead (Volume, Tumor vol, Body weight, Vehicle BW), by
+ *  whole words: Volasertib is a group. */
+const MEASURE = /\b(vol(ume)?|weight|bw)\b/i;
 
 /** The two shapes read, each as a tiny example, after what was not understood. */
 export const SHAPES = 'PMX Studio reads two wide shapes. A column per animal: ",Vehicle,,Cpd-A" / "Day,V1,V2,C1" / ' +
@@ -124,7 +138,7 @@ export function wideSummary(w: WideRead, blinded = false): string[] {
     ...w.ignored.map((l) => `Not read: ${l}.`)];
 }
 
-/** Every number outside the table's labels (`label`) is read from exactly one cell or left out on purpose
+/** Every cell with a digit outside the table's labels (`label`) is read from exactly one cell or left out on purpose
  *  (`ignored`); else why nothing may be read. */
 export function unplaced(cells: string[][], rows: WideRow[], label: (r: number, c: number) => boolean,
   ignored: (r: number, c: number) => boolean): string | null {
@@ -132,7 +146,7 @@ export function unplaced(cells: string[][], rows: WideRow[], label: (r: number, 
   const pairs = new Set(rows.map((x) => `${x.animal}\u0000${x.day}`));
   const lost: string[] = [];
   cells.forEach((row, r) => row.forEach((s, c) => {
-    if (isValue(s) && !label(r, c) && !ignored(r, c) && !read.has(`${r},${c}`))
+    if (/\d/.test(s) && !label(r, c) && !ignored(r, c) && !read.has(`${r},${c}`))
       lost.push(`${letter(c)}${r + 1}`);
   }));
   if (pairs.size < rows.length)
@@ -152,21 +166,25 @@ export function readWide(cells: string[][], decimalComma = false): WideRead | nu
   if (filled.length < 2)
     return null;
   const top = cells[filled[0]];
-  // a long table names the day and the animal, the volume or the group
-  if (top.some((s) => names(s, 'Day')) && top.some((s) => names(s, 'Animal', 'Volume', 'Group')))
+  const daysIn = (r: number) => cells[r].filter((s, c) => c > 0 && s && dayOf(s) !== null).length;
+  // the days on a second header row, under a "Day" spread over blank headings
+  const spread = top.findIndex((s, c) => names(s, 'Day') && top.slice(c + 1).every((x) => x === ''));
+  if (spread >= 0 && spread < top.length - 1 && daysIn(filled[1]) >= 2)
+    return refuse('by day', 'the days are on a second header row; put them in the header row itself (Day 0, Day 3)');
+  // a long table names its columns (animal, group, volume, day) and holds no day in its header
+  if (LONG_ROLES.filter((re) => top.some((s) => re.test(s))).length >= 2 && top.every((s) => dayOf(s) === null))
     return null;
   // wide by its first rows: a header of days, or days down column A under a header row (then read strictly)
   const head = filled.slice(0, 4);
-  const daysAcross = (r: number) => {
-    const days = cells[r].filter((s, c) => c > 0 && s && dayOf(s) !== null);
-    return days.length >= 2 && (days.some((s) => !isValue(s)) || cells[r].some((s) => names(s, 'Animal')));
-  };
+  const daysAcross = (r: number) => daysIn(r) >= 2 &&
+    (cells[r].some((s, c) => c > 0 && dayOf(s) !== null && !isValue(s)) || cells[r].some((s) => names(s, 'Animal')));
   const dayRow = (r: number) => dayOf(at(r, 0)) !== null && cells[r].some((s, c) => c > 0 && isValue(s));
   const titled = (r: number) => (at(r, 0) === '' || names(at(r, 0), 'Day')) && cells[r].some((s, c) => c > 0 && s);
-  if (head.slice(0, 3).some(daysAcross)) {
-    return daysAcross(filled[0]) ? readByDay(cells, filled, decimalComma) :
-      refuse('by day', 'there are rows above the header row of days');
-  }
+  if (daysAcross(filled[0]))
+    return readByDay(cells, filled, decimalComma);
+  // a header of days below a title: one that names the animals or the groups too
+  if (head.slice(1, 3).some((r) => daysAcross(r) && cells[r].some((s) => names(s, 'Animal', 'Group'))))
+    return refuse('by day', 'there are rows above the header row of days');
   return head.some((r, k) => titled(r) && head.slice(k + 1).some(dayRow)) ?
     readByAnimal(cells, filled, decimalComma) : null;
 }
@@ -181,7 +199,7 @@ function valuesOf(cells: string[][], r: number, cols: number[], decimalComma: bo
     const s = cells[r]?.[c] ?? '';
     const x = numberOf(s, decimalComma);
     if (x !== null && Number.isNaN(x))
-      return `cell ${letter(c)}${r + 1} ("${s}") is not a plain number`;
+      return `cell ${letter(c)}${r + 1} is not a plain number`;
     out.push(x);
   }
   return out;
@@ -210,7 +228,7 @@ function readByAnimal(cells: string[][], filled: number[], decimalComma: boolean
   if (at(g, 0) !== '' || dayOf(at(i, 0)) !== null)
     return no('the file does not start with a row of group names over a row of animal ids');
   if (at(i, 0) !== '' && !names(at(i, 0), 'Day'))
-    return no(`the row of animal ids starts with "${at(i, 0)}", not "Day" or a blank`);
+    return no('the row of animal ids does not start with "Day" or a blank');
   let last = cells[i].length - 1;
   while (last > 0 && at(i, last) === '')
     last--;
@@ -222,16 +240,25 @@ function readByAnimal(cells: string[][], filled: number[], decimalComma: boolean
     return no('the first animal (column B) has no group name above it');
   const beyond = cells[g].findIndex((s, c) => c > last && s !== '');
   if (beyond >= 0)
-    return no(`the group name "${at(g, beyond)}" (column ${letter(beyond)}) is over no animal`);
+    return no(`the group name in column ${letter(beyond)} is over no animal`);
   const groupOf: string[] = [];
   cols.forEach((c) => groupOf.push(at(g, c) || groupOf[groupOf.length - 1]));
-  const measure = groupOf.find((x) => WEIGHT.test(x) || /vol|tum/i.test(x));
-  if (measure)
-    return no(`"${measure}" over the animals is a measurement, not a group`);
+  const again = cols.find((c, k) => at(g, c) !== '' && k > 0 && groupOf[k - 1] !== at(g, c) &&
+    groupOf.slice(0, k).includes(at(g, c)));
+  if (again !== undefined)
+    return no(`the group named in column ${letter(again)} starts again after another group`);
+  const measure = cols.find((c) => MEASURE.test(at(g, c)));
+  if (measure !== undefined)
+    return no(`the name over column ${letter(measure)} is a measurement (a volume or a weight), not a group`);
   const ids = cols.map((c) => at(i, c));
-  const stat = cols.find((c) => SUMMARY.test(at(i, c)));
+  const stat = cols.find((c) => SUMMARY.test(at(i, c)) || SUMMARY_LIKE.test(at(i, c)));
   if (stat !== undefined)
-    return no(`column ${letter(stat)} is headed "${at(i, stat)}", a summary, not an animal`);
+    return no(`column ${letter(stat)} is headed as a summary (a mean or a count), not an animal`);
+  const decimal = cols.find((c) => /^[+-]?\d*[.,]\d+$/.test(at(i, c)));
+  if (decimal !== undefined)
+    return no(`the animal id in column ${letter(decimal)} is a number with decimals, a measurement`);
+  if (ids.every((s) => /^\d+$/.test(s)) && !names(at(i, 0), 'Day'))
+    return no('the animal ids are all numbers, so their row must start with "Day"');
   const animals = animalNames(ids, groupOf);
   if (!animals)
     return no('an animal id is there twice in one group');
@@ -249,10 +276,10 @@ function readByAnimal(cells: string[][], filled: number[], decimalComma: boolean
     const day = dayOf(at(r, 0));
     if (day === null) {
       return no(at(r, 0) === '' ? `row ${r + 1} has no day in column A` :
-        `row ${r + 1} starts with "${at(r, 0)}", not a day (0, 7, D7 or Day 7; dates are not read)`);
+        `row ${r + 1} does not start with a day (0, 7, D7 or Day 7; dates are not read)`);
     }
     if (day <= previous)
-      return no(`day ${at(r, 0)} (row ${r + 1}) does not come after the day above it`);
+      return no(`the day in row ${r + 1} does not come after the day above it`);
     previous = day;
     const beyondCell = cells[r].findIndex((s, c) => c > last && s !== '');
     if (beyondCell >= 0)
@@ -267,7 +294,7 @@ function readByAnimal(cells: string[][], filled: number[], decimalComma: boolean
     return no('no measurements under the animals');
   const left = unplaced(cells, rows, (r, c) => r === g || r === i || c === 0, (r) => summary.includes(r));
   return {shape: 'by animal', rows, groups: counted(rows), error: left,
-    ignored: summary.map((r) => `row ${r + 1} ("${at(r, 0)}"), a summary row`)};
+    ignored: summary.map((r) => `row ${r + 1}, a summary row (${summaryWord(at(r, 0))})`)};
 }
 
 /** A header row (animal, group, days), then a row per animal. */
@@ -280,8 +307,10 @@ function readByDay(cells: string[][], filled: number[], decimalComma: boolean): 
   const labels = Array.from({length: first}, (_, c) => c);
   const animalCols = labels.filter((c) => names(head[c], 'Animal'));
   const groupCols = labels.filter((c) => names(head[c], 'Group') && !animalCols.includes(c));
-  if (animalCols.length !== 1)
-    return no('no column is headed as the animals (Animal, Mouse, ID)');
+  if (animalCols.length !== 1) {
+    return no(animalCols.length === 0 ? 'no column is headed as the animals (Animal, Mouse, ID)' :
+      `more than one column is headed as the animals (${animalCols.map((c) => `"${head[c]}"`).join(', ')})`);
+  }
   if (groupCols.length !== 1) {
     return no(groupCols.length === 0 ? 'no column is headed as the groups (Group, Arm, Treatment)' :
       `more than one column is headed as the groups (${groupCols.map((c) => `"${head[c]}"`).join(', ')})`);
@@ -304,32 +333,34 @@ function readByDay(cells: string[][], filled: number[], decimalComma: boolean): 
   const dayCols = Array.from({length: lastDay - first + 1}, (_, k) => first + k);
   const width = Math.max(...filled.map((r) => cells[r].length));
   const after = Array.from({length: Math.max(0, width - lastDay - 1)}, (_, k) => lastDay + 1 + k)
-    .filter((c) => rest.some((r) => isValue(at(r, c))));
+    .filter((c) => rest.some((r) => /\d/.test(at(r, c))));
 
   const rows: WideRow[] = [];
-  const summary: number[] = [];
+  const summary: [number, string][] = [];
   const animals: {id: string, group: string, r: number}[] = [];
   let group = '';
   for (const r of rest) {
-    const aside = labels.find((c) => c !== animalCol && c !== groupCol && isValue(at(r, c)));
-    if (SUMMARY.test(at(r, animalCol)) || SUMMARY.test(at(r, groupCol)) || at(r, animalCol) === '' &&
-      at(r, groupCol) === '' && SUMMARY.test(cells[r].find((s) => s) ?? '')) {
-      summary.push(r);
+    const id = at(r, animalCol);
+    const aside = labels.find((c) => c !== animalCol && c !== groupCol && /\d/.test(at(r, c)));
+    // a summary row: no animal id, or the summary's word alone where the id goes; the group below it is named anew
+    if (id === '' || SUMMARY.test(id)) {
+      summary.push([r, id === '' ? '' : summaryWord(id)]);
+      group = '';
       continue;
     }
+    if (SUMMARY_LIKE.test(id) || SUMMARY.test(at(r, groupCol)))
+      return no(`row ${r + 1} looks like a summary row; leave its animal cell blank, or write only Mean (or n, SD)`);
     if (aside !== undefined)
       return no(`column ${letter(aside)} ("${head[aside]}") holds numbers before the days`);
     if (at(r, groupCol) !== '')
       group = at(r, groupCol);
-    if (at(r, animalCol) === '')
-      return no(`row ${r + 1} has no animal id`);
     if (group === '')
-      return no(`row ${r + 1} ("${at(r, animalCol)}") has no group`);
+      return no(`row ${r + 1} has no group`);
     const values = valuesOf(cells, r, dayCols, decimalComma);
     if (typeof values === 'string')
       return no(values);
     if (values.every((v) => v === null))
-      return no(`row ${r + 1} ("${at(r, animalCol)}") has no measurements`);
+      return no(`row ${r + 1} has no measurements`);
     animals.push({id: at(r, animalCol), group, r});
   }
   const named = animalNames(animals.map((a) => a.id), animals.map((a) => a.group));
@@ -342,9 +373,9 @@ function readByDay(cells: string[][], filled: number[], decimalComma: boolean): 
   });
   if (rows.length === 0)
     return no('no measurements under the days');
-  const left = unplaced(cells, rows, (r, c) => r === h || c < first, (r, c) => summary.includes(r) ||
+  const left = unplaced(cells, rows, (r, c) => r === h || c < first, (r, c) => summary.some(([s]) => s === r) ||
     after.includes(c));
   return {shape: 'by day', rows, groups: counted(rows), error: left, ignored: [
-    ...summary.map((r) => `row ${r + 1} ("${cells[r].find((s) => s)}"), a summary row`),
+    ...summary.map(([r, word]) => word ? `row ${r + 1}, a summary row (${word})` : `row ${r + 1}, with no animal id`),
     ...after.map((c) => `column ${letter(c)}, with no heading, after the days`)]};
 }
