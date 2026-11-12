@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+* Provenance (2026-11-12): a saved plan or study records the atlas it was made with (a fingerprint of
+  files/engine_priors_v3.json) and the PMX Studio version, an optional field: older files open as before. Opening a
+  plan saved with another atlas says so in one line (Plan recomputes it with the current one; Monitor keeps the plan's
+  predictions as saved). The PDF reports name the app version and the atlas, and the plan's when it differs.
+
+* Ethics application text (2026-11-12): beside the study protocol's Copy, a text for an animal-ethics application:
+  why this number of animals, why not fewer, the losses expected and how they are covered, and reduction, with the
+  plan's own numbers only and a bracketed line for the researcher to justify the expected effect.
+
 * Plan's bands as validated (2026-11-12): in MC38, CT26 and B16F10 the predicted tumor growth range and the range
   of the end of study ("in 8 of 10 studies") are drawn as wide as the validation on published studies left out of
   the atlas found them (files/band_calibration_v1.json, with its provenance): the growth range is where about 9 in
