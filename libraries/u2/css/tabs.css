@@ -50,6 +50,12 @@
   user-select: none;
 }
 
+.u2-tabs-tab[aria-disabled='true'],
+.u2-tabs-overflow-item[aria-disabled='true'] {
+  color: var(--dg-text-color-disabled);
+  cursor: default;
+}
+
 .u2-tabs-tab-active {
   border-bottom-color: var(--dg-accent);
   cursor: default;
