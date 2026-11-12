@@ -9,7 +9,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import {crux, CruxResult, MAX_SETS, named, rows} from './crux';
-import {MeasurementError, PriorFit, enginePriors, linePrior} from './priors';
+import {BandFactors, MeasurementError, PriorFit, bandCalibration, enginePriors, linePrior, widened} from './priors';
 import {ARCHETYPES, Archetype, Therapy} from './archetypes';
 
 export type EffectMetric = 'TGI' | 'TC';
@@ -509,7 +509,9 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
         `below the ${Math.round(d.power * 100)}% declared`);
     }
   }
-  return {
+  // the bands as wide as the validation found them, in the lines it measured (an unreadable file: the engine's)
+  const factors = (await bandCalibration().catch(() => null))?.lines[d.line];
+  return calibrated({
     declaration: d, studyEnd: first['evaluation_day'], endpointDay: first['endpoint_day'], duration, schedules,
     durationQ10: first['duration_q10'],
     durationQ90: finite(first['duration_q90']), pNotReached: pNot, nControl, randomiseControl, nTotal, randomiseTotal,
@@ -517,5 +519,18 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     alphaArm: plans[largest]['alpha_arm'], calendar: String(first['calendar']).split(',').map(Number), arms, curves,
     measurement: me, nonprogressing: lp.take.nonprogressing_map,
     atlas: {papers: lp.papers, animals: lp.animals, ess: lp.log_alpha.ess}, notes,
-  };
+  }, factors);
+}
+
+/** The design's drawn bands widened by the line's factors: the 8-in-10 range of the end around its median day (in
+ *  log days, at least half a day, as the validation measured it), and each group's 90% volume band around its median.
+ *  Only these: the animals, the power and the quartiles are the engine's. */
+export function calibrated<T extends Pick<StudyDesign, 'endpointDay' | 'durationQ10' | 'durationQ90' | 'curves'>>(
+  x: T, f: BandFactors | null | undefined): T {
+  const [end, vol] = [f?.end80 ?? null, f?.volume90 ?? null];
+  return {...x,
+    ...end === null ? {} : {durationQ10: widened(x.endpointDay, x.durationQ10, end, 0.5),
+      durationQ90: x.durationQ90 === null ? null : widened(x.endpointDay, x.durationQ90, end, 0.5)},
+    ...vol === null ? {} : {curves: x.curves.map((c) =>
+      ({...c, q05: widened(c.median, c.q05, vol), q95: widened(c.median, c.q95, vol)}))}};
 }

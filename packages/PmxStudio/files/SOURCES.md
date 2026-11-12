@@ -2,6 +2,8 @@
 
 The priors in `engine_priors_v*.json` are aggregates estimated from the vehicle/control arms of these open-access papers (PubMed Central): every paper with a control experiment in a line's base pool, which feeds the MAP priors, the calibration, the leave-one-out checks and the Monitor validation, and the papers of the treated arms behind the therapy archetypes (a paper can enter some of these and not the MAP). Per-paper results are not distributed: the `studies` table uses anonymous ids. The one exception is the example study (`example/`, CC BY 4.0, cited in `example/README.md`), distributed animal by animal under its licence.
 
+`band_calibration_v1.json` holds no data from these papers: factors of the drawn bands, from the validation on papers left out of the fit (its provenance inside).
+
 | DOI | Journal | Year | Licence | Lines |
 |---|---|---|---|---|
 | [10.1038/s41467-018-08115-8](https://doi.org/10.1038/s41467-018-08115-8) | Nature communications | 2019 | cc by | PDX-PDAC |

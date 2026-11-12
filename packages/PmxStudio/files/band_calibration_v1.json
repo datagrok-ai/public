@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "provenance": "Validation W1 (analysis/out_review/W1_FINAL_REPORT_2026-11-12.md), post hoc analysis of W1.1 on papers left out of the atlas fit: s* is the smallest factor of a band's half-widths, each side its own, around the predicted median in log scale, that brings the per-paper mean coverage to the band's level (one paper, one vote). end80: the 80% band of the day the median control reaches the endpoint (Plan's 'in 8 of 10 studies'), in log days, the variant started as Plan starts a study (each experiment's median first volume and the line's start spread). volume90: the 90% band of one animal's volume (null: not measured on the band Plan draws yet). Lines not validated have no entry and keep the engine's bands.",
+  "lines": {
+    "MC38": {"end80": 1.21, "volume90": null},
+    "CT26": {"end80": 1.15, "volume90": null},
+    "B16F10": {"end80": 1.58, "volume90": null}
+  }
+}

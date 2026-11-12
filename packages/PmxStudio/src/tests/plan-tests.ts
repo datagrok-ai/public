@@ -3,9 +3,9 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {armsFrame} from '../arms-input';
 import {fixedValue} from '../ui';
-import {ENDPOINT, HUMANE, LAB_WEEKDAYS, MIN_GROUP, StudyDeclaration, designStudy, finite} from '../engine';
+import {ENDPOINT, HUMANE, LAB_WEEKDAYS, MIN_GROUP, StudyDeclaration, calibrated, designStudy, finite} from '../engine';
 import {declarationOf, tgisOf} from '../frames';
-import {enginePriors} from '../priors';
+import {bandCalibration, enginePriors} from '../priors';
 
 /** pmxPlanStudy as the Plan view calls it: the outputs by name. */
 async function plan(params: {[k: string]: any}): Promise<{[k: string]: DG.DataFrame}> {
@@ -27,6 +27,28 @@ category('Plan', () => {
     expect(v(undefined), JSON.stringify({value: null}));
     for (const bad of [7.5, 1, 1000, NaN, 0, -0, Infinity, -Infinity, 'abc'])
       expect('error' in fixedValue(bad, 2, 100), true, `${bad} accepted`);
+  });
+
+  test('the validated lines draw their bands as wide as the validation found them, others as the engine', async () => {
+    const cal = await bandCalibration();
+    const f = (line: string) => cal.lines[line] ?? null;
+    expect([f('MC38')?.end80, f('CT26')?.end80, f('B16F10')?.end80].join(' '), '1.21 1.15 1.58');
+    expect(f('4T1'), null, 'a line not validated has no factor');
+    const curve = {day: 7, arm: 'Control', q05: 100, q25: 150, median: 200, q75: 260, q95: 400};
+    const x = {endpointDay: 15, durationQ10: 9, durationQ90: 23 as number | null, curves: [curve]};
+    // the end's 8-in-10 range, around day 15 in log days: day 9 to 23 becomes about 8.1 to 25.2 (MC38's 1.21)
+    const mc38 = calibrated(x, f('MC38'));
+    expect(mc38.durationQ10.toFixed(2), '8.08');
+    expect(mc38.durationQ90!.toFixed(2), '25.16');
+    expect(JSON.stringify(mc38.curves), JSON.stringify(x.curves), 'no volume factor yet: the engine\'s band');
+    // a 90% volume band of 100 to 400 mm³ around 200, 1.2 times as wide in log volume; the quartiles untouched
+    const v = calibrated(x, {end80: null, volume90: 1.2}).curves[0];
+    expect([v.q05.toFixed(1), v.q95.toFixed(1), v.q25, v.median, v.q75].join(' '), '87.1 459.5 150 200 260');
+    expect(calibrated(x, {end80: null, volume90: 1.2}).durationQ10, 9, 'the end untouched');
+    // a range that never closes stays open; an end near day 0 stays above half a day; no factor: as it was
+    expect(calibrated({...x, durationQ90: null}, f('B16F10')).durationQ90, null);
+    expect(calibrated({...x, endpointDay: 2, durationQ10: 0.2}, f('B16F10')).durationQ10 >= 0.5 - 1e-9, true);
+    expect(JSON.stringify(calibrated(x, null)), JSON.stringify(x));
   });
 
   test('one treated arm: Holm and no correction size it alike', async () => {

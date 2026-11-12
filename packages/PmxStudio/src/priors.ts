@@ -127,6 +127,19 @@ export interface TumourDensity {lines: {[line: string]: LineDensity}, all: LineD
 
 export const tumourDensity = cachedJson<TumourDensity>('tumour_density_v0.json');
 
+/** How much wider the engine's bands are drawn in the lines a validation measured them in:
+ *  files/band_calibration_v1.json (its provenance inside). Per line, the factor of each half-width around the median
+ *  in log scale; a line without an entry, or a factor null, keeps the engine's band. */
+export interface BandFactors {end80: number | null, volume90: number | null}
+export interface BandCalibration {version: number, provenance: string, lines: {[line: string]: BandFactors}}
+export const bandCalibration = cachedJson<BandCalibration>('band_calibration_v1.json');
+
+/** A quantile `x` moved `s` times as far from the median, in log scale (`floor`: the least either may be). */
+export function widened(median: number, x: number, s: number, floor = 0): number {
+  const [m, q] = [Math.max(median, floor), Math.max(x, floor)];
+  return Math.exp(Math.log(m) + s * (Math.log(q) - Math.log(m)));
+}
+
 /** The MAP prior of a new study's log alpha, recomputed by Crux from the per-paper table (plus `extra`
  *  studies, e.g. a user's own historical controls): one row per mixture component, summaries on every row. */
 export function mapPrior(line: string, extra: Study[] = []) {

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+* Plan's bands as validated (2026-11-12): in MC38, CT26 and B16F10 the range of the end of study ("in 8 of 10
+  studies") is drawn as wide as the validation on published studies left out of the atlas found it
+  (files/band_calibration_v1.json, with its provenance); the animals per group and the power are unchanged. Other
+  lines keep the engine's ranges.
+
 * A study keeps its tumor model (2026-11-12): saved without a plan, it opens again with the model chosen in Monitor
   and the Overview names it (an optional field: older files read as before; with a plan, the plan's model is read).
   A blinded study names no arm or compound outside itself until its groups are revealed: not in the Overview, its
