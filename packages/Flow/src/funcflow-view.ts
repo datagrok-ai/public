@@ -141,15 +141,15 @@ export class FuncFlowView extends DG.ViewBase {
     const state = stateMap as {scriptId?: string | null; flow?: FuncFlowDocument | null};
     this.restoring = stateMap;
     void this.restoreState(state.scriptId ?? null, state.flow ?? null)
-      .catch((e) => grok.shell.error(`Cannot restore flow "${this.name}": ${e instanceof Error ? e.message : e}`))
-      .finally(() => {
+      .then(() => {
         if (this.restoring === stateMap)
           this.restoring = null;
-      });
+      })
+      .catch((e) => grok.shell.error(`Cannot restore flow "${this.name}": ${e instanceof Error ? e.message : e}`));
   }
 
   private async restoreState(scriptId: string | null, doc: FuncFlowDocument | null): Promise<void> {
-    const script = scriptId ? await grok.dapi.scripts.find(scriptId).catch(() => null) : null;
+    const script = scriptId ? await grok.dapi.scripts.find(scriptId) ?? null : null;
     if (scriptId && !script)
       grok.shell.warning(`The saved flow of "${this.name}" is no longer available${doc ? '; its unsaved copy is shown' : '; the empty view is not saved with the project'}`);
     if (script && !doc) {

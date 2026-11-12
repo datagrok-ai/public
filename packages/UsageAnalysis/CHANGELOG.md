@@ -2,7 +2,7 @@
 
 ## v.next
 
-* core#239: Projects: The app is saved with a project and reopens on the same tab, sub-view and filters
+* [core#239](https://github.com/datagrok-ai/core/issues/239): Projects: The app is saved with a project and reopens on the same tab, sub-view and filters
 * Filters: Fixed the groups filter reaching the address bar and package links as `users`, so a shared link dropped it
 * [#3924](https://github.com/datagrok-ai/public/issues/3924): Tests: Added BDD features for category order: box plot, scatter plot (with molecules), line chart, bar chart, pie chart, 3D scatter plot, trellis plot, the order shared by all viewers and everyday workflows
 * Tests: Added BDD steps to the existing scenarios for closed bugs (a favorite opened once, Delete Project, column groups, toolbox search and Extract Rows, the script view's menu, a query address), viewer interactions (Sankey and Chord clicks, timelines under the Filter Panel, Globe, the confusion matrix tooltip, PC plot Save as PNG) and dialog cases a user meets (the Save dialog with its only table left out, an emptied name, a taken group name, Invite a Friend, the own account without Disable..., a Share dialog with nobody picked), and an Apps > Plates journey; checks that are not a gesture went to ApiTests, package and Dart tests, and each folder's MISSING.md says in one `Won't do` line what was left out
