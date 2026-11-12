@@ -201,10 +201,10 @@ export function parseStudy(text: string): SavedStudy {
     name: typeof s.name === 'string' ? s.name : '', looks: typeof s.looks === 'string' ? s.looks : ''} as SavedStudy;
 }
 
-/** The atlas a study table's plan was made with: undefined with no plan, null when it records none. */
-export function planAtlas(df: DG.DataFrame | null): string | null | undefined {
+/** The atlas a plan (its file's text) was made with: undefined with no plan, null when it records none. */
+export function planAtlas(text: string | null | undefined): string | null | undefined {
   try {
-    const p = JSON.parse(df?.getTag(PLAN_TAG) || 'null');
+    const p = JSON.parse(text?.trim() || 'null');
     return p ? provenanceOf(p.provenance)?.atlas ?? null : undefined;
   } catch {
     return undefined; // a damaged plan: Analyze says so

@@ -61,7 +61,7 @@ category('Provenance', () => {
 
   test('planOf writes the current provenance', async () => {
     const fc = DG.Func.find({package: 'PmxStudio', name: 'pmxPlanStudy'})[0].prepare({line: 'MC38', endpoint: 1000,
-      power: 80, correction: 'holm',
+      power: 80, correction: 'holm', compareSchedules: false,
       arms: armsFrame([{name: 'Cpd-A', therapy: 'small_molecule', metric: 'TGI', effect: 60}])});
     await fc.call();
     const f = Object.fromEntries(['plan', 'armResults', 'powerCurve'].map((o) => [o, fc.outputs[o]])) as

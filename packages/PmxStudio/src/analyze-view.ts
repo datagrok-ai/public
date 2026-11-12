@@ -24,6 +24,7 @@ import {askedOf, autoRun, axisAt, callInputs, cardGrid, dayText, keepSame, onTab
   sized, markStage,
   statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
 import {logOf, planAtlas, restoreFields} from './study-file';
+import {PLAN_TAG} from './plan-file';
 import {openStage} from './stages';
 import {noEffectNote, observedCell, planInput, planTab} from './plan-vs-observed';
 import {nciReadings, NciReading, tolerabilityTab} from './tolerability';
@@ -1097,7 +1098,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     ['Report (PDF)…', async () => {
       const {df, r} = studyNow();
       printSheet(await panels.all(() => reportHtml({title: r.analysis.name, stage: 'Analyze', meta: metaOf(df),
-        content, log: logOf(df), planAtlas: planAtlas(df),
+        // the plan the analysis used: the one picked in the form, else the study's (analyze.ts)
+        content, log: logOf(df), planAtlas: planAtlas(call.getParamValue('plan')?.trim() || df?.getTag(PLAN_TAG)),
         annex: [['Results', summary], ['Statistics', statsTable],
           ['Analysis protocol', protocol]]})));
     }],
