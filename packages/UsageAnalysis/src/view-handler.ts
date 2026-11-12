@@ -51,17 +51,17 @@ export class ViewHandler {
     this.loadState(state).catch((e) => grok.shell.error(`Cannot restore Usage Analysis: ${e instanceof Error ? e.message : e}`));
   }
 
-  async loadState(state: UaViewState): Promise<void> {
+  private async loadState(state: UaViewState): Promise<void> {
     this.pendingState = state;
     if (!this.toolbox)
       return;
     try {
-      if (state.filters) {
+      if (state.filters)
         this.toolbox.setState(state.filters);
-        this.toolbox.applyFilter();
-      }
       if (state.tab && this.view.tabs.getPane(state.tab))
         this.changeTab(state.tab);
+      if (state.filters)
+        this.toolbox.applyFilter();
       const v = this.getCurrentView();
       await v.viewersReady;
       if (state.rout && v.rout !== state.rout)

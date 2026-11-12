@@ -247,6 +247,7 @@ export class FuncFlowView extends DG.ViewBase {
 
   /** Resolves once the script's graph is on the canvas. */
   private bindScript(script: DG.Script): Promise<void> {
+    this.unrestored = null;
     this.boundScript = script;
     this.name = script.friendlyName || script.name || 'Flow';
     this.updatePath();
@@ -2314,6 +2315,7 @@ export class FuncFlowView extends DG.ViewBase {
    *  serialized: deserialize is clear() + per-node adds, so two interleaved
    *  loads (a double-clicked recent-flow row) would merge both graphs. */
   async loadFromDoc(doc: FuncFlowDocument): Promise<void> {
+    this.unrestored = null;
     const run = this.loadChain.then(() => this.doLoadFromDoc(doc));
     this.loadChain = run.catch(() => {});
     return run;
