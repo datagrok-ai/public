@@ -64,29 +64,29 @@ category('Ethics text', () => {
   test('several arms, Holm', async () => {
     expect(ethicsText({...base, arms: two}), `${TWO_ARMS} ${REQUEST_2} ${BRACKET} ${SIMULATED} ${FEWER} With 2 ` +
       'comparisons, Holm correction is applied; each group is sized at α = 0.025.\n\n' +
-      paragraph2(AVERAGE, 'one control group serves all 2 treated groups; ', COMPUTED_END));
+      paragraph2(AVERAGE, 'one control group serves both treated groups; ', COMPUTED_END));
   });
 
   test('several arms, Bonferroni, loss by confidence, end chosen', async () => {
     expect(ethicsText({...base, arms: two, correction: 'bonferroni', lossRule: 'confidence', lastDayChosen: true}),
       `${TWO_ARMS} ${REQUEST_2} ${BRACKET} ${SIMULATED} ${FEWER} With 2 comparisons, Bonferroni correction is ` +
       'applied; each group is sized at α = 0.025.\n\n' + paragraph2('each count is enough with at least 90% ' +
-        'probability', 'one control group serves all 2 treated groups; ', 'on day 21, chosen.'));
+        'probability', 'one control group serves both treated groups; ', 'on day 21, chosen.'));
   });
 
   test('several arms, no correction', async () => {
     expect(ethicsText({...base, arms: two, correction: 'none'}), `${TWO_ARMS} ${REQUEST_2} ${BRACKET} ${SIMULATED} ` +
       `${FEWER} Each of the 2 comparisons is tested at α = 0.05, without correction for multiple comparisons.\n\n` +
-      paragraph2(AVERAGE, 'one control group serves all 2 treated groups; ', COMPUTED_END));
+      paragraph2(AVERAGE, 'one control group serves both treated groups; ', COMPUTED_END));
   });
 
   test('several arms that differ', async () => {
     expect(ethicsText({...base, arms: [arm('A', 8), arm('B', 12, '82%', 'TGI 45%')]}), `${TWO_ARMS.replace(
       'B (chemotherapy, expected TGI 60%)', 'B (chemotherapy, expected TGI 45%)')} We request 8 analyzable animals ` +
       'for A (80% power to detect TGI 60%), 12 for B (82% power to detect TGI 45%), with a control group as large ' +
-      'as the largest treated group, at a two-sided significance level of 0.05. [Explain why an effect of TGI 60% ' +
-      `and TGI 45% is expected or is the smallest effect of interest.] ${SIMULATED} ${FEWER} With 2 comparisons, ` +
+      'as the largest treated group, at a two-sided significance level of 0.05. [Explain why effects of TGI 60% and ' +
+      `TGI 45% are expected or are the smallest effects of interest.] ${SIMULATED} ${FEWER} With 2 comparisons, ` +
       'Holm correction is applied; each group is sized at α = 0.025.\n\n' +
-      paragraph2(AVERAGE, 'one control group serves all 2 treated groups; ', COMPUTED_END));
+      paragraph2(AVERAGE, 'one control group serves both treated groups; ', COMPUTED_END));
   });
 });

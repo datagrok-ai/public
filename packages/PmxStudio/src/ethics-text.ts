@@ -56,15 +56,18 @@ export function ethicsText(f: EthicsFacts): string {
     ` With ${k} comparisons, ${f.correction === 'holm' ? 'Holm' : 'Bonferroni'} correction is applied; each group ` +
     `is sized at α = ${f.alphaPer}.`;
   const arms = f.arms.map((a) => `${a.name} (${a.therapy}, expected ${a.effect})`).join(', ');
+  const effects = [...new Set(f.arms.map((a) => a.effect))];
   const p1 = `${k + 1} groups: a control and ${arms}; each treated group is compared with the control. ${request} ` +
-    `[Explain why an effect of ${uniq(f.arms.map((a) => a.effect))} is expected or is the smallest effect of ` +
-    `interest.]${size}${multiple}`;
+    (effects.length === 1 ? `[Explain why an effect of ${effects[0]} is expected or is the smallest effect of ` +
+      'interest.]' : `[Explain why effects of ${effects.join(' and ')} are expected or are the smallest effects of ` +
+      'interest.]') + `${size}${multiple}`;
   const lost = `About ${f.preLoss} of implanted animals are expected to be lost before randomization (no tumor take, ` +
     `tumor outside the volume window) and ${f.postLoss} after it (ulceration, deaths, technical failures).`;
   const animals = f.nTotal === null ? lost : `${lost} We therefore implant ${f.implant}, randomize ` +
     `${f.randomise} and expect ${f.nTotal} analyzable animals; ${f.lossRule === 'expected' ?
       'the counts cover the average loss' : `each count is enough with at least ${f.confidence} probability`}.`;
-  const reduction = `Reduction: ${k >= 2 ? `one control group serves all ${k} treated groups; ` : ''}the size is ` +
+  const reduction = `Reduction: ${k === 2 ? 'one control group serves both treated groups; ' :
+    k > 2 ? `one control group serves all ${k} treated groups; ` : ''}the size is ` +
     'based on the published growth of this tumor model, which avoids using animals in a pilot study for that ' +
     'purpose, and the extra animals only cover the expected losses. An animal reaches its humane endpoint when the ' +
     `tumor exceeds ${f.humane} mm³ (equivalent to a mean diameter of about ${f.diameter} cm); the study ends ` +
