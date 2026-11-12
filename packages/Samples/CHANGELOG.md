@@ -4,6 +4,7 @@
 
 * Scripts: Migrated nodejs sample scripts to the js-api (`grok`/`DG` globals) following the nodejs script runtime change
 
+* Docker: Moved the image onto Wolfi with the conda env copied from a micromamba builder (zero reported CVEs), raised pandas to 2.2 and pinned pyarrow below 26 so the worker imports with NumPy 1.x
 * Docker: Raised conda env to Python 3.10 and added security floors (setuptools/wheel/urllib3/pyarrow/jaraco.context/brotli), plus removed stale ensurepip/pkgs-cache copies (VEX)
 * Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages and upgraded pip/setuptools/wheel in the conda env
 * GROK-14287: Dashboards: Fixed errors when opening the "Chemical Space Using tSNE" project
