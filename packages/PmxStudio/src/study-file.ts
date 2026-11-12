@@ -86,8 +86,9 @@ export function restoreFields(form: FuncCallForm, df: DG.DataFrame): void {
 export const REVEALED = 'Groups revealed';
 
 /** Whether the groups may be shown: always, unless the study is blinded and no one has revealed them yet. */
-export const groupsShown = (df: DG.DataFrame): boolean =>
-  !metaOf(df)?.blinded || logOf(df).some((e) => e.what === REVEALED);
+export const groupsShownIn = (meta: StudyMeta | null | undefined, log: LogEntry[]): boolean =>
+  !meta?.blinded || log.some((e) => e.what === REVEALED);
+export const groupsShown = (df: DG.DataFrame): boolean => groupsShownIn(metaOf(df), logOf(df));
 
 /** A log line, on the table it is about: when, who, what. */
 export function addLog(df: DG.DataFrame, what: string): LogEntry[] {

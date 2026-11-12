@@ -6,7 +6,7 @@ import {AnimalSelection, animalMarks, appendPasted, caliperVolume, emptyStudy, e
   pastedNumber, withoutExcluded} from '../study-table';
 import {EXCLUDED, FLAGGED, MARK_REASON, REVEALED, STUDY_TAG, WEIGHT_TAG, addLog, groupsShown, logOf, parseStudy,
   roleColumns, studyOf, tableOf} from '../study-file';
-import {studySummary} from '../file-preview';
+import {filePreview, studySummary} from '../file-preview';
 import {EXAMPLE, isBodyWeight} from '../ui';
 import {_package} from '../package';
 import {dateOf, dosingDays, emptyMeta, metaOf, parseMeta, setMetaOn, startFrom, weekdayOf} from '../study-meta';
@@ -53,11 +53,19 @@ category('Study table', () => {
       expect(lines.includes('32 animals in 4 groups, measured on 5 days, the last day 12'), true, all);
       expect(lines.includes('Vehicle: 8 animals'), true, all);
       expect(lines.includes('Body weight measured') && lines.includes('No plan attached'), true, all);
-      const blind = studySummary({...saved, meta: {...emptyMeta(), blinded: true}});
-      expect(blind.some((l) => l.startsWith('Vehicle')), false, 'a group named while blinded');
+      // blinded: no group's name in any line, nor how many there are
+      const names = [...new Set(saved.rows.map((r) => r.group!))];
+      const blind = studySummary({...saved, meta: {...emptyMeta(), blinded: true}}).join(' | ');
+      expect(names.some((g) => blind.includes(g)) || /\d+ groups?\b/.test(blind), false, blind);
       const revealed = studySummary({...saved, meta: {...emptyMeta(), blinded: true},
         log: [{when: '2026-11-12', who: 'x', what: REVEALED}]});
-      expect(revealed.some((l) => l.startsWith('Vehicle')), true, 'revealed, still unnamed');
+      expect(revealed.includes('Vehicle: 8 animals'), true, 'revealed, still unnamed');
+      expect(studySummary({...saved, rows: []})[0], '0 animals, measured on 0 days');
+      // the preview itself: a file that is no study, or damaged, says so in a sentence
+      for (const [text, says] of [['{"format": "other"}', 'Not a PMX Studio study'], ['{', 'not JSON']]) {
+        const v = await filePreview(DG.FileInfo.fromString('x.pmxstudy', text), 'study', () => {});
+        expect(v.root.textContent!.includes(says), true, v.root.textContent!);
+      }
       let said = '';
       try {
         parseStudy(JSON.stringify({...saved, version: 99}));

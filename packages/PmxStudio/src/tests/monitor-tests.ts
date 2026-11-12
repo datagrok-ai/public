@@ -184,6 +184,10 @@ category('Monitor', () => {
     const preview = planSummary(plan);
     expect(preview.length, plan.predicted.arms.length + 3, preview.join(' | '));
     expect(preview[0].startsWith('MC38 · endpoint'), true, preview[0]);
+    const arm = plan.predicted.arms[0];
+    expect(preview[2], `${arm.name}: TGI ${arm.effect}% expected, ${arm.n ?? 'over 40'} analyzable animals`);
+    const old = planSummary({...plan, created: undefined as any});
+    expect(old[old.length - 1].startsWith('Saved'), true, 'a plan without its date');
     const df = await upTo(5);
     df.name = 'S';
     df.setTag(LOOKS_TAG, '7, 10');
