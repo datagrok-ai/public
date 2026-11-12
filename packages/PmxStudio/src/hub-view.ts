@@ -21,6 +21,7 @@ import {PLAN_TAG, myPlans, parsePlan} from './plan-file';
 import {LibraryEntry, libraryReader, matches} from './library';
 import {dayToday} from './calendar';
 import {Brought, OPENED_EXTS, OpenStage, bring, readFile, suggestedStage} from './open-study';
+import {wideSummary} from './wide-table';
 
 /** The home view. */
 export async function hubView(): Promise<DG.ViewBase> {
@@ -414,7 +415,7 @@ export function openStudyDialog(first?: File[]): void {
 
   const selected = (): Option | null => {
     // a wide table opens once it is read: its question answered, nothing refused
-    const wide = brought.table?.wide;
+    const wide = brought.table?.wide?.read;
     if (phase !== 'loaded' || wide?.question || wide?.error)
       return null;
     const list = options().list;
@@ -460,10 +461,11 @@ export function openStudyDialog(first?: File[]): void {
       const holds = holdsOf(brought);
       if (holds.length)
         parts.push(h('ul', 'pmx-holds', holds));
-      const asked = table?.wide?.question;
+      const asked = table?.wide?.read.question;
       if (asked) {
-        // the table read again with the answer: the next question, or what was read
-        const answers = asked.choices.map((c, i) => {
+        // the table read again with the answer: the next question, or what was read; blinded, no group named
+        const {text, choices} = plan?.blinded && asked.blind ? asked.blind : asked;
+        const answers = choices.map((c, i) => {
           const radio = h('input', '', [], {type: 'radio', name: 'pmx-wide'});
           radio.addEventListener('change', () => {
             const again = readFile(table!.file, table!.wide!.text, {...table!.wide!.answers, [asked.id]: i});
@@ -473,7 +475,7 @@ export function openStudyDialog(first?: File[]): void {
           });
           return h('label', 'pmx-opt', [radio, h('span', '', [h('b', '', [c])])]);
         });
-        parts.push(h('div', 'pmx-ask', [h('div', 'pmx-q', [asked.text]), h('div', 'pmx-opts', answers)]));
+        parts.push(h('div', 'pmx-ask', [h('div', 'pmx-q', [text]), h('div', 'pmx-opts', answers)]));
       }
       const {question, list, hint} = options();
       const pick = selected();
@@ -587,14 +589,14 @@ function holdsOf(b: Brought): HTMLElement[] {
     const facts = [t.animals !== null ? `${t.animals} animals` : '', t.groups !== null ? `${t.groups} groups` : '',
       t.lastDay !== null ? `day 0–${t.lastDay}` : ''].filter(Boolean);
     const what = facts.join(' · ') || 'Measurements';
-    const w = t.wide;
+    const w = t.wide?.read;
     if (w?.error)
       out.push(line('warn', 'A wide table, not read', w.error));
     else if (w?.question)
       out.push(line('none', 'A wide table: one question before it is read'));
     else if (w) {
       // a column per day or per animal turned into one row per animal and day: how many animals, in plain words
-      const [counts, ...rest] = w.summary;
+      const [counts, ...rest] = wideSummary(w, !!b.plan?.blinded);
       out.push(line('ok', counts, what));
       rest.forEach((r) => out.push(line(r.startsWith('Not read') ? 'warn' : 'none', r)));
     } else {

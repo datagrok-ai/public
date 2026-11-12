@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import {PLAN_EXT, SavedPlan, parsePlan} from './plan-file';
 import {STUDY_EXT, SavedStudy, parseStudy} from './study-file';
 import {plainError} from './ui';
-import {Answers, Question, ROLES, WEIGHT, WideRow, cellsOf, readWide, wideSummary} from './wide-table';
+import {Answers, ROLES, WEIGHT, WideRead, WideRow, cellsOf, readWide} from './wide-table';
 
 export const OPENED_EXTS = [PLAN_EXT, STUDY_EXT, 'csv', 'tsv', 'txt'];
 
@@ -15,13 +15,12 @@ export const OPENED_EXTS = [PLAN_EXT, STUDY_EXT, 'csv', 'tsv', 'txt'];
 export interface MeasuredTable {kind: 'table', file: string, df: DG.DataFrame, animals: number | null,
   groups: number | null, lastDay: number | null, found: string[], missing: string[], weight: boolean,
   wide: WideTable | null}
-/** A wide table as read: what was read in plain words, or the question to answer first (`answers` so far), or why
- *  nothing was read. `text`: the file, read again with each answer. */
-export interface WideTable {summary: string[], question: Question | null, error: string | null, text: string,
-  answers: Answers}
+/** A wide table as read (wide-table.ts), with the answers given so far; `text`, the file, read again with each
+ *  answer. */
+export interface WideTable {read: WideRead, text: string, answers: Answers}
 /** `saved`: the file as read, so opening it does not read it again. */
 export interface PlanRead {kind: 'plan', file: string, text: string, saved: SavedPlan, name: string, line: string,
-  end: number | null}
+  end: number | null, blinded: boolean}
 export interface StudyRead {kind: 'study', file: string, text: string, saved: SavedStudy}
 /** `why`: what is wrong with it, in a sentence. */
 export type FileRead = MeasuredTable | PlanRead | StudyRead | {kind: 'bad', file: string, why: string};
@@ -38,7 +37,8 @@ export function readFile(name: string, text: string, answers: Answers = {}): Fil
     if (ext === PLAN_EXT) {
       const p = parsePlan(text);
       return {kind: 'plan', file: name, text, saved: p, name: p.name || baseOf(name), line: p.predicted.line ?? '',
-        end: Number.isFinite(p.predicted.studyEnd) ? Math.round(p.predicted.studyEnd) : null};
+        end: Number.isFinite(p.predicted.studyEnd) ? Math.round(p.predicted.studyEnd) : null,
+        blinded: !!p.study?.blinded};
     }
     if (ext === STUDY_EXT) {
       // read now, as a plan is: a damaged or newer study is said so here, not on opening it
@@ -50,8 +50,7 @@ export function readFile(name: string, text: string, answers: Answers = {}): Fil
       if (df.rowCount === 0 && !read)
         return {kind: 'bad', file: name, why: 'The table has no rows: open the file with the measurements.'};
       df.name = baseOf(name);
-      const wide: WideTable | null = read && {summary: read.question ? [] : wideSummary(read),
-        question: read.question, error: read.error, text, answers};
+      const wide: WideTable | null = read && {read, text, answers};
       const names = df.columns.names();
       const at = (re: RegExp) => names.find((c) => re.test(c));
       const roles = ROLES.map(([role, re]) => ({role, column: at(re)}));
