@@ -96,7 +96,7 @@ function setDefault(fc: DG.FuncCall, name: string, value: any) {
 }
 
 /** The annotation defaults of a new call; initial values win. Choices never fill a value: they are metadata. */
-async function initNewCall(fc: DG.FuncCall, initialValues: Record<string, any>) {
+export async function initNewCall(fc: DG.FuncCall, initialValues: Record<string, any>) {
   const defaults = fc.func.inputs.filter((prop) => prop.options.default != null && !(prop.name in initialValues));
   const values = await Promise.all(defaults.map((prop) => annotationDefault(fc, prop)));
   defaults.forEach((prop, idx) => setDefault(fc, prop.name, values[idx]));

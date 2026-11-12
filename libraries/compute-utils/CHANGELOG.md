@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Custom function view: Fixed the view never opening from a link to a run that fails to load; it shows the error and opens a new call
+* Custom function view: A new call starts with the function's default input values
 * RTD: A workflow custom export can be `preferred`, which lists it first in the Export menu
 * RTD: A step's viewers hook from its script that can't be made no longer fails the workflow config; `loadViewersHook` makes a function's hook, or warns and returns none
 * Export: Fixed the Excel report failing with "0 is out of bounds" on a table with no columns; its sheet is left empty
