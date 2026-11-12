@@ -169,8 +169,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       if (mine === latest) {
         empty.value = e instanceof EmptyState;
         error.value = e instanceof EmptyState ? e.message : plainError(e, 'The forecast could not be computed. ' +
-          'Try again; if it fails again, reload the ' +
-          'page.');
+          'Try again; if it fails again, reload the page.');
         // what is shown is no longer what the table or the form says
         stale.value = result.peek() !== undefined;
       }
