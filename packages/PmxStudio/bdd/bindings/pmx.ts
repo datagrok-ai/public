@@ -154,12 +154,14 @@ element('experimental groups section', {selector: '.u2-section:has(.u2-section-t
 element('twin section', {selector: '.u2-section:has(.u2-section-title:text-is("Each animal against its untreated twin"))'});
 element('tolerability tab', {selector: '.pmx-tab:has-text("Tolerability")'});
 element('third animal row', {selector: '.pmx-forest-row >> nth=2'});
-// ponytail: the demo studies left the app (2026-11-11); these elements and demoOpen stay for the scenarios marked
-// @skip until they are rewritten (create the study in Plan, save it, open it), and go with that rewrite
-// the demo MC38 study at its three moments, as the Overview lists it
-element('demo plan row', {selector: '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response (its plan)")'});
-element('demo followed row', {selector: '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response"):not(:has-text("(its plan)")):not(:has-text("(all its data)"))'});
-element('demo finished row', {selector: '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response (all its data)")'});
+// the Overview's Open a study: its strip, the dialog's drop zone (a click browses), the second file's and the plans
+// saved; the example study is the package's files/example (as the empty Monitor and Analyze offer it)
+element('open a study strip', {selector: '.pmx-strip'});
+element('study drop zone', {selector: '.pmx-open .pmx-dz:not(.pmx-dz-small)'});
+element('second file zone', {selector: '.pmx-open .pmx-dz-small'});
+element('saved plans link', {selector: '.pmx-open .pmx-alts :text-is("Saved plans")'});
+element('guide plan menu item', {selector: '.d4-menu-item:visible:has-text("MC38 guide plan.pmxplan")'});
+element('still running choice', {selector: '.pmx-open .pmx-opt:has-text("Still running")'});
 
 /** For a guide that is filmed: no hint a pointer left over a control would raise (tooltips, native titles), nor the
  *  hover tint of a row nothing happens on (Monitor's lists), which reads as a row picked out. */
@@ -199,20 +201,14 @@ export const stageOpen = Then('the {word} stage should be open', async (page: Pa
     .waitFor({timeout: pollMs(120000)});
   await expect.poll(() => page.locator('.pmx-busy').filter({visible: true}).count(),
     {timeout: pollMs(120000), message: 'the view\'s loader shows'}).toBe(0);
-}, {description: 'the stage\'s view is current and its loader gone (a demo study is simulated as it opens); silent in a guide'});
+}, {description: 'the stage\'s view is current and its loader gone; silent in a guide'});
 
 export const guideBudget = Given('the guide may take up to {int} minutes', async (page: Page, minutes: number) => {
   test.info().setTimeout(Math.max(test.info().timeout, minutes * 60000));
 }, {tier: 'api', description: 'a filmed walk through every stage outlasts a test\'s budget'});
 
-export const studiesListed = Then('the studies should be listed', async (page: Page) => {
-  silent(page);
-  await expect.poll(() => page.locator('.pmx-library .u2-table-row').filter({visible: true}).count(),
-    {timeout: pollMs(120000), message: 'the Overview\'s studies'}).toBeGreaterThan(3);
-}, {description: 'the Overview lists the user\'s and the demo studies (each demo is simulated first); silent in a guide'});
-
 /** What a guide films as the step's last picture is the page once PMX Studio has finished: a view a click opens (added
- *  a task later; a demo study is simulated first), and the loader of what it computes. */
+ *  a task later), and the loader of what it computes. */
 async function settled(page: Page, viewChanges: boolean, before: string): Promise<void> {
   if (viewChanges)
     await page.waitForFunction((b) => (window as any).grok.shell.v?.name !== b, before, {timeout: pollMs(120000)});
@@ -252,32 +248,9 @@ export const openOverview = Given('user opens PMX Studio on its Overview', async
     const g = (window as any).grok;
     g.shell.addView(await g.functions.call('PmxStudio:pmxStudioApp', {}));
   });
-  await expect.poll(() => page.locator('.pmx-library .u2-table-row').filter({visible: true}).count(),
-    {timeout: pollMs(120000), message: "the Overview's studies"}).toBeGreaterThan(3);
+  await page.locator('.pmx-strip').filter({visible: true}).first().waitFor({timeout: pollMs(120000)});
   await page.mouse.move(12, 1070);
-}, {tier: 'api', description: 'the app opened and its studies listed (each demo is simulated first); silent in a guide'});
-
-export const studiesShown = Then("the lab's studies should be on the Overview", async (page: Page) => {
-  await expect(page.locator('.pmx-library .u2-table-row').filter({visible: true}).first()).toBeVisible();
-}, {description: 'the step a guide opens on: the Overview with its studies'});
-
-/** Opens the demo MC38 study in Monitor (followed) and Analyze (all its data) from the Overview's list, each loaded,
- *  and comes back to the Overview: the header's stages then go to a study already there. */
-export const demoOpen = Given('the demo study is open in Monitor and Analyze', async (page: Page) => {
-  silent(page);
-  const DEMO = '.pmx-library .u2-table-row:has-text("MC38 · Cpd-A dose response")';
-  for (const [row, stage] of [[`${DEMO}:not(:has-text("(its plan)")):not(:has-text("(all its data)"))`, 'Monitor'],
-    [`${DEMO}:has-text("(all its data)")`, 'Analyze']]) {
-    await page.locator(row)
-      .filter({visible: true}).first().click();
-    await page.locator('.pmx-head-step.on').filter({visible: true, hasText: new RegExp(`^${stage}$`, 'i')}).first()
-      .waitFor({timeout: pollMs(120000)});
-    await settled(page, false, '');
-    await page.locator('.pmx-head-steps button:has-text("Overview")').filter({visible: true}).first().click();
-    await page.locator('.pmx-library .u2-table-row').filter({visible: true}).first().waitFor({timeout: pollMs(30000)});
-  }
-  await page.mouse.move(12, 1070);
-}, {tier: 'api', description: 'the demo study opened in Monitor and Analyze and loaded, the Overview current again; silent in a guide'});
+}, {tier: 'api', description: 'the app opened on its Overview; silent in a guide'});
 
 /** The element a selector registered for `target` names, the innermost one on screen (a section holds the sections
  *  inside it). Found by its selector, not through the runtime's lookup, so a guide does not light it as the step's
