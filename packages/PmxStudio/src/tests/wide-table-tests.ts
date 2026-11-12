@@ -1,6 +1,6 @@
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {cellsOf, dayOf, readWide, wideSummary, type WideRead} from '../wide-table';
+import {SHAPES, cellsOf, dayOf, readWide, unplaced, wideSummary, type WideRead} from '../wide-table';
 import {readFile} from '../open-study';
 
 /** The pattern our own extractor broke on: each group's name over its first animal only (merged cells, blanks to
@@ -10,103 +10,126 @@ const BY_ANIMAL = ',Vehicle,,,,Cpd-1,,,Cpd-2,,,,\n' +
   '0,100,101,99,102,98,97,103,100,99,101,102,98\n' +
   '3,150,151,149,152,120,118,121,110,111,109,112,108\n' +
   '7,220,230,210,240,140,,139,115,117,116,118,119\n';
+const BY_DAY = 'Animal,Group,Day 0,Day 3,Day 7\nV1,Vehicle,37.9,51.8,88.5\nV2,,41.2,55.0,90.1\nC1,Cpd-A,39.5,45.0,\n';
 
-const read = (csv: string, answers = {}): WideRead => readWide(cellsOf(csv), answers)!;
-const valuesIn = (csv: string) => cellsOf(csv).flat().filter((s) => /^\d+(\.\d+)?$/.test(s)).length;
+const read = (csv: string): WideRead => readWide(cellsOf(csv))!;
+const groups = (w: WideRead) => JSON.stringify(w.groups);
+
+/** The numbers of a read table that are neither the source of exactly one row nor in a row or column left out with
+ *  its reason, by position. The test's own reading of the layout: by animal, the rows down to the first one with a
+ *  day in column A, and column A, are labels; by day, the first row and the columns left of the first day are. */
+function unaccounted(csv: string, w: WideRead): string[] {
+  const cells = cellsOf(csv);
+  const isNum = (s: string) => /^[+-]?\d[\d.,]*$/.test(s);
+  const rows = new Set(w.ignored.flatMap((l) => /^row (\d+)/.exec(l)?.[1] ?? []).map((r) => +r - 1));
+  const cols = new Set(w.ignored.flatMap((l) => /^column ([A-Z]+)/.exec(l)?.[1] ?? [])
+    .map((s) => [...s].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1));
+  let label: (r: number, c: number) => boolean;
+  if (w.shape === 'by animal') {
+    const first = cells.findIndex((row) => dayOf(row[0] ?? '') !== null && row.slice(1).some(isNum));
+    label = (r, c) => r < first || c === 0;
+  } else {
+    const top = cells.findIndex((row) => row.some((s) => s !== ''));
+    const first = cells[top].findIndex((s) => s !== '' && dayOf(s) !== null);
+    label = (r, c) => r <= top || c < first;
+  }
+  const from = new Map<string, number>();
+  w.rows.forEach((x) => from.set(`${x.from[0]},${x.from[1]}`, (from.get(`${x.from[0]},${x.from[1]}`) ?? 0) + 1));
+  const out: string[] = [];
+  cells.forEach((row, r) => row.forEach((s, c) => {
+    const n = from.get(`${r},${c}`) ?? 0;
+    if (n > 1 || n === 1 && !isNum(s) || n === 0 && isNum(s) && !label(r, c) && !rows.has(r) && !cols.has(c))
+      out.push(`${String.fromCharCode(65 + c)}${r + 1}=${s}`);
+  }));
+  return out;
+}
 
 category('Wide tables', () => {
   test('a column per animal, each group named over its first animal only: every animal read and counted', async () => {
     const w = read(BY_ANIMAL);
-    expect(w.shape, 'by animal');
-    expect(w.question, null);
     expect(w.error, null);
-    expect(JSON.stringify(w.groups), JSON.stringify([['Vehicle', 4], ['Cpd-1', 3], ['Cpd-2', 5]]));
-    expect(wideSummary(w)[0], 'Read 3 groups: Vehicle 4 animals, Cpd-1 3 animals, Cpd-2 5 animals.');
+    expect(w.shape, 'by animal');
+    expect(groups(w), JSON.stringify([['Vehicle', 4], ['Cpd-1', 3], ['Cpd-2', 5]]));
+    expect(wideSummary(w)[0], 'Read 3 groups: Vehicle 4 animals, Cpd-1 3 animals, Cpd-2 5 animals, days 0–7.');
     const last = w.rows.filter((r) => r.animal === 'm11' || r.animal === 'm12');
     expect(last.length, 6);
     expect(last.every((r) => r.group === 'Cpd-2'), true);
     // a blank cell is a missing measurement, nothing else: 12 animals × 3 days, less m6 on day 7
     expect(w.rows.length, 35);
     expect(w.rows.find((r) => r.animal === 'm12' && r.day === 7)!.volume, 119);
+    expect(unaccounted(BY_ANIMAL, w).join(), '');
   });
 
-  test('the same table with trailing blanks cut from its header rows still reads the last animals', async () => {
-    const cut = BY_ANIMAL.replace(',Cpd-2,,,,\n', ',Cpd-2\n').replace(',m11,m12\n', ',m11\n');
-    const w = read(cut);
-    expect(JSON.stringify(w.groups), JSON.stringify([['Vehicle', 4], ['Cpd-1', 3], ['Cpd-2', 5]]));
-    expect(w.notes.some((n) => n.startsWith('No animal id over column M')), true);
+  test('a column per animal with numeric ids, and days written D7 or with a unit', async () => {
+    const w = read(',Vehicle,,Cpd\nDay,101,102,103\nD0,100,101,99\nDay 3 (d),150,151,120\n');
+    expect(groups(w), JSON.stringify([['Vehicle', 2], ['Cpd', 1]]));
+    expect([...new Set(w.rows.map((r) => r.animal))].join(), '101,102,103');
+    expect(w.rows.map((r) => r.day).join(), '0,0,0,3,3,3');
   });
 
-  test('a column per day, the group in a column: one row per animal and day', async () => {
-    const csv = 'Animal,Group,D0,D3,Day 7\nm1,Vehicle,100,150,220\nm2,Vehicle,101,151,\nm3,Cpd,99,120,130\n';
-    const w = read(csv);
+  test('a column per day, the group blank under its name: one row per animal and day', async () => {
+    const w = read(BY_DAY);
     expect(w.shape, 'by day');
-    expect(JSON.stringify(w.groups), JSON.stringify([['Vehicle', 2], ['Cpd', 1]]));
-    expect(w.rows.length, valuesIn(csv));
-    expect(w.rows.filter((r) => r.animal === 'm3').map((r) => r.day).join(), '0,3,7');
+    expect(groups(w), JSON.stringify([['Vehicle', 2], ['Cpd-A', 1]]));
+    expect(w.rows.length, 8);
+    expect(w.rows.find((r) => r.animal === 'V2' && r.day === 3)!.group, 'Vehicle');
+    expect(unaccounted(BY_DAY, w).join(), '');
   });
 
-  test('a column per day, the group in merged cells beside the animals or in a row over them', async () => {
-    const merged = read(',,D0,D3\nVehicle,m1,100,150\n,m2,101,151\nCpd,m3,99,120\n,m4,98,110\n');
-    expect(JSON.stringify(merged.groups), JSON.stringify([['Vehicle', 2], ['Cpd', 2]]));
-    const titled = read('Mouse,0,3,7\nVehicle\n1,100,150,220\n2,101,151,230\nCpd\n3,99,120,130\n');
-    expect(JSON.stringify(titled.groups), JSON.stringify([['Vehicle', 2], ['Cpd', 1]]));
+  test('rows of means and counts, and numbers in a column with no heading after the days, are listed', async () => {
+    const byDay = read(BY_DAY + 'Mean,,39.5,50.6,89.3\nn,,3,3,2\n');
+    expect(byDay.error, null);
+    expect(byDay.ignored.join('|'), 'row 5 ("Mean"), a summary row|row 6 ("n"), a summary row');
+    const tail = read('Animal,Group,D0,D3,\nm1,V,100,150,7\nm2,C,99,120,\n');
+    expect(tail.ignored.join(), 'column E, with no heading, after the days');
+    expect(wideSummary(tail)[1], 'Not read: column E, with no heading, after the days.');
+    const byAnimal = read(BY_ANIMAL + 'SD,5,6,7,8,9,10,11,12,13,14,15,16\n');
+    expect(byAnimal.ignored.join(), 'row 6 ("SD"), a summary row');
+    expect(unaccounted(BY_ANIMAL + 'SD,5,6,7,8,9,10,11,12,13,14,15,16\n', byAnimal).join(), '');
   });
 
-  test('body weight is read from a block of its own, by its title', async () => {
-    const w = read(',,Tumor volume,,Body weight,\nAnimal,Group,D0,D3,D0,D3\nm1,V,100,150,20,21\nm2,C,90,100,19,18\n');
-    const m1 = w.rows.find((r) => r.animal === 'm1' && r.day === 3)!;
-    expect(m1.volume, 150);
-    expect(m1.weight, 21);
-    // two blocks of days with no titles: which is the volume is asked, not guessed
-    const q = read('Animal,Group,D0,D3,D0,D3\nm1,V,100,150,20,21\n').question!;
-    expect(q.id, 'block');
-    expect(q.choices.join('|'), 'columns C–D|columns E–F');
+  test('anything else is refused with the two shapes that are read', async () => {
+    expect(read(',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n3,155,156,125\n').error,
+      `Not read: day 3 (row 5) does not come after the day above it. ${SHAPES}`);
+    expect(SHAPES, 'PMX Studio reads two wide shapes. A column per animal: ",Vehicle,,Cpd-A" / "Day,V1,V2,C1" / ' +
+      '"0,37.9,41.2,39.5" (each group\'s name over its first animal). A column per day: "Animal,Group,Day 0,Day 3" / ' +
+      '"V1,Vehicle,37.9,51.8" / "V2,,41.2,55.0". Or open it as one row per measurement (animal, group, day, volume).');
+    expect(read(',,,Vehicle,,Cpd,\nDay,m0,m00,m1,m2,m3,m4\n0,1,2,100,101,99,98\n').error!
+      .startsWith('Not read: the first animal (column B) has no group name above it.'), true);
+    expect(read('Animal,Group,Arm,D0,D3\nm1,1,V,100,150\n').error!
+      .startsWith('Not read: more than one column is headed as the groups ("Group", "Arm").'), true);
   });
 
-  test('measurements before the first group name are asked about, never guessed or dropped', async () => {
-    const csv = ',,,Vehicle,,Cpd,\nDay,m0,m00,m1,m2,m3,m4\n0,1,2,100,101,99,98\n3,1,2,150,151,120,110\n';
-    const w = read(csv);
-    expect(w.rows.length, 0);
-    expect(w.question!.id, 'before');
-    expect(w.question!.text, 'Columns B, C hold measurements but come before the first group name. Which group ' +
-      'are they in?');
-    expect(JSON.stringify(read(csv, {before: 0}).groups), JSON.stringify([['Vehicle', 4], ['Cpd', 2]]));
-    expect(JSON.stringify(read(csv, {before: 1}).groups),
-      JSON.stringify([['No group name', 2], ['Vehicle', 2], ['Cpd', 2]]));
-    const out = read(csv, {before: 2});
-    expect(JSON.stringify(out.groups), JSON.stringify([['Vehicle', 2], ['Cpd', 2]]));
-    expect(wideSummary(out)[1], 'Not read: columns B, C, before the first group name (as you chose).');
+  test('a number that could not be placed stops the read', async () => {
+    const cells = cellsOf(BY_DAY);
+    const w = read(BY_DAY);
+    const label = (r: number, c: number) => r === 0 || c < 2;
+    expect(unplaced(cells, w.rows, label, () => false), null);
+    expect(unplaced(cells, w.rows.filter((x) => !(x.animal === 'V2' && x.day === 3)), label, () => false),
+      'Nothing read: 1 number could not be placed (D3)');
   });
 
-  test('a header that could be animals or groups, and days that could run either way, are asked about', async () => {
-    expect(read('Day,A1,A2,A3\n0,100,101,99\n3,150,151,149\n').question!.id, 'header');
-    expect(JSON.stringify(read('Day,A1,A2,A3\n0,100,101,99\n3,150,151,149\n', {header: 0}).groups),
-      JSON.stringify([['One group', 3]]));
-    // an empty corner over numbers going up: days down the first column, or animals across the days?
-    expect(read(',D0,D3\n1,100,150\n2,110,160\n').question!.id, 'shape');
-    // group names alone, merged: the animals are numbered within each group, and the user is told
-    const unnamed = read('Day,Vehicle,,Cpd,,\n0,100,101,99,98,97\n3,150,151,149,140,130\n');
-    expect(JSON.stringify(unnamed.groups), JSON.stringify([['Vehicle', 2], ['Cpd', 3]]));
-    expect(unnamed.rows.some((r) => r.animal === 'Cpd 3'), true);
+  test('blinded: the counts alone, in the table\'s order, and the days', async () => {
+    expect(wideSummary(read(BY_ANIMAL), true)[0], 'Read 3 groups: 4, 3 and 5 animals, days 0–7.');
+    expect(wideSummary(read(BY_DAY + 'Mean,,39.5,50.6,89.3\n'), true).join('|'),
+      'Read 2 groups: 2 and 1 animals, days 0–7.|Not read: row 5 ("Mean"), a summary row.');
   });
 
-  test('what cannot be read is refused or named: numbers, a second table below, days', async () => {
-    expect(read('Animal,Group,D0,D3\nm1,V,"1,234",150\n').error!.startsWith('Nothing read: 1 value could not'),
+  test('the separator is the one the first lines use; a comma is a decimal only between semicolons', async () => {
+    expect(JSON.stringify(cellsOf('"a;b",c,d\n1;2,3,4\n')), JSON.stringify([['a;b', 'c', 'd'], ['1;2', '3', '4']]));
+    const semi = 'Animal;Group;D0;D3\nm1;V;100,512;150,25\nm2;C;90,1;95,75\n';
+    expect(readWide(cellsOf(semi), true)!.rows[0].volume, 100.512);
+    expect(readWide(cellsOf(semi.replace(/;/g, '\t')), false)!.error!.startsWith('Not read: cell C2 ("100,512")'),
       true);
-    const below = read('Animal,Group,D0,D3\nm1,V,100,150\nm2,V,101,151\n\nAnimal,Group,D0,D3\nm1,V,20,21\n');
-    expect(below.left.join(), 'row 6, a second table below the first');
-    expect(dayOf('D7'), 7);
-    expect(dayOf('Day 14'), 14);
-    expect(dayOf('0'), 0);
-    expect(dayOf('2024-03-01'), null);
   });
 
-  test('a long table is left to the long reading', async () => {
-    expect(readWide(cellsOf('Mouse ID,Arm,Day,Volume (mm3)\nm1,V,0,100\nm1,V,3,150\n')), null);
-    expect(readWide(cellsOf('Group,Day,Volume\nV,0,100\nV,3,150\n')), null);
-    // a day column the long reading does not know by name: still not taken for a wide table
-    expect(readWide(cellsOf('Animal,Group,Timepoint,Volume\nm1,V,0,100\nm1,V,3,150\nm2,V,0,90\n')), null);
+  test('every reviewer input is read with each number placed, refused, or left to the long reading', async () => {
+    for (const [name, csv, outcome] of FIXTURES) {
+      const w = readWide(cellsOf(csv));
+      expect(w === null ? 'long' : w.error ? 'refused' : 'read', outcome, name);
+      if (w && !w.error)
+        expect(unaccounted(csv, w).join(), '', name);
+    }
   });
 
   test('Open a study: a wide file opens as the long table, with its animals per group said', async () => {
@@ -119,176 +142,102 @@ category('Wide tables', () => {
     expect(r.animals, 12);
     expect(r.groups, 3);
     expect(r.lastDay, 7);
-    expect(wideSummary(r.wide!.read)[0], 'Read 3 groups: Vehicle 4 animals, Cpd-1 3 animals, Cpd-2 5 animals.');
-    const asked = readFile('cro.csv', ',,,Vehicle,,Cpd,\nDay,m0,m00,m1,m2,m3,m4\n0,1,2,100,101,99,98\n' +
-      '3,1,2,150,151,120,110\n');
-    expect(asked.kind === 'table' && asked.wide!.read.question!.id, 'before');
-  });
-
-  test('never silent: every number in a fixture is read, or sits in a column or row named as not read', async () => {
-    let checked = 0;
-    for (const [name, csv, given] of FIXTURES) {
-      // a question answered with its first choice, as a user might: nothing goes missing whatever the answer
-      const answers = {...given};
-      let w = readWide(cellsOf(csv), answers);
-      for (let k = 0; k < 4 && w?.question; k++)
-        w = readWide(cellsOf(csv), Object.assign(answers, {[w.question.id]: 0}));
-      if (!w || w.question || w.error)
-        continue;
-      checked++;
-      expect(unaccounted(csv, w), 0, name);
-    }
-    expect(checked >= 25, true, `${checked} fixtures read`);
-  });
-
-  test('a day measured twice does not end the days: the row is named, every animal read', async () => {
-    const w = read(',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n3,155,156,125\n7,160,170,130\n');
-    expect(JSON.stringify(w.groups), JSON.stringify([['Vehicle', 2], ['Cpd', 1]]));
-    expect(w.rows.filter((r) => r.animal === 'm1').map((r) => r.day).join(), '0,3,7');
-    expect(w.left.join(), 'row 5, day 3 a second time');
-  });
-
-  test('body weight beside the volumes, a column per animal, is refused, not read as a group', async () => {
-    const w = read(',Volume,,Weight,\nDay,m1,m2,m1,m2\n0,100,101,20,21\n3,150,151,19,20\n');
-    expect(w.error, 'Nothing read: the names over the animals ("Volume", "Weight") are measurements, not groups. ' +
-      'Open the tumor volumes on their own, each group\'s name over its first animal');
-  });
-
-  test('a row with an animal and no numbers is not taken for a group name', async () => {
-    for (const second of ['2,,,', '2,dead,,']) {
-      const w = read(`Mouse,0,3,7\nVehicle\n1,100,150,220\n${second}\n3,99,120,130\nCpd\n4,99,120,130\n`);
-      expect(JSON.stringify(w.groups), JSON.stringify([['Vehicle', 2], ['Cpd', 1]]), second);
-      expect(w.left.includes('row 4 (2), no numbers'), true, second);
-    }
-  });
-
-  test('animal ids and group names written as numbers', async () => {
-    const ids = read(',Vehicle,,Cpd\nDay,101,102,103\n0,100,101,99\n3,150,151,120\n7,160,170,130\n');
-    expect(ids.shape, 'by animal');
-    expect([...new Set(ids.rows.map((r) => r.animal))].join(), '101,102,103');
-    expect(JSON.stringify(ids.groups), JSON.stringify([['Vehicle', 2], ['Cpd', 1]]));
-    const groups = read(',1,,2\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n7,160,170,130\n');
-    expect(JSON.stringify(groups.groups), JSON.stringify([['1', 2], ['2', 1]]));
-  });
-
-  test('an animal whose cells are all words is named as not read, in both layouts', async () => {
-    const byAnimal = read(',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,dead,99\n3,150,dead,120\n');
-    expect(byAnimal.left.includes('column C (m2), no numbers'), true);
-    expect(byAnimal.left[0], 'cells that are not numbers: "dead" at C3, "dead" at C4');
-    const byDay = read('Animal,Group,D0,D3\nm1,V,100,150\nm2,V,dead,dead\nm3,C,1,2\n');
-    expect(byDay.left.includes('row 3 (m2), no numbers'), true);
-  });
-
-  test('a column that might hold the groups but is not headed so is asked about', async () => {
-    const csv = 'Animal,Cage,D0,D3\nm1,C1,100,150\nm2,C1,101,151\nm3,C2,99,120\nm4,C2,98,110\n';
-    const q = read(csv).question!;
-    expect(q.id, 'group');
-    expect(q.choices.join('|'), 'Column B ("Cage")|None: each group is named in a row over its animals');
-    expect(JSON.stringify(read(csv, {group: 0}).groups), JSON.stringify([['C1', 2], ['C2', 2]]));
-  });
-
-  test('a summary of means is not taken for a wide table', async () => {
-    expect(readWide(cellsOf('Group,Day,Mean,SEM\nV,0,100,5\nV,3,150,6\nV,7,200,9\n')), null);
-    // group means across the top: asked, not read as animals unasked
-    expect(read('Day,Vehicle,Cpd\n0,100,99\n3,150,120\n').question!.id, 'header');
-  });
-
-  test('the separator is the one the first lines use, outside quotes', async () => {
-    expect(JSON.stringify(cellsOf('"a;b",c,d\n1;2,3,4\n')), JSON.stringify([['a;b', 'c', 'd'], ['1;2', '3', '4']]));
-    expect(JSON.stringify(cellsOf('a;b;c\n1,5;2,5;3\n')), JSON.stringify([['a', 'b', 'c'], ['1,5', '2,5', '3']]));
-  });
-
-  test('blinded: the counts alone, in the table\'s order, and no group named in a question or a note', async () => {
-    expect(wideSummary(read(BY_ANIMAL), true)[0], 'Read 3 groups: 4, 3 and 5 animals.');
-    const q = read(',,,Vehicle,,Cpd,\nDay,m0,m00,m1,m2,m3,m4\n0,1,2,100,101,99,98\n3,1,2,150,151,120,110\n')
-      .question!;
-    expect(q.blind!.choices[0], 'The group after them');
-    const empty = read(',Vehicle,,Cpd,Spare\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n');
-    expect(wideSummary(empty).includes('No measurements under "Spare".'), true);
-    expect(wideSummary(empty, true).some((l) => l.includes('Spare') || l.includes('Vehicle')), false);
+    expect(wideSummary(r.wide!)[0], 'Read 3 groups: Vehicle 4 animals, Cpd-1 3 animals, Cpd-2 5 animals, days 0–7.');
+    const refused = readFile('cro.csv', 'Animal,Group,Baseline,D3\nm1,V,100,150\n');
+    expect(refused.kind === 'table' && refused.wide!.error!.startsWith('Not read: column C ("Baseline")'), true);
   });
 });
 
-/** The reviewer's probes: every layout read, asked about or refused; [name, csv, answers]. */
-const FIXTURES: [string, string, {[id: string]: number}][] = [
-  ['base', BY_ANIMAL, {}],
-  ['ragged short rows', ',Vehicle,,Cpd\nDay,m1,m2,m3,m4\n0,100,101,99,98\n3,150,151\n7,220\n', {}],
-  ['last group one animal', ',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n', {}],
-  ['group name in last col, no id', ',Vehicle,,Cpd\nDay,m1,m2,\n0,100,101,99\n3,150,151,120\n', {}],
-  ['bom crlf', '\uFEFF,Vehicle,,Cpd\r\nDay,m1,m2,m3\r\n0,100,101,99\r\n3,150,151,120\r\n\r\n\r\n', {}],
-  ['tabs', '\tVehicle\t\tCpd\nDay\tm1\tm2\tm3\n0\t100\t101\t99\n3\t150\t151\t120\n', {}],
-  ['quoted comma group', ',"Vehicle, 10 mg",,Cpd\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n', {}],
-  ['NaN mid', ',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,NA,99\n3,150,dead,120\n7,160,170,abc\n', {}],
-  ['day repeat', ',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n3,155,156,125\n7,160,170,130\n', {}],
-  ['neg days', ',Vehicle,,Cpd\nDay,m1,m2,m3\n-1,100,101,99\n0,150,151,120\n3,160,170,130\n', {}],
-  ['trailing blank cols', ',Vehicle,,Cpd,,,\nDay,m1,m2,m3,,,\n0,100,101,99,,,\n3,150,151,120,,,\n', {}],
-  ['row first value at day', ',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,,\n3,150,151,120\n', {}],
-  ['first data row single value', ',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,,\n3,,,120\n7,150,151,130\n', {}],
-  ['days going back', ',Vehicle,,Cpd\nDay,m1,m2,m3\n0,1,2,3\n3,4,5,6\n7,7,8,9\n0,10,11,12\n', {}],
-  ['before, own group', ',,,Vehicle,,Cpd,\nDay,m0,m00,m1,m2,m3,m4\n0,1,2,100,101,99,98\n3,1,2,150,151,120,110\n',
-    {before: 1}],
-  ['before, left out', ',,,Vehicle,,Cpd,\nDay,m0,m00,m1,m2,m3,m4\n0,1,2,100,101,99,98\n3,1,2,150,151,120,110\n',
-    {before: 2}],
-  ['by day ragged', 'Animal,Group,D0,D3,D7\nm1,V,100,150,220\nm2,V,101\nm3,C,99,120,130,140\n', {}],
-  ['by day value beyond header', 'Animal,Group,D0,D3\nm1,V,100,150\nm2,C,99,120,999\n', {}],
-  ['by day NA', 'Animal,Group,D0,D3\nm1,V,NA,150\nm2,C,99,dead\n', {}],
-  ['by day group row, blank animal', 'Mouse,0,3,7\nVehicle\n1,100,150,220\n2,,,\nCpd\n3,99,120,130\n', {}],
-  ['by day animal with only text', 'Animal,Group,D0,D3\nm1,V,100,150\nm2,V,dead,dead\nm3,C,1,2\n', {}],
-  ['by day repeated day col', 'Animal,Group,D0,D3,D3,D7\nm1,V,100,150,151,200\nm2,C,99,120,121,140\n', {block: 0}],
-  ['by day neg days', 'Animal,Group,D-1,D0,D3\nm1,V,100,150,151\nm2,C,99,120,121\n', {}],
-  ['by day blank row inside', 'Animal,Group,D0,D3\nm1,V,100,150\n\nm2,C,99,120\n', {}],
-  ['by day second table', 'Animal,Group,D0,D3\nm1,V,100,150\nm2,V,101,151\n\nAnimal,Group,D0,D3\nm1,V,20,21\n', {}],
-  ['by day volume and weight', ',,Volume,,Weight,\nAnimal,Group,0,3,0,3\nm1,V,100,150,20,21\nm2,C,90,100,19,18\n', {}],
-  ['numeric animal ids', ',Vehicle,,Cpd\nDay,101,102,103\n0,100,101,99\n3,150,151,120\n7,160,170,130\n', {}],
-  ['numeric group names', ',1,,2\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n7,160,170,130\n', {}],
-  ['group row, text-only animal',
-    'Mouse,0,3,7\nVehicle\n1,100,150,220\n2,dead,,\n3,99,120,130\nCpd\n4,99,120,130\n', {}],
-  ['by day merged group, text animal', 'Group,Animal,D0,D3\nV,m1,100,150\n,m2,101,151\nC,m3,99,120\n,m4,dead,\n', {}],
-  ['by animal empty column between', ',Vehicle,,,Cpd\nDay,m1,m2,,m3\n0,100,101,,99\n3,150,151,,120\n', {}],
-  ['by animal note left of days', 'Note,Day,m1,m2\nx,0,100,101\ny,3,150,151\n', {header: 0}],
-  ['by animal all-text column', ',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,dead,99\n3,150,dead,120\n', {}],
-  ['cage chosen', 'Animal,Cage,D0,D3\nm1,C1,100,150\nm2,C1,101,151\nm3,C2,99,120\nm4,C2,98,110\n', {group: 0}],
+/* eslint-disable max-len */
+/** The reviewers' inputs (p1–p4) and what becomes of each: read (every number placed), refused, or left to the long
+ *  reading as a table of one row per measurement. */
+const FIXTURES: [string, string, 'read' | 'refused' | 'long'][] = [
+  ['1 repeated day', ',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n3,155,156,125\n7,160,170,130\n10,170,180,140\n', 'refused'],
+  ['2 weight block beside by animal', ',Volume,,Weight,\nDay,m1,m2,m1,m2\n0,100,101,20,21\n3,150,151,19,20\n', 'refused'],
+  ['2b weight block group-named', ',Vehicle,,Vehicle BW,\nDay,m1,m2,m1,m2\n0,100,101,20,21\n3,150,151,19,20\n', 'refused'],
+  ['3 group-row blank animal', 'Mouse,0,3,7\nVehicle\n1,100,150,220\n2,,,\n3,99,120,130\nCpd\n4,99,120,130\n', 'refused'],
+  ['3b group-row word-only animal', 'Mouse,0,3,7\nVehicle\n1,100,150,220\n2,dead,,\n3,99,120,130\nCpd\n4,99,120,130\n', 'refused'],
+  ['4 numeric ids', ',Vehicle,,Cpd\nDay,101,102,103\n0,100,101,99\n3,150,151,120\n7,160,170,130\n', 'read'],
+  ['4b numeric group names', ',1,,2\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n7,160,170,130\n', 'read'],
+  ['4c numeric group names by day', 'Animal,Group,D0,D3\n1,1,100,150\n2,1,101,151\n3,2,99,120\n', 'read'],
+  ['5 text-only animal by animal', ',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,dead,99\n3,150,dead,120\n', 'refused'],
+  ['5b text-only animal by day', 'Animal,Group,D0,D3\nm1,V,100,150\nm2,V,dead,dead\nm3,C,1,2\n', 'refused'],
+  ['6 cage column', 'Animal,Cage,D0,D3\nm1,C1,100,150\nm2,C1,101,151\nm3,C2,99,120\nm4,C2,98,110\n', 'refused'],
+  ['6b cage + group', 'Animal,Group,Cage,D0,D3\nm1,V,C1,100,150\nm2,V,C1,101,151\nm3,T,C2,99,120\n', 'read'],
+  ['7 summary', 'Group,Day 0,Day 3,Day 7\nVehicle,100,150,200\nCpd,99,120,130\n', 'refused'],
+  ['7b summary mean rows', ',Vehicle,Cpd\nDay,Mean,Mean\n0,100,99\n3,150,120\n', 'refused'],
+  ['7c summary by animal-like', 'Day,Vehicle,Cpd\n0,100,99\n3,150,120\n7,200,130\n', 'refused'],
+  ['8 multi-line quoted', ',"Vehicle\n10 mg/kg",,Cpd\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n', 'read'],
+  ['8b separator: first lines text', 'Study X; report\nNotes; a; b\n,Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n7,1,2,3\n', 'long'],
+  ['N1 two header rows of ids', ',Vehicle,,Cpd\nDay,m1,m2,m3\n,A,B,C\n0,100,101,99\n3,150,151,120\n', 'refused'],
+  ['N2 group repeated over every animal', ',Vehicle,Vehicle,Cpd\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n', 'read'],
+  ['N3 group header spans into empty separator col', ',Vehicle,,,Cpd\nDay,m1,m2,,m3\n0,100,101,,99\n3,150,151,,120\n', 'refused'],
+  ['N3b separator col holds a stray number', ',Vehicle,,,Cpd\nDay,m1,m2,,m3\n0,100,101,5,99\n3,150,151,,120\n', 'refused'],
+  ['N4 day cols with units', 'Animal,Group,Day 7 (mm3),Day 14 (mm3)\nm1,V,100,150\nm2,C,90,95\n', 'read'],
+  ['N5 decimal comma semicolon', 'Animal;Group;D0;D3\nm1;V;100,5;150,25\nm2;C;90,1;95,75\n', 'read'],
+  ['N5b decimal comma 3 digits', 'Animal;Group;D0;D3\nm1;V;100,512;150,250\nm2;C;90,1;95,7\n', 'refused'],
+  ['N6 days as D-1', 'Animal,Group,D-1,D0,D3\nm1,V,100,150,151\nm2,C,99,120,121\n', 'read'],
+  ['N7 descending days by day', 'Animal,Group,D7,D3,D0\nm1,V,200,150,100\nm2,C,99,120,121\n', 'refused'],
+  ['N7b descending days by animal', ',Vehicle,,Cpd\nDay,m1,m2,m3\n7,100,101,99\n3,150,151,120\n0,1,2,3\n', 'refused'],
+  ['N8 totals row by day', 'Animal,Group,D0,D3\nm1,V,100,150\nm2,V,101,151\nm3,C,99,120\nMean,,100,140.3\n', 'read'],
+  ['N8b mean row by animal (bottom)', ',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\nMean,125,126,110\n', 'read'],
+  ['N8c mean column by animal', ',Vehicle,,,Cpd\nDay,m1,m2,Mean,m3\n0,100,101,100.5,99\n3,150,151,150.5,120\n', 'refused'],
+  ['N8d mean row inside group by day group rows', 'Mouse,0,3\nVehicle\n1,100,150\n2,101,151\nMean,100.5,150.5\nCpd\n3,99,120\n', 'refused'],
+  ['N9 n= row', ',Vehicle,,Cpd\nn=,2,,1\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n', 'refused'],
+  ['N9b n= row by day', 'Animal,Group,D0,D3\nm1,V,100,150\nm2,C,99,120\nn,,2,2\n', 'read'],
+  ['N10 footnotes', 'Animal,Group,D0,D3\nm1,V,100,150\nm2,C,99,120\n\n* animal 3 found dead day 5\nSource: CRO 2024\n', 'refused'],
+  ['N10b footnote with number by animal', ',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n\nNote: 1 animal excluded,,,\n', 'refused'],
+  ['N11 trailing commas excel', 'Animal,Group,D0,D3,,,\nm1,V,100,150,,,\nm2,C,99,120,,,\n,,,,,,\n,,,,,,\n', 'read'],
+  ['N12 one group by day', 'Animal,Group,D0,D3\nm1,V,100,150\nm2,V,99,120\n', 'read'],
+  ['N12b one group by animal', ',Vehicle,\nDay,m1,m2\n0,100,101\n3,150,151\n', 'read'],
+  ['N13 one animal by day', 'Animal,Group,D0,D3,D7\nm1,V,100,150,200\n', 'read'],
+  ['N13b one animal by animal', ',Vehicle\nDay,m1\n0,100\n3,150\n', 'read'],
+  ['N14 group name equals animal id', 'Animal,Group,D0,D3\nV,V,100,150\nm2,C,99,120\n', 'read'],
+  ['N14b by animal group == id', ',m1,,Cpd\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n', 'read'],
+  ['N15 all NA column', 'Animal,Group,D0,D3,D7\nm1,V,100,150,NA\nm2,C,99,120,NA\n', 'read'],
+  ['N16 blank lines between groups by day', 'Animal,Group,D0,D3\nm1,V,100,150\nm2,V,101,151\n\n\nm3,C,99,120\n', 'read'],
+  ['N16b blank lines between group-title blocks', 'Mouse,D0,D3\n\nVehicle\n1,100,150\n2,101,151\n\nCpd\n3,99,120\n', 'refused'],
+  ['N17 dup ids across groups', 'Animal,Group,D0,D3\n1,Vehicle,100,150\n2,Vehicle,101,151\n1,Cpd,99,120\n2,Cpd,98,110\n', 'read'],
+  ['N18 Treatment+Dose cols', 'Animal,Treatment,Dose,D0,D3\nm1,V,0,100,150\nm2,C,10,99,120\n', 'refused'],
+  ['N19 day header in 2nd row, title row', 'Tumor volume (mm3),,,\nAnimal,Group,D0,D3\nm1,V,100,150\nm2,C,99,120\n', 'refused'],
+  ['N20 days with "Day" prefix by animal col', ',Vehicle,,Cpd\nStudy day,m1,m2,m3\nDay 0,100,101,99\nDay 3,150,151,120\n', 'read'],
+  ['N21 dates in first col', ',Vehicle,,Cpd\nDate,m1,m2,m3\n2024-01-01,100,101,99\n2024-01-04,150,151,120\n', 'long'],
+  ['N22 negative / zero vol, "<LOD"', 'Animal,Group,D0,D3\nm1,V,0,<20\nm2,C,99,120\n', 'refused'],
+  ['N23 group col then animal col numbers only', 'Group,Animal,D0,D3\n1,1,100,150\n1,2,101,151\n2,3,99,120\n', 'read'],
+  ['N24 day header row repeated per group (stacked tables)', 'Vehicle,,\nAnimal,D0,D3\nm1,100,150\nm2,101,151\nCpd,,\nAnimal,D0,D3\nm3,99,120\n', 'refused'],
+  ['N25 two group columns: Group and Arm', 'Animal,Group,Arm,D0,D3\nm1,1,V,100,150\nm2,2,C,99,120\n', 'refused'],
+  ['N26 by animal value in day col left', 'Grp,Day,m1,m2\n,0,100,101\n,3,150,151\n', 'long'],
+  ['N27 thousands', 'Animal,Group,D0,D3\nm1,V,"1,234.5",150\nm2,C,99,"1,200"\n', 'refused'],
+  ['N28 sex col', 'Animal,Sex,Group,D0,D3\nm1,F,V,100,150\nm2,M,C,99,120\n', 'read'],
+  ['N29 Time column header numbers only by animal, no Day word', ',Vehicle,,Cpd\n,m1,m2,m3\n0,100,101,99\n3,150,151,120\n', 'read'],
+  ['N30 by day plain number days with label "Mouse"', 'Mouse,Group,0,3,7\n1,V,100,150,200\n2,C,99,120,130\n', 'read'],
+  ['N31 by day, unlabelled numeric header', ',,0,3,7\n1,V,100,150,200\n2,C,99,120,130\n', 'refused'],
+  ['M1 text-id animal with no values under group titles', 'Mouse,0,3\nVehicle\nm1,100,150\nm2\nm3,99,120\nCpd\nm4,98,110\n', 'refused'],
+  ['M1b same with trailing commas', 'Mouse,0,3\nVehicle,,\nm1,100,150\nm2,,\nm3,99,120\nCpd,,\nm4,98,110\n', 'refused'],
+  ['M2 baseline col left of days', 'Animal,Group,Baseline,D3,D7\nm1,V,100,150,200\nm2,C,99,120,130\n', 'refused'],
+  ['M2b BW single column left', 'Animal,Group,BW,D0,D3\nm1,V,20,100,150\nm2,C,21,99,120\n', 'refused'],
+  ['M2c randomization volume col', 'Animal,Group,Rand vol,D0,D3\nm1,V,95,100,150\nm2,C,94,99,120\n', 'refused'],
+  ['M3 cage col after group (unheaded group?)', 'Animal,Group,Cage,D0,D3\nm1,V,1,100,150\nm2,C,2,99,120\n', 'refused'],
+  ['M4 group col blank first rows', 'Animal,Group,D0,D3\nm1,,100,150\nm2,V,101,151\nm3,C,99,120\n', 'refused'],
+  ['M5 two group-ish cols unheaded', 'Animal,,,D0,D3\nm1,V,A,100,150\nm2,V,A,101,151\nm3,C,B,99,120\n', 'refused'],
+  ['M6 day row with trailing text col (comments)', 'Animal,Group,D0,D3,Comment\nm1,V,100,150,ok\nm2,C,99,120,dead 5\n', 'refused'],
+  ['M6b numeric comment col after days', 'Animal,Group,D0,D3,TGI%\nm1,V,100,150,\nm2,C,99,120,45\n', 'refused'],
+  ['M7 by animal TGI row at bottom with day number', ',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n%TGI,,,40\n', 'refused'],
+  ['M8 by animal: comment row between', ',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,101,99\nDosing,x,x,x\n3,150,151,120\n', 'refused'],
+  ['L1 long basic', 'Animal,Group,Day,Volume\nm1,V,0,100\nm1,V,3,150\nm2,C,0,99\nm2,C,3,120\n', 'long'],
+  ['L2 long +cage sex bw', 'Animal,Cage,Sex,Group,Day,Volume,Body weight\nm1,1,F,V,0,100,20\nm1,1,F,V,3,150,21\nm2,2,M,C,0,99,22\nm2,2,M,C,3,120,23\n', 'long'],
+  ['L3 long day first', 'Day,Animal,Group,Volume\n0,m1,V,100\n0,m2,C,99\n3,m1,V,150\n3,m2,C,120\n', 'long'],
+  ['L4 long day first numeric animals', 'Day,Mouse,Group,TV\n0,1,1,100\n0,2,2,99\n3,1,1,150\n3,2,2,120\n7,1,1,200\n7,2,2,130\n', 'long'],
+  ['L5 long no Day word (Time)', 'ID,Arm,Time,Vol\n1,V,0,100\n1,V,3,150\n2,C,0,99\n2,C,3,120\n', 'long'],
+  ['L6 long headers odd: Tag,Tx,DPI,TV', 'Tag,Tx,DPI,TV\nt1,V,0,100\nt1,V,3,150\nt2,C,0,99\nt2,C,3,120\n', 'long'],
+  ['L7 long sorted by day, numeric everything', 'Day,Animal,Cage,Volume,Weight\n0,1,1,100,20\n0,2,1,101,21\n3,1,1,150,21\n3,2,1,151,22\n7,1,1,200,22\n7,2,1,201,23\n', 'long'],
+  ['L8 long semicolon decimal comma', 'Animal;Group;Day;Volume\nm1;V;0;100,5\nm1;V;3;150,2\n', 'long'],
+  ['L9 long one animal per day sorted by day lowercase', 'day,animal,group,volume\n0,1,V,100\n3,1,V,150\n7,1,V,200\n', 'long'],
+  ['L10 long with Study day header + Date', 'Subject,Group,Date,Study Day,Tumor Volume (mm3)\nm1,V,2024-01-01,0,100\nm1,V,2024-01-04,3,150\n', 'long'],
+  ['L11 long DPI no names first col days', 'DPI,Mouse,Group,TV\n0,m1,V,100\n3,m1,V,150\n7,m1,V,200\n0,m2,C,90\n3,m2,C,95\n', 'long'],
+  ['L12 long day col named "Day" second, cage before', 'Cage,Day,Animal,Group,Volume\n1,0,m1,V,100\n1,3,m1,V,150\n1,7,m1,V,200\n2,0,m2,C,90\n', 'long'],
+  ['L13 long, Days post implant + day ascending all', 'Days,Volume,Weight,Animal\n0,100,20,m1\n3,150,21,m1\n7,200,22,m1\n10,250,22,m1\n', 'long'],
+  ['side-by-side group blocks by day', ',,Vehicle,,,Cpd-X,,\nAnimal,,D0,D3,D7,D0,D3,D7\nm1,,100,150,200,,,\nm2,,101,151,201,,,\nm3,,,,,99,120,130\n', 'refused'],
+  ['N31 answer 1', ',,0,3,7\n1,V,100,150,200\n2,C,99,120,130\n', 'refused'],
 ];
-
-const COL = (s: string) => [...s].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1;
-/** "C" or "C–F" (or "9–15") as the indexes it spans. */
-const span = (x: string, of: (s: string) => number) => {
-  const [a, b] = x.split('–').map(of);
-  return Array.from({length: (b ?? a) - a + 1}, (_, k) => a + k);
-};
-
-/** The numbers of a fixture neither read nor in a column or row named as not read. Its own reading of the layout:
- *  by animal, the days down the column headed Day (else the first) under header rows; by day, the days across the
- *  first row that has two of them, labels to their left. */
-function unaccounted(csv: string, w: WideRead): number {
-  const cells = cellsOf(csv);
-  const isNum = (s: string) => /^[+-]?\d[\d.,]*$/.test(s);
-  const cols = new Set<number>();
-  const rows = new Set<number>();
-  for (const l of w.left) {
-    const c = /^columns? ((?:[A-Z]+(?:–[A-Z]+)?(?:, )?)+)/.exec(l);
-    c?.[1].split(', ').filter((x) => x).forEach((x) => span(x, COL)
-      .forEach((k) => cols.add(k)));
-    const r = /^rows? ((?:\d+(?:–\d+)?(?:, )?)+)/.exec(l);
-    r?.[1].split(', ').filter((x) => x).forEach((x) => span(x, (s) => +s - 1)
-      .forEach((k) => rows.add(k)));
-  }
-  let structural: (r: number, c: number) => boolean;
-  if (w.shape === 'by animal') {
-    const headed = cells.flatMap((row) => row.map((s, c) => /^day$/i.test(s) ? c : -1)).find((c) => c >= 0);
-    const day = headed ?? Math.min(...cells.map((row) => row.findIndex((s) => s !== '')).filter((c) => c >= 0));
-    const start = cells.findIndex((row) => dayOf(row[day] ?? '') !== null && row.some((s, c) => c > day && isNum(s)));
-    structural = (r, c) => r < start || c === day;
-  } else {
-    const header = cells.findIndex((row) => row.filter((s, c) => c > 0 && dayOf(s) !== null).length >= 2);
-    const first = cells[header].findIndex((s, c) => c > 0 && dayOf(s) !== null);
-    structural = (r, c) => r <= header || c < first;
-  }
-  let numbers = 0;
-  cells.forEach((row, r) => row.forEach((s, c) => {
-    if (isNum(s) && !structural(r, c) && !rows.has(r) && !cols.has(c))
-      numbers++;
-  }));
-  const read = w.rows.reduce((n, x) => n + (x.volume !== null ? 1 : 0) + (x.weight !== null ? 1 : 0), 0);
-  return numbers - read;
-}
+/* eslint-enable max-len */

@@ -414,9 +414,8 @@ export function openStudyDialog(first?: File[]): void {
   };
 
   const selected = (): Option | null => {
-    // a wide table opens once it is read: its question answered, nothing refused
-    const wide = brought.table?.wide?.read;
-    if (phase !== 'loaded' || wide?.question || wide?.error)
+    // a wide table that could not be read opens nowhere
+    if (phase !== 'loaded' || brought.table?.wide?.error)
       return null;
     const list = options().list;
     const pick = list.find((o) => o.stage === chosen && !o.disabled) ??
@@ -461,38 +460,20 @@ export function openStudyDialog(first?: File[]): void {
       const holds = holdsOf(brought);
       if (holds.length)
         parts.push(h('ul', 'pmx-holds', holds));
-      const asked = table?.wide?.read.question;
-      if (asked) {
-        // the table read again with the answer: the next question, or what was read; blinded, no group named
-        const {text, choices} = plan?.blinded && asked.blind ? asked.blind : asked;
-        const answers = choices.map((c, i) => {
-          const radio = h('input', '', [], {type: 'radio', name: 'pmx-wide'});
-          radio.addEventListener('change', () => {
-            const again = readFile(table!.file, table!.wide!.text, {...table!.wide!.answers, [asked.id]: i});
-            if (again.kind === 'table')
-              brought = {...brought, table: again};
-            render();
-          });
-          return h('label', 'pmx-opt', [radio, h('span', '', [h('b', '', [c])])]);
-        });
-        parts.push(h('div', 'pmx-ask', [h('div', 'pmx-q', [text]), h('div', 'pmx-opts', answers)]));
-      }
       const {question, list, hint} = options();
       const pick = selected();
-      // the stage is asked once the table is read
-      parts.push(...asked ? [] : [h('div', 'pmx-ask', [h('div', 'pmx-q', [question]),
-        h('div', 'pmx-opts', list.map((o) => {
-          const radio = h('input', '', [], {type: 'radio', name: 'pmx-stage'});
-          radio.checked = pick?.stage === o.stage;
-          radio.disabled = o.disabled;
-          radio.addEventListener('change', () => {
-            chosen = o.stage;
-            render();
-          });
-          return h('label', 'pmx-opt' + (o.disabled ? ' is-off' : pick?.stage === o.stage ? ' is-on' : ''), [radio,
-            h('span', '', [h('b', '', [o.title]), o.desc, ...(o.note ? [h('em', '', [o.note])] : [])])]);
-        }))])]);
-      if (hint && !asked)
+      parts.push(h('div', 'pmx-ask', [h('div', 'pmx-q', [question]), h('div', 'pmx-opts', list.map((o) => {
+        const radio = h('input', '', [], {type: 'radio', name: 'pmx-stage'});
+        radio.checked = pick?.stage === o.stage;
+        radio.disabled = o.disabled;
+        radio.addEventListener('change', () => {
+          chosen = o.stage;
+          render();
+        });
+        return h('label', 'pmx-opt' + (o.disabled ? ' is-off' : pick?.stage === o.stage ? ' is-on' : ''), [radio,
+          h('span', '', [h('b', '', [o.title]), o.desc, ...(o.note ? [h('em', '', [o.note])] : [])])]);
+      }))]));
+      if (hint)
         parts.push(h('div', 'pmx-hint', [icon(ICON.info, 16, 1.8), h('span', '', [hint])]));
       if (error)
         parts.push(h('div', 'pmx-error', [icon(ICON.warn, 16, 1.8), h('span', '', [error])]));
@@ -589,16 +570,14 @@ function holdsOf(b: Brought): HTMLElement[] {
     const facts = [t.animals !== null ? `${t.animals} animals` : '', t.groups !== null ? `${t.groups} groups` : '',
       t.lastDay !== null ? `day 0–${t.lastDay}` : ''].filter(Boolean);
     const what = facts.join(' · ') || 'Measurements';
-    const w = t.wide?.read;
+    const w = t.wide;
     if (w?.error)
       out.push(line('warn', 'A wide table, not read', w.error));
-    else if (w?.question)
-      out.push(line('none', 'A wide table: one question before it is read'));
     else if (w) {
       // a column per day or per animal turned into one row per animal and day: how many animals, in plain words
       const [counts, ...rest] = wideSummary(w, !!b.plan?.blinded);
       out.push(line('ok', counts, what));
-      rest.forEach((r) => out.push(line(r.startsWith('Not read') ? 'warn' : 'none', r)));
+      rest.forEach((r) => out.push(line('warn', r)));
     } else {
       out.push(t.missing.length ? line('warn', what, `No column found for ${t.missing.join(', ')}: you pick ` +
         `${t.missing.length === 1 ? 'it' : 'them'} in the form that opens.`) : line('ok', what, t.found.join(' · ')));

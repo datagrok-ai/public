@@ -7,17 +7,15 @@ import * as DG from 'datagrok-api/dg';
 import {PLAN_EXT, SavedPlan, parsePlan} from './plan-file';
 import {STUDY_EXT, SavedStudy, parseStudy} from './study-file';
 import {plainError} from './ui';
-import {Answers, ROLES, WEIGHT, WideRead, WideRow, cellsOf, readWide} from './wide-table';
+import {ROLES, WEIGHT, WideRead, WideRow, cellsOf, readWide, separatorOf} from './wide-table';
 
 export const OPENED_EXTS = [PLAN_EXT, STUDY_EXT, 'csv', 'tsv', 'txt'];
 
 /** A table of measurements, as far as the hub reads it. */
 export interface MeasuredTable {kind: 'table', file: string, df: DG.DataFrame, animals: number | null,
   groups: number | null, lastDay: number | null, found: string[], missing: string[], weight: boolean,
-  wide: WideTable | null}
-/** A wide table as read (wide-table.ts), with the answers given so far; `text`, the file, read again with each
- *  answer. */
-export interface WideTable {read: WideRead, text: string, answers: Answers}
+  /** A wide table as read (wide-table.ts): what was read, or why nothing was. */
+  wide: WideRead | null}
 /** `saved`: the file as read, so opening it does not read it again. */
 export interface PlanRead {kind: 'plan', file: string, text: string, saved: SavedPlan, name: string, line: string,
   end: number | null, blinded: boolean}
@@ -30,8 +28,8 @@ export {ROLES, WEIGHT};
 const extOf = (name: string) => (name.split('.').pop() ?? '').toLowerCase();
 const baseOf = (name: string) => name.replace(/\.[^.]+$/, '');
 
-/** What one file holds; a wide table read with the `answers` given to its questions. */
-export function readFile(name: string, text: string, answers: Answers = {}): FileRead {
+/** What one file holds. */
+export function readFile(name: string, text: string): FileRead {
   const ext = extOf(name);
   try {
     if (ext === PLAN_EXT) {
@@ -45,12 +43,11 @@ export function readFile(name: string, text: string, answers: Answers = {}): Fil
       return {kind: 'study', file: name, text, saved: parseStudy(text)};
     }
     if (ext === 'csv' || ext === 'tsv' || ext === 'txt') {
-      const read = readWide(cellsOf(text), answers);
-      const df = read ? longTable(read.question || read.error ? [] : read.rows) : DG.DataFrame.fromCsv(text);
+      const read = readWide(cellsOf(text), separatorOf(text) === ';');
+      const df = read ? longTable(read.error ? [] : read.rows) : DG.DataFrame.fromCsv(text);
       if (df.rowCount === 0 && !read)
         return {kind: 'bad', file: name, why: 'The table has no rows: open the file with the measurements.'};
       df.name = baseOf(name);
-      const wide: WideTable | null = read && {read, text, answers};
       const names = df.columns.names();
       const at = (re: RegExp) => names.find((c) => re.test(c));
       const roles = ROLES.map(([role, re]) => ({role, column: at(re)}));
@@ -63,7 +60,7 @@ export function readFile(name: string, text: string, answers: Answers = {}): Fil
       return {kind: 'table', file: name, df, animals: count('Animal'), groups: count('Group'),
         lastDay: dayCol?.isNumerical ? Math.round(dayCol.stats.max) : null,
         found: roles.filter((r) => r.column).map((r) => `${r.role} ← ${r.column}`),
-        missing: roles.filter((r) => !r.column).map((r) => r.role), weight: !!at(WEIGHT), wide};
+        missing: roles.filter((r) => !r.column).map((r) => r.role), weight: !!at(WEIGHT), wide: read};
     }
   } catch (e: any) {
     // a plan or a study says what is wrong in a sentence; a table that does not parse, below
@@ -76,14 +73,13 @@ export function readFile(name: string, text: string, answers: Answers = {}): Fil
   return {kind: 'bad', file: name, why: 'PMX Studio opens .pmxplan, .pmxstudy, .csv and .tsv files.'};
 }
 
-/** Long rows as the study table the stages take (emptyStudy's columns; body weight only when read). */
+/** Long rows as the study table the stages take (emptyStudy's columns, without body weight; the source cells,
+ *  only a check, are not kept). */
 function longTable(rows: WideRow[]): DG.DataFrame {
   const cols = [DG.Column.fromStrings('animal', rows.map((r) => r.animal)),
     DG.Column.fromStrings('group', rows.map((r) => r.group)),
     DG.Column.fromFloat64Array('day', Float64Array.from(rows, (r) => r.day)),
     DG.Column.fromList(DG.TYPE.FLOAT, 'volume', rows.map((r) => r.volume))];
-  if (rows.some((r) => r.weight !== null))
-    cols.push(DG.Column.fromList(DG.TYPE.FLOAT, 'body_weight', rows.map((r) => r.weight)));
   return DG.DataFrame.fromColumns(cols);
 }
 
