@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Export: The Excel report renders all charts at once and captures each as soon as it is drawn instead of after a fixed 1 s delay, several times faster; fixed charts being squashed vertically
 * Custom function view: Fixed the view never opening from a link to a run that fails to load; it shows the error and opens a new call
 * Custom function view: A new call starts with the function's default input values
 * RTD: A workflow custom export can be `preferred`, which lists it first in the Export menu

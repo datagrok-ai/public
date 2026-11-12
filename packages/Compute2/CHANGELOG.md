@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Export: The default Excel report is several times faster with charts; fixed its charts being squashed vertically
 * RFV: Fixed multiple choice inputs showing no list, and the empty line below selects and multiple choice inputs, in a narrow form
 * Export: Added `CallExports` and `ExportCall`, which list a run's exports as its Export menu does and run one, returning its file
 * Export: A custom export with `preferred: true` (in `meta.customExports` or a workflow's `customExports`) comes first in the Export menu, before the default Excel report, and is the default of the Runs export; several keep their order; the report icon of RFV runs the first export of the menu
