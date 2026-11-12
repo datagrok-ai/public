@@ -1,6 +1,6 @@
 //api: DG.ViewBase.saveToProject, DG.ViewBase.saveToProjectByDefault
 // A view that can reopen from its state is offered in the Save project dialog, left out until the user
-// includes it. Include one from code, as the tab's "Save with project" item does.
+// includes it ("+" in the dialog). Include one from code.
 
 const tv = grok.shell.addTableView(grok.data.demo.demog());
 await grok.functions.call('CmdNewMarkupView');

@@ -5,8 +5,7 @@ Feature: A dashboard saves the arrangement of its views
   iris and demog-1000 are arranged by dragging their tabs onto the dock compass: iris to the right of
   cars, cars narrowed to about 30% of the width the two share by its splitter, demog-1000 below cars.
   A markup view is dragged out to float. Views other than tables join a new dashboard only by choice:
-  the Save project dialog lists them greyed out, its "+" includes one, a second is left out, and a
-  third whose tab's "Save with project" was switched on and off again is not listed at all. The
+  the Save project dialog lists them greyed out, its "+" includes one and a second is left out. The
   reopened dashboard brings back the arrangement (shares within 5 points, the float within 2% of the
   window) and only the markup view that was included. A markup view opened next to the open
   dashboard is then dragged onto it in the Dashboards panel, saved with it and reopened with it.
@@ -37,11 +36,6 @@ Feature: A dashboard saves the arrangement of its views
     Then the "BDD notes" view should be floating
     When user remembers where the "BDD notes" view floats
     Given user opens a markup view named "BDD scratch"
-    And user opens a markup view named "BDD flag"
-    When user picks "Save with project" from the context menu of the current view tab
-    And user closes the context menu
-    And user picks "Save with project" from the context menu of the current view tab
-    And user closes the context menu
     Then no errors should have been logged
 
   Scenario: The Save dialog lists the markup views left out until one is included
@@ -49,7 +43,6 @@ Feature: A dashboard saves the arrangement of its views
     And user opens the Save project dialog from the ribbon
     Then the "BDD notes" view should be excluded in the Save project dialog
     And the "BDD scratch" view should be excluded in the Save project dialog
-    And the Save project dialog should not list the "BDD flag" view
     When user includes the "BDD notes" view in the Save project dialog
     Then the "BDD scratch" view should be excluded in the Save project dialog
     When user types "BDDLayout{time}" into text input in "Save project" dialog
@@ -72,7 +65,6 @@ Feature: A dashboard saves the arrangement of its views
     And the "iris" view should be docked right-of the "demog-1000" view
     And the "BDD notes" view should float where it was remembered
     And "BDD scratch" view should be absent
-    And "BDD flag" view should be absent
     And no error or warning balloon should have been shown
 
   Scenario: A view dragged onto the open dashboard in the Dashboards panel is saved with it

@@ -1,10 +1,9 @@
 @journey @realizes:views.projects @realizes:core#239
 Feature: A dashboard saves an app view with its state and starts it only when opened for real
   core#239: an app view joins a dashboard by choice, and reopens where it was docked, on the tab, the
-  sub-view and the filters it had. Usage Analysis is opened next to cars, chosen through its tab's
-  "Save with project", switched to Functions > Execution time with the date filter set to "this
-  month", and docked to the right of cars. The Save project dialog lists it included; the reopened
-  dashboard brings it back to the right of cars, on Execution time, with the date filter it had. A
+  sub-view and the filters it had. Usage Analysis is opened next to cars, switched to Functions >
+  Execution time with the date filter set to "this month", and docked to the right of cars. The Save
+  project dialog lists it left out, and its "+" includes it; the reopened dashboard brings it back to the right of cars, on Execution time, with the date filter it had. A
   Browse preview of the dashboard (a single click on it under My stuff) shows the table and does not
   start the app; pinning the preview (a double click on its tab) does.
 
@@ -17,12 +16,10 @@ Feature: A dashboard saves an app view with its state and starts it only when op
     And simple mode is off
     And the user's own project "BDDLayoutApp{time}" is removed now and at feature end
 
-  Scenario: Usage Analysis is chosen for the dashboard, set to a sub-view and a filter, and docked beside a table
+  Scenario: Usage Analysis is set to a sub-view and a filter, and docked beside a table
     Given user opens cars dataset
     And user opens the "Usage Analysis" app on its "Overview" view
-    When user picks "Save with project" from the context menu of the current view tab
-    And user closes the context menu
-    And user clicks on Functions tab
+    When user clicks on Functions tab
     Then the "Functions" view should be current
     When user clicks on "Execution time" button
     Then "Execution time" button should be disabled
@@ -36,6 +33,8 @@ Feature: A dashboard saves an app view with its state and starts it only when op
   Scenario: The dashboard reopens Usage Analysis where it was, on its sub-view and filter
     When user clicks on the tab of the "cars" view
     And user opens the Save project dialog from the ribbon
+    Then the "Functions" view should be excluded in the Save project dialog
+    When user includes the "Functions" view in the Save project dialog
     Then the "Functions" view should be included in the Save project dialog
     When user types "BDDLayoutApp{time}" into text input in "Save project" dialog
     And user clicks on OK in the Save project dialog and the project uploads
