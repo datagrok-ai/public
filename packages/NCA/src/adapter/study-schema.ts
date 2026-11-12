@@ -23,6 +23,11 @@ import type * as DG from 'datagrok-api/dg';
 import type {NcaRules, RouteCode} from './index';
 import {INSTALLED_ENGINE_VERSION} from './engine-version';
 import {RESULTS_BASIS} from './unit-conversion';
+import type {DerivedChoices} from './occasion';
+
+/** The current derived-analysis basis stamp (tk-study-day-stratification F6): %F, the sex
+ *  comparison and dose proportionality are stratified per occasion. */
+export const DERIVED_BASIS = 'occasion-1';
 
 /* Field history of the retired `study.json` format (v1..v16). The file format, its
  *  `schemaVersion` and its migration ladder are gone (nca-ems-storage-migration: rows in the EMS
@@ -335,6 +340,17 @@ export interface AnalysisRecipe {
    * is complete; `getCurrentRecipe()` always emits it, so every v13+ save carries it.
    */
   readonly acceptanceRSquared?: number;
+  /**
+   * The analyst's occasion / animal / design / τ choices for the DERIVED analyses
+   * (tk-study-day-stratification F1, architect S2): none of them changes a per-profile fit,
+   * so the group lives OUTSIDE `columns` and outside `computeRecipeFingerprint` (a pick never
+   * raises "Setup changed" and needs no Confirm), but inside `computeRecipeHash`. **Absent =
+   * automatic** (the occasion is detected by name, the animal by rules ii/iii, the design is
+   * proposed, τ is unknown). No migration back-fills it: an absent field keeps every stored
+   * recipe hash unchanged (`recipeOf` omits it) — the `acceptanceRSquared` reader-tolerance
+   * precedent.
+   */
+  readonly derived?: DerivedChoices;
 }
 
 // ─── Source pointer (decision e — pointer, never embedded data) ──────────────
@@ -657,6 +673,14 @@ export interface AnalysisEntry extends AnalysisRecipe {
    * (`isStale`), and the study grid blanks its CL / Vz / Vss cells.
    */
   readonly resultsBasis?: string | null;
+  /**
+   * The derived-analysis basis the cached summary was built under (tk-study-day-stratification
+   * F6): `DERIVED_BASIS` (`'occasion-1'`) once %F is stratified per occasion. Round-tripped
+   * `?? null` like `resultsBasis`; only a freshly computed summary stamps it. Read only by the
+   * staleness predicate's `isDerivedBasisStale` term; deliberately NOT folded into
+   * `resultsBasis` (whose staleness blanks CL / Vz / Vss cells this change does not touch).
+   */
+  readonly derivedBasis?: string | null;
   /** When the stored results last CHANGED (ems-modification decision 2) — read-only, set by the
    *  repository on read; a reopen that recomputes the same numbers does not move it. Absent / null
    *  = no results, or not read. */
@@ -720,6 +744,8 @@ export function recipeOf(entry: AnalysisEntry): AnalysisRecipe {
     // is a SEPARATE enumeration from getCurrentRecipe — omitting it reset R_acc on reopen
     // (user QA 2026-08-25). `undefined` on a pre-v13 entry → the pane's `?? DEFAULT` fallback.
     acceptanceRSquared: entry.acceptanceRSquared,
+    // tk-study-day-stratification: omitted when absent, so a stored recipe hash never moves.
+    ...(entry.derived !== undefined ? {derived: entry.derived} : {}),
   };
 }
 
@@ -765,6 +791,7 @@ export function makeAnalysisEntry(a: MakeAnalysisEntryArgs): AnalysisEntry {
     summaryCache: a.summaryCache,
     engineVersion: a.summaryCache === null ? null : INSTALLED_ENGINE_VERSION,
     resultsBasis: a.summaryCache === null ? null : RESULTS_BASIS,
+    derivedBasis: a.summaryCache === null ? null : DERIVED_BASIS,
     confirmed: a.workflow.confirmed,
     lzOverrides: a.workflow.lzOverrides,
     reviewDecisions: a.workflow.reviewDecisions,

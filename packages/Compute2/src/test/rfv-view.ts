@@ -232,11 +232,27 @@ category('RFV: exports', () => {
   test('Exports show after a run: the default report, the custom ones and the project', async () => {
     const view = await openEditor(track, DG.Func.byName('Compute2:TestCustomExportModel').prepare({a: 1}));
     expect(ribbonIcons(view, 'arrow-to-bottom').length, 0, 'No report before the run');
-    expect(menuItems(view, 'Step exports') === null, true, 'No exports before the run');
+    expect(menuItems(view, 'Export') === null, true, 'No exports before the run');
     await run(view);
     await waitUntil(() => ribbonIcons(view, 'arrow-to-bottom').length === 1, 'The report icon should show', 5000);
-    await waitUntil(() => menuItems(view, 'Step exports') !== null, 'The exports should show', 5000);
-    expectDeepEqual(menuItems(view, 'Step exports'), ['Default Excel', 'rec', 'none', 'hook', 'Save as project...']);
+    await waitUntil(() => menuItems(view, 'Export') !== null, 'The exports should show', 5000);
+    expectDeepEqual(menuItems(view, 'Export'), ['Default Excel', 'rec', 'none', 'hook', 'Save as project...']);
+  });
+
+  test('The report icon runs the first export of the menu', async () => {
+    const view = await openEditor(track, DG.Func.byName('Compute2:TestPreferredExportModel').prepare({a: 1}));
+    await run(view);
+    await waitUntil(() => ribbonIcons(view, 'arrow-to-bottom').length === 1, 'The report icon should show', 5000);
+    const errors: string[] = [];
+    const showError = grok.shell.error;
+    (grok.shell as any).error = (e: any) => errors.push(String(e?.message ?? e));
+    try {
+      (ribbonIcons(view, 'arrow-to-bottom')[0] as HTMLElement).click();
+      await waitUntil(() => errors.length > 0, 'The icon should run the preferred export', 5000);
+      expectDeepEqual(errors, ['Export none returned no file']);
+    } finally {
+      (grok.shell as any).error = showError;
+    }
   });
 
   test('Fitting and sensitivity analysis icons follow the function features', async () => {

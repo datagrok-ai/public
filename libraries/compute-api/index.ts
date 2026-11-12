@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {
-  ConsistencyInfo, ExportUtils, HeadlessResult, ItemMetadata, LoadedRun, PipelineInstanceConfigInput, RunState,
-  ValidationResult, ViewersHook, normalizePipelineInstanceConfig,
+  CustomExportArgs, ExportUtils, HeadlessResult, ItemMetadata, LoadedRun, PipelineInstanceConfigInput, RunState,
+  normalizePipelineInstanceConfig,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
 
 type ConstructorTypeOf<T> = new (...args:any[]) => T;
@@ -100,15 +100,29 @@ export async function loadWorkflowRun(id: string): Promise<LoadedRun> {
   return call.getOutputParamValue();
 }
 
-/** The default Excel report of a run, as its export menu builds it, for a custom export to start from. Pass on
- * the `viewersHook` and `metaState` the export gets, so that a workflow step's report uses the step's hook. */
+/** The default Excel report of a run, as its export menu builds it, for a custom export to start from: pass on
+ * the args the export gets, so that a workflow step's report uses the step's hook and meta, and the file says
+ * whether the run is completed. */
 export async function reportFuncCallExcel(funcCall: DG.FuncCall, {validationState, consistencyState, viewersHook,
-  metaState}: {
-  validationState?: Record<string, ValidationResult>, consistencyState?: Record<string, ConsistencyInfo>,
-  viewersHook?: ViewersHook, metaState?: Record<string, {value: any}>,
-} = {}): ReturnType<ExportUtils['reportFuncCallExcel']> {
+  metaState, isOutputOutdated}: CustomExportArgs = {}): ReturnType<ExportUtils['reportStepExcel']> {
   const reportFunc = DG.Func.find({package: 'Compute2', name: 'ReportFuncCallExcel'})[0];
-  const call = reportFunc.prepare({funcCall, validationState, consistencyState, viewersHook, metaState});
+  const call = reportFunc.prepare({funcCall, validationState, consistencyState, viewersHook, metaState,
+    isOutputOutdated});
+  await call.call();
+  return call.getOutputParamValue();
+}
+
+/** The exports of a function's runs, as its Export menu lists them; the first is the default. */
+export async function getCallExports(func: DG.Func): Promise<{id: string, name: string}[]> {
+  const call = DG.Func.find({package: 'Compute2', name: 'CallExports'})[0].prepare({func});
+  await call.call();
+  return call.getOutputParamValue();
+}
+
+/** Exports a run as its Export menu does, with an id from `getCallExports`; pass on the args the export gets. */
+export async function exportCall(funcCall: DG.FuncCall, exportId: string, args: CustomExportArgs = {}):
+  Promise<DG.FileInfo> {
+  const call = DG.Func.find({package: 'Compute2', name: 'ExportCall'})[0].prepare({funcCall, exportId, args});
   await call.call();
   return call.getOutputParamValue();
 }

@@ -56,7 +56,7 @@ interface RendererInternals {
     molCtx: {mol: any}};
   _fetchRender(width: number, height: number, molString: string, scaffolds: {molecule: string, color?: string}[],
     molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean, alignByFirstSubstructure: boolean,
-    details?: object): ImageData;
+    details?: object, substructureObj?: object, renderOptions?: {[key: string]: any}): ImageData;
   cachedMoleculeCount: number;
   canvasReused: OffscreenCanvas;
   rendersCache: unknown;
@@ -444,6 +444,35 @@ category('chemical engine', () => {
       results.push(`${c.name}: ${ink.rdkit}/${ink.crux}`);
     }
     console.log(`chemical engine | inked pixels RDKit/Crux: ${results.join('; ')}`);
+  });
+
+  test('the Rendering settings draw in both engines', async () => {
+    const draw = (molecule: string, options: {[key: string]: any}, scaffolds: {molecule: string}[] = []) =>
+      newRenderer()._fetchRender(300, 150, molecule, scaffolds, false, false, false, {}, undefined, options);
+    // a wavy bond and a crossed double bond, "AND enantiomer" over "and1": more ink with the setting on
+    const settings: [string, string][] = [['unspecifiedStereoIsUnknown', 'CC(O)CC=CC'],
+      ['simplifiedStereoGroupLabel', 'C[C@H](N)C(=O)O |&1:1|']];
+    for (const [option, molecule] of settings) {
+      const ink = await inBothEngines(async () => ({on: inked(draw(molecule, {[option]: true})),
+        off: inked(draw(molecule, {[option]: false}))}), {noFallback: ['rendering', 'drawing']});
+      for (const [engine, {on, off}] of Object.entries(ink))
+        expect(on > off, true, `${option} in ${engine}: ink ${on} on, ${off} off`);
+      expect(Math.abs(ink.crux.on - ink.rdkit.on) <= ink.rdkit.on / 3, true,
+        `${option}: ink ${ink.rdkit.on} RDKit, ${ink.crux.on} Crux`);
+    }
+    // a highlight without a color of its own (the substructure filter's) takes the Highlight color
+    const blue = (image: ImageData) => {
+      let n = 0;
+      for (let i = 0; i < image.data.length; i += 4)
+        n += image.data[i + 2] > 200 && image.data[i] < 100 && image.data[i + 1] < 100 && image.data[i + 3] > 200 ? 1 : 0;
+      return n;
+    };
+    const highlighted = await inBothEngines(async () => ({
+      inBlue: blue(draw(ASPIRIN, {highlightColour: [0, 0, 1, 1]}, [{molecule: 'c1ccccc1'}])),
+      inDefault: blue(draw(ASPIRIN, {}, [{molecule: 'c1ccccc1'}])),
+    }), {noFallback: ['rendering', 'drawing']});
+    for (const [engine, {inBlue, inDefault}] of Object.entries(highlighted))
+      expect(inBlue > 100 && inDefault === 0, true, `${engine}: ${inBlue} blue pixels, ${inDefault} in the default color`);
   });
 
   test('canvasMol, drawMolecule and the SVG export draw with Crux', async () => {

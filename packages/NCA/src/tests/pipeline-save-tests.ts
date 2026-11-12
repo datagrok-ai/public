@@ -77,6 +77,7 @@ category('Pipeline save: untouched (pure)', () => {
       groupByCols: (r) => ({...r, groupByCols: ['Sex']}),
       passthroughCols: (r) => ({...r, passthroughCols: [{name: 'Smiles', isStructure: true}]}),
       acceptanceRSquared: (r) => ({...r, acceptanceRSquared: 0.5}),
+      derived: (r) => ({...r, derived: {occasionCol: 'StudyDay', tauH: 24}}),
     };
     for (const [field, fn] of Object.entries(mutate)) {
       const edited: AnalysisEntry = {...e, ...fn(recipeOf(e))};

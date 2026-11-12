@@ -145,8 +145,9 @@ export const InputForm = Vue.defineComponent({
 
     const hiddenInputs = Vue.computed(() => props.hiddenInputs);
 
+    // without skipLogic the core form owns visibility (visible expressions)
     Vue.watch([currentCall, currentForm, callMetaValues, hiddenInputs], ([call, form, meta, hiddenInputs]) => {
-      if (!form || !call) return;
+      if (!form || !call || !skipLogic.value) return;
       applyInputsVisibility([...call.inputParams.values()].map((param) => param.property.name),
         (name) => form.getInput(name), meta, hiddenInputs);
     });

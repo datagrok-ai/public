@@ -93,7 +93,7 @@ category('Viewers hook: broken', () => {
 
   test('The default Excel of a run whose viewers hook can\'t be made is built without it', async () => {
     const call = await DG.Func.byName(BROKEN).prepare({n: 2}).call();
-    const [blob] = await DG.Func.byName('Compute2:ReportFuncCallExcel').apply({funcCall: call});
-    expect(blob.size > 0, true);
+    const [file] = await DG.Func.byName('Compute2:ReportFuncCallExcel').apply({funcCall: call});
+    expect(file.data.length > 0, true);
   });
 });

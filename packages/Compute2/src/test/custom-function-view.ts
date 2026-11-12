@@ -189,6 +189,31 @@ category('Custom function view', () => {
     expect(view.funcCall!.id, saved.id);
   }));
 
+  test('A new view starts with the default inputs', async () => {
+    const view = new CountingView(DAY_CALCULATION);
+    await view.isReady.pipe(filter((ready) => ready), take(1)).toPromise();
+    expect(view.funcCall!.inputs['incomingVolume'], 1);
+    expect(view.funcCall!.inputs['maximumGrowthRate'], 0.4);
+  });
+
+  test('A deep link to a run that fails to load opens a new call', async () => {
+    const missing = missingRunId();
+    const handled = globalThis.initialURLHandled;
+    // the start URL can't be set otherwise; the own property hides the prototype getter until deleted
+    Object.defineProperty(grok.shell, 'startUri', {get: () => `${location.origin}/?id=${missing}`, configurable: true});
+    globalThis.initialURLHandled = false;
+    try {
+      const view = new CountingView(DAY_CALCULATION);
+      await awaitCheck(() => view.isReady.value, 'the view should open', 10000);
+      expect(view.funcCall!.id !== missing, true);
+      expect(view.funcCall!.inputs['incomingVolume'], 1);
+      expect(view.counts.afterLoad, 0);
+    } finally {
+      delete (grok.shell as any).startUri;
+      globalThis.initialURLHandled = handled;
+    }
+  });
+
   test('The editor setup gives the view both dialogs and takes them back', () => withRunStorage(async (f) => {
     const view = await readyView(f);
     const detach = attachRunStorage(view);
@@ -207,16 +232,6 @@ category('Custom function view', () => {
     const view: CustomFunctionView = await grok.functions.call('Compute2:CustomFunctionViewEditor',
       {call: editorCall});
     expect(!!view.funcCall && view.funcCall.id !== missing, true);
-  });
-
-  test('The editor adds the exports of the view function to the Export menu', async () => {
-    const view: CustomFunctionView = await grok.functions.call('Compute2:CustomFunctionViewEditor',
-      {call: DG.Func.byName(TEST_CUSTOM_VIEW).prepare({})});
-    expect(JSON.stringify(view.hostExports.map(({name}) => name)), JSON.stringify(['rec']));
-    expect(ribbonIcons(view).some((item) => !!item.querySelector('.fa-arrow-to-bottom')), true);
-    view.funcCall!.inputs['a'] = 6;
-    const file = await view.hostExports[0].export(view.funcCall!);
-    expect(new TextDecoder().decode(file.data), 'Compute2:TestAdd2|6');
   });
 
   test('A run saved from a custom view is listed under it and opens in it again', () => withRunStorage(async (f) => {

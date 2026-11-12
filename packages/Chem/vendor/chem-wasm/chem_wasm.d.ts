@@ -36,6 +36,28 @@ export class ChemMonomerLibrary {
 }
 
 /**
+ * A reaction read once (module docs), with the canvas layout last drawn: a repaint of the same box and options at
+ * any offset (a grid scrolling) draws it again without laying it out (Chem's grid, 2026-11-11: 0.7 ms a repaint).
+ */
+export class ChemReactionScheme {
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * `draw_to_canvas(canvas, options)`: the reaction drawn on the canvas's 2D context in the box `width` x
+     * `height` at `offsetx`, `offsety` (the canvas's own size by default), through the molecules' command buffer.
+     */
+    draw_to_canvas(canvas: any, options_json: string): void;
+    /**
+     * `get_svg(options)`: the reaction as an SVG string.
+     */
+    get_svg(options_json: string): string;
+    /**
+     * `new ChemReactionScheme(text, notation)`: the reaction read (module docs).
+     */
+    constructor(text: string, notation: string);
+}
+
+/**
  * Groups of SMARTS compiled once (Chem's structural alert rule sets, its pharmacophore families), matched against
  * many molecules (`match`; chem-wasm's chem_batch.rs docs).
  */
@@ -940,6 +962,12 @@ export function chemGasteigerMap(molecule: string, contours: number, width?: num
 export function chemInchiInputs(molecules: (string | null)[]): (Uint8Array | null)[];
 
 /**
+ * `chemMapReaction(rxn, canonicalize)`: one reaction's atom maps as JSON, `{"mapped_rxn", "confidence"}` or
+ * `{"error"}` (module docs).
+ */
+export function chemMapReaction(rxn: string, canonicalize?: boolean | null): string;
+
+/**
  * `chemMarkStereoAbsolute(molblocks)`: each block with every specified stereocentre in one ABS group, as V3000 (Bio's
  * replacement of `OCL.fromMolfile(m).toMolfileV3().replace('STERAC1', 'STEABS')`); null where a block is null, not a
  * string, or not read.
@@ -976,7 +1004,7 @@ export function chemToV2000(molblock: string): string;
 /**
  * Which parts this build holds: `"core"`, `"heavy"`, `"core,heavy"`, ...; the one file Chem loads (feature `chem`)
  * is `"core,heavy,search,descriptors,scaffold-tree,inchi-input,chem-scripts,chem-conformers,chem-identifiers,chem-murcko,
- * chem-filter-catalogs,synthon-search,biopolymer"`.
+ * chem-filter-catalogs,synthon-search,biopolymer,rxn-map"`.
  */
 export function chemWasmModules(): string;
 
@@ -1088,6 +1116,11 @@ export function get_rgd_text(cores: string[], details?: string | null): RGroupDe
 export function get_rxn(input: string, details?: string | null): Reaction | undefined;
 
 /**
+ * Load the model from upstream's `pytorch_model.bin` bytes. Once per page; later calls are no-ops.
+ */
+export function initRxnMapper(bytes: Uint8Array): void;
+
+/**
  * PORT(jswrapper.cpp:156-212, 921-928): RDKit-js `molzip`, its three forms and Crux's one-molecule form (module
  * docs): `molzip(a, b, details?)`, `molzip(row, details?)`, `molzip(mol, details?)`. A `JSMol`, or `null`.
  */
@@ -1171,6 +1204,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __wbg_chemmonomerlibrary_free: (a: number, b: number) => void;
+    readonly __wbg_chemreactionscheme_free: (a: number, b: number) => void;
     readonly __wbg_chemsmartsset_free: (a: number, b: number) => void;
     readonly __wbg_chemsynthonspace_free: (a: number, b: number) => void;
     readonly __wbg_collection_free: (a: number, b: number) => void;
@@ -1193,6 +1227,7 @@ export interface InitOutput {
     readonly chemFingerprints: (a: number, b: number, c: number, d: number, e: any, f: number) => [number, number, number];
     readonly chemGasteigerMap: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly chemInchiInputs: (a: any) => [number, number, number];
+    readonly chemMapReaction: (a: number, b: number, c: number) => [number, number, number, number];
     readonly chemMarkStereoAbsolute: (a: any) => any;
     readonly chemMurckoScaffolds: (a: any) => [number, number, number, number];
     readonly chemMutate: (a: number, b: number, c: number, d: number) => [number, number, number, number];
@@ -1205,6 +1240,9 @@ export interface InitOutput {
     readonly chemmonomerlibrary_errors: (a: number) => [number, number];
     readonly chemmonomerlibrary_new: (a: number, b: number) => [number, number, number];
     readonly chemmonomerlibrary_size: (a: number) => number;
+    readonly chemreactionscheme_draw_to_canvas: (a: number, b: any, c: number, d: number) => [number, number];
+    readonly chemreactionscheme_get_svg: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly chemreactionscheme_new: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly chemsmartsset_groups: (a: number) => number;
     readonly chemsmartsset_lastWork: (a: number) => [number, number];
     readonly chemsmartsset_match: (a: number, b: any) => [number, number, number];
@@ -1253,6 +1291,7 @@ export interface InitOutput {
     readonly get_rgd_smarts: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly get_rgd_text: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly get_rxn: (a: number, b: number, c: number, d: number) => number;
+    readonly initRxnMapper: (a: number, b: number) => [number, number];
     readonly jsmol_add_hs: (a: number) => [number, number, number, number];
     readonly jsmol_add_hs_in_place: (a: number) => [number, number, number];
     readonly jsmol_canonical_tautomer: (a: number, b: number, c: number) => [number, number, number];

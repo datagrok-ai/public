@@ -170,7 +170,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.fileHandler({
-    ext: 'ipv',
+    ext: 'ivp',
   })
   static async ivpFileHandler(content: string) {
     const solver = new DiffStudio();

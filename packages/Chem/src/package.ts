@@ -2006,16 +2006,19 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Flatten Molecules...',
     'name': 'Flatten Molecules',
-    'description': 'Removes stereochemistry from molecules and adds a column with flat SMILES.',
+    'description': 'Removes stereocenters (and optionally the E/Z of double bonds) and adds a column with flat SMILES.',
     'meta': {'role': 'transform'},
   })
   static async flattenMolecules(
     data: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column<string>,
     @grok.decorators.param({options: {initialValue: 'false'}}) overwrite: boolean = false,
-    @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true): Promise<DG.Column<string> | void> {
+    @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true,
+    @grok.decorators.param({options: {initialValue: 'false', caption: 'Flatten E/Z',
+      description: 'Also remove the E/Z (cis/trans) configuration of double bonds'}})
+    flattenDoubleBonds: boolean = false): Promise<DG.Column<string> | void> {
     // "Chemical engine": in Crux mode on the Crux workers, the RDKit pool behind them
-    const res = await flattenMoleculesByEngine(molecules.toList());
+    const res = await flattenMoleculesByEngine(molecules.toList(), flattenDoubleBonds);
     if (overwrite) {
       molecules.init((i) => res[i]);
       molecules.meta.units = DG.UNITS.Molecule.SMILES;

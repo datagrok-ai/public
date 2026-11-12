@@ -16,8 +16,10 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
   drug-likeness, toxicity).
 
   On chembl-scaffolds, choosing Scaffold as the Rendering pane's scaffold column and ticking
-  Highlight scaffold repaints the Smiles cells and puts the scaffold highlight colour into them,
-  which was not there before.
+  Highlight scaffold highlights the scaffold in the Smiles cells, and the pane's Highlight color then
+  repaints that highlight in the color picked. The pane also offers the column's Mark unspecified stereo
+  and Simplified stereo label, both on by default as Chem's settings are; what they draw is Chem's
+  package tests ('chemical engine').
 
   Not here: the 3D Structure pane (a server-side Python script) and the Identifiers pane (outside
   web services) — see the bdd library's CLAUDE.md, "What never becomes a feature".
@@ -41,6 +43,8 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
     Then "Scaffold column" choice input in "Rendering" pane in context panel should be visible
     And "Highlight scaffold" checkbox in "Rendering" pane in context panel should be visible
     And "Filter type" choice input in "Rendering" pane in context panel should be visible
+    And "Mark unspecified stereo" checkbox in "Rendering" pane in context panel should be checked
+    And "Simplified stereo label" checkbox in "Rendering" pane in context panel should be checked
     And no errors should have been logged
 
   @realizes:chem.panel.biology.toxicity @realizes:chem.panel.biology.drug-likeness
@@ -117,4 +121,17 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
     And user clicks on "Calculate MW for the whole table" icon in "Properties" pane in "Chemistry" pane in context panel
     Then the table should have a column "MW"
     And "MW" column should have no missing values
+    And no errors should have been logged
+
+  @realizes:chem.panel.chemistry.rendering
+  Scenario: The Rendering pane's Highlight color repaints the column's scaffold highlight
+    When user opens chembl-scaffolds dataset
+    And user clicks on the "header Smiles" area of grid
+    And user expands Chemistry accordion header in context panel
+    And user expands Rendering accordion header in context panel
+    And user selects "Scaffold" in "Scaffold column" choice input in "Rendering" pane in context panel
+    And user checks "Highlight scaffold" checkbox in "Rendering" pane in context panel
+    Then the "cell 1 of Smiles" area of grid should not contain the color "#00e0e0"
+    When user enters "#00e0e0" into "Highlight color" input in "Rendering" pane in context panel
+    Then the "cell 1 of Smiles" area of grid should contain the color "#00e0e0"
     And no errors should have been logged

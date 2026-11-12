@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 import {dfToViewerMapping} from '@datagrok-libraries/compute-utils/shared-utils/export';
 import {DEFAULT_FLOAT_FORMAT} from '@datagrok-libraries/webcomponents-vue';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
-import {BehaviorSubject} from 'rxjs';
 import * as Vue from 'vue';
 
 declare let ENABLE_VUE_DEV_TOOLS: any;
@@ -59,7 +58,7 @@ export function disposeViewers(mapping: {[key: string]: (DG.Viewer | undefined)[
 }
 
 export async function getViewers(
-  call: DG.FuncCall, viewersHook?: ViewersHook, metaState?: Record<string, BehaviorSubject<any>>,
+  call: DG.FuncCall, viewersHook?: ViewersHook, metaState?: Record<string, {value: any}>,
 ) {
   const mappings = await dfToViewerMapping(call);
   if (viewersHook) {

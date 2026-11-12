@@ -82,15 +82,32 @@ export async function SaveWorkflowRun(nqName: string, version: string, state: an
   return await PackageFunctions.SaveWorkflowRun(nqName, version, state, metadata);
 }
 
-//description: The default Excel report of a run, as its export menu builds it: [Blob, ExcelJS.Workbook].
+//description: The default Excel report of a run, as its export menu builds it: [DG.FileInfo, ExcelJS.Workbook].
 //input: funccall funcCall { description: The run to report }
 //input: object validationState { description: Validation results by input; optional: true }
 //input: object consistencyState { description: Consistency by input; optional: true }
 //input: object viewersHook { description: The viewers hook of a workflow step, in place of the function's own; optional: true }
 //input: object metaState { description: Meta values by output, for the hook; optional: true }
+//input: bool isOutputOutdated { description: Names the file Not completed when true; optional: true }
 //output: object result
-export async function ReportFuncCallExcel(funcCall: DG.FuncCall, validationState?: any, consistencyState?: any, viewersHook?: any, metaState?: any) {
-  return await PackageFunctions.ReportFuncCallExcel(funcCall, validationState, consistencyState, viewersHook, metaState);
+export async function ReportFuncCallExcel(funcCall: DG.FuncCall, validationState?: any, consistencyState?: any, viewersHook?: any, metaState?: any, isOutputOutdated?: boolean) {
+  return await PackageFunctions.ReportFuncCallExcel(funcCall, validationState, consistencyState, viewersHook, metaState, isOutputOutdated);
+}
+
+//description: The exports of a function's runs as its Export menu lists them, [{id, name}]; the first is default.
+//input: func func 
+//output: object result
+export function CallExports(func: any) {
+  return PackageFunctions.CallExports(func);
+}
+
+//description: Exports a run as its Export menu does, with the id CallExports gives; returns the file.
+//input: funccall funcCall { description: The run to export }
+//input: string exportId { description: The export id }
+//input: object args { description: The args a custom export gets (CustomExportArgs); optional: true }
+//output: file result
+export async function ExportCall(funcCall: DG.FuncCall, exportId: string, args?: any) : Promise<any> {
+  return await PackageFunctions.ExportCall(funcCall, exportId, args);
 }
 
 //description: Load a saved workflow run without UI and return the state of every step, as RunWorkflow does.
@@ -252,7 +269,6 @@ export async function TestDF1(df: DG.DataFrame) : Promise<any> {
 
 //name: Custom View (Compute 2 Test)
 //output: object result
-//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]
 //editor: Compute2:CustomFunctionViewEditor
 export async function TestCustomView() {
   return await PackageFunctions.TestCustomView();
@@ -278,10 +294,32 @@ export async function TestCustomExportRecorder(funcCall: DG.FuncCall) : Promise<
   return await PackageFunctions.TestCustomExportRecorder(funcCall);
 }
 
+//input: double a 
+//output: double result
+//meta.features: {"export": false}
+//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]
+export async function TestNoDefaultExportModel(a: number) : Promise<number> {
+  return await PackageFunctions.TestNoDefaultExportModel(a);
+}
+
 //input: funccall funcCall 
 //output: string result
 export async function TestCustomExportNoFile(funcCall: DG.FuncCall) : Promise<string> {
   return await PackageFunctions.TestCustomExportNoFile(funcCall);
+}
+
+//input: double a 
+//output: double result
+//meta.customExports: [{"name":"blob","function":"Compute2:TestCustomExportBlob"}]
+export async function TestBlobExportModel(a: number) : Promise<number> {
+  return await PackageFunctions.TestBlobExportModel(a);
+}
+
+//input: funccall funcCall 
+//input: bool startDownload 
+//output: object result
+export async function TestCustomExportBlob(funcCall: DG.FuncCall, startDownload: boolean) : Promise<any> {
+  return await PackageFunctions.TestCustomExportBlob(funcCall, startDownload);
 }
 
 //input: funccall funcCall 

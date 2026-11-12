@@ -463,7 +463,7 @@ export const RichFunctionView = Vue.defineComponent({
     return () => (
       Vue.withDirectives(<div class={`w-full h-full flex outline-none ${SCOPE_CLASS}`} tabindex={-1}>
         { exportsVisible.value && !uiBlocked.value && exports.value.length > 1 &&
-          <RibbonMenu groupName='Step exports' items={stepExportsItems.value}/> }
+          <RibbonMenu groupName={props.standalone ? 'Export' : 'Step exports'} items={stepExportsItems.value}/> }
         <RibbonMenu groupName='Panels' items={panelsItems.value}/>
         <RibbonPanel items={ribbonItems.value}/>
         <DockManager class='block h-full'

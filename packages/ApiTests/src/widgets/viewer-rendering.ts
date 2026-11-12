@@ -47,7 +47,7 @@ category('Viewer: rendering', () => {
       expect(plot.immediateRendering, true);
       renders = 0;
       plot.props.markerDefaultSize = 12;
-      plot.props.markerOpacity = 50;
+      plot.props.filteredRowsColor = 0x801f77b4;
       await new Promise((r) => setTimeout(r, 0));
       expect(renders, 1);
     } finally {

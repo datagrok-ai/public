@@ -46,6 +46,7 @@
         "label": {"type": "string", "required": true, "isName": true, "searchable": true, "friendlyName": "Name"},
         "engine_version": {"type": "string", "friendlyName": "Engine version", "description": "sci-comp version of the stored results; null = unknown or never computed"},
         "results_basis": {"type": "string", "friendlyName": "Results basis", "description": "Reporting-basis contract of the stored CL / Vz / Vss (RESULTS_BASIS, e.g. per-kg-1); null = written before the per-kg basis, stale"},
+        "derived_basis": {"type": "string", "friendlyName": "Derived basis", "description": "Basis of the cached derived analyses (DERIVED_BASIS, e.g. occasion-1: %F stratified per occasion); null = written before it, stale on a multi-occasion analysis with %F"},
         "has_cache": {"type": "bool", "default": false, "friendlyName": "Has results", "description": "Results were computed (possibly zero analysis_result rows); false = never confirmed"},
         "tier_n_subjects": {"type": "int", "min": 0, "friendlyName": "Subjects"},
         "tier_n_compounds": {"type": "int", "min": 0, "friendlyName": "Compounds"},

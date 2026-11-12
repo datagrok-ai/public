@@ -913,16 +913,17 @@ export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<a
 }
 
 //name: Flatten Molecules
-//description: Removes stereochemistry from molecules and adds a column with flat SMILES.
+//description: Removes stereocenters (and optionally the E/Z of double bonds) and adds a column with flat SMILES.
 //input: dataframe data 
 //input: column molecules { semType: Molecule }
 //input: bool overwrite = false 
 //input: bool join = true 
+//input: bool flattenDoubleBonds = false { caption: Flatten E/Z; description: Also remove the E/Z (cis/trans) configuration of double bonds }
 //output: column result
 //meta.role: transform
 //top-menu: Chem | Transform | Flatten Molecules...
-export async function flattenMolecules(data: DG.DataFrame, molecules: DG.Column<any>, overwrite: boolean, join: boolean) : Promise<any> {
-  return await PackageFunctions.flattenMolecules(data, molecules, overwrite, join);
+export async function flattenMolecules(data: DG.DataFrame, molecules: DG.Column<any>, overwrite: boolean, join: boolean, flattenDoubleBonds: boolean) : Promise<any> {
+  return await PackageFunctions.flattenMolecules(data, molecules, overwrite, join, flattenDoubleBonds);
 }
 
 //name: Convert Notation...

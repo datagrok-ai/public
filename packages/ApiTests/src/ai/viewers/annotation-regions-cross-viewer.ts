@@ -15,6 +15,15 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 // dataFrameAnnotationRegions sharing — covering the public surface that
 // changed without depending on canvas geometry.
 category('AI: Viewers: Annotation regions cross-viewer', () => {
+  test('getFillColor reads a region fill the way the viewers draw it', async () => {
+    const fill = (r: DG.AnnotationRegion) => DG.AnnotationRegionsHelper.getFillColor(r) >>> 0;
+    expect(fill({fill: '#ff000080'}).toString(16), '80ff0000');
+    expect(fill({fill: 0xFF0000}).toString(16), 'ffff0000');
+    expect(fill({}).toString(16), '4c808080');
+    expect(fill({fillColor: '#ff0000', opacity: 60}).toString(16), '99ff0000');
+    expect(fill({fill: 0xFFFF0000, fillColor: 0xFF00FF00, opacity: 10}).toString(16), 'ffff0000');
+  });
+
   const formulaRegion = {
     type: 'formula', header: 'AI test band',
     headerColor: 2062260, fillColor: 2062260, opacity: 16,

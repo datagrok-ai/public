@@ -12,6 +12,9 @@
  * stable (R1/F-7) — it proves the demo did not drift, not that the verdict is scientifically right.
  */
 
+// Type-only: erased at build, so this module stays a dependency-free leaf.
+import type {DerivedChoices} from './occasion';
+
 /** The structure column of every demo table (SMILES). Declared, not detected: the seed types it
  *  `Molecule` itself, so the demo installs without the Chem package (Chem then draws it). */
 export const DEMO_STRUCTURE_COL = 'SMILES';
@@ -111,6 +114,10 @@ export interface DemoStudySpec {
    *  without −T_inf/2), so a column recipe would reopen to different numbers. Every row of the
    *  column must equal the value (the seed asserts it), so both compute the same infusion. */
   readonly infusion?: {readonly col: string; readonly hours: number};
+  /** The derived-analysis choices the recipe stores (tk-study-day-stratification): Study 4
+   *  declares τ = 24 h (once daily, time after dose) so its dose proportionality and
+   *  accumulation report AUC0–τ rather than the labelled AUClast fallback. */
+  readonly derived?: DerivedChoices;
   readonly analyses: ReadonlyArray<DemoAnalysisSpec>;
 }
 
@@ -166,7 +173,7 @@ export const DEMO_STUDIES: ReadonlyArray<DemoStudySpec> = [
   {
     ref: 4, label: 'Demo · 28-day TK (rat)', file: 'demo_study4_dgk0007_rat_tk28d.csv',
     frameName: '28-day TK — DGK-0007 (simulated)', sparse: false,
-    groupBy: ['Dose_mg_kg', 'Sex', 'StudyDay'], passthrough: PASSTHROUGH,
+    groupBy: ['Dose_mg_kg', 'Sex', 'StudyDay'], passthrough: PASSTHROUGH, derived: {tauH: 24},
     analyses: [{
       label: 'DGK-0007', expectedPending: 3,
       // C6: a lab-flagged 8 h result, out of the λz regression only (PKNCA `exclude_half.life`).
