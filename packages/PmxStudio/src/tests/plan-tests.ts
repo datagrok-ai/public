@@ -51,6 +51,9 @@ category('Plan', () => {
     expect(calibrated({...x, durationQ90: null}, f('B16F10')).durationQ90, null);
     expect(calibrated({...x, endpointDay: 2, durationQ10: 0.2}, f('B16F10')).durationQ10 >= 0.5 - 1e-9, true);
     expect(JSON.stringify(calibrated(x, null)), JSON.stringify(x));
+    // only the drawn bands move: the animals and anything else the design carries pass through as they were
+    const sized = calibrated({...x, nControl: 7, nTotal: 28}, f('B16F10'));
+    expect(`${sized.nControl} ${sized.nTotal}`, '7 28');
   });
 
   test('one treated arm: Holm and no correction size it alike', async () => {

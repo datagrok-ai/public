@@ -509,7 +509,7 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
         `below the ${Math.round(d.power * 100)}% declared`);
     }
   }
-  // the bands as wide as the validation found them, in the lines it measured (an unreadable file: the engine's)
+  // the bands as wide as the validation found them, in the lines it measured; an unreadable file leaves the engine's
   const factors = (await bandCalibration().catch(() => null))?.lines[d.line];
   return calibrated({
     declaration: d, studyEnd: first['evaluation_day'], endpointDay: first['endpoint_day'], duration, schedules,

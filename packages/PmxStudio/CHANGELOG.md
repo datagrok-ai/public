@@ -6,7 +6,7 @@
   of the end of study ("in 8 of 10 studies") are drawn as wide as the validation on published studies left out of
   the atlas found them (files/band_calibration_v1.json, with its provenance): the growth range is where about 9 in
   10 measurements of an animal are expected. The animals per group and the power are unchanged. Other lines keep
-  the engine's ranges.
+  the engine's ranges; a plan saved before keeps the ranges it was saved with.
 
 * A study keeps its tumor model (2026-11-12): saved without a plan, it opens again with the model chosen in Monitor
   and the Overview names it (an optional field: older files read as before; with a plan, the plan's model is read).
