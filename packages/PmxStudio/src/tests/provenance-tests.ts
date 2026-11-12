@@ -40,8 +40,8 @@ category('Provenance', () => {
   test('a study keeps its provenance and an old one has none', async () => {
     const p = {atlas: 'a'.repeat(64), app: '1.2.3'};
     same(parseStudy(study({provenance: p})).provenance, p);
-    expect(parseStudy(study({})).provenance, undefined);
-    expect('provenance' in parseStudy(study({provenance: {atlas: 1}})), false);
+    expect(parseStudy(study({})).provenance === undefined, true);
+    expect(parseStudy(study({provenance: {atlas: 1}})).provenance === undefined, true);
   });
 
   test('the study export writes the current provenance', async () => {
