@@ -10,12 +10,45 @@ import {PlanFrames, PlanInputs, declarationOf} from './frames';
 import {PlanChecks, planChecks} from './plan-checks';
 import {finite, isFiniteNumber as fin} from './engine';
 import {StudyMeta, parseMeta} from './study-meta';
+import {_package} from './package';
+import {PRIORS_FILE} from './priors';
 
 export const PLAN_EXT = 'pmxplan';
 /** The tag of a study table that carries its plan (the plan's JSON). */
 export const PLAN_TAG = 'pmx.plan';
 const FORMAT = 'pmx-plan';
 export {FORMAT as PLAN_FORMAT};
+
+/** What a file was made with: the sha256 of the atlas file (hex) and the app's version. Both only say where the
+ *  file's numbers come from; they change no calculation. */
+export interface Provenance {atlas: string, app: string}
+
+/** The sha256 of a text's UTF-8 bytes, in hex. */
+export async function sha256Hex(text: string): Promise<string> {
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(d), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+let atlasHash: Promise<string> | null = null;
+
+/** The current atlas and app, the hash computed once; a failed read is not kept. */
+export async function provenance(): Promise<Provenance> {
+  atlasHash ??= _package.files.readAsText(PRIORS_FILE).then(sha256Hex).catch((e) => {
+    atlasHash = null;
+    throw e;
+  });
+  return {atlas: await atlasHash, app: _package.version};
+}
+
+/** A file's provenance, as far as it is well formed (a file without it, or with it damaged, has none). */
+export const provenanceOf = (x: any): Provenance | undefined =>
+  typeof x?.atlas === 'string' && typeof x.app === 'string' ? {atlas: x.atlas, app: x.app} : undefined;
+
+/** The sentence for a file made with another atlas than the current one; null when it is the same or says nothing. */
+export async function atlasNote(p: Provenance | undefined): Promise<string | null> {
+  return p && p.atlas !== (await provenance()).atlas ?
+    'Made with a different version of the atlas; its predictions are kept as saved.' : null;
+}
 
 export interface SavedPlan {
   format: typeof FORMAT;
@@ -26,6 +59,8 @@ export interface SavedPlan {
   author: string;
   /** the study's ID, owner, day 0 and what each group receives (older plans: none) */
   study?: StudyMeta;
+  /** the atlas and app it was made with (older plans: none) */
+  provenance?: Provenance;
   /** pmxPlanStudy's inputs as its form gives them, the arms as a list: Plan reopens with them */
   inputs: {[param: string]: unknown, arms: Arm[]};
   /** what Plan predicted, as it was shown */
@@ -93,9 +128,10 @@ export async function planOf(name: string, call: DG.FuncCall, f: PlanFrames, stu
     weekdays: d.weekdays, startWeekday: d.startWeekday, endpointDay: v('endpoint_day'), nControl: n('n_control') ?? 40,
     arms: arms.map((arm, i) => ({name: arm.name, therapy: arm.therapy, killRate: a.get('kill_rate_per_day', i),
       n: arm.n ?? 40}))});
-  return savedPlan(name, inputs, {line: v('line'), endpoint: v('endpoint'), vRand: v('v_rand'),
+  return {...savedPlan(name, inputs, {line: v('line'), endpoint: v('endpoint'), vRand: v('v_rand'),
     studyEnd: v('study_end'), endpointDay: v('endpoint_day'), durationQ10: v('duration_q10'),
-    durationQ90: n('duration_q90'), nControl: n('n_control'), arms, checks}, study);
+    durationQ90: n('duration_q90'), nControl: n('n_control'), arms, checks}, study),
+  provenance: await provenance()};
 }
 
 /** A plan read from a file someone may have edited or sent: checked before use. */
@@ -126,6 +162,11 @@ export function parsePlan(text: string): SavedPlan {
     p.study = study;
   else
     delete p.study;
+  const prov = provenanceOf(p.provenance);
+  if (prov)
+    p.provenance = prov;
+  else
+    delete p.provenance;
   return p as SavedPlan;
 }
 

@@ -22,7 +22,7 @@ import {openStage, showStage} from './stages';
 import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
 import {followPlan} from './monitor-view';
-import {SavedPlan, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
+import {SavedPlan, atlasNote, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
 import {labHumane} from './study-file';
 import {StudyMeta, dateOf, dateText, dosingDays, emptyMeta, weekdayOf, withId} from './study-meta';
 import {CAL, MenuAt, WEEKDAYS, dayActions, icsOf, mark, marked, weeksGrid} from './calendar';
@@ -203,7 +203,7 @@ export async function openPlanFile(content: string): Promise<DG.DataFrame[]> {
 }
 
 /** What Plan opens with: a saved plan, or only its name, details and form. */
-export type PlanStart = Pick<SavedPlan, 'name' | 'study'> & {inputs: {[param: string]: unknown}};
+export type PlanStart = Pick<SavedPlan, 'name' | 'study' | 'provenance'> & {inputs: {[param: string]: unknown}};
 
 // each Plan view's call (its form's inputs, hidden ones too), by its host: what the package's tests read
 const planCalls = new WeakMap<ViewHost, DG.FuncCall>();
@@ -893,7 +893,11 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     scenarioEnd.textContent = `The study ends on day ${r.scenarios.get('study_end', 0)} in every scenario.`;
     scenarioBox.replaceChildren(scenariosTable(r.scenarios, r.plan.get('per_week', 0)));
   });
-  const content = divV([cards, panels], 'pmx-plan-content');
+  // a plan made with another atlas says so, once, above its numbers
+  const atlasLine = div([], 'ui-label-details');
+  atlasLine.hidden = true;
+  void atlasNote(initial?.provenance).then((t) => t && (atlasLine.hidden = !(atlasLine.textContent = t)), () => {});
+  const content = divV([atlasLine, cards, panels], 'pmx-plan-content');
   Object.assign(content.style, {gap: 'var(--dg-space-l)'});
 
   // a calendar change: its own loader, the calendar dimmed, the page in view; a plan from the form clears its note
@@ -1033,8 +1037,10 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   downloadButton.title = 'Download the plan as a file, to send it to someone';
   exports.push(['Report (PDF)…', async () => {
     const r = ready();
-    if (r)
-      printSheet(await reportHtml({title: defaultName(r), stage: 'Plan', meta: meta.peek(), content}));
+    if (r) {
+      printSheet(await reportHtml({title: defaultName(r), stage: 'Plan', meta: meta.peek(), content,
+        provenance: initial?.provenance}));
+    }
   }], ['Plan file (.pmxplan)', () => downloadButton.click()],
   ['Copy the study protocol', () => {
     if (!ready())

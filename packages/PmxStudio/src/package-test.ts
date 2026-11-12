@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from './package';
 import './tests/priors-tests';
 import './tests/plan-tests';
+import './tests/provenance-tests';
 import './tests/analyze-tests';
 import './tests/band-chart-tests';
 import './tests/monitor-tests';

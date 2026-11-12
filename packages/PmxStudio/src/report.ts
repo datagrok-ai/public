@@ -7,6 +7,7 @@ import * as grok from 'datagrok-api/grok';
 import * as echarts from 'echarts/core';
 
 import {esc} from './sheet';
+import {Provenance, provenance} from './plan-file';
 import type {LogEntry} from './study-file';
 import {StudyMeta, dateOf, dateText} from './study-meta';
 
@@ -74,7 +75,7 @@ const table =(head: string[], rows: unknown[][]) => `<table><tr>${head.map((h) =
 /** The report: `content` (the stage's results) as shown, its charts as images, after a title; then the study's
  *  details, its notes by day and its log. */
 export async function reportHtml(o: {title: string, stage: string, meta: StudyMeta | null, content: HTMLElement,
-  log?: LogEntry[], annex?: [string, HTMLElement][]}): Promise<string> {
+  log?: LogEntry[], annex?: [string, HTMLElement][], provenance?: Provenance}): Promise<string> {
   const charts = [...o.content.querySelectorAll<HTMLElement>('[_echarts_instance_], .d4-viewer')]
     .filter((el) => el.offsetParent !== null && !el.parentElement?.closest('[_echarts_instance_], .d4-viewer'));
   const images = await Promise.all(charts.map(imageOf));
@@ -96,8 +97,10 @@ export async function reportHtml(o: {title: string, stage: string, meta: StudyMe
     .forEach((e) => e.remove());
 
   const m = o.meta;
+  const prov = o.provenance ?? await provenance();
   const day0 = dateOf(m?.start ?? null, 0);
   const sub = [m?.id, o.stage, day0 ? `Day 0: ${dateText(day0, true)}` : '',
+    `PMX Studio ${prov.app}, atlas ${prov.atlas.slice(0, 12)}`,
     `Exported ${new Date().toISOString().slice(0, 10)} by ${grok.shell.user?.login ?? ''}`].filter((x) => x);
   const details = !m ? '' : '<h2>Study details</h2>' + [m.description ? `<p>${esc(m.description)}</p>` : '',
     table(['Owner', 'Project', 'Tags', 'Blinded entry'], [[m.owner, m.project, m.tags.join(', '),

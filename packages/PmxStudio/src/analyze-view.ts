@@ -23,7 +23,7 @@ import {askedOf, autoRun, axisAt, callInputs, cardGrid, dayText, keepSame, onTab
   exampleLine, infoNote, noteLine, notesBox, num, pct, pValue, settleForm, signed, isBodyWeight, keepNamedColumns,
   sized, markStage,
   statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
-import {logOf, restoreFields} from './study-file';
+import {logOf, planProvenance, restoreFields} from './study-file';
 import {openStage} from './stages';
 import {noEffectNote, observedCell, planInput, planTab} from './plan-vs-observed';
 import {nciReadings, NciReading, tolerabilityTab} from './tolerability';
@@ -1097,7 +1097,8 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     ['Report (PDF)…', async () => {
       const {df, r} = studyNow();
       printSheet(await panels.all(() => reportHtml({title: r.analysis.name, stage: 'Analyze', meta: metaOf(df),
-        content, log: logOf(df), annex: [['Results', summary], ['Statistics', statsTable],
+        content, log: logOf(df), provenance: planProvenance(df),
+        annex: [['Results', summary], ['Statistics', statsTable],
           ['Analysis protocol', protocol]]})));
     }],
     ['Copy the results summary', () => copied(summaryText, 'Results summary')],

@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
 
 import {_package} from './package';
-import {PLAN_TAG, SavedPlan, fileNameOf, parsePlan} from './plan-file';
+import {PLAN_TAG, Provenance, SavedPlan, fileNameOf, parsePlan, provenance, provenanceOf} from './plan-file';
 import {StudyMeta, metaOf, parseMeta, setMetaOn} from './study-meta';
 
 export const STUDY_EXT = 'pmxstudy';
@@ -49,6 +49,8 @@ export interface SavedStudy {
   weightLimit?: number | null;
   /** the study's ID, owner, dates and what each group receives (older files: none) */
   meta?: StudyMeta;
+  /** the atlas and app it was saved with (older files: none) */
+  provenance?: Provenance;
   /** the tumor model chosen in Monitor (older files: none); a plan's model comes first */
   line?: string;
   /** `weight`: only when the study has body weights; the marks only on marked rows */
@@ -193,10 +195,23 @@ export function parseStudy(text: string): SavedStudy {
   if (s.plan)
     parsePlan(JSON.stringify(s.plan));
   // a field this version does not know is kept as it came; the model only as a name
-  const {line, ...rest} = s;
-  return {...rest, ...typeof line === 'string' && line ? {line} : {},
+  const {line, provenance: prov, ...rest} = s;
+  return {...rest, ...provenanceOf(prov) ? {provenance: provenanceOf(prov)} : {},
+    ...typeof line === 'string' && line ? {line} : {},
     name: typeof s.name === 'string' ? s.name : '', looks: typeof s.looks === 'string' ? s.looks : ''} as SavedStudy;
 }
+
+/** What a study table's plan was made with (none: no plan, or one saved before provenance was kept). */
+export function planProvenance(df: DG.DataFrame | null): Provenance | undefined {
+  try {
+    return provenanceOf(JSON.parse(df?.getTag(PLAN_TAG) || 'null')?.provenance);
+  } catch {
+    return undefined; // a damaged plan: Analyze says so
+  }
+}
+
+/** The study with what it is saved with (the atlas and app now). */
+export const stamped = async (s: SavedStudy): Promise<SavedStudy> => ({...s, provenance: await provenance()});
 
 /** The measurements table of a saved study, with its plan, reviews, limits and log in tags. */
 export function tableOf(s: SavedStudy): DG.DataFrame {
@@ -250,6 +265,7 @@ export async function saveStudy(s: SavedStudy): Promise<string> {
     await grok.dapi.files.readAsText(path).then((t) => JSON.parse(t)?.meta?.id ?? null).catch(() => null) : null;
   if (other && s.meta?.id && other !== s.meta.id)
     throw new Error(`Another study (${other}) is saved as "${s.name}": rename this one to save it`);
-  await grok.dapi.files.writeAsText(path, JSON.stringify(s, null, 2)); // (its index row, now older, is read again)
+  await grok.dapi.files.writeAsText(path, JSON.stringify(await stamped(s), null, 2));
+  // (its index row, now older than the file, is read again)
   return path;
 }

@@ -17,10 +17,11 @@ import {analyzeView} from './analyze-view';
 import {BandChart} from './band-chart';
 import {WEEKDAY_NAMES, groupColors, weekdaysOf} from './frames';
 import {allocateGroups, MonitorFrames, monitorFrames, MonitorInputs, outsideBand, promptsByChance} from './monitor';
-import {PLAN_TAG, SavedPlan, parsePlan} from './plan-file';
+import {PLAN_TAG, SavedPlan, atlasNote, parsePlan} from './plan-file';
 import {planInput} from './plan-vs-observed';
 import {openStage, showStage} from './stages';
 import {LIMITS_TAG, LINE_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf, newStudyTable, parseStudy,
+  planProvenance, stamped,
   restoreFields, roleColumns, saveStudy, studyOf, tableOf} from './study-file';
 import {editLayout, panelTabs, Tab} from './panels';
 import {stagePage, studyHeader} from './study-header';
@@ -779,7 +780,12 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   ], MONITOR_TABS, 'pmx-monitor-panels', 'monitor');
   exports.push(['Layout…', () => editLayout(panels.root), 'View']);
 
-  const content = divV([cards, panels.root], 'pmx-monitor-content');
+  // a study whose plan was made with another atlas says so, once, above its numbers
+  const atlasLine = div([], 'ui-label-details');
+  atlasLine.hidden = true;
+  void atlasNote(planProvenance(initial ?? null)).then((t) => t && (atlasLine.hidden = !(atlasLine.textContent = t)),
+    () => {});
+  const content = divV([atlasLine, cards, panels.root], 'pmx-monitor-content');
   const needStudy = () => studyTable() ?? (() => {
     throw new Error('Open a study first');
   })();
@@ -790,13 +796,13 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       if (busy.peek() || stale.peek() || !result.peek())
         throw new Error('The forecasts are not up to date yet: export the report once they are');
       printSheet(await panels.all(() => reportHtml({title: df.name, stage: 'Monitor', meta: metaOf(df), content,
-        log: logOf(df)})));
+        provenance: planProvenance(df), log: logOf(df)})));
     }],
     ['Study file (.pmxstudy)', () => {
       const df = needStudy();
       remember();
-      download(`${df.name}.pmxstudy`, JSON.stringify(studyOf(df, call.getParamValue('humane') ?? null,
-        call.getParamValue('weightLimit') ?? null)), 'application/json');
+      void stamped(studyOf(df, call.getParamValue('humane') ?? null, call.getParamValue('weightLimit') ?? null))
+        .then((s) => download(`${df.name}.pmxstudy`, JSON.stringify(s), 'application/json'), failed);
     }],
     ['Measurements (CSV)', () => download(`${needStudy().name}.csv`, needStudy().toCsv(), 'text/csv')],
     ['Calendar (.ics)', () => {
