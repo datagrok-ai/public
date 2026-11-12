@@ -715,9 +715,10 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
 
   // the protocol's Copy button, and beside it the same facts in the wording of an ethics application
   const protocolCopy = copyRow(() => protocolText, 'Study protocol');
-  protocolCopy.append(buttonWithIcon('Copy for an ethics application', 'copy', () => void navigator.clipboard
-    .writeText(ethicsApplication).then(() => grok.shell.info('Text for an ethics application copied'),
-      () => grok.shell.warning('Text for an ethics application: the clipboard is not available'))));
+  protocolCopy.append(buttonWithIcon('Copy for an ethics application', 'copy', () => !ethicsApplication ?
+    grok.shell.warning('Plan the study first') : void navigator.clipboard.writeText(ethicsApplication)
+      .then(() => grok.shell.info('Text for an ethics application copied'),
+        () => grok.shell.warning('Text for an ethics application: the clipboard is not available'))));
 
   const {row: scaleRow, log} = volumeAxis();
   const growth = new BandChart(computed(() => result.value?.curves), {x: 'day', lower: 'q05', upper: 'q95',

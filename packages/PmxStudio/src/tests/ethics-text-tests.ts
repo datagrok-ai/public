@@ -89,4 +89,27 @@ category('Ethics text', () => {
       'Holm correction is applied; each group is sized at α = 0.025.\n\n' +
       paragraph2(AVERAGE, 'one control group serves both treated groups; ', COMPUTED_END));
   });
+
+  test('one arm without a size beside two with one; all three share the control', async () => {
+    expect(ethicsText({...base, nTotal: null, arms: [arm('A', 8), arm('B', null, '—', 'TGI 30%'),
+      arm('C', 12, '82%', 'TGI 45%')]}), '4 groups: a control and A (chemotherapy, expected TGI 60%), B ' +
+      '(chemotherapy, expected TGI 30%), C (chemotherapy, expected TGI 45%); each treated group is compared with the ' +
+      'control. We request 8 analyzable animals for A (80% power to detect TGI 60%), 12 for C (82% power to detect ' +
+      'TGI 45%), with a control group as large as the largest treated group, at a two-sided significance level of ' +
+      '0.05. No group size up to 40 reaches 80% power for TGI 30%; the study is not adequately powered to detect it. ' +
+      '[Explain why effects of TGI 60%, TGI 30% and TGI 45% are expected or are the smallest effects of interest.] ' +
+      `${SIMULATED} ${FEWER} With 3 comparisons, Holm correction is applied; each group is sized at α = 0.025.\n\n` +
+      `${LOST} ${reduction('one control group serves all 3 treated groups; ')} ${COMPUTED_END}`);
+  });
+
+  test('two arms without a size; one arm at the minimum beside a larger one', async () => {
+    expect(ethicsText({...base, nTotal: null, arms: [arm('A', null, '—'), arm('B', null, '—', 'TGI 45%')]}),
+      `${TWO_ARMS.replace('B (chemotherapy, expected TGI 60%)', 'B (chemotherapy, expected TGI 45%)')} No group ` +
+      'size up to 40 reaches 80% power for TGI 60% and TGI 45%; the study is not adequately powered to detect them. ' +
+      '[Explain why effects of TGI 60% and TGI 45% are expected or are the smallest effects of interest.] With 2 ' +
+      'comparisons, Holm correction is applied; each group is sized at α = 0.025.\n\n' +
+      `${LOST} ${reduction('one control group serves both treated groups; ')} ${COMPUTED_END}`);
+    expect(ethicsText({...base, arms: [arm('A', 5), arm('B', 12, '82%', 'TGI 45%')]}).includes(`${SIMULATED} We use ` +
+      'five per group as a minimum, so that losing one animal still leaves a usable comparison. With 2'), true);
+  });
 });

@@ -31,23 +31,30 @@ export interface EthicsFacts {
 
 export function ethicsText(f: EthicsFacts): string {
   const k = f.arms.length;
-  const uniq = (xs: string[]) => [...new Set(xs)].join(' and ');
+  // the distinct values written as a list ('a', 'a and b', 'a, b and c')
+  const uniq = (xs: string[]) => [...new Set(xs)].join(', ').replace(/, ([^,]*)$/, ' and $1');
   const unreachable = f.arms.filter((a) => a.n === null);
-  const same = f.arms.every((a) => a.n === f.arms[0].n && a.power === f.arms[0].power && a.effect === f.arms[0].effect);
-  const nMax = Math.max(...f.arms.map((a) => a.n ?? 0));
+  // the arms with a size are always stated, also beside one that has none
+  const sized = f.arms.filter((a) => a.n !== null);
+  const same = unreachable.length === 0 &&
+    f.arms.every((a) => a.n === f.arms[0].n && a.power === f.arms[0].power && a.effect === f.arms[0].effect);
+  const nMax = Math.max(...sized.map((a) => a.n!), 0);
+  const nMin = Math.min(...sized.map((a) => a.n!));
   const control = k === 1 ? ` and ${nMax} controls` : ', with a control group as large as the largest treated group';
-  const request = unreachable.length > 0 ?
-    `No group size up to 40 reaches ${f.target} power for ${uniq(unreachable.map((a) => a.effect))}; the study is ` +
-    'not adequately powered to detect it.' :
+  const notReached = new Set(unreachable.map((a) => a.effect)).size;
+  const request = [sized.length === 0 ? '' :
     same ? `We request ${nMax} analyzable animals per treated group${control}, which gives ${f.arms[0].power} ` +
       `power to detect ${f.arms[0].effect} at a two-sided significance level of ${f.alpha}.` :
-      `We request ${f.arms.map((a, i) => `${a.n}${i === 0 ? ' analyzable animals' : ''} for ${a.name} ` +
+      `We request ${sized.map((a, i) => `${a.n}${i === 0 ? ' analyzable animals' : ''} for ${a.name} ` +
         `(${a.power} power to detect ${a.effect})`).join(', ')}${control}, at a two-sided significance level of ` +
-        `${f.alpha}.`;
-  const size = unreachable.length > 0 ? '' : f.nFixed ?
+        `${f.alpha}.`,
+  unreachable.length === 0 ? '' : `No group size up to 40 reaches ${f.target} power for ` +
+    `${uniq(unreachable.map((a) => a.effect))}; the study is not adequately powered to detect ` +
+    `${notReached > 1 ? 'them' : 'it'}.`].filter((s) => s).join(' ');
+  const size = sized.length === 0 ? '' : f.nFixed ?
     ' The group size was chosen by us; the power stated above is what this size provides.' :
     ` This is the smallest group size that reaches ${f.target} power, estimated by simulating tumor growth from the ` +
-    `controls of ${f.papers} published ${f.line} studies. ` + (nMax > f.minGroup ?
+    `controls of ${f.papers} published ${f.line} studies. ` + (nMin > f.minGroup ?
       `Fewer animals per group would fall below ${f.target} power and risk an inconclusive study that may need to ` +
       'be repeated.' : 'We use five per group as a minimum, so that losing one animal still leaves a usable ' +
       'comparison.');
@@ -59,7 +66,7 @@ export function ethicsText(f: EthicsFacts): string {
   const effects = [...new Set(f.arms.map((a) => a.effect))];
   const p1 = `${k + 1} groups: a control and ${arms}; each treated group is compared with the control. ${request} ` +
     (effects.length === 1 ? `[Explain why an effect of ${effects[0]} is expected or is the smallest effect of ` +
-      'interest.]' : `[Explain why effects of ${effects.join(' and ')} are expected or are the smallest effects of ` +
+      'interest.]' : `[Explain why effects of ${uniq(effects)} are expected or are the smallest effects of ` +
       'interest.]') + `${size}${multiple}`;
   const lost = `About ${f.preLoss} of implanted animals are expected to be lost before randomization (no tumor take, ` +
     `tumor outside the volume window) and ${f.postLoss} after it (ulceration, deaths, technical failures).`;
