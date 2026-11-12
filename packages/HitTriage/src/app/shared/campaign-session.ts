@@ -454,7 +454,6 @@ export function openCampaignSession(app: HitDesignApp, view: DG.TableView,
       });
     }
 
-    /** The time of the campaign's last save in the save log, null while it has none. */
     async function lastSaved(campaignId: string): Promise<string | null> {
       const df = await api.queries.getLastModified(app.appName, campaignId);
       return df.rowCount > 0 ? df.col('updated_at')?.getString(0) ?? null : null;
