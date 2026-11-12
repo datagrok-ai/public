@@ -64,7 +64,7 @@ export class ViewHandler {
         this.toolbox.applyFilter();
       const v = this.getCurrentView();
       await v.viewersReady;
-      if (state.rout && v.rout !== state.rout)
+      if (state.rout && this.getCurrentView() === v && v.rout !== state.rout)
         this.routButtons[v.name]?.[state.rout]?.click();
     } finally {
       if (this.pendingState === state)
