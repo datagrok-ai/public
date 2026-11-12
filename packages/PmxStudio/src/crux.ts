@@ -151,6 +151,9 @@ export const cruxCalls = () => calls;
  *  plainError). */
 export class EngineError extends Error {}
 
+/** Not a failure: what is still missing before a stage can show anything (shown plainly, not as an error). */
+export class EmptyState extends Error {}
+
 /** Calls the crux-fn `name` (e.g. 'stats.map_prior') on `table` (column name -> values) with `params`. */
 export const crux = (name: string, table: {[col: string]: any}, params: object = {}): Promise<CruxResult> => {
   calls++;

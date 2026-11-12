@@ -443,7 +443,7 @@ export function declarationPane(form: HTMLElement): HTMLElement {
  *  bar, what was shown left in view. `before`: shown between the note and the results (an empty state). */
 export function stagePanes(form: FuncCallForm, content: HTMLElement, o: {busy: ReadonlySignal<boolean>,
   result: ReadonlySignal<unknown>, error: ReadonlySignal<string | null>, stale: ReadonlySignal<boolean>,
-  busyText: string, staleText: string, before?: HTMLElement[]}): Splitter {
+  busyText: string, staleText: string, before?: HTMLElement[], empty?: ReadonlySignal<boolean>}): Splitter {
   const overlay = busyOverlay(o.busyText);
   const bar = busyBar();
   form.effect(() => {
@@ -451,10 +451,13 @@ export function stagePanes(form: FuncCallForm, content: HTMLElement, o: {busy: R
     bar.hidden = !o.busy.value || o.result.value === undefined;
   });
   const failure = div([], 'pmx-stage-error');
-  Object.assign(failure.style, {color: 'var(--dg-error-color, #c62828)'});
   form.effect(() => {
+    // an empty state (o.empty) is said plainly; a failure in the error's colour
+    const empty = o.empty?.value ?? false;
+    failure.style.color = empty ? '' : 'var(--dg-error-color, #c62828)';
     failure.hidden = o.error.value === null;
-    failure.replaceChildren(...(o.error.value === null ? [] : [noteLine(o.error.value, 'error')]));
+    failure.replaceChildren(...(o.error.value === null ? [] : [empty ? span(o.error.value) :
+      noteLine(o.error.value, 'error')]));
   });
   const outdated = staleNote(`A field is missing or invalid: ${o.staleText}`);
   form.effect(() => {

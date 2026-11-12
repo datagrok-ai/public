@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {AnalysisInputs, analysisDeclarationOf, pairGroups, tolerabilityFrames, twinModel} from './analyze';
 import {ARCHETYPES} from './archetypes';
-import {crux, CruxResult, named, rows} from './crux';
+import {crux, CruxResult, EmptyState, named, rows} from './crux';
 import {HUMANE, LAB_WEEKDAYS, TEST, designStudy, finite} from './engine';
 import {gpu} from './gpu';
 import {SavedPlan} from './plan-file';
@@ -197,7 +197,7 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
   const [animal, group, day, volume] = [pick(d.data.animal), pick(d.data.group), pick(d.data.day), pick(d.data.volume)];
   if (day.length === 0) {
     // rows held back for a missing animal, group or day are not "no measurements": say what they lack
-    throw new Error(d.data.skipped > 0 ? 'No row of the study table has its animal, group, day and volume yet: ' +
+    throw new EmptyState(d.data.skipped > 0 ? 'No row of the study table has its animal, group, day and volume yet: ' +
       'fill them in, and the forecasts follow.' : 'The study has no measurements yet: paste or type the volumes ' +
       'into the study table, and the forecasts follow.');
   }

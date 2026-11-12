@@ -27,6 +27,7 @@ import {editLayout, panelTabs, Tab} from './panels';
 import {stagePage, studyHeader} from './study-header';
 import {animalMarks, emptyStudy, studyDataLine, studyMenu, studyOf as studyNamesOf, tagStudy, withoutExcluded}
   from './study-table';
+import {EmptyState} from './crux';
 import {StudyMeta, dateOf, dateText, emptyMeta, metaOf, setMetaOn, weekdayOf, withId} from './study-meta';
 import {CAL, DayLook, dayActions, dayToday, icsOf, mark, marked, weeksGrid} from './calendar';
 import {LineInput} from './line-input';
@@ -82,6 +83,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   const call = DG.Func.byName('PmxStudio:pmxMonitorStudy').prepare();
   const result = signal<MonitorFrames | undefined>(undefined);
   const error = signal<string | null>(null);
+  // the error is an empty state (nothing measured yet), not a failure
+  const empty = signal(false);
   const stale = signal(false);
   const busy = signal(false);
   // the log's version: what it records (a reveal, the blinding switched) changes what is shown
@@ -152,6 +155,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       if (mine !== latest)
         return;
       error.value = null;
+      empty.value = false;
       stale.value = askedOf(call) !== sent;
       // the reviews stay with the study from its first run
       const df = studyTable();
@@ -163,7 +167,9 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     } catch (e: any) {
       // only the last run speaks: an older one failing late would write over a newer result's place
       if (mine === latest) {
-        error.value = plainError(e, 'The forecast could not be computed. Try again; if it fails again, reload the ' +
+        empty.value = e instanceof EmptyState;
+        error.value = e instanceof EmptyState ? e.message : plainError(e, 'The forecast could not be computed. ' +
+          'Try again; if it fails again, reload the ' +
           'page.');
         // what is shown is no longer what the table or the form says
         stale.value = result.peek() !== undefined;
@@ -828,7 +834,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     content.hidden = !result.value;
     start.hidden = !!result.value;
   });
-  const panes = stagePanes(form, content, {busy, result, error, stale, before: [start, firstGroups, dataLine.root],
+  const panes = stagePanes(form, content, {busy, result, error, stale, empty,
+    before: [start, firstGroups, dataLine.root],
     busyText: 'Forecasting the study…', staleText: 'the forecasts shown are for the last complete inputs'});
   // a session's values pasted or typed into the table: the forecasts follow, after a pause (one value, then the next)
   self.own(onTableEdits(form, computed(() => [result.value, error.value]),
