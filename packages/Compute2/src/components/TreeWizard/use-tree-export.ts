@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as Vue from 'vue';
 import {isFuncCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {ExportOption, TreeExportContext, exportWorkflow, workflowExports} from '../../run-exports';
-import {downloadFile} from './tree-export';
+import {downloadFile} from '../../call-export';
 import type {DriverAPI} from '../../composables/use-reactive-tree-driver';
 
 export function useTreeExport({treeState, states, currentMetaCallData, hasNotSavedEdits}: DriverAPI) {

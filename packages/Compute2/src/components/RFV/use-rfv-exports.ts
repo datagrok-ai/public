@@ -7,7 +7,7 @@ import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-drive
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {canUseResults} from '../../utils';
 import {saveCallToProject, DfExportEntry} from '../../project-export';
-import {downloadFile} from '../TreeWizard/tree-export';
+import {downloadFile} from '../../call-export';
 import {callExports, exportCall} from '../../run-exports';
 
 const PROJECT_EXPORT = 'project';

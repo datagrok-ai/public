@@ -105,12 +105,23 @@ export interface ExportCbInput {
   description?: Record<string, string | string[]>,
 }
 
+/** What a `meta.customExports` function gets besides `funcCall` (and the legacy `startDownload`). */
+export type CustomExportArgs = {
+  validationState?: Record<string, ValidationResult>,
+  consistencyState?: Record<string, ConsistencyInfo>,
+  isOutputOutdated?: boolean,
+  runError?: string,
+  viewersHook?: ViewersHook,
+  metaState?: Record<string, {value: any}>,
+};
+
 export type ExportUtils = {
   reportStateExcel: (pipelineState: PipelineState, cb?: (input: ExportCbInput) => Promise<void>) =>
     Promise<readonly [DG.FileInfo, Zippable, ExportSummaryItem[]]>;
   getExportSummary: (pipelineState: PipelineState) => ExportSummaryItem[];
   reportSummaryExcel: (pipelineState: PipelineState) => Promise<readonly [DG.FileInfo, ExcelJS.Workbook]>;
-  reportFuncCallExcel: (fc: DG.FuncCall, uuid: string) => Promise<readonly [DG.FileInfo, ExcelJS.Workbook]>;
+  // the step's report, with the step's own states
+  reportStepExcel: (fc: DG.FuncCall, uuid: string) => Promise<readonly [DG.FileInfo, ExcelJS.Workbook]>;
   getFuncCallCustomExports: (fc: DG.FuncCall) => string[];
   runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) => Promise<DG.FileInfo>;
 

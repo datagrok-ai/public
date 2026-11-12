@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {
-  ConsistencyInfo, ExportUtils, HeadlessResult, ItemMetadata, LoadedRun, PipelineInstanceConfigInput, RunState,
-  ValidationResult, ViewersHook, normalizePipelineInstanceConfig,
+  CustomExportArgs, ExportUtils, HeadlessResult, ItemMetadata, LoadedRun, PipelineInstanceConfigInput, RunState,
+  normalizePipelineInstanceConfig,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
 
 type ConstructorTypeOf<T> = new (...args:any[]) => T;
@@ -100,14 +100,11 @@ export async function loadWorkflowRun(id: string): Promise<LoadedRun> {
   return call.getOutputParamValue();
 }
 
-/** The default Excel report of a run, as its export menu builds it, for a custom export to start from. Pass on
- * the `viewersHook` and `metaState` the export gets, so that a workflow step's report uses the step's hook, and
- * `isOutputOutdated`, so that the file says whether the run is completed. */
+/** The default Excel report of a run, as its export menu builds it, for a custom export to start from: pass on
+ * the args the export gets, so that a workflow step's report uses the step's hook and meta, and the file says
+ * whether the run is completed. */
 export async function reportFuncCallExcel(funcCall: DG.FuncCall, {validationState, consistencyState, viewersHook,
-  metaState, isOutputOutdated}: {
-  validationState?: Record<string, ValidationResult>, consistencyState?: Record<string, ConsistencyInfo>,
-  viewersHook?: ViewersHook, metaState?: Record<string, {value: any}>, isOutputOutdated?: boolean,
-} = {}): ReturnType<ExportUtils['reportFuncCallExcel']> {
+  metaState, isOutputOutdated}: CustomExportArgs = {}): ReturnType<ExportUtils['reportStepExcel']> {
   const reportFunc = DG.Func.find({package: 'Compute2', name: 'ReportFuncCallExcel'})[0];
   const call = reportFunc.prepare({funcCall, validationState, consistencyState, viewersHook, metaState,
     isOutputOutdated});

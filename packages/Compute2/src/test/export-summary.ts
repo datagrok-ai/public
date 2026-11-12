@@ -189,11 +189,11 @@ category('Export: custom export utils', () => {
     fc = await DG.Func.byName('Compute2:ViewersHookModel').prepare({n: 2}).call();
   });
 
-  test('reportFuncCallExcel applies the step\'s viewers hook and meta, as the step file does', async () => {
+  test('reportStepExcel applies the step\'s viewers hook and meta, as the step file does', async () => {
     const applied: any[] = [];
     const state = withExport([{...step('hooked', fc), viewersHook: (ioName: string, type: string, _v: any, meta: any) =>
       applied.push([ioName, type, meta])}], async (_state, utils) => {
-      const [file] = await utils.reportFuncCallExcel(fc, 'hooked');
+      const [file] = await utils.reportStepExcel(fc, 'hooked');
       return file;
     });
     await exportWorkflow(state, 'custom', {
@@ -251,7 +251,7 @@ category('Export: custom export utils', () => {
   test('The default report utils return files named after the run', async () => {
     const names: string[] = [];
     const state = withExport([step('s', fc)], async (state, utils) => {
-      const [stepFile] = await utils.reportFuncCallExcel(fc, 's');
+      const [stepFile] = await utils.reportStepExcel(fc, 's');
       const [zip] = await utils.reportStateExcel(state);
       const [summary] = await utils.reportSummaryExcel(state);
       names.push(stepFile.fileName, zip.fileName, summary.fileName);

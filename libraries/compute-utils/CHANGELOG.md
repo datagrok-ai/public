@@ -3,13 +3,12 @@
 ## v.next
 
 * RTD: A workflow custom export can be `preferred`, which lists it first in the Export menu
-* CustomFunctionView: A host can add exports to the Export menu (`hostExports`); a failing export shows an error
 * RTD: A step's viewers hook from its script that can't be made no longer fails the workflow config; `loadViewersHook` makes a function's hook, or warns and returns none
 * Export: Fixed the Excel report failing with "0 is out of bounds" on a table with no columns; its sheet is left empty
 * RTD: Added `loadSavedTree`, which loads a saved workflow run without UI as the editor opens it
 * RTD: A saved workflow run records whether every step's outputs were current (`RUN_COMPLETED` option, read with `readRunCompleted`)
 * RTD: A workflow custom export handler and `ExportUtils.runFuncCallCustomExport` return the exported file (`DG.FileInfo`); like a `meta.customExports` function, a handler gets `startDownload`, always false
-* RTD: `ExportUtils` reports return a `DG.FileInfo` named after the run in place of the Blob: `reportStateExcel` returns `[file, Zippable, summary]`, `reportFuncCallExcel` and `reportSummaryExcel` return `[file, Workbook]` (breaking: `reportStateExcel` no longer returns the file name, so the summary is the 3rd element); `getFuncCallCustomExports` lists the exports with a function, in menu order, and the `reportStateExcel` callback is typed `(input) => Promise<void>`, which an async callback compiles against
+* RTD: `ExportUtils` reports return a `DG.FileInfo` named after the run in place of the Blob: `reportStateExcel` returns `[file, Zippable, summary]`, `reportFuncCallExcel` and `reportSummaryExcel` return `[file, Workbook]` (breaking: `reportStateExcel` no longer returns the file name, so the summary is the 3rd element); `getFuncCallCustomExports` lists the exports with a function, in menu order, and the `reportStateExcel` callback is typed `(input) => Promise<void>`, which an async callback compiles against; `ExportUtils.reportFuncCallExcel` is renamed `reportStepExcel` (breaking), and `CustomExportArgs` types the args a `meta.customExports` function gets
 * RTD: Fixed the workflow `disableDefaultExport` option being ignored: it never reached the workflow state, so the default export stayed in the Export menu and in a compact view's step
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Export: Fixed a failing Excel report rejecting with "Format is not supported" instead of its own error

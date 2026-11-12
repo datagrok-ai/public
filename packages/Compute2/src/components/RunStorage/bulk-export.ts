@@ -18,6 +18,9 @@ export const modelKind = (model: DG.Func, stepHistory: boolean): ModelKind =>
 
 /** The exports of a model's runs as the menus list them; a workflow's come from its current config. */
 export async function modelExports(model: DG.Func, kind: ModelKind): Promise<ExportOption[]> {
+  // a custom view has only its own exportConfig, which needs the open view
+  if (model.options['editor'] === 'Compute2:CustomFunctionViewEditor')
+    return [];
   if (kind === 'call')
     return callExports(model);
   const config = await loadWorkflowConfig(model.options['provider'] ?? model.nqName).toPromise();
@@ -50,7 +53,7 @@ export async function exportRuns(jobs: ExportJob[], {onProgress, isCancelled, vi
       break;
     try {
       const file = kind === 'workflow' ? await exportSavedWorkflow(item.run.id, exportId) :
-        await exportSavedCall(item.run.id, exportId, item.model, hookOf);
+        await exportSavedCall(item.run.id, exportId, hookOf);
       if (file)
         files.push({folders: item.folders, file});
       else

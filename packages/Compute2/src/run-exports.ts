@@ -27,9 +27,8 @@ import {
   RUN_ERROR_PATH, readOutputOutdated,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
-import {
-  callExcelReport, callFileName, exportedFile, getExportSummary, reportSummaryFile, reportTree,
-} from './components/TreeWizard/tree-export';
+import {getExportSummary, reportSummaryFile, reportTree} from './components/TreeWizard/tree-export';
+import {callExcelReport, callFileName, exportedFile} from './call-export';
 import {findNodeWithPathByUuid, resolveSingleStep} from './components/TreeWizard/tree-utils';
 import {runCompleted} from './components/RunStorage/run-storage';
 
@@ -55,7 +54,7 @@ export function callExports(func: DG.Func, hideDefault = false): ExportOption[] 
 
 export type CallExportStates = {
   viewersHook?: ViewersHook,
-  metaState?: Record<string, BehaviorSubject<any>>,
+  metaState?: Record<string, {value: any}>,
   validation?: Record<string, ValidationResult>,
   consistency?: Record<string, ConsistencyInfo>,
   isOutputOutdated?: boolean,
@@ -63,18 +62,17 @@ export type CallExportStates = {
   completed?: boolean,
 };
 
-/** Exports a call; custom exports come from `model`, which is a custom view's function for its runs. Every
- * export menu goes through here, so an export function always gets the same arguments. */
+/** Exports a call. Every export menu goes through here, so an export function always gets the same arguments. */
 export async function exportCall(
-  call: DG.FuncCall, exportId: string, states: CallExportStates = {}, model: DG.Func = call.func,
+  call: DG.FuncCall, exportId: string, states: CallExportStates = {},
 ): Promise<DG.FileInfo> {
   if (exportId === DEFAULT_EXPORT) {
     const [file] = await callExcelReport(call, states);
     return file;
   }
-  const item = Utils.getCustomExports(model).find((x) => x.name === exportId);
+  const item = Utils.getCustomExports(call.func).find((x) => x.name === exportId);
   if (!item)
-    throw new Error(`No export named ${exportId} is defined for ${model.nqName}`);
+    throw new Error(`No export named ${exportId} is defined for ${call.func.nqName}`);
   const result = await DG.Func.byName(item.function).apply({
     funcCall: call,
     startDownload: false,
@@ -87,16 +85,6 @@ export async function exportCall(
   });
   return exportedFile(result, exportId, callFileName(call, states.completed));
 }
-
-/** A custom view's run takes the viewers hook of its own function, which is not the view's function. */
-const callHook = (call: DG.FuncCall, model?: DG.Func,
-  hookOf: (func: DG.Func) => Promise<ViewersHook | undefined> = Utils.loadViewersHook) =>
-  hookOf(model?.name === call.func.name ? model : call.func);
-
-/** The Export menu of a custom view: the exports of its function, as bulk export runs them. */
-export const viewExports = (model: DG.Func) => callExports(model).map(({id, name}) => ({
-  name, export: async (call: DG.FuncCall) => exportCall(call, id, {viewersHook: await callHook(call, model)}, model),
-}));
 
 /** The exports of a workflow, in the menu's order: the first is the default. */
 export const workflowExports = (node: {disableDefaultExport?: boolean, customExports?: CustomExport[]}) =>
@@ -141,7 +129,7 @@ function stepStates(root: PipelineState, ctx: TreeExportContext, uuid: string): 
 /** The utils a workflow's custom export gets; a step is found in `root` by its uuid. */
 export function treeExportUtils(root: PipelineState, ctx: TreeExportContext): ExportUtils {
   return {
-    reportFuncCallExcel: (fc: DG.FuncCall, uuid: string) => callExcelReport(fc, stepStates(root, ctx, uuid)),
+    reportStepExcel: (fc: DG.FuncCall, uuid: string) => callExcelReport(fc, stepStates(root, ctx, uuid)),
     reportStateExcel: (state: PipelineState, cb?: (input: ExportCbInput) => Promise<void>) =>
       reportTree({treeState: state, ...reportStates(ctx), cb}),
     getExportSummary: (state: PipelineState) => getExportSummary(state, ctx.states),
@@ -189,15 +177,14 @@ export const exportSavedWorkflow = (runId: string, exportId: string) =>
     defer(() => exportTree(tree, metaCall, exportId)).pipe(finalize(() => tree.close())),
   )).toPromise() as Promise<DG.FileInfo | null>;
 
-/** Exports a saved run of `model`; the report takes the viewers hook of the run's function, which is not the
- * model for a custom view. */
-export async function exportSavedCall(runId: string, exportId: string, model?: DG.Func,
+/** Exports a saved run; a step's history passes the step's hook in place of the function's own. */
+export async function exportSavedCall(runId: string, exportId: string,
   hookOf: (func: DG.Func) => Promise<ViewersHook | undefined> = Utils.loadViewersHook) {
   const call = await historyUtils.loadRun(runId);
   return exportCall(call, exportId, {
-    viewersHook: await callHook(call, model, hookOf),
+    viewersHook: await hookOf(call.func),
     isOutputOutdated: readOutputOutdated(call),
     runError: call.options[RUN_ERROR_PATH] || undefined,
     completed: runCompleted(call),
-  }, model);
+  });
 }
