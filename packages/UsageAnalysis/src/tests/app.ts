@@ -47,14 +47,13 @@ category('App', () => {
   test('a project reopens the tab, its sub-view and the filters', async () => {
     const reopened = new ViewHandler();
     reopened.view.loadStateMap({tab: 'Functions', rout: '/ExecutionTime', filters: {date: 'this month'}});
-    expect(reopened.saveState()?.rout, '/ExecutionTime');
+    expect(reopened.saveState()?.rout, '/ExecutionTime', 'a save while the app loads keeps the state it restores');
     grok.shell.addView(reopened.view);
     try {
       await reopened.init();
-      await waitUntil(() => reopened.saveState()?.rout === '/ExecutionTime', 'the sub-view was not restored', 30000);
-      const state = reopened.saveState()!;
-      expect(state.tab, 'Functions');
-      expect(state.filters?.date, 'this month');
+      await waitUntil(() => reopened.getCurrentView().name === 'Functions' && reopened.getCurrentView().rout === '/ExecutionTime',
+        'the tab and its sub-view were not restored', 30000);
+      expect(reopened.view.path.includes('date=this%20month'), true, `the date filter was not applied: ${reopened.view.path}`);
     } finally {
       reopened.view.close();
     }

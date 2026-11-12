@@ -142,7 +142,10 @@ export class FuncFlowView extends DG.ViewBase {
     this.restoring = stateMap;
     void this.restoreState(state.scriptId ?? null, state.flow ?? null)
       .catch((e) => grok.shell.error(`Cannot restore flow "${this.name}": ${e instanceof Error ? e.message : e}`))
-      .finally(() => this.restoring = null);
+      .finally(() => {
+        if (this.restoring === stateMap)
+          this.restoring = null;
+      });
   }
 
   private async restoreState(scriptId: string | null, doc: FuncFlowDocument | null): Promise<void> {

@@ -67,7 +67,8 @@ export class ViewHandler {
       if (state.rout && v.rout !== state.rout)
         this.routButtons[v.name]?.[state.rout]?.click();
     } finally {
-      this.pendingState = undefined;
+      if (this.pendingState === state)
+        this.pendingState = undefined;
     }
   }
 
