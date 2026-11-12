@@ -212,10 +212,10 @@ category('Custom function view', () => {
   test('The editor adds the exports of the view function to the Export menu', async () => {
     const view: CustomFunctionView = await grok.functions.call('Compute2:CustomFunctionViewEditor',
       {call: DG.Func.byName(TEST_CUSTOM_VIEW).prepare({})});
-    expect(JSON.stringify(view.hostExports.map(({name}) => name)), JSON.stringify(['rec']));
+    expect(JSON.stringify(view.hostExports.map(({name}) => name)), JSON.stringify(['Default Excel', 'rec', 'hook']));
     expect(ribbonIcons(view).some((item) => !!item.querySelector('.fa-arrow-to-bottom')), true);
     view.funcCall!.inputs['a'] = 6;
-    const file = await view.hostExports[0].export(view.funcCall!);
+    const file = await view.hostExports.find(({name}) => name === 'rec')!.export(view.funcCall!);
     expect(new TextDecoder().decode(file.data), 'Compute2:TestAdd2|6');
   });
 

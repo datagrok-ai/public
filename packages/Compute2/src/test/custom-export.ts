@@ -1,6 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, expectExceptionAsync} from '@datagrok-libraries/test/src/test';
-import {applyCustomExport, exportedFile} from '../components/TreeWizard/tree-export';
+import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {replaceForWindowsPath} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {exportedFile} from '../components/TreeWizard/tree-export';
+import {exportCall, viewExports} from '../run-exports';
 
 // Headless check for the custom-export "report handler" contract: the function named in
 // `meta.customExports` (NOT the model itself) must run, receive the step's funcCall and return a file.
@@ -11,7 +14,7 @@ category('Custom export: report handler', () => {
     const model = DG.Func.byName('Compute2:TestCustomExportModel');
     const fc = model.prepare({a: 777});
 
-    const file = await applyCustomExport(fc, 'rec');
+    const file = await exportCall(fc, 'rec');
 
     expect(file instanceof DG.FileInfo, true, 'the export must return a file');
     expect(file.fileName, 'recorded.txt');
@@ -22,16 +25,16 @@ category('Custom export: report handler', () => {
   test('throws for an unknown export name', async () => {
     const model = DG.Func.byName('Compute2:TestCustomExportModel');
     const fc = model.prepare({a: 1});
-    await expectExceptionAsync(async () => {await applyCustomExport(fc, 'missing', {});});
+    await expectExceptionAsync(async () => {await exportCall(fc, 'missing');});
   });
 
   test('makes a file of the Blob a legacy export returns, telling it not to download', async () => {
     const fc = DG.Func.byName('Compute2:TestBlobExportModel').prepare({a: 1});
-    const file = await applyCustomExport(fc, 'blob');
-    expect(file.fileName, 'Compute2:TestBlobExportModel - Not completed');
+    const file = await exportCall(fc, 'blob');
+    expect(file.fileName, 'Compute2_TestBlobExportModel - Not completed');
     const ran = await fc.call();
-    const completed = await applyCustomExport(ran, 'blob', {}, ran.func, true);
-    expect(completed.fileName, `Compute2:TestBlobExportModel - ${ran.started}`);
+    const completed = await exportCall(ran, 'blob', {completed: true});
+    expect(completed.fileName, replaceForWindowsPath(`Compute2:TestBlobExportModel - ${ran.started}`));
     expect(new TextDecoder().decode(file.data), 'Compute2:TestBlobExportModel|false');
   });
 
@@ -44,6 +47,14 @@ category('Custom export: report handler', () => {
   test('throws for an export that returns no file', async () => {
     const model = DG.Func.byName('Compute2:TestCustomExportModel');
     const fc = model.prepare({a: 1});
-    await expectExceptionAsync(async () => {await applyCustomExport(fc, 'none');});
+    await expectExceptionAsync(async () => {await exportCall(fc, 'none');});
+  });
+
+  test('a custom view lists Default Excel and gives its exports the hook of the run\'s function', async () => {
+    const exports = viewExports(DG.Func.byName('Compute2:TestCustomView'));
+    expectDeepEqual(exports.map(({name}) => name), ['Default Excel', 'rec', 'hook']);
+    const call = DG.Func.byName('Compute2:ViewersHookModel').prepare({n: 2});
+    const file = await exports.find(({name}) => name === 'hook')!.export(call);
+    expect(new TextDecoder().decode(file.data), 'function|undefined');
   });
 });

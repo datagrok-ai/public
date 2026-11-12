@@ -181,7 +181,7 @@ category('Run storage: bulk export', () => {
     const saved = await f.save(call, {metadata: {name: uniqueName('Bulk call')}});
     expect(text(await exportSavedCall(saved.id, 'rec')), `${EXPORT_MODEL}|5`);
     const excel = await exportSavedCall(saved.id, DEFAULT_EXPORT);
-    expect(excel.fileName.startsWith(`${EXPORT_MODEL} - `), true, `unexpected file ${excel.fileName}`);
+    expect(excel.fileName.startsWith('Compute2_TestCustomExportModel - '), true, `unexpected file ${excel.fileName}`);
     expect(excel.fileName.endsWith('.xlsx') && excel.data.length > 0, true);
 
     const workflow = await saveWorkflow('Compute2:MockTreeWizardPipeline');
@@ -206,7 +206,7 @@ category('Run storage: bulk export', () => {
   test('Runs of a custom view export with the exports of its function', () => withRunStorage(async (f) => {
     const customView = DG.Func.byName(CUSTOM_VIEW);
     expectDeepEqual((await modelExports(customView, modelKind(customView, false))).map(({id}) => id),
-      [DEFAULT_EXPORT, 'rec']);
+      [DEFAULT_EXPORT, 'rec', 'hook']);
     const call = DG.Func.byName('Compute2:TestAdd2').prepare({a: 4, b: 1});
     await call.call();
     call.options[CUSTOM_VIEW_OPTION] = CUSTOM_VIEW;
@@ -231,7 +231,7 @@ category('Run storage: bulk export', () => {
     const completed = await exportSavedCall((await save(false)).id, DEFAULT_EXPORT);
     expect(completed.fileName.includes('Not completed'), false, `a completed run keeps its date, got ${completed.fileName}`);
     expect((await exportSavedCall((await save(true)).id, DEFAULT_EXPORT)).fileName,
-      `${EXPORT_MODEL} - Not completed.xlsx`);
+      'Compute2_TestCustomExportModel - Not completed.xlsx');
   }));
 
   test('A step\'s history exports with the step\'s hook, not its function\'s', () => withRunStorage(async (f) => {

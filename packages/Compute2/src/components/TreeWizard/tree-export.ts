@@ -6,13 +6,10 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
 import {richFunctionViewReport} from '@datagrok-libraries/compute-utils/shared-utils/export';
-import {
-  getCustomExports, getStartedOrNull, replaceForWindowsPath,
-} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {getStartedOrNull, replaceForWindowsPath} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import type ExcelJS from 'exceljs';
 import {FuncCallStateInfo, MetaCallInfo} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import type Dayjs from 'dayjs';
 import {ExportCbInput, ExportSummaryItem} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {
@@ -31,10 +28,15 @@ const XLSX_BLOB_TYPE = 'application/vnd.openxmlformats-officedocument.spreadshee
 
 const exportIndex = (idx: number) => String(idx + 1).padStart(3, '0');
 
+const titledName = (state: PipelineState, title?: string) => {
+  const stateName = state.friendlyName ?? state.configId;
+  return title ? `${stateName} - ${title}` : stateName;
+};
+
 const stepFileName = (state: StepFunCallState, idx: number, callInfo: FuncCallStateInfo, title?: string) => {
-  const rawFileName = getExportName(
-    state, callInfo.isOutputOutdated, title, getStartedOrNull(state.funcCall!), callInfo.runError);
-  return `${exportIndex(idx)}_${replaceForWindowsPath(rawFileName)}.xlsx`;
+  const started = getStartedOrNull(state.funcCall!);
+  const suffix = started && !callInfo.isOutputOutdated ? started : callInfo.runError ? 'failed' : 'Not completed';
+  return `${exportIndex(idx)}_${replaceForWindowsPath(`${titledName(state, title)} - ${suffix}`)}.xlsx`;
 };
 
 const workflowDirName = (state: Exclude<PipelineState, StepFunCallState>, idx: number) =>
@@ -106,7 +108,7 @@ export async function reportSummary(items: ExportSummaryItem[]) {
   return [new Blob([buffer], {type: XLSX_BLOB_TYPE}), wb] as const;
 }
 
-export const blobFile = async (fileName: string, blob: Blob) =>
+const blobFile = async (fileName: string, blob: Blob) =>
   DG.FileInfo.fromBytes(fileName, new Uint8Array(await blob.arrayBuffer()));
 
 /** The default Excel report of a call, named after its run, with its viewers built and hooked for it. */
@@ -204,27 +206,12 @@ export async function reportTree(
   return [file, zipConfig, summary] as const;
 }
 
-function getExportName(
-  state: PipelineState,
-  hasNotSavedEdits: boolean,
-  title?: string,
-  started?: Dayjs.Dayjs,
-  runError?: string,
-) {
-  const stateName = state.friendlyName ?? state.configId;
-  const name = title ? `${stateName} - ${title}` : stateName;
-  const fileName = (started && !hasNotSavedEdits) ? `${name} - ${started}` : (runError ? `${name} - failed` : `${name} - edited`);
-  return fileName;
-}
-
-export type TreeNameInfo = {meta?: MetaCallInfo, hasNotSavedEdits?: boolean, completed?: boolean};
+type TreeNameInfo = {meta?: MetaCallInfo, hasNotSavedEdits?: boolean, completed?: boolean};
 
 /** A workflow's files are named after its run: edited when it differs from the saved run, else completed or not. */
-export function treeFileName(state: PipelineState, {meta = {}, hasNotSavedEdits, completed}: TreeNameInfo) {
-  const stateName = state.friendlyName ?? state.configId;
-  const name = meta.title ? `${stateName} - ${meta.title}` : stateName;
+function treeFileName(state: PipelineState, {meta = {}, hasNotSavedEdits, completed}: TreeNameInfo) {
   const suffix = hasNotSavedEdits ? 'edited' : completed === false ? 'Not completed' : meta.started ?? 'edited';
-  return replaceForWindowsPath(`${name} - ${suffix}`);
+  return replaceForWindowsPath(`${titledName(state, meta.title)} - ${suffix}`);
 }
 
 export async function reportSummaryFile(state: PipelineState, states: RunStates, info: TreeNameInfo) {
@@ -235,7 +222,7 @@ export async function reportSummaryFile(state: PipelineState, states: RunStates,
 /** Unknown completion, as for a custom view's run, keeps the run's date. */
 export function callFileName(call: DG.FuncCall, completed?: boolean) {
   const started = completed === false ? undefined : getStartedOrNull(call);
-  return `${call.func.nqName} - ${started ?? 'Not completed'}`;
+  return replaceForWindowsPath(`${call.func.nqName} - ${started ?? 'Not completed'}`);
 }
 
 /** A legacy `meta.customExports` function returns a Blob, named `blobName` and `.xlsx` when it is Excel. */
@@ -250,20 +237,3 @@ export async function exportedFile(result: unknown, exportName: string, blobName
 }
 
 export const downloadFile = (file: DG.FileInfo) => DG.Utils.download(file.fileName, new Blob([file.data as any]));
-
-/** Resolves the custom export named `exportName` declared on `exportsOf` (via `meta.customExports`), the
- *  funcCall's function unless a custom view declares them, and applies it, passing the funcCall through. */
-export async function applyCustomExport(
-  fc: DG.FuncCall,
-  exportName: string,
-  args: Record<string, unknown> = {},
-  exportsOf: DG.Func = fc.func,
-  completed?: boolean,
-): Promise<DG.FileInfo> {
-  const item = getCustomExports(exportsOf).find((x) => x.name === exportName);
-  if (!item)
-    throw new Error(`No export named ${exportName} is defined for ${exportsOf.nqName}`);
-  return exportedFile(
-    await DG.Func.byName(item.function).apply({funcCall: fc, startDownload: false, ...args}), exportName,
-    callFileName(fc, completed));
-}

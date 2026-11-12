@@ -239,6 +239,22 @@ category('RFV: exports', () => {
     expectDeepEqual(menuItems(view, 'Export'), ['Default Excel', 'rec', 'none', 'hook', 'Save as project...']);
   });
 
+  test('The report icon runs the first export of the menu', async () => {
+    const view = await openEditor(track, DG.Func.byName('Compute2:TestPreferredExportModel').prepare({a: 1}));
+    await run(view);
+    await waitUntil(() => ribbonIcons(view, 'arrow-to-bottom').length === 1, 'The report icon should show', 5000);
+    const errors: string[] = [];
+    const showError = grok.shell.error;
+    (grok.shell as any).error = (e: any) => errors.push(String(e?.message ?? e));
+    try {
+      (ribbonIcons(view, 'arrow-to-bottom')[0] as HTMLElement).click();
+      await waitUntil(() => errors.length > 0, 'The icon should run the preferred export', 5000);
+      expectDeepEqual(errors, ['Export none returned no file']);
+    } finally {
+      (grok.shell as any).error = showError;
+    }
+  });
+
   test('Fitting and sensitivity analysis icons follow the function features', async () => {
     const labels = (view: DG.ViewBase) => view.getRibbonPanels().flat()
       .flatMap((el) => Array.from(el.querySelectorAll('[aria-label]')).map((icon) => icon.getAttribute('aria-label')));

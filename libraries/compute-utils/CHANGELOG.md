@@ -9,7 +9,7 @@
 * RTD: Added `loadSavedTree`, which loads a saved workflow run without UI as the editor opens it
 * RTD: A saved workflow run records whether every step's outputs were current (`RUN_COMPLETED` option, read with `readRunCompleted`)
 * RTD: A workflow custom export handler and `ExportUtils.runFuncCallCustomExport` return the exported file (`DG.FileInfo`); like a `meta.customExports` function, a handler gets `startDownload`, always false
-* RTD: `ExportUtils` reports return a `DG.FileInfo` named after the run in place of the Blob: `reportStateExcel` returns `[file, Zippable, summary]`, `reportFuncCallExcel` and `reportSummaryExcel` return `[file, Workbook]`
+* RTD: `ExportUtils` reports return a `DG.FileInfo` named after the run in place of the Blob: `reportStateExcel` returns `[file, Zippable, summary]`, `reportFuncCallExcel` and `reportSummaryExcel` return `[file, Workbook]` (breaking: `reportStateExcel` no longer returns the file name, so the summary is the 3rd element); `getFuncCallCustomExports` lists the exports with a function, in menu order, and the `reportStateExcel` callback is typed `(input) => Promise<void>`, which an async callback compiles against
 * RTD: Fixed the workflow `disableDefaultExport` option being ignored: it never reached the workflow state, so the default export stayed in the Export menu and in a compact view's step
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Export: Fixed a failing Excel report rejecting with "Format is not supported" instead of its own error

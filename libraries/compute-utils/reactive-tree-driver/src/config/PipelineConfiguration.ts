@@ -106,7 +106,7 @@ export interface ExportCbInput {
 }
 
 export type ExportUtils = {
-  reportStateExcel: (pipelineState: PipelineState, cb?: <T>(input: ExportCbInput) => Promise<T>) =>
+  reportStateExcel: (pipelineState: PipelineState, cb?: (input: ExportCbInput) => Promise<void>) =>
     Promise<readonly [DG.FileInfo, Zippable, ExportSummaryItem[]]>;
   getExportSummary: (pipelineState: PipelineState) => ExportSummaryItem[];
   reportSummaryExcel: (pipelineState: PipelineState) => Promise<readonly [DG.FileInfo, ExcelJS.Workbook]>;

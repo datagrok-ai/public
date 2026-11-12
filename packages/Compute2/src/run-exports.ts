@@ -23,10 +23,12 @@ import {RunStates} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 import {
   loadSavedTree, metaCallInfo, readStates,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
-import {readOutputOutdated} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
+import {
+  RUN_ERROR_PATH, readOutputOutdated,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {
-  applyCustomExport, callExcelReport, exportedFile, getExportSummary, reportSummaryFile, reportTree,
+  callExcelReport, callFileName, exportedFile, getExportSummary, reportSummaryFile, reportTree,
 } from './components/TreeWizard/tree-export';
 import {findNodeWithPathByUuid, resolveSingleStep} from './components/TreeWizard/tree-utils';
 import {runCompleted} from './components/RunStorage/run-storage';
@@ -61,23 +63,40 @@ export type CallExportStates = {
   completed?: boolean,
 };
 
-/** Exports a call; custom exports come from `model`, which is a custom view's function for its runs. */
+/** Exports a call; custom exports come from `model`, which is a custom view's function for its runs. Every
+ * export menu goes through here, so an export function always gets the same arguments. */
 export async function exportCall(
   call: DG.FuncCall, exportId: string, states: CallExportStates = {}, model: DG.Func = call.func,
 ): Promise<DG.FileInfo> {
-  if (exportId !== DEFAULT_EXPORT) {
-    return applyCustomExport(call, exportId, {
-      validationState: states.validation,
-      consistencyState: states.consistency,
-      isOutputOutdated: states.isOutputOutdated,
-      runError: states.runError,
-      viewersHook: states.viewersHook,
-      metaState: states.metaState,
-    }, model, states.completed);
+  if (exportId === DEFAULT_EXPORT) {
+    const [file] = await callExcelReport(call, states);
+    return file;
   }
-  const [file] = await callExcelReport(call, states);
-  return file;
+  const item = Utils.getCustomExports(model).find((x) => x.name === exportId);
+  if (!item)
+    throw new Error(`No export named ${exportId} is defined for ${model.nqName}`);
+  const result = await DG.Func.byName(item.function).apply({
+    funcCall: call,
+    startDownload: false,
+    validationState: states.validation,
+    consistencyState: states.consistency,
+    isOutputOutdated: states.isOutputOutdated,
+    runError: states.runError,
+    viewersHook: states.viewersHook,
+    metaState: states.metaState,
+  });
+  return exportedFile(result, exportId, callFileName(call, states.completed));
 }
+
+/** A custom view's run takes the viewers hook of its own function, which is not the view's function. */
+const callHook = (call: DG.FuncCall, model?: DG.Func,
+  hookOf: (func: DG.Func) => Promise<ViewersHook | undefined> = Utils.loadViewersHook) =>
+  hookOf(model?.name === call.func.name ? model : call.func);
+
+/** The Export menu of a custom view: the exports of its function, as bulk export runs them. */
+export const viewExports = (model: DG.Func) => callExports(model).map(({id, name}) => ({
+  name, export: async (call: DG.FuncCall) => exportCall(call, id, {viewersHook: await callHook(call, model)}, model),
+}));
 
 /** The exports of a workflow, in the menu's order: the first is the default. */
 export const workflowExports = (node: {disableDefaultExport?: boolean, customExports?: CustomExport[]}) =>
@@ -104,40 +123,32 @@ export type TreeExportContext = {
 const reportStates = ({states, metaStates, meta, hasNotSavedEdits, completed}: TreeExportContext) =>
   ({...states, metaStates, meta, hasNotSavedEdits, completed});
 
+/** The states of a workflow step, found in `root` by its uuid, as its own export menu passes them. */
+function stepStates(root: PipelineState, ctx: TreeExportContext, uuid: string): CallExportStates {
+  const step = findNodeWithPathByUuid(uuid, root)?.state;
+  const outdated = ctx.states.callInfoStates?.[uuid]?.isOutputOutdated;
+  return {
+    viewersHook: step && isFuncCallState(step) ? step.viewersHook : undefined,
+    metaState: ctx.metaStates?.[uuid],
+    validation: ctx.states.validationStates?.[uuid],
+    consistency: ctx.states.consistencyStates?.[uuid],
+    isOutputOutdated: outdated,
+    runError: ctx.states.callInfoStates?.[uuid]?.runError,
+    completed: outdated === undefined ? undefined : !outdated,
+  };
+}
+
 /** The utils a workflow's custom export gets; a step is found in `root` by its uuid. */
 export function treeExportUtils(root: PipelineState, ctx: TreeExportContext): ExportUtils {
-  const {validationStates, consistencyStates, callInfoStates} = ctx.states;
-  const stepCompleted = (uuid: string) => {
-    const outdated = callInfoStates?.[uuid]?.isOutputOutdated;
-    return outdated === undefined ? undefined : !outdated;
-  };
   return {
-    reportFuncCallExcel: (fc: DG.FuncCall, uuid: string) => {
-      const step = findNodeWithPathByUuid(uuid, root)?.state;
-      return callExcelReport(fc, {
-        viewersHook: step && isFuncCallState(step) ? step.viewersHook : undefined,
-        metaState: ctx.metaStates?.[uuid],
-        validation: validationStates?.[uuid],
-        consistency: consistencyStates?.[uuid],
-        completed: stepCompleted(uuid),
-      });
-    },
+    reportFuncCallExcel: (fc: DG.FuncCall, uuid: string) => callExcelReport(fc, stepStates(root, ctx, uuid)),
     reportStateExcel: (state: PipelineState, cb?: (input: ExportCbInput) => Promise<void>) =>
       reportTree({treeState: state, ...reportStates(ctx), cb}),
     getExportSummary: (state: PipelineState) => getExportSummary(state, ctx.states),
     reportSummaryExcel: (state: PipelineState) => reportSummaryFile(state, ctx.states, ctx),
-    getFuncCallCustomExports: (fc: DG.FuncCall) => Utils.getCustomExports(fc.func).map((x) => x.name),
-    runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) => {
-      const step = findNodeWithPathByUuid(uuid, root)?.state;
-      return applyCustomExport(fc, exportName, {
-        validationState: validationStates?.[uuid],
-        consistencyState: consistencyStates?.[uuid],
-        isOutputOutdated: callInfoStates?.[uuid]?.isOutputOutdated,
-        runError: callInfoStates?.[uuid]?.runError,
-        viewersHook: step && isFuncCallState(step) ? step.viewersHook : undefined,
-        metaState: ctx.metaStates?.[uuid],
-      }, fc.func, stepCompleted(uuid));
-    },
+    getFuncCallCustomExports: (fc: DG.FuncCall) => callExports(fc.func, true).map(({id}) => id),
+    runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) =>
+      exportCall(fc, exportName, stepStates(root, ctx, uuid)),
   };
 }
 
@@ -161,19 +172,14 @@ async function exportTree(tree: StateTree, metaCall: DG.FuncCall, exportId: stri
   if (!completed)
     return null;
   const metaStates = Object.fromEntries(Object.entries(tree.getMeta()).map(([uuid, meta]) => [uuid, meta.value]));
+  const ctx: TreeExportContext = {states, metaStates, meta: metaCallInfo(metaCall), completed};
   const single = resolveSingleStep(state);
   if (!single)
-    return exportWorkflow(state, exportId, {states, metaStates, meta: metaCallInfo(metaCall), completed});
-  const {uuid, funcCall, viewersHook} = single.step;
+    return exportWorkflow(state, exportId, ctx);
+  const {uuid, funcCall} = single.step;
   if (!funcCall)
     throw new Error(`The step of run ${metaCall.id} didn't load`);
-  return exportCall(funcCall, exportId, {
-    viewersHook, metaState: metaStates[uuid],
-    validation: states.validationStates?.[uuid], consistency: states.consistencyStates?.[uuid],
-    isOutputOutdated: states.callInfoStates?.[uuid]?.isOutputOutdated,
-    runError: states.callInfoStates?.[uuid]?.runError,
-    completed,
-  });
+  return exportCall(funcCall, exportId, stepStates(state, ctx, uuid));
 }
 
 /** Exports a saved workflow run as its menu does once the run is open; null when a step's outputs are outdated,
@@ -188,7 +194,10 @@ export const exportSavedWorkflow = (runId: string, exportId: string) =>
 export async function exportSavedCall(runId: string, exportId: string, model?: DG.Func,
   hookOf: (func: DG.Func) => Promise<ViewersHook | undefined> = Utils.loadViewersHook) {
   const call = await historyUtils.loadRun(runId);
-  const viewersHook = await hookOf(model?.name === call.func.name ? model : call.func);
-  return exportCall(call, exportId,
-    {viewersHook, isOutputOutdated: readOutputOutdated(call), completed: runCompleted(call)}, model);
+  return exportCall(call, exportId, {
+    viewersHook: await callHook(call, model, hookOf),
+    isOutputOutdated: readOutputOutdated(call),
+    runError: call.options[RUN_ERROR_PATH] || undefined,
+    completed: runCompleted(call),
+  }, model);
 }

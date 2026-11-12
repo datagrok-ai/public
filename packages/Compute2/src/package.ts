@@ -29,8 +29,8 @@ import type {
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {CUSTOM_VIEW_OPTION, loadViewersHook} from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {applyCustomExport, callExcelReport} from './components/TreeWizard/tree-export';
-import {callExports} from './run-exports';
+import {callExcelReport} from './components/TreeWizard/tree-export';
+import {viewExports} from './run-exports';
 import type {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import type {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {loadSavedTree, readRun, runWorkflow, saveWorkflowRun} from
@@ -167,9 +167,7 @@ export class PackageFunctions {
 
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     const detach = attachRunStorage(view, call.func);
-    view.hostExports = callExports(call.func, true).map(({id, name}) => ({
-      name, export: (fc: DG.FuncCall) => applyCustomExport(fc, id, {}, call.func),
-    }));
+    view.hostExports = viewExports(call.func);
     if (call.aux.initialRunId) {
       await view.loadRun(call.aux.initialRunId)
         .catch((e) => grok.shell.error(`Couldn't open the run: ${e?.message ?? e}`));
@@ -1080,7 +1078,8 @@ export class PackageFunctions {
     name: 'Custom View (Compute 2 Test)',
     editor: 'Compute2:CustomFunctionViewEditor',
     // meta: { role: 'model' },
-    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]'},
+    // eslint-disable-next-line max-len
+    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"},{"name":"hook","function":"Compute2:TestCustomExportHookArgs"}]'},
     outputs: [{type: 'object', name: 'result'}],
   })
   static async TestCustomView() {
