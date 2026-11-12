@@ -225,6 +225,70 @@ res = ranged;`).prepare(preset);
   });
 });
 
+category('RFV: core form layout', () => {
+  const track = closeViewsAfter();
+
+  const open = async () => {
+    await awaitWebComponents();
+    const call = DG.Script.create(`//name: RfvCoreFormLayout
+//language: javascript
+//input: bool advanced = false
+//input: double rate = 1.5 {visible: advanced}
+//input: int steps = 10 {visible: advanced}
+//input: double basic = 3 {visible: !advanced}
+//input: double always = 7
+//input: string pick = "a" {choices: ["a", "b", "c"]}
+//input: list<string> tags = ["alpha"] {choices: ["alpha", "beta", "gamma"]}
+//output: int res
+res = steps;`).prepare();
+    const view = track(await grok.functions.call(
+      'Compute2:RichFunctionViewEditor', {call},
+    ) as unknown as DG.ViewBase);
+    grok.shell.addView(view);
+    const formOf = () => (view.root.querySelector('dg-input-form') as any)?.formInst as DG.InputForm | undefined;
+    await waitUntil(() => !!formOf(), 'Form not rendered', 15000);
+    return formOf()!;
+  };
+
+  test('The view keeps inputs hidden by a visible expression on open', async () => {
+    // the core hides inputs bypassing this setter, so only the view's writes land here
+    const shown: string[] = [];
+    const proto = DG.InputBase.prototype;
+    const visible = Object.getOwnPropertyDescriptor(proto, 'visible')!;
+    Object.defineProperty(proto, 'visible', {...visible, set(this: DG.InputBase, value: boolean) {
+      if (value)
+        shown.push(this.property?.name);
+      visible.set!.call(this, value);
+    }});
+    try {
+      const form = await open();
+      // status icons are injected in the same watcher flush as the view's visibility
+      await waitUntil(() => !!form.getInput('rate').root.querySelector('.rfv2-validation-icon'),
+        'Status icons not injected', 5000);
+    } finally {
+      Object.defineProperty(proto, 'visible', visible);
+    }
+    expect(shown.join(), '', 'The view showed inputs the core hid');
+  });
+
+  test('A multiple choice input in a condensed form shows its list', async () => {
+    const form = await open();
+    await waitUntil(() => form.root.classList.contains('ui-form-condensed'), 'The form is not condensed', 5000);
+    const list = form.getInput('tags').root.querySelector('.ui-input-editor')!;
+    await waitUntil(() => list.getBoundingClientRect().width > 0, 'The list has no width', 5000);
+  });
+
+  test('Choice inputs in a condensed form leave no more space below than other inputs', async () => {
+    const form = await open();
+    await waitUntil(() => form.root.classList.contains('ui-form-condensed'), 'The form is not condensed', 5000);
+    const spaceBelow = (name: string) => form.getInput(name).root.getBoundingClientRect().bottom -
+      form.getInput(name).root.querySelector('.ui-input-editor')!.getBoundingClientRect().bottom;
+    await waitUntil(() => spaceBelow('always') > 0, 'Inputs not laid out', 5000);
+    expect(spaceBelow('pick'), spaceBelow('always'), 'Space below the select');
+    expect(spaceBelow('tags'), spaceBelow('always'), 'Space below the multiple choice list');
+  });
+});
+
 category('RFV: autorun', () => {
   const track = closeViewsAfter();
 
