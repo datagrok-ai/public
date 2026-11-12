@@ -118,7 +118,8 @@ export class AiUsageView extends UaView {
     col(t, 'groups').setTag(DG.TAGS.MULTI_VALUE_SEPARATOR, GROUP_SEPARATOR);
     col(t, 'time').meta.format = 'yyyy-MM-dd HH:mm';
     col(t, 'cost').meta.format = '0.0000';
-    this.measure = col(t, 'cost').stats.valueCount > 0 ? 'cost' : 'tokens';
+    const cost = col(t, 'cost').stats;
+    this.measure = cost.sum > 0 && cost.valueCount >= col(t, 'tokens').stats.valueCount ? 'cost' : 'tokens';
     this.showCards(t);
     this.frameSubs.push(t.onFilterChanged.subscribe(() => this.showCards(t)),
       t.onCurrentRowChanged.subscribe(() => this.showRequest(t)));
@@ -135,7 +136,7 @@ export class AiUsageView extends UaView {
       'Input tokens': [n(stats('input_tokens').sum)],
       'Output tokens': [n(stats('output_tokens').sum)],
       'Total tokens': [n(tokens.sum), `${n(stats('cache_read_tokens').sum + stats('cache_write_tokens').sum)} cache`],
-      'Estimated cost': cost.valueCount === 0 ? ['—', 'no prices'] : [`$${n(cost.sum)}`,
+      'Estimated cost': cost.valueCount === 0 || cost.sum === 0 ? ['—', 'no prices'] : [`$${n(cost.sum)}`,
         cost.valueCount < tokens.valueCount ? `${Math.floor(cost.valueCount * 100 / tokens.valueCount)}% priced` : ''],
     };
     ui.empty(this.cards);
