@@ -6,6 +6,7 @@ import {ISubstruct, ISubstructProvider} from '@datagrok-libraries/chem-meta/src/
 import {MMP_NAMES} from './mmp-constants';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getUncommonAtomsAndBonds} from '../../../utils/chem-common';
+import {byEngineModule} from '../../../engine/chem-engine';
 
 export class MMPSubstructProvider implements ISubstructProvider {
   idxsToSmiles: string[];
@@ -26,21 +27,23 @@ export class MMPSubstructProvider implements ISubstructProvider {
     if (tableRowIdx == null || tableRowIdx === -1)
       return;
 
-    let mcsMol;
-    try {
-      const molecule = this.df.get(this.colName, tableRowIdx);
-      const core = this.idxsToSmiles[this.df.get(MMP_NAMES.CORE_NUM, tableRowIdx)].replace('[*:1]', '[H]');
-      mcsMol = this.rdkit.get_mol(core);
-
-      const res = getUncommonAtomsAndBonds(molecule, mcsMol, this.rdkit, this.color);
-      if (!res)
-        return;
+    const molecule = this.df.get(this.colName, tableRowIdx);
+    const core = this.idxsToSmiles[this.df.get(MMP_NAMES.CORE_NUM, tableRowIdx)].replace('[*:1]', '[H]');
+    // "Chemical Engine": on Crux in Crux mode, on RDKit where Crux fails (engine/README.md)
+    return byEngineModule('mmpHighlight', this.rdkit, (module) => {
+      let mcsMol;
+      try {
+        mcsMol = module.get_mol(core);
+        const res = getUncommonAtomsAndBonds(molecule, mcsMol, module, this.color);
+        if (!res)
+          return null;
         //@ts-ignore
-      res['highlightBondWidthMultiplier'] = 40;
-        res!.alignByScaffold = mcsMol.get_molblock();
+        res['highlightBondWidthMultiplier'] = 40;
+        res.alignByScaffold = mcsMol.get_molblock();
         return res;
-    } finally {
-      mcsMol?.delete();
-    }
+      } finally {
+        mcsMol?.delete();
+      }
+    }) ?? undefined;
   }
 }

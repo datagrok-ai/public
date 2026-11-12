@@ -57,6 +57,7 @@ category('Dapi: domain trash', () => {
 
       const again = await thrown(() => items().restore(row.id));
       expect(again?.code, 'not-found', `restoring a live row must be a not-found: ${again}`);
+      expect(again?.message, `Row "${row.id}" not found in apitests.item`);
     } finally {
       await cleanup(prefix);
     }

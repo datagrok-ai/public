@@ -1,11 +1,12 @@
 import {getGPUDevice} from '../getGPUDevice';
 import {smoothKNNDistanceWGSL} from './wgsl/smooth-knn-distance.wgsl';
+import {WORKGROUP_DIM} from '../workgroup';
 
 export async function smoothKNNDistance(
   knnDistances: number[][] | Float32Array[], nNeighbors: number = 15, localConnectivity: number = 1.0,
   nIter: number = 64, bandwidth: number = 1.0
 ) {
-  const threadsPerWorkgroupDim = 10;
+  const threadsPerWorkgroupDim = WORKGROUP_DIM;
   const threadsPerWorkgroup = threadsPerWorkgroupDim * threadsPerWorkgroupDim;
   const numOfEntries = knnDistances.length;
   const requiredWorkgroups = Math.ceil(numOfEntries / threadsPerWorkgroup);

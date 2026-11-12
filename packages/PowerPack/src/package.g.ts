@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 //name: compareColumns
 //top-menu: Data | Compare Columns...
+//meta.requiresTable: true
 export function _compareColumns() : void {
   PackageFunctions._compareColumns();
 }
@@ -69,6 +70,38 @@ export function filterBuilder() : any {
 //output: view result
 export async function domainRouteView(address: string) : Promise<any> {
   return await PackageFunctions.domainRouteView(address);
+}
+
+//description: The "Create domain schema" dialog over an external database: Connection › Design › Review (u2)
+//tags: domainAuthoring
+//input: dynamic connection { optional: true }
+//input: string schema { optional: true }
+//input: string table { optional: true }
+//input: string catalog { optional: true }
+//output: string result
+//meta.mode: create
+export async function createDomainBinding(connection?: any, schema?: string, table?: string, catalog?: string) : Promise<any> {
+  return await PackageFunctions.createDomainBinding(connection, schema, table, catalog);
+}
+
+//description: The "Edit binding" dialog over a registered external binding: Design › Review › Saved (u2)
+//tags: domainAuthoring
+//input: string schema 
+//output: bool result
+//meta.mode: edit
+export async function editDomainBinding(schema: string) : Promise<boolean> {
+  return await PackageFunctions.editDomainBinding(schema);
+}
+
+//description: The chat compose box with @-mentions of users (u2)
+//tags: chatInput
+//input: string value { optional: true }
+//input: string placeholder { optional: true }
+//input: bool sendOnEnter { optional: true }
+//input: string draftKey { optional: true }
+//output: widget result
+export function chatMessageInput(value?: string, placeholder?: string, sendOnEnter?: boolean, draftKey?: string) : any {
+  return PackageFunctions.chatMessageInput(value, placeholder, sendOnEnter, draftKey);
 }
 
 //input: column col 

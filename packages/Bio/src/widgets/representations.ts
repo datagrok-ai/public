@@ -10,7 +10,26 @@ import {MmcrTemps, rendererSettingsChangedState} from '@datagrok-libraries/bio/s
 import {_package} from '../package';
 import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getColumnAnnotations, clearAnnotations} from '../utils/annotations/annotation-manager';
+import {getBioRendererDefaults} from '../utils/renderer-defaults';
+import {ISeqGraphInfoHelm} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {AnnotationCategory} from '@datagrok-libraries/bio/src/utils/macromolecule/annotations';
+
+/** Whether the sequence renderer can draw the column's connections: BILN, or a notation whose splitter gives some
+ * rows connections, unless the column is drawn by the HELM renderer */
+function canShowConnections(col: DG.Column<string>): boolean {
+  if (col.meta.units === NOTATION.BILN) return true;
+  if (col.getTag(DG.TAGS.CELL_RENDERER) === 'helm') return false;
+  try {
+    const sh = _package.seqHelper.getSeqHandler(col);
+    for (let rowIdx = 0; rowIdx < Math.min(col.length, 20); ++rowIdx) {
+      const gi = sh.getSplitted(rowIdx).graphInfo as ISeqGraphInfoHelm | undefined;
+      if (gi?.connections?.length || gi?.hbonds?.length) return true;
+    }
+  } catch {
+    // the column cannot be split: nothing to draw
+  }
+  return false;
+}
 
 /**
  * @export
@@ -50,7 +69,7 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
     tooltipText: `The max length of monomer symbol displayed without shortening, empty to no limit`
   });
 
-  let fontSize: number | null = (_package.properties ? _package.properties.fontSize : 12);
+  let fontSize: number | null = getBioRendererDefaults().fontSize;
   if (MmcrTemps.fontSize in col.temp && !!col.temp[MmcrTemps.fontSize] && !isNaN(col.temp[MmcrTemps.fontSize]))
     fontSize = col.temp[MmcrTemps.fontSize];
 
@@ -130,6 +149,23 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
     });
   }
 
+  // Rows with connections (BILN cyclizations, HELM bonds shown as a sequence) draw them as lines: the column's tag,
+  // else the package default
+  let showConnectionsInput: DG.InputBase<boolean> | null = null;
+  if (canShowConnections(col)) {
+    const tag = col.getTag(mmcrTAGS.showConnections);
+    showConnectionsInput = ui.input.bool('Show Connections', {
+      value: tag === 'true' || tag === 'false' ? tag === 'true' : getBioRendererDefaults().showConnections,
+      onValueChanged: (value) => {
+        col.setTag(mmcrTAGS.showConnections, value ? 'true' : 'false');
+        col.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.true;
+        col.dataFrame.fireValuesChanged();
+      },
+      tooltipText: 'Draw the bonds of cyclized and multi-chain sequences as lines over the monomers when the rows ' +
+        'are tall enough, instead of marks like C(1,3)',
+    });
+  }
+
   const inputsArray = [
     fontSizeInput,
     maxMonomerLengthInput,
@@ -141,6 +177,8 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
 
   if (renderMultilineInput)
     inputsArray.push(renderMultilineInput);
+  if (showConnectionsInput)
+    inputsArray.push(showConnectionsInput);
 
 
   const sequenceConfigInputs = ui.inputs(inputsArray);

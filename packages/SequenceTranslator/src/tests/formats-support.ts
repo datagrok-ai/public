@@ -37,4 +37,30 @@ category('Formats support', () => {
       expect(true, expected <= result);
     });
   });
+
+  test('Translations of the Translator\'s Axolabs sample', async () => {
+    const sequence = 'Afcgacsu';
+    expect(th.createFormatDetector(sequence).getFormat(), DEFAULT_FORMATS.AXOLABS);
+    expect(JSON.stringify(getTranslationObject(sequence, DEFAULT_FORMATS.AXOLABS, th)), JSON.stringify({
+      'BioSpring': '27867*5',
+      'HELM': 'RNA1{[fR](A)p.[25r](C)p.[25r](G)p.[25r](A)p.[25r](C)[sp].[25r](U)}$$$$',
+      'Mermade12': 'IFGEfH',
+      'Nucleotides': 'ACGACU',
+    }));
+  });
+
+  test('A plain RNA HELM is translated to nucleotides, not to HELM', async () => {
+    const sequence = 'RNA1{r(A)p.r(C)p.r(G)p.r(U)}$$$$';
+    expect(th.createFormatDetector(sequence).getFormat(), DEFAULT_FORMATS.HELM);
+    const output = getTranslationObject(sequence, DEFAULT_FORMATS.HELM, th);
+    expect(output['Nucleotides'], 'ACGU');
+    expect(DEFAULT_FORMATS.HELM in output, false, `${DEFAULT_FORMATS.HELM} among the translations`);
+  });
+
+  test('Codes the Translator cannot read leave no translations', async () => {
+    const sequence = 'AfcgacsuQQ';
+    expect(th.createFormatDetector(sequence).getFormat(), DEFAULT_FORMATS.AXOLABS);
+    expect(th.createSequenceValidator(sequence).getInvalidCodeIndex(DEFAULT_FORMATS.AXOLABS), 8);
+    expect(JSON.stringify(getTranslationObject(sequence, DEFAULT_FORMATS.AXOLABS, th)), '{}');
+  });
 });

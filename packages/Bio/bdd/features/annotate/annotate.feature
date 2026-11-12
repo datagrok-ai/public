@@ -4,6 +4,9 @@ Feature: Comparing, scanning and annotating antibody sequences
   them into a difference column; Scan Liabilities marks the motifs its rules find and reports
   them per row or as a count; Manage Annotations lists what a column carries and drops it.
 
+  Where each rule hits, the annotation column's per-row hits and the count column's numbers are
+  tested in Bio src/tests/liability-scanner-tests.ts ('liabilities').
+
   Not translated: nothing of the annotate-dialogs spec is left out.
 
   Background:
@@ -51,12 +54,11 @@ Feature: Comparing, scanning and annotating antibody sequences
     And "Create annotation column" checkbox in "Scan Sequence Liabilities" dialog should be checked
     And "Create summary count column" checkbox in "Scan Sequence Liabilities" dialog should be unchecked
 
-  Scenario: The default rules write the per-row annotation column and hit real motifs
+  Scenario: The default rules write the per-row annotation column
     When user clicks on OK button in "Scan Sequence Liabilities" dialog
     Then a new column "~AntibodyHC_annotations" should have been added
     And the table should not have a column "AntibodyHC_liability_count"
     And "AntibodyHC" column should carry at least 1 annotation
-    And every liability hit on "AntibodyHC" column should match its motif at the position it reports
     And no error or warning balloon should have been shown
 
   Scenario: Manage Annotations lists one row per annotation and drops them one by one or all
@@ -87,7 +89,6 @@ Feature: Comparing, scanning and annotating antibody sequences
     And user clicks on OK button in "Scan Sequence Liabilities" dialog
     Then a new column "AntibodyHC_liability_count" should have been added
     And "AntibodyHC_liability_count" column should have type "int"
-    And "AntibodyHC_liability_count" column should have no missing values
-    And the total of "AntibodyHC_liability_count" column should be fewer than the liability hits found before
+    And every annotation on "AntibodyHC" column should be named like "^Oxidation"
     And no error or warning balloon should have been shown
     And no errors should have been logged

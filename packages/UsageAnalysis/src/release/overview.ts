@@ -124,7 +124,7 @@ export class ReleaseOverviewView extends UaView {
       this.setCard('Benchmarks', 'n/a', 'info', `no runs within ${BENCH_SLOW_PCT}% baseline yet`);
     }
 
-    if (stressR.status === 'fulfilled') {
+    if (stressR.status === 'fulfilled' && stressR.value) {
       const reg = stressRegression(stressR.value);
       this.setCard('Stress', reg.regressed ? 'Slower' : 'OK', reg.regressed ? 'red' : 'green');
       if (reg.regressed)

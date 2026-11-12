@@ -8,6 +8,7 @@
     "email": "lbankurova@datagrok.ai"
   },
   "dependencies": {
+    "@datagrok-libraries/ems": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",

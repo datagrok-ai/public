@@ -225,7 +225,8 @@ test('Histogram tests', async ({page}) => {
       for (let i = 0; i < 5; i++) df.selection.set(i, true);
       await selected;
     });
-    await v.setViewerProps(page, 'Histogram', [{set: {rowSource: 'All'}, wait: 600}]);
+    // filtered-out rows are drawn as grey bars by default and would count as ink in every row source
+    await v.setViewerProps(page, 'Histogram', [{set: {rowSource: 'All', showFilteredOutRows: false}, wait: 600}]);
     const allPx = (await v.countCanvasPixels(page, 'Histogram')).total;
     const allHue = await v.countSelectionHuePixels(page, 'Histogram');
     await v.setViewerProps(page, 'Histogram', [{set: {rowSource: 'Selected'}, wait: 600}]);
@@ -261,7 +262,7 @@ test('Histogram tests', async ({page}) => {
         await new Promise(r => setTimeout(r, 25));
       }
     });
-    await v.setViewerProps(page, 'Histogram', [{set: {valueColumnName: 'AGE', filter: ''}, wait: 600}]);
+    await v.setViewerProps(page, 'Histogram', [{set: {valueColumnName: 'AGE', filter: '', showFilteredOutRows: false}, wait: 600}]);
 
     let prevPx = -1;
     const clearedPx = await v.pollStable(async () => (await v.countCanvasPixels(page, 'Histogram')).total,

@@ -21,12 +21,26 @@ With none left the viewer shows a message instead of a chart.
 `_renderWithToken` returns without drawing if a newer token has since been issued. So a burst of
 property changes collapses to one frame.
 
+## How selection is drawn
+
+Every sector shows the selected share of its rows: `TreeUtils.toTree` counts them per leaf and sums
+them up the parents, and the viewer fills the sector from its inner edge so that the filled area is
+that share. It is a hard-stop radial gradient, as echarts has no partial fill of a sector and zrender
+no angular gradient. Its coordinates are in pixels, so a resize with a selection paints the same tree
+again; it must not call `render`, which aggregates again and takes seconds on a million rows.
+
 ## A sector is addressed by its path
 
 The click handler builds a sector's identity from `params.treePathInfo` minus the root, and the
 selection is keyed by that path joined with `|`. The status reports the same names joined with
 ` | ` instead, for readability: `segment Cancer | Male`. A one-column sunburst therefore names its
 sectors by that column alone (`segment Cancer`).
+
+An empty value (`''`, or the `' '` the tree builder gives a null) is named **`(empty)`** —
+`segment (empty)`, `segment S_PART | (empty)`. Joined raw it would read `segment S_PART | `, which
+the automation's name matching cannot tell from `segment S_PART`, and a first-ring empty sector
+would be indistinguishable from the root. The root is the node with no `parentNode`, never a name.
+Clicks and selection still key on the raw value; only the status names it.
 
 ## Automation surface (`getWidgetStatus`)
 
@@ -42,7 +56,7 @@ radius-by-direction sweep a spec previously needed to land on a ring.
 | Area | What |
 |---|---|
 | `view` | the chart canvas |
-| `segment <path>` | a click target inside that sector — `segment Cancer \| Male` |
+| `segment <path>` | a click target inside that sector — `segment Cancer \| Male`, `segment S_PART \| (empty)` |
 
 | Reading | What |
 |---|---|
@@ -50,9 +64,10 @@ radius-by-direction sweep a spec previously needed to land on a ring.
 | `on click` | `Select` or `Filter` |
 | `include nulls` | the `includeNulls` property |
 | `rows shown` | `filter.trueCount` — the viewer's own combined filter |
-| `segments` | sectors the layout actually placed |
-| `segment names` | their paths, comma-separated |
+| `segments` | sectors the layout actually placed, empty values included |
+| `segment names` | their paths, comma-separated, an empty value as `(empty)` |
 | `rows of segment <path>` | that sector's value, as the last layout computed it |
+| `selected rows of segment <path>` | how many of those rows are selected, which is what its fill shows |
 
 `isRenderPending` covers both the queued renders and the frame echarts lays the sectors out on:
 `_render` ends at `setOption(..., lazyUpdate: true)`, so the series is built on the next zrender

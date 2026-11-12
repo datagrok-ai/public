@@ -1,7 +1,7 @@
 import {describe, it, expect} from 'vitest';
 import {
   throwIfApiError, apiPath, mapPositionalParams, NodeUsersDataSource, NodeFuncsDataSource,
-  NodeTablesDataSource, NodeFilesDataSource, NodeHttpDataSource,
+  NodeTablesDataSource, NodeFilesDataSource, NodeHttpDataSource, NodeDapi,
 } from '../utils/node-dapi';
 
 interface Call {method: string; path: string; body?: any}
@@ -29,6 +29,12 @@ describe('throwIfApiError', () => {
       .toThrow('Not Found');
     try { throwIfApiError({'#type': 'ApiError', message: 'Not Found', errorCode: 404}); }
     catch (e: any) { expect(e.apiError.errorCode).toBe(404); }
+  });
+
+  it('takes the code from the api-error-code header when the body has none', () => {
+    try { throwIfApiError({'#type': 'ApiError', message: 'Wait'}, new Headers({'api-error-code': '429'})); }
+    catch (e: any) { expect(e.apiError.errorCode).toBe(429); }
+    expect.assertions(1);
   });
 
   it('throws on an ApiError serialized as a JSON string', () => {
@@ -107,6 +113,41 @@ describe('NodeUsersDataSource.delete', () => {
     const {client, calls} = makeMock(() => ({}));
     await expect(new NodeUsersDataSource(client).delete('alice')).rejects.toThrow('grok s users block alice');
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe('NodeUsersDataSource.invite', () => {
+  it('asks for a link by default, with or without an email', async () => {
+    const {client, calls} = makeMock(() => 'https://x/?inviteCode=abc');
+    const users = new NodeUsersDataSource(client);
+    expect(await users.invite('a+1@b.com')).toBe('https://x/?inviteCode=abc');
+    await users.invite();
+    expect(calls.map((c: any) => c.path)).toEqual([
+      '/users/invite?email=a%2B1%40b.com&target=Datagrok&link=true',
+      '/users/invite?email=&target=Datagrok&link=true',
+    ]);
+  });
+
+  it('passes the code prefix', async () => {
+    const {client, calls} = makeMock(() => 'https://x/?inviteCode=ALEX-abc');
+    await new NodeUsersDataSource(client).invite(undefined, false, 'ALEX-');
+    expect(calls[0].path).toBe('/users/invite?email=&target=Datagrok&link=true&prefix=ALEX-');
+  });
+
+  it('sends an email only when asked', async () => {
+    const {client, calls} = makeMock(() => '');
+    await new NodeUsersDataSource(client).invite('a@b.com', true);
+    expect(calls[0].path).toBe('/users/invite?email=a%40b.com&target=Datagrok');
+  });
+});
+
+describe('NodeDapi.serverStatus', () => {
+  it('reads /info/server, plain and extended, parsing a text body', async () => {
+    const {client, calls} = makeMock(() => '{"Version":"1.28.0"}');
+    const dapi = new NodeDapi(client);
+    expect(await dapi.serverStatus()).toEqual({Version: '1.28.0'});
+    await dapi.serverStatus(true);
+    expect(calls.map((c) => c.path)).toEqual(['/info/server', '/info/server?extended=true']);
   });
 });
 

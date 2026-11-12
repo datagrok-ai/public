@@ -82,7 +82,7 @@ Expected:
 ## Notes
 
 - **Related bug — GROK-19145.** Both scenarios exist to reproduce and guard against this bug (a high Similarity threshold could throw on a null BitSet). This `.md` is the primary anchor scenario for that bug; a dedicated regression spec extends the same threshold-parameter surface.
-- **See:** `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Analysis options`; `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Table View`.
+- **See:** `help/datagrok/solutions/domains/bio/peptides-sar.md#Analysis options`; `help/datagrok/solutions/domains/bio/peptides-sar.md#Table View`.
 
 ## Original trailing metadata
 

@@ -6,6 +6,20 @@ const {bundler, rspack, loaders} = require('@datagrok/build-config');
 module.exports = bundler({
   mode: 'production',
   css: false,
+  entry: {
+    package: './src/package.js',
+    jupyterStyles: [
+      '@jupyterlab/application/style/index.css',
+      '@jupyterlab/codemirror/style/index.css',
+      '@jupyterlab/completer/style/index.css',
+      '@jupyterlab/documentsearch/style/index.css',
+      '@jupyterlab/notebook/style/index.css',
+      './css/application-base.css',
+      './css/notebooks.css',
+      './css/theme-light-extension-index.css',
+      './css/ui-components-base.css',
+    ],
+  },
   // @jupyterlab/codemirror needs its own CodeMirror 5; the platform global is not there when the package loads
   externals: {codemirror: false},
   resolve: {

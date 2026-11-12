@@ -1,10 +1,10 @@
 @journey @viewers @realizes:viewers.forms
-Feature: Forms viewer layout and project persistence
+Feature: Forms viewer layout persistence
   What the viewer carries across a round-trip: a field set that is neither the default set nor the
   table's order, the Sort By column, and a pinned row remembered by its value — re-applied over a
-  view that had the Forms viewer closed and a histogram added in its place, and again after the
-  view has been saved as a project and reopened. One journey on demog-1000. The sort direction is
-  not claimed: GROK-20666 is open.
+  view that had the Forms viewer closed and a histogram added in its place. One journey on
+  demog-1000. The sort direction is not claimed: GROK-20666 is open. The same settings through a
+  layout and a project are tested in PowerGrid src/tests/forms-tests.ts ('Layout', 'Project').
 
   Background:
     Given user is logged in
@@ -35,15 +35,4 @@ Feature: Forms viewer layout and project persistence
     And the "pinned records" reading of forms viewer should be 1
     And the "USUBJID of pinned card 1" reading of forms viewer should be "X0273T21000400001"
     And "pinnedRowValues" property of forms viewer should be "X0273T21000400001"
-    And no errors should have been logged
-
-  Scenario: A project round-trip keeps the field set, the sort column and the pinned row
-    When user saves the current view as project "zz-forms-persistence"
-    And user closes all views
-    And user opens the "zz-forms-persistence" project
-    Then forms viewer should be visible
-    And the "fields" reading of forms viewer should be "AGE, USUBJID, HEIGHT, SEX"
-    And the "sort column" reading of forms viewer should be "AGE"
-    And the "pinned records" reading of forms viewer should be 1
-    And the "USUBJID of pinned card 1" reading of forms viewer should be "X0273T21000400001"
     And no errors should have been logged

@@ -3,8 +3,8 @@ import { PanelContainer } from "../PanelContainer";
 import { PanelType } from "../enums/PanelType";
 import { DockNode } from "../DockNode";
 import { faStyle, style, style1, style2 } from "./styles";
-import { Observable, Subject, Subscriber } from "rxjs";
-import { debounceTime, takeUntil } from "rxjs/operators";
+import { Observable, Subject, Subscriber, timer } from "rxjs";
+import { debounce, takeUntil } from "rxjs/operators";
 
 const elementResized = (elem: Element) => {
     return new Observable((subscriber: Subscriber<ResizeObserverEntry[]>) => {
@@ -22,6 +22,10 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     private initialized = false;
     private elementContainerMap: Map<HTMLElement, PanelContainer> = new Map();
     private destroy$ = new Subject<true>();
+    // Docking turns ratios into pixels, so a 0x0 (hidden) dock would lose them; such panels dock once it has a size.
+    // Closing a panel there would shrink its neighbours to nothing too, so removals wait as well.
+    private pendingElements: HTMLElement[] = [];
+    private pendingRemovals: HTMLElement[] = [];
 
     constructor() {
         super();
@@ -46,6 +50,8 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         // tab must not steal focus from the user's current tab. The preferred tab is
         // driven explicitly via the `preferredPanelTitle` property instead.
         this.dockManager.config.activatePanelOnAdd = false;
+        // Esc belongs to the focused input or popup; a panel closes only from its own button
+        this.dockManager.config.escClosesWindow = false;
     }
 
     private initDockManager() {
@@ -92,7 +98,7 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
         this.observer.observe(this, {childList: true});
 
         elementResized(this).pipe(
-            debounceTime(50),
+            debounce(() => timer(this.pendingElements.length || this.pendingRemovals.length ? 0 : 50)),
             takeUntil(this.destroy$)
         ).subscribe(() => this.resize());
         this.dispatchEvent(new CustomEvent('manager-init-finished', {detail: this.dockManager}));
@@ -140,6 +146,10 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
 
     private handleAddedChildNode(element: HTMLElement) {
         if (element instanceof Comment || (element instanceof Text && element.textContent.length === 0)) return;
+        if (!this.hasSize()) {
+            this.pendingElements.push(element);
+            return;
+        }
 
         let slot = document.createElement('slot');
         let slotName = 'slot_' + this.slotId++;
@@ -194,9 +204,18 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
     }
 
     private handleRemovedChildNode(element: HTMLElement) {
-        let panel = this.elementContainerMap.get(element);
-        if (panel)
-            panel.close();
+        this.pendingElements = this.pendingElements.filter((pending) => pending !== element);
+        if (!this.elementContainerMap.has(element))
+            return;
+        if (!this.hasSize()) {
+            this.pendingRemovals.push(element);
+            return;
+        }
+        this.closePanelOf(element);
+    }
+
+    private closePanelOf(element: HTMLElement) {
+        this.elementContainerMap.get(element)?.close();
         this.elementContainerMap.delete(element);
     }
 
@@ -211,9 +230,24 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
 
     disconnectedCallback() {}
 
+    private hasSize() {
+        return this.clientWidth > 0 && this.clientHeight > 0;
+    }
+
     resize() {
-        if (this.clientWidth > 0 && this.clientHeight > 0)
-            this.dockManager.resize(this.clientWidth, this.clientHeight);
+        if (!this.hasSize())
+            return;
+        this.dockManager.resize(this.clientWidth, this.clientHeight);
+        const removals = this.pendingRemovals;
+        this.pendingRemovals = [];
+        for (const element of removals)
+            this.closePanelOf(element);
+        const pending = this.pendingElements;
+        this.pendingElements = [];
+        for (const element of pending) {
+            if (element.parentNode === this)
+                this.handleAddedChildNode(element);
+        }
     }
 
     getDockNodeForElement(elementOrContainer: HTMLElement | PanelContainer): DockNode {

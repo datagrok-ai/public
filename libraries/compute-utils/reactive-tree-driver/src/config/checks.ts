@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {RuleEffect, RuleExpr, RuleLogic, RuleSource, RuleValidatorEffect} from './PipelineConfiguration';
+import {RuleEffect, RuleExpr, RuleLogic, RuleSource} from './PipelineConfiguration';
 
 /** The annotation options the driver validates. Keys and values match the function
  *  annotation syntax; `check` links use the same object. */
@@ -13,13 +13,13 @@ export type CheckOptions = {
   validator?: string;
   /** GrokScript expression; the input is hidden while it is `false`. */
   visible?: string;
-  /** Named validator functions, evaluated by the platform (1.28+). */
+  /** Named validator functions, evaluated by the platform. */
   validators?: string[];
   choices?: any[];
   /** Column kind, column type or semantic type. */
   type?: string;
   semType?: string;
-  /** Id of the dataframe io the column belongs to. */
+  /** Query of the dataframe io the column belongs to. */
   table?: string;
   allowNulls?: boolean;
 };
@@ -27,7 +27,8 @@ export type CheckOptions = {
 export type CheckSeverity = 'error' | 'warning' | 'notification';
 
 export type CheckKey =
-  'required' | 'min' | 'max' | 'validator' | 'validators' | 'visible' | 'choices' | 'type' | 'semType' | 'table' | 'allowNulls';
+  'required' | 'min' | 'max' | 'validator' | 'validators' | 'visible' | 'choices' | 'type' | 'semType' | 'table' |
+  'allowNulls';
 
 export type CheckFamily = 'validator' | 'meta';
 
@@ -46,10 +47,13 @@ export type CheckExtras = {
   when?: RuleLogic;
   message?: RuleExpr;
   severity?: CheckSeverity;
+  /** Run `validators` through the step's FuncCall, as the platform does for annotations. */
+  validatorsViaCall?: boolean;
 };
 
 export const checkOptionKeys: (keyof CheckOptions)[] =
-  ['nullable', 'optional', 'min', 'max', 'validator', 'validators', 'visible', 'choices', 'type', 'semType', 'table', 'allowNulls'];
+  ['nullable', 'optional', 'min', 'max', 'validator', 'validators', 'visible', 'choices', 'type', 'semType', 'table',
+    'allowNulls'];
 
 // aliases shared by annotation-derived and config checks
 // `value` follows the platform's validator expressions; the rest are the driver's own names
@@ -86,12 +90,15 @@ type Condition = {
   sources?: Record<string, RuleSource>;
 };
 
-function conditions(options: CheckOptions): Condition[] {
+function conditions(options: CheckOptions, validatorsViaCall: boolean): Condition[] {
   const out: Condition[] = [];
   const add = (key: CheckKey, when: RuleLogic, message: string, needsTable = false) =>
     out.push({key, needsTable, needsCall: false, when: {and: [present, when]}, message});
-  if (options.nullable === false)
-    out.push({key: 'required', needsTable: false, needsCall: false, when: {missing: [VALUE]}, message: 'Missing value'});
+  if (options.nullable === false) {
+    out.push({
+      key: 'required', needsTable: false, needsCall: false, when: {missing: [VALUE]}, message: 'Missing value',
+    });
+  }
   if (options.min != null)
     add('min', {'<': [value, options.min]}, `Must be at least ${options.min}`);
   if (options.max != null)
@@ -117,8 +124,9 @@ function conditions(options: CheckOptions): Condition[] {
   }
   if (options.validators?.length) {
     out.push({
-      key: 'validators', needsTable: false, needsCall: false,
-      sources: {[VERDICTS]: {validators: {input: VALUE, names: options.validators}}},
+      key: 'validators', needsTable: false, needsCall: validatorsViaCall,
+      sources: {[VERDICTS]: {validators: validatorsViaCall ?
+        {input: VALUE, call: CALL} : {input: VALUE, names: options.validators}}},
       when: present, verdicts: VERDICTS,
     });
   }
@@ -160,11 +168,11 @@ export function validateCheckOptions(id: string, options: CheckOptions) {
 }
 
 /** Expands annotation-style options into one validator per option, in the rule params shape.
- *  Values are read from the `value` alias, the table from `table`, results go to `target`. */
+ *  Values are read from the `value` alias, the table from `$table`, results go to `$target`. */
 export function expandChecks(options: CheckOptions, extras: CheckExtras = {}): ExpandedCheck[] {
   if (options.optional != null)
     options = {...options, nullable: options.optional};
-  return conditions(options).map((condition) => {
+  return conditions(options, !!extras.validatorsViaCall).map((condition) => {
     const {key, needsTable, needsCall, when, message, verdicts, verdictMessage, sources} = condition;
     const family = condition.family ?? 'validator';
     let effects: RuleEffect[] = [];

@@ -139,7 +139,7 @@ function pickFallbackNumericColumn(df: DG.DataFrame, exclude: (string | undefine
   return col ? col.name : null;
 }
 
-/** Returns `color` with `alpha` (0..1) applied via `DG.Color`, or undefined if it can't be parsed. */
+/** Returns `color` with its alpha scaled by `alpha` (0..1), or undefined if it can't be parsed. */
 function dimColor(color: string | undefined | null, alpha: number): string | undefined {
   if (!color)
     return undefined;
@@ -147,12 +147,16 @@ function dimColor(color: string | undefined | null, alpha: number): string | und
     const c = DG.Color.fromHtml(color.trim());
     if (c == null || Number.isNaN(c))
       return undefined;
-    const a = Math.max(8, Math.min(255, Math.round(alpha * 255)));
-    return DG.Color.toHtml(DG.Color.setAlpha(c, a));
+    const a = DG.Color.a(c);
+    return DG.Color.toHtml(DG.Color.setAlpha(c, Math.min(a, Math.max(8, Math.round(a * alpha)))));
   } catch {
     return undefined;
   }
 }
+
+/** A color as the viewers draw it: layouts saved before the alpha may hold an ARGB number, and no alpha is opaque. */
+const savedColor = (color: number | string): number =>
+  DG.Color.opaqueIfNoAlpha(typeof color === 'string' ? DG.Color.fromHtml(color) : color);
 
 export const DEFAULT_OPTIONS: EditorOptions = {
   allowEditDFLines: true,
@@ -922,21 +926,16 @@ class Preview {
 
     // Render the other formula lines as ghosts so the user keeps context for the line being edited.
     // Bands and regions are not ghosted; ghosts are only added when the current item is a line.
-    // Color is dimmed in-place when possible (also fades the title); `opacity` is the fallback.
     const GHOST = 0.4;
-    const fadeOpacity = (cur: number | undefined): number => Math.max(3, Math.round((cur ?? 30) * GHOST));
     const addLineGhost = (line: DG.FormulaLine | undefined): void => {
       if (!line || !line.visible || line.type === ITEM_TYPE.BAND)
         return;
       try {
-        const g = structuredClone(line);
+        const g = DG.FormulaLinesHelper.setDefaults(structuredClone(line));
         const dimmed = dimColor(g.color, GHOST);
-        if (dimmed) {
-          g.color = dimmed;
-          g.opacity = 100;
-        } else
-          g.opacity = fadeOpacity(g.opacity);
-
+        if (!dimmed)
+          return;
+        g.color = dimmed;
         this.viewer.meta.formulaLines.add(g);
       } catch {}
     };
@@ -1057,10 +1056,7 @@ class Editor {
       mainPane.append(this.inputAnnotationFormula(itemIdx, 'formula2'));
     }
 
-    mainPane.append(this.inlineInputs(
-      this.areaInputColor(itemIdx, 'Region Color', 'fillColor', DG.Color.toHtml(DG.Color.gray)),
-      this.inputOpacity(itemIdx, false),
-    ));
+    mainPane.append(this.inputColor(itemIdx, false));
     mainPane.append(this.inlineInputs(
       this.areaInputColor(itemIdx, 'Outline Color', 'outlineColor', DG.Color.toHtml(DG.Color.gray)),
       this.inputLineWidth(itemIdx),
@@ -1112,8 +1108,7 @@ class Editor {
       if (caption === ITEM_CAPTION.BAND)
         mainPane.append(this.inputColumn2(itemIdx));
 
-      /** Preparing the "Format" panel — Color + Opacity share a row when wide enough */
-      formatPane.append(this.inlineInputs(this.inputColor(itemIdx), this.inputOpacity(itemIdx)));
+      formatPane.append(this.inputColor(itemIdx));
       if (caption !== ITEM_CAPTION.BAND)
         formatPane.append(this.inputStyle(itemIdx));
       formatPane.append(this.inputRange(itemIdx));
@@ -1162,27 +1157,40 @@ class Editor {
     return ibFormula.root;
   }
 
-  /** Creates color picker for item color */
-  private inputColor(itemIdx: number): HTMLElement {
-    const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
+  /** A line's or band's color, or a region's fill; the alpha is the opacity. A color saved before the alpha is
+   *  read the way the viewers draw it, and written back in the new format on the first edit. */
+  private inputColor(itemIdx: number, isFormulaLine: boolean = true): HTMLElement {
+    const item = isFormulaLine ? this.formulaLineItems[itemIdx] : this.annotationRegionItems[itemIdx];
+    const defaultColor = isFormulaLine ? '#000000' : DG.Color.toHtml(DG.Color.gray);
+    const c = isFormulaLine ?
+      savedColor(DG.FormulaLinesHelper.setDefaults(item as DG.FormulaLine).color ?? defaultColor) :
+      DG.AnnotationRegionsHelper.getFillColor(item as DG.AnnotationRegion);
 
-    const ibColor = ui.input.color('Color', {value: item.color ?? '#000000',
+    const ibColor = ui.input.color(isFormulaLine ? 'Color' : 'Region Color', {
+      value: DG.Color.toHtml(c), useAlphaChannel: true,
       onValueChanged: (value) => {
-        item.color = value;
-        this.onItemChangedAction(itemIdx, true);
+        delete item.opacity;
+        if (isFormulaLine) // "#rrggbb" is the format saved before the alpha, which draws a band at 30%
+          (item as DG.FormulaLine).color = value.length === 7 ? `${value}ff` : value;
+        else {
+          const region = item as DG.AnnotationRegion;
+          delete region.fillColor;
+          region.fill = DG.Color.fromHtml(value);
+        }
+        this.onItemChangedAction(itemIdx, isFormulaLine);
       }});
-
-    const elColor = ibColor.input as HTMLInputElement;
-    elColor.placeholder = '#000000';
-
+    (ibColor.input as HTMLInputElement).placeholder = defaultColor;
     return ibColor.root;
   }
 
-  private areaInputColor(itemIdx: number, header: string = 'Color', key: keyof DG.AnnotationRegion, defaultColor: string = '#000000'): HTMLElement {
+  private areaInputColor(itemIdx: number, header: string, key: 'outlineColor' | 'headerColor',
+    defaultColor: string = '#000000'): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.AnnotationRegion;
-    const ibColor = ui.input.color(header, {value: item[key] ? DG.Color.toHtml(item[key] as number) : defaultColor,
+    const saved: number | string | undefined = item[key];
+    const ibColor = ui.input.color(header, {
+      value: saved != null ? DG.Color.toHtml(savedColor(saved)) : defaultColor, useAlphaChannel: true,
       onValueChanged: (value) => {
-        (item as any)[key] = DG.Color.fromHtml(value);
+        item[key] = DG.Color.fromHtml(value);
         this.onItemChangedAction(itemIdx, false);
       }});
     const elColor = ibColor.input as HTMLInputElement;
@@ -1205,25 +1213,6 @@ class Editor {
     elWidth.setAttribute('style', 'padding-right: 24px;');
 
     return ibWidth.root;
-  }
-
-  /** Creates range slider for item opacity */
-  private inputOpacity(itemIdx: number, isFormulaLine: boolean = true): HTMLElement {
-    const item = isFormulaLine ? this.formulaLineItems[itemIdx] : this.annotationRegionItems[itemIdx];
-    const elOpacity = ui.element('input');
-    elOpacity.type = 'range';
-    elOpacity.min = 0;
-    elOpacity.max = 100;
-    elOpacity.value = item.opacity ?? 30;
-    elOpacity.addEventListener('input', () => {
-      item.opacity = parseInt(elOpacity.value);
-      this.onItemChangedAction(itemIdx, isFormulaLine);
-    });
-    elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
-
-    const label = ui.label('Opacity', 'ui-label ui-input-label');
-
-    return ui.div([label, elOpacity], 'ui-input-root');
   }
 
   /** Pairs ui-input-roots on a single row when there's enough width; wraps to
@@ -2163,7 +2152,7 @@ export class FormulaLinesDialog {
         return;
 
       this.tabs.currentPane = this.tabs.getPane(this.showValueOnOpen.isDataFrame ? ITEM_SOURCE.DATAFRAME : ITEM_SOURCE.VIEWER);
-      if (this.showValueOnOpen.index !== undefined) {
+      if (this.showValueOnOpen.index != null) {
         const isFormulaLine = !this.showValueOnOpen.isAnnotationArea;
         this.currentTable.update(this.showValueOnOpen.index, isFormulaLine);
       } else {
@@ -2230,7 +2219,9 @@ export class FormulaLinesDialog {
         return this.preview.update(itemIdx, isFormulaLine);
       },
       (isValid: boolean): void => {
-        isValid ? this.dialog.getButton('OK').classList.remove('disabled') : this.dialog.getButton('OK').classList.add('disabled');
+        const ok = this.dialog.getButton('OK');
+        ok.classList.toggle('disabled', !isValid);
+        isValid ? ok.removeAttribute('aria-disabled') : ok.setAttribute('aria-disabled', 'true');
       },
       singleAxisColumnNameForHost(src),
       defaultItemZIndexForHost(src),

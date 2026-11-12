@@ -30,15 +30,13 @@ Feature: Heat map layout, column labels, column cap and scrollbars
     And heat map viewer should be painted in at least 3 colors
     And no errors should have been logged
 
-  Scenario: In heat map mode the Row Height property row is disabled
-    # `$rowHeight` carries `dependsOn: "isGrid = true"` (grid_look.dart:98). Fixed 2026-09-21 in
-    # property_grid_lib.dart: the initial dependency pass only ran when the controlling property had
-    # a row of its own, and `isGrid` (not user-editable) has none, so the gate was never applied
-    # until `isGrid` itself was written. Left in a feature that never writes the mode, so the gate
-    # is read in its initial state.
+  Scenario: In heat map mode the grid-only Row Height has no row, and the heat map's own properties have
+    # `$rowHeight` carries `dependsOn: "isGrid = true"`, `heatmapColors` `dependsOn: "isGrid = false"`
+    # (grid_look.dart). A property gated on the non-editable `isGrid` is left out of the panel when the
+    # mode does not match, as it could never be enabled (GROK-20619, prop_grid.dart `isLockedOff`).
     When user clicks on settings icon of heat map viewer
-    Then "Row Height" property in context panel should be present
-    And "Row Height" property in context panel should be disabled
+    Then "Heatmap Colors" property in context panel should be present
+    And "Row Height" property in context panel should be absent
 
   Scenario: Col Labels Orientation is what was asked for, and what the layout resolved
     Then the "col labels orientation" reading of heat map viewer should be "Auto"

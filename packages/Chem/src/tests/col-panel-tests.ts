@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {waitUntil, category, expect, test} from '@datagrok-libraries/test/src/test';
 import { readDataframe } from './utils';
 
 
@@ -37,9 +37,8 @@ async function testInchiPanel(funcName: string, tableName: string, newColName: s
   const t = DG.DataFrame.fromCsv(csvForInchi);
   t.name = tableName;
   const v = grok.shell.addTableView(t);
-  await awaitCheck(() => v.dataFrame.name === tableName, undefined, 2000);
+  await waitUntil(() => v.dataFrame.name === tableName, `the ${tableName} view did not open`, 2000);
   await grok.functions.call(`Chem:${funcName}`, {table: t, molecules: t.columns.byName('smiles')});
-  await delay(1000);
   expect(t.columns.names().includes(newColName), true, `${newColName} column has not been added`);
   expect(t.col(newColName)!.get(0) === expected, true);
   v.close();

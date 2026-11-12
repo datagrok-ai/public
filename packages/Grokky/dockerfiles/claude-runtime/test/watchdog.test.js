@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const {raceIdle, IDLE, childProcesses} = require('../dist/watchdog');
+const {raceIdle, IDLE, processTable} = require('../dist/watchdog');
 
 const after = (ms, value) => new Promise((r) => setTimeout(() => r(value), ms));
 
@@ -32,15 +32,12 @@ test('does not hold the event loop open after resolving early', async () => {
   assert.ok(Date.now() - t0 < 1000, 'resolved promptly');
 });
 
-test('childProcesses returns an array and never throws off-Linux', () => {
-  const kids = childProcesses();
-  assert.ok(Array.isArray(kids));
-  for (const k of kids) {
-    assert.equal(typeof k.pid, 'number');
-    assert.equal(typeof k.command, 'string');
+test('processTable returns an array and never throws off-Linux', () => {
+  const table = processTable();
+  assert.ok(Array.isArray(table));
+  for (const p of table) {
+    assert.equal(typeof p.pid, 'number');
+    assert.equal(typeof p.ppid, 'number');
+    assert.equal(typeof p.command, 'string');
   }
-});
-
-test('childProcesses reports no children for an implausible parent pid', () => {
-  assert.deepEqual(childProcesses(2147483646), []);
 });

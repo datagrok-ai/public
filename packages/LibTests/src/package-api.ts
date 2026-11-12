@@ -8,18 +8,6 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function testViewerComponent(): Promise<void> {
-    return await grok.functions.call('LibTests:TestViewerComponent', {});
-  }
-
-  export async function testFromComponent(): Promise<void> {
-    return await grok.functions.call('LibTests:TestFromComponent', {});
-  }
-
-  export async function testElements(): Promise<void> {
-    return await grok.functions.call('LibTests:TestElements', {});
-  }
-
   export async function testAdd2(a: number , b: number ): Promise<number> {
     return await grok.functions.call('LibTests:TestAdd2', { a, b });
   }
@@ -98,6 +86,14 @@ export namespace funcs {
 
   export async function mockWrapperDF(params: any ): Promise<any> {
     return await grok.functions.call('LibTests:MockWrapperDF', { params });
+  }
+
+  export async function testToleranceInputs(plain: number , abs: number , rel: number , df: DG.DataFrame , both: number , dfCols: DG.DataFrame ): Promise<number> {
+    return await grok.functions.call('LibTests:TestToleranceInputs', { plain, abs, rel, df, both, dfCols });
+  }
+
+  export async function testToleranceBadInputs(notNumber: number , columns: number , count: number , badJson: DG.DataFrame , badColumn: DG.DataFrame ): Promise<number> {
+    return await grok.functions.call('LibTests:TestToleranceBadInputs', { notNumber, columns, count, badJson, badColumn });
   }
 
   /**

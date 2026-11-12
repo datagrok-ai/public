@@ -8,7 +8,7 @@ Category: **Bioinformatics**. Top menu: `Bio | ...`.
 
 ## Key Dependencies
 
-- `@datagrok-libraries/bio` — **core shared library**: macromolecule types, HELM types, splitters, palettes, MonomerWorks (seq→molfile), cell renderer engines, monomer hover, seq-helper/seq-handler interfaces
+- `@datagrok-libraries/bio` — **core shared library**: macromolecule types, HELM types, splitters, palettes, the assembly input for Chem's macromolecule assembler (seq→molfile), cell renderer engines, monomer hover, seq-helper/seq-handler interfaces
 - `@datagrok-libraries/ml` — distance matrices, dimensionality reduction (UMAP/tSNE), activity cliffs, KNN, MCL clustering, macromolecule distance functions
 - `@datagrok-libraries/math` — DBSCAN worker, WebGPU utilities
 - `@datagrok-libraries/utils` — BitArray, type declarations, SVG utilities
@@ -17,7 +17,6 @@ Category: **Bioinformatics**. Top menu: `Bio | ...`.
 - `@biowasm/aioli` — WebAssembly runtime for kalign (MSA)
 - `immunum` — WebAssembly antibody/TCR numbering (IMGT/Kabat) — run in a worker via `src/utils/antibody-numbering/`
 - `ajv` / `ajv-errors` — JSON schema validation for monomer libraries
-- `openchemlib` — molfile conversion, chirality engine
 
 ### Relationship to `@datagrok-libraries/bio`
 
@@ -120,8 +119,7 @@ Other packages depend on these implementations: **Helm**, **Peptides**, **Biostr
 - `seqHelper: ISeqHelper` — sequence operations facade
 - `monomerLib: IMonomerLib` — current merged monomer library
 - `monomerSets: IMonomerSet` — monomer set preferences
-- `rdKitModule: RDModule` — RDKit WebAssembly module
-- `properties: BioPackageProperties` — observable package settings (FontSize, MaxMonomerLength, TooltipWebLogo, DefaultSeparator)
+- `properties: BioPackageProperties` — package settings as loaded at init (FontSize, MaxMonomerLength, ShowConnections, TooltipWebLogo, DefaultSeparator); renderers read the live values through `utils/renderer-defaults.ts` (`getBioRendererDefaults()`)
 - `completeInit()` — wires up all singletons after loading
 
 ### Semantic Type Detector — `detectors.js`
@@ -144,7 +142,7 @@ Key methods: `detectSeparator()`, `detectAlphabet()`, `getAlphabetSimilarity()`,
 
 | File | Class | Purpose |
 |---|---|---|
-| `web-logo-viewer.ts` | `WebLogoViewer` | Canvas-based sequence logo viewer (~1430 lines). Renders monomer frequency/composition per position. Modes: Entropy (information content height) and Full (equal height). Supports aggregation by column, horizontal range slider, tooltips, click-to-filter. Properties: sequenceColumnName, positionWidth, startPosition, endPosition, mode, etc. |
+| `web-logo-viewer.ts` | `WebLogoViewer` | Canvas-based sequence logo viewer (~1430 lines). Renders monomer frequency/composition per position. Modes: Entropy (information content height) and Full (equal height). Supports aggregation by column, horizontal range slider, tooltips, click-to-filter. Properties: sequenceColumnName, positionWidth, startPosition, endPosition, mode, etc. The `profile` property draws a profile supplied by another package instead of the column's composition: the first function with `meta.role: webLogoProfile`, `(table, column, profile) => WebLogoProfile` (`libraries/bio/src/viewers/web-logo.ts`), returns per-position monomer heights and optionally the column position aligned to each (for click-to-select); e.g. HMM's profile HMM logos. |
 | `vd-regions-viewer.ts` | `VdRegionsViewer` | Antibody V-domain regions viewer (~530 lines). Displays FR1-4, CDR1-3 regions for Heavy/Light chains in a grid, each cell containing a child WebLogo. Supports IMGT-style nomenclature, fit-to-width, chain/region filtering. |
 | `utils.ts` | — | Single helper: `isReallyChanged(a, b, eps)` |
 
@@ -169,7 +167,6 @@ Key methods: `detectSeparator()`, `detectAlphabet()`, `getAlphabetSimilarity()`,
 | `to-atomic-level-widget.ts` | `toAtomicLevelSingle()` (seq→molfile), `toAtomicLevelWidget()` (2D molecule drawing), `molecular3DStructureWidget()` (3D NGL viewer) |
 | `sequence-scrolling-widget.ts` | `handleSequenceHeaderRendering()` — MSA column header with WebLogo + conservation tracks, viewport-aware lazy caching (50-position chunks), click to dock position statistics viewer. Installs the headers of every long non-HELM, known-alphabet column of a grid in one synchronous pass (re-run on columns added/removed, semantic types detected, the grid's table changed) and repaints the grid after it; the ruler names positions by the column's `.positionNames`, so regions extracted from a numbered aligned column keep the scheme's numbering |
 | `monomer-info-widget.ts` | `getMonomerInfoWidget()` — info-panel widget for `Monomer` semtype cells; renders the monomer card with structure, library origin and R-group info |
-| `package-settings-editor-widget.ts` | `PackageSettingsEditorWidget` — Bio package global settings form |
 
 ### Utilities (`src/utils/`)
 
@@ -179,12 +176,13 @@ Key methods: `detectSeparator()`, `detectAlphabet()`, `getAlphabetSimilarity()`,
 |---|---|
 | `cell-renderer.ts` | `MacromoleculeSequenceCellRenderer` — main cell renderer for macromolecule columns. Delegates to `MonomerPlacer` back-end from bio library. Also `MacromoleculeDifferenceCellRenderer` / `MacromoleculeDoubleCellRenderer` for showing diffs between two aligned sequences. |
 | `monomer-cell-renderer.ts` | `MonomerCellRenderer` — renders individual monomer cells with color from library. Extends `MonomerCellRendererBase`. |
+| `renderer-defaults.ts` | `getBioRendererDefaults()` — the sequence renderers' package defaults (FontSize, MaxMonomerLength with 'long' = 50, ShowConnections) read live from `_package.settings`; `parseBioRendererDefaults()` the pure parsing. Bio's renderer providers (`cell-renderer.ts`, `biln.ts`) pass them to `MonomerPlacer` as props |
 | `monomer-cell-renderer-base.ts` | `MonomerCellRendererBase` — abstract base that async-loads monomer library, invalidates grid on lib change |
 | `convert.ts` | `convert()` — dialog for notation conversion (FASTA ↔ SEPARATOR ↔ HELM ↔ BILN). `convertDo()` performs actual conversion via `ISeqHandler`. |
 | `get-region.ts` | `getRegionDo()` — extracts positional sub-region from macromolecule column via `ISeqHandler.getRegion()` |
 | `get-region-func-editor.ts` | Custom function-editor UI for the `getRegion` DG function (allows interactive position-range selection) |
 | `split-to-monomers.ts` | `splitToMonomersUI()` — splits aligned sequences into per-position `Monomer` columns using `splitAlignedSequences` |
-| `sequence-to-mol.ts` | `sequenceToMolfile()` — converts macromolecule column to atomic-level molfile column (linear via `_toAtomicLevel`, nonlinear via HELM converter) |
+| `sequence-to-mol.ts` | `sequenceToMolfile()` — converts a macromolecule column (any notation, read as it is) to an atomic-level molfile column on Chem's macromolecule assembler (`assembleSeqColumn`, linear layout with per-row fallback or non-linear), adds it with the hover link and the highlight tag |
 | `calculate-scores.ts` | `calculateScoresWithEmptyValues()` — wraps `calculateIdentityScoring`/`calculateChemSimilarityScoring` from bio lib, handles empty values |
 | `save-as-fasta.ts` | `saveAsFastaUI()` — dialog + download for FASTA export. `buildFasta()` builds the string. |
 | `biln.ts` | `BilnNotationProvider` — notation provider for BILN sequences with splitter, HELM converter, cell renderer back-end |
@@ -217,6 +215,7 @@ To add a new alignment engine (in this or any other package):
 3. All **remaining parameters** are engine-specific configuration (method, gap penalties, etc.) and will be rendered automatically in the MSA dialog under "Alignment parameters".
 4. The function must **create and return** the aligned output column with appropriate metadata tags (`meta.units`, `semType`, `aligned`, `alphabet`, `separator`, etc.). Different engines can produce different output notations (e.g. PepSeA produces separator notation with `.` delimiter).
 5. The MSA dialog handles clustering and row selection — the engine function receives a single column to align.
+6. *Canonical sequences*: by default engines are offered only for non-canonical columns (HELM, separator with an unknown alphabet), which they receive as HELM. An engine with `meta.acceptsCanonical: 'true'` is also offered for canonical DNA/RNA/protein columns (next to Kalign, which stays the default) and receives them as FASTA (e.g. HMM's `alignToProfile`, hmmalign).
 
 Example (decorator style):
 ```typescript
@@ -240,7 +239,7 @@ See `pepseaMsa()` in `package.ts` and `alignWithPepsea()` in `pepsea.ts` for a c
 
 | File | Purpose |
 |---|---|
-| `utils/annotations/numbering-ui.ts` | `showNumberingSchemeDialog()` — generic dialog for applying antibody numbering. Discovers registered engines via `DG.Func.find({meta: {role: 'antibodyNumbering'}})`, reads the selected engine's `scheme` parameter `choices` to populate the scheme dropdown (updates when the engine changes), runs the chosen engine, and applies the result (regions/annotations + aligned column). |
+| `utils/annotations/numbering-ui.ts` | `showNumberingSchemeDialog()` — generic dialog for applying antibody numbering. Discovers registered engines via `DG.Func.find({meta: {role: 'antibodyNumbering'}})` (engines of other packages first, so an installed one is the default and the built-in immunum the fallback), reads the selected engine's `scheme` parameter `choices` to populate the scheme dropdown (updates when the engine changes), shows the engine's extra parameters as options, runs the chosen engine, and applies the result (regions/annotations + aligned column). |
 | `utils/antibody-numbering/number-antibody.ts` | `numberAntibodyColumn()` — built-in Bio engine. Runs immunum in a worker, builds the result DataFrame in the shape the dialog expects (`position_names`, `chain_type`, `annotations_json`, `numbering_detail`, `numbering_map`). |
 | `utils/antibody-numbering/immunum-client.ts` | Worker client: spawns a **fresh worker per call** and terminates it before returning so the WASM instance is freed. Request/response is one `MessageChannel` round-trip. |
 | `utils/antibody-numbering/immunum.worker.ts` | Worker entry — fetches `immunum_bg.wasm` from the dist/ directory (resolved via `self.location`), initializes the module, caches an `Annotator` per (scheme, chains) tuple for the lifetime of the worker, converts immunum's `Map<posCode, residue>` + `query_start` into the per-row result shape. |
@@ -251,7 +250,7 @@ See `pepseaMsa()` in `package.ts` and `alignWithPepsea()` in `pepsea.ts` for a c
 
 | File | Purpose |
 |---|---|
-| `annotation-manager.ts` | `AnnotationManager` — model layer. Owns the per-column annotation list, persists to/from the column's `.annotations` tag (JSON `SeqAnnotation[]`), exposes add/update/remove + change observable for UI re-renders |
+| `annotation-manager.ts` | Re-exports `@datagrok-libraries/bio/src/utils/macromolecule/annotation-manager` (moved to the library so other packages write annotations the same way): the per-column annotation list in the column's `.annotations` tag (JSON `SeqAnnotation[]`), per-row hits in the hidden companion column, add/remove/merge helpers |
 | `annotation-manager-ui.ts` | `showAnnotationManagerDialog()` — UI for viewing/editing the annotations on a macromolecule column (region, motif, liability entries) |
 | `annotation-actions.ts` | Toolbar/context-menu actions that hook annotation creation off cell selection or position ranges |
 | `liability-scanner.ts` | `scanLiabilitiesOnColumn()` — scans macromolecule sequences for sequence-liability motifs (deamidation, oxidation, glycosylation, etc.); records hits as `SeqAnnotation`s with `LiabilitySeverity` |
@@ -284,6 +283,7 @@ To add a new engine (in this package or any other):
 3. The returned DataFrame **must** have the 5 string columns listed above with exactly those names — the numbering-ui dialog reads them by name.
 4. `position_names` / `numbering_detail` / `numbering_map` must agree: every code in `position_names` must key `numbering_map` and have a matching entry in `numbering_detail`.
 5. `annotations_json` is a JSON-serialized array of region definitions with `start` / `end` as scheme position codes (strings like `"1"`, `"105"`), **not** char indices. Use `SCHEME_REGIONS` from `@datagrok-libraries/bio/src/utils/macromolecule/numbering-schemes` for the canonical boundaries.
+6. *Optional engine options*: any parameters after `scheme` (e.g. preferred species, a score threshold) are shown by the dialog under the scheme, built from their declarations (`choices`, `initialValue`, `caption`, `description`), and passed by name. Give each a default so callers that pass only `(df, seqCol, scheme)` keep working.
 
 Reference implementation: `immunumAntibodyNumbering()` in `package.ts` and `numberAntibodyColumn()` in `utils/antibody-numbering/number-antibody.ts`.
 
@@ -296,7 +296,7 @@ Existing engines:
 | File | Purpose |
 |---|---|
 | `numbering-ui.ts` | `showNumberingSchemeDialog()` — generic dialog that discovers `meta.role: 'antibodyNumbering'` engines, populates the scheme dropdown from the chosen engine's `scheme` param `choices`, runs the engine, and applies its result (annotations + aligned column). See "Adding a New Antibody Numbering Engine" |
-| `annotation-manager.ts` | `AnnotationManager` — owns the per-column `RowAnnotationData[]`, persists to a column tag, fires events when annotations change. Backbone for the `manageAnnotations` UI |
+| `annotation-manager.ts` | Re-export of the library's annotation storage helpers (per-row `RowAnnotationData` in the companion column). Backbone for the `manageAnnotations` UI |
 | `annotation-manager-ui.ts` | UI for `Bio | Annotate | Manage Annotations...` — table + buttons for creating / editing / removing per-row annotations |
 | `annotation-actions.ts` | Annotation actions registry — bulk operations (clear, copy from another column, etc.) and the right-click action set wired into the cell renderer |
 | `liability-scanner.ts` | Liability rules engine — scans macromolecule sequences for chemistry liabilities (deamidation `NG`, oxidation `M`, …) and emits `SeqAnnotationHit[]` keyed by `LiabilitySeverity` |
@@ -347,8 +347,8 @@ Existing engines:
 
 | File | Purpose |
 |---|---|
-| `utils.ts` | `getMolColumnFromHelm()` (HELM → beautified V3K molfile column), `getSmilesColumnFromHelm()` (HELM → SMILES column) |
-| `converter/` | Full pipeline (~20 files) for HELM → V3K molfile conversion. `HelmToMolfileConverter` class handles HELM decomposition → monomer assembly → composite V3K with monomer-position maps and chirality (via OpenChemLib). |
+| `utils.ts` | `getMolColumnFromHelm()` (HELM → non-linear V3K molfile column; behind `HELM to Molecule`) |
+| `converter/converter.ts` | `HelmToMolfileConverter` — the `IHelmToMolfileConverter` implementation kept as a wrapper over the assembler (its own HELM parser, monomer wrappers and the RDKit/OpenChemLib steps were removed): made by the async `SeqHelper.getHelmToMolfileConverter()`, which readies the assembler's main-thread module and the library, its methods stay synchronous on the assembler's sync twins; `convertToMolfileV3K()` with per-row maps, `convertToMolfileV3KColumn()`, `convertToRdKitBeautifiedMolfileColumn()` (the `HELM to Molecule` path); `helmListColumn()` / `asHelmColumn()` |
 
 #### Substructure Search — `src/substructure-search/`
 
@@ -377,9 +377,7 @@ Existing engines:
 |---|---|
 | `bio01-similarity-diversity.ts` | Similarity & diversity search side-by-side |
 | `bio01a-hierarchical-clustering-and-sequence-space.ts` | UMAP sequence space + hierarchical clustering |
-| `bio01b-hierarchical-clustering-and-activity-cliffs.ts` | Activity cliffs + UMAP + clustering |
-| `bio03-atomic-level.ts` | HELM → atomic level conversion with monomer hover highlighting |
-| `bio05-helm-msa-sequence-space.ts` | HELM MSA via PepSeA + sequence space scatter plot |
+| `bio01b-hierarchical-clustering-and-activity-cliffs.ts` | Activity cliffs: opens the saved demo project and its cliffs grid |
 | `utils.ts` | Shared: `demoSequenceSpace()` (UMAP/tSNE + scatter), constants |
 
 ## Automation surface (`bdd/`)
@@ -392,6 +390,12 @@ vocabulary). What the package exposes for them, and must keep:
   `monomer <M> at position <label>` (CSS px of the canvas, the last laid-out range); readings
   `positions shown`, `rows shown`, `rows selected`. `isRenderPending` is true from a render
   request to the paint; `onRendered` fires after every render pass.
+- A sequence cell's renderer back (`MonomerPlacer`, kept in the grid column's `temp.rendererBack`, or in the
+  table column's for a notation provider such as BILN's; Helm's `HelmGridCellRendererBack` for HELM) answers
+  `getMonomerPoint(gridCell, position)`: where it drew that monomer, px from the cell's top left, the point its
+  hover hit test maps back to it. The bdd step `user hovers over monomer N of the "cell R of <col>" area of grid`
+  (the bdd library's viewers tier, `bindings/tiers/viewers/widgets.ts`) rests the pointer there and waits for
+  the monomer's tooltip.
 - The MSA header over a long sequence column (`MSAScrollingHeader`, installed by
   `widgets/sequence-scrolling-widget.ts`) adds to the grid's status, while the header is on screen,
   the readings `header tracks of <col>` (the tracks shown, top to bottom: `Conservation, WebLogo,
@@ -439,20 +443,24 @@ Test entry point: `src/package-test.ts` — imports all test files, exports `tes
 | `seq-handler-get-helm-tests.ts` | HELM conversion from other notations |
 | `renderers-test.ts` | Cell renderer behavior |
 | `renderers-monomer-placer-tests.ts` | MonomerPlacer rendering engine |
+| `renderers-connections-tests.ts` | Category `renderers: connections`: connections drawn as lines (flat positions, lanes, rings, combs, fit by height, one line per chain), canonical symbols when drawn, the column tag over the package default, multiline chain breaks, stacked hit bounds, the bond tooltip, a font size reaching every grid, package defaults (`renderer-defaults.ts`) |
 | `converters-test.ts` | Notation conversion |
 | `bio-tests.ts` | General bio functionality |
 | `helm-tests.ts` | HELM-specific operations |
 | `msa-tests.ts` | Multiple sequence alignment |
 | `pepsea-tests.ts` | PepSeA Docker MSA |
 | `antibody-numbering-tests.ts` | Immunum antibody numbering worker + DataFrame shape (IMGT/Kabat, heavy/light, empty-input handling) |
-| `to-atomic-level-tests.ts` | Sequence → molfile conversion |
-| `to-atomic-level-ui-tests.ts` | Atomic level UI widgets |
+| `liability-scanner-tests.ts` | Scan Liabilities rules: hits and their positions, the annotation and summary count columns |
+| `to-atomic-level-tests.ts` | Sequence → molfile conversion (goldens marked TODO(goldens): regenerate from Crux), HELM RNA chemistry checked on the molblock graph, hover maps |
+| `to-atomic-level-ui-tests.ts` | `sequenceToMolfile` linear/non-linear heavy-atom and bond counts |
+| `to-atomic-level-crux-tests.ts` | Category `toAtomicLevelCrux`: reproducing tests of the bugs the assembler fixes (connections ≥ 100, mixed types, annotated chains, siRNA pairs, per-row errors, R10, X caps, sugar stereo, wedge-shift monomers, dehydro double bonds, gap map, multi-chain linear, fixed repeats) |
+| `utils/molblock-graph.ts` | Engine-free chemistry checks on molblocks (atom/bond graph, SSSR, the SMARTS features the tests count), `canonicalSmiles()` through `Chem:convertMolNotation` |
+| `assembly-input-tests.ts` | Category `assemblyInput`: the macromolecule assembler's input (bio lib `assembly-input.ts`, `library-json.ts`): notations to `AsmSequence`, library keys, per-row errors, `buildSeqBatch`, pack/unpack, the effective library JSON and override keys |
 | `activity-cliffs-tests.ts` | Activity cliff detection |
 | `sequence-space-test.ts` | Sequence space UMAP/tSNE |
 | `similarity-diversity-tests.ts` | Similarity/diversity viewers |
 | `substructure-filters-tests.ts` | Substructure filter |
 | `monomer-libraries-tests.ts` | Monomer library loading/merging |
-| `lib-tests.ts` | Library management |
 | `scoring.ts` | Identity/similarity scoring |
 | `WebLogo-positions-test.ts` | WebLogo position handling |
 | `WebLogo-project-tests.ts` | WebLogo save/load projects |
@@ -489,6 +497,7 @@ Test entry point: `src/package-test.ts` — imports all test files, exports `tes
 | `FontSize` | int | 12 | Font size for monomer symbols in renderer |
 | `MaxMonomerLength` | string | "4" | Max displayed monomer symbol length ("long" = unlimited) |
 | `TooltipWebLogo` | bool | true | Show WebLogo in column header tooltip |
+| `ShowConnections` | bool | true | Draw BILN cyclizations and inter-chain bonds as lines in sequence cells when rows are tall enough (column override: the `.mm.cellRenderer.showConnections` tag, Renderer Settings "Show Connections") |
 | `DefaultSeparator` | string | "." | Default separator for notation conversion |
 
 ## Data Files
@@ -533,7 +542,7 @@ Test entry point: `src/package-test.ts` — imports all test files, exports `tes
 | Notation conversion | `src/utils/convert.ts` |
 | Compare two macromolecule columns | `src/utils/compare-sequences.ts` |
 | Seq → molfile conversion | `src/utils/sequence-to-mol.ts` |
-| HELM → molfile pipeline | `src/utils/helm-to-molfile/converter/` |
+| HELM → molfile (assembler wrapper) | `src/utils/helm-to-molfile/converter/converter.ts` |
 | FASTA import/export | `src/utils/save-as-fasta.ts` + bio lib `FastaFileHandler` |
 | Pairwise alignment | `src/seq_align.ts` (`SequenceAlignment`) |
 | BILN notation support | `src/utils/biln.ts` |

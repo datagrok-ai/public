@@ -12,7 +12,8 @@ export interface StateOptions {
 }
 
 export class StateSource extends Component implements BindSource {
-  readonly value: Signal<unknown>;
+  /** The value's signal, for wiring. */
+  readonly signal: Signal<unknown>;
   readonly type: string;
   readonly initial: unknown;
 
@@ -25,13 +26,27 @@ export class StateSource extends Component implements BindSource {
       specWarn(`u2-state: ${refusal} — starting empty`);
     this.initial = refusal === null && options.initial !== undefined ?
       options.initial : StateSource._empty(this.type);
-    this.value = signal(this.initial);
+    this.signal = signal(this.initial);
     this.registerFunction({name: 'clear', description: 'Back to the initial value', inputs: [],
-      apply: () => this.value.value = this.initial});
+      apply: () => this.value = this.initial});
+  }
+
+  /** The value: followed when read inside an `effect` or a `computed`; set it to change it. */
+  get value(): unknown {
+    return this.signal.value;
+  }
+
+  set value(x: unknown) {
+    this.signal.value = x;
+  }
+
+  /** The value, not followed. */
+  peek(): unknown {
+    return this.signal.peek();
   }
 
   bindStep(name: string): Signal<unknown> | null {
-    return name === 'value' || name === '' ? this.value : null;
+    return name === 'value' || name === '' ? this.signal : null;
   }
 
   bindProps(): BindProp[] {

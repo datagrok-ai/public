@@ -1,4 +1,5 @@
 import Choices from "choices.js";
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 export abstract class ChoiceInputBase {
@@ -10,6 +11,13 @@ export abstract class ChoiceInputBase {
         this.choices = choices;
         this.field = field;
         this.emptyLabel = emptyLabel;
+        // ui.input.choice starts disabled without items, and Choices keeps the state it is created with.
+        choices.enable();
+    }
+
+    static async queryValues(funcName: string, colName: string): Promise<string[]> {
+        const df: DG.DataFrame | null = await grok.functions.call(funcName);
+        return df?.col(colName)?.categories ?? [];
     }
 
     getSelectedItems(): string[] {

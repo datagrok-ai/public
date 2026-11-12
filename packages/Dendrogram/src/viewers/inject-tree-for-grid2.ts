@@ -429,6 +429,7 @@ export function injectTreeForGridUI2(
 
   const subs: Unsubscribable[] = [];
   subs.push(treeNb.onClosed.subscribe(treeNeighborOnClosed));
+  subs.push(grid.onDetached.subscribe(treeNeighborOnClosed));
   subs.push(renderer.onCurrentChanged.subscribe(rendererOnCurrentChanged));
   subs.push(renderer.onMouseOverChanged.subscribe(rendererOnMouseOverChanged));
   subs.push(renderer.onSelectionChanged.subscribe(rendererOnSelectionChanged));

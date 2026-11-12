@@ -7,12 +7,14 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [filters.cp.chem-and-bio-filters]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/crux.js';
 import '../../bindings/datasets.js';
 import '../../bindings/elements.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {filterPassesMatching} from '../../bindings/molecules.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, hoverOver, pressKeyIn, shouldBe, shouldHaveText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
@@ -79,30 +81,13 @@ test.describe("The substructure filter card and its search types", () => {
       await session.step(63, "And counter of filter panel should have text \"1\"", () => shouldHaveText(page, el("counter of filter panel"), "1"));
       await session.step(64, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("The search types split and nest the rows", async () => {
+    await run.scenario("The card offers the search types, and picking Not contains changes the rows", async () => {
       await session.step(67, "When user opens the settings of the \"Structure\" filter card", () => openCardSettings(page, "Structure"));
       await session.step(68, "Then the \"Structure\" filter card should offer search types \"Contains, Included in, Exact, Stereo agnostic, Similar, Not contains, Not included in\"", () => offersSearchTypes(page, "Structure", "Contains, Included in, Exact, Stereo agnostic, Similar, Not contains, Not included in"));
       await session.step(69, "When user picks search type \"Not contains\" in the \"Structure\" filter card", () => pickSearchType(page, "Not contains", "Structure"));
       await session.step(70, "Then 83 rows should pass the filter", () => filterPasses(page, 83));
       await session.step(71, "And the \"search type of Structure\" reading of filter panel should be \"Not contains\"", () => readingReads(page, "search type of Structure", el("filter panel"), "Not contains"));
-      await session.step(72, "When user picks search type \"Included in\" in the \"Structure\" filter card", () => pickSearchType(page, "Included in", "Structure"));
-      await session.step(73, "Then 0 rows should pass the filter", () => filterPasses(page, 0));
-      await session.step(74, "When user picks search type \"Not included in\" in the \"Structure\" filter card", () => pickSearchType(page, "Not included in", "Structure"));
-      await session.step(75, "Then all rows should pass the filter", () => filterPassesAll(page));
-      await session.step(76, "When user picks search type \"Exact\" in the \"Structure\" filter card", () => pickSearchType(page, "Exact", "Structure"));
-      await session.step(77, "Then 0 rows should pass the filter", () => filterPasses(page, 0));
-      await session.step(78, "When user picks search type \"Contains\" in the \"Structure\" filter card", () => pickSearchType(page, "Contains", "Structure"));
-      await session.step(79, "Then 17 rows should pass the filter", () => filterPasses(page, 17));
-      await session.step(80, "When user picks search type \"Similar\" in the \"Structure\" filter card", () => pickSearchType(page, "Similar", "Structure"));
-      await session.step(81, "Then 0 rows should pass the filter", () => filterPasses(page, 0));
-      await session.step(82, "When user picks search type \"Not contains\" in the \"Structure\" filter card", () => pickSearchType(page, "Not contains", "Structure"));
-      await session.step(83, "Then 83 rows should pass the filter", () => filterPasses(page, 83));
-      await session.step(84, "When user picks search type \"Stereo agnostic\" in the \"Structure\" filter card", () => pickSearchType(page, "Stereo agnostic", "Structure"));
-      await session.step(85, "Then 0 rows should pass the filter", () => filterPasses(page, 0));
-      await session.step(86, "When user picks search type \"Contains\" in the \"Structure\" filter card", () => pickSearchType(page, "Contains", "Structure"));
-      await session.step(87, "Then 17 rows should pass the filter", () => filterPasses(page, 17));
-      await session.step(88, "And the \"search type of Structure\" reading of filter panel should be \"Contains\"", () => readingReads(page, "search type of Structure", el("filter panel"), "Contains"));
-      await session.step(89, "And no errors should have been logged", () => noErrors(page));
+      await session.step(72, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

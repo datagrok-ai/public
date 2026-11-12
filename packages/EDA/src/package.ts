@@ -189,6 +189,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Reduce Dimensionality...',
+    'requiresTableView': true,
     'name': 'Multi Column Dimensionality Reduction',
   })
   static async reduceDimensionality(): Promise<void> {
@@ -258,6 +259,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Cluster | MCL...',
+    'requiresTableView': true,
     'name': 'MCL Clustering',
     'description': 'Markov clustering (MCL) is an unsupervised clustering algorithm for graphs based on simulation of stochastic flow.',
     'editor': 'EDA:GetMCLEditor',
@@ -330,6 +332,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Analyze | PLS...',
+    'requiresTableView': true,
     'description': 'Compute partial least squares (PLS) regression components. They maximally summarize the variation of the predictors while maximizing correlation with the response variable.',
   })
   static async topMenuPLS(): Promise<void> {
@@ -339,6 +342,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Analyze | Multivariate Analysis...',
+    'requiresTableView': true,
     'name': 'multivariateAnalysis',
     'description': 'Multidimensional data analysis using partial least squares (PLS) regression.',
   })
@@ -397,13 +401,14 @@ export class PackageFunctions {
     'name': 'MVA demo',
     'description': 'Multidimensional data analysis using partial least squares (PLS) regression. It identifies latent factors and constructs a linear model based on them.',
   })
-  static async demoMultivariateAnalysis(): Promise<void> {
-    await runDemoMVA();
+  static demoMultivariateAnalysis(): void {
+    runDemoMVA();
   }
 
 
   @grok.decorators.func({
     'top-menu': 'ML | Analyze | Group Comparison | T-test...',
+    'requiresTableView': true,
     'name': 'T-test',
     'description': 'Two-sample t-test (Welch or Student) compares the means of a feature between two groups.',
   })
@@ -414,6 +419,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Analyze | Group Comparison | ANOVA...',
+    'requiresTableView': true,
     'name': 'ANOVA',
     'description': 'One-way analysis of variances (ANOVA) determines whether the examined factor has a significant impact on the explored feature.',
   })
@@ -424,6 +430,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Analyze | Group Comparison | Control Comparisons...',
+    'requiresTableView': true,
     'name': 'Control comparisons',
     'description': 'Compare several groups against a single control (Dunnett\'s test or Holm-corrected Welch\'s t-tests).',
   })
@@ -434,6 +441,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Impute Missing Values...',
+    'requiresTableView': true,
     'name': 'KNN impute',
     'description': 'Missing values imputation using the k-nearest neighbors method (KNN)',
   })
@@ -1568,6 +1576,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Pareto Front...',
+    'requiresTableView': true,
     'name': 'Pareto Front',
     'description': 'Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.',
   })

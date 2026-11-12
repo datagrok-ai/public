@@ -11,12 +11,14 @@ import {mouseOverRowIs} from '../bindings/platform/columns.js';
 import {newestMatchingDistinct, newestMatchingFilled} from '../bindings/platform/commands.js';
 import {setTableTag, tableTagIsFile} from '../bindings/platform/data.js';
 import {taskBarFinished, taskBarShown, watchTaskBar} from '../bindings/platform/events.js';
-import {openTableOf} from '../bindings/platform/steps.js';
-import {fixtureFamilies, isStaleFixture, serviceGap} from '../src/runtime/server.js';
+import {openTableOf, SKETCHER_CONTROLS_TAG, sketcherPin} from '../bindings/platform/steps.js';
+import {fixtureFamilies, isStaleFixture, RUN_SUFFIX, serviceGap} from '../src/runtime/server.js';
 import {el} from '../src/runtime/args.js';
-import {select} from '../src/runtime/gestures.js';
+import {columnSelectorChoices, select} from '../src/runtime/gestures.js';
+import {expectReading, hitArea, readValue} from '../src/runtime/viewers.js';
 import {locate} from '../src/runtime/locate.js';
 import {knownFailure} from '../src/runtime/harness.js';
+import {StepFailure} from '../src/runtime/failure.js';
 import {whileExpectedToFail} from '../src/runtime/patience.js';
 
 let missing = '';
@@ -131,6 +133,58 @@ scenario('a Dart property row opens its editor on the value before a choice is m
   assert.equal((await (await locate(page!, el('label of "Newick Tag" property'))).textContent())?.trim(), 'Newick Tag');
 });
 
+/** A Dart column property as `column_combo_box.dart` behaves: a press opens the picker, which over 20 columns shows
+ * its search box focused; a task later the focus goes to the search box or the selector, and Escape closes it. */
+async function columnProperty(p: Page, columns: string[]): Promise<void> {
+  await p.setContent(`<table><tr class="property-grid-item" name="prop-color"><td class="property-grid-item-name">
+    <div class="property-grid-item-name-text"><span>Color</span></div></td><td class="property-grid-item-value">
+    <div class="d4-column-selector" tabindex="0" style="width:120px;height:20px"></div></td></tr></table>`);
+  await p.evaluate((names) => {
+    const w = window as any;
+    w.DG = {Widget: {find: () => ({gridRowToTable: (r: number) => r,
+      dataFrame: {filter: {trueCount: names.length}, col: () => ({get: (i: number) => names[i]})}})}};
+    const selector = document.querySelector('.d4-column-selector') as HTMLElement;
+    selector.addEventListener('mousedown', (md) => {
+      md.preventDefault();
+      const picker = document.createElement('div');
+      picker.innerHTML = '<div class="d4-column-grid" style="width:100px;height:100px">' +
+        '<div class="d4-column-selector-backdrop"></div><div name="viewer-Grid" style="width:100px;height:80px"></div></div>';
+      document.body.append(picker);
+      let search: HTMLInputElement | null = null;
+      if (names.length > 20) {
+        search = document.createElement('input');
+        search.className = 'd4-column-selector-search-input';
+        picker.prepend(search);
+        search.focus();
+        search.addEventListener('keydown', (kd) => {
+          if (kd.key === 'Escape') {
+            picker.remove();
+            kd.stopImmediatePropagation();
+          }
+        });
+      }
+      setTimeout(() => {
+        (search ?? selector).focus();
+        document.addEventListener('keydown', (kd) => {
+          if (kd.key === 'Escape')
+            picker.remove();
+        }, {once: true});
+      }, 0);
+    });
+  }, columns);
+}
+
+scenario('a column property offers its columns in order and its picker closes, search box or not', async () => {
+  const few = ['AGE', 'SEX', 'RACE'];
+  await columnProperty(page!, few);
+  assert.deepEqual(await columnSelectorChoices(page!, el('"Color" property')), few);
+  assert.equal(await page!.locator('.d4-column-grid').count(), 0, 'the picker is dismissed');
+  const many = Array.from({length: 22}, (_, i) => `AE${i}`);
+  await columnProperty(page!, many);
+  assert.deepEqual(await columnSelectorChoices(page!, el('"Color" property')), many);
+  assert.equal(await page!.locator('.d4-column-grid').count(), 0, 'the picker with a search box is dismissed');
+});
+
 scenario('the task bar record keeps an entry the bar has already removed', async () => {
   await page!.setContent('<div class="d4-task-bar"></div>');
   await watchTaskBar(page!);
@@ -158,6 +212,45 @@ scenario('the mouse-over row counts from 1, and a filled element is told from on
   await fails(() => fillsParent(page!, el('Half viewer')));
 });
 
+scenario('a widget outside any viewer that reports a status is found up from its element: its hit areas and readings; a container that reports nothing is not a viewer', async () => {
+  await page!.setContent(`<div style="padding:30px"><div data-widget="true" name="Probe" style="position:relative;left:5px;width:200px;height:100px">
+    <div id="inner" style="width:50px;height:50px"></div></div><div data-widget="true" name="Plain" style="width:20px;height:20px"></div>
+    <div data-widget="true" name="Gallery" style="width:200px;height:50px"><a style="display:block;width:50px;height:20px">Card</a></div></div>`);
+  await page!.evaluate(() => {
+    const w = window as any;
+    const root = document.querySelector('[name="Probe"]')!;
+    const probe = {root, type: 'Probe', isRenderPending: false,
+      getWidgetStatus: () => ({parts: {}, hitAreas: {'atom 0': {x: 10, y: 20, width: 8, height: 8}}, values: {smiles: 'CC'}})};
+    const gallery = document.querySelector('[name="Gallery"]')!;
+    const view = {root: gallery, type: 'scripts', getWidgetStatus: () => ({parts: {}, hitAreas: {}})};
+    w.grok = {shell: {tableViews: []}};
+    w.DG = {Widget: {find: (e: Element) => e === root ? probe : e === gallery ? view : null}};
+  });
+  const r = await page!.locator('[name="Probe"]').boundingBox();
+  assert.deepEqual(await hitArea(page!, el('Probe widget'), 'atom 0'), {x: r!.x + 10, y: r!.y + 20, width: 8, height: 8});
+  assert.equal(await readValue(page!, el('Probe widget'), 'smiles'), 'CC');
+  await assert.rejects(() => readValue(page!, el('Plain widget'), 'smiles'), /not a viewer/);
+  await assert.rejects(() => readValue(page!, el('Card link'), 'smiles'), /not a viewer/);
+});
+
+scenario('a reading waits for a viewer the platform knows only after its element is on the page', async () => {
+  // an element can be on the page while the platform does not know it as a viewer (one being built): the read threw
+  // "the element is not a viewer", which `expect.poll` does not retry, and the step failed at once, reporting "no
+  // readings" (seen in the Peptides pane's WebLogo scenario, 2026-11-04)
+  await page!.setContent('<div name="viewer-Logo" style="width:100px;height:50px"></div>');
+  await standIn(page!, {seq: ['T']}); // the shell and the events the viewer runtime subscribes to
+  await page!.evaluate(() => {
+    const w = window as any;
+    const root = document.querySelector('[name="viewer-Logo"]')!;
+    const logo = {root, type: 'Logo', isRenderPending: false,
+      getWidgetStatus: () => ({parts: {}, hitAreas: {}, values: {'rows selected': 630}})};
+    let known = false;
+    setTimeout(() => known = true, 300);
+    w.DG = {Widget: {find: (e: Element) => known && e === root ? logo : null}};
+  });
+  await expectReading(page!, el('Logo viewer'), 'rows selected', 'equal', 630);
+});
+
 scenario('a table tag is compared with a file byte for byte', async () => {
   await page!.setContent('<div></div>');
   await standIn(page!, {node: ['a']});
@@ -176,14 +269,28 @@ test('a known failure passes when its steps fail and fails when they pass', asyn
   await assert.rejects(() => knownFailure(async () => undefined), /tagged @known-failure and passed/);
 });
 
+test('a known failure pinned to a line passes only when the step at that line fails', async () => {
+  const at = (line: number) => new StepFailure(`features/a.feature:${line}`, 'Then x', 'the defect');
+  await knownFailure(async () => { throw at(12); }, 12);
+  await assert.rejects(() => knownFailure(async () => { throw at(9); }, 12), /tagged @known-failure:12, but did not fail at line 12/);
+  await assert.rejects(() => knownFailure(async () => { throw new Error('a binding broke'); }, 12), /did not fail at line 12/);
+  await assert.rejects(() => knownFailure(async () => undefined, 12), /tagged @known-failure and passed/);
+});
+
 test('a fixture of a dead run is stale after an hour; a live, a foreign or an unsuffixed one is not', () => {
-  const families = fixtureFamilies(['BDD-GL-Group-1789927107045', 'BDD-Share-Model-2f1c9c3e-0b1a-4c2d-8e9f-0123456789ab', 'BDD-CP-Root']);
-  assert.deepEqual(families, ['BDD-GL-Group', 'BDD-Share-Model']);
+  const families = fixtureFamilies(['BDD-GL-Group-1789927107045', 'BDD-Share-Model-2f1c9c3e-0b1a-4c2d-8e9f-0123456789ab', 'BDD-CP-Root',
+    'BddDouble1789927107045']);
+  assert.deepEqual(families, ['BDD-GL-Group', 'BDD-Share-Model', 'BddDouble']);
   const now = 1789930000000;
   const old = now - 2 * 3600 * 1000;
   const at = (name: string, createdOn: number) => ({name, friendlyName: name, createdOn});
   assert.equal(isStaleFixture(at('BDD-GL-Group-1789900000000', old), families, now), true);
   assert.equal(isStaleFixture(at('BDD-Share-Model-9f8e7d6c-5b4a-4321-8765-ba9876543210', old), families, now), true);
+  assert.equal(isStaleFixture(at('BddDouble1789900000000', old), families, now), true);
+  // a {time} suffix is the fixture's start, with or without its dash; a {run} one dates nothing
+  assert.equal(Number(RUN_SUFFIX.exec('bdd-sm-schema-1789900000000')?.[1]), 1789900000000);
+  assert.equal(Number(RUN_SUFFIX.exec('BddDouble1789900000000')?.[1]), 1789900000000);
+  assert.equal(RUN_SUFFIX.exec('BDD-Share-Model-9f8e7d6c-5b4a-4321-8765-ba9876543210')?.[1], undefined);
   assert.equal(isStaleFixture(at('BDD-GL-Group-1789900000000', now - 5 * 60 * 1000), families, now), false);
   assert.equal(isStaleFixture(at('BDD-GL-Renamed-1789900000000', old), families, now), false);
   assert.equal(isStaleFixture(at('BDD-GL-Group', old), families, now), false);
@@ -199,4 +306,15 @@ test('a service gate skips on a service the stand reports missing or down, and l
   assert.equal(serviceGap(services, 'No Such Service'), 'absent');
   assert.equal(serviceGap([], 'Jupyter'), '');
   assert.equal(serviceGap([], 'Jupyter', true), 'the stand reports no service health');
+});
+
+test('the molecule sketcher pinned is the one the feature names, or the run override; a feature about the controls of one sketcher skips under another', () => {
+  assert.deepEqual(sketcherPin('OpenChemLib', undefined, []), {pin: 'OpenChemLib'});
+  assert.deepEqual(sketcherPin('OpenChemLib', '', []), {pin: 'OpenChemLib'});
+  assert.deepEqual(sketcherPin('OpenChemLib', ' ', [SKETCHER_CONTROLS_TAG]), {pin: 'OpenChemLib'});
+  assert.deepEqual(sketcherPin('OpenChemLib', 'Crux', ['@journey']), {pin: 'Crux'});
+  assert.deepEqual(sketcherPin('Crux', 'Crux', [SKETCHER_CONTROLS_TAG]), {pin: 'Crux'});
+  const skipped = sketcherPin('Ketcher', ' Crux ', ['@journey', SKETCHER_CONTROLS_TAG]);
+  assert.ok('skip' in skipped);
+  assert.match((skipped as {skip: string}).skip, /Ketcher's own controls .*"Crux" \(BDD_MOLECULE_SKETCHER\)/);
 });

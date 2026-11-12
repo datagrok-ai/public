@@ -155,6 +155,11 @@ export class FormsViewer extends DG.JsViewer {
     ui.tooltip.bind(this.mouseOverRowIndicator, 'Mouse over row');
 
     this.root.addEventListener('contextmenu', () => this.contextMenuRowIdx = -1, true);
+    // a card re-rendered under the pointer goes without its mouseleave, so leaving the viewer clears the row
+    this.root.addEventListener('mouseleave', () => {
+      if (this.dataFrame && this.dataFrame.mouseOverRowIdx >= 0)
+        this.dataFrame.mouseOverRowIdx = -1;
+    });
 
     ui.tools.waitForElementInDom(this.root).then((_) => {
       this.columnHeadersDiv.style.setProperty('overflow', 'hidden', 'important');
@@ -261,7 +266,6 @@ export class FormsViewer extends DG.JsViewer {
     this._timers.add(gridSubTimer);
 
     sub(this.dataFrame.onColumnsRemoved, () => {
-      this.updateFieldsColumnNames();
       this.render();
     });
 
@@ -298,16 +302,7 @@ export class FormsViewer extends DG.JsViewer {
   }
 
   updateFieldsColumnNames() {
-    const newColumns = this.dataFrame.columns.names();
-    let counter = this.fieldsColumnNames.length;
-    for (let i = 0; i < counter; i++) {
-      const colIdx = newColumns.indexOf(this.fieldsColumnNames[i]);
-      if (colIdx === -1) {
-        this.fieldsColumnNames.splice(i, 1);
-        counter--;
-        i--;
-      }
-    }
+    this.fieldsColumnNames = this.fieldsColumnNames.filter((name) => this.dataFrame.col(name) !== null);
   }
 
   onPropertyChanged(property: DG.Property): void {
@@ -564,6 +559,10 @@ export class FormsViewer extends DG.JsViewer {
   }
 
   render() {
+    if (this.dataFrame == null)
+      return;
+    if (this.fieldsColumnNames)
+      this.updateFieldsColumnNames();
     const grid = this.getGrid();
 
     if (this.pinnedRowIndexes.some((i) => i >= this.dataFrame.rowCount))

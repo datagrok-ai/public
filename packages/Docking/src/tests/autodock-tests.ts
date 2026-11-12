@@ -9,7 +9,7 @@ import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
 import {_package} from '../package-test';
 import {buildDefaultAutodockGpf} from '../utils/auto-dock-service';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
-import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
+import {ensureContainerRunning, skipCategoryWithoutSpawner} from '@datagrok-libraries/test/src/test-container-utils';
 
 export const CONTAINER_TIMEOUT = 300000;
 
@@ -18,6 +18,7 @@ category('AutoDock', () => {
 
   before(async () => {
     adSvc = await getAutoDockService();
+    await skipCategoryWithoutSpawner('AutoDock', 'AutoDock');
   });
 
   test('clinfo', async () => {

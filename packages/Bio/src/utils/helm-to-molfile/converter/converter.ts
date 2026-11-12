@@ -1,121 +1,76 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
-import * as OCL from 'openchemlib/full';
 
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
-import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {IMacromoleculeAssembler} from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
 import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';
-import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {MolfileWithMap, MonomerMap} from '@datagrok-libraries/bio/src/monomer-works/types';
-
-import {Polymer} from './polymer';
-import {GlobalMonomerPositionHandler} from './position-handler';
+import {MolfileWithMap} from '@datagrok-libraries/bio/src/monomer-works/types';
+import {getMolColName, getUnusedColName} from '@datagrok-libraries/bio/src/monomer-works/utils';
+import {IHelmToMolfileConverter, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {assembleRowWithMapSync, assembleSeqColumnSync} from '@datagrok-libraries/bio/src/monomer-works/assembler';
+import {getMonomerLibKey} from '@datagrok-libraries/bio/src/monomer-works/library-json';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {_package} from '../../../package';
-import {getUnusedColName} from '@datagrok-libraries/bio/src/monomer-works/utils';
-import {IHelmToMolfileConverter} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
+/** A Macromolecule HELM column of the given HELM strings, for the assembler's input layer. */
+export function helmListColumn(helmList: (string | null | undefined)[], name: string = 'helm'): DG.Column<string> {
+  const col = DG.Column.fromStrings(name, Array.from(helmList, (helm) => helm ?? ''));
+  col.semType = DG.SEMTYPE.MACROMOLECULE;
+  col.meta.units = NOTATION.HELM;
+  return col;
+}
 
+/** The column itself when it is a Macromolecule HELM column, else a HELM column of its values. */
+export function asHelmColumn(helmCol: DG.Column<string>): DG.Column<string> {
+  if (helmCol.semType === DG.SEMTYPE.MACROMOLECULE && helmCol.meta.units === NOTATION.HELM)
+    return helmCol;
+  return helmListColumn(Array.from(helmCol.toList()), helmCol.name);
+}
+
+/** HELM to molecule with the non-linear layout, through Chem's macromolecule assembler (Crux). The converter keeps
+ * its synchronous interface (D14): it is made by the async SeqHelper.getHelmToMolfileConverter, which readies the
+ * assembler's main-thread module and the library ({@link libKey}), and its methods run on that module with the
+ * assembler's synchronous twins. Its own HELM parser, monomer wrappers and the RDKit and OpenChemLib steps are gone.
+ * Stereo is always absolute: the assembler puts every specified centre in one ABS group. */
 export class HelmToMolfileConverter implements IHelmToMolfileConverter {
   constructor(
-    private readonly helmHelper: IHelmHelper,
-    private readonly rdKitModule: RDModule,
-    private readonly monomerLib: IMonomerLibBase
+    private readonly monomerLib: IMonomerLibBase,
+    private readonly seqHelper: ISeqHelper,
+    private readonly assembler: IMacromoleculeAssembler,
+    /** The key {@link monomerLib} was readied with: the library as it was when the converter was made */
+    private readonly libKey: string,
   ) { }
 
-  convertToSmiles(helmCol: DG.Column<string>): DG.Column<string> {
-    const df = helmCol.dataFrame;
-    const smiles = this.getSmilesList(helmCol);
-    const smilesColName = `smiles(${helmCol.name})`;
-    const smilesColNameU = df ? df.columns.getUnusedName(smilesColName) : smilesColName;
-    return DG.Column.fromStrings(smilesColNameU, smiles.map((molecule) => {
-      if (molecule == null)
-        return '';
-      return molecule;
-    }));
-  }
-
-  private getSmilesList(helmCol: DG.Column<string>): string[] {
-    const molfilesV2K = this.convertToMolfileV3KColumn(helmCol).toList();
-    const smiles = molfilesV2K.map((mol) => DG.chem.convert(mol, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles));
-    return smiles;
-  }
-
-  public molV3KtoMolV3KOCL(molV3k: string): string {
-    try {
-      if (!molV3k)
-        return '';
-      const oclMolecule = OCL.Molecule.fromMolfile(molV3k);
-      const molV3000 = oclMolecule.toMolfileV3();
-      return molV3000.replace('STERAC1', 'STEABS');
-    } catch (err) {
-      const [errMsg, errStack] = errInfo(err);
-      _package.logger.error(errMsg, undefined, errStack);
-      return '';
-    }
-  }
-
-  public getMolV3000ViaOCL(beautifiedMols: (RDMol | null)[], columnName: string): DG.Column<string> {
-    const beautifiedMolV2000 = beautifiedMols.map((mol) => {
-      if (mol == null)
-        return '';
-      const molBlock = mol.get_v3Kmolblock();
-      mol!.delete();
-      return molBlock;
-    });
-    const molv3000Arr = new Array<string>(beautifiedMolV2000.length);
-    const chiralityPb = DG.TaskBarProgressIndicator.create(`Handling chirality...`);
-    for (let i = 0; i < beautifiedMolV2000.length; i++) {
-      molv3000Arr[i] = this.molV3KtoMolV3KOCL(beautifiedMolV2000[i]);
-      const progress = i / beautifiedMolV2000.length * 100;
-      chiralityPb.update(progress, `${progress?.toFixed(2)}% of molecules completed`);
-    }
-    chiralityPb.close();
-    return DG.Column.fromStrings(columnName, molv3000Arr);
-  }
-
-  // @deprecated Use SeqHelper.helmToAtomicLevel
+  /** The non-linear assembly of the column (the assembler lays the molecules out and keeps stereo absolute).
+   * @param {DG.Column<string>} helmCol HELM
+   * @param {boolean} _chiralityEngine no effect: stereo is always absolute
+   * @param {RDModule} _rdKitModule deprecated and unused
+   * @param {IMonomerLibBase} monomerLib the library to resolve with (the converter's when not given; another
+   *   library must have been readied on the assembler too)
+   * @return {DG.Column<string>} `molfile(<helmCol>)`, not added to the table
+   * @deprecated Use SeqHelper.helmToAtomicLevel */
   convertToRdKitBeautifiedMolfileColumn(
-    helmCol: DG.Column<string>, chiralityEngine: boolean, rdKitModule: RDModule, monomerLib: IMonomerLibBase
+    helmCol: DG.Column<string>, _chiralityEngine: boolean, _rdKitModule: RDModule | null, monomerLib: IMonomerLibBase,
   ): DG.Column<string> {
-    const df = helmCol.dataFrame;
-    const molfilesV3K = this.convertToMolfileV3KColumn(helmCol).toList();
-    const beautifiedMols = molfilesV3K.map((item) => {
-      if (item === '')
-        return null;
-      const mol = rdKitModule.get_mol(item);
-      if (!mol)
-        return null;
-      mol.set_new_coords();
-      mol.normalize_depiction(1);
-      mol.straighten_depiction(true);
-      return mol;
-    });
-    const molColName = `molfile(${helmCol.name})`;
-    const molColNameU = df ? df.columns.getUnusedName(molColName) : molColName;
-
-    if (chiralityEngine)
-      return this.getMolV3000ViaOCL(beautifiedMols, molColNameU);
-    return DG.Column.fromStrings(molColNameU, beautifiedMols.map((mol) => {
-      if (mol == null)
-        return '';
-      const molBlock = mol.get_v3Kmolblock();
-      mol!.delete();
-      return molBlock;
-    }));
+    const lib = monomerLib ?? this.monomerLib;
+    const key = lib === this.monomerLib ? this.libKey : getMonomerLibKey(lib);
+    const molCol = this.assembleColumn(helmCol, lib, key);
+    molCol.name = getMolColName(helmCol.dataFrame, helmCol.name);
+    return molCol;
   }
-
 
   public convertToMolfileV3KColumn(helmCol: DG.Column<string>): DG.Column<string> {
-    const df = helmCol.dataFrame;
-    const molfileList = this.convertToMolfileV3K(helmCol.toList()).map((mwm) => mwm.molfile);
-    const molColName = getUnusedColName(df, `molfileV3K(${helmCol.name})`);
-    const molfileColumn = DG.Column.fromList('string', molColName, molfileList);
-    return molfileColumn;
+    const molCol = this.assembleColumn(helmCol, this.monomerLib, this.libKey);
+    molCol.name = getUnusedColName(helmCol.dataFrame, `molfileV3K(${helmCol.name})`);
+    return molCol;
   }
 
-  /** Gets list of monomer molfiles */
+  /** Molfiles with their monomer maps (keyed by the HELM position, gaps counted), one row at a time on the
+   * main-thread module; an empty one for an empty or failed HELM. */
   public convertToMolfileV3K(helmList: string[]): MolfileWithMap[] {
+    const helmCol = helmListColumn(helmList);
     const resList: MolfileWithMap[] = new Array<MolfileWithMap>(helmList.length);
     for (let i = 0; i < helmList.length; ++i) {
       const helm = helmList[i];
@@ -126,7 +81,11 @@ export class HelmToMolfileConverter implements IHelmToMolfileConverter {
 
       let resMolfile: MolfileWithMap;
       try {
-        resMolfile = this.getPolymerMolfile(helm);
+        const res = assembleRowWithMapSync(helmCol, i, this.monomerLib, this.seqHelper, 'nonlinear',
+          this.assembler, this.libKey);
+        if (res.error)
+          throw new Error(`Cannot get molfile of HELM '${helm}': ${res.error}`);
+        resMolfile = new MolfileWithMap(res.molfile, res.monomers);
       } catch (err: any) {
         const [errMsg, errStack] = errInfo(err);
         _package.logger.error(errMsg, undefined, errStack);
@@ -137,34 +96,9 @@ export class HelmToMolfileConverter implements IHelmToMolfileConverter {
     return resList;
   }
 
-  private getPolymerGraphColumn(helmCol: DG.Column<string>): DG.Column<string> {
-    const helmStrList = helmCol.toList();
-    const molfileList = this.helmHelper.getMolfiles(helmStrList);
-    const molfileCol = DG.Column.fromStrings('mols', molfileList);
-    return molfileCol;
-  }
-
-  private getPolymerMolfile(helm: string): MolfileWithMap {
-    const woGapsRes = this.helmHelper.removeGaps(helm);
-    const woGapsHelm = woGapsRes.resHelm;
-    const woGapsReverseMap = new Map<number, number>();
-    for (const [orgPosIdx, woGapsPosIdx] of (woGapsRes.monomerMap?.entries() ?? []))
-      woGapsReverseMap.set(woGapsPosIdx, orgPosIdx);
-
-    const pseudoMolfile = this.helmHelper.getMolfiles([woGapsHelm])[0];
-    const globalPositionHandler = new GlobalMonomerPositionHandler(pseudoMolfile);
-    const woGapsPolymer = new Polymer(woGapsHelm, this.rdKitModule, this.monomerLib);
-    globalPositionHandler.monomerSymbols.forEach((monomerSymbol: string, monomerIdx: number) => {
-      const shift = globalPositionHandler.getMonomerShifts(monomerIdx);
-      woGapsPolymer.addMonomer(monomerSymbol, monomerIdx, shift);
-    });
-    const woGapsMolfile: MolfileWithMap = woGapsPolymer.compileToMolfile();
-    const orgMonomerMap = new MonomerMap();
-    for (const [woGapsPosIdx, m] of woGapsMolfile.monomers.entries()) {
-      const orgPosIdx = woGapsReverseMap.get(woGapsPosIdx) ?? woGapsPosIdx;
-      orgMonomerMap.set(orgPosIdx, m);
-    }
-
-    return new MolfileWithMap(woGapsMolfile.molfile, orgMonomerMap);
+  /** The non-linear molecule column of a HELM column, on the main-thread module (the legacy synchronous path). */
+  private assembleColumn(helmCol: DG.Column<string>, lib: IMonomerLibBase, key: string): DG.Column<string> {
+    const res = assembleSeqColumnSync(asHelmColumn(helmCol), lib, this.seqHelper, 'nonlinear', this.assembler, key);
+    return res.molCol!;
   }
 }

@@ -24,7 +24,8 @@ export type DimRedUiOptions = {
 
 export function getEmbeddingColsNames(df: DG.DataFrame) {
   const axes = ['Embed_X', 'Embed_Y'];
-  const colNameInd = df.columns.names().filter((it: string) => it.includes(axes[0])).length + 1;
+  const colNameInd = Math.max(0,
+    ...df.columns.names().map((it) => Number(/Embed_[XY]_(\d+)/.exec(it)?.[1] ?? 0))) + 1;
   return axes.map((it) => `${it}_${colNameInd}`);
 }
 

@@ -6,7 +6,7 @@ import {
   divV, divH, span, button, dot, loader, tableFromMap, iconButton, rowActions, timestamp,
 } from '@datagrok-libraries/u2';
 import type {Action, ReadonlySignal} from '@datagrok-libraries/u2';
-import {dapiPager, chip} from '@datagrok-libraries/u2/src/dg/index.js';
+import {dapiPager, chip} from '@datagrok-libraries/u2/dg';
 
 const PAGE_SIZE = 30;
 const ROW_HEIGHT = 44;
@@ -24,15 +24,15 @@ function created(date: dayjs.Dayjs): string {
 }
 
 function reportActions(r: DG.UserReport): Action[] {
-  const actions: Action[] = [{name: 'Copy description', icon: 'copy', run: () => {
+  const actions: Action[] = [{text: 'Copy description', icon: 'copy', run: () => {
     navigator.clipboard.writeText(r.description ?? '');
     grok.shell.info('Description copied');
   }}];
   if (r.jiraTicket) {
-    actions.push({name: `Open ${r.jiraTicket}`, icon: 'external-link-alt',
-      run: () => window.open(`https://reddata.atlassian.net/browse/${r.jiraTicket}`)});
+    actions.push({text: `Open ${r.jiraTicket}`, icon: 'external-link-alt',
+      run: () => void window.open(`https://reddata.atlassian.net/browse/${r.jiraTicket}`)});
   }
-  actions.push({name: 'Copy id', run: () => {
+  actions.push({text: 'Copy id', run: () => {
     navigator.clipboard.writeText(r.id);
     grok.shell.info('Id copied');
   }});
@@ -77,6 +77,7 @@ export function buildReportsBrowser(): ReportsBrowserParts {
     const list = new VirtualList<DG.UserReport>({itemHeight: ROW_HEIGHT, keyOf: (r) => r.id,
       render: reportRow, contextActions: reportActions});
     list.root.classList.add('u2-adaptive');
+    list.root.classList.add('u2demo-report-items');
     list.setItems(pager.items);
     const onScroll = () => {
       const root = list.root;
@@ -110,7 +111,7 @@ export function buildReportsBrowser(): ReportsBrowserParts {
       const r = current.value;
       shown?.dispose();
       shown = new Scope();
-      details.replaceChildren(Scope.runWith(shown, () =>
+      details.replaceChildren(shown.build(() =>
         r ? reportDetails(r) : span('Select a report to see its details.', 'u2demo-hint')));
       if (r)
         grok.shell.o = r;

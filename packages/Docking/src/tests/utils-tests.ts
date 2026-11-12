@@ -31,11 +31,11 @@ category('Utils', () => {
     expect(Object.keys(getRemarksFromPdb('ATOM 1 C1 LIG 1 0 0 0')).length, 0);
   });
 
-  test('buildComparisonTable: creates grid rows', async () => {
+  test('buildComparisonTable: a comparison row for each property the hovered pose has', async () => {
     const hovered = {'binding energy': -10.50, 'electrostatic': -2.36};
     const table = buildComparisonTable(EXPECTED_VALUES, hovered);
     expect(table instanceof HTMLElement, true);
-    expect(table.querySelectorAll('[style*="grid"]').length > 0, true);
+    expect(table.querySelectorAll('.docking-comparison-row').length, 2);
   });
 
   test('buildComparisonTable: handles missing hovered property', async () => {

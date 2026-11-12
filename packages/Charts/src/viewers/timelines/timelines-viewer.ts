@@ -7,10 +7,14 @@ import * as echarts from 'echarts';
 import {format} from 'echarts/lib/util/time';
 import $ from 'cash-dom';
 
+import {Observable} from 'rxjs';
+
 import {EChartViewer} from '../echart/echart-viewer';
 import {options, deepCopy} from './echarts-options';
 import {ColumnData, ColumnsData, Indexable, markerPosition, markerType, timePoint, DateFormats} from './constants';
 import {LegendHelper, VISIBILITY_MODE, VisibilityMode} from '../../utils/legend-utils';
+import {ERROR_CLASS, subscribeToColumnRemoval} from '../../utils/utils';
+import {timelinesStatus} from './timelines-status';
 
 export class TimelinesViewer extends EChartViewer {
   splitByColumnName: string;
@@ -27,6 +31,7 @@ export class TimelinesViewer extends EChartViewer {
   lineWidth: number;
   autoSize: boolean;
   dateFormat: string;
+  pickedDateFormat: string | null = null;
   axisPointer: string;
   showZoomSliders: boolean;
   legendVisibility: VisibilityMode;
@@ -49,6 +54,17 @@ export class TimelinesViewer extends EChartViewer {
   legendHelper: LegendHelper = new LegendHelper();
   colorMap: Indexable | null = null;
   dataMax: any;
+  private zoomOwedUntil = 0;
+
+  get onRendered(): Observable<void> {return this.signals.rendered;}
+
+  get isRenderPending(): boolean {return this.signals.pending;}
+
+  get renderError(): string | null {
+    return this.titleDiv.classList.contains(ERROR_CLASS) ? this.titleDiv.textContent : null;
+  }
+
+  getWidgetStatus(): DG.IWidgetStatus {return timelinesStatus(this);}
 
   constructor() {
     super();
@@ -105,6 +121,13 @@ export class TimelinesViewer extends EChartViewer {
           this.zoomState[i][0] = z.start!;
           this.zoomState[i][1] = z.end!;
         });
+        this.zoomOwedUntil = 0;
+        this.signals.settle();
+      });
+      // the inside zoom dispatches its action throttled (20 ms with animation off), outside `render`
+      this.chart.getZr().on('mousewheel', () => {
+        this.zoomOwedUntil = Date.now() + 100;
+        this.signals.settle();
       });
 
       this.subs.push(this.onEvent('d4-context-menu').subscribe((data) => {
@@ -112,6 +135,15 @@ export class TimelinesViewer extends EChartViewer {
           this.zoomState = [[0, 100], [0, 100], [0, 100], [0, 100]];
           this.render();
         });
+      }));
+
+      this.subs.push(subscribeToColumnRemoval(this, {
+        splitByColumnName: () => this.defaultColumnNames().splitByColumnName,
+        startColumnName: () => this.defaultColumnNames().startColumnName,
+        endColumnName: () => this.defaultColumnNames().endColumnName,
+        colorColumnName: null,
+        eventColumnName: null,
+        eventsColumnNames: null,
       }));
 
       this.subs.push(this.dataFrame.onMetadataChanged.subscribe((ev) => {
@@ -177,17 +209,19 @@ export class TimelinesViewer extends EChartViewer {
         }
       } else {
         this.columnData[property.name] = null;
+        if (property.name === 'eventsColumnNames') {
+          this.updateColumnData(this.props.getProperty('startColumnName'));
+          this.updateColumnData(this.props.getProperty('endColumnName'));
+        }
         if (property.name === 'colorColumnName') {
           this.legendHelper.hide(this.chart.getDom());
           this.colorMap = null;
         }
       }
-      const timeColumns = [this.columnData.startColumnName?.column, this.columnData.endColumnName?.column,
-        ...(this.columnData.eventsColumnNames ? Object.keys(this.columnData.eventsColumnNames).map((columnName) =>
-        this.columnData.eventsColumnNames![columnName]!.column) : [])].filter((col) => col) as DG.Column[];
-      if (this.timeOptionsApplicable(timeColumns))
-        this.dateFormat = this.selectDateFormat(timeColumns);
-    } else if (property.name === 'legendVisibility' && this.colorColumnName)
+      this.pickDateFormat();
+    } else if (property.name === 'dateFormat')
+      this.pickDateFormat();
+    else if (property.name === 'legendVisibility' && this.colorColumnName)
       this.switchLegendVisibility(property.get(this));
 
     this.render();
@@ -241,29 +275,36 @@ export class TimelinesViewer extends EChartViewer {
     return (strColumns!.length >= 1 && numColumns!.length >= 1);
   }
 
-  onTableAttached(): void {
-    this.init();
-
+  defaultColumnNames(): {[prop: string]: string | undefined} {
     const columns = this.dataFrame.columns.toList();
-
     const strColumns = columns.filter((col) => col.type === DG.COLUMN_TYPE.STRING)
       .sort((a, b) => a.categories.length - b.categories.length);
-
     const numColumns = [...this.dataFrame.columns.numerical].sort((a, b) => a.stats.avg - b.stats.avg);
     const numericalTypes = [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.FLOAT, DG.COLUMN_TYPE.DATE_TIME];
 
-    if (strColumns.length < 1 || numColumns.length < 1) {
+    return {
+      splitByColumnName: (this.findColumn(columns, this.splitByRegexps) ?? strColumns[strColumns.length - 1])?.name,
+      startColumnName: (this.findColumn(columns, this.startRegexps, numericalTypes) ?? numColumns[0])?.name,
+      endColumnName: (this.findColumn(columns, this.endRegexps, numericalTypes) ?? numColumns[numColumns.length - 1])?.name,
+      colorColumnName: (this.findColumn(columns, this.colorByRegexps, [DG.COLUMN_TYPE.STRING]) ?? strColumns[0])?.name,
+      eventColumnName: (this.findColumn(columns, this.eventRegexps, [DG.COLUMN_TYPE.STRING]) ?? strColumns[0])?.name,
+    };
+  }
+
+  onTableAttached(): void {
+    this.init();
+
+    const defaults = this.defaultColumnNames();
+    if (!defaults.colorColumnName || !defaults.startColumnName) {
       this.showErrorMessage('The Timelines viewer requires a minimum of 1 column.');
       return;
     }
 
-    this.splitByColumnName = (this.findColumn(columns, this.splitByRegexps) || strColumns[strColumns.length - 1]).name;
-    this.startColumnName = (this.findColumn(columns, this.startRegexps, numericalTypes) || numColumns[0]).name;
-    this.endColumnName = (this.findColumn(columns, this.endRegexps, numericalTypes) ||
-      numColumns[numColumns.length - 1]).name;
-    this.colorColumnName = (this.findColumn(columns, this.colorByRegexps, [DG.COLUMN_TYPE.STRING]) ||
-      strColumns[0]).name;
-    this.eventColumnName = (this.findColumn(columns, this.eventRegexps, [DG.COLUMN_TYPE.STRING]) || strColumns[0]).name;
+    this.splitByColumnName = defaults.splitByColumnName!;
+    this.startColumnName = defaults.startColumnName;
+    this.endColumnName = defaults.endColumnName!;
+    this.colorColumnName = defaults.colorColumnName;
+    this.eventColumnName = defaults.eventColumnName!;
 
     const columnPropNames = [
       'splitByColumnName', 'startColumnName', 'endColumnName', 'colorColumnName', 'eventColumnName',
@@ -294,11 +335,7 @@ export class TimelinesViewer extends EChartViewer {
     this.legendHelper.update(this.columnData.colorColumnName!.column);
     this.switchLegendVisibility(this.legendVisibility);
 
-    const timeColumns = [this.columnData.startColumnName?.column, this.columnData.endColumnName?.column,
-      ...(this.columnData.eventsColumnNames ? Object.keys(this.columnData.eventsColumnNames).map((columnName) =>
-      this.columnData.eventsColumnNames![columnName]!.column) : [])].filter((col) => col) as DG.Column[];
-    if (this.timeOptionsApplicable(timeColumns))
-      this.dateFormat = this.selectDateFormat(timeColumns);
+    this.pickDateFormat();
 
     let prevSubj: string | null = null;
 
@@ -598,6 +635,16 @@ export class TimelinesViewer extends EChartViewer {
     };
   }
 
+  pickDateFormat(): void {
+    if (this.dateFormat && this.dateFormat !== this.pickedDateFormat)
+      return;
+    const timeColumns = [this.columnData.startColumnName?.column, this.columnData.endColumnName?.column,
+      ...(this.columnData.eventsColumnNames ? Object.keys(this.columnData.eventsColumnNames).map((columnName) =>
+      this.columnData.eventsColumnNames![columnName]!.column) : [])].filter((col) => col) as DG.Column[];
+    if (this.timeOptionsApplicable(timeColumns))
+      this.dateFormat = this.pickedDateFormat = this.selectDateFormat(timeColumns);
+  }
+
   selectDateFormat(columns: DG.DateTimeColumn[]): string {
     if (columns.length === 0)
       return DateFormats.YEAR_DIFF;
@@ -638,7 +685,15 @@ export class TimelinesViewer extends EChartViewer {
     $(this.chart.getDom()).show();
   }
 
+  protected frameOwed(): boolean {
+    return Date.now() < this.zoomOwedUntil || super.frameOwed();
+  }
+
   render(): void {
+    this.signals.render(() => this.draw());
+  }
+
+  private draw(): void {
     this.updateContainers();
     if (!this.splitByColumnName || ((!this.startColumnName && !this.endColumnName) &&
         (!this.eventsColumnNames || this.eventsColumnNames.length === 0))) {
@@ -647,7 +702,7 @@ export class TimelinesViewer extends EChartViewer {
     }
     const data = this.getSeriesData();
     const selectedCategories = this.legendHelper.selectedCategories;
-    if (selectedCategories)
+    if (selectedCategories && this.colorColumnName)
       this.data = data.filter((item) => selectedCategories.includes(item[3][0]));
     this.option.series[0].data = this.data;
     this.updateZoom();

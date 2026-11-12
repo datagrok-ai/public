@@ -1,6 +1,3 @@
-/* What a failed step reports: the feature line, the step as written, and the reason in one plain
-   sentence — never a matcher diff, an in-page stack or a harness line. Pure, so it is unit-tested. */
-
 const PROGRAMMING_ERRORS = ['TypeError', 'ReferenceError', 'RangeError', 'SyntaxError'];
 const INTERNAL_FRAME = /node_modules[\\/]+(?:playwright|@playwright)|UtilityScript|eval at evaluate|node:internal|node:async_hooks/;
 const ANSI = new RegExp(String.fromCharCode(27) + '\\[[0-9;]*m', 'g');
@@ -34,13 +31,14 @@ export function reasonOf(e: unknown): string {
   return s;
 }
 
-/** Whether the error is Playwright giving up on an element — the case where what the page shows
- * instead is the missing half of the report. */
+/** Whether the error is Playwright giving up on an element, or finding several where the gesture
+ * needs one (strict mode) — the cases where what the page shows instead is the missing half of the
+ * report. */
 export function isWaitFailure(e: unknown): boolean {
   // Playwright colours its matcher output, and a check that names itself puts its message before
   // the "expect(locator)… failed" line
   const text = (e instanceof Error ? e.message : String(e)).replace(/\x1b\[[0-9;]*m/g, '');
-  return (e instanceof Error && e.name === 'TimeoutError') || /Timeout \d+ms exceeded|(^|\n)expect\(/.test(text);
+  return (e instanceof Error && e.name === 'TimeoutError') || /Timeout \d+ms exceeded|(^|\n)expect\(|strict mode violation/.test(text);
 }
 
 /** A `test.skip()` a capability gate raised (the stand has not got Jupyter, an outside host): Playwright's

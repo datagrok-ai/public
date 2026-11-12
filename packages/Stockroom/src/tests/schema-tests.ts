@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {domains} from '@datagrok-libraries/u2/src/dg/index.js';
+import {domains} from '@datagrok-libraries/ems/src/dg';
 
 // The schema as deployed plus the GHS vocabulary the seed scripts land: opened through the
 // same handle the app opens, counted through the table clients. Nothing is written.

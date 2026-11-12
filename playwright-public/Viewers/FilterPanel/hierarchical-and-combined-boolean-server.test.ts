@@ -98,7 +98,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters: layout and pro
     await softStep('Step 11: Layout round-trip (hierarchical) — close panel, re-apply saved layout', async () => {
       const beforeClose = await page.evaluate(async () => {
         const was = grok.shell.tv.dataFrame.filter.trueCount;
-        const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
+        const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'))
           .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.includes('/'));
         if (!card)
           throw new Error('no hierarchical filter card is painted in the Filter Panel — its caption is the only '
@@ -138,7 +138,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters: layout and pro
           () => grok.shell.tv.dataFrame.filter.trueCount, afterClose, 1000);
 
         let caption = '';
-        for (const c of document.querySelectorAll('[name="viewer-Filters"] .d4-filter')) {
+        for (const c of document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')) {
           const cn = c.querySelector('.d4-filter-column-name');
           if (cn && cn.textContent!.includes('/')) { caption = cn.textContent!.trim(); break; }
         }

@@ -390,6 +390,12 @@ test('Bio monomer_library source-class lifecycle: load → edit/save round-trip 
       const chooserPromise = page.waitForEvent('filechooser', {timeout: 30_000});
       await page.locator('button:has-text("Add")').first().click();
       await (await chooserPromise).setFiles({name: uploadedCopy, mimeType: 'application/json', buffer: Buffer.from(libJson)});
+      // a stand with more than one library storage (Files and a database) asks where the library goes first
+      const storage = page.locator('.d4-dialog').filter({hasText: 'Select storage for new monomer library'});
+      if (await storage.waitFor({state: 'visible', timeout: 5_000}).then(() => true, () => false)) {
+        await storage.locator('select').selectOption('Files');
+        await storage.locator('button:has-text("OK")').click();
+      }
       uploadedCopyWritten = true;
       const listing = async (): Promise<string[]> => page.evaluate(() => {
         const form: any = grok.shell.v?.root?.querySelector?.('.monomer-lib-controls-form');

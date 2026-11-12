@@ -4,10 +4,13 @@ Feature: Calculated columns over a file in My files follow a rename and an edit,
   ${WEIGHT} + 100 and Weight3 = ${Weight2} + 100 are added through the Add New Column dialog. WEIGHT
   is renamed through its header's Column Properties dialog and one of its cells edited in the grid:
   Weight2's formula follows the new name and both columns recalculate. The view is saved as a project
-  with Data sync on, closed and reopened: the table is read from the file again, so the edited cell
-  holds the file's value, while the rename and the two columns come back with their formulas and
-  values that follow the source; a second rename and a second edit on the reopened table are followed the same way
-  (GROK-17109). Translated from TestTrack PowerPack/add-new-column-advanced.md, the Home dir source.
+  with Data sync on, closed and reopened, and the renamed column and the two new ones are there.
+  Translated from TestTrack PowerPack/add-new-column-advanced.md, the Home dir source.
+
+  That the reopened table is reread from the file (the edited cell holds the file's value), that the
+  columns come back with their formulas and values that follow the source, and that a second rename
+  and edit on the reopened table are followed (GROK-17109) is ApiTests `Dapi: projects: data sync`
+  (src/dapi/projects.ts).
 
   The views are closed through the platform's API (the workspace then holds no table), and the
   project is reopened from Browse > Dashboards.
@@ -53,7 +56,7 @@ Feature: Calculated columns over a file in My files follow a rename and an edit,
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
-  Scenario: Saved with Data sync, closed and reopened, the columns keep their formulas
+  Scenario: Saved with Data sync, closed and reopened from Dashboards, the columns are there
     When user clicks on Save button in toolbar
     Then "Save project" dialog should be visible
     When user enters "bdd-anc-home-{run}" into Name text input in "Save project" dialog
@@ -76,29 +79,5 @@ Feature: Calculated columns over a file in My files follow a rename and an edit,
     And the table should have a column "Weight2"
     And the table should have a column "Weight3"
     And the table should have a column "BaseWeight"
-    And "Weight2" column should have tag "formula" equal to "${BaseWeight} + 100"
-    And "Weight3" column should have tag "formula" equal to "${Weight2} + 100"
-    # Data sync reads the file again: the edited cell holds what the file holds (73.2), the rename stays
-    And the value of "BaseWeight" column in row 1 should be "73.19999694824219"
-    And every value of "Weight2" column should equal "BaseWeight" column plus 100
-    And every value of "Weight3" column should equal "Weight2" column plus 100
-    And no error or warning balloon should have been shown
-    And no errors should have been logged
-
-  Scenario: On the reopened table a second rename and edit are followed too
-    When user picks "Column Properties..." from the context menu of the "header BaseWeight" area of grid
-    And user types "BaseWeight2" into "New name:" input in "BaseWeight" dialog
-    And user clicks on OK button in "BaseWeight" dialog
-    Then the table should have a column "BaseWeight2"
-    And "Weight2" column should have tag "formula" equal to "${BaseWeight2} + 100"
-    And "Weight3" column should have tag "formula" equal to "${Weight2} + 100"
-    When user double-clicks on the "cell 2 of BaseWeight2" area of grid
-    And user presses Control+A in cell editor
-    And user types "400" into cell editor
-    And user presses Enter
-    Then the value of "BaseWeight2" column in row 2 should be "400"
-    And the value of "Weight3" column in row 2 should be "600"
-    And every value of "Weight2" column should equal "BaseWeight2" column plus 100
-    And every value of "Weight3" column should equal "Weight2" column plus 100
     And no error or warning balloon should have been shown
     And no errors should have been logged

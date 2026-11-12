@@ -1495,6 +1495,9 @@
   vertical-align: middle;
 }
 
-.d4-dialog .d4-dialog-contents .grok-sketcher[style*="min-width: 0px"] {
+/* A sketcher dialog opened from a thumbnail in a popup (the SAR Matrix's filters) gets the popup's zero minimum width
+   on platforms whose Sketcher.isInPopupContainer checks the thumbnail: restore it, unless the sketcher has no minimum
+   at all (0 x 0). */
+.d4-dialog .d4-dialog-contents .grok-sketcher[style*="min-width: 0px"]:not([style*="min-height: 0px"]) {
   min-width: 400px !important;
 }

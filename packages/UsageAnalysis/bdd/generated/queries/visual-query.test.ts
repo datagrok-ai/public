@@ -7,7 +7,10 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [views.queries]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
+import '../../bindings/file-formats.js';
+import '../../bindings/flow.js';
 import '../../bindings/grid.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
@@ -15,13 +18,14 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {addToBuilderRow, builderRowHolds} from '../../bindings/queries.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, isExpanded, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {hasColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {clickRunsQuery} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, closeAllViews, currentViewType, noQueryOnServer, queriesOnServer, refreshBrowse, toolboxPaneHidden, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, closeAllViews, currentViewType, noQueryOnServer, queriesOnServer, refreshBrowse, standHasReachableConnection, toolboxPaneHidden, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors, pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -30,7 +34,8 @@ test.describe("A visual query built on a table", () => {
   test("A visual query built on a table", {tag: ["@journey", "@serial", "@realizes:views.queries"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 3, page);
-    await session.step(18, "Given user is logged in", () => loggedIn(page));
+    await session.step(17, "Given user is logged in", () => loggedIn(page));
+    await session.step(18, "And the stand has a reachable \"PostgresTest\" connection", () => standHasReachableConnection(page, "PostgresTest"));
     await session.step(19, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(20, "And no query named \"BDD-Q-vq-{time}\" is on the server", () => noQueryOnServer(page, session.text("BDD-Q-vq-{time}")));
     await run.scenario("The builder groups and aggregates a table", async () => {

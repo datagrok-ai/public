@@ -6,7 +6,7 @@
  * around multi-char codes). Conjugates / linkers without a base are
  * recognized as standalone units (e.g. `[GalNAc]`, `[L3]`, `[Chol]`).
  *
- * Why a custom parser rather than reusing bio's `HelmHelper.parse()`:
+ * Why a custom parser rather than reusing bio's HELM splitter (hwe):
  *  - we want plain `{sugar, base, phosphate}` triples, not a JSDraw2 mol graph
  *  - parsing is on the cell-render hot path; this is ~zero-allocation
  *  - bio's HELM splitter has had several normalization changes recently

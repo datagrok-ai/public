@@ -2,7 +2,10 @@
 Feature: Sequence space from the settings dialog
   The Viewers pane of the settings dialog adds the Sequence space scatter plot to a running
   analysis, removes it, and adds it again. The analysis is launched from the top menu with
-  cluster generation on, as the SAR dialog proposes it.
+  cluster generation on, as the SAR dialog proposes it. With the plot shown the dialog has a
+  Sequence space pane of its parameters: it shows the gap penalties and the fingerprint type only
+  for the distance that uses them (Needlemann-Wunsch, the default), and a distance chosen there
+  embeds the peptides again on OK.
 
   Background:
     Given user is logged in
@@ -71,5 +74,25 @@ Feature: Sequence space from the settings dialog
     And the open tableview should have 1 scatter plot viewer
     And the table should have a column "Embed_X_1"
     And scatter plot viewer should be painted
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: The Sequence space pane shows the inputs of the chosen distance, and a new distance embeds the peptides again
+    When user clicks on "Peptides analysis settings" icon
+    And user expands "Sequence space" pane in "Peptides settings" dialog
+    Then "Distance Function" input in "Sequence space" pane in "Peptides settings" dialog should have value "Needlemann-Wunsch"
+    And "Gap Open Penalty" input in "Sequence space" pane in "Peptides settings" dialog should be visible
+    And "Fingerprint Type" input in "Sequence space" pane in "Peptides settings" dialog should be visible
+    When user selects "Hamming" in "Distance Function" input in "Sequence space" pane in "Peptides settings" dialog
+    Then "Gap Open Penalty" input in "Sequence space" pane in "Peptides settings" dialog should be hidden
+    And "Fingerprint Type" input in "Sequence space" pane in "Peptides settings" dialog should be hidden
+    Given user listens for "peptides-sar-ready" custom event
+    When user clicks on OK button in "Peptides settings" dialog
+    Then "Peptides settings" dialog should be hidden
+    And the SAR analysis should be ready
+    And the SAR setting "sequenceSpaceParams.distanceF" should be "Hamming"
+    And the open tableview should have 1 scatter plot viewer
+    And the table should have a column "Embed_X_1"
+    And the "rows shown" reading of scatter plot viewer should be 647
     And no errors should have been logged
     And no error or warning balloon should have been shown

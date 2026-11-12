@@ -35,12 +35,18 @@ import {
   DOMAIN_SYSTEM_COLUMNS,
   DomainAggregateRow,
   DomainAggregateSpec,
+  DomainApplied,
+  DomainApplyBody,
+  DomainApplyPlan,
   DomainAuditEntry,
   DomainBatchOptions,
   DomainBatchReport,
   DomainBatchValidation,
   DomainDatetimeColumns,
   DomainDeleteReport,
+  DomainCreateSchemaOptions,
+  DomainDraft,
+  DomainDraftRequest,
   DomainError,
   DomainFacetKind,
   DomainFacetResultOf,
@@ -55,11 +61,16 @@ import {
   DomainQueryBuilder,
   DomainQuerySpec,
   DomainReadScope,
+  DomainRegisteredManifest,
   DomainRestoreResult,
   DomainRestrictError,
   DomainRowInsert,
   DomainAccess,
   DomainSavedFilterInfo,
+  DomainSchemaAccess,
+  DomainSchemaCreated,
+  DomainSchemaDryRun,
+  DomainSchemaValidation,
   DomainTableClientOptions,
   DomainTableInfo,
   DomainTableVersion,
@@ -194,6 +205,11 @@ export class Dapi {
 
   /** Users API (finding, saving, deleting users, notifications).
    * Also, current user and current session. */
+  /** Chats API: the discussions on entities and their comments. */
+  get chats(): ChatsDataSource {
+    return new ChatsDataSource();
+  }
+
   get users(): UsersDataSource {
     return new UsersDataSource(api.grok_Dapi_Users());
   }
@@ -346,7 +362,7 @@ export class HttpDataSource<T> {
     return Object.assign(copy, this, {query: {...this.query, ...patch}});
   }
 
-  private prepare(q: DataSourceQuery = this.query): any {
+  _prepare(q: DataSourceQuery = this.query): any {
     let d = api.grok_DataSource_ResetQuery(this.dart);
     if (q.allPackageVersions)
       d = api.grok_DataSource_AllPackageVersions(d);
@@ -376,19 +392,19 @@ export class HttpDataSource<T> {
       s = s.filter(options.filter);
     if (options.order !== undefined)
       s = s.order(options.order);
-    return api.grok_DataSource_List(s.prepare());
+    return api.grok_DataSource_List(s._prepare());
   }
 
   /** Counts entities that satisfy the filtering criteria (see {@link filter}).
    *  See examples: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
    *  Smart filter: {@link https://datagrok.ai/help/datagrok/smart-search} */
   count(): Promise<number> {
-    return api.grok_DataSource_Count(this.prepare());
+    return api.grok_DataSource_Count(this._prepare());
   }
 
   /** Returns the first entity that satisfies the filtering criteria (see {@link filter}). */
   first(): Promise<T> {
-    return api.grok_DataSource_First(this.prepare());
+    return api.grok_DataSource_First(this._prepare());
   }
 
   /** Returns an entity with the specified id.
@@ -397,12 +413,12 @@ export class HttpDataSource<T> {
    *  @param id - GUID of the corresponding object
    *  @returns `{Promise<object>}` - entity.  */
   find(id: string): Promise<T> {
-    return api.grok_DataSource_Find(this.prepare(), id);
+    return api.grok_DataSource_Find(this._prepare(), id);
   }
 
   /** Saves an entity; the saved copy comes back with this source's {@link include}s loaded. */
   save(e: DartObject): Promise<T> {
-    return api.grok_DataSource_Save(this.prepare({includes: this.query.includes}), e.dart);
+    return api.grok_DataSource_Save(this._prepare({includes: this.query.includes}), e.dart);
   }
 
   /** Deletes an entity. */
@@ -502,8 +518,9 @@ export class AdminDataSource {
     return api.grok_Dapi_Admin_GetServiceInfos(this.dart);
   }
 
-  /** Server metrics for a time window: HTTP request latency per route, the function-call queue,
-   *  and database statistics. Admin only. Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin} */
+  /** Server metrics for a time window: HTTP request latency per route, the errors, the function-call queue,
+   *  and database statistics. Needs the `ViewTelemetry` permission: without it, rejects with an Error whose `status`
+   *  is 403. Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin} */
   async getMetrics(options?: ServerMetricsOptions): Promise<ServerMetrics> {
     const iso = (d: Date | string) => d instanceof Date ? d.toISOString() : d;
     const params = new URLSearchParams();
@@ -515,9 +532,60 @@ export class AdminDataSource {
       params.set('date', options.date);
     if (options?.limit != null)
       params.set('limit', `${options.limit}`);
-    const r = await fetch(`${api.grok_Dapi_Root()}/admin/metrics?${params}`, {credentials: 'include'});
-    if (!r.ok)
-      throw new Error(await r.text());
+    const errors = {errors_by: options?.errorsBy, package: options?.package, user: options?.user, source: options?.source};
+    for (const [key, value] of Object.entries(errors))
+      if (value)
+        params.set(key, value);
+    return AdminDataSource.getJson(`/admin/metrics?${params}`);
+  }
+
+  /** How the platform's data grows: per database table and category (events by source, entities by type, ...), per
+   *  storage location and nature, per disk and per garbage collector key, the value now, its change over 1, 7 and 30
+   *  days, a daily trend, what the garbage collector deleted and has pending, and the metric alerts that cover it.
+   *  The server samples them on a schedule; a fresh server answers no rows until its first collection.
+   *  Needs the `ViewTelemetry` permission: without it, rejects with an Error whose `status` is 403; a bad `area` or
+   *  `days` rejects with `status` 400. An alert's `problemId` and `alertStatus` also need `ManageAlerts`, else they
+   *  are null. Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin} */
+  async getGrowthMetrics(options?: GrowthMetricsOptions): Promise<GrowthMetrics> {
+    const params = new URLSearchParams();
+    if (options?.area)
+      params.set('area', options.area);
+    if (options?.days != null)
+      params.set('days', `${options.days}`);
+    return AdminDataSource.getJson(`/admin/metrics/growth?${params}`);
+  }
+
+  /** A problem the platform detected and its current alert, by id or `kind:key`; null when there is none.
+   *  Needs the `ManageAlerts` permission: without it, rejects with an Error whose `status` is 403.
+   *  Sample: {@link https://public.datagrok.ai/js/samples/dapi/problems} */
+  async getProblem(id: string): Promise<Problem | null> {
+    // A `:` cannot pass through a route parameter behind the proxy, so kind:key is looked up by the list's filters.
+    const colon = id.indexOf(':');
+    if (!id || colon === 0 || colon === id.length - 1)
+      return null;
+    if (colon < 0)
+      return AdminDataSource.getJson(`/problems/${encodeURIComponent(id)}`, true);
+    const found = await AdminDataSource.getJson(`/problems?kind=${encodeURIComponent(id.substring(0, colon))}` +
+      `&key=${encodeURIComponent(id.substring(colon + 1))}&limit=1`);
+    return found[0] ?? null;
+  }
+
+  /** GET of [path] under the API root; null for a 404 when [nullIfMissing]. The server answers an error with 200
+   *  and the api-error-code header; it rejects with an Error whose `status` is that code. */
+  private static async getJson(path: string, nullIfMissing: boolean = false): Promise<any> {
+    const r = await fetch(`${api.grok_Dapi_Root()}${path}`, {credentials: 'include'});
+    const code = r.headers.get('api-error-code') ?? (r.ok ? null : `${r.status}`);
+    if (code === '404' && nullIfMissing)
+      return null;
+    if (code !== null) {
+      const text = await r.text();
+      let message: string | undefined;
+      try {
+        message = JSON.parse(text)?.message;
+      }
+      catch {}
+      throw Object.assign(new Error(message ?? (text || `HTTP ${code}`)), {status: Number(code)});
+    }
     return r.json();
   }
 
@@ -623,6 +691,31 @@ export interface ServerMetricsOptions {
   date?: string,
   /** Rows per ranking (default 10, max 1000). */
   limit?: number,
+  /** Groups `errors.top` by normalized message (the default) or by stack trace hash. */
+  errorsBy?: 'message' | 'signature',
+  /** Only the errors of this package. */
+  package?: string,
+  /** Only the errors of this login. */
+  user?: string,
+  /** Only the errors of this error source. */
+  source?: string,
+}
+
+/** One row of {@link ServerMetrics.errors}`.top`. */
+export interface ServerMetricsError {
+  message: string,
+  /** The stack trace hash, with `errorsBy: 'signature'`. */
+  signature: string | null,
+  source: string,
+  severity: string,
+  count: number,
+  users: number,
+  sessions: number,
+  /** Distinct hours the error occurred in. */
+  hours: number,
+  /** ISO 8601. */
+  firstSeen: string,
+  lastSeen: string,
 }
 
 /** Request statistics of a window or of one route. */
@@ -677,6 +770,32 @@ export interface ServerMetricsConnections {
   oldestIdleTransactionSeconds: number,
 }
 
+/** Result of {@link AdminDataSource.getProblem}. Times are ISO 8601. */
+export interface Problem {
+  id: string,
+  kind: string,
+  key: string,
+  /** The alert name, e.g. `DatagrokErrorIncident`. */
+  name: string,
+  severity: 'info' | 'warning' | 'critical',
+  audience: 'platform' | 'owner',
+  status: 'active' | 'muted' | 'not-a-problem' | 'fixed',
+  state: 'ongoing' | 'cleared',
+  summary: string | null,
+  url: string | null,
+  details: {[key: string]: any} | null,
+  lastSeen: string,
+  startedAt: string,
+  clearedAt: string | null,
+  mutedUntil: string | null,
+  mutedUntilVersion: string | null,
+  statusReason: string | null,
+  statusAt: string | null,
+  alertId: string | null,
+  alertStatus: 'open' | 'acknowledged' | 'resolved' | null,
+  alertedAt: string | null,
+}
+
 /** Result of {@link AdminDataSource.getMetrics}. */
 export interface ServerMetrics {
   /** ISO 8601; `previousStart` opens the window of the same length right before `start`. */
@@ -689,6 +808,14 @@ export interface ServerMetrics {
     previous: {count: number, p95: number},
     /** Ordered by `p95` descending, at most `limit` rows. */
     routes: ServerMetricsRoute[],
+  },
+  /** The window's errors: totals, the previous window's count, counts per error source, and the top
+   *  errors ranked by the users they hit, then the hours they recurred, `limit` per source. */
+  errors: {
+    now: {count: number, users: number},
+    previous: {count: number},
+    bySource: {[source: string]: number},
+    top: ServerMetricsError[],
   },
   /** `func_calls` by status: `queued` are waiting, `running` are executing. */
   queue: {queued: number, running: number},
@@ -716,6 +843,100 @@ export interface ServerMetrics {
       worstCacheHit: ServerMetricsStatement[],
     },
   },
+}
+
+/** Options for {@link AdminDataSource.getGrowthMetrics}. */
+export interface GrowthMetricsOptions {
+  /** The rows to answer: `database` (tables and their categories), `storage` (storage by location and nature, and the
+   *  disks), `gc` (the garbage collector's keys), or `all` (the default). */
+  area?: 'database' | 'storage' | 'gc' | 'all',
+  /** Days of the daily trend, 1–400 (default 30). */
+  days?: number,
+}
+
+/** One value of a {@link GrowthMetricsRow} over time: bytes, or a count of rows or objects. */
+export interface GrowthMetricsSeries {
+  /** The latest sample. */
+  now: number,
+  /** Change since the newest sample at or before a day ago; null when there is none that old. */
+  d1: number | null,
+  /** Change over 7 days; null when there is no sample that old. */
+  d7: number | null,
+  /** Change over 30 days; null when there is no sample that old. */
+  d30: number | null,
+  /** The first sample of each UTC day, oldest first, `days` long; null for a day without one. */
+  trend: (number | null)[],
+  /** True when the value is an estimate (table statistics, a sampled count, a storage listing that failed in part). */
+  estimated: boolean,
+}
+
+/** What the garbage collector did to the data of a {@link GrowthMetricsRow}: rows, or directories and entries of
+ *  storage. A table's row sums its categories. */
+export interface GrowthMetricsGc {
+  /** Deleted by the last run; null when the collector never deleted anything of it. */
+  deletedLast: number | null,
+  /** Deleted in the last 7 days. */
+  deleted7d: number | null,
+  /** Left to delete when last counted; null when it is not counted (or the count timed out). */
+  pending: number | null,
+}
+
+/** A metric alert (the Alerts setting `metricAlerts`) that covers a {@link GrowthMetricsRow}. */
+export interface GrowthMetricsAlert {
+  /** The alert's name, e.g. `table-growth`. */
+  name: string,
+  /** Whether its conditions hold for the row now. */
+  holding: boolean,
+  /** The id of its `growth` problem for the row; null when there is none, or without `ManageAlerts`. */
+  problemId: string | null,
+  /** The state of that problem's alert; null when none was opened, or without `ManageAlerts`. */
+  alertStatus: 'open' | 'acknowledged' | 'resolved' | null,
+}
+
+/** One row of {@link GrowthMetrics}: a database table or one of its categories, a storage location or nature, a disk,
+ *  or a garbage collector key. */
+export interface GrowthMetricsRow {
+  /** `database`, `storage` (disks included) or `gc`. */
+  area: 'database' | 'storage' | 'gc',
+  /** The sample key: `events`, `events/source=usage`, `(total)`, `shared/packages/Chem`, `local@<host>`. */
+  key: string,
+  /** The table of a database or garbage collector row, or `(total)` for the whole database. */
+  table: string | null,
+  /** The category a row of a table counts by, e.g. `source`. */
+  dimension: string | null,
+  /** The category's value (`usage`), or the sub-breakdown of a storage nature (a package name). */
+  value: string | null,
+  /** `shared`, or `local@<host>` for a server's own disk and storage. */
+  location: string | null,
+  /** The kind of storage data (`packages`, `app-data`, `tables`, ...), or `disk`. */
+  nature: string | null,
+  /** Size, bytes (a disk's used bytes); null when not sampled. */
+  bytes: GrowthMetricsSeries | null,
+  /** Rows of a table or category, or objects in storage; null when not sampled. */
+  count: GrowthMetricsSeries | null,
+  /** A disk's free bytes. */
+  freeBytes?: number | null,
+  /** A disk's used percentage. */
+  usedPct?: number | null,
+  /** What the garbage collector deleted and has pending; null when it never touches the data. */
+  gc: GrowthMetricsGc | null,
+  /** The enabled metric alerts whose metric and key cover the row. */
+  alerts: GrowthMetricsAlert[],
+}
+
+/** Result of {@link AdminDataSource.getGrowthMetrics}. Times are ISO 8601. */
+export interface GrowthMetrics {
+  /** The newest sample; null before the first collection. */
+  collectedAt: string | null,
+  /** The shared storage the `storage` rows list; null until it was listed once. */
+  storage: {type: string, root: string, collectedAt: string, truncated: boolean} | null,
+  /** The garbage collector: on or off (null when unknown), its last run, its next scheduled run, when pending was counted. */
+  gc: {enabled: boolean | null, lastRun: string | null, nextRun: string | null, pendingAt: string | null},
+  /** How often the server samples: sizes every `everyMinutes`, categories and pending every `breakdownHours`, the
+   *  storage every `storageHours`. */
+  schedule: {everyMinutes: number, breakdownHours: number, storageHours: number},
+  /** One row per key of the requested area. */
+  rows: GrowthMetricsRow[],
 }
 
 /**
@@ -871,6 +1092,14 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
     return toJs(await api.grok_DataConnectionsDataSource_SubDir(this.dart, e.dart, path));
   }
 
+  /** Lists the catalogs (databases) of the connection's server, in one request.
+   * Rejects, or resolves to an empty list, for a data source without catalogs: check
+   * `DG.ConnectionDataSource.byType(c.dataSource)?.supportCatalogs` first.
+   * @see {@link https://public.datagrok.ai/js/samples/data-access/db/catalogs} */
+  async getCatalogs(c: DataConnection): Promise<string[]> {
+    return toJs(await api.grok_DataConnectionsDataSource_Get_Catalogs(this.dart, c.dart));
+  }
+
   async getSchemas(e: DataConnection, catalog: string | null = null): Promise<string[]> {
     return toJs(await api.grok_DataConnectionsDataSource_Get_Schemas(this.dart, e.dart, catalog));
   }
@@ -956,6 +1185,8 @@ export class ViewsDataSource extends HttpDataSource<ViewInfo> {
   }
 }
 
+/** Permissions API: checking, granting and revoking permissions on entities, and checking the
+ * global ones (`grok.dapi.permissions`). */
 export class PermissionsDataSource {
   constructor() {
   };
@@ -970,23 +1201,31 @@ export class PermissionsDataSource {
 
   /** Checks if current user has permission {permission} for entity {e}
    * @param e - Entity to check permission for
-   * @param permission - Permission type
+   * @param permission - Permission type, or a privilege of the entity's type (`DataQuery.Execute`)
    * @returns Result */
-  check(e: Entity, permission: 'Edit' | 'View' | 'Share' | 'Delete'): Promise<boolean> {
+  check(e: Entity, permission: 'Edit' | 'View' | 'Share' | 'Delete' | (string & {})): Promise<boolean> {
     return api.grok_Dapi_Check_Permissions(e.dart, permission);
+  }
+
+  /** Checks if the current user holds a global permission — one granted on no entity, such as
+   * `DG.Permission.CREATE_DOMAIN_SCHEMA`. Asks the server every time: a grant since login
+   * counts, and an impersonated call answers for the impersonated user. */
+  checkGlobal(permission: string): Promise<boolean> {
+    return api.grok_Dapi_Check_Global_Permission(permission);
   }
 
   /** Grants permission on entity to the group
    * @param edit - allow to edit entity */
-  grant(e: Entity, g: Group, edit: boolean): Promise<any> {
+  grant(e: Entity, g: Group, edit: boolean): Promise<void> {
     return api.grok_Dapi_Set_Permission(e.dart, g.dart, edit);
   }
 
   /** Revokes the group's permission on the entity. */
-  revoke(e: Entity, g: Group): Promise<any>;
+  revoke(e: Entity, g: Group): Promise<void>;
   /** @deprecated Use `revoke(entity, group)`, matching {@link grant}. Removed in 1.30. */
-  revoke(g: Group, e: Entity): Promise<any>;
-  revoke(a: Entity | Group, b: Group | Entity): Promise<any> {
+  revoke(g: Group, e: Entity): Promise<void>;
+  /** @hidden */
+  revoke(a: Entity | Group, b: Group | Entity): Promise<void> {
     // Both orders reach here; when both arguments are groups the legacy (group, entity) reading wins.
     const [e, g] = b instanceof Group && !(a instanceof Group) ? [a, b] : [b, a];
     return api.grok_Dapi_Delete_Permission(e.dart, g.dart);
@@ -1298,11 +1537,39 @@ export class DomainsDataSource {
     return domainCall(api.grok_Dapi_Domains_Transaction(this.dart, schema, ops));
   }
 
-  /** Creates an empty user-managed domain schema (physical PG schema 'usr_<name>');
-   * requires the CreateDomainSchema privilege. Add tables via schema(name).apply(). */
-  createSchema(name: string, options?: {friendlyName?: string; description?: string}): Promise<{[key: string]: any}> {
+  /** Drafts a manifest over an external database the caller may introspect and query
+   * (requires CreateDomainSchema, and GetSchema + Query on the connection): the manifest as
+   * a starting point — remote names kept, the primary key as the business key, one-column
+   * foreign keys onto drafted tables as refs — with the inventory of what the warehouse has
+   * and why a table or column stayed out ({@link DomainDraft}). Nothing is registered; hand
+   * the (edited) manifest to {@link createSchema}. A malformed remote identifier rejects with a
+   * {@link DomainManifestValidationError} addressed by path (`'schema'`, `'tables[i]'`); no
+   * right on the connection with a {@link DomainForbiddenError} naming what is missing;
+   * an unreachable warehouse with a DomainError code `'external-unreachable'` (503). */
+  draft(body: DomainDraftRequest): Promise<DomainDraft> {
+    return domainCall(api.grok_Dapi_Domains_DraftSchema(this.dart, body));
+  }
+
+  /** Creates a user-managed domain schema; requires the CreateDomainSchema privilege. Without
+   * `manifest` the schema is empty and platform-stored ('usr_<name>'; add tables via
+   * schema(name).apply()). With one (`storage.kind: 'external'` — a {@link draft}, edited) it is
+   * an external binding ('ext_<name>'): the manifest is validated live against the warehouse
+   * before anything is registered, and the answer carries the binding's verdict. `dryRun: true`
+   * runs every check and registers nothing — `{status: 'ok', issues: []}`, or exactly the
+   * refusal the create would give: a {@link DomainManifestValidationError} whose `errors` are
+   * addressed by manifest path, a DomainError code `'schema-name-taken'` / `'invalid-storage'`
+   * / `'external-unreachable'`. A literal `true` / `false` / omitted `dryRun` types the answer
+   * precisely; a boolean variable answers the union. */
+  createSchema(name: string, options: DomainCreateSchemaOptions & {dryRun: true}): Promise<DomainSchemaDryRun>;
+  /** The create itself: the schema registered, with its binding's verdict where it is external. */
+  createSchema(name: string, options?: DomainCreateSchemaOptions & {dryRun?: false}): Promise<DomainSchemaCreated>;
+  /** `dryRun` decided at run time: the dry-run verdict or the created schema. */
+  createSchema(name: string, options?: DomainCreateSchemaOptions): Promise<DomainSchemaDryRun | DomainSchemaCreated>;
+  /** @hidden */
+  createSchema(name: string, options?: DomainCreateSchemaOptions): Promise<DomainSchemaDryRun | DomainSchemaCreated> {
     return domainCall(api.grok_Dapi_Domains_CreateSchema(this.dart, name,
-      options?.friendlyName ?? null, options?.description ?? null));
+      options?.friendlyName ?? null, options?.description ?? null,
+      {manifest: options?.manifest ?? null, dryRun: options?.dryRun ?? false}));
   }
 
   /** Lifecycle handle for a registered domain schema (mirrors table()). */
@@ -1368,7 +1635,9 @@ export class DomainRegistryClient {
 /**
  * Lifecycle handle for one registered domain schema (see {@link DomainsDataSource.schema}):
  * manifest export, partial applies with dry-run change plans, whole-schema audit, and full
- * purge. Mutations apply to user-managed schemas only (package schemas deploy on publish). */
+ * purge. Mutations apply to user-managed schemas only (package schemas deploy on publish).
+ * A name the registry does not have (never registered, or deleted since) rejects every call
+ * with a {@link DomainNotFoundError}. */
 export class DomainSchemaClient {
   dart: any;
 
@@ -1376,19 +1645,65 @@ export class DomainSchemaClient {
     this.dart = dart;
   }
 
-  /** Full manifest reconstructed from the registry (feeds editors; doubles as export). */
-  manifest(): Promise<{[key: string]: any}> {
+  /** Full manifest reconstructed from the registry (feeds editors; doubles as export), with the
+   * `version` and `incarnation` an {@link apply} sends back ({@link DomainRegisteredManifest}). */
+  manifest(): Promise<DomainRegisteredManifest> {
     return domainCall(api.grok_Dapi_Domains_GetManifest(this.dart, this.name));
   }
 
-  /** Applies a partial manifest; dryRun returns the change plan. Named tables replace
-   * their current definition wholesale — everything omitted comes from the registry.
-   * Destructive plans require confirmDestructive; stale ifVersion → DomainVersionConflictError;
-   * a destructive plan without confirmation → DomainError code 'destructive-confirmation-required'
-   * (the plan rides in error.body.plan).
+  /** The lossless access snapshot of the schema for its editor ({@link DomainSchemaAccess}): per
+   * table its direct grants and its core schema's, per relational column whether it is restricted
+   * and to whom, plus the `version` and `incarnation` the snapshot was read at — all from one
+   * transaction, so the tokens and the ACLs they stand for agree. What the caller may not Share
+   * reads `null` (unknown), never empty. Requires View or Edit on the schema. The deltas an edit
+   * derives from it travel in {@link apply} as {@link DomainApplyBody.access}. */
+  access(): Promise<DomainSchemaAccess> {
+    return domainCall(api.grok_Dapi_Domains_SchemaAccess(this.dart, this.name));
+  }
+
+  /** The live catalog of this EXTERNAL binding, shaped like {@link DomainsDataSource.draft}'s
+   * answer ({@link DomainDraft}) over the binding's own connection and remote schema — what an
+   * editor compares the registered manifest with (tables and columns to add, drift on what is
+   * registered); `options.tables` narrows it to those remote tables. Needs Edit on the schema plus
+   * GetSchema and Query on the connection — no CreateDomainSchema: an editor need not be able to
+   * create. A platform-stored schema has no catalog to draft ({@link DomainUnsupportedError}). */
+  draft(options?: {tables?: string[]}): Promise<DomainDraft> {
+    return domainCall(api.grok_Dapi_Domains_DraftFor(this.dart, this.name, options?.tables ?? null));
+  }
+
+  /** Re-validates an external schema's binding against its warehouse and records the
+   * outcome ({@link DomainSchemaValidation}: `status` `'ok'` or the issues by manifest path).
+   * Requires Edit on the schema; a platform-stored schema is a {@link DomainUnsupportedError}. */
+  validate(): Promise<DomainSchemaValidation> {
+    return domainCall(api.grok_Dapi_Domains_ValidateSchema(this.dart, this.name));
+  }
+
+  /** Applies a partial manifest ({@link DomainApplyBody}); `dryRun` answers the change plan
+   * ({@link DomainApplyPlan}) and moves nothing. Named tables replace their current definition
+   * wholesale — everything omitted comes from the registry. A destructive plan requires
+   * `confirmDestructive` (else DomainError code 'destructive-confirmation-required', the plan
+   * riding in `error.body.plan`); a stale `ifVersion`, or an `ifIncarnation` from another life of
+   * the name, rejects with a {@link DomainVersionConflictError}. A literal `true` / `false` /
+   * omitted `dryRun` types the answer precisely; a boolean variable answers the union.
    *
-   * On a USER-managed schema this requires Edit and `ifVersion` tracks the schema's apply
-   * counter. On a PACKAGE-managed schema it is the user-extension path: it requires
+   * On a USER-managed schema this requires Edit and `ifVersion` is REQUIRED: the `version` of
+   * the manifest the edit was made against (missing → DomainError code 'version-required'); it is
+   * checked again under the server's deploy lock, so of two concurrent applies exactly one commits.
+   * Such an apply may also change the schema's `friendlyName` and `description`, and — on an
+   * external binding — `storage.writable`; any other storage key must repeat the registered value
+   * ('storage-immutable'; the kind cannot flip, 'storage-conversion'). Access changes travel in
+   * the same apply ({@link DomainAccessDelta}) and are executed in the same transaction, after the
+   * manifest change: the answer's `access` reports each op's effect. A dry run on a binding runs
+   * the privilege proof and the live validation the commit runs, and answers with the same
+   * refusals; its plan is `registrationOnly` (no row counts). A user-schema plan carries `lost`
+   * ({@link DomainApplyLost}, counts): per dropped table its direct grants, core-schema grants,
+   * restricted columns with their grants, promoted rows with their grants and saved filters — all
+   * purged with it; per dropped column its restriction and the saved filters naming it (kept as
+   * they are) — and `metadata`, the `{from, to}` of a renamed schema. Dropping a table requires
+   * Delete on that table, dropping its columns Edit on it ('forbidden', naming the tables).
+   * Bootstrap grants go only to what an apply creates — a retained table keeps its ACL, so a
+   * custom permission newly declared on one is granted to nobody until someone with Share grants
+   * it. On a PACKAGE-managed schema it is the user-extension path: it requires
    * 'Extend' on the schema entity, `ifVersion` tracks `ext_version` (the plan echoes it as
    * `extVersion`) while the plugin's own version stays frozen, and the writable surface is
    * limited to objects you own — your own tables through `tables` (needs the schema's
@@ -1402,10 +1717,14 @@ export class DomainSchemaClient {
    * API surface — reads, writes, filters, and the audit trail — keeps using the logical name,
    * with the exception of raw PostgreSQL error text that quotes an identifier verbatim
    * (a constraint violation naming `fk_<table>_x_<column>`, say). */
-  apply(body: {tables?: object; extend?: {[table: string]: {columns: {[column: string]: object}}};
-               propertySchemas?: object; dropTables?: string[];
-               ifVersion?: string; confirmDestructive?: boolean},
-        options?: {dryRun?: boolean}): Promise<{[key: string]: any}> {
+  apply(body: DomainApplyBody, options: {dryRun: true}): Promise<DomainApplyPlan>;
+  /** The apply itself: the plan with `applied: true` and the access effects as resolved under the lock;
+   * an apply that changes nothing writes nothing and answers `applied: false`, `noop: true`. */
+  apply(body: DomainApplyBody, options?: {dryRun?: false}): Promise<DomainApplied>;
+  /** `dryRun` decided at run time: the plan, or the applied answer. */
+  apply(body: DomainApplyBody, options?: {dryRun?: boolean}): Promise<DomainApplyPlan | DomainApplied>;
+  /** @hidden */
+  apply(body: DomainApplyBody, options?: {dryRun?: boolean}): Promise<DomainApplyPlan | DomainApplied> {
     return domainCall(api.grok_Dapi_Domains_ApplySchema(this.dart, this.name, body, options?.dryRun ?? false));
   }
 
@@ -1414,9 +1733,12 @@ export class DomainSchemaClient {
     return domainCall(api.grok_Dapi_Domains_SchemaAudit(this.dart, this.name, options?.limit ?? null));
   }
 
-  /** Fully purges a user-managed schema: data, audit partition, registry, entities, permissions. */
-  delete(): Promise<void> {
-    return domainCall(api.grok_Dapi_Domains_DeleteSchema(this.dart, this.name));
+  /** Fully purges a user-managed schema: data, audit partition, registry, entities, permissions.
+   * Requires Delete on the schema. `ifIncarnation` (the `incarnation` of {@link manifest} or
+   * {@link access}) pins the delete to the schema the caller reviewed: a name deleted and
+   * re-created since rejects with a {@link DomainVersionConflictError} and the new schema is kept. */
+  delete(options?: {ifIncarnation?: string}): Promise<void> {
+    return domainCall(api.grok_Dapi_Domains_DeleteSchema(this.dart, this.name, options?.ifIncarnation ?? null));
   }
 
   /** Direct permission rows on this schema's registry entity (schema-level operation
@@ -1637,6 +1959,14 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * optimistic concurrency — the update fails with a {@link DomainVersionConflictError} if the
    * row has changed since. Resolves to `{id, version}` (version increments on every update).
    *
+   * `options.expected` is the guard for EXTERNAL tables (`support.concurrency === 'expected'`):
+   * the values of some columns as last read, AND-ed to the row's key. A mismatch rejects with a
+   * {@link DomainVersionConflictError} whose `body.expected` / `body.current` name what moved;
+   * `{}` guards nothing. `version` is for platform-stored tables and `expected` for external
+   * ones — the two never cross storages ({@link DomainValidationError}); a column the warehouse
+   * cannot guard (float, datetime, null or empty text, a key) rejects with a
+   * {@link DomainUnsupportedError} whose `op` is `'expected'`.
+   *
    * `values` may also carry declared many-to-many relations as lists of target row ids, with
    * **SET-REPLACE semantics over the links you can SEE**: the list becomes the visible link
    * set, `[]` clears it, and an ABSENT relation key leaves the relation untouched. Links whose
@@ -1646,8 +1976,8 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * version, so `options.version` covers the links too. `grok api`-generated clients name the
    * relations in their `<Table>Update` type and pass it as the client's fifth generic;
    * untyped callers keep `Partial<TRow>`. */
-  update(id: string, values: TUpdate, options?: {version?: number}): Promise<DomainUpdateResult> {
-    return domainCall(api.grok_Dapi_Domains_Patch(this.dart, this.schema, this.table, id, values, options?.version));
+  update(id: string, values: TUpdate, options?: {version?: number; expected?: Partial<TRow>}): Promise<DomainUpdateResult> {
+    return domainCall(api.grok_Dapi_Domains_Patch(this.dart, this.schema, this.table, id, values, options));
   }
 
   /** Judges the same payload and writes NOTHING (see {@link DomainBatchOptions.validateOnly}):
@@ -1674,7 +2004,7 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
       data instanceof DataFrame ? data.dart : data, format, options));
   }
 
-  /** Soft-deletes a row (engine-enforced cascade/restrict/setnull for declared relations;
+  /** Deletes a row — softly unless the table declares `softDelete: false` (engine-enforced cascade/restrict/setnull for declared relations;
    * a restrict reference rejects with a {@link DomainRestrictError}). */
   delete(id: string): Promise<void> {
     return domainCall(api.grok_Dapi_Domains_Delete(this.dart, this.schema, this.table, id));
@@ -1732,9 +2062,12 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return domainCall(api.grok_Dapi_Domains_Promote(this.dart, this.schema, this.table, id));
   }
 
-  /** Returns the row's audit trail (before/after diffs, in-transaction with each write). */
-  audit(id: string): Promise<DomainAuditEntry[]> {
-    return domainCall(api.grok_Dapi_Domains_RowAudit(this.dart, this.schema, this.table, id));
+  /** Returns the row's audit trail (before/after diffs, in-transaction with each write), oldest
+   * first: the newest `limit` events (default 100, at most 1000) whose `id` is below `before`.
+   * A page shorter than `limit` reaches the row's first event. */
+  audit(id: string, options?: {limit?: number; before?: number}): Promise<DomainAuditEntry[]> {
+    return domainCall(api.grok_Dapi_Domains_RowAudit(this.dart, this.schema, this.table, id,
+      options?.limit ?? null, options?.before ?? null));
   }
 
   /** Batched facet computation for filter panels: category counts, histograms, min/max, row count,
@@ -1916,8 +2249,9 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   }
 
   /** Insert-or-update by row identity: no id → insert; id → version-checked partial update
-   * (uses row.version when present). System columns other than the addressing id/version are
-   * stripped from the payload, so spreading a read row is safe. Resolves to the row merged
+   * (uses row.version when present). System columns other than the addressing id/version, the
+   * `'~'` service columns and master-expand fields are stripped from the payload, so spreading a
+   * read row is safe. Resolves to the row merged
    * with the new id/version — NB: re-saving an OLD object after a successful save carries its
    * stale version and rejects with a {@link DomainVersionConflictError}; keep the resolved
    * row. An id-less save whose business key matches an existing row is a TRUE
@@ -1931,7 +2265,7 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
   async save(row: Partial<TRow> & {id?: string; version?: number}): Promise<TRow> {
     const values: any = {};
     for (const k of Object.keys(row))
-      if (!(DOMAIN_SYSTEM_COLUMNS as readonly string[]).includes(k))
+      if (!(DOMAIN_SYSTEM_COLUMNS as readonly string[]).includes(k) && !k.startsWith('~') && !k.includes('.'))
         values[k] = (row as any)[k];
     if (row.id == null) {
       const [res] = await this.insert(values);
@@ -2056,6 +2390,22 @@ export class DockerDataSource {
   getAvailableServices(): Promise<string[]> {
     return api.grok_Dapi_DockersDataSource_GetAvailableServices();
   }
+
+  /** Whether the server can run containers: Grok Spawner is switched on (`enabled`) and its last poll found
+   * no connection failure (`isActive`). Resolves `{enabled: false}`, with no `isActive`, when the status
+   * could not be read. */
+  getStatus(): Promise<DockerStatus> {
+    return api.grok_Dapi_DockersDataSource_GetStatus();
+  }
+}
+
+/** Grok Spawner status, see {@link DockerDataSource.getStatus}. */
+export interface DockerStatus {
+  /** Grok Spawner is switched on for this server. */
+  enabled: boolean,
+  /** No recent connection failure: the server's last poll of Grok Spawner succeeded. This is not a live probe.
+   * Absent when the status could not be read. */
+  isActive?: boolean,
 }
 
 /** Functionality to work with Docker images. See also {@link DockerContainersDataSource}. */
@@ -2271,6 +2621,193 @@ export class NotificationsDataSource extends HttpDataSource<UserNotification> {
   async markAsRead(notificationId: string): Promise<void> {
     return api.grok_Dapi_Notifications_MarkAsRead(notificationId);
   }
+
+  /** Sends an in-platform notification to the user [userId], from the current user. Allowed for
+   * the current user, the users that share a group with them (other than All users), and anybody
+   * for a holder of the EditUser permission.
+   * [text] may hold entity markup, such as `user.toMarkup()`; [options.data] is an opaque string
+   * kept with the notification. */
+  async send(userId: string, text: string, options?: {data?: string}): Promise<ChatNotification> {
+    return api.grok_Dapi_Notifications_Send(userId, text, options?.data ?? null);
+  }
+}
+
+/** A notification as {@link NotificationsDataSource.send} returns it. */
+export interface ChatNotification {
+  /** The notification's id. */
+  id: string;
+  /** Its text, entity markup included. */
+  text: string;
+  /** The opaque string sent with it. */
+  data?: string;
+  /** The id of the user who sent it. */
+  sender?: string;
+  /** When it was sent, ISO 8601. */
+  createdAt?: string;
+}
+
+/** A user as a chat or a comment carries it. */
+export interface ChatUser {
+  /** The user's id. */
+  id: string;
+  /** The user's login. */
+  login?: string;
+  /** The user's display name. */
+  friendlyName?: string;
+}
+
+/** A comment's typed pointer: to an entity ([entityId]), or to something that is not an entity,
+ * such as a row of an unpromoted domain table ([ref], see {@link ChatsDataSource.domainRowRef}). */
+export interface ChatCommentRef {
+  /** The id of the entity it points to. */
+  entityId?: string;
+  /** The pointer to something that is not an entity. */
+  ref?: string;
+}
+
+/** A comment in a chat. */
+export interface ChatComment {
+  /** The comment's id. */
+  id: string;
+  /** Its text, entity markup included. */
+  text: string;
+  /** When it was posted, ISO 8601. */
+  posted?: string;
+  /** When its author last edited it, ISO 8601; null if never. */
+  edited?: string | null;
+  /** The comment this one replies to. */
+  parentId?: string | null;
+  /** Its author. */
+  user?: ChatUser;
+  /** Its explicit references plus every entity marked up in its text that the author can view. */
+  refs?: ChatCommentRef[];
+  /** The number of up votes. */
+  upVotes?: number;
+  /** The number of down votes. */
+  downVotes?: number;
+}
+
+/** A chat: a discussion attached to entities (visible to whoever can view one of them), or a
+ * private conversation of a group. */
+export interface ChatInfo {
+  /** The chat's id. */
+  id: string;
+  /** Its name. */
+  friendlyName?: string;
+  /** Whether it is a private conversation of a group. */
+  private?: boolean;
+  /** The entities it is attached to. */
+  entities?: {id: string}[];
+  /** The user who started it. */
+  author?: ChatUser;
+  /** The users who have posted to it. */
+  participants?: ChatUser[];
+  /** The number of its comments. */
+  commentsCount?: number;
+  /** The number of its comments the current user has not read. */
+  unreadCommentsCount?: number;
+  /** When its first comment was posted, ISO 8601. */
+  firstTimestamp?: string;
+  /** When its last comment was posted, ISO 8601. */
+  lastTimestamp?: string;
+  /** Whether the current user watches it. */
+  isWatched?: boolean;
+}
+
+/** Options of {@link ChatsDataSource.post}. */
+export interface IChatPostOptions {
+  /** The comment it replies to. */
+  parentId?: string;
+  /** References besides the entities marked up in the text. */
+  refs?: ChatCommentRef[];
+  /** Used when the post creates the chat: its name, and the entities it is attached to. */
+  chat?: {friendlyName?: string, entityIds?: string[]};
+}
+
+/** Options of {@link ChatsDataSource.import}. */
+export interface IChatImportOptions {
+  /** The comment's id; a new one when omitted. Importing an existing id overwrites that comment. */
+  id?: string;
+  /** The author; the current user when omitted. */
+  userId?: string;
+  /** The original posted time; now when omitted. */
+  posted?: Date | string;
+  /** The comment it replies to. */
+  parentId?: string;
+  /** References besides the entities marked up in the text. */
+  refs?: ChatCommentRef[];
+}
+
+/** Chats API (`grok.dapi.chats`). A chat on entities is visible to whoever can view one of them;
+ * mentioning a user in a comment (`user.toMarkup()` in the text) notifies them, and makes them watch
+ * the chat, if they can see it. */
+export class ChatsDataSource {
+  /** The reference to a row of a domain table, promoted or not, for {@link ChatCommentRef.ref}. */
+  static domainRowRef(schema: string, table: string, rowId: string): string {
+    return `domain:${schema}.${table}/${rowId}`;
+  }
+
+  /** The chats attached to the entity, and those whose comments reference it, most recently active first. */
+  forEntity(entityId: string): Promise<ChatInfo[]> {
+    return api.grok_Dapi_Chats_List(entityId, null);
+  }
+
+  /** The chats whose comments carry the reference [ref], most recently active first. */
+  forRef(ref: string): Promise<ChatInfo[]> {
+    return api.grok_Dapi_Chats_List(null, ref);
+  }
+
+  /** The chat, or null when it does not exist or the current user cannot see it. */
+  find(chatId: string): Promise<ChatInfo | null> {
+    return api.grok_Dapi_Chats_Find(chatId);
+  }
+
+  /** The comments of the chat, oldest first; empty when it does not exist or the current user cannot see it. */
+  comments(chatId: string): Promise<ChatComment[]> {
+    return api.grok_Dapi_Chats_Comments(chatId);
+  }
+
+  /** Posts a comment, creating the chat on its first one. */
+  post(chatId: string, text: string, options?: IChatPostOptions): Promise<ChatComment> {
+    const chat = options?.chat ? {friendlyName: options.chat.friendlyName,
+      entities: (options.chat.entityIds ?? []).map((id) => ({id}))} : null;
+    return api.grok_Dapi_Chats_Post(chatId,
+      {text, parentId: options?.parentId ?? null, refs: options?.refs ?? []}, chat);
+  }
+
+  /** Replaces the text of a comment of the current user's, and its references when [options.refs]
+   * is given (otherwise it keeps its non-entity references); the comment is marked edited. */
+  edit(chatId: string, commentId: string, text: string, options?: {refs?: ChatCommentRef[]}): Promise<ChatComment> {
+    return api.grok_Dapi_Chats_Post(chatId, {id: commentId, text, refs: options?.refs ?? []}, null);
+  }
+
+  /** Posts a comment with its original author and date, sending no notifications; requires the
+   * ImportComments permission. */
+  import(chatId: string, text: string, options?: IChatImportOptions): Promise<ChatComment> {
+    const posted = options?.posted instanceof Date ? options.posted.toISOString() : options?.posted ?? null;
+    return api.grok_Dapi_Chats_Import(chatId, {id: options?.id ?? null, text, posted,
+      user: options?.userId ? {id: options.userId} : null, parentId: options?.parentId ?? null, refs: options?.refs ?? []});
+  }
+
+  /** Deletes a comment: the author's own, or any with the DeleteComments permission. */
+  deleteComment(commentId: string): Promise<void> {
+    return api.grok_Dapi_Chats_DeleteComment(commentId);
+  }
+
+  /** Subscribes the current user to the chat's new comments. */
+  watch(chatId: string): Promise<void> {
+    return api.grok_Dapi_Chats_Watch(chatId, true);
+  }
+
+  /** Unsubscribes the current user from the chat; a mention no longer subscribes them again. */
+  unwatch(chatId: string): Promise<void> {
+    return api.grok_Dapi_Chats_Watch(chatId, false);
+  }
+
+  /** Whether the current user watches the chat. */
+  isWatched(chatId: string): Promise<boolean> {
+    return api.grok_Dapi_Chats_IsWatched(chatId);
+  }
 }
 
 export class LogDataSource extends HttpDataSource<LogEvent> {
@@ -2290,7 +2827,7 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
   /**
    * Names of the cloud log groups this instance can read.
    *
-   * Admins only. Without a connection the server uses its own AWS role.
+   * Needs the ViewTelemetry permission. Without a connection the server uses its own AWS role.
    *
    * @example
    * const groups = await grok.dapi.log.getCloudLogGroups({prefix: '/datagrok/'});
@@ -2329,6 +2866,36 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
   getArchiveEvents(connection: string, key: string): Promise<DataFrame> {
     return api.grok_Dapi_Log_ArchiveEvents(connection, key);
   }
+
+  /**
+   * The events and HTTP requests of a session from `from` to `to` (by default `from` + 10 minutes, at most 2 hours
+   * later), in time order (`GET /log/timeline`); `limit` defaults to 500, at most 5000. Needs the `ViewTelemetry`
+   * permission, except for the current session.
+   *
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/log-timeline}
+   *
+   * @example
+   * const session = (await grok.dapi.users.currentSession()).id;
+   * const rows = await grok.dapi.log.getTimeline({session, from: new Date(Date.now() - 5 * 60000)});
+   */
+  async getTimeline(query: {session: string, from: Date | string, to?: Date | string, limit?: number}): Promise<TimelineRow[]> {
+    return JSON.parse(await api.grok_Dapi_Log_Timeline(JSON.stringify(query)));
+  }
+}
+
+/** A row of {@link LogDataSource.getTimeline}. */
+export interface TimelineRow {
+  /** ISO 8601. */
+  time: string,
+  source: 'client' | 'server',
+  /** The event type, `error`, `warning` or `request`. */
+  kind: string,
+  summary: string,
+  /** An HTTP status, or the `status` parameter of an event. */
+  status: string | null,
+  ms: number | null,
+  /** A login. */
+  user: string | null,
 }
 
 export class ActivityDataSource extends HttpDataSource<LogEvent> {
@@ -2428,7 +2995,9 @@ export class FilesDataSource {
   async readFilesAsBlobs(folder: FileInfo | string, recursive: boolean = false, ext: string | undefined = undefined): Promise<{[key: string]: Blob}> {
     const folderPath = this.setRoot(folder);
     const conn = folderPath.replace(":", ".").split('/')[0];
-    let url = `${api.grok_Dapi_Root()}/connectors/connections/${conn}/folder/${folderPath.substring(folderPath.indexOf('/') + 1)}?recursive=${recursive}`;
+    const slash = folderPath.indexOf('/');
+    const dir = slash < 0 ? '' : folderPath.substring(slash + 1);
+    let url = `${api.grok_Dapi_Root()}/connectors/connections/${conn}/folder/${dir}?recursive=${recursive}`;
     if (ext) {
       if (!ext.startsWith('.'))
         ext = `.${ext}`;

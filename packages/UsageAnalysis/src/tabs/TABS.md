@@ -25,17 +25,34 @@ Tabs are a **fixed list** in `ViewHandler.init()`:
 
 ```ts
 const viewClasses = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView,
-                     SystemActivityView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
+                     SystemActivityView, AiUsageView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
 ```
 
 `SystemActivityView` (tab `System Activity`) lists the platform-level audit records datlas writes —
 `server-started`, `user-logged-in`, `user-logged-out`, `user-login-failed`, `user-impersonated`,
 `impersonation-failed`, `admin-session-started`, `admin-session-ended`, `dev-key-generated`,
+`email-confirmation-requested`, `email-confirmed`, `email-confirmation-failed`, `password-reset-requested`,
+`password-changed`, `password-change-failed`,
 `settings-changed`, `log-settings-changed` (`LogAudit` in `grok_shared/lib/src/log_entities.dart`).
 `SystemActivitySummary` feeds a per-type timeline and `SystemActivity` the filterable grid; the grid
 resolves the record's user from its `user` parameter first (a failed login or a server start has no
 session), so the groups filter applies to records with a user and passes the rest through. The
 packages input is hidden on it, like Projects. Both queries are uncached: this is a security log.
+
+`AiUsageView` (tab `AI Usage`) shows Grokky's `ai-turn` events: one cached query, `AiUsage` (5 minutes), returns a row
+per request that every card, chart, filter and the grid share. Charts open on cost only when every request with tokens
+is priced, otherwise on tokens. `AiChatContent` (uncached; prompt and answer arrive as separate events) fills the
+context panel with the chat's prompts, answers and tool calls. The packages input is hidden on it.
+
+`ErrorsView` (tab `Errors`): Top errors and Top source come from one `grok.dapi.admin.getMetrics` call
+(`GET /admin/metrics`, `errorsBy: 'signature'`, the toolbox's date; needs `ViewTelemetry`, else both say so); a Top
+errors bar click filters the `EventErrors` grid to its signatures. A row's context panel shows its reports and
+`SameErrors`, and an Alert pane with the `error-incident` problem of the row's `incident_key` (the incident's key: the
+stack hash, or the event type id of an error without a stack trace; `grok.dapi.admin.getProblem`, which needs
+`ManageAlerts`). The context
+panel of an event in the Log and System Activity tabs has a Timeline button (`openTimeline` in `utils.ts`:
+`grok.dapi.log.getTimeline` for the event's session from a minute before it to five minutes after, opened as a
+table view).
 
 `VulnerabilitiesView` is toolbox-independent: it loads the published VEX index
 (`https://data.datagrok.ai/vex/index.json`) via `grok.dapi.fetchProxy` and drills into the
@@ -70,6 +87,8 @@ Toolbox "Apply" → filterStream.next(UaFilter)
 - `filterStream` is a `BehaviorSubject<UaFilter>` on the toolbox; **one stream, all tabs subscribe**.
 - Viewers only re-query when `activated` — hidden tabs stay idle until visited.
 - `UaQueryViewer` applies shared formatting (count format, per-user color hashing) before `createViewer`.
+- Only the latest `reloadViewer` call renders: a slower earlier query's result or error is dropped, and its
+  `dataFrame` promise never resolves.
 
 ## Shared toolbox (`UaToolbox`)
 
@@ -93,3 +112,7 @@ read-only drilldown fields, reload a target tab's viewer with a derived filter, 
 
 `setUrlParam` / `updatePath` keep `view.path` as `/<tab><rout>?<params>` (lowercased). On load, `init()`
 parses the first path segment to pick the starting tab (default `Overview`) and applies incoming filter params.
+
+Incoming URL parameters reach the app only as `usageAnalysisApp(...)` function parameters
+(`package.ts`). Reading `window.location` inside a tab is useless: the platform rewrites the URL
+before the tab inits. A new deep-link parameter must be added as an app parameter and passed down.

@@ -2,7 +2,39 @@
 
 ## v.next
 
-* Sunburst: Added the automation surface — `getWidgetStatus` reports a `segment <path>` hit area per drawn sector (a point the sector confirms it contains, not its bounding box) plus `segments`, `segment names`, `rows of segment <path>`, `hierarchy columns`, `on click`, `include nulls` and `rows shown`; added `isRenderPending` / `onRendered` / `renderError`
+* [public#4548](https://github.com/datagrok-ai/public/issues/4548): Sankey: Fixed freezing on large tables by drawing one link per source-target pair instead of one per row
+* [public#4459](https://github.com/datagrok-ai/public/issues/4459): Timelines: Date Format resets to the default on any column change
+* [public#4462](https://github.com/datagrok-ai/public/issues/4462): Sankey: a Value column with negative values or only zeros draws with no message
+* [public#4514](https://github.com/datagrok-ai/public/issues/4514): Charts: Sankey: a click on a node selects rows the filter hides
+* [public#4477](https://github.com/datagrok-ai/public/issues/4477): Charts: Sunburst paints a partial selection as full on the outer rings and not at all on the inner ring
+* core#1174: Sunburst, Tree: Fixed the filter of a click staying after the clicked column is removed or the hierarchy changes
+* Tests: Added "Viewers: no rows": every viewer with every row filtered out and with every row deleted logs no error
+
+## 1.8.2 (2026-10-29)
+
+* Word cloud: Fixed errors logged after the viewer is closed while a render waits for its size
+* Radar: Fixed the legend overlapping the chart
+* [public#4422](https://github.com/datagrok-ai/public/issues/4422): Charts: Sunburst does not show rows selected in the grid
+* [public#4423](https://github.com/datagrok-ai/public/issues/4423): Tree viewer: Doesn't handle removal of the Size and Color columns
+* [public#4421](https://github.com/datagrok-ai/public/issues/4421): Chord: Doesn't handle removal of the From column correctly
+* [public#4420](https://github.com/datagrok-ai/public/issues/4420): Sankey: Doesn't handle removal of the Source column
+* Sunburst, Radar, Timelines, Surface plot, Globe, Word cloud: Fixed handling of removed columns: an optional column is cleared, a required one is replaced, and a column whose type changes stays selected
+* Group analysis: Fixed handling of a removed Group by column
+* [public#4425](https://github.com/datagrok-ai/public/issues/4425): Sunburst, Tree: the filter of a click stays after the viewer is closed or On Click is switched to Select
+* [public#4424](https://github.com/datagrok-ai/public/issues/4424): Word Cloud: Incorrect handling of invalid Rotation Step input
+* [public#4393](https://github.com/datagrok-ai/public/issues/4393): Tree: Fixed Shift+click on a branch not filtering, with an error, when On Click is Filter
+* [core#881](https://github.com/datagrok-ai/core/issues/881): Word cloud: Fixed out-of-memory errors and missing words when a column's values are very long
+* GROK-21150: Surface plot: Fixed an error when the plot opened on a table with a datetime column on an axis
+* Radar, Timelines, Tree: Added the automation surface — `getWidgetStatus` hit areas and readings, `isRenderPending` / `onRendered` / `renderError`
+* Sankey, Chord: Added the automation surface — node, link, category and chord hit areas and readings, `isRenderPending` / `onRendered` / `renderError`
+* Globe: Added the `points` automation reading and `isRenderPending` / `onRendered`
+* Globe: Fixed a filter change not redrawing the globe
+* Tree: Fixed one failed render stopping every later render
+* GROK-21110: Sankey: Fixed "Invalid array length" when the filter leaves no rows; it now draws nothing, as it does when no row has both a source and a target
+* Sankey: Fixed nodes drawn with no height when the Value column has a missing value (demog's M and Caucasian)
+* GROK-21101: Sunburst: Fixed an error when reordering columns in the Order or Hide Columns dialog
+* GROK-21111: Chord: Fixed the "Column '' not found" error when From and To are set to the same column
+* Sunburst: Added the automation surface — `getWidgetStatus` reports a `segment <path>` hit area per drawn sector (a point the sector confirms it contains, not its bounding box; an empty value as `(empty)`) plus `segments`, `segment names`, `rows of segment <path>`, `hierarchy columns`, `on click`, `include nulls` and `rows shown`; added `isRenderPending` / `onRendered` / `renderError`
 * Word cloud: Fixed two ways the viewer reported a cloud that was not there. A render on a host the dock has not sized yet emptied the root and then threw on the size, leaving no canvas, no message and a render that stayed pending for ever; it now measures the root as well as the host and keeps the picture that is up until a size it can use comes back. And a render declared itself finished on a canvas with no words in it — `echarts.init` creates the canvas, but the layout that places the words runs in the macrotask `setOption` queues — so it now waits for the boxes the layout leaves, which is what the automation surface reports
 * Word cloud: Added the automation surface — `getWidgetStatus` reports a `word "<name>"` hit area per laid-out word plus `words`, `word names`, `rows of word "<name>"`, `column`, `rows shown`, `font` and the message the viewer shows instead of a cloud; added `isRenderPending` / `onRendered`
 * GROK-20800: Timelines, Radar: Fixed the legend container placement — it is now a full-height strip on the right, filled by the legend

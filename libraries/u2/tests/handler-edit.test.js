@@ -6,10 +6,11 @@
    tests/dg-stub.mjs; the panel lives in the platform's context pane, so only its DOM is
    exercised here. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {Signal, signal} from '../src/core/signals.js';
 import {Control} from '../src/core/component.js';
@@ -191,7 +192,7 @@ function picker() {
   const dialog = document.querySelector('.u2-bind-picker');
   const list = dialog?.querySelector('.u2-list');
   if (list) {
-    list.clientHeight = 400;
+    layout(list, {clientHeight: 400});
     fire(list, 'scroll');
   }
   return dialog;
@@ -258,7 +259,7 @@ edit('propsFor(): sections by category, editor routing, a bound prop and a struc
     const [props, appearance] = model;
     assert.deepEqual(appearance.props.filter((p) => !APPEARANCE_NAMES.has(p.name)).map((p) => p.name),
       ['label'], 'the own prop leads its section; the shared group joins it');
-    assert.deepEqual(props.props.map((p) => p.name), ['value', 'stage', 'sizes', 'items', 'hint']);
+    assert.deepEqual(props.props.map((p) => p.name), ['value', 'stage', 'sizes', 'items', 'hint', 'visible']);
     const by = (name) => props.props.find((p) => p.name === name);
     assert.equal(typeof by('value').set, 'function');
     assert.deepEqual(by('stage').choices, ['Discovery', 'Phase I'],
@@ -287,13 +288,13 @@ edit('propsFor(): a plain HTML node, a per-child prop, and a node that failed to
     assert.deepEqual(propsFor(ref('logo'))[0].props.map((p) => p.name), ['text', 'cls', 'src']);
 
     const pane = propsFor(ref('firstPane'));
-    assert.deepEqual(pane.map((s) => s.title), ['Parent (u2-e-tabs)', 'Appearance'],
+    assert.deepEqual(pane.map((s) => s.title), ['Properties', 'Parent (u2-e-tabs)', 'Appearance'],
       'what the parent reads off the child, under the parent\'s own section');
     assert.equal(pane.find((s) => s.title === 'Parent (u2-e-tabs)').values.title, 'First');
 
     const broken = propsFor(ref('brokenInput'));
     assert.deepEqual(broken.flatMap((s) => s.props.map((p) => p.name)),
-      ['value', 'stage', 'sizes', 'items', 'hint', 'label', ...APPEARANCE_PROPS.map((p) => p.name)],
+      ['value', 'stage', 'sizes', 'items', 'hint', 'visible', 'label', ...APPEARANCE_PROPS.map((p) => p.name)],
       'a node that failed to build still has the props that need fixing');
     assert.equal(broken.find((s) => s.title === 'Appearance').values.label, 'Ghost',
       'read from the node, since nothing was built');
@@ -774,7 +775,7 @@ tier('a property-tier node binds through one "Add binding…" row: the bound pro
     assert.deepEqual(rows(shown), ['table', 'add-binding'], 'what is bound, and the row that adds');
     assert.equal(field(shown, 'Bindings', 'table').value, '$.orders');
     const select = section(shown, 'Bindings').querySelector('[data-u2-prop="add-binding"] select');
-    const offered = select.querySelectorAll('option').map((o) => o.value).filter((v) => v !== '');
+    const offered = [...select.querySelectorAll('option')].map((o) => o.value).filter((v) => v !== '');
     assert.ok(offered.includes('xColumnName') && !offered.includes('table'), `the unbound props: ${offered}`);
 
     const said = [];

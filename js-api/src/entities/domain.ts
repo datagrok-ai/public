@@ -27,6 +27,9 @@ export class DomainSchema extends Entity {
   /** Manifest version applied at last deploy. */
   get version(): string { return api.grok_DomainSchema_Get_Version(this.dart); }
 
+  /** Free-text description of the schema (editable through `schema(name).apply({description})`). */
+  get description(): string { return api.grok_DomainSchema_Get_Description(this.dart); }
+
   /** Tables registered in this schema (populate with `.include('tables')`). */
   get tables(): DomainTable[] { return toJs(api.grok_DomainSchema_Get_Tables(this.dart)); }
 }

@@ -9,6 +9,7 @@ sub_features_covered: [powerpack.dialogs.add-new-column, powerpack.cp.add-new-co
 import {test} from '@playwright/test';
 import '../../bindings/enrichment.js';
 import '../../bindings/home.js';
+import '../../bindings/identifiers.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
@@ -22,13 +23,13 @@ import {hoverArea, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewer
 import {dragAreaOntoElement, liesWithin} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
-test.describe("Add New Column on demog: the dialog, a formula built by hand, and the input history", () => {
+test.describe("Add New Column on demog-1000: the dialog, a formula built by hand, and the input history", () => {
   const session = feature(test, "features/add-new-column/add-new-column.feature", import.meta.url);
-  test("Add New Column on demog: the dialog, a formula built by hand, and the input history", {tag: ["@journey", "@realizes:powerpack.dialogs.add-new-column", "@realizes:powerpack.cp.add-new-column-persists"]}, async ({browser}) => {
+  test("Add New Column on demog-1000: the dialog, a formula built by hand, and the input history", {tag: ["@journey", "@realizes:powerpack.dialogs.add-new-column", "@realizes:powerpack.cp.add-new-column-persists"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 4, page);
     await session.step(26, "Given user is logged in", () => loggedIn(page));
-    await session.step(27, "And user opens demog dataset", () => openDataset(page, ds("demog")));
+    await session.step(27, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await run.scenario("The toolbar icon opens the dialog, and its controls carry tooltips", async () => {
       await session.step(30, "When user clicks on \"Add New Column...\" icon", () => clickOn(page, el("\"Add New Column...\" icon")));
       await session.step(31, "Then \"Add New Column\" dialog should be visible", () => shouldBe(page, el("\"Add New Column\" dialog"), "visible"));

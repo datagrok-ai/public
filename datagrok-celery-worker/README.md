@@ -4,7 +4,7 @@ A generic Node.js, Celery-compatible worker that executes a published Datagrok p
 JS functions. It is the JS mirror of the python library
 [`datagrok-celery-task`](../datagrok-celery-task): the Datagrok server (datlas) queues a
 `DockerFunc` call into a RabbitMQ task queue, the worker picks it up, streams dataframe /
-blob parameters over [grok_pipe](../../grok_pipe), runs the function from the package's
+blob parameters over [grok_pipe](../../core/grok_pipe), runs the function from the package's
 published webpack bundle (loaded via the `datagrok-api` Node runtime), and publishes the
 result back.
 
@@ -63,6 +63,7 @@ result back.
 | `DATAGROK_PARAM_TIMEOUT` | no | `5` | Total budget for receiving one param, minutes |
 | `DATAGROK_WS_MESSAGE_TIMEOUT` | no | `30` | Per-message pipe wait timeout, seconds |
 | `HEALTH_PORT` | no | `8000` | Port of the `{"status":"ok"}` health endpoint |
+| `GROK_JSON_LOGS` | no | `false` | `true` → one JSON line per record (`v`, `time`, `level`, `service`, `message`, `params`), secrets redacted |
 | `DATAGROK_MAX_CONCURRENT_TASKS` | no | `1` | Max tasks executed concurrently (invalid values fall back to `1`). Node runs them on one event loop, so raising it helps I/O-bound functions; CPU-bound functions still serialize |
 
 ## Local run

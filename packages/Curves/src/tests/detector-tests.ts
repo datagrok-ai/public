@@ -70,4 +70,30 @@ category('detectors', () => {
     expect(col.semType, FitConstants.FIT_SEM_TYPE);
     expect(col.getTag(FitConstants.TAG_CURVE_FORMAT), 'pzfx');
   });
+
+  test('curve JSON needs only series with points', async () => {
+    // GROK-18073: no fit function and no colors, the way a formula returning curve JSON gives it
+    const json = JSON.stringify({series: [{points: [{x: 0.1, y: 1}, {x: 1, y: 5}, {x: 10, y: 9}]}]});
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('curvecol', [json, json])]);
+    await grok.data.detectSemanticTypes(df);
+    expect(df.col('curvecol')!.semType, FitConstants.FIT_SEM_TYPE);
+  });
+
+  test('curve columns come back whole and detected from an exported CSV', async () => {
+    // GROK-17312, public#3215: the curve JSON of an exported CSV came back cropped
+    const df = await grok.dapi.files.readCsv('System:AppData/Curves/curves-demo.csv');
+    await grok.data.detectSemanticTypes(df);
+    const curveColumns = df.columns.bySemTypeAll(FitConstants.FIT_SEM_TYPE).map((c) => c.name);
+    expect(curveColumns.length, 5, `the demo has five curve columns, found ${curveColumns}`);
+
+    const reopened = DG.DataFrame.fromCsv(df.toCsv());
+    await grok.data.detectSemanticTypes(reopened);
+    expect(reopened.rowCount, df.rowCount);
+    expect(reopened.columns.names().join(', '), df.columns.names().join(', '));
+    for (const name of curveColumns) {
+      expect(reopened.col(name)!.semType, FitConstants.FIT_SEM_TYPE, `${name} is not a curve column again`);
+      for (let i = 0; i < df.rowCount; i++)
+        expect(reopened.get(name, i), df.get(name, i), `${name} changed in row ${i}`);
+    }
+  });
 });

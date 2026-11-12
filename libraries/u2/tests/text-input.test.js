@@ -1,9 +1,10 @@
 /* TextInput variants: the password eye and the auto-resizing field. */
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
-import {Scope, TextInput} from '../src/index.js';
+import {layout} from './layout.mjs';
+import {Scope, TextInput, signal, batch} from '../src/index.js';
 
 function smoke(name, body) {
   test(name, async () => {
@@ -47,7 +48,7 @@ smoke('password: masked by default, the eye toggles the field both ways', async 
 
   field(input).value = 'hunter3';
   fire(field(input), 'input');
-  assert.equal(input.value.value, 'hunter3', 'the value binding is the plain one');
+  assert.equal(input.value, 'hunter3', 'the value binding is the plain one');
   input.dispose();
 });
 
@@ -57,18 +58,18 @@ smoke('autoResize: the width follows the measured text between minWidth and maxW
   assert.equal(measure.textContent, 'Compound', 'an empty field is measured by its placeholder');
   assert.equal(field(input).style.width, '100px', 'never below minWidth');
 
-  measure.offsetWidth = 150;
-  input.value.value = 'Acetylsalicylic acid';
+  layout(measure, {offsetWidth: 150});
+  input.value = 'Acetylsalicylic acid';
   assert.equal(measure.textContent, 'Acetylsalicylic acid');
   assert.equal(field(input).style.width, '160px', 'text width plus the caret allowance');
 
-  measure.offsetWidth = 600;
-  input.value.value = 'N-(4-hydroxyphenyl)acetamide, analytical standard, 99%';
+  layout(measure, {offsetWidth: 600});
+  input.value = 'N-(4-hydroxyphenyl)acetamide, analytical standard, 99%';
   assert.equal(field(input).style.width, '300px', 'never above maxWidth');
 
   const custom = mount(new TextInput({label: 'Name', autoResize: true, minWidth: 40, maxWidth: 60}));
-  custom.root.querySelector('.u2-input-measure').offsetWidth = 200;
-  custom.value.value = 'long';
+  layout(custom.root.querySelector('.u2-input-measure'), {offsetWidth: 200});
+  custom.value = 'long';
   assert.equal(custom.root.querySelector('input').style.width, '60px');
   custom.dispose();
   input.dispose();
@@ -85,7 +86,64 @@ smoke('the plain and search variants are untouched by the new options', async ()
   const clear = search.root.querySelector('.u2-input-clear');
   assert.equal(clear.hidden, false);
   fire(clear, 'click');
-  assert.equal(search.value.value, '');
+  assert.equal(search.value, '');
   assert.equal(clear.hidden, true);
   search.dispose();
+});
+
+smoke('follow: shows the model value, never echoes it to onChanged, user commits still reach it', async () => {
+  const name = signal('orders');
+  const changes = [];
+  const input = mount(new TextInput({label: 'Name', value: '', commitOn: 'change', onChanged: (v) => changes.push(v)}))
+    .follow(() => name.value);
+  assert.equal(field(input).value, 'orders');
+
+  name.value = 'order_lines';
+  batch(() => name.value = 'lines');
+  assert.equal(field(input).value, 'lines');
+  assert.deepEqual(changes, []);
+
+  field(input).value = 'items';
+  fire(field(input), 'change');
+  assert.deepEqual(changes, ['items']);
+  input.dispose();
+});
+
+smoke('follow: a re-read with an unchanged value leaves the field being typed in alone', async () => {
+  const revision = signal(0);
+  const input = mount(new TextInput({label: 'Name', value: '', commitOn: 'change'}))
+    .follow(() => (revision.value, 'orders'));
+  const editor = field(input);
+  editor.value = 'ord';
+  revision.value++;
+  assert.equal(field(input), editor);
+  assert.equal(editor.value, 'ord');
+  assert.equal(input.value, 'orders');
+  input.dispose();
+});
+
+smoke('tooltipText: u2 tooltip over the caption, the editor\'s description; none over the editor', async () => {
+  const {Tooltip} = await import('../src/index.js');
+  const input = mount(testOwner().build(() => new TextInput({label: 'Name', tooltipText: 'The compound\'s registered name'})));
+  const caption = input.root.querySelector('.u2-input-label');
+  assert.equal(input.root.title, '', 'no native title');
+  assert.equal(field(input).getAttribute('aria-description'), 'The compound\'s registered name');
+  fire(caption, 'pointerenter');
+  await new Promise((r) => setTimeout(r, 400));
+  assert.equal(Tooltip.root.textContent, 'The compound\'s registered name');
+  fire(caption, 'pointerleave');
+  input.tooltipText = '';
+  assert.equal(field(input).hasAttribute('aria-description'), false);
+  fire(caption, 'pointerenter');
+  await new Promise((r) => setTimeout(r, 400));
+  assert.equal(Tooltip.isVisible, false, 'an emptied tooltip shows nothing');
+  fire(caption, 'pointerleave');
+
+  const bare = mount(testOwner().build(() => new TextInput({tooltipText: 'Filter rows'})));
+  fire(bare.root, 'pointerenter');
+  await new Promise((r) => setTimeout(r, 400));
+  assert.equal(Tooltip.root.textContent, 'Filter rows', 'no caption: the whole input carries it');
+  fire(bare.root, 'pointerleave');
+  input.dispose();
+  bare.dispose();
 });

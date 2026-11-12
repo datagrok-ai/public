@@ -249,7 +249,10 @@ export class DimReductionBaseEditor {
       changed();
       // the table can be uploaded on spot, so lets check that
       if (!value.columns.toList().some((col) => !!col.getTag(DG.Tags.SemanticDetectionDuration)))
-        value.meta.detectSemanticTypes().then(() => { changed(); });
+        value.meta.detectSemanticTypes().then(() => {
+          if (DG.toDart(this.tableInput.value) === DG.toDart(value))
+            changed();
+        });
     }
 
     private onColumnInputChanged() {

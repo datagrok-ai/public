@@ -12,17 +12,15 @@ Feature: Filter panel entry points
   "Remove All" empties the panel; a panel that works its cards out again leaves out a column hidden
   in the grid and gives it back once it is shown; Select Columns puts a card on every column or on
   none; a multi-value card built from its dialog lists each value its cells hold and keeps the rows
-  that hold the one clicked; Filter to Column writes the panel's filtering into a boolean column;
+  that hold the one clicked, a second value ticked in its include checkbox narrows them to the rows
+  holding both (the card starts in AND) and the switch in its header widens them to either; Filter to Column writes the panel's filtering into a boolean column;
   closing the panel releases its filtering while reopening it brings every card back as it was —
   criterion, switched-off card and removed card alike. One journey on demog-1000 (RACE: Caucasian
   896, Black 27; DIS_POP RA 434; SEX F 553). TOKENS is a column the feature makes,
   "<SEX>;<DIS_POP>", to have one whose cells hold several values.
   Not translated: the pin is proven by the grid's column order only (the grid reports no pinned
   columns); the unpinned header drag is in filter-panel-ladder.feature; the panel is first opened
-  empty through its API; two values ticked together on the multi-value card and its AND/OR switch over
-  them — a click on a value's name replaces the value kept, and the card reports no checkbox areas
-  for its include column (only "category <value>"), so the second tick needs that area in the core;
-  the GROK-12955 freeze is claimed only as "no errors" after the drags, the page staying responsive
+  empty through its API; the GROK-12955 freeze is claimed only as "no errors" after the drags, the page staying responsive
   being what every later step already needs.
 
   Background:
@@ -236,6 +234,14 @@ Feature: Filter panel entry points
     Then 434 rows should pass the filter
     And the filter should pass exactly the rows where "TOKENS" contains "RA"
     And the "summary of TOKENS" reading of filter panel should be "Includes RA"
+    When user clicks on the "include checkbox F of TOKENS" area of filter panel
+    Then the "summary of TOKENS" reading of filter panel should be "Includes F AND Includes RA"
+    And mode of "TOKENS" filter card should have text "AND"
+    And 330 rows should pass the filter
+    When user clicks on mode of "TOKENS" filter card
+    Then mode of "TOKENS" filter card should have text "OR"
+    And the "summary of TOKENS" reading of filter panel should be "Includes F OR Includes RA"
+    And 657 rows should pass the filter
     When user picks "Remove All" from the filter panel menu
     And user removes "TOKENS" column
     Then the table should have 11 columns

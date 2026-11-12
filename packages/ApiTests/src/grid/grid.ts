@@ -147,6 +147,12 @@ category('Grid', () => {
     }
   });
 
+  test('GridCell.renderer of an unregistered value cell', async () => {
+    const gc = DG.GridCell.fromValue('');
+    gc.cellType = 'api-tests-unregistered-cell-type';
+    expect(gc.renderer.cellType, DG.TYPE.STRING);
+  });
+
   test('getOptions', async () => {
     expect(Object.keys(grid.getOptions().look).length, 2);
   });
@@ -154,5 +160,17 @@ category('Grid', () => {
   test('setOptions', async () => {
     grid.setOptions({ allowEdit: false, showColumnLabels: false, colHeaderHeight: 100 });
     expect(Object.keys(grid.getOptions().look).length, 5);
+  });
+
+  test('fromProperties with rows beyond items', async () => {
+    const items: any[] = [{age: 28}, {age: 35}];
+    const g = DG.Grid.fromProperties(items, [DG.Property.jsInt('age')]);
+    g.dataFrame.rows.addNew();
+    const col = g.dataFrame.col('age')!;
+    expect(col.get(2), null);
+    expect(g.cell('age', 2).cell.value, null);
+    col.set(2, 40);
+    expect(items[2].age, 40);
+    expect(col.get(2), 40);
   });
 }, { owner: 'dkovalyov@datagrok.ai' });

@@ -152,35 +152,41 @@ export function applyProductFilters(
   if (specs.remove_charged_species && stats.hasCharge)
     return {pass: false, reason: 'remove_charged_species'};
 
-  for (const qmol of exclusionQmols) {
-    let match: string;
-    try {match = mol.get_substruct_match(qmol);} catch {continue;}
-    if (match && match !== '' && match !== '{}') {
-      try {
-        const obj = JSON.parse(match);
-        if (obj && Array.isArray(obj.atoms) && obj.atoms.length > 0)
-          return {pass: false, reason: 'exclusion_smarts'};
-      } catch {
-        if (match.length > 2) return {pass: false, reason: 'exclusion_smarts'};
-      }
-    }
-  }
+  for (const qmol of exclusionQmols)
+    if (hasSubstructMatch(mol, qmol)) return {pass: false, reason: 'exclusion_smarts'};
 
   return {pass: true};
+}
+
+/** Whether `qmol` matches `mol` (false where the match throws). */
+export function hasSubstructMatch(mol: RDMol, qmol: RDMol): boolean {
+  let raw: string;
+  try {
+    raw = mol.get_substruct_match(qmol);
+  } catch {
+    return false;
+  }
+  if (!raw || raw === '{}') return false;
+  try {
+    const obj = JSON.parse(raw);
+    return Array.isArray(obj?.atoms) && obj.atoms.length > 0;
+  } catch {
+    return raw.length > 2;
+  }
 }
 
 export function stripIsotopesFromSmiles(smiles: string): string {
   return smiles.replace(/\[(\d+)([A-Za-z])/g, '[$2');
 }
 
-export function buildExclusionQmols(rdkit: RDModule, smartsList: string[]): {qmols: RDMol[]; dispose: () => void} {
+export function buildExclusionQmols(module: RDModule, smartsList: string[]): {qmols: RDMol[]; dispose: () => void} {
   const qmols: RDMol[] = [];
   const sources: string[] = [];
   for (const s of smartsList) {
     const trimmed = (s ?? '').trim();
     if (!trimmed) continue;
     try {
-      const q = rdkit.get_qmol(trimmed);
+      const q = module.get_qmol(trimmed);
       if (q && q.is_valid()) {qmols.push(q); sources.push(trimmed);} else q?.delete();
     } catch {
       // skip invalid SMARTS

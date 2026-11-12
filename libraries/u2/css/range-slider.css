@@ -1,20 +1,23 @@
 /* Range slider skin — DOM track/band/handles, both orientations. Tokens only; css/tokens.css
    must be loaded alongside. */
 /* the floor keeps the track longer than its two handles: under it the band vanishes and the
-   slider reads as two overlapping circles */
+   slider reads as two overlapping circles. The half-handle margins keep a handle at either end
+   inside the component */
 .u2-range-slider {
   position: relative;
-  width: 100%;
+  width: calc(100% - 12px);
   min-width: 60px;
   height: 16px;
+  margin: 0 6px;
   touch-action: none;
   cursor: pointer;
 }
 
 .u2-range-slider-vertical {
   width: 16px;
-  height: 100%;
+  height: calc(100% - 12px);
   min-height: 60px;
+  margin: 6px 0;
 }
 
 .u2-range-track {

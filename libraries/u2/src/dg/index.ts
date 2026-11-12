@@ -1,10 +1,8 @@
-/* The ONLY layer allowed to import datagrok-api (enforced by eslint). Bridges u2's
-   platform-free core onto the platform's existing lifecycle and event surfaces. */
 export {asDartInput, dartInputFor, DartInput} from './inputs/input-bridge.js';
 export type {DartInputOptions, PropertyInputBuilder} from './inputs/input-bridge.js';
 export {columnInput, tableInput, tablesInput, ColumnPicker} from './inputs/pickers.js';
 export type {ColumnInputOptions, ColumnPickerOptions} from './inputs/pickers.js';
-export {ObjectForm, propertyForm, objectForm, inputForProperty, PlatformInputs} from './forms/object-form.js';
+export {ObjectForm, propertyForm, objectForm, inputForProperty, kindOf, PlatformInputs} from './forms/object-form.js';
 export type {IProperty} from '../core/property-like.js';
 export type {PropertySource, ObjectFormOptions, FieldOverride,
   PropertyInputOptions, InputFactory} from './forms/object-form.js';
@@ -12,7 +10,9 @@ export {propertyEditor, PropertyEditor} from './forms/property-editor.js';
 export type {PropertyEditorOptions} from './forms/property-editor.js';
 export {fromDartInput, PlatformInput} from './inputs/from-dart-input.js';
 export type {DartInputLike} from './inputs/from-dart-input.js';
-export {userInput} from './inputs/user-input.js';
+export {userInput, userPick} from './inputs/user-input.js';
+export {groupInput, groupPick, groupIcon} from './inputs/group-input.js';
+export type {GroupInputOptions} from './inputs/group-input.js';
 export {dapiSource, dapiPager, sanitizeFilterValue} from './entities/dapi-source.js';
 export type {DapiSourceLike, DapiSourceOptions, DapiPagerSourceLike, DapiPagerOptions} from './entities/dapi-source.js';
 export {handlerRenderer, HandlerRenderer, chip, EntityChip, entityCard, EntityCard, entityInput}
@@ -43,8 +43,12 @@ export {columnsInput, ColumnsInput, columnsMapInput, ColumnsMapInput, aggregated
   AggregatedColumnsInput, aggregationsFor, defaultAggregation} from './inputs/columns.js';
 export type {ColumnsInputOptions, ColumnsMapInputOptions, ColumnKey, ColumnAggregation,
   AggregatedColumnsInputOptions} from './inputs/columns.js';
-export {appView} from './shell/app-view.js';
-export type {AppViewOptions} from './shell/app-view.js';
+export {ViewHost} from './shell/view-host.js';
+export type {ViewSignals, ViewHostOptions, ViewContent, ViewDockOptions, ChromeItem} from './shell/view-host.js';
+export {host, isView} from './shell/host.js';
+export {Platform} from './shell/platform.js';
+export {TableViewChrome} from './shell/table-view-chrome.js';
+export type {RibbonOptions, RibbonAction, RibbonButton, ChromeCrumbs} from './shell/table-view-chrome.js';
 export {SpecNodeRef, SpecNodesRef, specTree, brokenCount, nodeLabel, idPath} from './designer/node-ref.js';
 export type {SpecTree} from './designer/node-ref.js';
 export {registerSpecNodeHandler} from './designer/handler.js';
@@ -70,15 +74,19 @@ export type {FuncEntry, FuncLike, FuncPick, FuncPickerOptions} from './designer/
 export {sourceStatus, statusText, refreshSource} from './designer/source-status.js';
 export type {SourceStatus} from './designer/source-status.js';
 export {platformContext} from './shell/spec-context.js';
-export {FilterSchemas, frameLike, toBitSet} from './filter/index.js';
+export {FilterSchemas, filterRenderer, filterRef, frameLike, toBitSet} from './filter/index.js';
 export type {DataFrameFilterSchema} from './filter/index.js';
 // side-effect only: filling `backends` is what makes the data sources work in the platform
 import './shell/source-backends.js';
+// side-effect only: on a platform page u2's notifications go into the platform's balloon stack
+import './shell/balloons.js';
 
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
-import {Scope} from '../core/scope.js';
+import {Scope, debug} from '../core/scope.js';
 import {signal, ReadonlySignal, rawEffect} from '../core/signals.js';
+import {Ownership} from '../core/owner.js';
+import type {Owner} from '../core/owner.js';
 import {PlatformInputs} from './forms/object-form.js';
 import {FileInput} from './inputs/file-input.js';
 
@@ -86,11 +94,10 @@ import {FileInput} from './inputs/file-input.js';
 // wired here instead of imported there
 PlatformInputs.register('file', (prop, options) => new FileInput(options));
 
-/** Mirrors an rxjs observable into a signal owned by `scope`. */
-export function toSignal<T>(observable: Observable<T>, initial: T, scope: Scope): ReadonlySignal<T> {
+/** Mirrors an rxjs observable into a signal, unsubscribed when `owner` goes (whoever is building by default). */
+export function toSignal<T>(observable: Observable<T>, initial: T, options?: {owner?: Owner}): ReadonlySignal<T> {
   const s = signal(initial);
-  const sub = observable.subscribe((v) => s.value = v);
-  scope.own(() => sub.unsubscribe());
+  Ownership.scopeOf(options?.owner, 'toSignal()').subscribe(observable, (v) => s.value = v);
   return s;
 }
 
@@ -100,10 +107,13 @@ export function toObservable<T>(source: ReadonlySignal<T>): Observable<T> {
   return new Observable<T>((observer) => rawEffect(() => observer.next(source.value)));
 }
 
-/** Live u2 scopes vs platform-registered widgets — the leak detector's report.
- * After a view with u2 content closes, both numbers must return to their baseline. */
-export function leakReport(): {liveScopes: number, liveWidgets: number} {
-  return {liveScopes: Scope.liveCount, liveWidgets: DG.Widget.getAll().length};
+/** Live u2 scopes vs platform-registered widgets — the leak detector's report — plus the pending
+ * timers and global listeners `debug` tracks (0 while tracking is off). After a view with u2
+ * content closes, every number must return to its baseline; the platform's own registry keeps a
+ * few shell-chrome widgets per closed view, u2 or not. */
+export function leakReport(): {liveScopes: number, liveWidgets: number, timers: number, listeners: number} {
+  return {liveScopes: Scope.liveCount, liveWidgets: DG.Widget.getAll().length,
+    timers: debug.timers().length, listeners: debug.listeners().length};
 }
 export {viewerOf, viewerControl, REPOINTING} from './viewers/viewer-control.js';
 export type {Bindable, TableRef} from './viewers/viewer-control.js';
@@ -122,33 +132,6 @@ export {messageInput, userMentionProvider, USER_TOKEN} from './inputs/message-in
 export type {MessageInputOptions, MentionProvider} from '../components/inputs/message-input.js';
 export {registerControlInspector, controlProperties, controlPropDescriptors, disposePanel,
   controlAt, noControl} from './shell/control-inspector.js';
-export {domains, DomainTable} from './domain/index.js';
-export type {DomainAction, RowValidator, DomainAppViewOptions} from './domain/index.js';
-export {DomainForm} from './domain/form.js';
-export type {DomainFormOptions, DomainFormTarget} from './domain/form.js';
-export {DomainList} from './domain/list.js';
-export type {DomainListOptions, DomainListMode} from './domain/list.js';
-export {DomainSelection} from './domain/selection.js';
-export {DomainPick, PickInput} from './domain/pick.js';
-export type {DomainPickOptions, PickInputOptions, PickItem} from './domain/pick.js';
-export type {SessionTarget, SessionButtonOptions} from './domain/buttons.js';
-export {registerDomainComponents} from './domain/registrations.js';
-export {DomainSearch} from './domain/search.js';
-export type {DomainSearchOptions} from './domain/search.js';
-export {DomainFilters} from './domain/filters.js';
-export type {DomainFiltersOptions, DomainFiltersMode} from './domain/filters.js';
-export {DomainApp} from './domain/app.js';
-export type {DomainAppOptions, DomainAppPage, DomainAppMode, DomainAppStatus, DomainRibbon} from './domain/app.js';
-export {DomainAddress} from './domain/address.js';
-export {ViewSync, mountView} from './domain/view-sync.js';
-export type {ViewState, ViewSyncHost, ViewMountOptions} from './domain/view-sync.js';
-export {DomainGrid, DomainDataTable} from './domain/grid.js';
-export type {DomainGridOptions, DomainDataTableOptions} from './domain/grid.js';
-export {DomainTree} from './domain/tree.js';
-export type {DomainTreeOptions} from './domain/tree.js';
-export {DomainHistory} from './domain/history.js';
-export type {DomainHistoryTarget} from './domain/history.js';
-export {DomainChildren} from './domain/children.js';
-export type {DomainChildrenOptions, DomainChildrenMode, ChildEntry} from './domain/children.js';
-export type {DomainBulkEditOptions} from './domain/bulk.js';
-export type {DomainImportOptions} from './domain/import.js';
+export {collectionSelection} from './shell/collection-selection.js';
+export {ViewSync, mountView, under} from './shell/view-sync.js';
+export type {ViewState, ViewSyncHost, ViewMountOptions} from './shell/view-sync.js';

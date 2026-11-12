@@ -1,7 +1,7 @@
 import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
-import { delay, expect, testEvent, testEventAsync } from "./test";
+import { expect, settled, testEvent, testEventAsync } from "./test";
 import { Observable } from 'rxjs';
 
 export async function createViewer(tv: _DG.TableView, v: string, packageName?: string): Promise<_DG.Viewer> {
@@ -55,22 +55,23 @@ export async function selectFilterChangeCurrent(args: any, withDelay = true): Pr
     //selection
     const num = currentDf.rowCount < 20 ? Math.floor(currentDf.rowCount / 2) : 10;
     currentDf.rows.select((row: _DG.Row) => row.idx >= 0 && row.idx < num);
+    // withDelay lets the viewer render each intermediate state before the next change
     if (withDelay)
-        await delay(50);
+        await settled(args.viewer);
     //filter
     for (let i = num; i < num * 2; i++) currentDf.filter.set(i, false);
     if (withDelay)
-        await delay(50);
+        await settled(args.viewer);
     //change current row
     currentDf.currentRowIdx = 1;
     //remove columns
     currentDf.columns.names().slice(0, Math.ceil(currentDf.columns.length / 2))
         .forEach((c: any) => currentDf.columns.remove(c));
     if (withDelay)
-        await delay(100);
+        await settled(args.viewer);
     //set back initial df with whole set of columns and preserved data
     args.tv!.dataFrame = dfSaved;
-    await delay(50);
+    await settled(args.viewer);
 }
 
 
@@ -103,7 +104,7 @@ export async function changeOptionsSaveLayout(args: any, withDelay = true): Prom
         .forEach((p: _DG.Property) => newProps[p.name] = p.choices.find((c: any) => c !== optns[p.name])!);
     //set new options
     args.viewer!.setOptions(newProps);
-    await delay(300);
+    await settled(args.viewer!);
     const layout = args.tv!.saveLayout();
     const savedLook = args.viewer!.getOptions().look;
     return { layout: layout, savedProps: savedLook };

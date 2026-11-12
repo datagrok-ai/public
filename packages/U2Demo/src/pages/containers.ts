@@ -1,7 +1,7 @@
 import {
   signal, computed, Signal, Scope,
   divV, divH, panel, span, h3, button,
-  TextInput, Splitter, Accordion, Breadcrumbs, Toolbar,
+  TextInput, SliderInput, MultiChoiceInput, Splitter, Accordion, Breadcrumbs, Toolbar,
   Menu, MenuBar, Dialog, Tooltip, Form,
 } from '@datagrok-libraries/u2';
 import {readout} from './common';
@@ -12,7 +12,7 @@ export function containersPage(): HTMLElement {
   const split = new Splitter([left, right], {direction: 'horizontal', sizes: [30, 70]});
   split.root.classList.add('u2demo-split');
   right.append(readout('sizes', computed(() =>
-    split.sizes.value.map((s) => s.toFixed(1)).join(' / '))));
+    split.sizes.value.map((s) => `${Math.round(s * 100)}%`).join(' / '))));
 
   const acc = new Accordion();
   acc.addPane('General', divV([span('Eagerly built pane.')]), true);
@@ -46,7 +46,7 @@ export function containersPage(): HTMLElement {
     readout('path', computed(() => crumbs.items.value.join(' > '))),
     h3('Toolbar (panel-local)'),
     panel([bar, span('Inline toolbars belong to a panel inside the view; the view\'s own commands ' +
-      'live in the ribbon. Narrow the window — items collapse into the » menu.', 'u2demo-hint')]),
+      'live in the ribbon. Narrow the window — items collapse into the … (More actions) menu.', 'u2demo-hint')]),
     readout('toolbar', computed(() => `${action.value || '(nothing yet)'} · compact ${compact.value}`)),
   ], 'u2demo-page');
 }
@@ -83,7 +83,7 @@ export function popupsPage(status: Signal<string>): HTMLElement {
     .item('Name', () => log('Sorted by name'))
     .item('Size', () => log('Sorted by size'))
     .endGroup()
-    .item('Delete', () => log('Deleted'), {enabled: false})
+    .item('Delete', () => log('Deleted'), {disabled: 'Only its owner can delete it'})
     .show({anchor: menuButton}));
 
   const zone = panel([span('Right-click anywhere in this panel for a context menu.')]);
@@ -93,20 +93,29 @@ export function popupsPage(status: Signal<string>): HTMLElement {
     .item('Paste', () => log('Pasted'))
     .separator()
     .item('Select all', () => log('Selected all'));
-  context.bindContext(zone, scope);
+  context.bindContext(zone, {owner: scope});
 
   const hoverMe = span('Hover me for a tooltip.', 'u2demo-card');
   Tooltip.bind(hoverMe, () => `One shared tooltip element, evaluated at show time: ${new Date().toLocaleTimeString()}`,
-    scope);
+    {owner: scope});
 
   const dlgName = new TextInput({label: 'Name', value: 'u2'});
   dlgName.addValidator((v) => v.trim() ? null : 'Required');
-  const dlgForm = new Form().add(dlgName);
-  const dialog = Dialog.create('u2 dialog')
+  const dlgForm = new Form().addAll([dlgName,
+    new SliderInput({label: 'Opacity', name: 'opacity', min: 0, max: 100, value: 30}),
+    new MultiChoiceInput({label: 'Targets', name: 'targets', items: ['GPCR', 'Kinase', 'Ion channel'],
+      value: ['Kinase']})]);
+  // content that grows after show: the dialog re-fits to the window instead of running off it
+  const dlgRows = divV([]);
+  const dialog = Dialog.create('u2 dialog', {keepAlive: true})
     .add(span('Modal, draggable by the title bar, Esc cancels, Enter accepts.'))
     .add(dlgForm)
-    .onOK(() => log(`Dialog OK, name = ${dlgName.value.value}`))
-    .onCancel(() => log('Dialog cancelled'));
+    .add(button('Add rows', () => dlgRows.append(...Array.from({length: 10},
+      (_, i) => span(`Row ${dlgRows.childElementCount + i + 1}`)))))
+    .add(dlgRows)
+    .onOK(() => log(`Dialog OK, name = ${dlgName.value}`))
+    .onCancel(() => log('Dialog cancelled'))
+    .onHelp(() => log('Dialog help'));
 
   return divV([
     h3('Menu bar (panel-local)'),

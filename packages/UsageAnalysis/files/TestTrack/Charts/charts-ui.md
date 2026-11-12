@@ -1,108 +1,65 @@
 ---
 feature: charts
 realizes_atlas: [charts.cp.click-segment-to-select-or-filter]
-realizes: [charts.viewer.sunburst, charts.viewer.tree]
+realizes: [charts.viewer.tree]
 priority: p0
-target_layer: manual-only
+target_layer: playwright
 coverage_type: smoke
-manual_only_reason: |
-  The Sunburst and Tree viewers render to a single canvas with no
-  per-segment / per-branch DOM elements, so these clicks and modifier
-  keys must be driven by hand.
 related_bugs: []
 ---
 
-# Charts — UI-only manual scenarios (canvas-gesture)
+# Charts: Tree branch clicks
 
-These scenarios require a human operator to drive the actual canvas
-click events — the gestures below cannot be synthesized by automation.
+Shift+Click on the Tree viewer's branches, with and without a filter.
 
 ## Setup
-Each scenario block opens its own dataset.
+
+1. Open `System:DemoFiles/demog.csv`.
+2. On the Menu Ribbon, click **Add viewer** and select **Tree**.
+3. Click the **Gear** icon of the Tree. In the Context Panel, click the **...** button of
+   **Hierarchy**. In the **Select columns...** dialog click **None**, check **CONTROL**, **SEX**
+   and **RACE**, and drag the rows so the order is CONTROL, SEX, RACE. Click **OK**.
 
 ## Scenarios
 
-### Sunburst — multi-selection on segments (canvas, Click / Ctrl+Click / Ctrl+Shift+Click)
+### 1. Shift+Click selects several branches
 
-1. Open `System:DemoFiles/chem/SPGI.csv` and add a Sunburst viewer.
-2. Configure Sunburst hierarchy with at least 2 columns (e.g. via
-   the Select Columns dialog: choose **Core** and **R101**).
-3. **Click** a single Sunburst segment with the left mouse button.
-4. **Verify:** exactly that segment is selected and the corresponding
-   grid rows are selected (check the grid row selection count
-   matches the segment's row count).
-5. Hold **Ctrl** and click an additional segment.
-6. **Verify:** both segments are selected; the grid row selection
-   reflects the union.
-7. Hold **Ctrl + Shift** and click one of the selected segments.
-8. **Verify:** that segment is deselected; the grid row selection
-   reflects the new union.
-
-### Sunburst — empty (null) category click (canvas)
-
-1. Open SPGI.csv and add a Sunburst viewer.
-2. Configure a column known to contain nulls (e.g. **Sampling Time**)
-   via Select Columns.
-3. **Click** the null (grey) segment.
-4. **Verify:** the segment behaves like any other category — the
-   corresponding rows (those with null in that column) are selected
-   or filtered (per the configured `onClick` action — Select or
-   Filter).
-
-### Tree — Shift+Click branches multi-selection (canvas)
-
-1. Open demog.csv and add a Tree viewer.
-2. Set Tree hierarchy to **CONTROL → SEX → RACE**.
-3. In the Tree viewer, hold **Shift** and click to multi-select the
-   following three branches:
+1. In the Tree, hold **Shift** and click these three branches:
    - `All → false → F → Asian`
    - `All → false → F → Black`
    - `All → false → M → Asian`
-4. **Verify:** the dataframe selection now contains 174 rows
-   (`df.selection.trueCount === 174`). The grid row highlight reflects
-   this subset.
-5. Hold **Shift + Click** on the branch `All → true → F → Black`.
-6. **Verify:** the selection extends to 176 rows
-   (`df.selection.trueCount === 176`).
+2. **Verify:** the status bar shows 174 selected rows, and the grid highlights them.
+3. Hold **Shift** and click the branch `All → true → F → Black`.
+4. **Verify:** the status bar shows 176 selected rows.
 
-### Tree — Shift+Click extend selection across non-contiguous parent (canvas)
+### 2. Shift+Click extends the selection under a filter
 
-Setup: continue from "Tree Shift+Click branches multi-selection"
-(scenario above) — selection is at 174 rows after the three initial
-branch picks.
+Continue from scenario 1 after step 2 (174 rows selected).
 
-
-1. In the **Filter Panel**, set **CONTROL = true** filter.
-2. **Verify:** the visible row count (filter ∧ selection) is **0**.
+1. In the **Filter Panel**, keep only **true** in the **CONTROL** filter.
+2. **Verify:** no selected row passes the filter (0 filtered and selected).
 3. Hold **Shift** and click the Tree branch `All → true → F → Black`.
-4. **Verify:** the visible row count (filter ∧ selection) is **2**.
-5. In the **Filter Panel**, clear the **CONTROL = true** filter.
-6. **Verify:** the row count returns to **176** (the full
-   selection).
+4. **Verify:** 2 selected rows pass the filter.
+5. In the **Filter Panel**, remove the **CONTROL** filter card.
+6. **Verify:** the status bar shows 176 selected rows.
 
+## Cleanup
 
-## Notes
+Close all.
 
-- **Why ui-only?** Canvas-rendered ECharts viewers (Sunburst, Tree,
-  Timelines) use a single `<canvas>` element inside the ECharts
-  instance container. There are no per-segment / per-branch DOM
-  elements to query, hover, or click. Any "click" needs canvas
-  pixel coordinates, which depend on viewport size, ECharts layout
-  algorithm, and theme — making programmatic synthesis brittle and
-  not equivalent to the actual UI invariant.
-- **JS-API fallbacks remain in companion specs** (`sunburst-spec.ts`,
-  `tree-spec.ts`) for the contract level (filter ∧ selection
-  cardinalities, `setOptions`/`props.get` round-trips), but the UI-
-  gesture invariant itself is documented here for manual
-  verification.
-- **Canonical manual-only, by design.** `sunburst-multi-selection`,
-  `tree-shift-click-multi-select`, and the Select Columns
-  per-column toggle are deliberately manual-only tests — not a
-  deferral and not a coverage gap. There is no plan to automate
-  them; this file is the authoritative catalog for human QA.
+## Expected results
+
+- Shift+Click on a branch adds that branch's rows to the selection.
+- A branch picked under a filter adds only the rows under it; the earlier selection stays.
+
+## Automation notes
+
+- The Tree viewer reports each branch it drew as a `branch <path>` area (`branch All | false | F | Asian`),
+  on the line into the node, where a click selects the branch's rows; translated in
+  `bdd/features/viewers/tree/tree.feature`.
 
 ---
 {
   "order": 35,
-  "datasets": ["System:DemoFiles/chem/SPGI.csv", "System:DemoFiles/demog.csv", "System:AppData/Chem/tests/spgi-100.csv"]
+  "datasets": ["System:DemoFiles/demog.csv"]
 }

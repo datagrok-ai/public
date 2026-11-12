@@ -34,7 +34,7 @@ expected_results:
       non-monotone-linear pairs.
   - anchor: "Scenario 2 Step 4"
     expectation: >-
-      After setting Show Pearson R to false, the matrix repaints (settle-gated
+      After setting Show Coefficients to false, the matrix repaints (settle-gated
       canvas diff exceeds the pre-flip settle noise) while the backing value for
       a spot-checked pair stays readable and unchanged via getCorrelation.
   - anchor: "Scenario 2 Step 6"
@@ -70,7 +70,7 @@ expected_results:
   - anchor: "Scenario 6 Step 4"
     expectation: >-
       After reopening the saved project, the Correlation plot is present,
-      Correlation Type is Spearman, Show Pearson R is false, X Columns is [AGE,
+      Correlation Type is Spearman, Show Coefficients is false, X Columns is [AGE,
       HEIGHT, WEIGHT], Y Columns is [AGE, HEIGHT], and a spot-checked cell value
       matches the runtime Spearman reference over the full row set within
       tolerance.
@@ -111,7 +111,7 @@ Expected:
 - Diagonal cell renders a histogram, not a correlation number (Step 4).
 - X Columns picker shows only numerical columns; SEX and RACE are absent (Step 5).
 
-### Scenario 2: Correlation type switch, Show Pearson R, and column narrowing
+### Scenario 2: Correlation type switch, Show Coefficients, and column narrowing
 
 Steps:
 1. On the Context Panel, open the Correlation Type dropdown and switch it to Spearman.
@@ -121,7 +121,7 @@ Steps:
 3. Confirm the values differ from the Pearson values obtained in Scenario 1 Step 2
    (at least one pair should differ, confirming the type switch is reflected in the displayed data,
    not just the label).
-4. On the Context Panel, set Show Pearson R to false. The setting stays false.
+4. On the Context Panel, set Show Coefficients to false. The setting stays false.
    Verify the matrix repaints without the in-cell R digits and with narrower value
    columns — capture a settle-gated canvas snapshot before and after the flip and
    assert the two renders differ; verify the backing correlation value for a
@@ -138,7 +138,7 @@ Steps:
 Expected:
 - Cell values equal the Spearman coefficient within 1e-3 after the switch (Step 2).
 - The settle-gated canvas diff shows the in-cell R digits gone and the value columns narrowed
-  after disabling Show Pearson R, while getCorrelation still returns the backing value (Step 4).
+  after disabling Show Coefficients, while getCorrelation still returns the backing value (Step 4).
 - Matrix is 3x2, values are correct, and column names are visible after narrowing (Step 6).
 
 ### Scenario 3: Row Source and viewer-local filter formula
@@ -183,7 +183,7 @@ Expected:
 ### Scenario 5: Layout persistence — save, re-arm, re-apply
 
 Steps:
-1. With all settings from Scenarios 2 and 3 active (Spearman, Show Pearson R = false,
+1. With all settings from Scenarios 2 and 3 active (Spearman, Show Coefficients = false,
    X = [AGE, HEIGHT, WEIGHT], Y = [AGE, HEIGHT], filter formula cleared, Row Source = Filtered),
    save the current view layout via the Save Layout button in the View ribbon
    (record the saved layout name, e.g. "CP-matrix-persist-test").
@@ -191,7 +191,7 @@ Steps:
 3. Close the Correlation Plot viewer and add a Scatter Plot viewer to the view
    (this makes the current state differ from the saved layout).
 4. Re-apply the saved layout via the Apply Layout option in the View ribbon.
-5. Read the current viewer set, Correlation Type, Show Pearson R, X Columns, Y Columns,
+5. Read the current viewer set, Correlation Type, Show Coefficients, X Columns, Y Columns,
    and filter formula from the restored Correlation Plot.
    Spot-check the AGE vs HEIGHT cell value against the Spearman coefficient over the full row set,
    within tolerance.
@@ -199,26 +199,26 @@ Steps:
 
 Expected:
 - After re-applying the layout, the viewer set equals the saved set (Correlation Plot, no Scatter Plot);
-  Correlation Type is Spearman; Show Pearson R is false; X Columns is [AGE, HEIGHT, WEIGHT];
+  Correlation Type is Spearman; Show Coefficients is false; X Columns is [AGE, HEIGHT, WEIGHT];
   Y Columns is [AGE, HEIGHT]; filter formula is empty; spot-check value matches Spearman reference (Step 5).
 
 ### Scenario 6: Project persistence — save, close all, reopen
 
 Steps:
-1. With the settings from Scenario 2 active on the Correlation Plot (Spearman, Show Pearson R = false,
+1. With the settings from Scenario 2 active on the Correlation Plot (Spearman, Show Coefficients = false,
    X = [AGE, HEIGHT, WEIGHT], Y = [AGE, HEIGHT]), save a project named
    "CP-matrix-persist-project" (see Automation notes for the mechanism this scenario actually scripts).
 2. Use Close All to close all open tables and viewers.
 3. Reopen the saved project via File > Recent Projects or the Projects panel.
 4. Locate the Correlation Plot in the reopened view.
-5. Read Correlation Type, Show Pearson R, X Columns, and Y Columns from the restored viewer.
+5. Read Correlation Type, Show Coefficients, X Columns, and Y Columns from the restored viewer.
    Spot-check the AGE vs HEIGHT cell value against the Spearman coefficient over the full row set,
    within tolerance.
 6. Delete the probe project via the Projects panel (cleanup step).
 
 Expected:
 - After reopening the project, Correlation Plot is present; Correlation Type is Spearman;
-  Show Pearson R is false; X Columns is [AGE, HEIGHT, WEIGHT]; Y Columns is [AGE, HEIGHT];
+  Show Coefficients is false; X Columns is [AGE, HEIGHT, WEIGHT]; Y Columns is [AGE, HEIGHT];
   spot-check value matches Spearman reference within tolerance (Step 5).
 
 ## Automation notes
@@ -238,7 +238,7 @@ Expected:
 - Scenario 6's project save is via the JS API — `saveProjectViaApi` from
   `helpers/projects.ts` — no ribbon click, no Save/Share dialogs, no fixed
   sleeps or polling. The round-trip assertions (Correlation Type, Show
-  Pearson R, X/Y Columns, the Spearman spot-check) are ordinary viewer
+  Coefficients, X/Y Columns, the Spearman spot-check) are ordinary viewer
   `@Prop` state, which `tv.getInfo()`'s `ViewInfo` restores the same as the
   ribbon Save does; `saveProjectViaUI` (real ribbon Save) is still required
   when a round-trip asserts state outside `@Prop`/layout serialization or
@@ -247,7 +247,7 @@ Expected:
   (props.filter feeds combinedFilter, not df.filter). The test MUST assert df.filter.trueCount
   is unchanged from the baseline; if it changes, the viewer has leaked the formula to the global
   filter — that is the anti-trap.
-- Show Pearson R actuation (Scenario 2 Step 4): actuate via cp.props.showPearsonR = false;
+- Show Coefficients actuation (Scenario 2 Step 4): actuate via cp.props.showPearsonR = false;
   signal is a settle-gated canvas snapshot before/after the flip
   (snapshotCanvasColors/diffCanvasColors from ../../helpers/viewers.ts) asserting the renders
   differ, plus a getCorrelation spot-check confirming the backing value stays readable with the

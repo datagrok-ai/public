@@ -2,8 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {_package} from '../package-test';
 
-import {delay} from '@datagrok-libraries/test/src/test';
-
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
 }
@@ -98,16 +96,16 @@ export function setDialogInputValue(dialogTitle: string, inputName: string,
 }
 
 export async function uploadProject(projectName: string, tableInfo: DG.TableInfo,
-  view: DG.TableView, df: DG.DataFrame): Promise<void> {
+  view: DG.TableView, df: DG.DataFrame): Promise<DG.Project> {
   const project = DG.Project.create();
   project.name = projectName;
   project.addChild(tableInfo);
-  const layout = view.saveLayout();
-  project.addChild(layout);
-  await grok.dapi.layouts.save(layout);
+  const viewInfo = DG.ViewInfo.fromJson(view.saveLayout().toJson());
+  project.addChild(viewInfo);
   await grok.dapi.tables.uploadDataFrame(df);
   await grok.dapi.tables.save(tableInfo);
-  await grok.dapi.projects.save(project);
+  await grok.dapi.views.save(viewInfo);
+  return await grok.dapi.projects.save(project);
 }
 
 export function findViewer(viewerName: string, view: DG.TableView): DG.Viewer | undefined {
@@ -175,39 +173,17 @@ export async function waitForElement(selector: string, error: string, wait=3000)
  * @return {Promise<void>}
  */
 export async function testApp(app: DG.Func): Promise<void> {
-  // const nodes = [...grok.shell.dockManager.rootNode.children];
-  // const lastNode = nodes[0];
-  // console.log(nodes);
-  const apps = ['Molecular Descriptors', 'Enamine Store'];
-  const views = [...grok.shell.views].length;
   grok.shell.lastError = '';
-  // console.log([...grok.shell.dockManager.rootNode.children]);
   try {
-    await app.apply();
-    await delay(1000);
-    if (grok.shell.lastError)
-      throw new Error(await grok.shell.lastError);
-    const nodes = [...grok.shell.dockManager.rootNode.children];
-    if ([...grok.shell.views].length === views && nodes[nodes.length - 1].dart.a.a === 'fill')
-      throw new Error('App did not load');
-    // console.log([...grok.shell.dockManager.rootNode.children]);
+    const result = await app.apply();
+    if (result instanceof DG.ViewBase)
+      grok.shell.addView(result);
+    const error = await grok.shell.lastError;
+    if (error)
+      throw new Error(error);
   } finally {
     grok.shell.closeAll();
     DG.Balloon.closeAll();
     grok.shell.windows.showHelp = false;
-    const nodes = [...grok.shell.dockManager.rootNode.children];
-    if (nodes[nodes.length - 1].dart.a.a !== 'fill' && !apps.includes(app.friendlyName)) {
-      nodes.forEach((n) => {
-        if (!String(n.dart.a.a).startsWith('horizontal_splitter'))
-          grok.shell.dockManager.close(n);
-      });
-    }
-    // console.log(grok.shell.lastError);
-    // const newNodes = [...grok.shell.dockManager.rootNode.children];
-    // console.log(newNodes);
-    // const newLastNode = nodes[0];
-    // console.log(lastNode === newLastNode);
-    // if (nodes.length !== newNodes.length)
-    // newNodes.forEach((n) => grok.shell.dockManager.close(n));
   }
 }

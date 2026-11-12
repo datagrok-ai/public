@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {DBExplorerConfig, DBValueObject, EntryPointOptions, QueryJoinOptions, ReferencedByObject, SchemaAndConnection, SupportedRenderer} from './types';
 import {queryDB} from './query';
+import {getSchemaReferences} from './utils';
 
 /** Case-insensitive object key lookup */
 function ciGet<T>(obj: {[key: string]: T}, key: string): T | undefined {
@@ -98,7 +99,6 @@ export function helmRenderer(value: string): HTMLElement {
       editable: false,
     });
     helmInput.setStringValue(value);
-    await DG.delay(200); // wait for proper sizing
     helmInput.getInput().addEventListener('click', () => {
       grok.shell.o = helmInput.getValue();
     });
@@ -141,14 +141,14 @@ export function rawImageRenderer(rawImage: string) {
   return host;
 }
 
-export function ownIdRenderer(id: string | number, tableName: string, colName: string, connectionNqName: string, schemaName: string) {
+export function ownIdRenderer(id: string | number, tableName: string, colName: string, connectionNqName: string, schemaName: string, catalogName?: string) {
   const nameHost = textRenderer(id.toString(), false);
   nameHost.style.color = 'var(--blue-1)';
   nameHost.style.cursor = 'pointer';
   ui.tooltip.bind(nameHost, 'Click to explore');
   nameHost.addEventListener('click', (e) => {
     e.stopImmediatePropagation();
-    grok.shell.o = new DBValueObject(connectionNqName, schemaName, tableName, colName, id);
+    grok.shell.o = new DBValueObject(connectionNqName, schemaName, tableName, colName, id, undefined, catalogName);
   });
   return nameHost;
 }
@@ -201,7 +201,8 @@ export class DBExplorerRenderer {
   constructor(
     protected schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
     protected schemaName: string,
-    protected entryPointOptions: EntryPointOptions
+    protected entryPointOptions: EntryPointOptions,
+    protected catalogName?: string
   ) {}
 
   addHeaderReplacers(replacers: {[tableName: string]: string}) {
@@ -252,7 +253,7 @@ export class DBExplorerRenderer {
     }
 
     try {
-      queryDB(connection, tableName, colName, id, schemaName, this.entryPointOptions.joinOptions)
+      queryDB(connection, tableName, colName, id, schemaName, this.entryPointOptions.joinOptions, false, this.catalogName)
         .then((df) => {
           if (df.rowCount == 0) {
             unableToRetrieve();
@@ -267,7 +268,7 @@ export class DBExplorerRenderer {
             e.stopImmediatePropagation();
             this.schemaInfoPromise().then((schemaAndConnection) => {
               if (schemaAndConnection && schemaAndConnection.connection && schemaAndConnection.schema)
-                grok.shell.setCurrentObject(new DBValueObject(schemaAndConnection.connection.nqName, this.schemaName, tableName, colName, id), false, true);
+                grok.shell.setCurrentObject(new DBValueObject(schemaAndConnection.connection.nqName, this.schemaName, tableName, colName, id, undefined, this.catalogName), false, true);
             });
           });
           nameHost.style.color = 'var(--blue-1)';
@@ -291,7 +292,7 @@ export class DBExplorerRenderer {
 
   async getTable(schemaName: string, tableName: string, match: string, matchValue: string | number, joinOptions: QueryJoinOptions[] = []) {
     const schemaAndConnection = await this.schemaInfoPromise();
-    const res = await queryDB(schemaAndConnection?.connection ?? null, tableName, match, matchValue, schemaName, joinOptions);
+    const res = await queryDB(schemaAndConnection?.connection ?? null, tableName, match, matchValue, schemaName, joinOptions, false, this.catalogName);
     return res;
   }
 
@@ -420,7 +421,7 @@ export class DBExplorerRenderer {
       const isUnqueCol = uniqueColForTable !== undefined && ciEquals(uniqueColForTable, dbColName);
       if (isUnqueCol) {
         if (!isAggregatedFromMultipleTables) // if its not aggregated, the tooltip in of the id will be the exact same as card, so we use simpler ownerIdRenderer
-          return [textRenderer(colName), ownIdRenderer(value, dbTableName, dbColName, schemaAndConnection.connection.nqName, dbSchemaName)];
+          return [textRenderer(colName), ownIdRenderer(value, dbTableName, dbColName, schemaAndConnection.connection.nqName, dbSchemaName, this.catalogName)];
         return [textRenderer(colName), this.refIdRenderer(schemaAndConnection.connection, value, dbSchemaName, dbTableName, dbColName)]; // otherwise use refIdRenderer
       }
 
@@ -534,7 +535,7 @@ export class DBExplorerRenderer {
       refTables.forEach((ref) => {
         const prefix = `${ref.schemaQualTable}.`;
         Object.entries(ref.refBys).forEach(([refedColumn, refInfo]) => {
-          const tableColActName = dbNameToActColNameMap[ref.schemaQualTable][refedColumn] ?? refedColumn;
+          const tableColActName = dbNameToActColNameMap[ref.schemaQualTable]?.[refedColumn] ?? refedColumn;
           const val = curDf.col(tableColActName)?.get(0);
           if (!val) return;
           const _pane = linksAcc.addPane(prefix + refedColumn, () => {
@@ -603,47 +604,16 @@ export class ExampleExplorerRenderer extends DBExplorerRenderer {
   constructor(
     connection: DG.DataConnection,
     shemaName: string,
-    entryPointOptions: EntryPointOptions
+    entryPointOptions: EntryPointOptions,
+    catalogName?: string
   ) {
-    const cacheKey = `${connection.id}||${shemaName}`;
-    if (ExampleExplorerRenderer.schemaCache.has(cacheKey)) {
-      const schemaPromise = ExampleExplorerRenderer.schemaCache.get(cacheKey)!;
-      super(() => schemaPromise, shemaName, entryPointOptions);
-    } else {
-      const schemaPromise: Promise<SchemaAndConnection> = grok.dapi.connections.getSchema(connection, shemaName).then((tables) => {
-        const references: {[schemaName: string]: {[tableName: string]: {[colName: string]: {refTable: string; refColumn: string, refSchema: string}}}} = {};
-        const referencedBy: {[schemaName: string]: {[tableName: string]: {[colName: string]: {refTable: string; refColumn: string, refSchema: string}[]}}} = {};
-        references[shemaName] = {};
-        const schemaRefs = references[shemaName];
-        referencedBy[shemaName] = {};
-        const schemaRefBy = referencedBy[shemaName];
-        tables.forEach((table) => {
-          const tableName = table.friendlyName ?? table.name;
-
-          schemaRefs[tableName] = {};
-          const t = schemaRefs[tableName];
-          table.columns.forEach((column) => {
-            const ref = column.referenceInfo;
-            if (ref && ref.table && ref.column) {
-              t[column.name] = {refTable: ref.table, refColumn: ref.column, refSchema: shemaName};
-              if (!schemaRefBy[ref.table])
-                schemaRefBy[ref.table] = {};
-
-              if (!schemaRefBy[ref.table][ref.column])
-                schemaRefBy[ref.table][ref.column] = [];
-
-              schemaRefBy[ref.table][ref.column].push({refTable: tableName, refColumn: column.name, refSchema: shemaName});
-            }
-          });
-        });
-        return {
-          schema: {references, referencedBy},
-          connection,
-        };
-      });
+    const cacheKey = `${connection.id}||${catalogName ?? ''}||${shemaName}`;
+    let schemaPromise = ExampleExplorerRenderer.schemaCache.get(cacheKey);
+    if (!schemaPromise) {
+      schemaPromise = getSchemaReferences(connection, shemaName, catalogName).then((schema) => ({schema, connection}));
       ExampleExplorerRenderer.schemaCache.set(cacheKey, schemaPromise);
-      super(() => schemaPromise, shemaName, entryPointOptions);
     }
+    super(() => schemaPromise!, shemaName, entryPointOptions, catalogName);
   }
 
   override async renderDataFrame(df: DG.DataFrame, schemaName: string, tableName: string, _opts?: {keepEmptyValues: boolean, columnTablesMap?: {[colName: string]: string}, skipCustomSelected?: boolean}): Promise<HTMLDivElement> {
@@ -654,7 +624,7 @@ export class ExampleExplorerRenderer extends DBExplorerRenderer {
     const schemaAndConnection = await this.schemaInfoPromise();
     if (!schemaAndConnection)
       return ui.divText('Schema information is not available');
-    const df = await queryDB(schemaAndConnection.connection, tableName, '', '', this.schemaName, joinOptions, true);
+    const df = await queryDB(schemaAndConnection.connection, tableName, '', '', this.schemaName, joinOptions, true, this.catalogName);
     if (df.rowCount < 1) return ui.divText('ID not found');
     return this.renderDataFrame(df, schemaName, tableName);
   }
@@ -665,7 +635,8 @@ export function renderExampleCard(connection: DG.DataConnection, schemaName: str
   const ex = new ExampleExplorerRenderer(
     connection,
     schemaName,
-    {joinOptions: config.joinOptions ?? [], valueConverter: (a) => a}
+    {joinOptions: config.joinOptions ?? [], valueConverter: (a) => a},
+    config.catalogName
   );
   ex.addCustomSelectedColumns(config.customSelectedColumns ?? {});
   (config.customRenderers ?? []).forEach((cr) =>

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Pre-flight for files/benchmark/suite.yaml.
 //
-// A benchmark run costs ~20 minutes and real subscription quota, so a malformed YAML entry or a
+// A benchmark run costs ~20 minutes and real model spend, so a malformed YAML entry or a
 // typo'd assert must be caught before it starts — not discovered from a report full of
 // "assert threw". Compiles every assert exactly the way benchmark.ts does, and flags assertions
 // that are too weak to carry the accuracy axis.

@@ -1,12 +1,13 @@
 import {getGPUDevice} from '../getGPUDevice';
 import {optimizeLayoutWGSL} from './wgsl/optimization-loop.wgsl';
+import {WORKGROUP_DIM} from '../workgroup';
 
 export async function optimizationLoop(
   head: Uint32Array, tail: Uint32Array, embeddingSize: number,
   epochsPerSample: Float32Array, epochsPerNegativeSample: Float32Array, initialAlpha: number, gamma: number,
   a: number, b: number, dim: number, nEpochs: number, nVertices: number
 ) {
-  const threadsPerWorkgroupDim = 10;
+  const threadsPerWorkgroupDim = WORKGROUP_DIM;
   const threadsPerWorkgroup = threadsPerWorkgroupDim * threadsPerWorkgroupDim;
   const requiredWorkgroups = Math.ceil(head.length / threadsPerWorkgroup);
   const numOfWorkgroupsPerDim = Math.ceil(Math.sqrt(requiredWorkgroups));

@@ -137,8 +137,10 @@ export class ReportingApp {
             const length = idCol.length;
             for (let i = 0; i < length; i++) {
               if (affectedIds.has(idCol.get(i))) {
-                table.cell(i, 'is_resolved').value = fields['is_resolved'];
-                table.cell(i, 'assignee').value = fields['assignee'];
+                if (fields['is_resolved'] !== undefined)
+                  table.cell(i, 'is_resolved').value = fields['is_resolved'];
+                if (fields['assignee'] !== undefined)
+                  table.cell(i, 'assignee').value = fields['assignee'];
                 if (fields['label'])
                   table.cell(i, 'labels').value =  `${table.cell(i, 'labels').value},${fields['label']}`;
               }

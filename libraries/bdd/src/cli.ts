@@ -1,12 +1,3 @@
-/* grok-bdd <command> — run inside a package (features under bdd/features) or inside the library.
-     init                  bootstrap bdd/ in the package: config, starter bindings, a smoke feature, manifest entries
-     compile [--check] [--verbose]  features/** → generated/**.test.ts; --check reports drift instead of writing, --verbose prints how every phrase resolves
-     lint                  diagnostics only, notes included
-     list-steps            the vocabulary this project sees (base tiers + its tiers + its own bindings)
-     run [playwright args] compile --check, then Playwright over generated/ with the library's config
-     guide <features> [--gif] [--help-pages] [--out <dir>] [--settle <ms>] [playwright args]
-                           run the scenarios in guide mode, render each into a how-to video (tool/guide-render.py)
-     link [--undo]         wire the package to this checkout of the library (one Playwright per run) */
 import {spawn} from 'node:child_process';
 import {copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmdirSync, rmSync,
   statSync, symlinkSync, unlinkSync, writeFileSync} from 'node:fs';
@@ -63,13 +54,18 @@ function report(diagnostics: Diagnostic[], notes: boolean): number {
 
 const eol = (s: string) => s.replace(/\r\n/g, '\n');
 
-async function compile(project: Project, check: boolean, notes = false): Promise<number> {
+/** `only`: the features the command is about — only their errors fail it, and a check reads only their specs (a
+ * guide films a few, a run names its specs; another feature being written beside them does not stop either). */
+async function compile(project: Project, check: boolean, notes = false, only?: Set<string>): Promise<number> {
   const {compiled, diagnostics} = await compileAll(project);
-  const errors = report(diagnostics, notes);
+  const counted = report(diagnostics, notes);
+  const errors = only ? diagnostics.filter((d) => d.level === 'error' && only.has(resolve(project.root, d.file))).length : counted;
   const expected = new Set(compiled.map((c) => c.outFile));
-  const orphans = listFiles(project.generatedDir, '.test.ts').filter((f) => !expected.has(f));
+  const orphans = only ? [] : listFiles(project.generatedDir, '.test.ts').filter((f) => !expected.has(f));
   let drift = 0;
   for (const c of compiled) {
+    if (check && only && !only.has(c.feature.path))
+      continue;
     const current = existsSync(c.outFile) ? eol(readFileSync(c.outFile, 'utf8')) : undefined;
     if (current === eol(c.code))
       continue;
@@ -126,7 +122,11 @@ function playwrightCli(project: Project): string {
 }
 
 async function run(project: Project, args: string[]): Promise<number> {
-  const code = await compile(project, true);
+  // a run of named specs or folders checks the features behind them: one being written beside them does not stop it
+  const paths = args.filter((a) => !a.startsWith('-')).map((a) => resolve(project.root, a));
+  const only = paths.length === 0 ? undefined : new Set(listFiles(project.featuresDir, '.feature')
+    .filter((f) => paths.some((p) => outFileFor(project.root, f).startsWith(p))));
+  const code = await compile(project, true, false, only);
   return code !== 0 ? code : launch(project, args);
 }
 
@@ -161,7 +161,7 @@ function exec(command: string, args: string[], cwd: string): Promise<number> {
   return new Promise((resolve) => child.on('exit', (exit) => resolve(exit ?? 1)).on('error', () => resolve(127)));
 }
 
-/** The `help/` tree of the public repository, from the package upwards; `BDD_HELP_ROOT` names another. */
+/** The `help/` tree, from the package upwards; `BDD_HELP_ROOT` names another. */
 function helpRoot(from: string): string | undefined {
   if (process.env.BDD_HELP_ROOT)
     return process.env.BDD_HELP_ROOT;
@@ -178,11 +178,17 @@ function helpRoot(from: string): string | undefined {
   return undefined;
 }
 
-/** `guide <feature|spec paths…> [--gif] [--help-pages] [--out <dir>] [--settle <ms>] [playwright args]`:
- * the scenarios run on one worker with `BDD_GUIDE` set, then every manifest the run wrote goes
- * through `tool/guide-render.py`. A `.feature` path names its generated spec. `--help-pages` adds
- * every feature tagged `@help:<page dir>` and copies each scenario's GIF and thumb into
- * `<help root>/<page dir>/img/<scenario slug>.gif` — the docs' own layout. */
+/** `guide <feature|spec paths…> [--gif] [--demo] [--help-mode] [--help-pages] [--out <dir>] [--settle <ms>] [GIF options]
+ * [playwright args]`: the scenarios run on one worker with `BDD_GUIDE` set, then every manifest the run wrote
+ * goes through `tool/guide-render.py`. A `.feature` path names its generated spec. `--help-mode` films a GIF
+ * for a help page (an 800x500 window unless BDD_GUIDE_VIEWPORT says otherwise, filmed at 2x; the bare shell,
+ * no captions, no set-up); `--help-pages` is that for every feature tagged `@help:<page dir>`, and puts each
+ * scenario's GIF and thumb into `<help root>/<page dir>/img/<scenario slug>.gif` — beside the one there, as
+ * `<slug>.new.gif`, for the reviewer to swap in. `--demo`, or a feature's `@demo` tag, films a demo clip: a
+ * 1080p video without captions or set-up, opened by a title card, of a 1600x900 window at twice its density (the
+ * page a little larger than on a 1080p screen). A feature's `@viewport:<w>x<h>` films it in that window instead,
+ * at twice its density below 1920 px. `--fps`, `--colors`,
+ * `--size` and `--hold` set the GIF's rate, palette, width and the hold of its last frame. */
 async function guide(project: Project, flags: string[]): Promise<number> {
   const args = [...flags];
   const take = (name: string): boolean => {
@@ -198,32 +204,67 @@ async function guide(project: Project, flags: string[]): Promise<number> {
     return args.splice(i, 2)[1];
   };
   const helpPages = take('--help-pages');
-  const gif = take('--gif') || helpPages;
+  const help = take('--help-mode') || helpPages;
+  const gif = take('--gif') || help;
+  const demoAll = take('--demo');
   const out = resolve(project.root, option('--out') ?? 'guides');
   const settle = option('--settle');
+  const render = [['--fps', '--gif-fps'], ['--colors', '--colors'], ['--size', '--gif-width'], ['--hold', '--end-hold']]
+    .flatMap(([name, as]) => {
+      const value = option(name);
+      return value === undefined ? [] : [as, value];
+    });
   const tagged = helpPages ?
     listFiles(project.featuresDir, '.feature').map((file) => parseFeature(file, readFileSync(file, 'utf8')))
       .filter((f) => f.tags.some((t) => t.startsWith('@help:'))) :
     [];
   const named = args.filter((a) => a.endsWith('.feature')).map((a) => resolve(project.root, a));
-  const features = [...named, ...tagged.map((f) => f.path)];
-  // Playwright reads its file arguments as regular expressions: a Windows path's backslashes
-  // would escape the letters after them
-  const specs = features.map((f) => rel(project, outFileFor(project.root, f)));
+  const models = [...named.map((f) => parseFeature(f, readFileSync(f, 'utf8'))), ...tagged];
   const rest = args.filter((a) => !a.endsWith('.feature'));
-  if (specs.length === 0 && !rest.some((a) => !a.startsWith('-'))) {
+  if (models.length === 0 && !rest.some((a) => !a.startsWith('-'))) {
     console.error('guide: name the features to film, or --help-pages for every @help: tagged one');
     return 2;
   }
-  // a guide is often a feature written a minute ago: its spec is generated here, not demanded
-  const compiled = await compile(project, false);
+  // a guide is often a feature written a minute ago: its spec is generated here, not demanded, and only
+  // its own errors stop the film
+  const compiled = await compile(project, false, false, new Set(models.map((m) => m.path)));
   if (compiled !== 0)
     return compiled;
+  // one run per way of filming: a demo and the window a feature asks for are the browser's settings
+  const runs = new Map<string, {demo: boolean; view?: string; specs: string[]}>();
+  for (const model of models) {
+    const demo = demoAll || model.tags.includes('@demo');
+    const view = model.tags.find((t) => t.startsWith('@viewport:'))?.slice('@viewport:'.length);
+    const key = `${demo} ${view ?? ''}`;
+    if (!runs.has(key))
+      runs.set(key, {demo, view, specs: []});
+    // Playwright reads its file arguments as regular expressions: a Windows path's backslashes
+    // would escape the letters after them
+    runs.get(key)!.specs.push(rel(project, outFileFor(project.root, model.path)));
+  }
+  if (runs.size === 0)
+    runs.set('', {demo: demoAll, specs: []});
   const started = Date.now();
-  const code = await launch(project, ['--workers=1', ...specs, ...rest],
-    {BDD_GUIDE: out, ...(settle ? {BDD_GUIDE_SETTLE: settle} : {})});
+  let code = 0;
+  for (const [i, run] of [...runs.values()].entries()) {
+    const view = run.view ?? process.env.BDD_GUIDE_VIEWPORT ?? (help ? '800x500' : run.demo ? '1600x900' : undefined);
+    const width = Number(/^(\d+)x\d+$/.exec(view ?? '')?.[1] ?? 1920);
+    // each run keeps its results apart, so two films of one project can go on at once
+    const results = join(project.root, 'test-results', `guide-${process.pid}-${i}`);
+    const exit = await launch(project, ['--workers=1', ...run.specs, ...rest], {BDD_GUIDE: out,
+      BDD_OUTPUT_DIR: results, PLAYWRIGHT_JSON_OUTPUT_FILE: join(results, 'report.json'),
+      ...(settle ? {BDD_GUIDE_SETTLE: settle} : {}),
+      ...(view ? {BDD_GUIDE_VIEWPORT: view} : {}),
+      ...(help ? {BDD_GUIDE_HELP: '1'} : {}),
+      ...(run.demo ? {BDD_GUIDE_DEMO: '1', BDD_GUIDE_SCALE: width < 1920 ? '2' : '1'} : {})});
+    code ||= exit;
+    if (exit === 0)
+      rmSync(results, {recursive: true, force: true});
+  }
+  // the scenarios of the features filmed: another film writing into the same folder meanwhile is its own
+  const filmed = new Set(models.flatMap((m) => m.scenarios.map((sc) => join(out, slugOf(m.name), slugOf(sc.name)))));
   const manifests = listFiles(out, '.json')
-    .filter((f) => basename(f) === 'steps.json' && statSync(f).mtimeMs >= started);
+    .filter((f) => basename(f) === 'steps.json' && statSync(f).mtimeMs >= started && (filmed.size === 0 || filmed.has(dirname(f))));
   if (manifests.length === 0) {
     console.error(`guide: the run wrote no manifest under ${out}`);
     return code || 1;
@@ -233,30 +274,41 @@ async function guide(project: Project, flags: string[]): Promise<number> {
   let failed = 0;
   for (const manifest of manifests) {
     const dir = dirname(manifest);
+    const filmed = JSON.parse(readFileSync(manifest, 'utf8'));
+    // what the title card says under the title: the scenario's own description, else the feature's first paragraph
+    const model = models.find((m) => slugOf(m.name) === slugOf(filmed.feature));
+    const scenario = model?.scenarios.find((s) => slugOf(s.name) === slugOf(filmed.scenario));
+    const description = (scenario?.description || model?.description.split(/\n\s*\n/)[0] || '').replace(/\s*\n\s*/g, ' ');
+    if (description !== filmed.description)
+      writeFileSync(manifest, JSON.stringify({...filmed, description}, null, 2));
+    const demo = demoAll || (filmed.tags ?? []).includes('@demo');
     console.log(`guide: ${relative(project.root, dir)}`);
-    const exit = await exec(python, [script, dir, ...(gif ? ['--gif'] : [])], project.root);
+    const exit = await exec(python, [script, dir, ...(gif ? ['--gif'] : []), ...(help ? ['--help'] : []),
+      ...(demo ? ['--demo'] : []), ...render], project.root);
     if (exit !== 0) {
       console.error(`guide: rendering failed (${exit}) — ${python} ${script}`);
       failed++;
     }
   }
   if (helpPages && failed === 0) {
-    const help = helpRoot(project.packageDir);
-    if (!help) {
+    const helpDir = helpRoot(project.packageDir);
+    if (!helpDir) {
       console.error('guide: no help/ tree found above the package (BDD_HELP_ROOT names one)');
       return 1;
     }
     for (const feature of tagged) {
       const page = feature.tags.find((t) => t.startsWith('@help:'))!.slice('@help:'.length);
-      const img = join(help, ...page.split('/'), 'img');
+      const img = join(helpDir, ...page.split('/'), 'img');
       mkdirSync(img, {recursive: true});
       for (const scenario of feature.scenarios) {
         const from = join(out, slugOf(feature.name), slugOf(scenario.name));
         if (!existsSync(join(from, 'guide.gif')))
           continue;
-        copyFileSync(join(from, 'guide.gif'), join(img, `${slugOf(scenario.name)}.gif`));
-        copyFileSync(join(from, 'guide-thumb.png'), join(img, `${slugOf(scenario.name)}-thumb.png`));
-        console.log(`guide: ${relative(help, img)}/${slugOf(scenario.name)}.gif`);
+        // a GIF the page already has is replaced only once the reviewer approves the new one
+        const name = existsSync(join(img, `${slugOf(scenario.name)}.gif`)) ? `${slugOf(scenario.name)}.new` : slugOf(scenario.name);
+        copyFileSync(join(from, 'guide.gif'), join(img, `${name}.gif`));
+        copyFileSync(join(from, 'guide-thumb.png'), join(img, `${name}-thumb.png`));
+        console.log(`guide: ${relative(helpDir, img)}/${name}.gif${name.endsWith('.new') ? ' — beside the one the page shows, for review' : ''}`);
       }
     }
   }
@@ -378,7 +430,7 @@ async function main(): Promise<number> {
   const [command = 'compile', ...flags] = process.argv.slice(2);
   if (command === '--help' || command === '-h' || command === 'help') {
     console.log('grok-bdd init | link [--undo] | compile [--check] [--verbose] | lint | list-steps | ' +
-      'run [playwright args] | guide <features> [--gif] [--help-pages] [--out <dir>] [--settle <ms>]');
+      'run [playwright args] | guide <features> [--gif] [--demo] [--help-mode] [--help-pages] [--out <dir>] [--settle <ms>]');
     return 0;
   }
   if (command === 'init')
@@ -410,7 +462,7 @@ async function main(): Promise<number> {
       return guide(project, flags);
     default:
       console.error(`unknown command "${command}" — init | link [--undo] | compile [--check] [--verbose] | lint | ` +
-        'list-steps | run [playwright args] | guide <features> [--gif] [--help-pages]');
+        'list-steps | run [playwright args] | guide <features> [--gif] [--demo] [--help-mode] [--help-pages]');
       return 2;
   }
 }

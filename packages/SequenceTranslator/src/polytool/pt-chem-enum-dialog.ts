@@ -204,13 +204,13 @@ async function smilesFromSketcher(sk: DG.chem.Sketcher, rdkit: RDModule): Promis
 
 /**
  * Draw-a-core dialog. OK is enabled iff the sketched molecule has ≥1 R-label.
- * `initialMolfile` preloads the sketcher for editing an existing core.
+ * `initialSmiles` preloads the sketcher for editing an existing core.
  */
-async function openCoreSketchDialog(rdkit: RDModule, initialMolfile?: string): Promise<ChemEnumCore | null> {
+async function openCoreSketchDialog(rdkit: RDModule, initialSmiles?: string): Promise<ChemEnumCore | null> {
   return new Promise((resolve) => {
     const sk = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.INPLACE);
     sk.syncCurrentObject = false;
-    if (initialMolfile) sk.setMolFile(initialMolfile);
+    if (initialSmiles) sk.setSmiles(initialSmiles); // a SMILES: a sketcher reading it as a molblock opens empty
 
     const status = ui.divText('', {style: {fontSize: '11px', padding: '4px 0', minHeight: '18px'}});
     let currentSmiles: string | null = null;
@@ -235,7 +235,7 @@ async function openCoreSketchDialog(rdkit: RDModule, initialMolfile?: string): P
     sk.onChanged.subscribe(() => { revalidate(); });
 
     const body = ui.divV([sk.root, status]);
-    const dialog = ui.dialog({title: initialMolfile ? 'Edit Core' : 'Draw Core'})
+    const dialog = ui.dialog({title: initialSmiles ? 'Edit Core' : 'Draw Core'})
       .add(body)
       .onOK(() => resolve(currentSmiles ? makeCore(currentSmiles, '', rdkit) : null))
       .onCancel(() => resolve(null));
@@ -250,11 +250,11 @@ async function openCoreSketchDialog(rdkit: RDModule, initialMolfile?: string): P
  * Draw-an-R-group dialog. R# is auto-inferred from the sketched SMILES.
  * OK is enabled iff the molecule has exactly one R-label AND R# is set.
  */
-async function openRGroupSketchDialog(rdkit: RDModule, initialMolfile?: string, initialRNum?: number): Promise<ChemEnumRGroup | null> {
+async function openRGroupSketchDialog(rdkit: RDModule, initialSmiles?: string, initialRNum?: number): Promise<ChemEnumRGroup | null> {
   return new Promise((resolve) => {
     const sk = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.INPLACE);
     sk.syncCurrentObject = false;
-    if (initialMolfile) sk.setMolFile(initialMolfile);
+    if (initialSmiles) sk.setSmiles(initialSmiles); // a SMILES: a sketcher reading it as a molblock opens empty
 
     const rNumberInput = ui.input.int('Target R#', {value: initialRNum, min: 1});
     const status = ui.divText('', {style: {fontSize: '11px', padding: '4px 0', minHeight: '18px'}});
@@ -306,7 +306,7 @@ async function openRGroupSketchDialog(rdkit: RDModule, initialMolfile?: string, 
     sk.onChanged.subscribe(() => { revalidate(); });
 
     const body = ui.divV([sk.root, rNumberInput.root, status]);
-    const dialog = ui.dialog({title: initialMolfile ? 'Edit R-Group' : 'Draw R-Group'})
+    const dialog = ui.dialog({title: initialSmiles ? 'Edit R-Group' : 'Draw R-Group'})
       .add(body)
       .onOK(() => {
         const n = rNumberInput.value;

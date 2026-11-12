@@ -68,7 +68,7 @@ export const FilterDropdown = Vue.defineComponent({
             border: '1px solid var(--border-color)', borderRadius: '2px',
             minWidth: '80px', userSelect: 'none', whiteSpace: 'nowrap',
           }}
-          onClick={() => { open.value = !open.value; search.value = ''; }}
+          onClick={() => {open.value = !open.value; search.value = '';}}
         >
           {triggerLabel.value}
           <span style={{marginLeft: '4px', fontSize: '10px'}}>&#9662;</span>
@@ -77,7 +77,7 @@ export const FilterDropdown = Vue.defineComponent({
           <div style={{
             position: 'absolute', zIndex: 1000, top: '100%', left: 0,
             border: '1px solid var(--border-color)', borderRadius: '2px',
-            background: 'var(--white, #fff)', boxShadow: '0 2px 6px rgba(0,0,0,.15)',
+            background: 'var(--white)', boxShadow: '0 2px 6px rgba(0,0,0,.15)',
             minWidth: '200px', maxHeight: '250px', display: 'flex',
             flexDirection: 'column',
           }}>
@@ -100,7 +100,7 @@ export const FilterDropdown = Vue.defineComponent({
                     padding: '2px 6px', fontSize: '12px', cursor: 'pointer',
                     whiteSpace: 'nowrap',
                   }}
-                  onMouseenter={(e) => (e.currentTarget as HTMLElement).style.background = 'var(--steel-1, rgba(64, 96, 127, 0.1))'}
+                  onMouseenter={(e) => (e.currentTarget as HTMLElement).style.background = 'var(--steel-1)'}
                   onMouseleave={(e) => (e.currentTarget as HTMLElement).style.background = ''}
                 >
                   <input

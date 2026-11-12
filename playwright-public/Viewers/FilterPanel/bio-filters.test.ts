@@ -89,7 +89,7 @@ async function macromoleculeColumn(page: Page): Promise<string | null> {
 async function bioCardCount(page: Page, column: string): Promise<number> {
   return page.evaluate((col) => {
     let cards = 0;
-    for (const card of document.querySelectorAll('[name="viewer-Filters"] .d4-filter')) {
+    for (const card of document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')) {
       const caption = (card.querySelector('.d4-filter-column-name')?.textContent ?? '').trim();
       if (caption === col && card.querySelector('input[placeholder="Substructure"]')) cards++;
     }
@@ -101,7 +101,7 @@ async function bioCardCount(page: Page, column: string): Promise<number> {
 // real quiet gap rather than read once.
 async function waitForPanelSettled(page: Page): Promise<number> {
   return page.evaluate(() => (window as any).__settledFor(
-    () => document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length, 1000, 30_000, 100));
+    () => document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)').length, 1000, 30_000, 100));
 }
 
 async function filterGroupSize(page: Page): Promise<number> {
@@ -111,7 +111,7 @@ async function filterGroupSize(page: Page): Promise<number> {
 async function removeSubstructureCards(page: Page): Promise<number> {
   return page.evaluate(() => {
     let clicks = 0;
-    for (const card of document.querySelectorAll('[name="viewer-Filters"] .d4-filter')) {
+    for (const card of document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')) {
       if (!card.querySelector('input[placeholder="Substructure"]')) continue;
       const x = card.querySelector('[name="icon-times"]') as HTMLElement | null;
       if (!x) throw new Error('a substructure filter card carries no [name="icon-times"] remove icon');

@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 import {getGPUDevice} from '../getGPUDevice';
 import {toOffsetForm} from '../umap/utils';
+import {WORKGROUP_DIM} from '../workgroup';
 
 export async function generationsGPU(structuresN: number, activityN: number, moleculesArray: string[],
   allStructures: string[], allInitActivities: Float32Array, activityName: string[], activities: Float32Array[],
@@ -82,7 +83,7 @@ export async function generationsGPU(structuresN: number, activityN: number, mol
   if (!device)
     return null; // if no device, return null, as we cannot do anything without it.
 
-  const threadsPerWorkgroupDim = 10;
+  const threadsPerWorkgroupDim = WORKGROUP_DIM;
   const threadsInWorkgroup = threadsPerWorkgroupDim * threadsPerWorkgroupDim;
   const neededThreads = 10000;
   const neededWorkgroups = Math.ceil(neededThreads / threadsInWorkgroup);

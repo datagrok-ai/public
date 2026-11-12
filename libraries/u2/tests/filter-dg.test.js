@@ -3,7 +3,7 @@
    mask. `DG`/`grok` come from tests/dg-stub.mjs; the `grok.meta` reflection the stub does not
    carry is layered over its `grok` by a local hook, so `forEntityType` runs headless too. */
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
@@ -111,81 +111,6 @@ smoke('forDataFrame: refresh re-reads the columns — a semantic type detected a
   assert.ok(schema.renderer(propOf(schema, 'smiles')));
 });
 
-// --- forDomainTable ---
-
-function domainsDouble() {
-  const calls = {rowProperties: [], facets: []};
-  const tables = {
-    'plates.plate': [
-      new Property('name', TYPE.STRING, {friendlyName: 'Name', nullable: false,
-        get: (r) => r.name, set: (r, v) => r.name = v}),
-      new Property('project_id', TYPE.STRING, {friendlyName: 'Project', semType: 'Core.projects'}),
-    ],
-    'Core.projects': [new Property('name', TYPE.STRING), new Property('created_on', TYPE.DATE_TIME)],
-  };
-  grok.dapi.domains = {
-    registry: {
-      rowProperties: async (address) => {
-        calls.rowProperties.push(address);
-        return tables[address];
-      },
-    },
-    table: (address) => ({
-      facets: async (spec) => {
-        calls.facets.push([address, spec]);
-        const column = spec.facets[0].column;
-        return {facets: {v: {categories: column === 'project_id' ?
-          [{value: 'p1', display: 'Alpha', total: 3, filtered: 1}] :
-          [{value: 'Ann', total: 2, filtered: 2}]}}};
-      },
-    }),
-  };
-  return calls;
-}
-
-smoke('forDomainTable: registry properties are copied field by field, a dotted semType is the ref', async () => {
-  const calls = domainsDouble();
-  const schema = await FilterSchemas.forDomainTable('plates.plate');
-  assert.deepEqual(calls.rowProperties, ['plates.plate']);
-
-  const source = (await grok.dapi.domains.registry.rowProperties('plates.plate'))[0];
-  assert.deepEqual(Object.keys({...source}), ['dart'], 'a spread of the platform property yields only its handle');
-  const name = propOf(schema, 'name');
-  assert.deepEqual([name.propertyType, name.friendlyName, name.nullable], [TYPE.STRING, 'Name', false]);
-  assert.equal(typeof name.get, 'function');
-  assert.equal(name.ref, undefined);
-
-  const project = propOf(schema, 'project_id');
-  assert.equal(project.ref, 'Core.projects');
-  assert.equal(Filters.kindOf(project), KIND.REF);
-  assert.equal(schema.renderer(project).caption({type: 'Core.projects', id: 'p1', name: 'Alpha'}), 'Alpha');
-  assert.equal(schema.renderer(project).caption({type: 'Core.projects', id: 'p1'}), 'p1');
-});
-
-smoke('forDomainTable: values go through the categories facet, refs come back as FilterRef', async () => {
-  const calls = domainsDouble();
-  const schema = await FilterSchemas.forDomainTable('plates.plate');
-
-  const refs = await schema.values(propOf(schema, 'project_id'), 'al', abort);
-  assert.deepEqual(calls.facets, [['plates.plate', {facets: [
-    {id: 'v', kind: 'categories', column: 'project_id', search: 'al', limit: 50}]}]]);
-  assert.deepEqual(refs, [{value: {type: 'Core.projects', id: 'p1', name: 'Alpha'}, label: 'Alpha', count: 3}]);
-
-  const names = await schema.values(propOf(schema, 'name'), '', abort);
-  assert.deepEqual(names, [{value: 'Ann', label: 'Ann', count: 2}]);
-});
-
-smoke('forDomainTable: resolveRef loads the target table', async () => {
-  const calls = domainsDouble();
-  const schema = await FilterSchemas.forDomainTable('plates.plate');
-  const project = propOf(schema, 'project_id');
-
-  const target = await schema.resolveRef(project);
-  assert.deepEqual(calls.rowProperties, ['plates.plate', 'Core.projects']);
-  assert.deepEqual(target.properties.map((p) => p.name), ['name', 'created_on']);
-  assert.equal(Filters.kindOf(propOf(target, 'created_on')), KIND.DATE_TIME);
-});
-
 // --- forEntityType ---
 
 function metaDouble() {
@@ -259,7 +184,8 @@ smoke('forEntityType: a type without a catalog is an error, not an empty schema'
 /** The value editor the builder mounts for the one condition of `schema`'s first property. */
 function rowEditor(schema, value) {
   const prop = schema.properties[0];
-  const fb = new FilterBuilder({schema, value: Filters.group('and', [Filters.cond(prop.name, '=', value)])});
+  const fb = testOwner().build(() =>
+    new FilterBuilder({schema, value: Filters.group('and', [Filters.cond(prop.name, '=', value)])}));
   document.body.append(fb.root);
   return {fb, editor: fb.root.querySelector('[data-u2-part="value"]')};
 }
@@ -307,7 +233,7 @@ smoke('editors: inputType/editor hints resolve after the rules; plain kinds retu
     {name: 'name', type: TYPE.STRING}, {name: 'age', type: TYPE.INT}]);
   const notes = Editors.resolve(propOf(schema, 'notes'), {});
   assert.ok(notes instanceof TextArea);
-  assert.equal(notes.enabled, true, 'a filter value is always writable');
+  assert.equal(notes.disabled === null, true, 'a filter value is always writable');
   notes.dispose();
   assert.equal(Editors.resolve(propOf(schema, 'name'), {}), null);
   assert.equal(Editors.resolve(propOf(schema, 'age'), {}), null);
@@ -327,7 +253,7 @@ smoke('editors: a ref is a type-ahead over schema.values, whose value is the Fil
     const box = input.root.querySelector('[data-u2="typeahead"] input');
     assert.ok(box);
 
-    input.value.value = {type: 'Group', id: 'g2', name: 'Testers'};
+    input.value = {type: 'Group', id: 'g2', name: 'Testers'};
     await flush();
     assert.equal(box.value, 'Testers', 'a written value shows its name');
 
@@ -338,7 +264,7 @@ smoke('editors: a ref is a type-ahead over schema.values, whose value is the Fil
     await flush();
     fire(box, 'keydown', {key: 'Enter'});
     await flush();
-    assert.deepEqual(input.value.value, {type: 'Group', id: 'g1', name: 'Developers'});
+    assert.deepEqual(input.value, {type: 'Group', id: 'g1', name: 'Developers'});
   } finally {
     input.dispose();
   }

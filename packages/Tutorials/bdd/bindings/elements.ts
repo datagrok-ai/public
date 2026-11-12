@@ -15,8 +15,14 @@ kind('tutorial card', {
   description: 'a tutorial of a track in the Tutorials panel, by the tutorial\'s name',
 });
 
-element('tutorial title', {selector: '.tutorials-root-header h1', aliases: ['running tutorial title'],
+element('tutorial title', {selector: '.tutorials-bar-title', aliases: ['running tutorial title'],
   description: 'the name of the tutorial that is running'});
+
+element('tutorial bar', {selector: '.tutorials-bar', aliases: ['running tutorial bar'],
+  description: 'the bar a running tutorial shows on top'});
+
+element('all steps icon', {selector: '.tutorials-bar .fa-list', aliases: ['tutorial step list icon'],
+  description: 'opens or closes the step list'});
 
 kind('cliff molecule', {
   aliases: ['cliff molecules'],

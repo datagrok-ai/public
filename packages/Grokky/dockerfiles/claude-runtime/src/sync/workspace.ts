@@ -10,13 +10,8 @@ const HELP_WORKSPACE = path.join(WORKSPACE, 'help');
 
 let activeCount = 0;
 let syncing = false;
-let syncDone: Promise<void> = Promise.resolve();
 let resolveIdle: (() => void) | null = null;
 let allQueriesIdle: Promise<void> = Promise.resolve();
-
-export function awaitWorkspaceSync(): Promise<void> {
-  return syncDone;
-}
 
 export function markQueryStart(): void {
   if (activeCount === 0)
@@ -47,8 +42,6 @@ async function syncWorkspace(): Promise<void> {
   if (syncing)
     return;
   syncing = true;
-  let resolve!: () => void;
-  syncDone = new Promise((r) => (resolve = r));
   try {
     await allQueriesIdle;
     const publicChanged = await syncRepo(WORKSPACE);
@@ -66,7 +59,6 @@ async function syncWorkspace(): Promise<void> {
   } catch (e: any) {
     console.warn('workspace: sync failed:', e.message);
   } finally {
-    resolve();
     syncing = false;
   }
 }

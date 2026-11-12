@@ -6,7 +6,11 @@ Feature: The Bio top menu
   catches. On this table of two sequence columns the commands that ask for a column are run on
   the second one, and the settings a dialog offers reach the result: Subsequence Search asks
   which column and its OK filters by what was typed, Composition on AntibodyLC binds its WebLogo
-  there, To Atomic Level on it with Non-linear off still gives a molfile per row.
+  there, To Atomic Level on it with Non-linear off still gives a molfile per row. The two commands
+  that work on molecules (Molecules to HELM, Match with Monomer Library) are greyed out on this table,
+  which has no Molecule column (the platform greys out a command whose function needs a column the
+  table lacks, #4226) — until To Atomic Level adds a molfile column — and open their dialogs on a table
+  that has one.
 
   Not translated: Bio | Folding (EsmFold, Boltz) — it submits real inference jobs; the leaves
   other packages add under Bio (Peptides' SAR, Dendrogram's Hierarchical Clustering,
@@ -52,7 +56,6 @@ Feature: The Bio top menu
     And no errors should have been logged
     Examples:
       | group     | leaf                          | dialog                     |
-      | Transform | Molecules to HELM...          | Molecules to HELM          |
       | Transform | To Atomic Level...            | To Atomic Level            |
       | Transform | Convert Sequence Notation...  | Convert Sequence Notation  |
       | Transform | Split to Monomers...          | Split to Monomers          |
@@ -67,8 +70,28 @@ Feature: The Bio top menu
       | Annotate  | Apply Numbering Scheme...     | Apply Antibody Numbering   |
       | Annotate  | Scan Liabilities...           | Scan Sequence Liabilities  |
       | Annotate  | Manage Annotations...         | Manage Annotations         |
-      | Manage    | Match with Monomer Library... | Match with Monomer Library |
       | Search    | Subsequence Search ...        | Substructure Search        |
+
+  Scenario: The commands that need a Molecule column are greyed out here, and open on a table that has one
+    Then the top menu should list "Bio > Transform > Molecules to HELM..." as disabled
+    And the top menu should list "Bio > Manage > Match with Monomer Library..." as disabled
+    Given user opens a table "molecules" with:
+      | smiles             |
+      | CCO                |
+      | c1ccccc1O          |
+      | CC(=O)Nc1ccc(O)cc1 |
+    Then "smiles" column should have semantic type "Molecule"
+    When user picks "Bio > Transform > Molecules to HELM..." from the top menu
+    Then "Molecules to HELM" dialog should be visible
+    When user clicks on CANCEL button in "Molecules to HELM" dialog
+    Then "Molecules to HELM" dialog should be hidden
+    When user picks "Bio > Manage > Match with Monomer Library..." from the top menu
+    Then "Match with Monomer Library" dialog should be visible
+    When user clicks on CANCEL button in "Match with Monomer Library" dialog
+    Then "Match with Monomer Library" dialog should be hidden
+    And no errors should have been logged
+    When user closes the current view
+    And user switches to the "antibodies" table view
 
   Scenario: Bio > Manage > Monomer Libraries opens the manager with the libraries listed
     When user picks "Bio > Manage > Monomer Libraries" from the top menu

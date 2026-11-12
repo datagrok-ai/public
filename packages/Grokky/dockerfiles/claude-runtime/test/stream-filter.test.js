@@ -1,4 +1,4 @@
-// emitFiltered — the fence-aware chunk filter that turns SDK text_deltas into client `chunk`
+// emitFiltered — the fence-aware chunk filter that turns the model's text deltas into client `chunk`
 // messages. It must never lose or duplicate a character: what the browser accumulates has to
 // equal what the model emitted. Fence state is keyed per session id, so each test uses its own.
 

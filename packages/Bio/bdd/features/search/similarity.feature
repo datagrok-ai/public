@@ -14,7 +14,8 @@ Feature: Similarity search
     Then "fasta" column should have semantic type "Macromolecule"
 
   Scenario: The command docks the viewer with a full neighbour list
-    When user picks "Bio > Search > Similarity Search" from the top menu
+    When user makes row 1 current
+    And user picks "Bio > Search > Similarity Search" from the top menu
     Then the top menu command should have completed
     And "Sequence Similarity Search" viewer should be visible
     And "Sequence Similarity Search" viewer should be bound to table "filter_FASTA"

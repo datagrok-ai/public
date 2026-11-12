@@ -21,7 +21,7 @@ const datasetPath = 'System:DemoFiles/demog.csv';
 
 async function toggleCardCheckbox(page: Page, column: string): Promise<{count: number; checked: boolean}> {
   return page.evaluate(async (column: string) => {
-    const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
+    const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'))
       .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === column);
     if (!card) throw new Error(`toggleCardCheckbox: the panel carries no ${column} card`);
     const cb = card.querySelector('input[type="checkbox"].ui-input-editor') as HTMLInputElement | null;
@@ -180,7 +180,7 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
       'out-of-range end → counter reads 2, slider still moves', async () => {
       await addCardViaPicker(page, 'AGE');
 
-      const ageCard = page.locator('[name="viewer-Filters"] .d4-filter')
+      const ageCard = page.locator('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')
         .filter({has: page.locator('.d4-filter-column-name', {hasText: /^AGE$/})});
       const cardBox = await ageCard.first().boundingBox();
       expect(cardBox).not.toBeNull();
@@ -254,7 +254,7 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
         const w = window as any;
         const df = grok.shell.tv.dataFrame;
         const before = df.filter.trueCount;
-        const cards = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'));
+        const cards = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'));
         const race = cards.find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === 'RACE')!;
         const cb = race.querySelector('input[type="checkbox"].ui-input-editor') as HTMLInputElement;
         const raceFilter = () => grok.shell.tv.getFiltersGroup().filters
@@ -334,7 +334,7 @@ test('Filter Panel — Panel Core Ladder', async ({page}) => {
         const was = grok.shell.tv.dataFrame.filter.trueCount;
         const after = await (window as any).__filtered(() =>
           (panel.querySelector('.d4-filter-group-header input[type="checkbox"]') as HTMLInputElement).click(), 3000, was);
-        const race = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
+        const race = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'))
           .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === 'RACE')!;
         return {
           after,

@@ -1,0 +1,139 @@
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+import type ExcelJS from 'exceljs';
+import {category, test, expect, waitUntil} from '@datagrok-libraries/test/src/test';
+import {dfToViewerMapping, richFunctionViewReport} from '@datagrok-libraries/compute-utils/shared-utils/export';
+import {closeViewsAfter, awaitWebComponents} from './utils';
+
+const PNG_PREFIX = 'iVBORw0KGgo';
+
+const plotValue = (call: DG.FuncCall) => String(call.outputs.get('plot') ?? '');
+
+async function openEditor(call: DG.FuncCall): Promise<DG.ViewBase> {
+  await awaitWebComponents();
+  const view = await grok.functions.call('Compute2:RichFunctionViewEditor', {call}) as unknown as DG.ViewBase;
+  await waitUntil(() => view.root.querySelector('dg-input-form') !== null, 'RFV form not rendered', 15000);
+  return view;
+}
+
+async function run(view: DG.ViewBase) {
+  await waitUntil(() => Array.from(view.root.querySelectorAll('button')).some((b) => b.textContent?.trim() === 'Run'),
+    'Run button not found', 10000);
+  Array.from(view.root.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Run')!.click();
+}
+
+const plotImg = (view: DG.ViewBase) =>
+  view.root.querySelector('[dock-spawn-title="plot"] img') as HTMLImageElement | null;
+
+category('RFV: graphics outputs', () => {
+  const track = closeViewsAfter();
+
+  test('PNG output renders as an image once the run fills it', async () => {
+    const call = DG.Func.byName('Compute2:GraphicsOutputTest').prepare({a: 7});
+    const view = track(await openEditor(call));
+    expect(view.root.querySelector('[dock-spawn-title="plot"]') === null, true,
+      'empty plot should be hidden before the run');
+
+    await run(view);
+    await waitUntil(() => plotValue(call).startsWith(PNG_PREFIX), 'run produced no plot', 15000);
+    await waitUntil(() => plotImg(view!) !== null, 'plot image not rendered', 15000);
+    expect(plotImg(view)!.src.startsWith(`data:image/png;base64,${PNG_PREFIX}`), true, 'PNG data URL expected');
+    expect((view.root.textContent ?? '').includes(PNG_PREFIX), false, 'base64 text must not be shown');
+  });
+
+  test('SVG output renders as an SVG image', async () => {
+    const call = DG.Func.byName('Compute2:GraphicsSvgOutputTest').prepare({a: 1});
+    const view = track(await openEditor(call));
+    await run(view);
+    await waitUntil(() => plotValue(call).startsWith('<svg'), 'run produced no plot', 15000);
+    await waitUntil(() => plotImg(view!) !== null, 'plot image not rendered', 15000);
+    expect(plotImg(view)!.src.startsWith('data:image/svg+xml'), true, 'SVG data URL expected');
+    expect((view.root.textContent ?? '').includes('<svg'), false, 'SVG markup must not be shown as text');
+  });
+});
+
+category('RFV: hidden outputs', () => {
+  const track = closeViewsAfter();
+
+  test('A hidden dataframe output gets no tab', async () => {
+    const call = DG.Func.byName('Compute2:HiddenOutputsTest').prepare({a: 1});
+    const view = track(await openEditor(call));
+    await run(view);
+    await waitUntil(() => view.root.querySelector('[dock-spawn-title="shown"]') !== null,
+      'shown output tab not rendered', 15000);
+    expect(view.root.querySelector('[dock-spawn-title="secret"]') === null, true, 'hidden output tab rendered');
+  });
+});
+
+// exceljs typings omit `ext`, which addImage({tl, ext}) keeps on the range
+const imageSize = (range: unknown) => (range as {ext?: {width: number, height: number}}).ext;
+
+async function exportWorkbook(call: DG.FuncCall): Promise<ExcelJS.Workbook> {
+  const [, wb] = await richFunctionViewReport('Excel', call.func, call, {});
+  return wb;
+}
+
+category('Export: graphics outputs', () => {
+  test('PNG output gets its own sheet at native size', async () => {
+    const call = await DG.Func.byName('Compute2:GraphicsOutputTest').prepare({a: 7}).call();
+    expect(plotValue(call).startsWith(PNG_PREFIX), true, 'run produced no plot');
+    const wb = await exportWorkbook(call);
+    const sheet = wb.getWorksheet('plot');
+    expect(sheet != null, true, 'plot sheet expected');
+    const images = sheet!.getImages();
+    expect(images.length, 1);
+    expect(imageSize(images[0].range)?.width, 3);
+    expect(imageSize(images[0].range)?.height, 2);
+  });
+
+  test('SVG output is fitted to the chart box keeping its aspect ratio', async () => {
+    const call = await DG.Func.byName('Compute2:GraphicsSvgOutputTest').prepare({a: 1}).call();
+    expect(plotValue(call).startsWith('<svg'), true, 'run produced no plot');
+    const wb = await exportWorkbook(call);
+    const images = wb.getWorksheet('plot')?.getImages() ?? [];
+    expect(images.length, 1);
+    expect(imageSize(images[0].range)?.width, 1280);
+    expect(imageSize(images[0].range)?.height, 640);
+  });
+
+  test('Empty graphics output gets no sheet', async () => {
+    const call = DG.Func.byName('Compute2:GraphicsOutputTest').prepare({a: 7});
+    const wb = await exportWorkbook(call);
+    expect(wb.getWorksheet('plot') == null, true, 'no plot sheet for an unrun call');
+  });
+});
+
+const imageAspect = (base64: string) => new Promise<number>((resolve, reject) => {
+  const img = new Image();
+  img.onload = () => resolve(img.naturalWidth / img.naturalHeight);
+  img.onerror = () => reject(new Error('Exported chart is not an image'));
+  img.src = base64;
+});
+
+category('Export: charts', () => {
+  test('Charts of every dataframe are exported at the chart box size', async () => {
+    const df = grok.data.demo.demog(100);
+    const call = DG.Script.create(`//name: ExportChartsTest
+//language: javascript
+//input: dataframe dfIn {viewer: Line chart() | Scatter plot()}
+//output: dataframe dfOut {viewer: Bar chart() | Grid() | Histogram()}
+dfOut = dfIn;`).prepare({dfIn: df});
+    call.outputs['dfOut'] = df.clone();
+    const container = grok.shell.v.root.parentElement!;
+    const childCount = container.childElementCount;
+
+    const [, wb] = await richFunctionViewReport('Excel', call.func, call, await dfToViewerMapping(call));
+
+    expect(container.childElementCount, childCount, 'chart boxes left in the page');
+    for (const sheetName of ['dfIn', 'dfOut']) {
+      const images = wb.getWorksheet(sheetName)?.getImages() ?? [];
+      expect(images.length, 2, `${sheetName} charts`);
+      for (const image of images) {
+        expect(imageSize(image.range)?.width, 1280);
+        expect(imageSize(image.range)?.height, 720);
+        const aspect = await imageAspect(wb.getImage(Number(image.imageId)).base64!);
+        expect(Math.abs(aspect - 1280 / 720) < 0.01, true, `${sheetName} chart image is ${aspect.toFixed(2)}:1`);
+      }
+    }
+  });
+});

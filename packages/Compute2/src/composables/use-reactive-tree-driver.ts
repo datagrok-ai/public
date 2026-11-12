@@ -46,9 +46,9 @@ export function useReactiveTreeDriver(
   const hasNotSavedEdits = useObservable(driver.hasNotSavedEdits$);
 
   const logs = useObservable(driver.logger.logs$.pipe(bufferDuringLock(globalLock$)));
-  const config = useObservable(driver.currentConfig$.pipe(bufferDuringLock(globalLock$)));
   const links = useObservable(driver.currentLinks$.pipe(bufferDuringLock(globalLock$)));
-  const result = useObservable(driver.result$);
+  const hiddenActions = useObservable(driver.hiddenActions$.pipe(bufferDuringLock(globalLock$)));
+  const result = useObservable(driver.result$.pipe(map((x) => Vue.markRaw(x))));
 
   if (overlayService) {
     Vue.watch(isGlobalLocked, (locked) => {
@@ -128,7 +128,9 @@ export function useReactiveTreeDriver(
     states.meta[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
-  Vue.watch([() => providerFunc.value, () => version.value, () => instanceConfig.value], ([providerFunc, version, instanceConfig]) => {
+  Vue.watch([
+    () => providerFunc.value, () => version.value, () => instanceConfig.value,
+  ], ([providerFunc, version, instanceConfig]) => {
     initPipeline(providerFunc, version, instanceConfig);
   });
 
@@ -148,8 +150,10 @@ export function useReactiveTreeDriver(
     driver.sendCommand({event: 'loadPipeline', funcCallId});
   };
 
-  const loadAndReplaceNestedPipeline = (parentUuid: string, dbId: string, itemId: string, position: number) => {
-    driver.sendCommand({event: 'loadDynamicItem', parentUuid, dbId, itemId, position, readonly: true, isReplace: true});
+  const loadAndReplaceNestedItem = (
+    parentUuid: string, dbId: string, itemId: string, position: number, readonly: boolean,
+  ) => {
+    driver.sendCommand({event: 'loadDynamicItem', parentUuid, dbId, itemId, position, readonly, isReplace: true});
   };
 
   // Resolves with the saved meta-call data, or null when the save fails or the command is
@@ -160,7 +164,7 @@ export function useReactiveTreeDriver(
   };
 
   const saveDynamicItem = (uuid:string, metaData?: ItemMetadata) => {
-    driver.sendCommand({event: 'saveDynamicItem', uuid, ...metaData});
+    return driver.sendCommand({event: 'saveDynamicItem', uuid, ...metaData});
   };
 
   const runStep = async (uuid: string) => {
@@ -168,13 +172,15 @@ export function useReactiveTreeDriver(
     driver.sendCommand({event: 'runStep', uuid});
   };
 
-  const runSequence = async (startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean, includeInfo?: boolean) => {
+  const runSequence = async (
+    startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean, includeInfo?: boolean,
+  ) => {
     await overlayService?.show();
     driver.sendCommand({event: 'runSequence', startUuid, rerunWithConsistent, includeNonNested, includeInfo});
   };
 
-  const runAction = (actionUuid: string) => {
-    driver.sendCommand({event: 'runAction', uuid: actionUuid});
+  const runAction = (actionUuid: string, additionalParams?: Record<string, any>) => {
+    driver.sendCommand({event: 'runAction', uuid: actionUuid, additionalParams});
   };
 
   const consistencyReset = (stepUuid: string, ioName: string) => {
@@ -193,6 +199,10 @@ export function useReactiveTreeDriver(
     driver.sendCommand({event: 'moveDynamicItem', uuid, position});
   };
 
+  const duplicateStep = (uuid: string) => {
+    driver.sendCommand({event: 'duplicateDynamicItem', uuid});
+  };
+
   const changeFuncCall = (uuid: string, call: DG.FuncCall) => {
     driver.sendCommand({event: 'updateFuncCall', stepUuid: uuid, funcCall: call});
   };
@@ -200,6 +210,9 @@ export function useReactiveTreeDriver(
   const returnResult = () => {
     driver.sendCommand({event: 'returnResult'});
   };
+
+  const inspectLinks = () => driver.inspectLinks();
+  const inspectConfig = () => driver.inspectConfig();
 
   return {
     // driver,
@@ -210,12 +223,12 @@ export function useReactiveTreeDriver(
     hasNotSavedEdits,
     states,
     logs,
-    config,
     links,
+    hiddenActions,
     result,
     //
     loadPipeline,
-    loadAndReplaceNestedPipeline,
+    loadAndReplaceNestedItem,
     savePipeline,
     saveDynamicItem,
     runStep,
@@ -225,8 +238,11 @@ export function useReactiveTreeDriver(
     addStep,
     removeStep,
     moveStep,
+    duplicateStep,
     changeFuncCall,
     returnResult,
+    inspectLinks,
+    inspectConfig,
   };
 }
 

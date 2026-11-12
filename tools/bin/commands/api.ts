@@ -17,22 +17,35 @@ const dbFile = 'db.ts';
 const dbUiFile = 'db-ui.ts';
 /** Where `db-ui.ts` takes the u2 domain stack from — the same specifier Grit and Stockroom use
  * (u2 is a relative-path dependency without a `dg` subpath export). */
-const u2DgModule = '@datagrok-libraries/u2/src/dg/index.js';
+const emsDgModule = '@datagrok-libraries/ems/src/dg';
 
-/** Naive English plural of a (snake_case) table name — `issue` → `issues`, `box` →
- * `boxes`, `category` → `categories`. */
+/** The platform's `StringUtils.toSingular` (ddt utils.dart): regular forms only; a noun already
+ * singular in `-is`/`-us`/`-ss` passes through. */
+function singularizeTableName(name: string): string {
+  if (name.length <= 2 || !name.endsWith('s') || /(ss|is|us)$/.test(name))
+    return name;
+  if (name.endsWith('ies') && name.length > 3)
+    return name.slice(0, -3) + 'y';
+  return /(xes|zzes|ches|shes|sses|tuses)$/.test(name) ? name.slice(0, -2) : name.slice(0, -1);
+}
+
+/** The platform's `StringUtils.toPlural` (ddt utils.dart) — `issue` → `issues`, `box` →
+ * `boxes`, `category` → `categories`, `analysis` → `analyses`. */
 function pluralizeTableName(name: string): string {
+  if (name.endsWith('is'))
+    return name.slice(0, -2) + 'es';
   if (/(s|x|z|ch|sh)$/.test(name))
     return name + 'es';
-  if (/[^aeiou_]y$/.test(name))
+  if (/[^aeiou]y$/.test(name))
     return name.slice(0, -1) + 'ies';
   return name + 's';
 }
 
 /** The camelCase plural property name a table gets on the schema client and under the
- * schema handle's `tables` (`issue_label` → `issueLabels`). */
+ * schema handle's `tables` (`issue_label` → `issueLabels`, `categories` → `categories`): the
+ * plural of the singular, as the platform derives a table's plural name. */
 export function tableProp(tableName: string): string {
-  return utils.snakeToCamelCase(pluralizeTableName(tableName), false);
+  return utils.snakeToCamelCase(pluralizeTableName(singularizeTableName(tableName)), false);
 }
 const domainSchemaPath = path.join(path.dirname(path.dirname(__dirname)), 'domain-schema.schema.json');
 /** The platform's own schema, whose tables a qualified ref may target (`Core.users`, ...). */
@@ -283,7 +296,7 @@ export function generateDomainClients(packageDir: string = curDir, options?: {ui
 
   if (ui) {
     const uiContent = annotationForDbUiFile +
-      `import {domains, DomainTable} from '${u2DgModule}';${sep}` +
+      `import {domains, DomainTable} from '${emsDgModule}';${sep}` +
       wrapTokens(`import {`, dbImports, ', ', `} from './${dbFile.replace(/\.ts$/, '')}';`) + sep +
       sep + uiParts.join(sep);
     fs.writeFileSync(path.join(genDir, dbUiFile), normEol(uiContent).replace(/\n/g, '\r\n'), 'utf8');
@@ -299,6 +312,7 @@ interface DomainGenColumn {
   insertType: string;   // Insert-side type (datetime accepts `Dayjs | string`)
   required: boolean;
   autoNumber?: boolean; // counter-filled on insert: always present on Row, optional on Insert
+  hasDefault?: boolean; // filled from `default` when an insert omits it: optional on Insert
   ref?: string;         // target table for 'ref' columns: in-manifest name, or qualified '<Schema>.<table>'
 }
 
@@ -340,6 +354,10 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
   packageDir: string): string | null {
   const decls: string[] = [];
   const systemColumnNames = new Set(domainSystemColumns.map(([name]) => name));
+  // An external table's rows carry `id` (the encoded business key) and nothing else
+  // system-side; nothing is expanded and nothing is written (external-bindings §3).
+  const external = manifest.storage?.kind === 'external';
+  const systemColumns = external ? domainSystemColumns.filter(([name]) => name === 'id') : domainSystemColumns;
   const tableNames = Object.keys(manifest.tables);
   // Keyed by table name; a qualified ref target ('Core.queries', 'grit.issue') lands here
   // under its qualified key so the expand map can list its columns — it gets no accessor.
@@ -349,7 +367,9 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
   const choicesAliases: {[alias: string]: string} = {};
 
   const choicesAlias = (tableName: string, columnName: string, values: any[]): string | null => {
-    const valueSet = values.map((v) => `'${v}'`).join(' | ');
+    // JSON.stringify escapes every special character; inside single quotes only ' needs one more
+    const literals = values.map((v) => `'${JSON.stringify(v).slice(1, -1).replace(/'/g, `\\'`)}'`);
+    const valueSet = literals.join(' | ');
     let alias = utils.snakeToCamelCase(tableName) + utils.snakeToCamelCase(columnName);
     if (choicesAliases[alias] !== undefined && choicesAliases[alias] !== valueSet)
       alias += utils.snakeToCamelCase(tableName);
@@ -359,8 +379,7 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     }
     if (choicesAliases[alias] === undefined) {
       choicesAliases[alias] = valueSet;
-      decls.push(wrapTokens(`export type ${alias} = `,
-        values.map((v) => `'${v}'`), ' | ', ';'));
+      decls.push(wrapTokens(`export type ${alias} = `, literals, ' | ', ';'));
     }
     return alias;
   };
@@ -441,7 +460,8 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
       columns.push({
         name: name, rawType: column.type, tsType: tsType,
         insertType: column.type === 'datetime' ? 'Dayjs | string' : tsType,
-        required: column.required === true, autoNumber: column.autoNumber != null, ref: ref,
+        required: column.required === true, autoNumber: column.autoNumber != null,
+        hasDefault: column.default != null, ref: ref,
       });
       return true;
     };
@@ -462,6 +482,7 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     return columns;
   }
 
+  const accessorTables = new Map<string, string>();
   for (const tableName of tableNames) {
     const typeName = utils.snakeToCamelCase(tableName);
     if (emittedTypes.has(typeName)) {
@@ -470,6 +491,13 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
       return null;
     }
     emittedTypes.add(typeName);
+    const accessor = tableProp(tableName);
+    if (accessorTables.has(accessor)) {
+      color.error(`${manifestPath}: tables '${accessorTables.get(accessor)}' and '${tableName}' ` +
+        `both get the accessor '${accessor}' (rename one of them)`);
+      return null;
+    }
+    accessorTables.set(accessor, tableName);
     const columns = collectColumns(tableName, manifest, false);
     if (columns == null)
       return null;
@@ -515,7 +543,7 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     const relations = tableRelations[tableName];
 
     const rowLines = [`/** Row of \`${manifest.name}.${tableName}\`. */`, `export interface ${typeName}Row {`];
-    for (const [name, tsType] of domainSystemColumns)
+    for (const [name, tsType] of systemColumns)
       rowLines.push(`  ${name}: ${tsType};`);
     for (const c of columns)
       rowLines.push(`  ${c.name}${c.required || c.autoNumber ? '' : '?'}: ${c.tsType};`);
@@ -525,7 +553,7 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     const insertLines = [`/** Insert payload for \`${manifest.name}.${tableName}\`. */`,
       `export interface ${typeName}Insert {`];
     for (const c of columns)
-      insertLines.push(`  ${c.name}${c.required ? '' : '?'}: ${c.insertType};`);
+      insertLines.push(`  ${c.name}${c.required && !c.hasDefault ? '' : '?'}: ${c.insertType};`);
     for (const r of relations)
       insertLines.push(`  /** Link set: \`${r.target}\` row ids. */`, `  ${r.name}?: string[];`);
     if (table.idempotency === true)
@@ -547,13 +575,13 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     }
 
     decls.push(formatColumnUnion(`${typeName}Column`,
-      [...domainSystemColumns.map(([name]) => name), ...columns.map((c) => c.name)]));
+      [...systemColumns.map(([name]) => name), ...columns.map((c) => c.name)]));
 
     // Expand map: MUST stay a `type` alias — object-type literals carry the implicit
     // index signature the `TExpand extends {[key: string]: {}}` constraint needs
     // (an interface would fail it).
     const expandEntries: string[] = [];
-    for (const c of columns) {
+    for (const c of external ? [] : columns) {
       if (c.ref == null)
         continue;
       const fields = tableColumns[c.ref].map((tc) =>
@@ -565,9 +593,9 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     // The link shape stays INLINE (structurally DG.DomainRelationLink): generated
     // files must compile against the datagrok-api the package depends on, which may
     // predate that interface.
-    for (const r of relations)
+    for (const r of external ? [] : relations)
       expandEntries.push(`  '${r.name}': {${r.name}?: {id: string; name: string}[]};`);
-    for (const childName of tableNames) {
+    for (const childName of external ? [] : tableNames) {
       const fks = tableColumns[childName].filter((c) => c.ref === tableName);
       if (fks.length === 0)
         continue;
@@ -584,13 +612,16 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
          `(consumed by query()/builder). */`,
          `export type ${typeName}Expand = {`, ...expandEntries, '};'].join(sep));
 
-    txArms.push(
-      `  {op: 'insert'; table: '${tableName}'; ref?: string; values: DG.DomainTxValues<${typeName}Insert>; ` +
-        `onDuplicate?: 'error'} |`,
-      `  {op: 'update'; table: '${tableName}'; id: string; ` +
-        `values: DG.DomainTxValues<${relations.length > 0 ? `${typeName}Update` : `Partial<${typeName}Row>`}>; ` +
-        `expectedVersion?: number} |`,
-      `  {op: 'delete'; table: '${tableName}'; id: string} |`);
+    if (!external)
+      txArms.push(
+        `  {op: 'insert'; table: '${tableName}'; ref?: string; values: DG.DomainTxValues<${typeName}Insert>; ` +
+          `onDuplicate?: 'error'} |`,
+        `  {op: 'update'; table: '${tableName}'; id: string; ` +
+          `values: DG.DomainTxValues<${relations.length > 0 ? `${typeName}Update` : `Partial<${typeName}Row>`}>; ` +
+          `expectedVersion?: number} |`,
+        `  {op: 'delete'; table: '${tableName}'; id: string} |`);
+    if (!external && table.softDelete !== false)
+      txArms.push(`  {op: 'restore'; table: '${tableName}'; id: string} |`);
 
     // No datetime config: the client resolves datetime columns from the domain
     // registry itself (the Dayjs typing in <Table>Row stays true for every client).
@@ -605,18 +636,22 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
   }
 
   const schemaType = utils.snakeToCamelCase(manifest.name);
-  const lastArm = txArms.pop()!;
-  txArms.push(lastArm.replace(/ \|$/, ';'));
-  decls.push([`export type ${schemaType}TransactionOp =`, ...txArms].join(sep));
+  const transaction: string[] = [];
+  if (!external) {
+    const lastArm = txArms.pop()!;
+    txArms.push(lastArm.replace(/ \|$/, ';'));
+    decls.push([`export type ${schemaType}TransactionOp =`, ...txArms].join(sep));
+    transaction.push(
+      `  transaction<T extends ${schemaType}TransactionOp[]>(ops: [...T]):`,
+      `      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {`,
+      `    return grok.dapi.domains.transaction('${manifest.name}', ops) as`,
+      `      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}>;`,
+      '  },');
+  }
 
   decls.push([`/** Typed clients for the \`${manifest.name}\` domain schema tables ` +
     `(lazy — no import-time side effects). */`,
-    `export const ${utils.snakeToCamelCase(manifest.name, false)}Db = {`, ...clients,
-    `  transaction<T extends ${schemaType}TransactionOp[]>(ops: [...T]):`,
-    `      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {`,
-    `    return grok.dapi.domains.transaction('${manifest.name}', ops) as`,
-    `      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}>;`,
-    '  },',
+    `export const ${utils.snakeToCamelCase(manifest.name, false)}Db = {`, ...clients, ...transaction,
     '};'].join(sep));
   return decls.join(sep.repeat(2)) + sep;
 }

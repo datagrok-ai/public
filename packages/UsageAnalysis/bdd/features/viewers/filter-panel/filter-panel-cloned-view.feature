@@ -3,7 +3,8 @@ Feature: Filter panel of a cloned view
   View > Layout > Clone View opens a second view over the same table, and its filter panel comes up
   with the original's cards, criteria and switches; a category clicked on a card of the original is
   followed by the clone's card on the same column, a card switched off in one view is switched off
-  in the other while a card of another type on the same column is left alone, and removing a card
+  in the other while a card of another type on the same column is left alone, the master toggle
+  switched off in one view is switched back on from the other (public#1837, public#1460), and removing a card
   in the clone leaves the original's card as it was. A layout saved from the clone brings its cards
   and switches back. A missing-values choice made from a card's own menu survives the clone, and
   the clone refuses a second card on that column (github-1984). A second table built on the very
@@ -18,7 +19,10 @@ Feature: Filter panel of a cloned view
   drag that does add a card; the "not filtered" reads are single reads, not a held window; the
   row count after the clone's layout comes back is not claimed — it is the two panels' together
   over one table, and the original view's panel is not reset by the clone's layout (measured on dev:
-  11 rows after the reload against 380 at the save).
+  11 rows after the reload against 380 at the save). The last scenario sets the SEX card to F
+  through the card's state, not a click: a panel keeps its scroll across a view switch (GROK-21109),
+  so demog-missing's comes back scrolled to its HEIGHT card with the F row under the panel header,
+  and a wheel scroll back up has no end a step can wait for before aiming the click.
 
   Background:
     Given user is logged in
@@ -71,6 +75,23 @@ Feature: Filter panel of a cloned view
     Then 18 rows should pass the filter
     When user switches to the "demog-1000 copy" view
     Then "SEX" filter card should be enabled
+    And no errors should have been logged
+
+  @realizes:public#1837 @realizes:public#1460
+  Scenario: The master toggle switched off in one view is switched back on from the clone (public#1837, public#1460)
+    When user switches to the "demog-1000" view
+    And user hovers over filter panel
+    And user unchecks master of filter panel
+    Then all rows should pass the filter
+    And the "active" reading of filter panel should be "false"
+    When user switches to the "demog-1000 copy" view
+    And user hovers over filter panel
+    And user checks master of filter panel
+    Then 18 rows should pass the filter
+    And the "active" reading of filter panel should be "true"
+    When user switches to the "demog-1000" view
+    Then 18 rows should pass the filter
+    And the "active" reading of filter panel should be "true"
     And no errors should have been logged
 
   Scenario: Switching off a card of another type in the clone leaves the original's card alone
@@ -174,7 +195,7 @@ Feature: Filter panel of a cloned view
     When user opens a table "shared SEX" that shares the "SEX" column of the current table
     Then 1000 rows of table "shared SEX" should pass the filter
     When user switches to the "demog-missing" view
-    And user clicks on the "category F of SEX" area of filter panel
+    And user adds a categorical filter on "SEX" keeping "F"
     Then fewer than 553 rows should pass the filter
     And the "rows shown" reading of filter panel should be at least 1
     And no rows where "SEX" is "M" should pass the filter

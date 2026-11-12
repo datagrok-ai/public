@@ -30,7 +30,7 @@ export interface External {id: string; type: string; nqName: string}
 /** What the bundle points at but does not carry: resolvable on the source, or dead there too. */
 export interface Outside {externals: External[]; dangling: string[]}
 
-const ALL_USERS = 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6';
+export const ALL_USERS = 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6';
 
 /** One round trip per entity, tens of thousands per stand — modest, since the server is shared. */
 const WALK_CONCURRENCY = 12;

@@ -3,7 +3,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {awaitCheck, before, category, delay, expect, expectArray, test, timeout} from '@datagrok-libraries/test/src/test';
+import {awaitCheck, before, category, delay, expect, expectArray, test, timeout, waitUntil} from '@datagrok-libraries/test/src/test';
+import {Control} from '@datagrok-libraries/u2';
+import type {Input, VirtualTree} from '@datagrok-libraries/u2';
+import {byKind, byName} from '@datagrok-libraries/u2/testing';
 
 import {
   performChemicalPropertyPredictions,
@@ -11,7 +14,7 @@ import {
   properties,
   setProperties,
 } from '../utils/admetica-utils';
-import { getAdmeProperties } from '../package';
+import {getAdmeProperties} from '../package';
 
 category('Admetica', () => {
   let v: DG.TableView;
@@ -56,16 +59,19 @@ category('Admetica', () => {
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     grok.shell.topMenu.find('Chem').group('Admetica').find('Calculate...').click();
     await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'cannot open Admetica dialog', 2000);
-    const admeticaDialog = returnDialog('Admetica')?.root;
-    await awaitCheck(() => admeticaDialog!.querySelectorAll('.d4-tree-view-group-host > .d4-tree-view-group').length === 5,
+    const admeticaDialog = returnDialog('Admetica')!.root;
+    const tree = () => Control.forElement(byName(admeticaDialog, 'properties')) as VirtualTree<unknown>;
+    const items = (level: number) => tree().getItems({all: true}).list.filter((item) => item.level === level);
+    await waitUntil(() => byKind(admeticaDialog, 'tree').length > 0 && items(1).length === 5,
       'properties number inside Admetica dialog is different than expected', 5000);
-    const smilesColumn = admeticaDialog!.querySelector('.d4-column-selector-column') as HTMLElement;
-    await awaitCheck(() => smilesColumn!.innerText === 'smiles',
-      'column inside Admetica dialog is different than expected', 5000);
+    const moleculesInput = Control.forElement(byName(admeticaDialog, 'Molecules')) as Input<string | null>;
+    expect(moleculesInput.peek(), 'smiles', 'column inside Admetica dialog is different than expected');
+    tree().expanded.value = new Set(items(1).map((item) => item.key));
     const models = properties.subgroup
       .flatMap((subgroup: any) => subgroup.models
         .map((model: any) => model.name));
-    expectArray(Array.from(admeticaDialog!.querySelectorAll('.d4-tree-view-item-label')).map((item) => item.innerHTML), models);
+    expectArray(items(2).map((item) => item.label), models);
+    returnDialog('Admetica')!.close();
     v.close();
     grok.shell.o = ui.div();
   }, {timeout: 25000});
@@ -121,7 +127,7 @@ category('Admetica', () => {
 
     const propertiesTable = admePanel?.parentElement?.querySelector('.d4-table.d4-item-table.d4-info-table') as HTMLElement;
     await awaitCheck(() => propertiesTable?.innerText.trim() !== '', 'Properties weren’t calculated', 8000);
-  }, { timeout: 100000 });
+  }, {timeout: 100000});
 
   test('Calculate.Benchmark column', async () => {
     const runAdmeticaBenchmark = async (moleculesCount: number) => {
@@ -130,7 +136,7 @@ category('Admetica', () => {
       return await getAdmeProperties(molecules, molecules.getCol('smiles'), await getQueryParams());
     };
     await DG.timeAsync('Admetica column', async () => await runAdmeticaBenchmark(5000));
-  }, {timeout: 3600000, benchmark: true });
+  }, {timeout: 3600000, benchmark: true});
 
   test('Calculate.Benchmark cell', async () => {
     const distributionSubgroup = properties.subgroup.find((subgroup: any) => subgroup.name === 'Distribution');

@@ -6,8 +6,9 @@ import {Fingerprint, rdKitFingerprintToBitArray, withChemCriticalSection} from '
 import {RuleId} from '../panels/structural-alerts';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {IFpResult} from './rdkit-service-worker-similarity';
+import type {FingerprintOptions} from '../utils/fingerprint-options';
 import {LockedEntity} from '../utils/locked-entity';
-import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
+import {clusterMcsSmiles, getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {PackageFunctions} from '../package';
 import {SubstructureSearchType} from '../constants';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
@@ -31,6 +32,14 @@ export type SubstructureSearchBatchResult = {
   fpCreated: boolean
 };
 
+/**
+ * At most this many RDKit workers. Each holds an RDKit WebAssembly instance, and a page has room for only so many
+ * WebAssembly memories (~120 in Chrome); sized by `hardwareConcurrency` alone, the pool would fill a page by itself on a
+ * machine with many threads, as crux's search pool did (`crux-service.ts`, the same cap).
+ */
+const MAX_WORKERS = 16;
+
+/** The RDKit worker pool (rdkit.worker.ts): RDKit mode's column work, and RDKit behind Crux's (engine/README.md). */
 export class RdKitService {
   workerCount: number;
   _initWaiters?: Promise<any>[];
@@ -43,7 +52,7 @@ export class RdKitService {
 
   constructor() {
     const cpuLogicalCores = window.navigator.hardwareConcurrency;
-    this.workerCount = Math.max(1, cpuLogicalCores - 2);
+    this.workerCount = Math.max(1, Math.min(cpuLogicalCores - 2, MAX_WORKERS));
     this.moleculesSegmentsLengths = new Uint32Array(this.workerCount);
   }
 
@@ -458,9 +467,10 @@ export class RdKitService {
    * predefined RDMols is not used)
    * @param {boolean} getCanonicalSmiles - optional parameter, if passed, in addition to fps function returns
    * canonical smiles
+   * @param {FingerprintOptions} options - optional: radius, size, chirality, features (utils/fingerprint-options.ts)
    * */
   async getFingerprints(fingerprintType: Fingerprint, molecules?: string[],
-    getCanonicalSmiles?: boolean): Promise<IFpResult> {
+    getCanonicalSmiles?: boolean, options?: FingerprintOptions | null): Promise<IFpResult> {
     const t = this;
     const getResult = (data: IFpResult[]): IFpResult => {
       return {
@@ -470,13 +480,13 @@ export class RdKitService {
     };
     const res = molecules ?
       await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
-        t.parallelWorkers[i].getFingerprints(fingerprintType, segment, getCanonicalSmiles),
+        t.parallelWorkers[i].getFingerprints(fingerprintType, segment, getCanonicalSmiles, options),
       (data: IFpResult[]) => {
         return getResult(data);
       }) :
       await this._doParallel(
         (i: number, _: number) => {
-          return t.parallelWorkers[i].getFingerprints(fingerprintType, molecules, getCanonicalSmiles);
+          return t.parallelWorkers[i].getFingerprints(fingerprintType, molecules, getCanonicalSmiles, options);
         },
         (data: IFpResult[]) => {
           return getResult(data);
@@ -490,11 +500,11 @@ export class RdKitService {
     (data: string[][]) => ([] as string[]).concat(...data)));
   }
 
-  /** Returns SMILES with stereochemistry removed for the provided molecules.
+  /** Returns SMILES without stereocenters (and without E/Z with `flattenDoubleBonds`) for the provided molecules.
    * Malformed molecules result in an empty string. */
-  async flattenMolecules(molecules: string[]): Promise<string[]> {
+  async flattenMolecules(molecules: string[], flattenDoubleBonds = false): Promise<string[]> {
     return withChemCriticalSection(() => this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
-      this.parallelWorkers[i].flattenMolecules(segment),
+      this.parallelWorkers[i].flattenMolecules(segment, flattenDoubleBonds),
     (data: string[][]) => ([] as string[]).concat(...data)));
   }
 
@@ -691,19 +701,7 @@ export class RdKitService {
           return Promise.resolve(mols.length === 1 ? mols[0] : '');
         return this.parallelWorkers[workerIndex].mostCommonStructure(mols, exactAtomSearch, exactBondSearch);
       }, 45000, 'MCS calculation'); // stuck for more than 45s => restart the worker, '' for the cluster
-    if (rawSmarts)
-      return res;
-    return res.map((it) => {
-      if (!it)
-        return '';
-      try {
-        const qm = getQueryMolSafe(it, '', PackageFunctions.getRdKitModule());
-        const smiles = qm?.get_smiles();
-        qm?.delete();
-        return smiles ?? '';
-      } catch (_) {}
-      return '';
-    });
+    return rawSmarts ? res : clusterMcsSmiles(res, clusteredMolecules, PackageFunctions.getRdKitModule());
   }
 
   /**

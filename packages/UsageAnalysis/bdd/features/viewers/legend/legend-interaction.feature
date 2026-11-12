@@ -1,8 +1,16 @@
 @journey @viewers @realizes:viewers.legend
 Feature: Legend interaction
   The legend a viewer hosts: what it lists, what a click on a category does to the viewer and to
-  the table, how a selection is added to and taken back, and what a click must never do to the
-  legend's own placement. One journey on demog-1000 with a scatter plot colored by RACE; every
+  the table, how a selection is added to and taken back, how Down and Up move a sole selection to
+  the next and the previous category (public#2548), and what a click must never do to the
+  legend's own placement, and that a selection outlives a row filter, even one that takes its
+  category off the legend for a while, but not a change of the
+  column it was made on — the item at the same place in the new column's list is not selected and
+  the plot draws every row again; the docked legend is measured to its labels, so the same four
+  categories with long labels widen it and short ones narrow it again; and a legend placed by Auto
+  in the one free corner (CORNERS keeps the points on the bottom row and, past AGE 60, on the top
+  row too, so only the top left is empty) leaves it once the regression equation is drawn there
+  (GROK-19041). One journey on demog-1000 with a scatter plot colored by RACE; every
   scenario puts back what it changed. The legend publishes its mode, slot and item total itself,
   so nothing here counts rendered rows or reads pixels to find out where it sits. Under Auto the
   scatter plot parks a four-item legend in a free corner, where its list shows only what fits, so
@@ -57,6 +65,20 @@ Feature: Legend interaction
     When user clicks on "Black" item in the legend of scatter plot viewer
     Then scatter plot viewer should show 872 rows
 
+  @realizes:public#2548 @realizes:core#1159
+  Scenario: Down and Up move the exclusive selection to the next and the previous category (public#2548)
+    When user clicks on "Asian" item in the legend of scatter plot viewer
+    Then "Asian" legend item in legend of scatter plot viewer should be selected
+    And "Black" legend item in legend of scatter plot viewer should not be selected
+    When user presses ArrowDown
+    Then "Black" legend item in legend of scatter plot viewer should be selected
+    And "Asian" legend item in legend of scatter plot viewer should not be selected
+    When user presses ArrowUp
+    Then "Asian" legend item in legend of scatter plot viewer should be selected
+    And "Black" legend item in legend of scatter plot viewer should not be selected
+    When user clicks on "Asian" item in the legend of scatter plot viewer
+    Then scatter plot viewer should show 872 rows
+
   Scenario: A click never moves the legend, and a filter never moves it either
     When user takes a snapshot of scatter plot viewer
     And user clicks on "Caucasian" item in the legend of scatter plot viewer
@@ -68,6 +90,30 @@ Feature: Legend interaction
     Then the legend of scatter plot viewer should be placed as before
     And the legend of scatter plot viewer should list the same items as before
     When user resets the filter
+
+  Scenario: A selection stays through a row filter and goes with the color column it was made on
+    When user clicks on "Black" item in the legend of scatter plot viewer
+    Then "Black" legend item in legend of scatter plot viewer should be selected
+    And scatter plot viewer should show 25 rows
+    When user filters rows where "SEX" is "F"
+    Then "Black" legend item in legend of scatter plot viewer should be selected
+    And scatter plot viewer should show 17 rows
+    When user resets the filter
+    Then scatter plot viewer should show 25 rows
+    When user filters rows where "RACE" is "Asian"
+    Then "Black" legend item in legend of scatter plot viewer should be absent
+    When user resets the filter
+    Then "Black" legend item in legend of scatter plot viewer should be selected
+    And scatter plot viewer should show 25 rows
+    When user sets "Color" property of scatter plot viewer to "DIS_POP"
+    Then the legend of scatter plot viewer should list 5 items
+    And "Indigestion" legend item in legend of scatter plot viewer should not be selected
+    And scatter plot viewer should show 872 rows
+    When user sets "Color" property of scatter plot viewer to "RACE"
+    Then the legend of scatter plot viewer should list 4 items
+    And "Black" legend item in legend of scatter plot viewer should not be selected
+    And scatter plot viewer should show 872 rows
+    And no errors should have been logged
 
   Scenario: A filter that empties a category drops it from the legend
     When user takes a snapshot of scatter plot viewer
@@ -107,6 +153,18 @@ Feature: Legend interaction
     And the legend of scatter plot viewer should list 4 items
     And no errors should have been logged
 
+  Scenario: The docked legend is as wide as its labels need
+    When user adds a calculated column "RACE described" with formula "\"race of the subject in the study: \" + ${RACE}"
+    And user sets "Color" property of scatter plot viewer to "RACE described"
+    Then the legend of scatter plot viewer should list 4 items
+    And the legend of scatter plot viewer should be wider than before
+    And the legend of scatter plot viewer should be docked
+    When user sets "Color" property of scatter plot viewer to "RACE"
+    Then the legend of scatter plot viewer should be narrower than before
+    And the legend of scatter plot viewer should list 4 items
+    When user removes "RACE described" column
+    Then no errors should have been logged
+
   Scenario: A numerical color column shows a scale instead of items
     When user sets "Color" property of scatter plot viewer to "AGE"
     Then the legend of scatter plot viewer should list 0 items
@@ -115,4 +173,29 @@ Feature: Legend interaction
     When user sets "Color" property of scatter plot viewer to "RACE"
     Then the legend of scatter plot viewer should list 4 items
     And scatter plot viewer should not have a "color scale" area
+    And no errors should have been logged
+
+  @GROK-19041
+  Scenario: An auto-placed legend leaves the corner the regression equation is drawn in
+    When user adds a calculated column "CORNERS" with formula "if(${AGE} > 60, Mod(${AGE}, 2) * 100, 0)"
+    And user sets properties of scatter plot viewer:
+      | X               | AGE     |
+      | Y               | CORNERS |
+      | Legend Position | Auto    |
+    Then the legend of scatter plot viewer should be in a corner
+    And the legend of scatter plot viewer should be in the "leftTop" slot
+    When user sets properties of scatter plot viewer:
+      | showRegressionLine         | true |
+      | showRegressionLineEquation | true |
+    Then scatter plot viewer should have a "regression stats" area
+    And the legend of scatter plot viewer should not cover the "regression stats" area
+    And the legend of scatter plot viewer should list 4 items
+    When user sets properties of scatter plot viewer:
+      | showRegressionLine | false   |
+      | X                  | WEIGHT  |
+      | Y                  | HEIGHT  |
+      | Legend Position    | Right   |
+    And user removes "CORNERS" column
+    Then the legend of scatter plot viewer should be docked
+    And the legend of scatter plot viewer should be on the right
     And no errors should have been logged

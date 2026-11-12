@@ -4,19 +4,21 @@ import * as DG from 'datagrok-api/dg';
 import {
   signal, computed, Scope,
   divV, divH, span, h3, button,
-  TextInput, TypeAhead,
+  Form, TextInput, TypeAhead,
 } from '@datagrok-libraries/u2';
 import {asDartInput, tableInput, columnInput, leakReport, propertyForm, IProperty,
   userInput, entityInput, chip, EntityChip, entityCard, handlerRenderer,
   moleculeInput, moleculeRenderer, fileInput, filesInput, rsaInput, tablesInput,
   columnsInput, columnsMapInput, aggregatedColumnsInput}
-  from '@datagrok-libraries/u2/src/dg/index.js';
+  from '@datagrok-libraries/u2/dg';
 import {readout, DRUGS} from './common';
 
 export function filesPage(): HTMLElement {
   const file = fileInput('File');
   const files = filesInput('Files');
   const key = rsaInput('Private key');
+  const form = new Form();
+  form.addAll([file, files, key]);
 
   return divV([
     span('Inputs that need the platform: file shares and keys through dapi — the pickers, not the ' +
@@ -25,11 +27,12 @@ export function filesPage(): HTMLElement {
       'nothing, so a path settles on "does not exist" — the state the machine is supposed to reach.',
     'u2demo-hint'),
     h3('File and key pickers'),
-    file, readout('file', computed(() => file.value.value?.name ?? '(none)')),
-    files, readout('files', computed(() =>
-      files.value.value.map((f) => f.name).join(', ') || '(none)')),
-    key, readout('key', computed(() => {
-      const v = key.value.value;
+    form.root,
+    readout('file', computed(() => file.value?.name ?? '(none)')),
+    readout('files', computed(() =>
+      files.value.map((f) => f.name).join(', ') || '(none)')),
+    readout('key', computed(() => {
+      const v = key.value;
       return v ? `${v.length} characters` : '(none)';
     })),
   ], 'u2demo-page');
@@ -46,15 +49,19 @@ export function dataframesPage(): HTMLElement {
   const mapping = columnsMapInput('Mapping', ['x', 'y'], demog);
   const aggregations = aggregatedColumnsInput('Aggregations', demog);
 
+  // a form gives the pickers one label column and one editor width
+  const form = new Form();
+  form.addAll([table, demogColumn, column, tables, columns, mapping, aggregations]);
   return divV([
     h3('Tables and columns'),
-    table, readout('table', table.value),
-    demogColumn, readout('demog column', demogColumn.value),
-    column, readout('column', computed(() => column.value.value ?? '(none)')),
-    tables, readout('tables', computed(() => tables.value.value.join(', ') || '(none)')),
-    columns, readout('columns', computed(() => columns.value.value.join(', ') || '(none)')),
-    mapping, readout('mapping', computed(() => JSON.stringify(mapping.value.value))),
-    aggregations, readout('aggregations', computed(() => JSON.stringify(aggregations.value.value))),
+    form.root,
+    readout('table', table.signal),
+    readout('demog column', demogColumn.signal),
+    readout('column', computed(() => column.value ?? '(none)')),
+    readout('tables', computed(() => tables.value.join(', ') || '(none)')),
+    readout('columns', computed(() => columns.value.join(', ') || '(none)')),
+    readout('mapping', computed(() => JSON.stringify(mapping.value))),
+    readout('aggregations', computed(() => JSON.stringify(aggregations.value))),
   ], 'u2demo-page');
 }
 
@@ -101,6 +108,8 @@ export function spacesPage(): HTMLElement {
       .filter((s) => s.friendlyName.toLowerCase().includes(q.toLowerCase())),
     renderer: handlerRenderer<DG.Project>(),
     placeholder: 'Choose a space…',
+    label: 'Space',
+    openOnFocus: true,
   });
   const project = entityInput<DG.Project>('Choose a project or dashboard…', () => grok.dapi.projects,
     {filter: (q) => q ? `friendlyName like "${q}"` : undefined});
@@ -109,18 +118,20 @@ export function spacesPage(): HTMLElement {
   scope.effect(() => { const s = space.selected.value; if (s) picked.value = s; });
   scope.effect(() => { const p = project.selected.value; if (p) picked.value = p; });
 
-  const preview = divV([], 'u2demo-row');
+  const preview = divV([], 'u2demo-stack');
+  preview.setAttribute('role', 'region');
+  preview.setAttribute('aria-label', 'Preview');
   let shown: Scope | undefined;
   scope.own(() => shown?.dispose());
   scope.effect(() => {
     const x = picked.value;
     shown?.dispose();
     shown = new Scope();
-    preview.replaceChildren(Scope.runWith(shown, () => x ?
+    preview.replaceChildren(shown.build(() => x ?
       divV([
         entityCard(x).root,
         divH([chip(x).root, button('Open', () => void x.open())], 'u2demo-row'),
-      ], 'u2demo-row') :
+      ], 'u2demo-stack') :
       span('Pick a space or a project to preview it.', 'u2demo-hint')));
   });
 
@@ -144,7 +155,7 @@ export function moleculesPage(): HTMLElement {
       'has Chem published.', 'u2demo-hint')], 'u2demo-page');
   }
   const structure = moleculeInput('Structure');
-  structure.value.value = DRUGS[0].smiles;
+  structure.value = DRUGS[0].smiles;
 
   const compound = {name: 'Aspirin', smiles: DRUGS[0].smiles, mw: 180.16};
   const props: IProperty[] = [
@@ -170,6 +181,7 @@ export function moleculesPage(): HTMLElement {
       listItem: (d) => divH([rowMol.listItem!(d.smiles), span(d.name)], 'u2demo-mol-row'),
     },
     placeholder: 'Find a compound…',
+    openOnFocus: true,
   });
 
   return divV([
@@ -179,7 +191,7 @@ export function moleculesPage(): HTMLElement {
     'u2demo-hint'),
     h3('moleculeInput — the platform sketcher as a u2 Input<string>'),
     structure,
-    readout('smiles', computed(() => structure.value.value || '(empty)')),
+    readout('smiles', computed(() => structure.value || '(empty)')),
     h3('propertyForm — the Structure field is picked by semType: Molecule'),
     form.root,
     readout('compound', computed(() => {
@@ -195,9 +207,17 @@ export function moleculesPage(): HTMLElement {
 }
 
 export function bridgePage(): HTMLElement {
-  const bridged = new TextInput({label: 'Compound', value: 'Aspirin'});
-  bridged.addValidator((v) => v.trim() ? null : 'Required');
-  const dart = asDartInput(bridged);
+  const compound = signal('Aspirin');
+  // closing a DG.Dialog detaches the DartInput it hosted, so every open builds its own
+  const openDialog = (): void => {
+    const bridged = new TextInput({label: 'Compound', value: compound.value,
+      onChanged: (v) => compound.value = v});
+    bridged.addValidator((v) => v.trim() ? null : 'Required');
+    ui.dialog('u2 input, platform dialog')
+      .add(asDartInput(bridged))
+      .onOK(() => grok.shell.info(`Compound: ${bridged.value}`))
+      .show();
+  };
 
   const leaks = signal('(press the button)');
 
@@ -206,12 +226,9 @@ export function bridgePage(): HTMLElement {
       'asDartInput() makes any u2 input a DG.InputBase.', 'u2demo-hint'),
     h3('DartInput bridge'),
     divH([
-      button('Open a DG.Dialog with a u2 input', () => ui.dialog('u2 input, platform dialog')
-        .add(dart)
-        .onOK(() => grok.shell.info(`Compound: ${bridged.value.value}`))
-        .show()),
+      button('Open a DG.Dialog with a u2 input', openDialog),
     ], 'u2demo-row'),
-    readout('bridged value', bridged.value),
+    readout('bridged value', compound),
     h3('Leak detector'),
     divH([
       button('leakReport()', () => leaks.value = JSON.stringify(leakReport())),

@@ -16,6 +16,10 @@ export enum RowSourceTypes {
   Selected = 'Selected',
   FilteredSelected = 'FilteredSelected',
 }
+
+export const sameRows = (a: DG.BitSet, b: DG.BitSet | null): boolean =>
+  b !== null && a.length === b.length && a.clone().xor(b, false).trueCount === 0;
+
 export class ChemSearchBaseViewer extends DG.JsViewer {
   isEditedFromSketcher: boolean = false;
   gridSelect: boolean = false;
@@ -42,6 +46,8 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
   renderCompleted = new Subject<void>();
   isComputing = false;
   rowSource: string;
+  /** The rows of the row source the cards were last searched among. */
+  protected searchedRows: DG.BitSet | null = null;
   error = '';
   private _renderPending = 0;
   private _onRendered = new Subject<void>();
@@ -93,7 +99,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     this.limit = this.int('limit', 12, {min: 1, max: this.maxLimit});
     this.distanceMetric = this.string('distanceMetric', CHEM_SIMILARITY_METRICS[0], {choices: CHEM_SIMILARITY_METRICS});
     this.size = this.string('size', Object.keys(this.sizesMap)[0], {choices: Object.keys(this.sizesMap)});
-    this.rowSource = this.string('rowSource', this.rowSourceChoices[0], {choices: this.rowSourceChoices});
+    this.rowSource = this.string('rowSource', RowSourceTypes.Filtered, {choices: this.rowSourceChoices});
     this.moleculeColumnName = this.addProperty('moleculeColumnName', DG.TYPE.COLUMN, '', {semType: DG.SEMTYPE.MOLECULE});
     this.name = name;
     this.moleculeProperties = this.columnList('moleculeProperties', [],
@@ -126,11 +132,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
           await this.render(compute);
         }));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
-        .subscribe(async (_: any) =>
-          await this.render(this.rowSource === RowSourceTypes.Selected || this.rowSource === RowSourceTypes.FilteredSelected)));
-      this.subs.push(DG.debounce((this.dataFrame.onFilterChanged), 50)
-        .subscribe(async (_: any) =>
-          await this.render(this.rowSource === RowSourceTypes.Filtered || this.rowSource === RowSourceTypes.FilteredSelected)));
+        .subscribe(async (_: any) => await this.render(false)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
         .subscribe(async (_: any) => await this.render(false)));
       this.subs.push(DG.debounce((this.dataFrame.onMetadataChanged), 50)
@@ -143,6 +145,13 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     await this.render(true);
   }
 
+
+  /** The platform calls this when the rows of the row source change: the filter in Filtered mode, the
+   * selection in Selected mode, either of them in FilteredSelected, and the mode itself. */
+  onSourceRowsChanged(): void {
+    if (this.initialized && !sameRows(this.getRowSourceIndexes(), this.searchedRows))
+      this.debouncedRender();
+  }
 
   onPropertyChanged(property: DG.Property): void {
     super.onPropertyChanged(property);

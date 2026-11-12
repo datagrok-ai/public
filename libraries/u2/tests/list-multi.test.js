@@ -1,11 +1,13 @@
 /* F5 — multi-selection on the virtualized list and its tree projection: Ctrl toggles, Shift
    ranges from the anchor (the last plain click), the contextmenu keeps a set it lands in, and
-   every single-select path — plain click, keyboard, setItems, a programmatic lead write —
-   collapses the set to the lead alone, so single-select consumers never see a ghost. */
+   every single-select path — plain click, keyboard, a programmatic lead write — collapses the set
+   to the lead alone, so single-select consumers never see a ghost; setItems keeps the selected keys
+   that are still there (keyed-rows.test.js). */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {batch} from '../src/core/signals.js';
 import {VirtualList} from '../src/components/collections/list.js';
@@ -35,7 +37,7 @@ function list(options = {}) {
     ...options,
   });
   document.body.append(l.root);
-  l.root.clientHeight = 220;
+  layout(l.root, {clientHeight: 220});
   l.setItems(Array.from({length: 10}, (_, i) => `item${i}`));
   return l;
 }
@@ -110,7 +112,7 @@ scoped('Shift-click ranges from the last plain click, replacing the set', () => 
   l.dispose();
 });
 
-scoped('keyboard, programmatic lead writes and setItems collapse to the lead alone', () => {
+scoped('keyboard and programmatic lead writes collapse to the lead alone; setItems keeps the keys still there', () => {
   const l = list({keyOf: (item) => item});
   click(l, 2);
   click(l, 5, {ctrlKey: true});
@@ -128,12 +130,12 @@ scoped('keyboard, programmatic lead writes and setItems collapse to the lead alo
   assert.deepEqual(selected(l), [1, 4]);
   l.setItems(['item4', 'other', 'another']);
   assert.equal(l.selectedIndex.value, 0, 'the key preserved the lead across setItems');
-  assert.deepEqual(selected(l), [0], 'and the lead alone');
+  assert.deepEqual(selected(l), [0], 'item1 left with its row; item4 stays selected');
   l.dispose();
 });
 
 scoped('the contextmenu keeps the set it lands in, and collapses to a row outside it', () => {
-  const l = list({contextActions: (item) => [{name: `Act on ${item}`, run: () => {}}]});
+  const l = list({contextActions: (item) => [{text: `Act on ${item}`, run: () => {}}]});
   click(l, 2);
   click(l, 5, {ctrlKey: true});
 
@@ -152,7 +154,7 @@ scoped('the contextmenu keeps the set it lands in, and collapses to a row outsid
 scoped('tree: selectedNodes projects the set in selection order, and clearSelection empties both', () => {
   const tree = new VirtualTree();
   document.body.append(tree.root);
-  tree.root.querySelector('.u2-list').clientHeight = 220;
+  layout(tree.root.querySelector('.u2-list'), {clientHeight: 220});
   tree.expanded.value = new Set(['b']);
   tree.setRoots([
     {id: 'a', label: 'a', data: 'A'},
@@ -208,16 +210,16 @@ scoped('a swap measured at zero height renders the whole window one frame later,
 
   // the in-place swap: the rows are replaced while the layout has not settled, so the scroller
   // measures 0 — committing that window would leave three rows under a status line saying forty
-  l.root.clientHeight = 0;
+  layout(l.root, {clientHeight: 0});
   l.setItems(Array.from({length: 40}, (_, i) => `next${i}`));
-  l.root.clientHeight = 220;
+  layout(l.root, {clientHeight: 220});
   await flush();
   assert.equal(rendered(), 14, 'the frame after the swap renders the window the height allows');
   assert.equal(row(l, 13) !== null, true, 'down to the last row of it');
   assert.equal(row(l, 14), null, 'and no further');
 
   // a list that is genuinely off screen settles instead of asking for frames for ever
-  l.root.clientHeight = 0;
+  layout(l.root, {clientHeight: 0});
   l.setItems(Array.from({length: 40}, (_, i) => `hidden${i}`));
   await flush();
   await flush();

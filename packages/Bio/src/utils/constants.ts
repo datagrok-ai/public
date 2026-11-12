@@ -26,22 +26,9 @@ export const MSA = 'MSA';
 
 export const STATS = 'stats';
 
-export const EMBEDDING_STATUS = 'embeddingStatus';
-
-export const PEPTIDES_ANALYSIS = 'isPeptidesAnalysis';
-
 export enum FLAGS {
   CELL_CHANGING = 'isCellChanging',
 }
-
-export const aarGroups = {
-  'R': 'PC', 'H': 'PC', 'K': 'PC',
-  'D': 'NC', 'E': 'NC',
-  'S': 'U', 'T': 'U', 'N': 'U', 'Q': 'U',
-  'C': 'SC', 'U': 'SC', 'G': 'SC', 'P': 'SC',
-  'A': 'H', 'V': 'H', 'I': 'H', 'L': 'H', 'M': 'H', 'F': 'H', 'Y': 'H', 'W': 'H',
-  '-': '-',
-};
 
 export const groupDescription: { [key: string]: { 'description': string, aminoAcids: string[] } } = {
   'PC': {'description': 'Positive Amino Acids, with Electrically Charged Side Chains', 'aminoAcids': ['R', 'H', 'K']},
@@ -60,14 +47,6 @@ export namespace PEPSEA {
 }
 
 export const kalignVersion = '3.3.1';
-
-export const msaDefaultOptions = {
-  kalign: {
-    gapOpen: -1.0,
-    gapExtend: -1.0,
-    terminalGap: -1.0,
-  },
-} as const;
 
 /** meta.role value for dynamically discovered MSA engine functions */
 export const MSA_ENGINE_ROLE = 'sequenceMSA';

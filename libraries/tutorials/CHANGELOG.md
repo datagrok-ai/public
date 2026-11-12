@@ -1,7 +1,17 @@
 # tutorials changelog
 
-## v.next
+## 1.7.11 (2026-11-05)
 
+* Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
+* [#4437](https://github.com/datagrok-ai/public/issues/4437): Tutorials: Show both Windows and Mac keyboard shortcuts in step instructions
+* Tutorial: Column inputs are checked at once instead of after the first second (core#1146)
+* Tutorial: A running tutorial shows its current step in a bar docked on top; `showAllSteps()` opens the full pane
+* Tutorial: `cleanup()` removes what a tutorial created on the server; it runs when the tutorial finishes and when it is closed
+
+## 1.7.10 (2026-10-19)
+
+* Tutorial: `Tutorial.closeActive()` closes the tutorial in progress, so a tutorial the user leaves no longer keeps running in the background
+* Package prerequisites check that the package is installed, so a tutorial reports a package the server only lists from its repository
 * A tutorial finished while the panel is open marks its card done in `data-status` too, not only visually
 * Tutorial: Step entries carry `role="checkbox"`, `aria-checked`, `aria-current="step"` and `data-step`, the progress bar `role="progressbar"` with `aria-valuenow`/`aria-valuemax`, and the `tutorial-step-completed` / `tutorial-completed` custom events fire, so tests read the tutorial's state instead of its CSS classes
 * Tutorial: A step whose event stream fails (a control that never appeared) is no longer shown as done: it keeps `aria-checked="false"`, gets `aria-invalid`, and the tutorial stops at the failure card instead of congratulating

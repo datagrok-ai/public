@@ -2,6 +2,33 @@
 
 ## v.next
 
+* [core#637](https://github.com/datagrok-ai/core/issues/637): GPU scatter plot: Made markers take the alpha of their colors (marker opacity and category colors), as the core draws them
+* [#3924](https://github.com/datagrok-ai/public/issues/3924): Scatter plot: Switched to the canvas renderer while a string axis has a category order (`xCategoryOrder`, `yCategoryOrder`)
+* WebGPU: On Windows, when the browser computes on an integrated GPU, a one-time tip says how to move it to a dedicated GPU, if the computer has one (Windows Settings > System > Display > Graphics > High performance): Chrome ignores WebGPU's high-performance request there
+* Tests: Added `Forms viewer` 'A pinned row stays pinned under a filter that hides it and leaves the pinned pane once deleted', moved from BDD
+* [public#4452](https://github.com/datagrok-ai/public/issues/4452): Forms: Fixed a layout naming a removed column throwing an error on every render
+* VlaaiVis: Fixed the settings growing wider than the Context Panel when Columns lists many columns, which hid the columns' gear icons and scrolled the panel sideways
+* [public#4378](https://github.com/datagrok-ai/public/issues/4378): Summary columns: Fixed a source column brought back by Ctrl+Z not returning to its summary column (a Tags column stayed blank)
+* [public#4431](https://github.com/datagrok-ai/public/issues/4431): PowerGrid: Pie Chart summary column throws an error on hover when all its source columns are removed
+* Tests: Added BDD regression scenarios for an empty integer cell on the Forms card ([#3561](https://github.com/datagrok-ai/public/issues/3561)) and a Sparklines summary column surviving hidden and shown columns ([#1093](https://github.com/datagrok-ai/public/issues/1093))
+* [public#4411](https://github.com/datagrok-ai/public/issues/4411): PowerGrid: Radar summary column throws errors when all its source columns are removed
+* Tests: Added BDD claims for Ctrl+Z bringing a removed source column back to its place (GROK-19942) and a known-failure scenario for the Tags column left blank after that Ctrl+Z ([#4378](https://github.com/datagrok-ai/public/issues/4378))
+* Tags: Made a Tags column as wide as its widest cell when the renderer takes over, instead of 80 px that shortened the tags
+* [core#644](https://github.com/datagrok-ai/core/issues/644): Skip rendering the Forms viewer while it has no table
+* [core#656](https://github.com/datagrok-ai/core/issues/656): Migrate legacy pie chart subsectors without functionType when reading settings
+* Scatter plot: Made hovering a GPU-drawn plot cheaper: the check the core runs on every mouse move reads only what it needs and no longer rebuilds the viewer's info map, and hit tests answer for the frame on screen without re-reading the plot (about 40% less PowerGrid time per mouse move)
+* Scatter plot: Made the GPU renderers draw marker shapes up to 40× faster when most rows are in view (2M circles: about 200 ms a frame down to 7 ms), so zooming and panning a large plot from its overview stays at the display's frame rate on WebGPU and WebGL; the markers look exactly as before
+* [public#438](https://github.com/datagrok-ai/public/issues/438): Binary Image: Decodes each image once and draws it in the same paint, instead of decoding every visible image again after each repaint
+* [public#438](https://github.com/datagrok-ai/public/issues/438): Binary Image: Byte columns that are not images (PDFs, hashes) are no longer shown as empty image cells
+* [public#438](https://github.com/datagrok-ai/public/issues/438): Binary Image: Double-click previews the image, with Replace... to load another one, and no longer opens a text editor showing the byte count
+* [public#4233](https://github.com/datagrok-ai/public/issues/4233): Fixed the Color, Tags and Multi Choice renderers drawing the first row's value for every item in viewer legends and pie chart labels
+* Scatter plot: Fixed "Failed to autostart: viewers is not iterable" logged at startup when a non-table view (a script, a Diff Studio model) was open
+* Tests: Added package tests for the summary columns and the Forms viewer through a layout and a project, and for the Tags renderer marking only flagged rows without painting the grid over (GROK-20888); the bdd features keep the UI gestures
+* Scatter plot: Added a WebGL renderer for plots over 50K rows where WebGPU is unavailable or blocked: dots, all marker shapes (also per row, by a Markers column), sizes, colors, opacity, borders, selection, filtered-out rows and hit testing, matching the CPU renderer
+* Scatter plot: Rewrote the WebGPU renderer to draw what the WebGL one does: it matches the CPU renderer (dots pixel for pixel, sharp on high-DPI screens), draws per-row marker shapes, borders and opacity as the canvas does, compiles its pipelines once instead of every frame, and draws in the same frame as the axes; a lost device or a validation error falls back to WebGL
+* Scatter plot: The GPU renderers leave plots with labels next to the markers, a datetime axis by a time unit, or a non-numeric, non-string axis column to the CPU renderer, which draws them right
+* Scatter plot: A large plot drawn on the CPU before the package loaded switches to the GPU when it does
+* Forms: Fixed the mouse-over card keeping a row after the pointer left the viewer, when the card under the pointer had been re-rendered (in `@datagrok-libraries/utils`)
 * Tests: Added `bdd/features/grid/summary-columns.feature` (14 tests), translating the summary-column scenarios of the TestTrack grid specs: every renderer item of Add > Summary Columns with its renderer read from the grid, the top-panel remove icon (GROK-18256), a Tags column whose source column is removed (GROK-19942), a renamed source column, the columns across a layout and a project, and what a Tags column draws (GROK-20888)
 * Summary columns: Fixed the autostart failing with "Cannot read properties of undefined (reading 'dataFrame')" when it landed while a table view was still being built
 * Summary columns: Fixed the source-column rename and remove handler skipping Tags columns — it looked the settings up under the grid's lower-case cell type, where the Tags renderer keeps them under `Tags`; a removed source column now leaves the Tags column's settings

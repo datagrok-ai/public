@@ -7,7 +7,7 @@ import {RuleId} from '../panels/structural-alerts';
 import {SubstructureSearchType} from '../constants';
 import {hasNewLines, stringArrayToMolList} from '../utils/chem-common';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
-import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
+import {queryNeedsSanitizedMolecules} from './query-features';
 
 export enum MolNotation {
   Smiles = 'smiles',
@@ -29,13 +29,6 @@ export interface IRGroupAnalysisResult {
 export interface IMmpFragmentsResult {
   frags: [string, string][][];
   smiles: string[];
-}
-
-export type InverseSubstructureRes = {
-  inverse1: (ISubstruct | null)[],
-  inverse2: (ISubstruct | null)[],
-  fromAligned: string[],
-  toAligned: string[]
 }
 
 // ── Ring-closure SMILES joining (see linkRGroupFragments) ───────────────────
@@ -97,6 +90,44 @@ function formatRingDigit(n: number): string {
   return n <= 9 ? `${n}` : `%${n.toString().padStart(2, '0')}`;
 }
 
+/** RDKit.js's `get_mcs_as_json` (`{smarts, canceled, numAtoms, numBonds}`), which chem-meta's RDModule leaves out. */
+interface McsAsJson {
+  get_mcs_as_json(mols: MolList, details?: string): string;
+}
+
+/**
+ * RDKit's molzip where the module has it: Chem's Crux module (crux-core decision chem-wasm-ports), not Chem's RDKit.js
+ * 2024.09. The two-molecule form is RDKit.js's own; the one-molecule form (the pieces in one dot-disconnected
+ * molecule) is Crux's. `details`: RDKit's MolzipParams by name (`Label`, `AtomSymbols`, `AtomProperty`,
+ * `EnforceValenceRules`), as JSON.
+ */
+export interface Molzip {
+  molzip(a: RDMol, b: RDMol, details?: string): RDMol | null;
+  molzip(mol: RDMol, details?: string): RDMol | null;
+}
+
+/** Whether the module has RDKit's molzip ({@link Molzip}). */
+export function hasMolzip(module: RDModule): module is RDModule & Molzip {
+  return typeof (module as Partial<Molzip>).molzip === 'function';
+}
+
+/**
+ * The canonical SMILES of molzip's result, read again as Chem reads a molecule (getMolSafe: sanitized, explicit H
+ * atoms removed) since molzip does not sanitize its result; '' for none. Frees `zipped`.
+ */
+export function zippedSmiles(zipped: RDMol | null, module: RDModule): string {
+  if (!zipped)
+    return '';
+  let read: RDMol | null = null;
+  try {
+    read = getMolSafe(zipped.get_smiles(), {}, module).mol;
+    return read?.get_smiles() ?? '';
+  } finally {
+    read?.delete();
+    zipped.delete();
+  }
+}
+
 const MALFORMED_MOL_V2000 = `
 Malformed
 
@@ -108,9 +139,31 @@ Malformed
   0  0  0  0  0  0            999 V3000
 M  END`;
 
+/** What `convertMolNotation` gives a molecule it cannot read or write in `targetNotation`. */
+export function notConverted(targetNotation: string): string {
+  return (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
+    (targetNotation === MolNotation.V3KMolBlock) ? MALFORMED_MOL_V3000 : 'MALFORMED_INPUT_VALUE';
+}
+
 const cxWithoutCoordsJSON = JSON.stringify({CX_ALL_BUT_COORDS: true});
 
+/** The search's fast read of a candidate (its canonical SMILES): as written, unsanitized; its rings come from a
+ * depth-first search, which gives ring membership as sanitization does, but not RDKit's rings. */
+const FAST_READ = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
+/** The reads for a query that needs the molecules as RDKit sanitizes them (queryNeedsSanitizedMolecules), in getMolSafe's
+ * order: kekulized, else aromatic as written. */
+const SANITIZED_READS = [JSON.stringify({removeHs: false, assignStereo: false}),
+  JSON.stringify({removeHs: false, assignStereo: false, kekulize: false})];
+
+/** A SMILES's chirality marks (`@`, `@@`, `@TH1`, `@SP2`...) and its double bonds' directions: SMILES has neither `@`
+ * nor `/` and `\` elsewhere. */
+const CHIRALITY = /@(?:@|TH[12]|AL[12]|SP[1-3]|TB\d{1,2}|OH\d{1,2})?/g;
+const BOND_DIRECTIONS = /[/\\]/g;
+
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
+  /** The molecules the search read the fast way and cached: a query that needs sanitized molecules reads them again. */
+  private _fastReadMols = new WeakSet<RDMol>();
+
   constructor(module: RDModule, webRoot: string) {
     super(module, webRoot);
   }
@@ -160,7 +213,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         }
       }
       const matches = await this.searchWithPatternFps(queryMol, molecules,
-        searchType ?? SubstructureSearchType.CONTAINS, queryCanonicalSmiles);
+        searchType ?? SubstructureSearchType.CONTAINS, queryCanonicalSmiles, queryNeedsSanitizedMolecules(queryMol));
       queryMol.delete();
       return matches;
     } else
@@ -174,14 +227,32 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return details ? this._rdKitModule.get_mol(molString, details) : this._rdKitModule.get_mol(molString);
   }
 
+  /** A candidate of the search, read sanitized for a query that needs it, else the fast way (so is one RDKit cannot
+   * sanitize, as the search read it before). */
+  private readCandidate(molString: string, sanitized: boolean): RDMol | null {
+    if (sanitized) {
+      for (const details of SANITIZED_READS) {
+        try {
+          const mol = this.getMolWithSmilesCheck(molString, details);
+          if (mol)
+            return mol;
+        } catch {}
+      }
+    }
+    const mol = this.getMolWithSmilesCheck(molString, FAST_READ);
+    if (mol)
+      this._fastReadMols.add(mol);
+    return mol;
+  }
 
+  /** `sanitized`: the query needs the molecules as RDKit sanitizes them (queryNeedsSanitizedMolecules); otherwise each
+   * candidate not in the cache is read the fast way. */
   async searchWithPatternFps(queryMol: RDMol, molecules: string[], searchType: SubstructureSearchType,
-    queryCanonicalSmiles: string): Promise<Uint32Array> {
+    queryCanonicalSmiles: string, sanitized = false): Promise<Uint32Array> {
     const stereoAgnostic = searchType === SubstructureSearchType.STEREO_AGNOSTIC;
     const matches = new BitArray(molecules.length);
     if (this._requestTerminated)
       return matches.buffer;
-    const details = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
     for (let i = 0; i < molecules.length; ++i) {
       const terminationCheckDelay = queryCanonicalSmiles ?
         this._terminationCheckDelay * 10 :
@@ -199,10 +270,15 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         let isCached = false;
         try {
           const cachedMol = this._molsCache?.get(molecules[i]);
-          mol = cachedMol ?? this.getMolWithSmilesCheck(molecules[i], details)!;
-          // addToCache is called for hits too, so the per-dataset budget counts every processed molecule
-          if (mol && this.addToCache(mol))
-            isCached = true;
+          if (cachedMol && sanitized && this._fastReadMols.has(cachedMol)) {
+            // read the fast way by an earlier search: read again for this query, and let go after it
+            mol = this.readCandidate(molecules[i], sanitized);
+          } else {
+            mol = cachedMol ?? this.readCandidate(molecules[i], sanitized);
+            // addToCache is called for hits too, so the per-dataset budget counts every processed molecule
+            if (mol && this.addToCache(mol))
+              isCached = true;
+          }
           if (mol) {
             if (stereoAgnostic)
               matches.setFast(i, this.getSmiles(mol, true) === queryCanonicalSmiles);
@@ -335,9 +411,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
   async convertMolNotation(molecules: string[], targetNotation: string, kekulize = false): Promise<string[]> {
     if (!molecules || this._requestTerminated)
       return [];
-    let addedToCache = false;
-    const result = (targetNotation === MolNotation.MolBlock) ? MALFORMED_MOL_V2000 :
-      (targetNotation === MolNotation.V3KMolBlock) ? MALFORMED_MOL_V3000 : 'MALFORMED_INPUT_VALUE';
+    const result = notConverted(targetNotation);
     const results = new Array<string>(molecules.length).fill(result);
 
     for (let i = 0; i < molecules!.length; ++i) {
@@ -351,13 +425,15 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         results[i] = '';
         continue;
       }
-      let rdMol = this._molsCache?.get(molecules[i]);
+      // a molecule kekulized here is a fresh one, never cached: the searches reuse the cached ones as read
+      let rdMol = kekulize ? null : this._molsCache?.get(molecules[i]);
       if (!rdMol) {
         const mol: IMolContext = getMolSafe(item, {}, this._rdKitModule);
         rdMol = mol?.mol;
         if (rdMol)
           rdMol.is_qmol = mol?.isQMol;
       }
+      let addedToCache = false;
       if (rdMol) {
         if (kekulize) {
           try {
@@ -392,7 +468,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             results[i] = 'Unknown notation: ' + targetNotation;
             throw Error('Unknown notation: ' + targetNotation);
           }
-          addedToCache = this.addToCache(rdMol);
+          addedToCache = !kekulize && this.addToCache(rdMol);
         } catch {
           // nothing to do, fp is already null
         } finally {
@@ -406,9 +482,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return results;
   }
 
-  /** Returns SMILES with stereochemistry removed for {@link molecules}.
-   * Malformed molecules result in an empty string. */
-  async flattenMolecules(molecules: string[]): Promise<string[]> {
+  /** Returns SMILES of {@link molecules} without their stereocenters, and without the E/Z configuration of their
+   * double bonds only with {@link flattenDoubleBonds}. Malformed molecules result in an empty string. */
+  async flattenMolecules(molecules: string[], flattenDoubleBonds: boolean = false): Promise<string[]> {
     if (!molecules || this._requestTerminated)
       return [];
     const results = new Array<string>(molecules.length).fill('');
@@ -431,7 +507,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       }
       if (rdMol) {
         try {
-          results[i] = rdMol.get_smiles(JSON.stringify({doIsomericSmiles: false}));
+          results[i] = this.withoutStereo(rdMol.get_smiles(), flattenDoubleBonds);
           addedToCache = this.addToCache(rdMol);
         } catch {
           // nothing to do, result is already an empty string
@@ -444,6 +520,21 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       }
     }
     return results;
+  }
+
+  /** Isomeric `smiles` without its chirality marks and, with `flattenDoubleBonds`, its bond directions, written again
+   * canonically; isotopes stay. */
+  private withoutStereo(smiles: string, flattenDoubleBonds: boolean): string {
+    const achiral = smiles.replace(CHIRALITY, '');
+    const flat = flattenDoubleBonds ? achiral.replace(BOND_DIRECTIONS, '') : achiral;
+    if (flat === smiles)
+      return smiles;
+    const mol = this._rdKitModule.get_mol(flat);
+    try {
+      return mol?.get_smiles() || flat;
+    } finally {
+      mol?.delete();
+    }
   }
 
   /** Returns InChI identifiers for {@link molecules}, or InChI keys when {@link keys} is set.
@@ -785,11 +876,15 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
    * `attachIdx[p]` is the attachment number of fragment column `p` (R7 -> 7), or several numbers for a
    * fragment bonded to the core at more than one point (a bridge). It cannot be inferred from the
    * fragments: an empty fragment carries no `[*:N]` label, yet must still name which dummy to erase.
+   *
+   * On a module with RDKit's molzip (Chem's Crux module, {@link hasMolzip}) the core and its fragments are joined by
+   * molzip at their `[*:N]` pairs instead of the string assembly, and the result read again as above.
    */
   linkRGroupFragments(cores: string[], fragmentColumns: string[][], attachIdx: (number | number[])[]): string[] {
     const size = cores.length;
     const smiles = new Array<string>(size);
     const numbers = attachIdx.map((a) => Array.isArray(a) ? a : [a]);
+    const module = this._rdKitModule;
     for (let i = 0; i < size; i++) {
       // Collect the joins this core actually supports; erase dummies whose fragment is H.
       let core = cores[i];
@@ -800,14 +895,26 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           continue;
         const fragment = fragmentColumns[p][i];
         if (fragment)
-          joins.push({ns, fragment: moveStartRLabelToBranch(fragment)});
+          joins.push({ns, fragment});
         else {
           for (const n of ns)
             core = core.split(`[*:${n}]`).join('[H]');
         }
       }
 
-      const pieces = [moveStartRLabelToBranch(core), ...joins.map((j) => j.fragment)];
+      if (hasMolzip(module)) {
+        const read = [core, joins.map((j) => j.fragment).join('.')].map((m) => getMolSafe(m, {}, module).mol);
+        try {
+          smiles[i] = !read[0] || !read[1] ? '' : zippedSmiles(module.molzip(read[0], read[1]), module);
+        } catch {
+          smiles[i] = '';
+        } finally {
+          read.forEach((mol) => mol?.delete());
+        }
+        continue;
+      }
+
+      const pieces = [moveStartRLabelToBranch(core), ...joins.map((j) => moveStartRLabelToBranch(j.fragment))];
       const bonds = joins.reduce((count, join) => count + join.ns.length, 0);
       const digits = pickFreeRingDigits(pieces, bonds);
       if (digits.length < bonds) {
@@ -870,7 +977,10 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     this._requestTerminated = flag;
   }
 
-  mostCommonStructure(molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean): string {
+  /** The FMCS of the molecules as SMARTS ('' for none). `timeoutS`: FMCS's own Timeout in seconds, '' when it
+   * runs out (the Crux pool's cluster MCS; RdKitService.clusterMCS restarts a worker stuck that long instead). */
+  mostCommonStructure(molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean,
+    timeoutS?: number): string {
     let mols;
     try {
       mols = new this._rdKitModule.MolList();
@@ -889,11 +999,17 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       }
       let mcsSmarts: string|null = null;
       if (mols.size() > 1) {
-        mcsSmarts = this._rdKitModule.get_mcs_as_smarts(mols, JSON.stringify({
+        const details = {
           AtomCompare: exactAtomSearch ? 'Elements' : 'Any',
           BondCompare: exactBondSearch ? 'OrderExact' : 'Order',
           //RingMatchesRingOnly: true
-        }));
+        };
+        if (timeoutS !== undefined) {
+          const mcs = JSON.parse((this._rdKitModule as RDModule & McsAsJson)
+            .get_mcs_as_json(mols, JSON.stringify({...details, Timeout: timeoutS})));
+          mcsSmarts = mcs.canceled ? '' : mcs.smarts;
+        } else
+          mcsSmarts = this._rdKitModule.get_mcs_as_smarts(mols, JSON.stringify(details));
       }
       return mcsSmarts ?? '';
     } finally {

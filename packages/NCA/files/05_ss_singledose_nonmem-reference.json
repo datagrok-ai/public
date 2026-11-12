@@ -1,0 +1,47 @@
+{
+  "dataset": "05_ss_singledose_nonmem",
+  "pknca_version": "0.12.1",
+  "config": {
+    "auc_method": "lin up/log down",
+    "min_points": 3,
+    "min_r_squared": 0.85
+  },
+  "dataset_meta": {
+    "route": "iv-bolus",
+    "conc_unit": "mg/L",
+    "tau": 24,
+    "auc_tau_ss_hand_derived": 50,
+    "dose": 100,
+    "cl": 2,
+    "identity": "AUCtau,ss = Dose/CL (derived; k>0 precondition)",
+    "pknca_consistency_pct": 0
+  },
+  "profiles": [
+    {
+      "profile_key": {
+        "subject": "S1",
+        "route": "iv-bolus"
+      },
+      "parameters": {
+        "cmax": 10.082980378,
+        "tmax": 0,
+        "auclast": 50.000000000132,
+        "aucinf": null,
+        "pct_aucextrap": null,
+        "lambda_z": null,
+        "half_life": null,
+        "cl": null,
+        "vz": null
+      },
+      "provenance": {
+        "lambda_z_n_points": null,
+        "lambda_z_r_squared": null,
+        "lambda_z_adj_r_squared": null,
+        "lambda_z_time_first": null,
+        "lambda_z_time_last": null,
+        "clast_obs": null,
+        "c0_extrapolated": null
+      }
+    }
+  ]
+}

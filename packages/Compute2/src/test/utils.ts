@@ -1,15 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {awaitCheck} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil} from '@datagrok-libraries/test/src/test';
+import {loadInstanceState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
+import {
+  isFuncCallSerializedState, PipelineSerializedState,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 /** Wait for a selector to appear inside a root element, return the matched element. */
 export async function awaitElement(
   root: HTMLElement, selector: string, msg: string, timeout = 5000,
 ): Promise<HTMLElement> {
-  await awaitCheck(
-    () => root.querySelector(selector) !== null,
-    `${msg}: selector "${selector}" not found`, timeout,
-  );
+  await waitUntil(() => root.querySelector(selector) !== null, `${msg}: selector "${selector}" not found`, timeout);
   return root.querySelector(selector) as HTMLElement;
 }
 
@@ -17,7 +18,7 @@ export async function awaitElement(
 export async function launchApp(name: string, timeout = 10000): Promise<DG.ViewBase> {
   await grok.functions.call(`Compute2:${name}`);
   let view: DG.ViewBase | undefined;
-  await awaitCheck(() => {
+  await waitUntil(() => {
     const v = grok.shell.v;
     if (v && v.name === name) {
       view = v;
@@ -30,15 +31,43 @@ export async function launchApp(name: string, timeout = 10000): Promise<DG.ViewB
 
 /** Close a view, swallowing errors if already closed. */
 export function closeView(view: DG.ViewBase): void {
-  try { view.close(); } catch (_) { /* already closed */ }
+  try {view.close();} catch (_) {/* already closed */}
+}
+
+/** Registers views a category's tests open, so every one of them is closed after the category. */
+export function closeViewsAfter() {
+  const views: DG.ViewBase[] = [];
+  after(async () => views.splice(0).forEach(closeView));
+  return <T extends DG.ViewBase>(view: T): T => {
+    views.push(view);
+    return view;
+  };
+}
+
+const savedCallIds = (state: PipelineSerializedState): string[] => isFuncCallSerializedState(state) ?
+  (state.funcCallId ? [state.funcCallId] : []) : state.steps.flatMap(savedCallIds);
+
+/** Deletes a saved run and checks it is gone; plain calls.delete() silently keeps it. */
+export async function deleteSavedRun(id: string) {
+  const calls = grok.dapi.functions.calls.allPackageVersions();
+  const call = await calls.find(id);
+  if (!call)
+    return;
+  await calls.delete(call);
+  if (await calls.find(id))
+    throw new Error(`Saved run ${id} was not deleted`);
+}
+
+/** Deletes a saved workflow run with its step calls. */
+export async function deleteSavedWorkflow(id: string) {
+  const [state] = await loadInstanceState(id);
+  for (const callId of [id, ...savedCallIds(state)])
+    await deleteSavedRun(callId);
 }
 
 /** Wait for WebComponents custom elements to be registered. */
 export async function awaitWebComponents(timeout = 10000): Promise<void> {
-  await awaitCheck(
-    () => customElements.get('dg-viewer') !== undefined,
-    'WebComponents not initialized', timeout,
-  );
+  await waitUntil(() => customElements.get('dg-viewer') !== undefined, 'WebComponents not initialized', timeout);
 }
 
 /** Find a button inside a root element by partial text content (case-insensitive). */
@@ -53,13 +82,13 @@ export function findButton(root: HTMLElement, text: string): HTMLButtonElement {
 
 /**
  * Click a button and poll until a condition becomes true.
- * Use this instead of delay() + awaitCheck() after interactions.
+ * Use this instead of a fixed delay and a poll after interactions.
  */
 export async function clickAndAwait(
   btn: HTMLElement, check: () => boolean, msg: string, timeout = 5000,
 ): Promise<void> {
   btn.click();
-  await awaitCheck(check, msg, timeout);
+  await waitUntil(check, msg, timeout);
 }
 
 /**
@@ -71,8 +100,5 @@ export async function clickAndAwaitChange(
 ): Promise<void> {
   const before = root.innerHTML;
   btn.click();
-  await awaitCheck(
-    () => root.innerHTML !== before,
-    msg, timeout,
-  );
+  await waitUntil(() => root.innerHTML !== before, msg, timeout);
 }

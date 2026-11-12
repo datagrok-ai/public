@@ -1,18 +1,33 @@
 /* Popup / context menu. Hand-written introspectable machine per D6: 'closed' | 'open' |
    'submenu-open' exposed as a signal, WAI-ARIA 1.2 menu pattern, focus parked on the panel with
-   aria-activedescendant. The fluent surface mirrors DG.Menu so platform users read it unaided. */
+   aria-activedescendant. The fluent surface mirrors DG.Menu so platform users read it unaided.
+   Anchored and at a point alike, the menu is a popup of the one overlay stack: Escape and an
+   outside press close it there, and the menu installs no page listener of its own. */
 
 import {autoUpdate, computePosition, flip, offset, shift} from '@floating-ui/dom';
-import {signal, ReadonlySignal} from '../../core/signals.js';
+import {signal, batch, ReadonlySignal} from '../../core/signals.js';
 import {Scope} from '../../core/scope.js';
+import {Ownership} from '../../core/owner.js';
+import type {Owner} from '../../core/owner.js';
+import {Control} from '../../core/component.js';
 import {Overlay, OVERLAY_CLOSE_EVENT} from '../../core/overlay.js';
+import {Reason} from '../../core/reason.js';
+import {Tooltip} from '../../core/tooltip.js';
 import {icon as iconElement} from '../display/icon.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 export interface MenuItemOptions {
   icon?: string;
   shortcut?: string;
-  enabled?: boolean;
+  /** Why the item does nothing now — shown greyed, the reason as its tooltip; read when the menu opens. */
+  disabled?: Reason;
   check?: boolean;
+  /** Grey text after the label — what the item stands for ("hydroxyl · O[*:2]"); the details of one
+   * menu start in one column. */
+  detail?: string;
+  /** A pick leaves the menu open and turns the check mark over, as the platform's checkable items do: a
+   * chooser toggling several things in one visit (the columns of a table). */
+  keepOpen?: boolean;
 }
 
 export type MenuState = 'closed' | 'open' | 'submenu-open';
@@ -20,7 +35,7 @@ export type MenuState = 'closed' | 'open' | 'submenu-open';
 interface MenuNode {
   kind: 'item' | 'separator' | 'group';
   label: string;
-  onClick?: () => void;
+  onClick?: () => unknown;
   options?: MenuItemOptions;
   children?: MenuNode[];
 }
@@ -28,13 +43,40 @@ interface MenuNode {
 interface MenuLevel {
   depth: number;
   panel: HTMLElement;
-  entries: {node: MenuNode, el: HTMLElement}[];
+  entries: {node: MenuNode, el: HTMLElement, path: string}[];
   active: number;
   openIndex: number;
-  disposers: (() => void)[];
+  scope: Scope;
 }
 
 const SUBMENU_DELAY = 200;
+
+/** One open level of a menu as a control: what it shows, for tests and tools. It belongs to the
+ * menu and closes with it, never to whatever scope is ambient when the menu opens. */
+class MenuPanel extends Control {
+  constructor(private readonly _level: MenuLevel) {
+    super(_level.panel, _level.scope);
+  }
+
+  protected get ambientAdoption(): boolean {
+    return false;
+  }
+
+  getState(): ReturnType<Control['getState']> {
+    return {...super.getState(), open: true};
+  }
+
+  /** The items, keyed by their path (`File > Open`); separators are not items. */
+  getItems(): IItemsState {
+    const level = this._level;
+    const list = level.entries.filter((e) => e.node.kind !== 'separator').map((e, index) => ({
+      key: e.path, label: e.node.label, index, disabled: Reason.now(e.node.options?.disabled) !== null,
+      ...e.node.options?.check === undefined ? {} : {checked: e.node.options.check},
+      ...e.node.kind === 'group' ? {expanded: level.entries[level.openIndex] === e} : {},
+      rendered: true}));
+    return {count: list.length, list, truncated: false};
+  }
+}
 
 export class Menu {
   private static _seq = 0;
@@ -50,7 +92,7 @@ export class Menu {
   private readonly _machine = signal<MenuState>('closed');
   private _scope: Scope | undefined;
   private _returnFocus: HTMLElement | undefined;
-  private _hoverTimer = 0;
+  private _hoverCancel: (() => void) | undefined;
 
   constructor() {
     this.isOpen = this._open;
@@ -62,8 +104,10 @@ export class Menu {
     return new Menu();
   }
 
-  item(label: string, onClick: () => void, options?: MenuItemOptions): Menu {
-    this._current.push({kind: 'item', label, onClick, options});
+  /** `onClick` runs owned by whoever added the item (none once that owner is gone), after the menu closed; a
+   * promise it answers that rejects is reported there. */
+  item(label: string, onClick: () => unknown, options?: MenuItemOptions): Menu {
+    this._current.push({kind: 'item', label, onClick: Menu._owned(onClick), options});
     return this;
   }
 
@@ -90,17 +134,15 @@ export class Menu {
     this.close();
     const focused = document.activeElement;
     this._returnFocus = focused instanceof HTMLElement ? focused : undefined;
-    const scope = new Scope();
+    const scope = new Scope(undefined, {label: 'menu'});
     this._scope = scope;
-    const level = this._buildLevel(this._nodes, 0);
+    const level = this._buildLevel(this._nodes, 0, '');
     this._levels.push(level);
     this._open.value = true;
     this._machine.value = 'open';
-    if ('anchor' in options) {
-      Overlay.show(options.anchor, level.panel, scope);
-      this._listen(level, level.panel, OVERLAY_CLOSE_EVENT, () => this.close());
-    } else
-      this._showAt(level.panel, options.x, options.y, scope);
+    const anchor = 'anchor' in options ? options.anchor : Menu._point(level.panel, options.x, options.y, scope);
+    Overlay.show(anchor, level.panel, {owner: scope});
+    level.scope.listen(level.panel, OVERLAY_CLOSE_EVENT, () => this.close());
     level.panel.focus({preventScroll: true});
   }
 
@@ -109,7 +151,7 @@ export class Menu {
     if (!scope)
       return;
     this._scope = undefined;
-    window.clearTimeout(this._hoverTimer);
+    this._hoverCancel = undefined;
     while (this._levels.length > 0)
       Menu._disposeLevel(this._levels.pop()!);
     scope.dispose();
@@ -121,72 +163,71 @@ export class Menu {
       restore.focus();
   }
 
-  /** Right-click on `el` opens the menu at the cursor; the listener is released with `scope`. */
-  bindContext(el: HTMLElement, scope: Scope): void {
-    const handler = (e: Event) => {
+  /** Right-click on `el` opens the menu at the cursor. The listener goes with `owner` — whoever is building by
+   * default — and so does a menu it opened, still on screen when the owner goes (the row it was opened on). */
+  bindContext(el: HTMLElement, options?: {owner?: Owner}): void {
+    const scope = Ownership.scopeOf(options?.owner, 'Menu.bindContext()');
+    let opened: Scope | undefined;
+    scope.listen(el, 'contextmenu', (e) => {
       e.preventDefault();
       const me = e as MouseEvent;
       this.show({x: me.clientX, y: me.clientY});
-    };
-    el.addEventListener('contextmenu', handler);
-    scope.own(() => el.removeEventListener('contextmenu', handler));
+      opened = this._scope;
+    });
+    scope.own(() => {
+      if (opened !== undefined && this._scope === opened)
+        this.close();
+    });
   }
 
   private get _current(): MenuNode[] {
     return this._stack[this._stack.length - 1];
   }
 
-  private _showAt(panel: HTMLElement, x: number, y: number, scope: Scope): void {
+  /** A zero-size anchor at the point, moved left of it when the panel would run past the right
+   * edge — the overlay places the panel under its anchor and flips it up when there is no room. */
+  private static _point(panel: HTMLElement, x: number, y: number, scope: Scope): HTMLElement {
     panel.style.position = 'fixed';
-    panel.style.left = '0';
-    panel.style.top = '0';
+    panel.style.visibility = 'hidden';
     Overlay.host.append(panel);
-
-    const onPointerDown = (e: Event) => {
-      if (!panel.contains(e.target as Node))
-        this.close();
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape')
-        this.close();
-    };
-    document.addEventListener('pointerdown', onPointerDown, true);
-    document.addEventListener('keydown', onKeyDown);
-    scope.own(() => {
-      document.removeEventListener('pointerdown', onPointerDown, true);
-      document.removeEventListener('keydown', onKeyDown);
-    });
-
-    computePosition({getBoundingClientRect: () => new DOMRect(x, y, 0, 0)}, panel, {
-      strategy: 'fixed',
-      placement: 'right-start',
-      middleware: [flip({fallbackPlacements: ['left-start', 'right-end', 'left-end']}), shift({padding: 4})],
-    }).then(({x: left, y: top}) => {
-      panel.style.left = `${left}px`;
-      panel.style.top = `${top}px`;
-    });
+    const width = panel.offsetWidth;
+    panel.style.visibility = '';
+    const anchor = document.createElement('div');
+    anchor.className = 'u2-menu-point';
+    const left = x + width > window.innerWidth - 4 ? Math.max(4, x - width) : x;
+    anchor.style.cssText = `position: fixed; left: ${left}px; top: ${y}px; width: 0; height: 0;`;
+    Overlay.host.append(anchor);
+    scope.own(() => anchor.remove());
+    return anchor;
   }
 
-  private _buildLevel(nodes: MenuNode[], depth: number): MenuLevel {
+  private _buildLevel(nodes: MenuNode[], depth: number, path: string): MenuLevel {
     const panel = document.createElement('div');
     panel.className = 'u2-menu';
     panel.dataset.u2 = 'menu';
     panel.tabIndex = -1;
     panel.setAttribute('role', 'menu');
-    const level: MenuLevel = {depth, panel, entries: [], active: -1, openIndex: -1, disposers: []};
+    const level: MenuLevel = {depth, panel, entries: [], active: -1, openIndex: -1,
+      scope: this._scope!.child('menu-level')};
+    const detailed = nodes.some((n) => n.options?.detail !== undefined);
+    panel.classList.toggle('u2-menu-detailed', detailed);
     for (const node of nodes) {
-      const el = this._renderNode(node, depth, level.entries.length);
-      level.entries.push({node, el});
+      const itemPath = path === '' ? node.label : `${path} > ${node.label}`;
+      const el = this._renderNode(node, depth, level.entries.length, itemPath, detailed, level.scope);
+      level.entries.push({node, el, path: itemPath});
       panel.append(el);
     }
-    this._listen(level, panel, 'keydown', (e) => this._onKeyDown(level, e as KeyboardEvent));
-    this._listen(level, panel, 'pointerover', (e) => this._onPointerOver(level, e));
-    this._listen(level, panel, 'pointerdown', (e) => e.preventDefault());
-    this._listen(level, panel, 'click', (e) => this._onClick(level, e));
+    new MenuPanel(level);
+    const scope = level.scope;
+    scope.listen(panel, 'keydown', (e) => this._onKeyDown(level, e as KeyboardEvent));
+    scope.listen(panel, 'pointerover', (e) => this._onPointerOver(level, e));
+    scope.listen(panel, 'pointerdown', (e) => e.preventDefault());
+    scope.listen(panel, 'click', (e) => this._onClick(level, e));
     return level;
   }
 
-  private _renderNode(node: MenuNode, depth: number, index: number): HTMLElement {
+  private _renderNode(node: MenuNode, depth: number, index: number, path: string, detailed: boolean,
+    scope: Scope): HTMLElement {
     if (node.kind === 'separator') {
       const sep = document.createElement('div');
       sep.className = 'u2-menu-separator';
@@ -199,8 +240,14 @@ export class Menu {
     el.className = isGroup ? 'u2-menu-item u2-menu-item-sub' : 'u2-menu-item';
     el.id = `${this._id}-${depth}-${index}`;
     el.dataset.index = String(index);
+    el.dataset.u2Item = path;
     el.setAttribute('role', options.check === undefined ? 'menuitem' : 'menuitemcheckbox');
-    el.setAttribute('aria-disabled', String(options.enabled === false));
+    const off = Reason.now(options.disabled);
+    Reason.apply(el, off);
+    if (off === null)
+      el.setAttribute('aria-disabled', 'false');
+    else
+      Tooltip.bind(el, off, {owner: scope});
     if (options.check !== undefined)
       el.setAttribute('aria-checked', String(options.check));
     if (isGroup) {
@@ -209,17 +256,36 @@ export class Menu {
     }
     const icon = document.createElement('span');
     icon.className = 'u2-menu-icon';
+    icon.setAttribute('aria-hidden', 'true');
     if (options.check)
       icon.textContent = '✓';
     else if (options.icon)
       icon.append(iconElement(options.icon));
     const label = document.createElement('span');
     label.className = 'u2-menu-label';
+    label.dataset.u2Part = 'item-label';
     label.textContent = node.label;
+    // the item is called by its label; its check mark is aria-checked and its detail its description
+    label.id = `${el.id}-label`;
+    el.setAttribute('aria-labelledby', label.id);
     const accel = document.createElement('span');
     accel.className = isGroup ? 'u2-menu-arrow' : 'u2-menu-shortcut';
-    accel.textContent = isGroup ? '▸' : (options.shortcut ?? '');
-    el.append(icon, label, accel);
+    accel.textContent = isGroup ? '' : (options.shortcut ?? '');
+    el.append(icon, label);
+    // an item of a detailed menu with no detail of its own ("Edit definition…") lets its label run on
+    // across the details' column, so a long label does not push every detail right
+    label.classList.toggle('u2-menu-label-wide', detailed && options.detail === undefined);
+    if (options.detail !== undefined) {
+      const detail = document.createElement('span');
+      detail.className = 'u2-menu-detail';
+      detail.dataset.u2Part = 'item-detail';
+      detail.textContent = options.detail;
+      detail.id = `${el.id}-detail`;
+      if (off === null)
+        el.setAttribute('aria-describedby', detail.id);
+      el.append(detail);
+    }
+    el.append(accel);
     return el;
   }
 
@@ -229,7 +295,7 @@ export class Menu {
       return;
     if (level.openIndex !== index) {
       this._closeFrom(level.depth + 1);
-      const sub = this._buildLevel(entry.node.children!, level.depth + 1);
+      const sub = this._buildLevel(entry.node.children!, level.depth + 1, entry.path);
       this._levels.push(sub);
       level.openIndex = index;
       entry.el.setAttribute('aria-expanded', 'true');
@@ -240,7 +306,7 @@ export class Menu {
       // Nested in the owning item rather than in Overlay.host: the root overlay dismisses on any
       // pointerdown outside its content, and a detached submenu panel would count as outside.
       entry.el.append(sub.panel);
-      sub.disposers.push(autoUpdate(entry.el, sub.panel, () => {
+      sub.scope.own(autoUpdate(entry.el, sub.panel, () => {
         computePosition(entry.el, sub.panel, {
           strategy: 'fixed',
           placement: 'right-start',
@@ -253,7 +319,7 @@ export class Menu {
           sub.panel.style.left = `${x}px`;
           sub.panel.style.top = `${y}px`;
         });
-      }, {animationFrame: true}));
+      }));
     }
     const child = this._levels[level.depth + 1];
     this._machine.value = 'submenu-open';
@@ -286,9 +352,26 @@ export class Menu {
       return;
     }
     const onClick = entry.node.onClick;
+    const options = entry.node.options;
+    if (options?.keepOpen) {
+      if (options.check !== undefined)
+        Menu._check(entry.el, options, !options.check);
+      onClick?.();
+      return;
+    }
     this.close();
     if (onClick)
       onClick();
+  }
+
+  /** A kept-open item's check mark, turned over in place. */
+  private static _check(el: HTMLElement, options: MenuItemOptions, check: boolean): void {
+    options.check = check;
+    el.setAttribute('aria-checked', String(check));
+    const mark = el.querySelector<HTMLElement>('.u2-menu-icon')!;
+    mark.textContent = check ? '✓' : '';
+    if (!check && options.icon)
+      mark.append(iconElement(options.icon));
   }
 
   private _onClick(level: MenuLevel, e: Event): void {
@@ -307,10 +390,12 @@ export class Menu {
     const isGroup = entry.node.kind === 'group';
     if (Menu._navigable(entry.node))
       Menu._setActive(level, index);
-    window.clearTimeout(this._hoverTimer);
+    this._hoverCancel?.();
+    this._hoverCancel = undefined;
     if (isGroup ? level.openIndex === index : level.openIndex < 0)
       return;
-    this._hoverTimer = window.setTimeout(() => {
+    this._hoverCancel = this._scope?.setTimeout(() => {
+      this._hoverCancel = undefined;
       if (isGroup)
         this._openSubmenu(level, index, false);
       else
@@ -371,20 +456,20 @@ export class Menu {
     }
   }
 
-  private _listen(level: MenuLevel, target: EventTarget, type: string, handler: (e: Event) => void): void {
-    target.addEventListener(type, handler);
-    level.disposers.push(() => target.removeEventListener(type, handler));
+  /** A handler run the way its registrant would run it: with the scope ambient where it was registered, in one
+   * batch, a throw or a rejection reported to that scope (none once it is gone). */
+  private static _owned(fn: () => unknown): () => unknown {
+    const owner = Scope.ambient;
+    return () => owner !== undefined && !owner.isDisposed ? owner.run(fn) : batch(() => Scope.runWith(undefined, fn));
   }
 
   private static _disposeLevel(level: MenuLevel): void {
-    for (const d of level.disposers)
-      d();
-    level.disposers.length = 0;
+    level.scope.dispose();
     level.panel.remove();
   }
 
   private static _navigable(node: MenuNode): boolean {
-    return node.kind !== 'separator' && (!node.options || node.options.enabled !== false);
+    return node.kind !== 'separator' && Reason.now(node.options?.disabled) === null;
   }
 
   private static _indexAt(level: MenuLevel, e: Event): number {

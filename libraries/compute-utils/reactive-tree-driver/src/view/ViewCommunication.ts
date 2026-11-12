@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {ItemId, NqName} from '../data/common-types';
 import {PipelineInstanceConfig} from '../config/PipelineInstance';
+import type {SaveTarget} from '../../../history-utils/src/history-utils';
 
 // view config update requests
 
@@ -25,8 +26,8 @@ export interface LoadDynamicItem {
 export type ItemMetadata = {
   title?: string,
   description?: string,
-  isFavorite?: boolean,
   tags?: string[],
+  target?: SaveTarget,
 }
 
 export interface SaveDynamicItem extends ItemMetadata {
@@ -36,6 +37,11 @@ export interface SaveDynamicItem extends ItemMetadata {
 
 export interface RemoveDynamicItem {
   event: 'removeDynamicItem';
+  uuid: string;
+}
+
+export interface DuplicateDynamicItem {
+  event: 'duplicateDynamicItem';
   uuid: string;
 }
 
@@ -101,4 +107,6 @@ export interface ReturnResult {
   event: 'returnResult',
 }
 
-export type ViewConfigCommands = AddDynamicItem | LoadDynamicItem | SaveDynamicItem | RemoveDynamicItem | MoveDynamicItem | RunStep | RunAction | RunSequence | SavePipeline | LoadPipeline | InitPipeline | ResetToConsistent | UpdateFuncCall | ReturnResult;
+export type ViewConfigCommands = AddDynamicItem | LoadDynamicItem | SaveDynamicItem | RemoveDynamicItem |
+  MoveDynamicItem | DuplicateDynamicItem | RunStep | RunAction | RunSequence | SavePipeline | LoadPipeline |
+  InitPipeline | ResetToConsistent | UpdateFuncCall | ReturnResult;

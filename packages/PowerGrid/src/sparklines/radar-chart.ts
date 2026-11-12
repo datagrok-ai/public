@@ -97,6 +97,8 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
     const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
     const row = gridCell.cell.row.idx;
     const cols = df.columns.byNames(settings.columnNames).filter((c) => c != null);
+    if (cols.length === 0)
+      return;
 
     g.strokeStyle = 'lightgray';
 

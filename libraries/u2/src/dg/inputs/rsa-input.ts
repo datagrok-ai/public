@@ -25,7 +25,7 @@ export class RsaInput extends Input<string | null, RsaInputOptions> {
   static readonly PLACEHOLDER = '_____________';
   private static readonly PEM = '-----BEGIN';
 
-  private _picker!: HTMLInputElement;
+  private declare _picker: HTMLInputElement;
 
   constructor(options: RsaInputOptions = {}) {
     super(options, null);
@@ -53,7 +53,7 @@ export class RsaInput extends Input<string | null, RsaInputOptions> {
     picker.type = 'file';
     picker.accept = this._accept;
     picker.hidden = true;
-    this._listen(picker, 'change', () => {
+    this.scope.listen(picker, 'change', () => {
       const file = picker.files?.[0];
       if (file)
         this.accept(file);
@@ -77,12 +77,15 @@ export class RsaInput extends Input<string | null, RsaInputOptions> {
     this._makeDroppable(editor);
 
     this.effect(() => {
-      const stored = (this.value.value ?? '') !== '';
+      const stored = (this.value ?? '') !== '';
       upload.hidden = stored;
       maskedBox.hidden = !stored;
     });
-    this.addValidator((v) => !this.nullable && (v ?? '') === '' ? 'Can\'t be empty.' : null);
     return editor;
+  }
+
+  protected get emptyMessage(): string {
+    return 'Can\'t be empty.';
   }
 
   /** Reads a local file and stores it; a file whose extension is not accepted is refused with a
@@ -94,7 +97,7 @@ export class RsaInput extends Input<string | null, RsaInputOptions> {
     }
     const content = RsaInput.content(new Uint8Array(await file.arrayBuffer()));
     if (!this.scope.isDisposed)
-      this.value.value = content;
+      this.value = content;
   }
 
   private _drop(files: FileList): void {
@@ -113,7 +116,7 @@ export class RsaInput extends Input<string | null, RsaInputOptions> {
   }
 
   private _change(): void {
-    this.value.value = null;
+    this.value = null;
     this._picker.value = '';
     this._picker.click();
   }
@@ -135,7 +138,7 @@ export class RsaInput extends Input<string | null, RsaInputOptions> {
         if (content === null)
           grok.shell.error('Could not read the key file.');
         else if (content.startsWith(RsaInput.PEM))
-          this.value.value = content;
+          this.value = content;
         else
           grok.shell.error('Invalid key file');
       },
@@ -165,11 +168,6 @@ export class RsaInput extends Input<string | null, RsaInputOptions> {
     } catch {
       return true;
     }
-  }
-
-  private _listen(el: HTMLElement, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }
 

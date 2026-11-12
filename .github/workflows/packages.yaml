@@ -617,6 +617,29 @@ jobs:
             sudo apt-get install -y -qq ffmpeg
           fi
           ffmpeg -version | head -n 1
+      - name: Attach DBTests Athena credentials
+        # The AthenaDBTests connection ships without credentials: AWS keys cannot live in this repo.
+        # They bind to the connection's bid; posting the connection itself would rename it.
+        if: ${{ matrix.test == 'test' && matrix.package == 'DBTests' && contains(steps.datagrok-image.outputs.apiUrl, '127.0.0.1') }}
+        env:
+          ATHENA_AK: ${{ secrets.DBTESTS_ATHENA_AWS_ACCESS_KEY_ID }}
+          ATHENA_SK: ${{ secrets.DBTESTS_ATHENA_AWS_SECRET_ACCESS_KEY }}
+        run: |
+          if [ -z "$ATHENA_AK" ]; then
+            echo "::warning::DBTESTS_ATHENA_AWS_* secrets are unavailable; the Athena tests will fail"
+            exit 0
+          fi
+          api='${{ steps.datagrok-image.outputs.apiUrl }}'
+          token=$(.github/scripts/grok-token.sh "$api" admin)
+          bid=$(curl -s "$api/public/v1/connections/Dbtests.AthenaDBTests" -H "Authorization: $token" | jq -r '.bid // empty')
+          if [ -z "$bid" ]; then
+            echo "::warning::Dbtests:AthenaDBTests not found; the Athena tests will fail"
+            exit 0
+          fi
+          jq -n --arg id "$bid" --arg ak "$ATHENA_AK" --arg sk "$ATHENA_SK" \
+              '{entityBindId: $id, parameters: {accessKey: $ak, secretKey: $sk}}' \
+            | curl -s -o /dev/null -w "AthenaDBTests credentials: HTTP %{http_code}\n" -X POST "$api/public/v1/credentials" \
+                -H "Content-Type: application/json" -H "Authorization: $token" --data-binary @-
       - name: Test Package
         if: ${{ matrix.test == 'test' }}
         continue-on-error: ${{ contains(matrix.package, 'Tests') || matrix.package == 'Chemspace' || matrix.package == 'DevTools' || matrix.package == 'ApiSamples' }}

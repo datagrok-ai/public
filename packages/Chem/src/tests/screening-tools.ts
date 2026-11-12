@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 
-import {category, test, before, after, expect, expectArray, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
+import {category, test, before, after, expect, expectArray, waitUntil} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {RuleSet, runStructuralAlertsDetection} from '../panels/structural-alerts';
@@ -33,7 +33,6 @@ category('screening tools', () => {
     else
       df = molecules.clone();
     const tv = grok.shell.addTableView(df);
-    await delay(10);
     await PackageFunctions.elementalAnalysis(df, df.getCol(DG.Test.isInBenchmark ? 'canonical_smiles' : 'smiles'), false, false);
     expect(df.columns.length, DG.Test.isInBenchmark ? 30 : 12); //TODO!! Check number of columns for benchmark
     tv.close();
@@ -51,8 +50,26 @@ category('screening tools', () => {
     const df = approvedDrugs100.clone();
     const tv = grok.shell.addTableView(df);
     await PackageFunctions.elementalAnalysis(df, df.getCol('molecule'), false, false);
-    expect(df.columns.length, 42);
+    // 32 + 10 elements + Molecule Charge: RDKit writes 64 of these molecules (enhanced stereo) as V3000 MOL blocks,
+    // whose atoms were counted as none (42 columns then: no Na)
+    expect(df.columns.length, 43);
+    expect(df.col('C')!.toList().filter((n) => !n).length, 0, 'every molecule\'s carbons counted');
     tv.close();
+  });
+
+  test('elementalAnalysis.smarts', async () => {
+    const df = await readDataframe('enumerations/ex_smarts.csv');
+    await grok.data.detectSemanticTypes(df);
+    const tv = grok.shell.addTableView(df);
+    try {
+      await PackageFunctions.elementalAnalysis(df, df.getCol('SMARTS'), false, false);
+      expectArray(df.columns.names(), ['SMARTS', 'H', 'C', 'N', 'O', 'S', 'Molecule Charge']);
+      expectArray(df.getCol('C').toList(), [0, 1, 0]);
+      expectArray(df.getCol('N').toList(), [1, 0, 0]);
+      expectArray(df.getCol('O').toList(), [2, 2, 0]);
+      expectArray(df.getCol('S').toList(), [0, 1, 0]);
+      expectArray(df.getCol('Molecule Charge').toList(), [0, 0, 0]);
+    } finally {tv.close();}
   });
 
   test('elementalAnalysis.emptyValues', async () => {
@@ -106,10 +123,10 @@ category('screening tools: benchmarks', () => {
     const df: DG.DataFrame = DG.DataFrame.fromCsv(await _package.files.readAsText('test.csv'));
     df.name = 'test';
     const v = grok.shell.addTableView(df);
-    await awaitCheck(() => v.dataFrame.name === 'test', undefined, 1000);
+    await waitUntil(() => v.dataFrame.name === 'test', 'the test view did not open', 1000);
     await grok.data.detectSemanticTypes(df);
     const col: DG.Column = df.getCol('molecule');
-    DG.timeAsync('Elemental Analysis', async () => {
+    await DG.timeAsync('Elemental Analysis', async () => {
       await PackageFunctions.elementalAnalysis(df, col, false, false);
     });
   });

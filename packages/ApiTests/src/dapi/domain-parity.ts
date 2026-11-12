@@ -143,7 +143,7 @@ category('Dapi: domain parity', () => {
       return;
     }
     // The audit gate fires before row resolution, so a synthetic id suffices.
-    const movements = grok.dapi.domains.table('inventory.stock_movements');
+    const movements = grok.dapi.domains.table('inventory.stock_movement');
     const err = await thrown(() => movements.watch('00000000-0000-0000-0000-000000000000'));
     expect(err instanceof DG.DomainValidationError, true,
       `expected DomainValidationError, got ${err?.constructor?.name}: ${err?.message}`);

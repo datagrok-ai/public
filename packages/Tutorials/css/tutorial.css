@@ -232,6 +232,60 @@ progress[value]::-webkit-progress-value::after {
   color: var(--grey-4);
 }
 
+/* Tutorial Bar */
+.tutorials-bar {
+  overflow-y: auto;
+}
+
+.panel-base:has(> .panel-content > .tutorials-bar) > .panel-titlebar {
+  display: none;
+}
+
+.tutorials-bar-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: 12px;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: 6px 12px;
+}
+
+.tutorials-bar-meta {
+  max-width: 220px;
+  padding-right: 12px;
+  border-right: 1px solid var(--grey-2);
+}
+
+.tutorials-bar .d4-flex-row {
+  align-items: center;
+  gap: 6px;
+}
+
+.tutorials-bar-title,
+.tutorials-bar-section {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tutorials-bar-title {
+  font-weight: 500;
+}
+
+.tutorials-bar-section {
+  color: var(--grey-5);
+}
+
+.tutorials-bar-ring {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(var(--white) 4.5px, transparent 5px),
+    conic-gradient(var(--blue-1) var(--tutorials-progress), var(--grey-2) 0);
+}
+
 /* Animation */
 /* Add div container with class blob*/
 .blob {
@@ -375,4 +429,11 @@ progress[value]::-webkit-progress-value::after {
 .ui-hint-popup.ui-hint-popup-green-1::before {
   background: var(--green-1) !important;
   box-shadow: 0 0 1px 1px var(--green-1), -1px 1px 2px var(--grey-3) !important;
+}
+
+kbd[data-keys] {
+  font: inherit;
+  font-weight: bold;
+  border-bottom: 1px dotted var(--grey-3);
+  cursor: pointer;
 }

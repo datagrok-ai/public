@@ -3,17 +3,21 @@
    the path inline when clicked (no menu, so the control stays overlay-free). */
 import {signal, Signal, ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
+import type {IItemsState} from '../../core/widget-like.js';
+
+/** Gets the clicked item's index and text, the click and the breadcrumbs. */
+export type BreadcrumbsClick = (index: number, item: string, e: MouseEvent, crumbs: Breadcrumbs) => void;
 
 export class Breadcrumbs extends Control {
   readonly items: ReadonlySignal<string[]>;
 
   private readonly _items: Signal<string[]>;
-  private readonly _onClick?: (index: number, item: string) => void;
+  private readonly _onClick?: BreadcrumbsClick;
   private _expanded = false;
   private _middle: HTMLElement[] = [];
   private _ellipsis: HTMLElement[] = [];
 
-  constructor(options: {items: string[], onClick?: (index: number, item: string) => void}) {
+  constructor(options: {items: string[], onClick?: BreadcrumbsClick}) {
     super(document.createElement('nav'));
     this._items = signal(options.items.slice());
     this.items = this._items;
@@ -23,7 +27,7 @@ export class Breadcrumbs extends Control {
     this.root.dataset.u2 = 'breadcrumbs';
     this.root.setAttribute('aria-label', 'breadcrumb');
 
-    this._listen(this.root, 'click', (e) => this._onRootClick(e));
+    this.scope.listen(this.root, 'click', (e) => this._onRootClick(e as MouseEvent));
     const resize = new ResizeObserver(() => this._layout());
     resize.observe(this.root);
     this.own(() => resize.disconnect());
@@ -33,6 +37,19 @@ export class Breadcrumbs extends Control {
   setItems(items: string[]): void {
     this._expanded = false;
     this._items.value = items.slice();
+  }
+
+  /** The base state plus the last item as the current one. */
+  getState(): ReturnType<Control['getState']> {
+    const items = this._items.peek();
+    return {...super.getState(), ...items.length === 0 ? {} : {current: items[items.length - 1]}};
+  }
+
+  getItems(): IItemsState {
+    const items = this._items.peek();
+    const list = items.map((item, index) => ({key: item, label: item, index, current: index === items.length - 1,
+      rendered: true}));
+    return {count: list.length, list, truncated: false};
   }
 
   private _render(): void {
@@ -82,6 +99,8 @@ export class Breadcrumbs extends Control {
     el.type = 'button';
     el.className = 'u2-breadcrumbs-item';
     el.dataset.index = String(index);
+    if (index >= 0)
+      el.dataset.u2Item = text;
     el.textContent = text;
     return el;
   }
@@ -89,6 +108,7 @@ export class Breadcrumbs extends Control {
   private _current(text: string): HTMLElement {
     const el = document.createElement('span');
     el.className = 'u2-breadcrumbs-current';
+    el.dataset.u2Item = text;
     el.textContent = text;
     el.setAttribute('aria-current', 'page');
     return el;
@@ -102,7 +122,7 @@ export class Breadcrumbs extends Control {
     return el;
   }
 
-  private _onRootClick(e: Event): void {
+  private _onRootClick(e: MouseEvent): void {
     const el = (e.target as HTMLElement).closest('.u2-breadcrumbs-item') as HTMLElement | null;
     if (!el)
       return;
@@ -111,11 +131,6 @@ export class Breadcrumbs extends Control {
       this._expanded = true;
       this._collapse(false);
     } else if (this._onClick)
-      this._onClick(index, this._items.peek()[index]);
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
+      this._onClick(index, this._items.peek()[index], e, this);
   }
 }

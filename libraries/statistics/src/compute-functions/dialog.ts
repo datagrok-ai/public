@@ -137,7 +137,6 @@ export async function chemFunctionsDialog(
       editor.classList.add('oy-scroll');
       editor.style.marginLeft = '15px';
       editor.style.removeProperty('max-width');
-      tabControlArgs[f.friendlyName ?? f.name] = wrapWithRerun(keyName, editor);
       funcNamesMap[f.friendlyName ?? f.name] = keyName;
       calculatedFunctions[keyName] = (template?.compute?.functions?.some(
         (f) => func.func.type === funcTypeNames.function &&
@@ -150,6 +149,7 @@ export async function chemFunctionsDialog(
             (ts) => `${HTScriptPrefix}:${ts.name}:${ts.id}` === keyName && ts.rerunOnOpen) ||
           template?.compute?.queries?.some(
             (tq) => `${HTQueryPrefix}:${tq.name}:${tq.id}` === keyName && tq.rerunOnOpen)) ?? false;
+      tabControlArgs[f.friendlyName ?? f.name] = wrapWithRerun(keyName, editor);
     } catch (e) {
       console.error(e);
       continue;

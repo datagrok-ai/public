@@ -103,18 +103,55 @@ a balloon for an empty current row, and GROK-20964 was an API check inside a UI 
 | [Removing a scaffold under a colored one — GROK-18286](../../packages/Chem/bdd/features/scaffold-tree/colors-and-limits.feature) | The scatter plot colored by "Structure colors" lost its coloring. | [Scaffold Tree](../../packages/Chem/src/widgets/scaffold-tree.ts) `removeColorCoding` removed the colored ancestor's entry for a child that only inherits its color, so the column was dropped and rebuilt, unbinding the plot. The old claim (the last colored scaffold removed, the plot still colored) contradicted the design and became two scenarios. |
 | [Names beside an existing canonical_smiles — GROK-20955](../../packages/Chem/bdd/features/transform/names-to-smiles.feature) | "Column named 'canonical_smiles' already exists", nothing written. | [Chem](../../packages/Chem/src/package.ts) `namesToSmiles` takes an unused name: canonical_smiles (2). |
 
-## Open since 2026-09-22 (`bdd/chem-gaps`)
+## Tags retired on 2026-10-12
 
-| Scenario | Stops at | Was |
+Every tag was pinned to the step it describes (`@known-failure:<line>`, compile.ts / harness.ts): a failure
+anywhere else now fails the test. Pinning showed one tag green for the wrong reason.
+
+| Scenario | Was | Resolution |
 | --- | --- | --- |
-| [Converted molecules keep their stereochemistry — GROK-20956](../../packages/Chem/bdd/features/transform/notation.feature) | `every molecule of "canonical_smiles_molblock" column should be the same as in "canonical_smiles" column` | Rows 478, 487 and 488: the molblock conversion inverts the vinyl stereocentre of the quinuclidines. RDKit's own: its SMILES → molblock → SMILES round trip flips the centre in 2024.09 and keeps it in 2026.03 (checked in Python), so the tag goes when Chem's RDKit_minimal (1.2.23) is upgraded. |
+| [Open table residues gives compId — GROK-21118](../../packages/UsageAnalysis/bdd/features/biostructure-viewer/file-open-and-preview.feature) | The residue names came out empty. | [pdb-helper](../../packages/BiostructureViewer/src/utils/pdb-helper.ts): `compId` is a string column (it was made an int column). |
+| [A Biostructure viewer takes the structure column by itself — GROK-21119](../../packages/UsageAnalysis/bdd/features/biostructure-viewer/file-open-and-preview.feature) | The viewer never picked a column. | [Mol* viewer](../../packages/BiostructureViewer/src/viewers/molstar-viewer/molstar-viewer.ts): detection returned early on `dataJson`, whose empty value is the string `'null'`. |
+| [The context panel title follows the new name — GROK-21137](../../packages/UsageAnalysis/bdd/features/layouts/layout-names-tags.feature) | The title kept the old layout name. | `client/xamgle/lib/src/meta/view_layout_meta.dart`: the title follows a save of the same layout. |
+| [Edit tags... keeps the name typed into the context panel — GROK-21138](../../packages/UsageAnalysis/bdd/features/layouts/layout-names-tags.feature) | The card saved its stale copy and put the old name back. | `client/xamgle/lib/src/features/viewer_suggestions.dart`: a save rebuilds the card on the saved entity. |
+| [The rows a molecule used as a filter lets through contain that molecule](../../packages/UsageAnalysis/bdd/features/viewers/nx/nx-chain.feature) | Rows without the molecule passed. | [Chem substructure filter](../../packages/Chem/src/widgets/chem-substructure-filter.ts): Remove All deactivated the card before removing it, and the broadcast stopped the peers in the other views; a removed card now releases them. The step's own check matched a Kekulé query (`get_qmol` → `get_mol`, `bindings/nx.ts`). |
+| [After a layout saved before a rename, the formula names only existing columns](../../packages/UsageAnalysis/bdd/features/viewers/nx/nx-chain.feature) | A layout wrote its saved `formula` tag over the column's own. | `client/xamgle/lib/src/views/table_view.dart` `applyUserDataTags`; Dart test in "Core: ddt: Calculated columns: Save/Apply". |
+| [Converting the same column twice keeps both columns — GROK-20806](../../packages/UsageAnalysis/bdd/features/sequence-translator/oligo-toolkit-translator-structure.feature) | Green for the wrong reason: the scenario failed at its first claim, a column name Convert no longer writes (it writes HELM). | The bug is fixed: with the name corrected, both columns stay, the second named "(2)". |
 
-## Open since 2026-09-28 (`bdd/powerpack-nx-gaps`)
+## Tags retired on 2026-10-18
 
-| Scenario | Stops at | Was |
+| Scenario | Was | Resolution |
 | --- | --- | --- |
-| [The rows a molecule used as a filter lets through contain that molecule](../../packages/UsageAnalysis/bdd/features/viewers/nx/nx-chain.feature) | `every row that passes the filter should contain the molecule of the cell picked` | Current Value > Use as filter in a view whose table the first view's Scaffold Tree card also filters puts a Structure card that reports the molecule and "filtering", yet rows without the molecule pass (RDKit substructure match over the passing rows). |
-| [After a layout saved before Chemical Space X was renamed, the calculated column's formula names only existing columns](../../packages/UsageAnalysis/bdd/features/viewers/nx/nx-chain.feature) | `every column the formula of "${Spec} result" column refers to should exist` | A layout saved before a column rename, applied after it, writes the old name back into the `formula` tag of a calculated column; a project saved afterwards warns on reopen that the column is missing. |
+| [Shift-click on a network diagram node adds its rows](../../packages/UsageAnalysis/bdd/features/viewers/network-diagram/network-diagram-selection.feature) | Shift-click replaced the selection (6 rows, not 554). | `client/d4/lib/src/viewers/network_diagram/network_diagram_core.dart`: the click took its modifiers from the last key event the viewer's root received, never sent while the focus is outside it; it reads them off the click's own pointer event (vis's `event.srcEvent`). The scenario's Control-click claim said "only the M rows" (447) for the one row left; it now says no F row is selected. |
+| [Save SDF with an antisense strand that cannot be converted is refused by name — GROK-20959](../../packages/UsageAnalysis/bdd/features/sequence-translator/oligo-toolkit-translator-structure.feature) | The refusal balloon does not name the strand. | The product names it ("Unable to detect the format of the sequence 'NOTASEQUENCE'"); the scenario claimed the one balloon twice, and the first claim takes it. One claim now. |
+
+## Fixed instead of tagged on 2026-11-08
+
+PRs 4479, 4488, 4516 and 4541 arrived with 35 known-failure scenarios, 13 of them in five temporary
+`<folder>-known-failures.feature` files. None was merged as a known failure. The defects below were fixed at the
+cause and are claimed by ordinary steps or tests; the rest are one `## Still open` line each in their folder's
+MISSING.md, with the claim to add once fixed. Core paths are relative to `core/`.
+
+| Defect | Fix | Claimed by |
+| --- | --- | --- |
+| core#1159, public#2548 (master's tag, retired): Up/Down no longer moved a legend's sole selection | `client/d4/lib/src/widgets/legend/legend_interaction.dart` `wireKeys`, wired by `legend_mixin.dart` and `legend.dart` (the handler "Legend: Refactor" dropped) | `viewers/legend/legend-interaction.feature` |
+| core#1174: a removed column left its rows filtered (Combined Boolean, Expression and free-text rules — which also threw — the bar chart's click filter, the sunburst's and tree's) | `bool_columns_filter.dart`, `free_text_filter.dart` (a renamed column is followed), `bar_chart_core.dart` `onLookChanged`; Charts `sunburst-viewer.ts`, `tree-viewer.ts` | xamgle `Core: d4: Filters: Removed column`, `Fixed issues`; `sunburst`, `tree-on-click-filter` |
+| core#1223: a hierarchical card kept a removed level, also from a layout | `hierarchical_filter.dart` `refresh`, `applyState` | xamgle `Core: d4: Filters: Removed column` |
+| core#1194, core#1195: Shift+Enter selected rows with Allow Row Selection off (and opened the cell editor); a blank group name made a group | `grid_row_selection.dart`, `grid_editors.dart` `isEditButton`; xamgle `column_commands.dart` | `viewers/grid/grid-rows`, `grid-column-groups` |
+| core#1137, core#1191: Unpin Column threw with Frozen Columns above the column count; pinned values past the 10-row cap came back from a layout | `grid_core.dart` (`_clampFrozenColumns`, `pinRowsByValues`), `grid_popup_menu.dart` | xamgle `Core: d4: Viewers: Grid` |
+| core#1213: a viewer's Filter formula kept a renamed column's old name | `client/d4/lib/src/viewer_base/data_frame_viewer.dart` `_renameColumnInLook` | ApiTests `AI: Viewers: Shared rules` |
+| core#1252, core#980, core#1180: a layout renamed to nothing in its Details pane; a Share dialog's OK with nobody picked; a profile name empty or over 64 characters | xamgle `view_layout_meta.dart`, `share_dataset.dart` + `permissions_browser.dart`, `user_profile.dart` | `layouts/layout-names-tags`, `sharing/sharing-dialog`, `general/profile` |
+| public#4473, public#4475: MCL on number columns never finished; Compare Columns over two tables was false in every row | libraries/ml `mcl-editor.ts`; PowerPack `compare-columns.ts` | EDA `analyze/clustering`, PowerPack `compare-columns` |
+| core#641, core#1246: Run query... on an unsaved query; Data to Curves and Compare Columns missing from the Data menu | fixed in core before the round (8fad96d965, 2f1fee3171) | `queries/parameterized-queries`, Curves and PowerPack features |
+| The Recent view's calendar offered a placeholder day for 500 ms (browse-my-stuff red on master after the Dart 3 client); its feed failed with a server RangeError when a package's log message was among the user's events | xamgle `recent_activity_view.dart`: no placeholder, the dates load at once; `server/datlas/lib/src/services/action_logger_service.dart` `getActivity` skips an event that names fewer than two entities | `browse/browse-my-stuff` |
+| The Move entity dialog of a drop on a project or space opened before its rows, which wait for each entity to be fetched again: under two workers "selects Move" found no choice (projects-move, projects-complex, now and then) | xamgle `meta/project_meta.dart` `entityProjectMove` shows the dialog once the move widget is built | xamgle `Core: xamgle: Projects/Layouts: Projects` 'The Move entity dialog opens with its choices'; the nine features that use the dialog |
+| A connection a local docker spawner serves (the ChEMBL container, PostgresDocker) failed: grok_connect, itself in docker, was handed `localhost:<port>` (the 2026-10-29 fix, lost in the Dart 3 merge) | `server/datlas/lib/src/services/connectors/connectors_service.dart` `startConnectionDocker` | `viewers/trellis-plot/trellis-plot-keyboard`; `connections/connections-schema`, which skipped at its gate before |
+
+## Open on 2026-10-12
+
+| Scenario | Pinned at | Was |
+| --- | --- | --- |
+| [Converted molecules keep their stereochemistry — GROK-20956](../../packages/Chem/bdd/features/transform/notation.feature) | line 58, `every molecule of "canonical_smiles_molblock" column should be the same as in "canonical_smiles" column` | Rows 478, 487 and 488: RDKit's own SMILES → molblock → SMILES round trip flips the vinyl stereocentre of the quinuclidines in Chem's RDKit_minimal 1.2.23 (2024.09) and keeps it in 2026.03; the tag goes with the upgrade. CoordGen also flips the C=N geometry of row 833 — a separate defect the next line would report once the first is fixed. |
 
 ## Validation
 

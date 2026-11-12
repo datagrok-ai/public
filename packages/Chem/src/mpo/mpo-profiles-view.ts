@@ -4,7 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {Subscription} from 'rxjs';
-import {u2} from '@datagrok-libraries/utils/src/u2';
+import {AppHeader} from '@datagrok-libraries/u2';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 
 import {_package} from '../package';
 import {MpoProfileInfo, updateMpoPath, MpoPathMode, MPO_PROFILES_NAME, MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from './utils';
@@ -76,14 +77,15 @@ export class MpoProfilesView {
   }
 
   private buildHeader(): HTMLElement {
-    return u2.appHeader({
-      iconPath: `${_package.webRoot}/images/mpo.png`,
-      description:
-        '- Create and manage MPO profiles.\n' +
-        '- Build profiles manually or train from labeled data.\n' +
-        '- Initialize profiles from scratch or from an existing dataset.\n' +
-        '- Full lifecycle support: create, edit, clone, and delete profiles.\n',
-    });
+    return ViewHost.of(this.view).build(() => new AppHeader({
+      icon: `${_package.webRoot}/images/mpo.png`,
+      items: [
+        'Create and manage MPO profiles.',
+        'Build profiles manually or train from labeled data.',
+        'Initialize profiles from scratch or from an existing dataset.',
+        'Full lifecycle support: create, edit, clone, and delete profiles.',
+      ],
+    })).root;
   }
 
   private rerenderTable(): void {

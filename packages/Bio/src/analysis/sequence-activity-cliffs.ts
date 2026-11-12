@@ -5,15 +5,11 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {getSimilarityFromDistance} from '@datagrok-libraries/ml/src/distance-metrics-methods';
-import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
-import {AvailableMetrics, DistanceMetricsSubjects, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
 
 import {drawMoleculeDifferenceOnCanvas} from '../utils/cell-renderer';
-import {invalidateMols, MONOMERIC_COL_TAGS} from '../substructure-search/substructure-search';
 
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
@@ -27,54 +23,6 @@ export type SeqActivityCliffsParams = {
   similarity: number,
   options: any,
   isDemo?: boolean,
-}
-
-export async function getDistances(col: DG.Column, seq: string): Promise<Array<number>> {
-  const stringArray = col.toList();
-  const distances = new Array(stringArray.length).fill(0);
-  const distanceMethod: (x: string, y: string) => number =
-    AvailableMetrics[DistanceMetricsSubjects.String][StringMetricsNames.Levenshtein];
-  for (let i = 0; i < stringArray.length; ++i) {
-    const distance = stringArray[i] ? distanceMethod(stringArray[i], seq) : null;
-    distances[i] = distance ? distance / Math.max((stringArray[i] as string).length, seq.length) : null;
-  }
-  return distances;
-}
-
-export async function getSimilaritiesMatrix(
-  dim: number, seqCol: DG.Column, df: DG.DataFrame, colName: string, simArr: DG.Column[],
-): Promise<DG.Column[]> {
-  const distances = new Array(simArr.length).fill(null);
-  for (let i = 0; i != dim - 1; ++i) {
-    const seq: string = seqCol.get(i);
-    df.rows.removeAt(0, 1, false);
-    distances[i] = (await getDistances(df.col(colName)!, seq))!;
-  }
-
-  for (let i = 0; i < distances.length; i++) {
-    for (let j = 0; j < distances[i].length; j++)
-      distances[i][j] = getSimilarityFromDistance(distances[i][j]);
-
-    simArr[i] = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'distances', distances[i]);
-  }
-  return simArr;
-}
-
-export async function getChemSimilaritiesMatrix(dim: number, seqCol: DG.Column, seqHelper: ISeqHelper,
-  df: DG.DataFrame, colName: string, simArr: (DG.Column | null)[])
-  : Promise<(DG.Column | null)[]> {
-  if (seqCol.version !== seqCol.temp[MONOMERIC_COL_TAGS.LAST_INVALIDATED_VERSION])
-    await invalidateMols(seqCol, seqHelper, false);
-  const fpDf = DG.DataFrame.create(seqCol.length);
-  fpDf.columns.addNewString(colName).init((i) => seqCol.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS].get(i));
-  const res = await grok.functions.call('Chem:getChemSimilaritiesMatrix', {
-    dim: dim,
-    col: seqCol.temp[MONOMERIC_COL_TAGS.MONOMERIC_MOLS],
-    df: fpDf,
-    colName: colName,
-    simArr: simArr,
-  });
-  return res;
 }
 
 export function createTooltipElement(params: ITooltipAndPanelParams): HTMLDivElement {
@@ -99,16 +47,6 @@ export function createTooltipElement(params: ITooltipAndPanelParams): HTMLDivEle
   });
   return tooltipElement;
 }
-
-function _moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLElement {
-  const dict: { [key: string]: string } = {};
-  for (const col of df.columns) {
-    if (col.name !== seqColName)
-      dict[col.name] = df.get(col.name, idx);
-  }
-  return ui.tableFromMap(dict);
-}
-
 
 export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivElement {
   const propPanel = ui.div();

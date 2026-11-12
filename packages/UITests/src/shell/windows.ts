@@ -1,4 +1,4 @@
-import {category, delay, test} from '@datagrok-libraries/test/src/test';
+import {category, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 // import * as DG from 'datagrok-api/dg';
@@ -66,6 +66,5 @@ async function checkSwitch(sw: string, selector: string) {
     throw x;
   } finally {
     (<any>grok.shell.windows)[sw] = state;
-    await delay(10);
   }
 }

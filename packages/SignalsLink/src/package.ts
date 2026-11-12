@@ -2,7 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {u2} from "@datagrok-libraries/utils/src/u2";
+import {AppHeader} from '@datagrok-libraries/u2';
+import {ViewHost} from '@datagrok-libraries/u2/dg';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -14,15 +15,18 @@ export class PackageFunctions{
     name: 'Signals',
   })
   static async signalsApp(): Promise<DG.ViewBase> {
-    const appHeader = u2.appHeader({
-      iconPath: _package.webRoot + '/images/signals-icon.png',
-      learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/Signals/README.md',
-      description: '- Connect to the Revvity Signals ELN.\n' +
-        '- Analyze assay data.\n' +
-        '- Find contextual information on molecules.\n'
-    });
+    const view = DG.View.create();
+    const appHeader = ViewHost.of(view).build(() => new AppHeader({
+      icon: _package.webRoot + '/images/signals-icon.png',
+      learnMore: 'https://github.com/datagrok-ai/public/blob/master/packages/Signals/README.md',
+      items: [
+        'Connect to the Revvity Signals ELN.',
+        'Analyze assay data.',
+        'Find contextual information on molecules.',
+      ],
+    }));
 
-    const view = DG.View.fromRoot(appHeader);
+    view.root.append(appHeader.root);
     view.name = 'Signals';
     return view;
   }

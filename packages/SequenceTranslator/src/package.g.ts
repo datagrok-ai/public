@@ -88,6 +88,7 @@ export async function translateOligonucleotideSequence(sequence: string, sourceF
 //name: polyToolConvert
 //description: editor for Performing conversion of sequences in custom notation to molfiles
 //top-menu: Bio | PolyTool | Convert...
+//meta.requiresSemType: Macromolecule
 export async function polyToolConvertTopMenu() : Promise<void> {
   await PackageFunctions.polyToolConvertTopMenu();
 }
@@ -105,12 +106,11 @@ export async function getPolyToolConvertEditor(call: DG.FuncCall) : Promise<any>
 //input: dataframe table 
 //input: column seqCol { caption: Sequence }
 //input: bool generateHelm = true { description: Also produce a HELM column alongside the molfiles }
-//input: bool chiralityEngine = true { description: Use the chirality engine when building structures }
 //input: object rules 
 //output: column result
 //editor: SequenceTranslator:getPolyToolConvertEditor
-export async function polyToolConvert2(table: DG.DataFrame, seqCol: DG.Column, generateHelm: boolean, chiralityEngine: boolean, rules: string[]) : Promise<any> {
-  return await PackageFunctions.polyToolConvert2(table, seqCol, generateHelm, chiralityEngine, rules);
+export async function polyToolConvert2(table: DG.DataFrame, seqCol: DG.Column, generateHelm: boolean, rules: string[]) : Promise<any> {
+  return await PackageFunctions.polyToolConvert2(table, seqCol, generateHelm, rules);
 }
 
 //name: polyToolEnumerateHelm
@@ -197,6 +197,8 @@ export async function enumerateSingleHelmSequenceWithNaturalAAs(helmSequence: st
 
 //name: Combine Sequences
 //top-menu: Bio | PolyTool | Combine Sequences...
+//meta.requiresTable: true
+//meta.requiresSemType: Macromolecule
 export async function getPolyToolCombineDialog() : Promise<void> {
   await PackageFunctions.getPolyToolCombineDialog();
 }

@@ -1,13 +1,16 @@
-/* IDE toolbar: one compact row that collapses whole items into a » menu when it runs out of
+/* IDE toolbar: one compact row that collapses whole items into a "…" menu (More actions) when it runs out of
    width. WAI-ARIA toolbar pattern — a single tab stop with roving ←/→ focus. */
 import {Signal} from '../../core/signals.js';
 import {Scope} from '../../core/scope.js';
 import {Control} from '../../core/component.js';
 import {Tooltip} from '../../core/tooltip.js';
 import {Menu} from './menu.js';
+import {icon as iconElement} from '../display/icon.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 export interface ToolbarButtonOptions {
   tooltip?: string;
+  /** A Font Awesome name. */
   icon?: string;
 }
 
@@ -18,7 +21,6 @@ interface Item {
   el: HTMLElement;
   label: string;
   hidden: boolean;
-  icon?: string;
   onClick?: () => void;
   bind?: Signal<boolean>;
   build?: (menu: Menu) => void;
@@ -29,6 +31,10 @@ const FOCUSABLE = 'input, button, select, textarea, a[href], [tabindex]';
 const CARET = 'input:not([type=button]):not([type=checkbox]):not([type=radio]), textarea';
 
 export class Toolbar extends Control {
+  /** What every u2 row that folds its items shows for them (a toolbar, a ribbon group): the glyph and its name. */
+  static readonly OVERFLOW_ICON = 'ellipsis-h';
+  static readonly OVERFLOW_LABEL = 'More actions';
+
   private readonly _items: Item[] = [];
   private readonly _chevron = document.createElement('button');
   private _menu: Menu | undefined;
@@ -47,16 +53,16 @@ export class Toolbar extends Control {
 
     this._chevron.type = 'button';
     this._chevron.className = `u2-toolbar-btn u2-toolbar-overflow ${HIDDEN}`;
-    this._chevron.textContent = '»';
+    this._chevron.append(iconElement(Toolbar.OVERFLOW_ICON, {cls: 'u2-toolbar-icon'}));
     this._chevron.tabIndex = -1;
-    this._chevron.setAttribute('aria-label', 'More');
+    this._chevron.setAttribute('aria-label', Toolbar.OVERFLOW_LABEL);
     this._chevron.setAttribute('aria-haspopup', 'menu');
     this._chevron.setAttribute('aria-expanded', 'false');
     this.root.append(this._chevron);
 
-    this._listen(this._chevron, 'click', () => this._toggleMenu(this._chevron, (m) => this._buildOverflow(m)));
-    this._listen(this.root, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
-    this._listen(this.root, 'focusin', (e) => this._onFocusIn(e));
+    this.scope.listen(this._chevron, 'click', () => this._toggleMenu(this._chevron, (m) => this._buildOverflow(m)));
+    this.scope.listen(this.root, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    this.scope.listen(this.root, 'focusin', (e) => this._onFocusIn(e));
 
     const resize = new ResizeObserver(() => this._layout());
     resize.observe(this.root);
@@ -66,14 +72,14 @@ export class Toolbar extends Control {
 
   addButton(label: string, onClick: () => void, options?: ToolbarButtonOptions): Toolbar {
     const el = this._button(label, options);
-    this._listen(el, 'click', () => onClick());
-    return this._add({kind: 'button', el, label, hidden: false, onClick, icon: options ? options.icon : undefined});
+    this.scope.listen(el, 'click', () => onClick());
+    return this._add({kind: 'button', el, label, hidden: false, onClick});
   }
 
   addToggle(label: string, bind: Signal<boolean>, options?: {tooltip?: string}): Toolbar {
     const el = this._button(label, options);
     el.setAttribute('aria-pressed', 'false');
-    this._listen(el, 'click', () => bind.value = !bind.peek());
+    this.scope.listen(el, 'click', () => bind.value = !bind.peek());
     this.effect(() => {
       const pressed = bind.value;
       el.classList.toggle('u2-toolbar-btn-pressed', pressed);
@@ -92,7 +98,7 @@ export class Toolbar extends Control {
     arrow.className = 'u2-toolbar-arrow';
     arrow.textContent = '▾';
     el.append(arrow);
-    this._listen(el, 'click', () => this._toggleMenu(el, build));
+    this.scope.listen(el, 'click', () => this._toggleMenu(el, build));
     return this._add({kind: 'menu', el, label, hidden: false, build});
   }
 
@@ -111,23 +117,30 @@ export class Toolbar extends Control {
     return this._add({kind: 'slot', el: slot, label: '', hidden: false});
   }
 
+  /** The buttons, toggles and menus, keyed by label; a toggle is selected while pressed, an item
+   * folded into the … (More actions) menu is not rendered. */
+  getItems(): IItemsState {
+    const list = this._items.filter((item) => item.kind !== 'separator' && item.kind !== 'slot').map((item, index) => ({
+      key: item.label, label: item.label, index, disabled: (item.el as HTMLButtonElement).disabled,
+      ...item.bind === undefined ? {} : {selected: item.bind.peek()}, rendered: !item.hidden}));
+    return {count: list.length, list, truncated: false};
+  }
+
   private _button(label: string, options?: ToolbarButtonOptions): HTMLButtonElement {
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'u2-toolbar-btn';
+    el.dataset.u2Item = label;
     el.tabIndex = -1;
-    if (options && options.icon) {
-      const icon = document.createElement('span');
-      icon.className = 'u2-toolbar-icon';
-      icon.textContent = options.icon;
-      el.append(icon);
-    }
+    if (options && options.icon)
+      el.append(iconElement(options.icon, {cls: 'u2-toolbar-icon'}));
     const text = document.createElement('span');
     text.className = 'u2-toolbar-label';
+    text.dataset.u2Part = 'item-label';
     text.textContent = label;
     el.append(text);
     if (options && options.tooltip)
-      Tooltip.bind(el, options.tooltip, this.scope);
+      Tooltip.bind(el, options.tooltip, {owner: this.scope});
     return el;
   }
 
@@ -272,7 +285,7 @@ export class Toolbar extends Control {
       if (item.kind === 'separator')
         menu.separator();
       else if (item.kind === 'button')
-        menu.item(item.label, item.onClick!, {icon: item.icon});
+        menu.item(item.label, item.onClick!);
       else if (item.kind === 'toggle')
         menu.item(item.label, () => item.bind!.value = !item.bind!.peek(), {check: item.bind!.peek()});
       else {
@@ -283,10 +296,6 @@ export class Toolbar extends Control {
     }
   }
 
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
-  }
 
   private static _setHidden(item: Item, hidden: boolean): void {
     item.hidden = hidden;

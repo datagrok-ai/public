@@ -36,7 +36,7 @@ export async function addNode(flow: FlowEditor, typeName: string, x = 0, y = 0):
 }
 
 /** Resolves false on timeout — assert the returned boolean. */
-export async function until(cond: () => boolean, timeoutMs = 3000, stepMs = 50): Promise<boolean> {
+export async function until(cond: () => boolean, timeoutMs = 3000, stepMs = 20): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     if (cond()) return true;

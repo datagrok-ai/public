@@ -1,6 +1,7 @@
 export const MAXIMUM_ROW_NUMBER = 1000;
 export const MAXIMUM_SERIES_NUMBER = 25;
 export const MAXIMUM_COLUMN_NUMBER = 10;
+export const WARNING_CLASS = 'radar-warning';
 export interface RadarIndicator {
   name: string;
   max?: number;

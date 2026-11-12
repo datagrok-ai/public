@@ -78,8 +78,10 @@ category('DataFrame: Methods', () => {
   test('appendTables', async () => {
     const df1 = createDf();
     await df1.columns.addNewCalculated('doubled', '${population} * 2');
+    const views = Array.from(grok.shell.views).length;
     const appended = await grok.data.appendTables([df1, createDfTail()]);
     expectArray(appended.col('doubled')!.toList(), [2, 8, 4, 6]);
+    expect(Array.from(grok.shell.views).length, views, 'appendTables must not open a view');
   });
 
   test('cell', async () => {
@@ -227,6 +229,23 @@ category('DataFrame: Methods', () => {
     df1.columns.add(DG.Column.fromStrings('Category', ['population', 'population']));
     df1.columns.add(DG.Column.fromInt32Array('Value', Int32Array.from([1, 4])));
     expectTable(df.unpivot(['countries'], ['population']), df1);
+  });
+
+  test('compareTables', async () => {
+    const t1 = DG.DataFrame.fromCsv('name,city\nAnn,Oslo\nBob,Rome\nCid,Oslo');
+    const t2 = DG.DataFrame.fromCsv('name,city\nAnn,Oslo\nBob,Paris\nDan,Oslo');
+    const names = (t: DG.DataFrame): string =>
+      Array.from({length: t.rowCount}, (_, i) => t.get('name', i)).sort().join();
+    const r = grok.data.compareTables(t1, t2, ['name'], ['name'], ['city'], ['city']);
+    expect(names(r.diffTable), 'Bob,Cid,Dan');
+    expect(r.changedValues, 1);
+    expect(r.changedColumns, 1);
+    expect(r.t1MissingRows, 1);
+    expect(r.t2MissingRows, 1);
+    expect(r.missingRows, 2);
+    const keysOnly = grok.data.compareTables(t1, t2, ['name'], ['name'], [], []);
+    expect(names(keysOnly.diffTable), 'Cid,Dan');
+    expect(keysOnly.changedValues, 0);
   });
 
   test('create', async () => {
@@ -472,6 +491,14 @@ category('DataFrame: Column', () => {
   test('fromList', async () => {
     const col = DG.Column.fromList('string', 'col', ['a', 'b', 'c']);
     expect(col.get(0), 'a');
+  });
+
+  test('fromList bigint', async () => {
+    const col = DG.Column.fromList('bigint', 'col', [12345678901234567890n, 0n, null]);
+    expect(col.get(0), 12345678901234567890n);
+    expect(col.get(1), 0n);
+    expect(col.isNone(2), true);
+    expect(DG.Column.fromBigInt64Array('col', BigInt64Array.from([-5n])).get(0), -5n);
   });
 
   test('fromStrings', async () => {

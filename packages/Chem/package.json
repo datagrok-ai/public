@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.17.15",
+  "version": "1.17.19",
   "author": {
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"
@@ -21,22 +21,52 @@
         "OpenChemLib",
         "Ketcher",
         "Marvin",
-        "ChemDraw"
+        "ChemDraw",
+        "Crux"
       ],
       "defaultValue": "Ketcher",
+      "category": "Chemical engine",
       "nullable": true
     },
     {
-      "name": "SubstructureSearchEngine",
-      "friendlyName": "Substructure Search Engine",
-      "category": "Search",
-      "description": "Engine for Contains / Not contains substructure searches. Crux falls back to RDKit for queries it cannot express (radicals, isotopes, some SMARTS primitives)",
+      "name": "ChemicalEngine",
+      "friendlyName": "Chemical Engine",
+      "category": "Chemical engine",
+      "description": "Engine behind Chem's own chemistry, Contains / Not contains substructure searches included. With Crux, molecules are drawn and searched, descriptors, fingerprints and structural alerts calculated and the scaffold tree built by Crux; RDKit does the rest, and any molecule or call Crux cannot handle. Other packages get RDKit objects from Chem in both modes (getRdKitModule, getRdKitService); in Crux mode the pictures and values of the moved functions come from Crux.",
       "propertyType": "string",
       "choices": [
         "RDKit",
         "Crux"
       ],
-      "defaultValue": "RDKit",
+      "defaultValue": "Crux",
+      "nullable": false
+    },
+    {
+      "name": "HighlightColor",
+      "friendlyName": "Highlight color",
+      "category": "Rendering",
+      "description": "Color of highlighted substructures that have no color of their own, such as the matches of the substructure filter. A molecule column can override it in Chemistry | Rendering.",
+      "propertyType": "string",
+      "inputType": "Color",
+      "defaultValue": "#ffb3b3",
+      "nullable": false
+    },
+    {
+      "name": "UnspecifiedStereoIsUnknown",
+      "friendlyName": "Mark unspecified stereo",
+      "category": "Rendering",
+      "description": "Draw stereocenters with unspecified configuration with a wavy bond, and double bonds with unspecified E/Z configuration as crossed bonds. A molecule column can override it in Chemistry | Rendering.",
+      "propertyType": "bool",
+      "defaultValue": true,
+      "nullable": false
+    },
+    {
+      "name": "SimplifiedStereoGroupLabel",
+      "friendlyName": "Simplified stereo label",
+      "category": "Rendering",
+      "description": "When all stereocenters of a molecule are in one AND or OR enhanced stereo group, label the molecule once (\"AND enantiomer\", \"OR enantiomer\") instead of each stereocenter (\"and1\", \"or1\"). A molecule column can override it in Chemistry | Rendering.",
+      "propertyType": "bool",
+      "defaultValue": true,
       "nullable": false
     },
     {
@@ -75,6 +105,7 @@
     "@datagrok-libraries/statistics": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/tutorials": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "@types/pako": "^2.0.3",
     "@webgpu/types": "^0.1.40",
@@ -91,6 +122,9 @@
     "typescript-lru-cache": "^2.0.0",
     "worker-loader": "^3.0.8",
     "wu": "catalog:"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",
@@ -110,7 +144,8 @@
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src",
-    "test": "grok test"
+    "test": "grok test",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Administrators"

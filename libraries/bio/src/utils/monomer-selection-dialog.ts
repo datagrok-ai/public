@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {Subject} from 'rxjs';
 
 import {HelmType, PolymerType} from '../helm/types';
 import {IMonomerLib, IMonomerLibHelper, Monomer} from '../types/monomer-library';
@@ -40,6 +41,8 @@ export class MonomerSelectionWidget {
 
   /** The root element to embed in a container */
   public readonly root: HTMLDivElement;
+  /** The selection after every change — an add, a removal, Clear all, a bulk add. */
+  public readonly onChanged = new Subject<string[]>();
 
   constructor(
     monomerLib: IMonomerLib,
@@ -115,6 +118,7 @@ export class MonomerSelectionWidget {
 
   private updateCountLabel(): void {
     this.countLabel.textContent = this.selectedMonomers.length > 0 ? `${this.selectedMonomers.length} monomer(s) selected` : '';
+    this.onChanged.next(this.getSelectedMonomers());
   }
 
   private renderTags(): void {
@@ -318,7 +322,9 @@ export class MonomerSelectionWidget {
           if (val)
             this.addMonomer(val);
         }
-      } else if (e.key === 'Escape') {
+      } else if (e.key === 'Escape' && this.currentMenu !== null) {
+        e.preventDefault();
+        e.stopPropagation();
         this.hideMenu();
       }
     });

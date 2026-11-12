@@ -38,7 +38,7 @@ Feature: The Dashboards tutorial
     # the tutorial will not start without the connector service (its prerequisite)
     Given the stand reports the "Grok Connect" service the tutorial requires
     When user starts the "Dashboards" tutorial
-    Then the tutorial progress should be 1 of 27
+    Then the tutorial progress should be 1 of 26
     Given the tutorial step "Create a connection to Postgres server" should not be done yet
     When user picks "New connection..." from the context menu of Databases---Postgres tree node inside browse tree
     Then the tutorial step "Create a connection to Postgres server" should be done
@@ -59,10 +59,10 @@ Feature: The Dashboards tutorial
     Given the tutorial step "Set \"Name\" to \"Stores in @state\"" should not be done yet
     When user enters "Stores in @state" into "Name" input
     Then the tutorial step "Set \"Name\" to \"Stores in @state\"" should be done
-    When user puts "select * from starbucks_us where state = @state;" on the first line of code editor
-    Then the tutorial step "Add \"select * from starbucks_us where state = @state;\" to the editor" should be done
     When user puts "--input: string state" on the first line of code editor
-    Then the tutorial step "Add \"--input: string state\" as the first line of the query" should be done
+    Then the tutorial step "Enter the query with its parameter annotation" should not be done yet
+    When user puts "select * from starbucks_us where state = @state;" on a new line after the line starting with "--input" in code editor
+    Then the tutorial step "Enter the query with its parameter annotation" should be done
     When user clicks on SAVE button
     Then the tutorial step "Save the query" should be done
     And 1 query named "Stores in @state" should be on the server
@@ -112,7 +112,7 @@ Feature: The Dashboards tutorial
     And the table should have 84 rows
 
     And the "Dashboards" tutorial should be completed
-    And the tutorial should have listed 27 steps
-    And the tutorial progress should be 27 of 27
+    And the tutorial should have listed 26 steps
+    And the tutorial progress should be 26 of 26
     And no hint should be shown
     And no errors should have been logged

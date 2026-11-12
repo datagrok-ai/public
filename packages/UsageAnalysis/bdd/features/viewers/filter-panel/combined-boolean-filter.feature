@@ -8,10 +8,9 @@ Feature: Combined boolean filter card
   boolean columns puts exactly one card on them, the first time and again after Remove All. One
   journey on demog-1000 with its own CONTROL (true in 6 rows) and a calculated SEX_bool (true in
   the 553 F rows).
-  Not translated: two flags ticked at once, and so the card's AND/OR switch over them — the switch
-  is a word in the card header a click flips, but a click on a flag's name replaces the flag kept
-  and the card reports only "category <flag>" areas, no checkbox ones, so the second tick needs
-  those areas in the core.
+  A click on a flag's name replaces the flag kept, while a tick in its "true" checkbox adds it: two
+  flags ticked keep the rows holding either (OR, CONTROL or F: 554) until the word in the card's
+  header is clicked to AND (CONTROL and F: 5), and a second tick takes the flag off again.
 
   Background:
     Given user is logged in
@@ -61,6 +60,23 @@ Feature: Combined boolean filter card
     And 553 rows should pass the filter
     And the "summary of Flags" reading of filter panel should be "SEX_bool: True"
     And counter of filter panel should have text "1"
+    And no errors should have been logged
+
+  Scenario: Two flags ticked at once combine with OR, and the card's switch makes them AND
+    Then the "summary of Flags" reading of filter panel should be "SEX_bool: True"
+    When user clicks on the "true checkbox CONTROL of Flags" area of filter panel
+    Then the "summary of Flags" reading of filter panel should be "CONTROL: True, SEX_bool: True"
+    And mode of "Flags" filter card should have text "OR"
+    And 554 rows should pass the filter
+    When user clicks on mode of "Flags" filter card
+    Then mode of "Flags" filter card should have text "AND"
+    And 5 rows should pass the filter
+    When user clicks on mode of "Flags" filter card
+    Then mode of "Flags" filter card should have text "OR"
+    And 554 rows should pass the filter
+    When user clicks on the "true checkbox CONTROL of Flags" area of filter panel
+    Then the "summary of Flags" reading of filter panel should be "SEX_bool: True"
+    And 553 rows should pass the filter
     And no errors should have been logged
 
   Scenario: Removing the card releases the rows and Add Filter brings it back once

@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {after, before, category, test} from '@datagrok-libraries/test/src/test';
 
 import {readDataframe} from './utils';
-import {_testActivityCliffsOpen} from './activity-cliffs-utils';
+import {_testActivityCliffsOnNotation, _testActivityCliffsOpen} from './activity-cliffs-utils';
 
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
@@ -15,6 +15,7 @@ import {
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {_package} from '../package-test';
 
@@ -71,5 +72,13 @@ category('activityCliffs', async () => {
       await _testActivityCliffsOpen(df, DimReductionMethods.UMAP,
         'HELM', 'Activity', 65, 20, BitArrayMetricsNames.Tanimoto, helmEncodingFunc);
     }
+  });
+
+  test('activityCliffsHelm', async () => {
+    await _testActivityCliffsOnNotation('samples/HELM.csv', 'HELM', NOTATION.HELM, seqEncodingFunc);
+  });
+
+  test('activityCliffsMsa', async () => {
+    await _testActivityCliffsOnNotation('samples/MSA.csv', 'MSA', NOTATION.SEPARATOR, seqEncodingFunc);
   });
 });

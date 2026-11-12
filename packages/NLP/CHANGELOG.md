@@ -1,5 +1,10 @@
 # NLP changelog
 
+## v.next
+
+* Docker: Rebuilt the nlp image on Wolfi (multi-stage, no pip in the final image) to clear the Debian CVEs
+* [public#4226](https://github.com/datagrok-ai/public/issues/4226): Text Clustering and Sentence Similarity Search are disabled until the current table has a Text column, instead of failing or warning
+
 ## 1.2.5 (2026-07-12)
 
 * GROK-18695: Migrated AWS Translate to AWS SDK v3 (removes unpatchable aws-sdk v2 advisory)

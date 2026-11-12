@@ -8,14 +8,14 @@ The application${appNames.length > 1 ? 's' : ''} ${appNames.join(', ')} ` +
 `(over ${tables.join(', ')}) ${appNames.length > 1 ? 'have' : 'has'} been added successfully
 
 Next steps:
-  pnpm install                   link @datagrok-libraries/u2 (a workspace dependency)
+  pnpm install                   link @datagrok-libraries/ems (a workspace dependency)
   grok build && grok publish     publish the package and open the app from the browse tree
 
 The app is the u2 defaults alone — list, search, filters, entity page with children
 and history, editing under one session, permissions and deep links. src/app.spec.json
 is the same app as a designer-editable spec. To go further, run \`grok api --ui\` for
 typed handles (get<Schema>Db()) and declare on a table: actions.add(...),
-validators.add(column, ...), renderer, and app({app: <a DomainApp subclass>}) for
+validators.add(column, ...), renderer, and app({ribbon, shortcuts, menu, setup}) for
 presets and shortcuts — the Grit package is the reference.
 Read more at https://datagrok.ai/help/develop/how-to/build-an-app`;
 

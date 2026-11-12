@@ -1,0 +1,1708 @@
+import {emsBackends} from '../src/core/domain-backend.js';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
+import assert from 'node:assert/strict';
+import {register} from 'node:module';
+import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
+import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
+import {backends, Scope, Rows, notify, allowedActions, Control} from '@datagrok-libraries/u2';
+import {Usage} from 'datagrok-api/u2core';
+import {SharedSession} from '../src/core/session.js';
+import {backend} from './domain-fixtures.mjs';
+
+register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
+const {domains} = await import('../src/dg/facade.js');
+const {DomainApp} = await import('../src/dg/app.js');
+const {DgDomainTable} = await import('../src/dg/backend.js');
+const grok = await import('datagrok-api/grok');
+
+/** The address bar at `url`, as the platform's router leaves it — past any spy on replaceState. */
+const setAddress = (url) => History.prototype.replaceState.call(history, null, '', url);
+
+/** Spies on the history moves; the returned function puts the real ones back. */
+function spyHistory(pushState, replaceState = () => {}) {
+  Object.assign(history, {pushState, replaceState});
+  return () => {
+    delete history.pushState;
+    delete history.replaceState;
+  };
+}
+
+function scoped(name, body) {
+  test(name, async () => {
+    const live = Scope.liveCount;
+    const saved = {...backends};
+    const savedEms = {...emsBackends};
+    try {
+      await body();
+    } finally {
+      for (const key of Object.keys(backends))
+        delete backends[key];
+      Object.assign(backends, saved);
+      for (const key of Object.keys(emsBackends))
+        delete emsBackends[key];
+      Object.assign(emsBackends, savedEms);
+      notify.closeAll();
+      resetDom();
+      await flush();
+    }
+    assert.equal(Scope.liveCount, live, 'live scopes back to baseline');
+    assert.equal(DomainApp.live.size, 0, 'no app left behind');
+  });
+}
+
+const BASE = '/apps/T/Issues';
+const buttonNamed = (text) => [...document.body.querySelectorAll('.u2-dialog button')].find((b) => b.textContent === text);
+/** A ribbon control by its `data-u2`, wherever in the group it sits — the search box and the
+ * filter travel inside one wrapping item, and a subclass puts its own controls beside it. */
+function ribbonControl(group, u2) {
+  for (const control of group) {
+    const el = control.root.dataset.u2 === u2 ? control.root : control.root.querySelector(`[data-u2="${u2}"]`);
+    if (el)
+      return Control.forElement(el);
+  }
+  return undefined;
+}
+
+const crumbs = (app) => [...app.breadcrumbs.root.querySelectorAll('.u2-breadcrumbs-item, .u2-breadcrumbs-current')]
+  .filter((el) => el.style.display !== 'none' && el.textContent !== '…').map((el) => el.textContent);
+
+async function app(options = {}) {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10, ...options}));
+  document.body.append(a.root);
+  await flush();
+  return {table, app: a};
+}
+
+scoped('the list page first; path follows the query; goTo the entity page and back', async () => {
+  const {app: a} = await app();
+  assert.equal(a.root.dataset.u2, 'domain-app');
+  assert.equal(a.page.value, 'list');
+  assert.equal(a.entity.value, null);
+  assert.equal(a.path.value, BASE);
+  assert.equal(a.listSource.rows.items.value.length, 3);
+  assert.equal(a.summary.value, '3 issues');
+  a.listSource.query.value = 'done = true';
+  assert.equal(a.path.value, `${BASE}?q=done%20%3D%20true`);
+  assert.equal(await a.goTo('entity', 'i2'), true);
+  assert.equal(a.page.value, 'entity');
+  assert.equal(a.entity.value, 'i2');
+  assert.equal(a.path.value, `${BASE}?entity=i2`);
+  const source = a.entitySource.value;
+  assert.equal(source.session, a.session, 'the entity source shares the session');
+  await flush();
+  assert.equal(a.form.value.input('title').value, 'Ibuprofen');
+  assert.deepEqual(crumbs(a), ['Issues', 'Ibuprofen']);
+  assert.equal(a.summary.value, 'Ibuprofen', 'the entity page says which row, not a count');
+  assert.equal(a.root.querySelector('[data-u2-part="list-page"]').hidden, true);
+  assert.equal(a.root.querySelector('[data-u2-part="entity-page"]').hidden, false);
+  fire(a.breadcrumbs.root.querySelector('.u2-breadcrumbs-item'), 'click');
+  await flush();
+  assert.equal(a.page.value, 'list');
+  assert.equal(a.entitySource.value, null, 'the entity source is released');
+  assert.equal(a.form.value, null);
+  assert.equal(a.path.value, `${BASE}?q=done%20%3D%20true`, 'the list keeps its query');
+  a.dispose();
+});
+
+scoped('back by the crumb from a row\'s page, the live scopes are the list\'s again', async () => {
+  const {app: a} = await app();
+  const list = Scope.liveCount;
+  for (const row of a.listSource.rows.items.value.slice(0, 2)) {
+    a.listSource.currentRow.value = row;
+    a.listSource.activate.value++;
+    await flush();
+    assert.equal(a.entity.value, row.id);
+    assert.ok(Scope.liveCount > list, 'the page builds its source, form and panes');
+    fire(a.breadcrumbs.root.querySelector('button'), 'click');
+    await flush();
+    assert.equal(a.page.value, 'list');
+    assert.equal(Scope.liveCount, list, `back from ${row.id}`);
+  }
+  a.dispose();
+});
+
+scoped('open(path): ?entity= restores the entity page, ?q= the list under the query, nothing the list', async () => {
+  const {app: a} = await app();
+  assert.equal(await a.open(`${BASE}?entity=i1`), true);
+  assert.equal(a.page.value, 'entity');
+  assert.equal(a.entity.value, 'i1');
+  assert.equal(await a.open(`${BASE}?q=${encodeURIComponent('title like "a"')}`), true);
+  assert.equal(a.page.value, 'list');
+  assert.equal(a.listSource.query.value, 'title like "a"');
+  assert.equal(a.path.value, `${BASE}?q=title%20like%20%22a%22`);
+  await flush();
+  assert.equal(a.listSource.total.value, 2);
+  await a.open(BASE);
+  assert.equal(a.listSource.query.value, '');
+  await a.open(`${BASE}?entity=nope`);
+  await flush();
+  assert.match(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, /not found/);
+  a.dispose();
+});
+
+scoped('a path is authoritative: open(\'\') is the list even while the address bar holds ?entity=', async () => {
+  const {app: a} = await app();
+  assert.equal(await a.open('?entity=new'), true);
+  assert.equal(a.page.value, 'entity');
+  assert.equal(a.entity.value, DomainApp.NEW);
+  location.search = '?entity=new';
+  assert.equal(await a.open(''), true);
+  assert.equal(a.page.value, 'list');
+  assert.equal(a.entity.value, null);
+  a.dispose();
+});
+
+scoped('the gate: a move with unsaved changes asks; cancel keeps the page and the changes', async () => {
+  const {app: a} = await app();
+  await a.goTo('entity', 'i1');
+  await flush();
+  a.form.value.input('title').value = 'Aspirin 100';
+  await flush();
+  assert.equal(a.session.isDirty.value, true);
+  assert.equal(a.summary.value, 'Aspirin 100 — 1 unsaved change',
+    'the row the page holds stands, and the session\'s summary is the notice beside it');
+  const answer = a.goTo('list');
+  await flush();
+  assert.notEqual(document.body.querySelector('.u2-dialog'), null);
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await answer, false);
+  assert.equal(a.page.value, 'entity');
+  assert.equal(a.session.isDirty.value, true);
+  assert.equal(a.form.value.input('title').value, 'Aspirin 100');
+  assert.equal(await a.goTo('entity', 'i1'), true, 'staying put asks nothing');
+  const back = a.goTo('list');
+  await flush();
+  fire(buttonNamed('DISCARD'), 'click');
+  assert.equal(await back, true);
+  assert.equal(a.page.value, 'list');
+  assert.equal(a.session.isDirty.value, false);
+  a.dispose();
+});
+
+scoped('one session: an edit on the entity page and one on the list save as one transaction', async () => {
+  const {app: a} = await app();
+  let transactions = 0;
+  const real = emsBackends.domain.transaction.bind(emsBackends.domain);
+  emsBackends.domain.transaction = (ops) => {
+    transactions++;
+    return real(ops);
+  };
+  await a.goTo('entity', 'i1');
+  await flush();
+  a.form.value.input('title').value = 'Aspirin 100';
+  a.listSource.rows.byKey('i3').title = 'Naproxen 500';
+  await flush();
+  assert.equal(a.session.changeCount.value, 2);
+  assert.equal(a.summary.value, 'Aspirin 100 — 2 unsaved changes',
+    'the entity source and the list source are one table');
+  assert.equal(await a.session.save(), true);
+  assert.equal(transactions, 1);
+  const rows = emsBackends.domain.tableSync('grit.issue').rows;
+  assert.deepEqual(rows.map((r) => r.title), ['Aspirin 100', 'Ibuprofen', 'Naproxen 500']);
+  a.dispose();
+});
+
+scoped('find-or-activate: DomainTable.open lands on the app\'s entity page; a registered view comes to the front', async () => {
+  const {table, app: a} = await app();
+  assert.equal(DomainApp.baseOf('grit.issue'), BASE);
+  const other = testOwner().build(() => table.source());
+  await flush();
+  table.open(other.rows.byKey('i3'));
+  await flush();
+  assert.equal(a.page.value, 'entity');
+  assert.equal(a.entity.value, 'i3');
+  const view = {name: 'Issues'};
+  const unregister = DomainApp.register(a, view);
+  assert.equal(DomainApp.of(view), a);
+  assert.equal(DomainApp.activate(BASE, 'i2'), true);
+  assert.equal(grok.shell.v, view, 'the view is made current');
+  await flush();
+  assert.equal(a.entity.value, 'i2');
+  assert.equal(DomainApp.activate('/apps/Other', 'i2'), false);
+  unregister();
+  assert.equal(DomainApp.of(view), undefined);
+  other.dispose();
+  a.dispose();
+  assert.equal(DomainApp.baseOf('grit.issue'), undefined);
+});
+
+scoped('New: the entity page over a pristine draft; once saved the page is the row\'s', async () => {
+  const {app: a} = await app();
+  const slots = testOwner().build(() => a.ribbon());
+  assert.deepEqual(slots.main.map((c) => c.root.dataset.u2),
+    ['new-button', 'save-button', 'discard-button', 'actions-menu', 'refresh-button']);
+  assert.deepEqual(slots.presets, [], 'no query switch unless a subclass builds one');
+  const ribbon = a.ribbonGroups();
+  assert.equal(ribbon.length, 2, 'the empty presets slot is not a group');
+  // only the search box rides the ribbon: the shell's is one fixed 32px line with `overflow:
+  // hidden`, and the query box is a row of the LIST PAGE instead
+  assert.deepEqual(ribbon[1].map((c) => c.root.dataset.u2), ['domain-search', 'sort-menu', 'button-group']);
+  assert.equal(ribbon[1][0].root.hidden, false);
+  const listPage = a.root.querySelector('[data-u2-part="list-page"]');
+  assert.equal([...listPage.children].find((el) => !el.hidden) === a.filters.root, true,
+    'the query box is the list page first row');
+  fire(slots.main[0].root, 'click');
+  await flush();
+  assert.equal(a.page.value, 'entity');
+  assert.equal(a.entity.value, DomainApp.NEW);
+  assert.equal(a.path.value, `${BASE}?entity=new`);
+  assert.equal(ribbon[1][0].root.hidden, true, 'no search on the entity page');
+  const source = a.entitySource.value;
+  assert.equal(source.isDraft, true);
+  assert.equal(Rows.isDraft(source.currentRow.value), true);
+  assert.equal(a.session.isDirty.value, false, 'pristine');
+  assert.deepEqual(crumbs(a), ['Issues', 'New issue']);
+  const form = a.form.value;
+  form.input('project_id').value = 'p1';
+  form.input('title').value = 'Fresh';
+  await flush();
+  assert.equal(await a.session.save(), true);
+  await flush();
+  const saved = emsBackends.domain.tableSync('grit.issue').rows.find((r) => r.title === 'Fresh');
+  assert.equal(a.entity.value, saved.id);
+  assert.equal(a.path.value, `${BASE}?entity=${saved.id}`);
+  assert.equal(a.session.isDirty.value, false);
+  a.dispose();
+});
+
+scoped('New: the crumb and the count follow the title as its field holds it, emptied too', async () => {
+  const {app: a} = await app();
+  fire(testOwner().build(() => a.ribbon()).main[0].root, 'click');
+  await flush();
+  const title = a.form.value.input('title').root.querySelector('input');
+  const type = async (text) => {
+    title.value = text;
+    fire(title, 'input');
+    await flush();
+  };
+  await type('x');
+  assert.deepEqual(crumbs(a), ['Issues', 'x']);
+  assert.equal(a.status.value.notice, '1 unsaved change');
+  await type('');
+  assert.equal(a.entitySource.value.currentRow.value.title, 'x', 'the draft keeps the last valid title');
+  assert.deepEqual(crumbs(a), ['Issues', 'New issue'], 'the crumb reads the emptied field');
+  assert.equal(a.status.value.notice, '1 unsaved change', 'the draft is one change');
+  await type('y');
+  assert.deepEqual(crumbs(a), ['Issues', 'y']);
+  a.dispose();
+});
+
+scoped('a saved row whose title is emptied keeps its name in the crumb and the count', async () => {
+  const {app: a} = await app();
+  await a.goTo('entity', 'i1');
+  await flush();
+  const title = a.form.value.input('title').root.querySelector('input');
+  const type = async (text) => {
+    title.value = text;
+    fire(title, 'input');
+    await flush();
+  };
+  await type('');
+  assert.deepEqual(crumbs(a), ['Issues', 'Aspirin'], 'an emptied name leaves no blank crumb');
+  assert.equal(a.status.value.count, 'Aspirin');
+  assert.equal(a.status.value.notice, '1 unsaved change');
+  await type('Aspirin 5');
+  assert.deepEqual(crumbs(a), ['Issues', 'Aspirin 5']);
+  assert.equal(a.status.value.count, 'Aspirin 5');
+  a.dispose();
+});
+
+scoped('New: discarding the draft is the way back to the list, entity and all', async () => {
+  const {app: a} = await app();
+  const ribbon = testOwner().build(() => a.ribbon()).main;
+  fire(ribbon[0].root, 'click');
+  await flush();
+  a.form.value.input('title').value = 'Fresh';
+  await flush();
+  assert.equal(a.session.isDirty.value, true);
+  fire(ribbon[2].button, 'click');
+  await flush();
+  assert.equal(a.page.value, 'list');
+  assert.equal(a.entity.value, null);
+  assert.equal(a.entitySource.value, null, 'the draft page is released');
+  assert.equal(a.path.value, BASE, 'no ?entity= left in the URL');
+  assert.equal(a.summary.value, '3 issues', 'the status bar is the list\'s again');
+  a.dispose();
+});
+
+scoped('New, saved, then deleted from its own page: back to the list once, with no "wait for the batch" warning',
+  async () => {
+    const {app: a} = await app();
+    try {
+      assert.equal(await a.create(), true);
+      await flush();
+      Object.assign(a.entitySource.value.currentRow.value, {project_id: 'p1', title: 'Fresh'});
+      await flush();
+      assert.equal(await a.session.save(), true);
+      await flush();
+      assert.equal(a.entitySource.value.isDraft, true, 'the page is still the draft source New made');
+      a.menuActions().find((x) => x.text === 'Delete').run();
+      await flush();
+      assert.equal(await a.session.save(), true);
+      await flush();
+      await flush();
+      assert.equal(document.body.textContent.includes('Wait for the batch'), false, 'the saved delete is not a discard');
+      assert.equal(a.page.value, 'list');
+      assert.equal(a.path.value, BASE);
+    } finally {
+      a.dispose();
+    }
+  });
+
+scoped('New: a refused save then Discard lands on the list too', async () => {
+  const {app: a} = await app();
+  const ribbon = testOwner().build(() => a.ribbon()).main;
+  fire(ribbon[0].root, 'click');
+  await flush();
+  // no project: the form's own gate refuses the batch, and the draft stays pending
+  a.form.value.input('title').value = 'Fresh';
+  await flush();
+  assert.equal(await a.session.save(), false);
+  await flush();
+  assert.equal(a.page.value, 'entity');
+  assert.equal(a.entity.value, DomainApp.NEW);
+  fire(ribbon[2].button, 'click');
+  await flush();
+  assert.equal(a.page.value, 'list');
+  assert.equal(a.entity.value, null);
+  assert.equal(a.path.value, BASE);
+  a.dispose();
+});
+
+scoped('the entity page carries the children and history panes under the form; both can be left out', async () => {
+  const {app: a} = await app();
+  const panes = () => [...a.panes.children].map((el) => el.dataset.u2);
+  assert.deepEqual(panes(), [], 'nothing on the list page');
+  await a.goTo('entity', 'i1');
+  await flush();
+  assert.deepEqual(panes(), ['domain-children', 'domain-history']);
+  const history = a.panes.querySelector('[data-u2="domain-history"]');
+  assert.equal(history.querySelector('[data-u2-part="hint"]').hidden, true, 'a saved row has a history');
+  await a.goTo('list');
+  assert.deepEqual(panes(), [], 'released with the entity page');
+  a.dispose();
+
+  const {app: bare} = await app({children: false, history: false});
+  await bare.goTo('entity', 'i1');
+  await flush();
+  assert.deepEqual([...bare.panes.children], []);
+  bare.dispose();
+});
+
+scoped('DomainTable.app(): the entity page\'s source is the app\'s — opening a row or New reports no owner-missing',
+  async () => {
+    emsBackends.domain = backend();
+    const table = await domains.table('grit.issue');
+    const view = table.app({path: BASE});
+    document.body.append(view.root);
+    const a = DomainApp.of(view);
+    const unowned = () => Usage.reports().filter((r) => r.code === 'owner-missing').map((r) => r.site);
+    const mode = Usage.mode;
+    Usage.mode = 'report';
+    Usage.clear();
+    try {
+      assert.equal(await a.goTo('entity', 'i2'), true);
+      await flush();
+      assert.equal(a.entitySource.value.currentRow.value.id, 'i2');
+      assert.deepEqual(unowned(), [], 'the row\'s source');
+      assert.equal(await a.create(), true);
+      await flush();
+      assert.equal(a.entitySource.value.isDraft, true);
+      assert.deepEqual(unowned(), [], 'the draft\'s source');
+    } finally {
+      Usage.mode = mode;
+      a.dispose();
+    }
+  });
+
+scoped('DomainTable.app(): the view over the app — name, path, the registries, and the close gate', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const view = table.app({path: BASE});
+  document.body.append(view.root);
+  const a = DomainApp.of(view);
+  assert.notEqual(a, undefined);
+  assert.equal(view.name, 'Issues', 'the display name of the table');
+  assert.equal(DomainApp.titleOf({pluralName: 'order_lines'}), 'Order lines',
+    'a plural the registry derived from the table name is made presentable');
+  assert.equal(DomainApp.titleOf({pluralName: 'order_lines', friendlyName: 'Order Lines'}), 'Order Lines',
+    'what the schema declares wins');
+  assert.equal(a.base, BASE);
+  assert.equal(DomainApp.baseOf('grit.issue'), BASE);
+  assert.equal(view.ribbonPanels.length, 2);
+  assert.equal(view.statusBarPanels.length, 4, 'one panel per status slot');
+  await flush();
+  assert.equal(view.path, BASE);
+  assert.equal(view.acceptsPath('/apps/t/issues'), true);
+  assert.equal(view.acceptsPath('/apps/Other'), false);
+  const address = location.href;
+  setAddress('/apps/T/Issues?entity=i2');
+  try {
+    view.handlePath('/apps/T/Issues');
+    await flush();
+  } finally {
+    setAddress(address);
+  }
+  assert.equal(a.entity.value, 'i2', 'a deep link opens the entity page');
+  assert.equal(view.path, `${BASE}?entity=i2`, 'the address bar follows');
+  assert.equal(view.statusBarPanels[0].textContent, 'Ibuprofen');
+  assert.equal(await a.goTo('list'), true);
+  await flush();
+  assert.equal(view.path, BASE, 'back to the list path');
+  a.listSource.query.value = 'done = true';
+  await flush();
+  assert.equal(view.path, `${BASE}?q=done%20%3D%20true`, 'the query follows too');
+  assert.equal(await a.goTo('entity', 'i1'), true);
+  await flush();
+  assert.equal(view.path, `${BASE}?entity=i1`, 'every page switch is mirrored, not just the first');
+  assert.equal(await a.goTo('list'), true);
+  await flush();
+  assert.equal(view.path, `${BASE}?q=done%20%3D%20true`, 'and back, under the list\'s query');
+  await a.goTo('entity', 'i2');
+  await flush();
+
+  const removing = grok.events.onViewRemoving;
+  const closeRequest = () => ({args: {view: {dart: view.dart}}, prevented: 0, preventDefault() {
+    this.prevented++;
+  }});
+  let e = closeRequest();
+  removing.fire(e);
+  assert.equal(e.prevented, 0, 'a clean view closes without a word');
+  a.form.value.input('title').value = 'Ibuprofen 400';
+  await flush();
+  e = closeRequest();
+  removing.fire(e);
+  assert.equal(e.prevented, 1, 'unsaved changes: the removal is cancelled');
+  await flush();
+  fire(buttonNamed('CANCEL'), 'click');
+  await flush();
+  assert.equal(view.dart.closed, 0, 'and the view stays');
+  assert.equal(a.session.isDirty.value, true);
+  e = closeRequest();
+  removing.fire(e);
+  await flush();
+  fire(buttonNamed('DISCARD'), 'click');
+  await flush();
+  assert.equal(view.dart.closed, 1, 'decided: closed for real');
+  assert.equal(a.session.isDirty.value, false);
+  const other = {args: {view: {dart: {}}}, preventDefault: () => assert.fail('another view is not ours')};
+  a.form.value.input('title').value = 'x';
+  removing.fire(other);
+
+  a.dispose();
+  assert.equal(DomainApp.of(view), undefined);
+  assert.equal(removing.count, 0, 'the gate left with the app');
+
+  const defaults = table.app();
+  assert.equal(DomainApp.of(defaults).base, '/domains/grit/issue', 'the route phase 3 serves');
+  DomainApp.of(defaults).dispose();
+});
+
+scoped('DomainTable.app(): the docked view tells the app the route the shell mounted it at, ' +
+  'and the address bar it was opened from', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const address = location.href;
+  setAddress('/apps/Grit?entity=i2');
+  let view;
+  try {
+    view = table.app();
+    document.body.append(view.root);
+    const a = DomainApp.of(view);
+    assert.equal(a.base, '/domains/grit/issue', 'the default base until the view is docked');
+    // the shell prepends its app route to every path the view reports (`View.path`)
+    const own = view.path;
+    Object.defineProperty(view, 'path', {get: () => `/apps/Grit${own}`, set: () => {}, configurable: true});
+    grok.events.onViewAdded.fire(view);
+    await flush();
+    assert.equal(a.base, '/apps/Grit', 'the app rebased onto the shell\'s route');
+    assert.equal(DomainApp.baseOf('grit.issue'), '/apps/Grit', 'find-or-activate looks it up there');
+    assert.equal(view.acceptsPath('/apps/Grit'), true, 'and claims the route');
+    assert.equal(a.page.value, 'entity', 'the cold deep link reached the app');
+    assert.equal(a.entity.value, 'i2');
+    a.dispose();
+  } finally {
+    setAddress(address);
+  }
+});
+
+scoped('DomainTable.app(): the shell rewrites the view path only AFTER onViewAdded — ' +
+  'the route is derived again, and the cold deep link still lands', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const address = location.href;
+  setAddress('/apps/Grit?entity=i2');
+  let view;
+  try {
+    view = table.app();
+    document.body.append(view.root);
+    const a = DomainApp.of(view);
+    grok.events.onViewAdded.fire(view);
+    await flush();
+    assert.equal(a.base, '/domains/grit/issue', 'nothing to derive from yet');
+    assert.equal(a.page.value, 'list', 'and no page restored');
+    assert.equal(a.listSource.rows.items.value.length, 3, 'the list loaded all the same');
+    const own = view.path;
+    Object.defineProperty(view, 'path', {get: () => `/apps/Grit${own}`, set: () => {}, configurable: true});
+    grok.events.onCurrentViewChanged.fire({args: {current: view}});
+    await flush();
+    assert.equal(a.base, '/apps/Grit', 'the rebase that lost the race lands here');
+    assert.equal(DomainApp.baseOf('grit.issue'), '/apps/Grit');
+    assert.equal(view.acceptsPath('/apps/Grit'), true);
+    assert.equal(view.acceptsPath('/domains/grit/issue'), true, 'the fallback route is claimed too');
+    assert.equal(view.acceptsPath('/apps/Other'), false);
+    assert.equal(a.page.value, 'entity', 'and the cold deep link reached the app');
+    assert.equal(a.entity.value, 'i2');
+    grok.events.onCurrentViewChanged.fire({args: {current: view}});
+    await flush();
+    assert.equal(a.page.value, 'entity', 'replayed once');
+    a.dispose();
+  } finally {
+    setAddress(address);
+  }
+});
+
+scoped('the ambient session is the app\'s; New is hidden without insert', async () => {
+  emsBackends.domain = backend({access: {can: {view: true, insert: false, edit: true, delete: true, share: true},
+    fields: {title: 'editable'}}});
+  const table = await domains.table('grit.issue');
+  const session = new SharedSession();
+  const a = testOwner().build(() => SharedSession.runWith(session, () => domains.app({table, base: BASE})));
+  assert.equal(a.session, session);
+  assert.equal(a.listSource.session, session);
+  await flush();
+  const ribbon = testOwner().build(() => a.ribbon()).main;
+  assert.equal(ribbon[0].root.hidden, true);
+  a.dispose();
+});
+
+scoped('app({ribbon, shortcuts}): the option\'s presets write the query with $me bound; a shortcut runs an action',
+  async () => {
+    emsBackends.domain = backend();
+    const table = await domains.table('grit.issue');
+    const ran = [];
+    table.actions.add({name: 'Escalate', run: (row) => ran.push(row.id)});
+    let mine;
+    const view = table.app({path: BASE, shortcuts: {'Ctrl+Shift+E': 'Escalate'}, ribbon: (base, app) =>
+      ({...base, presets: [mine = app.presets(['Mine', 'reporter = $me'], ['Done', 'done = true'])]})});
+    document.body.append(view.root);
+    const a = DomainApp.of(view);
+    assert.equal(view.ribbonPanels.length, 3, 'the presets are a group of their own');
+    assert.equal(view.ribbonPanels[2].length, 1);
+    assert.equal(a.ribbon().presets[0], mine, 'the option runs once');
+    await flush();
+    assert.equal(mine.root.dataset.u2, 'domain-presets');
+    assert.deepEqual(mine.selected.value, [], 'no preset matches the empty query');
+    const buttons = mine.root.querySelectorAll('.u2-btn-group-item');
+    assert.deepEqual([...buttons].map((b) => b.textContent), ['Mine', 'Done']);
+    fire(buttons[0], 'click');
+    await flush();
+    assert.equal(a.listSource.query.value, 'reporter = "user-1"', 'the stub shell\'s user, bound as $me');
+    assert.deepEqual(mine.selected.value, ['0'], 'the preset in force is pressed');
+    assert.equal(a.path.value, `${BASE}?q=${encodeURIComponent('reporter = "user-1"')}`);
+    fire(buttons[0], 'click');
+    await flush();
+    assert.equal(a.listSource.query.value, '', 'a press on the preset in force clears the query');
+    assert.deepEqual(mine.selected.value, [], 'and un-presses it');
+    assert.equal(a.path.value, BASE);
+    a.listSource.query.value = 'done = true';
+    await flush();
+    assert.deepEqual(mine.selected.value, ['1'], 'a query set elsewhere selects its preset');
+    await a.goTo('entity', 'i2');
+    await flush();
+    assert.equal(mine.root.hidden, true, 'a list-page control');
+    assert.equal(a.getWidgetStatus().shortcuts['Ctrl+Shift+E'], 'Escalate');
+    fire(a.root, 'keydown', {key: 'e', ctrlKey: true, shiftKey: true});
+    assert.deepEqual(ran, ['i2'], 'the entity page\'s row');
+    fire(a.root, 'keydown', {key: 'e', ctrlKey: true});
+    assert.deepEqual(ran, ['i2'], 'another chord is not the shortcut');
+    a.dispose();
+  });
+
+scoped('app({setup, menu}): setup runs once under the app\'s owner; menu changes the Actions menu on every open',
+  async () => {
+    emsBackends.domain = backend();
+    const table = await domains.table('grit.issue');
+    const ran = [];
+    let seen;
+    const view = table.app({path: BASE,
+      setup: (app, self) => {
+        seen = {app, self, built: new Control(document.createElement('div')), calls: (seen?.calls ?? 0) + 1};
+        self.own(() => ran.push('disposed'));
+      },
+      menu: (base, app) => [...base.filter((x) => x.text !== 'Bulk edit…'),
+        {text: 'Open as table', run: () => ran.push(app.page.peek())}]});
+    document.body.append(view.root);
+    const a = DomainApp.of(view);
+    await flush();
+    assert.equal(seen.app, a);
+    assert.equal(seen.self, a.scope, 'self is the app\'s own scope');
+    assert.equal(seen.calls, 1);
+    assert.deepEqual(a.menuActions().map((x) => x.text), ['Import…', 'Show deleted', 'Open as table']);
+    a.menuActions().at(-1).run();
+    await a.goTo('entity', 'i2');
+    await flush();
+    assert.deepEqual(a.menuActions().map((x) => x.text), ['Delete', 'Import…', 'Show deleted', 'Open as table'],
+      'read again on the entity page');
+    assert.deepEqual(ran, ['list']);
+    a.dispose();
+    assert.equal(seen.built.scope.isDisposed, true, 'what setup builds is the app\'s');
+    assert.deepEqual(ran, ['list', 'disposed']);
+  });
+
+scoped('a refused save says why in the status bar and balloons once, with no form on the page', async () => {
+  const {table, app: a} = await app();
+  const off = table.validators.add('priority',
+    (value, row) => value === 'high' && !row.reporter ? 'Assign before escalating' : null);
+  a.listSource.rows.byKey('i2').priority = 'high';
+  await flush();
+  assert.equal(a.summary.value, '3 issues — 1 unsaved change');
+  assert.equal(await a.session.save(), false);
+  await flush();
+  assert.equal(a.summary.value, '3 issues — Cannot save: Ibuprofen: Priority: Assign before escalating',
+    'the refusal names the row it is about, and the count it is about stands (U37)');
+  assert.deepEqual({...a.status.value}, {count: '3 issues', selected: 0, notice: '1 unsaved change',
+    problem: 'Cannot save: Ibuprofen: Priority: Assign before escalating'}, 'one slot each');
+  assert.equal(a.listSource.problemRow.value, 'i2', 'the offending row is named');
+  assert.equal(a.list.list.root.querySelector('[data-u2-row="i2"]')
+    .classList.contains('u2-domain-list-invalid'), true, 'and marked in the list');
+  assert.equal(document.body.querySelectorAll('.u2-notify-error').length, 1, 'one balloon');
+  a.session.discard();
+  await flush();
+  assert.equal(a.summary.value, '3 issues', 'a discard takes the refusal back');
+  off();
+  a.dispose();
+});
+
+scoped('a ?q= the grammar refuses never loads: the text stays red in the box, the rows answer no filter', async () => {
+  const {app: a} = await app();
+  const [add] = testOwner().build(() => a.ribbon()).main;
+  const filters = a.filters;
+  document.body.append(add.root, filters.root);
+  await flush();
+  assert.equal(await a.open('?q=validator'), true);
+  await flush();
+  const box = filters.input.value;
+  assert.equal(a.listSource.state.value, 'ready', 'no load error, no Retry');
+  assert.equal(a.listSource.query.value, '');
+  assert.equal(a.listSource.rows.items.value.length, 3);
+  assert.equal(box.text.value, 'validator', 'the offending text is in the box, to be fixed in place');
+  assert.equal(box.validity.value !== null, true, 'red, with the reason on the editor');
+  assert.equal(filters.problem.value, 'Expected an operator', 'told the way a typed mistake is');
+  assert.equal(a.summary.value, '3 issues — Expected an operator');
+  assert.equal(filters.root.querySelector('.u2-domain-filters-note').hidden, false,
+    'the rows are said to answer the last valid filter');
+  assert.equal(add.root.hidden, false, 'New follows the access');
+  assert.equal(document.body.querySelector('.u2-notify-error'), null, 'not a balloon');
+  box.text.value = '';
+  assert.equal(box.commit(), true);
+  await flush();
+  assert.equal(filters.problem.value, null);
+  assert.equal(filters.root.querySelector('.u2-domain-filters-note').hidden, true);
+  a.dispose();
+});
+
+scoped('a query the backend refuses is the list\'s error, in the status bar and over the rows', async () => {
+  const {app: a} = await app();
+  assert.equal(await a.open('?q=project_id%20under%20%22p1%22'), true);
+  await flush();
+  assert.equal(a.listSource.state.value, 'error');
+  assert.equal(a.summary.value, 'Unknown or inaccessible column "project_id"',
+    'the backend\'s refusal, in the status bar');
+  assert.match(a.root.querySelector('.u2-domain-list-error').textContent, /Unknown or inaccessible column/);
+  const clear = [...a.root.querySelectorAll('.u2-domain-list-error button')].find((b) => b.textContent === 'Clear filter');
+  assert.notEqual(clear, undefined, 'Retry alone would only run it again');
+  assert.equal(document.body.querySelector('.u2-notify-error'), null, 'a load failure is not a balloon');
+  fire(clear, 'click');
+  await flush();
+  assert.equal(a.listSource.query.value, '');
+  assert.equal(a.listSource.rows.items.value.length, 3);
+  a.dispose();
+});
+
+scoped('an emptied box applies the empty query even when the refused one left no tree behind', async () => {
+  const {app: a} = await app();
+  const filters = a.filters;
+  document.body.append(filters.root);
+  await flush();
+  assert.equal(await a.open('?q=validator'), true);
+  await flush();
+  const box = filters.input.value;
+  box.text.value = '';
+  assert.equal(box.commit(), true);
+  await flush();
+  assert.equal(a.listSource.query.value, '');
+  assert.equal(a.listSource.rows.items.value.length, 3);
+  a.dispose();
+});
+
+scoped('a refused filter leaves the rows as they were: shown stale, the count standing down', async () => {
+  const {app: a} = await app();
+  const filters = a.filters;
+  document.body.append(filters.root);
+  await flush();
+  assert.equal(a.summary.value, '3 issues');
+  const box = filters.input.value;
+  box.text.value = 'priority = High';
+  assert.equal(box.commit(), false, 'the schema refuses it');
+  await flush();
+  assert.equal(a.listSource.rows.items.value.length, 3, 'the rows still answer the previous filter');
+  assert.equal(a.list.root.classList.contains('u2-domain-list-stale'), true);
+  assert.match(a.summary.value, /Filter not applied|Unknown column/,
+    'the rows the box no longer reads as are dimmed, and the line says why');
+  // and what it says is the box's own refusal, not a placeholder: a tooltip on a red box is not read
+  assert.equal(a.filterProblem.value, box.problems.value[0].message);
+  assert.equal(a.summary.value, `3 issues — ${a.filterProblem.value}`);
+  assert.equal(a.status.value.problem, a.filterProblem.value, 'in the error colour, beside the count');
+  assert.equal(a.status.value.notice, null);
+  box.text.value = 'done = true';
+  assert.equal(box.commit(), true);
+  await flush();
+  assert.equal(a.list.root.classList.contains('u2-domain-list-stale'), false);
+  assert.equal(a.summary.value, '1 issue');
+  a.dispose();
+});
+
+scoped('Ctrl+S saves from the ribbon — outside the app root, where Tab from the last field lands — and once from inside the form',
+  async () => {
+    emsBackends.domain = backend();
+    const table = await domains.table('grit.issue');
+    const view = table.app({path: BASE});
+    document.body.append(view.root);
+    const a = DomainApp.of(view);
+    grok.shell.v = view;
+    try {
+      let saves = 0;
+      const save = a.session.save.bind(a.session);
+      a.session.save = () => {
+        saves++;
+        return save();
+      };
+      await a.goTo('entity', 'i2');
+      await flush();
+      // the shell mounts the ribbon outside the app root, as appView hands it over
+      const [, saveButton] = view.ribbonPanels[0];
+      document.body.append(saveButton);
+      a.form.value.input('title').value = 'From the ribbon';
+      await flush();
+      assert.equal(a.session.isDirty.value, true);
+
+      fire(saveButton, 'keydown', {key: 's', ctrlKey: true});
+      await flush();
+      await flush();
+      assert.equal(saves, 1, 'the ribbon is within the app\'s reach');
+      assert.equal(a.session.isDirty.value, false);
+      assert.equal(emsBackends.domain.tableSync('grit.issue').rows.find((r) => r.id === 'i2').title,
+        'From the ribbon');
+
+      a.form.value.input('title').value = 'From the form';
+      await flush();
+      fire(a.form.value.root.querySelector('.u2-input-editor'), 'keydown', {key: 'Enter', ctrlKey: true});
+      await flush();
+      await flush();
+      assert.equal(saves, 2, 'the form and the app never save twice for one keystroke');
+      assert.equal(a.session.isDirty.value, false);
+    } finally {
+      grok.shell.v = undefined;
+      DomainApp.of(view)?.dispose();
+    }
+  });
+
+scoped('a preset shows in the filter box as it was written, not as the id it binds to', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  let mine;
+  const view = table.app({path: BASE, ribbon: (base, app) =>
+    ({...base, presets: [mine = app.presets(['Mine', 'reporter = $me'], ['Done', 'done = true'])]})});
+  document.body.append(view.root);
+  const a = DomainApp.of(view);
+  await flush();
+  await flush();
+  const filters = a.filters;
+  const box = filters.input.value;
+  fire(mine.root.querySelectorAll('.u2-btn-group-item')[0], 'click');
+  await flush();
+  assert.equal(a.listSource.query.value, 'reporter = "user-1"', 'the query runs bound');
+  assert.equal(box.text.value, 'reporter = $me', 'the box says what the preset says');
+  assert.equal(box.commit(), true, 'and Enter on it changes nothing');
+  assert.equal(a.listSource.query.value, 'reporter = "user-1"');
+  fire(mine.root.querySelectorAll('.u2-btn-group-item')[1], 'click');
+  await flush();
+  assert.equal(box.text.value, 'done = true', 'a preset without a binding reads as itself');
+  a.dispose();
+});
+
+scoped('open(?q=) on the list page goes through the gate: cancel keeps the query and the changes', async () => {
+  const {app: a} = await app();
+  a.listSource.rows.byKey('i1').title = 'Edited';
+  assert.equal(a.session.isDirty.value, true);
+  const answer = a.open(`${BASE}?q=${encodeURIComponent('done = false')}`);
+  await flush();
+  assert.notEqual(document.body.querySelector('.u2-dialog'), null, 'a deep link is a query change like any other');
+  assert.equal(a.listSource.query.value, '', 'nothing written yet');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await answer, false);
+  assert.equal(a.listSource.query.value, '');
+  assert.equal(a.session.isDirty.value, true);
+  const again = a.open(`${BASE}?q=${encodeURIComponent('done = false')}`);
+  await flush();
+  fire(buttonNamed('DISCARD'), 'click');
+  assert.equal(await again, true);
+  assert.equal(a.listSource.query.value, 'done = false');
+  await flush();
+  assert.equal(await a.open(`${BASE}?q=${encodeURIComponent('done = false')}`), true,
+    'the query it is already under asks nothing');
+  a.dispose();
+});
+
+scoped('a path is the app\'s at a segment boundary only: a sibling table\'s route is not its own', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const view = table.app({path: '/domains/grit/issue'});
+  await flush();
+  assert.equal(view.acceptsPath('/domains/grit/issue'), true);
+  assert.equal(view.acceptsPath('/domains/grit/issue?entity=i1'), true);
+  assert.equal(view.acceptsPath('/domains/grit/issue/anything'), true);
+  assert.equal(view.acceptsPath('/domains/grit/issue_label'), false, 'another table, not a deeper path');
+  DomainApp.of(view).dispose();
+});
+
+scoped('closing through the write-back is blocked: the view is clean and still being written', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const view = table.app({path: '/domains/grit/issue'});
+  await flush();
+  const a = DomainApp.of(view);
+  let release;
+  const real = emsBackends.domain.saveAll.bind(emsBackends.domain);
+  emsBackends.domain.saveAll = async (edits) => {
+    const landed = await real(edits);
+    await new Promise((resolve) => release = resolve);
+    return landed;
+  };
+  a.listSource.rows.byKey('i1').title = 'Edited';
+  const saving = a.session.save();
+  await flush();
+  assert.equal(a.session.isDirty.value, false, 'the batch landed: the rows read clean already');
+  const e = {args: {view: {dart: view.dart}}, prevented: 0, preventDefault() {
+    this.prevented++;
+  }};
+  grok.events.onViewRemoving.fire(e);
+  await flush();
+  assert.equal(e.prevented, 1, 'the removal is cancelled through that window');
+  assert.equal(view.dart.closed, 0);
+  assert.match(document.body.querySelector('.u2-notify-warning')?.textContent ?? '', /Wait for the batch/);
+  release();
+  assert.equal(await saving, true);
+  a.dispose();
+});
+
+scoped('trash mode: the ⋯ menu toggles ?trash=1, the rows are read-only with Restore, and back', async () => {
+  const {app: a} = await app();
+  const [add, save, discard, more] = testOwner().build(() => a.ribbon()).main;
+  await flush();
+  assert.equal(more.root.dataset.u2, 'actions-menu');
+  assert.equal(more.root.hidden, false, 'the delete grant is what the menu holds');
+  // the ribbon is the shell's, and an anchored menu needs its button in the document
+  document.body.append(more.root);
+  fire(more.root, 'click');
+  await flush();
+  const items = [...document.querySelectorAll('[role="menuitem"] .u2-menu-label')].map((el) => el.textContent);
+  assert.deepEqual(items, ['Import…', 'Bulk edit…', 'Show deleted']);
+  assert.equal(a.breadcrumbs.root.hidden, true, 'a plain list has no breadcrumb: the view title names the table');
+
+  a.listSource.edit.value.markDeleted('i2');
+  assert.equal(await a.session.save(), true);
+  await flush();
+  assert.equal(await a.setTrash(true), true);
+  await flush();
+  assert.equal(a.trash.value, true);
+  assert.equal(a.listSource.deleted.value, 'only');
+  assert.equal(a.path.value, `${BASE}?trash=1`);
+  assert.deepEqual(a.listSource.rows.items.value.map((r) => r.title), ['Ibuprofen']);
+  assert.equal(a.summary.value, '1 deleted issue', 'the table is named, as the live count names it');
+  assert.deepEqual(crumbs(a), ['Issues', 'Trash']);
+  assert.equal(a.breadcrumbs.root.hidden, false, 'the LIST page reads "Issues › Trash" too');
+  // the root crumb is a link and must do what a link does: the ⋯ menu is not the only way out
+  fire(a.breadcrumbs.root.querySelector('.u2-breadcrumbs-item'), 'click');
+  await flush();
+  assert.equal(a.mode.value, 'live', 'the root crumb leaves the trash');
+  assert.equal(await a.setTrash(true), true);
+  await flush();
+  assert.equal(save.root.hidden, true, 'nothing in the trash is edited: no Save while nothing is staged');
+  assert.equal(discard.root.hidden, true);
+  assert.equal(add.root.classList.contains('u2-domain-app-invisible'), true, 'and nothing to insert: the slot stays');
+
+  const row = a.listSource.rows.byKey('i2');
+  assert.deepEqual(a.list.actionsFor(row).map((x) => x.text), ['Restore'], 'the row action Delete became Restore');
+  assert.equal(a.list.root.querySelector('[data-u2-row="i2"]').classList.contains('u2-domain-list-deleted'), true);
+  assert.equal(a.listSource.access.value.row(row).can('edit'), false, 'a deleted row is read-only');
+  a.list.actionsFor(row)[0].run();
+  await flush();
+  assert.equal(a.session.isDirty.value, true, 'a restore is staged into the session, not written');
+  assert.deepEqual([save.root.hidden, discard.root.hidden], [false, false],
+    'a restore is saved: Save and Discard are there once one is staged (R-c)');
+  assert.deepEqual(a.listSource.rows.items.value.map((r) => r.title), ['Ibuprofen'], 'and the row stays put');
+  // one dirty source words its own pending changes: "1 restore pending", not the session's
+  // count of them (M1)
+  assert.equal(a.status.value.notice, '1 restore pending');
+  assert.equal(a.listSource.summary.value, '1 restore pending');
+  assert.equal(await a.session.save(), true);
+  await flush();
+  assert.deepEqual(a.listSource.rows.items.value.map((r) => r.title), [], 'the restored row left the trash');
+
+  assert.equal(await a.setTrash(false), true);
+  await flush();
+  assert.deepEqual(a.listSource.rows.items.value.map((r) => r.title), ['Aspirin', 'Ibuprofen', 'Naproxen']);
+  assert.equal(a.path.value, BASE);
+  assert.equal(a.mode.value, 'live', 'one signal behind the three switches');
+  a.dispose();
+});
+
+scoped('support ⇒ absent: a table that declares no writes and no soft delete offers neither', async () => {
+  // permission ⇒ hidden is the other question, and it is asked of the same menu below: here the
+  // table CANNOT do these things at all, so nothing offers them
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, writes: false, updateWhere: false, deleted: false, restore: false};
+  for (const member of ['updateWhere', 'batch', 'restore'])
+    Object.defineProperty(issue, member, {value: undefined, configurable: true});
+  emsBackends.domain = memory;
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  const ribbon = testOwner().build(() => a.ribbon()).main;
+  await flush();
+  assert.deepEqual(a.menuActions().map((x) => x.text), [], 'no Import, no Bulk edit, no Trash');
+  assert.equal(ribbon[3].root.hidden, true, 'and the ⋯ button with them');
+  a.dispose();
+});
+
+scoped('the trash reads newest-deleted first and gives the sort back on the way out', async () => {
+  const {app: a} = await app();
+  a.listSource.sort.value = 'title';
+  await flush();
+  assert.equal(await a.setTrash(true), true);
+  await flush();
+  assert.equal(a.listSource.sort.value, '!updated_on', 'the trash order while it is on');
+  assert.equal(await a.setTrash(false), true);
+  await flush();
+  assert.equal(a.listSource.sort.value, 'title', 'the order the user chose is back');
+  a.dispose();
+});
+
+scoped('?trash=1 round-trips through open(); without the delete grant the menu drops Trash', async () => {
+  const {app: a} = await app({query: 'done = false'});
+  await flush();
+  assert.equal(await a.open('?trash=1&q=done%20%3D%20false'), true);
+  await flush();
+  assert.equal(a.trash.value, true);
+  assert.equal(a.path.value, `${BASE}?q=done%20%3D%20false&trash=1`);
+  assert.equal(await a.open(''), true);
+  assert.equal(a.trash.value, false, 'a path is authoritative about the mode');
+  a.dispose();
+
+  emsBackends.domain = backend({access: {can: {view: true, insert: true, edit: true, delete: false, share: false},
+    fields: {title: 'editable'}}});
+  const table = await domains.table('grit.issue');
+  const b = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(b.root);
+  const ribbon = testOwner().build(() => b.ribbon()).main;
+  await flush();
+  assert.deepEqual(allowedActions(b.menuActions(), {access: b.listSource.access.value}).map((x) => x.text),
+    ['Import…', 'Bulk edit…'], 'permission ⇒ hidden: Trash alone is gone');
+  assert.equal(ribbon[3].root.hidden, false, 'the ⋯ button stands while anything in it is allowed');
+  b.dispose();
+
+  emsBackends.domain = backend({access: {can: {view: true, insert: false, edit: false, delete: false, share: false},
+    fields: {title: 'editable'}}});
+  const readOnly = await domains.table('grit.issue');
+  const c = testOwner().build(() => domains.app({table: readOnly, base: BASE, pageSize: 10}));
+  document.body.append(c.root);
+  const bare = testOwner().build(() => c.ribbon()).main;
+  await flush();
+  assert.equal(bare[3].root.hidden, true, 'and the button goes when nothing in it is allowed');
+  c.dispose();
+});
+
+scoped('Refresh is in the ribbon only while the page is stale, and reloads through the gate', async () => {
+  const memory = backend();
+  let last = '2026-01-01T00:00:00Z';
+  memory.tableSync('grit.issue').probe = () => Promise.resolve({count: 3, last});
+  emsBackends.domain = memory;
+  const table = await domains.table('grit.issue');
+  // off at the start, so the poll's first tick is taken by hand below
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10, live: false}));
+  document.body.append(a.root);
+  await flush();
+  const reload = testOwner().build(() => a.ribbon()).main[4];
+  await flush();
+  assert.equal(reload.root.dataset.u2, 'refresh-button');
+  assert.equal(reload.root.hidden, true, 'nothing is behind the server yet');
+
+  // the poll's own tick, taken by hand: the first one only records what the server looks like
+  let tick;
+  const saved = globalThis.setInterval;
+  globalThis.setInterval = (fn) => (tick = fn, 0);
+  a.listSource.live.value = true;
+  await flush();
+  globalThis.setInterval = saved;
+  a.listSource.edit.value.setValue('i1', 'title', 'Edited');
+  tick();
+  await flush();
+  last = '2026-02-02T00:00:00Z';
+  tick();
+  await flush();
+  assert.equal(a.stale.value, true, 'the collection moved under pending changes');
+  assert.equal(reload.root.hidden, false);
+  assert.deepEqual({...a.status.value}, {count: '3 issues', selected: 0,
+    notice: '1 unsaved change — Data changed — Refresh', problem: null},
+    'what is pending and that the rows moved are both the notice; the count stands');
+
+  fire(reload.root.querySelector('button') ?? reload.root, 'click');
+  await flush();
+  fire(buttonNamed('DISCARD'), 'click');
+  await flush();
+  assert.equal(a.session.isDirty.value, false);
+  assert.equal(a.stale.value, false, 'the reload cleared it');
+  assert.equal(reload.root.hidden, true);
+  a.dispose();
+});
+
+scoped('entering and leaving the trash is ONE history entry each, and Back leaves it', async () => {
+  const {app: a} = await app();
+  const pushes = [];
+  const restore = spyHistory((_state, _title, url) => pushes.push(url));
+  try {
+    assert.equal(await a.setTrash(true), true);
+    await flush();
+    assert.deepEqual(pushes, [`${BASE}?trash=1`], 'one entry for the move into the trash');
+    assert.equal(await a.setTrash(false), true);
+    await flush();
+    assert.deepEqual(pushes, [`${BASE}?trash=1`, BASE], 'and one back out');
+    // Back: the entry before the trash is the bare list, which `open` restores without pushing
+    assert.equal(await a.setTrash(true), true);
+    await flush();
+    assert.equal(await a.open(BASE), true);
+    await flush();
+    assert.equal(a.trash.value, false, 'Back leaves the trash');
+    assert.equal(pushes.length, 3, 'and the restore pushed nothing');
+  } finally {
+    restore();
+    a.dispose();
+  }
+});
+
+scoped('entering the trash from the entity page is still one entry', async () => {
+  const {app: a} = await app();
+  assert.equal(await a.goTo('entity', 'i2'), true);
+  await flush();
+  const pushes = [];
+  const restore = spyHistory((_state, _title, url) => pushes.push(url));
+  try {
+    assert.equal(await a.setTrash(true), true);
+    await flush();
+    assert.equal(a.page.value, 'list');
+    assert.deepEqual(pushes, [`${BASE}?trash=1`], 'the page and the mode settle together');
+  } finally {
+    restore();
+    a.dispose();
+  }
+});
+
+const UUID = '11111111-2222-3333-4444-555555555555';
+
+scoped('under /domains a row is a path segment: the business key when unambiguous, the id when not', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.project');
+  const a = testOwner().build(() => domains.app({table, base: '/domains/grit/project', children: false}));
+  document.body.append(a.root);
+  await flush();
+  assert.equal(a.entityPath, true, 'the platform route addresses rows by a segment');
+  assert.equal(await a.open('/domains/grit/project/GRIT'), true);
+  await flush();
+  assert.equal(a.page.value, 'entity');
+  assert.equal(a.form.value.input('name').value, 'Grit', 'the business key resolved the row');
+  assert.equal(a.path.value, '/domains/grit/project/GRIT');
+  assert.equal(await a.goTo('list'), true);
+  assert.equal(a.path.value, '/domains/grit/project', 'and back, with nothing left in the URL');
+  assert.equal(await a.open('/domains/grit/project/nope'), true);
+  await flush();
+  assert.match(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, /not found/,
+    'a key that matches nothing shows the not-found, as the Dart view does');
+  assert.equal(a.keyOf({id: 'x', key: 'A-B'}), 'A-B', 'a single-column key keeps its dashes');
+  assert.equal(a.keyOf({id: 'x', key: null}), 'x', 'a null component is not addressable');
+  a.dispose();
+});
+
+scoped('a composite key is joined by "-" and read back by arity; a dash in a component falls back to the id',
+  async () => {
+    emsBackends.domain = backend();
+    const table = await domains.table('grit.issue');
+    const a = testOwner().build(() => domains.app({table, base: '/domains/grit/issue'}));
+    document.body.append(a.root);
+    await flush();
+    assert.equal(a.keyOf(a.listSource.rows.byKey('i1')), 'p1-1');
+    assert.equal(a.keyOf({id: 'i9', project_id: 'p-1', number: 2}), 'i9', 'the split would be ambiguous');
+    assert.equal(a.keyOf({id: 'i9', project_id: 'p1', number: null}), 'i9');
+    assert.equal(await a.open('/domains/grit/issue/p1-1'), true);
+    await flush();
+    assert.equal(a.form.value.input('title').value, 'Aspirin', 'the int component is read as an int');
+    assert.equal(a.path.value, '/domains/grit/issue/p1-1');
+    assert.equal(await a.open('/domains/grit/issue/p1-1-2'), true, 'an arity that does not match is read as an id');
+    await flush();
+    assert.match(a.form.value.root.querySelector('[data-u2-part="empty"]').textContent, /not found/);
+    a.dispose();
+  });
+
+scoped('a uuid segment is read as an id, and the path settles on the key the row carries', async () => {
+  emsBackends.domain = backend({rows: {project: [{id: UUID, key: 'GRIT', name: 'Grit'}], issue: []}});
+  const table = await domains.table('grit.project');
+  const a = testOwner().build(() => domains.app({table, base: '/domains/grit/project', children: false}));
+  document.body.append(a.root);
+  await flush();
+  assert.equal(await a.open(`/domains/grit/project/${UUID}`), true);
+  assert.equal(a.path.value, `/domains/grit/project/${UUID}`, 'the address as given, until the row is in');
+  await flush();
+  assert.equal(a.form.value.input('name').value, 'Grit');
+  assert.equal(a.path.value, '/domains/grit/project/GRIT');
+  a.dispose();
+});
+
+scoped('an app at /apps keeps emitting ?entity= (R2); a /domains link still reaches it after a rebase', async () => {
+  const {app: a} = await app();
+  assert.equal(a.entityPath, false);
+  assert.equal(await a.goTo('entity', 'i2'), true);
+  assert.equal(a.path.value, `${BASE}?entity=i2`);
+  a.dispose();
+
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const b = testOwner().build(() => domains.app({table, base: '/domains/grit/issue'}));
+  document.body.append(b.root);
+  await flush();
+  b.rebase('/apps/Grit');
+  assert.equal(b.entityPath, false, 'mounted at an app route, it is back to ?entity=');
+  assert.equal(await b.open('/domains/grit/issue/p1-1'), true, 'the fallback route still reaches it');
+  await flush();
+  assert.equal(b.form.value.input('title').value, 'Aspirin');
+  assert.equal(b.path.value, '/apps/Grit?entity=i1', 'and the URL it leaves behind is the id one');
+  b.dispose();
+});
+
+scoped('?search= round-trips: read on open, written into the path beside the query (U8)', async () => {
+  const {app: a} = await app();
+  await flush();
+  assert.equal(await a.open(`${BASE}?q=${encodeURIComponent('done = false')}&search=ibu`), true);
+  await flush();
+  assert.equal(a.listSource.search.value, 'ibu');
+  assert.equal(a.path.value, `${BASE}?q=done%20%3D%20false&search=ibu`);
+  assert.equal(a.listSource.rows.items.value.length, 1, 'the search narrowed the list');
+  a.listSource.search.value = '';
+  assert.equal(a.path.value, `${BASE}?q=done%20%3D%20false`);
+  assert.equal(await a.open(`${BASE}?search=asp`), true);
+  await flush();
+  assert.equal(a.listSource.query.value, '', 'a path is authoritative about both');
+  assert.equal(a.listSource.search.value, 'asp');
+  assert.equal(a.path.value, `${BASE}?search=asp`);
+  a.dispose();
+});
+
+scoped('history: one entry per user move, none while restoring, and the push lands before the shell mirrors',
+  async () => {
+    emsBackends.domain = backend();
+    const table = await domains.table('grit.issue');
+    const log = [];
+    const restore = spyHistory((_state, _title, url) => log.push(['push', url]),
+      (_state, _title, url) => log.push(['replace', url]));
+    const pushes = () => log.filter(([kind]) => kind === 'push').map(([, url]) => url);
+    let a;
+    try {
+      const view = table.app({path: BASE});
+      document.body.append(view.root);
+      a = DomainApp.of(view);
+      Object.defineProperty(view, 'path', {configurable: true, get: () => view.dart.path,
+        set: (x) => {
+          log.push(['path', x]);
+          view.dart.path = x;
+        }});
+      await flush();
+      assert.equal(await a.goTo('entity', 'i2'), true);
+      assert.deepEqual(log, [['push', `${BASE}?entity=i2`], ['path', `${BASE}?entity=i2`]],
+        'the entry is pushed before the shell replaces it with the same URL');
+      assert.equal(await a.goTo('list'), true);
+      a.listSource.query.value = 'done = true';
+      await flush();
+      a.listSource.search.value = 'ibu';
+      await flush();
+      // a page move is an entry each; the query OPENS one for the text and the search, still in
+      // the same burst, rewrites it — typing is not navigating (five keystrokes were five Backs)
+      assert.deepEqual(pushes(), [`${BASE}?entity=i2`, BASE, `${BASE}?q=done%20%3D%20true`],
+        'two page moves and one entry for the text');
+      assert.deepEqual(log[log.length - 1], ['path', `${BASE}?q=done%20%3D%20true&search=ibu`]);
+      assert.equal(log.some(([kind, url]) => kind === 'replace' &&
+        url === `${BASE}?q=done%20%3D%20true&search=ibu`), true, 'the search rewrote that entry');
+      assert.equal(await a.open(`${BASE}?entity=i1`), true);
+      await flush();
+      assert.equal(await a.open(BASE), true);
+      await flush();
+      assert.equal(pushes().length, 3, 'a restore from the address bar pushes nothing');
+      const ribbon = testOwner().build(() => a.ribbon()).main;
+      fire(ribbon[0].root, 'click');
+      await flush();
+      assert.equal(pushes().length, 4, 'New is a move');
+      a.form.value.input('project_id').value = 'p1';
+      a.form.value.input('title').value = 'Fresh';
+      await flush();
+      assert.equal(await a.session.save(), true);
+      await flush();
+      assert.equal(a.entity.value, emsBackends.domain.tableSync('grit.issue').rows.find((r) => r.title === 'Fresh').id);
+      assert.equal(pushes().length, 4, 'the draft that became a row is the same page');
+    } finally {
+      restore();
+      a?.dispose();
+    }
+  });
+
+scoped('a cold deep link replays every parameter the app owns: ?trash=1 and ?search= too', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const address = location.href;
+  setAddress('/domains/grit/issue?trash=1&search=asp');
+  let a;
+  try {
+    const view = table.app({path: '/domains/grit/issue'});
+    document.body.append(view.root);
+    a = DomainApp.of(view);
+    grok.events.onViewAdded.fire(view);
+    await flush();
+    assert.equal(a.trash.value, true, 'the mode the URL carried');
+    assert.equal(a.listSource.search.value, 'asp');
+    assert.equal(a.path.value, '/domains/grit/issue?trash=1&search=asp');
+  } finally {
+    setAddress(address);
+    a?.dispose();
+  }
+});
+
+scoped('Back restores the app from the address bar, and pushes nothing while doing it', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const address = location.href;
+  const pushes = [];
+  const restore = spyHistory((_state, _title, url) => pushes.push(url));
+  let a;
+  try {
+    const view = table.app({path: BASE});
+    document.body.append(view.root);
+    a = DomainApp.of(view);
+    grok.shell.v = view;
+    await flush();
+    assert.equal(await a.goTo('entity', 'i2'), true);
+    await flush();
+    assert.equal(pushes.length, 1);
+    setAddress(BASE);
+    window.dispatchEvent(new Event('popstate'));
+    await flush();
+    assert.equal(a.page.value, 'list', 'the entry the URL carries is restored');
+    assert.equal(pushes.length, 1, 'a restore pushes nothing');
+    setAddress('/apps/Somebody/Else?entity=i1');
+    window.dispatchEvent(new Event('popstate'));
+    await flush();
+    assert.equal(a.page.value, 'list', 'another view\'s address is not the app\'s to read');
+    grok.shell.v = undefined;
+    setAddress(`${BASE}?entity=i1`);
+    window.dispatchEvent(new Event('popstate'));
+    await flush();
+    assert.equal(a.page.value, 'list', 'and neither is any address while the app is not shown');
+  } finally {
+    restore();
+    setAddress(address);
+    grok.shell.v = undefined;
+    a?.dispose();
+  }
+});
+
+scoped('a selection is not a pending change: the unload gate stays down over a clean list', async () => {
+  const {app: a} = await app();
+  a.guardUnload();
+  layout(a.list.list.root, {clientHeight: 400});
+  fire(a.list.list.root, 'scroll');
+  await flush();
+  // the guard prevents the event; a prevented dispatch answers false
+  const armed = () => fire(globalThis, 'beforeunload', {cancelable: true}) === false;
+  assert.equal(armed(), false, 'nothing pending, nothing to hold the browser for');
+
+  fire(a.list.root.querySelector('[data-u2-row="i1"]'), 'click');
+  fire(a.list.root.querySelector('[data-u2-row="i3"]'), 'click', {ctrlKey: true});
+  await flush();
+  assert.deepEqual(a.listSource.selection.value.map((r) => r.id), ['i1', 'i3']);
+  assert.equal(a.session.isDirty.value, false, 'picking rows writes nothing');
+  assert.equal(armed(), false, 'so leaving a clean list asks nothing');
+
+  a.listSource.rows.byKey('i1').title = 'Edited';
+  await flush();
+  assert.equal(armed(), true, 'an actual change does hold it');
+  a.dispose();
+});
+
+scoped('the status bar is four slots, and a refusal never takes the count off the line (U37)', async () => {
+  const {app: a} = await app();
+  layout(a.list.list.root, {clientHeight: 400});
+  fire(a.list.list.root, 'scroll');
+  await flush();
+  assert.deepEqual({...a.status.value}, {count: '3 issues', selected: 0, notice: null, problem: null});
+  assert.equal(DomainApp.summaryOf({count: '3 issues', selected: 2, notice: 'Data changed', problem: null}),
+    '3 issues · 2 selected — Data changed');
+  assert.equal(DomainApp.summaryOf({count: '', selected: 0, notice: null, problem: 'Boom'}), 'Boom',
+    'an empty slot leaves no dangling dash');
+  assert.equal(DomainApp.summaryOf({count: '3 issues', selected: 0, notice: 'Nice', problem: 'Boom'}),
+    '3 issues — Boom', 'a problem outranks a notice');
+
+  const panels = DomainApp.statusPanels(a);
+  await flush();
+  assert.deepEqual(panels.map((el) => el.dataset.u2Part), ['count', 'selected', 'notice', 'problem']);
+  assert.deepEqual(panels.map((el) => el.className),
+    ['u2-domain-status-count', 'u2-domain-status-selected u2-domain-status-after',
+      'u2-domain-status-notice u2-domain-status-after', 'u2-domain-status-problem u2-domain-status-after']);
+  assert.equal(panels[0].textContent, '3 issues');
+  assert.deepEqual(panels.map((el) => el.hidden), [false, true, true, true], 'an empty slot is away');
+
+  fire(a.list.root.querySelector('[data-u2-row="i1"]'), 'click');
+  fire(a.list.root.querySelector('[data-u2-row="i3"]'), 'click', {ctrlKey: true});
+  await flush();
+  assert.equal(a.status.value.selected, 2);
+  assert.equal(panels[1].textContent, '2 selected');
+  assert.equal(panels[1].hidden, false);
+  assert.equal(a.summary.value, '3 issues · 2 selected');
+  a.dispose();
+});
+
+scoped('mode: ONE signal behind the deleted rows, the sort, the breadcrumb and the ?trash=1', async () => {
+  const {app: a} = await app();
+  assert.equal(a.mode.value, 'live');
+  assert.equal(await a.setMode('trash'), true);
+  await flush();
+  assert.equal(a.trash.value, true, 'trash is the one question the app asks of the mode');
+  assert.equal(a.listSource.deleted.value, 'only');
+  assert.equal(a.listSource.sort.value, '!updated_on');
+  assert.equal(a.path.value, `${BASE}?trash=1`);
+  assert.deepEqual(crumbs(a), ['Issues', 'Trash']);
+  assert.equal(a.root.classList.contains('u2-domain-app-trash'), true);
+  assert.equal(await a.setMode('trash'), true, 'the mode it is already in asks nothing');
+  assert.equal(await a.setTrash(false), true, 'setTrash is setMode');
+  await flush();
+  assert.equal(a.mode.value, 'live');
+  assert.equal(a.listSource.deleted.value, 'exclude');
+  assert.equal(a.path.value, BASE);
+  a.dispose();
+});
+
+scoped('live by default (R-b): an app polls unless it is told not to', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const issues = emsBackends.domain.tableSync('grit.issue');
+  const probe = issues.probe.bind(issues);
+  const probes = [];
+  issues.probe = (spec) => {
+    probes.push(spec);
+    return probe(spec);
+  };
+  const ticks = [];
+  const saved = globalThis.setInterval;
+  globalThis.setInterval = (fn) => (ticks.push(fn), 0);
+  let a;
+  let b;
+  try {
+    a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+    document.body.append(a.root);
+    await flush();
+    assert.equal(a.listSource.live.value, true, 'no `live` option is `live: true`');
+    assert.equal(ticks.length, 1, 'and the poll is armed');
+    ticks[0]();
+    await flush();
+    assert.equal(probes.length, 1, 'one probe per tick');
+    b = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10, live: false}));
+    await flush();
+    assert.equal(b.listSource.live.value, false, 'and `live: false` still turns it off');
+    assert.equal(ticks.length, 1, 'nothing armed for it');
+  } finally {
+    globalThis.setInterval = saved;
+    issues.probe = probe;
+    a?.dispose();
+    b?.dispose();
+  }
+});
+
+scoped('defaults (R-d): every draft the app opens starts with the values the view preset', async () => {
+  const {app: a} = await app({defaults: {project_id: 'p1'}});
+  assert.equal(await a.create(), true);
+  await flush();
+  assert.equal(a.entitySource.value.currentRow.value.project_id, 'p1');
+  assert.equal(a.form.value.input('project_id').value, 'p1');
+  a.dispose();
+});
+
+scoped('rowAddress "id": the segment is the row id as given — a comma, a hyphen, an encoded datetime — never split',
+  async () => {
+    // an externally bound table's id is its key values (`10248,11`), which may carry any delimiter:
+    // the business-key split would turn `a-b,c` into two wrong predicates
+    const ids = [['10248,11', 'Lines'], ['a-b,c', 'Hyphen'], ['2026-09-18T07:08:09.123Z', 'Stamp']];
+    const memory = backend({rows: {project: [{id: 'p1', key: 'GRIT', name: 'Grit'}],
+      issue: ids.map(([id, title], at) => ({id, project_id: 'p1', number: at + 1, title}))}});
+    memory.tableSync('grit.issue').info.rowAddress = 'id';
+    emsBackends.domain = memory;
+    const table = await domains.table('grit.issue');
+    const a = testOwner().build(() => domains.app({table, base: '/domains/grit/issue', children: false}));
+    document.body.append(a.root);
+    await flush();
+    for (const [id, title] of ids) {
+      assert.equal(a.keyOf(a.listSource.rows.byKey(id)), id, `${id}: the id, not the key values`);
+      const segment = encodeURIComponent(id);
+      assert.equal(await a.open(`/domains/grit/issue/${segment}`), true);
+      await flush();
+      assert.equal(a.entity.value, id);
+      assert.equal(a.form.value.input('title').value, title, `${id}: opened by id = <segment>`);
+      assert.equal(a.path.value, `/domains/grit/issue/${segment}`, `${id}: the path settles on the same segment`);
+    }
+    assert.equal(encodeURIComponent(ids[2][0]), '2026-09-18T07%3A08%3A09.123Z', 'the datetime key as the URL spells it');
+    a.dispose();
+  });
+
+scoped('a key equal to a route word, a dot segment, the draft sentinel or led by ~ is escaped in the path and read back; /new stays the draft',
+  async () => {
+    const ids = [['version', 'Version'], ['..', 'Dots'], ['~x', 'Tilde'], ['new', 'New'], ['a%2Fb', 'Slash']];
+    const memory = backend({rows: {project: [{id: 'p1', key: 'GRIT', name: 'Grit'}],
+      issue: ids.map(([id, title], at) => ({id, project_id: 'p1', number: at + 1, title}))}});
+    memory.tableSync('grit.issue').info.rowAddress = 'id';
+    emsBackends.domain = memory;
+    const table = await domains.table('grit.issue');
+    const a = testOwner().build(() => domains.app({table, base: '/domains/grit/issue', children: false}));
+    document.body.append(a.root);
+    await flush();
+    const segments = {version: '~version', '..': '~..', '~x': '~~x', new: '~new', 'a%2Fb': 'a%252Fb'};
+    for (const [id, title] of ids) {
+      assert.equal(a.keyOf(a.listSource.rows.byKey(id)), id, `${id}: keyOf is the raw id`);
+      assert.equal(await a.open(`/domains/grit/issue/${segments[id]}`), true);
+      await flush();
+      assert.equal(a.entity.value, id, `${id}: the segment reads back as the id`);
+      assert.equal(a.entitySource.value.isDraft, false, `${id}: a row, not the draft`);
+      assert.equal(a.form.value.input('title').value, title, `${id}: opened by the escaped segment`);
+      assert.equal(a.path.value, `/domains/grit/issue/${segments[id]}`, `${id}: the path is written escaped`);
+    }
+    assert.equal(await a.open('/domains/grit/issue/new'), true);
+    await flush();
+    assert.equal(a.entity.value, DomainApp.NEW);
+    assert.equal(a.entitySource.value.isDraft, true, 'the raw sentinel is the draft');
+    assert.equal(a.path.value, '/domains/grit/issue/new', 'and is spelled as is');
+    assert.equal(await a.goTo('list'), true);
+    assert.equal(await a.goTo('entity', 'version'), true);
+    await flush();
+    assert.equal(a.path.value, '/domains/grit/issue/~version', 'a move by id is written escaped too');
+    assert.equal(await a.goTo('entity', 'new'), true);
+    await flush();
+    assert.equal(a.entitySource.value.isDraft, false, 'goTo by id is never the create page');
+    assert.equal(a.form.value.input('title').value, 'New', 'the row keyed "new", from the list or find-or-activate');
+    assert.equal(a.path.value, '/domains/grit/issue/~new');
+    a.dispose();
+  });
+
+scoped('?entity= is escaped and read back the same way; ?entity=new stays the draft', async () => {
+  const memory = backend({rows: {project: [{id: 'p1', key: 'GRIT', name: 'Grit'}],
+    issue: [{id: 'version', project_id: 'p1', number: 1, title: 'Version'}]}});
+  memory.tableSync('grit.issue').info.rowAddress = 'id';
+  emsBackends.domain = memory;
+  const issueTable = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table: issueTable, base: BASE, children: false}));
+  document.body.append(a.root);
+  await flush();
+  assert.equal(await a.open(`${BASE}?entity=~version`), true);
+  await flush();
+  assert.equal(a.entity.value, 'version');
+  assert.equal(a.form.value.input('title').value, 'Version');
+  assert.equal(a.path.value, `${BASE}?entity=~version`);
+  assert.equal(await a.open(`${BASE}?entity=new`), true);
+  await flush();
+  assert.equal(a.entity.value, DomainApp.NEW);
+  assert.equal(a.entitySource.value.isDraft, true);
+  assert.equal(a.path.value, `${BASE}?entity=new`);
+  a.dispose();
+});
+
+scoped('a draft saved under a key that is reserved or led by ~ is addressed escaped from then on', async () => {
+  emsBackends.domain = backend();
+  const projectTable = await domains.table('grit.project');
+  const a = testOwner().build(() => domains.app({table: projectTable, base: '/domains/grit/project', children: false}));
+  document.body.append(a.root);
+  await flush();
+  for (const [key, segment] of [['new', '~new'], ['~x', '~~x']]) {
+    assert.equal(await a.create(), true);
+    await flush();
+    assert.equal(a.path.value, '/domains/grit/project/new', 'the draft is spelled as is');
+    a.form.value.input('key').value = key;
+    a.form.value.input('name').value = `Row ${key}`;
+    await flush();
+    assert.equal(await a.session.save(), true);
+    await flush();
+    assert.equal(a.path.value, `/domains/grit/project/${segment}`, `${key}: once saved, the page is the row's and its key is spelled like any other`);
+    assert.equal(await a.goTo('list'), true);
+  }
+  a.dispose();
+});
+
+scoped('support ⇒ absent: Bulk edit goes with updateWhere, the History pane with audit', async () => {
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, updateWhere: false, audit: false};
+  for (const member of ['updateWhere', 'audit'])
+    Object.defineProperty(issue, member, {value: undefined, configurable: true});
+  emsBackends.domain = memory;
+  const issueTable = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table: issueTable, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await flush();
+  assert.deepEqual(a.menuActions().map((x) => x.text), ['Import…', 'Show deleted'],
+    'no Bulk edit without updateWhere');
+  await a.goTo('entity', 'i1');
+  await flush();
+  assert.deepEqual([...a.panes.children].map((el) => el.dataset.u2), ['domain-children'],
+    'no History pane at all without audit — not one that says the table keeps none');
+  a.dispose();
+});
+
+scoped('support ⇒ absent: a table `transaction` does not land on offers no New, Import, Delete or Trash', async () => {
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, transaction: false};
+  emsBackends.domain = memory;
+  const issueTable = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table: issueTable, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  const ribbon = testOwner().build(() => a.ribbon()).main;
+  await flush();
+  assert.equal(a.listSource.readOnly.value, true);
+  assert.equal(ribbon[0].root.hidden, true, 'no New');
+  assert.equal(a.menuActions().some((x) => x.text === 'Import…'), false, 'no Import');
+  assert.deepEqual(allowedActions(a.menuActions(), {access: a.listSource.access.value}), [],
+    'Bulk edit and Trash need edit and delete, which the read-only bound denies');
+  assert.equal(ribbon[3].root.hidden, true, 'and the ⋯ button with them');
+  assert.equal(a.list.actionsFor(a.listSource.rows.byKey('i1')).some((x) => x.text === 'Delete'), false, 'no Delete');
+  a.dispose();
+});
+
+scoped('the read-only bound reaches the frame writer: a row\'s own ~can_edit lifts nothing without `transaction`', async () => {
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, transaction: false};
+  issue.rows[0]['~can_edit'] = true;
+  emsBackends.domain = memory;
+  const issueTable = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table: issueTable, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await flush();
+  const row = a.listSource.rows.byKey('i1');
+  assert.equal(row['~can_edit'], true, 'the frame carries the row grant');
+  assert.equal(a.listSource.access.value.row(row).field('title'), 'readonly',
+    'what the grid reads a cell by: the bound holds against the row grant');
+  // the access the dg backend hands `DomainFrameEditor.attach`, whose `canEdit` reads `~can_edit`
+  // itself: every field closed, so `writableColumns` is empty and no cell is editable
+  const bound = DgDomainTable.narrowed({can: {view: true, insert: true, edit: true, delete: true, share: true},
+    fields: {title: 'editable', number: 'immutable', done: 'readonly'}}, undefined, false);
+  assert.deepEqual(bound.fields, {title: 'readonly', number: 'readonly', done: 'readonly'});
+  assert.deepEqual([bound.can.edit, bound.can.insert, bound.can.delete, bound.can.view], [false, false, false, true]);
+  assert.deepEqual(Object.keys(bound.fields).filter((c) => bound.fields[c] !== 'readonly'), [], 'nothing writable');
+  a.dispose();
+});
+
+scoped('domains.views: Back and Forward inside a view reach the app func, which docks no second view', async () => {
+  emsBackends.domain = backend();
+  const docked = [];
+  grok.shell.addView = (view) => docked.push(view) && view;
+  const address = location.href;
+  const restore = spyHistory(() => {});
+  const views = domains.views({path: '/apps/B', views: [{table: 'grit.issue', name: 'Issues'}]});
+  // the platform's order on a Back: the address bar moves, the router asks the app func for the path alone (no
+  // plain view claims a path), then the view's own handler reads the address bar
+  const back = async (search) => {
+    setAddress(`/apps/B/Issues${search}`);
+    const answer = await views.open('/Issues');
+    window.dispatchEvent(new Event('popstate'));
+    await flush();
+    return answer === null ? 'no view' : 'a new view';
+  };
+  try {
+    setAddress('/apps/B/Issues');
+    const view = await views.open('Issues');
+    const issues = DomainApp.of(view);
+    grok.shell.v = view;
+    await flush();
+    assert.equal(await issues.goTo('entity', 'i2'), true);
+    await flush();
+    assert.deepEqual([await back(''), DomainApp.live.size, issues.page.value], ['no view', 1, 'list'],
+      'Back to the list: the open view takes it, no second app');
+    assert.deepEqual([await back('?entity=i2'), DomainApp.live.size, issues.page.value, issues.entity.value],
+      ['no view', 1, 'entity', 'i2'], 'Forward onto the row: the address bar\'s query');
+    issues.form.value.input('title').value = 'Ibuprofen 400';
+    await flush();
+    assert.equal(await back(''), 'no view');
+    assert.equal([...document.body.querySelectorAll('button')].filter((b) => b.textContent === 'DISCARD').length, 1,
+      'one gate for the router and the view');
+    fire(buttonNamed('DISCARD'), 'click');
+    await flush();
+    assert.deepEqual([issues.page.value, issues.session.isDirty.value, DomainApp.live.size, docked.length],
+      ['list', false, 1, 0]);
+  } finally {
+    delete grok.shell.addView;
+    restore();
+    setAddress(address);
+    grok.shell.v = undefined;
+    for (const app of [...DomainApp.live])
+      app.dispose();
+  }
+});
+
+// the last test: the views it makes stay registered for the process
+scoped('domains.views: a view per table, addressed and brought forward, where its rows open, an item each', async () => {
+  emsBackends.domain = backend();
+  const docked = [];
+  grok.shell.addView = (view) => docked.push(view) && view;
+  const views = domains.views({path: '/apps/T', views: [
+    {table: 'grit.project', name: 'Projects', options: {history: false}},
+    {table: 'grit.issue', name: 'Open Issues', options: {pageSize: 10, sort: '!number'}},
+  ]});
+  assert.equal(domains.views({path: '/apps/R', views: [{table: 'grit.label', name: 'Labels', segment: ''}]})
+    .baseOf('grit.label'), '/apps/R', 'an empty segment is the app\'s path itself');
+  const until = async (done) => {
+    for (let i = 0; i < 20 && !done(); i++)
+      await flush();
+  };
+  try {
+    const view = await views.open('OpenIssues?entity=i2');
+    const issues = DomainApp.of(view);
+    await flush();
+    assert.deepEqual([view.name, issues.base, issues.entity.value, issues.listSource.sort.value],
+      ['Open Issues', '/apps/T/OpenIssues', 'i2', '!number'], 'the segment is the name without spaces');
+    assert.equal(await views.show('openissues?q=done%20%3D%20true'), view, 'the open view takes the address');
+    await flush();
+    assert.deepEqual([issues.page.value, issues.listSource.query.value, docked.length], ['list', 'done = true', 0]);
+    (await domains.table('grit.project')).open({id: 'p1'});
+    await until(() => docked.length > 0);
+    const projects = DomainApp.of(docked[0]);
+    await flush();
+    assert.deepEqual([projects.base, projects.entity.value], ['/apps/T/Projects', 'p1'],
+      'a row opens in the view docked for its table');
+    const items = [];
+    views.tree({item: (name) => ({onSelected: {subscribe: (run) => items.push([name, run])}}),
+      group: () => ({children: []})});
+    items[0][1]();
+    await flush();
+    assert.deepEqual([items.map(([name]) => name), projects.page.value, docked.length],
+      [['Projects', 'Open Issues'], 'list', 1], 'an item per view, bringing it to its list');
+  } finally {
+    delete grok.shell.addView;
+    for (const app of [...DomainApp.live])
+      app.dispose();
+  }
+});

@@ -138,6 +138,24 @@ category('pharmacophores', () => {
     expect(resultDf.columns.length, 7, 'should have 7 family columns');
   }, {timeout: 120000});
 
+  test('batch detection: a family column flags the molecules that have it', async () => {
+    const featuresDf = DG.DataFrame.fromCsv(await _package.files.readAsText('pharmacophore-features.csv'));
+    // diethyl ether, benzene, acetic acid, ethylamine
+    const molecules = DG.Column.fromStrings('smiles', ['CCOCC', 'c1ccccc1', 'CC(=O)O', 'CCN']);
+    const familySet: PharmFamilySet = {
+      'Donor': true, 'Acceptor': true, 'Hydrophobic': false,
+      'Aromatic': true, 'Positive': true, 'Negative': true, 'Halogen Bond': false,
+    };
+    const resultDf = await runPharmacophoreDetection(molecules, familySet, featuresDf,
+      await chemCommonRdKit.getRdKitService());
+    const flags = (family: string) => resultDf.getCol(family).toList().join(', ');
+    expect(flags('Donor'), 'false, false, true, true');
+    expect(flags('Acceptor'), 'true, false, true, true');
+    expect(flags('Aromatic'), 'false, true, false, false');
+    expect(flags('Positive'), 'false, false, false, true');
+    expect(flags('Negative'), 'false, false, true, false');
+  }, {timeout: 120000});
+
   after(async () => {
     grok.shell.closeAll();
     DG.Balloon.closeAll();

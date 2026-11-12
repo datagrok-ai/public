@@ -1,11 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import {v4 as uuidv4} from 'uuid';
 import {NodePath} from './BaseTree';
+import {AnnotationLinkKind} from './common-types';
 import {BehaviorSubject, Subject} from 'rxjs';
-
-export type DebugLogType =
- 'linkRunScheduled' | 'linkRunFinished' | 'linkAdded' | 'linkRemoved' | 'actionAdded' | 'actionRemoved' |
- 'treeUpdateStarted' | 'treeUpdateMutation' | 'treeUpdateFinished'
 
 export interface DebugLogBase {
   uuid: string,
@@ -17,7 +14,7 @@ export interface LinkLogPayload {
   prefix: Readonly<NodePath>,
   basePath?: Readonly<NodePath>,
   id: string,
-  isDefaultValidator?: boolean,
+  annotation?: AnnotationLinkKind,
 }
 
 export interface LinkLogItem extends DebugLogBase, LinkLogPayload {}
@@ -76,10 +73,39 @@ export interface ErrorLogItem extends DebugLogBase {
   links?: string[];
 }
 
+type LinkLogItems = LinkRunStartedLogItem | LinkRunFinishedLogItem | LinkAddedLogItem | LinkRemoveLogItem |
+  ActionAddedLogItem | ActionRemoveLogItem;
+
+export type LinkLogType = LinkLogItems['type'];
+
 export type LogItem =
-TreeUpdateStartedLogItem | TreeUpdateMutationLogItem | TreeUpdateFinishedLogItem |
-LinkRunStartedLogItem | LinkRunFinishedLogItem | LinkAddedLogItem | LinkRemoveLogItem | ActionAddedLogItem | ActionRemoveLogItem |
-ErrorLogItem;
+TreeUpdateStartedLogItem | TreeUpdateMutationLogItem | TreeUpdateFinishedLogItem | LinkLogItems | ErrorLogItem;
+
+type LogEventGroup = 'tree' | 'link' | 'action' | 'error';
+
+// a Record, so a log type missing here fails to compile
+const logEventGroups: Record<LogItem['type'], LogEventGroup> = {
+  treeUpdateStarted: 'tree',
+  treeUpdateFinished: 'tree',
+  treeUpdateMutation: 'tree',
+  linkAdded: 'link',
+  linkRemoved: 'link',
+  linkRunStarted: 'link',
+  linkRunFinished: 'link',
+  actionAdded: 'action',
+  actionRemoved: 'action',
+  error: 'error',
+};
+
+export const LOG_EVENT_TYPES = Object.entries(logEventGroups).map(([type, group]) =>
+  ({type: type as LogItem['type'], group}));
+
+const linkLogTypes = new Set<string>(
+  LOG_EVENT_TYPES.filter((t) => t.group === 'link' || t.group === 'action').map((t) => t.type));
+
+export function isLinkLogItem(item: LogItem): item is LogItem & LinkLogItem & {type: LinkLogType} {
+  return linkLogTypes.has(item.type);
+}
 
 const MAX_LOG_ENTRIES = 5000;
 
@@ -97,9 +123,9 @@ export class DriverLogger {
   private _errors: ErrorLogItem[] = [];
   public errors$ = new Subject<ErrorLogItem>();
 
-  get errors(): readonly ErrorLogItem[] { return this._errors; }
+  get errors(): readonly ErrorLogItem[] {return this._errors;}
 
-  logLink(type: 'linkRunStarted' | 'linkRunFinished' | 'linkAdded' | 'linkRemoved' | 'actionAdded' | 'actionRemoved', data: LinkLogPayload) {
+  logLink(type: LinkLogType, data: LinkLogPayload) {
     const uuid = uuidv4();
     const timestamp = new Date();
     this.append({type, uuid, timestamp, ...data});
@@ -150,7 +176,9 @@ export function reportErrorToUI(severity: ErrorSeverity, context: string, error:
     grok.shell.warning(msg);
 }
 
-export function reportError(severity: ErrorSeverity, context: string, error: Error | string, logger?: DriverLogger, links?: string[]) {
+export function reportError(
+  severity: ErrorSeverity, context: string, error: Error | string, logger?: DriverLogger, links?: string[],
+) {
   const err = error instanceof Error ? error : new Error(error);
   if (logger)
     logger.logError(severity, context, err, links);

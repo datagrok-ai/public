@@ -4,6 +4,7 @@
     "src"
   ],
   "exclude": [
-    "dockerfiles"
+    "dockerfiles",
+    "bdd"
   ]
 }

@@ -18,12 +18,17 @@ const GRID_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'P
 /** A Font Awesome icon name, picked from a searchable grid in an anchored popup. A pick commits
  * and closes; Esc, an outside click or the anchor leaving the DOM close without a write. */
 export class IconInput extends Input<string, IconInputOptions> {
-  private _control!: HTMLElement;
-  private _popup?: Scope;
+  private declare _control: HTMLElement;
+  private declare _popup?: Scope;
 
   constructor(options: IconInputOptions = {}) {
     super(options, '');
     this.root.dataset.u2 = 'icon-input';
+  }
+
+  /** Whether the icon grid is open. */
+  getState(): ReturnType<Input<string>['getState']> {
+    return {...super.getState(), open: this._popup !== undefined};
   }
 
   protected createEditor(): HTMLElement {
@@ -34,16 +39,17 @@ export class IconInput extends Input<string, IconInputOptions> {
     for (const [k, v] of [['role', 'button'], ['aria-haspopup', 'listbox'], ['aria-expanded', 'false']])
       control.setAttribute(k, v);
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       preview.replaceChildren(...(value ? [icon(value)] : []));
       name.textContent = value || '—';
     });
-    control.addEventListener('click', () => this._toggle());
-    control.addEventListener('keydown', (e) => {
-      const clear = (e.key === 'Backspace' || e.key === 'Delete') && this.nullable;
+    this.scope.listen(control, 'click', () => this._toggle());
+    this.scope.listen(control, 'keydown', (e) => {
+      const key = (e as KeyboardEvent).key;
+      const clear = (key === 'Backspace' || key === 'Delete') && this.nullable;
       if (clear)
-        this.value.value = '';
-      else if (e.key === 'Enter' || e.key === ' ')
+        this.value = '';
+      else if (key === 'Enter' || key === ' ')
         this._toggle();
       else
         return;
@@ -54,28 +60,31 @@ export class IconInput extends Input<string, IconInputOptions> {
   }
 
   private _toggle(): void {
-    if (!this.enabled) // the editor is a div, so the base's disabled sweep never reaches it
+    if (this.disabled !== null) // the editor is a div, so the base's disabled sweep never reaches it
       return;
     if (this._popup)
       return this._close();
     const scope = this._popup = new Scope();
-    Scope.runWith(scope, () => {
+    scope.build(() => {
       const names = this.options.names ?? ALL;
       const search = new TextInput({placeholder: 'Search…', search: true, inline: true});
       const grid = new VirtualGrid<string>({cellWidth: 28, cellHeight: 28,
         render: (n, _i, cell) => { cell.title = n; return icon(n); },
-        onActivate: (n) => { this.value.value = n; this._close(); }});
+        onActivate: (n) => {
+          this.value = n;
+          this._close();
+        }});
       scope.effect(() => {
-        const q = search.value.value.trim().toLowerCase().replace(/\s+/g, '-');
+        const q = search.value.trim().toLowerCase().replace(/\s+/g, '-');
         grid.setItems(q ? names.filter((n) => n.includes(q)) : names);
       });
       const popup = divV([search, grid], 'u2-icon-input-popup');
-      popup.addEventListener('keydown', (e) => {
-        if (GRID_KEYS.has(e.key) && !grid.root.contains(e.target as Node))
-          grid.onKeyDown(e);
+      scope.listen(popup, 'keydown', (e) => {
+        if (GRID_KEYS.has((e as KeyboardEvent).key) && !grid.root.contains(e.target as Node))
+          grid.onKeyDown(e as KeyboardEvent);
       });
-      popup.addEventListener(OVERLAY_CLOSE_EVENT, () => this._close());
-      Overlay.show(this._control, popup, scope);
+      scope.listen(popup, OVERLAY_CLOSE_EVENT, () => this._close());
+      Overlay.show(this._control, popup, {owner: scope});
       this._control.setAttribute('aria-expanded', 'true');
       search.root.querySelector<HTMLElement>('input')?.focus();
     });

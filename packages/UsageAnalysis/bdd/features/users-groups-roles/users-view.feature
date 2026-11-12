@@ -3,7 +3,7 @@ Feature: The Users view
   Browse > Platform > Users as an administrator sees it: the list and its toolbar, the view modes,
   search and filters, the New dialogs up to the point where they would create someone, and what a
   user's context menu, context panel and profile show. Translated from files/TestTrack/User
-  groups/users_manual_tests.md (Users-01 to 04, 06, 08 to 17, 22) and
+  groups/users_manual_tests.md (Users-01 to 04, 06, 08, 09, 11 to 17, 22) and
   playwright-public/user groups/users.test.ts.
 
   The user every claim is about is the bddviewed fixture user, made once per stand and never changed
@@ -19,15 +19,20 @@ Feature: The Users view
   user joined ("just now", "a minute ago": grok_user_meta.dart), not the name, email and login the
   manual case lists — nothing there reads as a fact about this user, so the pane is claimed shown.
 
-  A #tag search is claimed only to run without an error, as the manual case asks: no user carries a
-  tag this run could find (the JS API cannot tag a user), and a list emptied by a tag no one has
-  would empty just the same if # were read as plain text. A sort is claimed by
-  the first item: which order the rest is in no reading exposes, and Admin and System joined in the
-  same instant, so either may lead the default order. The order chosen is kept in the browser, so
-  the scenario ends on Default, the ordering Settings gives.
+  A sort is claimed by the first item: which order the rest is in no reading exposes, and Admin and
+  System joined in the same instant, so either may lead the default order. The order chosen is kept
+  in the browser, so the scenario ends on Default, the ordering Settings gives.
+
+  A #tag search (Users-10) is the search syntax, tested in dinq test/dinq_test.dart 'parser test 1'.
 
   Elsewhere: Users-05 and 07 (creating users) are users-create.feature; Users-18 to 21 are
   users-manage.feature.
+
+  "You can't disable your own account" (help govern/access-control/users-and-groups.md): the running
+  account's own card, found by its login (the gallery shows the user's name; on a stand where the two
+  differ the card is not found), offers no Disable.... Invite a Friend says "User is already
+  registered" once the server has checked the email typed (`cmdUsersInvite` in users_browser.dart);
+  the dialog is cancelled, since OK would send an invitation.
 
   Background:
     Given user is logged in
@@ -137,11 +142,14 @@ Feature: The Users view
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: Invite a Friend asks for an email (Users-08)
+  Scenario: Invite a Friend asks for an email and says when it is already registered (Users-08)
     When user clicks on New button
     And user picks "Invite a Friend..." from the open menu
     Then "Invite a Friend" dialog should be visible
     And Email input in "Invite a Friend" dialog should be visible
+    And "User is already registered" text in "Invite a Friend" dialog should be hidden
+    When user enters "bddviewed@datagrok.ai" into Email input in "Invite a Friend" dialog
+    Then "User is already registered" text in "Invite a Friend" dialog should be visible
     When user clicks on CANCEL button in "Invite a Friend" dialog
     Then the "Invite a Friend" dialog should close
     And no errors should have been logged
@@ -157,7 +165,7 @@ Feature: The Users view
     And the open menu should list "Groups..."
     And the open menu should list "Roles..."
     And the open menu should list "Copy > ID"
-    And the open menu should list "Add to favorites"
+    And the open menu should list "Add To Favorites"
     When user closes the context menu
     And user clears gallery search
     Then no errors should have been logged
@@ -203,15 +211,6 @@ Feature: The Users view
     Then no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: A #tag search runs without an error (Users-10)
-    When user remembers the gallery counter
-    And user types "#bddnotag{time}" into gallery search
-    Then gallery counter should have text "0"
-    When user clears gallery search
-    Then the gallery counter should not be lower than remembered
-    And no errors should have been logged
-    And no error or warning balloon should have been shown
-
   Scenario: Sort list reorders the users, and Default reorders them back (Users-12)
     When user remembers the first item in gallery
     And user clicks on "Sort list" icon inside gallery toolbar
@@ -234,4 +233,16 @@ Feature: The Users view
     When user clicks on "Toggle filters" icon inside gallery toolbar
     Then filter panel should be hidden
     And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: The running account's own context menu offers no Disable
+    When user remembers the gallery counter
+    And user types "{login}" into gallery search
+    Then the gallery counter should be lower than remembered
+    When user opens the context menu of "{login}" link in gallery
+    Then the open menu should list "Details"
+    And the open menu should not list "Disable..."
+    When user closes the context menu
+    And user clears gallery search
+    Then no errors should have been logged
     And no error or warning balloon should have been shown

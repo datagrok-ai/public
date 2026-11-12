@@ -4,7 +4,7 @@ import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-lo
 
 test.use(specTestOptions);
 
-test('Helm monomer-funcs swap path — overrideMonomersFuncs / revertOriginalMonomersFuncs / buildMonomersFuncsFromLib (contract)', async ({page}) => {
+test('Helm monomer-funcs path — buildMonomersFuncsFromLib (contract)', async ({page}) => {
 
   test.setTimeout(180_000);
   stepErrors.length = 0;
@@ -39,88 +39,10 @@ test('Helm monomer-funcs swap path — overrideMonomersFuncs / revertOriginalMon
     const lib = libHelper.getMonomerLib();
     (window as any).__hh = hh;
     (window as any).__lib = lib;
-
-    try {
-      if (hh?.originalMonomersFuncs != null) hh.revertOriginalMonomersFuncs();
-    } catch (_) {  }
   });
 
   try {
-    await softStep('S1: overrideMonomersFuncs / revert state-machine — override records, revert clears, double-apply + pre-revert no longer throw', async () => {
-      const out = await page.evaluate(async () => {
-        const result: any = {
-          hhReady: false,
-          baselineNull: false,
-          overrideReturnedNonNull: false, afterOverrideNonNull: false,
-          doubleApplyThrew: false, doubleApplyMsg: '',
-          revertReturnedNonNull: false, afterRevertNull: false,
-          preRevertThrew: false, preRevertMsg: '',
-          errBalloonsDelta: 0, err: null,
-        };
-        const errBefore = document.querySelectorAll('.d4-balloon.error').length;
-        try {
-          const hh = (window as any).__hh;
-          if (!hh) throw new Error('Pre-flight prelude missing: window.__hh is undefined');
-          result.hhReady = true;
-
-          if (hh.originalMonomersFuncs != null) hh.revertOriginalMonomersFuncs();
-          result.baselineNull = hh.originalMonomersFuncs === null;
-
-          const sentinel = {
-            getMonomer: (_a: any, _name: any) => ({id: 'SENTINEL-1', m: 'sentinel-mol-1', n: 'sentinel'}),
-            getMonomerSet: (_a: any) => ({id: 'SENTINEL-SET-1'}),
-          };
-          const previous = hh.overrideMonomersFuncs(sentinel);
-          result.overrideReturnedNonNull = previous != null;
-          result.afterOverrideNonNull = hh.originalMonomersFuncs != null;
-
-          const sentinel2 = {
-            getMonomer: (_a: any, _name: any) => ({id: 'SENTINEL-2'}),
-            getMonomerSet: (_a: any) => null,
-          };
-          try {
-            hh.overrideMonomersFuncs(sentinel2);
-          } catch (e: any) {
-            result.doubleApplyThrew = true;
-            result.doubleApplyMsg = String(e?.message ?? e).slice(0, 300);
-          }
-
-          const outgoing = hh.revertOriginalMonomersFuncs();
-          result.revertReturnedNonNull = outgoing != null;
-          result.afterRevertNull = hh.originalMonomersFuncs === null;
-
-          try {
-            hh.revertOriginalMonomersFuncs();
-          } catch (e: any) {
-            result.preRevertThrew = true;
-            result.preRevertMsg = String(e?.message ?? e).slice(0, 300);
-          }
-        } catch (e: any) {
-          result.err = String(e?.message ?? e).slice(0, 400);
-        }
-
-        try {
-          const hh = (window as any).__hh;
-          if (hh?.originalMonomersFuncs != null) hh.revertOriginalMonomersFuncs();
-        } catch (_) {  }
-        const errAfter = document.querySelectorAll('.d4-balloon.error').length;
-        result.errBalloonsDelta = errAfter - errBefore;
-        return result;
-      });
-      expect(out.hhReady, 'window.__hh present from pre-flight').toBe(true);
-      expect(out.baselineNull, `clean baseline: hh.originalMonomersFuncs === null; err: ${out.err ?? ''}`).toBe(true);
-      expect(out.overrideReturnedNonNull, 'overrideMonomersFuncs returns the previous funcs (non-null)').toBe(true);
-      expect(out.afterOverrideNonNull, 'after override, hh.originalMonomersFuncs is non-null (override recorded)').toBe(true);
-
-      expect(out.doubleApplyThrew, `double-apply MUST NOT throw in the new build; observed msg: ${out.doubleApplyMsg}`).toBe(false);
-      expect(out.revertReturnedNonNull, 'revertOriginalMonomersFuncs returns the outgoing funcs (non-null)').toBe(true);
-      expect(out.afterRevertNull, 'after revert, hh.originalMonomersFuncs is back to null').toBe(true);
-
-      expect(out.preRevertThrew, `pre-revert (no override in effect) MUST NOT throw in the new build; observed msg: ${out.preRevertMsg}`).toBe(false);
-      expect(out.errBalloonsDelta, 'new error balloon delta after S1').toBe(0);
-    });
-
-    await softStep('S2: buildMonomersFuncsFromLib — plain lookup matches lib; unknown → missing placeholder; bracketed NOT stripped; getMonomerSet no-throw', async () => {
+    await softStep('S1: buildMonomersFuncsFromLib — plain lookup matches lib; unknown → missing placeholder; bracketed NOT stripped; getMonomerSet no-throw', async () => {
       const out = await page.evaluate(async () => {
         const result: any = {
           funcsResolved: false, hasGetMonomer: false, hasGetMonomerSet: false,
@@ -181,15 +103,11 @@ test('Helm monomer-funcs swap path — overrideMonomersFuncs / revertOriginalMon
 
       expect(out.bracketedIsPlaceholder, `bracketed '[meI]' returns {id:'[meI]', n:'missing'} (brackets NOT stripped in new build); observed id=${out.bracketedId}, n=${out.bracketedN}`).toBe(true);
       expect(out.monomerSetThrew, `getMonomerSet('PEPTIDE') must not throw; err: ${out.monomerSetErr}`).toBe(false);
-      expect(out.errBalloonsDelta, 'new error balloon delta after S2').toBe(0);
+      expect(out.errBalloonsDelta, 'new error balloon delta after S1').toBe(0);
     });
 
   } finally {
     await page.evaluate(() => {
-      try {
-        const hh = (window as any).__hh;
-        if (hh?.originalMonomersFuncs != null) hh.revertOriginalMonomersFuncs();
-      } catch (_) {  }
       try { delete (window as any).__hh; } catch (_) {  }
       try { delete (window as any).__lib; } catch (_) {  }
       try { (window as any).grok.shell.closeAll(); } catch (_) {  }

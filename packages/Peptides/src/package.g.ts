@@ -14,6 +14,7 @@ export function Peptides() : any {
 
 //name: Bio Peptides
 //top-menu: Bio | Analyze | SAR...
+//meta.requiresSemType: Macromolecule
 export async function peptidesDialog() : Promise<any> {
   return await PackageFunctions.peptidesDialog();
 }

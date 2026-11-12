@@ -15,7 +15,10 @@ import {NodeExecStatus} from '../execution/execution-state';
 import {FuncNode} from '../rete/nodes/func-node';
 import {FlowNode} from '../rete/scheme';
 import {safeGet} from '../utils/dart-proxy-utils';
-import {makeEditor, destroyEditor, addNode} from './test-utils';
+import {makeEditor, destroyEditor, addNode, until} from './test-utils';
+
+/** Stamped by createFuncCallEditor in the same step that subscribes to the dialog's close and run action. */
+const EDITOR_DIALOG_CLASS = 'd4-flow-function-funccall-editor';
 
 function registeredByName(name: string): {func: DG.Func; nodeTypeName: string} | null {
   const info = getRegisteredFuncs().find((f) => f.func.name === name);
@@ -149,8 +152,8 @@ category('Flow: func editor', () => {
       const dlg = await pollDialogCreation(10_000);
       expect(!!dlg, true, 'the editor dialog opened');
       expect(dlg!.title, 'Add New Column', 'the function’s own editor, not a generic form');
-      // give the launcher's own dialog poll a beat to see the dialog and subscribe to onClose
-      await new Promise((r) => setTimeout(r, 400));
+      expect(await until(() => dlg!.root.classList.contains(EDITOR_DIALOG_CLASS), 10_000), true,
+        'the launcher took over the dialog and subscribed to its close');
       dlg!.close();
       expect(await openPromise, true, 'the round-trip resolved');
       expect(String(node.inputValues['name']), 'myNewCol', 'seeded value survives the round-trip');
@@ -164,7 +167,6 @@ category('Flow: func editor', () => {
     // matches by func — `ignoreEvent` must let a concurrent Flow run pass through
     const ancFunc = DG.Func.find({name: 'AddNewColumn'})[0];
     if (!ancFunc) return;
-    const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
     const seed = DG.DataFrame.fromColumns([DG.Column.fromList(DG.TYPE.INT, 'a', [1, 2, 3])]);
     let running = true; // simulates an in-flight Flow run (state.isRunning)
@@ -177,13 +179,21 @@ category('Flow: func editor', () => {
       });
     const dlg = await pollDialogCreation(10_000);
     expect(!!dlg, true, 'the editor dialog opened');
-    await sleep(300); // let the util's own dialog poll attach its subscriptions
+    expect(await until(() => dlg!.root.classList.contains(EDITOR_DIALOG_CLASS), 10_000), true,
+      'the util took over the dialog and subscribed to its run action');
 
-    const other = DG.DataFrame.fromColumns([DG.Column.fromList(DG.TYPE.INT, 'b', [1, 2])]);
-    await grok.functions.call('AddNewColumn', {table: other, name: 'extra', expression: '1'});
-    expect(other.columns.names().includes('extra'), true,
-      'the concurrent call executed — it was NOT canceled by the dialog interception');
-    await sleep(200);
+    // Subscribed after the util, so this handler sees the event only once the util's handler has run.
+    let beforeRunEvents = 0;
+    const beforeRunSub = grok.events.onEvent('d4-before-run-action').subscribe(() => beforeRunEvents++);
+    try {
+      const other = DG.DataFrame.fromColumns([DG.Column.fromList(DG.TYPE.INT, 'b', [1, 2])]);
+      await grok.functions.call('AddNewColumn', {table: other, name: 'extra', expression: '1'});
+      expect(other.columns.names().includes('extra'), true,
+        'the concurrent call executed — it was NOT canceled by the dialog interception');
+      expect(await until(() => beforeRunEvents > 0), true, 'the concurrent call raised d4-before-run-action');
+    } finally {
+      beforeRunSub.unsubscribe();
+    }
     expect(resolved, false, 'the round-trip did not resolve early with the wrong funccall');
 
     running = false;

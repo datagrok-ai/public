@@ -1,0 +1,11 @@
+.compute-settings {
+  max-width: 480px;
+}
+
+.compute-settings .u2-form-buttons {
+  justify-content: flex-end;
+}
+
+.compute-settings .u2-input-root[aria-disabled="true"] .u2-input-box {
+  opacity: 0.5;
+}

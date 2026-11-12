@@ -8,7 +8,7 @@
 import {Control} from '../../core/component.js';
 import {batch, computed, signal, Signal, ReadonlySignal} from '../../core/signals.js';
 import {button, div, divH, divV, span} from '../../core/elements.js';
-import type {BindProp, BindSource} from '../../core/widget-like.js';
+import type {BindProp, BindSource, IItemsState} from '../../core/widget-like.js';
 import type {LiveOption} from '../../core/input-base.js';
 import {TextInput} from '../inputs/text-input.js';
 import {iconButton} from '../actions/buttons.js';
@@ -181,10 +181,10 @@ export class FunctionsBrowser extends Control {
     this._shown = computed(() => filterFuncItems(this._source.value.value, this.query.value,
       this.checkedTags.value, this.checkedRoles.value));
 
-    const searchInput = this.runInScope(() => new TextInput(
+    const searchInput = this.build(() => new TextInput(
       {search: true, inline: true, placeholder: 'Search by name, #tag, or @role', bind: this.query}));
     // the toggle option mirrors showTags into aria-pressed and the pressed skin, however it flips
-    const filterIcon = this.runInScope(() => iconButton('filter', () => {},
+    const filterIcon = this.build(() => iconButton('filter', () => {},
       {tooltip: 'Toggle filter panel', toggle: this.showTags}));
     const searchRow = divH([searchInput, filterIcon], 'u2-fb-search');
     searchRow.dataset.u2 = 'fb-search';
@@ -214,9 +214,10 @@ export class FunctionsBrowser extends Control {
     panes.dataset.u2 = 'fb-panes';
 
     const contextActions = options.contextActions;
-    this._list = this.runInScope(() => new VirtualList<FuncItem>({
+    this._list = this.build(() => new VirtualList<FuncItem>({
       itemHeight: options.itemHeight ?? 28,
       keyOf: (item) => item.name,
+      labelOf: (item) => item.label,
       render: (item, _index, row) => this._renderRow(item, row),
       contextActions: contextActions ? (item) => contextActions(item) : undefined,
     }));
@@ -224,7 +225,7 @@ export class FunctionsBrowser extends Control {
     this._list.setItems(this._shown);
 
     const emptyMessage = span('', 'u2-fb-empty-message');
-    const clearSearch = this.runInScope(() => button('Clear search', () => this.query.value = ''));
+    const clearSearch = this.build(() => button('Clear search', () => this.query.value = ''));
     clearSearch.classList.add('u2-fb-clear');
     clearSearch.dataset.u2 = 'fb-clear';
     const empty = divV([emptyMessage, clearSearch], 'u2-async-empty u2-fb-empty');
@@ -334,6 +335,17 @@ export class FunctionsBrowser extends Control {
 
   setItems(items: FuncItem[] | ReadonlySignal<FuncItem[]>): void {
     this._source.value = Array.isArray(items) ? signal(items) : items;
+  }
+
+  /** The functions the search and the panes leave, as the list holds them: key = the qualified
+   * name, label = the friendly name. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    return this._list.getItems(opts);
+  }
+
+  /** Scrolls a shown function — by qualified name, else by friendly name — into the list. */
+  revealItem(keyOrLabel: string): Promise<HTMLElement | null> {
+    return this._list.revealItem(keyOrLabel);
   }
 
   /** `$.fb.search` is {@link query}; `$.fb.selected` answers the selected item's qualified name

@@ -1,9 +1,6 @@
-/* The session is the storage state global setup writes (@datagrok-libraries/test); this step only
-   lands in the shell — once per browser page, the scenarios of a feature share it — and applies the
-   automation-friendly shell settings every suite applies, plus the viewer runtime: every viewer the
-   page holds or adds later renders immediately (no debounce, no animation-frame wait). */
 import type {BrowserContext, Page} from '@playwright/test';
 import {Given, When} from '../../src/registry.js';
+import {markLeakBaseline} from '../../src/runtime/audit.js';
 import {takeErrors} from '../../src/runtime/harness.js';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {installViewerRuntime, takeBalloons} from '../../src/runtime/viewers.js';
@@ -34,9 +31,12 @@ async function homeWidgetsSettled(page: Page): Promise<void> {
  * runtime installed. What the page logged while it booted stays on the error floor: a widget that fails
  * to load is the claim of a scenario that reloads or signs in. */
 export async function resetShellAfterLoad(page: Page, simpleMode = guide.shellSimpleMode()): Promise<void> {
-  await page.evaluate((simple) => {
+  // the preloader goes once the start-up URL is routed; a closeAll before that is undone by the view it opens
+  await page.waitForFunction(() => !document.querySelector('#grok-preloader'), null, {timeout: 180000});
+  await page.evaluate(([simple, filmed, help, demo]) => {
     grok.shell.closeAll();
-    document.body.classList.add('selenium');
+    // the test styles (title-bar icons shown without a hover) are not what a person sees in a guide
+    document.body.classList.toggle('selenium', !filmed);
     grok.shell.windows.simpleMode = simple;
     // the console and help panels a feature leaves open share the right column with the context panel and can
     // squeeze it to its title bar; a feature that needs one opens it
@@ -44,11 +44,34 @@ export async function resetShellAfterLoad(page: Page, simpleMode = guide.shellSi
     grok.shell.windows.showHelp = false;
     if (grok.shell.windows.presentationMode)
       grok.shell.windows.presentationMode = false;
-  }, simpleMode);
-  // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it
-  await page.waitForFunction(() => grok.shell.v?.type === 'datagrok', null, {timeout: 60000});
+    // a help GIF starts from the bare shell, whatever panels the account keeps open; a step opens the one it needs
+    // a demo clip keeps the sidebar, so the shell is recognisable, and opens the panels it shows; the stand
+    // account's count of unread notifications is no part of any demo
+    if (help || demo) {
+      grok.shell.windows.showSidebar = demo;
+      grok.shell.windows.showBrowse = false;
+      grok.shell.windows.showToolbox = false;
+      grok.shell.windows.showContextPanel = false;
+    }
+    if (demo && !document.getElementById('bdd-demo-style')) {
+      const style = document.createElement('style');
+      style.id = 'bdd-demo-style';
+      style.textContent = '.grok-notification-count {display: none !important}';
+      document.head.append(style);
+    }
+  }, [simpleMode, !!guide.guideDir(), guide.helpMode(), guide.demoMode()] as [boolean, boolean, boolean, boolean]);
+  // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it, and the view a
+  // reloaded address opens (a script, a project) can land after it: that one is closed in turn
+  await page.waitForFunction(() => {
+    const v = grok.shell.v;
+    if (v != null && v.type !== 'datagrok')
+      v.close();
+    return grok.shell.v?.type === 'datagrok';
+  }, null, {timeout: 60000, polling: 100});
   await homeWidgetsSettled(page);
   await installViewerRuntime(page);
+  // a cold load or a reload starts the scenario's leak baseline here, before any app view opens
+  await markLeakBaseline(page);
 }
 
 /** The shell mode the page runs in now: a reload or a sign-in mid-feature keeps what the feature set. */
@@ -88,9 +111,14 @@ export const loggedIn = Given('user is logged in', async (page: Page) => {
   // dialog, a docked panel, a sticky option) reaches the next one; BDD_FRESH_PAGE starts each
   // feature from a reload, at the cost of a shell load per feature
   guide.silent(page);
-  const inShell = process.env.BDD_FRESH_PAGE !== '1' &&
+  const fresh = process.env.BDD_FRESH_PAGE === '1';
+  const inShell = !fresh &&
     await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
-  if (!inShell) {
+  const first = startedAs.get(page.context());
+  // a scenario that failed on the login page leaves the page signed out, where "/" never shows the shell
+  const signedOut = !inShell && first != null &&
+    await page.locator('input[placeholder="Login or Email"]').filter({visible: true}).count().catch(() => 0) > 0;
+  if (!inShell && !signedOut) {
     // a dev stand's pub serve can take minutes to hand out the bundle while it recompiles or is
     // starved: that is a delay once per page, not a failure of the feature
     const start = Date.now();
@@ -100,13 +128,13 @@ export const loggedIn = Given('user is logged in', async (page: Page) => {
     if (seconds >= 30)
       console.warn(`bdd: the shell took ${seconds} s to load (a dev stand serving a bundle it is recompiling?)`);
   }
-  const now = await page.evaluate(() => ({token: localStorage.getItem('auth') ?? String(grok.dapi.token ?? ''),
+  const now = signedOut ? {token: '', login: ''} : await page.evaluate(() => ({token: localStorage.getItem('auth') ?? String(grok.dapi.token ?? ''),
     login: String(grok.shell.user?.login ?? '')}));
-  const first = startedAs.get(page.context());
   if (!first)
     startedAs.set(page.context(), now);
   if (first && first.login !== now.login) {
-    console.warn(`bdd: the page was left signed in as ${now.login}; signing ${first.login} back in`);
+    if (!signedOut)
+      console.warn(`bdd: the page was left signed in as ${now.login}; signing ${first.login} back in`);
     await signInWithSession(page, first.token, first.login, guide.shellSimpleMode());
   }
   else

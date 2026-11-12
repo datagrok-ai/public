@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/hit-triage",
   "friendlyName": "Hit Triage",
-  "version": "1.10.6",
+  "version": "1.10.9",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -19,7 +19,8 @@
     "@datagrok-libraries/bio": "workspace:^",
     "@datagrok-libraries/compute-utils": "workspace:^",
     "@datagrok-libraries/statistics": "workspace:^",
-    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/test": "^1.4.1",
+    "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",
@@ -27,13 +28,19 @@
     "typeahead-standalone": "4.14.1",
     "uuid": "^11.1.1"
   },
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
   "devDependencies": {
-    "@types/uuid": "^9.0.2"
+    "@types/uuid": "^9.0.2",
+    "@datagrok-libraries/bdd": "workspace:^",
+    "@playwright/test": "^1.62.1"
   },
   "scripts": {
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
-    "lint": "eslint --ext .ts,.tsx src"
+    "lint": "eslint --ext .ts,.tsx src",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Administrators"

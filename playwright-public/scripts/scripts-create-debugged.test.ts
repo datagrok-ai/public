@@ -142,11 +142,9 @@ test.describe.serial('Scripts: Create', () => {
     // Verify: "saved" balloon message appears
     await expect(page.locator('.d4-balloon', { hasText: /saved/i }).first()).toBeVisible({ timeout: 10_000 });
 
-    // Verify: view title updated to script name. The platform drops underscores from the
-    // entity name (PW_CreateTest -> PWCreateTest), same transform the run suite applies to
-    // build the function name.
-    await expect(page.locator('[name="div-view-name"]'))
-      .toContainText(SCRIPT_NAME.replace(/_/g, ''), { ignoreCase: true });
+    // Verify: view title updated to script name. The ribbon shows the friendly name
+    // (PW_CreateTest); the entity name drops the underscore (PWCreateTest).
+    await expect(page.locator('[name="div-view-name"]')).toContainText(/PW_?CreateTest/i);
 
     // Step 12: Close the script view via the ribbon close button
     await page.locator('.d4-ribbon > .grok-icon.fal').click();

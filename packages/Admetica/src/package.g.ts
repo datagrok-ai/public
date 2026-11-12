@@ -54,6 +54,7 @@ export function admeticaEditor(call: DG.FuncCall) : any {
 //input: bool addForm { description: Add a form viewer. }
 //friendlyName: Admetica
 //top-menu: Chem | Admetica | Calculate...
+//meta.requiresTableView: true
 //editor: Admetica:AdmeticaEditor
 export async function admeticaMenu(table: DG.DataFrame, molecules: DG.Column, template: string, models: string[], addPiechart: boolean, addForm: boolean) : Promise<void> {
   await PackageFunctions.admeticaMenu(table, molecules, template, models, addPiechart, addForm);

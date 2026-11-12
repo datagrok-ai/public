@@ -34,8 +34,8 @@ export class Splitter extends Control {
   private readonly _sashes: HTMLElement[] = [];
   private _drag: Drag | undefined;
   private _pointerPos = 0;
-  private _frame = 0;
-  private _hoverTimer = 0;
+  private _frame: (() => void) | undefined;
+  private _hoverTimer: (() => void) | undefined;
 
   /** A panel given as a `Control` is owned: disposed with the splitter. */
   constructor(panels: (HTMLElement | Control)[], options: SplitterOptions) {
@@ -66,37 +66,43 @@ export class Splitter extends Control {
       this.root.append(sash);
     }
 
-    this.own(() => {
-      window.clearTimeout(this._hoverTimer);
-      if (this._frame)
-        cancelAnimationFrame(this._frame);
-    });
     this.effect(() => this._layout());
+
+    const resize = new ResizeObserver(() => this._clamp());
+    resize.observe(this.root);
+    this.own(() => resize.disconnect());
+  }
+
+  /** The base state plus the panel sizes, in percent, as `extra.sizes` ('30,70'). */
+  getState(): ReturnType<Control['getState']> {
+    return {...super.getState(), extra: {sizes: this.sizes.peek().map((s) => Math.round(s * 1000) / 10).join(',')}};
   }
 
   private _createSash(index: number): HTMLElement {
     const sash = document.createElement('div');
     sash.className = 'u2-sash';
+    sash.dataset.u2Part = 'sash';
     sash.tabIndex = 0;
     sash.setAttribute('role', 'separator');
     sash.setAttribute('aria-orientation', this._horizontal ? 'vertical' : 'horizontal');
     sash.setAttribute('aria-valuemin', '0');
     sash.setAttribute('aria-valuemax', '100');
-    this._listen(sash, 'pointerdown', (e) => this._onPointerDown(e as PointerEvent, index));
-    this._listen(sash, 'pointermove', (e) => this._onPointerMove(e as PointerEvent));
-    this._listen(sash, 'pointerup', () => this._endDrag());
-    this._listen(sash, 'pointercancel', () => this._endDrag());
-    this._listen(sash, 'pointerenter', () => this._hover(sash, true));
-    this._listen(sash, 'pointerleave', () => this._hover(sash, false));
-    this._listen(sash, 'dblclick', () => this._resetPair(index));
-    this._listen(sash, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent, index));
+    this.scope.listen(sash, 'pointerdown', (e) => this._onPointerDown(e as PointerEvent, index));
+    this.scope.listen(sash, 'pointermove', (e) => this._onPointerMove(e as PointerEvent));
+    this.scope.listen(sash, 'pointerup', () => this._endDrag());
+    this.scope.listen(sash, 'pointercancel', () => this._endDrag());
+    this.scope.listen(sash, 'pointerenter', () => this._hover(sash, true));
+    this.scope.listen(sash, 'pointerleave', () => this._hover(sash, false));
+    this.scope.listen(sash, 'dblclick', () => this._resetPair(index));
+    this.scope.listen(sash, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent, index));
     return sash;
   }
 
   private _hover(sash: HTMLElement, on: boolean): void {
-    window.clearTimeout(this._hoverTimer);
+    this._hoverTimer?.();
+    this._hoverTimer = undefined;
     if (on)
-      this._hoverTimer = window.setTimeout(() => sash.classList.add('u2-sash-hover'), HOVER_DELAY_MS);
+      this._hoverTimer = this.scope.setTimeout(() => sash.classList.add('u2-sash-hover'), HOVER_DELAY_MS);
     else
       sash.classList.remove('u2-sash-hover');
   }
@@ -107,7 +113,6 @@ export class Splitter extends Control {
     e.preventDefault();
     const sash = this._sashes[index];
     sash.setPointerCapture(e.pointerId);
-    sash.focus();
     sash.classList.add('u2-sash-active');
     this.root.classList.add('u2-splitter-dragging');
     this._drag = {index, startSizes: this.sizes.peek(), startPos: this._coord(e), total: this._total()};
@@ -119,8 +124,8 @@ export class Splitter extends Control {
     this._pointerPos = this._coord(e);
     if (this._frame)
       return;
-    this._frame = requestAnimationFrame(() => {
-      this._frame = 0;
+    this._frame = this.scope.requestFrame(() => {
+      this._frame = undefined;
       this._applyDrag();
     });
   }
@@ -129,8 +134,8 @@ export class Splitter extends Control {
     if (!this._drag)
       return;
     if (this._frame) {
-      cancelAnimationFrame(this._frame);
-      this._frame = 0;
+      this._frame();
+      this._frame = undefined;
       this._applyDrag();
     }
     this._sashes[this._drag.index].classList.remove('u2-sash-active');
@@ -174,6 +179,21 @@ export class Splitter extends Control {
     this.sizes.value = sizes;
   }
 
+  /** A smaller splitter keeps every panel at `minSize` (an equal share when even that does not
+   * fit): the shortfall comes off the panels that have room, in proportion to it. */
+  private _clamp(): void {
+    const total = this._total();
+    if (total === 0 || this._drag)
+      return;
+    const min = Math.min(this._minSize / total, 1 / this._panels.length);
+    const sizes = this.sizes.peek();
+    const deficit = sizes.reduce((sum, s) => sum + Math.max(0, min - s), 0);
+    if (deficit < 1e-6)
+      return;
+    const room = sizes.reduce((sum, s) => sum + Math.max(0, s - min), 0);
+    this.sizes.value = sizes.map((s) => s <= min ? min : s - (s - min) / room * deficit);
+  }
+
   private _layout(): void {
     const sizes = this.sizes.value;
     let offset = 0;
@@ -195,10 +215,5 @@ export class Splitter extends Control {
 
   private _coord(e: PointerEvent): number {
     return this._horizontal ? e.clientX : e.clientY;
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }

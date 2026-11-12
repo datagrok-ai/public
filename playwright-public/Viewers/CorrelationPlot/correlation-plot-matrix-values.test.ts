@@ -156,7 +156,7 @@ test('Correlation Plot — Matrix Values, Scope, and Persistence', async ({page}
       expect(anyDiffer).toBe(true);
     });
 
-    await softStep('Scenario 2 Step 4 — Show Pearson R false: matrix repaints, backing value still readable', async () => {
+    await softStep('Scenario 2 Step 4 — Show Coefficients false: matrix repaints, backing value still readable', async () => {
       const settlePrecheck = await settledSnap(page);
       const before = await page.evaluate(() => {
         const cp = grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot');

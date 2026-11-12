@@ -1,5 +1,3 @@
-/* The value carriers generated specs pass to step functions, and the context switch they emit
-   after a step declared with `enters`. */
 import type {Page} from '@playwright/test';
 import {ContextEntry, DatasetEntry, lookupContext, lookupDataset} from '../registry.js';
 

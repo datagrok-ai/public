@@ -23,31 +23,12 @@ import {Model, ModelInfo} from './model';
 
 import utc from 'dayjs/plugin/utc';
 import dayjs from 'dayjs';
+import {BIOREACTOR_DEMO_INFO, BIOREACTOR_DEMO_EQUATIONS, PK_PD_DEMO_EQUATIONS, PK_PD_DEMO_INFO} from './demo/demo-defs';
 
 export const _package = new DG.Package();
 
 /** Default demo layout for `.ivp`-driven demos. */
-const DEMO_UI_OPTS = {inputsTabDockRatio: 0.17, graphsDockRatio: 0.85};
-
-/** Run a model shipped under `files/<modelFile>` as a Diff Studio demo — equations come from the
- *  `.ivp` file (single source of truth). Help text is the companion `<helpFile>` readme when given,
- *  otherwise it falls back to text derived from the model's `#description`. */
-async function runIvpDemo(modelFile: string, helpFile?: string): Promise<void> {
-  const equations = await _package.files.readAsText(modelFile);
-  let info = '';
-  if (helpFile) {
-    try {
-      info = await _package.files.readAsText(helpFile);
-    } catch {
-      // readme missing — fall back to #description below
-    }
-  }
-  if (!info) {
-    const descr = (/^#description:\s*(.+)$/m.exec(equations)?.[1] ?? '').trim();
-    info = `# Model\n${descr}\n\n# Try\nInteractive results update as you change the inputs.`;
-  }
-  await new Model({equations, uiOptions: DEMO_UI_OPTS, info}).runDemo();
-}
+const DEMO_UI_OPTS = {inputsTabDockRatio: 0.17, graphsDockRatio: 0.85, skipPrefetch: true};
 
 //name: info
 export function info() {
@@ -189,7 +170,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.fileHandler({
-    ext: 'ipv',
+    ext: 'ivp',
   })
   static async ivpFileHandler(content: string) {
     const solver = new DiffStudio();
@@ -314,7 +295,11 @@ export class PackageFunctions {
     },
   })
   static async demoSimPKPD(): Promise<any> {
-    await runIvpDemo('models/pk-pd.ivp', 'models/pk-pd.md');
+    await new Model({
+      equations: PK_PD_DEMO_EQUATIONS,
+      uiOptions: DEMO_UI_OPTS,
+      info: PK_PD_DEMO_INFO,
+    }).runDemo();
   }
 
 
@@ -325,7 +310,11 @@ export class PackageFunctions {
     test: {test: 'demoBioreactor()', wait: '100'},
   })
   static async demoBioreactor(): Promise<any> {
-    await runIvpDemo('models/bioreactor.ivp', 'models/bioreactor.md');
+    await new Model({
+      equations: BIOREACTOR_DEMO_EQUATIONS,
+      uiOptions: DEMO_UI_OPTS,
+      info: BIOREACTOR_DEMO_INFO,
+    }).runDemo();
   }
 
 

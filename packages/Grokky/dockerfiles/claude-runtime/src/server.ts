@@ -1,63 +1,28 @@
+import './privileges';
 import {Hono} from 'hono';
 import {serve} from '@hono/node-server';
 import {createNodeWebSocket} from '@hono/node-ws';
+import type {WSContext} from 'hono/ws';
 import {syncUserFiles} from './sync/orchestrator';
 import {userDirs} from './user/user-dir';
 import {startWorkspaceSync} from './sync/workspace';
 import {buildHelpIndex} from './help-index';
-import {WORKSPACE, rewriteForDocker} from './constants';
-import {apiUrlFromMcpUrl} from './query-options';
-import {BROKER_BASE} from './broker/provider-env';
-import {getProviderInfo, authStart, authCode} from './broker/broker-client';
-import {emit, handleMessage, handleAbort, handleInputResponse, handleDisconnect} from './session';
+import {WORKSPACE, apiUrlFromMcpUrl, rewriteForDocker} from './constants';
+import {emit} from './stream-filter';
+import type {WsSender} from './stream-filter';
+import {handleMessage, handleAbort, handleInputResponse, handleDisconnect} from './session';
 import {claimTask, releaseTask} from './tasks';
-import type {WsSender} from './session';
+import {disposeAll, startPool} from './agent/pool';
+import {CONTAINER_TOKEN_HEADER, userCredentials} from './credentials';
 
 const PORT = 5355;
-
-let authOwner: WsSender | null = null;
-
-async function handleAuthStart(ws: WsSender): Promise<void> {
-  authOwner = ws;
-  try {
-    const r = await authStart();
-    if (r.url)
-      emit(ws, {type: 'auth_url', url: r.url});
-    else
-      emit(ws, {type: 'auth_error', message: r.error ?? 'Authentication failed to start'});
-  } catch (e: any) {
-    emit(ws, {type: 'auth_error', message: e.message});
-  }
-}
-
-async function handleAuthCode(ws: WsSender, code: string): Promise<void> {
-  try {
-    const r = await authCode(code);
-    if (r.status === 'done')
-      emit(ws, {type: 'auth_done'});
-    else
-      emit(ws, {type: 'auth_error', message: r.message ?? 'Authentication failed'});
-  } catch (e: any) {
-    emit(ws, {type: 'auth_error', message: e.message});
-  }
-}
-
-// ---------------------------------------------------------------------------
-// HTTP + WebSocket transport — routes incoming ws messages to their handlers
-// ---------------------------------------------------------------------------
+// The life of the container token a connection brings: its credentials are not re-read after that.
+const CREDENTIALS_TTL_MS = 15 * 60_000;
 
 const app = new Hono();
 const {injectWebSocket, upgradeWebSocket} = createNodeWebSocket({app});
 
-app.get('/health', async (c) => {
-  try {
-    if (!(await fetch(`${BROKER_BASE}/health`)).ok)
-      return c.json({status: 'degraded', broker: 'unhealthy'}, 503);
-  } catch {
-    return c.json({status: 'degraded', broker: 'unreachable'}, 503);
-  }
-  return c.json({status: 'ok'});
-});
+app.get('/health', (c) => c.json({status: 'ok'}));
 
 // Admission-task long-poll for the queued route (see tasks.ts). The celery worker
 // re-polls while the answer is {status: 'running'}; any other status ends its task.
@@ -77,13 +42,36 @@ app.post('/task/release', async (c) => {
   return c.json({status: 'released'});
 });
 
-app.get('/ws', upgradeWebSocket(() => {
+app.get('/ws', upgradeWebSocket((c) => {
+  // The token comes only with the handshake. A connection whose lookup failed, or whose credentials have outlived
+  // the token, is closed once idle: the browser's next prompt reconnects and the credentials are read again.
+  const credentials = userCredentials(c.req.header(CONTAINER_TOKEN_HEADER));
+  let stale = false;
+  let turns = 0;
+  let socket: WSContext | undefined;
+  const closeIfStale = () => {
+    if (stale && !turns)
+      socket?.close(1000, 'Credentials refresh');
+  };
+  credentials.catch((e: Error) => {
+    console.warn(`credentials: ${e.message}`);
+    stale = true;
+  });
+  const expiry = setTimeout(() => {
+    stale = true;
+    closeIfStale();
+  }, CREDENTIALS_TTL_MS);
   const sessionIds = new Set<string>();
-  let conn: WsSender | null = null;
+  const disconnect = (_evt: unknown, ws: WsSender) => {
+    clearTimeout(expiry);
+    handleDisconnect(sessionIds, ws);
+  };
   return {
+    onOpen(_evt: Event, ws: WSContext) {
+      socket = ws;
+    },
     onMessage(evt: any, ws: any) {
       const sender = ws as unknown as WsSender;
-      conn = sender;
       let data: any;
       try {
         data = JSON.parse(String(evt.data));
@@ -103,16 +91,6 @@ app.get('/ws', upgradeWebSocket(() => {
 
       if (data.type === 'input_response') {
         handleInputResponse(sender, data);
-        return;
-      }
-
-      if (data.type === 'auth_start') {
-        handleAuthStart(sender);
-        return;
-      }
-
-      if (data.type === 'auth_code') {
-        handleAuthCode(sender, data.code ?? '');
         return;
       }
 
@@ -145,40 +123,34 @@ app.get('/ws', upgradeWebSocket(() => {
       }
 
       sessionIds.add(data.sessionId ?? '');
-      handleMessage(sender, data).catch((e: any) =>
-        emit(sender, {type: 'error', sessionId: data.sessionId ?? '', message: String(e?.message ?? e)}));
+      turns++;
+      handleMessage(sender, data, credentials).catch((e: any) =>
+        emit(sender, {type: 'error', sessionId: data.sessionId ?? '', message: String(e?.message ?? e)}))
+        .finally(() => {
+          turns--;
+          closeIfStale();
+        });
     },
-    onClose() {
-      if (authOwner === conn)
-        authOwner = null;
-      handleDisconnect(sessionIds);
-    },
-    onError() {
-      if (authOwner === conn)
-        authOwner = null;
-      handleDisconnect(sessionIds);
-    },
+    onClose: disconnect,
+    onError: disconnect,
   };
 }));
 
 app.notFound((c) => c.json({error: 'Not found'}, 404));
 app.onError((err, c) => c.json({error: String(err)}, 500));
 
-getProviderInfo().then((info) => {
-  console.log(`Claude auth: broker mode = ${info.mode}`);
-  if (info.mode === 'none')
-    console.warn('Claude auth: broker reports no provider configured — API calls will fail');
-}).catch((e: any) => console.warn('Claude auth: could not reach broker /status:', e.message));
-
-// ---------------------------------------------------------------------------
-// Startup
-// ---------------------------------------------------------------------------
-
-// Survive stray SDK rejections (e.g. abort races) instead of letting Node kill the container.
+// Survive stray rejections (e.g. abort races) instead of letting Node kill the container.
 process.on('unhandledRejection', (reason) => console.error('unhandledRejection (survived):', reason));
 process.on('uncaughtException', (err) => console.error('uncaughtException (survived):', err));
+// Agent processes run in their own process groups, so they do not die with this one on their own.
+for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(signal, () => {
+    disposeAll(signal);
+    process.exit(0);
+  });
+}
 
-const server = serve({fetch: app.fetch, port: PORT});
+const server = serve({fetch: app.fetch, port: PORT}, () => startPool());
 injectWebSocket(server);
 startWorkspaceSync();
 try {

@@ -7,8 +7,13 @@ import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
 import {vectorDotProduct, vectorLength} from '@datagrok-libraries/utils/src/vector-operations';
 
 import {
+  Atom, Bond, expandRepeats, formatConnectionPosition, Group, isAmbiguousBond, Mol, parseHelm, ParseResult, RGroupRef,
+  ValidationDiagnostic,
+} from '@datagrok-libraries/hwe';
+
+import {
   CandidateSimType,
-  CandidateType, ISeqGraphInfo, ISeqSplitted,
+  CandidateType, ISeqConnectionExt, ISeqGraphInfo, ISeqGraphInfoHelm, ISeqRepeat, ISeqSplitted,
   MonomerFreqs,
   SeqColStats, SeqSplittedBase,
   SplitterFunc
@@ -21,7 +26,6 @@ import {UnknownSeqPalettes} from '../../unknown';
 import {ISeqHelper} from '../seq-helper';
 
 import {ISeqHandler} from './seq-handler';
-import {cleanupHelmSymbol} from '../../helm/utils';
 import {HelmTypes, PolymerTypes} from '../../helm/consts';
 import {HelmType, PolymerType} from '../../helm/types';
 
@@ -76,83 +80,16 @@ export class StringListSeqSplitted implements ISeqSplitted {
 }
 
 
-/** Same as string list splitted, but for helm will also encode the graph info, and define a getter for it
- *
- */
-export class HelmSplitted extends StringListSeqSplitted {
-  private polymerTypes: PolymerType[];
-  constructor(
-    protected mListSeparated: string[][], // list of lists of monomers (separated by | in helm notation
-    private readonly connections: string, // string part of helm defining connections between monomers
-    polymerTypes: PolymerType[], // polymer types for each disjoint sequence part
-    gapOriginalMonomer: string,
-  ) {
-    super(mListSeparated.flat(), gapOriginalMonomer);
-    this.polymerTypes = mListSeparated.map((n, i) => new Array(n.length).fill(polymerTypes[i])).flat();
-  }
+/** Same as string list splitted, but also encodes the graph info (chains, connections), built by
+ * {@link parseConnections} on first access */
+export abstract class HelmSplitted extends StringListSeqSplitted {
   protected _graphInfo: ISeqGraphInfo | undefined = undefined;
   get graphInfo(): ISeqGraphInfo {
     this._graphInfo ??= this.parseConnections();
     return this._graphInfo;
   }
 
-  protected parseConnections(): ISeqGraphInfo {
-    const graphInfo: ISeqGraphInfo = {
-      connections: [],
-      disjointSeqStarts: [],
-      polymerTypes: this.polymerTypes
-    };
-    // Start positions of each disjoint sequence part (chain). This is
-    // independent of connections: a HELM like RNA1{...}|RNA2{...}$$$$ has two
-    // disjoint chains even though it declares no inter-chain connections.
-    // Always record the chain boundaries so downstream consumers (multi-chain
-    // atomic-level assembly, the '|' chain separator in the cell renderer)
-    // can see them.
-    let seqStart = 0;
-    for (let i = 0; i < this.mListSeparated.length; ++i) {
-      graphInfo.disjointSeqStarts.push(seqStart);
-      seqStart += this.mListSeparated[i].length;
-    }
-    if ((this.connections?.length ?? 0) > 0) {
-      // parse connections like PEPTIDE2,PEPTIDE2,16:R2-1:R1
-      const connectionParts = (this.connections ?? '').split('|').filter((cp) => (cp?.length ?? 0) > 0);
-      const sequenceConSeqIdxRe = /^(PEPTIDE|RNA|BLOB|CHEM)\d{1,2}$/;
-      const sequenceConRe = /^\d{1,2}:R\d{1}-\d{1,2}:R\d{1}$/;
-      for (const cp of connectionParts) {
-        const cpParts = cp.split(',');
-        if (cpParts.length !== 3 || !sequenceConRe.test(cpParts[2]) || !sequenceConSeqIdxRe.test(cpParts[0]) || !sequenceConSeqIdxRe.test(cpParts[1]))
-          continue;
-        const seq1 = parseInt(cpParts[0].replace(/^(PEPTIDE|RNA|BLOB|CHEM)/, '')) - 1;
-        const seq2 = parseInt(cpParts[1].replace(/^(PEPTIDE|RNA|BLOB|CHEM)/, '')) - 1;
-        const seq1Type = cpParts[0].replace(/\d{1,2}$/, '') as PolymerType;
-        const seq2Type = cpParts[1].replace(/\d{1,2}$/, '') as PolymerType;
-        if (seq1 < 0 || seq1 >= this.mListSeparated.length || seq2 < 0 || seq2 >= this.mListSeparated.length)
-          continue;
-        const conParts = cpParts[2].split('-');
-        if (conParts.length !== 2)
-          continue;
-        const con1Parts = conParts[0].split(':');
-        const con2Parts = conParts[1].split(':');
-        if (con1Parts.length !== 2 || con2Parts.length !== 2)
-          continue;
-        const con1 = parseInt(con1Parts[0]) - 1;
-        const con2 = parseInt(con2Parts[0]) - 1;
-        if (con1 < 0 || con1 >= this.mListSeparated[seq1].length || con2 < 0 || con2 >= this.mListSeparated[seq2].length)
-          continue;
-        graphInfo.connections.push({
-          seq1Type: seq1Type as PolymerType,
-          seq2Type: seq2Type as PolymerType,
-          seqIndex1: seq1,
-          seqIndex2: seq2,
-          monomerIndex1: con1,
-          monomerIndex2: con2,
-          rGroup1: parseInt(con1Parts[1].substring(1)),
-          rGroup2: parseInt(con2Parts[1].substring(1)),
-        });
-      }
-    }
-    return graphInfo;
-  }
+  protected abstract parseConnections(): ISeqGraphInfo;
 }
 
 /** Gets canonical monomers for original ones with cyclization marks */
@@ -160,6 +97,8 @@ export class BilnSeqSplitted extends HelmSplitted {
   override getCanonical(posIdx: number): string {
     if (this.isGap(posIdx)) return GAP_SYMBOL;
     const om = this.getOriginal(posIdx);
+    // a cyclization mark ends with ')': without one, there is nothing to strip
+    if (om.charCodeAt(om.length - 1) !== 41 /* ) */) return om;
     let cmRes = om;
     const re = /\(\d{1,2},\d{1,2}\)$/; // there can be multiple cyclization marks
     while (re.test(cmRes))
@@ -169,12 +108,14 @@ export class BilnSeqSplitted extends HelmSplitted {
 
   override getOriginal(posIdx: number): string {
     const om = super.getOriginal(posIdx);
-    // replace [] with '' for biln
+    // replace [] with '' for biln; only a monomer starting with '[' has them
+    if (om.charCodeAt(0) !== 91 /* [ */) return om;
     return om.replace(/^\[(.*)\]/, '$1');
   }
 
-  constructor(seqListSplit: string[][], gapOriginalMonomer: string) {
-    super(seqListSplit, '', seqListSplit.map(() => PolymerTypes.PEPTIDE), gapOriginalMonomer);
+  /** @param {string[][]} mListSeparated monomers of each disjoint part ('.'-separated in BILN) */
+  constructor(protected readonly mListSeparated: string[][], gapOriginalMonomer: string) {
+    super(mListSeparated.flat(), gapOriginalMonomer);
   }
 
   protected override parseConnections(): ISeqGraphInfo {
@@ -315,10 +256,9 @@ function getStats(splitted: Iterable<ISeqSplitted>, minLength: number): SeqColSt
  * @return {string[]} array of monomers
  */
 export const splitterAsFasta: SplitterFunc = (seq: string): ISeqSplitted => {
-  const mmList = wu<RegExpMatchArray>(seq.toString().matchAll(monomerRe))
-    .map((ma: RegExpMatchArray) => {
-      return ma[2] ?? ma[1]; // preserve '-' as gap symbol for compatibility with simpleAsFastaSimple
-    }).toArray();
+  const mmList: string[] = [];
+  for (const ma of seq.toString().matchAll(monomerRe))
+    mmList.push(ma[2] ?? ma[1]); // preserve '-' as gap symbol for compatibility with simpleAsFastaSimple
 
   return new StringListSeqSplitted(mmList, GapOriginals[NOTATION.FASTA]);
 
@@ -357,46 +297,299 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
   };
 }
 
-// this scary thing is a pattern for matching HELM RNA notation with most complex cases like [Sug(smt)]([NNs])[pm()].
-export const RNA_HELM_TRIPLET_MONOMER_REG = /^((?:[^\[\]()]|\[[^\[\]]*\])+)\(((?:[^\[\]()]|\[[^\[\]]*\])+)\)((?:[^\[\]()]|\[[^\[\]]*\])+)$/;
-// this one matches the terminal phosphate-less monomer in RNA HELM notation, e.g. [dR](A) or [R](A)
-export const RNA_HELM_TERMINAL_PHOSPHATELESS_MONOMER_REG = /^((?:[^\[\]()]|\[[^\[\]]*\])+)\(((?:[^\[\]()]|\[[^\[\]]*\])+)\)$/;
-/** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).
- * Only for linear polymers, does not split RNA for ribose and phosphate monomers.
+/** Non-implicit hwe bond in flat positions; graphInfo is built from these on first access. `ambiguous` is the
+ * connection as written when its ends are not one monomer each (hwe's `isAmbiguousBond`). */
+type HweLink = { a1: number, a2: number, r1: RGroupRef, r2: RGroupRef, kind: string, ambiguous?: string };
+
+/** What {@link HweHelmSplitted} keeps of an hwe parse to build its graph info on first access */
+type HweRow = {
+  monomerPolymerTypes: PolymerType[],
+  chainStarts: number[],
+  chainIds: string[],
+  links: HweLink[],
+  biotypes: HelmType[],
+  biotypesKnown: boolean,
+  /** The parsed molecule, kept only when it has repeat brackets: they expand on first access */
+  repeatMol: Mol | null,
+  diagnostics: readonly ValidationDiagnostic[],
+  ambiguities: string[] | null,
+  /** An hwe parse the adapter cannot map to positions (not expected from hwe): the row is empty, with this error */
+  unmapped?: string,
+};
+
+/** HELM split by the hwe parser (PLAN §5.2, D4): one position per hwe atom in source order (RNA sugar, base and
+ * linker are separate positions), position = `continuousId - 1`. The extended graph info is built on first access. */
+class HweHelmSplitted extends HelmSplitted {
+  constructor(mList: string[], private readonly row: HweRow) {
+    super(mList, GapOriginals[NOTATION.HELM]);
+  }
+
+  protected override parseConnections(): ISeqGraphInfo {
+    const row = this.row;
+    const starts = row.chainStarts;
+    const gi: ISeqGraphInfoHelm = {connections: [], disjointSeqStarts: starts, polymerTypes: row.monomerPolymerTypes};
+    const chainOf = (pos: number): number => {
+      let c = starts.length - 1;
+      while (c > 0 && starts[c] > pos) --c;
+      return c;
+    };
+    const errors: string[] = row.unmapped !== undefined ? [row.unmapped] : [];
+    if (row.ambiguities) errors.push(...row.ambiguities);
+    const hbonds: ISeqConnectionExt[] = [];
+    for (const l of row.links) {
+      // Multi-site positions, ranges, '?', symbol positions found more than once, group endpoints: hwe draws such a
+      // bond at the first candidate, which is not a bond of the molecule; it is in neither list (see
+      // ISeqGraphInfoHelm.connections).
+      if (l.ambiguous !== undefined) {
+        errors.push(`ambiguous connection '${l.ambiguous}' is not supported`);
+        continue;
+      }
+      const c1 = chainOf(l.a1);
+      const c2 = chainOf(l.a2);
+      if (l.kind === 'hbond') {
+        hbonds.push({
+          seq1Type: gi.polymerTypes![l.a1], seq2Type: gi.polymerTypes![l.a2], seqIndex1: c1, seqIndex2: c2,
+          monomerIndex1: l.a1 - starts[c1], monomerIndex2: l.a2 - starts[c2], rGroup1: 0, rGroup2: 0, kind: 'hbond',
+        });
+        continue;
+      }
+      if (l.kind !== 'cross-polymer' || l.r1.kind !== 'numeric' || l.r2.kind !== 'numeric') {
+        const desc = `${row.chainIds[c1]},${row.chainIds[c2]},${l.a1 - starts[c1] + 1}-${l.a2 - starts[c2] + 1}`;
+        errors.push(`connection ${desc} with R-groups '${rGroupRefToString(l.r1)}', '${rGroupRefToString(l.r2)}' ` +
+          `is not supported`);
+        continue;
+      }
+      gi.connections.push({
+        seq1Type: gi.polymerTypes![l.a1], seq2Type: gi.polymerTypes![l.a2], seqIndex1: c1, seqIndex2: c2,
+        monomerIndex1: l.a1 - starts[c1], monomerIndex2: l.a2 - starts[c2], rGroup1: l.r1.r, rGroup2: l.r2.r,
+        kind: 'covalent',
+      });
+    }
+    // HELM has no DNA polymer; hwe reads DNA1{..} as RNA, but its monomers are not RNA library keys
+    for (const id of row.chainIds)
+      if (id.startsWith('DNA')) errors.push(`polymer type 'DNA' is not supported (${id})`);
+    // Lenient-parse errors that change the graph (dropped connections, unterminated braces, CHEM repeats, ...);
+    // missing '$' sections and the trailing tokens of V1.0 strings are harmless. Whitespace, multi-site positions
+    // and group endpoints are warnings and infos in hwe 1.1.0.
+    const recovered = row.unmapped !== undefined || row.diagnostics.some(isHweRecoveryError);
+    const repeatTooLarge = row.diagnostics.some((d) => d.code === 'bracket-repeat-too-large');
+    errors.push(...hweDiagnosticErrors(row.diagnostics));
+
+    gi.hbonds = hbonds;
+    gi.chainIds = row.chainIds;
+    if (row.biotypesKnown) gi.biotypes = row.biotypes;
+    gi.repeats = row.repeatMol && !repeatTooLarge ? hweRepeats(row.repeatMol, this.length, errors) : [];
+    gi.errors = errors;
+    if (recovered) gi.recovered = true;
+    return gi;
+  }
+}
+
+/** An empty row with the error {@link unmapped} and hwe's diagnostics: an hwe parse whose atoms cannot be mapped to
+ * positions (not expected from hwe) */
+function hweUnmappedRow(unmapped: string, diagnostics: readonly ValidationDiagnostic[]): HweHelmSplitted {
+  return new HweHelmSplitted([], {monomerPolymerTypes: [], chainStarts: [], chainIds: [], links: [], biotypes: [],
+    biotypesKnown: false, repeatMol: null, diagnostics, ambiguities: null, unmapped});
+}
+
+/** Lenient-parse error codes of hwe that leave the parsed graph right */
+const HWE_HARMLESS_ERRORS = new Set<string>(['missing-section-separator']);
+/** hwe warnings whose graph is not what the HELM says: a zero repeat count (the monomers stay once), a repeat over
+ * 10000 (not expanded), two polymers with one id (connections go to the last) */
+const HWE_ERROR_WARNINGS = new Set<string>(['repeat-zero-count', 'bracket-repeat-too-large', 'duplicate-polymer-id']);
+
+/** An hwe error after which the lenient parser skipped part of the string (an unterminated brace, an unexpected
+ * token, ...): monomers after it may be missing from the parse */
+function isHweRecoveryError(d: ValidationDiagnostic): boolean {
+  return d.severity === 'error' && !HWE_HARMLESS_ERRORS.has(d.code);
+}
+
+/** Row errors from hwe's diagnostics: the recovery errors and the warnings of {@link HWE_ERROR_WARNINGS} */
+function hweDiagnosticErrors(diagnostics: readonly ValidationDiagnostic[]): string[] {
+  const errors: string[] = [];
+  for (const d of diagnostics) {
+    if (isHweRecoveryError(d) || HWE_ERROR_WARNINGS.has(d.code))
+      errors.push(`HELM ${d.code}: ${d.message}`);
+  }
+  return errors;
+}
+
+function rGroupRefToString(r: RGroupRef): string {
+  switch (r.kind) {
+  case 'numeric': return `R${r.r}`;
+  case 'positional': return `${r.position}:R${r.r}`;
+  case 'unspecified': return '?';
+  case 'wildcard': return '*';
+  case 'pair': return 'pair';
+  }
+}
+
+/** A connection with {@link Bond.endpoints} as the HELM wrote it, e.g. `PEPTIDE1,CHEM1,(1,3):R3-1:R1` */
+function hweConnectionToString(b: Bond): string {
+  const [e1, e2] = b.endpoints!;
+  return `${e1.polymerId},${e2.polymerId},${formatConnectionPosition(e1.position)}:${rGroupRefToString(b.r1)}-` +
+    `${formatConnectionPosition(e2.position)}:${rGroupRefToString(b.r2)}`;
+}
+
+/** True when every end of an ambiguous-looking bond is one monomer after all: an index, or a symbol position
+ * (`C:R3`) whose symbol occurs once in its polymer, where hwe draws the bond. Group ids, `?`, lists and ranges are
+ * never definite. */
+function isDefiniteBySymbol(b: Bond, atoms: readonly Atom[]): boolean {
+  for (const e of b.endpoints!) {
+    if (e.isGroup) return false;
+    const p = e.position;
+    if (p.kind === 'index') continue;
+    if (p.kind !== 'symbol') return false;
+    let count = 0;
+    for (const a of atoms) if (a.symbol === p.value && a.bio.chainId === e.polymerId) ++count;
+    if (count !== 1) return false;
+  }
+  return true;
+}
+
+const repeatCountToString = (r: { min: number, max: number }): string =>
+  r.min === r.max ? `'${r.min}'` : `'${r.min}-${r.max}'`;
+
+/** The fixed repeats of {@link mol} as flat source ranges [start, end) for assembly-input's `expandAsmRepeats`, which
+ * copies each range in place, the copies keeping the source positions (D9). Which repeats are fixed comes from hwe's
+ * `expandRepeats`; the ranges are checked against its expansion (`bio.sourceContinuousId` of every expanded atom).
+ * Ranges `'2-5'`, CHEM repeats, nested repeats and zero counts add to {@link errors}.
+ * @param {Mol} mol hwe parse with repeat brackets
+ * @param {number} n flat monomer count (the atoms of {@link mol})
+ * @param {string[]} errors the row's errors, appended to
+ * @return {ISeqRepeat[]} the fixed repeats, in source order */
+function hweRepeats(mol: Mol, n: number, errors: string[]): ISeqRepeat[] {
+  const atomOfId = new Map<number, Atom>();
+  for (const a of mol.atoms) atomOfId.set(a.id, a);
+  const spanOf = (g: Group): { start: number, end: number } => {
+    let start = n;
+    let end = 0;
+    for (const m of g.members) {
+      const a = atomOfId.get(parseInt(m.target, 10));
+      if (a === undefined) continue;
+      start = Math.min(start, a.bio.continuousId - 1);
+      // An RNA sugar member brings its base (the next position)
+      end = Math.max(end, a.bio.continuousId, a.branchAtom?.bio.continuousId ?? 0);
+    }
+    return {start, end};
+  };
+  const {mol: expanded, unexpanded} = expandRepeats(mol);
+  const repeats: ISeqRepeat[] = [];
+  for (const g of mol.groups) {
+    if (g.kind !== 'bracket' || g.repeat === undefined) continue;
+    const {start, end} = spanOf(g);
+    const where = end > start ? ` at position ${start + 1}` : '';
+    if (unexpanded.includes(g)) {
+      errors.push(g.repeat.min !== g.repeat.max ? `repeat range ${repeatCountToString(g.repeat)}${where} is not supported` :
+        `repeat ${repeatCountToString(g.repeat)}${where} is not supported`);
+    } else if (!(g.repeat.min >= 1))
+      errors.push(`repeat ${repeatCountToString(g.repeat)}${where} is not supported`);
+    else if (end > start)
+      repeats.push({start, end, min: g.repeat.min, max: g.repeat.max});
+  }
+  repeats.sort((x, y) => x.start - y.start);
+  for (let i = 1; i < repeats.length; ++i) {
+    if (repeats[i].start < repeats[i - 1].end) {
+      errors.push(`nested repeats at position ${repeats[i - 1].start + 1} are not supported`);
+      return repeats;
+    }
+  }
+  // The expansion the ranges give, in source positions, must be hwe's
+  const expected: number[] = [];
+  for (let i = 0, ri = 0; i < n;) {
+    const r = ri < repeats.length && repeats[ri].start === i ? repeats[ri++] : null;
+    if (r === null) { expected.push(i++); continue; }
+    for (let copy = 0; copy < r.min; ++copy) for (let k = r.start; k < r.end; ++k) expected.push(k);
+    i = r.end;
+  }
+  const got: number[] = new Array(expanded.atoms.length);
+  for (const a of expanded.atoms) got[a.bio.continuousId - 1] = (a.bio.sourceContinuousId ?? a.bio.continuousId) - 1;
+  if (got.length !== expected.length || got.some((p, i) => p !== expected[i]))
+    errors.push(`repeats at positions ${repeats.map((r) => r.start + 1).join(', ')} expand differently in hwe`);
+  return repeats;
+}
+
+/** Parses HELM with hwe, leniently and without a monomer library (no resolution, no library side effects) */
+function hweParseHelm(seq: string): ParseResult {
+  return parseHelm(seq, null, {mode: 'lenient'});
+}
+
+/** Splits HELM to monomers with the hwe parser (PLAN §5.2, D4), keeping the {@link ISeqSplitted} contract:
+ * one position per hwe atom in source order, so RNA `R(A)P` gives the positions R, A, P (position = `continuousId - 1`
+ * of hwe); originals without the enclosing square brackets; `*` is the gap. Repeats are listed once, as written
+ * (`A.(G.C)'2'` is A, G, C): renderers and WebLogo see the source tokens, and only the assembly input expands them,
+ * from `graphInfo.repeats`. `graphInfo` (built on first access) holds the section-1 connections with the chain index
+ * in source order and any position or R-group number, chain starts, per-monomer polymer types, and the
+ * {@link ISeqGraphInfoHelm} extras: hydrogen bonds, chain ids, biotypes, repeats and the errors that make the row
+ * unbuildable at atomic level (ambiguity, ambiguous connections, repeat ranges, ...).
+ * Invalid HELM keeps what hwe read: a row hwe cannot parse at all has no monomers, and one hwe recovered from a syntax
+ * error in may miss the monomers after it (hwe skips the rest of the polymer, so `PEPTIDE1{Ac(1).A.A}$$$$` reads as
+ * `Ac` alone). Both carry hwe's errors in `graphInfo.errors` and `graphInfo.recovered`, which keep the row
+ * unbuildable at atomic level.
  * EG byciclic helm: PEPTIDE1{F}|PEPTIDE2{[dI].[Trp_Ome].[Asp_OMe].[Cys_Bn].[meG].[Phe_3Cl].[dD].T.[dI].T.[dK].[aG].[3Pal].[xiIle].[meD].[Ala_tBu]}|PEPTIDE3{L.[Pro_4Me3OH].S.[NMe2Abz].Q.[3Pal].[xiIle].[D-Hyp].[Ala_tBu].[dI].[Trp_Ome].[Asp_OMe].N.[meG].[Phe_34diCl].[Phe_34diCl]}$PEPTIDE2,PEPTIDE2,16:R2-1:R1|PEPTIDE3,PEPTIDE3,16:R2-1:R1|PEPTIDE3,PEPTIDE2,10:R3-1:R3|PEPTIDE1,PEPTIDE2,1:R2-9:R3$$$V2.0
- * Also should support smiles in monomer names, like: PEPTIDE1{[ac].L.N.[*N[C@H](C(=O)*)Cc1ccc(cc1)OP(=O)(O)O |$_R1;;;;;_R2;;;;;;;;;;;;$|].I.D.L.D.L.V.[am]}$$$$
+ * Also supports smiles in monomer names, like: PEPTIDE1{[ac].L.N.[*N[C@H](C(=O)*)Cc1ccc(cc1)OP(=O)(O)O |$_R1;;;;;_R2;;;;;;;;;;;;$|].I.D.L.D.L.V.[am]}$$$$
  * @param {string} seq Source string of HELM notation
- * @param {ISeqSource} src Source of the {@link seq} string
- * @return {string[]}
+ * @return {ISeqSplitted}
  */
 export const splitterAsHelm: SplitterFunc = (seq: string): ISeqSplitted => {
-  const indexOfSequenceEnd = seq.indexOf('}$');
-  const sequencePart = seq.substring(0, indexOfSequenceEnd + 1);
-  const connectionsEndPart = seq.indexOf('$', indexOfSequenceEnd + 2);
-  const connectionsPart = seq.substring(indexOfSequenceEnd + 2, connectionsEndPart);
-  // const helmParts = seq.split('$');
-  const spList = sequencePart.split('}|');
-  // since we removed }|, need to add } to last part
-  for (let i = 0; i < spList.length - 1; i++)
-    spList[i] = spList[i] + '}';
+  const {mol, diagnostics} = hweParseHelm(seq);
+  const atoms = mol.atoms;
+  const chains = mol.chains;
+  const chainCount = chains.length;
+  const n = atoms.length;
+  const mList: string[] = new Array(n);
+  const monomerPolymerTypes: PolymerType[] = new Array(n);
+  const biotypes: HelmType[] = new Array(n);
+  const chainIds: string[] = new Array(chainCount);
+  const chainStarts: number[] = new Array(chainCount);
+  // Atoms come chain after chain, in the order of the chains: a chain covers its backbone atoms and their branches
+  // (RNA bases). Sizes, not ids, cut the chains, so two chains with one id (invalid, an error below) stay two.
+  let total = 0;
+  for (let c = 0; c < chainCount; ++c) {
+    chainIds[c] = chains[c].id;
+    chainStarts[c] = total;
+    for (const a of chains[c].backboneAtoms) total += a.branchAtom === undefined ? 1 : 2;
+  }
+  if (total !== n) return hweUnmappedRow('HELM parse: hwe chain sizes do not add up to its monomers', diagnostics);
+  let biotypesKnown = true;
+  let ambiguities: string[] | null = null;
+  let inOrder = true;
+  let c = -1;
+  let chainId = '';
+  let chainPt: PolymerType = PolymerTypes.PEPTIDE;
+  for (let i = 0; i < n; ++i) {
+    const a = atoms[i];
+    const bio = a.bio;
+    if (bio.continuousId !== i + 1) inOrder = false;
+    // a chain without atoms (G1{}) starts where the next one does
+    while (c + 1 < chainCount && chainStarts[c + 1] <= i) {
+      ++c;
+      chainId = chainIds[c];
+      chainPt = chains[c].polymerType;
+    }
+    if (bio.chainId !== chainId) inOrder = false;
+    mList[i] = a.symbol;
+    monomerPolymerTypes[i] = chainPt;
+    biotypes[i] = a.biotype;
+    // hwe (1.1.0 too) reads a lone RNA token (a 5' phosphate `P.R(A)P`, a spacer) as a sugar slot without a base
+    if (a.biotype === HelmTypes.SUGAR && a.branchAtom === undefined) biotypesKnown = false;
+    if (bio.ambiguity !== undefined)
+      (ambiguities ??= []).push(`ambiguous monomer '${bio.ambiguity}' at position ${i + 1} is not supported`);
+  }
+  // the position invariant or the chain cuts would not hold; not expected from hwe
+  if (!inOrder) return hweUnmappedRow('HELM parse: hwe chains out of order', diagnostics);
 
-  const polymerTypes = spList.map((sp) => sp.replace(/\d{1,2}\{.+\}/, '')) as PolymerType[];
-  const mListSplit = spList
-    .map((sp: string, i) => (sp.match(/(?<=\{).+(?=})/)?.[0]?.split('.') ?? [])
-      .flatMap((m) => {
-        if (polymerTypes[i] === PolymerTypes.RNA) {
-          const match = RNA_HELM_TRIPLET_MONOMER_REG.exec(m)!;
-          if (match != null)
-            return [cleanupHelmSymbol(match[1]), cleanupHelmSymbol(match[2]), cleanupHelmSymbol(match[3])];
-          const terminalMatch = RNA_HELM_TERMINAL_PHOSPHATELESS_MONOMER_REG.exec(m);
-          if (terminalMatch != null)
-            return [cleanupHelmSymbol(terminalMatch[1]), cleanupHelmSymbol(terminalMatch[2])];
-        }
-        return [cleanupHelmSymbol(m)];
-      }));
-  const res = new HelmSplitted(mListSplit, connectionsPart ?? '', polymerTypes, GapOriginals[NOTATION.HELM]);
-
-  return res;
+  const links: HweLink[] = [];
+  for (const b of mol.bonds) {
+    if (b.kind === 'backbone' || b.kind === 'branch') continue;
+    const l: HweLink = {a1: b.a1.bio.continuousId - 1, a2: b.a2.bio.continuousId - 1, r1: b.r1, r2: b.r2, kind: b.kind};
+    if (b.endpoints !== undefined && isAmbiguousBond(b) && !isDefiniteBySymbol(b, atoms))
+      l.ambiguous = hweConnectionToString(b);
+    links.push(l);
+  }
+  const repeatMol = mol.groups.some((g) => g.kind === 'bracket' && g.repeat !== undefined) ? mol : null;
+  return new HweHelmSplitted(mList, {monomerPolymerTypes, chainStarts, chainIds, links, biotypes, biotypesKnown,
+    repeatMol, diagnostics, ambiguities});
 };
 
 export function splitterAsBiln(seq: string): ISeqSplitted {
@@ -417,8 +610,8 @@ export function splitterAsBiln(seq: string): ISeqSplitted {
     disjointPartsRaw[i] = dp;
   }
   const disjointParts: string[][] = disjointPartsRaw
-    .map((ds) => ds.split('-')
-      .map((m) => m.replaceAll(tempSep, '-')));
+    .map((ds) => ds.indexOf(tempSep) === -1 ? ds.split('-') : // no monomer to restore
+      ds.split('-').map((m) => m.replaceAll(tempSep, '-')));
 
   //const totalLength = disjointParts.reduce((acc, ss) => acc + ss.length, 0);
   const res = new BilnSeqSplitted(

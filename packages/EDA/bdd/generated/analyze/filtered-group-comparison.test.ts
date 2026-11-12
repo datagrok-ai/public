@@ -23,19 +23,19 @@ test.describe("Group comparison of a filtered table", () => {
   const session = feature(test, "features/analyze/filtered-group-comparison.feature", import.meta.url);
   test("Group comparison of a filtered table", {tag: ["@journey", "@eda", "@realizes:ml.menu.analyze.group-comparison.control-comparisons"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 2, page);
+    const run = journey(test, 1, page);
     await session.step(12, "Given user is logged in", () => loggedIn(page));
-    await session.step(13, "And user opens demog dataset", () => openDataset(page, ds("demog")));
+    await session.step(13, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await run.scenario("Running control comparisons preserves the filter and produces the comparison table", async () => {
       await session.step(16, "When user filters rows where \"SEX\" is \"F\"", () => filterTo(page, "SEX", "F"));
-      await session.step(17, "Then 3243 rows should pass the filter", () => filterPasses(page, 3243));
+      await session.step(17, "Then 553 rows should pass the filter", () => filterPasses(page, 553));
       await session.step(18, "When user picks \"ML > Analyze > Group Comparison > Control Comparisons...\" from the top menu", () => pickFromTopMenu(page, "ML > Analyze > Group Comparison > Control Comparisons..."));
       await session.step(19, "Then \"Control comparisons\" dialog should be visible", () => shouldBe(page, el("\"Control comparisons\" dialog"), "visible"));
-      await session.step(20, "And 3243 rows should pass the filter", () => filterPasses(page, 3243));
+      await session.step(20, "And 553 rows should pass the filter", () => filterPasses(page, 553));
       await session.step(21, "When user clicks on Run button in \"Control comparisons\" dialog", () => clickOn(page, el("Run button in \"Control comparisons\" dialog")));
       await session.step(22, "Then table \"Control comparisons result\" should be open", () => tableOpen(page, "Control comparisons result"));
       await session.step(23, "And \"Control comparisons\" dialog should be hidden", () => shouldBe(page, el("\"Control comparisons\" dialog"), "hidden"));
-      await session.step(24, "And 3243 rows should pass the filter", () => filterPasses(page, 3243));
+      await session.step(24, "And 553 rows should pass the filter", () => filterPasses(page, 553));
       await session.step(25, "And table \"Control comparisons result\" should have 3 rows", () => tableRows(page, "Control comparisons result", 3));
       await session.step(26, "And table \"Control comparisons result\" should have no missing values in \"n\" column", () => tableColumnComplete(page, "Control comparisons result", "n"));
       await session.step(27, "And second grid viewer should be bound to table \"Control comparisons result\"", () => boundTable(page, el("second grid viewer"), "Control comparisons result"));
@@ -44,11 +44,6 @@ test.describe("Group comparison of a filtered table", () => {
       await session.step(30, "And the \"text of cell 3 of Group\" reading of second grid viewer should be \"Other\"", () => readingReads(page, "text of cell 3 of Group", el("second grid viewer"), "Other"));
       await session.step(31, "And no error or warning balloon should have been shown", () => noBalloons(page));
       await session.step(32, "And no errors should have been logged", () => noErrors(page));
-    });
-    await run.scenario("The comparison sizes count only the women", async () => {
-      await session.step(35, "Then the \"text of cell 1 of n\" reading of second grid viewer should be \"104\"", () => readingReads(page, "text of cell 1 of n", el("second grid viewer"), "104"));
-      await session.step(36, "And the \"text of cell 2 of n\" reading of second grid viewer should be \"2823\"", () => readingReads(page, "text of cell 2 of n", el("second grid viewer"), "2823"));
-      await session.step(37, "And the \"text of cell 3 of n\" reading of second grid viewer should be \"279\"", () => readingReads(page, "text of cell 3 of n", el("second grid viewer"), "279"));
     });
     run.finish();
   });

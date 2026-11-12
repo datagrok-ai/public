@@ -1,4 +1,4 @@
-import {computed, Scope, Control} from '../../src/index.js';
+import {computed, signal, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
 import {PropertyGrid} from '../../src/components/forms/property-grid.js';
 
@@ -82,9 +82,11 @@ export async function render(main) {
   intro.innerHTML = 'Two columns — a name cell (its <code>title</code> carries the description) and an ' +
     'inline editor picked from the property type. Rows sit under collapsible category headers; ' +
     'uncategorized ones come first. Every edit replaces the <code>values</code> record and reports the ' +
-    'change through <code>onChanged</code>; writing <code>values</code> from code pushes into all editors ' +
-    'without echoing back. Each <code>setProperties</code> builds its rows under a fresh child scope, so ' +
-    'no bridge outlives the row it belonged to — while category collapse state survives by name.';
+    'change through the <code>onChanged</code> option (and the <code>change</code> event); writing ' +
+    '<code>values</code> from code pushes into the editors whose value changed, without echoing back. ' +
+    'Rows are keyed by property name: <code>setProperties</code> keeps a row whose descriptor is unchanged ' +
+    '(its editor keeps focus), rebuilds a changed one in a fresh scope and disposes a gone one; category ' +
+    'collapse state survives by name.';
   main.append(intro);
 
   const scopeCount = el('span', null, String(Scope.liveCount));
@@ -103,7 +105,8 @@ export async function render(main) {
   };
 
   section('Viewer properties', () => {
-    const grid = new PropertyGrid();
+    const lastEdit = signal('nothing edited yet');
+    const grid = new PropertyGrid({onChanged: (change) => lastEdit.value = `${change.name} = ${JSON.stringify(change.value)}`});
     grid.setProperties(PROPS, VALUES);
     grid.root.style.width = '380px';
     grid.root.style.border = 'var(--dg-border-width) solid var(--dg-border)';
@@ -112,11 +115,6 @@ export async function render(main) {
     const json = span(computed(() => JSON.stringify(grid.values.value, null, 1)), 'u2-gallery-status');
     json.style.whiteSpace = 'pre-wrap';
     json.style.fontFamily = 'var(--dg-font-family-mono)';
-
-    const lastEdit = computed(() => {
-      const change = grid.onChanged.value;
-      return change === null ? 'nothing edited yet' : `${change.name} = ${JSON.stringify(change.value)}`;
-    });
 
     const buttons = divH([
       button('Set programmatically', () => grid.values.value = {...grid.values.peek(), ...PRESET}),
@@ -136,13 +134,13 @@ export async function render(main) {
   main.append(el('h2', null, 'Collapsing'));
   main.append(el('p', 'u2-gallery-status',
     'Click a category header (or focus it and press Enter or Space) to collapse it. Collapse a ' +
-    'category, then press "Re-apply properties" or "Add a category": the rows are rebuilt from scratch, ' +
-    'yet the categories you collapsed stay collapsed because the state is kept by name.'));
+    'category, then press "Re-apply properties" or "Add a category": the rows you had are kept, and ' +
+    'the categories you collapsed stay collapsed because the state is kept by name.'));
 
   main.append(el('h2', null, 'Disposal'));
   main.append(el('p', 'u2-gallery-status',
-    'The section owns the grid, the grid owns one child scope per setProperties call, and that scope ' +
-    'owns every editor and both directions of its value bridge. Disposing the section releases all of ' +
+    'The section owns the grid, the grid owns one child scope per category and per row, and a row\'s ' +
+    'scope owns its editor and both directions of its value bridge. Disposing the section releases all of ' +
     'them, and live scopes drop back to the page baseline.'));
   main.append(button('Dispose sections', () => {
     for (const part of parts)

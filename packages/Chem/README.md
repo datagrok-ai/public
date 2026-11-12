@@ -40,7 +40,7 @@ The following features are still in the core, but we plan to move them out to th
 
 ## Sketcher
 
-Supports multiple sketchers (MarvinJS, OpenChemLib, Ketcher).
+Supports multiple sketchers (MarvinJS, OpenChemLib, Ketcher, Crux).
 
 You can set the default Sketcher in the package property so that new users won't have to switch on the first use manually:
 
@@ -50,6 +50,20 @@ You can set the default Sketcher in the package property so that new users won't
 4. Set **Sketcher** to the desired default sketcher.
 
 ![default sketcher](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/gifs/default-sketcher.gif)
+
+## Chemical engine
+
+Chem runs on [RDKit](https://www.rdkit.org) compiled to WebAssembly, and gradually moves to Crux, a Rust port of
+RDKit compiled to one WebAssembly file (`vendor/chem-wasm`). Two package settings pick the engine (**Manage >
+Packages > Chem > Settings**, as above):
+
+* **Chemical Engine** (Crux by default): with **Crux**, molecules are drawn, descriptors, fingerprints and structural
+  alerts calculated and the scaffold tree built by Crux, in the browser (descriptors and the scaffold tree otherwise run
+  on the server); RDKit does the rest, and whatever Crux cannot handle. Other packages get RDKit objects from Chem in
+  both modes (`getRdKitModule`, `getRdKitService`); in Crux mode the pictures and values of the moved functions come
+  from Crux. Contains / Not contains searches follow it too: Crux indexes a column once and searches it many times
+  faster, with the same hits as RDKit (every query feature, as RDKit matches it); a query Crux cannot read runs on
+  RDKit.
 
 ## Favorite and recent structures
 
@@ -214,6 +228,9 @@ To add a fragment use:
   ![add structural alert highlight](help/add_structural_alert_highlight.gif)
 
 ## Scaffold Tree
+
+The magic wand generates the tree from the molecule column. A column of more than 750 molecules is generated from a
+sample of 750 spread over the whole column (the same rows each time); the wand's tooltip and the progress say so.
 
 We have seamlessly integrated Scaffold Tree with molecule fragments highlighting. To utilize this feature, we have introduced two icons:
 

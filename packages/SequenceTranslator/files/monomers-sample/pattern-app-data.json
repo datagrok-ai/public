@@ -14,7 +14,7 @@
     },
     "2'-O-Methyl": {
       "color": "rgb(150, 95, 245)",
-      "substitution": "$1f"
+      "substitution": "\\L$1"
     },
     "2'-O-MOE": {
       "color": "rgb(129, 199, 130)",

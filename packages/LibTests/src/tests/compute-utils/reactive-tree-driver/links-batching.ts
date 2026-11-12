@@ -3,7 +3,6 @@ import * as DG from 'datagrok-api/dg';
 import {category, test, before} from '@datagrok-libraries/test/src/test';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
-import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
@@ -20,7 +19,7 @@ category('ComputeUtils: Driver links batching', async () => {
     testScheduler = createTestScheduler();
   });
 
-  test('Batched default validators via runLinks', async () => {
+  test('Batched annotation checks via runLinks', async () => {
     const pconf = await getProcessedConfig({
       id: 'pipeline1',
       type: 'static',
@@ -38,7 +37,9 @@ category('ComputeUtils: Driver links batching', async () => {
 
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
-      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true, batchLinks: true});
+      const tree = StateTree.fromPipelineConfig({
+        config: pconf, mockMode: true, annotationChecks: true, batchLinks: true,
+      });
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
       const n1 = tree.nodeTree.getNode([{idx: 0}]);
@@ -50,7 +51,9 @@ category('ComputeUtils: Driver links batching', async () => {
         n2.getItem().getStateStore().setState('b', 4);
       });
       // With batching, all validators should complete — verify final state is correct
-      expectObservable((n1.getItem() as FuncCallNode).funcCallState$.pipe(skip(1), take(1)), '-^ 1000ms !').toBe('-(a|)', {
+      expectObservable(
+        (n1.getItem() as FuncCallNode).funcCallState$.pipe(skip(1), take(1)), '-^ 1000ms !',
+      ).toBe('-(a|)', {
         a: {
           'isRunning': false,
           'isRunnable': true,
@@ -58,7 +61,9 @@ category('ComputeUtils: Driver links batching', async () => {
           'pendingDependencies': [],
         },
       });
-      expectObservable((n2.getItem() as FuncCallNode).funcCallState$.pipe(skip(1), take(1)), '-^ 1000ms !').toBe('-(a|)', {
+      expectObservable(
+        (n2.getItem() as FuncCallNode).funcCallState$.pipe(skip(1), take(1)), '-^ 1000ms !',
+      ).toBe('-(a|)', {
         a: {
           'isRunning': false,
           'isRunnable': true,
@@ -116,7 +121,9 @@ category('ComputeUtils: Driver links batching', async () => {
         n2.getItem().getStateStore().setState('a', 2);
       });
       // Both validators should fire via the batch scheduler after a single debounceTime(0)
-      expectObservable((n1.getItem().getStateStore() as FuncCallInstancesBridge).validations$.pipe(skip(1), take(1)), '-^ 1000ms !').toBe('-(a|)', {
+      expectObservable(
+        (n1.getItem().getStateStore() as FuncCallInstancesBridge).validations$.pipe(skip(1), take(1)), '-^ 1000ms !',
+      ).toBe('-(a|)', {
         a: {
           [tree.linksState.links.values().next().value!.uuid]: {
             'a': {
@@ -156,8 +163,7 @@ category('ComputeUtils: Driver links batching', async () => {
 
     const pconf = await getProcessedConfig(config);
 
-    testScheduler.run((helpers) => {
-      const {cold, expectObservable} = helpers;
+    testScheduler.run(() => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, batchLinks: true});
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
@@ -216,7 +222,7 @@ category('ComputeUtils: Driver links batching', async () => {
         n1.getItem().getStateStore().setState('b', 2);
       });
       // Both meta links should fire and set their meta values
-      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).meta.a
+      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).meta.a,
       ).toBe('ab', {
         a: undefined,
         b: {
@@ -248,7 +254,7 @@ category('ComputeUtils: Driver links batching', async () => {
     };
     const pconf = await getProcessedConfig(config);
 
-    testScheduler.run((helpers) => {
+    testScheduler.run(() => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, batchLinks: false});
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
@@ -290,7 +296,7 @@ category('ComputeUtils: Driver links batching', async () => {
     };
     const pconf = await getProcessedConfig(config);
 
-    testScheduler.run((helpers) => {
+    testScheduler.run(() => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, batchLinks: true});
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
@@ -325,7 +331,7 @@ category('ComputeUtils: Driver links batching', async () => {
     };
     const pconf = await getProcessedConfig(config);
 
-    testScheduler.run((helpers) => {
+    testScheduler.run(() => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, batchLinks: true});
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();

@@ -10,8 +10,10 @@ Feature: The Files section of the Browse tree
   Browse-Files-04 (a file written on the server appears after Refresh, GROK-19844) is claimed with a
   file the feature writes into its own package's App Data folder and deletes again: Refresh reports
   when it is done, so the tree is read after it. Browse-Files-06 (download from a file's menu) is
-  claimed on the file that arrives. Browse-Files-05 (Shared with me grouped by sharer) needs the
-  second account to own and share something first, which no step can make it do.
+  claimed on the file that arrives. Browse-Files-05 (a shared folder under My stuff > Shared with me,
+  in the group of the account that shared it) is sharing/sharing-folder.feature's "The second account
+  finds the folder under Shared with me": the running account shares a folder, and the second
+  account opens it from the node of the running account under Shared with me.
 
   The shares claimed are the two every stand is provisioned with, App Data and Demo. The user's
   own home share is named by the stand ("My files" on dev) and a stand whose users have no home
@@ -45,19 +47,19 @@ Feature: The Files section of the Browse tree
 
   Scenario: A tabular file opens as a preview with its rows
     Given Files---Demo tree node inside browse tree is expanded
-    When user clicks on Files---Demo---demog.csv tree node inside browse tree
-    Then the "demog" view should be current
-    And grid should show 5850 rows
+    When user clicks on Files---Demo---demog-1000.csv tree node inside browse tree
+    Then the "demog-1000" view should be current
+    And grid should show 1000 rows
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
   Scenario: Download from a file's menu hands over the file
     Given user watches downloads
     And Files---Demo tree node inside browse tree is expanded
-    When user opens the context menu of Files---Demo---demog.csv tree node inside browse tree
+    When user opens the context menu of Files---Demo---demog-1000.csv tree node inside browse tree
     And user downloads a file through "Download" menu item in context menu
-    Then a file "demog.csv" should have been downloaded
-    And the downloaded file "demog.csv" should contain text "USUBJID"
+    Then a file "demog-1000.csv" should have been downloaded
+    And the downloaded file "demog-1000.csv" should contain text "USUBJID"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

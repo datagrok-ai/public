@@ -115,6 +115,7 @@ export class PolyToolPlaceholdersInput extends DG.JsInputBase<DG.DataFrame> {
     const monomersGridCol = this.grid.columns.byName('Monomers');
     if (monomersGridCol)
       monomersGridCol.editable = false;
+    this.grid.props.showReadOnlyNotifications = false;
 
     // Double-click on Monomers cell opens the monomer selection dialog
     this.subs.push(this.grid.onCellDoubleClick.subscribe((gc: DG.GridCell) => {

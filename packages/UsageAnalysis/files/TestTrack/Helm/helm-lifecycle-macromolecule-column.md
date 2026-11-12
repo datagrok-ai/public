@@ -10,20 +10,19 @@ realized_as:
 related_bugs: []
 ---
 
-# Helm — Macromolecule HELM column: render, edit, compute properties, convert & parse
+# Helm — Macromolecule HELM column: render, edit, compute properties & convert
 
 Runs the full lifecycle of a grid column detected as Macromolecule/HELM: the
 grid renders each HELM sequence as connected monomer structures (with correct
 re-rendering after scrolling and cache invalidation), the cell editor lets a
 user edit and save a sequence back to the cell, the Properties context panel
 computes formula / molecular weight / extinction coefficient (including a
-safeguard for very long sequences), and the underlying parse / convert-to-
-molfile / remove-gaps functions behave correctly on peptide and RNA fixtures.
+safeguard for very long sequences), and the column converts to molfiles.
 This targets the column lifecycle after the 2026 HELM editor rewrite
-(JSDraw2/Dojo replaced by a native SVG editor); the parse / removeGaps /
-getMolfiles API contract is unchanged, though `getMolfiles` now returns an
-HWE pseudo-molfile instead of a V2000/V3000 molfile. See grok-browser
-`references/helm.md`.
+(JSDraw2/Dojo replaced by a native SVG editor); `getMolfiles` now returns an
+HWE pseudo-molfile instead of a V2000/V3000 molfile, and the helper's `parse` /
+`removeGaps` (the former Scenarios 5 and 6) are gone from `IHelmHelper`. See
+grok-browser `references/helm.md`.
 
 ## Setup
 
@@ -139,45 +138,3 @@ Expected:
   entries.
 - Re-issuing the call after the 1-second eviction window succeeds; no
   console error.
-
-### Scenario 5 (bundled — parse_helm): DOM-free HELM parser handles peptide and RNA fixtures
-
-Steps:
-1. Acquire the HELM helper:
-   `const hh = await grok.functions.call('Helm:getHelmHelper')`.
-2. Call `hh.parse('PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et}$$$$')`
-   and inspect the returned `HelmMol` (`atoms`, `bonds`).
-3. Call the lighter pure-string utility on the same input:
-   `parseHelm('PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et}$$$$')`
-   (imported from `public/packages/Helm/src/utils/index.ts`).
-4. Repeat with an RNA fixture `'RNA1{r(A)p.r(C)p.r(G)p.r(U)p}$$$$'`.
-
-Expected:
-- `hh.parse(peptide)` returns a non-null `HelmMol` with **9 atoms, 8 bonds**
-  (n-1 for the linear 9-monomer chain).
-- `hh.parse(RNA)` returns a non-null `HelmMol` with **12 atoms, 11 bonds**.
-- The pure-string `parseHelm(...)` returns a flat array of monomer symbols
-  whose length equals the monomer count above; multi-char square-bracketed
-  names (`[L-hArg(Et,Et)]`) are preserved as single tokens.
-- Both fixtures parse without throwing; no DOM access.
-
-### Scenario 6 (bundled — remove_gaps): gap-stripping transform preserves bonds across linear and cyclic positions
-
-Steps:
-1. With the HELM helper from Scenario 5, call
-   `hh.removeGaps('PEPTIDE1{A.*.G.*.K}$$$$')` (gap monomer `*` at positions
-   2 and 4 of a 5-monomer linear chain).
-2. Inspect the returned `{ srcHelm, resHelm, monomerMap }`.
-3. Call the pure-string utility `removeGapsFromHelm('PEPTIDE1{A.*.G.*.K}$$$$')`
-   and compare.
-4. Edge boundary: call `hh.removeGaps('PEPTIDE1{*.A.G.K}$$$$')` (gap at
-   start) and `hh.removeGaps('PEPTIDE1{A.G.K.*}$$$$')` (gap at end).
-
-Expected:
-- The first call returns `resHelm` with the two `*` monomers removed and
-  surrounding bonds re-linked across the gaps (`PEPTIDE1{A.G.K}$$$$V2.0`
-  shape); `monomerMap` maps original positions to new positions (size 3).
-- The pure-string utility returns the gap-stripped HELM but does NOT return
-  a position mapping (it is a pure regex strip).
-- Start / end edge cases strip cleanly to `PEPTIDE1{A.G.K}$$$$V2.0` without
-  throwing.

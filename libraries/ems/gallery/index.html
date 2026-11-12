@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- the pages link the sheets they show; u2 controls must not install the whole stylesheet too -->
+  <meta name="u2-styles" content="linked">
+  <title>EMS gallery</title>
+  <script type="importmap">{"imports":{
+    "@datagrok-libraries/u2":"../../u2/src/index.js",
+    "@datagrok-libraries/u2/":"../../u2/",
+    "@floating-ui/dom":"../../u2/node_modules/@floating-ui/dom/dist/floating-ui.dom.mjs",
+    "@floating-ui/core":"../../u2/node_modules/@floating-ui/core/dist/floating-ui.core.mjs",
+    "@floating-ui/utils":"../../u2/node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs",
+    "@floating-ui/utils/dom":"../../u2/node_modules/@floating-ui/utils/dist/floating-ui.utils.dom.mjs",
+    "datagrok-api/u2core":"../../u2/node_modules/datagrok-api/dist/src/u2core/index.js"}}</script>
+  <link rel="stylesheet" href="../../u2/css/tokens.css">
+  <style>
+    body { margin: 0; font-family: var(--dg-font-family); font-size: var(--dg-font-size); }
+    nav { display: flex; gap: var(--dg-space-m); padding: var(--dg-space-s) var(--dg-space-m);
+      border-bottom: var(--dg-border-width) solid var(--dg-border); }
+    #main { padding: var(--dg-space-m); }
+  </style>
+</head>
+<body>
+  <nav><a href="#domain">Domain source</a><a href="#session">Domain session</a></nav>
+  <div id="main"></div>
+  <script type="module">
+    import {Scope} from '@datagrok-libraries/u2';
+    const main = document.getElementById('main');
+    let pageScope = null;
+    async function route() {
+      const page = location.hash.slice(1) || 'domain';
+      pageScope?.dispose();
+      main.textContent = '';
+      try {
+        pageScope = new Scope();
+        const mod = await import(`./pages/${page}.js`);
+        await Scope.runWith(pageScope, () => mod.render(main));
+      }
+      catch (e) {
+        main.textContent = `Failed to render "${page}": ${e.message}`;
+      }
+    }
+    addEventListener('hashchange', route);
+    route();
+  </script>
+</body>
+</html>

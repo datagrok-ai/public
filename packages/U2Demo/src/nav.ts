@@ -6,15 +6,19 @@ import {funcConvergencePage} from './func-convergence';
 import {funcsPage} from './funcs';
 import {funcHistoryPage} from './func-history';
 import {basicInputsPage, rangeSliderPage, multiSelectPage, asyncPage} from './pages/inputs';
+import {chainedChoicesPage} from './pages/chained-choices';
 import {containersPage, popupsPage} from './pages/containers';
 import {listsPage, treesPage} from './pages/collections';
-import {cardsPage, feedbackPage, tablesPage, sectionsPage, messagingPage} from './pages/display';
+import {catalogTablePage} from './pages/catalog-table';
+import {recordsPage, dialogsPage, tableChromePage} from './pages/foundations';
+import {cardsPage, appHeaderPage, feedbackPage, tablesPage, sectionsPage, messagingPage} from './pages/display';
 import {overviewPage} from './pages/overview';
 import {formPage, propertyGridPage, objectFormPage} from './pages/forms';
 import {filesPage, dataframesPage, entitiesPage, spacesPage, moleculesPage, bridgePage}
   from './pages/platform';
 import {msaWorkbenchPage} from './pages/msa-workbench';
 import {filtersPage} from './pages/filters';
+import {catalogPage} from './pages/catalog';
 import {SRC_ROOT} from './const';
 
 export interface SourceRef {
@@ -84,6 +88,14 @@ export const DEMO_TREE: DemoGroup[] = [
       description: 'Combobox over local and async items, AsyncView loading states',
       build: () => asyncPage(),
       source: {file: `${SRC_ROOT}/pages/inputs.ts`, symbol: 'asyncPage'}},
+    {id: 'chained-choices', label: 'Chained choices',
+      description: 'Five choices, each loading its options from every pick above it (a mock 500 ms server)',
+      build: () => chainedChoicesPage(),
+      source: {file: `${SRC_ROOT}/pages/chained-choices.ts`, symbol: 'chainedChoices'}},
+    {id: 'records', label: 'Records',
+      description: 'RecordsInput: rows edited in place, add / remove / reorder; ChecklistInput with an order',
+      build: () => recordsPage(),
+      source: {file: `${SRC_ROOT}/pages/foundations.ts`, symbol: 'recordsPage'}},
   ]),
   group('containers', 'Containers', [
     {id: 'layout', label: 'Layout',
@@ -94,6 +106,11 @@ export const DEMO_TREE: DemoGroup[] = [
       description: 'Menu, context menu, tooltip, dialog',
       build: (ctx) => popupsPage(ctx.status),
       source: {file: `${SRC_ROOT}/pages/containers.ts`, symbol: 'popupsPage'}},
+    {id: 'dialogs', label: 'Dialogs',
+      description: 'confirmDialog(), sized and resizable dialogs, first focus past read-only fields, required ' +
+        'asterisks',
+      build: (ctx) => dialogsPage(ctx.status),
+      source: {file: `${SRC_ROOT}/pages/foundations.ts`, symbol: 'dialogsPage'}},
   ]),
   group('collections', 'Collections', [
     {id: 'lists', label: 'Lists',
@@ -104,12 +121,20 @@ export const DEMO_TREE: DemoGroup[] = [
       description: 'VirtualTree with lazy branches and expandPath',
       build: () => treesPage(),
       source: {file: `${SRC_ROOT}/pages/collections.ts`, symbol: 'treesPage'}},
+    {id: 'catalog-table', label: 'Catalog table',
+      description: 'CatalogTable over 50 campaigns: sort, groups with counts, columns menu, row actions, kept choices',
+      build: () => catalogTablePage(),
+      source: {file: `${SRC_ROOT}/pages/catalog-table.ts`, symbol: 'catalogTablePage'}},
   ]),
   group('display', 'Display', [
     {id: 'cards', label: 'Cards',
       description: 'Card surfaces and StatCard KPIs, clickable and selectable',
       build: () => cardsPage(),
       source: {file: `${SRC_ROOT}/pages/display.ts`, symbol: 'cardsPage'}},
+    {id: 'app-header', label: 'App header',
+      description: 'The app home\'s hero: the icon, what the app does and Learn more; the titled variant',
+      build: () => appHeaderPage(),
+      source: {file: `${SRC_ROOT}/pages/display.ts`, symbol: 'appHeaderPage'}},
     {id: 'feedback', label: 'Feedback',
       description: 'Progress bars, notification balloons and the guided tour',
       build: () => feedbackPage(),
@@ -174,6 +199,11 @@ export const DEMO_TREE: DemoGroup[] = [
       description: 'moleculeInput, structure chips and a structure typeahead',
       build: () => moleculesPage(),
       source: {file: `${SRC_ROOT}/pages/platform.ts`, symbol: 'moleculesPage'}},
+    {id: 'table-chrome', label: 'TableView chrome',
+      description: 'ViewHost: a ribbon group owned by the view, folding into "…"; the view\'s signals; ' +
+        'a dialog pinned to the view',
+      build: (ctx) => tableChromePage(ctx.status),
+      source: {file: `${SRC_ROOT}/pages/foundations.ts`, symbol: 'tableChromePage'}},
     {id: 'bridge', label: 'Bridge',
       description: 'DartInput bridge and the leak detector',
       build: () => bridgePage(),
@@ -188,6 +218,11 @@ export const DEMO_TREE: DemoGroup[] = [
       description: 'A small app the behavioral tests in libraries/bdd drive: toolbar, form, dialog, tabs, list',
       build: () => msaWorkbenchPage(),
       source: {file: `${SRC_ROOT}/pages/msa-workbench.ts`, symbol: 'msaWorkbenchPage'}},
+    {id: 'catalog', label: 'Catalog',
+      description: 'Every registered u2 component in each state it can be put in, generated from the registry — ' +
+        'the BDD suite walks it',
+      build: () => catalogPage(),
+      source: {file: `${SRC_ROOT}/pages/catalog.ts`, symbol: 'catalogPage'}},
   ]),
 ];
 
@@ -201,10 +236,21 @@ export function leafById(id: string): DemoLeaf | undefined {
 }
 
 /** Resolves the tail of `/apps/U2demo/U2Demo/...` — leaf ids are globally unique, so the last
- * segment decides: `/forms/funcs` and `/funcs` both land on Functions. */
+ * segment decides, by id and then by label: `/forms/funcs`, `/funcs` and `/Functions` all land on
+ * Functions, `/Sections%20%26%20wizard` on Sections & wizard. */
 export function leafForPath(path: string | undefined): DemoLeaf | undefined {
   const segments = (path ?? '').split('?')[0].split('/').filter((s) => s !== '');
-  return segments.length === 0 ? undefined : leafById(segments[segments.length - 1]);
+  if (segments.length === 0)
+    return undefined;
+  let last = segments[segments.length - 1];
+  try {
+    last = decodeURIComponent(last);
+  }
+  catch {
+    // a stray % in a typed URL keeps the segment as it is
+  }
+  const label = last.trim().toLowerCase();
+  return leafById(last) ?? DEMO_TREE.flatMap((g) => g.children).find((l) => l.label.toLowerCase() === label);
 }
 
 export function pathOf(leaf: DemoLeaf): string {

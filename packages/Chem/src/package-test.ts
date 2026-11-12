@@ -5,6 +5,7 @@ import './tests/calculate';
 import './tests/menu-tests-chem-space';
 import './tests/menu-tests-cliffs';
 import './tests/menu-tests-similarity-diversity';
+import './tests/similarity-diversity-row-source-tests';
 import './tests/menu-tests-rgroups';
 import './tests/menu-tests-script-based';
 
@@ -13,6 +14,11 @@ import './tests/cell-panel-tests';
 
 import './tests/substructure-search-tests';
 import './tests/crux-substructure-search-tests';
+import './tests/crux-search-types-tests';
+import './tests/chemical-engine-tests';
+import './tests/edge-cases-tests';
+import './tests/crux-column-jobs-tests';
+import './tests/crux-sketcher-tests';
 import './tests/rendering-tests';
 import './tests/rendering-scatter-plot-tooltip-tests';
 import './tests/sketcher-tests';
@@ -24,9 +30,13 @@ import './tests/screening-tools';
 import './tests/pharmacophore-features-tests';
 
 import './tests/save-as-sdf-tests';
+import './tests/save-as-csv-tests';
 import './tests/substructure-filter-tests';
+import './tests/query-roundtrip-tests';
+import './tests/query-roundtrip-more-tests';
 
 import './tests/mol2-importer-tests';
+import './tests/mpo-tests';
 import './tests/chemical-table-parsing';
 import './tests/is-smarts-tests';
 import './tests/fingerprints';
@@ -35,6 +45,11 @@ import './tests/projects-tests';
 import './tests/clone-layout-tests';
 import './tests/mmpa-tests';
 import './tests/sar-matrix-tests';
+import './tests/crux-analyses-tests';
+import './tests/crux-biopolymer-tests';
+import './tests/crux-trap-tests';
+import './tests/crux-biopolymer-limits-tests';
+import './tests/python-free-tests';
 import './tests/editor-loop-tests';
 import './tests/chemprop-tests';
 import './tests/vector-funcs-tests';
@@ -44,11 +59,13 @@ import './tests/atom-index-mapper-tests';
 import './tests/atom-picker-tests';
 import './tests/reaction-enumeration-tests';
 import './tests/reaction-rendering-tests';
+import './tests/reactions-tests';
 // import './tests/atom-picker-3d-hover-tests';
 import './tests/atom-picker-escape-tests';
 import './tests/renderer-hover-tests';
 
 import './tests/viewers';
+import './tests/chem-speed-benchmarks';
 
 export const _package = new DG.Package();
 export {tests};

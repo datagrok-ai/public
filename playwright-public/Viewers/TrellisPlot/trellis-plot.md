@@ -43,7 +43,7 @@ expected_results:
 
       Step 5: All inner viewers update their visible data range after dragging the slider.
 
-      Step 6: The context-menu item Reset Inner Range Sliders is present, and clicking it restores all range sliders to full range.
+      Step 6: The context-menu item Reset View is present, and clicking it restores all range sliders to full range.
   - anchor: "Tiles mode"
     expectation: |-
       Step 1: With one category column and Tiles enabled the tiles form a rectangle: the row width is the smaller of Tiles Per Row and the number of categories, capped at five; the row count is what that width needs, also capped at five; a width that does not divide the categories pads the last row with empty tiles, so the tile count is the rectangle's area and not always the category count.
@@ -272,7 +272,7 @@ with Global Scale on or off. Both are handed back at the end.
 3. Set **Show X Axes** to **Always**
 4. Hover over the X axis area -- a range slider should appear
 5. Drag the range slider to narrow the visible data range -- all inner viewers should update
-6. Right-click on the trellis plot and select **Reset Inner Range Sliders** -- sliders reset to full range
+6. Right-click on the trellis plot and select **Reset View** -- sliders reset to full range
 7. Repeat for Y axis (set **Show Y Axes** to **Always**)
 
 ## Gridlines
@@ -602,7 +602,7 @@ count by count rather than asking whether "the controls" are visible.
   pitfall 22): most of a viewer menu is collapsed at any moment. Actuation never reuses that read.
 - CHANNEL — every step that INVOKES a menu command opens the owning group by real mouse hover,
   polls for visibility and clicks for real: "Use in Trellis" (**General**), "Pick Up" / "Apply"
-  (**Pick Up / Apply**), "To JavaScript" (**To Script**), "Reset Inner Range Sliders" (reachable
+  (**Pick Up / Apply**), "To JavaScript" (**To Script**), "Reset View" (reachable
   with no group open; the failure names the group if it ever is not). MENU REACHABILITY IS NOT DOM
   PRESENCE (refdoc: pitfall 22, Trellis-specific items).
 - CHANNEL — "Multi Curve inner viewer (and table switching)" grades the table switch on the
@@ -682,7 +682,7 @@ count by count rather than asking whether "the controls" are visible.
 - A set-then-read of `globalScale` is forbidden — prop-echo.
 - Every canvas-delta null-guards BOTH endpoints of BOTH sampled cells — a vanished canvas hashes to
   null and satisfies an inequality with no repaint, booking a delta for a cell never drawn.
-- Where a baseline doubles as a restore target (Reset Inner Range Sliders), the same guard keeps
+- Where a baseline doubles as a restore target (Reset View), the same guard keeps
   the equality from being null-against-null.
 - "Inner viewer properties" grades the X/Y column change on a canvas delta across every
   populated cell it samples, the sample itself asserted non-empty, never on reading
@@ -750,7 +750,7 @@ count by count rather than asking whether "the controls" are visible.
   grades Horz/Vert on the `rotate()` angle those same nodes carry (0 vs -90).
 - The add/remove-column step pins BOTH cell counts exactly through the clamp — a bare "more cells
   than before" also passes on a grid that grew for an unrelated reason.
-- The "Reset Inner Range Sliders" step runs on a Scatter inner (refdoc: Trellis-specific items) —
+- The "Reset View" step runs on a Scatter inner (refdoc: Trellis-specific items) —
   the inner type primed before it is a precondition, not decoration.
 - Every cell-count and geometry expectation goes through the single
   `axisViewportCount(n, oneColumnOnly)` helper reproducing the clamp (refdoc: The category viewport
@@ -804,7 +804,7 @@ count by count rather than asking whether "the controls" are visible.
   pausing, and a real `locator.click()` on the item.
 - A synthetic click on a collapsed menu item is FORBIDDEN throughout this file, and no step may
   read "the label is in the DOM" as "the item is available".
-- "Pick Up / Apply", "To Script" and "Reset Inner Range Sliders" use the same two helpers; only
+- "Pick Up / Apply", "To Script" and "Reset View" use the same two helpers; only
   "Context menu", grading composition, reads the menu by text.
 - Neither table rebind in "Multi Curve inner viewer" — to curves and back to demog — may be
   swallowed: each captures its error instead of an empty `catch`.

@@ -7,13 +7,17 @@ import dayjs from 'dayjs';
 import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 import {queries} from '../package-api';
+import {waitForWidth} from '../release/data';
 
 type CardColor = 'green' | 'orange' | 'red' | 'info';
 type QueriesMode = 'slowest' | 'mostCalled' | 'worstCacheHit';
+type GrowthArea = 'database' | 'storage' | 'gc';
 
 const DASHBOARD_LIMIT = 10;
 const FULL_VIEW_LIMIT = 100000;
 const EMAIL_LIMIT = 100;
+const GROWTH_DAYS = [7, 30, 90];
+const TOOLTIP_TOP = 5;
 
 const THRESH = {
   cacheHit: {green: 99, orange: 97},
@@ -28,6 +32,7 @@ const THRESH = {
   routeErrPct: {green: 10, orange: 50},
   diskUsedPct: {orange: 75, red: 90},
   diskFreeBytes: {orange: 5 * 1024 * 1024 * 1024, red: 2 * 1024 * 1024 * 1024},
+  growthPct: {green: 10, orange: 25},
 };
 
 interface DiskStat {
@@ -105,6 +110,18 @@ function formatBytes(n: number | null | undefined): string {
   return `${v >= 100 ? v.toFixed(0) : v.toFixed(1)} ${units[i]}`;
 }
 
+function formatSigned(n: number | null | undefined, format: (n: number) => string): string {
+  return n == null ? '—' : `${n > 0 ? '+' : n < 0 ? '-' : ''}${format(Math.abs(n))}`;
+}
+
+/** Growth of [s] over 7 days, percent of the value a week ago; null when there is no sample that old. */
+function growthPct(s: DG.GrowthMetricsSeries | null): number | null {
+  if (s == null || s.d7 == null)
+    return null;
+  const before = s.now - s.d7;
+  return before > 0 ? s.d7 * 100 / before : null;
+}
+
 function formatCount(n: number | null | undefined): string {
   if (n == null) return '—';
   if (n < 1000) return `${n}`;
@@ -125,6 +142,11 @@ export class MetricsView extends UaView {
   private httpRoutesHost!: HTMLElement;
   private refreshing = false;
   private metrics: DG.ServerMetrics | null = null;
+  private growthHost!: HTMLElement;
+  private growth: DG.GrowthMetrics | null = null;
+  private growthArea: GrowthArea = 'database';
+  private growthDays = 30;
+  private onlyGrowing = false;
 
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
@@ -138,19 +160,16 @@ export class MetricsView extends UaView {
     this.largestTablesHost = ui.div([], 'ua-metrics-grid-host');
     this.tableHealthHost = ui.div([], 'ua-metrics-grid-host');
     this.httpRoutesHost = ui.div([], 'ua-metrics-grid-host');
+    this.growthHost = ui.div([], 'ua-metrics-grid-host ua-metrics-growth-host');
 
     const refreshBtn = ui.bigButton('Refresh', () => this.refresh());
     refreshBtn.prepend(ui.iconFA('sync-alt'), ' ');
     refreshBtn.classList.add('ua-metrics-btn-secondary');
-    const sendBtn = ui.bigButton('Share...', () => this.sendToDatagrok());
-    sendBtn.prepend(ui.iconFA('envelope'), ' ');
-    sendBtn.classList.add('ua-metrics-btn-secondary');
 
     const header = ui.divH([
       this.asOfLabel,
       ui.div([], {style: {flex: '1'}}),
       refreshBtn,
-      sendBtn,
     ], 'ua-metrics-header');
 
     const cardsRow1 = ui.divH([
@@ -168,6 +187,14 @@ export class MetricsView extends UaView {
       this.makeCard('sessions', 'Sessions'),
     ], 'ua-metrics-cards-row');
 
+    const cardsRow3 = ui.divH([
+      this.makeCard('dbGrowth', 'DB growth 7d'),
+      this.makeCard('storageGrowth', 'Storage growth 7d'),
+      this.makeCard('gcDeleted', 'GC deleted'),
+      this.makeCard('gcPending', 'GC pending'),
+      this.makeCard('growthAlerts', 'Growth alerts'),
+    ], 'ua-metrics-cards-row');
+
     const queriesPanel = this.buildQueriesPanel();
     const largestTablesPanel = MetricsView.buildPanel('Largest tables', this.largestTablesHost,
       () => this.openFullView(queries.metricsLargestTables, 'MetricsLargestTables', 'Largest tables'));
@@ -178,11 +205,14 @@ export class MetricsView extends UaView {
         'getMetrics', 'HTTP routes'));
 
     const tablesRow = ui.divH([largestTablesPanel, tableHealthPanel], 'ua-metrics-tables-row');
+    const growthPanel = this.buildGrowthPanel();
 
     this.root.append(ui.div([
       header,
       cardsRow1,
       cardsRow2,
+      cardsRow3,
+      growthPanel,
       queriesPanel,
       tablesRow,
       httpRoutesPanel,
@@ -310,6 +340,7 @@ export class MetricsView extends UaView {
         this.refreshWindowCards(),
         this.loadStorage(),
         this.loadDisk(),
+        this.loadGrowth(),
       ]);
     } finally {
       this.refreshing = false;
@@ -911,7 +942,272 @@ export class MetricsView extends UaView {
     if (errPctCol)
       errPctCol.format = '#0.##';
     grid.onCellPrepare((gc) => MetricsView.colorHttpRoutesCell(gc));
+    const g = grid as DG.Grid;
+    g.onCellTooltip((gc, x, y) => {
+      if (!gc.isTableCell || gc.gridColumn.name !== 'err_pct' || !(gc.cell.value > 0))
+        return false;
+      ui.tooltip.show('Click to see the failed requests, their errors and log', x, y);
+      return true;
+    });
+    g.onCellClick.subscribe((gc) => {
+      if (gc.isTableCell && gc.gridColumn.name === 'err_pct' && gc.cell.value > 0)
+        this.openRouteFailures(routes[gc.tableRowIndex!]);
+    });
     MetricsView.fitGrid(grid, this.httpRoutesHost);
+  }
+
+  private buildGrowthPanel(): HTMLElement {
+    const areas: Array<[string, GrowthArea, string]> = [
+      ['database', 'database',
+        'Platform database tables, and their categories: events by source and type, entities by type, ...'],
+      ['storage', 'storage', 'File storage by location and kind of data, and each server\'s disk.'],
+      ['gc', 'gc', 'What the garbage collector deleted and has left to delete.'],
+    ];
+    const toggle = ui.toggleButtonGroup(areas.map(([label, area, tooltip]) => {
+      const btn = ui.toggleButton(label, () => {
+        this.growthArea = area;
+        this.renderGrowth();
+      }, tooltip);
+      if (area === this.growthArea)
+        btn.classList.add('d4-current');
+      return btn;
+    }));
+    toggle.classList.add('ua-metrics-mode-toggle');
+    const growing = ui.input.bool('Only growing', {value: this.onlyGrowing,
+      tooltipText: 'Only what grew over the last 7 days', onValueChanged: (v) => {
+        this.onlyGrowing = v;
+        this.renderGrowth();
+      }});
+    const days = ui.input.choice<number>('Days', {value: this.growthDays, items: GROWTH_DAYS, nullable: false,
+      tooltipText: 'Days of the trend', onValueChanged: (v) => {
+        this.growthDays = v ?? 30;
+        this.loadGrowth();
+      }});
+    const controls = ui.divH([toggle, growing.root, days.root], 'ua-metrics-growth-controls');
+    return MetricsView.buildPanel('Data growth', this.growthHost,
+      () => this.openFullView(async () => this.growthFrame(this.growthRows()), 'getGrowthMetrics', 'Data growth'),
+      controls);
+  }
+
+  private async loadGrowth(): Promise<void> {
+    MetricsView.resetHost(this.growthHost);
+    this.growth = await MetricsView.safeCall(() => grok.dapi.admin.getGrowthMetrics({days: this.growthDays}),
+      'getGrowthMetrics');
+    this.loadGrowthCards();
+    this.renderGrowth();
+  }
+
+  /** The rows of the current area, the growing ones only when asked, fastest-growing first. */
+  private growthRows(): DG.GrowthMetricsRow[] {
+    const rows = (this.growth?.rows ?? []).filter((r) => r.area === this.growthArea &&
+      (!this.onlyGrowing || (r.bytes?.d7 ?? 0) > 0 || (r.count?.d7 ?? 0) > 0));
+    return rows.sort((a, b) => ((b.bytes?.d7 ?? -Infinity) - (a.bytes?.d7 ?? -Infinity)) ||
+      ((b.bytes?.now ?? b.count?.now ?? 0) - (a.bytes?.now ?? a.count?.now ?? 0)));
+  }
+
+  private static growthName(r: DG.GrowthMetricsRow): string {
+    if (r.area !== 'storage')
+      return r.dimension == null ? r.key : `${r.table} · ${r.dimension}=${r.value ?? ''}`;
+    return `${r.location} · ${r.nature ?? 'all'}${r.value != null ? `/${r.value}` : ''}`;
+  }
+
+  /** One row per [rows], typed: sizes and counts are float columns, since a size passes 2^31. */
+  private growthFrame(rows: DG.GrowthMetricsRow[]): DG.DataFrame {
+    const text = (name: string, f: (r: DG.GrowthMetricsRow) => string | null) =>
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, rows.map((r) => f(r) ?? ''));
+    const number = (name: string, f: (r: DG.GrowthMetricsRow) => number | null | undefined) =>
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, rows.map((r) => f(r) ?? null));
+    const columns = [
+      text('name', (r) => MetricsView.growthName(r)), text('area', (r) => r.area), text('location', (r) => r.location),
+      text('nature', (r) => r.nature), text('table', (r) => r.table), text('dimension', (r) => r.dimension),
+      text('value', (r) => r.value), text('key', (r) => r.key),
+      number('size', (r) => r.bytes?.now), number('count', (r) => r.count?.now),
+      number('d1_bytes', (r) => r.bytes?.d1), number('d7_bytes', (r) => r.bytes?.d7),
+      number('d30_bytes', (r) => r.bytes?.d30),
+      number('d7_pct', (r) => growthPct(r.bytes ?? r.count)), number('d7_count', (r) => r.count?.d7),
+      number('written_7d', (r) => r.count?.d7 == null ? null : r.count.d7 + (r.gc?.deleted7d ?? 0)),
+      number('gc_last', (r) => r.gc?.deletedLast), number('gc_7d', (r) => r.gc?.deleted7d),
+      number('gc_pending', (r) => r.gc?.pending),
+      number('free_bytes', (r) => r.freeBytes), number('used_pct', (r) => r.usedPct),
+      text('alert', (r) => r.alerts.filter((a) => a.holding).map((a) => a.name).join(', ')),
+      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'estimated',
+        rows.map((r) => (r.bytes?.estimated || r.count?.estimated) ?? false)),
+    ];
+    for (let i = 0; i < this.growthDays; i++)
+      columns.push(number(`t${i}`, (r) => (r.bytes ?? r.count)?.trend[i]));
+    const df = DG.DataFrame.fromColumns(columns);
+    df.name = 'Data growth';
+    return df;
+  }
+
+
+  private renderGrowth(): void {
+    this.growthHost.innerHTML = '';
+    if (!this.growth) {
+      this.growthHost.append(MetricsView.degradedMessage('Data growth unavailable.'));
+      return;
+    }
+    if (this.growth.collectedAt == null) {
+      this.growthHost.append(MetricsView.degradedMessage('Collecting the first samples…'));
+      return;
+    }
+    const rows = this.growthRows();
+    if (rows.length === 0) {
+      this.growthHost.append(MetricsView.degradedMessage(this.onlyGrowing ?
+        'Nothing grew over the last 7 days.' : 'No samples in this area yet.'));
+      return;
+    }
+    const df = this.growthFrame(rows);
+    const grid = DG.Viewer.grid(df, MetricsView.gridOptions());
+    for (const name of ['count', 'd7_count', 'written_7d', 'gc_last', 'gc_7d', 'gc_pending']) {
+      const col = grid.col(name);
+      if (col)
+        col.format = '#,##0';
+    }
+    const pct = grid.col('d7_pct');
+    if (pct)
+      pct.format = '#0.#';
+    const nameCol = grid.col('name');
+    if (nameCol)
+      nameCol.width = 260;
+    grid.onCellPrepare((gc) => MetricsView.renderGrowthCell(gc, rows));
+    MetricsView.bindGrowthAlerts(grid, rows);
+    const trendCols = Array.from({length: this.growthDays}, (_, i) => `t${i}`);
+    const area = this.growthArea;
+    const visible = ['name', 'size', 'count', 'd7_bytes', 'd7_pct', 'trend',
+      ...(area === 'storage' ? ['free_bytes', 'used_pct'] : ['written_7d', 'gc_7d', 'gc_pending']), 'alert'];
+    waitForWidth(grid.root).then(() => {
+      const trend = grid.columns.add({gridColumnName: 'trend', cellType: 'sparkline'});
+      trend.settings = {columnNames: trendCols};
+      grid.columns.setVisible(visible.filter((n) => grid.col(n) != null));
+    });
+    MetricsView.fitGrid(grid, this.growthHost);
+  }
+
+  private static renderGrowthCell(gc: DG.GridCell, rows: DG.GrowthMetricsRow[]): void {
+    if (!gc.isTableCell)
+      return;
+    const name = gc.gridColumn.name;
+    const v = gc.cell.value;
+    const row = rows[gc.tableRowIndex!];
+    if (row == null)
+      return;
+    const estimated = row.count?.estimated ? '~' : '';
+    if (name === 'size' || name === 'd1_bytes' || name === 'd7_bytes' || name === 'd30_bytes' || name === 'free_bytes')
+      gc.customText = v == null ? '' :
+        name === 'size' || name === 'free_bytes' ? formatBytes(v) : formatSigned(v, formatBytes);
+    else if (name === 'count' && v != null)
+      gc.customText = `${(v as number).toLocaleString()}${estimated}`;
+    else if (name === 'd7_pct' && v != null) {
+      gc.customText = `${v > 0 ? '+' : ''}${(v as number).toFixed(v >= 10 || v <= -10 ? 0 : 1)}%`;
+      gc.style.textColor = thresholdColor(v as number, THRESH.growthPct, false);
+    }
+    else if (name === 'alert') {
+      gc.customText = row.alerts.some((a) => a.holding) ? '●' : '';
+      gc.style.textColor = COLOR_RED;
+    }
+  }
+
+  /** The alerts holding for the row of [gc] as a tooltip; a click opens the first one's problem in Alerts (its id is
+   *  only there for `ManageAlerts` holders). */
+  private static bindGrowthAlerts(grid: DG.Grid, rows: DG.GrowthMetricsRow[]): void {
+    const holding = (gc: DG.GridCell) => !gc.isTableCell || gc.gridColumn.name !== 'alert' ? [] :
+      (rows[gc.tableRowIndex!]?.alerts ?? []).filter((a) => a.holding);
+    grid.onCellTooltip((gc, x, y) => {
+      const alerts = holding(gc);
+      if (alerts.length === 0)
+        return false;
+      const linked = alerts.some((a) => a.problemId != null);
+      ui.tooltip.show(ui.div([...alerts.map((a) => ui.divText(a.name)),
+        ...(linked ? [ui.divText('Click to open the problem in Alerts.', 'ua-metrics-tt-dim')] : [])],
+      'ua-metrics-tt'), x, y);
+      return true;
+    });
+    grid.onCellClick.subscribe((gc) => {
+      const id = holding(gc).find((a) => a.problemId != null)?.problemId;
+      if (id)
+        grok.shell.route(`/alerts/${id}`);
+    });
+  }
+
+  private loadGrowthCards(): void {
+    for (const id of ['dbGrowth', 'storageGrowth', 'gcDeleted', 'gcPending', 'growthAlerts'])
+      ui.tooltip.bind(this.card(id).root, null);
+    const g = this.growth;
+    if (!g) {
+      for (const id of ['dbGrowth', 'storageGrowth', 'gcDeleted', 'gcPending', 'growthAlerts'])
+        this.setCard(id, '—', 'unavailable', 'info');
+      return;
+    }
+    if (g.collectedAt == null) {
+      for (const id of ['dbGrowth', 'storageGrowth', 'gcDeleted', 'gcPending', 'growthAlerts'])
+        this.setCard(id, '—', 'collecting…', 'info');
+      return;
+    }
+    const total = g.rows.find((r) => r.area === 'database' && r.key === '(total)');
+    this.setGrowthCard('dbGrowth', total?.bytes ?? null, `now ${formatBytes(total?.bytes?.now)}`,
+      g.rows.filter((r) => r.area === 'database' && r.dimension == null && r.key !== '(total)'));
+    const shared = g.rows.find((r) => r.area === 'storage' && r.key === 'shared');
+    this.setGrowthCard('storageGrowth', shared?.bytes ?? null,
+      `${g.storage?.type ?? 'storage'} · ${formatBytes(shared?.bytes?.now)}`,
+      g.rows.filter((r) => r.area === 'storage' && r.location === 'shared' && r.nature != null && r.value == null));
+
+    const gcRows = g.rows.filter((r) => r.area === 'gc' && r.gc != null);
+    const sum = (f: (r: DG.GrowthMetricsRow) => number | null) => gcRows.reduce((s, r) => s + (f(r) ?? 0), 0);
+    const deleted = sum((r) => r.gc!.deletedLast);
+    const lastRun = g.gc.lastRun ? dayjs(g.gc.lastRun) : null;
+    this.setCard('gcDeleted', g.gc.lastRun ? formatCount(deleted) : '—',
+      g.gc.enabled === false ? 'GC disabled' : lastRun ? `last run ${lastRun.format('MM-DD HH:mm')}` : 'no run yet',
+      g.gc.enabled === false ? 'orange' : 'info');
+    this.bindTopTooltip('gcDeleted', gcRows, (r) => r.gc!.deleted7d, (n) => formatCount(n),
+      'Deleted in 7 days, by key');
+    const pending = sum((r) => r.gc!.pending);
+    const biggest = [...gcRows].sort((a, b) => (b.gc!.pending ?? 0) - (a.gc!.pending ?? 0))[0];
+    this.setCard('gcPending', g.gc.pendingAt ? formatCount(pending) : '—',
+      biggest?.gc?.pending ? biggest.key : g.gc.pendingAt ? 'nothing pending' : 'not counted yet', 'info');
+    this.bindTopTooltip('gcPending', gcRows, (r) => r.gc!.pending, (n) => formatCount(n), 'Left to delete, by key');
+
+    const holding: Array<[string, string, DG.GrowthMetricsAlert]> = [];
+    for (const r of g.rows)
+      for (const a of r.alerts.filter((a) => a.holding))
+        holding.push([a.name, MetricsView.growthName(r), a]);
+    const open = holding.some(([, , a]) => a.alertStatus === 'open' || a.alertStatus === 'acknowledged');
+    const names = [...new Set(holding.map(([name]) => name))].join(', ');
+    this.setCard('growthAlerts', `${holding.length}`, holding.length === 0 ? 'none holding' : names,
+      holding.length === 0 ? 'green' : open ? 'red' : 'orange');
+    const lines = holding.length === 0 ?
+      [ui.divText('No metric alert holds.'),
+        ui.divText('Settings > Alerts > Data growth sets them.', 'ua-metrics-tt-dim')] :
+      [...holding.slice(0, TOOLTIP_TOP * 2).map(([name, row]) => ui.divText(`${name}: ${row}`)),
+        ui.divText('Red: an alert is open. Browse > Platform > Observability > Alerts acts on them.', 'ua-metrics-tt-dim')];
+    ui.tooltip.bind(this.card('growthAlerts').root, () => ui.div(lines, 'ua-metrics-tt'));
+  }
+
+  private setGrowthCard(id: string, s: DG.GrowthMetricsSeries | null, sub: string, parts: DG.GrowthMetricsRow[]): void {
+    if (s == null || s.d7 == null) {
+      this.setCard(id, '—', s == null ? 'collecting…' : `${sub} · collecting…`, 'info');
+      return;
+    }
+    const pct = growthPct(s);
+    const pctText = pct == null ? '' : `${pct > 0 ? '+' : ''}${pct.toFixed(0)}% · `;
+    this.setCard(id, formatSigned(s.d7, formatBytes), `${pctText}${sub}`,
+      pct == null ? 'info' : thresholdBand(pct, THRESH.growthPct, false));
+    this.bindTopTooltip(id, parts, (r) => r.bytes?.d7 ?? null, (n) => formatSigned(n, formatBytes),
+      'Grew most in 7 days');
+  }
+
+  /** Binds to card [id] the [TOOLTIP_TOP] rows of [rows] with the largest [value]. */
+  private bindTopTooltip(id: string, rows: DG.GrowthMetricsRow[], value: (r: DG.GrowthMetricsRow) => number | null,
+    format: (n: number) => string, title: string): void {
+    const top = rows.filter((r) => (value(r) ?? 0) !== 0)
+      .sort((a, b) => (value(b) ?? 0) - (value(a) ?? 0)).slice(0, TOOLTIP_TOP);
+    ui.tooltip.bind(this.card(id).root, () => ui.div([
+      ui.divText(title),
+      top.length === 0 ? ui.divText('Nothing yet.', 'ua-metrics-tt-dim') : ui.div(top.map((r) => ui.divH([
+        ui.divText(MetricsView.growthName(r), 'ua-metrics-tt-col-prefix'),
+        ui.divText(format(value(r)!), 'ua-metrics-tt-col-num'),
+      ])), 'ua-metrics-tt-table'),
+    ], 'ua-metrics-tt'));
   }
 
   private static frame(rows: object[]): DG.DataFrame {
@@ -998,6 +1294,34 @@ export class MetricsView extends UaView {
     }
   }
 
+  /** The failed requests of [r] in the window, each with its nearest error; the selected request's log docked below. */
+  private async openRouteFailures(r: DG.ServerMetricsRoute): Promise<void> {
+    const title = `${r.method} ${r.route} failures`;
+    const df = await MetricsView.safeCall(
+      () => queries.metricsRouteFailures(r.method, r.route, this.uaToolbox.getFilter().date!), 'MetricsRouteFailures');
+    if (!df) {
+      grok.shell.warning(`${title} unavailable.`);
+      return;
+    }
+    df.name = title;
+    const tv = grok.shell.addTableView(df);
+    const log = DG.Viewer.grid(DG.DataFrame.create(0), MetricsView.gridOptions());
+    tv.dockManager.dock(log, DG.DOCK_TYPE.DOWN, null, 'Request log', 0.4);
+    const showLog = async (): Promise<void> => {
+      const i = df.currentRowIdx;
+      const session = i < 0 ? null : df.get('session_id', i) as string | null;
+      if (!session)
+        return;
+      const logDf = await MetricsView.safeCall(
+        () => queries.metricsRequestLog(session, (df.get('time', i) as dayjs.Dayjs).toISOString()), 'MetricsRequestLog');
+      if (logDf)
+        log.dataFrame = logDf;
+    };
+    tv.subs.push(df.onCurrentRowChanged.subscribe(() => showLog()));
+    if (df.rowCount > 0)
+      df.currentRowIdx = 0;
+  }
+
   private async openFullView(fn: (limit: number) => Promise<DG.DataFrame>, queryName: string, title: string): Promise<void> {
     const progress = DG.TaskBarProgressIndicator.create(`Loading ${title}...`);
     try {
@@ -1011,37 +1335,6 @@ export class MetricsView extends UaView {
     } finally {
       progress.close();
     }
-  }
-
-  private async sendToDatagrok(): Promise<void> {
-    const progress = DG.TaskBarProgressIndicator.create('Preparing snapshot...');
-    let files: DG.FileInfo[];
-    try {
-      files = await this.collectSnapshotAttachments();
-    } catch (e) {
-      grok.shell.error(`Failed to prepare snapshot: ${e}`);
-      return;
-    } finally {
-      progress.close();
-    }
-
-    const reportEmail = await MetricsView.safeCall(() => grok.dapi.admin.getReportEmail(), 'getReportEmail');
-    const subject = `Datagrok metrics — ${window.location.host} — ${dayjs().format('YYYY-MM-DD HH:mm')}`;
-    ui.composeEmail({
-      title: 'Share metrics', subject, to: reportEmail ? reportEmail.split(/[,;\s]+/).filter((s) => s) : [],
-      bcc: [], attachments: files,
-      onSend: async (r) => {
-        await grok.dapi.admin.sendEmail({
-          subject: r.subject,
-          to: r.to,
-          bcc: r.bcc,
-          html: r.html,
-          text: r.text,
-          attachments: r.attachments.map((fi) => ({name: fi.name, data: fi.data})),
-        });
-        grok.shell.info('Metrics snapshot sent.');
-      },
-    }).show();
   }
 
   private async collectSnapshotAttachments(): Promise<DG.FileInfo[]> {
@@ -1092,4 +1385,5 @@ export class MetricsView extends UaView {
     }
     return files;
   }
+
 }

@@ -1,18 +1,15 @@
 import * as grok from 'datagrok-api/grok';
-import {BehaviorSubject, Observable, Subject, EMPTY, of, from, combineLatest, defer} from 'rxjs';
-import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
-import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, ResetToConsistent, ReturnResult, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, UpdateFuncCall, ViewConfigCommands} from './view/ViewCommunication';
+import {BehaviorSubject, Observable, Subject, EMPTY, of, combineLatest, defer} from 'rxjs';
+import {PipelineState} from './config/PipelineInstance';
+import {AddDynamicItem, DuplicateDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, ResetToConsistent, ReturnResult, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, UpdateFuncCall, ViewConfigCommands} from './view/ViewCommunication';
 import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, tap, distinctUntilChanged, filter, defaultIfEmpty, last, take} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
-import {loadInstanceState} from './runtime/funccall-utils';
-import {callHandler} from './utils';
-import {PipelineConfiguration} from './config/PipelineConfiguration';
-import {getProcessedConfig, PipelineConfigurationProcessed} from './config/config-processing-utils';
 import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from './runtime/StateTreeNodes';
 import {ValidationResult} from './data/common-types';
 import {DriverLogger, reportError} from './data/Logger';
 import {LinksData} from './runtime/LinksState';
-import {getStartedOrNull} from '../../shared-utils/utils';
+import {inspectConfig, inspectLinks} from './runtime/inspection';
+import {loadSavedTree, loadWorkflowConfig, metaCallInfo} from './runtime/headless';
 
 export type CommandAck = {cid: number, result: any} | {cid: number, error: unknown};
 
@@ -23,12 +20,14 @@ export class Driver {
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
   public currentCallsState$ = new BehaviorSubject<Record<string, Observable<FuncCallStateInfo | undefined>>>({});
   public currentValidations$ = new BehaviorSubject<Record<string, Observable<Record<string, ValidationResult>>>>({});
-  public currentPipelineValidations$ = new BehaviorSubject<Record<string, Observable<ValidationResult | undefined>>>({});
+  public currentPipelineValidations$ =
+    new BehaviorSubject<Record<string, Observable<ValidationResult | undefined>>>({});
   public currentConsistency$ = new BehaviorSubject<Record<string, Observable<Record<string, ConsistencyInfo>>>>({});
   public currentMeta$ = new BehaviorSubject<Record<string, Observable<Record<string, BehaviorSubject<any>>>>>({});
-  public currentConfig$ = new BehaviorSubject<PipelineConfigurationProcessed | undefined>(undefined);
-  public nodesDescriptions$ = new BehaviorSubject<Record<string, Observable<Record<string, string | string[]> | undefined>>>({});
+  public nodesDescriptions$ =
+    new BehaviorSubject<Record<string, Observable<Record<string, string | string[]> | undefined>>>({});
   public currentLinks$ = new BehaviorSubject<LinksData[]>([]);
+  public hiddenActions$ = new BehaviorSubject<ReadonlySet<string>>(new Set());
   public result$ = new Subject<any>();
 
   public globalROLocked$ = new BehaviorSubject(false);
@@ -124,10 +123,10 @@ export class Driver {
       takeUntil(this.closed$),
     ).subscribe(this.nodesDescriptions$);
 
-    stateUpdates$.pipe(
-      map((state) => state ? state.config : undefined),
+    this.states$.pipe(
+      switchMap((state) => state ? state.linksState.hiddenActions$ : of(new Set<string>())),
       takeUntil(this.closed$),
-    ).subscribe(this.currentConfig$);
+    ).subscribe(this.hiddenActions$);
 
     stateUpdates$.pipe(
       switchMap((state) => state ? state.globalROLocked$ : of(false)),
@@ -165,6 +164,16 @@ export class Driver {
     return ack;
   }
 
+  public inspectLinks() {
+    const state = this.states$.value;
+    return state ? inspectLinks(state) : [];
+  }
+
+  public inspectConfig() {
+    const state = this.states$.value;
+    return state ? inspectConfig(state.config) : undefined;
+  }
+
   public close() {
     this.closed$.next(true);
     // resolves pending sendCommand promises (with undefined) instead of leaving them hanging
@@ -185,6 +194,8 @@ export class Driver {
       return this.removeDynamicItem(msg, state);
     case 'moveDynamicItem':
       return this.moveDynamicItem(msg, state);
+    case 'duplicateDynamicItem':
+      return this.duplicateDynamicItem(msg, state);
     case 'runStep':
       return this.runStep(msg, state);
     case 'runAction':
@@ -223,8 +234,8 @@ export class Driver {
 
   private saveDynamicItem(msg: SaveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
-    const {title, description, tags} = msg;
-    return state.save(msg.uuid, {title, description, tags});
+    const {title, description, tags, target} = msg;
+    return state.save(msg.uuid, {title, description, tags, target});
   }
 
   private removeDynamicItem(msg: RemoveDynamicItem, state?: StateTree) {
@@ -237,6 +248,13 @@ export class Driver {
   private moveDynamicItem(msg: MoveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
     return state.moveSubtree(msg.uuid, msg.position).pipe(
+      tap(() => this.wasEdited$.next(true)),
+    );
+  }
+
+  private duplicateDynamicItem(msg: DuplicateDynamicItem, state?: StateTree) {
+    this.checkState(msg, state);
+    return state.duplicateSubtree(msg.uuid).pipe(
       tap(() => this.wasEdited$.next(true)),
     );
   }
@@ -263,71 +281,33 @@ export class Driver {
 
   private savePipeline(msg: SavePipeline, state?: StateTree) {
     this.checkState(msg, state);
-    const {title, description, isFavorite, tags} = msg;
-    return state.save(undefined, {title, description, isFavorite, tags}).pipe(
-      tap((call) => this.currentMetaCallData$.next({
-        id: call?.id,
-        title: call?.options.title,
-        isFavorite,
-        description: call?.options.description,
-        tags: call?.options.tags,
-        started: getStartedOrNull(call),
-      })),
+    const {title, description, tags, target} = msg;
+    return state.save(undefined, {title, description, tags, target}).pipe(
+      tap((call) => this.currentMetaCallData$.next(metaCallInfo(call))),
       tap(() => this.wasEdited$.next(false)),
     );
   }
 
   private loadPipeline(msg: LoadPipeline) {
-    return from(loadInstanceState(msg.funcCallId)).pipe(
-      concatMap(([stateLoaded, metaCall, isFavorite]) => {
-        if (isFuncCallSerializedState(stateLoaded))
-          throw new Error(`Wrong pipeline config in wrapper FuncCall ${msg.funcCallId}`);
-        if (!stateLoaded.nqName)
-          throw new Error(`Pipeline config in wrapper FuncCall ${msg.funcCallId} missing nqName`);
-        if (msg.config)
-          return of([stateLoaded, msg.config, metaCall, isFavorite] as const);
-        return callHandler<PipelineConfiguration>(stateLoaded.nqName, {version: stateLoaded.version}).pipe(
-          concatMap((conf) => from(getProcessedConfig(conf, this.logger))),
-          map((config) => [stateLoaded, config, metaCall, isFavorite] as const),
-        );
-      }),
-      map(([state, config, metaCall, isFavorite]) =>
-        [StateTree.fromInstanceState({
-          state,
-          config,
-          isReadonly: !!msg.readonly,
-          defaultValidators: true,
-          batchLinks: true,
-          mockMode: this.mockMode,
-          logger: this.logger,
-        }), metaCall, isFavorite] as const),
-      concatMap(([state, metaCall, isFavorite]) => state.init().pipe(mapTo([state, metaCall, isFavorite] as const))),
-      tap(([state, metaCall, isFavorite]) => {
-        this.states$.next(state);
-        this.currentMetaCallData$.next({
-          id: metaCall?.id,
-          title: metaCall?.options.title,
-          description: metaCall?.options.description,
-          isFavorite,
-          tags: metaCall?.options.tags,
-          started: getStartedOrNull(metaCall),
-        });
+    return loadSavedTree(msg.funcCallId,
+      {config: msg.config, isReadonly: !!msg.readonly, mockMode: this.mockMode, logger: this.logger}).pipe(
+      tap(({tree, metaCall}) => {
+        this.states$.next(tree);
+        this.currentMetaCallData$.next(metaCallInfo(metaCall));
         this.wasEdited$.next(false);
       }),
     );
   }
 
   private initPipeline(msg: InitPipeline) {
-    const config$ = msg.config ? of(msg.config) :
-      callHandler<PipelineConfiguration>(msg.provider, {version: msg.version}).pipe(
-        concatMap((conf) => from(getProcessedConfig(conf, this.logger))));
+    const config$ = msg.config ? of(msg.config) : loadWorkflowConfig(msg.provider, msg.version, this.logger);
     return config$.pipe(
       map((config) => msg.instanceConfig ?
         StateTree.fromInstanceConfig({
           config,
           instanceConfig: msg.instanceConfig,
           isReadonly: false,
-          defaultValidators: true,
+          annotationChecks: true,
           batchLinks: true,
           mockMode: this.mockMode,
           logger: this.logger,
@@ -335,7 +315,7 @@ export class Driver {
         StateTree.fromPipelineConfig({
           config,
           isReadonly: false,
-          defaultValidators: true,
+          annotationChecks: true,
           batchLinks: true,
           mockMode: this.mockMode,
           logger: this.logger,

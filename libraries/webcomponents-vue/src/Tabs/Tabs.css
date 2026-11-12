@@ -1,0 +1,20 @@
+.webcomponents-vue-tabs {
+  min-height: 0;
+}
+
+.webcomponents-vue-tabs-list {
+  display: flex;
+}
+
+.webcomponents-vue-tabs-close {
+  margin-left: 6px;
+}
+
+/* the platform's tab content clips, so a pane taller than the host scrolls on its own */
+.webcomponents-vue-tabs-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}

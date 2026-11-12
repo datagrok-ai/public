@@ -10,7 +10,7 @@ Feature: Column enrichment of a database table
   have a session, and the visual query Get Top 100 of the events table. The md writes the SQL query in
   the platform's query editor; here it is saved through the API, and running it is the claim. Every
   enrichment the feature makes is named "bdd-enrich-...-{time}" and is deleted when it ends, with the
-  queries, the layout and the project. The queries are named "BDD-enrich-...": the Browse tree lists a
+  queries. The queries are named "BDD-enrich-...": the Browse tree lists a
   connection's queries a page at a time by name, capitals first, and System:Datagrok holds more
   queries than a page, so a lowercase name would sit behind "Load more".
 
@@ -18,11 +18,11 @@ Feature: Column enrichment of a database table
   joins its columns onto the table in place, a left join; a name the table already has comes in as
   "result.<name>". Applied again after an edit, it adds the columns it now selects. Deleting an
   enrichment deletes its configuration: the pane and the server no longer have it, and the columns an
-  earlier run added stay in the table. A layout keeps the look of the view, not its data: columns
-  removed from the table do not come back when a layout saved before is applied. A reopened project
-  runs the enrichments its table went through again, from their saved configuration; one deleted in
-  the meantime is reported in an error balloon ("Could not find enrichment") and its columns do not
-  come back.
+  earlier run added stay in the table. What the joins put into the rows, the "result.<name>" of a
+  clashing column, an edit, a deletion, the foreign key lookup, and an enrichment applied again from
+  its saved configuration as a reopened project does (a deleted one reported, "Could not find
+  enrichment") are PowerPack's package test, category Enrichment (src/tests/enrichment.ts); this
+  feature claims what the pane and the editor do.
 
   The pane of a column lists the enrichments made for that table and column, and those made for the
   column its foreign key refers to, labelled "via <table>": func_calls.session_id refers to
@@ -114,14 +114,11 @@ Feature: Column enrichment of a database table
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: The enrichment applied adds the four session columns, filled by the join
+  Scenario: The enrichment applied from its link adds its columns
     Given user watches the task bar
     When user clicks on link of "bdd-enrich-sessions-{time}" enrichment
     Then the task bar should have finished "Enriching..."
-    And the table should have the columns "id, friendly_name, session_id, event_type_id, event_time, description, error_message, error_stack_trace, exported_by, ended, is_short, started, user_id"
-    And the table should have 50 rows
-    And the "started" column should hold, row by row, the "started" of the "users_sessions" table matched on "session_id" = "id"
-    And the "user_id" column should hold, row by row, the "user_id" of the "users_sessions" table matched on "session_id" = "id"
+    And the table should have a column "started"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -138,22 +135,17 @@ Feature: Column enrichment of a database table
     When user clicks on OK button in "Enrich session_id" dialog
     Then the "Enrich session_id" dialog should close
     And 1 enrichment named "bdd-enrich-sessions-{time}" should be on the server
-    And the enrichment "bdd-enrich-sessions-{time}" on the server should select the column "type"
-    And the enrichment "bdd-enrich-sessions-{time}" on the server should not select the column "is_short"
     Given user watches the task bar
     When user clicks on link of "bdd-enrich-sessions-{time}" enrichment
     Then the task bar should have finished "Enriching..."
     And the table should have a column "type"
-    And the "type" column should hold, row by row, the "type" of the "users_sessions" table matched on "session_id" = "id"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: A deleted enrichment is gone from the pane and the server, and its columns stay
+  Scenario: A deleted enrichment is gone from the pane and the server
     When user clicks on delete icon of "bdd-enrich-sessions-{time}" enrichment
     Then "bdd-enrich-sessions-{time}" enrichment should be absent
     And 0 enrichments named "bdd-enrich-sessions-{time}" should be on the server
-    And the table should have a column "is_short"
-    And the table should have a column "type"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -203,7 +195,7 @@ Feature: Column enrichment of a database table
     Given user watches the task bar
     When user clicks on link of "bdd-enrich-types-{time}" enrichment
     Then the task bar should have finished "Enriching..."
-    And the "source" column should hold, row by row, the "source" of the "event_types" table matched on "event_type_id" = "id"
+    And the table should have a column "source"
     When user drags the "x scroll handle" area of grid by 1000 pixels to the left
     And user clicks on the "header session_id" area of grid
     Then the context panel should show "session_id"
@@ -212,12 +204,11 @@ Feature: Column enrichment of a database table
     And user watches the task bar
     When user clicks on link of "bdd-enrich-tokens-{time}" enrichment
     Then the task bar should have finished "Enriching..."
-    And the table should have the columns "id, friendly_name, session_id, event_type_id, event_time, description, error_message, error_stack_trace, exported_by, error_severity, result.friendly_name, is_error, source, is_short, type, user_id"
-    And the "user_id" column should hold, row by row, the "user_id" of the "users_sessions" table matched on "session_id" = "id"
+    And the table should have a column "is_short"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: Deleting one of the applied enrichments removes its configuration only
+  Scenario: Deleting one of the applied enrichments removes it from the pane and the server
     When user drags the "x scroll handle" area of grid by 1000 pixels to the left
     And user clicks on the "header event_type_id" area of grid
     Then the context panel should show "event_type_id"
@@ -226,8 +217,6 @@ Feature: Column enrichment of a database table
     When user clicks on delete icon of "bdd-enrich-types-{time}" enrichment
     Then "bdd-enrich-types-{time}" enrichment should be absent
     And 0 enrichments named "bdd-enrich-types-{time}" should be on the server
-    And the table should have a column "source"
-    And the table should have a column "is_short"
     And no errors should have been logged
 
   Scenario: The enrichment of session_id is offered on the other result of the events table
@@ -240,54 +229,6 @@ Feature: Column enrichment of a database table
     Then "bdd-enrich-tokens-{time}" enrichment should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown
-
-  Scenario: A layout saved before enriched columns are removed does not bring them back
-    Given the layouts named "BDD-enrich-events-{time}" are deleted when the feature ends
-    When user clicks on BDD-enrich-events-{time} view
-    Then the "BDD-enrich-events-{time}" view should be current
-    And the table should have a column "is_short"
-    Given the toolbox pane is shown
-    And Layouts accordion header in toolbox is expanded
-    When user clicks on Save button in layouts pane
-    Then "BDD-enrich-events-{time}" layout card should be visible
-    When user clicks on histogram icon on toolbox
-    Then the open tableview should have 1 histogram viewer
-    When user drags the "x scroll handle" area of grid by 1000 pixels to the right
-    And user picks "Remove" from the context menu of the "header is_short" area of grid
-    Then the table should not have a column "is_short"
-    When user clicks on "BDD-enrich-events-{time}" layout card
-    Then the open tableview should have 0 histogram viewers
-    And the table should not have a column "is_short"
-    And the table should have a column "user_id"
-    And no errors should have been logged
-    And no error or warning balloon should have been shown
-
-  Scenario: A project with the enriched table reopens with the enrichments that still exist
-    Given no project named "bdd-enrich-project-{time}" is on the server
-    When user closes events view
-    Then the "BDD-enrich-events-{time}" view should be current
-    When user clicks on Save button in toolbar
-    Then "Save project" dialog should be visible
-    When user enters "bdd-enrich-project-{time}" into Name text input in "Save project" dialog
-    And user clicks on OK button in "Save project" dialog
-    Then "Save project" dialog should be hidden
-    And 1 project named "bdd-enrich-project-{time}" should be on the server
-    And "Share bdd-enrich-project-{time}" dialog should be visible
-    When user presses Escape
-    Then "Share bdd-enrich-project-{time}" dialog should be absent
-    When user closes all views
-    Given the browse panel is open
-    When user refreshes the browse tree
-    And user expands "My stuff" tree node inside browse tree
-    And user expands "My stuff > My dashboards" tree node inside browse tree
-    And user double-clicks on "My stuff > My dashboards > bdd-enrich-project-{time}" tree node inside browse tree
-    Then the table should have been reloaded by data sync
-    And the table should have a column "type"
-    And the table should have a column "user_id"
-    And the table should not have a column "is_short"
-    And the table should not have a column "source"
-    And an error balloon containing "Could not find enrichment" should have been shown
-    And no errors should have been logged
 
   Scenario: The func_calls with a session run from the Browse tree
     Given the browse panel is open

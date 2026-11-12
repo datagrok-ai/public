@@ -492,6 +492,10 @@ export class SpotlightWidget extends DG.Widget {
           : null;
         this.subwidgetsAdded.set(SpotlightTabNames.RECENT, this.recentItemsRoot);
         console.timeEnd('ActivityDashboardWidget.total');
+        // nothing recent is left (the entities were deleted) and nothing else is listed: the tab shows what a new
+        // user gets rather than a blank page
+        if (!this.recentItemsRoot && !this.actionRequiredRoot && !this.sharedWithMeRoot)
+          return await this.getNewUserInfoColumns();
         return this.recentItemsRoot ?? ui.div([]);
       }));
     }

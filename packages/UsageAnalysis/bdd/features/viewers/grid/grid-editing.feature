@@ -9,8 +9,9 @@ Feature: Grid cell editing and the clipboard
   copies the selected rows with a header line, tab-separated, in the grid's column order - a moved
   column where it was moved, a column hidden from the grid still in (the operator confirmed the
   hidden column belongs in the copy) - Control+V moves a value between cells, Control+A
-  then copy then paste leaves the table alone, and Shift+Delete removes the selected rows while
-  Control+Z brings them back. The permissions scenario types the login of the account the run
+  then copy then paste leaves the table alone, Shift+Delete removes the selected rows while
+  Control+Z brings them back, and a Refresh of the Browse tree beside the table view leaves the
+  grid's copy and paste working (GROK-20266: the Toolbox's Files Refresh broke copy). The permissions scenario types the login of the account the run
   signs in with, then that of the second account the library's setup keeps (`bddsecond`, or
   DATAGROK_SHARING_LOGIN), on SEVERITY where `grid-ui.md` uses Chemist of spgi-100 (operator
   decision D8). One journey on demog-1000; every scenario puts the value back. The auto-append and
@@ -18,8 +19,11 @@ Feature: Grid cell editing and the clipboard
   once the appended row was deleted (seen on dev in two runs, not reproduced outside the journey;
   reported to the operator).
 
-  Not translated, and why: from `grid-ui.md` "Context Panel - Permissions", the "Pin if editable" switch is not claimed, and the refusal
-  message is matched by its text, not by the login it names.
+  The refusal message is matched by its text, not by the login it names. The "Pin if editable" switch
+  (`grid-ui.md` "Context Panel - Permissions") is in `grid-pin-if-editable.feature`.
+
+  The last scenario pastes into a read-only grid: the cell keeps its value, and the same paste into an
+  editable cell right after shows that the clipboard held one.
 
   Background:
     Given user is logged in
@@ -209,4 +213,38 @@ Feature: Grid cell editing and the clipboard
     Then the table should have 1000 rows
     When user clears the row selection
     Then no rows should be selected
+    And no errors should have been logged
+
+  @GROK-20266
+  Scenario: Copy and paste still work after the Browse tree is refreshed
+    Given the browse panel is open
+    When user refreshes the browse tree
+    And user clicks on the "cell 3 of AGE" area of grid
+    And user presses Control+C
+    And user clicks on the "cell 12 of AGE" area of grid
+    And user presses Control+V
+    Then the value of "AGE" column in row 12 should be "58"
+    When user double-clicks on the "cell 12 of AGE" area of grid
+    And user presses Control+A in cell editor
+    And user types "28" into cell editor
+    And user presses Enter
+    Then the value of "AGE" column in row 12 should be "28"
+    And no errors should have been logged
+
+  Scenario: A read-only grid takes no paste
+    When user sets "Allow Edit" property of grid to "false"
+    And user clicks on the "cell 2 of AGE" area of grid
+    And user presses Control+C
+    And user clicks on the "cell 11 of AGE" area of grid
+    And user presses Control+V
+    And user sets "Allow Edit" property of grid to "true"
+    And user clicks on the "cell 13 of AGE" area of grid
+    And user presses Control+V
+    Then the value of "AGE" column in row 13 should be "30"
+    And the value of "AGE" column in row 11 should be "46"
+    When user double-clicks on the "cell 13 of AGE" area of grid
+    And user presses Control+A in cell editor
+    And user types "43" into cell editor
+    And user presses Enter
+    Then the value of "AGE" column in row 13 should be "43"
     And no errors should have been logged

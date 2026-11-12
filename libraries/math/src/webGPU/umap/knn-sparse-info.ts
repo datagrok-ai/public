@@ -1,6 +1,7 @@
 import {getGPUDevice} from '../getGPUDevice';
 import {SparseKNNInfo} from './types';
 import {knnMatrixOpInfoWGSL} from './wgsl/knn-sparse-info.wgsl';
+import {WORKGROUP_DIM} from '../workgroup';
 
 /**
  * this will get all the info needed for subsequent operation in umap
@@ -12,7 +13,7 @@ import {knnMatrixOpInfoWGSL} from './wgsl/knn-sparse-info.wgsl';
 export async function getKnnSparseOpInfo(
   knnIndexes: number[][] | Int32Array[] | Uint32Array[]
 ): Promise<SparseKNNInfo | undefined> {
-  const threadsPerWorkgroupDim = 10;
+  const threadsPerWorkgroupDim = WORKGROUP_DIM;
   const threadsPerWorkgroup = threadsPerWorkgroupDim * threadsPerWorkgroupDim;
   const numOfEntries = knnIndexes.length;
   const requiredWorkgroups = Math.ceil(numOfEntries / threadsPerWorkgroup);

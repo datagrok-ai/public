@@ -1,18 +1,14 @@
 #!/usr/bin/env node
-// One command for the dev loop: compile, run the unit tier, and (unless --fast) prove the
-// runtime still serves a real turn end to end. Exits non-zero on any failure.
-//
-//   node dev/check.mjs          compile + unit + live smoke turn
-//   node dev/check.mjs --fast   compile + unit only (no model call, no quota spent)
+// One command for the dev loop: compile and run the unit tier. Exits non-zero on any failure.
+// A live turn needs model credentials, which the runtime reads only from Datagrok: run it on a stand.
 
-import {execFileSync, spawnSync} from 'node:child_process';
+import {execFileSync, execSync} from 'node:child_process';
 import * as path from 'node:path';
-import {pathToFileURL} from 'node:url';
 
 const DEV = import.meta.dirname;
 const RUNTIME = path.join(DEV, '..', 'dockerfiles', 'claude-runtime');
 const MCP = path.join(DEV, '..', 'dockerfiles', 'mcp-server');
-const fast = process.argv.includes('--fast');
+const NODE_PASS = /^(?:# |ℹ )pass (\d+)$/m;
 
 function step(label, fn) {
   const t0 = Date.now();
@@ -32,9 +28,8 @@ step('compile', () => {
 });
 
 step('unit tests', () => {
-  const out = execFileSync('node', ['--test', 'test/'], {cwd: RUNTIME, encoding: 'utf8'});
-  const pass = out.match(/^# pass (\d+)$/m)?.[1] ?? '?';
-  return `(${pass} tests)`;
+  const out = execSync('npm test 2>&1', {cwd: RUNTIME, encoding: 'utf8'});
+  return `(${out.match(NODE_PASS)?.[1] ?? '?'} tests)`;
 });
 
 // The MCP server is a separate image with its own build, so a runtime-only check would miss a
@@ -42,7 +37,7 @@ step('unit tests', () => {
 step('mcp-server', () => {
   execFileSync('npx', ['tsc'], {cwd: MCP, encoding: 'utf8', shell: true});
   const out = execFileSync('node', ['--test', 'test/'], {cwd: MCP, encoding: 'utf8'});
-  return `(${out.match(/^# pass (\d+)$/m)?.[1] ?? '?'} tests)`;
+  return `(${out.match(NODE_PASS)?.[1] ?? '?'} tests)`;
 });
 
 // Cheap to check, expensive to get wrong: a malformed assert only surfaces ~20 minutes into a run.
@@ -50,34 +45,6 @@ step('benchmark suite', () => {
   const harness = path.join(DEV, 'harness');
   const out = execFileSync('node', ['lint-suite.mjs'], {cwd: harness, encoding: 'utf8'});
   return `(${out.match(/^suite: (\d+) prompts$/m)?.[1] ?? '?'} prompts)`;
-});
-
-if (fast)
-  process.exit(0);
-
-// The container has the old modules in memory until restarted, even though dist/ is bind-mounted.
-step('restart runtime', () => {
-  execFileSync('node', [path.join(DEV, 'runtime.mjs'), 'up'], {encoding: 'utf8'});
-});
-
-step('live turn', () => {
-  // A Windows absolute path is not a valid ESM specifier — dynamic import() needs a file:// URL.
-  const driveUrl = pathToFileURL(path.join(DEV, 'harness', 'drive.mjs')).href;
-  const script = `
-    import('${driveUrl}').then(async ({driveOnce}) => {
-      const r = await driveOnce('Reply with exactly: PONG',
-        {systemPromptMode: 'none', model: 'haiku', timeoutMs: 90000});
-      if (!r.ok || !/PONG/.test(r.content)) {
-        console.error('unexpected turn result:', JSON.stringify(r).slice(0, 400));
-        process.exit(1);
-      }
-      console.log(r.totalMs);
-      process.exit(0);
-    });`;
-  const r = spawnSync('node', ['-e', script], {encoding: 'utf8'});
-  if (r.status !== 0)
-    throw new Error(r.stderr || r.stdout);
-  return `(${r.stdout.trim()}ms round trip)`;
 });
 
 console.log('\nall green');

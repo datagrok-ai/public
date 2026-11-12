@@ -43,7 +43,37 @@ export function showEventDetails(table: DG.DataFrame): void {
     return ui.tableFromMap(map);
   }), true);
 
-  grok.shell.o = accordion.root;
+  grok.shell.o = ui.divV([ui.button('Timeline', () => openTimeline(eventId),
+    'What happened in the session of this event, from a minute before it to five minutes after'), accordion.root]);
+}
+
+/** Opens what happened in the session of an event, from a minute before it to five minutes after, as a table view. */
+export async function openTimeline(eventId: string): Promise<void> {
+  const progress = DG.TaskBarProgressIndicator.create('Loading the timeline...');
+  try {
+    const event = await grok.dapi.log.find(eventId);
+    const session = typeof event.session === 'string' ? event.session : event.session?.id;
+    if (!session) {
+      grok.shell.info('The event has no session');
+      return;
+    }
+    const time = event.eventTime;
+    const rows = await grok.dapi.log.getTimeline({session, from: time.subtract(1, 'minute').toDate(),
+      to: time.add(5, 'minute').toDate()});
+    if (!rows.length) {
+      grok.shell.info('Nothing recorded in the session around this event');
+      return;
+    }
+    const t = DG.DataFrame.fromObjects(rows)!;
+    t.name = `Timeline ${time.format('YYYY-MM-DD HH:mm')}`;
+    grok.shell.addTableView(t);
+  }
+  catch (e: any) {
+    grok.shell.error(`Timeline: ${e?.message ?? e}`);
+  }
+  finally {
+    progress.close();
+  }
 }
 
 export function setupUserIconRenderer(grid: DG.Grid, users: { [name: string]: DG.User }, columnNames: string[]): void {

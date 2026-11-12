@@ -3,23 +3,16 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import wu from 'wu';
-import {LRUCache} from 'lru-cache';
-
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 import {addSubstructProvider, getMonomerHover, ISubstruct, setMonomerHover} from '@datagrok-libraries/chem-meta/src/types';
 
 import {IMonomerLibBase} from '../types/monomer-library';
-import {HelmType, ISeqMonomer, PolymerType} from '../helm/types';
-import {HelmTypes, PolymerTypes} from '../helm/consts';
-import {ALPHABET} from '../utils/macromolecule';
-import {buildRolesForHelmRna, getMonomersDictFromLib} from './to-atomic-level';
-import {monomerSeqToMolfile} from './to-atomic-level-utils';
+import {ISeqMonomer} from '../helm/types';
 import {MonomerHoverLink} from './utils';
 import {getMolHighlight} from './seq-to-molfile';
-import {MonomerMap} from './types';
-import {IHelmToMolfileConverter, ISeqHelper} from '../utils/seq-helper';
+import {ISeqHelper} from '../utils/seq-helper';
+import {AsmLayoutName, getSeqSrcLayout, MonomerMapProvider} from './assembler';
 
 export const MonomerHoverLinksTemp = 'MonomerHoverLinks';
 
@@ -31,104 +24,54 @@ export function addMonomerHoverLink(seqColTemp: any, resLink: MonomerHoverLink) 
   seqColTemp[MonomerHoverLinksTemp] = mhhList;
 }
 
+/** Invalidates the grids that may show {@link molCol}: the table views of its data frame and the last grid a
+ * hover came from. */
+function invalidateMolGrids(molCol: DG.Column<string>, lastGrid: DG.Grid | null): void {
+  lastGrid?.invalidate();
+  const df = molCol.dataFrame;
+  if (!df) return;
+  for (const tv of grok.shell.tableViews)
+    if (tv.dataFrame?.id === df.id) tv.grid?.invalidate();
+}
+
 /**
- * Builds a monomer hover link between sequence and molecule columns
- * throughPOM specifies if the sequence is translated through seqhelper using POM (default is false)
+ * Builds a monomer hover link between sequence and molecule columns. The monomer maps come from the macromolecule
+ * assembler per row, on demand (D6): the first hover of a row requests its map and redraws the molecule cell when it
+ * arrives (no highlight until then); with the `.sequence-src-highlight-monomers` tag on, the rows the renderer draws
+ * get their maps requested and their grids redrawn when they arrive. The maps are built with the layout in the
+ * molecule column's `.sequence-src-layout` tag (any value but 'linear' is non-linear). Molfiles not made by the
+ * assembler (stored by the old JavaScript conversion) do not match its maps (D7).
+ * @param {DG.Column<string>} seqCol the sequence column the molecules were made from
+ * @param {DG.Column<string>} molCol the molecule column
+ * @param {IMonomerLibBase} monomerLib the library the molecules were made with
+ * @param {ISeqHelper} seqHelper
+ * @param {RDModule} rdKitModule deprecated and unused: the maps come from the assembler
+ * @param {boolean} throughPOM the layout for a molecule column without the layout tag: non-linear when true
+ * @return {Promise<MonomerHoverLink>} the registered link
  */
 export async function buildMonomerHoverLink(
   seqCol: DG.Column<string>, molCol: DG.Column<string>,
-  monomerLib: IMonomerLibBase, seqHelper: ISeqHelper, rdKitModule: RDModule, throughPOM: boolean = false
+  monomerLib: IMonomerLibBase, seqHelper: ISeqHelper, rdKitModule?: RDModule | null, throughPOM: boolean = false,
 ): Promise<MonomerHoverLink> {
-  const seqSH = seqHelper.getSeqHandler(seqCol);
-  const isNucleotide = (seqSH.alphabet == ALPHABET.RNA || seqSH.alphabet == ALPHABET.DNA);
-  const isNucleotideHelmSequence = seqSH.isHelm() && isNucleotide;
-  // if the conversion goes through polymer object model, it is aware that DNA/RNA need sugars and phosphates, therefore, for fasta
-  // of length 15, it will return 45 monomers. so we need to handle this case separately
-  const isNucleotideNonHelmSequence = !seqSH.isHelm() && isNucleotide;
+  const defaultLayout: AsmLayoutName = throughPOM ? 'nonlinear' : 'linear';
+  const maps = new MonomerMapProvider(seqCol, monomerLib, seqHelper, () => getSeqSrcLayout(molCol, defaultLayout));
 
-  const getSeqMonomerCorrectedPosition = (pos?: number) => {
-    if (pos == undefined) return null;
-    // HELM RNA is split into per-position sugar/base/phosphate monomers, so the
-    // renderer reports a flat monomer index and the monomer map is keyed by that
-    // same flat index — both for the POM converter and (since the map is now
-    // built with roles) for the linear path. No division needed in either case.
-    if (isNucleotideHelmSequence)
-      return pos;
-    // Non-HELM DNA/RNA: the linear map keys by base position; the POM converter
-    // expands each base into a sugar/base/phosphate triple, so map the base to
-    // its base entry (the middle of its triple).
-    if (isNucleotideNonHelmSequence)
-      return throughPOM ? pos * 3 + 1 : pos;
-    return pos;
+  let lastGrid: DG.Grid | null = null;
+  let invalidateTimer: number | null = null;
+  /** Maps of the whole-molecule highlight arrive one by one; one redraw for those arriving together */
+  const scheduleInvalidate = (): void => {
+    if (invalidateTimer !== null) return;
+    invalidateTimer = window.setTimeout(() => {
+      invalidateTimer = null;
+      invalidateMolGrids(molCol, lastGrid);
+    }, 50);
   };
-
-  const helmToMolfileConverter: IHelmToMolfileConverter | null = throughPOM ? await seqHelper.getHelmToMolfileConverter(monomerLib) : null;
-  function buildMonomerMap(seqCol: DG.Column<string>, tableRowIdx: number): MonomerMap {
-    const seqSH = seqHelper.getSeqHandler(seqCol);
-    if (!throughPOM) {
-      const seqSS = seqSH.getSplitted(tableRowIdx);
-      const gi = seqSS.graphInfo;
-
-      // Polymer type: for HELM read it from the parsed graph rather than the
-      // alphabet — modified RNA can mis-detect as ALPHABET.UN. The whole row is
-      // assumed to be the first chain's type. Non-HELM falls back to the alphabet.
-      let polymerType: PolymerType;
-      if (seqSH.isHelm() && gi?.polymerTypes && gi.polymerTypes.length > 0)
-        polymerType = gi.polymerTypes[0];
-      else {
-        const a = seqSH.alphabet as ALPHABET;
-        polymerType = (a === ALPHABET.RNA || a === ALPHABET.DNA) ? PolymerTypes.RNA : PolymerTypes.PEPTIDE;
-      }
-
-      // Coerce a UN alphabet to RNA for the RNA polymer path (only used for the
-      // bases-only default sugar/phosphate selection; irrelevant in triples mode).
-      let alphabet = seqSH.alphabet as ALPHABET;
-      if (polymerType === PolymerTypes.RNA && alphabet !== ALPHABET.RNA && alphabet !== ALPHABET.DNA)
-        alphabet = ALPHABET.RNA;
-
-      // HELM RNA is assembled from per-position sugar/base/phosphate triples;
-      // the monomer map must be built with the same roles (and multi-chain
-      // stacking) the real conversion uses, otherwise every monomer is treated
-      // as a base and the atom map does not match the rendered molfile.
-      const isHelmRna = seqSH.isHelm() && polymerType === PolymerTypes.RNA;
-      const biotype: HelmType = isHelmRna ? (HelmTypes.NUCLEOTIDE as HelmType) : seqSH.defaultBiotype;
-      const seqMList: ISeqMonomer[] = wu.count(0).take(seqSS.length)
-        .map((posIdx) => { return {position: posIdx, symbol: seqSS.getCanonical(posIdx), biotype: biotype} as ISeqMonomer; })
-        .toArray();
-
-      const chainStarts = (gi?.disjointSeqStarts && gi.disjointSeqStarts.length > 0) ?
-        gi.disjointSeqStarts.slice() : [0];
-      const roles = isHelmRna ?
-        buildRolesForHelmRna([seqMList], monomerLib, polymerType, [chainStarts])[0] : undefined;
-
-      const monomersDict = getMonomersDictFromLib([seqMList], [roles], polymerType, alphabet, monomerLib, rdKitModule);
-      // Call seq-to-molfile worker core directly
-      const molWM = monomerSeqToMolfile(seqMList, monomersDict, alphabet, polymerType, roles, chainStarts);
-      return molWM.monomers;
-    } else {
-      const helm = seqSH.getHelm(tableRowIdx);
-      const molWM = seqHelper.helmToAtomicLevelSingle(helm, helmToMolfileConverter!, false, false); // skip mol beautification step. not needed.
-      return molWM.monomers;
-    }
-  }
-
-  const monomerMapLruCache = new LRUCache<string, MonomerMap>({max: 100});
-
-  function getMonomerMap(seqCol: DG.Column<string>, tableRowIdx: number): MonomerMap | null {
-    const seq = seqCol.get(tableRowIdx);
-    if (seq == null) return null;
-
-    let resMonomerMap = monomerMapLruCache.get(seq);
-    if (!resMonomerMap)
-      monomerMapLruCache.set(seq, resMonomerMap = buildMonomerMap(seqCol, tableRowIdx));
-
-    return resMonomerMap;
-  }
 
   const resLink: MonomerHoverLink = {
     targetCol: molCol,
     handler: (seqGridCell: DG.GridCell, seqMonomer: ISeqMonomer | null, targetGridCol: DG.GridColumn): boolean => {
       const grid = targetGridCol.grid;
+      lastGrid = grid;
       const tableRowIdx = seqGridCell.tableRowIndex!;
       const gridRowIdx = seqGridCell.gridRow;
       const targetGridCell = grid.cell(targetGridCol.name, gridRowIdx);
@@ -145,27 +88,38 @@ export async function buildMonomerHoverLink(
           setMonomerHover(null);
           return true;
         }
+        const seqPosition = seqMonomer.position;
         setMonomerHover({
           gridCell: targetGridCell,
           dataFrameId: seqCol.dataFrame.id,
           gridRowIdx: gridRowIdx,
           seqColName: seqCol.name,
-          seqPosition: getSeqMonomerCorrectedPosition(seqMonomer?.position) ?? -1,
+          // The assembler keys maps by the sequence position the renderers report (a FASTA/separator nucleotide's
+          // sugar, base and phosphate share the base's position), so no remapping is needed
+          seqPosition: seqPosition ?? -1,
           getSubstruct: (): ISubstruct | undefined => { // Gets monomer highlight
             if (!seqMonomer || seqMonomer.symbol === '*')
               return undefined;
 
-            const molMonomerMap = getMonomerMap(seqCol, tableRowIdx);
+            const molMonomerMap = maps.get(tableRowIdx); // undefined until the map arrives
             if (!molMonomerMap)
               return undefined;
 
-            const monomerMap = molMonomerMap.get(getSeqMonomerCorrectedPosition(seqMonomer?.position)!); // single monomer
+            const monomerMap = molMonomerMap.get(seqPosition); // single monomer
             if (!monomerMap) return {atoms: [], bonds: [], highlightAtomColors: [], highlightBondColors: []};
 
-            const res: ISubstruct = getMolHighlight([monomerMap], monomerLib);
+            const res: ISubstruct = getMolHighlight([monomerMap], monomerLib, 0.6);
             return res;
           }
         });
+
+        // Request the hovered row's map first; redraw the molecule cell when it arrives, if still hovered
+        maps.get(tableRowIdx, () => {
+          const cur = getMonomerHover();
+          if (cur && cur.dataFrameId == seqCol.dataFrame?.id && cur.gridRowIdx == gridRowIdx &&
+            cur.seqColName == seqCol.name && cur.seqPosition == seqPosition)
+            targetGridCell.render();
+        }, true);
 
         // TODO: Invalidate targetGridCell
         //grid.invalidate();
@@ -180,7 +134,8 @@ export async function buildMonomerHoverLink(
       const seq = seqCol.get(tableRowIdx);
       if (!seq) return undefined;
 
-      const molMonomerMap = getMonomerMap(seqCol, tableRowIdx);
+      // Prefetch: the rows the renderer draws get their maps requested; their grids redraw when the maps arrive
+      const molMonomerMap = maps.get(tableRowIdx, scheduleInvalidate);
       if (!molMonomerMap) return undefined;
       const res: ISubstruct = getMolHighlight(molMonomerMap.values(), monomerLib);
       return res;

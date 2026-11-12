@@ -350,7 +350,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
       return;
     g.save();
     try {
-      const renderedOnGrid = gridCell.gridColumn && gridCell.grid && g.canvas === gridCell.grid.canvas;
+      const renderedOnGrid = gridCell.grid?.dart && g.canvas === gridCell.grid.canvas;
       const cellImageData = this.imageCache.has(cellValue) ? this.imageCache.get(cellValue) : null;
       const bd = new DG.Rect(x, y, w, h);
       let gridCellWidth: number;
@@ -534,18 +534,4 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
       gCtx.restore();
     }
   }
-}
-
-async function base64ToImg(base64: string): Promise<HTMLImageElement> {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    try {
-      const img = new Image();
-      img.onload = () => {
-        resolve(img);
-      };
-      img.src = base64;
-    } catch (err) {
-      reject(err);
-    }
-  });
 }

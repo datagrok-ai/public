@@ -7,6 +7,9 @@ import './tests/add-new-column';
 import './tests/utils';
 import './tests/excel';
 import './tests/filter';
+import './tests/enrichment';
+import './tests/chat-input';
+import './tests/db-explorer';
 
 export const _package = new DG.Package();
 export {tests};

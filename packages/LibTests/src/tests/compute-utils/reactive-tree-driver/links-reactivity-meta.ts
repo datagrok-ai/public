@@ -51,7 +51,7 @@ category('ComputeUtils: Driver links reactivity: meta', async () => {
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
-      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).meta.a
+      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).meta.a,
       ).toBe('ab', {
         a: undefined,
         b: {
@@ -104,7 +104,7 @@ category('ComputeUtils: Driver links reactivity: meta', async () => {
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
-      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).meta.a
+      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).meta.a,
       ).toBe('a(bc)', {
         a: undefined,
         b: {
@@ -141,10 +141,10 @@ category('ComputeUtils: Driver links reactivity: meta', async () => {
     const pconf = await getProcessedConfig(config);
     testScheduler.run((helpers) => {
       const {expectObservable} = helpers;
-      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, annotationChecks: true});
       tree.init().subscribe();
       const node = tree.nodeTree.getNode([{idx: 0}]);
-      expectObservable((node.getItem().getStateStore() as FuncCallInstancesBridge).meta.a
+      expectObservable((node.getItem().getStateStore() as FuncCallInstancesBridge).meta.a,
       ).toBe('a', {
         a: {
           'key': 'val',

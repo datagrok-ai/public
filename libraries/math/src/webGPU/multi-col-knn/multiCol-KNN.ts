@@ -4,6 +4,7 @@ import {WEBGSLAGGREGATION, WEBGSLAGGREGATIONFUNCTIONS} from '../multi-col-distan
 import {SupportedEntryTypes, WEBGPUDISTANCE, webGPUFunctions,
   WGPUENTRYTYPE} from '../multi-col-distances/webGPU-multicol-distances';
 import {webGPUProcessInfo} from '../preprocessing/webGPU-process-info';
+import {WORKGROUP_DIM} from '../workgroup';
 
 
 /** generate KNN based on list of lists of entries.
@@ -100,7 +101,7 @@ export async function multiColWebGPUKNN(
   const pairComparisonsPerPass = Math.ceil(10000 / combinedComplexity);
 
 
-  const workGroupDivision = 10; // how many threads inside of one workgroup dimension (in this case 10 * 10 threads per workgroup)
+  const workGroupDivision = WORKGROUP_DIM; // threads per workgroup dimension (../workgroup.ts)
 
   const threadsPerWorkgroup = workGroupDivision * workGroupDivision;
 

@@ -5,8 +5,16 @@ import './tests/utils/expect-tests';
 import './tests/utils/json-serialization-tests';
 import './tests/compute-utils/reactive-tree-driver/config-processing';
 import './tests/compute-utils/reactive-tree-driver/instance-init';
+import './tests/compute-utils/reactive-tree-driver/dataframe-copies';
+import './tests/compute-utils/reactive-tree-driver/consistency-tolerance';
 import './tests/compute-utils/reactive-tree-driver/instance-persistence';
+import './tests/compute-utils/reactive-tree-driver/state-snapshot';
+import './tests/compute-utils/reactive-tree-driver/load-errors';
+import './tests/compute-utils/reactive-tree-driver/headless';
+import './tests/compute-utils/reactive-tree-driver/links-pending';
 import './tests/compute-utils/reactive-tree-driver/instance-mutations';
+import './tests/compute-utils/reactive-tree-driver/instance-duplicate';
+import './tests/compute-utils/reactive-tree-driver/inspection';
 import './tests/compute-utils/reactive-tree-driver/instance-readonly';
 import './tests/compute-utils/reactive-tree-driver/links-matching';
 import './tests/compute-utils/reactive-tree-driver/links-reactivity-data';
@@ -14,9 +22,15 @@ import './tests/compute-utils/reactive-tree-driver/links-reactivity-validators';
 import './tests/compute-utils/reactive-tree-driver/links-reactivity-meta';
 import './tests/compute-utils/reactive-tree-driver/links-rule';
 import './tests/compute-utils/reactive-tree-driver/links-check';
+import './tests/compute-utils/reactive-tree-driver/annotation-checks';
 import './tests/compute-utils/reactive-tree-driver/links-check-expressions';
 import './tests/compute-utils/reactive-tree-driver/links-rule-sources';
 import './tests/compute-utils/reactive-tree-driver/links-rule-formula';
+import './tests/compute-utils/reactive-tree-driver/links-rule-separate';
+import './tests/compute-utils/reactive-tree-driver/links-rule-message-actions';
+import './tests/compute-utils/reactive-tree-driver/driver-states';
+import './tests/compute-utils/reactive-tree-driver/links-rule-workflow';
+import './tests/compute-utils/reactive-tree-driver/links-count-query';
 import './tests/compute-utils/reactive-tree-driver/links-value-annotations';
 import './tests/compute-utils/reactive-tree-driver/links-reserved-names';
 import './tests/compute-utils/reactive-tree-driver/links-docs-cases';
@@ -26,6 +40,7 @@ import './tests/compute-utils/reactive-tree-driver/links-reactivity-actions';
 import './tests/compute-utils/reactive-tree-driver/instance-additional';
 import './tests/compute-utils/reactive-tree-driver/funcall-wrappers';
 import './tests/compute-utils/reactive-tree-driver/instance-bridge';
+import './tests/compute-api/custom-function-view';
 import './tests/compute-utils/reactive-tree-driver/links-additional-states-propagation';
 import './tests/compute-utils/reactive-tree-driver/step-deps-tracking';
 import './tests/compute-utils/reactive-tree-driver/obsolete-meta';
@@ -59,14 +74,28 @@ import './tests/compute-utils/fitting/pool-multi-session';
 import './tests/compute-utils/fitting/formula-resolver';
 import './tests/compute-utils/history-file-inputs';
 import './tests/compute-utils/history-new-id';
+import './tests/compute-utils/history-saves';
 import './tests/compute-utils/model-handler-icon';
 import './tests/arrow/roundtrip';
 import './tests/arrow/titanic';
 import './tests/webcomponents/viewer-host';
+import './tests/webcomponents/viewer-element';
+import './tests/webcomponents/viewer-frame-swap-contract';
+import './tests/webcomponents/input-form-element';
+import './tests/webcomponents/validation-icon';
+import './tests/webcomponents/elements';
+import './tests/webcomponents/dock-layout';
 import './tests/webcomponents-vue/ribbon-core';
 import './tests/webcomponents-vue/ribbon-elements';
 import './tests/webcomponents-vue/ribbon-service';
+import './tests/webcomponents-vue/tabs';
 import './tests/webcomponents-vue/ribbon-components';
+import './tests/webcomponents-vue/view-service';
+import './tests/webcomponents-vue/input-form';
+import './tests/webcomponents-vue/call-meta';
+import './tests/webcomponents-vue/directives';
+import './tests/webcomponents-vue/resize-handle';
+import './tests/webcomponents-vue/wrappers';
 
 export const _package = new DG.Package();
 export {tests};
@@ -77,7 +106,8 @@ export {tests};
 //input: object testContext {optional: true}
 //input: bool stressTest {optional: true}
 //output: dataframe result
-export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean): Promise<DG.DataFrame> {
+export async function test(category: string, test: string, testContext: TestContext,
+  stressTest?: boolean): Promise<DG.DataFrame> {
   const data = await runTests({category, test, testContext, stressTest});
   return DG.DataFrame.fromObjects(data)!;
 }

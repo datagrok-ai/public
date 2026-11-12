@@ -1,11 +1,5 @@
 import type {OutgoingMessage} from './types';
 
-// Client streaming: message emission plus the fence-aware text-delta filter.
-//
-// Deliberately free of any Claude Agent SDK import so it stays pure text processing —
-// that keeps it unit-testable under any Node version (the SDK is ESM-only, which a
-// CommonJS require() cannot load before Node 22).
-
 export interface WsSender {
   send(data: string): void;
 }
@@ -33,7 +27,7 @@ export const beginRevision = (sid: string): void => void revisingSids.add(sid);
 export const endRevision = (sid: string): boolean => revisingSids.delete(sid);
 export const clearFenceState = (sid: string): void => void fenceStates.delete(sid);
 
-// Streams text from a Claude text_delta. Holds only the partial trailing line when it could
+// Streams one model text delta. Holds only the partial trailing line when it could
 // still become a fence marker (starts with `` ` `` at line start); everything else is emitted
 // immediately under the current mode. Complete lines are batched per same-mode group so a
 // 50-line delta yields ~3 emits, not 50.

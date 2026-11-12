@@ -23,7 +23,7 @@ export const DELAY = 2000;
 
 /** Wait for current view has element */
 export async function getViewWithElement(selector: string) {
-  let view: DG.ViewBase | null = null;  
+  let view: DG.ViewBase | null = null;
   let totalTime = 0;
 
   while (true) {
@@ -39,7 +39,7 @@ export async function getViewWithElement(selector: string) {
     totalTime += TICK;
   }
 
-  return view;  
+  return view;
 }
 
 /** Get the specified child */
@@ -120,7 +120,7 @@ export function describeElements(roots: HTMLElement[], description: string[]): H
   }, 'Go to the next viewer');
 
   const prevBtn = ui.button('prev', () => {
-    idx -= 1;    
+    idx -= 1;
     popup.remove();
     step();
   }, 'Go to the previous viewer');
@@ -128,7 +128,8 @@ export function describeElements(roots: HTMLElement[], description: string[]): H
   const doneBtn = ui.button('done', () => popup.remove(), 'Go to the next step');
 
   // named as runDescriber names its buttons, so a tour of either kind is walked the same way
-  for (const [btn, role] of [[nextBtn, 'next'], [prevBtn, 'prev'], [doneBtn, 'done']] as [HTMLButtonElement, string][]) {
+  for (const [btn, role] of
+    [[nextBtn, 'next'], [prevBtn, 'prev'], [doneBtn, 'done']] as [HTMLButtonElement, string][]) {
     btn.setAttribute('name', `button-tour-${role}`);
     btn.setAttribute('aria-label', role);
   }
@@ -143,7 +144,7 @@ export function describeElements(roots: HTMLElement[], description: string[]): H
       doneBtn.hidden = (idx < roots.length - 1);
       nextBtn.hidden = (idx === roots.length - 1);
       prevBtn.hidden = (idx < 1);
-      
+
       closeIcn = popup.querySelector('i') as HTMLElement;
       closeIcn.onclick = () => doneBtn.click();
     }
@@ -155,7 +156,8 @@ export function describeElements(roots: HTMLElement[], description: string[]): H
 }
 
 /** Description of a single element */
-export function singleDescription(root: HTMLElement, description: string, tooltip: string, position: ui.hints.POSITION = ui.hints.POSITION.LEFT) {
+export function singleDescription(root: HTMLElement, description: string, tooltip: string,
+  position: ui.hints.POSITION = ui.hints.POSITION.LEFT) {
   try {
     const clearBtn = ui.button('ok', () => closeIcn.click(), tooltip);
     const btnDiv = ui.divH([clearBtn]);
@@ -166,9 +168,9 @@ export function singleDescription(root: HTMLElement, description: string, toolti
     const popup = ui.hints.addHint(root, msg, position);
     const closeIcn = popup.querySelector('i') as HTMLElement;
     btnDiv.classList.add('tutorials-sci-comp-btns-div');
-    
+
     return closeIcn;
-  } catch (err) {
+  } catch {
     return null;
   }
 }
@@ -215,14 +217,14 @@ export function simulateMouseEventsWithMove(el: HTMLElement, moveX: number, move
   const startX = rect.left + rect.width / 2;
   const startY = rect.top + rect.height / 2;
 
-  const downEvent = new MouseEvent("mousedown", {
+  const downEvent = new MouseEvent('mousedown', {
     bubbles: true,
     clientX: startX,
     clientY: startY,
   });
   el.dispatchEvent(downEvent);
 
-  const moveEvent = new MouseEvent("mousemove", {
+  const moveEvent = new MouseEvent('mousemove', {
     bubbles: true,
     clientX: startX + moveX,
     clientY: startY + moveY,
@@ -232,7 +234,7 @@ export function simulateMouseEventsWithMove(el: HTMLElement, moveX: number, move
     el.dispatchEvent(moveEvent);
   }, 50);
 
-  const upEvent = new MouseEvent("mouseup", {
+  const upEvent = new MouseEvent('mouseup', {
     bubbles: true,
     clientX: startX + 1,
     clientY: startY + 1,
@@ -243,7 +245,7 @@ export function simulateMouseEventsWithMove(el: HTMLElement, moveX: number, move
   }, 100);
 }
 
-export function getLegendDiv(title: string, lines: string[]): HTMLElement {    
+export function getLegendDiv(title: string, lines: string[]): HTMLElement {
   return ui.divV([
     ui.markdown(title),
     ...lines.map((line) => {
@@ -258,9 +260,9 @@ export function getLegendDiv(title: string, lines: string[]): HTMLElement {
 export function getBallFlightModelLegend(): HTMLElement {
   return getLegendDiv('# Simulation 🏀\n\nThis model takes the ball and thrown parameters, and computes:', [
     '* the ball flight trajectory',
-    '* max height and distance'      
+    '* max height and distance',
   ]);
-}  
+}
 
 export function buildToggleOverlay(toggle: HTMLElement): HTMLElement {
   const overlay = document.createElement('div');
@@ -284,6 +286,10 @@ export function buildToggleOverlay(toggle: HTMLElement): HTMLElement {
  * descendant search finds the wrong label and matches nothing. */
 export function inputRootByCaption(form: Element, caption: string): HTMLElement | null {
   return Array.from(form.querySelectorAll<HTMLElement>('div.ui-input-root'))
-    .find((root) => root.querySelector(':scope > label.ui-label')?.textContent?.trim().toLowerCase()
-      === caption.toLowerCase()) ?? null;
+    .find((root) => root.querySelector(':scope > label.ui-label')?.textContent?.trim().toLowerCase() ===
+      caption.toLowerCase()) ?? null;
+}
+
+export function toggleSwitch(editor: HTMLElement): void {
+  editor.querySelector<HTMLElement>('.ui-input-switch')!.click();
 }

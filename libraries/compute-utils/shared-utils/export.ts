@@ -3,8 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import type ExcelJS from 'exceljs';
 import type html2canvas from 'html2canvas';
-import {DEFAULT_FLOAT_FORMAT, viewerTypesMapping} from './consts';
-import {delay, getPropViewers} from './utils';
+import {interval, race, timer} from 'rxjs';
+import {filter, switchMap, take} from 'rxjs/operators';
+import {DEFAULT_FLOAT_FORMAT, G7_FLOAT_FORMAT} from '@datagrok-libraries/utils/src/format-version-utils';
+import {viewerTypesMapping} from './consts';
+import {getPropViewers, graphicsDataUrl, isSvgGraphics} from './utils';
 import type {ValidationResult} from '../reactive-tree-driver/src/data/common-types';
 import type {ConsistencyInfo} from '../reactive-tree-driver/src/runtime/StateTreeNodes';
 
@@ -15,6 +18,18 @@ const EXPORT_VIEWER_WIDTH = 1280;
 const EXPORT_VIEWER_HEIGHT = 720;
 const EXCEL_ROW_HEIGHT_PX = 20;
 const CHART_ROW_STRIDE = Math.ceil(EXPORT_VIEWER_HEIGHT / EXCEL_ROW_HEIGHT_PX) + 1;
+const MAX_RENDER_WAIT_MS = 2000;
+
+// isRenderPending clears shortly after the last render event, without another event. Viewers that send
+// no render events (JS viewers, forms) or stay pending are captured after MAX_RENDER_WAIT_MS.
+const viewerRendered = (viewer: DG.Viewer) => race(
+  viewer.onViewerRendered.pipe(
+    take(1),
+    switchMap(() => interval(10)),
+    filter(() => !viewer.isRenderPending),
+  ),
+  timer(MAX_RENDER_WAIT_MS),
+).pipe(take(1)).toPromise();
 
 const updateIndicatorWithText = (element: HTMLElement, updating: boolean, text?: string) => {
   ui.setUpdateIndicator(element, updating);
@@ -68,44 +83,44 @@ export const richFunctionViewReport = async (
       updateIndicatorWithText(grok.shell.v.root.parentElement!, true,
         'Generating report. Please do not switch the browser tab...');
 
-      let dfCounter = 0;
+      const plots: {sheet: ExcelJS.Worksheet, viewer: DG.Viewer | undefined, col: number, row: number}[] = [];
 
-      const plotToSheet = async (
-        sheet: ExcelJS.Worksheet,
-        viewer: DG.Viewer | undefined,
-        columnForImage: number, rowForImage = 0,
-      ) => {
-        if (!viewer || !viewer.dataFrame)
-          return;
-        const newViewer = DG.Viewer.fromType(viewer.type, viewer.dataFrame.clone());
-        newViewer.copyViewersLook(viewer);
-
-        const width = EXPORT_VIEWER_WIDTH;
-        const height = EXPORT_VIEWER_HEIGHT;
-
-        const viewerBox = ui.div(newViewer.root, {style: {
-          width: `${width}px`,
-          height: `${height}px`,
-        }});
-        viewerBox.classList.add('ui-box');
-        viewerBox.classList.remove('ui-div');
-        grok.shell.v.root.insertAdjacentElement('afterend', viewerBox);
-        await delay(1000);
-        const imageDataUrl = (await loadedHtml2canvas(viewerBox)).toDataURL();
-
-        viewerBox.remove();
-        // removing the DOM node does not release the dart viewer or its cloned dataframe
-        newViewer.detach();
-
-        const imageId = exportWorkbook.addImage({
-          base64: imageDataUrl,
-          extension: 'png',
+      // All charts render at once, then each is captured in turn
+      const plotsToSheets = async () => {
+        const boxes = plots.filter(({viewer}) => viewer?.dataFrame).map((plot) => {
+          const newViewer = DG.Viewer.fromType(plot.viewer!.type, plot.viewer!.dataFrame.clone());
+          newViewer.copyViewersLook(plot.viewer!);
+          // the view container is a flex column, which would stretch the box past the image size
+          const box = ui.div(newViewer.root, {style: {
+            width: `${EXPORT_VIEWER_WIDTH}px`,
+            height: `${EXPORT_VIEWER_HEIGHT}px`,
+            flex: 'none',
+          }});
+          box.classList.add('ui-box');
+          box.classList.remove('ui-div');
+          return {...plot, newViewer, box, rendered: viewerRendered(newViewer)};
         });
-
-        sheet.addImage(imageId, {
-          tl: {col: columnForImage, row: rowForImage},
-          ext: {width, height},
-        });
+        try {
+          grok.shell.v.root.after(...boxes.map(({box}) => box));
+          await Promise.all(boxes.map(({rendered}) => rendered));
+          for (const {sheet, box, col, row} of boxes) {
+            // html2canvas clones the whole document unless told to skip what is not around the box
+            const canvas = await loadedHtml2canvas(box, {
+              logging: false,
+              ignoreElements: (el) => !el.contains(box) && !box.contains(el) && !document.head.contains(el),
+            });
+            sheet.addImage(exportWorkbook.addImage({base64: canvas.toDataURL(), extension: 'png'}), {
+              tl: {col, row},
+              ext: {width: EXPORT_VIEWER_WIDTH, height: EXPORT_VIEWER_HEIGHT},
+            });
+          }
+        } finally {
+          for (const {box, newViewer} of boxes) {
+            box.remove();
+            // removing the DOM node does not release the dart viewer or its cloned dataframe
+            newViewer.detach();
+          }
+        }
       };
 
       const isScalarType = (type: DG.TYPE) => (DG.TYPES_SCALAR.has(type));
@@ -128,8 +143,7 @@ export const richFunctionViewReport = async (
 
         const validation = validationStates?.[dfInput.name];
         const consistency = consistencyStates?.[dfInput.name];
-        dfToSheet({sheet: currentDfSheet, dfCounter, df: currentDf, validation, consistency});
-        dfCounter++;
+        dfToSheet({sheet: currentDfSheet, df: currentDf, validation, consistency});
       });
 
       if (scalarInputs.length) {
@@ -141,7 +155,9 @@ export const richFunctionViewReport = async (
             caption: scalarInput.options['caption'] ?? scalarInput.name,
             value: lastCall.inputs[scalarInput.name] ?? '',
             units: scalarInput.options['units'] ?? '',
-            format: scalarInput.format || DEFAULT_FLOAT_FORMAT,
+            // the form's default, so the export matches it whether or not the form was shown
+            format: scalarInput.format ||
+              (scalarInput.propertyType === DG.TYPE.FLOAT ? G7_FLOAT_FORMAT : DEFAULT_FLOAT_FORMAT),
           })),
           validationStates,
           consistencyStates,
@@ -159,8 +175,7 @@ export const richFunctionViewReport = async (
 
         const validation = validationStates?.[dfOutput.name];
         const consistency = consistencyStates?.[dfOutput.name];
-        dfToSheet({sheet: currentDfSheet, dfCounter, df: currentDf, validation, consistency});
-        dfCounter++;
+        dfToSheet({sheet: currentDfSheet, df: currentDf, validation, consistency});
       });
 
 
@@ -180,6 +195,19 @@ export const richFunctionViewReport = async (
         );
       }
 
+      for (const graphicsOutput of func.outputs.filter((output) => output.propertyType === DG.TYPE.GRAPHICS)) {
+        const value = lastCall.outputs[graphicsOutput.name];
+        if (value == null || value === '')
+          continue;
+        const visibleTitle = graphicsOutput.options.caption || graphicsOutput.name;
+        const sheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, exportWorkbook));
+        const {dataUrl, width, height} = await graphicsToPng(value);
+        sheet.addImage(exportWorkbook.addImage({base64: dataUrl, extension: 'png'}), {
+          tl: {col: 0, row: 0},
+          ext: {width, height},
+        });
+      }
+
       for (const inputProp of func.inputs.filter((prop) => isDataFrame(prop))) {
         const currentDf = lastCall.inputs[inputProp.name];
         if (isEmptyDf(currentDf)) continue;
@@ -193,12 +221,12 @@ export const richFunctionViewReport = async (
         const visibleTitle = inputProp.options.caption || inputProp.name;
 
         for (const [index, viewer] of nonGridViewers.entries()) {
-          await plotToSheet(
-            exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!,
+          plots.push({
+            sheet: exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!,
             viewer,
-            currentDf.columns.length + 2,
-            index * CHART_ROW_STRIDE,
-          );
+            col: currentDf.columns.length + 2,
+            row: index * CHART_ROW_STRIDE,
+          });
         };
       }
 
@@ -229,27 +257,26 @@ export const richFunctionViewReport = async (
               DG.Column.float('Stdev', length).init((i: number) => currentDf.columns.byIndex(i).stats.stdev),
             ]);
             dfToSheet(
-              {sheet: exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!, dfCounter, df: stats, column: currentDf.columns.length + 2, row: index * CHART_ROW_STRIDE},
+              {sheet: exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!, df: stats, column: currentDf.columns.length + 2, row: index * CHART_ROW_STRIDE},
             );
-            dfCounter++;
           } else {
-            await plotToSheet(
-              exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!,
+            plots.push({
+              sheet: exportWorkbook.getWorksheet(getSheetName(visibleTitle, exportWorkbook))!,
               viewer,
-              currentDf.columns.length + 2,
-              index * CHART_ROW_STRIDE,
-            );
+              col: currentDf.columns.length + 2,
+              row: index * CHART_ROW_STRIDE,
+            });
           }
         }
       }
+
+      await plotsToSheets();
 
       const buffer = await exportWorkbook.xlsx.writeBuffer();
 
       const blob = new Blob([buffer], {type: BLOB_TYPE});
 
       return [blob, exportWorkbook] as const;
-    } catch (e) {
-      console.log(e);
     } finally {
       ui.setDisplay(grok.shell.v.root, true);
       updateIndicatorWithText(grok.shell.v.root.parentElement!, false);
@@ -259,7 +286,7 @@ export const richFunctionViewReport = async (
   throw new Error('Format is not supported');
 };
 
-export const formatNumber = (val: any, format?: string) => {
+const formatNumber = (val: any, format?: string) => {
   try {
     return (Number.isFinite(val) && format) ? DG.format(val, format) : val;
   } catch {
@@ -267,7 +294,7 @@ export const formatNumber = (val: any, format?: string) => {
   }
 };
 
-export const scalarsToSheet = (sheet: ExcelJS.Worksheet,
+const scalarsToSheet = (sheet: ExcelJS.Worksheet,
   scalars: { name: string, caption: string, value: string, units: string, format?: string }[],
   validationStates?: Record<string, ValidationResult>,
   consistencyStates?: Record<string, ConsistencyInfo>,
@@ -323,45 +350,38 @@ const getConsistencyString = (data?: ConsistencyInfo) => {
 const dfToSheet = (
   {
     sheet,
-    dfCounter,
     df,
     column,
     row,
     validation,
     consistency,
   } :
- { sheet: ExcelJS.Worksheet; dfCounter: number; df?: DG.DataFrame; column?: number; row?: number; validation?: ValidationResult; consistency?: ConsistencyInfo },
+ { sheet: ExcelJS.Worksheet; df?: DG.DataFrame; column?: number; row?: number; validation?: ValidationResult; consistency?: ConsistencyInfo },
 ) => {
   if (!df)
     return;
   const columnKey = sheet.getColumn(column ?? 1).letter;
   const nCols = df.columns.length;
+  const cols = df.columns.toList();
+  const formats = cols.map((col) => col.type === 'double' ? col.tags?.['format'] ?? DEFAULT_FLOAT_FORMAT : undefined);
   const rows = [];
-  for (let rowIdx = 0; rowIdx < df.rowCount; rowIdx++) {
-    const row = [];
-    for (let colIdx = 0; colIdx < df.columns.length; colIdx++) {
-      const col = df.col(colIdx)!;
-      const rawVal = df.get(col.name, rowIdx);
-      if (col?.type === 'double') {
-        const format = col?.tags?.['format'] ?? DEFAULT_FLOAT_FORMAT;
-        const val = formatNumber(rawVal, format);
-        row.push(val);
-      } else
-        row.push(rawVal);
-    }
-    rows.push(row);
-  }
+  for (let rowIdx = 0; rowIdx < df.rowCount; rowIdx++)
+    rows.push(cols.map((col, colIdx) => formats[colIdx] ? formatNumber(col.get(rowIdx), formats[colIdx]) : col.get(rowIdx)));
   const tableConfig = {
-    name: `ID_${dfCounter.toString()}`,
+    // Excel table names are unique in the workbook
+    name: `ID_${sheet.workbook.worksheets.reduce((count, ws) => count + ws.getTables().length, 0)}`,
     ref: `${columnKey}${row ?? 1}`,
-    columns: df.columns.toList().map((col) => ({name: col.name, filterButton: false})),
+    columns: cols.map((col) => ({name: col.name, filterButton: false})),
     rows,
   };
-  sheet.addTable(tableConfig);
-  sheet.columns.forEach((col) => {
-    col.width = 25;
-    col.alignment = {wrapText: true};
-  });
+  // Excel has no table without columns, so a table with none leaves the sheet empty
+  if (nCols > 0) {
+    sheet.addTable(tableConfig);
+    sheet.columns.forEach((col) => {
+      col.width = 25;
+      col.alignment = {wrapText: true};
+    });
+  }
   const metaCol = nCols + 1;
   sheet.getColumn(metaCol).width = 100;
   sheet.getCell(1, metaCol).value = 'Validation and Consistency';
@@ -374,6 +394,45 @@ const dfToSheet = (
 }
 
 const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
+
+const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+  const img = new Image();
+  img.onload = () => resolve(img);
+  img.onerror = () => reject(new Error('Failed to load a graphics output'));
+  img.src = src;
+});
+
+const svgSize = (markup: string) => {
+  const svg = new DOMParser().parseFromString(markup, 'image/svg+xml').documentElement;
+  const px = (attr: string) => /^\s*[\d.]+(px)?\s*$/.test(svg.getAttribute(attr) ?? '') ?
+    parseFloat(svg.getAttribute(attr)!) : NaN;
+  const [width, height] = [px('width'), px('height')];
+  if (width > 0 && height > 0)
+    return {width, height};
+  const [, , vbWidth, vbHeight] = (svg.getAttribute('viewBox') ?? '').trim().split(/[\s,]+/).map(Number);
+  if (vbWidth > 0 && vbHeight > 0)
+    return {width: vbWidth, height: vbHeight};
+  // no intrinsic proportions: square rather than stretched to the chart box
+  return {width: 1, height: 1};
+};
+
+// Raster graphics keep their native pixel size; SVG is rasterized into the chart box, keeping its aspect ratio
+const graphicsToPng = async (value: string) => {
+  const dataUrl = graphicsDataUrl(value);
+  const img = await loadImage(dataUrl);
+  if (!isSvgGraphics(value))
+    return {dataUrl, width: img.naturalWidth, height: img.naturalHeight};
+
+  const size = svgSize(value);
+  const scale = Math.min(EXPORT_VIEWER_WIDTH / size.width, EXPORT_VIEWER_HEIGHT / size.height);
+  const width = Math.round(size.width * scale);
+  const height = Math.round(size.height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+  return {dataUrl: canvas.toDataURL('image/png'), width, height};
+};
 
 const isEmptyDf = (df?: DG.DataFrame) => !df || df.rowCount === 0;
 

@@ -83,6 +83,13 @@ export function referencesName(path: string, name: string): boolean {
   return rest === '' || rest[0] === '.' || rest[0] === '[';
 }
 
+/** A node's children as the walkers see them: a `children` that is not an array, and an entry that
+ * is not a node, are passed over — the node carrying them renders its own diagnostic. */
+export function childNodes(node: SpecNode): SpecNode[] {
+  return Array.isArray(node.children) ?
+    node.children.filter((child) => child !== null && typeof child === 'object') : [];
+}
+
 /** Every node — in the form or on the tray — whose binds or events reference `name`: `$.name…`
  * paths, event args included, and `cmd:name.…` component functions. The read-only sibling of
  * `renameRefs`: what captured `name`'s signals at its own render, and must be rendered again
@@ -92,7 +99,7 @@ export function referencesOf(spec: Spec, name: string): SpecNode[] {
   const walk = (node: SpecNode): void => {
     if (references(node, name))
       found.push(node);
-    for (const child of node.children ?? [])
+    for (const child of childNodes(node))
       walk(child);
   };
   walk(spec.root);
@@ -103,7 +110,7 @@ export function referencesOf(spec: Spec, name: string): SpecNode[] {
 
 function references(node: SpecNode, name: string): boolean {
   for (const path of Object.values(node.bind ?? {})) {
-    if (referencesName(path, name))
+    if (typeof path === 'string' && referencesName(path, name))
       return true;
   }
   for (const entry of Object.values(node.on ?? {})) {
@@ -129,7 +136,7 @@ export function findBindingCycle(spec: Spec): string[] | null {
   const collect = (node: SpecNode): void => {
     if (node.name !== undefined && !nodes.has(node.name))
       nodes.set(node.name, node);
-    for (const child of node.children ?? [])
+    for (const child of childNodes(node))
       collect(child);
   };
   collect(spec.root);
@@ -140,7 +147,7 @@ export function findBindingCycle(spec: Spec): string[] | null {
   for (const [name, node] of nodes) {
     const to: string[] = [];
     for (const path of Object.values(node.bind ?? {})) {
-      const first = parsePath(path)?.[0];
+      const first = typeof path === 'string' ? parsePath(path)?.[0] : undefined;
       if (first !== undefined && nodes.has(first) && !to.includes(first))
         to.push(first);
     }

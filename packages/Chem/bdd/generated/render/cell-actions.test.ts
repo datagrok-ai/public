@@ -7,12 +7,14 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [chem.cp.molecule-cell-actions]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/crux.js';
 import '../../bindings/datasets.js';
 import '../../bindings/elements.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {clipboardMolecule, sortedBySimilarity} from '../../bindings/molecules.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clipboardContains, clipboardDiffers, clipboardImage, downloadContains, fileDownloaded, hoverOver, rememberClipboard, watchDownloads} from '@datagrok-libraries/bdd/bindings/common/steps';

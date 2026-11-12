@@ -18,6 +18,26 @@
   height: 100%!important;
 }
 
+/* The in-place sketcher (Sketcher.createInplaceModeSketcher): a column that fills its parent, the input row at its own
+   height, the host taking the rest (no lower than the minimum height of the sketcher in it). In a box sized by its
+   content (a dialog as it opens) the host is as tall as its sketcher. The host's selector outweighs ui.css's
+   `div.ui-div > div.ui-box` (flex-shrink: 0), under which it kept its full height below the row. */
+.chem-inplace-sketcher.ui-div {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chem-inplace-sketcher.ui-div > .chem-sketcher-host.ui-box {
+  flex: 1 1 auto;
+}
+
+/* The invalid-molecule warning is drawn over the sketcher's lower left (.chem-invalid-molecule-warning's offset), and
+   takes no room below it: its line left a blank strip under the sketcher while a molecule was invalid. */
+.chem-inplace-sketcher.ui-div > .chem-invalid-molecule-warning {
+  height: 0;
+}
+
 .chem-clear-sketcher-button {
   position: absolute;
   right: 0px;

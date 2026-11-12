@@ -26,11 +26,11 @@ function useHelpService() {
       helpLoading.value = true;
     }),
     switchMap((func: undefined | DG.Func) => {
-      return (func && Utils.hasContextHelp(func)) ? from(Utils.getContextHelp(func)) : of(undefined);
-    }),
-    catchError((e) => {
-      console.error(e);
-      return of(undefined);
+      const help = (func && Utils.hasContextHelp(func)) ? from(Utils.getContextHelp(func)) : of(undefined);
+      return help.pipe(catchError((e) => {
+        console.error(e);
+        return of(undefined);
+      }));
     }),
   ).subscribe((help) => {
     helpContent.value = help;

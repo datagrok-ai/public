@@ -47,7 +47,7 @@ export function bulkTranslate(eventBus: EventBus): void {
     const terminals = eventBus.getTerminalModifications()[strand];
     const ptoFlags = eventBus.getPhosphorothioateLinkageFlags()[strand];
 
-    const outputColName = `${eventBus.getPatternName()}(${inputCol.name})`;
+    const outputColName = df.columns.getUnusedName(`${eventBus.getPatternName()}(${inputCol.name})`);
     df.columns.addNewString(outputColName).init((i) => {
       const input = inputCol.get(i);
       return applyPatternToRawSequence(
@@ -89,7 +89,8 @@ export function applyPatternToRawSequence(
 function getModifiedNucleotide(nucleotide: string, modification: string, jsonData: JsonData): string {
   const format = Object.keys(jsonData.patternAppData)[0];
   const substitution = jsonData.patternAppData[format][modification].substitution;
-  return nucleotide.replace(/([AGCTU])/, substitution);
+  // `\L$1` is the base in lowercase: Axolabs writes a 2'-O-Methyl A as `a`
+  return nucleotide.replace(/[AGCTU]/, (base) => substitution.replace('\\L$1', base.toLowerCase()).replace('$1', base));
 }
 
 function getPhosphorothioateLinkageSymbol(): string {

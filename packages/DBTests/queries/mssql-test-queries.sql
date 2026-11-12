@@ -6,7 +6,7 @@ select * from orders;
 
 --name: MSSQLByInt
 --connection: MSSQLTest
---input: int orderid = 10330
+--input: int orderid = 83
 --meta.testExpectedRows: 1
 select * from orders where orderid = @orderid;
 --end

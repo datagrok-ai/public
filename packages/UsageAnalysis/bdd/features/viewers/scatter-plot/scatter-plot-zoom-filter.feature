@@ -10,7 +10,10 @@ Feature: Scatter plot zoom and filter synchronization
   logarithmic Y axis filters no row (the md's spgi-100 identifiers become WEIGHT by HEIGHT, whose
   values are all positive). Under filter by zoom
   the table's filter follows the viewport once the zoom animation has landed, so a claim on the
-  filter is read after the zoom. One journey on demog-1000, X = WEIGHT, Y = HEIGHT (872 of the
+  filter is read after the zoom. Closed issues last: a window set with the range slider under
+  Zoom and Filter = no action survives the filter panel opening, filtering and its reset
+  (public#552); a plot shrunk to 40 by 40 adds no zoom filter of its own (public#1348); a
+  logarithmic axis on an all-empty column under filter by zoom filters no row (public#1744). One journey on demog-1000, X = WEIGHT, Y = HEIGHT (872 of the
   1000 rows have a HEIGHT); every scenario puts back what it changed.
 
   Background:
@@ -140,6 +143,64 @@ Feature: Scatter plot zoom and filter synchronization
       | Y Axis Type | linear |
       | jitterSize  | 0      |
       | jitterSizeY | 0      |
+    Then all rows should pass the filter
+    And scatter plot viewer should show 872 rows
+    And no errors should have been logged
+
+  @realizes:public#552
+  Scenario: A zoom under Zoom and Filter = no action survives filtering in the filter panel (public#552)
+    When user sets properties of scatter plot viewer:
+      | Zoom and Filter    | no action |
+      | axesFollowFilter   | false     |
+    And user drags the min handle of the "x" range slider of scatter plot viewer by 30 pixels
+    Then scatter plot viewer should show a narrower value range than before
+    When user remembers the value range of scatter plot viewer
+    And user opens the filter panel
+    Then scatter plot viewer should show the remembered value range
+    When user adds a range filter on "AGE" from 20 to 40
+    Then 359 rows should pass the filter
+    And scatter plot viewer should show the remembered value range
+    When user hovers over filter panel
+    And user clicks on reset icon of filter panel
+    Then all rows should pass the filter
+    And scatter plot viewer should show the remembered value range
+    When user sets properties of scatter plot viewer:
+      | Zoom and Filter    | filter by zoom |
+      | axesFollowFilter   | true           |
+    And user picks "Reset View" from the context menu of scatter plot viewer
+    Then all rows should pass the filter
+    And scatter plot viewer should show 872 rows
+    And no errors should have been logged
+
+  @realizes:public#1348
+  Scenario: A plot shrunk almost to nothing filters no row, and the panel's reset gives every row back (public#1348)
+    When user opens the filter panel
+    And user resizes scatter plot viewer to 40 by 40
+    And user adds a range filter on "WEIGHT" from 100 to 170
+    Then 143 rows should pass the filter
+    When user hovers over filter panel
+    And user clicks on reset icon of filter panel
+    Then all rows should pass the filter
+    When user restores the size of scatter plot viewer
+    Then all rows should pass the filter
+    And scatter plot viewer should show 872 rows
+    And no errors should have been logged
+
+  @realizes:public#1744
+  Scenario: A logarithmic axis on an all-empty column under filter by zoom filters no row (public#1744)
+    When user adds a calculated column "NO_VALUES" with formula "if(${AGE} > 1000, ${WEIGHT}, null)"
+    Then "NO_VALUES" column should have missing values
+    And "Zoom and Filter" property of scatter plot viewer should be "filter by zoom"
+    When user sets properties of scatter plot viewer:
+      | Y Axis Type | logarithmic |
+      | Y           | NO_VALUES   |
+    Then scatter plot viewer should show 0 rows
+    And all rows should pass the filter
+    When user sets properties of scatter plot viewer:
+      | Y           | HEIGHT |
+      | Y Axis Type | linear |
+    And user removes "NO_VALUES" column
+    And user picks "Reset View" from the context menu of scatter plot viewer
     Then all rows should pass the filter
     And scatter plot viewer should show 872 rows
     And no errors should have been logged

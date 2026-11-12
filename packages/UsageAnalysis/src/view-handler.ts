@@ -10,6 +10,7 @@ import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
 import {LogView} from './tabs/log';
 import {SystemActivityView} from './tabs/system-activity';
+import {AiUsageView} from './tabs/ai-usage';
 import {ErrorsView} from './tabs/errors';
 import {ProjectsView} from "./tabs/projects";
 import {ClicksView} from './tabs/clicks';
@@ -19,10 +20,12 @@ import {StressView} from './tabs/stress-tests';
 
 export class ViewHandler {
   public static UA_NAME = 'Usage Analysis';
+  private static noPackagesTabs = ['Projects', 'Metrics', 'Stress', 'Vulnerabilities', 'System Activity', 'AI Usage'];
   private urlParams: Map<string, string> = new Map<string, string>();
   public view: DG.MultiView;
 
-  constructor() {
+  /** [appTab]: the tab an app of its own opens (`metrics`); under that app's URL the tab needs no path segment. */
+  constructor(private appTab?: string) {
     this.view = new DG.MultiView({viewFactories: {}});
     this.view.name = ViewHandler.UA_NAME;
     this.view.box = true;
@@ -31,7 +34,7 @@ export class ViewHandler {
   async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
     const toolboxPromise = UaToolbox.construct(this);
     const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView,
-      SystemActivityView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
+      SystemActivityView, AiUsageView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
     const views: UaView[] = [];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i]();
@@ -50,6 +53,8 @@ export class ViewHandler {
       if (urlView)
         urlTab = urlView.name;
     }
+    else if (this.appTab)
+      urlTab = views.find((v) => ViewHandler.urlName(v) === this.appTab)?.name ?? urlTab;
 
     const indicatorTimer = setTimeout(() => ui.setUpdateIndicator(this.view.root, true, 'Loading...'), 200);
     const toolbox = await toolboxPromise;
@@ -62,7 +67,7 @@ export class ViewHandler {
     toolbox.toggleCategoriesInput(urlTab == 'Packages');
     toolbox.toggleTagsInput(urlTab == 'Functions');
     toolbox.toggleProjectsInput(urlTab == 'Projects');
-    toolbox.togglePackagesInput(!['Projects', 'Metrics', 'Stress', 'Vulnerabilities', 'System Activity'].includes(urlTab));
+    toolbox.togglePackagesInput(!ViewHandler.noPackagesTabs.includes(urlTab));
     toolbox.toggleGroupsInput(!['Metrics', 'Stress', 'Vulnerabilities'].includes(urlTab));
 
     const paramsHaveDate = date != undefined;
@@ -133,12 +138,12 @@ export class ViewHandler {
     fButtons.style.display = 'none';
     toolbox.filters.root.before(fButtons);
 
-    this.view.tabs.onTabChanged.subscribe((_) => {
+    this.view.tabs.onTabChanged.subscribe(() => {
       const view = this.view.currentView;
       toolbox.toggleCategoriesInput(view.name === 'Packages');
       toolbox.toggleTagsInput(view.name === 'Functions');
       toolbox.toggleProjectsInput(view.name == 'Projects');
-      toolbox.togglePackagesInput(!['Projects', 'Metrics', 'Stress', 'Vulnerabilities', 'System Activity'].includes(view.name));
+      toolbox.togglePackagesInput(!ViewHandler.noPackagesTabs.includes(view.name));
       toolbox.toggleGroupsInput(!['Metrics', 'Stress', 'Vulnerabilities'].includes(view.name));
       // ViewHandler.UA.path = ViewHandler.UA.path.replace(/(UsageAnalysis\/)([a-zA-Z/]+)/, '$1' + view.name);
       this.updatePath();
@@ -203,13 +208,18 @@ export class ViewHandler {
     if (saveDuringChangingView)
       this.urlParams.set(key, value);
 
-    this.view.path = `/${ViewHandler.urlName(this.getCurrentView())}?${params.join('&')}`.toLowerCase();
+    this.view.path = `${this.tabPath(this.getCurrentView())}?${params.join('&')}`.toLowerCase();
   }
 
    updatePath(): void {
     const v = this.getCurrentView();
     const s = this.view.path.split('?');
     const params = s.length === 2 ? s[1] : null;
-     this.view.path = `/${ViewHandler.urlName(v)}${v.rout ?? ''}${params ? '?' + params : ''}`.toLowerCase();
+     this.view.path = `${this.tabPath(v)}${v.rout ?? ''}${params ? '?' + params : ''}`.toLowerCase();
+  }
+
+  private tabPath(v: DG.ViewBase): string {
+    const name = ViewHandler.urlName(v);
+    return name === this.appTab ? '' : `/${name}`;
   }
 }

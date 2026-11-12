@@ -3,10 +3,12 @@
    (it is the only server involved) and the package must be staged into web/local/pkg/.
    `--only <substring>` runs the check files whose name contains it; `--lane <name>[,<name>…]`
    (or `U2_E2E_LANES`) runs exactly those lanes — a lane is a check file, and its name is the
-   prefix its PASS/FAIL lines print (`domain`, `session`, `filters`, `leak`, `u2demo-inputs`, …). */
+   prefix its PASS/FAIL lines print (`filters`, `leak`, `u2demo-inputs`, …). `--checks <dir>` runs
+   another library's check files (every `*.spec.mjs` there, by name) in the same booted client. */
 import {execFileSync} from 'child_process';
 import {existsSync, readdirSync} from 'fs';
 import {join, resolve} from 'path';
+import {pathToFileURL} from 'url';
 import {ARTIFACTS, E2E_DIR, LOCAL_URL, note, ok, openApp, openLocal, report, results, shot} from './local.mjs';
 import {APP} from './lib.mjs';
 
@@ -16,12 +18,16 @@ const GROK_CORE = join(REPO, 'core/tools/grok-core/bin/grok-core.js');
 
 /** Every file opens with its own fixture, so the order is a convention — except `leak`, which
  * closes every view and reopens the app: it stays last. */
-const FILES = ['view-and-panel', 'editing', 'metadata-and-navigation', 'multi-select-and-guards',
+const U2_FILES = ['view-and-panel', 'editing', 'metadata-and-navigation', 'multi-select-and-guards',
   'tray-and-sources', 'pickers', 'full-build', 'seeded-panes', 'platform-drop', 'icon-input', 'viewers',
   'func-form', 'funcs-pane', 'func-call-history', 'func-form-async', 'func-form-tables', 'pickers-parity',
   'func-form-expressions', 'binding', 'card', 'tour', 'message-input',
-  'u2demo-nav', 'u2demo-routing', 'u2demo-inputs', 'u2demo-inspector', 'u2demo-source', 'filters', 'domain', 'session',
+  'u2demo-nav', 'u2demo-routing', 'u2demo-inputs', 'u2demo-inspector', 'u2demo-source', 'filters',
   'leak'];
+const checksAt = process.argv.indexOf('--checks');
+const CHECKS = checksAt < 0 ? join(E2E_DIR, 'checks') : resolve(process.argv[checksAt + 1]);
+const FILES = checksAt < 0 ? U2_FILES :
+  readdirSync(CHECKS).filter((f) => f.endsWith('.spec.mjs')).map((f) => f.slice(0, -'.spec.mjs'.length)).sort();
 
 async function pubServeIsUp() {
   try {
@@ -67,7 +73,7 @@ if (selected.length === 0) {
 }
 const suites = [];
 for (const name of selected)
-  suites.push({name, ...await import(`./checks/${name}.spec.mjs`)});
+  suites.push({name, ...await import(pathToFileURL(join(CHECKS, `${name}.spec.mjs`)).href)});
 
 const started = Date.now();
 if (!await pubServeIsUp()) {

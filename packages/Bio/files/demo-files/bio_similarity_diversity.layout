@@ -59,7 +59,7 @@
                       }
                     }
                   ],
-                  "onInitializedScript": "\n      setTimeout(async () => {\n        const t = grok.shell.table('Table');\n        if (!t)\n          return;\n        await t.meta.detectSemanticTypes();\n        const func = DG.Func.find({name: 'hierarchicalClustering'})[0];\n        if (!func)\n          return;\n        const cols = [\"sequence\"];\n        func.apply({\n          df: t,\n          colNameList: cols,\n          distance: 'euclidean',\n          linkage: 'complete'\n        });\n      }, 1000)\n    "
+                  "onInitializedScript": "\n      setTimeout(async () => {\n        const t = v.dataFrame;\n        const hosted = () => t != null && grok.shell.tableView(t.name)?.grid?.root === v.root;\n        if (!hosted())\n          return;\n        await t.meta.detectSemanticTypes();\n        const func = DG.Func.find({name: 'hierarchicalClustering'})[0];\n        if (!func || !hosted())\n          return;\n        const cols = [\"sequence\"];\n        func.apply({\n          df: t,\n          colNameList: cols,\n          distance: 'euclidean',\n          linkage: 'complete'\n        });\n      }, 1000)\n    "
                 },
                 "title": "peptides-non-natural",
                 "default": true

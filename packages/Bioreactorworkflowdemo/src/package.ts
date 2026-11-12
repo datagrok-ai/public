@@ -77,6 +77,7 @@ export function bioreactorWorkflow(params: {version?: string}): PipelineConfigur
         id: 'bioreactorConfiguration',
         nqName: 'BioreactorWorkflowDemo:BioreactorConfiguration',
         friendlyName: 'Bioreactor configuration',
+        enableHistory: true,
       },
       {
         id: 'dailyCultivation',

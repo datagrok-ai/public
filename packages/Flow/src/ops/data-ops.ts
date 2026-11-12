@@ -63,7 +63,7 @@ export async function deleteRows(table: DG.DataFrame, condition: string): Promis
 
 /** Rows matching the condition, keeping only the chosen columns; none chosen keeps all. */
 export async function extractRows(
-  table: DG.DataFrame, condition: string, columns?: DG.Column[] | null,
+  table: DG.DataFrame, condition: string, columns?: Iterable<DG.Column> | null,
 ): Promise<DG.DataFrame> {
   const names = columnNames(columns);
   const mask = await conditionMask(table, condition);
@@ -112,7 +112,7 @@ export function selectRandomRows(
 }
 
 /** A copy of the table without the chosen columns. */
-export function deleteColumns(table: DG.DataFrame, columns: DG.Column[]): DG.DataFrame {
+export function deleteColumns(table: DG.DataFrame, columns: Iterable<DG.Column>): DG.DataFrame {
   const dropped = new Set(columnNames(columns));
   if (dropped.size === 0)
     throw new Error('Pick at least one column to delete');
@@ -124,7 +124,7 @@ export function deleteColumns(table: DG.DataFrame, columns: DG.Column[]): DG.Dat
 
 /** Tags are column metadata, so there is nothing to copy — the mutation IS the result. */
 export function tagColumns(
-  table: DG.DataFrame, columns: DG.Column[], tag: string, value: string,
+  table: DG.DataFrame, columns: Iterable<DG.Column>, tag: string, value: string,
 ): DG.DataFrame {
   const key = String(tag ?? '').trim();
   if (key === '')
@@ -190,9 +190,9 @@ export function aggregationProblems(specs: readonly AggregationSpec[]): string[]
 /** A pivot column turns the group-by into a pivot table — hence also findable as "pivot". */
 export function aggregate(
   table: DG.DataFrame,
-  groupByColumns: DG.Column[] | null,
+  groupByColumns: Iterable<DG.Column> | null,
   aggregations: string,
-  pivotColumns?: DG.Column[] | null,
+  pivotColumns?: Iterable<DG.Column> | null,
 ): DG.DataFrame {
   const specs = parseAggregations(aggregations);
   const problems = aggregationProblems(specs);
@@ -214,8 +214,8 @@ export function aggregate(
 /** Wide → long; delegates to `core:Unpivot`, whose only canvas flaw is bare string-list params. */
 export async function unpivot(
   table: DG.DataFrame,
-  copyColumns: DG.Column[] | null,
-  mergeColumns: DG.Column[],
+  copyColumns: Iterable<DG.Column> | null,
+  mergeColumns: Iterable<DG.Column>,
   categoryColumnName: string = 'Category',
   valueColumnName: string = 'Value',
 ): Promise<DG.DataFrame> {
@@ -233,9 +233,9 @@ export async function unpivot(
 }
 
 /** Tolerates the null/undefined a blank `column_list` compiles to. */
-function columnNames(columns: DG.Column[] | null | undefined): string[] {
+function columnNames(columns: Iterable<DG.Column> | null | undefined): string[] {
   if (!columns) return [];
-  return columns.filter((c) => c != null).map((c) => c.name);
+  return Array.from(columns).filter((c) => c != null).map((c) => c.name);
 }
 
 /** So output tabs and previews read as something other than `table`. */

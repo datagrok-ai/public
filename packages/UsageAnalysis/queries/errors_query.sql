@@ -38,18 +38,6 @@ limit 50;
 --end
 
 
---name: TopErrorSources
---input: string date { pattern: datetime }
---connection: System:Datagrok
-select et.error_source, count(1) as count from event_types et
-join events e on e.event_type_id = et.id
-where @date(e.event_time)
-and et.source = 'error'
-group by et.error_source
-order by count desc limit 50;
---end
-
-
 --name: EventErrors
 --input: string date { pattern: datetime }
 --connection: System:Datagrok
@@ -61,6 +49,7 @@ COALESCE(e.description, t.error_source || ': ' || e.friendly_name || E'\\n' || C
 AS error_message,
 e.error_stack_trace,
 t.error_stack_trace_hash,
+LEFT((CASE WHEN COALESCE(t.error_stack_trace, '') = '' THEN t.id ELSE t.error_stack_trace_hash END)::text, 12) AS incident_key,
 EXISTS (SELECT 1 FROM reports r WHERE r.error_stack_trace_hash = t.error_stack_trace_hash) AS is_reported
 FROM events e
     JOIN event_types t ON e.event_type_id = t.id
@@ -102,16 +91,4 @@ SELECT DISTINCT rt.count FROM events e
 JOIN event_types t ON t.id = e.event_type_id
 JOIN error_stats rt ON rt.id = t.id
 WHERE e.id = @event_id OR @event_id IS NULL;
---end
-
---name: TopErrors
---input: string date {pattern: datetime}
---connection: System:Datagrok
-SELECT COALESCE(e.description, t.error_source || ': ' || e.friendly_name || E'\\n' || COALESCE(e.error_stack_trace, ''))
-           AS error, COUNT(t.error_stack_trace_hash)
-FROM events e
-         JOIN event_types t ON e.event_type_id = t.id
-WHERE t.source = 'error' AND @date(e.event_time)
-GROUP BY error
-ORDER BY count DESC LIMIT 15;
 --end

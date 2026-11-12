@@ -2,6 +2,15 @@
 
 ## v.next
 
+* Locations: The containers' source is built under an owner the view disposes, so the view no longer fails with a u2 `owner-missing` error where u2 is strict (dev, tests)
+* Locations: Added New container to a location's context menu
+* Locations: Showed the container count in the Containers header
+* Locations: Fixed the containers table not scrolling to every container
+* Containers: Site suggests the sites already in use
+* Locations: New container says "Select a location first" as a u2 tooltip, on hover and on keyboard focus, and stays reachable by Tab while disabled
+* u2: Took u2's stylesheet from u2 itself (installed once per page, the newest copy any package carries) instead of the EMS sheet bundle; republish with the other u2 packages
+* Fixed `app.spec.json`: `u2-domain-source` moved to the components tray, so the spec renders
+* EMS: imports from `@datagrok-libraries/ems`
 * GROK-20298: Locations: New container from the selected location — a ribbon button, disabled with "Select a location first" until a node is picked, opens the Containers app narrowed to that node's subtree, named "Containers in &lt;location&gt;", with every draft it creates starting in that location and its site
 * GROK-20753: Locations reads as a page: the two panes carry "Locations" / "Containers" headers, the status line says "6 containers in Lab 101, including sublocations", Enter (or a double-click) on a container opens its entity page, and an "All locations" row is the way back to every container once a node has been picked
 * GROK-20753: The Stockroom app follows the server (`live: true`) — another session's substance shows up within a poll instead of on the next reload

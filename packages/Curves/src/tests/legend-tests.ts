@@ -3,9 +3,12 @@ import * as ui from 'datagrok-api/ui';
 
 import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/test';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {chooseLegendCorner, legendEntries, legendTooltip, legendTooltipElement, maxTooltipRows} from '../fit/fit-legend';
+import {getOrCreateParsedChartData} from '../fit/fit-chart-data';
+import {changeCurvesOptions} from '../fit/fit-options';
 
-import {sigmoidPoints, renderedTexts, renderedRows} from './curve-data';
+import {sigmoidPoints, renderedTexts, renderedRows, renderedDataRows} from './curve-data';
 
 /** Curves spread over several columns, the way the multi curve viewer hands them over. */
 function multiColumnJson(columns: {column: string, series: string[]}[], showColumnLabel: boolean = true): string {
@@ -175,6 +178,26 @@ category('legend', () => {
     expect(off.includes('Run:2023-08-08'), false, 'showLegend: false should leave the curves unnamed');
     // and the rest of the chart is untouched
     expect(off.some((t) => t === 'Conc.' || t === 'Activity' || t.length > 0), true);
+  });
+
+  test('Show Legend set for the column names no curve, set for one cell names that one again', async () => {
+    const json = multiColumnJson([{column: 'curve', series: ['Run:2023-08-08']}], false);
+    const col = DG.Column.fromStrings('curve', [json, json]);
+    col.semType = FitConstants.FIT_SEM_TYPE;
+    const df = DG.DataFrame.fromColumns([col]);
+    df.name = 'legendLevels';
+    const grid = DG.Viewer.grid(df);
+    const showLegend = (value: boolean) => ({property: {name: 'showLegend'}, value: value}) as unknown as DG.InputBase;
+    const named = (row: number) => renderedDataRows(getOrCreateParsedChartData(df.cell(row, 'curve')), 500, 400)
+      .rows.some((r) => r.text === 'Run:2023-08-08');
+    expect(named(0) && named(1), true, 'every cell names its curve to begin with');
+
+    changeCurvesOptions(grid.cell('curve', 0), showLegend(false), 'chartOptions', 'Column');
+    expect(named(0) || named(1), false, 'off for the column, no cell names its curve');
+
+    changeCurvesOptions(grid.cell('curve', 1), showLegend(true), 'chartOptions', 'Cell');
+    expect(named(1), true, 'on for one cell, that cell names its curve');
+    expect(named(0), false, 'and the rest of the column stays as the column says');
   });
 
   test('hovering what did not fit gives the whole legend', async () => {

@@ -9,6 +9,8 @@ import {awaitNgl} from './ngl-viewer-utils';
 export async function viewNglUI(fileContent: string): Promise<void> {
   const view = grok.shell.newView('NGL');
   const host = ui.div([], 'd4-ngl-viewer');
+  host.setAttribute('data-u2-name', 'ngl-host');
+  view.append(host);
   const stage = new ngl.Stage(host);
   await awaitNgl(stage, `viewNglUI()`);
   const blob = new Blob([fileContent], {type: 'application/octet-binary'});
@@ -17,10 +19,16 @@ export async function viewNglUI(fileContent: string): Promise<void> {
   const subs: Unsubscribable[] = [];
   subs.push(grok.events.onViewRemoved.subscribe((evtView) => {
     if (evtView.id === view.id) {
-      stage.dispose();
+      disposeWhenIdle(stage);
       for (const sub of subs) sub.unsubscribe();
     }
   }));
+}
+
+/** NGL builds a representation in a worker after loadFile has resolved, and the worker's answer goes through
+ * the stage's task counter: a stage disposed before then throws from NGL, so it is disposed once idle. */
+function disposeWhenIdle(stage: ngl.Stage): void {
+  stage.tasks.onZeroOnce(() => stage.dispose());
 }
 
 /**
@@ -29,27 +37,25 @@ export async function viewNglUI(fileContent: string): Promise<void> {
  */
 export function previewNglUI(file: DG.FileInfo): { view: DG.View, loadingPromise: Promise<void> } {
   const view = DG.View.create();
+  view.name = file.name;
   const host = ui.div([], 'd4-ngl-viewer');
+  host.setAttribute('data-u2-name', 'ngl-host');
   const stage = new ngl.Stage(host);
   // await awaitNgl(stage); // previewNglUI is not async
 
-  const loadingPromise = new Promise<void>(async (resolve, reject) => {
-    try {
-      const data = await file.readAsBytes();
-      const blob = new Blob([data as BlobPart], {type: 'application/octet-binary'});
-      await stage.loadFile(blob, {defaultRepresentation: true, ext: file.extension});
-    } catch (err: any) {
-      reject(err);
-    }
-  });
+  const loadingPromise = (async () => {
+    const data = await file.readAsBytes();
+    const blob = new Blob([data as BlobPart], {type: 'application/octet-binary'});
+    await stage.loadFile(blob, {defaultRepresentation: true, ext: file.extension});
+  })();
 
   handleResize(host, stage);
   view.append(host);
   const subs: Unsubscribable[] = [];
   subs.push(grok.events.onViewRemoved.subscribe((evtView) => {
     if (evtView.id === view.id) {
-      stage.dispose();
       for (const sub of subs) sub.unsubscribe();
+      loadingPromise.then(() => disposeWhenIdle(stage), () => disposeWhenIdle(stage));
     }
   }));
   return {view, loadingPromise};

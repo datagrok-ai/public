@@ -1,11 +1,13 @@
 /// Docs: [Grok Dapi](/docs/plans/grok-dapi/)
 import * as fs from 'fs';
 import * as path from 'path';
+import {randomUUID} from 'crypto';
 import {NodeDapi, BatchRequest, BatchOperation, InternalDataSource, PackageOpResult, mapPositionalParams} from '../utils/node-dapi';
-import {createClient} from '../utils/server-client';
+import {createClient, logSpecOf} from '../utils/server-client';
 import {printOutput, printBatchOutput, printError, setOutputFormat, OutputFormat} from '../utils/server-output';
 import {handleMigrate} from './server-migrate';
 import {handleDomains} from './server-domains';
+import {handleObserve, OBSERVE_USAGE, printRequestLog} from './server-observe';
 import {isUuid} from '../utils/migrate/registry';
 import {resolveEntity} from '../utils/migrate/walker';
 
@@ -13,7 +15,8 @@ import {resolveEntity} from '../utils/migrate/walker';
 const ENTITY_TYPES: Record<string, string> = {queries: 'DataQuery', scripts: 'Script', reports: 'UserReport'};
 
 const ENTITIES = ['users', 'groups', 'functions', 'connections', 'queries', 'scripts', 'packages', 'reports', 'files', 'tables'];
-const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle', 'token'];
+const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'status', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle', 'token',
+  'observe', 'o'];
 const VERBS = ['list', 'count', 'get', 'delete'];
 
 export async function server(argv: any): Promise<boolean> {
@@ -34,10 +37,16 @@ export async function server(argv: any): Promise<boolean> {
     console.log(HELP_SERVER);
     return true;
   }
+  if ((entity === 'observe' || entity === 'o') && !verb) {
+    console.log(OBSERVE_USAGE);
+    return true;
+  }
 
   let client;
+  const logSpec = logSpecOf(argv);
+  const logId = logSpec || (entity === 'functions' && verb === 'run' && isDebug(argv)) ? randomUUID() : undefined;
   try {
-    client = await createClient(host, !!argv.admin);
+    client = await createClient(host, !!argv.admin, logId ? {logId, spec: logSpec} : undefined);
   } catch (err: any) {
     // a bad alias, URL or key is not a usage error: no help dump, just the reason
     printError(err);
@@ -52,6 +61,7 @@ export async function server(argv: any): Promise<boolean> {
     if (['pull', 'push', 'migrate', 'diff', 'bundle'].includes(entity))
       return await handleMigrate(dapi, entity, [verb, ...rest].filter(Boolean), argv, output);
     if (entity === 'domains') return await handleDomains(dapi, verb, rest, argv, output);
+    if (entity === 'observe' || entity === 'o') return await handleObserve(dapi, verb, rest[0], rest.slice(1), argv, output);
     if (entity === 'batch') return await handleBatch(dapi, argv, verb, rest, output);
     // Shell scripts that used to curl /users/login/dev get a token the same way
     // every other command does, whatever credential the config holds.
@@ -59,6 +69,7 @@ export async function server(argv: any): Promise<boolean> {
     if (entity === 'raw') return await handleRaw(dapi, verb, rest, argv, output);
     if (entity === 'describe') return await handleDescribe(dapi, verb ?? rest[0], output);
     if (entity === 'healthcheck') return await handleHealthcheck(dapi, argv, output);
+    if (entity === 'status') return await handleStatus(dapi, output);
     if (entity === 'sync') return await handleSync(dapi, verb, rest, argv, output);
     if (entity === 'functions' && verb === 'run') return await handleFuncRun(dapi, rest, argv, output);
     if (entity === 'functions' && verb === 'list') return await handleFunctionsList(dapi, argv, limit, offset, filter, output);
@@ -92,6 +103,7 @@ export async function server(argv: any): Promise<boolean> {
     if (entity === 'groups' && (verb === 'list-members' || verb === 'list-memberships')) return await handleGroupListMembers(dapi, verb, rest, argv, output);
     if (entity === 'users' && verb === 'block') return await handleUserBlock(dapi, rest, output);
     if (entity === 'users' && verb === 'unblock') return await handleUserUnblock(dapi, rest, output);
+    if (entity === 'users' && verb === 'invite') return await handleUserInvite(dapi, rest, argv, output);
     if (entity === 'tables' && verb === 'download') return await handleTablesDownload(dapi, rest, argv, output);
     if (entity === 'tables' && verb === 'upload') return await handleTablesUpload(dapi, rest, output);
     if (entity === 'packages' && verb === 'install') return await handlePackagesInstall(dapi, rest, argv, output);
@@ -154,6 +166,15 @@ export async function server(argv: any): Promise<boolean> {
     process.exitCode = 1;
     return true;
   }
+  finally {
+    if (logId)
+      await printRequestLog(dapi, logId, output);
+  }
+}
+
+/** `--debug` is not a declared boolean (grok publish reads it too), so it can arrive as a string. */
+function isDebug(argv: any): boolean {
+  return argv.debug !== undefined && argv.debug !== false && argv.debug !== 'false';
 }
 
 async function handleFilesPut(dapi: NodeDapi, rest: string[], output: OutputFormat): Promise<boolean> {
@@ -192,6 +213,20 @@ async function handleUserUnblock(dapi: NodeDapi, rest: string[], output: OutputF
   const user = await dapi.users.find(rest[0]);
   await dapi.users.unblock(user);
   if (output !== 'quiet') console.log(`Unblocked ${user?.login ?? rest[0]}`);
+  return true;
+}
+
+async function handleUserInvite(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  const email = rest[0] !== undefined ? String(rest[0]) : undefined;
+  const prefix = argv.prefix !== undefined ? String(argv.prefix) : undefined;
+  if (argv['send-email'] && (!email || prefix !== undefined)) {
+    printError(new Error('Usage: grok s users invite <email> --send-email (no --prefix: only a link has a code)'));
+    return false;
+  }
+  const link = await dapi.users.invite(email, !!argv['send-email'], prefix);
+  if (output === 'json') printOutput({email: email ?? null, link: link || null}, output);
+  else if (link) console.log(link);
+  else if (output !== 'quiet') console.log(`Invitation sent to ${email}`);
   return true;
 }
 
@@ -558,6 +593,34 @@ async function handleHealthcheck(dapi: NodeDapi, argv: any, output: OutputFormat
   return true;
 }
 
+async function handleStatus(dapi: NodeDapi, output: OutputFormat): Promise<boolean> {
+  const [info, extended] = await Promise.all([dapi.serverStatus(), dapi.serverStatus(true)]);
+  if (output === 'json') {
+    printOutput({server: info, extended}, output);
+    return true;
+  }
+  if (output === 'quiet') {
+    console.log(info?.Version ?? '');
+    return true;
+  }
+  const http = info?.['Http Server'];
+  const fields = {...info, 'Http Server': undefined};
+  const width = Math.max(...Object.keys(fields).map((k) => k.length)) + 2;
+  for (const [k, v] of Object.entries(fields))
+    if (v !== undefined) console.log(`${(k + ':').padEnd(width)}${v ?? ''}`);
+  if (http)
+    console.log(`${'Http Server:'.padEnd(width)}total ${http.total}, active ${http.active}, idle ${http.idle}, closing ${http.closing}`);
+  // Non-admins get the plain count back; admins get {"METHOD url": inFlight}.
+  const active = extended?.['Http Server']?.active;
+  if (active && typeof active === 'object') {
+    console.log('');
+    const rows = Object.entries(active).map(([request, count]) => ({request, count}));
+    if (rows.length) printOutput(rows, output);
+    else console.log('(no requests in flight)');
+  }
+  return true;
+}
+
 async function handleDescribe(dapi: NodeDapi, entityType: string | undefined, output: OutputFormat): Promise<boolean> {
   if (!entityType) {
     printError(new Error('Usage: grok s describe <entity|type>   e.g. grok s describe connections, grok s describe Project'));
@@ -579,9 +642,11 @@ async function handleDescribe(dapi: NodeDapi, entityType: string | undefined, ou
 }
 
 async function handleFuncRun(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
-  let funcName = rest[0];
+  // `--debug 'Pkg:f()'` hands the call to --debug.
+  let funcName = rest[0] ?? (typeof argv.debug === 'string' ? argv.debug : undefined);
+  const debug = isDebug(argv);
   if (!funcName) {
-    printError(new Error('Usage: grok s functions run <Name:function(args...)> [--json params.json]'));
+    printError(new Error('Usage: grok s functions run <Name:function(args...)> [--json params.json] [--debug]'));
     return false;
   }
 
@@ -603,7 +668,7 @@ async function handleFuncRun(dapi: NodeDapi, rest: string[], argv: any, output: 
       params = mapPositionalParams(params, (await dapi.functions.find(funcName))?.parameterInfos, funcName);
   }
 
-  const result = await dapi.functions.run(funcName, params);
+  const result = await dapi.functions.run(funcName, params, debug);
   printOutput(result, output);
   return true;
 }
@@ -885,6 +950,7 @@ Manage a Datagrok server from the command line.
 Entities:
   users, groups, functions, connections, queries, scripts, packages, reports, files, tables
   (plus domains, shares, batch, raw, describe, healthcheck, sync, pull/push/migrate/diff/bundle below)
+  observe (alias o): problems, problem rules, logger settings, errors, timeline, cloud logs; grok s observe prints its verbs
 
 Verbs:
   list      List entities (--filter, --limit, --offset)
@@ -904,6 +970,8 @@ Special commands:
   grok s raw <METHOD> <path> [--json f | --data j]    Any API endpoint; path is API-relative (/users/current), /api prefix optional
   grok s describe <entity|type>                       Fields of an entity type (registry record + a live sample)
   grok s healthcheck [--module <name>]                Check server + per-module health
+  grok s status                                       Server build, uptime, DB pool and HTTP connections
+                                                      (/info/server); admins also see requests in flight
   grok s shares add <entity> <group>[,<group>...] [--access View|Edit]
                                                       Share an entity with one or more groups
   grok s shares list <entity-id-or-name>              List who an entity is shared with
@@ -922,6 +990,10 @@ Special commands:
                                                       List parent groups
   grok s users block <id-or-login>                    Block a user from the platform
   grok s users unblock <id-or-login>                  Unblock a previously blocked user
+  grok s users invite [<email>] [--prefix <P>] [--send-email]
+                                                      Invite a user; prints a login link (no email sent).
+                                                      --prefix starts the code with <P> (e.g. ALEX-);
+                                                      --send-email mails the invitation instead
   grok s tables upload <name> <file.csv|file.d42>     Upload a CSV or d42 binary as a Datagrok table
   grok s tables download <name|Project:Table|id> [-O <file>]
                                                       Download a table as CSV (stdout by default)
@@ -1004,6 +1076,13 @@ Options:
   --offset <n>          Start offset (default: 0)
   -r, --recursive       Recursive (for files list)
   --verbose             Print the stack of a runtime failure, not just its message
+  --log [<spec>]        Keep what this command's requests log at <spec>, then collect it from
+                        every server instance and print it to stderr: verbose (default),
+                        standard, levels (error, warning, info, debug, audit, usage) and debug
+                        flags (db, storage, credentials, ..., or all), comma-separated. Only
+                        these requests are affected; no permission is needed
+  --debug               functions run: a debug call, as the query debugger runs it; its log (the
+                        query's stages) prints the same way
   --json <file>         Read a JSON body from a file (save, functions run, batch, raw)
   --data '<json>'       Inline JSON body for raw
   -O, --output-file     Write table download to a file instead of stdout
@@ -1034,6 +1113,8 @@ Examples:
   grok s connections test --json conn.json
   grok s functions run 'Chem:smilesToMw("ccc")'
   grok s functions run Chem:test --json params.json
+  grok s functions run 'MyPkg:MyQuery()' --debug                   # the query's own log
+  grok s functions run UsageAnalysis:Groups --log verbose,db       # and every SQL statement it ran
   grok s functions list --type script --language python --limit 20
   grok s functions list --package Chem --type query
   grok s functions list --package PowerPack --type package --filter 'name contains "grid"'

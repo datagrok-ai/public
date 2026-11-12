@@ -27,11 +27,10 @@ export function msaWorkbenchPage(): HTMLElement {
   const settingsOn = signal(false);
   const toolbar = new Toolbar({ariaLabel: 'Workbench toolbar'});
   toolbar.name = 'workbenchToolbar';
-  toolbar.addButton('Open', () => openDatasetDialog(), {icon: '📂', tooltip: 'Open a dataset'});
-  toolbar.addButton('Run', () => openMsaDialog(), {icon: '▶', tooltip: 'Run the alignment'});
-  const toolbarSave = button('Save', () => notify.info('Saved from the toolbar'));
-  toolbarSave.dataset.u2Name = 'toolbarSave';
-  toolbar.add(toolbarSave);
+  toolbar.addButton('Open', () => openDatasetDialog(), {icon: 'folder-open', tooltip: 'Open a dataset'});
+  toolbar.addButton('Run', () => openMsaDialog(), {icon: 'play', tooltip: 'Run the alignment'});
+  toolbar.addButton('Save', () => notify.info('Saved from the toolbar'), {icon: 'save', tooltip: 'Save the alignment'});
+  toolbar.root.querySelector<HTMLElement>('[data-u2-item="Save"]')!.dataset.u2Name = 'toolbarSave';
   toolbar.addSeparator();
   toolbar.addToggle('Settings', settingsOn, {tooltip: 'Show the settings panel'});
 
@@ -62,8 +61,8 @@ export function msaWorkbenchPage(): HTMLElement {
   log.dataset.u2Name = 'log';
   log.textContent = 'Nothing has run yet.';
   const resultTabs = new TabStrip({tabs: [
-    {id: 'alignment', label: 'Alignment', content: alignedList.root},
-    {id: 'log', label: 'Log', content: log},
+    {id: 'alignment', title: 'Alignment', content: alignedList.root},
+    {id: 'log', title: 'Log', content: log},
   ]});
   resultTabs.name = 'resultTabs';
   const results = divV([h2('Results'), status, resultTabs.root], 'u2demo-msa-card');
@@ -72,28 +71,29 @@ export function msaWorkbenchPage(): HTMLElement {
   // --- settings -----------------------------------------------------------------------------------
   const settings = new Section({title: 'Settings'});
   settings.name = 'settingsPanel';
+  settings.root.classList.add('u2demo-msa-card');
   settings.body.append(new ChoiceInput({label: 'Theme', name: 'theme', items: ['light', 'dark'], value: 'light'}).root);
   toolbar.effect(() => settings.root.hidden = !settingsOn.value);
 
   // --- dialogs ------------------------------------------------------------------------------------
   function openMsaDialog(): void {
     const column = new ChoiceInput({label: 'Sequence column', name: 'dialogSequenceColumn', items: SEQUENCE_COLUMNS,
-      value: sequenceColumn.value.peek() ?? 'sequence'});
+      value: sequenceColumn.peek() ?? 'sequence'});
     const dialogMethod = new ChoiceInput({label: 'Method', name: 'dialogMethod', items: METHODS,
-      value: method.value.peek() ?? 'kalign'});
+      value: method.peek() ?? 'kalign'});
     const dialogForm = new Form({layout: 'normal'});
     dialogForm.add(column);
     dialogForm.add(dialogMethod);
     new Dialog('MSA', {name: 'msaDialog'})
       .add(dialogForm.root)
       .onOK(() => {
-        const chosen = dialogMethod.value.peek() ?? 'kalign';
-        const rows = align(chosen, keepGaps.value.peek());
+        const chosen = dialogMethod.peek() ?? 'kalign';
+        const rows = align(chosen, keepGaps.peek());
         alignedList.setItems(rows);
         status.textContent = `Aligned ${rows.length} sequences with ${chosen}`;
-        log.textContent = [`method: ${chosen}`, `column: ${column.value.peek()}`,
-          `gap penalty: ${gapPenalty.value.peek()}`, `keep gaps: ${keepGaps.value.peek()}`,
-          `name: ${nameInput.value.peek() || '(unnamed)'}`].join('\n');
+        log.textContent = [`method: ${chosen}`, `column: ${column.peek()}`,
+          `gap penalty: ${gapPenalty.peek()}`, `keep gaps: ${keepGaps.peek()}`,
+          `name: ${nameInput.peek() || '(unnamed)'}`].join('\n');
         notify.info('Alignment finished');
       })
       .onCancel(() => undefined)
@@ -104,13 +104,13 @@ export function msaWorkbenchPage(): HTMLElement {
     const dataset = new ChoiceInput({label: 'Dataset', name: 'dataset', items: ['spgi', 'demog', 'peptides'], value: 'spgi'});
     new Dialog('Open dataset', {name: 'openDialog'})
       .add(dataset.root)
-      .onOK(() => notify.info(`Opened ${dataset.value.peek()}`))
+      .onOK(() => notify.info(`Opened ${dataset.peek()}`))
       .onCancel(() => undefined)
       .show();
   }
 
   const header = divH([h1('MSA workbench'), toolbar.root], 'u2demo-msa-header');
-  const layout = div([alignmentPanel, divV([results, settings.root])], 'u2demo-msa-layout');
+  const layout = div([alignmentPanel, divV([results, settings.root], 'u2demo-msa-column')], 'u2demo-msa-layout');
   const root = divV([header, layout], 'u2demo-page u2demo-msa');
   root.dataset.u2Name = 'msaWorkbench';
   return root;

@@ -1,7 +1,3 @@
-/* What a viewer's pixels say: repainted, ink, colors, the selection highlight, the value range
-   and the color scale — every "than before" against the snapshot the last change took. A throw
-   inside an `expect.poll` callback ends the poll, so a read the viewer may be between layouts of
-   returns `false` and keeps the reason for the failure that follows. */
 import {Page} from '@playwright/test';
 import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
@@ -22,16 +18,29 @@ export function canvasChange(page: Page, target: ElementRef): Promise<CanvasChan
   return onViewer(page, target, (el) => (window as any).__bdd.change(el), undefined);
 }
 
-/** Waits until the canvas differs from the last snapshot by at least `minPx` pixels. */
+/** Waits until the canvas differs from the last snapshot by at least `minPx` pixels. A viewer that
+ * builds its chart anew on a render (the Tree) has no canvas for a frame: that read is "not yet". */
 export async function expectRepainted(page: Page, target: ElementRef, minPx = 1): Promise<void> {
-  await expect.poll(async () => (await canvasChange(page, target)).delta,
-    {timeout: pollMs(10000), message: minPx > 1 ? `${target.phrase} did not repaint by ${minPx} pixels` : `${target.phrase} did not repaint`}).toBeGreaterThanOrEqual(minPx);
+  let why = '';
+  try {
+    await expect.poll(async () => (await canvasChange(page, target).catch((e: Error) => { why = reasonOf(e); return {delta: 0}; })).delta,
+      {timeout: pollMs(10000)}).toBeGreaterThanOrEqual(minPx);
+  }
+  catch {
+    throw new Error(`${target.phrase} did not repaint${minPx > 1 ? ` by ${minPx} pixels` : ''}${why === '' ? '' : `: ${why}`}`);
+  }
 }
 
 /** A hit area's own repaint: the pixels inside its rectangle that differ from the snapshot. */
 export async function expectAreaRepainted(page: Page, target: ElementRef, area: string, minPx = 1): Promise<void> {
-  await expect.poll(() => onViewer(page, target, (el, a) => (window as any).__bdd.areaDelta(el, a), area),
-    {timeout: pollMs(10000), message: `the "${area}" area of ${target.phrase} did not repaint`}).toBeGreaterThanOrEqual(minPx);
+  let why = '';
+  try {
+    await expect.poll(() => onViewer(page, target, (el, a) => (window as any).__bdd.areaDelta(el, a), area)
+      .catch((e: Error) => { why = reasonOf(e); return 0; }), {timeout: pollMs(10000)}).toBeGreaterThanOrEqual(minPx);
+  }
+  catch {
+    throw new Error(`the "${area}" area of ${target.phrase} did not repaint${why === '' ? '' : `: ${why}`}`);
+  }
 }
 
 /** The canvas is what it was at the snapshot, read after the frame a repaint would have landed
@@ -160,10 +169,12 @@ export async function expectAreaColor(page: Page, target: ElementRef, area: stri
   }
 }
 
-/** No pixel of the color (nor a shade of it) inside the area, read once. */
+/** No pixel of the color (nor a shade of it) inside the area, read once the viewer is settled: the
+ * repaint of a change the step before made (a selection cleared) can still be on its way. */
 export async function expectAreaNotColor(page: Page, target: ElementRef, area: string, color: string): Promise<void> {
   const want = paintHex(color);
   await hitArea(page, target, area);
+  await settle(page, target);
   const read = await areaColors(page, target, area);
   const count = pixelsNear(read.colors, want);
   expect(count, `the "${area}" area of ${target.phrase} is painted in ${want} (${count} px); ${describeColors(read)}`).toBeLessThan(COLOR_MIN_PX);
@@ -209,9 +220,11 @@ export async function expectAreaColors(page: Page, target: ElementRef, area: str
   }
 }
 
-/** One area has a significant color the other has nothing near. */
+/** One area has a significant hue the other has nothing near. Greys are the chrome over a color (a label,
+ * a cell's text, an edge), and their ink depends on the glyph and where it lands: "M" crossed the floor
+ * where "F" did not. */
 const hasOwnColor = (mine: AreaColor[], theirs: AreaColor[]): boolean =>
-  mine.some((c) => c.count >= SIGNIFICANT_PX && !theirs.some((d) => d.count >= COLOR_MIN_PX && near(c.hex, d.hex)));
+  mine.some((c) => c.count >= SIGNIFICANT_PX && hsl(c.hex).s >= GREY_SATURATION && !theirs.some((d) => d.count >= COLOR_MIN_PX && near(c.hex, d.hex)));
 
 /** Two areas painted in different colors (`same` = false), or in the same ones: every significant
  * color of either has a near color in the other (a linked color coding, a category and its swatch). */

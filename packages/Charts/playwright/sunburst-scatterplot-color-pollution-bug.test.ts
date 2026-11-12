@@ -81,20 +81,20 @@ test('Charts / Sunburst x Scatterplot — color-state isolation (github-3412)', 
       await poll(() => sunburst.root && sunburst.root.children.length > 0);
       sunburst.setOptions({hierarchyColumnNames: [col]});
       await poll(() => {
-        const rb = sunburst.props.get('hierarchyColumnNames');
+        const rb = sunburst.props['hierarchyColumnNames'];
         return rb && Array.from(rb).indexOf(col) >= 0;
       });
       const scatterplot = tv.addViewer('Scatter plot');
       await poll(() => scatterplot.root && scatterplot.root.children.length > 0);
       scatterplot.setOptions({colorColumnName: col});
-      await poll(() => scatterplot.props.get('colorColumnName') === col);
+      await poll(() => scatterplot.props['colorColumnName'] === col);
       const types: string[] = [];
       for (const v of tv.viewers) types.push(v.type);
-      const sbHierarchyReadback = sunburst.props.get('hierarchyColumnNames');
+      const sbHierarchyReadback = sunburst.props['hierarchyColumnNames'];
       return {
         types,
         sbHierarchy: sbHierarchyReadback ? Array.from(sbHierarchyReadback) : null,
-        spColor: scatterplot.props.get('colorColumnName'),
+        spColor: scatterplot.props['colorColumnName'],
       };
     }, sharedColumn);
     expect(result.types).toContain('Sunburst');
@@ -127,14 +127,14 @@ test('Charts / Sunburst x Scatterplot — color-state isolation (github-3412)', 
       let mutationApplied = false;
       if (scatterplot) {
         scatterplot.setOptions({colorColumnName: col});
-        mutationApplied = await poll(() => scatterplot.props.get('colorColumnName') === col);
+        mutationApplied = await poll(() => scatterplot.props['colorColumnName'] === col);
       }
-      const sbHierarchyAfter = sunburst ? sunburst.props.get('hierarchyColumnNames') : null;
+      const sbHierarchyAfter = sunburst ? sunburst.props['hierarchyColumnNames'] : null;
       const root = sunburst ? sunburst.root as HTMLElement : null;
       return {
         mutationApplied,
         sbHierarchyAfter: sbHierarchyAfter ? Array.from(sbHierarchyAfter) : null,
-        spColorAfter: scatterplot ? scatterplot.props.get('colorColumnName') : null,
+        spColorAfter: scatterplot ? scatterplot.props['colorColumnName'] : null,
         sbHasContent: root ? root.children.length > 0 : false,
         sbWidth: root ? root.getBoundingClientRect().width : 0,
       };
@@ -175,10 +175,10 @@ test('Charts / Sunburst x Scatterplot — color-state isolation (github-3412)', 
       await poll(() => sunburst2.root && sunburst2.root.children.length > 0);
       sunburst2.setOptions({hierarchyColumnNames: [col]});
       await poll(() => {
-        const rb = sunburst2.props.get('hierarchyColumnNames');
+        const rb = sunburst2.props['hierarchyColumnNames'];
         return rb && Array.from(rb).indexOf(col) >= 0;
       });
-      const readBack = sunburst2.props.get('hierarchyColumnNames');
+      const readBack = sunburst2.props['hierarchyColumnNames'];
       const root = sunburst2.root as HTMLElement;
       return {
         ok: true,

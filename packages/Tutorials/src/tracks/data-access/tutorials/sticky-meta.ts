@@ -3,7 +3,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {getPlatform, Platform} from '../../shortcuts';
 import {_package} from '../../../package';
 import {fromEvent, interval} from 'rxjs';
 import {filter} from 'rxjs/operators';
@@ -17,7 +16,6 @@ enum LINKS {
 /** What the steps tell the learner to type. The later steps look these values back up, so they have
  * to be the same string in both places — they used to disagree in case, and the lookup that missed
  * took the rest of the tutorial down with it. */
-const SCHEMA_NAME = 'schema for tutorial';
 const PROPERTY_NAME = 'project name';
 const PROPERTY_VALUE = 'Tutorial';
 const TABLE_NAME = 'Sticky Meta molecules';
@@ -47,7 +45,18 @@ export class StickyMetaTutorial extends Tutorial {
   helpUrl: string = LINKS.STICKY_META;
   prerequisites: TutorialPrerequisites = {packages: ['Chem']};
   demoTable: string = '';
-  platform: Platform = getPlatform();
+
+  get typeName() {return `molecule-tutorial-${grok.shell.user.login}`;}
+  get schemaName() {return `schema for tutorial ${grok.shell.user.login}`;}
+
+  protected async cleanup(): Promise<void> {
+    const schema = (await grok.dapi.stickyMeta.getSchemas()).find((s) => s.name === this.schemaName);
+    if (schema)
+      await grok.dapi.stickyMeta.deleteSchema(new DG.Entity(schema.dart).id);
+    const type = (await grok.dapi.entityTypes.list()).find((t) => t.name === this.typeName);
+    if (type)
+      await grok.dapi.entityTypes.delete(type);
+  }
 
   protected async _run() {
     grok.shell.windows.showContextPanel = false;
@@ -56,6 +65,8 @@ export class StickyMetaTutorial extends Tutorial {
     grok.shell.windows.showBrowse = true;
 
     this.header.textContent = this.name;
+
+    const {typeName, schemaName} = this;
 
     // --- Step 1: Introduction ---
     this.title('Introduction', true);
@@ -85,6 +96,8 @@ export class StickyMetaTutorial extends Tutorial {
       'Open Types node',
       elementClick(() => stickyMetaChild('Types')),
       () => stickyMetaChild('Types'),
+      '',
+      () => stickyMetaChild('Types')!.click(),
     );
 
     // --- Step 3: Open new entity type dialog ---
@@ -94,6 +107,7 @@ export class StickyMetaTutorial extends Tutorial {
       'Create a new entity type',
       () => button('New Entity Type...'),
       'Click "New Entity Type..." to create a new entity type.',
+      () => button('New Entity Type...')!.click(),
     );
 
     // --- Step 4: Explore entity type dialog ---
@@ -113,13 +127,15 @@ export class StickyMetaTutorial extends Tutorial {
       fromEvent(doneBtn, 'click'),
       undefined,
       'Click "Next" to proceed.',
+      () => doneBtn.click(),
     );
 
     // --- Step 5: Fill in entity type fields ---
-    await this.dlgInputAction(typeDialog, 'Set "Name" to "molecule-tutorial"', 'Name', 'molecule-tutorial');
-    await this.dlgInputAction(typeDialog, 'Set "Matching expression" to "semtype=Molecule"', 'Matching expression', 'semtype=Molecule');
+    await this.dlgInputAction(typeDialog, `Set "Name" to "${typeName}"`, 'Name', typeName);
+    await this.dlgInputAction(typeDialog, 'Set "Matching expression" to "semtype=Molecule"', 'Matching expression',
+      'semtype=Molecule');
 
-    await this.action('Save entity type', typeDialog.onClose, $(typeDialog.root).find('button.ui-btn-ok')[0], 'Click OK to save the entity type.');
+    await this.dialogOkAction(typeDialog, 'Save entity type', 'Click OK to save the entity type.');
 
     // --- Step 6: Open schemas node ---
     this.title('Explore schemas');
@@ -129,6 +145,8 @@ export class StickyMetaTutorial extends Tutorial {
       'Open schemas node',
       elementClick(() => stickyMetaChild('Schemas')),
       () => stickyMetaChild('Schemas'),
+      '',
+      () => stickyMetaChild('Schemas')!.click(),
     );
 
     // --- Step 7: Open new schema dialog ---
@@ -138,6 +156,7 @@ export class StickyMetaTutorial extends Tutorial {
       'Create a new schema',
       () => button('New Schema...'),
       'Click "New Schema..." to create a schema.',
+      () => button('New Schema...')!.click(),
     );
 
     // --- Step 8: Explore schema dialog ---
@@ -157,10 +176,10 @@ export class StickyMetaTutorial extends Tutorial {
       '# Properties\nMetadata fields with a name and type (string, int, bool, double, datetime).',
     ]);
 
-    await this.action('Explore schema dialog', fromEvent(doneBtn, 'click'));
+    await this.action('Explore schema dialog', fromEvent(doneBtn, 'click'), null, '', () => doneBtn.click());
 
     // --- Step 9: Fill in schema details ---
-    await this.textInpAction(schemaDialogRoot, `Set "Name" to "${SCHEMA_NAME}"`, 'Name', SCHEMA_NAME);
+    await this.textInpAction(schemaDialogRoot, `Set "Name" to "${schemaName}"`, 'Name', schemaName);
 
     const assocWithRoot = $(schemaDialogRoot)
       .find('label.ui-label.ui-input-label span')
@@ -172,32 +191,44 @@ export class StickyMetaTutorial extends Tutorial {
       'Select associated entity',
       new Promise<void>((resolve) => selectEntitiesLabel.addEventListener('click', () => resolve(), {once: true})),
       selectEntitiesLabel,
+      '',
+      () => selectEntitiesLabel.click(),
     );
 
     const selectorDlg = await new Promise<DG.Dialog>((resolve) => {
-      const iv = setInterval(() => {
-        const dlg = DG.Dialog.getOpenDialogs().find((d) => d.title.includes('Select types for'));
-        if (dlg) {clearInterval(iv); resolve(dlg);}
-      }, 50);
+      const find = () => DG.Dialog.getOpenDialogs().find((d) => d.title.includes('Select types for'));
+      const open = find();
+      if (open) {
+        resolve(open);
+        return;
+      }
+      const sub = grok.events.onDialogShown.subscribe(() => {
+        const dlg = find();
+        if (dlg) {
+          sub.unsubscribe();
+          resolve(dlg);
+        }
+      });
     });
 
     // the rows are rendered after the dialog opens, so the checkbox is looked up on every poll
     const moleculeCheckbox = () => Array.from(selectorDlg.root.querySelectorAll('.property-grid-item-name-text'))
-      .find((x) => x.textContent?.trim() === 'molecule-tutorial')
+      .find((x) => x.textContent?.trim() === typeName)
       ?.closest('.property-grid-item')?.querySelector('input[type="checkbox"]') as HTMLInputElement ?? null;
 
     await this.action(
-      'Select molecule-tutorial',
+      `Select ${typeName}`,
       interval(200).pipe(filter(() => moleculeCheckbox()?.checked === true)),
       moleculeCheckbox,
+      '',
+      () => moleculeCheckbox()!.click(),
     );
 
-    const selectorOkBtn = $(selectorDlg.root).find('button.ui-btn-ok')[0];
-    await this.action('Confirm entity selection', selectorDlg.onClose, selectorOkBtn);
+    await this.dialogOkAction(selectorDlg, 'Confirm entity selection');
 
     await this.textInpAction(propertyRow, `Set property "Name" to "${PROPERTY_NAME}"`, 'Name', PROPERTY_NAME);
     await this.choiceInputAction(propertyRow, 'Set property "Type" to "string"', 'Property Type', 'string');
-    await this.action('Save schema', schemaDialog.onClose, $(schemaDialog.root).find('button.ui-btn-ok[name="button-OK"]')[0], 'Click OK to save schema.');
+    await this.dialogOkAction(schemaDialog, 'Save schema', 'Click OK to save schema.');
 
     // --- Step 10: Open dataset ---
     this.title('Annotate dataset');
@@ -226,70 +257,76 @@ export class StickyMetaTutorial extends Tutorial {
           }
         });
       }),
+      null,
+      '',
+      () => Tutorial.clickCell(grid, colName, rowIndex),
     );
 
     // --- Step 11: Fill in sticky meta property ---
+    // the context panel rebuilds its accordion after the click, so the pane, the input and the button
+    // are looked up in the live panel every time instead of being kept
     grok.shell.windows.showContextPanel = true;
-    const stickyPane = await waitForElement<HTMLElement>(
-      () => document.querySelector<HTMLElement>('.d4-accordion-pane[d4-title="Sticky meta"]'),
-      'the Sticky meta pane');
-    const header = stickyPane.querySelector('.d4-accordion-pane-header') as HTMLElement;
-    if (header && !header.classList.contains('expanded')) header.click();
-
-    const schemaSection = await waitForElement<HTMLElement>(
-      () => Array.from(stickyPane.querySelectorAll<HTMLElement>('.grok-sticky-meta-schema-header'))
-        .find(textIs(SCHEMA_NAME)), `the "${SCHEMA_NAME}" section`);
-    schemaSection.scrollIntoView({block: 'start'});
+    const stickyPanes = () => Array.from(document.querySelectorAll<HTMLElement>(
+      '.d4-accordion-pane[d4-title="Sticky meta"]'));
+    const schemaSection = () => stickyPanes()
+      .map((pane) => Array.from(pane.querySelectorAll<HTMLElement>('.grok-sticky-meta-schema-header'))
+        .find(textIs(schemaName)))
+      .find((section) => section != null) ?? null;
+    await waitForElement<HTMLElement>(() => {
+      for (const pane of stickyPanes()) {
+        const header = pane.querySelector<HTMLElement>('.d4-accordion-pane-header');
+        if (header && !header.classList.contains('expanded')) header.click();
+      }
+      return schemaSection();
+    }, `the "${schemaName}" section`);
+    schemaSection()?.scrollIntoView({block: 'start'});
 
     // by its label, not by a generated input name: the property is named by the learner
-    const projectPropertyInput = await waitForElement<HTMLInputElement>(
-      () => Array.from(schemaSection.parentElement!.querySelectorAll('.ui-input-root'))
-        .find((root) => textIs(PROPERTY_NAME)(root.querySelector('label.ui-label span')!))
-        ?.querySelector('input'), `the "${PROPERTY_NAME}" input`);
+    const projectPropertyInput = () => Array.from(
+      schemaSection()?.parentElement?.querySelectorAll('.ui-input-root') ?? [])
+      .find((root) => textIs(PROPERTY_NAME)(root.querySelector('label.ui-label span')!))
+      ?.querySelector('input') ?? null;
+    await waitForElement<HTMLInputElement>(projectPropertyInput, `the "${PROPERTY_NAME}" input`);
     await this.action(
       `Set "${PROPERTY_NAME}" to "${PROPERTY_VALUE}"`,
-      new Promise<void>((resolve) => {
-        const listener = () => {
-          if (projectPropertyInput.value.trim().toLowerCase() === PROPERTY_VALUE.toLowerCase()) {
-            projectPropertyInput.removeEventListener('input', listener);
-            resolve();
-          }
-        };
-        projectPropertyInput.addEventListener('input', listener);
-      }),
+      interval(200).pipe(filter(() =>
+        projectPropertyInput()?.value.trim().toLowerCase() === PROPERTY_VALUE.toLowerCase())),
       [schemaSection, projectPropertyInput],
-      `In the Context Panel, under <b>Sticky meta → ${SCHEMA_NAME}</b>, ` +
+      `In the Context Panel, under <b>Sticky meta → ${schemaName}</b>, ` +
         `type <b>${PROPERTY_VALUE}</b> into the <b>${PROPERTY_NAME}</b> field.`,
+      () => Tutorial.setInputValue(projectPropertyInput()!, PROPERTY_VALUE),
     );
 
     // --- Step 12: Save sticky meta ---
     const schemaSaveButton = () => {
-      for (let el = schemaSection.nextElementSibling; el != null; el = el.nextElementSibling) {
+      for (let el = schemaSection()?.nextElementSibling; el != null; el = el.nextElementSibling) {
         const btn = el.matches('button[name^="button-Save"]') ? el : el.querySelector('button[name^="button-Save"]');
         if (btn != null)
           return btn as HTMLButtonElement;
       }
       return null;
     };
-    const saveBtn = await waitForElement<HTMLButtonElement>(() => {
+    await waitForElement<HTMLButtonElement>(() => {
       const btn = schemaSaveButton();
       return btn != null && !btn.classList.contains('disabled') && btn.getAttribute('aria-disabled') !== 'true' ?
         btn : null;
-    }, `the enabled Save button of "${SCHEMA_NAME}"`);
+    }, `the enabled Save button of "${schemaName}"`);
 
     await this.action(
-      `Click SAVE under "${SCHEMA_NAME}"`,
-      new Promise<void>((resolve) => saveBtn.addEventListener('click', () => resolve(), {once: true})),
-      saveBtn,
+      `Click SAVE under "${schemaName}"`,
+      fromEvent<MouseEvent>(document, 'click', {capture: true})
+        .pipe(filter((e) => schemaSaveButton()?.contains(e.target as Node) === true)),
+      schemaSaveButton,
       `Click the <b>SAVE</b> button right below the <b>${PROPERTY_NAME}</b> field. ` +
         'Each schema in the pane has its own SAVE button.',
+      () => schemaSaveButton()!.click(),
     );
 
     await this.action(
       'Hover a cell to verify metadata tooltip.',
       new Promise<void>((resolve) => {
         const sub = grid.onCellTooltip((cell) => {
-          if (cell.cell.column.name === 'smiles' && cell.gridRow === 0) {
+          if (cell.tableColumn?.name === 'smiles' && cell.gridRow === 0) {
             sub.unsubscribe();
             resolve();
           }
@@ -298,7 +335,8 @@ export class StickyMetaTutorial extends Tutorial {
     );
 
     this.title('Sticky Meta tutorial completed', true);
-    this.describe('You have created an entity type and schema, annotated a dataset, and explored Sticky Meta.');
+    this.describe('You have created an entity type and schema, annotated a dataset, and explored Sticky Meta. ' +
+      'The entity type and schema are removed when the tutorial finishes.');
   }
 }
 

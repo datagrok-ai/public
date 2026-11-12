@@ -1,0 +1,13 @@
+StudyID,CompoundID,SubjectID,Species,Strain,Route,Dose_mg_kg,Time_hr,Conc_ng_mL,BLQ,LLOQ_ng_mL,Matrix,SamplingType
+RAT-CASSETTE-007,DGK-0001,R001,Rat,Sprague-Dawley,IV,1,0.25,259.139,False,0.5,Plasma,Serial
+RAT-CASSETTE-007,DGK-0001,R001,Rat,Sprague-Dawley,IV,1,1.0,183.266,False,0.5,Plasma,Serial
+RAT-CASSETTE-007,DGK-0001,R001,Rat,Sprague-Dawley,IV,1,4.0,88.412,False,0.5,Plasma,Serial
+RAT-CASSETTE-007,DGK-0001,R001,Rat,Sprague-Dawley,IV,1,8.0,31.005,False,0.5,Plasma,Serial
+RAT-CASSETTE-007,DGK-0002,R001,Rat,Sprague-Dawley,IV,1,0.28,412.770,False,0.5,Plasma,Serial
+RAT-CASSETTE-007,DGK-0002,R001,Rat,Sprague-Dawley,IV,1,1.1,301.554,False,0.5,Plasma,Serial
+RAT-CASSETTE-007,DGK-0002,R001,Rat,Sprague-Dawley,IV,1,4.2,142.881,False,0.5,Plasma,Serial
+RAT-CASSETTE-007,DGK-0002,R001,Rat,Sprague-Dawley,IV,1,8.3,49.226,False,0.5,Plasma,Serial
+RAT-CASSETTE-007,DGK-0002,R002,Rat,Sprague-Dawley,IV,1,0.25,388.140,False,0.5,Plasma,Serial
+RAT-CASSETTE-007,DGK-0002,R002,Rat,Sprague-Dawley,IV,1,1.0,270.998,False,0.5,Plasma,Serial
+RAT-CASSETTE-007,DGK-0002,R002,Rat,Sprague-Dawley,IV,1,4.0,121.334,False,0.5,Plasma,Serial
+RAT-CASSETTE-007,DGK-0002,R002,Rat,Sprague-Dawley,IV,1,8.0,40.117,False,0.5,Plasma,Serial

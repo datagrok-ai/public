@@ -2,7 +2,17 @@
 
 ## v.next
 
+* [core#1146](https://github.com/datagrok-ai/core/issues/1146): NGL: no 50 ms wait after the stage has already rendered
+* Biostructure viewer: Fixed "Invalid argument (index): null" when the viewer was added to a table with no current row yet; the structure loads once a row becomes current
+* [core#988](https://github.com/datagrok-ai/core/issues/988): Renderers: Fixed a scatter plot tooltip failing with "method not found on null" on a sequence difference column when no grid shows the table
+* NGL preview: Fixed "Cannot read properties of undefined (reading 'length')" from NGL when a preview was closed while its structure was still being built
 * Molstar viewer: Fixed a crash when closing an unrelated view while a structure preview was open
+* Biostructure, NGL: Added automation status (readings, render-pending)
+* Biostructure: Fixed the Representation property skipping structures not yet interacted with in the 3D view, and a structure loaded later (current-row reload) keeping the default representation
+* Fixed Show > Biostructure / Show > NGL docking the viewer's root instead of a viewer (no title bar, not listed)
+* NGL: Fixed the double-click view not attaching its viewer host; the file preview view is named after the file
+* GROK-21118: Fixed Open table residues leaving the compId column empty (it was an int column for residue names)
+* GROK-21119: Fixed a Biostructure viewer added to a table not taking its structure (Molecule3D / PDB id) and ligand columns by itself
 
 ## 1.4.11 (2026-07-13)
 

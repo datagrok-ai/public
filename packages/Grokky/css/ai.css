@@ -1,3 +1,9 @@
+.grokky-content-log-notice {
+  color: var(--grey-5);
+  font-size: 11px;
+  margin-top: 4px;
+}
+
 .ai-panel-question {
   font-style: italic;
 }
@@ -535,18 +541,18 @@
   margin: 8px 0;
 }
 
-.grokky-auth-widget {
+.grokky-confirm-card {
   border: 1px solid var(--grey-2);
   border-radius: 4px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.grokky-auth-body {
+.grokky-confirm-body {
   padding: 12px;
 }
 
-.grokky-auth-body > * + * {
+.grokky-confirm-body > * + * {
   margin-top: 8px;
 }
 
@@ -556,25 +562,10 @@
   border-bottom: 1px solid var(--grey-2);
 }
 
-.grokky-strip-pending {
-  border-left-color: #e6a817;
-  background: var(--grey-1);
-}
-
-.grokky-strip-success {
-  border-left-color: var(--green-2);
-  border-bottom: none;
-  background: var(--green-1);
-}
-
 .grokky-strip-danger {
   border-left-color: var(--red-3);
   background: var(--red-1);
   color: var(--red-4);
-}
-
-.grokky-auth-error {
-  display: none;
 }
 
 .grokky-unverified-warning {
@@ -583,6 +574,10 @@
   border-left: 2px solid var(--red-3);
   padding: 3px 0 3px 12px;
   margin-top: 8px;
+}
+
+.grokky-markdown-fallback {
+  white-space: pre-wrap;
 }
 
 .grokky-exec-sep {

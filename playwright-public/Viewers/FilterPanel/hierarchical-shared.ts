@@ -20,7 +20,7 @@ export const glyphName = (g: number): string => 'U+' + g.toString(16).toUpperCas
 export async function hierNode(page: Page, path: string[],
   action: 'probe' | 'read' | 'expand' | 'toggle'): Promise<HierNodeState> {
   return await page.evaluate(({path, action}: {path: string[], action: string}) => {
-    const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
+    const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'))
       .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.includes('/'));
     if (!card)
       throw new Error('no hierarchical filter card is painted in the Filter Panel — its caption is the '
@@ -90,7 +90,7 @@ export const trueCountOf = async (page: Page): Promise<number> =>
 
 export async function hierCaption(page: Page): Promise<string> {
   return page.evaluate(() => {
-    for (const c of document.querySelectorAll('[name="viewer-Filters"] .d4-filter')) {
+    for (const c of document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')) {
       const cn = c.querySelector('.d4-filter-column-name');
       if (cn && cn.textContent!.includes('/')) return cn.textContent!.trim();
     }

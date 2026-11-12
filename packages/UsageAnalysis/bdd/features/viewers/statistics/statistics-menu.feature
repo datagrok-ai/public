@@ -10,7 +10,13 @@ Feature: The Statistics and Histograms submenus, and what they turn on
   library's generic state read with no viewer-specific binding at all, and the right-click lands on
   `row AGE`, a region the viewer reports.
   It also noted that "the submenu opens only once per page ... those steps are manual". Measured
-  here: the submenu reopens, and removing `sum` again is a scenario, not a manual note.
+  here: the submenu reopens, and removing `sum` again is a scenario, not a manual note. The md's
+  manual "Open as table" closes the journey: the statistics become a table of their own, one row
+  per column and one column per aggregation.
+  Not translated: the md's manual "Full-screen shortcut" — the title bar's icon takes the viewer
+  full screen in the suite's browser, but Alt+F pressed in the viewer leaves it there (in a bare
+  Playwright Chromium the same key takes it back), so the way out is not a claim this suite can
+  make yet.
 
   Background:
     Given user is logged in
@@ -84,4 +90,19 @@ Feature: The Statistics and Histograms submenus, and what they turn on
     And the "stats" reading of statistics viewer should not contain "sum"
     When user picks "Histograms > SEX" from the context menu of the "row AGE" area of statistics viewer
     Then the "histogram columns" reading of statistics viewer should be 0
+    And no errors should have been logged
+
+  Scenario: Open as table hands the statistics over as a table of their own
+    When user picks "Open as table" from the context menu of the "row AGE" area of statistics viewer
+    Then table "demog-1000 stats" should be open
+    And table "demog-1000 stats" should have 11 rows
+    And table "demog-1000 stats" should have columns "__t, __name, values, nulls, unique, min, max, avg, stdev, med"
+    When user switches to the "demog-1000 stats" table view
+    Then the value of "__name" column in row 2 should be "AGE"
+    And the value of "max" column in row 2 should be "89"
+    And the value of "__name" column in row 6 should be "HEIGHT"
+    And the value of "nulls" column in row 6 should be "128"
+    When user closes the current view
+    And user switches to the "demog-1000" table view
+    Then the "columns shown" reading of statistics viewer should be 11
     And no errors should have been logged

@@ -6,6 +6,7 @@ import {Signal, ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
 import {div, span, Text} from '../../core/elements.js';
 import {AsyncValue} from '../../core/async-value.js';
+import {Format} from '../../core/format.js';
 import {icon} from './icon.js';
 import {skeleton} from './async-view.js';
 
@@ -18,7 +19,7 @@ export interface StatCardOptions {
   value?: StatValue | ReadonlySignal<StatValue | undefined>;
   /** Wins over {@link value}: loading renders a skeleton, error the message, ready the value. */
   source?: AsyncValue<StatValue>;
-  /** Default: numbers through `toLocaleString()`, strings as they are. */
+  /** Default: numbers with their thousands grouped (`Format.count`), strings as they are. */
   format?: (x: StatValue) => string;
   /** A fraction: 0.12 reads "+12%". */
   delta?: number | ReadonlySignal<number | undefined>;
@@ -39,17 +40,32 @@ export class StatCard extends Control {
     this.root.classList.add('u2-card', 'u2-stat-card');
     this.root.dataset.u2 = 'stat-card';
     this._valueEl = div(undefined, 'u2-stat-value');
+    this._valueEl.dataset.u2Part = 'value';
     this._deltaEl = options.delta === undefined ? undefined : div(undefined, 'u2-stat-delta');
-    this.runInScope(() => {
+    if (this._deltaEl)
+      this._deltaEl.dataset.u2Part = 'delta';
+    this.build(() => {
       if (options.icon !== undefined)
         this.root.append(icon(options.icon, {cls: 'u2-stat-icon'}));
-      this.root.append(this._valueEl, span(options.label, 'u2-stat-label'));
+      const label = span(options.label, 'u2-stat-label');
+      label.dataset.u2Part = 'label';
+      this.root.append(this._valueEl, label);
       if (this._deltaEl)
         this.root.append(this._deltaEl);
     });
     this.effect(() => this._renderValue());
     if (this._deltaEl)
       this.effect(() => this._renderDelta());
+  }
+
+  /** The base state plus the value (raw), as shown, and the delta in `extra.delta`. */
+  getState(): ReturnType<Control['getState']> {
+    const source = this._options.source?.state.peek();
+    const value = source === undefined ? StatCard._peek(this._options.value) :
+      source.kind === 'ready' ? source.value : undefined;
+    const delta = StatCard._peek(this._options.delta);
+    return {...super.getState(), value: value ?? null, text: Control.text(this._valueEl),
+      ...delta !== undefined && Number.isFinite(delta) ? {extra: {delta}} : {}};
   }
 
   private _renderValue(): void {
@@ -89,7 +105,11 @@ export class StatCard extends Control {
     const format = this._options.format;
     if (format)
       return format(x);
-    return typeof x === 'number' ? x.toLocaleString() : x;
+    return typeof x === 'number' ? Format.count(x) : x;
+  }
+
+  private static _peek<T>(x: T | ReadonlySignal<T> | undefined): T | undefined {
+    return x instanceof Signal ? (x as ReadonlySignal<T>).peek() : x as T | undefined;
   }
 
   private static _current<T>(x: T | ReadonlySignal<T> | undefined): T | undefined {

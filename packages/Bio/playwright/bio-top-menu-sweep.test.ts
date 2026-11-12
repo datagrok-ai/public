@@ -25,10 +25,13 @@ interface Leaf {
   viewerReady?: string;
   view?: string;
   filter?: boolean;
+  /** Semantic type of a column the leaf's function needs and antibodies.csv lacks. The platform greys
+   * such a leaf out (public#4226), so it is opened on a small table that has the column. */
+  needs?: string;
 }
 
 const BIO_LEAVES: Leaf[] = [
-  {group: 'Transform', leaf: 'Molecules-to-HELM...', dialog: 'Molecules-to-HELM'},
+  {group: 'Transform', leaf: 'Molecules-to-HELM...', dialog: 'Molecules-to-HELM', needs: 'Molecule'},
   {group: 'Transform', leaf: 'To-Atomic-Level...', dialog: 'To-Atomic-Level'},
   {group: 'Transform', leaf: 'Convert-Sequence-Notation...', dialog: 'Convert-Sequence-Notation'},
   {group: 'Transform', leaf: 'Split-to-Monomers...', dialog: 'Split-to-Monomers'},
@@ -43,7 +46,7 @@ const BIO_LEAVES: Leaf[] = [
   {group: 'Annotate', leaf: 'Apply-Numbering-Scheme...', dialog: 'Apply-Antibody-Numbering'},
   {group: 'Annotate', leaf: 'Scan-Liabilities...', dialog: 'Scan-Sequence-Liabilities'},
   {group: 'Annotate', leaf: 'Manage-Annotations...', dialog: 'Manage-Annotations'},
-  {group: 'Manage', leaf: 'Match-with-Monomer-Library...', dialog: 'Match-with-Monomer-Library'},
+  {group: 'Manage', leaf: 'Match-with-Monomer-Library...', dialog: 'Match-with-Monomer-Library', needs: 'Molecule'},
   {group: 'Manage', leaf: 'Monomer-Libraries', view: 'Manage Monomer Libraries'},
   {group: 'Manage', leaf: 'Monomers', view: 'Manage Monomers'},
   {group: 'Search', leaf: 'Similarity-Search', viewer: 'Sequence Similarity Search', viewerReady: 'idxs'},
@@ -59,7 +62,7 @@ const BIO_LEAVES: Leaf[] = [
 const FOREIGN_LEAVES: Leaf[] = [
   {group: 'Analyze', leaf: 'Hierarchical-Clustering...', dialog: 'Hierarchical-Clustering'},
   {group: 'Analyze', leaf: 'SAR...', dialog: 'Analyze-Peptides'},
-  {group: 'Transform', leaf: 'Fetch-PDB-Sequences...', dialog: 'Fetch-PDB-Sequences'},
+  {group: 'Transform', leaf: 'Fetch-PDB-Sequences...', dialog: 'Fetch-PDB-Sequences', needs: 'PDB_ID'},
   {group: 'PolyTool', leaf: 'Enumerate-HELM...', dialog: 'PolyTool-Helm-Enumeration'},
   {group: 'PolyTool', leaf: 'Combine-Sequences...', dialog: 'Combine-Sequences'},
 ];
@@ -73,6 +76,42 @@ async function backToTable(page: Page): Promise<void> {
     if (tv && grok.shell.v !== tv) grok.shell.v = tv as any;
   }, TABLE);
   await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
+}
+
+const NEEDS_CSV: {[semType: string]: string} = {
+  Molecule: 'smiles\nCCO\nc1ccccc1O\nCC(=O)Nc1ccc(O)cc1',
+  PDB_ID: 'pdb\n1CRN\n4HHB\n1UBQ',
+};
+
+const neededTable = (l: Leaf): string => `with-${l.needs}`;
+
+/** Checks that the leaf is greyed out on antibodies.csv, then makes a small table with the column it
+ * needs the current one. */
+async function toNeededTable(page: Page, l: Leaf): Promise<void> {
+  await openBioGroup(page, l.group);
+  await expect(page.locator(`[name="div-Bio---${l.group}---${l.leaf}"]`),
+    `${label(l)} is greyed out on a table without a ${l.needs} column`).toHaveAttribute('aria-disabled', 'true');
+  // Neither Escape nor the menu bar item closes the menu, only a click outside it; left open, a later
+  // openBioGroup would take it for a freshly opened one.
+  await page.locator('[name="viewer-Grid"]').click();
+  await page.locator(`[name="div-Bio---${l.group}"]`).waitFor({state: 'hidden', timeout: 15_000});
+  await page.evaluate(({csv, semType, name}) => {
+    const df = DG.DataFrame.fromCsv(csv);
+    df.name = name;
+    const col = df.columns.byIndex(0);
+    col.semType = semType;
+    if (semType === 'Molecule') col.meta.units = 'smiles';
+    grok.shell.addTableView(df);
+  }, {csv: NEEDS_CSV[l.needs!], semType: l.needs!, name: neededTable(l)});
+  await page.waitForFunction((n) => grok.shell.tv?.dataFrame?.name === n, neededTable(l), {timeout: 30_000});
+  await page.locator('[name="div-Bio"]').waitFor({state: 'visible', timeout: 30_000});
+}
+
+async function closeNeededTable(page: Page, l: Leaf): Promise<void> {
+  await page.evaluate((n) => {
+    for (const tv of Array.from(grok.shell.tableViews) as any[])
+      if (tv.dataFrame?.name === n) tv.close();
+  }, neededTable(l));
 }
 
 test('Bio top menu — every Bio-owned leaf is registered under its group', async ({page}) => {
@@ -101,6 +140,19 @@ test('Bio top menu — every leaf opens its dialog, viewer or view and closes cl
   for (const l of BIO_LEAVES) {
     await softStep(`${label(l)} opens and closes`, async () => {
       await backToTable(page);
+      if (l.needs) {
+        try {
+          await toNeededTable(page, l);
+          await openBioMenu(page, l.group, l.leaf);
+          await dialog(page, l.dialog!).waitFor({timeout: 90_000});
+          expect(await dialog(page, l.dialog!).locator('[name="button-OK"]').count()).toBe(1);
+          await cancelDialog(page, l.dialog!);
+        }
+        finally {
+          await closeNeededTable(page, l);
+        }
+        return;
+      }
       await openBioMenu(page, l.group, l.leaf);
 
       if (l.dialog) {
@@ -193,9 +245,19 @@ test('Bio top menu — leaves contributed by other packages open when those pack
           await page.keyboard.press('Escape');
           return;
         }
-        await leafLoc.click();
-        await dialog(page, l.dialog!).waitFor({timeout: 90_000});
-        await cancelDialog(page, l.dialog!);
+        try {
+          if (l.needs) {
+            await toNeededTable(page, l);
+            await openBioMenu(page, l.group, l.leaf);
+          }
+          else
+            await leafLoc.click();
+          await dialog(page, l.dialog!).waitFor({timeout: 90_000});
+          await cancelDialog(page, l.dialog!);
+        }
+        finally {
+          if (l.needs) await closeNeededTable(page, l);
+        }
       });
     }
     if (skipped.length > 0)

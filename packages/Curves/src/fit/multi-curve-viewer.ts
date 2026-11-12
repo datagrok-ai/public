@@ -5,13 +5,16 @@ import * as grok from 'datagrok-api/grok';
 
 import {mergeChartOptions, mergeSeries, getOrCreateParsedChartData, mergeProperties, chartDataId} from './fit-chart-data';
 import {FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {debounce} from 'rxjs/operators';
-import {interval, merge} from 'rxjs';
+import {debounce, tap} from 'rxjs/operators';
+import {interval, merge, Observable, Subject} from 'rxjs';
 import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {FitChartCellRenderer} from './fit-renderer';
 import {chartTooltip} from './fit-interaction';
+import {drawnLegend, LEGEND_CORNERS} from './fit-legend';
 
 const ERROR_CLASS = 'd4-viewer-error';
+/** The properties the viewer tells "set" from "unset" by its field. */
+const FIELD_SET_PROPERTIES = ['logX', 'logY', 'allowXZeroes', 'mergeCellSeries', 'showColumnLabel'];
 
 @grok.decorators.viewer({
   name: 'MultiCurveViewer',
@@ -38,7 +41,14 @@ export class MultiCurveViewer extends DG.JsViewer {
   allowXZeroes?: boolean;
   mergeCellSeries?: boolean;
   showColumnLabel?: boolean;
+  private renderPending = false;
+  private rendered = new Subject<void>();
 
+  /** Fires after every render - what automation settles on with {@link isRenderPending}. */
+  get onRendered(): Observable<void> { return this.rendered; }
+
+  /** Whether a change of the current, mouse-over or selected rows is waiting for its debounced render. */
+  get isRenderPending(): boolean { return this.renderPending; }
 
   /** What a trellis plot puts on its control panel. */
   get trellisProperties(): string[] { return ['mergeColumnSeries', 'logX', 'logY']; }
@@ -69,8 +79,7 @@ export class MultiCurveViewer extends DG.JsViewer {
     // the grid routes these to the cell renderer; here the viewer owns the canvas and does it itself
     this.canvas.addEventListener('mousemove', (e: MouseEvent) => {
       if ((this.data.series?.length ?? 0) > 0 &&
-        !chartTooltip(this.data, new DG.Rect(0, 0, this.canvas.width, this.canvas.height), e,
-          {x: e.offsetX, y: e.offsetY}))
+        !chartTooltip(this.data, this.chartBounds(), e, {x: e.offsetX, y: e.offsetY}))
         ui.tooltip.hide();
     });
     this.canvas.addEventListener('mouseleave', () => ui.tooltip.hide());
@@ -84,8 +93,14 @@ export class MultiCurveViewer extends DG.JsViewer {
     this.mergeColumnSeries = this.bool('mergeColumnSeries', false);
     this.showOutliers = this.bool('showOutliers', true);
 
-    for (const p of fitChartDataProperties)
-      this.addProperty(p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name, p.propertyType, p.defaultValue, {...p.options, showSlider: false});
+    for (const p of fitChartDataProperties) {
+      const name = p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name;
+      const value = this.addProperty(name, p.propertyType, p.defaultValue, {...p.options, showSlider: false});
+      // the panel reads the field, so a default the render applies on its own has to be in it: Show Legend
+      // read unchecked over a legend that was drawn
+      if (value != null && !FIELD_SET_PROPERTIES.includes(name))
+        this[name] = value;
+    }
   }
 
   static fromChartData(chartData: IFitChartData): MultiCurveViewer {
@@ -107,11 +122,11 @@ export class MultiCurveViewer extends DG.JsViewer {
 
   mergeViewerChartOptions(): void {
     for (const p of fitChartDataProperties) {
-      const isDefaultValueChanged = ['logX', 'logY', 'allowXZeroes', 'mergeCellSeries', 'showColumnLabel'].includes(p.name === 'mergeSeries' ?
+      const isDefaultValueChanged = FIELD_SET_PROPERTIES.includes(p.name === 'mergeSeries' ?
         'mergeCellSeries' : p.name) ? this[p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name] !== undefined :
         this.props.get(p.name) !== undefined && this.props.get(p.name) !== p.defaultValue;
       if (isDefaultValueChanged) {
-        if (['logX', 'logY', 'allowXZeroes', 'mergeCellSeries', 'showColumnLabel'].includes(p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name))
+        if (FIELD_SET_PROPERTIES.includes(p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name))
           this.data.chartOptions![p.name as keyof IFitChartOptions] = this[p.name];
         else
           this.data.chartOptions![p.name as keyof IFitChartOptions] = this.props.get(p.name) as unknown as any;
@@ -210,7 +225,7 @@ export class MultiCurveViewer extends DG.JsViewer {
       this.props.set('showColumnLabel', this.curvesColumnNames?.length! > 1 as unknown as object);
       this.showColumnLabel = this.curvesColumnNames?.length! > 1;
     }
-    if (['logX', 'logY', 'allowXZeroes', 'mergeCellSeries', 'showColumnLabel'].includes(property?.name === 'mergeSeries' ? 'mergeCellSeries' : property?.name ?? ''))
+    if (FIELD_SET_PROPERTIES.includes(property?.name === 'mergeSeries' ? 'mergeCellSeries' : property?.name ?? ''))
       this[property?.name === 'mergeSeries' ? 'mergeCellSeries' : property?.name ?? ''] = this[property?.name ?? ''];
     this.applyViewerProperties();
     this.createChartData();
@@ -224,8 +239,9 @@ export class MultiCurveViewer extends DG.JsViewer {
       this.curvesColumnNames = [fitCol.name];
 
     this.subs.push(merge(...[this.dataFrame.onCurrentCellChanged, ...(grid ? [grid.onCellMouseEnter] : []), this.dataFrame.onSelectionChanged])
-      .pipe(debounce((_) => interval(50)))
+      .pipe(tap(() => this.renderPending = true), debounce((_) => interval(50)))
       .subscribe((_) => {
+        this.renderPending = false;
         if (this.dataFrame) {
           this.createChartData();
           this.render();
@@ -251,17 +267,64 @@ export class MultiCurveViewer extends DG.JsViewer {
     g.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this._removeErrorMessage();
 
-    if (this.curvesColumnNames?.length === 0) {
+    if (this.curvesColumnNames?.length === 0)
       this._showErrorMessage('The MultiCurveViewer viewer requires a minimum of 1 curves column.');
-      return;
-    }
-    if (this.data?.series?.length === 0) {
+    else if (this.data?.series?.length === 0)
       this._showErrorMessage('No data to show.');
-      return;
+    else {
+      // drawn from this very object rather than through a serialized cell, so that hovering can find the
+      // legend the render laid out
+      new FitChartCellRenderer().renderCurves(g, this.chartBounds(), this.data, undefined, this.fitIdentities);
     }
-    // drawn from this very object rather than through a serialized cell, so that hovering can find
-    // the legend the render laid out
-    const bounds = new DG.Rect(0, 0, this.canvas.width, this.canvas.height);
-    new FitChartCellRenderer().renderCurves(g, bounds, this.data, undefined, this.fitIdentities);
+    this.rendered.next();
+  }
+
+  private chartBounds(): DG.Rect {
+    return new DG.Rect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  /** What the viewer shows, read off the last render: the curves, and the legend as it was laid out -
+   * a hit area per row it drew and one for `+N more`, in CSS pixels of the canvas. */
+  getWidgetStatus(): DG.IWidgetStatus {
+    const status = super.getWidgetStatus();
+    const drawn = this.curvesColumnNames?.length === 0 ? 0 : this.data?.series?.length ?? 0;
+    const legend = drawn === 0 ? null : drawnLegend(this.data, this.chartBounds());
+    const values: {[name: string]: number | string | boolean} = {...status.values, 'curves': drawn,
+      'legend shown': legend !== null};
+    const hitAreas = {...status.hitAreas};
+    if (drawn > 0) {
+      // the axes as the render lays them out, taking in the curves as well as the points (GROK-20661)
+      const bounds = new FitChartCellRenderer().layOutChart(this.chartBounds(), this.data, undefined, this.fitIdentities)
+        .dataBounds;
+      const num = (x: number) => Number(x.toPrecision(4));
+      values['x range'] = `${num(bounds.minX)} .. ${num(bounds.maxX)}`;
+      values['y range'] = `${num(bounds.minY)} .. ${num(bounds.maxY)}`;
+      // each axis at its own scale: concentrations in molar span 1e-9 .. 1e-5
+      const outside = (v: number, min: number, max: number) => {
+        const slack = 1e-9 * Math.max(Math.abs(max - min), Math.abs(min), Math.abs(max));
+        return v < min - slack || v > max + slack;
+      };
+      values['points outside the axes'] = (this.data.series ?? []).reduce((n, series) => n + series.points.filter((p) =>
+        outside(p.x, bounds.minX, bounds.maxX) || outside(p.y, bounds.minY, bounds.maxY)).length, 0);
+    }
+    if (legend) {
+      const scale = this.canvas.width > 0 ? this.canvas.getBoundingClientRect().width / this.canvas.width : 1;
+      const css = (r: DG.Rect) => ({x: r.x * scale, y: r.y * scale, width: r.width * scale, height: r.height * scale});
+      const shortened: number[] = [];
+      for (const [i, row] of legend.rows.entries()) {
+        const whole = row.shown === row.entry.text;
+        hitAreas[`${whole ? '' : 'shortened '}legend row ${i + 1}`] = css(row.box);
+        values[`legend row ${i + 1}`] = row.shown;
+        if (!whole)
+          shortened.push(i + 1);
+      }
+      if (legend.moreBox)
+        hitAreas['legend more'] = css(legend.moreBox);
+      values['legend corner'] = LEGEND_CORNERS[legend.corner];
+      values['legend rows'] = legend.rows.length;
+      values['legend shortened rows'] = shortened.join(', ');
+      values['legend hidden'] = legend.entries.length - legend.rows.length;
+    }
+    return {...status, parts: {...status.parts, canvas: this.canvas}, hitAreas, values};
   }
 }

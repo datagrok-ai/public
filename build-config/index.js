@@ -17,6 +17,7 @@ const PLATFORM_EXTERNALS = {
   'datagrok-api/dg': 'DG',
   'datagrok-api/grok': 'grok',
   'datagrok-api/ui': 'ui',
+  'datagrok-api/u2core': 'DG.U2',
 };
 for (const [name, d] of Object.entries(platformDeps))
   Object.assign(PLATFORM_EXTERNALS, {[name]: d.global}, d.imports);

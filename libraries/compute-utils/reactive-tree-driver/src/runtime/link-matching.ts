@@ -7,11 +7,14 @@ import {StateTree} from './StateTree';
 import {StateTreeNode} from './StateTreeNodes';
 
 export type LinkSpec = PipelineLinkConfiguration<LinkIOParsed[]>;
-export type ActionSpec = DataActionConfiguraion<LinkIOParsed[]> | PipelineMutationConfiguration<LinkIOParsed[]> | FuncCallActionConfiguration<LinkIOParsed[]>;
+export type ActionSpec = DataActionConfiguraion<LinkIOParsed[]> | PipelineMutationConfiguration<LinkIOParsed[]> |
+  FuncCallActionConfiguration<LinkIOParsed[]>;
 
 export type MatchedIO = {
   path: Readonly<NodePath>;
   ioName?: string;
+  /** Set for a `count` query: the number of matching children of the node at `path`. */
+  count?: number;
 }
 
 export type MatchedNodePaths = Readonly<Array<MatchedIO>>;
@@ -26,7 +29,8 @@ export type MatchInfo = {
   // needed to diff order beetween multiple steps of the same kind
   inputsUUID: Map<string, Array<string>>;
   outputsUUID: Map<string, Array<string>>;
-  isDefaultValidator?: boolean;
+  // resolved after actions, so a changed action recreates the links referencing it
+  actionsUUID: Map<string, Map<string, string[]>>;
 }
 
 type NodeTraverseState = {
@@ -41,8 +45,12 @@ export function matchLink(state: StateTree, address: NodePath, spec: LinkSpec): 
   return matchNodeLink(rnode, spec);
 }
 
-export function matchNodeLink(rnode: TreeNode<StateTreeNode>, spec: LinkSpec | ActionSpec, basePath?: Readonly<NodePath>) {
-  const basePaths = basePath ? [{path: basePath}] : (spec.base?.length ? expandLinkBase(rnode, spec.base[0]) : undefined);
+export function matchNodeLink(
+  rnode: TreeNode<StateTreeNode>, spec: LinkSpec | ActionSpec, basePath?: Readonly<NodePath>,
+) {
+  const basePaths = basePath ?
+    [{path: basePath}] :
+    (spec.base?.length ? expandLinkBase(rnode, spec.base[0]) : undefined);
   const baseName = spec.base?.length ? spec.base[0].name : undefined;
   if (spec.not) {
     const currentIO: Record<string, MatchedNodePaths> = {};
@@ -56,7 +64,9 @@ export function matchNodeLink(rnode: TreeNode<StateTreeNode>, spec: LinkSpec | A
     const matchInfo = matchLinkInstance(rnode, spec);
     return matchInfo ? [matchInfo] : undefined;
   } else {
-    const instances = basePaths.map((basePath) => matchLinkInstance(rnode, spec, basePath, baseName)).filter((x) => !!x);
+    const instances = basePaths
+      .map((basePath) => matchLinkInstance(rnode, spec, basePath, baseName))
+      .filter((x) => !!x);
     return instances.length ? instances : undefined;
   }
 }
@@ -76,6 +86,7 @@ function matchLinkInstance(
     outputs: {},
     inputsUUID: new Map(),
     outputsUUID: new Map(),
+    actionsUUID: new Map(),
   };
   const currentIO: Record<string, MatchedNodePaths> = {};
   if (base && baseName)
@@ -86,9 +97,13 @@ function matchLinkInstance(
     actions[action.name] = parsed;
   }
 
-  const ioData = [...spec.from.map((item) => ['inputs', item] as const), ...spec.to.map((item) => ['outputs', item] as const)];
+  const ioData = [
+    ...spec.from.map((item) => ['inputs', item] as const),
+    ...spec.to.map((item) => ['outputs', item] as const),
+  ];
   for (const [kind, io] of ioData) {
-    const skipIO = (spec.type === 'pipeline' && kind === 'outputs') || (!!io.flags?.includes('call')) || (spec.type === 'pipelineValidator' && kind === 'outputs');
+    const skipIO = (spec.type === 'pipeline' && kind === 'outputs') || (!!io.flags?.includes('call')) ||
+      (spec.type === 'pipelineValidator' && kind === 'outputs');
     const useDescriptionsStore = ((spec.type === 'nodemeta' || spec.type === 'selector') && kind === 'outputs');
     const paths = matchLinkIO(rnode, currentIO, io, skipIO, useDescriptionsStore);
     if (paths.length == 0) {
@@ -110,18 +125,22 @@ function expandLinkBase(
   rnode: TreeNode<StateTreeNode>,
   baseLink: LinkIOParsed,
 ) {
-  const traverse = buildTraverseD([] as Readonly<NodePath>, (state: NodeTraverseState, currentPath, currentSegment?: number) => {
+  const traverse = buildTraverseD([] as Readonly<NodePath>, (
+    state: NodeTraverseState, currentPath, currentSegment?: number,
+  ) => {
     const segment = baseLink.segments[currentSegment!];
     const {pnode} = state;
     const isLastSegment = baseLink.segments.length - 1 === currentSegment;
     if (segment?.type === 'selector') {
       const {selector, ids} = segment;
       const nextNodes = matchNonRefSegment(pnode, ids, selector as LinkNonRefSelectors);
-      return nextNodes.map(([idx, node]) => [{pnode: node.item, isLastSegment}, [...currentPath, {id: node.id, idx}], currentSegment!+1] as const);
+      return nextNodes.map(([idx, node]) =>
+        [{pnode: node.item, isLastSegment}, [...currentPath, {id: node.id, idx}], currentSegment!+1] as const);
     } else if (segment?.type === 'tag') {
       const {selector, tags} = segment;
       const nextNodes = matchNonRefTag(pnode, tags, selector as LinkNonRefSelectors);
-      return nextNodes.map(({path, node}) => [{pnode: node, isLastSegment}, [...currentPath, ...path], currentSegment!+1] as const);
+      return nextNodes.map(({path, node}) =>
+        [{pnode: node, isLastSegment}, [...currentPath, ...path], currentSegment!+1] as const);
     } else
       return [] as const;
   }, 0);
@@ -183,7 +202,19 @@ function matchLinkIO(
   skipIO: boolean,
   useDescriptionStore: boolean,
 ): MatchedNodePaths {
-  const traverse = buildTraverseD([] as Readonly<NodePath>, (state: NodeTraverseState, currentPath, currentSegment?: number) => {
+  const lastSegment = indexFromEnd(parsedLink.segments);
+  if (lastSegment?.type === 'selector' && lastSegment.selector === 'count') {
+    const parents = matchLinkIO(
+      rnode, currentIO, {...parsedLink, segments: parsedLink.segments.slice(0, -1)}, true, useDescriptionStore);
+    const ids = new Set(lastSegment.ids);
+    return parents.map(({path}) => ({
+      path,
+      count: rnode.getNode(path).getChildren().filter(({id}) => !ids.size || ids.has(id)).length,
+    }));
+  }
+  const traverse = buildTraverseD([] as Readonly<NodePath>, (
+    state: NodeTraverseState, currentPath, currentSegment?: number,
+  ) => {
     const segment = parsedLink.segments[currentSegment!];
     const {pnode} = state;
     const isLastSegment = parsedLink.segments.length - (skipIO ? 1 : 2) === currentSegment;
@@ -199,7 +230,8 @@ function matchLinkIO(
           originIdx = refOrigin.path[currentSegment!].idx;
         nextNodes = matchRefSegment(pnode, ids, selector, originIdx, stopIds);
       }
-      return nextNodes.map(([idx, node]) => [{pnode: node.item, isLastSegment}, [...currentPath, {id: node.id, idx}], currentSegment!+1] as const);
+      return nextNodes.map(([idx, node]) =>
+        [{pnode: node.item, isLastSegment}, [...currentPath, {id: node.id, idx}], currentSegment!+1] as const);
     } else if (segment?.type === 'tag') {
       const {ref, selector, tags} = segment;
       let nextNodes: ReturnType<typeof matchNonRefTag> = [];
@@ -214,7 +246,8 @@ function matchLinkIO(
           return [];
         nextNodes = matchRefTag(pnode, tags, selector, refNode.getItem().uuid);
       }
-      return nextNodes.map(({path, node}) => [{pnode: node, isLastSegment}, [...currentPath, ...path], currentSegment!+1] as const);
+      return nextNodes.map(({path, node}) =>
+        [{pnode: node, isLastSegment}, [...currentPath, ...path], currentSegment!+1] as const);
     }
     return [];
   }, 0);

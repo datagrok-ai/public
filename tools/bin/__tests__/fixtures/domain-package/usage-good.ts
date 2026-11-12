@@ -32,6 +32,9 @@ export async function good(): Promise<void> {
   const createdFlag: boolean = ins1.created;
   const newVersion: number = upd.version;
   void createdFlag; void newVersion;
+  const [restored] = await testdbDb.transaction([{op: 'restore', table: 'sample', id: rows[0].id}]);
+  const restoredFlag: true = restored.restored;
+  void restoredFlag;
   // the fluent builder rides the generated generics: columns, choices, expand keys
   const built = await testdbDb.samples.query()
     .where('status', '=', 'new').orderBy('created_on', true).select('name', 'status').top(3);

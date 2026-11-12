@@ -9,7 +9,7 @@
 //            pub serve port (default http://localhost:8888)
 // DEV_KEY    developer key (default admin)
 // CHROME     a Chrome executable to run instead of Playwright's own browser
-// It sets the user's Substructure Search Engine package property and leaves it on RDKit.
+// It sets the user's Substructure Search Engine package property and leaves it on Crux, the default.
 import {writeFileSync} from 'fs';
 import {loadRdkit, requireFromChem} from './node-env.mjs';
 
@@ -75,9 +75,13 @@ await page.waitForFunction(() => {
 
 await page.evaluate(async () => {
   window.__csv = await (await fetch('/__crux-bench/data.csv')).text();
+  // the search follows the Chemical Engine (since 2026-10-22); the group's other settings are kept (a save replaces
+  // the whole map) and the engine found first is put back at the end
   window.__setEngine = async (engine) => {
     const pkg = DG.Func.find({package: 'Chem', name: 'searchSubstructure'})[0].package;
-    await pkg.setSettings({SubstructureSearchEngine: engine}, grok.shell.user.group);
+    const settings = (await pkg.getProperties()) ?? {};
+    window.__engineBefore ??= settings.ChemicalEngine ?? 'RDKit';
+    await pkg.setSettings({...settings, ChemicalEngine: engine ?? window.__engineBefore}, grok.shell.user.group);
   };
   // the molecules: the first column with smiles in its name, else the detected one
   window.__newDf = async (name) => {
@@ -185,7 +189,7 @@ try {
     }
   }
 } finally {
-  await page.evaluate(() => window.__setEngine('RDKit'));
+  await page.evaluate(() => window.__setEngine(null));
   await browser.close();
 }
 const out = process.env.OUT ?? 'crux-bench-results.json';

@@ -50,10 +50,6 @@ export namespace funcs {
     return await grok.functions.call('APITests:TestIntAsync', { a });
   }
 
-  export async function customStringInput(params: any ): Promise<any> {
-    return await grok.functions.call('APITests:CustomStringInput', { params });
-  }
-
   export async function testOutputAnnotationJoinDf(data: DG.DataFrame , col: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('APITests:TestOutputAnnotationJoinDf', { data, col });
   }

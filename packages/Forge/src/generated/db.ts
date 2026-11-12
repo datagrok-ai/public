@@ -79,7 +79,7 @@ export interface ModelInsert {
   seed?: number;
   splitting?: {[key: string]: any};
   search?: {[key: string]: any};
-  storage_mode: ModelStorageMode;
+  storage_mode?: ModelStorageMode;
   dataset_name?: string;
   row_count?: number;
   dataset_ref?: {[key: string]: any};
@@ -151,7 +151,7 @@ export interface TrainingRunInsert {
   row_count?: number;
   dataset_fingerprint?: {[key: string]: any};
   status: TrainingRunStatus;
-  source: TrainingRunSource;
+  source?: TrainingRunSource;
   error?: string;
   started_on: Dayjs | string;
   duration_ms?: number;
@@ -201,8 +201,8 @@ export interface ApplicationInsert {
   row_count: number;
   skipped_rows?: number;
   column_name?: string;
-  source: ApplicationSource;
-  status: ApplicationStatus;
+  source?: ApplicationSource;
+  status?: ApplicationStatus;
   error?: string;
   duration_ms?: number;
 }
@@ -228,12 +228,15 @@ export type ForgeTransactionOp =
   {op: 'insert'; table: 'model'; ref?: string; values: DG.DomainTxValues<ModelInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'model'; id: string; values: DG.DomainTxValues<Partial<ModelRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'model'; id: string} |
+  {op: 'restore'; table: 'model'; id: string} |
   {op: 'insert'; table: 'training_run'; ref?: string; values: DG.DomainTxValues<TrainingRunInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'training_run'; id: string; values: DG.DomainTxValues<Partial<TrainingRunRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'training_run'; id: string} |
+  {op: 'restore'; table: 'training_run'; id: string} |
   {op: 'insert'; table: 'application'; ref?: string; values: DG.DomainTxValues<ApplicationInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'application'; id: string; values: DG.DomainTxValues<Partial<ApplicationRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'application'; id: string};
+  {op: 'delete'; table: 'application'; id: string} |
+  {op: 'restore'; table: 'application'; id: string};
 
 /** Typed clients for the `forge` domain schema tables (lazy — no import-time side effects). */
 export const forgeDb = {

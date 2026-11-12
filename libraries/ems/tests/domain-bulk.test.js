@@ -1,0 +1,300 @@
+import {emsBackends} from '../src/core/domain-backend.js';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
+import assert from 'node:assert/strict';
+import {register} from 'node:module';
+import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
+import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
+import {backends, Scope, Control, notify} from '@datagrok-libraries/u2';
+import {MemoryDomainBackend} from '../src/core/memory-domain.js';
+import {SCHEMA, backend} from './domain-fixtures.mjs';
+
+register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
+const {domains} = await import('../src/dg/facade.js');
+
+function scoped(name, body) {
+  test(name, async () => {
+    const live = Scope.liveCount;
+    const saved = {...backends};
+    const savedEms = {...emsBackends};
+    try {
+      await body();
+    } finally {
+      for (const key of Object.keys(backends))
+        delete backends[key];
+      Object.assign(backends, saved);
+      for (const key of Object.keys(emsBackends))
+        delete emsBackends[key];
+      Object.assign(emsBackends, savedEms);
+      notify.closeAll();
+      resetDom();
+      await flush();
+    }
+    assert.equal(Scope.liveCount, live, 'live scopes back to baseline');
+  });
+}
+
+const buttonNamed = (text) => [...document.body.querySelectorAll('.u2-dialog button')]
+  .find((b) => b.textContent === text);
+const control = (name) => Control.forElement(document.querySelector(`.u2-dialog [data-u2-name="${name}"]`));
+const field = (name) => control(name);
+const shown = (name) => document.querySelector(`.u2-dialog [data-u2-name="${name}"]`)?.closest('[hidden]') === null;
+const balloon = (kind) => document.body.querySelector(`.u2-notify-${kind}`)?.textContent ?? '';
+const issues = (memory) => memory.tableSync('grit.issue').rows;
+
+/** The field picker: what the edit changes, by column name. */
+const picker = () => control('fields');
+const offered = () => picker().getItems({all: true}).list.map((i) => i.key);
+function choose(...names) {
+  picker().value = names;
+}
+
+/** "Apply to": a choice where there are two targets, plain text where there is one. */
+const target = () => control('target');
+const targets = () => target().items;
+const targetText = () => document.querySelector('.u2-dialog [data-u2-name="target"]').textContent;
+/** The primary button — its caption follows the target. */
+const ok = () => [...document.querySelectorAll('.u2-dialog [data-u2-part="footer"] button')].at(-1);
+const okDisabled = () => ok().disabled === true;
+/** What blocks the button, said in the footer beside it. */
+const reason = () => document.querySelector('.u2-dialog [data-u2-part="footer"] [data-u2-part="reason"]');
+
+/** The dialog up and rendered; the promise is handed back WRAPPED — an async function
+ * returning it would chain on it and never come back until the dialog is answered. */
+async function opened(source) {
+  const running = domains.bulkEdit(source);
+  await flush();
+  return {running};
+}
+
+async function table(memory, options = {}) {
+  emsBackends.domain = memory;
+  const handle = await domains.table('grit.issue');
+  const source = testOwner().build(() => handle.source(options));
+  await flush();
+  return {handle, source};
+}
+
+/** `n` issues on one project, all open — enough of them to reach the server's 1000-row cap. */
+function many(n) {
+  return new MemoryDomainBackend(SCHEMA, {rows: {
+    project: [{id: 'p1', key: 'GRIT', name: 'Grit'}],
+    issue: Array.from({length: n}, (_, i) =>
+      ({id: `x${i}`, project_id: 'p1', number: i + 1, title: `T${i}`, done: false})),
+  }});
+}
+
+function select(source, keep) {
+  const df = source.df.value;
+  df.selection = {get: keep};
+  df.onSelectionChanged.fire(undefined);
+}
+
+scoped('the checked columns are written to the selection; an unchecked one is left alone', async () => {
+  const memory = backend();
+  const {source} = await table(memory, {query: 'number > 0'});
+  select(source, (i) => i !== 1);
+  assert.deepEqual(source.selection.value.map((r) => r.id), ['i1', 'i3']);
+
+  const {running} = await opened(source);
+  assert.equal(target().value, '2 selected issues', 'a selection is the default target');
+  assert.deepEqual(targets(), ['2 selected issues', 'All 3 issues matching the filter'],
+    'no empty option in front of the targets');
+  assert.equal(offered().includes('id'), false, 'a system column is not offered');
+  assert.equal(shown('done'), false, 'an unchecked column has no editor');
+  assert.equal(okDisabled(), true);
+  assert.equal(reason().textContent, 'Choose the fields to change');
+  assert.equal(field('title').root.querySelector('.u2-input-error')?.textContent ?? '', '',
+    'nothing is red before the user did anything');
+  choose('done');
+  await flush();
+  assert.equal(shown('done'), true, 'choosing the column shows its editor');
+  assert.equal(field('done').disabled, null);
+  assert.equal(okDisabled(), false);
+  assert.equal(reason().textContent, '');
+  field('done').value = true;
+  field('title').value = 'NOT WRITTEN';
+  fire(ok(), 'click');
+  assert.equal(await running, 1, 'Aspirin is already done: only the row the values change is written');
+  assert.match(balloon('info'), /Updated 1 issue\./, 'the table\'s words, never "rows"');
+
+  const rows = issues(memory);
+  assert.deepEqual(rows.map((r) => r.done), [true, false, true], 'the two selected rows only');
+  assert.deepEqual(rows.map((r) => r.title), ['Aspirin', 'Ibuprofen', 'Naproxen'],
+    'the unchecked column was not in the request');
+  source.dispose();
+});
+
+scoped('nothing checked keeps OK disabled and says so inline; CANCEL resolves null', async () => {
+  const memory = backend();
+  const {source} = await table(memory);
+  select(source, () => true);
+  const {running} = await opened(source);
+  assert.equal(okDisabled(), true);
+  assert.match(reason().textContent, /Choose the fields to change/);
+  assert.equal(balloon('warning'), '', 'a refusal is not a balloon on the far edge of the screen');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+  assert.deepEqual(issues(memory).map((r) => r.version), [1, 1, 1], 'nothing was written');
+  source.dispose();
+});
+
+scoped('a selection past the cap disables OK and says how many are selected', async () => {
+  const memory = many(1001);
+  const {source} = await table(memory, {pageSize: 1100});
+  select(source, () => true);
+  assert.equal(source.selection.value.length, 1001);
+  const {running} = await opened(source);
+  choose('done');
+  await flush();
+  field('done').value = true;
+  assert.equal(okDisabled(), true);
+  assert.match(reason().textContent, /at most 1000 issues at a time; 1001 are selected/);
+  assert.equal(issues(memory).filter((r) => r.done === true).length, 0, 'nothing was written');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+  source.dispose();
+});
+
+scoped('"all matching" writes the list\'s filter, capped, and reports that more match', async () => {
+  const memory = many(1001);
+  const {source} = await table(memory, {query: 'done = false'});
+  const {running} = await opened(source);
+  assert.equal(targetText(), 'Apply toAll 1,001 issues matching the filter', 'nothing selected: the filter is the only target');
+  choose('done');
+  await flush();
+  field('done').value = true;
+  fire(ok(), 'click');
+  assert.equal(await running, 1000);
+  assert.match(balloon('info'), /Updated 1000 issues — more match/);
+  assert.equal(issues(memory).filter((r) => r.done === true).length, 1000);
+  source.dispose();
+});
+
+scoped('no target the server would take: the dialog never opens, and says the way out', async () => {
+  const memory = backend();
+  const {source} = await table(memory);
+  assert.equal(await domains.bulkEdit(source), null, 'nothing selected and nothing filtered');
+  assert.match(balloon('warning'), /Select the issues to write, or filter the list/);
+  assert.equal(picker(), undefined, 'no dialog promising a target it would then refuse');
+
+  notify.closeAll();
+  source.query.value = 'done = false';
+  source.search.value = 'asp';
+  await flush();
+  assert.equal(await domains.bulkEdit(source), null);
+  assert.match(balloon('warning'), /clear the search box/,
+    'a search the update endpoint cannot take is said BEFORE the dialog, not after OK');
+  source.dispose();
+});
+
+scoped('a search with a selection still offers the selection alone', async () => {
+  const memory = backend();
+  const {source} = await table(memory, {query: 'done = false'});
+  source.search.value = 'ibu';
+  await flush();
+  select(source, () => true);
+  const {running} = await opened(source);
+  assert.equal(targetText(), 'Apply to1 selected issue', 'the filter target is not offered under a search');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+  source.dispose();
+});
+
+scoped('the unsaved gate runs before the dialog opens', async () => {
+  const memory = backend();
+  const {source} = await table(memory, {query: 'done = false'});
+  source.edit.value.setValue('i2', 'title', 'Edited');
+  assert.equal(source.isDirty.value, true);
+  const running = domains.bulkEdit(source);
+  await flush();
+  assert.equal(picker(), undefined, 'the bulk dialog is not up yet');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null, 'a cancelled gate cancels the whole thing');
+
+  const second = domains.bulkEdit(source);
+  await flush();
+  fire(buttonNamed('DISCARD'), 'click');
+  await flush();
+  assert.equal(source.isDirty.value, false);
+  assert.notEqual(picker(), undefined, 'and a discard lets it through');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await second, null);
+  source.dispose();
+});
+
+scoped('the list\'s own selection is the collection\'s, and only a user makes one', async () => {
+  const memory = backend();
+  emsBackends.domain = memory;
+  const handle = await domains.table('grit.issue');
+  const source = testOwner().build(() => handle.source({}));
+  const list = testOwner().build(() => domains.list(source));
+  document.body.append(list.root);
+  layout(list.root, {clientHeight: 400});
+  await flush();
+  assert.deepEqual(source.selection.value, [], 'a cold list selects nothing: the load put the lead there');
+  assert.notEqual(source.currentRow.value, null, 'though it has a current row');
+
+  const row = (id) => list.root.querySelector(`[data-u2-row="${id}"]`);
+  fire(row('i1'), 'click');
+  await flush();
+  assert.deepEqual(source.selection.value.map((r) => r.id), ['i1'], 'a click is a selection');
+  fire(row('i3'), 'click', {ctrlKey: true});
+  await flush();
+  assert.deepEqual(source.selection.value.map((r) => r.id), ['i1', 'i3']);
+
+  const {running} = await opened(source);
+  assert.equal(targetText(), 'Apply to2 selected issues');
+  choose('done');
+  await flush();
+  field('done').value = true;
+  fire(ok(), 'click');
+  assert.equal(await running, 1, 'Aspirin is already done');
+  assert.deepEqual(issues(memory).map((r) => r.done), [true, false, true]);
+
+  assert.deepEqual(source.selection.value.map((r) => r.id), ['i1', 'i3'],
+    'the rows a bulk edit just wrote are still the rows the user picked: the refresh keeps them');
+
+  fire(list.list.root, 'keydown', {key: 'Escape'});
+  await flush();
+  assert.deepEqual(source.selection.value, [], 'Escape clears it');
+
+  // a query that answers none of the picked rows is a new collection, with nothing selected
+  fire(row('i1'), 'click');
+  await flush();
+  assert.deepEqual(source.selection.value.map((r) => r.id), ['i1']);
+  source.query.value = 'title = "Naproxen"';
+  await flush();
+  assert.deepEqual(source.selection.value, [], 'and a collection holding none of them selects none');
+  list.dispose();
+  source.dispose();
+});
+
+scoped('a trash source is refused: deleted rows are read-only until they are restored', async () => {
+  const memory = backend();
+  const {source: live} = await table(memory);
+  live.edit.value.markDeleted('i2');
+  assert.equal(await live.session.save(), true);
+  await flush();
+  live.dispose();
+
+  const {source} = await table(memory, {deleted: 'only'});
+  assert.deepEqual(source.rows.items.value.map((r) => r.title), ['Ibuprofen']);
+  assert.equal(await domains.bulkEdit(source), null);
+  assert.match(balloon('warning'), /deleted rows are read-only/);
+  assert.equal(picker(), undefined, 'no dialog, and nothing posted');
+  assert.deepEqual(issues(memory).map((r) => r.version), [1, 2, 1]);
+  source.dispose();
+});
+
+scoped('a backend that declares no writes offers no bulk edit, and says so by name', async () => {
+  const memory = backend();
+  // the method lives on the prototype: shadowed here, as a table whose declared support has no
+  // writes — the member and the flag always answer together
+  const issue = memory.tableSync('grit.issue');
+  Object.defineProperty(issue, 'updateWhere', {value: undefined, configurable: true});
+  issue.support = {...issue.support, writes: false};
+  const {source} = await table(memory);
+  assert.equal(await domains.bulkEdit(source), null);
+  assert.match(balloon('error'), /does not support bulk edits/);
+  source.dispose();
+});

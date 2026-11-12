@@ -1,5 +1,9 @@
 // This file will be used from Web Workers
 // There should be no imports from Datagrok or OCL
+// RDKit-only (it goes with RDKit.js, engine/README.md "Removing RDKit"): RDKit's main-thread module and pool
+// (`initRdKitModuleLocal`, `initRdKitService`, `getRdKitModule`, `getRdKitService`, `cancelChemOp`),
+// `checkMoleculeValid`, `validationMessageByRdKit` and reaction drawing (`drawRdKitReactionToOffscreenCanvas`). The
+// rest takes the module or branches by engine, and stays.
 import {RdKitService} from '../rdkit-service/rdkit-service';
 import {convertToRDKit} from '../analysis/r-group-analysis';
 //@ts-ignore
@@ -9,10 +13,14 @@ import initRDKitModule from '../RDKit_minimal.js';
 import {hasNewLines, isChemOpRunning, isMolBlock} from './chem-common';
 import {MAX_SMILES_LENGTH} from './chem-constants';
 import $ from 'cash-dom';
-import {RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDLog, RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {IMolContext, getMolSafe} from './mol-creation_rdkit';
 import {initRdKitFrom} from '../rdkit-service/rdkit-service-worker-api';
+import {byEngineModule, withMol} from '../engine/chem-engine';
+import {noteCruxError} from '../engine/crux-module';
+import {cruxReadsCxExtension} from '../crux/crux-service';
+import {renderingOptions} from '../rendering/rendering-settings';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
@@ -48,8 +56,6 @@ export const RDKIT_COMMON_RENDER_OPTS: {[key: string]: any} = {
     53: [0.247, 0.0, 0.498],
   },
   // addStereoAnnotation: true,
-  simplifiedStereoGroupLabel: true,
-  highlightColour: [1.0, 0.7, 0.7, 1.0],
   backgroundColour: [1, 1, 1, 1],
   queryColour: [0, 0, 0, 1],
 };
@@ -74,7 +80,10 @@ export async function initRdKitModuleLocal(): Promise<void> {
   _rdKitModule.use_legacy_stereo_perception(false);
   console.log('RDKit module package instance was initialized');
   moduleInitialized = true;
-  _rdKitService = new RdKitService();
+  // A second init (a test category's `before`) keeps the worker pool: a new service would leave the old one's workers
+  // running for the rest of the page's life, each holding an RDKit instance, and a page has room for only so many
+  // WebAssembly memories (instantiation fails with "Out of memory" past it)
+  _rdKitService ??= new RdKitService();
 }
 
 export async function initRdKitService(): Promise<void> {
@@ -105,6 +114,8 @@ export async function cancelChemOp(opId: string, workers: number[]): Promise<voi
   await Promise.all(workers.map((w) => svc.restartWorker(w)));
 }
 
+/** Chem's web root (the package's files, the wasm files' folder), set at the package's init: not RDKit's, despite the
+ * name; it stays when RDKit goes. */
 export function getRdKitWebRoot() {
   return _webRoot;
 }
@@ -122,19 +133,24 @@ export function drawErrorCross(ctx: OffscreenCanvasRenderingContext2D, width: nu
   ctx.stroke();
 }
 
-function createRenderingOpts(addSettings: {[key: string]: any}): {[key: string]: any} {
-  return {...RDKIT_COMMON_RENDER_OPTS, ...addSettings};
+/** Chem's draw options: the common ones, the Rendering settings' (rendering-settings.ts), then `addSettings`. */
+export function createRenderingOpts(addSettings: {[key: string]: any}): {[key: string]: any} {
+  return {...RDKIT_COMMON_RENDER_OPTS, ...renderingOptions(), ...addSettings};
 }
 
+/**
+ * Draws the molecule (an RDKit one, or Crux's in Crux mode). False when the drawing threw: with `failQuietly` (a Crux
+ * molecule, which RDKit then draws) nothing is drawn or logged, else an error cross is drawn.
+ */
 export function drawRdKitMoleculeToOffscreenCanvas(
   molCtx: IMolContext, w: number, h: number, offscreenCanvas: OffscreenCanvas, substruct: Object | null,
-  renderingOptions: {[key: string]: any} = {}): void {
+  renderingOptions: {[key: string]: any} = {}, failQuietly: boolean = false): boolean {
   const g = offscreenCanvas.getContext('2d', {willReadFrequently: true}) as OffscreenCanvasRenderingContext2D;
   const rdKitMol: RDMol | null = molCtx.mol;
   if (rdKitMol === null) {
     console.error('Molecule to be rendered cannot be null.');
     drawErrorCross(g, w, h);
-    return;
+    return true;
   }
 
 
@@ -143,7 +159,7 @@ export function drawRdKitMoleculeToOffscreenCanvas(
 
   if (!w || !h) {
     console.warn('Molecule not rendered due to width or height less than 1');
-    return;
+    return true;
   }
 
   const opts = createRenderingOpts({width: w, height: h});
@@ -166,11 +182,18 @@ export function drawRdKitMoleculeToOffscreenCanvas(
   try {
     rdKitMol.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));
   } catch (e) {
+    if (failQuietly) { // a Crux drawing that stopped partway: the canvas as RDKit expects it, then RDKit draws
+      noteCruxError(e);
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.clearRect(0, 0, w, h);
+      return false;
+    }
     console.error('Molecule failed to render ' + rdKitMol.get_molblock());
     drawErrorCross(g, w, h);
-    return;
+    return false;
   }
   // we need the offscreen canvas first to not let the molecule scaffold skew on a real canvas
+  return true;
 }
 
 export function drawRdKitReactionToOffscreenCanvas(
@@ -205,38 +228,61 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   if (!isMol)
     molString = convertToRDKit(molString);
 
+  // in Crux mode ("Chemical engine") Crux draws, and RDKit whatever Crux cannot read or refuses, and a CXSMILES whose
+  // query features Crux's reader skips (the molecule's or the scaffold's)
+  const cruxReads = (s: string | null): boolean => !s || cruxReadsCxExtension(s);
+  byEngineModule('canvasMol', getRdKitModule(), (module, crux) => {
+    if (crux && !(cruxReads(molString) && cruxReads(scaffoldMolString)))
+      return null;
+    const drawn = drawMoleculeWith(module, crux, x, y, w, h, nW, nH, onscreenCanvas, molString, isMol,
+      scaffoldMolString, scaffoldStruct, renderingOptions);
+    return drawn || !crux ? true : null;
+  }, `RDKit draws what Crux cannot read or refuses, e.g. ${molString}`);
+}
+
+/** {@link drawMoleculeToCanvas} by one engine's module. Under Crux (`crux`) false, with nothing drawn, for a molecule
+ * or a scaffold Crux cannot read or a drawing it refuses. */
+function drawMoleculeWith(module: RDModule, crux: boolean, x: number, y: number, w: number, h: number, nW: number,
+  nH: number, onscreenCanvas: HTMLCanvasElement, molString: string, isMol: boolean, scaffoldMolString: string | null,
+  scaffoldStruct: ISubstruct | null, renderingOptions?: {[key: string]: any}): boolean {
   const offscreenCanvas = new OffscreenCanvas(nW, nH);
-  const molCtx = getMolSafe(molString, {}, getRdKitModule());
+  const molCtx = getMolSafe(molString, {}, module, true, crux ? noteCruxError : undefined);
   const mol : RDMol | null = molCtx.mol;
   if (mol === null) {
+    if (crux)
+      return false;
     console.error('Molecule is null for ' + molString);
     drawErrorCross(offscreenCanvas.getContext('2d') as OffscreenCanvasRenderingContext2D, w, h);
-    return;
-  }
-
-  if (!isMol)
-    mol.set_new_coords(true);
-
-  const molHasOwnCoords = (mol.has_coords() > 0);
-  if (molHasOwnCoords) {
-    mol.normalize_depiction(0);
-    mol.straighten_depiction(true);
+    return true;
   }
 
   let scaffoldMol: RDMol | null = null;
   try {
+    if (!isMol)
+      mol.set_new_coords(true);
+
+    const molHasOwnCoords = (mol.has_coords() > 0);
+    if (molHasOwnCoords) {
+      mol.normalize_depiction(0);
+      mol.straighten_depiction(true);
+    }
+
     let substruct: ISubstruct | null = null;
     if (scaffoldStruct)
       substruct = scaffoldStruct;
     else {
       let substructJson = '{}';
       scaffoldMol = scaffoldMolString == null ? null :
-        (isMolBlock(scaffoldMolString) ? getRdKitModule().get_qmol(scaffoldMolString) :
-          getRdKitModule().get_qmol(convertToRDKit(scaffoldMolString)!));
+        (isMolBlock(scaffoldMolString) ? module.get_qmol(scaffoldMolString) :
+          module.get_qmol(convertToRDKit(scaffoldMolString)!));
+      if (crux && scaffoldMolString && !scaffoldMol) // ('' is no scaffold, as for RDKit's empty query)
+        return false;
       if (scaffoldMol) {
         try {
           substructJson = mol.get_substruct_match(scaffoldMol);
         } catch (e) {
+          if (crux)
+            throw e;
           console.error(`get_substruct_match failed for ${molString} and ${scaffoldMolString}`);
         }
         if (substructJson === '')
@@ -244,21 +290,41 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
       }
       substruct = JSON.parse(substructJson);
     }
-    drawRdKitMoleculeToOffscreenCanvas(molCtx, nW, nH, offscreenCanvas, substruct, renderingOptions);
+    if (!drawRdKitMoleculeToOffscreenCanvas(molCtx, nW, nH, offscreenCanvas, substruct, renderingOptions, crux) && crux)
+      return false;
     const image = offscreenCanvas!.getContext('2d')!.getImageData(0, 0, nW, nH);
     const context = onscreenCanvas.getContext('2d')!;
     context.putImageData(image, x, y);
+    return true;
   } finally {
     mol?.delete();
     scaffoldMol?.delete();
   }
 }
 
-export function checkMolEqualSmiles(mol1: any, molfile2: string): boolean {
-  const mol2 = checkMoleculeValid(molfile2);
-  const result = mol2 ? mol1.get_smiles() === mol2.get_smiles() : false;
-  mol2?.delete();
-  return result;
+/** `molecule`'s canonical SMILES (null where it does not read: {@link checkMoleculeValid}'s `get_mol`) on `module`;
+ * under Crux (`crux`) what the module throws is thrown (the fallback notes a trap). */
+export function canonicalWith(module: RDModule, crux: boolean, molecule: string): string | null {
+  if (!hasNewLines(molecule) && molecule?.length > MAX_SMILES_LENGTH)
+    return null;
+  return withMol(module, crux, molecule, (mol) => mol.get_smiles());
+}
+
+/** Whether `molecule` reads as a molecule ({@link checkMoleculeValid}'s check) by the main thread's module: "Chemical
+ * engine", Crux's in Crux mode, RDKit's where Crux reads none. */
+export function readsAsMolecule(molecule: string): boolean {
+  return byEngineModule('molecule check', getRdKitModule(),
+    (module, crux) => canonicalWith(module, crux, molecule) !== null ? true : null) ?? false;
+}
+
+/** Whether two molecule strings are one molecule (the same canonical SMILES) by the main thread's module: "Chemical
+ * engine", Crux's in Crux mode, RDKit's where Crux reads either none. A string that does not read is no match. */
+export function sameMolecule(molecule1: string, molecule2: string): boolean {
+  return byEngineModule('molecule compare', getRdKitModule(), (module, crux) => {
+    const smiles1 = canonicalWith(module, crux, molecule1);
+    const smiles2 = smiles1 === null ? null : canonicalWith(module, crux, molecule2);
+    return smiles2 === null ? null : smiles1 === smiles2;
+  }) ?? false;
 }
 
 export function checkMoleculeValid(molecule: string): any {
@@ -272,4 +338,23 @@ export function checkMoleculeValid(molecule: string): any {
     return null;
   }
   return mol;
+}
+
+/** RDKit's message for a molecule string it does not read ('' for one it reads with nothing logged): what
+ * `validateMolecule` shows. RDKit-only: Crux keeps no log. */
+export function validationMessageByRdKit(rdKitModule: RDModule, molecule: string): string | null {
+  let logHandle: RDLog | null = null;
+  let mol: RDMol | null = null;
+  try {
+    logHandle = rdKitModule.set_log_capture('rdApp.error');
+    mol = getMolSafe(molecule, {}, rdKitModule, true).mol;
+    let logBuffer = logHandle?.get_buffer();
+    logHandle?.clear_buffer();
+    if (!mol && !logBuffer)
+      logBuffer = 'unknown error';
+    return logBuffer ?? null;
+  } finally {
+    logHandle?.delete();
+    mol?.delete();
+  }
 }

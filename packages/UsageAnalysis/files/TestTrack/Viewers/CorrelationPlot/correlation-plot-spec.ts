@@ -465,7 +465,7 @@ test('Correlation plot — property surface smoke', async ({page}) => {
 
       const settle = await settledSnap(page, geom);
       expect(settle).toBeGreaterThanOrEqual(0);
-      const clickedShowR = await clickMenuByName(page, 'div-Show-Pearson-R');
+      const clickedShowR = await clickMenuByName(page, 'div-Show-Coefficients');
       expect(clickedShowR).toBe(true);
       const showRAfter: boolean = await v.pollValue(() => page.evaluate(() =>
         grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot').props.showPearsonR),
@@ -505,7 +505,7 @@ test('Correlation plot — property surface smoke', async ({page}) => {
       expect(shownWhileOff).toBe(false);
 
       await openCellMenu(page, geom, xiHeight, yiAge);
-      await clickMenuByName(page, 'div-Show-Pearson-R');
+      await clickMenuByName(page, 'div-Show-Coefficients');
       await v.pollValue(() => page.evaluate(() =>
         grok.shell.tv.viewers.find((x: any) => x.type === 'Correlation plot').props.showPearsonR),
       (val) => val === true, 4000, 50);

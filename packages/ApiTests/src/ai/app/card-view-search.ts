@@ -8,7 +8,6 @@ import {expectNoThrow, withAttachedView} from '../helpers';
 // without it refresh() throws "DataSource not specified" as an unhandled async rejection.
 category('AI: App: CardView Search', () => {
   const withCardView = (body: (cv: DG.CardView) => void): Promise<void> =>
-    // awaitRender=false: search/filter state is model-backed; dataSource lets refresh() run cleanly.
     withAttachedView<DG.CardView>(() => {
       const cv = DG.CardView.create({dataSource: grok.dapi.scripts});
       cv.objectType = 'Script';
@@ -16,7 +15,7 @@ category('AI: App: CardView Search', () => {
     }, (cv) => {
       expect(cv instanceof DG.CardView, true);
       body(cv);
-    }, false);
+    });
 
   test('searchValue round-trips and survives refresh', async () => {
     await withCardView((cv) => {
