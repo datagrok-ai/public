@@ -37,9 +37,12 @@ export class ViewHandler {
     this.view.loadStateMap = (state: object) => this.restore(state as UaViewState);
   }
 
+  /** While a restore is under way, saving keeps the state it restores. */
   saveState(): UaViewState | null {
+    if (this.pendingState)
+      return this.pendingState;
     if (!this.toolbox)
-      return this.pendingState ?? null;
+      return null;
     const v = this.getCurrentView();
     return {tab: v.name, rout: v.rout ?? null, filters: this.toolbox.getState()};
   }
@@ -49,20 +52,23 @@ export class ViewHandler {
   }
 
   async loadState(state: UaViewState): Promise<void> {
-    if (!this.toolbox) {
-      this.pendingState = state;
+    this.pendingState = state;
+    if (!this.toolbox)
       return;
+    try {
+      if (state.tab && this.view.tabs.getPane(state.tab))
+        this.changeTab(state.tab);
+      if (state.filters) {
+        this.toolbox.setState(state.filters);
+        this.toolbox.applyFilter();
+      }
+      const v = this.getCurrentView();
+      await v.viewersReady;
+      if (state.rout && v.rout !== state.rout)
+        this.routButtons[v.name]?.[state.rout]?.click();
+    } finally {
+      this.pendingState = undefined;
     }
-    if (state.tab)
-      this.changeTab(state.tab);
-    if (state.filters) {
-      this.toolbox.setState(state.filters);
-      this.toolbox.applyFilter();
-    }
-    const v = this.getCurrentView();
-    await v.viewersReady;
-    if (state.rout && v.rout !== state.rout)
-      this.routButtons[v.name]?.[state.rout]?.click();
   }
 
   async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
@@ -215,10 +221,8 @@ export class ViewHandler {
     });
     this.changeTab(urlTab);
     this.toolbox = toolbox;
-    if (this.pendingState) {
+    if (this.pendingState)
       this.restore(this.pendingState);
-      this.pendingState = undefined;
-    }
   }
 
   static urlName(view: DG.ViewBase): string {
@@ -238,7 +242,8 @@ export class ViewHandler {
   }
 
   setUrlParam(key: string, value: string, saveDuringChangingView: boolean = false) {
-    const urlParams = new URLSearchParams(window.location.search);
+    const isCurrent = grok.shell.v?.root === this.view.root;
+    const urlParams = new URLSearchParams(isCurrent ? window.location.search : this.view.path.split('?')[1] ?? '');
     urlParams.set(key, value);
 
     const params: string[] = [];

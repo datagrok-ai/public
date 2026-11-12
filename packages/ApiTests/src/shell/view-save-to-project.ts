@@ -9,7 +9,6 @@ const inScratchpad = (v: DG.ViewBase): boolean =>
 
 category('View: Save to project', () => {
   test('a markup view is saved by default and the flag takes it out and back', async () => {
-    grok.shell.closeAll();
     await grok.functions.call('CmdNewMarkupView');
     const markup = grok.shell.v;
     try {
@@ -22,7 +21,7 @@ category('View: Save to project', () => {
       markup.saveToProject = true;
       expect(inScratchpad(markup), true);
     } finally {
-      grok.shell.closeAll();
+      markup.close();
     }
   }, {skipReason: nodeSkip});
 

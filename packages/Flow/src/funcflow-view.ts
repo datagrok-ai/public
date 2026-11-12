@@ -147,8 +147,10 @@ export class FuncFlowView extends DG.ViewBase {
 
   private async restoreState(scriptId: string | null, doc: FuncFlowDocument | null): Promise<void> {
     const script = scriptId ? await grok.dapi.scripts.find(scriptId).catch(() => null) : null;
+    if (scriptId && !script)
+      grok.shell.warning(`The saved flow of "${this.name}" is no longer available${doc ? '; its unsaved copy is shown' : ''}`);
     if (script && !doc) {
-      this.bindScript(script);
+      await this.bindScript(script);
       return;
     }
     if (script) {
@@ -225,20 +227,22 @@ export class FuncFlowView extends DG.ViewBase {
 
   static forScript(script: DG.Script): FuncFlowView {
     const view = new FuncFlowView();
-    view.bindScript(script);
+    void view.bindScript(script);
     return view;
   }
 
-  private bindScript(script: DG.Script): void {
+  /** Resolves once the script's graph is on the canvas. */
+  private bindScript(script: DG.Script): Promise<void> {
     this.boundScript = script;
     this.name = script.friendlyName || script.name || 'Flow';
     this.updatePath();
     try {
       const {doc} = parseFlowBody(script.script);
-      void this.loadFromDoc(doc).then(() => this.markSaved())
+      return this.loadFromDoc(doc).then(() => this.markSaved())
         .catch((e) => grok.shell.error(`Cannot load flow "${this.name}": ${e instanceof Error ? e.message : e}`));
     } catch (e) {
       grok.shell.error(`Cannot read flow "${this.name}": ${e instanceof Error ? e.message : e}`);
+      return Promise.resolve();
     }
   }
 
@@ -1101,7 +1105,7 @@ export class FuncFlowView extends DG.ViewBase {
     try {
       // Re-find by id so the body is guaranteed present, not a lean listing row.
       const full = await grok.dapi.scripts.find(f.id);
-      this.bindScript((full as DG.Script | null) ?? f);
+      void this.bindScript((full as DG.Script | null) ?? f);
       this.hideStartPanel();
     } catch (e: any) {
       grok.shell.error(`Could not open "${f.friendlyName || f.name}": ${e?.message ?? e}`);
@@ -1920,7 +1924,7 @@ export class FuncFlowView extends DG.ViewBase {
         if (!picked) return;
         // Re-find by id so the body is guaranteed present, not a lean listing row.
         const full = await grok.dapi.scripts.find(picked.id);
-        this.bindScript(full ?? picked);
+        void this.bindScript(full ?? picked);
       })
       .show();
   }
