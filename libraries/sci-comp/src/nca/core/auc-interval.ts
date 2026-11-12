@@ -41,6 +41,7 @@
  */
 
 import type {ProfileInputs, NcaRules, AucMethod} from './types';
+import {isKnownRouteCode} from './types';
 import {augmentProfile} from './augment';
 import {collectMeasurable, pickAucFn} from './compute-nca';
 
@@ -49,8 +50,8 @@ export interface AucIntervalResult {
   /**
    * AUC over `[startUsed, endUsed]`. `0` when the interval lies wholly outside
    * the measured range. `NaN` when the profile has no measurable point
-   * (`computeNca` status `'failed'`) or the interval is invalid (`start` not
-   * finite, `end` NaN, or `end < start`).
+   * (`computeNca` status `'failed'`), `inputs.route` is not a known `RouteCode`,
+   * or the interval is invalid (`start` not finite, `end` NaN, or `end < start`).
    */
   readonly value: number;
   /** `start` clipped to the integrated profile `[tFirst, tLast]`. */
@@ -82,6 +83,7 @@ export function aucInterval(
   inputs: ProfileInputs, rules: NcaRules, start: number, end: number,
 ): AucIntervalResult {
   if (!Number.isFinite(start) || Number.isNaN(end) || end < start) return FAILED;
+  if (!isKnownRouteCode(inputs.route)) return FAILED; // as computeNca: never guessed extravascular
 
   const aug = augmentProfile(inputs, rules.blq);
   if (aug === null) return FAILED;
