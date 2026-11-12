@@ -7,6 +7,8 @@ import {PackageFunctions} from '../package';
 import {hubView} from '../hub-view';
 import {INDEX_VERSION, LibraryFiles, indexPath, libraryReader, myLibrary} from '../library';
 import {bring, readFile, suggestedStage} from '../open-study';
+import {VOLUME_TAG, parseStudy, studyOf, tableOf} from '../study-file';
+import {studySummary} from '../study-reader';
 import {gpu} from '../gpu';
 
 const CSV = 'Mouse ID,Arm,Day,Volume (mm3),Body weight\n' +
@@ -28,14 +30,28 @@ category('Hub', () => {
     expect(r.animals, 2);
     expect(r.groups, 2);
     expect(r.lastDay, 12);
-    expect(r.missing.length, 0);
     expect(r.weight, true);
-    expect(r.found.join('|'), 'Animal ← Mouse ID|Group ← Arm|Day ← Day|Volume ← Volume (mm3)');
+    expect(studySummary(r.read).join('|'), 'Read 2 groups: Vehicle 1 animal, Cpd-1 1 animal, days 0–12.|Volumes as ' +
+      'given.|No unit in the column names: assumed g.');
+    expect(r.df.columns.names().join(), 'animal,group,day,volume,body_weight');
+    expect(r.df.getTag(VOLUME_TAG), JSON.stringify({formula: null, source: 'given'}));
   });
 
   test('a table without a volume column says so', async () => {
     const r = readFile('study.tsv', 'animal\tgroup\tday\nm1\tA\t0\n');
-    expect(r.kind === 'table' && r.missing.join(), 'Volume');
+    expect(r.kind === 'table' && r.read.error, 'Not read: no column is the tumor volume, nor its length and width.');
+  });
+
+  test('a table read with an answer: its volumes from length and width, kept in the study it opens as', async () => {
+    const csv = 'Animal,Group,Day,Length,Width\nm1,V,0,10,8\nm2,C,0,9,7\n';
+    const r = readFile('caliper.csv', csv, {formula: 'pi/6*LW2'});
+    expect(r.kind, 'table');
+    if (r.kind !== 'table')
+      return;
+    expect(Math.abs(r.df.col('volume')!.get(0) - Math.PI / 6 * 640) < 1e-9, true);
+    const saved = parseStudy(JSON.stringify(studyOf(r.df, null)));
+    expect(JSON.stringify(saved.provenance), JSON.stringify({volume: {formula: 'pi/6*LW2', source: 'computed'}}));
+    expect(tableOf(saved).getTag(VOLUME_TAG), JSON.stringify({formula: 'pi/6*LW2', source: 'computed'}));
   });
 
   test('a saved plan, and the stage its study opens in from the dates alone', async () => {

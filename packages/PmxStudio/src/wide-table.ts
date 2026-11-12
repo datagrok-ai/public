@@ -109,7 +109,7 @@ const isValue = (s: string) => /^[+-]?\d[\d.,]*$/.test(s);
 /** A cell that names a role by its word (a name with a number in it is a value, "Mouse 1"). */
 const names = (s: string, ...roles: string[]) => !/\d/.test(s) && roles.some((r) => role(r).test(s));
 /** A row of the CRO's own statistics, by its label, the word alone: left out, never an animal. */
-const SUMMARY = /^(mean|average|sem|se|sd|std|total|n|median)\s*=?\s*$/i;
+export const SUMMARY = /^(mean|average|sem|se|sd|std|total|n|median)\s*=?\s*$/i;
 /** A label that starts as a summary's and goes on ("Mean Vehicle", "n=5"): neither an animal nor read as a summary. */
 const SUMMARY_LIKE = /^((mean|average|median|total|sem|sd|std)[\s(:=]|(n|se)\s*[(:=])/i;
 const summaryWord = (s: string) => s.replace(/[\s=]+$/, '');

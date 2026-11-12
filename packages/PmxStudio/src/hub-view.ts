@@ -21,7 +21,7 @@ import {PLAN_TAG, myPlans, parsePlan} from './plan-file';
 import {LibraryEntry, libraryReader, matches} from './library';
 import {dayToday} from './calendar';
 import {Brought, OPENED_EXTS, OpenStage, bring, readFile, suggestedStage} from './open-study';
-import {wideSummary} from './wide-table';
+import {Question, studySummary, waiting} from './study-reader';
 
 /** The home view. */
 export async function hubView(): Promise<DG.ViewBase> {
@@ -414,14 +414,31 @@ export function openStudyDialog(first?: File[]): void {
   };
 
   const selected = (): Option | null => {
-    // a wide table that could not be read opens nowhere
-    if (phase !== 'loaded' || brought.table?.wide?.error)
+    // a table not read, or waiting on an answer, opens nowhere
+    const read = brought.table?.read;
+    if (phase !== 'loaded' || read && (read.error || waiting(read)))
       return null;
     const list = options().list;
     const pick = list.find((o) => o.stage === chosen && !o.disabled) ??
       list.find((o) => o.stage === suggestedStage(brought) && !o.disabled) ??
       list.find((o) => !o.disabled);
     return pick ?? null;
+  };
+
+  const askTable = (q: Question): HTMLElement => {
+    const t = brought.table!;
+    const now = t.answers[q.id] ?? q.preset;
+    return h('div', 'pmx-ask', [h('div', 'pmx-q', [q.text]), h('div', 'pmx-opts', q.options.map(([value, label]) => {
+      const radio = h('input', '', [], {type: 'radio', name: `pmx-read-${q.id}`});
+      radio.checked = now === value;
+      radio.addEventListener('change', () => {
+        const again = readFile(t.file, t.text, {...t.answers, [q.id]: value});
+        if (again.kind === 'table')
+          brought = {...brought, table: again};
+        render();
+      });
+      return h('label', 'pmx-opt' + (now === value ? ' is-on' : ''), [radio, h('span', '', [label])]);
+    }))]);
   };
 
   const dropZone = (small: boolean, text: string): HTMLElement => {
@@ -460,6 +477,9 @@ export function openStudyDialog(first?: File[]): void {
       const holds = holdsOf(brought);
       if (holds.length)
         parts.push(h('ul', 'pmx-holds', holds));
+      // what the table's reader could not tell: one choice each, the table read again with every answer
+      for (const q of table?.read.questions ?? [])
+        parts.push(askTable(q));
       const {question, list, hint} = options();
       const pick = selected();
       parts.push(h('div', 'pmx-ask', [h('div', 'pmx-q', [question]), h('div', 'pmx-opts', list.map((o) => {
@@ -570,17 +590,15 @@ function holdsOf(b: Brought): HTMLElement[] {
     const facts = [t.animals !== null ? `${t.animals} animals` : '', t.groups !== null ? `${t.groups} groups` : '',
       t.lastDay !== null ? `day 0–${t.lastDay}` : ''].filter(Boolean);
     const what = facts.join(' · ') || 'Measurements';
-    const w = t.wide;
-    if (w?.error)
-      out.push(line('warn', 'A wide table, not read', w.error));
-    else if (w) {
-      // a column per day or per animal turned into one row per animal and day: how many animals, in plain words
-      const [counts, ...rest] = wideSummary(w, !!b.plan?.blinded);
+    if (t.read.error)
+      out.push(line('warn', 'The table was not read', t.read.error));
+    else if (waiting(t.read))
+      out.push(line('none', `${t.read.questions.length > 1 ? 'Questions' : 'A question'} before the table is read`));
+    else {
+      // what was read and how, in plain words: the check that nothing was lost or guessed
+      const [counts, ...rest] = studySummary(t.read, !!b.plan?.blinded);
       out.push(line('ok', counts, what));
-      rest.forEach((r) => out.push(line('warn', r)));
-    } else {
-      out.push(t.missing.length ? line('warn', what, `No column found for ${t.missing.join(', ')}: you pick ` +
-        `${t.missing.length === 1 ? 'it' : 'them'} in the form that opens.`) : line('ok', what, t.found.join(' · ')));
+      rest.forEach((r) => out.push(line(r.startsWith('Not read') ? 'warn' : 'none', r)));
     }
     out.push(t.weight ? line('ok', 'Body weight') : line('none', 'No body weight'));
     out.push(b.plan ? line('ok', `Plan: ${b.plan.name}`) : line('none', 'No plan'));

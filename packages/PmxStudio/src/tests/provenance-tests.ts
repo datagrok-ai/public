@@ -44,6 +44,15 @@ category('Provenance', () => {
     expect(parseStudy(study({provenance: {atlas: 1}})).provenance === undefined, true);
   });
 
+  test('a study keeps where its volumes come from; a damaged source is dropped', async () => {
+    const p = {atlas: 'a'.repeat(64), app: '1.2.3', volume: {formula: 'LW2/2', source: 'deduced'}};
+    same(parseStudy(study({provenance: p})).provenance, p);
+    same(parseStudy(study({provenance: {volume: {formula: null, source: 'given'}}})).provenance,
+      {volume: {formula: null, source: 'given'}});
+    expect(parseStudy(study({provenance: {volume: {formula: 'L*W', source: 'computed'}}})).provenance === undefined,
+      true);
+  });
+
   test('the study export writes the current provenance', async () => {
     const df = await exampleStudy();
     same((await stamped(studyOf(df, 2000))).provenance, await provenance());

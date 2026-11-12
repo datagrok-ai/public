@@ -9,6 +9,7 @@ import type {FuncCallForm} from '@datagrok-libraries/u2/dg';
 import {_package} from './package';
 import {PLAN_TAG, Provenance, SavedPlan, fileNameOf, parsePlan, provenance, provenanceOf} from './plan-file';
 import {StudyMeta, metaOf, parseMeta, setMetaOn} from './study-meta';
+import {VolumeSource, volumeSourceOf} from './study-reader';
 
 export const STUDY_EXT = 'pmxstudy';
 const FORMAT = 'pmx-study';
@@ -24,6 +25,8 @@ export const WEIGHT_TAG = 'pmx.weight';
 export const LIMITS_TAG = 'pmx.limits';
 /** The tumor model chosen for the study, kept for a study with no plan (with a plan, the plan's model is read). */
 export const LINE_TAG = 'pmx.line';
+/** Where the table's volumes come from, as Open a study read them (JSON, study-reader.ts's VolumeSource). */
+export const VOLUME_TAG = 'pmx.volume';
 /** The marks, visible columns of the study table (study-table.ts sets them): ticked in Excluded, out of PMX Studio's
  *  analysis (the row stays); ticked in Flagged, to look at; why, in Mark reason. */
 export const EXCLUDED = 'Excluded';
@@ -49,8 +52,10 @@ export interface SavedStudy {
   weightLimit?: number | null;
   /** the study's ID, owner, dates and what each group receives (older files: none) */
   meta?: StudyMeta;
-  /** the atlas and app the study was saved with (older files: none); its plan's predictions carry their own */
-  provenance?: Provenance;
+  /** the atlas and app the study was saved with (older files: none; none either when the atlas could not be read);
+   *  its plan's predictions carry their own. `volume`: where its volumes come from, given, computed from length and
+   *  width with a formula, or given and found to follow one (studies opened from a table since 1.x; older: none) */
+  provenance?: Partial<Provenance> & {volume?: VolumeSource};
   /** the tumor model chosen in Monitor (older files: none); a plan's model comes first */
   line?: string;
   /** `weight`: only when the study has body weights; the marks only on marked rows */
@@ -59,6 +64,15 @@ export interface SavedStudy {
   /** the table's other columns (caliper readings, cage, sex, comments), by name, a value per row (older files: none) */
   extra?: {[column: string]: (string | number | boolean | null)[]};
   log: LogEntry[];
+}
+
+/** Where a table's volumes come from (VOLUME_TAG), when Open a study read it; undefined otherwise. */
+function volumeOfTag(df: DG.DataFrame): VolumeSource | undefined {
+  try {
+    return volumeSourceOf(JSON.parse(df.getTag(VOLUME_TAG) || 'null'));
+  } catch {
+    return undefined; // a damaged tag says nothing
+  }
 }
 
 export const logOf = (df: DG.DataFrame): LogEntry[] => JSON.parse(df.getTag(LOG_TAG) || '[]');
@@ -158,6 +172,7 @@ export function studyOf(df: DG.DataFrame, humane: number | null, weightLimit: nu
   const [e, f, r] = [df.col(EXCLUDED), df.col(FLAGGED), df.col(MARK_REASON)];
   const meta = metaOf(df);
   const line = df.getTag(LINE_TAG);
+  const volume = volumeOfTag(df);
   // what else the table holds goes with the study: the caliper readings behind a volume, a cage, a comment
   const kept = new Set([a, g, d, v, w, e, f, r].filter((c) => c).map((c) => c!.name));
   const plain: string[] = [DG.TYPE.FLOAT, DG.TYPE.INT, DG.TYPE.STRING, DG.TYPE.BOOL];
@@ -166,7 +181,7 @@ export function studyOf(df: DG.DataFrame, humane: number | null, weightLimit: nu
     .map((c) => [c.name, Array.from({length: df.rowCount}, (_, i) => c.isNone(i) ? null : c.get(i))]));
   return {format: FORMAT, version: 1, name: df.name, plan: planText ? parsePlan(planText) : null,
     looks: df.getTag(LOOKS_TAG) ?? '', humane, weightLimit, log: logOf(df), ...meta ? {meta} : {},
-    ...line ? {line} : {},
+    ...line ? {line} : {}, ...volume ? {provenance: {volume}} : {},
     ...Object.keys(extra).length ? {extra} : {},
     rows: Array.from({length: df.rowCount}, (_, i) => ({animal: String(a.get(i)), group: g.isNone(i) ? null : g.get(i),
       day: d.isNone(i) ? null : d.get(i), volume: v.isNone(i) ? null : v.get(i),
@@ -201,7 +216,9 @@ export function parseStudy(text: string): SavedStudy {
     parsePlan(JSON.stringify(s.plan));
   // a field this version does not know is kept as it came; the model only as a name
   const {line, provenance: prov, ...rest} = s;
-  return {...rest, ...provenanceOf(prov) ? {provenance: provenanceOf(prov)} : {},
+  const volume = volumeSourceOf(prov?.volume);
+  const kept = {...provenanceOf(prov), ...volume ? {volume} : {}};
+  return {...rest, ...Object.keys(kept).length ? {provenance: kept} : {},
     ...typeof line === 'string' && line ? {line} : {},
     name: typeof s.name === 'string' ? s.name : '', looks: typeof s.looks === 'string' ? s.looks : ''} as SavedStudy;
 }
@@ -219,7 +236,8 @@ export function planAtlas(text: string | null | undefined): string | null | unde
 /** The study with what it is saved with (the atlas and app now); unchanged when the atlas cannot be read. */
 export const stamped = async (s: SavedStudy): Promise<SavedStudy> => {
   const provenanceNow = await provenance().catch(() => undefined);
-  return provenanceNow ? {...s, provenance: provenanceNow} : s;
+  const volume = s.provenance?.volume;
+  return provenanceNow ? {...s, provenance: {...provenanceNow, ...volume ? {volume} : {}}} : s;
 };
 
 /** The measurements table of a saved study, with its plan, reviews, limits and log in tags. */
@@ -257,6 +275,8 @@ export function tableOf(s: SavedStudy): DG.DataFrame {
     df.setTag(PLAN_TAG, JSON.stringify(s.plan));
   if (s.line)
     df.setTag(LINE_TAG, s.line);
+  if (s.provenance?.volume)
+    df.setTag(VOLUME_TAG, JSON.stringify(s.provenance.volume));
   df.setTag(LOOKS_TAG, s.looks);
   df.setTag(LOG_TAG, JSON.stringify(s.log));
   return df;

@@ -2,6 +2,7 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {SHAPES, cellsOf, dayOf, readWide, separatorOf, unplaced, wideSummary, type WideRead} from '../wide-table';
 import {readFile} from '../open-study';
+import {readStudy, studySummary} from '../study-reader';
 
 /** The pattern our own extractor broke on: each group's name over its first animal only (merged cells, blanks to
  *  the right), groups of 4, 3 and 5, and the last group's last animals (m11, m12) far right of its name. */
@@ -172,6 +173,10 @@ category('Wide tables', () => {
       expect(w === null ? 'long' : w.error ? 'refused' : 'read', outcome, name);
       if (w && !w.error)
         expect(unaccounted(csv, w).join(), '', name);
+      // the study reader reads a wide table as this one does, or refuses it in its words
+      const s = readStudy(cellsOf(csv), {'unit:volume': 'mm3'}, separatorOf(csv) === ';');
+      if (w)
+        expect(s.error ?? `${s.rows.length} rows`, w.error ?? `${w.rows.length} rows`, name);
     }
   });
 
@@ -185,9 +190,9 @@ category('Wide tables', () => {
     expect(r.animals, 12);
     expect(r.groups, 3);
     expect(r.lastDay, 7);
-    expect(wideSummary(r.wide!)[0], 'Read 3 groups: Vehicle 4 animals, Cpd-1 3 animals, Cpd-2 5 animals, days 0–7.');
-    const refused = readFile('cro.csv', 'Animal,Group,Baseline,D3\nm1,V,100,150\n');
-    expect(refused.kind === 'table' && refused.wide!.error!.startsWith('Not read: column C ("Baseline")'), true);
+    expect(studySummary(r.read)[0], 'Read 3 groups: Vehicle 4 animals, Cpd-1 3 animals, Cpd-2 5 animals, days 0–7.');
+    const refused = readFile('cro.csv', 'Animal,Group,Baseline,D3,D7\nm1,V,100,150,160\n');
+    expect(refused.kind === 'table' && refused.read.error!.startsWith('Not read: column C ("Baseline")'), true);
   });
 });
 
