@@ -94,6 +94,22 @@ export async function ReportFuncCallExcel(funcCall: DG.FuncCall, validationState
   return await PackageFunctions.ReportFuncCallExcel(funcCall, validationState, consistencyState, viewersHook, metaState, isOutputOutdated);
 }
 
+//description: The exports of a function's runs as its Export menu lists them, [{id, name}]; the first is default.
+//input: func func 
+//output: object result
+export function CallExports(func: any) {
+  return PackageFunctions.CallExports(func);
+}
+
+//description: Exports a run as its Export menu does, with the id CallExports gives; returns the file.
+//input: funccall funcCall { description: The run to export }
+//input: string exportId { description: The export id }
+//input: object args { description: The args a custom export gets (CustomExportArgs); optional: true }
+//output: file result
+export async function ExportCall(funcCall: DG.FuncCall, exportId: string, args?: any) : Promise<any> {
+  return await PackageFunctions.ExportCall(funcCall, exportId, args);
+}
+
 //description: Load a saved workflow run without UI and return the state of every step, as RunWorkflow does.
 //input: string id { description: Meta FuncCall id of the saved workflow run }
 //output: object result
@@ -276,6 +292,14 @@ export async function TestPreferredExportModel(a: number) : Promise<number> {
 //output: file result
 export async function TestCustomExportRecorder(funcCall: DG.FuncCall) : Promise<any> {
   return await PackageFunctions.TestCustomExportRecorder(funcCall);
+}
+
+//input: double a 
+//output: double result
+//meta.features: {"export": false}
+//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]
+export async function TestNoDefaultExportModel(a: number) : Promise<number> {
+  return await PackageFunctions.TestNoDefaultExportModel(a);
 }
 
 //input: funccall funcCall 

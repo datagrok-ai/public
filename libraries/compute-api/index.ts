@@ -112,6 +112,21 @@ export async function reportFuncCallExcel(funcCall: DG.FuncCall, {validationStat
   return call.getOutputParamValue();
 }
 
+/** The exports of a function's runs, as its Export menu lists them; the first is the default. */
+export async function getCallExports(func: DG.Func): Promise<{id: string, name: string}[]> {
+  const call = DG.Func.find({package: 'Compute2', name: 'CallExports'})[0].prepare({func});
+  await call.call();
+  return call.getOutputParamValue();
+}
+
+/** Exports a run as its Export menu does, with an id from `getCallExports`; pass on the args the export gets. */
+export async function exportCall(funcCall: DG.FuncCall, exportId: string, args: CustomExportArgs = {}):
+  Promise<DG.FileInfo> {
+  const call = DG.Func.find({package: 'Compute2', name: 'ExportCall'})[0].prepare({funcCall, exportId, args});
+  await call.call();
+  return call.getOutputParamValue();
+}
+
 import {OptimizerParams} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 
 export async function runOptimizer(params: OptimizerParams): Promise<DG.FuncCall[]> {

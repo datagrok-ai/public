@@ -81,6 +81,23 @@ export namespace funcs {
   }
 
   /**
+   * The exports of a function's runs as its Export menu lists them, [{id, name}]; the first is default.
+   */
+  export async function callExports(func: any ): Promise<any> {
+    return await grok.functions.call('Compute2:CallExports', { func });
+  }
+
+  /**
+   * Exports a run as its Export menu does, with the id CallExports gives; returns the file.
+   * @param {any} funcCall - The run to export
+   * @param {string} exportId - The export id
+   * @param {any} args - The args a custom export gets (CustomExportArgs)
+   */
+  export async function exportCall(funcCall: any , exportId: string , args?: any ): Promise<DG.FileInfo> {
+    return await grok.functions.call('Compute2:ExportCall', { funcCall, exportId, args });
+  }
+
+  /**
    * Load a saved workflow run without UI and return the state of every step, as RunWorkflow does.
    * @param {string} id - Meta FuncCall id of the saved workflow run
    */
@@ -218,6 +235,10 @@ export namespace funcs {
 
   export async function testCustomExportRecorder(funcCall: any ): Promise<DG.FileInfo> {
     return await grok.functions.call('Compute2:TestCustomExportRecorder', { funcCall });
+  }
+
+  export async function testNoDefaultExportModel(a: number ): Promise<number> {
+    return await grok.functions.call('Compute2:TestNoDefaultExportModel', { a });
   }
 
   export async function testCustomExportNoFile(funcCall: any ): Promise<string> {

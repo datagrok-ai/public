@@ -30,7 +30,11 @@ import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-seriali
 import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {CUSTOM_VIEW_OPTION, loadViewersHook} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {callExcelReport} from './call-export';
+import {callExports, exportCall} from './run-exports';
 import type {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
+import type {
+  CustomExportArgs,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import type {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {loadSavedTree, readRun, runWorkflow, saveWorkflowRun} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
@@ -335,6 +339,34 @@ export class PackageFunctions {
     return callExcelReport(funcCall, {
       viewersHook: viewersHook ?? await loadViewersHook(funcCall.func), metaState,
       validation: validationState, consistency: consistencyState,
+      completed: isOutputOutdated == null ? undefined : !isOutputOutdated,
+    });
+  }
+
+  @grok.decorators.func({
+    name: 'CallExports',
+    description: 'The exports of a function\'s runs as its Export menu lists them, [{id, name}]; the first is default.',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static CallExports(@grok.decorators.param({type: 'func'}) func: DG.Func) {
+    return callExports(func);
+  }
+
+  @grok.decorators.func({
+    name: 'ExportCall',
+    description: 'Exports a run as its Export menu does, with the id CallExports gives; returns the file.',
+    outputs: [{type: 'file', name: 'result'}],
+  })
+  static async ExportCall(
+    @grok.decorators.param({type: 'funccall', options: {description: 'The run to export'}}) funcCall: DG.FuncCall,
+    @grok.decorators.param({options: {description: 'The export id'}}) exportId: string,
+    @grok.decorators.param({type: 'object', options: {
+      description: 'The args a custom export gets (CustomExportArgs)', optional: true}}) args?: CustomExportArgs,
+  ): Promise<DG.FileInfo> {
+    const {validationState, consistencyState, isOutputOutdated, runError, viewersHook, metaState} = args ?? {};
+    return exportCall(funcCall, exportId, {
+      validation: validationState, consistency: consistencyState, isOutputOutdated, runError, metaState,
+      viewersHook: viewersHook ?? await loadViewersHook(funcCall.func),
       completed: isOutputOutdated == null ? undefined : !isOutputOutdated,
     });
   }
@@ -1104,6 +1136,12 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async TestCustomExportRecorder(funcCall: DG.FuncCall): Promise<DG.FileInfo> {
     return DG.FileInfo.fromString('recorded.txt', `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}`);
+  }
+
+  @grok.decorators.func({meta: {
+    features: '{"export": false}', customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]'}})
+  static async TestNoDefaultExportModel(a: number): Promise<number> {
+    return a;
   }
 
   @grok.decorators.func()

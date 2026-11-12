@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Export: Added `CallExports` and `ExportCall`, which list a run's exports as its Export menu does and run one, returning its file
 * Export: A custom export with `preferred: true` (in `meta.customExports` or a workflow's `customExports`) comes first in the Export menu, before the default Excel report, and is the default of the Runs export; several keep their order; the report icon of RFV runs the first export of the menu
 * RFV, Workflows: A viewers hook that can't be made, because its function is missing or fails, shows a warning and the viewers and exports go on without it; in a workflow it used to keep the workflow from opening
 * Workflows: Fixed custom export changes to a step workbook in the `reportStateExcel` callback being lost, and `reportStepExcel` (then `reportFuncCallExcel`) building the step without its viewers hook and meta
