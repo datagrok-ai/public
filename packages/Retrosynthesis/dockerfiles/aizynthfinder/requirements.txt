@@ -1,4 +1,6 @@
 numpy==1.26.4
+# pyarrow 26 (pulled in by datagrok-celery-task) refuses to import with NumPy 1.x
+pyarrow<26
 datagrok-celery-task
 celery
 datagrok-api>=0.0.9

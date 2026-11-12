@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Docker: moved the aizynthfinder image onto Wolfi with a copied venv (zero reported CVEs) and pinned pyarrow below 26, which refused to import with NumPy 1.x and kept the worker from starting
 * Docker: moved the aizynthfinder image to Python 3.11 for pillow 13 and filelock 4.2 (both dropped 3.10) and removed the runtime-unused pip, whose vendored setuptools was flagged
 
 ## 1.1.1 (2026-11-03)
