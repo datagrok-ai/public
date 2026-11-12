@@ -810,7 +810,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         sweeping = null;
     });
   });
-  const sensitivityChart = viewers.lineChart(computed(() => {
+  const sensitivityData = computed(() => {
     const s = sensitivity.value;
     if (!s || s.of !== result.value)
       return undefined;
@@ -825,9 +825,11 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     df.col('Assumed TGI')!.meta.units = '%';
     df.col('Animals of the study')!.meta.colors.setCategorical({'To implant': '#2083d5', 'Analyzable': '#5b6b7f'});
     return df;
-  }), {xColumnName: 'Assumed TGI', yColumnNames: ['Animals'], splitColumnNames: ['Animals of the study'],
-    legendVisibility: 'Always', showXAxis: true, showYAxis: true, markerType: 'circle', showMarkers: 'Always',
-    showTopPanel: false, showAggrSelectors: false, showSplitSelector: false} as any);
+  });
+  const sensitivityChart = viewers.lineChart(sensitivityData, {xColumnName: 'Assumed TGI', yColumnNames: ['Animals'],
+    splitColumnNames: ['Animals of the study'], legendVisibility: 'Always', showXAxis: true, showYAxis: true,
+    markerType: 'circle', showMarkers: 'Always', showTopPanel: false, showAggrSelectors: false,
+    showSplitSelector: false} as any);
   const sweepNote = div([], 'pmx-plan-sweep-note');
   form.effect(() => {
     const s = sensitivity.value;
@@ -869,8 +871,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // (with no group size, no power by end: the chart would keep the last plan's)
   form.effect(() => byEnd.root.style.visibility = result.value?.duration.rowCount ? '' : 'hidden');
   // (nor the sizes by TGI before their sweep: the chart would say its columns are missing)
-  form.effect(() => sensitivityChart.root.style.visibility =
-    sensitivity.value && sensitivity.value.of === result.value ? '' : 'hidden');
+  form.effect(() => sensitivityChart.root.style.visibility = sensitivityData.value ? '' : 'hidden');
   // the schedules are the design's costliest scan: computed once their panel has been in view (and from then on,
   // so scrolling does not flip the form's input and dim the plan)
   const seen = new IntersectionObserver((entries) => {
