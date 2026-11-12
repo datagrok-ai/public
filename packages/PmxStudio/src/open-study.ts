@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {PLAN_EXT, SavedPlan, parsePlan} from './plan-file';
 import {STUDY_EXT, SavedStudy, parseStudy} from './study-file';
+import {plainError} from './ui';
 
 export const OPENED_EXTS = [PLAN_EXT, STUDY_EXT, 'csv', 'tsv', 'txt'];
 
@@ -67,7 +68,7 @@ export function readFile(name: string, text: string): FileRead {
   } catch (e: any) {
     // a plan or a study says what is wrong in a sentence; a table that does not parse, below
     if (ext === PLAN_EXT || ext === STUDY_EXT)
-      return {kind: 'bad', file: name, why: String(e?.message ?? e)};
+      return {kind: 'bad', file: name, why: plainError(e, 'The file is damaged: open another copy of it.')};
     console.warn(`PMX Studio: ${name}`, e);
     return {kind: 'bad', file: name, why: 'The table could not be read. Save it again as .csv or .tsv from your ' +
       'spreadsheet.'};

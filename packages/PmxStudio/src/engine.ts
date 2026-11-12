@@ -8,7 +8,7 @@
  */
 import * as DG from 'datagrok-api/dg';
 
-import {crux, CruxResult, MAX_SETS, named, rows} from './crux';
+import {crux, CruxResult, EngineError, MAX_SETS, named, rows} from './crux';
 import {BandFactors, MeasurementError, PriorFit, bandCalibration, enginePriors, linePrior, widened} from './priors';
 import {ARCHETYPES, Archetype, Therapy} from './archetypes';
 
@@ -348,7 +348,8 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
   const {lp, me, prior, params} = await lineModel(d.line);
   const armParams = (arm: ArmDeclaration, model: Row) => armCallParams(d, arm, model);
   const armError = (arm: ArmDeclaration) => (e: any) => {
-    throw new Error(`${arm.name}: ${e?.message ?? e}`);
+    // an engine failure stays one, so Monitor shows it in plain words (ui.ts plainError)
+    throw new (e instanceof EngineError ? EngineError : Error)(`${arm.name}: ${e?.message ?? e}`);
   };
   // the minimum detectable effect searches over every study at once: such a design is one call; else the worker sets
   // shared out over the arms (each shard repeats its arm's calibration: more shards than sets only queue)
