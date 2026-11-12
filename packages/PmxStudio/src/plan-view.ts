@@ -18,6 +18,7 @@ import {Arm, ArmsInput, CorrectionInput, armsFrame} from './arms-input';
 import {ENDPOINT_RISK, MIN_GROUP, StudyDeclaration, diameterOf, finite, safeEndpoint} from './engine';
 import {askedOf, autoRun, callInputs, cardGrid, copyRow, fixedValue, hintLink, infoNote, notes, notesBox, num, pct,
   settleForm, sized, markStage, statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
+import {ethicsText} from './ethics-text';
 import {openStage, showStage} from './stages';
 import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
@@ -405,6 +406,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   growthNotes.style.margin = 'var(--dg-space-s) 0 var(--dg-space-m)';
   const analysis = div([], 'pmx-protocol');
   let protocolText = '';
+  let ethicsApplication = '';
   const groupsTable = div([]);
   const scheduleBox = div([]);
   // the power by measurement schedule is the design's costliest scan: the plan takes it along only while its
@@ -701,7 +703,21 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     // the text the Copy button gives: the same rows
     protocolText = [`Study protocol (${r.plan.name})`, ...Object.entries(plan).map(([k, t]) => `${k}: ${t}`)]
       .join('\n');
+    ethicsApplication = ethicsText({arms: armRows.map((x) => ({name: x.name, therapy: x.therapy, effect: x.effect,
+      n: x.n, power: pct(x.power)})), line: v('line'), papers: v('atlas_papers'), target: pct(v('power_target')),
+    alpha: String(num(v('alpha'), 2)), alphaPer: String(num(v('alpha_per_comparison'), 3)), nFixed: !!v('n_fixed'),
+    correction: corr as 'holm' | 'bonferroni' | 'none',
+    minGroup: MIN_GROUP, preLoss: pct(v('pre_loss')), postLoss: pct(v('post_loss')), confidence: pct(v('confidence')),
+    lossRule: String(v('loss_rule')), implant: v('implant_total'), randomise: v('randomise_total'),
+    nTotal: finite(v('n_total')), humane: v('humane_limit'), diameter: diameterOf(v('humane_limit')).toFixed(1),
+    lastDayChosen: !!v('last_day_chosen'), end: v('study_end'), endpoint: v('endpoint')});
   });
+
+  // the protocol's Copy button, and beside it the same facts in the wording of an ethics application
+  const protocolCopy = copyRow(() => protocolText, 'Study protocol');
+  protocolCopy.append(buttonWithIcon('Copy for an ethics application', 'copy', () => void navigator.clipboard
+    .writeText(ethicsApplication).then(() => grok.shell.info('Text for an ethics application copied'),
+      () => grok.shell.warning('Text for an ethics application: the clipboard is not available'))));
 
   const {row: scaleRow, log} = volumeAxis();
   const growth = new BandChart(computed(() => result.value?.curves), {x: 'day', lower: 'q05', upper: 'q95',
@@ -868,7 +884,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
       'sized for the target power whatever animals per arm is set', content: [
       sized(sensitivityChart, 280), sweepNote, scenarioEnd, scenarioBox]},
     {id: 'protocol', title: 'Study protocol', hint: 'Design, sample size and analysis, ready to paste',
-      content: [copyRow(() => protocolText, 'Study protocol'), analysis]},
+      content: [protocolCopy, analysis]},
   ], PLAN_LAYOUT, 'pmx-plan-panels', 'plan');
   exports.push(['Layout…', () => editLayout(panels), 'View']);
   // an empty viewer says what columns it lacks: the charts hidden until the first plan gives them their data
