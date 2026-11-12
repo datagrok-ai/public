@@ -57,7 +57,7 @@ export async function runDiffStudioDemo() : Promise<void> {
 
 //input: string content 
 //meta.role: fileHandler
-//meta.ext: ipv
+//meta.ext: ivp
 export async function ivpFileHandler(content: string) : Promise<void> {
   await PackageFunctions.ivpFileHandler(content);
 }
