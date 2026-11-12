@@ -33,17 +33,19 @@ export class ViewHandler {
     this.view = new DG.MultiView({viewFactories: {}});
     this.view.name = ViewHandler.UA_NAME;
     this.view.box = true;
-    // A project saves the open tab, its sub-view and the filters with the view and hands them back after
-    // reopening the app.
     this.view.saveStateMap = () => this.saveState();
-    this.view.loadStateMap = (state: object) => void this.loadState(state as UaViewState);
+    this.view.loadStateMap = (state: object) => this.restore(state as UaViewState);
   }
 
   saveState(): UaViewState | null {
     if (!this.toolbox)
-      return null;
+      return this.pendingState ?? null;
     const v = this.getCurrentView();
     return {tab: v.name, rout: v.rout ?? null, filters: this.toolbox.getState()};
+  }
+
+  private restore(state: UaViewState): void {
+    this.loadState(state).catch((e) => grok.shell.error(`Cannot restore Usage Analysis: ${e instanceof Error ? e.message : e}`));
   }
 
   async loadState(state: UaViewState): Promise<void> {
@@ -214,7 +216,7 @@ export class ViewHandler {
     this.changeTab(urlTab);
     this.toolbox = toolbox;
     if (this.pendingState) {
-      void this.loadState(this.pendingState);
+      this.restore(this.pendingState);
       this.pendingState = undefined;
     }
   }

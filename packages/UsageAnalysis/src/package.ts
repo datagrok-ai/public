@@ -528,7 +528,7 @@ export class PackageFunctions {
           return widget;
         }));
         const UAlink = ui.link('', async () => {
-          grok.shell.v.path = `/apps/UsageAnalysis/Packages?date=this%20week&users=${(await grok.dapi.groups.getGroupsLookup('All users'))[0].id}&packages=${ent.name}`;
+          grok.shell.v.path = `/apps/UsageAnalysis/Packages?date=this%20week&groups=${(await grok.dapi.groups.getGroupsLookup('All users'))[0].id}&packages=${ent.name}`;
           grok.functions.eval('UsageAnalysis:usageAnalysisApp()');
         }, 'Open Usage Analysis');
         UAlink.style.marginLeft = '3px';

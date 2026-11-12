@@ -2,6 +2,8 @@
 
 ## v.next
 
+* core#239: Views: Added `ViewBase.saveToProject` (whether a view is saved with the project) and `ViewBase.saveToProjectByDefault` (the default a view type overrides)
+* core#239: Settings: Removed `saveProjectWithViewLayout`; a project now always saves the arrangement of its views
 * [#3924](https://github.com/datagrok-ai/public/issues/3924): Viewers: Added category order settings: `xCategoryOrder` / `yCategoryOrder` (scatter plot), `categoryOrder` (box plot; bar and pie charts under the `custom` sort type), `xCategoryOrder` (line chart), `xCategoryOrder` / `yCategoryOrder` / `zCategoryOrder` (3D scatter plot), and `DG.FUNC_TYPES.CATEGORY_ORDERER` for a function that orders a semantic type's categories by a computed property
 * Connections: Added `grok.dapi.connections.getCatalogs(connection)`: the names of the catalogs (databases) of the connection's server, in one request
 * Startup: Fixed `window.grok`, `ui`, `$`, `dayjs` and `wu` being set only on DOM-ready: when a package's bundle was evaluated before `DOMContentLoaded` (a warm cache and slow stylesheets), every package failed to initialize with "grok is not defined"

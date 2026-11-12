@@ -120,9 +120,13 @@ export class FuncFlowView extends DG.ViewBase {
   static readonly TYPE = 'flowView';
   override get type(): string { return FuncFlowView.TYPE; }
 
-  /** What a project needs to reopen this flow: the saved script it edits, plus the graph itself when it has
-   *  unsaved changes or was never saved. An empty, unbound canvas has nothing to restore. */
+  /** The state a project restores and has not finished restoring yet; saving meanwhile keeps it. */
+  private restoring: object | null = null;
+
+  /** The saved script this flow edits, plus the graph when it is unsaved; an empty, unbound canvas saves nothing. */
   override saveStateMap(): object | null {
+    if (this.restoring)
+      return this.restoring;
     if (!this.outputPanelEnabled)
       return null;
     if (!this.flow)
@@ -135,12 +139,14 @@ export class FuncFlowView extends DG.ViewBase {
 
   override loadStateMap(stateMap: object): void {
     const state = stateMap as {scriptId?: string | null; flow?: FuncFlowDocument | null};
+    this.restoring = stateMap;
     void this.restoreState(state.scriptId ?? null, state.flow ?? null)
-      .catch((e) => grok.shell.error(`Cannot restore flow "${this.name}": ${e instanceof Error ? e.message : e}`));
+      .catch((e) => grok.shell.error(`Cannot restore flow "${this.name}": ${e instanceof Error ? e.message : e}`))
+      .finally(() => this.restoring = null);
   }
 
   private async restoreState(scriptId: string | null, doc: FuncFlowDocument | null): Promise<void> {
-    const script = scriptId ? await grok.dapi.scripts.find(scriptId) : null;
+    const script = scriptId ? await grok.dapi.scripts.find(scriptId).catch(() => null) : null;
     if (script && !doc) {
       this.bindScript(script);
       return;

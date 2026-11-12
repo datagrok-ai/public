@@ -45,14 +45,9 @@ category('App', () => {
     expect(Array.isArray(rows), true);
   });
   test('a project reopens the tab, its sub-view and the filters', async () => {
-    handler.changeTab('Functions');
-    await handler.getCurrentView().viewersReady;
-    await handler.loadState({tab: 'Functions', rout: '/ExecutionTime', filters: {date: 'this month'}});
-    const saved = handler.saveState()!;
-    expect(saved.rout, '/ExecutionTime');
-
     const reopened = new ViewHandler();
-    reopened.view.loadStateMap(saved);
+    reopened.view.loadStateMap({tab: 'Functions', rout: '/ExecutionTime', filters: {date: 'this month'}});
+    expect(reopened.saveState()?.rout, '/ExecutionTime');
     grok.shell.addView(reopened.view);
     try {
       await reopened.init();
