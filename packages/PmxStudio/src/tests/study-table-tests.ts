@@ -309,6 +309,21 @@ category('Study table', () => {
     expect(back.col('day')!.isNone(1), true, 'the empty day came back as a value');
     expect(back.col('volume')!.isNone(1), true, 'the empty volume came back as a value');
   });
+  test('a study opened from a table is listed by its groups, unless they are blinded', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M1', 'M2', 'M3']),
+      DG.Column.fromStrings('group', ['Vehicle', 'Cpd-A 10 mg/kg', 'Vehicle']), DG.Column.fromList('double', 'day',
+        [0, 0, 0]), DG.Column.fromList('double', 'volume', [100, 90, 95])]);
+    const entry = () => entryOf(JSON.stringify(studyOf(df, null)), 1)!;
+    expect([entry().compounds, entry().treatment].join('|'), 'Vehicle, Cpd-A 10 mg/kg|Vehicle, Cpd-A 10 mg/kg',
+      'its own groups');
+    setMetaOn(df, {...emptyMeta(), blinded: true});
+    expect([entry().compounds, entry().treatment].join('|'), '|', 'blinded: no group named');
+    addLog(df, REVEALED);
+    expect(entry().treatment, 'Vehicle, Cpd-A 10 mg/kg', 'revealed: named again');
+    setMetaOn(df, {...emptyMeta(), groups: [{group: 'Cpd-A 10 mg/kg', compound: 'Cpd-A', dose: 10, unit: 'mg/kg',
+      route: '', schedule: ''}]});
+    expect(entry().compounds, 'Cpd-A', 'the details first, the groups only without them');
+  });
   test('a saved study keeps its marks and its details', async () => {
     const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M1', 'M2']),
       DG.Column.fromStrings('group', ['A', 'B']), DG.Column.fromList('double', 'day', [0, 0]),

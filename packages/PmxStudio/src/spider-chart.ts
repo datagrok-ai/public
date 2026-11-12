@@ -78,7 +78,8 @@ export class SpiderChart extends Control {
         animation: false,
         grid: {left: 56, right: 16, top: 32, bottom: 40},
         // the legend in full colour whatever is dimmed
-        legend: {top: 0, data: [...new Set(x.lines.map((l) => l.group))], itemStyle: {opacity: 1},
+        // one line, paged when the groups' names do not fit (as the band chart): never over the lines
+        legend: {type: 'scroll', top: 0, data: [...new Set(x.lines.map((l) => l.group))], itemStyle: {opacity: 1},
           lineStyle: {opacity: 1}},
         tooltip: {trigger: 'item', formatter: (p: any) => `${esc(p.data.animal)} (${esc(p.seriesName)})<br>Day ` +
           `${p.data.value[0]}: ${p.data.value[1] > 0 ? '+' : ''}${p.data.value[1]}%`},
@@ -136,7 +137,7 @@ export class WaterfallChart extends Control {
       this.chart.setOption({
         animation: false,
         grid: {left: 56, right: 16, top: 32, bottom: 12},
-        legend: {top: 0, data: x.groups},
+        legend: {type: 'scroll', top: 0, data: x.groups},
         tooltip: {trigger: 'item', formatter: (p: any) => `${esc(p.data.animal)} (${esc(p.seriesName)})<br>` +
           `${esc(x.title)}: ${fmt(p.data.value)}`},
         xAxis: {type: 'category', data: sorted.map((b) => b.animal), axisLabel: {show: false},

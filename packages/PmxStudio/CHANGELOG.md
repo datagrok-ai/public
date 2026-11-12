@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+* Fixes (2026-11-12): in Analyze's Each animal, the legends of the waterfall and the spider plot stay on one line,
+  paged, instead of covering the bars and lines when the groups' names are long. In the Overview, a study opened
+  from a table, with no plan or details, is listed by its groups (not while they are blinded).
+
 * Exposure (2026-11-12): with the NCA package installed, Analyze's Advanced fields take a table of plasma
   concentrations (picked, or opened while the field is empty) and show each group's AUClast and Cmax from NCA, mean
   and CV%, beside its effect. A group is matched by its own name in the table, else (one drug) by drug, dose and route
