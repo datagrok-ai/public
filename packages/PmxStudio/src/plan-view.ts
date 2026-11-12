@@ -868,6 +868,9 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   form.effect(() => [growth, power].forEach((v) => v.root.style.visibility = result.value ? '' : 'hidden'));
   // (with no group size, no power by end: the chart would keep the last plan's)
   form.effect(() => byEnd.root.style.visibility = result.value?.duration.rowCount ? '' : 'hidden');
+  // (nor the sizes by TGI before their sweep: the chart would say its columns are missing)
+  form.effect(() => sensitivityChart.root.style.visibility =
+    sensitivity.value && sensitivity.value.of === result.value ? '' : 'hidden');
   // the schedules are the design's costliest scan: computed once their panel has been in view (and from then on,
   // so scrolling does not flip the form's input and dim the plan)
   const seen = new IntersectionObserver((entries) => {
