@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1407](https://github.com/datagrok-ai/core/issues/1407): Fitting: Fixed the loss table built from an untyped empty array when no extrema are found
 * RTD: A workflow custom export can be `preferred`, which lists it first in the Export menu
 * CustomFunctionView: A host can add exports to the Export menu (`hostExports`); a failing export shows an error
 * RTD: A step's viewers hook from its script that can't be made no longer fails the workflow config; `loadViewersHook` makes a function's hook, or warns and returns none

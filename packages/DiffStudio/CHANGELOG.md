@@ -2,7 +2,7 @@
 
 ## v.next
 
-* core#1407: Loop models: Fixed the accumulated solution starting from untyped empty columns
+* [core#1407](https://github.com/datagrok-ai/core/issues/1407): Loop models: Fixed the accumulated solution starting from untyped empty columns
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Hub: The header is u2's `AppHeader` (moved out of `@datagrok-libraries/utils`): the same icon, bullets and Learn more
 * Tests: The catalog feature puts the library manifest back at feature end; fitting and sensitivity analysis no longer repeat open-model's and LibTests' claims

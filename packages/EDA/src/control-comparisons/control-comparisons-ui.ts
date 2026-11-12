@@ -323,7 +323,12 @@ export function runControlComparisons(): void {
   // --- Method ---
   const methodSource = {method: currentMethod};
   const methodProp = DG.Property.fromOptions({
-    name: 'method', type: DG.TYPE.STRING, caption: 'Method', inputType: 'Radio', choices: METHODS, defaultValue: 'Dunnett',
+    name: 'method',
+    type: DG.TYPE.STRING,
+    caption: 'Method',
+    inputType: 'Radio',
+    choices: METHODS,
+    defaultValue: 'Dunnett',
   });
   const methodInput = ui.input.forProperty(methodProp, methodSource);
   methodInput.onChanged.subscribe(() => {

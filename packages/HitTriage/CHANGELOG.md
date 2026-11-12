@@ -2,7 +2,7 @@
 
 ## v.next
 
-* core#1407: Campaigns: Fixed the check for another session's saves reading the first row of an empty save log, which logged an error every 3 s under a client that checks bounds (DDC) for a campaign not saved yet, and releasing a lock that had already expired
+* [core#1407](https://github.com/datagrok-ai/core/issues/1407): Campaigns: Fixed the check for another session's saves reading the first row of an empty save log, which logged an error every 3 s under a client that checks bounds (DDC) for a campaign not saved yet, and releasing a lock that had already expired
 * Hit Design, Hit Triage, PeptiHit: Fixed the images of the help pages, which pointed at the help folder that public no longer has
 * Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
 * Tests: The ribbon scenario no longer fails on a stand where a package with a designer function (Reinvent4) is published
