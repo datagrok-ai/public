@@ -20,7 +20,7 @@ import {allocateGroups, MonitorFrames, monitorFrames, MonitorInputs, outsideBand
 import {PLAN_TAG, SavedPlan, parsePlan} from './plan-file';
 import {planInput} from './plan-vs-observed';
 import {openStage, showStage} from './stages';
-import {LIMITS_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf, newStudyTable, parseStudy,
+import {LIMITS_TAG, LINE_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf, newStudyTable, parseStudy,
   restoreFields, roleColumns, saveStudy, studyOf, tableOf} from './study-file';
 import {editLayout, panelTabs, Tab} from './panels';
 import {stagePage, studyHeader} from './study-header';
@@ -124,6 +124,10 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     df.setTag(WEIGHT_TAG, weight instanceof DG.Column ? weight.name : typeof weight === 'string' ? weight : '');
     df.setTag(LIMITS_TAG, JSON.stringify({humane: call.getParamValue('humane') ?? null,
       weightLimit: call.getParamValue('weightLimit') ?? null}));
+    // an empty field leaves the model the study was saved with
+    const line = call.getParamValue('line');
+    if (typeof line === 'string' && line)
+      df.setTag(LINE_TAG, line);
   };
   const planState = {stale, error, result: computed(() => result.value && {analysis: result.value.status}),
     reading: Promise.resolve() as Promise<unknown>, changed: () => auto.changed()};

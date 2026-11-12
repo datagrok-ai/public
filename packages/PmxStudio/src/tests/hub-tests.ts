@@ -5,7 +5,7 @@ import {PLAN_TAG} from '../plan-file';
 import {cruxCalls} from '../crux';
 import {PackageFunctions} from '../package';
 import {hubView} from '../hub-view';
-import {LibraryFiles, indexPath, libraryReader, myLibrary} from '../library';
+import {INDEX_VERSION, LibraryFiles, indexPath, libraryReader, myLibrary} from '../library';
 import {bring, readFile, suggestedStage} from '../open-study';
 import {gpu} from '../gpu';
 
@@ -177,14 +177,14 @@ category('Hub', () => {
     expect((await myLibrary(fs)).length, 2);
     expect(Object.keys(indexed()).join(), 'a.pmxplan,b.pmxplan');
     // a damaged index, or one of another version, is rebuilt from the files
-    for (const damaged of ['{"version": 1, "rows": [', '{"version": 2, "rows": []}', '{"version": 99, "rows": {}}',
-      JSON.stringify({version: 1, rows: {'a.pmxplan': {name: 'Plan A', updated: 1}, 'b.pmxplan': {name: 'Plan B',
-        updated: 2}}})]) {
+    for (const damaged of ['{"version": 1, "rows": [', `{"version": ${INDEX_VERSION}, "rows": []}`,
+      '{"version": 99, "rows": {}}', JSON.stringify({version: 1, rows: {'a.pmxplan': {name: 'Plan A', updated: 1},
+        'b.pmxplan': {name: 'Plan B', updated: 2}}})]) {
       store.set(indexPath(), damaged);
       reads = 0;
       expect(rows(await myLibrary(fs)), rows(first), damaged);
       expect(reads, 2, damaged);
-      expect(JSON.parse(store.get(indexPath())!).version, 2);
+      expect(JSON.parse(store.get(indexPath())!).version, INDEX_VERSION);
       // and rebuilt for good: the next load reads nothing
       reads = 0;
       await myLibrary(fs);

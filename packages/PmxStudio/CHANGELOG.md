@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+* A study keeps its tumor model (2026-11-12): saved without a plan, it opens again with the model chosen in Monitor
+  and the Overview names it (an optional field: older files read as before; with a plan, the plan's model is read).
+  A blinded study names no arm or compound outside itself until its groups are revealed: not in the Overview, its
+  search or the file preview, even when the blinding is in its plan's details only.
+
 * Fixes (2026-11-12): in Analyze's Each animal, the legends of the waterfall and the spider plot stay on one line,
   paged, instead of covering the bars and lines when the groups' names are long. In the Overview, a study opened
   from a table, with no plan or details, is listed by its groups (not while they are blinded).

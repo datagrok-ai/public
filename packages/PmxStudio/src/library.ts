@@ -8,7 +8,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {parsePlan, PLAN_EXT, PLAN_FORMAT, plansFolder} from './plan-file';
-import {groupsShownIn, parseStudy, studiesFolder, STUDY_EXT, STUDY_FORMAT} from './study-file';
+import {parseStudy, savedGroupsShown, studiesFolder, STUDY_EXT, STUDY_FORMAT} from './study-file';
 import {compoundsOf, parseMeta, treatmentOf} from './study-meta';
 import {futureDays} from './monitor';
 
@@ -45,14 +45,17 @@ export function entryOf(text: string, updated: number, file: DG.FileInfo | null 
     const plan = study ? study.plan : parsePlan(text);
     const meta = parseMeta(study ? x.meta : plan?.study) ?? parseMeta(plan?.study);
     const days = (study?.rows ?? []).map((r) => r.day).filter((d): d is number => Number.isFinite(d));
-    // a study opened from a table, with no details or plan: its own groups, unless they are still blinded
-    const groups = study && groupsShownIn(study.meta, study.log) ?
-      [...new Set(study.rows.map((r) => r.group).filter((g): g is string => !!g))] : [];
-    const compounds = compoundsOf(meta) || (plan?.predicted.arms ?? []).map((a) => a.name).join(', ') ||
+    // a blinded study names no arm or compound outside itself until its groups are revealed (row, search, index)
+    const shown = !study || savedGroupsShown(study);
+    // what the groups receive: the details, else the plan's arms, else (a study opened from a table) its own groups
+    const groups = study ? [...new Set(study.rows.map((r) => r.group).filter((g): g is string => !!g))] : [];
+    const compounds = !shown ? '' : compoundsOf(meta) || (plan?.predicted.arms ?? []).map((a) => a.name).join(', ') ||
       groups.join(', ');
+    // the model: the plan's, else the one chosen for the study
+    const line = plan?.predicted.line ?? study?.line ?? '';
     return {kind: study ? 'study' : 'plan', stage: study ? 2 : 1, file, text, id: meta?.id ?? '', name: x.name ?? '',
-      line: plan?.predicted.line ?? '', compounds, owner: meta?.owner || plan?.author || '', tags: meta?.tags ?? [],
-      updated, treatment: treatmentOf(meta) || compounds, start: meta?.start ?? null,
+      line, compounds, owner: meta?.owner || plan?.author || '', tags: meta?.tags ?? [],
+      updated, treatment: shown && treatmentOf(meta) || compounds, start: meta?.start ?? null,
       day: days.length ? days.reduce((a, b) => Math.max(a, b)) : null,
       next: days.length ? futureDays(days, plan, meta?.start)[0] : null,
       end: plan?.predicted.studyEnd ?? null};
@@ -95,7 +98,7 @@ type Index = {[file: string]: Omit<LibraryEntry, 'file' | 'text'> | {updated: nu
 
 /** The index file's format: another (or none) is rebuilt. Any change to entryOf or LibraryEntry, or to what parsePlan
  *  or parseStudy accept, raises it. */
-const INDEX_VERSION = 2;
+export const INDEX_VERSION = 3;
 /** Whether a file's text is a PMX Studio plan or study, of any version. */
 const ours = (text: string): boolean => {
   try {

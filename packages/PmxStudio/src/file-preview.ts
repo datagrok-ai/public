@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 
 import {parsePlan} from './plan-file';
 import type {SavedPlan} from './plan-file';
-import {groupsShownIn, parseStudy} from './study-file';
+import {parseStudy, savedGroupsShown} from './study-file';
 import type {SavedStudy} from './study-file';
 import {parseMeta} from './study-meta';
 
@@ -30,7 +30,7 @@ export function planSummary(p: SavedPlan): string[] {
 /** What a study holds so far, from its saved rows: its animals, days measured, the values marked and its plan; its
  *  groups (names, number, the plan's name) only when the groups may be shown. */
 export function studySummary(s: SavedStudy): string[] {
-  const shown = groupsShownIn(s.meta, s.log);
+  const shown = savedGroupsShown(s);
   const days = [...new Set(s.rows.map((r) => r.day).filter((d): d is number => typeof d === 'number'))];
   const groups = [...new Set(s.rows.map((r) => r.group).filter((g): g is string => !!g))];
   const animalsOf = (g: string) => new Set(s.rows.filter((r) => r.group === g).map((r) => r.animal)).size;

@@ -4,8 +4,10 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {DEFAULT_RULES, findOutliers, StudyColumns} from '../outlier-rules';
 import {AnimalSelection, animalMarks, appendPasted, caliperVolume, emptyStudy, exclusionsOf, mark, mirrorSelection,
   pastedNumber, withoutExcluded} from '../study-table';
-import {EXCLUDED, FLAGGED, MARK_REASON, REVEALED, STUDY_TAG, WEIGHT_TAG, addLog, groupsShown, logOf, parseStudy,
-  roleColumns, studyOf, tableOf} from '../study-file';
+import {EXCLUDED, FLAGGED, LINE_TAG, MARK_REASON, REVEALED, STUDY_TAG, WEIGHT_TAG, addLog, groupsShown, lineOf, logOf,
+  parseStudy, roleColumns, studyOf, tableOf} from '../study-file';
+import {PLAN_TAG, parsePlan} from '../plan-file';
+import {exampleStudy} from './example-study';
 import {filePreview, studySummary} from '../file-preview';
 import {EXAMPLE, isBodyWeight} from '../ui';
 import {_package} from '../package';
@@ -323,6 +325,62 @@ category('Study table', () => {
     setMetaOn(df, {...emptyMeta(), groups: [{group: 'Cpd-A 10 mg/kg', compound: 'Cpd-A', dose: 10, unit: 'mg/kg',
       route: '', schedule: ''}]});
     expect(entry().compounds, 'Cpd-A', 'the details first, the groups only without them');
+  });
+  test('a study keeps its tumor model without a plan; with one, the plan\u2019s model is read', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M1']), DG.Column.fromStrings('group', ['A']),
+      DG.Column.fromList('double', 'day', [0]), DG.Column.fromList('double', 'volume', [100])]);
+    // a file saved before the field (none): read as before, no model of its own
+    const old = studyOf(df, null);
+    expect('line' in old, false);
+    expect([lineOf(tableOf(parseStudy(JSON.stringify(old)))), entryOf(JSON.stringify(old), 1)!.line].join('|'),
+      '|', 'an older file: no model');
+    // saved now, without a plan: the model chosen comes back on the table and in the Overview
+    df.setTag(LINE_TAG, 'B16F10');
+    const text = JSON.stringify(studyOf(df, null));
+    expect(lineOf(tableOf(parseStudy(text))), 'B16F10');
+    expect(entryOf(text, 1)!.line, 'B16F10');
+    // a field a version does not know is kept, not refused (as an older PMX Studio reads this one); a model that is
+    // not a name is dropped
+    expect((parseStudy(JSON.stringify({...JSON.parse(text), future: 1})) as any).future, 1);
+    expect(parseStudy(JSON.stringify({...JSON.parse(text), line: 7})).line === undefined, true);
+    // with a plan of another model, the plan's is read: it is what the study was sized and forecast for
+    const study = await exampleStudy();
+    const planLine = parsePlan(study.getTag(PLAN_TAG)!).predicted.line;
+    study.setTag(LINE_TAG, planLine === 'B16F10' ? 'CT26' : 'B16F10');
+    const both = JSON.stringify(studyOf(study, null));
+    expect([lineOf(tableOf(parseStudy(both))), entryOf(both, 1)!.line].join('|'), `${planLine}|${planLine}`);
+  });
+  test('a blinded study names no arm or compound outside itself until revealed', async () => {
+    const study = await exampleStudy();
+    const plan = parsePlan(study.getTag(PLAN_TAG)!);
+    setMetaOn(study, {...emptyMeta(), id: 'PMX-2026-099', blinded: true, groups: plan.predicted.arms.map((a) =>
+      ({group: a.name, compound: a.name.split(' ')[0], dose: null, unit: '', route: '', schedule: ''}))});
+    // the arms and their compounds (the study's own name is the user's, and stays)
+    const names = [...plan.predicted.arms.map((a) => a.name), ...plan.predicted.arms.map((a) => a.name.split(' ')[0])]
+      .filter((n) => n);
+    const said = () => {
+      const text = JSON.stringify(studyOf(study, null));
+      const e = entryOf(text, 1)!;
+      // the Overview's row, its search, its index row and the file's preview
+      return {e, text: [e.compounds, e.treatment, e.line, ...e.tags, ...studySummary(parseStudy(text))].join(' | ')};
+    };
+    const hidden = said();
+    const leaks = names.filter((n) => hidden.text.includes(n) || matches(hidden.e, n));
+    expect(leaks.length, 0, `blinded, named: ${leaks.join(', ')} in ${hidden.text}`);
+    expect(matches(hidden.e, 'PMX-2026-099'), true, 'found by its ID');
+    addLog(study, REVEALED);
+    const compound = names[names.length - 1];
+    expect(said().e.compounds.includes(compound) && matches(said().e, compound), true, 'revealed: named again');
+    // a file whose blinding is in its plan's details only (no details of its own): blinded all the same
+    const x = JSON.parse(JSON.stringify(studyOf(study, null)));
+    delete x.meta;
+    x.log = [];
+    x.plan.study = {...emptyMeta(), blinded: true};
+    const planOnly = entryOf(JSON.stringify(x), 1)!;
+    const shownThere = [planOnly.compounds, planOnly.treatment, ...studySummary(parseStudy(JSON.stringify(x)))]
+      .join(' | ');
+    expect(names.filter((n) => shownThere.includes(n) || matches(planOnly, n)).join(', '), '',
+      `blinded by its plan, named in ${shownThere}`);
   });
   test('a saved study keeps its marks and its details', async () => {
     const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('animal', ['M1', 'M2']),

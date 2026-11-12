@@ -22,6 +22,8 @@ const LOG_TAG = 'pmx.log';
 /** The name of the table's body weight column, and the protocol's limits ({humane, weightLimit}). */
 export const WEIGHT_TAG = 'pmx.weight';
 export const LIMITS_TAG = 'pmx.limits';
+/** The tumor model chosen for the study, kept for a study with no plan (with a plan, the plan's model is read). */
+export const LINE_TAG = 'pmx.line';
 /** The marks, visible columns of the study table (study-table.ts sets them): ticked in Excluded, out of PMX Studio's
  *  analysis (the row stays); ticked in Flagged, to look at; why, in Mark reason. */
 export const EXCLUDED = 'Excluded';
@@ -47,6 +49,8 @@ export interface SavedStudy {
   weightLimit?: number | null;
   /** the study's ID, owner, dates and what each group receives (older files: none) */
   meta?: StudyMeta;
+  /** the tumor model chosen in Monitor (older files: none); a plan's model comes first */
+  line?: string;
   /** `weight`: only when the study has body weights; the marks only on marked rows */
   rows: {animal: string, group: string | null, day: number | null, volume: number | null, weight?: number | null,
     excluded?: true, flagged?: true, reason?: string}[];
@@ -64,17 +68,22 @@ export function labHumane(): number | null {
   return Number.isFinite(x) && x > 0 ? x : null;
 }
 
-/** What a table says of itself into a form on it: its plan's tumor model, its body weight column and the protocol's
+/** A study table's tumor model: its plan's, else the one chosen for it in Monitor (LINE_TAG), else null. */
+export function lineOf(df: DG.DataFrame): string | null {
+  try {
+    if (df.getTag(PLAN_TAG))
+      return parsePlan(df.getTag(PLAN_TAG)!).predicted.line;
+  } catch {
+    // a damaged plan: Analyze says so; the study's own model, if any, stands
+  }
+  return df.getTag(LINE_TAG) || null;
+}
+
+/** What a table says of itself into a form on it: its tumor model, its body weight column and the protocol's
  *  limits. */
 export function restoreFields(form: FuncCallForm, df: DG.DataFrame): void {
   const limits = JSON.parse(df.getTag(LIMITS_TAG) || '{}');
-  let line: string | null = null;
-  try {
-    line = df.getTag(PLAN_TAG) ? parsePlan(df.getTag(PLAN_TAG)!).predicted.line : null;
-  } catch {
-    // a damaged plan: Analyze says so; the field stays as it is
-  }
-  const fields = {line, bodyWeight: df.getTag(WEIGHT_TAG) || null, humane: limits.humane ?? labHumane(),
+  const fields = {line: lineOf(df), bodyWeight: df.getTag(WEIGHT_TAG) || null, humane: limits.humane ?? labHumane(),
     weightLimit: limits.weightLimit ?? null};
   for (const [name, value] of Object.entries(fields)) {
     const input = form.getInput(name);
@@ -89,6 +98,9 @@ export const REVEALED = 'Groups revealed';
 export const groupsShownIn = (meta: StudyMeta | null | undefined, log: LogEntry[]): boolean =>
   !meta?.blinded || log.some((e) => e.what === REVEALED);
 export const groupsShown = (df: DG.DataFrame): boolean => groupsShownIn(metaOf(df), logOf(df));
+/** The same for a saved study: its details, else its plan's (as metaOf reads a table), and its log. */
+export const savedGroupsShown = (s: SavedStudy): boolean =>
+  groupsShownIn(parseMeta(s.meta) ?? parseMeta(s.plan?.study), s.log);
 
 /** A log line, on the table it is about: when, who, what. */
 export function addLog(df: DG.DataFrame, what: string): LogEntry[] {
@@ -143,6 +155,7 @@ export function studyOf(df: DG.DataFrame, humane: number | null, weightLimit: nu
   const w = weightName ? df.col(weightName) : null;
   const [e, f, r] = [df.col(EXCLUDED), df.col(FLAGGED), df.col(MARK_REASON)];
   const meta = metaOf(df);
+  const line = df.getTag(LINE_TAG);
   // what else the table holds goes with the study: the caliper readings behind a volume, a cage, a comment
   const kept = new Set([a, g, d, v, w, e, f, r].filter((c) => c).map((c) => c!.name));
   const plain: string[] = [DG.TYPE.FLOAT, DG.TYPE.INT, DG.TYPE.STRING, DG.TYPE.BOOL];
@@ -151,6 +164,7 @@ export function studyOf(df: DG.DataFrame, humane: number | null, weightLimit: nu
     .map((c) => [c.name, Array.from({length: df.rowCount}, (_, i) => c.isNone(i) ? null : c.get(i))]));
   return {format: FORMAT, version: 1, name: df.name, plan: planText ? parsePlan(planText) : null,
     looks: df.getTag(LOOKS_TAG) ?? '', humane, weightLimit, log: logOf(df), ...meta ? {meta} : {},
+    ...line ? {line} : {},
     ...Object.keys(extra).length ? {extra} : {},
     rows: Array.from({length: df.rowCount}, (_, i) => ({animal: String(a.get(i)), group: g.isNone(i) ? null : g.get(i),
       day: d.isNone(i) ? null : d.get(i), volume: v.isNone(i) ? null : v.get(i),
@@ -178,8 +192,10 @@ export function parseStudy(text: string): SavedStudy {
     throw new Error('The study file is damaged');
   if (s.plan)
     parsePlan(JSON.stringify(s.plan));
-  return {...s, name: typeof s.name === 'string' ? s.name : '',
-    looks: typeof s.looks === 'string' ? s.looks : ''} as SavedStudy;
+  // a field this version does not know is kept as it came; the model only as a name
+  const {line, ...rest} = s;
+  return {...rest, ...typeof line === 'string' && line ? {line} : {},
+    name: typeof s.name === 'string' ? s.name : '', looks: typeof s.looks === 'string' ? s.looks : ''} as SavedStudy;
 }
 
 /** The measurements table of a saved study, with its plan, reviews, limits and log in tags. */
@@ -215,6 +231,8 @@ export function tableOf(s: SavedStudy): DG.DataFrame {
   df.name = s.name;
   if (s.plan)
     df.setTag(PLAN_TAG, JSON.stringify(s.plan));
+  if (s.line)
+    df.setTag(LINE_TAG, s.line);
   df.setTag(LOOKS_TAG, s.looks);
   df.setTag(LOG_TAG, JSON.stringify(s.log));
   return df;
