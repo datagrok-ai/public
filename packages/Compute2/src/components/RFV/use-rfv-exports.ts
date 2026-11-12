@@ -37,6 +37,7 @@ export function useRfvExports(currentCall: Readonly<Vue.Ref<DG.FuncCall>>, deps:
         validation: validationState.value,
         consistency: consistencyState.value,
         isOutputOutdated: isOutputOutdated.value,
+        completed: isOutputOutdated.value === false,
       }));
     } catch (e: any) {
       grok.shell.error(e);

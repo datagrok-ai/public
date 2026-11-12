@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, expectExceptionAsync} from '@datagrok-libraries/test/src/test';
-import {applyCustomExport} from '../components/TreeWizard/tree-export';
+import {applyCustomExport, exportedFile} from '../components/TreeWizard/tree-export';
 
 // Headless check for the custom-export "report handler" contract: the function named in
 // `meta.customExports` (NOT the model itself) must run, receive the step's funcCall and return a file.
@@ -23,6 +23,22 @@ category('Custom export: report handler', () => {
     const model = DG.Func.byName('Compute2:TestCustomExportModel');
     const fc = model.prepare({a: 1});
     await expectExceptionAsync(async () => {await applyCustomExport(fc, 'missing', {});});
+  });
+
+  test('makes a file of the Blob a legacy export returns, telling it not to download', async () => {
+    const fc = DG.Func.byName('Compute2:TestBlobExportModel').prepare({a: 1});
+    const file = await applyCustomExport(fc, 'blob');
+    expect(file.fileName, 'Compute2:TestBlobExportModel - Not completed');
+    const ran = await fc.call();
+    const completed = await applyCustomExport(ran, 'blob', {}, ran.func, true);
+    expect(completed.fileName, `Compute2:TestBlobExportModel - ${ran.started}`);
+    expect(new TextDecoder().decode(file.data), 'Compute2:TestBlobExportModel|false');
+  });
+
+  test('names a legacy Blob .xlsx only when it is Excel', async () => {
+    const excel = new Blob(['x'], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    expect((await exportedFile(excel, 'e', 'run')).fileName, 'run.xlsx');
+    expect((await exportedFile(new Blob(['x'], {type: 'application/pdf'}), 'e', 'run')).fileName, 'run');
   });
 
   test('throws for an export that returns no file', async () => {

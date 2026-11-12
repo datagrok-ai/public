@@ -17,6 +17,7 @@ export function useTreeExport({treeState, states, currentMetaCallData, hasNotSav
     metaStates: states.meta,
     meta: currentMetaCallData.value,
     hasNotSavedEdits: hasNotSavedEdits.value,
+    completed: isTreeReportable.value,
   });
 
   const exports = Vue.computed(() =>

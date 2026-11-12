@@ -107,15 +107,17 @@ export interface ExportCbInput {
 
 export type ExportUtils = {
   reportStateExcel: (pipelineState: PipelineState, cb?: <T>(input: ExportCbInput) => Promise<T>) =>
-    Promise<readonly [Blob, Zippable, string, ExportSummaryItem[]]>;
+    Promise<readonly [DG.FileInfo, Zippable, ExportSummaryItem[]]>;
   getExportSummary: (pipelineState: PipelineState) => ExportSummaryItem[];
-  reportSummaryExcel: (pipelineState: PipelineState) => Promise<readonly [Blob, ExcelJS.Workbook]>;
-  reportFuncCallExcel: (fc: DG.FuncCall, uuid: string) => Promise<readonly [Blob, ExcelJS.Workbook]>;
+  reportSummaryExcel: (pipelineState: PipelineState) => Promise<readonly [DG.FileInfo, ExcelJS.Workbook]>;
+  reportFuncCallExcel: (fc: DG.FuncCall, uuid: string) => Promise<readonly [DG.FileInfo, ExcelJS.Workbook]>;
   getFuncCallCustomExports: (fc: DG.FuncCall) => string[];
   runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) => Promise<DG.FileInfo>;
 
 }
-export type PipelineExport = (pipelineState: PipelineState, utils: ExportUtils) => Promise<DG.FileInfo>;
+// startDownload, always false, matches meta.customExports functions
+export type PipelineExport =
+  (pipelineState: PipelineState, utils: ExportUtils, startDownload: boolean) => Promise<DG.FileInfo>;
 export type ViewersHook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void;
 
 // link-like

@@ -106,16 +106,21 @@ export async function reportSummary(items: ExportSummaryItem[]) {
   return [new Blob([buffer], {type: XLSX_BLOB_TYPE}), wb] as const;
 }
 
-/** The default Excel report of a call, with its viewers built and hooked for it. */
-export async function callExcelReport(call: DG.FuncCall, {viewersHook, metaState, validation, consistency}: {
+export const blobFile = async (fileName: string, blob: Blob) =>
+  DG.FileInfo.fromBytes(fileName, new Uint8Array(await blob.arrayBuffer()));
+
+/** The default Excel report of a call, named after its run, with its viewers built and hooked for it. */
+export async function callExcelReport(call: DG.FuncCall, {viewersHook, metaState, validation, consistency, completed}: {
   viewersHook?: ViewersHook,
   metaState?: Record<string, BehaviorSubject<any>>,
   validation?: Record<string, ValidationResult>,
   consistency?: Record<string, ConsistencyInfo>,
+  completed?: boolean,
 } = {}) {
   const viewers = await getViewers(call, viewersHook, metaState);
-  return richFunctionViewReport('Excel', call.func, call, viewers, validation, consistency)
+  const [blob, wb] = await richFunctionViewReport('Excel', call.func, call, viewers, validation, consistency)
     .finally(() => disposeViewers(viewers));
+  return [await blobFile(`${callFileName(call, completed)}.xlsx`, blob), wb] as const;
 }
 
 export async function reportTree(
@@ -129,12 +134,14 @@ export async function reportTree(
     pipelineValidations,
     descriptions,
     hasNotSavedEdits,
+    completed,
     cb,
   }: {
     treeState: PipelineState;
     meta?: MetaCallInfo;
     metaStates?: Record<string, Record<string, BehaviorSubject<any>> | undefined>,
     hasNotSavedEdits?: boolean;
+    completed?: boolean;
     cb?: (input: ExportCbInput) => Promise<void>,
   } & RunStates) {
   const zipConfig: Zippable = {};
@@ -154,12 +161,12 @@ export async function reportTree(
       const description = descriptions?.[state.uuid];
       const metaState = metaStates?.[state.uuid];
       const {isOutputOutdated, runError} = callInfo;
-      const [blob, wb] = await callExcelReport(funcCall,
+      const [file, wb] = await callExcelReport(funcCall,
         {viewersHook: state.viewersHook, metaState, validation, consistency});
 
       const fileName = stepFileName(state, idx, callInfo, textTitle(description));
       const configKey = [...path, fileName].join('/');
-      const stepFile: Zippable[string] = [new Uint8Array(await blob.arrayBuffer()), {level: 0}];
+      const stepFile: Zippable[string] = [file.data, {level: 0}];
       zipConfig[configKey] = stepFile;
       if (cb) {
         await cb({
@@ -192,10 +199,9 @@ export async function reportTree(
   const [summaryBlob] = await reportSummary(summary);
   zipConfig[SUMMARY_FILE_NAME] = [new Uint8Array(await summaryBlob.arrayBuffer()), {level: 0}];
 
-  const rawFileName = getExportName(treeState, !!hasNotSavedEdits, meta.title, meta.started);
-  const fileName = replaceForWindowsPath(`${rawFileName}.zip`);
-  const blob = new Blob([zipSync(zipConfig) as any]);
-  return [blob, zipConfig, fileName, summary] as const;
+  const file = DG.FileInfo.fromBytes(`${treeFileName(treeState, {meta, hasNotSavedEdits, completed})}.zip`,
+    zipSync(zipConfig));
+  return [file, zipConfig, summary] as const;
 }
 
 function getExportName(
@@ -211,8 +217,33 @@ function getExportName(
   return fileName;
 }
 
+export type TreeNameInfo = {meta?: MetaCallInfo, hasNotSavedEdits?: boolean, completed?: boolean};
 
-export function exportedFile(result: unknown, exportName: string): DG.FileInfo {
+/** A workflow's files are named after its run: edited when it differs from the saved run, else completed or not. */
+export function treeFileName(state: PipelineState, {meta = {}, hasNotSavedEdits, completed}: TreeNameInfo) {
+  const stateName = state.friendlyName ?? state.configId;
+  const name = meta.title ? `${stateName} - ${meta.title}` : stateName;
+  const suffix = hasNotSavedEdits ? 'edited' : completed === false ? 'Not completed' : meta.started ?? 'edited';
+  return replaceForWindowsPath(`${name} - ${suffix}`);
+}
+
+export async function reportSummaryFile(state: PipelineState, states: RunStates, info: TreeNameInfo) {
+  const [blob, wb] = await reportSummary(getExportSummary(state, states));
+  return [await blobFile(`${treeFileName(state, info)} - summary.xlsx`, blob), wb] as const;
+}
+
+/** Unknown completion, as for a custom view's run, keeps the run's date. */
+export function callFileName(call: DG.FuncCall, completed?: boolean) {
+  const started = completed === false ? undefined : getStartedOrNull(call);
+  return `${call.func.nqName} - ${started ?? 'Not completed'}`;
+}
+
+/** A legacy `meta.customExports` function returns a Blob, named `blobName` and `.xlsx` when it is Excel. */
+export async function exportedFile(result: unknown, exportName: string, blobName?: string): Promise<DG.FileInfo> {
+  if (blobName && result instanceof Blob) {
+    const ext = result.type.includes('spreadsheetml.sheet') ? '.xlsx' : '';
+    return blobFile(`${blobName}${ext}`, result);
+  }
   if (!(result instanceof DG.FileInfo))
     throw new Error(`Export ${exportName} returned no file`);
   return result;
@@ -227,9 +258,12 @@ export async function applyCustomExport(
   exportName: string,
   args: Record<string, unknown> = {},
   exportsOf: DG.Func = fc.func,
+  completed?: boolean,
 ): Promise<DG.FileInfo> {
   const item = getCustomExports(exportsOf).find((x) => x.name === exportName);
   if (!item)
     throw new Error(`No export named ${exportName} is defined for ${exportsOf.nqName}`);
-  return exportedFile(await DG.Func.byName(item.function).apply({funcCall: fc, ...args}), exportName);
+  return exportedFile(
+    await DG.Func.byName(item.function).apply({funcCall: fc, startDownload: false, ...args}), exportName,
+    callFileName(fc, completed));
 }

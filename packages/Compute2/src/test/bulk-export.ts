@@ -217,11 +217,21 @@ category('Run storage: bulk export', () => {
     expect(text(files[0].file), 'Compute2:TestAdd2|4');
 
     const hooksOf: string[] = [];
-    await exportSavedCall(saved.id, DEFAULT_EXPORT, customView, async (func) => {
+    const excel = await exportSavedCall(saved.id, DEFAULT_EXPORT, customView, async (func) => {
       hooksOf.push(func.name);
       return undefined;
     });
     expectDeepEqual(hooksOf, ['TestAdd2'], {prefix: 'the report takes the hook of the run\'s function'});
+    expect(excel.fileName.includes('Not completed'), false, `a custom view's run keeps its date, got ${excel.fileName}`);
+  }));
+
+  test('A saved call\'s file says whether the run is completed', () => withRunStorage(async (f) => {
+    const save = async (outdated: boolean) => f.save(await callOf(EXPORT_MODEL, {a: 1}, outdated).call(),
+      {metadata: {name: uniqueName('Bulk completed')}});
+    const completed = await exportSavedCall((await save(false)).id, DEFAULT_EXPORT);
+    expect(completed.fileName.includes('Not completed'), false, `a completed run keeps its date, got ${completed.fileName}`);
+    expect((await exportSavedCall((await save(true)).id, DEFAULT_EXPORT)).fileName,
+      `${EXPORT_MODEL} - Not completed.xlsx`);
   }));
 
   test('A step\'s history exports with the step\'s hook, not its function\'s', () => withRunStorage(async (f) => {

@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Added `reportFuncCallExcel`, the default Excel report of a run, for RFV custom exports to start from; pass it the `viewersHook` and `metaState` the export gets
+* Added `reportFuncCallExcel`, the default Excel report of a run as a named `DG.FileInfo` and its workbook, for RFV custom exports to start from; pass it the `viewersHook`, `metaState` and `isOutputOutdated` the export gets
 * Added `loadWorkflowRun`, which loads a saved workflow run without UI and returns its state as `runWorkflow` does
 * Removed `createCFV`: it read `window.compute.CFV`, which no package sets, and `CustomFunctionView` is abstract, so it could never create a working view; `CustomFunctionView` is now exported as the class, so a custom view subclasses it and is returned by a function with `editor: 'Compute2:CustomFunctionViewEditor'`
 * Added `runWorkflow`, which runs a workflow without UI, and `saveWorkflowRun`, which saves its result to history

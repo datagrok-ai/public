@@ -318,7 +318,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'ReportFuncCallExcel',
-    description: 'The default Excel report of a run, as its export menu builds it: [Blob, ExcelJS.Workbook].',
+    description: 'The default Excel report of a run, as its export menu builds it: [DG.FileInfo, ExcelJS.Workbook].',
     outputs: [{type: 'object', name: 'result'}],
   })
   static async ReportFuncCallExcel(
@@ -332,10 +332,14 @@ export class PackageFunctions {
       viewersHook?: ViewersHook,
     @grok.decorators.param({type: 'object', options: {
       description: 'Meta values by output, for the hook', optional: true}})
-      metaState?: Record<string, BehaviorSubject<any>>) {
+      metaState?: Record<string, BehaviorSubject<any>>,
+    @grok.decorators.param({type: 'bool', options: {
+      description: 'Names the file Not completed when true', optional: true}})
+      isOutputOutdated?: boolean) {
     return callExcelReport(funcCall, {
       viewersHook: viewersHook ?? await loadViewersHook(funcCall.func), metaState,
       validation: validationState, consistency: consistencyState,
+      completed: isOutputOutdated == null ? undefined : !isOutputOutdated,
     });
   }
 
@@ -1110,6 +1114,17 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async TestCustomExportNoFile(funcCall: DG.FuncCall): Promise<string> {
     return funcCall.func.nqName;
+  }
+
+  @grok.decorators.func({meta: {customExports: '[{"name":"blob","function":"Compute2:TestCustomExportBlob"}]'}})
+  static async TestBlobExportModel(a: number): Promise<number> {
+    return a;
+  }
+
+  // A legacy export: it gets startDownload and returns a Blob
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  static async TestCustomExportBlob(funcCall: DG.FuncCall, startDownload: boolean): Promise<Blob> {
+    return new Blob([`${funcCall.func.nqName}|${startDownload}`]);
   }
 
   @grok.decorators.func()

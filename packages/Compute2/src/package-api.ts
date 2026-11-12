@@ -68,15 +68,16 @@ export namespace funcs {
   }
 
   /**
-   * The default Excel report of a run, as its export menu builds it: [Blob, ExcelJS.Workbook].
+   * The default Excel report of a run, as its export menu builds it: [DG.FileInfo, ExcelJS.Workbook].
    * @param {any} funcCall - The run to report
    * @param {any} validationState - Validation results by input
    * @param {any} consistencyState - Consistency by input
    * @param {any} viewersHook - The viewers hook of a workflow step, in place of the function's own
    * @param {any} metaState - Meta values by output, for the hook
+   * @param {boolean} isOutputOutdated - Names the file Not completed when true
    */
-  export async function reportFuncCallExcel(funcCall: any , validationState?: any , consistencyState?: any , viewersHook?: any , metaState?: any ): Promise<any> {
-    return await grok.functions.call('Compute2:ReportFuncCallExcel', { funcCall, validationState, consistencyState, viewersHook, metaState });
+  export async function reportFuncCallExcel(funcCall: any , validationState?: any , consistencyState?: any , viewersHook?: any , metaState?: any , isOutputOutdated?: boolean ): Promise<any> {
+    return await grok.functions.call('Compute2:ReportFuncCallExcel', { funcCall, validationState, consistencyState, viewersHook, metaState, isOutputOutdated });
   }
 
   /**
@@ -221,6 +222,14 @@ export namespace funcs {
 
   export async function testCustomExportNoFile(funcCall: any ): Promise<string> {
     return await grok.functions.call('Compute2:TestCustomExportNoFile', { funcCall });
+  }
+
+  export async function testBlobExportModel(a: number ): Promise<number> {
+    return await grok.functions.call('Compute2:TestBlobExportModel', { a });
+  }
+
+  export async function testCustomExportBlob(funcCall: any , startDownload: boolean ): Promise<any> {
+    return await grok.functions.call('Compute2:TestCustomExportBlob', { funcCall, startDownload });
   }
 
   export async function testCustomExportHookArgs(funcCall: any , viewersHook?: any , metaState?: any ): Promise<DG.FileInfo> {
