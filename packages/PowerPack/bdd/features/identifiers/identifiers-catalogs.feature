@@ -1,10 +1,10 @@
 @skip @journey @serial @realizes:powerpack.db-explorer
 Feature: Identifiers of a database with catalogs
   TODO: development only. The feature is set aside and does not run in CI: its database exists on no
-  shared stand (the fixture is made by hand, see the README), it saves an identifiers configuration in
-  the one file every configuration of the stand is kept in, and it reloads the page. Take @skip off
-  while working on catalogs in Configure Identifiers or the db-explorer library, run it on a local
-  stand with the fixture, and put the tag back before committing.
+  shared stand (a Docker container made by catalogs-db.mjs, see the README), it saves an identifiers
+  configuration in the one file every configuration of the stand is kept in, and it reloads the page.
+  Take @skip off while working on catalogs in Configure Identifiers or the db-explorer library, run it
+  on a local stand with the fixture, and put the tag back before committing.
 
   Configure Identifiers... on a connection whose database has catalogs (Databricks, Snowflake, SQL Server)
   asks for the catalog before the schema, reads the schemas of that catalog alone, and saves a
@@ -15,8 +15,8 @@ Feature: Identifiers of a database with catalogs
   connection's own), research and sales, with two hundred more beside them; a stand without it skips the
   feature. research and archive both hold chem.compounds with the same ids and other names (archive's
   are "ARCHIVED ..."), and only research holds chem.batches and the schema bio: a card or a list read
-  from the connection's own catalog shows it at once. The script that makes the database is in the
-  feature's folder, catalogs-fixture.sql.
+  from the connection's own catalog shows it at once. catalogs-db.mjs in the feature's folder makes the
+  database from catalogs-fixture.sql; its login owns those 203 catalogs and sees them, master and tempdb.
 
   The dialog opens on the connection's own catalog and lists the others behind it; the claims on the
   list wait for it. No schema is picked for the user among several: the first by name is a system one
@@ -44,7 +44,7 @@ Feature: Identifiers of a database with catalogs
     And OK button in "Select catalog and schema for Identifiers Configuration" dialog should be disabled
 
   Scenario: Among two hundred catalogs one is found by a part of its name
-    Then "Select catalog and schema for Identifiers Configuration" dialog should contain text "207 catalogs; archive is the connection's own."
+    Then "Select catalog and schema for Identifiers Configuration" dialog should contain text "205 catalogs; archive is the connection's own."
     When user clicks on catalog search icon
     And user finds the catalog "tenant_150" by typing "tenant_15"
     Then Catalog input in "Select catalog and schema for Identifiers Configuration" dialog should have value "tenant_150"
