@@ -11,7 +11,9 @@ declare const DG: any;
  * "Oligo Translator" view): the library's `user opens the {string} app` waits for a view of the app's name. */
 export const openAppOnView = Given('user opens the {string} app on its {string} view', async (page: Page, app: string, view: string) => {
   await page.evaluate(async (name) => {
-    const fn = DG.Func.find({tags: ['app']}).find((f: any) => f.friendlyName === name || f.name === name);
+    // an admin app (Usage Analysis) carries its role in its meta, not a tag
+    const apps = [...DG.Func.find({tags: ['app']}), ...DG.Func.find({meta: {role: 'adminApp'}})];
+    const fn = apps.find((f: any) => f.friendlyName === name || f.name === name);
     if (!fn)
       throw new Error(`no "${name}" app is registered`);
     const v = await fn.apply({});
