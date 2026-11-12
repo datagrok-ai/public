@@ -97,8 +97,10 @@ export interface MonitorFrames {
 /** The planned reviews from their text: the study days, ascending; anything else is an error. */
 export function parseLooks(text: string | null | undefined): number[] {
   const days = (text ?? '').split(/[,;\s]+/).filter((x) => x).map(Number);
-  if (days.some((d) => !Number.isFinite(d)))
-    throw new Error(`Planned reviews: "${text}" is not a list of study days`);
+  if (days.some((d) => !Number.isFinite(d))) {
+    throw new Error(`Planned reviews: "${text}" is not a list of study days. Write the days separated by commas, ` +
+      'such as 14, 21.');
+  }
   return [...new Set(days)].sort((a, b) => a - b);
 }
 
@@ -193,11 +195,17 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
   const keep = d.data.volume.map((v) => Number.isFinite(v));
   const pick = <T>(xs: T[]) => xs.filter((_, i) => keep[i]);
   const [animal, group, day, volume] = [pick(d.data.animal), pick(d.data.group), pick(d.data.day), pick(d.data.volume)];
-  if (day.length === 0)
-    throw new Error('The study has no measurements yet');
+  if (day.length === 0) {
+    // rows held back for a missing animal, group or day are not "no measurements": say what they lack
+    throw new Error(d.data.skipped > 0 ? 'No row of the study table has its animal, group, day and volume yet: ' +
+      'fill them in, and the forecasts follow.' : 'The study has no measurements yet: paste or type the volumes ' +
+      'into the study table, and the forecasts follow.');
+  }
   const names = [...new Set(group)];
-  if (!names.includes(d.control))
-    throw new Error(`No group "${d.control}" in the study: the control must be one of ${names.join(', ')}`);
+  if (!names.includes(d.control)) {
+    throw new Error(`There is no group "${d.control}" in the study table: pick the control among ` +
+      `${names.join(', ')}.`);
+  }
   const notes: string[] = [];
   // the plan's arms, the line's twin and the body weights do not wait for one another
   const [arms, model, {tolerability, weights, animals: weighed}, byChance] = await Promise.all([

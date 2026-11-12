@@ -11,7 +11,7 @@ import {PlanChecks, planChecks} from './plan-checks';
 import {finite, isFiniteNumber as fin} from './engine';
 import {StudyMeta, parseMeta} from './study-meta';
 import {_package} from './package';
-import {PRIORS_FILE} from './priors';
+import {priorsText} from './priors';
 
 export const PLAN_EXT = 'pmxplan';
 /** The tag of a study table that carries its plan (the plan's JSON). */
@@ -34,7 +34,7 @@ let atlasHash: Promise<string> | null = null;
 /** The current atlas and app, the hash computed once; a failed read is not kept. The atlas is hashed with LF line
  *  ends, as git stores it, so a package built on Windows (CRLF checkout) gives the same hash. */
 export async function provenance(): Promise<Provenance> {
-  atlasHash ??= _package.files.readAsText(PRIORS_FILE).then((t) => sha256Hex(t.replace(/\r\n/g, '\n'))).catch((e) => {
+  atlasHash ??= priorsText().then((t) => sha256Hex(t.replace(/\r\n/g, '\n'))).catch((e) => {
     atlasHash = null;
     throw e;
   });
@@ -147,12 +147,15 @@ export function parsePlan(text: string): SavedPlan {
   try {
     p = JSON.parse(text);
   } catch {
-    throw new Error('Not a PMX Studio plan: the file is not JSON');
+    throw new Error('Not a PMX Studio plan: the file cannot be read (cut short, or another kind of file). ' +
+      'Open the .pmxplan file saved from Plan.');
   }
   if (p?.format !== FORMAT)
-    throw new Error('Not a PMX Studio plan');
-  if (p.version !== 1)
-    throw new Error(`A plan of version ${p.version}, which this PMX Studio cannot read: update the package`);
+    throw new Error('Not a PMX Studio plan. Open the .pmxplan file saved from Plan.');
+  if (p.version !== 1) {
+    throw new Error('This plan was saved by another version of PMX Studio, which this one cannot read. Ask your ' +
+      'administrator to update the PMX Studio package.');
+  }
   const range = (r: any) => fin(r?.q025) && fin(r.median) && (r.q975 === null || fin(r.q975));
   const pr = p.predicted;
   const ch = pr?.checks;
@@ -162,8 +165,10 @@ export function parsePlan(text: string): SavedPlan {
     ch.controls.every((b: any) => fin(b?.day) && fin(b.median)) && Array.isArray(ch.arms) &&
     ch.arms.every((a: any) => typeof a?.name === 'string' && range(a.tgi) && range(a.tc)) &&
     p.inputs && typeof p.inputs === 'object';
-  if (!ok)
-    throw new Error('The plan file is damaged: save it again from Plan');
+  if (!ok) {
+    throw new Error('The plan file is damaged: some of what Plan predicted is missing. Open another copy of it, or ' +
+      'make the plan again in Plan.');
+  }
   const study = parseMeta(p.study);
   if (study)
     p.study = study;

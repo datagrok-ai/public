@@ -77,7 +77,7 @@ category('Study table', () => {
       await new Promise((r) => setTimeout(r, 0));
       expect(opened.length > 0, true, 'the button opens the study');
       // the preview itself: a file that is no study, or damaged, says so in a sentence
-      for (const [text, says] of [['{"format": "other"}', 'Not a PMX Studio study'], ['{', 'not JSON']]) {
+      for (const [text, says] of [['{"format": "other"}', 'Not a PMX Studio study'], ['{', 'cannot be read']]) {
         const v = await filePreview(DG.FileInfo.fromString('x.pmxstudy', text), 'study', () => {});
         expect(v.root.textContent!.includes(says), true, v.root.textContent!);
       }
@@ -87,7 +87,7 @@ category('Study table', () => {
       } catch (e: any) {
         said = e.message;
       }
-      expect(said.includes('update the package'), true, said);
+      expect(said.includes('update the PMX Studio package'), true, said);
     });
 
   test('the rules find the typo and the weight loss, nothing else', async () => {

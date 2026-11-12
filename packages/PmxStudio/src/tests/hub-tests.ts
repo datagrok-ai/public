@@ -59,6 +59,13 @@ category('Hub', () => {
       readFile('empty.csv', ''), readFile('cut.pmxstudy', '{"format": "pmx-study", "version": 1, "rows": [')]);
     expect(bad.join(), 'notes.docx,broken.pmxplan,empty.csv,cut.pmxstudy');
     expect(Object.keys(brought).length, 0);
+    // each with what is wrong, in a sentence
+    const why = (name: string, text: string) => {
+      const r = readFile(name, text);
+      return r.kind === 'bad' ? r.why : '';
+    };
+    expect(why('notes.docx', 'x').includes('.pmxstudy'), true, why('notes.docx', 'x'));
+    expect(why('broken.pmxplan', '{').startsWith('Not a PMX Studio plan'), true, why('broken.pmxplan', '{'));
   });
 
   test('the home: three stages, each open', async () => {

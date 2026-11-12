@@ -9,14 +9,14 @@ import {BasicTable, computed, signal} from '@datagrok-libraries/u2';
 import {ViewHost} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
-import {markStage, stageOf} from './ui';
+import {markStage, plainError, stageOf} from './ui';
 import {steps} from './study-header';
 import type {Stage} from './ui';
 import {openStage, showStage} from './stages';
 import {planView} from './plan-view';
 import {analyzeView} from './analyze-view';
 import {monitorView, openStudyFile} from './monitor-view';
-import {newStudyTable, parseStudy, tableOf} from './study-file';
+import {newStudyTable, tableOf} from './study-file';
 import {PLAN_TAG, myPlans, parsePlan} from './plan-file';
 import {LibraryEntry, libraryReader, matches} from './library';
 import {dayToday} from './calendar';
@@ -285,7 +285,10 @@ function yourStudies(): {root: HTMLElement, reload: () => void} {
   // and once: a second click while it opens would open it twice
   let opening = false;
   const openEntry = async (e: LibraryEntry): Promise<unknown> => {
-    const text = e.file ? await grok.dapi.files.readAsText(e.file) : e.text;
+    const text = e.file ? await grok.dapi.files.readAsText(e.file).catch((err) => {
+      console.warn('PMX Studio:', err);
+      throw new Error(`"${e.name}" could not be read from your files. Check your connection and try again.`);
+    }) : e.text;
     return e.kind === 'plan' ? showStage('plan', await planView(parsePlan(text))) : openStudyFile(text);
   };
   const search = ui.input.string('', {placeholder: 'Search studies',
@@ -318,7 +321,8 @@ function yourStudies(): {root: HTMLElement, reload: () => void} {
       if (opening)
         return;
       opening = true;
-      void openEntry(e).catch((err) => grok.shell.error(String(err?.message ?? err))).finally(() => opening = false);
+      void openEntry(e).catch((err) => grok.shell.error(plainError(err, `"${e.name}" could not be opened. Try ` +
+        'again; if it fails again, reload the page.'))).finally(() => opening = false);
     }});
   table.root.style.cursor = 'pointer';
   host.append(h('div', 'pmx-library-head', [h('h3', '', ['Your studies']), search.root, chips]), today,
@@ -380,7 +384,8 @@ export function openStudyDialog(first?: File[]): void {
   const body = h('div', 'pmx-open');
   const dialog = ui.dialog({title: 'Open a study'});
   dialog.add(body);
-  dialog.onOK(() => void go().catch((e) => grok.shell.error(String(e?.message ?? e))), {closeOnEnter: false});
+  dialog.onOK(() => void go().catch((e) => grok.shell.error(plainError(e, 'The study could not be opened. Try ' +
+    'again; if it fails again, reload the page.'))), {closeOnEnter: false});
   // the OK button says where the study opens, and waits until there is one
   const ok: HTMLButtonElement = dialog.getButton('OK') ?? document.createElement('button');
 
@@ -496,8 +501,10 @@ export function openStudyDialog(first?: File[]): void {
     await new Promise((r) => setTimeout(r, Math.max(0, 450 - (Date.now() - started))));
     if (mine !== latest)
       return;
-    const {brought: next, bad} = bring(brought, reads);
-    error = bad.length ? `Not a study file: ${bad.join(', ')}` : '';
+    const {brought: next} = bring(brought, reads);
+    // each file set aside, with what is wrong with it
+    error = reads.map((r) => r.kind === 'bad' ? `"${r.file}" could not be opened. ${r.why}` : '').filter((s) => s)
+      .join(' ');
     brought = next;
     chosen = null;
     phase = next.table || next.plan || next.study ? 'loaded' : 'error';
@@ -505,14 +512,18 @@ export function openStudyDialog(first?: File[]): void {
   };
 
   const savedPlans = async () => {
-    const files = await myPlans().catch(() => [] as DG.FileInfo[]);
-    if (files.length === 0) {
-      grok.shell.info('No saved plans yet');
+    const files = await myPlans().catch((e) => {
+      grok.shell.error(plainError(e, 'Your saved plans could not be listed. Try again in a moment.'));
+      return null;
+    });
+    if (files?.length === 0)
+      grok.shell.info('No saved plans yet: save one in Plan, or drop a .pmxplan file here.');
+    if (!files?.length)
       return;
-    }
     DG.Menu.popup().items(files.map((f) => f.fileName), (name: string) => {
       const f = files.find((x) => x.fileName === name)!;
-      void grok.dapi.files.readAsText(f).then((text) => take([new File([text], f.fileName)]));
+      void grok.dapi.files.readAsText(f).then((text) => take([new File([text], f.fileName)]), (e) =>
+        grok.shell.error(plainError(e, `"${f.fileName}" could not be read. Try again in a moment.`)));
     }).show();
   };
 
@@ -522,15 +533,14 @@ export function openStudyDialog(first?: File[]): void {
     if (!pick)
       return;
     if (pick.stage === 'plan' && plan)
-      showStage('plan', await planView(parsePlan(plan.text)));
+      showStage('plan', await planView(plan.saved));
     else if (pick.stage === 'analyze' && table) {
       if (plan)
         table.df.setTag(PLAN_TAG, plan.text);
       showStage('analyze', await analyzeView({study: table.df}));
     } else if (pick.stage === 'monitor') {
       // a followed study as saved; a table under way with its plan; a plan starting now, with an empty table
-      const df = study ? tableOf(parseStudy(study.text)) : table?.df ?? (plan ? newStudyTable(parsePlan(plan.text)) :
-        null);
+      const df = study ? tableOf(study.saved) : table?.df ?? (plan ? newStudyTable(plan.saved) : null);
       if (!df)
         return;
       if (table && plan)
@@ -558,8 +568,8 @@ function holdsOf(b: Brought): HTMLElement[] {
     const facts = [t.animals !== null ? `${t.animals} animals` : '', t.groups !== null ? `${t.groups} groups` : '',
       t.lastDay !== null ? `day 0–${t.lastDay}` : ''].filter(Boolean);
     const what = facts.join(' · ') || 'Measurements';
-    out.push(t.missing.length ? line('warn', what, `Not found: ${t.missing.join(', ')}. ` +
-      'You pick it next.') : line('ok', what, t.found.join(' · ')));
+    out.push(t.missing.length ? line('warn', what, `No column found for ${t.missing.join(', ')}: you pick ` +
+      `${t.missing.length === 1 ? 'it' : 'them'} in the form that opens.`) : line('ok', what, t.found.join(' · ')));
     out.push(t.weight ? line('ok', 'Body weight') : line('none', 'No body weight'));
     out.push(b.plan ? line('ok', `Plan: ${b.plan.name}`) : line('none', 'No plan'));
   } else if (b.plan && !b.study) {

@@ -36,8 +36,8 @@ import {studyInputsOf} from './explore';
 import {tolerabilityTab} from './tolerability';
 import {askedOf, autoRun, block, callInputs, cardGrid, dayText, exampleLine, infoNote, onTableEdits, TABLE_EDITS,
   isBodyWeight,
-  keepNamedColumns, noteLine, notes, notesBox, num, pct, settleForm, sized, markStage, signed, stageOf, statCard,
-  swatch, volumeAxis, wrapCells, stagePanes} from './ui';
+  keepNamedColumns, noteLine, notes, notesBox, num, pct, plainError, settleForm, sized, markStage, signed, stageOf,
+  statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
 
 /** Monitor's tabs and their panels, in order and width (twelfths): today's work and how the groups grow; the
  *  measurements and the groups formed; how the animals bear it; whether each group is worth continuing. */
@@ -163,7 +163,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     } catch (e: any) {
       // only the last run speaks: an older one failing late would write over a newer result's place
       if (mine === latest) {
-        error.value = String(e?.message ?? e);
+        error.value = plainError(e, 'The forecast could not be computed. Try again; if it fails again, reload the ' +
+          'page.');
         // what is shown is no longer what the table or the form says
         stale.value = result.peek() !== undefined;
       }
@@ -397,7 +398,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       throw new Error('Open the study\'s measurements first');
     const text = df.getTag(PLAN_TAG);
     if (!text)
-      throw new Error('Propose groups needs the study\'s plan, for its groups and animals');
+      throw new Error('Propose groups needs the study\'s plan, for its groups and animals: add it in the Plan field.');
     const plan: SavedPlan = parsePlan(text);
     const [animal, day, volume] = ['animal', 'day', 'volume'].map((role) => roleCol(df, role));
     if (!animal || !day || !volume)
@@ -426,7 +427,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       ['Spread (sd of log volume)', (b) => String(num(b.sd_log, 2))]]);
   };
   // an action's failure is said where it happened and goes away (the run's error line stays the run's)
-  const failed = (e: any) => grok.shell.error(String(e?.message ?? e));
+  const failed = (what: string) => (e: any) =>
+    grok.shell.error(plainError(e, `${what}. Try again; if it fails again, reload the page.`));
   // groups already in the table are someone's allocation, perhaps the one the animals are being dosed by, so they
   // are replaced only when asked twice
   const proposeAsked = () => {
@@ -435,11 +437,11 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     const allocated = !!df && !!groups &&
       Array.from({length: df.rowCount}, (_, i) => i).some((i) => !groups.isNone(i) && String(groups.get(i)).trim());
     if (!allocated)
-      return void propose().catch(failed);
+      return void propose().catch(failed('The groups could not be proposed'));
     ui.dialog('Propose groups')
       .add(ui.divText('The table already has groups. Proposing them again gives every animal a new random group, ' +
         'from its latest volume, in place of the one it has. The study\'s log keeps the new seed, not the old groups.'))
-      .onOK(() => void propose().catch(failed)).show();
+      .onOK(() => void propose().catch(failed('The groups could not be proposed'))).show();
   };
   const proposeButton = buttonWithIcon('Propose groups', 'random', proposeAsked);
   proposeButton.title = 'Fill the table\'s group column with random groups alike in their tumors';
@@ -447,7 +449,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   const sheetButton = buttonWithIcon('Print randomization sheet', 'print', () => {
     const df = studyTable();
     if (!df || !roleCol(df, 'group')) {
-      failed('The sheet needs the study\'s groups: propose them, or open a table with a group column');
+      grok.shell.warning('The sheet needs the study\'s groups: propose them, or open a table with a group column.');
       return;
     }
     const seed = [...logOf(df)].reverse().map((e) => /seed (\d+)/.exec(e.what)?.[1]).find((s) => s) ?? null;
@@ -456,7 +458,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       addLog(df, 'Randomization sheet printed (it shows the groups)');
       logVersion.value++;
     } catch (e: any) {
-      failed(e);
+      failed('The sheet could not be printed')(e);
     }
   });
   sheetButton.title = 'A page for the animal room: each animal, its group and its volume at randomization, ' +
@@ -717,7 +719,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     // through setMeta: the header shows the ID the study has just been given
     setMeta(withId(metaOf(df) ?? emptyMeta()));
     void Promise.resolve().then(() => saveStudy(studyOf(df, call.getParamValue('humane') ?? null,
-      call.getParamValue('weightLimit') ?? null))).then((p) => grok.shell.info(`Study saved: ${p}`), failed);
+      call.getParamValue('weightLimit') ?? null))).then((p) => grok.shell.info(`Study saved: ${p}`),
+      failed('The study could not be saved'));
   });
   saveButton.title = 'Save the plan, the measurements and the log to your files';
   let toAnalyze = false;
@@ -732,7 +735,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       reveal();
     // in place of an Analyze view already open
     [...grok.shell.views].find((v) => stageOf(v) === 'analyze')?.close();
-    void analyzeView({study: df}).then((v) => showStage('analyze', v)).catch(failed).finally(() => toAnalyze = false);
+    void analyzeView({study: df}).then((v) => showStage('analyze', v)).catch(failed('Analyze could not be opened'))
+      .finally(() => toAnalyze = false);
   };
   const analyzeButton = buttonWithIcon('Analyze this study', 'chart-line', analyzeThis);
   analyzeButton.title = 'Analyze this table as planned; in a blinded study this reveals the groups, and the log ' +
@@ -810,7 +814,8 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       const df = needStudy();
       remember();
       void stamped(studyOf(df, call.getParamValue('humane') ?? null, call.getParamValue('weightLimit') ?? null))
-        .then((s) => download(`${df.name}.pmxstudy`, JSON.stringify(s), 'application/json'), failed);
+        .then((s) => download(`${df.name}.pmxstudy`, JSON.stringify(s), 'application/json'),
+          failed('The study file could not be made'));
     }],
     ['Measurements (CSV)', () => download(`${needStudy().name}.csv`, needStudy().toCsv(), 'text/csv')],
     ['Calendar (.ics)', () => {

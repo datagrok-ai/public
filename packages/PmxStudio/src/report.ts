@@ -10,11 +10,13 @@ import {esc} from './sheet';
 import {provenance} from './plan-file';
 import type {LogEntry} from './study-file';
 import {StudyMeta, dateOf, dateText} from './study-meta';
+import {plainError} from './ui';
 
 /** A menu item: its name, what it does and its group (Export unless named). */
 export type Exports = [string, () => void | Promise<void>, string?][];
 
-const failed = (e: any) => grok.shell.error(String(e?.message ?? e));
+const failed = (e: any) =>
+  grok.shell.error(plainError(e, 'The export could not be made. Try again; if it fails again, reload the page.'));
 
 /** The view's menu: the stage's exports in an Export group, its other items in theirs (View: the layout). */
 export function exportMenu(view: DG.ViewBase, items: Exports): void {

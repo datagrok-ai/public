@@ -3,17 +3,20 @@
    stays blind until it is analyzed. */
 import * as DG from 'datagrok-api/dg';
 
-import {PLAN_EXT, parsePlan} from './plan-file';
-import {STUDY_EXT, parseStudy} from './study-file';
+import {PLAN_EXT, SavedPlan, parsePlan} from './plan-file';
+import {STUDY_EXT, SavedStudy, parseStudy} from './study-file';
 
 export const OPENED_EXTS = [PLAN_EXT, STUDY_EXT, 'csv', 'tsv', 'txt'];
 
 /** A table of measurements, as far as the hub reads it. */
 export interface MeasuredTable {kind: 'table', file: string, df: DG.DataFrame, animals: number | null,
   groups: number | null, lastDay: number | null, found: string[], missing: string[], weight: boolean}
-export interface PlanRead {kind: 'plan', file: string, text: string, name: string, line: string, end: number | null}
-export interface StudyRead {kind: 'study', file: string, text: string}
-export type FileRead = MeasuredTable | PlanRead | StudyRead | {kind: 'bad', file: string};
+/** `saved`: the file as read, so opening it does not read it again. */
+export interface PlanRead {kind: 'plan', file: string, text: string, saved: SavedPlan, name: string, line: string,
+  end: number | null}
+export interface StudyRead {kind: 'study', file: string, text: string, saved: SavedStudy}
+/** `why`: what is wrong with it, in a sentence. */
+export type FileRead = MeasuredTable | PlanRead | StudyRead | {kind: 'bad', file: string, why: string};
 
 /** The columns Analyze needs, by the names a study table usually gives them. */
 export const ROLES: [string, RegExp][] = [
@@ -35,18 +38,17 @@ export function readFile(name: string, text: string): FileRead {
   try {
     if (ext === PLAN_EXT) {
       const p = parsePlan(text);
-      return {kind: 'plan', file: name, text, name: p.name || baseOf(name), line: p.predicted.line ?? '',
+      return {kind: 'plan', file: name, text, saved: p, name: p.name || baseOf(name), line: p.predicted.line ?? '',
         end: Number.isFinite(p.predicted.studyEnd) ? Math.round(p.predicted.studyEnd) : null};
     }
     if (ext === STUDY_EXT) {
-      // read now, as a plan is: a damaged or newer study is said to be no study file here, not on opening it
-      parseStudy(text);
-      return {kind: 'study', file: name, text};
+      // read now, as a plan is: a damaged or newer study is said so here, not on opening it
+      return {kind: 'study', file: name, text, saved: parseStudy(text)};
     }
     if (ext === 'csv' || ext === 'tsv' || ext === 'txt') {
       const df = DG.DataFrame.fromCsv(text);
       if (df.rowCount === 0)
-        return {kind: 'bad', file: name};
+        return {kind: 'bad', file: name, why: 'The table has no rows: open the file with the measurements.'};
       df.name = baseOf(name);
       const names = df.columns.names();
       const at = (re: RegExp) => names.find((c) => re.test(c));
@@ -62,10 +64,15 @@ export function readFile(name: string, text: string): FileRead {
         found: roles.filter((r) => r.column).map((r) => `${r.role} ← ${r.column}`),
         missing: roles.filter((r) => !r.column).map((r) => r.role), weight: !!at(WEIGHT)};
     }
-  } catch {
-    // a file that does not parse as its extension says is not a study file
+  } catch (e: any) {
+    // a plan or a study says what is wrong in a sentence; a table that does not parse, below
+    if (ext === PLAN_EXT || ext === STUDY_EXT)
+      return {kind: 'bad', file: name, why: String(e?.message ?? e)};
+    console.warn(`PMX Studio: ${name}`, e);
+    return {kind: 'bad', file: name, why: 'The table could not be read. Save it again as .csv or .tsv from your ' +
+      'spreadsheet.'};
   }
-  return {kind: 'bad', file: name};
+  return {kind: 'bad', file: name, why: 'PMX Studio opens .pmxplan, .pmxstudy, .csv and .tsv files.'};
 }
 
 /** What the files brought so far hold together: one of each kind, the latest winning. */

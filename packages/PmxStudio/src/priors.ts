@@ -98,22 +98,36 @@ export async function tumorModels(): Promise<{[line: string]: TumorModel}> {
   return (await enginePriors()).models ?? {};
 }
 
+/** A package file's text, read once; a failed read is not kept, so the next call tries again. */
+function cachedText(file: string): () => Promise<string> {
+  let read: Promise<string> | null = null;
+  return () => read ??= _package.files.readAsText(file).catch((e) => {
+    read = null;
+    console.error(`PMX Studio: ${file}`, e);
+    throw new Error('PMX Studio\'s reference data could not be loaded. Check your connection and try again.');
+  });
+}
+
 /** A package file's JSON, read once; a failed read is not kept, so the next call tries again. */
-function cachedJson<T>(file: string): () => Promise<T> {
+function cachedJson<T>(file: string, text = cachedText(file)): () => Promise<T> {
   let read: Promise<T> | null = null;
-  return () => read ??= _package.files.readAsText(file).then((t) => JSON.parse(t) as T).catch((e) => {
+  return () => read ??= text().then((t) => JSON.parse(t) as T).catch((e) => {
     read = null;
     throw e;
   });
 }
 
-export const enginePriors = cachedJson<EnginePriors>(PRIORS_FILE);
+/** The atlas file's text: read once for its priors and its hash (plan-file.ts's provenance). */
+export const priorsText = cachedText(PRIORS_FILE);
+export const enginePriors = cachedJson<EnginePriors>(PRIORS_FILE, priorsText);
 
 export async function linePrior(line: string): Promise<LinePrior> {
   const all = await enginePriors();
   const p = all.lines[line];
-  if (!p)
-    throw new Error(`No prior for cell line "${line}"; known: ${Object.keys(all.lines).join(', ')}`);
+  if (!p) {
+    throw new Error(`PMX Studio has no data for the tumor model "${line}": pick one of ` +
+      `${Object.keys(all.lines).join(', ')}.`);
+  }
   return p;
 }
 

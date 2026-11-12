@@ -252,6 +252,13 @@ export function noteLine(text: string, kind: 'warning' | 'success' | 'error' = '
   return line;
 }
 
+/** What a failure tells the user: PMX Studio's own errors (a plain Error, or a sentence) are written to be read; any
+ *  other (the engine, a bug) is `fallback`. The technical text goes to the console. */
+export function plainError(e: any, fallback: string): string {
+  console.error('PMX Studio:', e);
+  return typeof e === 'string' ? e : e instanceof Error && e.constructor === Error && e.message ? e.message : fallback;
+}
+
 /** The engine's notes (" | "-separated) as note lines. */
 export const notes = (text: unknown) => String(text ?? '').split(' | ').filter((n) => n).map((n) => noteLine(n));
 
@@ -272,7 +279,7 @@ export const EXAMPLE = {file: 'example/mc38-ld4172-anti-pd1.csv', saveAs: 'pmx-e
 export function exampleLine(): HTMLElement {
   const get = link(`Download an example study (${EXAMPLE.what})`, () => void _package.files.readAsText(EXAMPLE.file)
     .then((text) => DG.Utils.download(EXAMPLE.saveAs, text, 'text/csv'))
-    .catch((e) => grok.shell.error(String(e?.message ?? e))));
+    .catch((e) => grok.shell.error(plainError(e, 'The example could not be downloaded. Try again in a moment.'))));
   get.title = 'A table of measurements to open here: Yu X. et al., Nature Communications 15 (2024), ' +
     'doi:10.1038/s41467-024-55006-2, CC BY 4.0';
   const line = span('No study at hand? ', 'pmx-muted');

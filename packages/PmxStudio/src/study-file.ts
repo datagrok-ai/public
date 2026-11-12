@@ -144,7 +144,7 @@ export function roleColumns(df: DG.DataFrame): {animal: DG.Column, group: DG.Col
   const col = (role: string) => {
     const c = (typeof roles[role] === 'string' ? df.col(roles[role] as string) : null) ?? df.col(role);
     if (!c)
-      throw new Error(`The study table has no ${role} column`);
+      throw new Error(`The study table has no ${role} column: pick it in the form, then try again.`);
     return c;
   };
   return {animal: col('animal'), group: col('group'), day: col('day'), volume: col('volume')};
@@ -181,17 +181,22 @@ export function parseStudy(text: string): SavedStudy {
   try {
     s = JSON.parse(text);
   } catch {
-    throw new Error('Not a PMX Studio study: the file is not JSON');
+    throw new Error('Not a PMX Studio study: the file cannot be read (cut short, or another kind of file). ' +
+      'Open the .pmxstudy file saved from Monitor.');
   }
   if (s?.format !== FORMAT)
-    throw new Error('Not a PMX Studio study');
-  if (s.version !== 1)
-    throw new Error(`A study of version ${s.version}, which this PMX Studio cannot read: update the package`);
+    throw new Error('Not a PMX Studio study. Open the .pmxstudy file saved from Monitor.');
+  if (s.version !== 1) {
+    throw new Error('This study was saved by another version of PMX Studio, which this one cannot read. Ask your ' +
+      'administrator to update the PMX Studio package.');
+  }
   // what the views read without asking: a row's animal, a log line's time and text
   if (!Array.isArray(s.rows) || !Array.isArray(s.log) ||
     !s.rows.every((r: any) => r && typeof r.animal === 'string') ||
-    !s.log.every((e: any) => e && typeof e.when === 'string' && typeof e.what === 'string'))
-    throw new Error('The study file is damaged');
+    !s.log.every((e: any) => e && typeof e.when === 'string' && typeof e.what === 'string')) {
+    throw new Error('The study file is damaged: some of its rows or log lines are incomplete. Open another copy of ' +
+      'it.');
+  }
   if (s.plan)
     parsePlan(JSON.stringify(s.plan));
   // a field this version does not know is kept as it came; the model only as a name

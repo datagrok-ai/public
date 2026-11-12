@@ -147,10 +147,16 @@ let calls = 0;
 /** The calls made so far (for the package's tests: what opens the engine). */
 export const cruxCalls = () => calls;
 
+/** A failure of the engine itself, its text as Crux gives it: technical, so not shown to the user (ui.ts's
+ *  plainError). */
+export class EngineError extends Error {}
+
 /** Calls the crux-fn `name` (e.g. 'stats.map_prior') on `table` (column name -> values) with `params`. */
 export const crux = (name: string, table: {[col: string]: any}, params: object = {}): Promise<CruxResult> => {
   calls++;
-  return engine.call(name, table, params);
+  return engine.call(name, table, params).catch((e) => {
+    throw new EngineError(String(e?.message ?? e));
+  });
 };
 
 /** A gesture that will compute (a field changed, a stage opened, the tab back): the engine at rest reopens its sets

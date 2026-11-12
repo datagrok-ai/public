@@ -264,7 +264,7 @@ export async function twinModel(line: string) {
   const lp = await linePrior(line);
   const [sp, nz, tw] = [lp.study_prior, lp.noise, lp.twin];
   if (!sp || !nz || !tw)
-    throw new Error(`The engine priors have no digital twin model for ${line}`);
+    throw new Error(`PMX Studio has no growth model for ${line} yet: pick another tumor model.`);
   return {mean_log_alpha: sp.mean_log_alpha, sd_study_log_alpha: sp.sd_log_alpha, mean_log_beta: sp.mean_log_beta,
     sd_study_log_beta: sp.sd_log_beta, rho_study: sp.rho, log_v_ref: lp.log_v_ref, start_sd: lp.start_sd,
     me_c0: nz.c0, me_c1: nz.c1, noise_df: nz.df, sd_session: nz.sd_session, v_lod: V_LOD,
@@ -375,8 +375,10 @@ function twinOf(window: Window, params: object) {
 
 export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysis> {
   const groups = [...new Set(d.data.group)];
-  if (!groups.includes(d.control))
-    throw new Error(`No group "${d.control}" in the study: the control must be one of ${groups.join(', ')}`);
+  if (!groups.includes(d.control)) {
+    throw new Error(`There is no group "${d.control}" in the study table: pick the control among ` +
+      `${groups.join(', ')}.`);
+  }
   const treated = groups.filter((g) => g !== d.control);
   if (treated.length === 0)
     throw new Error('The study has no treated group');

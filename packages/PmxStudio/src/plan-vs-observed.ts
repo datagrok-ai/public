@@ -13,7 +13,7 @@ import {AnalysisFrames, PREDICTED} from './analyze';
 import {BandChart} from './band-chart';
 import {finite} from './engine';
 import {SavedPlan, myPlans, parsePlan, plansFolder} from './plan-file';
-import {axisAt, block, guide, infoNote, noteLine, notes, notesBox, pct, pValue, sized, swatch,
+import {axisAt, block, guide, infoNote, noteLine, notes, notesBox, pct, plainError, pValue, sized, swatch,
   volumeAxis} from './ui';
 
 /** A treated group's effect against the plan's on a shared percent axis from `lo` to 100: the range a study run as
@@ -160,7 +160,8 @@ export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: 
     }
     DG.Menu.popup().items(files.map((f) => f.name), (name: string) =>
       planField.value = files.find((f) => f.name === name) ?? null).show();
-  }), {tooltip: 'Choose one of your saved plans'})));
+  }, (e) => grok.shell.error(plainError(e, 'Your saved plans could not be listed. Try again in a moment.'))),
+  {tooltip: 'Choose one of your saved plans'})));
   // ponytail: u2's FileInput keeps its last file when the box is emptied (it reports the empty path as missing), so
   // the plan is taken off with a button of its own
   planField.addOptions(form.build(() => iconButton('times', () => planField.value = null,
@@ -194,7 +195,8 @@ export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: 
         applyPlan(parsePlan(text));
         call.setParamValue('plan', text);
         state.changed();
-      }).catch((e) => error.value = String(e?.message ?? e));
+      }).catch((e) => error.value = plainError(e, 'The plan file could not be read. Pick it again, or pick ' +
+        'another.'));
     });
   });
 
