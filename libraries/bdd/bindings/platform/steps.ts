@@ -1738,9 +1738,10 @@ const dbMetaOf = (page: Page, connection: string, path: string): Promise<Record<
         }
       }
       // annotations are tag text, a list of values as JSON: shown as its items, as the pane lists them
-      const asText = (v: any): string => {
+      const asText = (k: string, v: any): string => {
         try {
-          const list = typeof v === 'string' && v.startsWith('[') ? JSON.parse(v) : v;
+          const isList = (k === 'values' || k === 'sampleValues') && typeof v === 'string' && v.startsWith('[');
+          const list = isList ? JSON.parse(v) : v;
           return String(list);
         }
         catch (_) {
@@ -1749,7 +1750,7 @@ const dbMetaOf = (page: Page, connection: string, path: string): Promise<Record<
       };
       // a column's and a table's tags are a map whose own methods (values, keys) shadow tags of those names
       return Object.fromEntries(keys.map((k: string) => [k, (typeof held.get === 'function' ? held.get(k) : held[k]) ?? ''])
-        .map(([k, v]) => [k, asText(v)]));
+        .map(([k, v]) => [k, asText(k, v)]));
     }
     throw new Error(`no "${p}" in any database of "${c}"`);
   }, [connection, path, Object.values(DB_META_FIELDS)] as [string, string, string[]]);
