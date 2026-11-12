@@ -134,10 +134,10 @@ export interface BandFactors {end80: number | null, volume90: number | null}
 export interface BandCalibration {version: number, provenance: string, lines: {[line: string]: BandFactors}}
 export const bandCalibration = cachedJson<BandCalibration>('band_calibration_v1.json');
 
-/** A quantile `x` moved `s` times as far from the median, in log scale (`floor`: the least either may be). */
+/** A quantile `x` moved `s` times as far from the median, in log scale (`floor`: the least any of them may be). */
 export function widened(median: number, x: number, s: number, floor = 0): number {
   const [m, q] = [Math.max(median, floor), Math.max(x, floor)];
-  return Math.exp(Math.log(m) + s * (Math.log(q) - Math.log(m)));
+  return Math.max(floor, Math.exp(Math.log(m) + s * (Math.log(q) - Math.log(m))));
 }
 
 /** The MAP prior of a new study's log alpha, recomputed by Crux from the per-paper table (plus `extra`
