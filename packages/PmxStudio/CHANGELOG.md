@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+* Plain messages from Open a study to Monitor (2026-11-12): what is missing, empty or failed says what happened and
+  what to do; no technical text reaches the user (it goes to the console), and no failure is dropped silently (a
+  saved-plans list that could not be read no longer says there are none). The atlas file is downloaded once.
+
 * Provenance (2026-11-12): a saved plan or study records the atlas it was made with (a fingerprint of
   files/engine_priors_v3.json) and the PMX Studio version, an optional field: older files open as before. Opening a
   plan saved with another atlas says so in one line (Plan recomputes it with the current one; Monitor keeps the plan's
