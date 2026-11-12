@@ -16,10 +16,12 @@ import {DEFAULT_RULES, Finding, OutlierRules, RulesSource, canEditLabRules, find
   saveLabRules, saveUserRules, userRules} from './outlier-rules';
 import {StudyInputs as StudyNames} from './explore';
 import type {MenuAt} from './calendar';
-import {ROLES, WEIGHT} from './open-study';
+import {ROLES, WEIGHT, pastedNumber} from './wide-table';
 import {EXCLUDED, FLAGGED, MARK_REASON, STUDY_TAG, addLog, groupsShown, ticked} from './study-file';
 import {metaOf} from './study-meta';
 import {stageOf} from './ui';
+
+export {pastedNumber};
 
 /* The marks (study-file.ts's EXCLUDED, FLAGGED, MARK_REASON) are visible columns created on first use; a tick typed
    straight into the grid counts as well, and so does a study file's own Excluded column (true, yes, 1, x). */
@@ -260,23 +262,6 @@ export function emptyStudy(): DG.DataFrame {
     DG.Column.float('day', 0), DG.Column.float('volume', 0), DG.Column.float('body_weight', 0)]);
   df.name = 'New study';
   return df;
-}
-
-/** A pasted cell as a number: digits with a dot or a comma for the decimals, or with the thousands marked as well
- *  (1,234.5 or 1.234,5). NaN for what cannot be read without guessing: "1,234" alone (1.234 or 1234?), a unit, "<50".
- *  null: an empty cell, or one that says so (NA, n/a, -). */
-export function pastedNumber(cell: string): number | null {
-  const v = cell.trim();
-  if (v === '' || /^(na|n\/a|nan|-|\.)$/i.test(v))
-    return null;
-  if (/^[+-]?\d+(\.\d+)?$/.test(v))
-    return Number(v);
-  if (/^[+-]?\d{1,3}(,\d{3})+\.\d+$/.test(v))
-    return Number(v.replace(/,/g, ''));
-  if (/^[+-]?\d{1,3}(\.\d{3})+,\d+$/.test(v))
-    return Number(v.replace(/\./g, '').replace(',', '.'));
-  // a decimal comma, unless three digits follow it: that reads as thousands just as well
-  return /^[+-]?\d+,\d+$/.test(v) && !/,\d{3}$/.test(v) ? Number(v.replace(',', '.')) : NaN;
 }
 
 /** Rows pasted from a spreadsheet, added at the end of `df` (the grid's own paste writes over the cells there):

@@ -11,6 +11,7 @@ import './tests/monitor-tests';
 import './tests/hub-tests';
 import './tests/explore-tests';
 import './tests/study-table-tests';
+import './tests/wide-table-tests';
 import './tests/line-input-tests';
 import './tests/arm-name-tests';
 import './tests/plan-view-tests';
