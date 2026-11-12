@@ -122,6 +122,8 @@ export class FuncFlowView extends DG.ViewBase {
 
   /** The state a project restores and has not finished restoring yet; saving meanwhile keeps it. */
   private restoring: object | null = null;
+  /** The state a restore could not load (its script could not be reached); kept while the canvas stays empty. */
+  private unrestored: object | null = null;
 
   /** The saved script this flow edits, plus the graph when it is unsaved; an empty, unbound canvas saves nothing. */
   override saveStateMap(): object | null {
@@ -129,9 +131,12 @@ export class FuncFlowView extends DG.ViewBase {
       return this.restoring;
     if (!this.outputPanelEnabled)
       return null;
+    const empty = !this.boundScript && (this.flow?.getNodeCount() ?? 0) === 0;
+    if (empty && this.unrestored)
+      return this.unrestored;
     if (!this.flow)
       return this.boundScript ? {scriptId: this.boundScript.id, flow: null} : null;
-    if (!this.boundScript && this.flow.getNodeCount() === 0)
+    if (empty)
       return null;
     const unsaved = !this.boundScript || this.savedSnapshot === null || this.currentSnapshot() !== this.savedSnapshot;
     return {scriptId: this.boundScript?.id ?? null, flow: unsaved ? serializeFlow(this.flow, this.flowSettings) : null};
@@ -141,15 +146,21 @@ export class FuncFlowView extends DG.ViewBase {
     const state = stateMap as {scriptId?: string | null; flow?: FuncFlowDocument | null};
     this.restoring = stateMap;
     void this.restoreState(state.scriptId ?? null, state.flow ?? null)
-      .then(() => {
+      .catch((e) => {
+        this.unrestored = stateMap;
+        grok.shell.error(`Cannot restore flow "${this.name}": ${e instanceof Error ? e.message : e}`);
+      })
+      .finally(() => {
         if (this.restoring === stateMap)
           this.restoring = null;
-      })
-      .catch((e) => grok.shell.error(`Cannot restore flow "${this.name}": ${e instanceof Error ? e.message : e}`));
+      });
   }
 
   private async restoreState(scriptId: string | null, doc: FuncFlowDocument | null): Promise<void> {
     const script = scriptId ? await grok.dapi.scripts.find(scriptId) ?? null : null;
+    // the user loaded a flow of their own while the script was being fetched
+    if (this.boundScript || (this.flow?.getNodeCount() ?? 0) > 0)
+      return;
     if (scriptId && !script)
       grok.shell.warning(`The saved flow of "${this.name}" is no longer available${doc ? '; its unsaved copy is shown' : '; the empty view is not saved with the project'}`);
     if (script && !doc) {

@@ -412,6 +412,9 @@ category('Flow: entity server round-trip', () => {
       const state = unsaved.saveStateMap() as {scriptId: string | null; flow: FuncFlowDocument | null};
       expect(state.scriptId === null && state.flow?.nodes.length === 2, true, 'the unsaved graph is saved again as a graph');
 
+      expect(DG.Func.find({package: 'Flow', name: 'flowView'})[0]?.friendlyName, FuncFlowView.TYPE,
+        'a project reopens Flow views by the friendly name of the flowView function');
+
       const missing = await reopen({scriptId: '00000000-0000-0000-0000-000000000000', flow: doc});
       expect(await until(() => nodes(missing) === 2, 15000), true, 'a missing script lost the unsaved graph');
       expect((missing.saveStateMap() as {scriptId: string | null}).scriptId, null);

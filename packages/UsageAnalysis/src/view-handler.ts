@@ -73,6 +73,15 @@ export class ViewHandler {
   }
 
   async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
+    try {
+      await this.build(date, groups, packages, tags, categories, projects, path);
+    } catch (e) {
+      this.pendingState = undefined;
+      throw e;
+    }
+  }
+
+  private async build(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
     const toolboxPromise = UaToolbox.construct(this);
     const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView,
       SystemActivityView, AiUsageView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
@@ -98,10 +107,7 @@ export class ViewHandler {
       urlTab = views.find((v) => ViewHandler.urlName(v) === this.appTab)?.name ?? urlTab;
 
     const indicatorTimer = setTimeout(() => ui.setUpdateIndicator(this.view.root, true, 'Loading...'), 200);
-    const toolbox = await toolboxPromise.catch((e) => {
-      this.pendingState = undefined;
-      throw e;
-    });
+    const toolbox = await toolboxPromise;
     clearTimeout(indicatorTimer);
     ui.setUpdateIndicator(this.view.root, false);
     for (const view of views)
