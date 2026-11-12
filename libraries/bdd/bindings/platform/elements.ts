@@ -16,6 +16,10 @@ element('browse panel', {selector: '.grok-view-browse, .layout-browse', aliases:
 element('browse tree', {selector: '.grok-view-browse [role="tree"], .layout-browse [role="tree"]',
   description: 'the tree inside the browse panel — the scope for a node phrase ("Files tree node inside browse tree")'});
 element('context panel', {selector: '.grok-prop-panel', aliases: ['property panel']});
+// the panel docks alone or in a column with the help panel
+element('context panel splitter', {selector: '.splitbar-vertical:is(:has(+ .panel-base > .panel-content .grok-prop-panel), ' +
+  ':has(+ .splitter-container-column > .panel-base > .panel-content .grok-prop-panel))',
+  description: 'the dock splitter at the context panel\'s left edge: dragged right, it narrows the panel'});
 element('favorite star', {selector: '.d4-star', aliases: ['favorites star'],
   description: 'the star beside an entity\'s name in the context panel that adds it to favorites and takes it out; it carries no aria state, only `fas` (a favorite) or `fal`, so claim the favorites on the server'});
 element('browse panel close icon', {selector: '.grok-browse-header .panel-titlebar-button-close',
