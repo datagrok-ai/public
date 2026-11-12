@@ -1365,7 +1365,11 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         hoveredLigand.structureRefs = await addLigandOnStage(plugin, hoveredLigandData, color, this.zoom);
       });
     }
-    this.logger.debug(`${logPrefix}, newLigands:`, newLigands);
+    this.logger.debug(`${logPrefix}, newLigands:`, {
+      selected: newLigands.selected.map((l) => l.rowIdx),
+      current: newLigands.current?.rowIdx,
+      hovered: newLigands.hovered?.rowIdx,
+    });
 
     // Because of the async nature of loading structures to .viewer, the .dataFrame property can be changed (to null).
     // So collect data from the .dataFrame synchronously and then add ligands to the .viewer with postponed sync.
