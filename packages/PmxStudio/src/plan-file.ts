@@ -45,10 +45,16 @@ export async function provenance(): Promise<Provenance> {
 export const provenanceOf = (x: any): Provenance | undefined =>
   typeof x?.atlas === 'string' && typeof x.app === 'string' ? {atlas: x.atlas, app: x.app} : undefined;
 
-/** The sentence for a file made with another atlas than the current one; null when it is the same or says nothing. */
-export async function atlasNote(p: Provenance | undefined): Promise<string | null> {
-  return p && p.atlas !== (await provenance()).atlas ?
-    'Made with a different version of the atlas; its predictions are kept as saved.' : null;
+/** What a file made with another atlas says: Plan recomputes what it opens, Monitor keeps the plan's predictions. */
+export const PLAN_ATLAS_NOTE = 'Saved with a different version of the atlas; the numbers shown are computed with ' +
+  'the current one.';
+export const FROZEN_ATLAS_NOTE = 'Made with a different version of the atlas; its predictions are kept as saved.';
+
+/** `note` for a file made with another atlas than the current one; null when it is the same, says nothing, or the
+ *  atlas cannot be read. */
+export async function atlasNote(p: Provenance | undefined, note: string): Promise<string | null> {
+  const now = await provenance().catch(() => undefined);
+  return p && now && p.atlas !== now.atlas ? note : null;
 }
 
 export interface SavedPlan {
@@ -132,7 +138,7 @@ export async function planOf(name: string, call: DG.FuncCall, f: PlanFrames, stu
   return {...savedPlan(name, inputs, {line: v('line'), endpoint: v('endpoint'), vRand: v('v_rand'),
     studyEnd: v('study_end'), endpointDay: v('endpoint_day'), durationQ10: v('duration_q10'),
     durationQ90: n('duration_q90'), nControl: n('n_control'), arms, checks}, study),
-  provenance: await provenance()};
+  ...await provenance().then((x) => ({provenance: x}), () => ({}))};
 }
 
 /** A plan read from a file someone may have edited or sent: checked before use. */

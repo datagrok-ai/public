@@ -17,11 +17,11 @@ import {analyzeView} from './analyze-view';
 import {BandChart} from './band-chart';
 import {WEEKDAY_NAMES, groupColors, weekdaysOf} from './frames';
 import {allocateGroups, MonitorFrames, monitorFrames, MonitorInputs, outsideBand, promptsByChance} from './monitor';
-import {PLAN_TAG, SavedPlan, atlasNote, parsePlan} from './plan-file';
+import {FROZEN_ATLAS_NOTE, PLAN_TAG, SavedPlan, atlasNote, parsePlan} from './plan-file';
 import {planInput} from './plan-vs-observed';
 import {openStage, showStage} from './stages';
 import {LIMITS_TAG, LINE_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf, newStudyTable, parseStudy,
-  planProvenance, stamped,
+  stamped,
   restoreFields, roleColumns, saveStudy, studyOf, tableOf} from './study-file';
 import {editLayout, panelTabs, Tab} from './panels';
 import {stagePage, studyHeader} from './study-header';
@@ -780,11 +780,19 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
   ], MONITOR_TABS, 'pmx-monitor-panels', 'monitor');
   exports.push(['Layout…', () => editLayout(panels.root), 'View']);
 
-  // a study whose plan was made with another atlas says so, once, above its numbers
+  // a study whose plan was made with another atlas says so above its numbers (the plan the form gives, else the
+  // table's); the latest answer stands
   const atlasLine = div([], 'ui-label-details');
   atlasLine.hidden = true;
-  void atlasNote(planProvenance(initial ?? null)).then((t) => t && (atlasLine.hidden = !(atlasLine.textContent = t)),
-    () => {});
+  let atlasAsked = 0;
+  form.effect(() => {
+    void result.value;
+    const asked = ++atlasAsked;
+    void atlasNote(studyPlan()?.provenance, FROZEN_ATLAS_NOTE).then((t) => {
+      if (asked === atlasAsked)
+        atlasLine.hidden = !(atlasLine.textContent = t ?? '');
+    });
+  });
   const content = divV([atlasLine, cards, panels.root], 'pmx-monitor-content');
   const needStudy = () => studyTable() ?? (() => {
     throw new Error('Open a study first');
@@ -796,7 +804,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
       if (busy.peek() || stale.peek() || !result.peek())
         throw new Error('The forecasts are not up to date yet: export the report once they are');
       printSheet(await panels.all(() => reportHtml({title: df.name, stage: 'Monitor', meta: metaOf(df), content,
-        provenance: planProvenance(df), log: logOf(df)})));
+        planAtlas: studyPlan() ? studyPlan()!.provenance?.atlas ?? null : undefined, log: logOf(df)})));
     }],
     ['Study file (.pmxstudy)', () => {
       const df = needStudy();

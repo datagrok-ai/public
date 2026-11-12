@@ -22,7 +22,8 @@ import {openStage, showStage} from './stages';
 import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
 import {followPlan} from './monitor-view';
-import {SavedPlan, atlasNote, downloadPlan, parsePlan, planOf, planSaved, plansFolder, savePlan} from './plan-file';
+import {PLAN_ATLAS_NOTE, SavedPlan, atlasNote, downloadPlan, parsePlan, planOf, planSaved, plansFolder,
+  savePlan} from './plan-file';
 import {labHumane} from './study-file';
 import {StudyMeta, dateOf, dateText, dosingDays, emptyMeta, weekdayOf, withId} from './study-meta';
 import {CAL, MenuAt, WEEKDAYS, dayActions, icsOf, mark, marked, weeksGrid} from './calendar';
@@ -896,7 +897,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // a plan made with another atlas says so, once, above its numbers
   const atlasLine = div([], 'ui-label-details');
   atlasLine.hidden = true;
-  void atlasNote(initial?.provenance).then((t) => t && (atlasLine.hidden = !(atlasLine.textContent = t)), () => {});
+  void atlasNote(initial?.provenance, PLAN_ATLAS_NOTE)
+    .then((t) => t && (atlasLine.hidden = !(atlasLine.textContent = t)));
   const content = divV([atlasLine, cards, panels], 'pmx-plan-content');
   Object.assign(content.style, {gap: 'var(--dg-space-l)'});
 
@@ -1037,10 +1039,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   downloadButton.title = 'Download the plan as a file, to send it to someone';
   exports.push(['Report (PDF)…', async () => {
     const r = ready();
-    if (r) {
-      printSheet(await reportHtml({title: defaultName(r), stage: 'Plan', meta: meta.peek(), content,
-        provenance: initial?.provenance}));
-    }
+    if (r)
+      printSheet(await reportHtml({title: defaultName(r), stage: 'Plan', meta: meta.peek(), content}));
   }], ['Plan file (.pmxplan)', () => downloadButton.click()],
   ['Copy the study protocol', () => {
     if (!ready())

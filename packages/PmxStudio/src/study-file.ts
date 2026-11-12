@@ -49,7 +49,7 @@ export interface SavedStudy {
   weightLimit?: number | null;
   /** the study's ID, owner, dates and what each group receives (older files: none) */
   meta?: StudyMeta;
-  /** the atlas and app it was saved with (older files: none) */
+  /** the atlas and app the study was saved with (older files: none); its plan's predictions carry their own */
   provenance?: Provenance;
   /** the tumor model chosen in Monitor (older files: none); a plan's model comes first */
   line?: string;
@@ -201,17 +201,21 @@ export function parseStudy(text: string): SavedStudy {
     name: typeof s.name === 'string' ? s.name : '', looks: typeof s.looks === 'string' ? s.looks : ''} as SavedStudy;
 }
 
-/** What a study table's plan was made with (none: no plan, or one saved before provenance was kept). */
-export function planProvenance(df: DG.DataFrame | null): Provenance | undefined {
+/** The atlas a study table's plan was made with: undefined with no plan, null when it records none. */
+export function planAtlas(df: DG.DataFrame | null): string | null | undefined {
   try {
-    return provenanceOf(JSON.parse(df?.getTag(PLAN_TAG) || 'null')?.provenance);
+    const p = JSON.parse(df?.getTag(PLAN_TAG) || 'null');
+    return p ? provenanceOf(p.provenance)?.atlas ?? null : undefined;
   } catch {
     return undefined; // a damaged plan: Analyze says so
   }
 }
 
-/** The study with what it is saved with (the atlas and app now). */
-export const stamped = async (s: SavedStudy): Promise<SavedStudy> => ({...s, provenance: await provenance()});
+/** The study with what it is saved with (the atlas and app now); unchanged when the atlas cannot be read. */
+export const stamped = async (s: SavedStudy): Promise<SavedStudy> => {
+  const provenanceNow = await provenance().catch(() => undefined);
+  return provenanceNow ? {...s, provenance: provenanceNow} : s;
+};
 
 /** The measurements table of a saved study, with its plan, reviews, limits and log in tags. */
 export function tableOf(s: SavedStudy): DG.DataFrame {
