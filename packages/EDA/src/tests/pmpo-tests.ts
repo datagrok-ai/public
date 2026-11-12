@@ -384,7 +384,7 @@ category('Probabilistic MPO: API', () => {
     try {
       Pmpo.fit(df, getDescrCols(df, ['d1', 'd2']), df.col('des')!,
         P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT);
-    } catch (_) {
+    } catch {
       threw = true;
     }
     expect(threw, true, 'Expected fit to throw on non-applicable data');
@@ -404,7 +404,7 @@ category('Probabilistic MPO: API', () => {
     try {
       Pmpo.fit(df, getDescrCols(df, ['d1', 'd2']), df.col('des')!,
         P_VAL_TRES_DEFAULT, R2_DEFAULT, Q_CUTOFF_DEFAULT);
-    } catch (_) {
+    } catch {
       threw = true;
     }
     expect(threw, true, 'Expected fit to throw when no descriptors pass p-value filter');
@@ -470,7 +470,7 @@ category('Probabilistic MPO: API', () => {
     let threw = false;
     try {
       Pmpo.predict(incompleteDf, trainRes.params, true, SCORES_NAME);
-    } catch (_) {
+    } catch {
       threw = true;
     }
     expect(threw, true, 'Expected predict to throw for missing column');
