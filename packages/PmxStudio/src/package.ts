@@ -13,6 +13,7 @@ import {hubView} from './hub-view';
 import {quietContextPanel} from './stages';
 import {decorateStudyView, markRows} from './study-table';
 import {tumorModels} from './priors';
+import {filePreview} from './file-preview';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -85,6 +86,23 @@ export class PackageFunctions {
   static async pmxPlanFileHandler(content: string): Promise<DG.DataFrame[]> {
     quietContextPanel();
     return openPlanFile(content);
+  }
+
+  // a plan or a study selected in Files: what it holds, read from the file alone, and a button to its stage
+  @grok.decorators.fileViewer({fileViewer: 'pmxplan'})
+  static async pmxPlanFilePreview(file: DG.FileInfo): Promise<DG.View> {
+    return filePreview(file, 'plan', (text) => {
+      quietContextPanel();
+      return openPlanFile(text);
+    });
+  }
+
+  @grok.decorators.fileViewer({fileViewer: 'pmxstudy'})
+  static async pmxStudyFilePreview(file: DG.FileInfo): Promise<DG.View> {
+    return filePreview(file, 'study', (text) => {
+      quietContextPanel();
+      return openStudyFile(text);
+    });
   }
 
   @grok.decorators.func({

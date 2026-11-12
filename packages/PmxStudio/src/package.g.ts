@@ -60,6 +60,22 @@ export async function pmxPlanFileHandler(content: string) : Promise<any> {
   return await PackageFunctions.pmxPlanFileHandler(content);
 }
 
+//input: file file 
+//output: view result
+//meta.role: fileViewer
+//meta.fileViewer: pmxplan
+export async function pmxPlanFilePreview(file: DG.FileInfo) : Promise<any> {
+  return await PackageFunctions.pmxPlanFilePreview(file);
+}
+
+//input: file file 
+//output: view result
+//meta.role: fileViewer
+//meta.fileViewer: pmxstudy
+export async function pmxStudyFilePreview(file: DG.FileInfo) : Promise<any> {
+  return await PackageFunctions.pmxStudyFilePreview(file);
+}
+
 //description: Flags rows of a study table to look at, excludes them from the analysis (the reason asked in a dialog, required to exclude) or clears their marks; PMX Studio's items in the grid's context menu call it.
 //input: dataframe table { description: The study table. }
 //input: string rows { description: The rows, comma-separated indexes. }

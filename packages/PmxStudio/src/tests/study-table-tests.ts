@@ -4,8 +4,9 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {DEFAULT_RULES, findOutliers, StudyColumns} from '../outlier-rules';
 import {AnimalSelection, animalMarks, appendPasted, caliperVolume, emptyStudy, exclusionsOf, mark, mirrorSelection,
   pastedNumber, withoutExcluded} from '../study-table';
-import {EXCLUDED, FLAGGED, MARK_REASON, REVEALED, STUDY_TAG, addLog, groupsShown, logOf, parseStudy, roleColumns,
-  studyOf, tableOf} from '../study-file';
+import {EXCLUDED, FLAGGED, MARK_REASON, REVEALED, STUDY_TAG, WEIGHT_TAG, addLog, groupsShown, logOf, parseStudy,
+  roleColumns, studyOf, tableOf} from '../study-file';
+import {studySummary} from '../file-preview';
 import {EXAMPLE, isBodyWeight} from '../ui';
 import {_package} from '../package';
 import {dateOf, dosingDays, emptyMeta, metaOf, parseMeta, setMetaOn, startFrom, weekdayOf} from '../study-meta';
@@ -41,6 +42,30 @@ category('Study table', () => {
     expect(volume.stats.missingValueCount, 0, 'no volume missing');
     expect(df.columns.names().filter(isBodyWeight).length, 1, 'one body weight column');
   });
+
+  test('a study file previewed: its animals, groups and days; no group named while blinded; a newer file said so',
+    async () => {
+      const df = DG.DataFrame.fromCsv(await _package.files.readAsText(EXAMPLE.file));
+      df.setTag(WEIGHT_TAG, 'body_weight');
+      const saved = parseStudy(JSON.stringify(studyOf(df, 1500)));
+      const lines = studySummary(saved);
+      const all = lines.join(' | ');
+      expect(lines.includes('32 animals in 4 groups, measured on 5 days, the last day 12'), true, all);
+      expect(lines.includes('Vehicle: 8 animals'), true, all);
+      expect(lines.includes('Body weight measured') && lines.includes('No plan attached'), true, all);
+      const blind = studySummary({...saved, meta: {...emptyMeta(), blinded: true}});
+      expect(blind.some((l) => l.startsWith('Vehicle')), false, 'a group named while blinded');
+      const revealed = studySummary({...saved, meta: {...emptyMeta(), blinded: true},
+        log: [{when: '2026-11-12', who: 'x', what: REVEALED}]});
+      expect(revealed.some((l) => l.startsWith('Vehicle')), true, 'revealed, still unnamed');
+      let said = '';
+      try {
+        parseStudy(JSON.stringify({...saved, version: 99}));
+      } catch (e: any) {
+        said = e.message;
+      }
+      expect(said.includes('update the package'), true, said);
+    });
 
   test('the rules find the typo and the weight loss, nothing else', async () => {
     const s = study();

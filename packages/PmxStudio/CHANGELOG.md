@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+* Files (2026-11-12): a plan or a study selected in Datagrok's Files shows what it holds, read from the file alone:
+  a plan its model, end, groups and animals; a study its animals, groups (not named while blinded), days measured,
+  marked values and plan. A button opens it in Plan or Monitor; a damaged file or one from a newer version says so.
+
 * An example study (2026-11-12): the empty Monitor and Analyze offer a published one to download, MC38 with LD4172,
   anti-PD-1 and the two combined (Yu et al., Nat Commun 2024, CC BY 4.0; source and changes in
   `files/example/README.md`).

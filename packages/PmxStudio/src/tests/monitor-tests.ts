@@ -6,6 +6,7 @@ import {exampleStudy} from './example-study';
 import {allocateGroups, checkChance, futureDays, outsideBand, parseLooks, promptsByChance, reasonsOf,
   weightReasons} from '../monitor';
 import {PLAN_TAG, parsePlan} from '../plan-file';
+import {planSummary} from '../file-preview';
 import {LIMITS_TAG, LOOKS_TAG, WEIGHT_TAG, addLog, logOf, newStudyTable, parseStudy, studyOf, tableOf}
   from '../study-file';
 import {panelTabs} from '../panels';
@@ -179,6 +180,10 @@ category('Monitor', () => {
     const whole = await exampleStudy();
     const plan = parsePlan(whole.getTag(PLAN_TAG)!);
     expect(newStudyTable(plan).rowCount, 0);
+    // previewed in Files: its model and end, the control and each arm, who saved it
+    const preview = planSummary(plan);
+    expect(preview.length, plan.predicted.arms.length + 3, preview.join(' | '));
+    expect(preview[0].startsWith('MC38 · endpoint'), true, preview[0]);
     const df = await upTo(5);
     df.name = 'S';
     df.setTag(LOOKS_TAG, '7, 10');

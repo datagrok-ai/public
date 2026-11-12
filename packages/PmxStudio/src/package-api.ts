@@ -58,6 +58,14 @@ export namespace funcs {
     return await grok.functions.call('PMXStudio:PmxPlanFileHandler', { content });
   }
 
+  export async function pmxPlanFilePreview(file: DG.FileInfo ): Promise<DG.View> {
+    return await grok.functions.call('PMXStudio:PmxPlanFilePreview', { file });
+  }
+
+  export async function pmxStudyFilePreview(file: DG.FileInfo ): Promise<DG.View> {
+    return await grok.functions.call('PMXStudio:PmxStudyFilePreview', { file });
+  }
+
   /**
    * Flags rows of a study table to look at, excludes them from the analysis (the reason asked in a dialog, required to exclude) or clears their marks; PMX Studio's items in the grid's context menu call it.
    * @param {DG.DataFrame} table - The study table.
