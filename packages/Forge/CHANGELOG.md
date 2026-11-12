@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1518](https://github.com/datagrok-ai/core/issues/1518): Took over the platform's ML | Models menu, Browse node and table pane, moved to the shared prediction tag predictive.model, and recognized columns of the earlier tool in Predicted by (needs Datagrok <minimum platform version: TBD> or later)
 * GROK-20932: Added Find best model's Strategy: Equal, an equal split (the default: every checked method an equal share of the limit, the time or trials a method leaves unused passed on to the methods after it; by trials the search reaches Max trials) or Leaders, focus on leaders (successive halving), and options.search.strategy (equal or halving, with method auto; schema 0.1.23)
 * GROK-20932: Improved the search limit: one limit, Limit Time (Max time: whole minutes, 1 to 60, with a clicker, on one underline) or Trials (the default; Max trials: 1 to 10000), first in Tune's Search options, each validated by the platform's int input with its range (Find and Tune disabled with the reason, no search started); options.search takes budgetSeconds or maxTrials, never both; the remembered seconds become whole minutes
 * GROK-20932: Improved the task-bar progress of a search: `Finding best model (79/100)` (the trials finished), `Tuning <Method> (42 s left)` or `(2 min left)`, and `(finishing 3 trials)` once the time is up

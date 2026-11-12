@@ -1,4 +1,4 @@
-/* The table pane Forge models (`table-models-panel.ts`): a named table as the current object, the place of the pane
+/* The table pane Models (`table-models-panel.ts`): a named table as the current object, the place of the pane
    in the context panel, and the feature's own lines in it. The pane is built in `ui.wait` each time it is shown, so
    every claim polls. */
 import type {Page} from '@playwright/test';

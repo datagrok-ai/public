@@ -1,6 +1,6 @@
 @journey @serial
 Feature: Training on iris with missing values: Skip rows, Impute, and a cell cleared later
-  ML | Forge | Train... over iris opened from the demo files, with two cells of Sepal.Width (rows 3 and 10) and one of
+  ML | Models | Train Model... over iris opened from the demo files, with two cells of Sepal.Width (rows 3 and 10) and one of
   Species (row 20) cleared before the view opens. Translated from the manual scenarios 3.11, 3.12, 5.11 (steps 1-3)
   and 5.13 (step 3) of core/docs/features/platform/predictive-modeling/forge/manual-checks.md. A training is claimed
   by the run its results show (data-forge-run-id): a new run's result, then that run as the table's newest on the
@@ -33,7 +33,7 @@ Feature: Training on iris with missing values: Skip rows, Impute, and a cell cle
     When user clears "Sepal.Width" column in rows "3, 10"
     And user clears "Species" column in rows "20"
     And user remembers the shown training
-    And user picks "ML > Forge > Train..." from the top menu
+    And user picks "ML > Models > Train Model..." from the top menu
     Then the "Predictive model" view should be current
     And a new training's result should be shown
     When user selects "SVM" in Method input

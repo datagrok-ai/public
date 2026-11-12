@@ -1,6 +1,6 @@
 @journey @serial
 Feature: Training a classifier on iris in the Train view
-  ML | Forge | Train... over iris opened from the demo files (a table with a creation script, so Save offers
+  ML | Models | Train Model... over iris opened from the demo files (a table with a creation script, so Save offers
   Reference). Translated from the manual scenarios 2.1, 6.2 (steps 1-3), 2.5, 5.1, 5.2 (steps 1-2), 5.13 (steps 1-2),
   2.2, 2.3, 2.8, 4.7 (step 1), 5.5, 5.6 and 5.7 of core/docs/features/platform/predictive-modeling/forge/manual-checks.md.
   The view trains by itself. A training is claimed by the run its results show (data-forge-run-id on the results
@@ -41,7 +41,7 @@ Feature: Training a classifier on iris in the Train view
     And user opens the demo file "iris.csv" as "forge-test-iris-{time}"
     And user watches the task bar
     And user remembers the shown training
-    When user picks "ML > Forge > Train..." from the top menu
+    When user picks "ML > Models > Train Model..." from the top menu
     Then the "Predictive model" view should be current
     And a new training's result should be shown
     And no balloon of any colour should have been shown
@@ -354,7 +354,7 @@ Feature: Training a classifier on iris in the Train view
     And the newest training run of the table "forge-test-iris-{time}" should be linked to the model "forge-test-iris-{time}"
     And the shown seed should be the seed of the Forge model "forge-test-iris-{time}" on the server
     When user switches to the "forge-test-iris-{time}" table view
-    And user picks "ML > Forge > Models" from the top menu
+    And user calls "Forge:forgeModels" function
     Then the "Forge" view should be current
     And second grid viewer should list the Forge model "forge-test-iris-{time}"
     Given the context panel is open
@@ -398,7 +398,7 @@ Feature: Training a classifier on iris in the Train view
       | dataset_table_id | present |
     And the training copy of the Forge model "forge-test-iris-copy-{time}" should be the table "forge-test-iris-copy-{time} (training data)" of 150 rows and the columns "Sepal.Length, Petal.Length, Sepal.Width, Petal.Width, Species"
     When user switches to the "forge-test-iris-{time}" table view
-    And user picks "ML > Forge > Models" from the top menu
+    And user calls "Forge:forgeModels" function
     Then the "Forge" view should be current
     When user clicks on the Forge model "forge-test-iris-copy-{time}" in second grid viewer
     Then the context panel should show the Forge model "forge-test-iris-copy-{time}"

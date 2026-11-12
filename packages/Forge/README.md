@@ -11,7 +11,7 @@ share and delete models.
 
 ## Train a model
 
-Open a table, then **ML | Forge | Train...**. The **Predictive model** view opens with the inputs on the left, in
+Open a table, then **ML | Models | Train Model...**. The **Predictive model** view opens with the inputs on the left, in
 groups you can fold with their chevrons: **Data** (Table, Target, Features), **Preparation** (see "Preparation"; shown
 only while one of its inputs applies), **Method** (Method, **Settings** and the method's settings; see "Search") and **Validation** (see
 "Validation"). They start open but **Validation**, which starts folded, and a group with a problem opens itself. The results are on the right; drag the splitter between them to resize.
@@ -586,8 +586,8 @@ catalog open in this browser tab shows the new model right away.
 
 ## Apply a model
 
-Open a table, then **ML | Forge | Apply...** (or use the play icon in the catalog or the run icon in the table's
-**Forge models** pane). The **Apply predictive model**
+Open a table, then **ML | Models | Apply Model...** (or use the play icon in the catalog or the run icon in the table's
+**Models** pane). The **Apply predictive model**
 dialog has:
 
 * **Table**: the table to add the prediction to
@@ -617,7 +617,7 @@ open table it fits, otherwise on the current table (or the first open one).
 A problem (an empty row, a column of the wrong kind, a column used twice, a column removed from the table meanwhile,
 a model Forge cannot apply) marks the input it concerns, and **OK** stays unavailable with the first problem as its
 tooltip. **OK** closes the dialog and adds the column `<target> (predicted)` (`<target> (predicted 2)` and so on when
-the name is taken) to the table, tagged with the model's id (`forge.model`). A model saved with **Predict
+the name is taken) to the table, tagged with the model's id (`predictive.model`). A model saved with **Predict
 probability** also adds, right after it, the probability columns `P(<target> = <class>)` (`P(<target> = <class>) 2`
 when taken), tagged the same way: for two classes the positive class's only (`P(SEX = F)`), for more one per class
 (`P(Species = setosa)`, ...); hover a column's header for `Probability that <target> is <class>, predicted by <model
@@ -628,9 +628,8 @@ number of skipped rows. Every application, completed, failed or cancelled, is re
 
 ### Models for a table
 
-Show a table in the context panel (for example, click a cell or an empty area of its grid): the pane **Forge models** lists
-the models you can see whose features all have a close column in the table, newest first, as the built-in **Models**
-pane does. Each line has the small green run icon (**Run prediction**: the **Apply predictive model** dialog with that model and
+Show a table in the context panel (for example, click a cell or an empty area of its grid): the pane **Models** lists
+the models you can see whose features all have a close column in the table, newest first. Each line has the small green run icon (**Run prediction**: the **Apply predictive model** dialog with that model and
 this table, showing the table after applying), the model's name as a link and the menu arrow. Hover the name for the
 model's summary (Created by, Created, Updated, Trained on, Last run, Tags, Inputs, Outputs, Method and, when an open
 table fits, Applicable to); click it to show the model in the context panel; right-click it, or click the arrow, for
@@ -941,12 +940,12 @@ functions, which it runs in your browser: it can list the methods and your model
 rename, tag and delete models, and open the Share dialog for a model. Forge publishes what the assistant needs to know
 in its `agents/` folder: `package-knowledge.yaml` (what Forge does and where to find it) and `skills.md` (which
 function answers which request, the inputs, the results, the error messages and the rules, such as uploading no data
-unless you ask for a copy). The built-in **ML | Models** is another tool with its own models; the assistant's Forge
-knowledge does not cover it.
+unless you ask for a copy). Models of the earlier predictive modeling tool are not Forge's; the assistant's Forge
+knowledge does not cover them.
 
 ## Model catalog
 
-Open the catalog from **Browse > Apps > Forge** or **ML | Forge | Models**. The view has two sections:
+Open the catalog from **Browse > Apps > Forge** or **Browse > Platform > Predictive models**. The view has two sections:
 
 * **Methods**: a grid of every method Forge found, with its package, method type (function or script), roles and the
   hyperparameters it accepts; hover a header, or a **Method type**, **Roles** or **Hyperparameters** cell, for what it
@@ -1025,7 +1024,8 @@ storage: <mode> · Tags: <tags>`. The view's filter panel offers **Method**, **T
 **Created**.
 
 A prediction column's context panel has a **Predicted by** pane with the card of the model that made it, with the same
-tooltip.
+tooltip. A column predicted by a model of the earlier predictive modeling tool says so there, with the model's name:
+`Predicted by "<name>", a model of the earlier predictive modeling tool. Forge cannot show it yet.`
 
 ## Share a model
 
@@ -1039,13 +1039,14 @@ Training runs are not shared with their model: each user sees only their own. On
 administrator, too, sees only the models shared with them, not every user's (a platform issue).
 
 To share a model through a Space, drag it onto the Space in **Browse**: its card (**Browse > Platform > Domains >
-forge > model**, card mode), its name in a table's **Forge models** pane, or its name in the title of its context
+forge > model**, card mode), its name in a table's **Models** pane, or its name in the title of its context
 panel. The platform asks to confirm and links the model to the Space; everyone with access to the Space can then see
 and apply it. Dropping it again links nothing twice. The platform has no **Add to** command for models yet.
 
-The built-in **ML | Models** tools keep working next to Forge. The two do not share models. **Browse > Platform >
-Predictive models** and the table's **Models** pane are the built-in tool's; Forge's are **Browse > Apps > Forge** and
-the pane **Forge models**.
+On a server with Forge, **ML | Models**, **Browse > Platform > Predictive models** and the table's **Models** pane are
+Forge's. Models of the earlier predictive modeling tool are not shown; a column predicted by such a model says so in
+**Predicted by**. Forge needs Datagrok **<minimum platform version: TBD>** or later: on an older server the earlier
+tool stays in **ML | Models** and a table shows two **Models** panes.
 
 ## Methods
 

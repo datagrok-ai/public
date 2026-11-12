@@ -1,6 +1,7 @@
 @journey @serial
-Feature: The table pane Forge models: the models that fit a table, their tooltip, menu and run icon, and Train
-  The context panel of a table holds Forge's pane Forge models after the built-in panes: one line per saved model
+Feature: The table pane Models: the models that fit a table, their tooltip, menu and run icon, and Train
+  The context panel of a table holds Forge's pane Models after the built-in panes (the core hides its own Models pane
+  when Forge is installed): one line per saved model
   that fits the table, newest first, then Train. Translated from the manual scenarios 6.1 (steps 1-7) and 4.13 (step
   3) of core/docs/features/platform/predictive-modeling/forge/manual-checks.md. The Background trains four models
   through Forge:trainModel (no data stored): two iris classifiers (XGBoost; the second, saved after the first, has the
@@ -15,7 +16,8 @@ Feature: The table pane Forge models: the models that fit a table, their tooltip
   current again, a platform issue: a step sets the table as the current object instead); step 4's cell click back to
   the table (a click on a cell of the iris grid makes the cell the current object, not the table: the same step sets
   the table again); "newest first" beyond the two iris models; the run icon's colour and "no model icon" (visual);
-  the built-in Models pane's content (the old tool's list; the pane is claimed present); the values of the tooltip's
+  that the context panel has one Models pane only (the package test UI: Table panel "the context panel has one Models
+  pane"); the values of the tooltip's
   Created by, Created and Updated (the account's name and the times of the run; the Created by caption is claimed); the
   menu items Edit..., Clone, Delete and Watch
   of step 3 (the row menu of a line lists Open, Share..., History, Copy link, Apply... and Download); step 8 (the
@@ -55,23 +57,22 @@ Feature: The table pane Forge models: the models that fit a table, their tooltip
 
   Scenario: A table's context panel lists the models that fit it, newest first, after the built-in panes (6.1, 4.13)
     Given the table "forge-test-iris-{time}" is the current object
-    Then "Models" pane in context panel should be visible
-    And the "Forge models" pane in context panel should come after the "Script" pane
-    When user expands "Forge models" pane in context panel
-    Then the model lines of "Forge models" pane in context panel should list exactly "forge-test-pane-flower-{time}, forge-test-pane-iris-{time}" among those ending in "-{time}"
-    And "forge-test-pane-quality-{time}" model line in "Forge models" pane in context panel should be absent
-    And "forge-test-pane-demog-{time}" model line in "Forge models" pane in context panel should be absent
-    And menu arrow of "forge-test-pane-iris-{time}" model line in "Forge models" pane in context panel should be visible
-    And "Train" button in "Forge models" pane in context panel should be visible
-    When user hovers over run icon of "forge-test-pane-iris-{time}" model line in "Forge models" pane in context panel
+    Then the "Models" pane in context panel should come after the "Script" pane
+    When user expands "Models" pane in context panel
+    Then the model lines of "Models" pane in context panel should list exactly "forge-test-pane-flower-{time}, forge-test-pane-iris-{time}" among those ending in "-{time}"
+    And "forge-test-pane-quality-{time}" model line in "Models" pane in context panel should be absent
+    And "forge-test-pane-demog-{time}" model line in "Models" pane in context panel should be absent
+    And menu arrow of "forge-test-pane-iris-{time}" model line in "Models" pane in context panel should be visible
+    And "Train" button in "Models" pane in context panel should be visible
+    When user hovers over run icon of "forge-test-pane-iris-{time}" model line in "Models" pane in context panel
     Then tooltip should contain text "Run prediction"
-    When user hovers over "Train" button in "Forge models" pane in context panel
+    When user hovers over "Train" button in "Models" pane in context panel
     Then tooltip should contain text "Train a new model on this table."
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
   Scenario: A line's name shows the model's tooltip and the row's menu (6.1)
-    When user hovers over name of "forge-test-pane-iris-{time}" model line in "Forge models" pane in context panel
+    When user hovers over name of "forge-test-pane-iris-{time}" model line in "Models" pane in context panel
     Then tooltip should contain text "forge-test-pane-iris-{time}"
     And tooltip should contain text "Created by"
     And value of "Trained on" detail in tooltip should have the text "forge-test-iris-{time} (150 rows)"
@@ -81,7 +82,7 @@ Feature: The table pane Forge models: the models that fit a table, their tooltip
     And value of "Outputs" detail in tooltip should have the text "Species"
     And value of "Method" detail in tooltip should have the text "XGBoost"
     And value of "Applicable to" detail in tooltip should have the text "forge-test-iris-{time}"
-    When user right-clicks on name of "forge-test-pane-iris-{time}" model line in "Forge models" pane in context panel
+    When user right-clicks on name of "forge-test-pane-iris-{time}" model line in "Models" pane in context panel
     Then the open menu should list "Open"
     And the open menu should list "Share..."
     And the open menu should list "History"
@@ -94,18 +95,18 @@ Feature: The table pane Forge models: the models that fit a table, their tooltip
     And no errors should have been logged
 
   Scenario: The name opens the model in the context panel (6.1)
-    When user clicks on name of "forge-test-pane-iris-{time}" model line in "Forge models" pane in context panel
+    When user clicks on name of "forge-test-pane-iris-{time}" model line in "Models" pane in context panel
     Then the context panel should show the Forge model "forge-test-pane-iris-{time}"
     And "Details" pane in context panel should be visible
     Given the table "forge-test-iris-{time}" is the current object
-    Then "Forge models" pane in context panel should be visible
+    Then "Models" pane in context panel should be visible
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
   Scenario: The run icon applies the model to the table (6.1)
     Given user counts the task bar entries
-    When user expands "Forge models" pane in context panel
-    And user clicks on run icon of "forge-test-pane-iris-{time}" model line in "Forge models" pane in context panel
+    When user expands "Models" pane in context panel
+    And user clicks on run icon of "forge-test-pane-iris-{time}" model line in "Models" pane in context panel
     Then there should be 1 visible "Apply predictive model" dialog
     And Table input in "Apply predictive model" dialog should have value "forge-test-iris-{time}"
     And Model input in "Apply predictive model" dialog should have value "forge-test-pane-iris-{time}"
@@ -126,22 +127,22 @@ Feature: The table pane Forge models: the models that fit a table, their tooltip
   Scenario: Each table lists only the models that fit it; a table no model fits says so (6.1)
     When user switches to the "forge-test-wine-{time}" table view
     Given the table "forge-test-wine-{time}" is the current object
-    When user expands "Forge models" pane in context panel
-    Then the model lines of "Forge models" pane in context panel should list exactly "forge-test-pane-quality-{time}" among those ending in "-{time}"
+    When user expands "Models" pane in context panel
+    Then the model lines of "Models" pane in context panel should list exactly "forge-test-pane-quality-{time}" among those ending in "-{time}"
     When user switches to the "forge-test-demog-{time}" table view
     Given the table "forge-test-demog-{time}" is the current object
-    When user expands "Forge models" pane in context panel
-    Then the model lines of "Forge models" pane in context panel should list exactly "forge-test-pane-demog-{time}" among those ending in "-{time}"
+    When user expands "Models" pane in context panel
+    Then the model lines of "Models" pane in context panel should list exactly "forge-test-pane-demog-{time}" among those ending in "-{time}"
     Given user opens the demo file "cars.csv" as "forge-test-cars-{time}"
     And the table "forge-test-cars-{time}" is the current object
-    When user expands "Forge models" pane in context panel
-    Then the model lines of "Forge models" pane in context panel should list exactly "forge-test-pane-demog-{time}" among those ending in "-{time}"
+    When user expands "Models" pane in context panel
+    Then the model lines of "Models" pane in context panel should list exactly "forge-test-pane-demog-{time}" among those ending in "-{time}"
     Given user opens the demo file "country-languages.csv" as "forge-test-langs-{time}"
     And the table "forge-test-langs-{time}" is the current object
-    When user expands "Forge models" pane in context panel
-    Then "Forge models" pane in context panel should contain text "No model fits this table."
-    And the model lines of "Forge models" pane in context panel should list exactly "" among those ending in "-{time}"
-    And "Train" button in "Forge models" pane in context panel should be visible
+    When user expands "Models" pane in context panel
+    Then "Models" pane in context panel should contain text "No model fits this table."
+    And the model lines of "Models" pane in context panel should list exactly "" among those ending in "-{time}"
+    And "Train" button in "Models" pane in context panel should be visible
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
@@ -149,8 +150,8 @@ Feature: The table pane Forge models: the models that fit a table, their tooltip
     When user switches to the "forge-test-iris-{time}" table view
     Given the table "forge-test-demog-{time}" is the current object
     And user remembers the shown training
-    When user expands "Forge models" pane in context panel
-    And user clicks on "Train" button in "Forge models" pane in context panel
+    When user expands "Models" pane in context panel
+    And user clicks on "Train" button in "Models" pane in context panel
     Then the "Predictive model" view should be current
     And Table input should have value "forge-test-demog-{time}"
     And a new training's result should be shown

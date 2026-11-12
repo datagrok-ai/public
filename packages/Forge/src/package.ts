@@ -44,21 +44,18 @@ export async function forgeApp(): Promise<DG.ViewBase> {
 
 //name: forgeModels
 //description: Opens the Forge app
-//top-menu: ML | Forge | Models
 export async function forgeModels(): Promise<void> {
   await ForgeApp.open();
 }
 
 //name: forgeTrain
-//description: Trains a predictive model on the current table
-//top-menu: ML | Forge | Train...
+//description: Opens the Train view on the current table (the core's ML | Models | Train Model... calls it)
 export async function forgeTrain(): Promise<void> {
   await TrainView.open();
 }
 
 //name: forgeApply
-//description: Applies a saved Forge model to the current table
-//top-menu: ML | Forge | Apply...
+//description: Opens the Apply dialog on the current table (the core's ML | Models | Apply Model... calls it)
 export async function forgeApply(): Promise<void> {
   await openApplyDialog(grok.shell.currentTable);
 }
@@ -170,7 +167,7 @@ export async function shareModel(model: string): Promise<void> {
 }
 
 //name: isPredictionColumn
-//description: Whether the column holds the predictions of a Forge model
+//description: Whether the column holds predictions of a model: a Forge model or one made with the earlier predictive modeling tool
 //input: column col
 //output: bool result
 export function isPredictionColumn(col: DG.Column): boolean {
@@ -178,7 +175,7 @@ export function isPredictionColumn(col: DG.Column): boolean {
 }
 
 //name: Predicted by
-//description: The Forge model that predicted the column
+//description: The model that predicted the column
 //input: column col
 //output: widget result
 //meta.role: panel
@@ -187,8 +184,8 @@ export function predictedByPanel(col: DG.Column): DG.Widget {
   return new DG.Widget(predictedByPane(col));
 }
 
-//name: Forge models
-//description: The Forge models that fit the table, and training a new one
+//name: Models
+//description: The models that fit the table, and training a new one
 //input: dataframe table
 //output: widget result
 //meta.role: panel

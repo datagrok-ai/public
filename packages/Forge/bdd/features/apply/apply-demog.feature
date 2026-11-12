@@ -1,6 +1,6 @@
 @journey @serial
 Feature: Applying on data with natural gaps: demog's HEIGHT and WEIGHT, skipped by default or imputed
-  ML | Forge | Apply... over demog.csv opened from the demo files, whose HEIGHT (751 empty cells) and WEIGHT (one) are
+  ML | Models | Apply Model... over demog.csv opened from the demo files, whose HEIGHT (751 empty cells) and WEIGHT (one) are
   the features of a regressor of AGE the Background trains and saves through Forge:trainModel (Linear Regression, the
   method the Train view suggests for this selection; no data stored). Translated from the manual scenario 3.15 (steps
   2-4) of core/docs/features/platform/predictive-modeling/forge/manual-checks.md. The gaps are the demo file's own:
@@ -48,7 +48,7 @@ Feature: Applying on data with natural gaps: demog's HEIGHT and WEIGHT, skipped 
     And the value of "AGE" column in row 1193 should be ""
     And the value of "HEIGHT" column in row 965 should be ""
     And the value of "WEIGHT" column in row 2222 should be ""
-    When user picks "ML > Forge > Apply..." from the top menu
+    When user picks "ML > Models > Apply Model..." from the top menu
     Then there should be 1 visible "Apply predictive model" dialog
     And Table input in "Apply predictive model" dialog should have value "forge-test-demog-{time}"
     And Model input in "Apply predictive model" dialog should have value "forge-test-apply-demog-{time}"
@@ -97,7 +97,7 @@ Feature: Applying on data with natural gaps: demog's HEIGHT and WEIGHT, skipped 
 
   Scenario: Impute fills the gaps on a copy and predicts every row; the table keeps its gaps (3.15, step 4)
     Given user counts the task bar entries
-    When user picks "ML > Forge > Apply..." from the top menu
+    When user picks "ML > Models > Apply Model..." from the top menu
     Then there should be 1 visible "Apply predictive model" dialog
     And Model input in "Apply predictive model" dialog should have value "forge-test-apply-demog-{time}"
     And "Missing values" input in "Apply predictive model" dialog should be visible

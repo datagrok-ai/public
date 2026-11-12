@@ -52,8 +52,8 @@ overview: |
   to the Forge catalog without its training data unless asked, applies it to new tables as a prediction column,
   evaluates it on data with known targets, and manages the catalog (list, describe, rename, tag, share, delete).
 
-  UI: ML | Forge | Train... (the Predictive model view), ML | Forge | Apply..., ML | Forge | Models (the catalog, also
-  Browse > Apps > Forge), the table's context pane "Forge models", the model's panes Details / Performance / Activity /
+  UI: ML | Models | Train Model... (the Predictive model view), ML | Models | Apply Model..., the catalog (Browse >
+  Platform > Predictive models, also Browse > Apps > Forge), the table's context pane "Models", the model's panes Details / Performance / Activity /
   Sharing. In the view, Search options' Limit ends the search at a Max time (minutes) or Max trials, Find's Strategy is Equal (equal
   split) or Leaders (focus on leaders), Tune or Find again continues the last search on the same data and settings (the limit added
   on top), and after a search of two methods or more the Search panel shows each method's score less one standard error as a bar chart beside the
@@ -62,6 +62,6 @@ overview: |
   From code and from the assistant: Forge:listMethods, Forge:listModels, Forge:getModel, Forge:trainModel,
   Forge:applyModel, Forge:evaluateModel, Forge:updateModel, Forge:shareModel, Forge:deleteModel, through
   grok.functions.call in the browser (they run in the page, not on the server). Signatures, result shapes and rules:
-  agents/skills.md. The built-in ML | Models tool is a different, older tool with its own models.
+  agents/skills.md. grok.ml.applyModel(name, table) applies a Forge model by name too.
 apiRef: src/package-api.ts
 docsRef: README.md

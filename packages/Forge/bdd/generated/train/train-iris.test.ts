@@ -17,6 +17,7 @@ import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clearField, clickOn, collapse, dragBy, enterInto, expand, hoverOver, placeholderStarts, pressKeyIn, rememberSize, selectIn, shouldBe, shouldContainText, shouldHaveText, shouldHaveValue, shouldNotContainText, shouldOffer, sizeAgainstRemembered, typeInto, uncheck, visibleCount} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {taskBarFinished, watchTaskBar} from '@datagrok-libraries/bdd/bindings/platform/events';
+import {call} from '@datagrok-libraries/bdd/bindings/platform/functions';
 import {contextPanelOpen, dialogCloses, switchTableView, switchView, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {clickArea, infoBalloonText, noBalloons, noErrors, readingBetween, readingIs, readingReads} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {checkedInColumnList, toggleInColumnList, uncheckedInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
@@ -33,7 +34,7 @@ test.describe("Training a classifier on iris in the Train view", () => {
     await session.step(41, "And user opens the demo file \"iris.csv\" as \"forge-test-iris-{time}\"", () => openDemoFile(page, "iris.csv", session.text("forge-test-iris-{time}")));
     await session.step(42, "And user watches the task bar", () => watchTaskBar(page));
     await session.step(43, "And user remembers the shown training", () => rememberShownTraining(page));
-    await session.step(44, "When user picks \"ML > Forge > Train...\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Train..."));
+    await session.step(44, "When user picks \"ML > Models > Train Model...\" from the top menu", () => pickFromTopMenu(page, "ML > Models > Train Model..."));
     await session.step(45, "Then the \"Predictive model\" view should be current", () => viewIsCurrent(page, "Predictive model"));
     await session.step(46, "And a new training's result should be shown", () => newTrainingShown(page));
     await session.step(47, "And no balloon of any colour should have been shown", () => noBalloonAtAll(page));
@@ -291,7 +292,7 @@ test.describe("Training a classifier on iris in the Train view", () => {
       await session.step(354, "And the newest training run of the table \"forge-test-iris-{time}\" should be linked to the model \"forge-test-iris-{time}\"", () => newestRunLinked(page, session.text("forge-test-iris-{time}"), session.text("forge-test-iris-{time}")));
       await session.step(355, "And the shown seed should be the seed of the Forge model \"forge-test-iris-{time}\" on the server", () => shownSeedIsModels(page, session.text("forge-test-iris-{time}")));
       await session.step(356, "When user switches to the \"forge-test-iris-{time}\" table view", () => switchTableView(page, session.text("forge-test-iris-{time}")));
-      await session.step(357, "And user picks \"ML > Forge > Models\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Models"));
+      await session.step(357, "And user calls \"Forge:forgeModels\" function", () => call(page, "Forge:forgeModels"));
       await session.step(358, "Then the \"Forge\" view should be current", () => viewIsCurrent(page, "Forge"));
       await session.step(359, "And second grid viewer should list the Forge model \"forge-test-iris-{time}\"", () => catalogLists(page, el("second grid viewer"), session.text("forge-test-iris-{time}")));
       await session.step(360, "Given the context panel is open", () => contextPanelOpen(page));
@@ -327,7 +328,7 @@ test.describe("Training a classifier on iris in the Train view", () => {
       await session.step(396, "And the Forge model \"forge-test-iris-copy-{time}\" on the server should have:", () => modelShouldHave(page, session.text("forge-test-iris-copy-{time}"), [["storage_mode","copy"],["dataset_table_id","present"]]), [["storage_mode","copy"],["dataset_table_id","present"]]);
       await session.step(399, "And the training copy of the Forge model \"forge-test-iris-copy-{time}\" should be the table \"forge-test-iris-copy-{time} (training data)\" of 150 rows and the columns \"Sepal.Length, Petal.Length, Sepal.Width, Petal.Width, Species\"", () => trainingCopyIs(page, session.text("forge-test-iris-copy-{time}"), session.text("forge-test-iris-copy-{time} (training data)"), 150, "Sepal.Length, Petal.Length, Sepal.Width, Petal.Width, Species"));
       await session.step(400, "When user switches to the \"forge-test-iris-{time}\" table view", () => switchTableView(page, session.text("forge-test-iris-{time}")));
-      await session.step(401, "And user picks \"ML > Forge > Models\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Models"));
+      await session.step(401, "And user calls \"Forge:forgeModels\" function", () => call(page, "Forge:forgeModels"));
       await session.step(402, "Then the \"Forge\" view should be current", () => viewIsCurrent(page, "Forge"));
       await session.step(403, "When user clicks on the Forge model \"forge-test-iris-copy-{time}\" in second grid viewer", () => clickCatalogRow(page, session.text("forge-test-iris-copy-{time}"), el("second grid viewer")));
       await session.step(404, "Then the context panel should show the Forge model \"forge-test-iris-copy-{time}\"", () => panelShowsModel(page, session.text("forge-test-iris-copy-{time}")));

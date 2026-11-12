@@ -36,7 +36,7 @@ test.describe("Training on demog in the Train view: dates, one-hot, ids, Predict
     await session.step(52, "And no Forge training runs of the tables \"forge-test-demog-{time}, forge-test-demog50k-{time}\" are on the server", () => noRunsOf(page, session.text("forge-test-demog-{time}, forge-test-demog50k-{time}")));
     await session.step(53, "And user opens the demo file \"demog.csv\" as \"forge-test-demog-{time}\"", () => openDemoFile(page, "demog.csv", session.text("forge-test-demog-{time}")));
     await session.step(54, "And user remembers the shown training", () => rememberShownTraining(page));
-    await session.step(55, "When user picks \"ML > Forge > Train...\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Train..."));
+    await session.step(55, "When user picks \"ML > Models > Train Model...\" from the top menu", () => pickFromTopMenu(page, "ML > Models > Train Model..."));
     await session.step(56, "Then the \"Predictive model\" view should be current", () => viewIsCurrent(page, "Predictive model"));
     await session.step(57, "And a new training's result should be shown", () => newTrainingShown(page));
     await session.step(58, "And no balloon of any colour should have been shown", () => noBalloonAtAll(page));
@@ -150,7 +150,7 @@ test.describe("Training on demog in the Train view: dates, one-hot, ids, Predict
       await session.step(181, "Given user counts the task bar entries", () => countTaskBarEntries(page));
       await session.step(182, "And user opens the demo file \"demog.csv\" as \"forge-test-demog2-{time}\"", () => openDemoFile(page, "demog.csv", session.text("forge-test-demog2-{time}")));
       await session.step(183, "When user sets \"RACE\" column in row 1 to \"Martian\"", () => setCell(page, "RACE", 1, "Martian"));
-      await session.step(184, "And user picks \"ML > Forge > Apply...\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Apply..."));
+      await session.step(184, "And user picks \"ML > Models > Apply Model...\" from the top menu", () => pickFromTopMenu(page, "ML > Models > Apply Model..."));
       await session.step(185, "Then there should be 1 visible \"Apply predictive model\" dialog", () => visibleCount(page, 1, el("\"Apply predictive model\" dialog")));
       await session.step(186, "When user selects \"forge-test-demog-onehot-{time}\" in Model input in \"Apply predictive model\" dialog", () => selectIn(page, session.text("forge-test-demog-onehot-{time}"), el("Model input in \"Apply predictive model\" dialog")));
       await session.step(187, "Then Model input in \"Apply predictive model\" dialog should have value \"forge-test-demog-onehot-{time}\"", () => shouldHaveValue(page, el("Model input in \"Apply predictive model\" dialog"), session.text("forge-test-demog-onehot-{time}")));
@@ -186,7 +186,7 @@ test.describe("Training on demog in the Train view: dates, one-hot, ids, Predict
       await session.step(220, "Then the \"Save model\" dialog should close", () => dialogCloses(page, "Save model"));
       await session.step(221, "And 1 Forge model named \"forge-test-demog-ids-{time}\" should be on the server", () => modelCount(page, 1, session.text("forge-test-demog-ids-{time}")));
       await session.step(222, "When user switches to the \"forge-test-demog2-{time}\" table view", () => switchTableView(page, session.text("forge-test-demog2-{time}")));
-      await session.step(223, "And user picks \"ML > Forge > Apply...\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Apply..."));
+      await session.step(223, "And user picks \"ML > Models > Apply Model...\" from the top menu", () => pickFromTopMenu(page, "ML > Models > Apply Model..."));
       await session.step(224, "Then there should be 1 visible \"Apply predictive model\" dialog", () => visibleCount(page, 1, el("\"Apply predictive model\" dialog")));
       await session.step(225, "When user selects \"forge-test-demog-ids-{time}\" in Model input in \"Apply predictive model\" dialog", () => selectIn(page, session.text("forge-test-demog-ids-{time}"), el("Model input in \"Apply predictive model\" dialog")));
       await session.step(226, "Then Model input in \"Apply predictive model\" dialog should have value \"forge-test-demog-ids-{time}\"", () => shouldHaveValue(page, el("Model input in \"Apply predictive model\" dialog"), session.text("forge-test-demog-ids-{time}")));
@@ -297,7 +297,7 @@ test.describe("Training on demog in the Train view: dates, one-hot, ids, Predict
       await session.step(331, "And the Forge model \"forge-test-sex-prob-{time}\" on the server should have:", () => modelShouldHave(page, session.text("forge-test-sex-prob-{time}"), [["task","regression"],["engine_name","XGBoost"],["options.postprocessingInfo","[\"binary-classification\"]"],["options.positiveClass","F"],["options.negativeClass","M"],["options.binaryClassificationThreshold","0.5"],["options.targetType","string"],["metrics.validation.auc","number"]]), [["task","regression"],["engine_name","XGBoost"],["options.postprocessingInfo","[\"binary-classification\"]"],["options.positiveClass","F"],["options.negativeClass","M"],["options.binaryClassificationThreshold","0.5"],["options.targetType","string"],["metrics.validation.auc","number"]]);
       await session.step(340, "Given user counts the task bar entries", () => countTaskBarEntries(page));
       await session.step(341, "When user switches to the \"forge-test-demog-{time}\" table view", () => switchTableView(page, session.text("forge-test-demog-{time}")));
-      await session.step(342, "And user picks \"ML > Forge > Apply...\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Apply..."));
+      await session.step(342, "And user picks \"ML > Models > Apply Model...\" from the top menu", () => pickFromTopMenu(page, "ML > Models > Apply Model..."));
       await session.step(343, "Then there should be 1 visible \"Apply predictive model\" dialog", () => visibleCount(page, 1, el("\"Apply predictive model\" dialog")));
       await session.step(344, "When user selects \"forge-test-sex-prob-{time}\" in Model input in \"Apply predictive model\" dialog", () => selectIn(page, session.text("forge-test-sex-prob-{time}"), el("Model input in \"Apply predictive model\" dialog")));
       await session.step(345, "Then Model input in \"Apply predictive model\" dialog should have value \"forge-test-sex-prob-{time}\"", () => shouldHaveValue(page, el("Model input in \"Apply predictive model\" dialog"), session.text("forge-test-sex-prob-{time}")));
@@ -354,7 +354,7 @@ test.describe("Training on demog in the Train view: dates, one-hot, ids, Predict
     });
     await run.scenario("A slow method trains on Train only; a cancel is recorded (5.4)", async () => {
       await session.step(398, "Given a demo table \"forge-test-demog50k-{time}\" of 50000 rows is open", () => demoTableOpen(page, session.text("forge-test-demog50k-{time}"), 50000));
-      await session.step(399, "When user picks \"ML > Forge > Train...\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Train..."));
+      await session.step(399, "When user picks \"ML > Models > Train Model...\" from the top menu", () => pickFromTopMenu(page, "ML > Models > Train Model..."));
       await session.step(400, "Then the \"Predictive model\" view should be current", () => viewIsCurrent(page, "Predictive model"));
       await session.step(401, "And a new training's result should be shown", () => newTrainingShown(page));
       await session.step(402, "When user selects \"sex\" in Target input", () => selectIn(page, "sex", el("Target input")));

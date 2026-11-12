@@ -7,6 +7,7 @@ import {applyAndRecord, ApplyRequest, DEFAULT_BATCH_SIZE, LoadedModel, loadModel
 import {compatibility, exactMapping, isSuggested, MAX_NAME_DISTANCE, mappedColumns, mappingProblems, nameDistance,
   suggestMapping} from '../apply/column-matching';
 import {featureColumns} from '../apply/feature-columns';
+import {predictionTagOf} from '../apply/prediction-tag';
 import {PREDICTION_TAG} from '../constants';
 import {Engine} from '../engines/engine';
 import {apply, LoopProgress} from '../engines/engine-calls';
@@ -205,6 +206,35 @@ category('Apply', () => {
       'd!: Choose a column for \'d\'.',
     ]);
   });
+
+  test('predictionTagOf reads a Forge id and an earlier tool\'s markup', async () => {
+    const col = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'p', ['a']);
+    const tagOf = (value: string) => {
+      col.setTag(PREDICTION_TAG, value);
+      return JSON.stringify(predictionTagOf(col));
+    };
+    expect(JSON.stringify(predictionTagOf(col)), 'null');
+    const id = DG.Utils.uuid4();
+    expect(tagOf(id), JSON.stringify({kind: 'forge', id}));
+    const old = '<span>#{x.11111111-1111-1111-1111-111111111111.';
+    expect(tagOf(`${old}"Old model"}</span>`), JSON.stringify({kind: 'legacy', name: 'Old model'}));
+    expect(tagOf(`${old}"An "old" model"}</span>`), JSON.stringify({kind: 'legacy', name: 'An "old" model'}));
+    expect(tagOf(`${old}""}</span>`), JSON.stringify({kind: 'legacy', name: null}));
+  });
+
+  test('grok.ml.applyModel applies a Forge model', async () => {
+    const iris = await openIris();
+    const {id, name} = await saveIrisModel(iris);
+    try {
+      const names = iris.columns.names();
+      await grok.ml.applyModel(name, iris, {}, false);
+      expectArray(iris.columns.names(), [...names, 'Species (predicted)']);
+      expect(iris.getCol('Species (predicted)').getTag(PREDICTION_TAG), id);
+      expect(await applicationCount(id), 1);
+    } finally {
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
 
   test('predictionName adds a number for every repeat, ignoring case', async () => {
     const table = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Species', ['a'])]);

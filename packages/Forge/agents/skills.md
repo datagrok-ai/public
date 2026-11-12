@@ -9,9 +9,8 @@ fails the call with one sentence that says what to fix.
 ## When to use
 
 Any request to predict a column from other columns, or to train, apply, evaluate, compare, find, describe, rename,
-tag, share or delete a model. Not for clustering or PCA, and not for the built-in **ML | Models** tool (its menu,
-**Browse > Platform > Predictive models** and the table's **Models** pane): that is a different, older tool, and the
-two do not share models.
+tag, share or delete a model. Not for clustering or PCA. Not for models of the earlier predictive modeling tool: Forge
+does not list or open them.
 
 ## User intent -> call
 
@@ -420,4 +419,5 @@ return t.columns.names().filter((name) => name.startsWith('Species (predicted'))
 - After `shareModel`, complete the dialog it opened with the dialog functions (`list_view_widgets`, then
   `getShareInfo` / `addShareGrantee` / `setShareAccess`, or `getDialogInfo` / `setInput` / `clickButton`).
 - Confirm with the user before `deleteModel`.
-- Forge's menu is **ML | Forge**; **ML | Models** is the built-in tool, not Forge.
+- In the UI, Forge is **ML | Models | Train Model...** and **Apply Model...**, the catalog **Browse > Platform >
+  Predictive models** (also **Browse > Apps > Forge**) and the table's **Models** pane.

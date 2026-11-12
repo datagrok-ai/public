@@ -10,8 +10,10 @@ an EMS schema owned by Forge, and the UI on top.
 - **Engines stay in their packages.** Forge calls them through the `mlname`/`mlrole` contract and copies no engine code.
 - **"Method" for users, "engine" in code.** Captions, messages and docs for users say method; code, the `engines/`
   folder, the `engine_*` columns and the `mlname` contract keep engine.
-- **Two tools coexist.** The built-in `ML | Models` tool keeps working until the switchover. Forge uses its own
-  identifiers (`ML | Forge` menu, app, schema) and never touches the old tool's.
+- **The platform's entry points open Forge.** On a server with Forge, the core's `ML | Models` menu, **Browse >
+  Platform > Predictive models** and `grok.ml.applyModel` call Forge's functions by name and hide the earlier tool's
+  panes (see "Core entry points"). Forge registers no menu of its own; its prediction columns carry the platform's
+  `predictive.model` tag. Its storage stays its own (app, schema).
 - **Training data never leaves the browser without consent.** Only the `copy` storage mode, chosen in the Save
   dialog, uploads it; `none` keeps a fingerprint of the data and `reference` a link to its source.
 - **Every training attempt is recorded.** Completed, failed and cancelled runs are `training_run` rows, from the Train
@@ -103,7 +105,7 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
            │                           ui/edit-model-dialog.ts, DG.DomainObjectHandler (openShareDialog: shareRow)
            ├─> ui/model-comparison.ts ──> catalog/, ui/data-grid.ts, ui/model-panes.ts (modelIcon),
            │                              PowerGrid's Forms viewer
-           ├─> ui/prediction-column-panel.ts ──> ui/model-handler.ts (the card)
+           ├─> ui/prediction-column-panel.ts ──> apply/prediction-tag.ts, ui/model-handler.ts (the card)
            └─> ui/table-models-panel.ts ──> catalog/ (modelsFor, model-activity), constants.ts (MAX_MODELS), generated/db.ts,
                                             storage/model-fields.ts (tagsOf), ui/model-handler.ts,
                                             ui/model-panes.ts (modelFacts), ui/apply-model-dialog.ts (openApplyDialog),
@@ -111,12 +113,12 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
 ```
 
 - `package.ts` holds the annotated functions only: the app `forgeApp` (shown as "Forge", `Browse > Apps`),
-  `forgeModels` (`ML | Forge | Models`), `forgeTrain` (`ML | Forge | Train...`), `forgeApply` (`ML | Forge |
-  Apply...`), the API functions `applyModel`, `trainModel`, `deleteModel`, `listMethods`, `listModels`, `getModel`,
+  `forgeModels` (opens the app; no menu), `forgeTrain` and `forgeApply` (no menu of their own: the core's `ML | Models
+  | Train Model...` and `Apply Model...` call them, see "Core entry points"), the API functions `applyModel`, `trainModel`, `deleteModel`, `listMethods`, `listModels`, `getModel`,
   `updateModel`, `evaluateModel` and `shareModel`, the autostart `_initForge` (registers
   the model handler with the model commands and the context panel's follower, and the comparison handler),
   `isPredictionColumn`, the column panel
-  **Predicted by** (function `predictedByPanel`) and the table panel **Forge models** (function `tableModelsPanel`).
+  **Predicted by** (function `predictedByPanel`) and the table panel **Models** (function `tableModelsPanel`).
   They delegate to `ForgeApp`, `TrainView`, `openApplyDialog`, `runApplyModel`, `runTrainModel`, `runDeleteModel`,
   `runListMethods`, `runListModels`, `runGetModel` (with `grok.shell.tables`), `runUpdateModel`, `runEvaluateModel`,
   `openShareDialog`, `ForgeModelHandler.registerOnce`, `registerModelActions`, `ForgeModelHandler.followChanges`,
@@ -182,7 +184,7 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   too (`ForgeModelHandler.followChanges`, subscribed once by `_initForge`).
 - `TrainView` (tab **Predictive model** with the core's model icon, `ui.iconSvg('model')` returned by `getIcon()`)
   holds the form, the live validation, the live training and the results. `TrainView.openFor(table)` opens it on a
-  table (the boundary of the table pane's **Train**); `TrainView.open()` (`ML | Forge | Train...`) calls it with the
+  table (the boundary of the table pane's **Train**); `TrainView.open()` (`forgeTrain`, the core's `ML | Models | Train Model...`) calls it with the
   current table, or says "Open a table first.". The form is one `ui.form`, so the platform
   aligns every label in it: the group **Data** (Table, Target, Features), the group **Preparation**
   (`PreparationInputs`, below; hidden while none of its inputs applies), the group **Method** (Method, whose first item
@@ -1672,8 +1674,8 @@ missing-value settings. `applyAndRecord(request, source, progress?)`:
 7. With skipped rows, the predictions are spread over a full-length column (`scatteredColumn`); skipped rows stay
    empty.
 8. Names the column `predictionName(table, target)`: `<target> (predicted)`, or `<target> (predicted 2)`, ... when a
-   column of that name exists (ignoring case); tags it `forge.model` = the model id (`PREDICTION_TAG` in
-   `constants.ts`) and adds it to the table. A model whose options record `class-probabilities` and whose method
+   column of that name exists (ignoring case); tags it `predictive.model` = the model id (`PREDICTION_TAG` in
+   `constants.ts`, the tag the platform's earlier tool wrote too) and adds it to the table. A model whose options record `class-probabilities` and whose method
    returned probabilities then adds, after it, the positive class's column (`positiveClass` recorded and among the
    classes) or one per class, each spread over the kept rows as the labels are, named `probabilityName(table, target,
    class)` (`P(<target> = <class>)`, `P(<target> = <class>) 2`, ...; both names come from `freeName`), tagged the same way and described (`meta.
@@ -1751,15 +1753,15 @@ a feature without one accepts any column of the right kind.
 ## Apply dialog
 
 `ui/apply-model-dialog.ts`. `openApplyDialog(table, {modelId?, switchToTable?, preferredTable?})` is the boundary of
-`ML | Forge | Apply...` (the current table), of a model's **Apply...** and the catalog's play icon (the current
+`forgeApply` (the core's `ML | Models | Apply Model...`; the current table), of a model's **Apply...** and the catalog's play icon (the current
 table, else the first open one) and of the table pane's run icon (the pane's table, also as `preferredTable`);
 without a table it says "Open a table first.". It calls `applyModelDialog({table,
 modelId?, switchToTable?, preferredTable?})`, which reads up to 10000 visible model rows once (`MAX_MODELS` of
 `constants.ts`), only the
-columns applying needs (`APPLY_COLUMNS`; no models: "No Forge models yet. Train and save one with ML | Forge |
-Train... first.") and discovers the engines once. With a `modelId` among them, the dialog opens on `presetTable`:
+columns applying needs (`APPLY_COLUMNS`; no models: "No Forge models yet. Train and save one with ML | Models |
+Train Model... first.") and discovers the engines once. With a `modelId` among them, the dialog opens on `presetTable`:
 `preferredTable` (the catalog's **Applicable to**) while it is open, else the current table if the model fits it
-(`applicableTables`), else the first open table it fits, else `table`; without one (`ML | Forge | Apply...`) on `table`.
+(`applicableTables`), else the first open table it fits, else `table`; without one (`forgeApply`) on `table`.
 The dialog **Apply predictive model** has:
 
 - **Table** (`Table to add the prediction to.`): a change re-orders **Model**, keeps the chosen model and re-prefills
@@ -2173,15 +2175,20 @@ the Compare view: the table view of `compareModels` with the same Forms viewer a
 
 ## Predicted by
 
-`isPredictionColumn(col)` (`Forge:isPredictionColumn`) is true when the column carries the `forge.model` tag
-(`PREDICTION_TAG`). The panel function `predictedByPanel` (friendly name **Predicted by**, `PANEL_PREDICTED_BY`;
-`meta.role: panel`, condition `Forge:isPredictionColumn(col)`) shows the card (with its rich tooltip; it reads the
-card's and the tooltip's columns) of the model whose id the tag holds, or
-"The model that predicted this column is no longer available to you.". The raw tag stays in the column's tags.
+`isPredictionColumn(col)` (`Forge:isPredictionColumn`) is true when the column carries a non-empty
+`predictive.model` tag (`PREDICTION_TAG`). `predictionTagOf` (`apply/prediction-tag.ts`) reads it: a value with the
+earlier tool's model markup (`#{x.<uuid>."<name>"}`, as that tool wrote it) is `legacy` with the name (null when
+empty), any other value `forge` with the value as the model id. The panel function `predictedByPanel` (friendly name
+**Predicted by**, `PANEL_PREDICTED_BY`; `meta.role: panel`, condition `Forge:isPredictionColumn(col)`) shows, for a
+`forge` tag, the card (with its rich tooltip; it reads the card's and the tooltip's columns) of the model whose id the
+tag holds, or "The model that predicted this column is no longer available to you."; for a `legacy` tag the text
+`Predicted by "<name>", a model of the earlier predictive modeling tool. Forge cannot show it yet.` (without a name:
+`Predicted by a model of the earlier predictive modeling tool. ...`), as a text node. The raw tag stays in the
+column's tags.
 
 ## Table pane
 
-The panel function `tableModelsPanel` (friendly name **Forge models**, `PANEL_TABLE_MODELS`; `meta.role: panel`, one
+The panel function `tableModelsPanel` (friendly name **Models**, `PANEL_TABLE_MODELS`; `meta.role: panel`, one
 `dataframe` input, no condition, so the platform lists it for every table and builds it only when the pane is
 expanded) returns `tableModelsPane(table)` (`ui/table-models-panel.ts`): under `ui.wait`, it reads up to `MAX_MODELS`
 rows with the card's columns (`CARD_COLUMNS` of `ui/model-handler.ts`, shared with **Predicted by**) and
@@ -2206,6 +2213,25 @@ shows the error instead). Without a fitting model the text `No model fits this t
 the big button **Train** (`Train a new model on this table.`, `TrainView.openFor(table)`). The pane holds no subscription: the platform never detaches a panel's widget, so a
 subscription would leak; the pane is built again whenever the context panel shows the table again, as the built-in
 **Models** pane is.
+
+## Core entry points
+
+The core detects Forge by its presence: when `Forge:applyModel` is registered in the user's browser, the platform's
+predictive modeling entry points call Forge's functions by name, and each falls back to the earlier tool when its
+function is missing:
+
+| Function | Inputs | The core calls it from |
+|---|---|---|
+| `forgeTrain` | none (the current table) | `ML \| Models \| Train Model...` |
+| `forgeApply` | none (the current table) | `ML \| Models \| Apply Model...` |
+| `forgeApp` | none; output `view` | **Browse > Platform > Predictive models**, the URL `/models`, a restored view of the old catalog |
+| `applyModel` | `model`, `table`, `columnNamesMap`, `showProgress`, passed by name | `grok.ml.applyModel(name, table, map, showProgress)` for any name that is not a model of the earlier tool |
+
+With Forge installed the core also hides the earlier tool's table pane **Models**, its **Predicted By** row in a
+column's **Details**, its **MLFlow** node and its other panes; models of the earlier tool are shown without commands.
+Renaming one of these functions or its inputs silently brings the earlier tool back, or breaks `grok.ml.applyModel`;
+`ui-tests.ts` ("the core's entry points exist without a menu of their own") pins them. Publishing or removing Forge
+takes effect in a session after a page reload.
 
 ## Sharing
 
@@ -2271,7 +2297,8 @@ the feature rows in place under a **Columns** summary instead of a sub-dialog, c
 before the engine (the API too, which used to check presence only), suggests close names only within a distance
 threshold instead of always assigning a column, makes every check a validator with **OK** unavailable until all pass,
 skips or imputes rows with missing values at application, checks for a cancel before every batch, records every
-application, and names and tags the prediction column with Forge's own `<target> (predicted)` and `forge.model`.
+application, and names the prediction column with Forge's own `<target> (predicted)`, tagged `predictive.model` with the model id
+(the built-in tool wrote the model's markup there).
 
 The catalog stays a grid (with **Applicable to** filtering open tables in the browser instead of uploading one), the
 card shows in the Domains view. The model's activity comes from its application records, not from log events, and
@@ -2292,7 +2319,8 @@ has no Chats pane. Two or more selected models show in the panel as forms (the b
 command). Tags are a column of the model, not entity tags. The model file downloads as `<name>.bin` instead
 of a zip.
 
-The table's pane is **Forge models** (the built-in tool's pane is **Models**): it lists the models that fit the table,
+The table's pane is **Models**, as the built-in tool's (which the core hides when Forge is installed); it is a panel
+function's pane, so the platform places it after its own panes instead of right after **Actions**. It lists the models that fit the table,
 found in the browser by close column names and kinds, instead of the server's suggested models; each line's run
 icon (`model-run`) is **Run prediction** as in the built-in pane, the model's menu is the platform's row menu with Forge's
 commands (the built-in menu had **Run** and the model's commands), the tooltip has no **Links** row, and the empty
@@ -2310,8 +2338,9 @@ same-data rule: a card is shown only on the target and validation it was trained
 a data change).
 
 The model's menu has no **Add to** (the built-in tool added a model to an open project): a model reaches a Space by
-the platform's drag (see Sharing). Forge's Browse node is **Apps > Forge**; **Browse > Platform > Predictive models**
-and its **MLFlow** node stay the built-in tool's until the switchover. The Domains view of `model` can be filtered by
+the platform's drag (see Sharing). Forge's Browse node is **Apps > Forge**; with Forge installed, the core opens Forge's
+catalog from **Browse > Platform > Predictive models** too and hides its **MLFlow** node (see "Core entry points").
+There is no catalog menu item (the built-in tool had none either). The Domains view of `model` can be filtered by
 **Tags** (the built-in catalog's tags filter); its **Author** filter has no counterpart.
 
 **Tune** is new (the built-in tool had no tuning or method search): a seeded random search of the method's
@@ -2399,7 +2428,7 @@ The views publish their state in the DOM, so a test waits on what a view says in
 The user flows are Gherkin features on `@datagrok-libraries/bdd` in `bdd/` (`bdd/README.md`), run by Playwright
 against a stand. Forge's vocabulary is in `bdd/bindings/`: the kinds `group` and `results panel` over the classes
 above, `detail` (a caption-value row of a `ui.tableFromMap`, in the context panel or a tooltip) and `model line` (a line of the table
-pane **Forge models**: its run icon, name and menu arrow), a named table set as the current object (the platform's
+pane **Models**: its run icon, name and menu arrow), a named table set as the current object (the platform's
 corner click does not make it current again), forced and not frozen, the catalog's loads over the
 `.forge-catalog` of every open Forge view (a hidden view's root is read through `grok.shell.views`), the captions a grid
 draws (the text of the header cell at each column's `header <column>` area), the demo-file opener (`OpenServerFile`

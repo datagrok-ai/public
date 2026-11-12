@@ -1,6 +1,6 @@
 @journey @serial
 Feature: Applying the quality regressor to winequality, and cancelling an application
-  ML | Forge | Apply... over winequality opened from the demo files, with a quality regressor the Background trains and
+  ML | Models | Apply Model... over winequality opened from the demo files, with a quality regressor the Background trains and
   saves through Forge:trainModel (XGBoost, the method the manual chooses; no data stored). Translated from the manual
   scenarios 3.2, 3.6 and 4.4 (step 3), with 3.5's records of these applications, of
   core/docs/features/platform/predictive-modeling/forge/manual-checks.md. The predictions are claimed against the
@@ -16,8 +16,8 @@ Feature: Applying the quality regressor to winequality, and cancelling an applic
   Not claimed here: 3.2 step 1 as a separate read (the MAE claim reads the stored metric itself) and "the iris models
   follow in the list" (the order of models that do not fit is the stand's, not the feature's); the rows of the
   Columns group between fixed.acidity and alcohol; 4.4 step 4 as a separate query (the newest application is claimed
-  instead), the Activity grid's When, and step 3's play icon (the feature opens the Forge view through ML | Forge |
-  Models, the catalog's menu path, not the icon).
+  instead), the Activity grid's When, and step 3's play icon (the feature opens the Forge view through
+  Forge:forgeModels, not the icon).
 
   Background:
     Given user is logged in
@@ -30,9 +30,9 @@ Feature: Applying the quality regressor to winequality, and cancelling an applic
     Then no balloon of any colour should have been shown
     And no errors should have been logged
 
-  Scenario: The quality model is preset and matches every column; its predictions are whole numbers with the training's MAE (3.2, 3.5)
+  Scenario: The quality model is preset and matches every column; its predictions are decimal numbers with the training's MAE (3.2, 3.5)
     Given user counts the task bar entries
-    When user picks "ML > Forge > Apply..." from the top menu
+    When user picks "ML > Models > Apply Model..." from the top menu
     Then there should be 1 visible "Apply predictive model" dialog
     And Table input in "Apply predictive model" dialog should have value "forge-test-wine-{time}"
     And Model input in "Apply predictive model" dialog should have value "forge-test-apply-quality-{time}"
@@ -54,7 +54,7 @@ Feature: Applying the quality regressor to winequality, and cancelling an applic
     And a new column "quality (predicted)" should have been added
     And "quality (predicted)" column should have no missing values
     And an info balloon containing 'Added the column "quality (predicted)" to forge-test-wine-{time}.' should have been shown
-    And every value of "quality (predicted)" column should match "^-?\d+$"
+    And "quality (predicted)" column should have type "double"
     And the mean absolute difference of "quality" and "quality (predicted)" columns of the table "forge-test-wine-{time}" should equal the Train MAE of the Forge model "forge-test-apply-quality-{time}" within 0.001
     And the model "forge-test-apply-quality-{time}" should have 1 application on the server
     And the newest application of the model "forge-test-apply-quality-{time}" should have:
@@ -70,7 +70,7 @@ Feature: Applying the quality regressor to winequality, and cancelling an applic
 
   Scenario: A cancelled application adds no column and is recorded; the model's Activity and Last run show it (3.6, 4.4)
     Given user counts the task bar entries
-    When user picks "ML > Forge > Apply..." from the top menu
+    When user picks "ML > Models > Apply Model..." from the top menu
     Then there should be 1 visible "Apply predictive model" dialog
     And Model input in "Apply predictive model" dialog should have value "forge-test-apply-quality-{time}"
     When user expands "More options" group
@@ -89,7 +89,7 @@ Feature: Applying the quality regressor to winequality, and cancelling an applic
       | status      | cancelled              |
       | column_name | empty                  |
     And the model "forge-test-apply-quality-{time}" should have 2 applications on the server
-    When user picks "ML > Forge > Models" from the top menu
+    When user calls "Forge:forgeModels" function
     Then the "Forge" view should be current
     Given the context panel is open
     When user clicks on the Forge model "forge-test-apply-quality-{time}" in second grid viewer

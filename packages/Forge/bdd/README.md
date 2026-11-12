@@ -10,17 +10,17 @@ claim.
 | `train/train-winequality.feature` | 2.4, 5.2 (4), 5.3, 5.12 (1-3, 5) | the type classifier's panels, the quality regressor and the Target/Features conflict, every regression method on 6497 rows, a change that supersedes a training, a regressor's results, a hovered point as the table's row |
 | `train/train-iris-gaps.feature` | 3.11, 3.12, 5.11 (1-3), 5.13 (3) | iris with cleared cells, on SVM (XGBoost's keep claimed once): the Preparation group and its Missing values, Skip rows counted and recorded, Impute with its settings and an invalid one, a feature unchecked and checked again, a cell cleared later counted at the next change, a hovered point as the table's row with the same values |
 | `train/train-demog.feature` | 3.14 (1), 3.15 (1), 5.8, 5.9, 5.10, 5.14, 5.4 | demog in the Train view: a date feature and a date target flagged, one-hot on and off, a saved one-hot model replayed on a second demog with an unseen category, an id column left out and not asked for at Apply, Predict probability and its cutoff re-cutting without a training, the saved probability model predicting labels, the ROC curve's AUC and marked point, SVM on a 50000-row demo table on Train only, cancelled and recorded |
-| `integration/table-pane.feature` | 6.1 (1-7), 4.13 (3) | the table pane Forge models after the built-in panes: the fitting lines newest first, the run icon and Train tooltips, the name's tooltip and row menu, the run icon's application, the name opening the model, the lines of other tables (cars lists the demog regressor by close names), "No model fits this table.", Train opening the Train view |
-| `apply/apply-iris.feature` | 3.1 (3-5), 3.4, 4.10, 3.3, 3.13, 3.7 (1, 2, 4), 3.8, 3.14 (2-5), 3.9, 3.5 (1-2) | the Apply dialog's presets and the predictions against the stored Accuracy, the catalog's Apply model icon and the column's tag and Predicted by pane, close, far and repeated column names, missing values skipped and imputed, a row without a model file, Forge:applyModel and its refusal, every red row of the mapping, the old tool's menu and dialog, the trash-icon delete and the orphaned column; every application counted on the server |
-| `apply/apply-winequality.feature` | 3.2, 3.6, 4.4 (3), 3.5 (1-2) | the quality model preset with every column matched, whole-number predictions with the stored MAE, a cancelled application (a batch of one row) and the model's Activity and Last run |
+| `integration/table-pane.feature` | 6.1 (1-7), 4.13 (3) | the table pane Models after the built-in panes: the fitting lines newest first, the run icon and Train tooltips, the name's tooltip and row menu, the run icon's application, the name opening the model, the lines of other tables (cars lists the demog regressor by close names), "No model fits this table.", Train opening the Train view |
+| `apply/apply-iris.feature` | 3.1 (3-5), 3.4, 4.10, 3.3, 3.13, 3.7 (1, 2, 4), 3.8, 3.14 (2-5), 3.9, 3.5 (1-2) | the Apply dialog's presets and the predictions against the stored Accuracy, the catalog's Apply model icon and the column's tag and Predicted by pane, close, far and repeated column names, missing values skipped and imputed, a row without a model file, Forge:applyModel and its refusal, every red row of the mapping, ML | Models opening Forge's dialog and the shared tag, the trash-icon delete and the orphaned column; every application counted on the server (the model trained with Skip rows, so the dialog shows Missing values) |
+| `apply/apply-winequality.feature` | 3.2, 3.6, 4.4 (3), 3.5 (1-2) | the quality model preset with every column matched, decimal predictions with the stored MAE, a cancelled application (a batch of one row) and the model's Activity and Last run |
 | `apply/apply-demog.feature` | 3.15 (2-4) | the Apply dialog on demog's natural gaps: the gapped columns and their counts, the rows without a prediction by default and the skipped count, Impute predicting every row on a copy |
 | `catalog/catalog.feature` | 4.0 (3), 4.1, 4.2 (1-2), 4.3, 4.4 (1-2), 4.5, 4.6, 4.7 (2-3), 4.8, 3.7 (3), 4.11, 4.12 (1-3), 5.15, 2.6, 4.9 | the model as a platform entity, its Details, tooltip, Performance and Activity, two models compared, the row menu and the preset table, tags and a rename, Download, Applicable to, a share with the second account taken back, Run Evaluation on the stored data and on an open table, the deletes from a second catalog and from the menu |
-| `app/app-and-menus.feature` | 1.1, 1.2, 6.4, 4.13 (1-2), 1.3, 1.4, 1.6, 2.9 | the app from Apps and from ML, the menus listed exactly, the Browse nodes, the Methods grid and its tooltips, the catalog's captions and icons, the old tool's Train view and Apply dialog |
+| `app/app-and-menus.feature` | 1.1, 1.2, 6.4, 4.13 (1-2), 1.3, 1.4, 1.6, 2.9 | the app from Apps, from Browse > Platform > Predictive models and from Forge:forgeModels, ML > Models listed exactly, the Methods grid and its tooltips, the catalog's captions and icons, ML | Models opening Forge's Train view and Apply dialog |
 
 All are `@journey`: one test each, the Background once, the scenarios in order, each putting back what it changed.
 The eight that save models are `@serial` (one at a time; the catalog, the Apply dialog, Applicable to and the table
 pane read every model the account sees), and so is `train-iris-gaps`, which saves nothing but keeps a run to two lanes
-(three sessions starting at once have stalled the stand); `app-and-menus` saves nothing and runs beside them. The
+(three sessions starting at once have stalled the stand); `app-and-menus` saves only its own table's training run, swept at its start and end, and runs beside them. The
 apply, catalog and table-pane features train their models in the Background through `Forge:trainModel` (no data
 stored unless a step says so), so every claim names the feature's own models. Every Background ends with `no balloon of any colour should have been shown` and `no errors should have
 been logged`: the journey harness takes the balloons and the logged errors at each scenario's start, so what a
@@ -31,12 +31,6 @@ probe (a plain `ui.dialog` with a `ui.setDisabled` button) found the tooltip's h
 tagged, the scenario passes by failing and fails the run once the tooltip shows: drop the tag once the platform is
 fixed. A scenario stops at its first failing step, so its last step (CANCEL) keeps the journey clean only once the
 tooltip shows; until then the harness closes the dialog with Escape after the failure.
-
-Stale since XGBoost, the default method, handles missing values (`mlnativenans`) and hides Missing values; left
-unedited for the BDD resume:
-
-- `apply-iris` 3.13: its XGBoost model's Apply dialog hides Missing values and skips no row; it needs a model of a
-  method without `mlnativenans` (SVM).
 
 Stale since Predict probability uses the method's class probabilities (schema 0.1.20: no regression mode, the
 **Classification threshold** renamed from Positive class cutoff, a toggle that re-cuts without a run); left unedited
@@ -124,8 +118,8 @@ named after its table).
 - `elements.ts`: the kinds `group` (a collapsible group by its caption, `aria-expanded` on its header), `results
   panel` (a panel of the results by its title) and `detail` (a caption-value row of a key-value table of the context
   panel or a tooltip (Details, Sharing, a model's tooltip): `value of "Applications" detail in context panel`) and `model line` (a line of the table
-  pane Forge models by the model's name, with the parts `run icon`, `name` and `menu arrow`: `run icon of "…" model
-  line in "Forge models" pane in context panel`), the elements `results area` (the Train view's readiness), `ROC Curve
+  pane Models by the model's name, with the parts `run icon`, `name` and `menu arrow`: `run icon of "…" model
+  line in "Models" pane in context panel`), the elements `results area` (the Train view's readiness), `ROC Curve
   panel` (its title carries the AUC, which the kind's whole-title match does not take for "ROC Curve"), `forge app`
   (the Forge view), `train form`, `form splitter`, `seed copy icon`, `tags box`, `tag chips`, `column search`.
 - `results-state.ts` (no steps): the results area's `aria-busy`, `aria-invalid` and `data-forge-run-id` (the shown
@@ -148,7 +142,7 @@ named after its table).
   result should be shown`), the demo-file opener (`OpenServerFile` unprocessed, so the table keeps its creation script
   and Save offers Reference; done when its semantic types are detected and its view is current with its own grid
   shown), the API fixture `a Forge model "…" is trained on the current table through the API with:`
-  (target, features, method, storage, tags, description), the task bar entries counted since `user counts the task bar
+  (target, features, method, missing values, storage, tags, description), the task bar entries counted since `user counts the task bar
   entries` (with every text each showed): their count, the end of such an entry (it has left the page, whatever it
   shows by then), a text it showed or never showed (`Rows 1-1 of 6497`), its cancel (the cross of the counted entry
   that showed the text: a running job replaces it with its progress) and a change while a training runs, no balloon of

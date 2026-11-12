@@ -1,8 +1,10 @@
 @journey @serial
 Feature: Applying an iris classifier: the Apply dialog, column matching, missing values and the API
-  ML | Forge | Apply..., the catalog's Apply model icon and Forge:applyModel over iris opened from the demo files, with
+  ML | Models | Apply Model..., the catalog's Apply model icon and Forge:applyModel over iris opened from the demo files, with
   an iris classifier the Background trains and saves through Forge:trainModel (XGBoost, no data stored) in place of
-  the manual's Train view and Save (train-iris.feature walks those). Translated from the manual scenarios 3.1 (steps
+  the manual's Train view and Save (train-iris.feature walks those). It is trained with Missing values Skip rows:
+  XGBoost handles missing values and keeps them by default, and the Apply dialog of such a model hides Missing values,
+  which 3.13 and 3.14 claim. Translated from the manual scenarios 3.1 (steps
   3-5), 3.3, 3.4, 3.5 (steps 1-2), 3.7 (steps 1, 2, 4), 3.8, 3.9, 3.13, 3.14 (steps 2-5) and 4.10 of
   core/docs/features/platform/predictive-modeling/forge/manual-checks.md. The predictions are claimed against the
   training: the share of rows where Species and its prediction agree (an empty prediction fails it) equals the stored
@@ -31,7 +33,8 @@ Feature: Applying an iris classifier: the Apply dialog, column matching, missing
   of a disabled button inside a dialog (a regression, train-iris.feature's @known-failure scenario); OK is claimed
   disabled and the reason is claimed on the input it concerns.
 
-  Where the product moved on from the manual text: the catalog is ML | Forge | Models (it focuses an open catalog);
+  Where the product moved on from the manual text: ML | Models opens Forge, and the catalog has no menu item: the
+  feature opens it with Forge:forgeModels (it focuses an open catalog);
   3.4's Apply model icon presets the table the model fits, so no table is chosen by hand. 3.8 step 2's refusal is
   claimed on demog, not winequality: any table without the model's columns is refused with the same message, and
   demog is the table the feature opens anyway (3.14).
@@ -42,14 +45,15 @@ Feature: Applying an iris classifier: the Apply dialog, column matching, missing
     And no Forge training runs of the table "forge-test-iris-{time}" are on the server
     And user opens the demo file "iris.csv" as "forge-test-iris-{time}"
     And a Forge model "forge-test-apply-iris-{time}" is trained on the current table through the API with:
-      | target | Species |
-      | method | XGBoost |
+      | target         | Species |
+      | method         | XGBoost |
+      | missing values | skip    |
     Then no balloon of any colour should have been shown
     And no errors should have been logged
 
   Scenario: The newest fitting model is preset; the predictions agree with the training as its Accuracy says (3.1, 3.5)
     Given user counts the task bar entries
-    When user picks "ML > Forge > Apply..." from the top menu
+    When user picks "ML > Models > Apply Model..." from the top menu
     Then there should be 1 visible "Apply predictive model" dialog
     And Table input in "Apply predictive model" dialog should have value "forge-test-iris-{time}"
     And Model input in "Apply predictive model" dialog should have value "forge-test-apply-iris-{time}"
@@ -89,7 +93,7 @@ Feature: Applying an iris classifier: the Apply dialog, column matching, missing
 
   Scenario: The catalog's Apply model icon applies under a new name; the column points at its model (3.4, 4.10)
     Given user counts the task bar entries
-    When user picks "ML > Forge > Models" from the top menu
+    When user calls "Forge:forgeModels" function
     Then the "Forge" view should be current
     And "Apply model" icon in forge app should be disabled
     Given the context panel is open
@@ -109,7 +113,7 @@ Feature: Applying an iris classifier: the Apply dialog, column matching, missing
     And the table should have a column "Species (predicted 2)"
     And an info balloon containing 'Added the column "Species (predicted 2)" to forge-test-iris-{time}.' should have been shown
     And the "Species (predicted 2)" column should be tagged with the id of the Forge model "forge-test-apply-iris-{time}"
-    And the "Species (predicted 2)" column should not have the tag "predictive.model"
+    And the "Species (predicted 2)" column should not have the tag "forge.model"
     And the model "forge-test-apply-iris-{time}" should have 2 applications on the server
     Given the "Species (predicted 2)" column is the current object
     Then the context panel title should be "Species (predicted 2)"
@@ -130,7 +134,7 @@ Feature: Applying an iris classifier: the Apply dialog, column matching, missing
     And user opens the demo file "iris.csv" as "forge-test-iris2-{time}"
     When user renames "Sepal.Width" column to "sepal width"
     And user removes "Petal.Width" column
-    And user picks "ML > Forge > Apply..." from the top menu
+    And user picks "ML > Models > Apply Model..." from the top menu
     Then there should be 1 visible "Apply predictive model" dialog
     When user selects "forge-test-apply-iris-{time}" in Model input in "Apply predictive model" dialog
     Then summary of "Columns" group should have the text "3 of 4 matched"
@@ -183,7 +187,7 @@ Feature: Applying an iris classifier: the Apply dialog, column matching, missing
     And user opens the demo file "iris.csv" as "forge-test-irisgaps-{time}"
     When user clears "Sepal.Width" column in rows "3, 10"
     And user clears "Species" column in rows "20"
-    And user picks "ML > Forge > Apply..." from the top menu
+    And user picks "ML > Models > Apply Model..." from the top menu
     Then there should be 1 visible "Apply predictive model" dialog
     And Model input in "Apply predictive model" dialog should have value "forge-test-apply-iris-{time}"
     And summary of "Columns" group should have the text "4 of 4 matched"
@@ -215,7 +219,7 @@ Feature: Applying an iris classifier: the Apply dialog, column matching, missing
       | skipped_rows | 2                          |
       | column_name  | Species (predicted)        |
       | status       | completed                  |
-    When user picks "ML > Forge > Apply..." from the top menu
+    When user picks "ML > Models > Apply Model..." from the top menu
     Then there should be 1 visible "Apply predictive model" dialog
     When user selects "Impute" in "Missing values" input in "Apply predictive model" dialog
     Then "Neighbors" input in "Apply predictive model" dialog should be visible
@@ -246,7 +250,7 @@ Feature: Applying an iris classifier: the Apply dialog, column matching, missing
   Scenario: A model row without a model file is refused with the reason, and is no application (3.7)
     Given user switches to the "forge-test-iris-{time}" table view
     And a Forge model row "forge-test-apply-hand-{time}" without a model file is on the server
-    When user picks "ML > Forge > Apply..." from the top menu
+    When user picks "ML > Models > Apply Model..." from the top menu
     Then there should be 1 visible "Apply predictive model" dialog
     When user selects "forge-test-apply-hand-{time}" in Model input in "Apply predictive model" dialog
     Then "Apply predictive model" dialog should contain text "The model 'forge-test-apply-hand-{time}' has no model file, so it cannot be applied. It was not trained and saved in Forge."
@@ -282,7 +286,7 @@ Feature: Applying an iris classifier: the Apply dialog, column matching, missing
 
   Scenario: Every problem of the mapping marks its row with a plain text and keeps OK disabled (3.14)
     Given user switches to the "forge-test-demog-{time}" table view
-    When user picks "ML > Forge > Apply..." from the top menu
+    When user picks "ML > Models > Apply Model..." from the top menu
     Then there should be 1 visible "Apply predictive model" dialog
     When user selects "forge-test-apply-iris-{time}" in Model input in "Apply predictive model" dialog
     Then summary of "Columns" group should have the text "0 of 4 matched"
@@ -331,19 +335,18 @@ Feature: Applying an iris classifier: the Apply dialog, column matching, missing
     Then no error or warning balloon should have been shown
     And no errors should have been logged
 
-  Scenario: The old tool's menu and dialog know nothing of Forge; the column has Forge's tag and pane (3.9)
+  Scenario: ML | Models opens Forge's dialog, not the old tool's; the column has the shared tag and Forge's pane (3.9)
     Given user switches to the "forge-test-iris-{time}" table view
     Then the "ML > Models" top menu group should list exactly "Train Model..., Apply Model..."
-    And the "ML > Forge" top menu group should list exactly "Models, Train..., Apply..."
     When user picks "ML > Models > Apply Model..." from the top menu
     Then there should be 1 visible "Apply predictive model" dialog
-    And Inputs input in "Apply predictive model" dialog should be visible
-    And "Columns" group in "Apply predictive model" dialog should be absent
-    And Model input in "Apply predictive model" dialog should not contain text "forge-test-"
+    And Inputs input in "Apply predictive model" dialog should be absent
+    When user selects "forge-test-apply-iris-{time}" in Model input in "Apply predictive model" dialog
+    Then summary of "Columns" group should have the text "4 of 4 matched"
     When user clicks on CANCEL button in "Apply predictive model" dialog
     Then the "Apply predictive model" dialog should close
     And the "Species (predicted 2)" column should be tagged with the id of the Forge model "forge-test-apply-iris-{time}"
-    And the "Species (predicted 2)" column should not have the tag "predictive.model"
+    And the "Species (predicted 2)" column should not have the tag "forge.model"
     Given the "Species (predicted 2)" column is the current object
     Then the context panel title should be "Species (predicted 2)"
     When user expands "Predicted by" pane in context panel
@@ -352,7 +355,7 @@ Feature: Applying an iris classifier: the Apply dialog, column matching, missing
     And no errors should have been logged
 
   Scenario: Deleted with the trash icon, the model is gone and its prediction column says so (4.10)
-    When user picks "ML > Forge > Models" from the top menu
+    When user calls "Forge:forgeModels" function
     Then the "Forge" view should be current
     When user remembers the catalog loads
     And user clicks on "Refresh" icon in forge app

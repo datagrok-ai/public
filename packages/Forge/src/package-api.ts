@@ -30,14 +30,14 @@ export namespace funcs {
   }
 
   /**
-   * Trains a predictive model on the current table
+   * Opens the Train view on the current table (the core's ML | Models | Train Model... calls it)
    */
   export async function forgeTrain(): Promise<void> {
     return await grok.functions.call('Forge:ForgeTrain', {});
   }
 
   /**
-   * Applies a saved Forge model to the current table
+   * Opens the Apply dialog on the current table (the core's ML | Models | Apply Model... calls it)
    */
   export async function forgeApply(): Promise<void> {
     return await grok.functions.call('Forge:ForgeApply', {});
@@ -142,21 +142,21 @@ export namespace funcs {
   }
 
   /**
-   * Whether the column holds the predictions of a Forge model
+   * Whether the column holds predictions of a model: a Forge model or one made with the earlier predictive modeling tool
    */
   export async function isPredictionColumn(col: DG.Column ): Promise<boolean> {
     return await grok.functions.call('Forge:IsPredictionColumn', { col });
   }
 
   /**
-   * The Forge model that predicted the column
+   * The model that predicted the column
    */
   export async function predictedByPanel(col: DG.Column ): Promise<any> {
     return await grok.functions.call('Forge:PredictedByPanel', { col });
   }
 
   /**
-   * The Forge models that fit the table, and training a new one
+   * The models that fit the table, and training a new one
    */
   export async function tableModelsPanel(table: DG.DataFrame ): Promise<any> {
     return await grok.functions.call('Forge:TableModelsPanel', { table });

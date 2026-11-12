@@ -1,6 +1,6 @@
 @journey @serial
 Feature: Training on demog in the Train view: dates, one-hot, ids, Predict probability, the ROC curve, a slow method
-  ML | Forge | Train... over demog opened from the demo files (HEIGHT has 751 gaps, WEIGHT one, AGE one; STARTED is a
+  ML | Models | Train Model... over demog opened from the demo files (HEIGHT has 751 gaps, WEIGHT one, AGE one; STARTED is a
   date; USUBJID an id), then a 50000-row demo table. Translated from the manual scenarios 3.14 (step 1), 3.15 (step
   1), 5.8, 5.9, 5.10, 5.14 and 5.4 of core/docs/features/platform/predictive-modeling/forge/manual-checks.md. A
   training is claimed by the run its results show (data-forge-run-id): a new run's result, then that run as the
@@ -52,7 +52,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     And no Forge training runs of the tables "forge-test-demog-{time}, forge-test-demog50k-{time}" are on the server
     And user opens the demo file "demog.csv" as "forge-test-demog-{time}"
     And user remembers the shown training
-    When user picks "ML > Forge > Train..." from the top menu
+    When user picks "ML > Models > Train Model..." from the top menu
     Then the "Predictive model" view should be current
     And a new training's result should be shown
     And no balloon of any colour should have been shown
@@ -181,7 +181,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     Given user counts the task bar entries
     And user opens the demo file "demog.csv" as "forge-test-demog2-{time}"
     When user sets "RACE" column in row 1 to "Martian"
-    And user picks "ML > Forge > Apply..." from the top menu
+    And user picks "ML > Models > Apply Model..." from the top menu
     Then there should be 1 visible "Apply predictive model" dialog
     When user selects "forge-test-demog-onehot-{time}" in Model input in "Apply predictive model" dialog
     Then Model input in "Apply predictive model" dialog should have value "forge-test-demog-onehot-{time}"
@@ -220,7 +220,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     Then the "Save model" dialog should close
     And 1 Forge model named "forge-test-demog-ids-{time}" should be on the server
     When user switches to the "forge-test-demog2-{time}" table view
-    And user picks "ML > Forge > Apply..." from the top menu
+    And user picks "ML > Models > Apply Model..." from the top menu
     Then there should be 1 visible "Apply predictive model" dialog
     When user selects "forge-test-demog-ids-{time}" in Model input in "Apply predictive model" dialog
     Then Model input in "Apply predictive model" dialog should have value "forge-test-demog-ids-{time}"
@@ -339,7 +339,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
       | metrics.validation.auc                | number                    |
     Given user counts the task bar entries
     When user switches to the "forge-test-demog-{time}" table view
-    And user picks "ML > Forge > Apply..." from the top menu
+    And user picks "ML > Models > Apply Model..." from the top menu
     Then there should be 1 visible "Apply predictive model" dialog
     When user selects "forge-test-sex-prob-{time}" in Model input in "Apply predictive model" dialog
     Then Model input in "Apply predictive model" dialog should have value "forge-test-sex-prob-{time}"
@@ -396,7 +396,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
 
   Scenario: A slow method trains on Train only; a cancel is recorded (5.4)
     Given a demo table "forge-test-demog50k-{time}" of 50000 rows is open
-    When user picks "ML > Forge > Train..." from the top menu
+    When user picks "ML > Models > Train Model..." from the top menu
     Then the "Predictive model" view should be current
     And a new training's result should be shown
     When user selects "sex" in Target input

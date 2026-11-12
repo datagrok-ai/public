@@ -21,7 +21,7 @@ import {deleteModel, modelsChanged} from '../storage/model-store';
 import {ForgeApp} from '../ui/forge-app';
 import {comparisonForms, hasFormsViewer, ModelComparison, NO_FORMS} from '../ui/model-comparison';
 import {ForgeModelHandler, forgeModelHandler} from '../ui/model-handler';
-import {isForgePrediction, predictedByPane} from '../ui/prediction-column-panel';
+import {isForgePrediction, legacyPredictionText, predictedByPane} from '../ui/prediction-column-panel';
 import {runTrainModel} from '../training/train-api';
 import {metricsRecordOf, trainModel} from '../training/train-model';
 import {columnsOf, deleteModelsNamed, deleteRunsOf, expectMetrics, failsWith, insertModelRow, MEASUREMENTS,
@@ -350,6 +350,16 @@ category('Catalog', () => {
     const gone = predictedByPane(col);
     const noModel = 'The model that predicted this column is no longer available to you.';
     await awaitCheck(() => (gone.textContent ?? '') === noModel, 'A missing model is not explained', WAIT_MS);
+
+    col.setTag(PREDICTION_TAG, '<span>#{x.11111111-1111-1111-1111-111111111111."forge-test-old"}</span>');
+    expect(isForgePrediction(col), true);
+    expect(await grok.functions.call('Forge:isPredictionColumn', {col}), true);
+    expect(predictedByPane(col).textContent, legacyPredictionText('forge-test-old'));
+    expect(legacyPredictionText('forge-test-old'), 'Predicted by "forge-test-old", a model of the earlier ' +
+      'predictive modeling tool. Forge cannot show it yet.');
+    col.setTag(PREDICTION_TAG, '<span>#{x.11111111-1111-1111-1111-111111111111.""}</span>');
+    expect(predictedByPane(col).textContent,
+      'Predicted by a model of the earlier predictive modeling tool. Forge cannot show it yet.');
   });
 
   test('updateModelInfo writes name and description and refuses a stale version', async () => {

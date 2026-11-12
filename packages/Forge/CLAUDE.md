@@ -1,15 +1,15 @@
 # Forge
 
-Predictive modeling (train, apply, catalog), replacing `ML | Models` at the switchover. Design: [ARCHITECTURE.md](ARCHITECTURE.md).
+Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` when installed. Design: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Entry points
 
 - `src/package.ts` — annotated functions only, each delegating: `forgeApp`, `forgeModels`, `forgeTrain`, `forgeApply`
-  (`ML | Forge | ...`), the API `applyModel`, `trainModel`, `deleteModel`, `listMethods` (`training/train-api.ts` over
+  (no menus: the core's `ML | Models` and Browse node call them), the API `applyModel`, `trainModel`, `deleteModel`, `listMethods` (`training/train-api.ts` over
   `engines/method-list.ts`, whose `methodColumns` the app's Methods grid, `methodsFrame`, shares), `listModels`, `getModel`, `updateModel` (`catalog/list-models.ts`,
   `get-model.ts`, `model-edit.ts`), `evaluateModel` (`training/evaluate-api.ts`), `shareModel` (`openShareDialog` in
   `ui/model-actions.ts`), `_initForge` (autostart), the column panel
-  **Predicted by** and the table panel **Forge models** (`ui/table-models-panel.ts`).
+  **Predicted by** and the table panel **Models** (`ui/table-models-panel.ts`).
 - `src/ui/`: `train-view.ts` (+ `runs-panel.ts`, `tune-settings.ts`: Settings and Search options, `find-settings.ts`:
   the Find best model block of Method Auto, built from Tune's static builders (status line, Search options toggle,
   Metric row) plus the platform radio Strategy and multi-choice Candidates, `limit-inputs.ts`: both blocks' Limit
@@ -62,8 +62,8 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
   continued Tune or halving search draws the points one longer run would (an equal split splits the new limit
   equally again).
 - A loop of awaited engine calls must `yieldToEventLoop` (microtasks hold back a cancel click and the repaint).
-- `ignore-missing` / `impute-missing` are recorded in `options`, never replayed. Prediction columns carry `forge.model`
-  (`PREDICTION_TAG`; `predictRows` adds none). Inserts of applications and runs need explicit `source`, `status`.
+- `ignore-missing` / `impute-missing` are recorded in `options`, never replayed. Prediction columns carry `predictive.model`
+  (`PREDICTION_TAG`; `predictRows` adds none; an old model's markup is recognized by `apply/prediction-tag.ts`). Inserts of applications and runs need explicit `source`, `status`.
 - Header defaults (`= 20`) are in `Property.initialValue`, strings in quotes (`'RBF'`): use `defaultValuesOf`.
 - API lists are frames, one-model results objects; `object` outputs describe their keys in the output description
   (the generated API types them `any`). `agents/skills.md` repeats the API annotations and the README's errors:
@@ -89,7 +89,8 @@ Predictive modeling (train, apply, catalog), replacing `ML | Models` at the swit
   by the user's decision of 2026-11-05). A plain `grok.shell.o =` freezes the panel for a
   second and ignores the next plain set: the catalog sets with `setCurrentObject(x, true, true)`.
 - Tests type a tag chip into `input.d4-tags-selector-input` (`typeTag`); assigning the Tags `value` skips Enter.
-- Never reuse the old tool's identifiers: no `ML | Models` items, `Models` node or pane, `predictive.model` tag.
+- The core calls `forgeTrain`, `forgeApply`, `forgeApp` and `applyModel` (inputs by name) by name: renaming one or its
+  inputs breaks `ML | Models` and `grok.ml.applyModel` (core#1518).
 - A panel function's widget is never detached: a pane holds no subscription. `grok s functions list --filter
   'name = "X"'` matches the friendly name. A JS `ui.bind` row gets only **Properties...**: use `ui.contextActions(row)`.
 - A row reaches a Space only by the platform's drag of a model element (`ui.bind` / `ui.makeDraggable` with the row).

@@ -17,8 +17,9 @@ import {applicationsCount, newestApplicationShouldHave, noModelsNamed, noRunsOf,
 import {cancelTaskBarEntry, clickCatalogRow, countTaskBarEntries, noBalloonAtAll, openDemoFile, panelShowsModel, taskBarEntryCount, taskBarEntryEnded, taskBarEntryNotShowedText, taskBarEntryShowedText, trainThroughApiWith} from '../../bindings/train.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, expand, shouldBe, shouldContainText, shouldHaveText, shouldHaveValue, visibleCount} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {columnComplete, everyValueMatches} from '@datagrok-libraries/bdd/bindings/platform/columns';
+import {columnComplete, columnType} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {newColumnNamed, pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
+import {call} from '@datagrok-libraries/bdd/bindings/platform/functions';
 import {contextPanelOpen, dialogCloses, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {infoBalloonText, noBalloons, noErrors, readingReads, warningBalloonText} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
@@ -35,9 +36,9 @@ test.describe("Applying the quality regressor to winequality, and cancelling an 
     await session.step(27, "And a Forge model \"forge-test-apply-quality-{time}\" is trained on the current table through the API with:", () => trainThroughApiWith(page, session.text("forge-test-apply-quality-{time}"), [["target","quality"],["method","XGBoost"]]), [["target","quality"],["method","XGBoost"]]);
     await session.step(30, "Then no balloon of any colour should have been shown", () => noBalloonAtAll(page));
     await session.step(31, "And no errors should have been logged", () => noErrors(page));
-    await run.scenario("The quality model is preset and matches every column; its predictions are whole numbers with the training's MAE (3.2, 3.5)", async () => {
+    await run.scenario("The quality model is preset and matches every column; its predictions are decimal numbers with the training's MAE (3.2, 3.5)", async () => {
       await session.step(34, "Given user counts the task bar entries", () => countTaskBarEntries(page));
-      await session.step(35, "When user picks \"ML > Forge > Apply...\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Apply..."));
+      await session.step(35, "When user picks \"ML > Models > Apply Model...\" from the top menu", () => pickFromTopMenu(page, "ML > Models > Apply Model..."));
       await session.step(36, "Then there should be 1 visible \"Apply predictive model\" dialog", () => visibleCount(page, 1, el("\"Apply predictive model\" dialog")));
       await session.step(37, "And Table input in \"Apply predictive model\" dialog should have value \"forge-test-wine-{time}\"", () => shouldHaveValue(page, el("Table input in \"Apply predictive model\" dialog"), session.text("forge-test-wine-{time}")));
       await session.step(38, "And Model input in \"Apply predictive model\" dialog should have value \"forge-test-apply-quality-{time}\"", () => shouldHaveValue(page, el("Model input in \"Apply predictive model\" dialog"), session.text("forge-test-apply-quality-{time}")));
@@ -59,7 +60,7 @@ test.describe("Applying the quality regressor to winequality, and cancelling an 
       await session.step(54, "And a new column \"quality (predicted)\" should have been added", () => newColumnNamed(page, "quality (predicted)"));
       await session.step(55, "And \"quality (predicted)\" column should have no missing values", () => columnComplete(page, "quality (predicted)"));
       await session.step(56, "And an info balloon containing 'Added the column \"quality (predicted)\" to forge-test-wine-{time}.' should have been shown", () => infoBalloonText(page, session.text("Added the column \"quality (predicted)\" to forge-test-wine-{time}.")));
-      await session.step(57, "And every value of \"quality (predicted)\" column should match \"^-?\\d+$\"", () => everyValueMatches(page, "quality (predicted)", "^-?\\d+$"));
+      await session.step(57, "And \"quality (predicted)\" column should have type \"double\"", () => columnType(page, "quality (predicted)", "double"));
       await session.step(58, "And the mean absolute difference of \"quality\" and \"quality (predicted)\" columns of the table \"forge-test-wine-{time}\" should equal the Train MAE of the Forge model \"forge-test-apply-quality-{time}\" within 0.001", () => maeMatches(page, "quality", "quality (predicted)", session.text("forge-test-wine-{time}"), session.text("forge-test-apply-quality-{time}"), 0.001));
       await session.step(59, "And the model \"forge-test-apply-quality-{time}\" should have 1 application on the server", () => applicationsCount(page, session.text("forge-test-apply-quality-{time}"), 1));
       await session.step(60, "And the newest application of the model \"forge-test-apply-quality-{time}\" should have:", () => newestApplicationShouldHave(page, session.text("forge-test-apply-quality-{time}"), [["table_name",session.text("forge-test-wine-{time}")],["row_count","6497"],["skipped_rows","0"],["column_name","quality (predicted)"],["source","ui"],["status","completed"],["duration_ms","number"]]), [["table_name",session.text("forge-test-wine-{time}")],["row_count","6497"],["skipped_rows","0"],["column_name","quality (predicted)"],["source","ui"],["status","completed"],["duration_ms","number"]]);
@@ -68,7 +69,7 @@ test.describe("Applying the quality regressor to winequality, and cancelling an 
     });
     await run.scenario("A cancelled application adds no column and is recorded; the model's Activity and Last run show it (3.6, 4.4)", async () => {
       await session.step(72, "Given user counts the task bar entries", () => countTaskBarEntries(page));
-      await session.step(73, "When user picks \"ML > Forge > Apply...\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Apply..."));
+      await session.step(73, "When user picks \"ML > Models > Apply Model...\" from the top menu", () => pickFromTopMenu(page, "ML > Models > Apply Model..."));
       await session.step(74, "Then there should be 1 visible \"Apply predictive model\" dialog", () => visibleCount(page, 1, el("\"Apply predictive model\" dialog")));
       await session.step(75, "And Model input in \"Apply predictive model\" dialog should have value \"forge-test-apply-quality-{time}\"", () => shouldHaveValue(page, el("Model input in \"Apply predictive model\" dialog"), session.text("forge-test-apply-quality-{time}")));
       await session.step(76, "When user expands \"More options\" group", () => expand(page, el("\"More options\" group")));
@@ -84,7 +85,7 @@ test.describe("Applying the quality regressor to winequality, and cancelling an 
       await session.step(86, "And the table \"forge-test-wine-{time}\" should have no column matching \"^quality \\(predicted \\d+\\)$\"", () => namedTableNoColumnMatching(page, session.text("forge-test-wine-{time}"), "^quality \\(predicted \\d+\\)$"));
       await session.step(87, "And the newest application of the model \"forge-test-apply-quality-{time}\" should have:", () => newestApplicationShouldHave(page, session.text("forge-test-apply-quality-{time}"), [["table_name",session.text("forge-test-wine-{time}")],["status","cancelled"],["column_name","empty"]]), [["table_name",session.text("forge-test-wine-{time}")],["status","cancelled"],["column_name","empty"]]);
       await session.step(91, "And the model \"forge-test-apply-quality-{time}\" should have 2 applications on the server", () => applicationsCount(page, session.text("forge-test-apply-quality-{time}"), 2));
-      await session.step(92, "When user picks \"ML > Forge > Models\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Models"));
+      await session.step(92, "When user calls \"Forge:forgeModels\" function", () => call(page, "Forge:forgeModels"));
       await session.step(93, "Then the \"Forge\" view should be current", () => viewIsCurrent(page, "Forge"));
       await session.step(94, "Given the context panel is open", () => contextPanelOpen(page));
       await session.step(95, "When user clicks on the Forge model \"forge-test-apply-quality-{time}\" in second grid viewer", () => clickCatalogRow(page, session.text("forge-test-apply-quality-{time}"), el("second grid viewer")));

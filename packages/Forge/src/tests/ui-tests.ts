@@ -9,7 +9,7 @@ import {recordApplication} from '../apply/application-store';
 import {applyAndRecord, DEFAULT_BATCH_SIZE, loadModel} from '../apply/apply-model';
 import {exactMapping} from '../apply/column-matching';
 import {updateModelInfo} from '../catalog/model-edit';
-import {APP_NAME, MENU_PATH, MODEL_TYPE, PANEL_TABLE_MODELS} from '../constants';
+import {APP_NAME, MODEL_TYPE, PANEL_TABLE_MODELS} from '../constants';
 import {enabledRules, hyperparametersOf, isEnabled} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
@@ -366,9 +366,9 @@ category('UI', () => {
     expect(apps[0].friendlyName, APP_NAME);
   });
 
-  test('menu function is registered', async () => {
+  test('catalog menu item', async () => {
     const topMenu = DG.Func.find({package: 'Forge', name: 'forgeModels'})[0]?.topMenu;
-    expect(topMenu?.startsWith(MENU_PATH), true, `Unexpected top menu: ${topMenu}`);
+    expect(topMenu === null || topMenu === '', true, `Unexpected top menu: ${topMenu}`);
   });
 
   test('Train view opens with Save in the ribbon and one form with a hidden Train', async () => {
@@ -728,14 +728,14 @@ category('UI', () => {
     }
   });
 
-  test('train function is registered', async () => {
-    const topMenu = DG.Func.find({package: 'Forge', name: 'forgeTrain'})[0]?.topMenu;
-    expect(topMenu?.startsWith(MENU_PATH), true, `Unexpected top menu: ${topMenu}`);
-  });
-
-  test('apply functions are registered', async () => {
-    const topMenu = DG.Func.find({package: 'Forge', name: 'forgeApply'})[0]?.topMenu;
-    expect(topMenu?.startsWith(MENU_PATH), true, `Unexpected top menu: ${topMenu}`);
+  test('the core\'s entry points exist without a menu of their own', async () => {
+    for (const name of ['forgeTrain', 'forgeApply']) {
+      const func = DG.Func.find({package: 'Forge', name})[0];
+      expect(func !== undefined, true, `${name} is not registered`);
+      expect(!func.topMenu, true, `Unexpected top menu of ${name}: ${func.topMenu}`);
+    }
+    const app = DG.Func.find({package: 'Forge', name: 'forgeApp'})[0];
+    expectArray(app?.outputs.map((p) => p.propertyType) ?? [], [DG.TYPE.VIEW]);
     const inputs = DG.Func.find({package: 'Forge', name: 'applyModel'})[0]?.inputs.map((p) => p.name) ?? [];
     expectArray(inputs, ['model', 'table', 'columnNamesMap', 'showProgress']);
   });
@@ -3723,8 +3723,8 @@ category('UI: Table panel', () => {
         if (!(grok.shell.o instanceof DG.DataFrame && grok.shell.o.dart === iris.dart))
           grok.shell.setCurrentObject(iris, false, true);
         return header() !== undefined;
-      }, 'No Forge models pane', WAIT_MS).catch(() => {
-        throw new Error(`No Forge models pane for ${String(grok.shell.o)}: ${headers().map((h) => h.textContent)}`);
+      }, 'No Models pane', WAIT_MS).catch(() => {
+        throw new Error(`No Models pane for ${String(grok.shell.o)}: ${headers().map((h) => h.textContent)}`);
       });
       if (header()?.getAttribute('aria-expanded') !== 'true')
         header()?.click();
@@ -3739,6 +3739,29 @@ category('UI: Table panel', () => {
       paneParts(panel(), name).link.click();
       await awaitCheck(() => grok.shell.o instanceof DG.DomainRow && grok.shell.o.values?.name === name,
         `The click left ${String(grok.shell.o)} as the current object`, WAIT_MS);
+    } finally {
+      grok.shell.windows.showContextPanel = isPanelShown;
+      tableView.close();
+    }
+  }, {timeout: TIMEOUT});
+
+  test('the context panel has one Models pane', async () => {
+    const {name, iris} = paneFixture();
+    const tableView = grok.shell.addTableView(iris);
+    const isPanelShown = grok.shell.windows.showContextPanel;
+    grok.shell.windows.showContextPanel = true;
+    const panel = () => document.querySelector<HTMLElement>('.grok-prop-panel') ?? ui.div();
+    const modelsHeaders = () => Array.from(panel().querySelectorAll<HTMLElement>('.d4-accordion-pane-header'))
+      .filter((h) => h.textContent?.trim() === PANEL_TABLE_MODELS);
+    try {
+      await awaitCheck(() => {
+        if (!(grok.shell.o instanceof DG.DataFrame && grok.shell.o.dart === iris.dart))
+          grok.shell.setCurrentObject(iris, false, true);
+        for (const header of modelsHeaders().filter((h) => h.getAttribute('aria-expanded') !== 'true'))
+          header.click();
+        return paneLine(panel(), name) !== undefined;
+      }, 'Forge\'s Models pane does not list the model', WAIT_MS);
+      expect(modelsHeaders().length, 1);
     } finally {
       grok.shell.windows.showContextPanel = isPanelShown;
       tableView.close();

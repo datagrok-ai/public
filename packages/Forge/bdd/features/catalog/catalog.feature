@@ -1,6 +1,6 @@
 @journey @serial
 Feature: The model catalog: a model's panes, its commands, comparing, sharing, evaluating and deleting
-  ML | Forge | Models with three iris and quality models the Background trains and saves through Forge:trainModel
+  The catalog (opened with Forge:forgeModels) with three iris and quality models the Background trains and saves through Forge:trainModel
   (XGBoost; the iris classifier tagged "demo", a second iris classifier keeping a reference to iris.csv, the quality
   regressor saved last, so it is the newest), and a model row made by hand without a model file. Translated from the
   manual scenarios 2.6, 3.7 (step 3), 4.0 (step 3), 4.1, 4.2 (steps 1-2), 4.3, 4.4 (steps 1-2), 4.5, 4.6, 4.7 (steps
@@ -36,7 +36,8 @@ Feature: The model catalog: a model's panes, its commands, comparing, sharing, e
   3, "Enter a name for the model."): the platform shows no tooltip of a disabled button inside a dialog
   (train-iris.feature's @known-failure scenario); OK is claimed disabled.
 
-  Where the product moved on from the manual text: ML | Forge | Models focuses an open catalog, so 2.6's second
+  Where the product moved on from the manual text: the catalog has no menu item, and Forge:forgeModels focuses an
+  open catalog, so 2.6's second
   catalog is the app opened again; 4.4's "click the catalog row again" is not needed: the shown model's Details and
   Activity show the application by themselves.
   4.6 opens a second iris copy, so the iris model fits two tables, and then the catalog again: the demo opener names
@@ -63,7 +64,7 @@ Feature: The model catalog: a model's panes, its commands, comparing, sharing, e
     And a Forge model "forge-test-cat-quality-{time}" is trained on the current table through the API with:
       | target | quality |
       | method | XGBoost |
-    When user picks "ML > Forge > Models" from the top menu
+    When user calls "Forge:forgeModels" function
     Then the "Forge" view should be current
     Given the context panel is open
     Then second grid viewer should list the Forge model "forge-test-cat-iris-{time}"
@@ -255,7 +256,7 @@ Feature: The model catalog: a model's panes, its commands, comparing, sharing, e
     And user switches to the "Forge" view
     When user closes the current view
     And user switches to the "forge-test-wine-{time}" table view
-    And user picks "ML > Forge > Models" from the top menu
+    And user calls "Forge:forgeModels" function
     Then the "Forge" view should be current
     And there should be 1 open view named "Forge"
     When user selects "forge-test-iris2-{time}" in "Applicable to" input in forge app

@@ -95,7 +95,7 @@ async function panelOfModel(page: Page, name: string): Promise<string> {
       return `the current object is ${String(o)}`;
     return o.values.name === n ? 'the model' : `the current object is the Forge model "${String(o.values.name)}"`;
   }, name), contextPanelTitle(page)]);
-  // The title, not the panel's text: a table's panel names its models too (the pane Forge models).
+  // The title, not the panel's text: a table's panel names its models too (the pane Models).
   return current !== 'the model' ? current : title === name ? 'shown' : `the context panel's title is "${title}"`;
 }
 
@@ -491,7 +491,7 @@ export const openDemoFile = Given('user opens the demo file {string} as {string}
   'script, so Save offers Reference), named; done when the platform has detected its semantic types and its view is ' +
   'current with its grid shown'});
 
-const FIXTURE_FIELDS = ['target', 'features', 'method', 'storage', 'tags', 'description'];
+const FIXTURE_FIELDS = ['target', 'features', 'method', 'missing values', 'storage', 'tags', 'description'];
 
 /* A saved model for a feature that is not about training (M1b's catalog and apply features): Forge:trainModel in the
    page with the view's defaults unless a row says otherwise. The model and the runs of the table are swept at feature
@@ -514,11 +514,13 @@ export const trainThroughApiWith = Given('a Forge model {string} is trained on t
       const t = grok.shell.t;
       await grok.functions.call('Forge:trainModel', {table: t, target: f.target ?? t.columns.byIndex(t.columns.length - 1).name,
         features: list, method: f.method ?? null, name: modelName, storage: f.storage ?? 'none', tags: f.tags ?? null,
+        options: f['missing values'] === undefined ? null : {missingValues: f['missing values']},
         description: f.description ?? null, showProgress: false});
     }, [name, fields, features] as [string, Record<string, string | undefined>, string[] | null]);
     await expectCreatedModel(name, `the Forge model "${name}" trained on ${table}`);
   }, {tier: 'api', description: 'Forge:trainModel on the current table, saved as the name, with | field | value | rows: ' +
-  'target (default the last column), features (comma-separated; default the API\'s), method, storage (default none), ' +
+  'target (default the last column), features (comma-separated; default the API\'s), method, missing values (the ' +
+  'option missingValues: skip, impute or keep; default the method\'s), storage (default none), ' +
   'tags, description; deleted with Forge:deleteModel at feature end, and the runs of the table swept'});
 
 /* LIB-PROMOTE: a journey's scenario inherits the balloons of the ones before it (the harness removes them between

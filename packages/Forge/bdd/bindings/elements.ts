@@ -48,14 +48,14 @@ element('tag chips', {selector: '.d4-tags-selector-tags-container > *',
 
 element('forge app', {selector: '.forge-app', description: 'the Forge view: Methods and the model catalog'});
 
-/* LIB-PROMOTE: a line of the table pane Forge models (`table-models-panel.ts`) has the shape of the built-in Models
+/* LIB-PROMOTE: a line of the table pane Models (`table-models-panel.ts`) has the shape of the built-in Models
    pane's rows (`d4-entity-markup-row`): the run icon, the name as a link, the menu arrow of `ui.contextActions`. */
 kind('model line', {
   selector: '.forge-model-line',
   match: ['label'],
   labelSelector: '.forge-model-name',
   parts: {'run icon': '.svg-model-run', name: '.forge-model-name', 'menu arrow': '.grok-context-arrow-down'},
-  description: 'a model\'s line in the table pane Forge models by the model\'s name; its run icon, name and menu arrow',
+  description: 'a model\'s line in the table pane Models by the model\'s name; its run icon, name and menu arrow',
 });
 
 /* LIB-PROMOTE: every entity's Details (and a package's Sharing) pane, and a model's tooltip, is a ui.tableFromMap, a

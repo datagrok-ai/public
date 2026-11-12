@@ -35,7 +35,7 @@ export interface ApplyDialogOptions {
 export async function applyModelDialog(options: ApplyDialogOptions): Promise<DG.Dialog> {
   const rows: ApplyModelRow[] = await forgeDb.models.query().select(...APPLY_COLUMNS).top(MAX_MODELS);
   if (rows.length === 0)
-    throw new ForgeError('No Forge models yet. Train and save one with ML | Forge | Train... first.');
+    throw new ForgeError('No Forge models yet. Train and save one with ML | Models | Train Model... first.');
   const preset = rows.find((row) => row.id === options.modelId);
   const table = preset === undefined ? options.table : presetTable(options, preset);
   return new ApplyForm(rows, EngineRegistry.discover(), {...options, table}).dialog;

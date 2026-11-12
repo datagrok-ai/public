@@ -35,7 +35,7 @@ test.describe("Training on iris with missing values: Skip rows, Impute, and a ce
     await session.step(33, "When user clears \"Sepal.Width\" column in rows \"3, 10\"", () => clearCells(page, "Sepal.Width", "3, 10"));
     await session.step(34, "And user clears \"Species\" column in rows \"20\"", () => clearCells(page, "Species", "20"));
     await session.step(35, "And user remembers the shown training", () => rememberShownTraining(page));
-    await session.step(36, "And user picks \"ML > Forge > Train...\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Train..."));
+    await session.step(36, "And user picks \"ML > Models > Train Model...\" from the top menu", () => pickFromTopMenu(page, "ML > Models > Train Model..."));
     await session.step(37, "Then the \"Predictive model\" view should be current", () => viewIsCurrent(page, "Predictive model"));
     await session.step(38, "And a new training's result should be shown", () => newTrainingShown(page));
     await session.step(39, "When user selects \"SVM\" in Method input", () => selectIn(page, "SVM", el("Method input")));

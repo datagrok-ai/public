@@ -43,7 +43,7 @@ test.describe("Applying on data with natural gaps: demog's HEIGHT and WEIGHT, sk
       await session.step(48, "And the value of \"AGE\" column in row 1193 should be \"\"", () => valueInRow(page, "AGE", 1193, ""));
       await session.step(49, "And the value of \"HEIGHT\" column in row 965 should be \"\"", () => valueInRow(page, "HEIGHT", 965, ""));
       await session.step(50, "And the value of \"WEIGHT\" column in row 2222 should be \"\"", () => valueInRow(page, "WEIGHT", 2222, ""));
-      await session.step(51, "When user picks \"ML > Forge > Apply...\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Apply..."));
+      await session.step(51, "When user picks \"ML > Models > Apply Model...\" from the top menu", () => pickFromTopMenu(page, "ML > Models > Apply Model..."));
       await session.step(52, "Then there should be 1 visible \"Apply predictive model\" dialog", () => visibleCount(page, 1, el("\"Apply predictive model\" dialog")));
       await session.step(53, "And Table input in \"Apply predictive model\" dialog should have value \"forge-test-demog-{time}\"", () => shouldHaveValue(page, el("Table input in \"Apply predictive model\" dialog"), session.text("forge-test-demog-{time}")));
       await session.step(54, "And Model input in \"Apply predictive model\" dialog should have value \"forge-test-apply-demog-{time}\"", () => shouldHaveValue(page, el("Model input in \"Apply predictive model\" dialog"), session.text("forge-test-apply-demog-{time}")));
@@ -85,7 +85,7 @@ test.describe("Applying on data with natural gaps: demog's HEIGHT and WEIGHT, sk
     });
     await run.scenario("Impute fills the gaps on a copy and predicts every row; the table keeps its gaps (3.15, step 4)", async () => {
       await session.step(99, "Given user counts the task bar entries", () => countTaskBarEntries(page));
-      await session.step(100, "When user picks \"ML > Forge > Apply...\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Apply..."));
+      await session.step(100, "When user picks \"ML > Models > Apply Model...\" from the top menu", () => pickFromTopMenu(page, "ML > Models > Apply Model..."));
       await session.step(101, "Then there should be 1 visible \"Apply predictive model\" dialog", () => visibleCount(page, 1, el("\"Apply predictive model\" dialog")));
       await session.step(102, "And Model input in \"Apply predictive model\" dialog should have value \"forge-test-apply-demog-{time}\"", () => shouldHaveValue(page, el("Model input in \"Apply predictive model\" dialog"), session.text("forge-test-apply-demog-{time}")));
       await session.step(103, "And \"Missing values\" input in \"Apply predictive model\" dialog should be visible", () => shouldBe(page, el("\"Missing values\" input in \"Apply predictive model\" dialog"), "visible"));

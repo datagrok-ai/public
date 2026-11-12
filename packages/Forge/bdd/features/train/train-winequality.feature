@@ -1,6 +1,6 @@
 @journey @serial
 Feature: Training a regressor of wine quality in the Train view
-  ML | Forge | Train... over winequality opened from the demo files: a classifier of the default target first, then
+  ML | Models | Train Model... over winequality opened from the demo files: a classifier of the default target first, then
   the quality regressor. Translated from the manual scenarios 2.4, 5.2 (step 4), 5.3 and 5.12 (steps 1-3 and 5) of
   core/docs/features/platform/predictive-modeling/forge/manual-checks.md. A training is claimed by the run its results
   show (data-forge-run-id): a new run's result, then that run as the table's newest on the server with the method
@@ -27,7 +27,7 @@ Feature: Training a regressor of wine quality in the Train view
     And no Forge training runs of the table "forge-test-wine-{time}" are on the server
     And user opens the demo file "winequality.csv" as "forge-test-wine-{time}"
     And user remembers the shown training
-    When user picks "ML > Forge > Train..." from the top menu
+    When user picks "ML > Models > Train Model..." from the top menu
     Then the "Predictive model" view should be current
     And a new training's result should be shown
     And no balloon of any colour should have been shown
