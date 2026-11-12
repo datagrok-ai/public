@@ -28,7 +28,6 @@ export abstract class ChoiceInputBase {
             return [this.emptyLabel];
     }
 
-    /** Replaces the selection; [items] match the choices case-insensitively. */
     setItems(items: string[]) {
         this.choices.removeActiveItems(-1);
         this.addItems(items.map((i) => i.toLowerCase()));

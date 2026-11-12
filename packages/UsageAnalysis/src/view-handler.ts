@@ -56,12 +56,12 @@ export class ViewHandler {
     if (!this.toolbox)
       return;
     try {
-      if (state.tab && this.view.tabs.getPane(state.tab))
-        this.changeTab(state.tab);
       if (state.filters) {
         this.toolbox.setState(state.filters);
         this.toolbox.applyFilter();
       }
+      if (state.tab && this.view.tabs.getPane(state.tab))
+        this.changeTab(state.tab);
       const v = this.getCurrentView();
       await v.viewersReady;
       if (state.rout && v.rout !== state.rout)
@@ -98,7 +98,10 @@ export class ViewHandler {
       urlTab = views.find((v) => ViewHandler.urlName(v) === this.appTab)?.name ?? urlTab;
 
     const indicatorTimer = setTimeout(() => ui.setUpdateIndicator(this.view.root, true, 'Loading...'), 200);
-    const toolbox = await toolboxPromise;
+    const toolbox = await toolboxPromise.catch((e) => {
+      this.pendingState = undefined;
+      throw e;
+    });
     clearTimeout(indicatorTimer);
     ui.setUpdateIndicator(this.view.root, false);
     for (const view of views)

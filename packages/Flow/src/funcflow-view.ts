@@ -151,7 +151,7 @@ export class FuncFlowView extends DG.ViewBase {
   private async restoreState(scriptId: string | null, doc: FuncFlowDocument | null): Promise<void> {
     const script = scriptId ? await grok.dapi.scripts.find(scriptId).catch(() => null) : null;
     if (scriptId && !script)
-      grok.shell.warning(`The saved flow of "${this.name}" is no longer available${doc ? '; its unsaved copy is shown' : ''}`);
+      grok.shell.warning(`The saved flow of "${this.name}" is no longer available${doc ? '; its unsaved copy is shown' : '; the empty view is not saved with the project'}`);
     if (script && !doc) {
       await this.bindScript(script);
       return;
