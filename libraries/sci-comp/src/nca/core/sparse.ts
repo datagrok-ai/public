@@ -14,13 +14,32 @@
  *   timepoint whose BLQ fraction exceeds 50 % contributes a zero mean to the
  *   AUClast point estimate). BLQ is imputed **before** averaging.
  * - {@link sparseAuc}: the composite **AUClast** (linear-trapezoidal, anchored
- *   at t=0, C=0), its Holder variance, the Nedelman-Jia df, and the Student-t CI.
+ *   at t=0, C=0 — or, for an IV-bolus composite, at the dose-time concentration
+ *   Ĉ0), its Holder variance, the Nedelman-Jia df, and the Student-t CI.
+ * - {@link compositeProfileArrays}: the composite as profile arrays — the ONE
+ *   copy of the "> 50 % BLQ → 0" rule, read by `sparseAuc` and by a caller that
+ *   runs the dense NCA on the composite mean, so both start from the same arrays.
  *
  * ## The math
  *
  * Lever-arm linear-trapezoidal weights over the design timepoints (with the
  * t=0 anchor): `w = c(0, diff(t)/2) + c(diff(t)/2, 0)` — PKNCA
  * `sparse_auc_weight_linear`. The AUC estimator is `AÛC = Σ_i w_i · C̄_i`.
+ *
+ * ## IV bolus (`route: ROUTE_IV_BOLUS`)
+ *
+ * The composite starts at `(0, Ĉ0)`, the same dose-time rule and C0 chain as the
+ * dense run (`augmentProfile`): a positive measured `t = 0` mean is the observed
+ * C0; otherwise Ĉ0 = `estimateC0Detailed` (`logslope → c1 → cmin → set0`) on the
+ * post-dose composite means, and a pre-dose `t = 0` group (BLQ / zero) is not
+ * integrated. Groups at `t < 0` are never integrated. The first segment is linear,
+ * `t₁·(Ĉ0 + C̄₁)/2`. Ĉ0 is a function of the means, so its variance enters ψ by the
+ * delta method: the anchor's lever-arm weight `t₁/2` is distributed onto the
+ * means it was computed from, `w'_i = w_i + (t₁/2)·∂Ĉ0/∂C̄_i`, and ψ and the df use
+ * `w'` (`logslope`: `Ĉ0·t₂/((t₂−t₁)C̄₁)` and `−Ĉ0·t₁/((t₂−t₁)C̄₂)`; `c1` / `cmin`:
+ * 1 at the point used; a point the > 50 % BLQ rule zeroed is a constant, 0).
+ * Phoenix keeps Ĉ0 a constant in the variance; this SE is a documented
+ * divergence (nca-studio `nca-calculation-standards.md` §7).
  *
  * Holder 2001 eq (A1) variance (`ψ`):
  * ```
@@ -47,7 +66,9 @@
  * - **Linear-trapezoidal only**: the Holder variance is valid only where AUC is
  *   linear in the timepoint means. A steep, wide-gap terminal phase makes the
  *   linear rule over-estimate a convex decline; {@link sparseAuc} raises
- *   `SPARSE_TERMINAL_OVEREST` (Jia-Nedelman 1996).
+ *   `SPARSE_TERMINAL_OVEREST` with the estimated size of the excess. The trigger
+ *   numbers (gap > 2 × t½, terminal mean < 20 % Cmax) are a heuristic with no
+ *   located source.
  * - **Topology from the data, not the label**: destructive / batch / serial is
  *   derived from the r_ij overlap matrix and cross-checked against the declared
  *   label (`SPARSE_TOPOLOGY_MISMATCH`).
@@ -63,7 +84,9 @@
  * @see Jia X, Nedelman J (1996) — log-trap nonlinearity / terminal-gap AUC bias.
  */
 
-import type {BlqRule} from './types';
+import type {BlqRule, C0Method, RouteCode} from './types';
+import {ROUTE_IV_BOLUS} from './types';
+import {estimateC0Detailed} from './c0';
 import {studentTInv} from '../../stats/distributions';
 
 // Public types
@@ -109,6 +132,17 @@ export interface SparseAucOptions {
   readonly varianceBorrow?: boolean;
   /** Declared topology label, cross-checked against the data. */
   readonly declaredTopology?: SamplingTopology;
+  /**
+   * Dosing route of the composite. Only `ROUTE_IV_BOLUS` changes anything: the
+   * composite is integrated from `(0, Ĉ0)` with the delta-method SE (see the
+   * module header). Absent or any other route: the `(0, 0)` anchor.
+   *
+   * A caller that bootstraps the IV-bolus AUC must pass the route in the resampled
+   * statistic too. Ĉ0's chain is discontinuous (a resample whose first pair rises
+   * answers `c1` instead of `logslope`), so that bootstrap distribution can be
+   * bimodal on a composite with a shallow first decline — label it exploratory.
+   */
+  readonly route?: RouteCode;
 }
 
 export type SparseWarningCode =
@@ -143,7 +177,8 @@ export interface CompositeProfileResult {
 }
 
 export interface SparseAucResult {
-  /** Composite AUClast (linear trapezoidal, anchored at t=0, C=0). */
+  /** Composite AUClast (linear trapezoidal, anchored at t=0, C=0; at t=0, C=Ĉ0 on
+   *  an IV-bolus composite). */
   readonly auc: number;
   /** Holder standard error of the AUC. */
   readonly se: number;
@@ -153,9 +188,27 @@ export interface SparseAucResult {
   readonly ci: readonly [number, number];
   /** Topology derived from the r_ij matrix. */
   readonly topology: SamplingTopology;
-  /** The composite profile (mean/SD/%CV/n/%BLQ per nominal time). */
+  /** The composite profile (mean/SD/%CV/n/%BLQ per nominal time) — every
+   *  timepoint supplied, including those an IV-bolus run does not integrate. */
   readonly composite: CompositeProfileResult;
   readonly warnings: ReadonlyArray<SparseWarning>;
+  /** IV bolus only: the dose-time anchor of `auc` and how it was obtained
+   *  (`observed` = a positive measured t = 0 mean). Absent on every other route. */
+  readonly c0?: {readonly value: number; readonly method: C0Method | 'observed'};
+  /** Present when `SPARSE_TERMINAL_OVEREST` fires: the estimated excess of the
+   *  linear rule over the exponential (log-trapezoid) area on the descending
+   *  intervals after Cmax, as a % of `auc`. A diagnostic — no number changes. */
+  readonly terminalExcessPct?: number;
+}
+
+/** The composite as profile arrays (one entry per timepoint, ascending time). */
+export interface CompositeProfileArrays {
+  readonly time: Float64Array;
+  /** The mean, or 0 where more than 50 % of the samples are BLQ (PKNCA
+   *  `arithmetic mean, <=50% BLQ`). */
+  readonly conc: Float64Array;
+  /** 1 where the mean is not positive (an all-zero / all-BLQ timepoint). */
+  readonly blqMask: Uint8Array;
 }
 
 // Internal: grouping by nominal time
@@ -275,6 +328,70 @@ export function buildCompositeProfile(
   return {timepoints};
 }
 
+/**
+ * The composite as profile arrays: time, the mean with the PKNCA "> 50 % BLQ →
+ * 0" rule, and a BLQ mask where the mean is not positive. The one copy of that
+ * mapping: `sparseAuc` integrates these arrays, and a caller that runs the dense
+ * `computeNca` on the composite mean passes the same arrays, so the C0 chain sees
+ * the same points on both sides.
+ */
+export function compositeProfileArrays(composite: CompositeProfileResult): CompositeProfileArrays {
+  const tps = composite.timepoints;
+  return {
+    time: Float64Array.from(tps.map((t) => t.time)),
+    conc: Float64Array.from(tps.map((t) => (t.n > 0 && t.nBlq / t.n > 0.5 ? 0 : t.mean))),
+    blqMask: Uint8Array.from(tps.map((t) => (t.mean > 0 ? 0 : 1))),
+  };
+}
+
+/**
+ * The IV-bolus dose-time rule on the composite, applied ONCE before anything is
+ * derived from the groups (so means, variances, r_ij, the weights and the
+ * terminal check stay index-aligned) — the `augmentProfile` rule:
+ * groups at t < 0 are dropped; a t = 0 group with a positive mean that the BLQ
+ * rule did not zero is the observed C0 (kept, nothing inserted); any other t = 0
+ * group is dropped and Ĉ0 comes from the chain on the post-dose arrays.
+ * `dC0[k]` = ∂Ĉ0/∂C̄ at kept index k.
+ */
+function ivBolusAnchor(prof: CompositeProfileArrays, means: ReadonlyArray<number>): {
+  keep: number[]; c0: {value: number; method: C0Method | 'observed'}; anchor: number; dC0: number[];
+} {
+  const K = prof.time.length;
+  const keep: number[] = [];
+  for (let i = 0; i < K; i++) if (prof.time[i] >= 0) keep.push(i);
+  const t0 = keep.length > 0 && prof.time[keep[0]] === 0 ? keep[0] : -1;
+  const observed = t0 >= 0 && prof.conc[t0] > 0 && Number.isFinite(prof.conc[t0]);
+  if (observed)
+    return {keep, c0: {value: prof.conc[t0], method: 'observed'}, anchor: 0, dC0: keep.map(() => 0)};
+
+  const post = t0 >= 0 ? keep.slice(1) : keep;
+  const time = Float64Array.from(post.map((i) => prof.time[i]));
+  const conc = Float64Array.from(post.map((i) => prof.conc[i]));
+  const blq = Uint8Array.from(post.map((i) => prof.blqMask[i]));
+  const dC0 = post.map(() => 0);
+  // With the default chain `set0` always answers; null only on a caller chain.
+  const est = estimateC0Detailed(time, conc, blq) ?? {value: 0, method: 'set0' as C0Method, usedIndices: []};
+  const c0 = est.value;
+  // A point the > 50 % BLQ rule zeroed is a constant, not its mean: derivative 0. `means` are the
+  // composite's own timepoint means — the very doubles `compositeProfileArrays` copied — so the
+  // comparison is an identity, not two computations that happen to agree.
+  const isMean = (k: number): boolean => conc[k] === means[post[k]];
+  switch (est.method) {
+  case 'logslope': {
+    const [k1, k2] = est.usedIndices;
+    const t1 = time[k1]; const t2 = time[k2];
+    if (isMean(k1)) dC0[k1] = c0 * t2 / ((t2 - t1) * conc[k1]);
+    if (isMean(k2)) dC0[k2] = -c0 * t1 / ((t2 - t1) * conc[k2]);
+    break;
+  }
+  case 'c1': case 'cmin':
+    if (isMean(est.usedIndices[0])) dC0[est.usedIndices[0]] = 1;
+    break;
+  case 'c0': case 'set0': break; // no post-dose dose-time point / a constant 0
+  }
+  return {keep: post, c0: {value: c0, method: est.method}, anchor: c0, dC0};
+}
+
 // Public: design-aware closed-form sparse AUC + SE + df + CI
 
 /**
@@ -290,8 +407,16 @@ export function sparseAuc(input: SparseInput, options: SparseAucOptions = {}): S
   const varianceBorrow = options.varianceBorrow ?? true;
   const warnings: SparseWarning[] = [];
 
-  const groups = groupByTime(input, blqRule);
+  const allGroups = groupByTime(input, blqRule);
   const composite = buildCompositeProfile(input, blqRule);
+  const prof = compositeProfileArrays(composite);
+
+  // IV bolus: the dose-time rule filters the groups ONCE, up front; every other
+  // route keeps every group and the (0, 0) anchor (byte-identical to 0.11.0).
+  const iv = options.route === ROUTE_IV_BOLUS ?
+    ivBolusAnchor(prof, composite.timepoints.map((t) => t.mean)) : null;
+  const keep = iv !== null ? iv.keep : allGroups.map((_, i) => i);
+  const groups = keep.map((i) => allGroups[i]);
   const K = groups.length;
 
   const means = groups.map((g) => mean(g.conc));
@@ -301,7 +426,8 @@ export function sparseAuc(input: SparseInput, options: SparseAucOptions = {}): S
   if (varianceBorrow) modelSingletonVariances(means, r, variances, warnings);
 
   const rij = overlapMatrix(groups);
-  const topology = deriveTopology(r, rij, K);
+  // Topology is a property of the design: every timepoint supplied, before the filter.
+  const topology = deriveTopology(allGroups.map((g) => g.conc.length), overlapMatrix(allGroups), allGroups.length);
   if (input.animalId === null) {
     warnings.push({
       code: 'SPARSE_ANIMAL_ID_ABSENT_ASSUMED_DESTRUCTIVE',
@@ -317,15 +443,20 @@ export function sparseAuc(input: SparseInput, options: SparseAucOptions = {}): S
     });
   }
 
-  // Mean profile for AUClast with the >50%-BLQ-zeroing rule.
-  const meansForAuc = means.map((m, i) => (r[i] > 0 && groups[i].nBlq / r[i] > 0.5 ? 0 : m));
+  // Mean profile for AUClast with the >50%-BLQ-zeroing rule (compositeProfileArrays).
+  const meansForAuc = keep.map((i) => prof.conc[i]);
 
-  // Anchored timepoint vector (t=0, C=0) + lever-arm weights.
+  // Anchored timepoint vector (t=0, C=anchor) + lever-arm weights. The anchor is 0
+  // except on an IV-bolus composite with no observed C0, where it is Ĉ0.
+  const anchor = iv !== null ? iv.anchor : 0;
   const times = [0, ...groups.map((g) => g.time)];
   const wAll = leverArmWeights(times);
   const w = wAll.slice(1); // weight on each measured timepoint mean
+  // Delta method: Ĉ0 is a function of the means; its lever-arm weight wAll[0] = t1/2
+  // moves onto the means it was computed from (zero everywhere but IV bolus).
+  if (iv !== null) for (let i = 0; i < K; i++) w[i] += wAll[0] * iv.dC0[i];
 
-  const auc = aucLast([0, ...meansForAuc], times);
+  const auc = aucLast([anchor, ...meansForAuc], times);
   const Sigma = covarianceMatrix(groups, means, r, variances, rij);
 
   // ψ = wᵀ Σ w  (Holder A1 variance).
@@ -344,7 +475,7 @@ export function sparseAuc(input: SparseInput, options: SparseAucOptions = {}): S
     });
   }
 
-  flagTerminalOverest(groups, meansForAuc, options.estimatedHalfLife, warnings);
+  const terminalExcessPct = flagTerminalOverest(groups, meansForAuc, auc, options.estimatedHalfLife, warnings);
 
   // Student-t CI.
   let ci: [number, number] = [NaN, NaN];
@@ -353,7 +484,11 @@ export function sparseAuc(input: SparseInput, options: SparseAucOptions = {}): S
     ci = [auc - t * se, auc + t * se];
   }
 
-  return {auc, se, df, ci, topology, composite, warnings};
+  return {
+    auc, se, df, ci, topology, composite, warnings,
+    ...(iv !== null ? {c0: iv.c0} : {}),
+    ...(terminalExcessPct !== null ? {terminalExcessPct} : {}),
+  };
 }
 
 // Internal: AUClast, overlap matrix, covariance, df, topology, guards
@@ -512,28 +647,65 @@ function modelSingletonVariances(
  * linear rule over-estimates a convex decline). Trigger: terminal gap
  * `(t_K − t_{K−1}) > 2 × t½` AND terminal mean `< 20 % Cmax`. With no t½, fall
  * back to the concentration-only criterion so the flag never disappears silently.
+ * The trigger numbers are a heuristic; no source for them was located.
+ *
+ * When it fires, the message states the estimated size: the excess of the linear
+ * rule over the log-trapezoid on every DESCENDING interval after Cmax, summed and
+ * divided by `auc` ({@link terminalExcess}). Returns that %, or null when silent.
  */
 function flagTerminalOverest(
-  groups: TimeGroup[], meansForAuc: number[], halfLife: number | undefined,
+  groups: TimeGroup[], meansForAuc: number[], auc: number, halfLife: number | undefined,
   warnings: SparseWarning[],
-): void {
+): number | null {
   // Last measurable index.
   let last = -1;
   for (let i = meansForAuc.length - 1; i >= 0; i--) if (meansForAuc[i] > 0) {last = i; break;}
-  if (last < 1) return;
+  if (last < 1) return null;
   const cmax = Math.max(...meansForAuc.slice(0, last + 1));
-  if (!(cmax > 0)) return;
+  if (!(cmax > 0)) return null;
   const terminalLow = meansForAuc[last] < 0.2 * cmax;
-  if (!terminalLow) return;
+  if (!terminalLow) return null;
   const gap = groups[last].time - groups[last - 1].time;
   const wideGap = halfLife !== undefined && halfLife > 0 ? gap > 2 * halfLife : true;
-  if (wideGap) {
-    warnings.push({
-      code: 'SPARSE_TERMINAL_OVEREST',
-      message: 'The terminal phase is steep with a wide last-interval gap; the ' +
-        'linear-trapezoidal rule may over-estimate AUC over a convex decline ' +
-        (halfLife !== undefined ? '(gap > 2×t½, ' : '(no t½ supplied; ') +
-        'terminal mean < 20% Cmax). Interpret AUClast with care.',
-    });
+  if (!wideGap) return null;
+  const times = groups.map((g) => g.time);
+  const pct = auc > 0 ? 100 * terminalExcess(times, meansForAuc, meansForAuc.indexOf(cmax), last) / auc : NaN;
+  warnings.push({
+    code: 'SPARSE_TERMINAL_OVEREST',
+    message: 'The terminal phase is steep with a wide last-interval gap; the ' +
+      'linear-trapezoidal rule may over-estimate AUC over a convex decline ' +
+      (halfLife !== undefined ? '(gap > 2×t½, ' : '(no t½ supplied; ') +
+      'terminal mean < 20% Cmax). Interpret AUClast with care' +
+      (Number.isFinite(pct) ?
+        `: estimated excess ≈ ${pct.toFixed(1)} % of AUClast; the AUClast CI does not include this excess.` :
+        '.'),
+  });
+  return pct;
+}
+
+/**
+ * The linear-trapezoid area minus the log-trapezoid area, summed over every
+ * descending interval from `from` (the Cmax index) to `last`:
+ * `Δ·(c₁ + c₂)/2 − Δ·(c₁ − c₂)/ln(c₁/c₂)`. The log-trapezoid is the exact area under
+ * an exponential through the two points (an identity), so each term is what the
+ * linear rule adds over an exponential decline there. A rising or flat interval
+ * adds nothing (`c₁ = c₂`: the log area is `Δ·c₁`, no 0/0). An interval with a
+ * non-positive end (an embedded BLQ-majority mean) adds nothing either — there is
+ * no exponential through a zero — and the sum goes on, as AUClast integrates on
+ * through that point to `last`.
+ *
+ * The IV-bolus anchor interval [0, t₁] is NOT counted: Ĉ0 is itself a log-linear
+ * back-extrapolation, and the measured first-segment error of the anchored
+ * composite is small (−0.7 … +5.7 %, `sparse-iv-bolus.test.ts` calibration), so
+ * this is the excess of the post-dose composite only.
+ */
+function terminalExcess(times: number[], conc: number[], from: number, last: number): number {
+  let excess = 0;
+  for (let i = from; i < last; i++) {
+    const c1 = conc[i]; const c2 = conc[i + 1];
+    if (!(c1 > 0) || !(c2 > 0) || !(c2 < c1)) continue;
+    const dt = times[i + 1] - times[i];
+    excess += dt * (c1 + c2) / 2 - dt * (c1 - c2) / Math.log(c1 / c2);
   }
+  return excess;
 }

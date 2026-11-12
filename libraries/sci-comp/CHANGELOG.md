@@ -1,5 +1,23 @@
 # sci-comp changelog
 
+## 0.12.0 (2026-11-12)
+
+Non-Compartmental Analysis — IV-bolus sparse composite and interval AUC:
+
+* `SparseAucOptions.route?` — with `ROUTE_IV_BOLUS`, `sparseAuc` integrates the composite
+  from `(0, Ĉ0)` (observed `t = 0` mean or the C0 chain) instead of `(0, 0)`, and Ĉ0's
+  variance enters the SE and df by the delta method. **Moves `auc`, `se`, `df`, `ci` on
+  IV-bolus composites only**; every other call is byte-identical to 0.11.0.
+* `SparseAucResult.c0?` and `terminalExcessPct?` — the anchor used and the size of the
+  `SPARSE_TERMINAL_OVEREST` excess (% of AUClast), now quoted in its message.
+* `compositeProfileArrays(composite)` — the composite as `{time, conc, blqMask}` with the
+  "> 50 % BLQ → 0" rule; `estimateC0Detailed` reports `usedIndices`.
+* `nca.aucInterval(inputs, rules, start, end)` — AUC over `[start, end]` with PKNCA
+  `aucint.last` semantics: bounds interpolated by the interval's AUC method, no area past
+  tlast (`truncatedAtTlast`). `[0, Infinity]` equals `aucLast` exactly.
+* Fixtures `07_iv_bolus_sparse` and `08_aucint` validated against PKNCA 0.12.1. No
+  previously committed value changed.
+
 ## 0.11.0 (2026-09-22 — GROK-20960)
 
 Non-Compartmental Analysis — two bug fixes in `computeNca` that **change computed

@@ -694,6 +694,25 @@ export class NcaController {
     return this.profileByKey.get(subjectKey);
   }
 
+  /**
+   * AUC over [start, end] (hours, time after dose) of one subject's profile — sci-comp
+   * `nca.aucInterval` (PKNCA `aucint.last`) on the SAME extracted, unit-canonical inputs and
+   * BLQ rules the profile's NCA ran on (guardrail "one function, every caller"). NaN when the
+   * subject is unknown or extraction fails. tk-study-day-stratification F4 (AUC0–τ past tlast).
+   */
+  intervalAuc(subjectKey: string, start: number, end: number): number {
+    const index = this.profileByKey.get(subjectKey);
+    if (index === undefined) return NaN;
+    try {
+      const {inputs} = extractProfileInputs(this.df, index, this.contract, this.scalars);
+      return nca.aucInterval(inputs, this.rules, start, end).value;
+    } catch (e) {
+      // NaN reads as "AUC0–τ not available" downstream (the AUClast fallback label); keep the cause visible.
+      console.warn(`NcaController.intervalAuc(${subjectKey}): ${e instanceof Error ? e.message : String(e)}`);
+      return NaN;
+    }
+  }
+
   /** Recompute ONE subject in place (AC-1.2) — patches its results row, preserving
    *  frame identity; every other row is untouched. `auditAction` distinguishes a
    *  forward override (`'override-lambdaz'`) from a reset (`'reset-lambdaz'`, F-4). */
