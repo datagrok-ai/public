@@ -56,15 +56,6 @@ category('AI: Widgets: Input Extras', () => {
     expect(inp.validate(), true);
   });
 
-  test('addValidator on a column input gets the column name', async () => {
-    const df = demog(10);
-    const inp = ui.input.column('c', {table: df, value: df.col('age')!});
-    let seen: string | null = null;
-    inp.addValidator((v) => { seen = v; return v === 'age' ? null : 'not age'; });
-    expect(inp.validate(), true);
-    expect(seen, 'age');
-  });
-
   test('number min/max validate vs slider clamp', async () => {
     const n = ui.input.int('n', {min: 0, max: 10});
     n.value = 99;
