@@ -13,7 +13,8 @@
   A blinded study names no arm or compound outside itself until its groups are revealed: not in the Overview, its
   search or the file preview, even when the blinding is in its plan's details only.
 
-* Fixes (2026-11-12): in Analyze's Each animal, the legends of the waterfall and the spider plot stay on one line,
+* Fixes (2026-11-12): in Plan, the measurement schedule comparison no longer spins without end when it is reached by
+  scrolling; it fills in about a second. In Analyze's Each animal, the legends of the waterfall and the spider plot stay on one line,
   paged, instead of covering the bars and lines when the groups' names are long. In the Overview, a study opened
   from a table, with no plan or details, is listed by its groups (not while they are blinded).
 
