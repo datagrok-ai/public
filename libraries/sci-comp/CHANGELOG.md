@@ -11,6 +11,13 @@ Non-Compartmental Analysis — intraperitoneal route:
   No computed value changed.
 * `RouteCode` is widened from `0…5` to `0…6`; an exhaustive `switch` or
   `Record<RouteCode, …>` in a consumer needs an `IP` entry.
+* **An unknown route code is rejected.** A `route` outside `0…6` (7, NaN, a
+  non-integer — reachable from untyped callers) used to fall through the IV checks
+  and be computed silently as extravascular. Now `computeNca` returns
+  `status: 'failed'` with an `UNKNOWN_ROUTE_CODE` error warning, `aucInterval`
+  returns NaN, and `sparseAuc` returns NaN `auc`/`se`/`df`/`ci` with
+  `SPARSE_UNKNOWN_ROUTE_CODE` (composite and topology still reported). New
+  `isKnownRouteCode(code)`. Valid inputs are unaffected.
 
 ## 0.12.0 (2026-11-12)
 

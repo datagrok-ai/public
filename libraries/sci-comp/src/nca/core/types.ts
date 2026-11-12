@@ -41,6 +41,13 @@ export type Route = 'IV-bolus' | 'IV-infusion' | 'PO' | 'SC' | 'IM' | 'other' | 
  * code is extravascular: `(0, 0)` dose-time augmentation and apparent CL/F,
  * Vz/F. IP (intraperitoneal) is its own code so a caller can report the route,
  * not because it is computed differently from PO.
+ *
+ * A value outside this set (7, NaN, a non-integer — reachable from untyped
+ * callers) is REJECTED by `computeNca` (status `'failed'`, `UNKNOWN_ROUTE_CODE`),
+ * `aucInterval` (NaN) and `sparseAuc` (NaN, `SPARSE_UNKNOWN_ROUTE_CODE`) rather
+ * than computed as extravascular: an unknown code may be an intravascular dose,
+ * and the extravascular `(0, 0)` anchor would then understate early AUC and
+ * inflate CL with no warning. See {@link isKnownRouteCode}.
  */
 export type RouteCode = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -52,6 +59,11 @@ export const ROUTE_SC: RouteCode = 3;
 export const ROUTE_IM: RouteCode = 4;
 export const ROUTE_OTHER: RouteCode = 5;
 export const ROUTE_IP: RouteCode = 6;
+
+/** True when `code` is one of the {@link RouteCode} values (an integer 0…6). */
+export function isKnownRouteCode(code: number): code is RouteCode {
+  return Number.isInteger(code) && code >= ROUTE_IV_BOLUS && code <= ROUTE_IP;
+}
 
 // Profile inputs — what the core receives for a single subject's profile
 
@@ -365,6 +377,9 @@ export type ParameterWarningCode =
    *  near the trend line scores well precisely because it is near the line),
    *  so it is reported rather than inferred (severity `'warning'`). */
   | 'LAMBDAZ_SUBSTITUTED_BLQ'
+  /** `inputs.route` is not a {@link RouteCode} (7, NaN, a non-integer): the
+   *  profile is not computed (status `'failed'`, severity `'error'`). */
+  | 'UNKNOWN_ROUTE_CODE'
   // Load-bearing: `string & {}` preserves literal autocomplete that a bare
   // `| string` would collapse.
   | (string & {});
