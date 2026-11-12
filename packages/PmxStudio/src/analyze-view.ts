@@ -11,7 +11,7 @@ import * as ui from 'datagrok-api/ui';
 import {badge, BasicTable, computed, div, divH, divV, dot, loader, signal, span, tableFromMap,
   Tooltip} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
-import {funcForm, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
+import {funcForm, TableInput, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
 import {AnalysisFrames, AnalysisInputs, PREDICTED, analysisDeclarationOf, analysisFrames, warmTwin}
@@ -42,6 +42,7 @@ import {Competing, Survival, competingOf, survivalOf} from './survival';
 import {KmChart} from './km-chart';
 import {synergyDialog} from './synergy';
 import {arriveDialog, arriveItems} from './arrive';
+import {ArmExposure, concentrationMapping, exposureByArm, meanCv, ncaInstalled, runNca} from './exposure';
 
 /** Analyze's tabs and their panels, in order and width (twelfths): the answer and how the groups grew; each animal;
  *  how the animals bore it; whether the study went as planned. */
@@ -366,6 +367,52 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   });
   planInput(form, call, planState);
 
+  // exposure from the NCA package, when installed: a concentration table picked here, or opened while the field is
+  // empty, gives each group NCA's AUClast and Cmax beside its effect (a description: nothing saved, nothing analyzed)
+  const ncaRun = signal<Awaited<ReturnType<typeof runNca>> | null>(null);
+  const ncaSays = signal<string | null>(null);
+  const exposureField = ncaInstalled() ? form.build(() => new TableInput({label: 'Exposure (NCA)', nullable: true,
+    tooltipText: 'Plasma concentrations over time, one row per animal and sample: NCA gives each group its AUClast ' +
+      'and Cmax, shown beside its effect. Nothing is saved, and the analysis does not change.'})) : null;
+  if (exposureField) {
+    void form.settled.then(() => form.getInput('density')?.root.after(exposureField.root));
+    let reading = 0;
+    form.effect(() => {
+      const t = exposureField.table;
+      const mine = ++reading;
+      ncaRun.value = null;
+      ncaSays.value = null;
+      if (!t)
+        return;
+      const missed: string[] = [];
+      void concentrationMapping(t, missed).then(async (m) => {
+        if (mine !== reading)
+          return;
+        if (!m) {
+          ncaSays.value = `NCA does not read ${t.name} as concentrations over time` +
+            `${missed.length ? ` (${missed.join('; ')})` : ''}: it reads the units from the column names, as in ` +
+            'TIME_H, CONC_NG_ML and DOSE_MG_KG.';
+          return;
+        }
+        const run = await runNca(t, m);
+        if (mine === reading)
+          ncaRun.value = run;
+      }).catch((e) => {
+        if (mine === reading)
+          ncaSays.value = `NCA could not compute exposure: ${e?.message ?? e}`;
+      });
+    });
+    self.subscribe(grok.events.onTableAdded, (e: DG.EventData<DG.DataFrameArgs>) => {
+      const t = e.args.dataFrame;
+      if (exposureField.value || t.name === form.getInput('study')?.value)
+        return;
+      void concentrationMapping(t).then((m) => {
+        if (m && !exposureField.value)
+          exposureField.table = t;
+      });
+    });
+  }
+
   const start = divV([
     span('Open your study table (one row per animal and measurement day, day 0 the randomization), check its ' +
       'columns: the analysis follows them, and any change you make to the table.'),
@@ -413,6 +460,22 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
 
   const groupsTable = div([]);
   const groupNotes = notesBox();
+  // NCA's exposure: why a group has none, and exposure against effect when the groups span 3 doses or more
+  const exposureNotes = notesBox();
+  const exposurePoints = signal<{arm: string, tgi: number, auc: number, dose: string, drug: string,
+    route: string}[] | null>(null);
+  // one drug by one route at 3 doses or more: exposures of different drugs share no axis
+  const exposureData = computed(() => {
+    const p = exposurePoints.value;
+    if (!p || new Set(p.map((x) => `${x.drug}|${x.route}`)).size !== 1 || new Set(p.map((x) => x.dose)).size < 3)
+      return undefined;
+    return DG.DataFrame.fromObjects(p.map((x) => ({'Group': x.arm, 'AUClast': x.auc, 'TGI (%)': x.tgi})))!;
+  });
+  const exposureChart = viewers.scatterPlot(exposureData, {xColumnName: 'AUClast', yColumnName: 'TGI (%)',
+    labelColumnNames: ['Group'], showRegressionLine: false});
+  const exposureBox = divV([span('Each point is one group: its mean AUClast from NCA against its TGI. A ' +
+    'description of the groups: no line is fitted and nothing is tested.'), sized(exposureChart, 260)]);
+  form.effect(() => exposureBox.style.display = exposureData.value ? '' : 'none');
   const statsTable = div([]);
   const controlCheck = div([]);
   const protocol = div([]);
@@ -448,13 +511,40 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     groupNotes.replaceChildren(...allNotes.filter((n) => !odd.includes(n)).map((n) => noteLine(n)));
 
     const nci = nciReadings(r);
+    // each treated group's exposure, matched to it by NCA's group name or its drug, dose and route
+    const run = ncaRun.value;
+    const exposure: Map<string, ArmExposure> | null = run ?
+      exposureByArm(r.comparisons.col('arm')!.toList(), run.results, run.summary, run.groupCol) : null;
+    const first = exposure && [...exposure.values()].find((x) => x.exposure)?.exposure;
+    const exposureCell = (arm: string, which: 'auc' | 'cmax'): string | HTMLElement => {
+      const x = exposure!.get(arm)?.exposure;
+      const mean = x?.[which];
+      if (!x || mean === null || mean === undefined)
+        return '—';
+      const cell = span(meanCv(mean, which === 'auc' ? x.aucCv : x.cmaxCv));
+      Tooltip.bind(cell, `NCA, ${x.profiles} profile${x.profiles === 1 ? '' : 's'} at ${x.dose}, route ${x.route}` +
+        `${x.schedule ? `; the group is dosed ${x.schedule}, and the value is NCA's as computed, not scaled to it` :
+          ''}${x.pooled ? '. One profile pooled from animals sampled a few times each: no spread between them' :
+          x.profiles === 1 ? '. One profile: no spread between animals' : ''}.`);
+      return cell;
+    };
+    exposureNotes.replaceChildren(...!exposure ? ncaSays.value ? [noteLine(ncaSays.value)] : [] :
+      [...exposure.values()].filter((x) => x.why).map((x) => noteLine(x.why!)));
+    exposurePoints.value = !exposure ? null : Array.from({length: r.comparisons.rowCount}, (_, i) => i)
+      .filter((i) => exposure.get(r.comparisons.get('arm', i))?.exposure)
+      .map((i) => ({arm: r.comparisons.get('arm', i) as string, tgi: r.comparisons.get('tgi', i) as number,
+        ...exposure.get(r.comparisons.get('arm', i))!.exposure!}));
 
     // the control first, then each treated group: its effect on the evaluation day, its animals against their
     // twins and its result (a table built in this run is disposed with it)
     const c = r.comparisons;
     type Row = {name: string, cells: (string | HTMLElement)[]};
-    const rows: Row[] = [{name: control, cells: [swatch(control, colors[control]), String(v('n_control')), '—', '—',
-      '—', '—', '—', withNci(span('Reference'), nci.get(control), showNci)]}];
+    const withExposure = (cells: (string | HTMLElement)[], arm: string | null) => !exposure ? cells :
+      [...cells.slice(0, 4), arm ? exposureCell(arm, 'auc') : '—', arm ? exposureCell(arm, 'cmax') : '—',
+        ...cells.slice(4)];
+    const rows: Row[] = [{name: control, cells: withExposure([swatch(control, colors[control]),
+      String(v('n_control')), '—', '—', '—', '—', '—', withNci(span('Reference'), nci.get(control),
+        showNci)], null)}];
     for (let i = 0; i < c.rowCount; i++) {
       const g = (k: string) => c.get(k, i);
       const tc = g('tc');
@@ -464,17 +554,20 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
       const why = noEffectNote((k) => r.versusPlan.get(k, i), v);
       if (why)
         Tooltip.bind(verdict, why);
-      rows.push({name: g('arm'), cells: [swatch(g('arm'), colors[g('arm')]), String(g('n')), pct(g('tgi') / 100),
+      rows.push({name: g('arm'), cells: withExposure([swatch(g('arm'), colors[g('arm')]), String(g('n')),
+        pct(g('tgi') / 100),
         tc === null ? '—' : observedCell(pct(tc / 100), g('tc_lower') === null ? '' :
           `(${Math.round(g('tc_lower'))}–${Math.round(g('tc_upper'))}%)`),
         !done ? waitingTwin() : g('paired_effect') === null ? '—' : pct(g('paired_effect') / 100),
         !done ? waitingTwin() : `${g('responders')} of ${g('twin_animals')}`, pValue(g('p_value')).replace(' ', ' '),
-        withNci(verdict, nci.get(g('arm')), showNci)]});
+        withNci(verdict, nci.get(g('arm')), showNci)], g('arm'))});
     }
-    const headers = ['Group', 'Analyzed', 'TGI', 'T/C (95% CI)', 'Smaller than its twin', 'Responders', 'p',
-      'Result'];
+    const unit = (u: string | undefined) => u ? ` (${u})` : '';
+    const headers = ['Group', 'Analyzed', 'TGI', 'T/C (95% CI)',
+      ...exposure ? [`AUClast${unit(first?.aucUnit)}`, `Cmax${unit(first?.cmaxUnit)}`] : [],
+      'Smaller than its twin', 'Responders', 'p', 'Result'];
     const table = new BasicTable<Row>({items: rows, keyOf: (x) => x.name, columns: headers.map((header, j) => ({header,
-      render: (x: Row) => x.cells[j], align: j >= 1 && j <= 6 ? 'center' : 'left'}))});
+      render: (x: Row) => x.cells[j], align: j >= 1 && j < headers.length - 1 ? 'center' : 'left'}))});
     table.root.style.width = '100%';
     wrapCells(table.root);
     groupsTable.replaceChildren(table.root);
@@ -954,7 +1047,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
   // the figures answer the study's question; each panel, one closer question
   const panels = panelTabs([
     {id: 'groups', title: 'Experimental groups', hint: 'Each treated group against the control on the evaluation day',
-      content: [groupsTable, groupNotes]},
+      content: [groupsTable, groupNotes, exposureNotes, exposureBox]},
     {id: 'growth', title: 'Observed tumor growth', hint: 'Median and range (smallest to largest tumor) ' +
       'of each group, to the evaluation day; in grey, the median control predicted by the plan',
     content: [growthAxis.row, sized(growth, 380), perDay]},

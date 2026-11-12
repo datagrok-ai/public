@@ -9,6 +9,7 @@ import {competingOf, projectedRows} from '../survival';
 import {synergyOf, synergyWords} from '../synergy';
 import {arriveItems} from '../arrive';
 import {tumorModels} from '../priors';
+import {concentrationMapping, exposureByArm, ncaInstalled, runNca} from '../exposure';
 
 const OUTPUTS = ['analysis', 'comparisons', 'animals', 'volumes', 'twins', 'effects', 'checks', 'versusPlan',
   'predicted', 'tolerability', 'weights'];
@@ -341,5 +342,66 @@ category('Analyze', () => {
       meta: null, randomized: false, endpoint: 1500, evaluationDay: 20, protocol: 'Slopes compared', analyzed: []});
     expect(items.length, 10);
     expect(items.filter((i) => !i.done).map((i) => i.n).join(','), '2,4,5,8,9,10');
+  });
+
+  test('exposure from NCA: matched by name, else by drug, dose and route; never guessed', async () => {
+    // NCA's frames as it returns them, one row per profile (results) and per group (summary)
+    const frames = (named: boolean) => {
+      const groups = ['Cpd-A 10 mg/kg', 'Cpd-A 30 mg/kg', 'Combo'];
+      const results = DG.DataFrame.fromObjects([
+        {compound: 'Cpd-A', ROUTE: 'PO', DOSE: 10, VERDICT: 'Pass', REASONS: ''},
+        {compound: 'Cpd-A', ROUTE: 'PO', DOSE: 30, VERDICT: 'Pass', REASONS: ''},
+        {compound: 'Cpd-B', ROUTE: '', DOSE: null, VERDICT: 'Blocked',
+          REASONS: 'sparse design with fewer than 3 animals, a composite needs 3 or more'},
+      ].map((r, i) => named ? {...r, group: groups[i]} : r))!;
+      results.setTag('nca.units', JSON.stringify({dose: 'mg/kg'}));
+      const summary = DG.DataFrame.fromObjects([0, 1].map((i) => ({compound: 'Cpd-A',
+        ...named ? {group: groups[i]} : {}, ROUTE: 'PO', DOSE: [10, 30][i], N: [6, 1][i],
+        MEAN_AUC_LAST: [1200, 4100][i], CV_PCT_AUC_LAST: [18, null][i], MEAN_CMAX: [300, 900][i],
+        CV_PCT_CMAX: [22, null][i]})))!;
+      summary.col('MEAN_AUC_LAST')!.setTag('units', 'h*ng/mL');
+      summary.setTag('nca.keyColumns', JSON.stringify(named ? ['compound', 'group'] : ['compound']));
+      return {results, summary};
+    };
+    // by the group's own name
+    const named = frames(true);
+    const byName = exposureByArm(['Cpd-A 10 mg/kg', 'Combo', 'Missing'], named.results, named.summary, 'group');
+    expect(byName.get('Cpd-A 10 mg/kg')!.exposure!.auc, 1200);
+    expect(byName.get('Cpd-A 10 mg/kg')!.exposure!.aucUnit, 'h*ng/mL');
+    expect(byName.get('Combo')!.why!, 'NCA could not compute exposure for Combo: too few animals sampled ' +
+      '(a pooled profile needs at least 3)');
+    expect(byName.get('Missing')!.why!.endsWith('no concentrations found for it'), true);
+    // by drug, dose and route read in the arm's name; a combination, another unit or another route is no match
+    const bare = frames(false);
+    const byDrug = exposureByArm(['Cpd-A 30 mg/kg PO QD', 'Cpd-A 30 mg/kg i.p.', 'Cpd-A + Cpd-B', 'Cpd-A 10 mg'],
+      bare.results, bare.summary, null);
+    const x = byDrug.get('Cpd-A 30 mg/kg PO QD')!.exposure!;
+    expect(x.auc === 4100 && x.aucCv === null && x.profiles === 1 && x.schedule === 'QD', true, JSON.stringify(x));
+    expect(byDrug.get('Cpd-A 30 mg/kg i.p.')!.why!.endsWith('no concentrations found for it'), true);
+    expect(byDrug.get('Cpd-A + Cpd-B')!.why!.includes('exact name only'), true);
+    expect(byDrug.get('Cpd-A 10 mg')!.why!.includes('same unit'), true);
+    // a dose NCA blocked has no dose of its own: by drug, the drug's reason is given, not "nothing found"
+    const blockedByDrug = exposureByArm(['Cpd-B 5 mg/kg'], bare.results, bare.summary, null).get('Cpd-B 5 mg/kg')!;
+    expect(blockedByDrug.why!.endsWith('too few animals sampled (a pooled profile needs at least 3)'), true,
+      blockedByDrug.why!);
+    // males and females given apart: not pooled here, said so
+    const sexes = bare.summary.clone();
+    sexes.columns.addNewString('SEX').init((i) => i === 0 ? 'M' : 'F');
+    sexes.set('DOSE', 1, 10);
+    expect(exposureByArm(['Cpd-A 10 mg/kg'], bare.results, sexes, null).get('Cpd-A 10 mg/kg')!.why!
+      .endsWith('males and females apart'), true);
+    // without the NCA package nothing is read; with it, two animals sampled once each give no exposure
+    const sparse = DG.DataFrame.fromObjects(['m1', 'm2'].map((a, i) => ({subject: a, group: 'Cpd-A 10 mg/kg',
+      time_h: [1, 4][i], conc_ng_ml: [120, 40][i], dose_mg_kg: 10, route: 'PO'})))!;
+    const m = await concentrationMapping(sparse);
+    if (!ncaInstalled()) {
+      expect(m, null);
+      return;
+    }
+    expect(m !== null, true, 'NCA reads the sparse table as concentrations');
+    const run = await runNca(sparse, m);
+    const said = exposureByArm(['Cpd-A 10 mg/kg'], run.results, run.summary, run.groupCol).get('Cpd-A 10 mg/kg')!;
+    expect(said.why ?? '', 'NCA could not compute exposure for Cpd-A 10 mg/kg: too few animals sampled ' +
+      '(a pooled profile needs at least 3)');
   });
 });

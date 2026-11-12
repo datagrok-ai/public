@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+* Exposure (2026-11-12): with the NCA package installed, Analyze's Advanced fields take a table of plasma
+  concentrations (picked, or opened while the field is empty) and show each group's AUClast and Cmax from NCA, mean
+  and CV%, beside its effect. A group is matched by its own name in the table, else (one drug) by drug, dose and route
+  read in its name; nothing is guessed or scaled across doses or schedules, and a group NCA could not compute or
+  match shows "—" and says why. With 3 doses or more, a chart of exposure against TGI, one point per group, no line
+  and no test. Nothing is saved in the study, and the analysis is unchanged.
+
 * Files (2026-11-12): a plan or a study selected in Datagrok's Files shows what it holds, read from the file alone:
   a plan its model, end, groups and animals; a study its animals, groups (not named while blinded), days measured,
   marked values and plan. A button opens it in Plan or Monitor; a damaged file or one from a newer version says so.
