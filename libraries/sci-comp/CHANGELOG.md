@@ -1,67 +1,22 @@
 # sci-comp changelog
 
-## 0.13.0 (2026-11-11)
+## 0.12.0 (2026-11-12)
 
-NCA — interval AUC. **Additive only: no existing function, type or computed value
-changes** (the full suite, including the 27-profile `computeNca` snapshot, is unchanged).
+Non-Compartmental Analysis — IV-bolus sparse composite and interval AUC:
 
-Runtime:
-
-* **New `nca.aucInterval(inputs, rules, start, end)`**: the AUC of one profile over
-  `[start, end]`, with PKNCA `aucint.last` semantics (`pk.calc.aucint`,
-  `auc.type = "AUClast"`). It integrates the profile `computeNca` integrates for AUClast
-  (`augmentProfile`: BLQ rules, IV-bolus c0; the same measurable-point collection) with the
-  same trapezoid kernel. A bound between two samples is interpolated with that interval's
-  method: log on a log interval, linear otherwise. Past tlast the concentration is 0, so
-  an `end` beyond tlast integrates to tlast only (`truncatedAtTlast`); a `start` before
-  the dose time adds no area. `[0, Infinity]` equals `aucLast` exactly. Validated against
-  PKNCA 0.12.1 `aucint.last` on every profile of theoph, indometh and rat_simple over
-  [0, 12], [0, 24] and [2, 10], for `linear` and `linear-up-log-down`, in both summation
-  modes (156 oracle rows; max relative error 1.3e-12, tolerance 0.1 %). `log-linear`
-  has no PKNCA counterpart and is not oracle-validated.
-
-Compile time (all additive):
-
-* New exports `aucInterval` and type `AucIntervalResult`
-  (`{value, startUsed, endUsed, tLast, truncatedAtTlast}`).
-* Fixture `08_aucint.json` from the new `regen-aucint-fixture.R`.
-
-## 0.12.0 (2026-11-10)
-
-Sparse NCA — an IV-bolus composite is integrated from its dose-time concentration.
-**Changes computed values on IV-bolus sparse composites only** (`sparseAuc` with the
-new `route: ROUTE_IV_BOLUS`); every other call is byte-identical to 0.11.0 (pinned by
-a jest snapshot written on 0.11.0, `core/__tests__/sparse-pin.test.ts`).
-
-Runtime:
-
-* **IV-bolus anchor.** With `route: ROUTE_IV_BOLUS`, `sparseAuc` starts the composite at
-  `(0, Ĉ0)` instead of `(0, 0)`: the dense run's dose-time rule and C0 chain on the
-  composite means (a positive measured `t = 0` mean is used as-is; otherwise
-  `estimateC0Detailed` on the post-dose means), a linear first segment. A pre-dose
-  `t = 0` group (BLQ / zero) and groups at `t < 0` are not integrated; `topology` and
-  `composite` still describe every timepoint supplied. **Moves `auc`, `se`, `df` and `ci`**
-  (e.g. the simulated fixture: AUClast 18.556 → 20.825 with a 15-min first sample).
-* **Delta-method SE.** Ĉ0's variance enters the Holder variance and the Nedelman-Jia df
-  through effective weights `w'_i = w_i + (t₁/2)·∂Ĉ0/∂C̄_i`. Phoenix keeps C0 a constant
-  in the variance; this is a documented divergence. Validated by a finite-difference
-  gradient oracle, a seeded parametric calibration (empSD / SE 1.04–1.09 on three models)
-  and a closed form; known small-SE regime at steep α, ω ≥ 0.5, n ≤ 3 (asserted).
-* **`SPARSE_TERMINAL_OVEREST` states its size.** The message gains `estimated excess ≈ N %
-  of AUClast` (linear minus log-trapezoid over every descending interval after Cmax) and
-  that the AUClast CI does not include it. Where and when the note fires is unchanged.
-
-Compile time (all additive):
-
-* `SparseAucOptions.route?: RouteCode`.
-* `SparseAucResult.c0?: {value, method}` (IV bolus only) and
-  `SparseAucResult.terminalExcessPct?: number` (when the terminal note fires) — both
-  OPTIONAL, so code that constructs a `SparseAucResult` keeps compiling.
-* `estimateC0Detailed` reports `usedIndices` (the points the answering method read).
-* New export `compositeProfileArrays(composite)` → `{time, conc, blqMask}`: the one copy
-  of the "> 50 % BLQ → 0" rule; `sparseAuc` uses it on every route.
-* Fixture `07_iv_bolus_sparse` (simulated destructive IV-bolus composites, PKNCA 0.12.1
-  `pk.calc.c0` / `pk.calc.auciv` oracle; `regen-sparse-fixture.R` block 4).
+* `SparseAucOptions.route?` — with `ROUTE_IV_BOLUS`, `sparseAuc` integrates the composite
+  from `(0, Ĉ0)` (observed `t = 0` mean or the C0 chain) instead of `(0, 0)`, and Ĉ0's
+  variance enters the SE and df by the delta method. **Moves `auc`, `se`, `df`, `ci` on
+  IV-bolus composites only**; every other call is byte-identical to 0.11.0.
+* `SparseAucResult.c0?` and `terminalExcessPct?` — the anchor used and the size of the
+  `SPARSE_TERMINAL_OVEREST` excess (% of AUClast), now quoted in its message.
+* `compositeProfileArrays(composite)` — the composite as `{time, conc, blqMask}` with the
+  "> 50 % BLQ → 0" rule; `estimateC0Detailed` reports `usedIndices`.
+* `nca.aucInterval(inputs, rules, start, end)` — AUC over `[start, end]` with PKNCA
+  `aucint.last` semantics: bounds interpolated by the interval's AUC method, no area past
+  tlast (`truncatedAtTlast`). `[0, Infinity]` equals `aucLast` exactly.
+* Fixtures `07_iv_bolus_sparse` and `08_aucint` validated against PKNCA 0.12.1. No
+  previously committed value changed.
 
 ## 0.11.0 (2026-09-22 — GROK-20960)
 
