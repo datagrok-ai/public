@@ -1,5 +1,5 @@
-/* A plan or a study file selected in Datagrok's Files: what it holds, read from the file alone (no engine, no
-   index, nothing computed), and a button to open it in its stage. */
+// read from the file alone (no engine, no index, nothing computed)
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
@@ -7,6 +7,7 @@ import {parsePlan} from './plan-file';
 import type {SavedPlan} from './plan-file';
 import {groupsShownIn, parseStudy} from './study-file';
 import type {SavedStudy} from './study-file';
+import {parseMeta} from './study-meta';
 
 /** `n` with its noun, singular or plural: "1 animal", "4 groups". */
 const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`;
@@ -14,15 +15,15 @@ const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`;
 /** What a plan says, in a few lines: its model and end, each group with its animals, who saved it. */
 export function planSummary(p: SavedPlan): string[] {
   const pr = p.predicted;
-  // null: more than the search went to; absent (an older file): not said
-  const animals = (n: number | null | undefined) => n === undefined ? '' :
-    `, ${n === null ? 'over 40' : n} analyzable animals`;
+  // null means more than the search went to; a count absent (an older file) or not a number is not said
+  const animals = (n: unknown) => n === null ? ', over 40 analyzable animals' :
+    typeof n === 'number' && Number.isFinite(n) ? `, ${n} analyzable animals` : '';
   const saved = typeof p.created === 'string' ? `Saved on ${p.created.slice(0, 10)}` : 'Saved';
   return [
     `${pr.line} · endpoint ${pr.endpoint} mm³ · the study ends on day ${pr.studyEnd}`,
     `Control${animals(pr.nControl)}`,
     ...pr.arms.map((a) => `${a.name}: ${a.metric === 'TC' ? 'T/C' : 'TGI'} ${a.effect}% expected${animals(a.n)}`),
-    `${saved}${p.author ? ` by ${p.author}` : ''}`,
+    `${saved}${typeof p.author === 'string' && p.author ? ` by ${p.author}` : ''}`,
   ];
 }
 
@@ -36,14 +37,15 @@ export function studySummary(s: SavedStudy): string[] {
   const [flagged, excluded] = [s.rows.filter((r) => r.flagged).length, s.rows.filter((r) => r.excluded).length];
   const animals = count(new Set(s.rows.map((r) => r.animal)).size, 'animal');
   return [
-    ...s.meta?.id ? [s.meta.id] : [],
+    ...parseMeta(s.meta)?.id ? [parseMeta(s.meta)!.id] : [],
     `${animals}${shown && groups.length ? ` in ${count(groups.length, 'group')}` : ''}, measured on ` +
       `${count(days.length, 'day')}${days.length ? `, the last day ${Math.max(...days)}` : ''}`,
     ...!shown ? ['Blinded: the groups are shown in Monitor once someone reveals them'] :
       groups.map((g) => `${g}: ${count(animalsOf(g), 'animal')}`),
     ...s.rows.some((r) => typeof r.weight === 'number') ? ['Body weight measured'] : [],
     ...flagged || excluded ? [`${count(flagged, 'value')} flagged to look at, ${excluded} excluded`] : [],
-    !s.plan ? 'No plan attached' : shown ? `Plan: ${s.plan.name}` : 'A plan attached',
+    !s.plan ? 'No plan attached' : shown && typeof s.plan.name === 'string' && s.plan.name ? `Plan: ${s.plan.name}` :
+      'A plan attached',
   ];
 }
 
@@ -71,7 +73,8 @@ export async function filePreview(file: DG.FileInfo, kind: 'plan' | 'study',
   view.append(ui.divV([
     ui.h1(file.name.replace(/\.pmx(plan|study)$/i, '')),
     ...lines.map((l) => ui.divText(l)),
-    ui.button(kind === 'plan' ? 'Open in Plan' : 'Open in Monitor', () => open(text)),
+    ui.button(kind === 'plan' ? 'Open in Plan' : 'Open in Monitor', () => Promise.resolve().then(() => open(text))
+      .catch((e) => grok.shell.error(`This ${kind} could not be opened: ${e?.message ?? e}`))),
   ], {style: {gap: '6px', padding: '12px'}}));
   return view;
 }

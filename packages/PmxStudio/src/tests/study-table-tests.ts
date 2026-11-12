@@ -61,6 +61,19 @@ category('Study table', () => {
         log: [{when: '2026-11-12', who: 'x', what: REVEALED}]});
       expect(revealed.includes('Vehicle: 8 animals'), true, 'revealed, still unnamed');
       expect(studySummary({...saved, rows: []})[0], '0 animals, measured on 0 days');
+      // blinded with a plan attached: the plan is said to be there, not named
+      const planned = studySummary({...saved, plan: {...saved.plan, name: 'Secret plan'} as any,
+        meta: {...emptyMeta(), blinded: true}});
+      expect(planned.includes('A plan attached') && !planned.join(' ').includes('Secret plan'), true,
+        planned.join(' | '));
+      // a study that reads: its lines and the button, which opens it
+      let opened = '';
+      const ok = await filePreview(DG.FileInfo.fromString('S.pmxstudy', JSON.stringify(studyOf(df, 1500))), 'study',
+        (t) => opened = t);
+      expect(ok.root.textContent!.includes('Vehicle: 8 animals'), true, ok.root.textContent!);
+      ok.root.querySelector('button')!.click();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(opened.length > 0, true, 'the button opens the study');
       // the preview itself: a file that is no study, or damaged, says so in a sentence
       for (const [text, says] of [['{"format": "other"}', 'Not a PMX Studio study'], ['{', 'not JSON']]) {
         const v = await filePreview(DG.FileInfo.fromString('x.pmxstudy', text), 'study', () => {});
