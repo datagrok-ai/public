@@ -1,5 +1,17 @@
 # sci-comp changelog
 
+## 0.13.0 (2026-11-12)
+
+Non-Compartmental Analysis — intraperitoneal route:
+
+* `nca.ROUTE_IP` (`RouteCode` 6) and `Route` `'IP'`. IP is extravascular: `computeNca`
+  and `sparseAuc` treat it exactly as PO (`(0, 0)` dose-time augmentation, apparent
+  CL/F and Vz/F), pinned by an IP = PO identity test on the theoph and rat_simple
+  fixtures. The code exists so a caller can report the route instead of `other`.
+  No computed value changed.
+* `RouteCode` is widened from `0…5` to `0…6`; an exhaustive `switch` or
+  `Record<RouteCode, …>` in a consumer needs an `IP` entry.
+
 ## 0.12.0 (2026-11-12)
 
 Non-Compartmental Analysis — IV-bolus sparse composite and interval AUC:

@@ -27,7 +27,7 @@ const inputs: nca.ProfileInputs = {
   doseUnits:          'mg',
   concentrationUnits: 'mg/L',
   timeUnits:          'h',
-  route:              nca.ROUTE_PO,         // 0=IV-bolus, 1=IV-infusion, 2=PO, 3=SC, 4=IM, 5=other
+  route:              nca.ROUTE_PO,         // 0=IV-bolus, 1=IV-infusion, 2=PO, 3=SC, 4=IM, 5=other, 6=IP
   infusionDuration:   null,
   bodyWeight:         null,
 };

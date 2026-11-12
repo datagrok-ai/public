@@ -23,7 +23,7 @@ import {computeNca} from '../compute-nca';
 import {augmentProfile} from '../augment';
 import {sparseAuc} from '../sparse';
 import type {SparseInput} from '../sparse';
-import {ROUTE_IV_BOLUS, ROUTE_IV_INFUSION, ROUTE_PO} from '../types';
+import {ROUTE_IP, ROUTE_IV_BOLUS, ROUTE_IV_INFUSION, ROUTE_PO} from '../types';
 import type {ProfileInputs, NcaRules, RouteCode} from '../types';
 
 const PKNCA_RULES: NcaRules = {
@@ -948,5 +948,38 @@ describe('computeNca output snapshot @0.10.0 — byte-identity pin for numbers-c
     }
     expect(n).toBe(27);
     expect(out).toMatchSnapshot();
+  });
+});
+
+/**
+ * IP (intraperitoneal) is extravascular: `computeNca` must give it the PO
+ * result exactly. There is no PKNCA IP fixture because there is no separate IP
+ * computation; this identity carries the PO reference parity over to IP.
+ */
+describe('computeNca — IP route is computed as PO', () => {
+  const EXTRAVASCULAR_FIXTURES: ReadonlyArray<{
+    csv: string; timeCol: string; dose: (row: Record<string, number>) => number;
+  }> = [
+    {csv: '01_theoph.csv', timeCol: 'Time', dose: (r) => r.Dose * r.Wt},
+    {csv: '03_rat_simple.csv', timeCol: 'Time', dose: (r) => r.Dose},
+  ];
+
+  it('ROUTE_IP is code 6', () => {
+    expect(ROUTE_IP).toBe(6);
+  });
+
+  it.each([false, true])('compensatedSummation=%s — every profile equals its PO result', (compensated) => {
+    const rules: NcaRules = {...PKNCA_RULES, compensatedSummation: compensated};
+    let n = 0;
+    for (const spec of EXTRAVASCULAR_FIXTURES) {
+      for (const group of loadAndGroup(spec.csv)) {
+        const dose = spec.dose(group.rows[0]);
+        const ip = computeNca(buildInputs(group.rows, spec.timeCol, dose, ROUTE_IP), rules);
+        const po = computeNca(buildInputs(group.rows, spec.timeCol, dose, ROUTE_PO), rules);
+        expect(ip).toEqual(po);
+        n++;
+      }
+    }
+    expect(n).toBeGreaterThan(0);
   });
 });

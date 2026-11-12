@@ -17,7 +17,7 @@
 
 import {sparseAuc} from '../sparse';
 import type {SparseInput, SparseAucResult} from '../sparse';
-import {ROUTE_IV_BOLUS, ROUTE_PO} from '../types';
+import {ROUTE_IP, ROUTE_IV_BOLUS, ROUTE_PO} from '../types';
 import {mulberry32} from '../prng';
 import {studentTInv} from '../../../stats/distributions';
 import {ivInputs, mouseInputs} from './sparse-fixture-io';
@@ -388,6 +388,9 @@ describe('sparseAuc — every other route unchanged (AC-2.1 guard)', () => {
   for (const {dose, input} of mouseInputs()) {
     it(`PO mouse ${dose} mg/kg: extravascular route = no route`, () => {
       expect(sparseAuc(input, {route: ROUTE_PO})).toEqual(sparseAuc(input));
+    });
+    it(`IP mouse ${dose} mg/kg: same composite as PO`, () => {
+      expect(sparseAuc(input, {route: ROUTE_IP})).toEqual(sparseAuc(input, {route: ROUTE_PO}));
     });
   }
 });
