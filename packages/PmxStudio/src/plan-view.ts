@@ -407,9 +407,13 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const groupsTable = div([]);
   const scheduleBox = div([]);
   // the power by measurement schedule is the design's costliest scan: the plan takes it along only while its
-  // section is open; opened later, it is computed then for the plan in view
+  // section is open; opened later, the plan in view is made again with it. A plan made without it has none to show
+  // (its table is empty either way: a plan made with it and no arm reaching the target power has none either)
   const scheduleOpen = signal(false);
-  const schedules = signal<DG.DataFrame | undefined>(undefined);
+  const schedules = computed(() => {
+    const r = result.value;
+    return r && declared.get(r)?.schedules ? r.schedules : undefined;
+  });
   const calendarBox = div([]);
   // what a change on the calendar did: the counts and the end it moved (their cards flash), and a power that fell
   // below the target (with the animals per arm fixed; else the animals grow to keep it)
@@ -914,29 +918,20 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   const panes = stagePanes(form, content, {busy: planning, result, error, stale, before: [noArms],
     busyText: 'Designing the study…', staleText: 'the plan shown is for the last complete inputs'});
 
-  // the plan carries the schedules while their section is open; opened on a plan without them, they are computed
-  // for it (the form's own inputs, the plan unchanged)
+  // the plan carries the schedules while their section is open; opened on a plan without them, the plan is made
+  // again with them, by the same run as every other plan: a newer plan, a change made meanwhile or a failure are
+  // then handled as for any plan, and the section waits only while that run is on (it once had a computation of its
+  // own beside the plan's, whose answer could be dropped or never come, and its loader stayed)
   void form.settled.then(() => form.effect(() => call.setParamValue('compareSchedules', scheduleOpen.value)));
   void form.settled.then(() => form.effect(() =>
     effectAs.value = form.getInput('effectAs')?.value === 'T/C' ? 'TC' : 'TGI'));
+  let remade: PlanFrames | null = null;
   form.effect(() => {
     const r = result.value;
-    schedules.value = r && r.schedules.rowCount > 0 ? r.schedules : undefined;
-  });
-  let comparing: PlanFrames | null = null;
-  form.effect(() => {
-    const r = result.value;
-    if (!scheduleOpen.value || schedules.value || !r || stale.value || busy.value || comparing === r)
+    if (!scheduleOpen.value || schedules.value || !r || stale.value || busy.value || remade === r)
       return;
-    comparing = r; // one computation per plan: an edit undone gives the same plan back, not a second run
-    const fill = designed({compareSchedules: true, tgiScenarios: null});
-    void fill.then((c) => {
-      if (result.peek() === r)
-        schedules.value = c.schedules;
-    }).catch((e) => error.value = String(e?.message ?? e)).finally(() => {
-      if (comparing === r)
-        comparing = null;
-    });
+    remade = r; // once per plan: a run that fails says so, and is not tried again in a loop
+    void replan();
   });
 
   // with the animals per arm set, the plan shows first and each arm's smallest detectable effect fills in after it,
