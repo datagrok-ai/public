@@ -40,7 +40,9 @@ category('Plan', () => {
     const mc38 = calibrated(x, f('MC38'));
     expect(mc38.durationQ10.toFixed(2), '8.08');
     expect(mc38.durationQ90!.toFixed(2), '25.16');
-    expect(JSON.stringify(mc38.curves), JSON.stringify(x.curves), 'no volume factor yet: the engine\'s band');
+    expect([f('MC38')?.volume90, f('CT26')?.volume90, f('B16F10')?.volume90].join(' '), '1.25 1.21 1.28');
+    // MC38's volume band of 100 to 400 mm³ around 200, 1.25 times as wide in log volume
+    expect([mc38.curves[0].q05.toFixed(1), mc38.curves[0].q95.toFixed(1)].join(' '), '84.1 475.7');
     // a 90% volume band of 100 to 400 mm³ around 200, 1.2 times as wide in log volume; the quartiles untouched
     const v = calibrated(x, {end80: null, volume90: 1.2}).curves[0];
     expect([v.q05.toFixed(1), v.q95.toFixed(1), v.q25, v.median, v.q75].join(' '), '87.1 459.5 150 200 260');
