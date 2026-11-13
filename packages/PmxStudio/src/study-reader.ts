@@ -614,7 +614,7 @@ export function cellsOfFrame(df: SheetFrame): string[][] {
  *  not start with its column names loses cells. */
 export function sheetProblem(df: SheetFrame): string | null {
   const names = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i).name);
-  // PowerPack's own names for what the first row left blank: colN at position N, and "Name (1)" beside "Name"
+  // PowerPack's own names for what the first row left blank (colN at position N, and "Name (1)" beside "Name")
   const invented = (n: string, i: number) => n === `col${i + 1}` || (/ \(\d+\)$/.test(n) &&
     names.includes(n.replace(/ \(\d+\)$/, '')));
   if (names.length < 2 || names.some(invented)) {
