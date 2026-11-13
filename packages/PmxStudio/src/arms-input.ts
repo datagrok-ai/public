@@ -6,7 +6,7 @@
      the number of arms declared. Bonferroni stays a value of the function, for scripts and Grokky. */
 import * as DG from 'datagrok-api/dg';
 import {BoolInput, buttonWithIcon, computed, Control, div, divH, Form, iconButton, Input, InputOptions, Menu,
-  NumberInput, ReadonlySignal, Reason, Signal, signal, span, TextInput} from '@datagrok-libraries/u2';
+  NumberInput, ReadonlySignal, Reason, Signal, signal, span, TextArea} from '@datagrok-libraries/u2';
 import {THERAPIES, Therapy} from './archetypes';
 import {describeArm, moreVariable, parseArmName, therapyOf} from './arm-name';
 import {contextHint, hintLink} from './ui';
@@ -89,10 +89,44 @@ class ArmCard extends Control {
       flexDirection: 'column'});
     this.build(() => {
       // the name is the card's title, edited in place
-      const name = new TextInput({name: 'name', value: arm.name, fill: true, placeholder: `Treatment ${index + 1}`,
+      // a box that grows a line at a time, so a long name (a combination with doses and schedules) shows whole;
+      // Enter leaves it, as in a one-line field
+      const name = new TextArea({name: 'name', value: arm.name, fill: true, autoGrow: true, rows: 1,
+        placeholder: `Treatment ${index + 1}`,
         tooltipText: 'The arm\'s name: its drugs, with dose, schedule and route if you like ' +
           '("Cpd-A 10 mg/kg QD p.o.")'});
       name.root.classList.add('pmx-arm-title');
+      const area = name.root.querySelector('textarea')!;
+      // its height is the text's: one line for a short name, no handle to drag
+      Object.assign(area.style, {minHeight: '0', resize: 'none', overflow: 'hidden', width: '100%'});
+      // the title takes the card's width beside the remove button
+      name.root.style.flex = '1 1 auto';
+      // the box takes its text's height once laid out and whenever its width changes (a card built before it is
+      // shown, a narrower window), not only when typed in
+      let width = -1;
+      const fit = () => {
+        area.style.height = 'auto';
+        area.style.height = `${area.scrollHeight}px`;
+      };
+      const watch = new ResizeObserver(() => {
+        if (area.clientWidth !== width) {
+          width = area.clientWidth;
+          fit();
+        }
+      });
+      watch.observe(area);
+      this.scope.own(() => watch.disconnect());
+      // a name is one line: a pasted line break becomes a space
+      area.addEventListener('input', () => {
+        if (/[\r\n]/.test(area.value))
+          name.value = area.value.replace(/[\r\n]+/g, ' ');
+      });
+      area.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          area.blur();
+        }
+      });
       name.root.style.fontWeight = '500';
       const remove = iconButton('times', () => onRemove(), {tooltip: 'Remove this arm'});
       const head = divH([name.root, remove]);
@@ -145,8 +179,10 @@ class ArmCard extends Control {
             }
             return l;
           };
-          const what = read.value.placed ? 'One drug not recognized · it works on the tumor ' :
-            'Small molecule · works on the tumor ';
+          // in a combination, the drug the name does not place named, in the words its own arm's card uses
+          const unplaced = read.value.unplaced;
+          const what = read.value.placed && unplaced.length ?
+            `${unplaced.join(' and ')}: small molecule · works on the tumor ` : 'Small molecule · works on the tumor ';
           return [...said, what, way('directly', 'small_molecule'), ' / ',
             way('through the immune system', 'immune_agonist')];
         }

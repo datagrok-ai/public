@@ -107,7 +107,7 @@ category('Arm cards', () => {
       const cards = [...input.root.querySelectorAll<HTMLElement>('.pmx-arm')];
       const grey = (c: HTMLElement) => c.querySelector<HTMLElement>('[data-pmx=understood]')!;
       const therapy = (i: number) => armsOf(input.value)[i].therapy;
-      expect((cards[0].querySelector('.pmx-arm-title input') as HTMLInputElement).value, 'anti-PD-1 10 mg/kg');
+      expect((cards[0].querySelector('.pmx-arm-title textarea') as HTMLTextAreaElement).value, 'anti-PD-1 10 mg/kg');
       expect(cards[0].textContent!.includes('Arm 1'), false, 'no "Arm 1" over the name');
       expect(therapy(0), 'immunotherapy', 'read from the name');
       expect(grey(cards[0]).textContent!.includes('antibody or protein'), true);
@@ -174,7 +174,7 @@ category('Arm cards', () => {
       expect(therapy(1), 'small_molecule', 'read again: immunodeficient');
       expect(therapy(0), 'small_molecule');
       host.value = 'immunocompetent';
-      const title = cards[0].querySelector<HTMLInputElement>('.pmx-arm-title input')!;
+      const title = cards[0].querySelector<HTMLTextAreaElement>('.pmx-arm-title textarea')!;
       title.value = 'Cpd-X 10 mg/kg';
       title.dispatchEvent(new Event('input', {bubbles: true}));
       await delay(50);

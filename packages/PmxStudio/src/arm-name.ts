@@ -184,18 +184,20 @@ export function moreVariable(a: Therapy, b: Therapy): Therapy {
  *  small molecule, and the caller decides the rest (arms-input's therapyFor). Radiation is no drug: beside drugs
  *  their kind is the arm's; alone (`radiation`) it acts on the tumor directly, as a small molecule. */
 export function therapyOf(name: string): {therapy: Therapy, known: boolean, placed: Therapy | null,
-  radiation: boolean} {
+  radiation: boolean, unplaced: string[]} {
   const all = parseArmName(name);
   const parts = all.filter((p) => p.key !== 'radiation');
   if (all.length && !parts.length)
-    return {therapy: 'small_molecule', known: true, placed: 'small_molecule', radiation: true};
+    return {therapy: 'small_molecule', known: true, placed: 'small_molecule', radiation: true, unplaced: []};
   // a dose in cells is a cell therapy whatever the cells are called
   const own = (p: ArmPart) => kindOf(p.dose?.unit === 'cells' ? `${p.drug} cells` : p.drug);
   const kinds = parts.length > 1 ? parts.map(own) : [(parts[0] && own(parts[0])) ?? kindOf(name)];
   const found = kinds.filter((k): k is Therapy => k !== null);
   const placed = found.length ? found.reduce(moreVariable) : null;
+  // the drugs of a combination the name does not place, as written: the card names them
+  const unplaced = parts.length > 1 ? parts.filter((_, i) => kinds[i] === null).map((p) => p.drug) : [];
   return {therapy: placed ?? 'small_molecule', known: placed !== null && found.length === kinds.length, placed,
-    radiation: false};
+    radiation: false, unplaced};
 }
 
 function kindOf(text: string): Therapy | null {
