@@ -151,6 +151,242 @@ export const viewTabsInOrder = Then('the view tabs should be in the order {strin
     .filter((n) => w.includes(n)), want), {message: 'the views\' tabs, left to right'}).toEqual(want);
 }, {tier: 'ui', description: 'the order of those views\' tabs in the tab strip of a full shell, left to right; the tabs of other views (Home, Browse) are not counted'});
 
+/* --- views docked around each other ----------------------------------------------------------------
+   A view is a tab of the document manager, a panel docked beside it (a title bar, no tab) or a floating
+   window. Dragging a view by its tab (or title bar) undocks it at once and shows dock-spawn's compass over
+   the panel under the pointer; its side items dock the view on that side of the panel, and a drop clear of
+   every wheel item leaves it floating. A view's box is the panel it is docked in: the document manager
+   for its tabs, shown or not. Shares are claimed with a tolerance, never in pixels. */
+type Box = {x: number; y: number; width: number; height: number};
+
+type ViewBox = Box & {floating: boolean};
+
+/** The box, or why there is none (the view is not open, not on screen) � a reason a poll keeps reading past. */
+function readViewBox(page: Page, name: string): Promise<ViewBox | string> {
+  return page.evaluate((n) => {
+    const views = Array.from(grok.shell.views) as any[];
+    const view = views.find((v) => v.name === n);
+    if (!view)
+      return `no "${n}" view is open; open: ${views.map((v) => v.name).join(', ')}`;
+    const root = view.root as HTMLElement;
+    const floating = root.closest('.dialog-floating');
+    const host = floating ?? root.closest('.panel-base') ?? root.closest('.document-manager') ??
+      Array.from(document.querySelectorAll('.document-manager .tab-handle'))
+        .find((t) => t.getAttribute('name') === `view-handle: ${n}` && !t.closest('.grok-view'))?.closest('.document-manager');
+    const r = host?.getBoundingClientRect();
+    return r && r.width > 0 ? {x: r.x, y: r.y, width: r.width, height: r.height, floating: floating != null} : `the "${n}" view is not on screen`;
+  }, name);
+}
+
+async function viewBox(page: Page, name: string): Promise<ViewBox> {
+  const box = await readViewBox(page, name);
+  if (typeof box === 'string')
+    throw new Error(box);
+  return box;
+}
+
+const floatingOf = async (page: Page, name: string): Promise<boolean | string> => {
+  const box = await readViewBox(page, name);
+  return typeof box === 'string' ? box : box.floating;
+};
+
+/** What a person grabs to move a view: its tab, else the title bar of the panel it is docked in. */
+async function viewGrip(page: Page, name: string): Promise<Locator> {
+  // a table view keeps a tab strip of its own (its viewers), whose tab can carry the view's name
+  const tab = page.locator(`.tab-handle[name="view-handle: ${cssString(name)}"]:not(.grok-view .tab-handle)`).filter({visible: true});
+  if (await tab.count() > 0)
+    return tab.first();
+  const index = await page.evaluate((n) => {
+    const view = (Array.from(grok.shell.views) as any[]).find((v) => v.name === n);
+    const panel = (view?.root as HTMLElement | undefined)?.closest('.panel-base');
+    return panel ? Array.from(document.querySelectorAll('.panel-base')).indexOf(panel) : -1;
+  }, name);
+  if (index < 0)
+    throw new Error(`the "${name}" view has neither a tab nor a title bar to grab`);
+  return page.locator('.panel-base').nth(index).locator('.panel-titlebar').first();
+}
+
+async function startViewDrag(page: Page, name: string): Promise<void> {
+  const grip = await viewGrip(page, name);
+  await expect(grip, `the tab of the "${name}" view`).toBeVisible({timeout: pollMs(5000)});
+  const g = (await grip.boundingBox())!;
+  const start = {x: g.x + Math.min(30, g.width / 2), y: g.y + g.height / 2};
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(start.x + 10, start.y + 40, {steps: 4});
+}
+
+const COMPASS_SIDES: Record<string, string> = {left: 'left', right: 'right', top: 'top', bottom: 'down'};
+
+export const dockViewBeside = When('user drags the tab of the {string} view to the {word} side of the {string} view',
+  async (page: Page, name: string, side: string, other: string) => {
+    const wheelSide = COMPASS_SIDES[side];
+    if (!wheelSide)
+      throw new Error(`a view docks to the left, right, top or bottom side — not "${side}"`);
+    const target = await viewBox(page, other);
+    await startViewDrag(page, name);
+    const item = page.locator(`.dock-wheel-base:has(.dock-wheel-fill) .dock-wheel-item.dock-wheel-${wheelSide}`).filter({visible: true}).first();
+    try {
+      await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, {steps: 10});
+      await item.waitFor({timeout: pollMs(5000)}).catch(() => {
+        throw new Error(`dragging the "${name}" view over the "${other}" view showed no dock compass`);
+      });
+      const b = (await item.boundingBox())!;
+      const aim = {x: b.x + b.width / 2, y: b.y + b.height / 2};
+      await page.mouse.move(aim.x, aim.y, {steps: 6});
+      // the wheel items keep their hover class from the last drop: what is under the pointer tells
+      await expect.poll(() => page.evaluate((p) => document.elementFromPoint(p.x, p.y)?.closest('.dock-wheel-item')?.className ?? 'none', aim),
+        {message: `the "${side}" item of the dock compass under the pointer`, timeout: pollMs(3000)}).toContain(`dock-wheel-${wheelSide} `);
+    }
+    finally {
+      await page.mouse.up();
+    }
+    await expect.poll(() => floatingOf(page, name), {message: `the "${name}" view docked, not floating`}).toBe(false);
+    await settleAll(page);
+  }, {tier: 'ui', description: 'drags the view by its tab (or title bar) onto that side item of the dock compass shown over the other view\'s panel (the document manager for a tab)'});
+
+export const floatView = When('user drags the tab of the {string} view out to float', async (page: Page, name: string) => {
+  const area = await viewBox(page, name);
+  await startViewDrag(page, name);
+  try {
+    // a third of the way into the panel: clear of the compass in its middle and of the edge items
+    const drop = {x: area.x + area.width / 3, y: area.y + area.height / 3};
+    await page.mouse.move(drop.x, drop.y, {steps: 10});
+    // the wheel items keep their hover class from the last drop: what is under the pointer tells
+    expect(await page.evaluate((p) => document.elementFromPoint(p.x, p.y)?.closest('.dock-wheel-item')?.className ?? 'none', drop),
+      'the dock wheel item under the pointer').toBe('none');
+  }
+  finally {
+    await page.mouse.up();
+  }
+  await expect.poll(() => floatingOf(page, name), {message: `the "${name}" view floating`}).toBe(true);
+}, {tier: 'ui', description: 'drags the view by its tab a third of the way into its panel, clear of every dock wheel item, and drops it there: the view floats in a window of its own'});
+
+export const viewFloating = Then('the {string} view should be floating', async (page: Page, name: string) => {
+  await expect.poll(() => floatingOf(page, name), {message: `whether the "${name}" view floats in a window of its own`}).toBe(true);
+});
+
+export const viewNotFloating = Then('the {string} view should not be floating', async (page: Page, name: string) => {
+  await expect.poll(() => floatingOf(page, name), {message: `whether the "${name}" view floats in a window of its own`}).toBe(false);
+});
+
+const shareOfWindow = (page: Page, box: Box) => page.evaluate((b) =>
+  [b.x / innerWidth, b.y / innerHeight, b.width / innerWidth, b.height / innerHeight], box);
+
+const rememberedFloats = new WeakMap<Page, Map<string, number[]>>();
+
+export const rememberFloat = When('user remembers where the {string} view floats', async (page: Page, name: string) => {
+  const box = await viewBox(page, name);
+  if (!box.floating)
+    throw new Error(`the "${name}" view does not float`);
+  const floats = rememberedFloats.get(page) ?? new Map<string, number[]>();
+  floats.set(name, await shareOfWindow(page, box));
+  rememberedFloats.set(page, floats);
+}, {description: 'its window\'s place and size as shares of the browser window'});
+
+export const floatsAsRemembered = Then('the {string} view should float where it was remembered', async (page: Page, name: string) => {
+  const was = rememberedFloats.get(page)?.get(name);
+  if (!was)
+    throw new Error(`where the "${name}" view floats was not remembered`);
+  let now: number[] = [];
+  await expect.poll(async () => {
+    const box = await readViewBox(page, name);
+    now = typeof box !== 'string' && box.floating ? await shareOfWindow(page, box) : [];
+    return now.length > 0 && now.every((s, i) => Math.abs(s - was[i]) <= 0.02);
+  }, {message: `the "${name}" view floating at ${was.map((s) => s.toFixed(2))} of the window (x, y, width, height)`}).toBe(true).catch(() => {
+    throw new Error(`the "${name}" view floats at ${now.map((s) => s.toFixed(2)).join(', ') || 'no window'}; it floated at ${was.map((s) => s.toFixed(2)).join(', ')} (x, y, width, height as shares of the window)`);
+  });
+}, {description: 'its window\'s place and size, as shares of the browser window, within 2% of the remembered ones'});
+
+const DOCK_SLACK = 8;
+
+function besideOf(a: Box, b: Box, where: string): boolean {
+  const near = (p: number, q: number) => Math.abs(p - q) <= DOCK_SLACK;
+  switch (where) {
+  case 'right-of': return near(a.x, b.x + b.width) && a.y < b.y + b.height && b.y < a.y + a.height;
+  case 'left-of': return near(a.x + a.width, b.x) && a.y < b.y + b.height && b.y < a.y + a.height;
+  case 'below': return near(a.y, b.y + b.height) && a.x < b.x + b.width && b.x < a.x + a.width;
+  case 'above': return near(a.y + a.height, b.y) && a.x < b.x + b.width && b.x < a.x + a.width;
+  default: throw new Error(`a view is docked right-of, left-of, below or above another — not "${where}"`);
+  }
+}
+
+const describeBox = (name: string, b: Box) => `"${name}" ${Math.round(b.x)},${Math.round(b.y)} ${Math.round(b.width)}x${Math.round(b.height)}`;
+
+export const viewDockedBeside = Then('the {string} view should be docked {word} the {string} view', async (page: Page, name: string, where: string, other: string) => {
+  let why = '';
+  await expect.poll(async () => {
+    const [a, b] = [await readViewBox(page, name), await readViewBox(page, other)];
+    if (typeof a === 'string' || typeof b === 'string') {
+      why = [a, b].filter((x) => typeof x === 'string').join('; ');
+      return false;
+    }
+    why = `${describeBox(name, a)}${a.floating ? ' (floating)' : ''}; ${describeBox(other, b)}`;
+    return !a.floating && !b.floating && besideOf(a, b, where);
+  }, {message: `the "${name}" view docked ${where} the "${other}" view`}).toBe(true).catch(() => {
+    throw new Error(`the "${name}" view is not docked ${where} the "${other}" view: ${why}`);
+  });
+}, {description: 'right-of / left-of: their panels touch side by side and overlap in height; below / above: they touch one over the other and overlap in width (8 px slack for the splitter)'});
+
+type Axis = 'width' | 'height';
+
+function axisOf(word: string): Axis {
+  if (word !== 'width' && word !== 'height')
+    throw new Error(`a share is of the width or the height — not "${word}"`);
+  return word;
+}
+
+const shareOf = (a: Box, b: Box, axis: Axis) => a[axis] / (a[axis] + b[axis]);
+
+export const viewTakesShare = Then('the {string} view should take about {int}% of the {word} it shares with the {string} view',
+  async (page: Page, name: string, percent: number, word: string, other: string) => {
+    const axis = axisOf(word);
+    let why = '';
+    await expect.poll(async () => {
+      const [a, b] = [await readViewBox(page, name), await readViewBox(page, other)];
+      if (typeof a === 'string' || typeof b === 'string') {
+        why = [a, b].filter((x) => typeof x === 'string').join('; ');
+        return false;
+      }
+      const share = shareOf(a, b, axis);
+      why = `it takes ${Math.round(share * 100)}%`;
+      return Math.abs(share * 100 - percent) <= 5;
+    }, {message: `the "${name}" view's share of the ${axis}`}).toBe(true).catch(() => {
+      throw new Error(`the "${name}" view does not take about ${percent}% of the ${axis} it shares with the "${other}" view: ${why}`);
+    });
+  }, {description: 'its panel\'s width (height) over the two panels\' together, within 5 percentage points'});
+
+export const resizeViewShare = When('user resizes the {string} view to {int}% of the {word} it shares with the {string} view',
+  async (page: Page, name: string, percent: number, word: string, other: string) => {
+    const axis = axisOf(word);
+    const [a, b] = [await viewBox(page, name), await viewBox(page, other)];
+    const pos = axis === 'width' ? 'x' : 'y';
+    const first = a[pos] < b[pos];
+    const lead = first ? a : b;
+    const trail = first ? b : a;
+    const bar = await page.evaluate(([cls, from, to, horizontal]) => {
+      const bars = Array.from(document.querySelectorAll(`.${cls}`)).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0);
+      const hit = bars.find((r) => horizontal ?
+        r.x >= from - 8 && r.x + r.width <= to + 8 :
+        r.y >= from - 8 && r.y + r.height <= to + 8);
+      return hit ? {x: hit.x, y: hit.y, width: hit.width, height: hit.height} : null;
+    }, [axis === 'width' ? 'splitbar-vertical' : 'splitbar-horizontal', lead[pos] + lead[axis], trail[pos], axis === 'width'] as [string, number, number, boolean]);
+    if (!bar)
+      throw new Error(`no splitter between the "${name}" and the "${other}" views: ${describeBox(name, a)}; ${describeBox(other, b)}`);
+    const total = a[axis] + b[axis];
+    const target = first ? lead[pos] + total * percent / 100 : trail[pos] + trail[axis] - total * percent / 100;
+    const centre = {x: bar.x + bar.width / 2, y: bar.y + bar.height / 2};
+    // the drag starts on the part of the bar both panels border
+    const along = axis === 'width' ? Math.max(a.y, b.y, bar.y) + 20 : Math.max(a.x, b.x, bar.x) + 20;
+    const grip = axis === 'width' ? {x: centre.x, y: along} : {x: along, y: centre.y};
+    await page.mouse.move(grip.x, grip.y);
+    await page.mouse.down();
+    await page.mouse.move(axis === 'width' ? target : grip.x, axis === 'width' ? grip.y : target, {steps: 10});
+    await page.mouse.up();
+    await viewTakesShare(page, name, percent, word, other);
+    await settleAll(page);
+  }, {tier: 'ui', description: 'drags the splitter between the two panels until the view takes that share of their width (height) together; done when it does, within 5 points'});
+
 export const switchToLastView = When('user switches to the last table view of {string}', async (page: Page, table: string) => {
   const name = await page.evaluate((t) => {
     const views = (Array.from(grok.shell.tableViews) as any[]).filter((v) => v.dataFrame?.name === t);
@@ -313,15 +549,31 @@ export const saveAllAsProject = When('user saves all open table views as project
   saveProject(page, name, true),
 {tier: 'api', description: 'every open table view in one project, as the ribbon\'s Save does — for a project that has to hold more than the current table'});
 
-export const openProject = When('user opens the {string} project', async (page: Page, name: string) => {
-  await page.evaluate(async (n) => {
-    const id = ((window as any).__bddProjects ?? {})[n];
-    const p = id ? await grok.dapi.projects.find(id) :
-      await grok.dapi.projects.filter(`friendlyName = ${JSON.stringify(n)} or name = ${JSON.stringify(n)}`).first();
-    if (!p)
-      throw new Error(`no project "${n}" on the server`);
+/** `untilOpened`: resolves once the platform says the project has opened (its views added), table view or not. */
+const openNamedProject = (page: Page, name: string, untilOpened: boolean): Promise<void> => page.evaluate(async ([n, wait]) => {
+  const id = ((window as any).__bddProjects ?? {})[n];
+  const p = id ? await grok.dapi.projects.find(id) :
+    await grok.dapi.projects.filter(`friendlyName = ${JSON.stringify(n)} or name = ${JSON.stringify(n)}`).first();
+  if (!p)
+    throw new Error(`no project "${n}" on the server`);
+  let sub: {unsubscribe(): void} | undefined;
+  const opened = new Promise<void>((resolve) => { sub = grok.events.onProjectOpened.subscribe(() => resolve()); });
+  try {
     await p.open();
-  }, name);
+    if (wait)
+      await opened;
+  }
+  finally {
+    sub?.unsubscribe();
+  }
+}, [name, untilOpened] as [string, boolean]);
+
+export const openProjectViews = When('user opens the {string} project and waits until it has opened', (page: Page, name: string) =>
+  openNamedProject(page, name, true),
+{tier: 'api', description: 'the project as `user opens the {string} project` finds it; done on grok.events.onProjectOpened, for a project whose current view is not a table view'});
+
+export const openProject = When('user opens the {string} project', async (page: Page, name: string) => {
+  await openNamedProject(page, name, false);
   // a project with data sync reads its sources again before its first table view shows
   await page.waitForFunction(() => grok.shell.tv?.dataFrame != null, null, {timeout: pollMs(120000)});
 }, {tier: 'api', description: 'the project this feature saved under that name, else the server\'s by name or friendly name; done when a table view is current'});
@@ -394,7 +646,19 @@ export const projectLinks = Then('the {string} project on the server should link
 const saveDialog = (page: Page) => page.locator('[name="dialog-Save-project"]').filter({visible: true});
 
 export const openSaveDialog = When('user opens the Save project dialog from the ribbon', async (page: Page) => {
-  await click(page, el('Save button'));
+  // views docked side by side each show their ribbon: the Save of the view in front is the one
+  const saves = page.locator('[name="button-Save"]').filter({visible: true});
+  if (await saves.count() > 1) {
+    const index = await saves.evaluateAll((buttons) => {
+      const host = (grok.shell.v?.root as HTMLElement | undefined)?.closest('.panel-content, .tab-content');
+      return buttons.findIndex((b) => host?.contains(b) === true);
+    });
+    if (index < 0)
+      throw new Error('no Save button in the ribbon of the current view');
+    await saves.nth(index).click();
+  }
+  else
+    await click(page, el('Save button'));
   await expect(saveDialog(page), 'the Save project dialog').toHaveCount(1, {timeout: pollMs(15000)});
 }, {tier: 'ui', description: 'the ribbon\'s Save button; done when the Save project dialog is shown'});
 
@@ -407,6 +671,39 @@ export const saveDialogDataSync = Then('the Save project dialog should save the 
       .map((row) => `${row.querySelector('label')?.textContent?.trim()}: ${row.querySelector('[name="input-host-Data-sync"] [role="switch"]')?.getAttribute('aria-checked') === 'true' ? 'on' : 'off'}`);
   }).then((rows) => rows.sort()), {message: 'the tables of the Save project dialog and their Data sync switches'}).toEqual(want);
 }, {description: 'the dialog lists exactly these tables (comma-separated), each with its Data sync switch on'});
+
+/* A view without a table has a row of its own, named by its label; a table's views sit, hidden, under the
+   table's row. Such a row starts excluded unless the view was chosen for the project (its tab's "Save with
+   project"): the row is greyed out (`disabled`) and its "+" includes it. */
+const saveDialogViewRow = (page: Page, name: string) => saveDialog(page).last()
+  .locator('.grok-project-move-entity-row:not([name^="project-table-"]):not(.grok-project-move-entity-debug)')
+  .filter({has: page.locator('label', {hasText: exactText(name)})});
+
+async function expectSaveDialogView(page: Page, name: string, included: boolean): Promise<void> {
+  const row = saveDialogViewRow(page, name);
+  await expect(row, `the "${name}" view in the Save project dialog`).toHaveCount(1, {timeout: pollMs(15000)});
+  const state = (r: Locator) => r.evaluate((e) => e.classList.contains('disabled') ? 'excluded' : 'included');
+  await expect.poll(() => state(row), {message: `whether the Save project dialog saves the "${name}" view`}).toBe(included ? 'included' : 'excluded');
+}
+
+export const saveDialogViewExcluded = Then('the {string} view should be excluded in the Save project dialog', (page: Page, name: string) =>
+  expectSaveDialogView(page, name, false), {description: 'the dialog lists the view, its row greyed out: the project is saved without it'});
+
+export const saveDialogViewIncluded = Then('the {string} view should be included in the Save project dialog', (page: Page, name: string) =>
+  expectSaveDialogView(page, name, true), {description: 'the dialog lists the view, its row not greyed out: the project is saved with it'});
+
+export const saveDialogViewAbsent = Then('the Save project dialog should not list the {string} view', async (page: Page, name: string) => {
+  // the entity list adds its share-link block after its last row (project_entity_move.dart init)
+  await expect(saveDialog(page).last().locator('.d4-url-params-consolidated-share'), 'the end of the Save project dialog\'s list').toBeAttached({timeout: pollMs(15000)});
+  await expect(saveDialogViewRow(page, name), `the "${name}" view in the Save project dialog`).toHaveCount(0);
+}, {description: 'no row of the dialog names the view, once the dialog has built its whole list'});
+
+export const includeSaveDialogView = When('user includes the {string} view in the Save project dialog', async (page: Page, name: string) => {
+  const row = saveDialogViewRow(page, name);
+  await expect(row, `the "${name}" view in the Save project dialog`).toHaveCount(1, {timeout: pollMs(15000)});
+  await row.locator('.fa-plus').click();
+  await expectSaveDialogView(page, name, true);
+}, {tier: 'ui', description: 'the "+" icon of the view\'s row; done when the row is no longer greyed out'});
 
 export const saveFromDialog = When('user clicks on OK in the Save project dialog and the project uploads', async (page: Page) => {
   await watchTaskBar(page);
@@ -452,6 +749,17 @@ export const openApp = Given('user opens the {string} app', async (page: Page, n
   }, name);
   await expect.poll(() => page.evaluate(() => String((window as any).grok.shell.v?.name ?? '')), {message: 'the current view'}).toBe(name);
 }, {tier: 'api', description: 'runs the app function by name (the way the browse tree does) and shows the view it returns; done when that view is current'});
+
+/* A markup view (FlexView) has no menu entry ("View | Add Markup View" is not in any menu): a person has one
+   from a script or a project, so it is set up through the API. */
+export const openMarkupView = Given('user opens a markup view named {string}', async (page: Page, name: string) => {
+  await page.evaluate((n) => {
+    const view = DG.View.createByType('flex');
+    view.name = n;
+    grok.shell.addView(view);
+  }, name);
+  await expect.poll(() => page.evaluate(() => String(grok.shell.v?.name ?? '')), {message: 'the current view'}).toBe(name);
+}, {tier: 'api', description: 'a new markup view of that name, current; it reopens with a project, so the Save dialog lists it'});
 
 export const autostartsCompleted = Given('the package autostarts have completed', async (page: Page) => {
   await page.evaluate(async () => { await grok.shell.autostartsCompleted; });
@@ -1095,6 +1403,10 @@ export const notListedInMyStuffBucket = Then('{string} should not be listed in t
   await expect.poll(() => page.locator(`[name="tree-${cssString(`${bucket}---${dashed(name)}`)}"]`).count(),
     {message: `${name} under My stuff > ${bucket}`}).toBe(0);
 }, {tier: 'ui', description: 'no such node under the expanded bucket of an entity type in My stuff (a collapsed one fails the claim); a bucket the stand does not list at all lists nothing'});
+
+export const clickInMyStuffBucket = When('user clicks on {string} in the {string} bucket of My stuff', async (page: Page, name: string, type: string) =>
+  click(page, el(`${await waitForMyStuffBucket(page, type)}---${dashed(name)} tree node inside browse tree`)),
+{tier: 'ui', description: 'a single click on the node: Browse previews what it holds'});
 
 // Space and group name filters miss existing entities, so names are matched after reading every page.
 type NamedSource = 'spaces' | 'models' | 'groups' | 'queries' | 'scripts' | 'connections';

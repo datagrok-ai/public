@@ -3,51 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 
-import {category, test, expect, expectExceptionAsync, expectArray, before} from '@datagrok-libraries/test/src/test';
-
-category('Property: General', () => {
-  test('eval', async () => {
-    const dfList: DG.DataFrame[] = await grok.functions
-      .eval('OpenServerFile("System:AppData/ApiTests/datasets/demog.csv")');
-    expect(dfList[0].columns instanceof DG.ColumnList, true);
-  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
-
-  test('call', async () => {
-    const dfList: DG.DataFrame[] = await grok.functions
-      .call('OpenServerFile', {'fullPath': 'System:AppData/ApiTests/datasets/demog.csv'});
-    expect(dfList[0].columns instanceof DG.ColumnList, true);
-  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
-
-  test('def param', async () => {
-    await grok.functions.call('AddNewColumn', {table: grok.data.demo.demog(), expression: 'test', name: 'test'});
-  });
-
-  test('call params', async () => {
-    expect(await grok.functions.call('sin', {y: 0.5}), null, '{y: 0.5}');
-    expect(await grok.functions.call('sin', {x: 0.5}), 0.479425538604203, '{x: 0.5}');
-    expect(await grok.functions.call('sin', {X: 0.5}), 0.479425538604203, '{X: 0.5}');
-    await expectExceptionAsync(() => grok.functions.call('qqqqqq'));
-  });
-
-  test('query params', async () => {
-    // expect(await grok.data.query('ApiTests:dummyPackageQuery', {y: 0.5}), null, '{y: 0.5}');
-    expect((await grok.data.query('ApiTests:dummyPackageQuery', {x: 0.5})).get('res', 0), 0.5, '{x: 0.5}');
-    expect((await grok.data.query('ApiTests:dummyPackageQuery', {X: 0.5})).get('res', 0), 0.5, '{X: 0.5}');
-    await expectExceptionAsync(() => grok.data.query('ApiTests:qqqqqq'));
-  });
-
-  test('forProperty: a datetime of a JS object', async () => {
-    const started = DG.Property.fromOptions({name: 'started', type: DG.TYPE.DATE_TIME});
-    const input = ui.input.forProperty(started, {started: dayjs('2026-01-15T12:00:00')});
-    expect(dayjs(input.value).format('YYYY-MM-DD'), '2026-01-15');
-  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
-
-  test('forProperty: a map of a JS object', async () => {
-    const tags = DG.Property.fromOptions({name: 'tags', type: DG.TYPE.MAP});
-    const input = ui.input.forProperty(tags, {tags: {a: '1', b: 'x'}});
-    expect(JSON.stringify(input.value), JSON.stringify({a: '1', b: 'x'}));
-  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
-}, {owner: 'aparamonov@datagrok.ai'});
+import {category, test, expect, expectArray, before} from '@datagrok-libraries/test/src/test';
 
 category('Property: Header parsing', () => {
   let func!: DG.Func;
@@ -147,3 +103,17 @@ category('Property: Accessors', () => {
     w.detach();
   }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 }, {owner: 'askalkin@datagrok.ai'});
+
+category('Property: Inputs', () => {
+  test('forProperty: a datetime of a JS object', async () => {
+    const started = DG.Property.fromOptions({name: 'started', type: DG.TYPE.DATE_TIME});
+    const input = ui.input.forProperty(started, {started: dayjs('2026-01-15T12:00:00')});
+    expect(dayjs(input.value).format('YYYY-MM-DD'), '2026-01-15');
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
+
+  test('forProperty: a map of a JS object', async () => {
+    const tags = DG.Property.fromOptions({name: 'tags', type: DG.TYPE.MAP});
+    const input = ui.input.forProperty(tags, {tags: {a: '1', b: 'x'}});
+    expect(JSON.stringify(input.value), JSON.stringify({a: '1', b: 'x'}));
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
+});

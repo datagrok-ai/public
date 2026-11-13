@@ -2,6 +2,10 @@
 
 ## v.next
 
+* [core#1507](https://github.com/datagrok-ai/core/issues/1507): Spaces: Fixed the Space row refusing to move a project into a space that links it: `spaceHasName()` takes the project that does not count
+* [core#1507](https://github.com/datagrok-ai/core/issues/1507): Tree: Added `VirtualTree.rename(id)`, the inline rename F2 opens, for a node added a moment ago too; the rename box is named `Rename <label>` for screen readers
+* [core#1507](https://github.com/datagrok-ai/core/issues/1507): Added `spaceSaveRow()` (u2/dg): the Space row of the Save project dialog - where the project goes, Move or Link for a saved one, and a name the space already holds refused
+* [core#1507](https://github.com/datagrok-ai/core/issues/1507): Added `SpaceInput` (u2/dg): the space to save into, with a search, the spaces saved to last, read-only spaces greyed with the reason, a "+" on the heading for a top-level space and on each row for a space inside it, created as soon as it is named inline, and × to clear; `saveToSpace()`, which refuses a name the space holds as the platform's move does; and `SpaceBrowser` / `openFromSpace()`, which list what "All spaces" or a space and its subspaces hold and open the pick with its default action
 * Inputs: Fixed `disabled: false` (and `input.disabled = false`) from plain JS turning the input off with no reason and taking it out of its form's verdict; `false` now means on
 * Inputs: Added the `reason-boolean` usage report for `disabled: true`; where it is only reported, the reason reads "Unavailable" instead of "true"
 * Inputs: Added the `bind-readonly` usage report: an input bound to a signal it cannot write (`bind: computed(…)`) is shown read-only instead of throwing on every keystroke; `readOnly: true` says it is read-only on purpose

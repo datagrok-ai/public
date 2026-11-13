@@ -264,46 +264,6 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:LogEventParameters', { eventId });
   }
 
-  export async function metricsResetPgStatStatements(): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsResetPgStatStatements', {});
-  }
-
-  export async function metricsCacheMissTables(): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsCacheMissTables', {});
-  }
-
-  export async function metricsTableHealthSummary(limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsTableHealthSummary', { limit });
-  }
-
-  export async function metricsConnectionsOffenders(limit: number , idleXactSec: number , activeSec: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsConnectionsOffenders', { limit, idleXactSec, activeSec });
-  }
-
-  export async function metricsLargestTables(limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsLargestTables', { limit });
-  }
-
-  export async function metricsTableHealth(limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsTableHealth', { limit });
-  }
-
-  export async function metricsErrorsCount(date: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsErrorsCount', { date });
-  }
-
-  export async function metricsSessionsCount(date: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsSessionsCount', { date });
-  }
-
-  export async function metricsRouteFailures(method: string , route: string , date: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsRouteFailures', { method, route, date });
-  }
-
-  export async function metricsRequestLog(session: string , time: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsRequestLog', { session, time });
-  }
-
   export async function uniqueUsersList(date: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:UniqueUsersList', { date });
   }
@@ -448,6 +408,14 @@ export namespace queries {
 
   export async function manualTests(lastBatchesNum: number ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:ManualTests', { lastBatchesNum });
+  }
+
+  export async function stressTestsBuilds(lastBuildsNum: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:StressTestsBuilds', { lastBuildsNum });
+  }
+
+  export async function stressTestsBuildSummary(build: string , runs: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:StressTestsBuildSummary', { build, runs });
   }
 
   /**
@@ -600,28 +568,12 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:StressRawDashboard', {});
   }
 
-  export async function metricsApp(path?: string ): Promise<DG.View> {
-    return await grok.functions.call('UsageAnalysis:MetricsApp', { path });
-  }
-
   export async function testTrackApp(): Promise<void> {
     return await grok.functions.call('UsageAnalysis:TestTrackApp', {});
   }
 
   export async function reportsApp(path?: string ): Promise<DG.View> {
     return await grok.functions.call('UsageAnalysis:ReportsApp', { path });
-  }
-
-  export async function serviceLogsApp(path?: string , params?: any , limit?: number ): Promise<DG.View> {
-    return await grok.functions.call('UsageAnalysis:ServiceLogsApp', { path, params, limit });
-  }
-
-  export async function cloudLogsApp(): Promise<DG.View> {
-    return await grok.functions.call('UsageAnalysis:CloudLogsApp', {});
-  }
-
-  export async function serviceLogsAppTreeBrowser(treeNode: any ): Promise<void> {
-    return await grok.functions.call('UsageAnalysis:ServiceLogsAppTreeBrowser', { treeNode });
   }
 
   export async function reportsAppTreeBrowser(treeNode: any ): Promise<void> {

@@ -6,8 +6,6 @@ import {UaView} from '../tabs/ua';
 import {UaToolbox} from '../ua-toolbox';
 import {fetchReleaseBenchmarks, computeBenchmarkAlerts, BenchmarkPivot, ReleaseContext, BENCH_SLOW_PCT,
   JENKINS_TEST_JOB, colorStatusCell, COLOR_FAIL_TEXT, waitForWidth, openInWorkspaceIcon} from './data';
-import {combineLatest} from 'rxjs';
-import {debounceTime} from 'rxjs/operators';
 
 const SLOW_BACK = 0xFFFFF3E0;
 const SLOW_TEXT = 0xFFB35A00;
@@ -24,8 +22,7 @@ export class BenchmarksView extends UaView {
   constructor(private ctx: ReleaseContext, uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Benchmarks';
-    combineLatest([this.ctx.env, this.ctx.branch]).pipe(debounceTime(0))
-      .subscribe(() => { if (this.initialized) this.refresh(); });
+    this.ctx.scopeChanged.subscribe(() => { if (this.initialized) this.refresh(); });
     this.ctx.refresh.subscribe(() => { if (this.initialized) this.refresh(); });
   }
 

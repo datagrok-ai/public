@@ -1,15 +1,44 @@
 -- Catalog fixture for db-explorer: three working catalogs. `research` and `archive` hold the same
 -- chem.compounds table with the same ids and different names, so a query that drops the catalog
--- returns visibly wrong rows.
+-- returns visibly wrong rows; `sales` and the two hundred `tenant_NNN` catalogs stand beside them.
+--
+-- catalogs-db.mjs runs it as sa with `-v owner=catalogs_demo`: every database it makes is given to
+-- that login at once, and it drops or changes only databases of its own names, owned by that login or
+-- still by sa. A database of one of those names that another login owns stops it before anything
+-- changes, so the databases other logins keep on the same server are never touched. It can be run
+-- again: it re-creates its three working catalogs and adds the two hundred others only where they are
+-- missing.
+:on error exit
 SET NOCOUNT ON;
+GO
+IF SUSER_ID(N'$(owner)') IS NULL
+  RAISERROR(N'The login $(owner) does not exist: the fixture gives its databases to it.', 16, 1);
+GO
+DECLARE @mine TABLE (name SYSNAME COLLATE DATABASE_DEFAULT PRIMARY KEY);
+INSERT INTO @mine VALUES (N'research'), (N'archive'), (N'sales');
+DECLARE @i INT = 1;
+WHILE @i <= 200
+BEGIN
+  INSERT INTO @mine VALUES (N'tenant_' + RIGHT('000' + CAST(@i AS VARCHAR(3)), 3));
+  SET @i += 1;
+END
+DECLARE @others NVARCHAR(2000) = (SELECT STRING_AGG(CAST(d.name AS NVARCHAR(200)), N', ')
+  FROM sys.databases d JOIN @mine m ON m.name = d.name COLLATE DATABASE_DEFAULT
+  WHERE ISNULL(SUSER_SNAME(d.owner_sid), N'') NOT IN (N'$(owner)', N'sa'));
+IF @others IS NOT NULL
+  RAISERROR(N'%s: of the fixture''s names, but another login owns them. The fixture leaves them alone and stops.',
+    16, 1, @others);
 GO
 IF DB_ID('research') IS NOT NULL BEGIN ALTER DATABASE research SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE research; END
 IF DB_ID('archive') IS NOT NULL BEGIN ALTER DATABASE archive SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE archive; END
 IF DB_ID('sales') IS NOT NULL BEGIN ALTER DATABASE sales SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE sales; END
 GO
 CREATE DATABASE research;
+ALTER AUTHORIZATION ON DATABASE::research TO [$(owner)];
 CREATE DATABASE archive;
+ALTER AUTHORIZATION ON DATABASE::archive TO [$(owner)];
 CREATE DATABASE sales;
+ALTER AUTHORIZATION ON DATABASE::sales TO [$(owner)];
 GO
 
 ------------------------------------------------------------------------------------------------
@@ -149,7 +178,8 @@ BEGIN
   SET @name = 'tenant_' + RIGHT('000' + CAST(@i AS VARCHAR(3)), 3);
   IF DB_ID(@name) IS NULL
   BEGIN
-    SET @sql = N'CREATE DATABASE ' + QUOTENAME(@name);
+    SET @sql = N'CREATE DATABASE ' + QUOTENAME(@name) + N'; ALTER AUTHORIZATION ON DATABASE::' + QUOTENAME(@name)
+      + N' TO ' + QUOTENAME(N'$(owner)') + N';';
     EXEC (@sql);
     SET @sql = N'USE ' + QUOTENAME(@name) + N'; CREATE TABLE dbo.events (event_id INT NOT NULL PRIMARY KEY, payload VARCHAR(64) NOT NULL); '
       + N'INSERT INTO dbo.events VALUES (1, ''' + @name + N' first event'');';
@@ -157,4 +187,4 @@ BEGIN
   END
   SET @i += 1;
 END
-SELECT COUNT(*) AS catalogs FROM sys.databases;
+SELECT COUNT(*) AS catalogs_of_the_owner FROM sys.databases WHERE SUSER_SNAME(owner_sid) = N'$(owner)';

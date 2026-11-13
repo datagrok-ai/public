@@ -177,6 +177,11 @@
           "maxLength": 256,
           "description": "Explicit plural display name (view titles); defaults to a guess from the table name."
         },
+        "icon": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "Font Awesome 5 icon name for the table's rows, such as \"flask\"; none shows the table icon."
+        },
         "columns": {
           "type": "object",
           "description": "Relational columns keyed by column name. System columns (id, is_deleted, version, created_on, updated_on, author_id, idempotency_key, data) are generated and must not be declared.",
@@ -307,8 +312,8 @@
       "additionalProperties": false,
       "properties": {
         "type": {
-          "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "file", "json", "user", "group"],
-          "description": "Property type; ref = FK to another table in this manifest; user/group = aliases of ref Core.users / ref Core.groups (semantic type User / Group); file = a file://<connection>/<path> string into platform file storage (semantic type File); json = a jsonb-backed opaque object (filters, sorts, facets and aggregates refuse it). An external storage admits string, int, float, bool, datetime and same-manifest ref only."
+          "enum": ["string", "int", "float", "bool", "datetime", "string_list", "ref", "file", "json", "user", "group", "double"],
+          "description": "Property type; ref = FK to another table in this manifest; user/group = aliases of ref Core.users / ref Core.groups (semantic type User / Group); double = alias of float; file = a file://<connection>/<path> string into platform file storage (semantic type File); json = a jsonb-backed opaque object (filters, sorts, facets and aggregates refuse it). An external storage admits string, int, float, bool, datetime and same-manifest ref only."
         },
         "column": {
           "$ref": "#/definitions/remoteIdentifier",

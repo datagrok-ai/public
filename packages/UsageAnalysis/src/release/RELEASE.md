@@ -23,16 +23,38 @@ extends `UaView`; the handler calls `markToolboxReady()` (added to `src/tabs/ua.
 
 | Tab            | File                        | Source                                                      |
 |----------------|-----------------------------|-------------------------------------------------------------|
-| Overview       | `src/release/overview.ts`   | Fetches all domains in parallel; status cards + alerts       |
+| Overview       | `src/release/overview.ts`   | Fetches all domains in parallel; each card and its alerts render as soon as its own source answers |
 | Tests          | `src/release/tests.ts`      | `UsageAnalysis:ReleaseTests` query (`queries/release_tests.sql`) — unit + integration + package (non-manual) |
 | Benchmarks     | `src/release/benchmarks.ts` | `UsageAnalysis:ReleaseBenchmarks` + `ReleaseBenchmarkVersions` — `test_runs.benchmark` only |
 | Manual         | `src/release/manual.ts`     | `UsageAnalysis:ReleaseManualTests` query — Test Track batches |
-| Stress         | `src/tabs/stress-tests.ts`  | **reused**; `StressTestsSummary`/`StressTestsRaw`            |
+| Stress         | `src/tabs/stress-tests.ts`  | **reused**; `fetchStressSummary` (`StressTestsBuilds` + cached `StressTestsBuildSummary`), `StressTestsRaw` |
 | Vulnerabilities| `src/tabs/vulnerabilities.ts`| **reused**; VEX `index.json` — core shown as bleeding-edge only (`toDashboardImages`) |
 | Tickets        | `src/release/tickets.ts`    | `JiraConnect:GetJiraTicketsByFilter` (fixVersion)           |
 
 Shared, pure helpers live in `src/release/data.ts` (host check, `ReleaseTests` fetch + client-side
 pivot, alert computation, `stressRegression`) so Overview and the tabs never duplicate logic.
+
+## Loading and speed
+
+- **Overview never waits for its slowest source.** Each of the five sources sets its own cards and
+  alert nodes when it answers; a failure turns only its cards to `n/a` and is logged
+  (`grok.log.warning`), so a broken source is visible in the console instead of looking like "no data".
+- **One tests pivot for Overview and Tests.** `ReleaseContext.tests()` keeps the last pivot per
+  env, branch and build count; opening the Tests tab after Overview runs no query. The Refresh
+  buttons force a re-fetch.
+- **`ReleaseTests` returns one row per actual run**, plus one placeholder row (on the latest build)
+  for a test with no run in the window. The test x build grid is filled in by the client pivot;
+  shipping it from SQL tripled the row count with "did not run" padding.
+- **The pivot is hand-rolled** (`pivotByIndex`). `DataFrame.groupBy().pivot().first()` keeps numeric
+  aggregates only and silently drops `first()` of a string column, which is what status and result are.
+- **Stress summaries are cached per build.** `stress_tests` holds ~160k rows per build, and
+  summarizing 20 builds in one query took over two minutes on dev. `StressTestsBuilds` lists the
+  builds with their row counts (an index scan), and `StressTestsBuildSummary(build, runs)` is
+  `meta.cache: all`: the row count is part of the cache key, so a finished build is computed once
+  and a build that is still reporting, or was re-run, is recomputed. `StressTestsSummary` (one query,
+  uncached) stays for the CicdTests dashboard.
+- **`ReleaseContext.scopeChanged`** fires only when the env or branch really changes; re-asserting the
+  current values (the branch list arriving) used to re-run every query.
 
 ## Global environment (instance) picker
 
@@ -57,7 +79,7 @@ it collapses to the **latest CI/CD run per (test, build)** (`latest_runs` CTE, `
 then-passed tests aren't counted as failed and non-CI (local/ad-hoc) runs are excluded. Note the failing
 count spans **all** exercised suites, including the `PlaywrightPublic` E2E suite; a single package/unit
 CI job (e.g. a Jenkins `test-build`) reports fewer failures because it doesn't include E2E. `fetchReleaseTests()` pivots it
-client-side (`groupBy(['package','test','owner']).pivot('build_index')`) into one row per test, then
+client-side (`pivotByIndex` over `package`/`test`/`owner` x `build_index`) into one row per test, then
 derives `failing`/`stable`/`flaky`/`slower`/`needs_attention` and joins the **Autotests** sticky-meta
 schema (`ignore?`/`ignoreReason`/`lastResolved`).
 

@@ -85,7 +85,7 @@
  */
 
 import type {BlqRule, C0Method, RouteCode} from './types';
-import {ROUTE_IV_BOLUS} from './types';
+import {ROUTE_IV_BOLUS, isKnownRouteCode} from './types';
 import {estimateC0Detailed} from './c0';
 import {studentTInv} from '../../stats/distributions';
 
@@ -135,7 +135,10 @@ export interface SparseAucOptions {
   /**
    * Dosing route of the composite. Only `ROUTE_IV_BOLUS` changes anything: the
    * composite is integrated from `(0, Ĉ0)` with the delta-method SE (see the
-   * module header). Absent or any other route: the `(0, 0)` anchor.
+   * module header). Absent or any other route: the `(0, 0)` anchor. A value that
+   * is not a known `RouteCode` is rejected: `auc`, `se`, `df` and `ci` are NaN
+   * with `SPARSE_UNKNOWN_ROUTE_CODE` (the composite and topology are still
+   * reported).
    *
    * A caller that bootstraps the IV-bolus AUC must pass the route in the resampled
    * statistic too. Ĉ0's chain is discontinuous (a resample whose first pair rises
@@ -150,7 +153,8 @@ export type SparseWarningCode =
   | 'SPARSE_TERMINAL_OVEREST'
   | 'SPARSE_VARIANCE_MODELED'
   | 'SPARSE_ANIMAL_ID_ABSENT_ASSUMED_DESTRUCTIVE'
-  | 'SPARSE_DF_UNAVAILABLE';
+  | 'SPARSE_DF_UNAVAILABLE'
+  | 'SPARSE_UNKNOWN_ROUTE_CODE';
 
 export interface SparseWarning {
   readonly code: SparseWarningCode;
@@ -410,6 +414,21 @@ export function sparseAuc(input: SparseInput, options: SparseAucOptions = {}): S
   const allGroups = groupByTime(input, blqRule);
   const composite = buildCompositeProfile(input, blqRule);
   const prof = compositeProfileArrays(composite);
+
+  // An unknown route code is rejected, never integrated from the extravascular
+  // (0, 0) anchor (it may be an IV bolus). The composite and topology still report.
+  if (options.route !== undefined && !isKnownRouteCode(options.route)) {
+    return {
+      auc: NaN, se: NaN, df: NaN, ci: [NaN, NaN],
+      topology: deriveTopology(allGroups.map((g) => g.conc.length), overlapMatrix(allGroups), allGroups.length),
+      composite,
+      warnings: [{
+        code: 'SPARSE_UNKNOWN_ROUTE_CODE',
+        message: `Route code ${String(options.route)} is not a known RouteCode (0–6); ` +
+          'the composite AUC was not computed.',
+      }],
+    };
+  }
 
   // IV bolus: the dose-time rule filters the groups ONCE, up front; every other
   // route keeps every group and the (0, 0) anchor (byte-identical to 0.11.0).

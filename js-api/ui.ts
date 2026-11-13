@@ -3,7 +3,7 @@
  * @module ui
  **/
 
-import {ElementOptions, IndexPredicate, Callback} from './src/const';
+import {ElementOptions, IndexPredicate, Callback, FUNC_TYPES} from './src/const';
 import {Viewer} from './src/viewer';
 import {View, VirtualView} from './src/views/view';
 import {
@@ -39,7 +39,7 @@ import {__obs, DragDropArgs} from './src/events';
 import {HtmlUtils, _isDartium, _options, Utils} from './src/utils';
 import * as rxjs from 'rxjs';
 import {CanvasRenderer, Grid, GridCell, GridCellRenderer, Rect, SemanticValue, Size} from './src/grid';
-import {DataConnection, Entity, FileInfo, Group, Property, User} from './src/entities';
+import {DataConnection, Entity, FileInfo, Func, Group, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
@@ -440,6 +440,15 @@ export function divV(items: any[], options: string | ElementOptions | null = nul
  * Example: {@link https://public.datagrok.ai/js/samples/ui/containers/flexbox} */
 export function divH(items: (HTMLElement | null)[], options: string | ElementOptions | null = null): HTMLDivElement {
   return <HTMLDivElement>_options(api.grok_UI_DivH(items == null ? null : items.map(x => render(x)), 'ui-div'), options);
+}
+
+/** The Space row of the Save project dialog from the {@link FUNC_TYPES.SPACE_SAVE_ROW} function, or null without one.
+ * `homeId` is the project's space, `name` is checked against the picked space, `projectId` is the saved project. */
+export async function spaceSaveRow(homeId?: string | null, name?: string, projectId?: string | null):
+  Promise<Widget | null> {
+  const func = Func.find({meta: {role: FUNC_TYPES.SPACE_SAVE_ROW}})[0];
+  return func === undefined ? null :
+    await func.apply({homeId: homeId ?? null, name: name ?? '', projectId: projectId ?? null});
 }
 
 /** Renders content as a card. */
@@ -1856,6 +1865,12 @@ export class ObjectHandler<T = any> {
       return args.handler;
 
     return toJs(api.grok_Meta_ForEntity(toDart(object)));
+  }
+
+  /** Runs what a double-click on `x` does in the platform (Browse, cards, lists): opens a project, a table,
+   * a script and so on; nothing when the platform has no default action for it. */
+  static runDefaultAction(x: any): void {
+    api.grok_Meta_RunDefaultAction(toDart(x));
   }
 
   static forSemType(semType: string): Promise<ObjectHandler[]> {

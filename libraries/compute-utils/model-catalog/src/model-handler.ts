@@ -17,7 +17,9 @@ function displayPopover(icon: HTMLElement, popover: HTMLElement) {
 }
 
 function hidePopover(popover: HTMLElement) {
-  popover.hidePopover();
+  // the same info box is also shown inline, in the preview and the context panel
+  if (popover.popover)
+    popover.hidePopover();
 }
 
 function alignPopover(target: HTMLElement, popover: HTMLElement): void {
@@ -39,11 +41,11 @@ function stylePopover(popover: HTMLElement): void {
   popover.style.color = 'var(--gray-6)';
 }
 
-function getBulletIcon() {
-  const bulletIcon = ui.iconFA('times');
-  bulletIcon.style.marginRight = '6px';
-  bulletIcon.classList.remove('grok-icon');
-  return bulletIcon;
+// the platform's icon for a group
+function getGroupIcon() {
+  const groupIcon = ui.iconFA('user-friends');
+  groupIcon.classList.remove('grok-icon');
+  return groupIcon;
 }
 
 async function requestMembership(groupName: string) {
@@ -253,11 +255,7 @@ export class ModelHandler extends DG.ObjectHandler {
       v.name = (x.friendlyName ?? x.name) + ' preview';
 
       const startBtnDiv = missingMandatoryGroups?.length ?
-        ui.div([this.makeMandatoryGroupsInfo(missingMandatoryGroups)], {style: {
-          border: '2px solid var(--red-3)',
-          padding: '10px',
-          maxWidth: '400px',
-        }}) :
+        this.makeMandatoryGroupsInfo(missingMandatoryGroups) :
         ui.div([ui.bigButton('Launch', () => x.prepare().edit())]);
       v.append(
         ui.div(
@@ -279,23 +277,6 @@ export class ModelHandler extends DG.ObjectHandler {
       );
       return v;
     });
-  }
-
-  override renderProperties(func: DG.Func) {
-    const a = ui.accordion('ComputeModel');
-    a.context = func;
-    const titleDiv = ui.div([
-      ui.span([this.renderIcon(func), ui.label(func.friendlyName), ui.contextActions(func), ui.star(func.id)])]);
-    a.addTitle(titleDiv);
-
-    if (func.description != null)
-      titleDiv.appendChild(ui.div([ui.markdown(func.description)], 'model-catalog-description'));
-    titleDiv.appendChild(ui.tags(func));
-    if ( func.options['dev.status'] != null)
-      titleDiv.appendChild(ui.tableFromMap({Status: func.options['dev.status']}));
-
-    a.end();
-    return a.root;
   }
 
   override renderTooltip(x: DG.Func) {
@@ -324,42 +305,32 @@ export class ModelHandler extends DG.ObjectHandler {
       ModelHandler.openHelp(DG.toJs(func));
     });
 
-    const funcs = new DG.Functions();
-    const isFavoritesApplicable = (func: DG.Func) => func instanceof DG.Entity;
-    const isFavorite = (func: DG.Func) => grok.shell.favorites.some((f) => f.id == func.id);
-    //@ts-ignore
-    funcs.registerParamFunc('Add To Favorites', (this.type as DG.Type), async (func: DG.Func) => await DG.Favorites.add(DG.toJs(func)), (func: DG.Func) => {
-      const properFunc = DG.toJs(func);
-      return this.isApplicable(properFunc) && isFavoritesApplicable(properFunc) && !isFavorite(properFunc);
-    });
-    //@ts-ignore
-    funcs.registerParamFunc('Remove from favorites', (this.type as DG.Type), async (func: DG.Func) => await DG.Favorites.remove(DG.toJs(func)), (func: DG.Func) => {
-      const properFunc = DG.toJs(func);
-      return this.isApplicable(properFunc) && isFavoritesApplicable(properFunc) && isFavorite(properFunc);
-    });
-
     setTimeout(async () => {
       const userGroups = await ModelHandler.getUserGroups();
       this.userGroups.next(userGroups);
     });
   }
 
-  private makeMandatoryGroupsInfo(missingMandatoryGroups: {name: string, help?: string}[]) {
+  protected makeMandatoryGroupsInfo(missingMandatoryGroups: {name: string, help?: string}[]) {
+    // wrapped: the info box is also a popover, which the flex display of divV would keep visible
     const mandatoryGroupsInfo = ui.div(ui.divV([
-      ui.label('You should be a member of the following group(s):', {style: {marginLeft: '0px'}}),
+      ui.divText('You should be a member of the following group(s):', 'model-catalog-groups-title'),
       ...missingMandatoryGroups.map((group) => ui.divV([
-        ui.span([getBulletIcon(), group.name], {style: {fontWeight: '600'}}),
-        ...group.help ? [ui.span([group.help], {style: {marginLeft: '16px'}})]: [],
-        ui.link(`Request group membership`, async () => {
-          await requestMembership(group.name);
-          hidePopover(mandatoryGroupsInfo);
-        }, undefined, {style: {marginLeft: '16px'}}),
+        ui.divH([
+          getGroupIcon(),
+          ui.span([group.name], 'model-catalog-group-name'),
+          ui.link('Request membership', async () => {
+            await requestMembership(group.name);
+            hidePopover(mandatoryGroupsInfo);
+          }),
+        ], 'model-catalog-group'),
+        ...group.help ? [ui.divText(group.help, 'model-catalog-group-help')] : [],
       ])),
-    ], {style: {gap: '10px'}})) as HTMLElement;
+    ], 'model-catalog-groups'));
     return mandatoryGroupsInfo;
   }
 
-  private async awaitUserGroups() {
+  protected async awaitUserGroups() {
     return this.userGroups.pipe(
       filter((g) => !!g),
       map((g) => g!),

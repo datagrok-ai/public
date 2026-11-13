@@ -1,6 +1,7 @@
 import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {requireConnection} from '../connections/reachable';
 
 category('Database Meta: DbInfo', async () => {
     let conn: DG.DataConnection;
@@ -10,6 +11,7 @@ category('Database Meta: DbInfo', async () => {
 
     before(async () => {
         conn = await grok.functions.eval('DbTests:PostgreSQLDBTests');
+        await requireConnection(conn);
         dbInfo = (await grok.data.db.getInfo(conn, 'public'))[0];
         try {
             await dbInfo?.clearProperties();
@@ -117,6 +119,7 @@ category('Database Meta: DbSchemaInfo', async () => {
 
     before(async () => {
         conn = await grok.functions.eval('DbTests:PostgreSQLDBTests');
+        await requireConnection(conn);
         dbInfo = (await grok.data.db.getInfo(conn, 'public'))[0];
         try {
             await dbInfo?.clearProperties();
@@ -293,12 +296,51 @@ async function dbEntityId(conn: DG.DataConnection, schema: DG.DbSchemaInfo, ...p
     const namespace = '0bb1a16e-df07-45f5-99e0-8e67000ecc22'.replace(/-/g, '').match(/../g)!
         .map((h) => parseInt(h, 16));
     const name = new TextEncoder().encode([conn.id, schema.catalog ?? '', schema.name, ...path].join(':'));
-    const digest = await crypto.subtle.digest('SHA-1', new Uint8Array([...namespace, ...name]));
-    const hash = new Uint8Array(digest).slice(0, 16);
+    const hash = sha1(new Uint8Array([...namespace, ...name])).slice(0, 16);
     hash[6] = (hash[6] & 0x0f) | 0x50;
     hash[8] = (hash[8] & 0x3f) | 0x80;
     const hex = Array.from(hash, (b) => b.toString(16).padStart(2, '0')).join('');
     return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20)].join('-');
+}
+
+/** SHA-1 of the bytes. `crypto.subtle` exists only on a secure origin, and a stand served over plain HTTP,
+ * as the CI one, is not. */
+function sha1(bytes: Uint8Array): Uint8Array {
+    const length = bytes.length;
+    const padded = new Uint8Array((((length + 8) >> 6) + 1) << 6);
+    padded.set(bytes);
+    padded[length] = 0x80;
+    const view = new DataView(padded.buffer);
+    view.setUint32(padded.length - 8, Math.floor(length / 0x20000000));
+    view.setUint32(padded.length - 4, (length << 3) >>> 0);
+    const h = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];
+    const w = new Uint32Array(80);
+    const rotl = (x: number, n: number) => (x << n) | (x >>> (32 - n));
+    for (let offset = 0; offset < padded.length; offset += 64) {
+        for (let i = 0; i < 16; i++)
+            w[i] = view.getUint32(offset + i * 4);
+        for (let i = 16; i < 80; i++)
+            w[i] = rotl(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
+        let [a, b, c, d, e] = h;
+        for (let i = 0; i < 80; i++) {
+            const [f, k] = i < 20 ? [(b & c) | (~b & d), 0x5a827999] : i < 40 ? [b ^ c ^ d, 0x6ed9eba1] :
+                i < 60 ? [(b & c) | (b & d) | (c & d), 0x8f1bbcdc] : [b ^ c ^ d, 0xca62c1d6];
+            const t = (rotl(a, 5) + f + e + k + w[i]) | 0;
+            e = d;
+            d = c;
+            c = rotl(b, 30);
+            b = a;
+            a = t;
+        }
+        h[0] = (h[0] + a) | 0;
+        h[1] = (h[1] + b) | 0;
+        h[2] = (h[2] + c) | 0;
+        h[3] = (h[3] + d) | 0;
+        h[4] = (h[4] + e) | 0;
+    }
+    const digest = new Uint8Array(20);
+    h.forEach((x, i) => new DataView(digest.buffer).setUint32(i * 4, x));
+    return digest;
 }
 
 category('Database Meta: DbRelationInfo', async () => {
@@ -307,6 +349,7 @@ category('Database Meta: DbRelationInfo', async () => {
 
     before(async () => {
         conn = await grok.functions.eval('DbTests:PostgreSQLDBTests');
+        await requireConnection(conn);
         dbInfo = (await grok.data.db.getInfo(conn, 'public'))[0];
         try {
             await dbInfo?.clearProperties();

@@ -4,12 +4,10 @@ import * as ui from 'datagrok-api/ui';
 
 import {UaView} from '../tabs/ua';
 import {UaToolbox} from '../ua-toolbox';
-import {fetchReleaseTests, computeTestAlerts, ReleasePivot, ReleaseContext, JENKINS_TEST_JOB, colorStatusCell,
+import {computeTestAlerts, ReleasePivot, ReleaseContext, JENKINS_TEST_JOB, colorStatusCell,
   COLOR_FAIL_TEXT, DIM_STATUS_BACK, COLOR_DIM_TEXT, NOT_RUN_BACK, waitForWidth, openInWorkspaceIcon,
   getReleaseMutesSchema, MUTED_VERSIONS, STALE_MUTED_VERSIONS, MUTE_ON, MUTE_OFF,
   parseMutedVersions, isMutedForVersion} from './data';
-import {combineLatest} from 'rxjs';
-import {debounceTime} from 'rxjs/operators';
 
 export class TestsView extends UaView {
   private lastBuildsInput!: DG.InputBase;
@@ -28,9 +26,7 @@ export class TestsView extends UaView {
   constructor(private ctx: ReleaseContext, uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Tests';
-    // Switching instance re-points the branch too, so debounce the pair into one re-fetch.
-    combineLatest([this.ctx.env, this.ctx.branch]).pipe(debounceTime(0))
-      .subscribe(() => { if (this.initialized) this.refresh(); });
+    this.ctx.scopeChanged.subscribe(() => { if (this.initialized) this.refresh(); });
     this.ctx.refresh.subscribe(() => { if (this.initialized) this.refresh(); });
   }
 
@@ -40,7 +36,7 @@ export class TestsView extends UaView {
     this.summaryHost = ui.div([], 'ua-metrics-grid-host');
     this.gridHost = ui.div([], 'ua-metrics-grid-host');
 
-    const refreshBtn = ui.bigButton('Refresh', () => this.refresh());
+    const refreshBtn = ui.bigButton('Refresh', () => this.refresh(true));
     refreshBtn.prepend(ui.iconFA('sync-alt'), ' ');
     refreshBtn.classList.add('ua-metrics-btn-secondary');
     const header = ui.divH([
@@ -63,12 +59,12 @@ export class TestsView extends UaView {
     await this.refresh();
   }
 
-  private async refresh(): Promise<void> {
+  private async refresh(force = false): Promise<void> {
     this.summaryHost.innerHTML = '';
     this.summaryHost.append(ui.loader());
     this.gridHost.innerHTML = '';
     try {
-      this.pivot = await fetchReleaseTests(this.ctx.env.value, this.lastBuildsInput.value ?? 5, this.ctx.branch.value);
+      this.pivot = await this.ctx.tests(this.lastBuildsInput.value ?? 5, force);
       if (!this.pivot) {
         this.summaryHost.innerHTML = '';
         this.summaryHost.append(ui.divText('No package test runs reported for this instance.', 'ua-metrics-degraded'));

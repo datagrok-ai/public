@@ -2,6 +2,12 @@
 
 ## v.next
 
+* Tests: `ui: spaceSaveRow` does not fail on a stand without PowerPack, the package that provides the row
+* Tests: Fixed `Dapi: connector ddl` 'ddl lifecycle' and 'uploadAs creates and loads a DataFrame': the scratch table had a mixed-case name, which the test's own plain SQL checks, unquoted, could not find
+* Tests: Made the suite independent of the packages a stand has: `Dapi: sticky meta: canonical keys` (was `: molecules`) uses the package's own semantic type, detector and canonicalizer instead of Chem's, `Dapi: models` 'Engines' has the package's own engine (`ApiTests engine`, never applicable, so the Train Model view does not offer it) and names the engines it checked, and `Dapi: files: formats` no longer opens kml and kmz, which the GIS importer opens
+* Packages: `Packages: project isolation` 'Dashboard: a debug publish does not link the debug version' follows core#1244 (was 'entity propagation across package versions', which expected the debug version's entities to be linked)
+* Tests: Removed `Property: General`, a copy of the first five `Functions: General` tests; `Dapi: connector ddl` says which database the query path reached when it does not see a table the mutation path wrote
+* [core#745](https://github.com/datagrok-ai/core/issues/745): Domain schemas: per-table icons, and domain rows resolved in Favorites and the Space tree
 * [core#637](https://github.com/datagrok-ai/core/issues/637): Viewers, color, inputs: Added tests for the color alpha: removed scatter plot and line chart opacity props read, written and migrated from layouts through the color alpha, `setMarkerOpacity`, formula line opacity folded once, `AnnotationRegionsHelper.getFillColor`, `Color.opaqueIfNoAlpha` and a color input with `useAlphaChannel`
 * [#3924](https://github.com/datagrok-ai/public/issues/3924): Viewers: Added `Viewers: category order` (the per-viewer `categoryOrder` properties, a custom `categoryOrderer` function)
 * Connections, containers: Added `Widgets: containers` 'empty takes out text and comments, and kills the elements' and `Dapi: connection` 'getCatalogs lists the databases of the server, the connection's own among them' (development only, skipped)

@@ -4,7 +4,8 @@
 
 * [core#1407](https://github.com/datagrok-ai/core/issues/1407): Fitting: Fixed the loss table built from an untyped empty array when no extrema are found
 * Export: The Excel report renders all charts at once and captures each as soon as it is drawn instead of after a fixed 1 s delay, several times faster; fixed charts being squashed vertically
-* Custom function view: Fixed the view never opening from a link to a run that fails to load; it shows the error and opens a new call
+* Custom function view: The view no longer opens a run from the page link; the editor hosting it does, as for RFV (breaking for views opened without Compute2's editor)
+* Custom function view: `exports`, a list of named exports that each return a `DG.FileInfo`, replaces `exportConfig` (breaking); the Export icon runs the first one and `exportEnabled` turns them off
 * Custom function view: A new call starts with the function's default input values
 * RTD: A workflow custom export can be `preferred`, which lists it first in the Export menu
 * RTD: A step's viewers hook from its script that can't be made no longer fails the workflow config; `loadViewersHook` makes a function's hook, or warns and returns none

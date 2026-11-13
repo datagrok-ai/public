@@ -80,9 +80,10 @@ async function expectJoined(df: DG.DataFrame, column: string, key: string, sql: 
   }
 }
 
-// Development only: needs a CatalogsDemo connection over the SQL Server fixture of
-// bdd/features/identifiers/catalogs-fixture.sql, with `archive` as its own database. Stays skipped in CI.
-const DEV_ONLY = {skipReason: 'Development only: needs the CatalogsDemo SQL Server fixture'};
+// Development only: needs the CatalogsDemo connection to the SQL Server fixture, `archive` its own database:
+// `node bdd/features/identifiers/catalogs-db.mjs up`, then `connection` (bdd/README.md). Stays skipped in CI.
+const DEV_ONLY = {skipReason: 'Development only: needs the CatalogsDemo connection to the SQL Server fixture ' +
+  '(bdd/features/identifiers/catalogs-db.mjs up, then connection)'};
 
 category('Enrichment', () => {
   let events: () => Promise<DG.DataFrame>;

@@ -89,4 +89,25 @@ export namespace funcs {
   export async function testVectorFuncNonVectorizableParam(col: DG.Column , prefix: string , postfix: DG.Column ): Promise<DG.Column> {
     return await grok.functions.call('APITests:TestVectorFuncNonVectorizableParam', { col, prefix, postfix });
   }
+
+  /**
+   * The canonical form of an apitests-key value (trimmed, lower case); sticky meta of that semantic type is keyed by it
+   * @param {string} key
+   *   semType: apitests-key
+   */
+  export async function canonicalizeApiTestsKey(key: string ): Promise<string> {
+    return await grok.functions.call('APITests:CanonicalizeApiTestsKey', { key });
+  }
+
+  export async function trainApiTestsEngine(df: DG.DataFrame , predictColumn: DG.Column ): Promise<any> {
+    return await grok.functions.call('APITests:TrainApiTestsEngine', { df, predictColumn });
+  }
+
+  export async function applyApiTestsEngine(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('APITests:ApplyApiTestsEngine', { df, model });
+  }
+
+  export async function isApplicableApiTestsEngine(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('APITests:IsApplicableApiTestsEngine', { df, predictColumn });
+  }
 }
