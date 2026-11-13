@@ -452,8 +452,6 @@ function applyGroupFlags(g: any, argv: any): any {
   if (argv.to !== undefined) {
     const old: any[] = g.saveTo ?? [];
     const to = list(argv, 'to');
-    if (!to.length)
-      throw new Error('--to needs a value');
     g.saveTo = to.map((t) => {
       const [destination, format] = t.split(':');
       return {...(old.find((x) => x.destination === destination) ?? {}), destination, ...(format ? {format} : {})};

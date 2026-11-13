@@ -675,7 +675,7 @@ describe('groups', () => {
     await expect(set({levels: 'error,fatal'})).rejects.toThrow('--levels is one of');
     await expect(set({flags: 'db,sql'})).rejects.toThrow('--flags is one of');
     await expect(set({to: true})).rejects.toThrow('--to needs a value');
-    await expect(set({to: ','})).rejects.toThrow('--to needs a value');
+    expect(posted((await set({to: ''})).calls).logGroups[0].saveTo).toEqual([]);
     await expect(set({for: '90s'})).rejects.toThrow('--for expects whole minutes');
     const {calls} = await set({for: '0', before: 0, flags: 'all'});
     expect(posted(calls).logGroups[0]).toMatchObject({activeMinutes: 0, flushBeforeSeconds: 0, debugFlags: ['all']});

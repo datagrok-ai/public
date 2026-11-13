@@ -553,7 +553,7 @@ grok s o groups set Chembl --when 'level = error and package = Chembl' --scope s
 grok s o groups set Chembl --enabled false                  # only the flags given change; groups rm Chembl deletes it
 grok s o groups put --json groups.json                      # replace every log group (the GROK_PARAMETERS settings.logger.logGroups shape)
 grok s o groups reset                                       # back to the default groups; the audit group can only be switched off, not removed
-grok s o groups set Metrics --to grafana                    # push the health gauges every minute (kind metrics: endpoints only)
+grok s o groups set Metrics --to grafana                    # push the health gauges every minute (kind metrics: endpoints only); --to '' stops it
 grok s o endpoints                                          # where groups can send records; endpoints rm grafana
 grok s o logs activations                                   # triggered groups on now; logs activations stop <group id> <key>
 ```
