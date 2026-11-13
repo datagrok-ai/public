@@ -18,8 +18,8 @@ const [red, blue] = await tags.insert([{name: `${stamp} red`}, {name: `${stamp} 
 const [item] = await items.insert({sku: `${stamp}-1`, name: 'Widget', tags: [red.id, blue.id]});
 
 // READ: expand returns {id, name} links, capped at 100 and ordered by display name.
-const [row] = await items.query({filter: [{property: 'id', operator: '=', value: item.id}],
-  expand: ['tags']});
+const [row] = (await items.query({filter: [{property: 'id', operator: '=', value: item.id}],
+  expand: ['tags']})).rows;
 grok.shell.info(`tags: ${row.tags.map((t) => t.name).join(', ')}`);
 
 // In a DataFrame the same links become a chips column plus a hidden id companion —
@@ -29,11 +29,11 @@ grok.shell.info(`d42 columns: ${df.columns.names().join(', ')}`);
 
 // FILTER: a relation is one hop, so 'tags.name' and 'tags.id' are filter paths
 // (an id list compiles to ANY-of — what a checkbox list emits).
-const tagged = await items.query({filter: [{property: 'tags.id', operator: '=', value: [red.id]}]});
+const tagged = (await items.query({filter: [{property: 'tags.id', operator: '=', value: [red.id]}]})).rows;
 grok.shell.info(`${tagged.length} item(s) tagged red`);
 
 // The smart-filter string takes the same paths (values quoted, as everywhere).
-const byName = await items.query({filter: `tags.name = "${stamp} red"`});
+const byName = (await items.query({filter: `tags.name = "${stamp} red"`})).rows;
 grok.shell.info(`${byName.length} item(s) matched by the string filter`);
 
 // Facet counts are per OWNER: an item with two tags counts once under each,
@@ -48,7 +48,7 @@ grok.shell.info(facets.facets['t'].categories.map((c) => `${c.display}: ${c.tota
 // remove links its author knows about.
 await items.update(item.id, {tags: [blue.id]});
 grok.shell.info(`after replace: ${(await items.query({expand: ['tags'],
-  filter: [{property: 'id', operator: '=', value: item.id}]}))[0].tags.length} link(s)`);
+  filter: [{property: 'id', operator: '=', value: item.id}]})).rows[0].tags.length} link(s)`);
 
 // Creating the target and linking it atomically is a transaction — '$ref'
 // placeholders resolve element-wise inside the list.

@@ -8,7 +8,7 @@ const info = await grok.dapi.domains.registry.tableInfo('apitests.item');
 console.log(`searchable columns: ${info.searchableColumns.join(', ')}`);
 
 // The query spec, the builder, and the count all take the same `search`.
-const rows = await items.query({search: 'alp', limit: 20});
+const rows = (await items.query({search: 'alp', limit: 20})).rows;
 const same = await items.query().search('alp').top(20);
 const total = await items.count(undefined, {search: 'alp'});
 grok.shell.info(`${rows.length} of ${total} rows match "alp" (builder: ${same.length})`);

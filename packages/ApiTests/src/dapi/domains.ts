@@ -25,7 +25,7 @@ category('Dapi: domains', () => {
     expect(ins.created, true);
     const id: string = ins.id;
     try {
-      const rows = await items().query({filter: `sku = "${key}"`});
+      const rows = (await items().query({filter: `sku = "${key}"`})).rows;
       expect(rows.length, 1);
       expect(rows[0].name, 'Widget');
       expect(rows[0].note, 'first', 'jsonb property schema key not returned');
@@ -153,15 +153,15 @@ category('Dapi: domains', () => {
       const filter = `id = "${ev.id}"`;
       const caption = DG.domainCaptionColumn('item_id');
       expect(caption, '~caption_item_id', 'the caption column name is spelled once, in the js-api');
-      const [row] = await events.query({filter, captions: ['item_id']});
+      const [row] = (await events.query({filter, captions: ['item_id']})).rows;
       // the name column wins over the business key (C3): apitests.item names itself by `name`
       expect(row[caption], 'Caption parent', `the caption must be the parent's display name: ${JSON.stringify(row)}`);
       // A caption is not an expand and does not drag its ref column in.
-      const [narrow] = await events.query({filter, columns: ['kind'], captions: ['item_id']});
+      const [narrow] = (await events.query({filter, columns: ['kind'], captions: ['item_id']})).rows;
       expect(narrow[caption], 'Caption parent', 'a caption is independent of the projected columns');
       expect('item_id' in narrow, false,
         `asking for a caption must not project the ref column: ${JSON.stringify(narrow)}`);
-      const [plain] = await events.query({filter});
+      const [plain] = (await events.query({filter})).rows;
       expect(caption in plain, false, `captions are never on by default: ${JSON.stringify(plain)}`);
     } finally {
       await items().delete(ins.id); // cascades item_event

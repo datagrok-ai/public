@@ -100,31 +100,31 @@ category('Dapi: domain relations', () => {
       [{property: 'name', operator: 'like', value: `${marker}%`}];
 
     // 'tags.name' matches the owners that HAVE such a link (per-hop EXISTS).
-    const byName = await items.query({filter: [...marked, 'and',
-      {property: 'tags.name', operator: '=', value: `${marker} red`}]});
+    const byName = (await items.query({filter: [...marked, 'and',
+      {property: 'tags.name', operator: '=', value: `${marker} red`}]})).rows;
     expect(byName.length, 1, `expected the one red-tagged item, got ${byName.length}`);
     expect(byName[0].id, itemA);
 
     // The smart-filter STRING form takes the same paths (values quoted, as everywhere).
-    const byString = await items.query({filter: `name like "${marker}" and tags.name = "${marker} red"`});
+    const byString = (await items.query({filter: `name like "${marker}" and tags.name = "${marker} red"`})).rows;
     expect(byString.length, 1, `string-form relation filter: got ${byString.length}`);
     expect(byString[0].id, itemA);
 
     // 'tags.id' with a list is the ANY-of shape the filter panel's checkbox list emits.
-    const byIds = await items.query({filter: [...marked, 'and',
-      {property: 'tags.id', operator: '=', value: [red, green]}], sort: 'name'});
+    const byIds = (await items.query({filter: [...marked, 'and',
+      {property: 'tags.id', operator: '=', value: [red, green]}], sort: 'name'})).rows;
     expect(byIds.map((r) => r.id).join(','), `${itemA},${itemG}`);
     // An empty selection matches nothing (never "everything").
     expect((await items.query({filter: [...marked, 'and',
-      {property: 'tags.id', operator: '=', value: []}]})).length, 0);
+      {property: 'tags.id', operator: '=', value: []}]})).rows.length, 0);
 
     // '<relation>.id = null' is the facet's "(no value)" bucket: owners with NO
     // visible link (a NOT EXISTS — the one question per-hop EXISTS cannot ask).
     // Membership, not a count: the write tests leave unlinked items of their own.
     const unlinked = (await items.query({filter: [...marked, 'and',
-      {property: 'tags.id', operator: '=', value: null}]})).map((r) => r.id);
+      {property: 'tags.id', operator: '=', value: null}]})).rows.map((r) => r.id);
     const anyLink = (await items.query({filter: [...marked, 'and',
-      {property: 'tags.id', operator: '!=', value: null}]})).map((r) => r.id);
+      {property: 'tags.id', operator: '!=', value: null}]})).rows.map((r) => r.id);
     expect(unlinked.includes(itemBare), true, 'the unlinked item belongs to the null bucket');
     expect(unlinked.includes(itemA) || unlinked.includes(itemG), false, JSON.stringify(unlinked));
     expect(anyLink.includes(itemA) && anyLink.includes(itemG), true, JSON.stringify(anyLink));
@@ -134,12 +134,12 @@ category('Dapi: domain relations', () => {
     // linked to any of them. The per-hop reading ("has some other tag") would keep
     // itemA — it carries blue as well — right after the user unchecked red.
     const notRed = (await items.query({filter: [...marked, 'and',
-      {property: 'tags.id', operator: '!=', value: [red]}]})).map((r) => r.id);
+      {property: 'tags.id', operator: '!=', value: [red]}]})).rows.map((r) => r.id);
     expect(notRed.includes(itemA), false, `unchecking red must drop itemA: ${JSON.stringify(notRed)}`);
     expect(notRed.includes(itemG) && notRed.includes(itemBare), true, JSON.stringify(notRed));
     // Excluding nothing constrains nothing.
     expect((await items.query({filter: [...marked, 'and',
-      {property: 'tags.id', operator: '!=', value: []}]})).length >= 3, true);
+      {property: 'tags.id', operator: '!=', value: []}]})).rows.length >= 3, true);
 
     // Unchecking red AND the "(no value)" bucket — what the filter panel emits
     // for that gesture (an exclusion list minus null, AND '!= null'). The extra
@@ -147,7 +147,7 @@ category('Dapi: domain relations', () => {
     // '!=' is a NOT EXISTS, true for an owner with no links at all.
     const notRedNorBare = (await items.query({filter: [...marked, 'and',
       {property: 'tags.id', operator: '!=', value: [red]}, 'and',
-      {property: 'tags.id', operator: '!=', value: null}]})).map((r) => r.id);
+      {property: 'tags.id', operator: '!=', value: null}]})).rows.map((r) => r.id);
     expect(notRedNorBare.includes(itemBare), false,
       `the null bucket must be excluded too: ${JSON.stringify(notRedNorBare)}`);
     expect(notRedNorBare.includes(itemA), false, JSON.stringify(notRedNorBare));

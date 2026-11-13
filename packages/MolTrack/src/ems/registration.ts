@@ -73,10 +73,16 @@ export class BulkRegistration {
     const found = new Map<string, CompoundRow>();
     for (let at = 0; at < hashes.length; at += LOOKUP_CHUNK) {
       const filter = DG.cond(column, '=', hashes.slice(at, at + LOOKUP_CHUNK));
-      const rows = await moltrackDb.compounds.query({filter, columns: [column, 'molregno'], sort: 'molregno'});
-      for (const row of rows) {
-        if (!found.has(row[column]!))
-          found.set(row[column]!, row);
+      for (let offset = 0; ; ) {
+        const {rows, hasMore} = await moltrackDb.compounds.query({filter, columns: [column, 'molregno'],
+          sort: 'molregno', limit: LOOKUP_CHUNK, offset});
+        for (const row of rows) {
+          if (!found.has(row[column]!))
+            found.set(row[column]!, row);
+        }
+        if (!hasMore)
+          break;
+        offset += rows.length;
       }
     }
     return found;

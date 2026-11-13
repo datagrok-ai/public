@@ -591,8 +591,8 @@ type Raw = Record<string, any>;
 const rawAnalysis = async (id: string): Promise<Raw> => (await ncaDb.analyses.get(id)) as Raw;
 const rawRows = async (table: 'analysisResults' | 'lzOverrides' | 'reviewDecisions' | 'pipelineFlags',
   property: string, value: string): Promise<Raw[]> =>
-  (await (ncaDb[table] as unknown as {query: (s: unknown) => Promise<unknown[]>}).query(
-    {filter: {property, operator: '=', value}, limit: 1000})) as Raw[];
+  (await (ncaDb[table] as unknown as {query: (s: unknown) => Promise<{rows: unknown[]}>}).query(
+    {filter: {property, operator: '=', value}, limit: 1000})).rows as Raw[];
 
 const LZ_ONE = [{profileKey: 'A', timeKey: '2', ordinal: 0, concKey: '3', action: 'force-out' as const,
   user: 'Analyst One', at: '2026-01-02T03:04:05.000Z'}];
@@ -776,7 +776,7 @@ category('NCA storage: EMS layout (live)', () => {
       await plan('K2', ['S3']);
       const runs = await ncaDb.pipelineRuns.query(
         {filter: {property: 'run_id', operator: '=', value: runId}, limit: 10});
-      expect(runs.length, 2, 'one run row per (run, study)');
+      expect(runs.rows.length, 2, 'one run row per (run, study)');
       const base = (await repo.pipelineBase(owner, 'K1')).study!;
       const a = base.analyses[0];
       const opened = (await repo.loadAnalysis(a.id)).entry;

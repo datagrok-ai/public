@@ -15,8 +15,8 @@ grok.shell.info(`${up1.status} then ${up2.status}`); // inserted then updated
 const found = await items.query().where('name', '=', "O'Brien's widget").top(5);
 const firstMatch = await items.query().where('sku', '=', `${stamp}-1`).first(); // row or null
 // ...and compose into trees with DG.cond / DG.and / DG.or:
-const trees = await items.query({filter: DG.or(
-  DG.cond('name', '=', "O'Brien's widget"), DG.cond('quantity', '>', 100))});
+const trees = (await items.query({filter: DG.or(
+  DG.cond('name', '=', "O'Brien's widget"), DG.cond('quantity', '>', 100))})).rows;
 grok.shell.info(`builder: ${found.length}, helpers: ${trees.length}`);
 
 // save(): insert-or-update by row identity; updateWithRetry(): read-modify-write

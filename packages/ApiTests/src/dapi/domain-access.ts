@@ -112,10 +112,10 @@ category('Dapi: domain access', () => {
     const [ins] = await items().insert({sku, name: 'Access probe'});
     try {
       const filter = `sku = "${sku}"`;
-      const [plain] = await items().query({filter});
+      const [plain] = (await items().query({filter})).rows;
       for (const k of ACCESS_KEYS)
         expect(k in plain, false, `${k} must be absent without the flag: ${JSON.stringify(plain)}`);
-      const [row] = await items().query({filter, withAccess: true});
+      const [row] = (await items().query({filter, withAccess: true})).rows;
       for (const k of ACCESS_KEYS)
         expect(isAccessValue(k, row[k]), true, `${k} must be an access flag: ${JSON.stringify(row)}`);
       expect(typeof row['~can_share'], 'boolean', `a row-mode table carries per-row Share: ${JSON.stringify(row)}`);
@@ -131,7 +131,7 @@ category('Dapi: domain access', () => {
       // Off row mode (item_event is master-secured) the per-row Share is null, not false.
       const events = grok.dapi.domains.table('apitests.item_event');
       const [ev] = await events.insert({item_id: ins.id, kind: `acc-${stamp()}`, amount: 1});
-      const [event] = await events.query({filter: `id = "${ev.id}"`, withAccess: true});
+      const [event] = (await events.query({filter: `id = "${ev.id}"`, withAccess: true})).rows;
       expect(event['~can_share'], null, `~can_share must be null off row mode: ${JSON.stringify(event)}`);
       expect(typeof event['~can_edit'], 'boolean', `~can_edit must still be a boolean: ${JSON.stringify(event)}`);
     } finally {
@@ -194,7 +194,7 @@ category('Dapi: domain access', () => {
         // Earlier balloons may expire meanwhile — only a NEW one is the editor's.
         expect(document.querySelectorAll('.d4-balloon').length <= balloons, true,
           'a quiet editor raised its own Saved balloon');
-        expect((await items().query({filter: `sku = "${prefix}-1"`})).length, 1, 'the added row was not inserted');
+        expect((await items().query({filter: `sku = "${prefix}-1"`})).rows.length, 1, 'the added row was not inserted');
         // The post-save re-read lands the server's row: system columns it filled
         // in, and the per-row access — not the payload and not the frame defaults.
         const id = df.get('id', row);
@@ -275,11 +275,11 @@ category('Dapi: domain access', () => {
         try {
           const before = await asUser(() => items().access());
           expect(before.can['approve'], false, `no grant yet, can.approve must deny: ${JSON.stringify(before.can)}`);
-          const [row] = await asUser(() => items().query({filter: `sku = "${sku}"`, withAccess: true}));
+          const [row] = (await asUser(() => items().query({filter: `sku = "${sku}"`, withAccess: true}))).rows;
           expect(row['~can_approve'], false, `~can_approve must be a per-row false before the grant: ${JSON.stringify(row)}`);
           await items().grant(probe.group, 'approve');
           expect((await asUser(() => items().access())).can['approve'], true, 'the approve grant did not flip can.approve');
-          const [granted] = await asUser(() => items().query({filter: `sku = "${sku}"`, withAccess: true}));
+          const [granted] = (await asUser(() => items().query({filter: `sku = "${sku}"`, withAccess: true}))).rows;
           expect(granted['~can_approve'], true, `~can_approve did not follow the grant: ${JSON.stringify(granted)}`);
           const df = await asUser(() => items().queryDf({filter: `sku = "${sku}"`, withAccess: true}));
           expect(df.col('~can_approve')?.meta.includeInCsvExport, false, '~can_approve is not export-tagged in queryDf');
@@ -336,8 +336,8 @@ category('Dapi: domain access', () => {
           () => probe.asUser(() => items().query({filter: `sku = "${sku}"`})));
         const seenHidden = await step('read apitests.hidden_item as the restricted user',
           () => probe.asUser(() => hidden().query({filter: `sku = "${sku}"`})));
-        expect(seenVisible.length, 1, 'a table View grant must reach rows of a table-visibility table');
-        expect(seenHidden.length, 0,
+        expect(seenVisible.rows.length, 1, 'a table View grant must reach rows of a table-visibility table');
+        expect(seenHidden.rows.length, 0,
           `a table View grant must NOT reach rows of a defaultRowVisibility:"none" table: ${JSON.stringify(seenHidden)}`);
         return 'checked';
       } finally {

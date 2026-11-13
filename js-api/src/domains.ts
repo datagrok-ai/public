@@ -181,6 +181,10 @@ export interface DomainDeleteReport { deleted: number; hasMore: boolean; }
  * more matching editable rows remain (loop while `hasMore`). */
 export interface DomainUpdateReport { updated: number; hasMore: boolean; }
 
+/** Result of domain table `query`: one page of rows, and whether more matching rows remain
+ * past the limit (page with `offset` while `hasMore`). */
+export interface DomainQueryResult<TRow = any> { rows: TRow[]; hasMore: boolean; }
+
 /** Grantable permission on a domain registry entity (table, schema, or column schema).
  * 'Extend' is grantable on SCHEMA entities only — it lets the holder add their own
  * tables and columns to a package-managed schema the plugin opted in to. Any other
@@ -1524,7 +1528,7 @@ export async function retryOnVersionConflict<T>(
 
 /** Minimal structural client the builder executes against (avoids a domains.ts → dapi.ts cycle). */
 export interface IDomainQueryExecutor<TRow> {
-  query(spec: any): Promise<TRow[]>;
+  query(spec: any): Promise<DomainQueryResult<TRow>>;
   queryDf(spec: any): Promise<any>;       // DG.DataFrame
   count(filter?: any, options?: {search?: string}): Promise<number>;
   /** Table address, needed by {@link DomainQueryBuilder.toQuery} (`DomainTableClient` carries it). */
@@ -1569,8 +1573,9 @@ function _joinNodes<TColumn extends string>(
  * `.where/.orderBy/.select/.expand/.top/.skip`, then `await` it (rows), or finish with
  * `.df()/.first()/.count()/.exists()`. Prefer the condition forms of `where` (and the
  * `cond`/`and`/`or` helpers) over template-built filter strings — condition values are
- * bound server-side, so any string value is safe (apostrophes included). Without `.top()`
- * the server's default limit (100) applies; page larger sets with `.top()/.skip()`.
+ * bound server-side, so any string value is safe (apostrophes included). Awaiting it reads
+ * every matching row (or `.top(n)` of them), fetching pages until the server reports no more;
+ * an external table refuses to page past 10000 rows, so a larger read there throws.
  * Immutable-ish: `expand()`/`select()` return a re-typed builder; other methods mutate
  * and return this. Invariants: the builder is PromiseLike only — there is no
  * `.catch()`/`.finally()`, use `try { await b } catch`; EVERY `await` (or terminal)
@@ -1647,7 +1652,7 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
     return this as any;
   }
 
-  /** Row cap for this query (server default 100 without it). */
+  /** Row cap for this query (every matching row without it). */
   top(count: number): this {
     this._limit = count;
     return this;
@@ -1698,8 +1703,19 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
     return spec;
   }
 
-  private _run(): Promise<TResult[]> {
-    return this.client.query(this._spec()) as Promise<any>;
+  private async _run(): Promise<TResult[]> {
+    const spec = this._spec();
+    const want = this._limit == null ? Infinity : Math.floor(this._limit);
+    const rows: TResult[] = [];
+    for (let offset = Math.max(0, this._offset ?? 0); rows.length < want;) {
+      const limit = Math.min(want - rows.length, _DOMAIN_QUERY_PAGE);
+      const page = await this.client.query({...spec, limit, offset});
+      rows.push(...page.rows as unknown as TResult[]);
+      if (!page.hasMore || page.rows.length === 0)
+        break;
+      offset += page.rows.length;
+    }
+    return rows;
   }
 
   /** The same query as a typed DataFrame (d42; `'details:'` expand is JSON-only and
@@ -1731,10 +1747,8 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
    * elements: top-level AND conjuncts are emitted one per element (so a URL can bind
    * `filters[0]` alone), anything else travels as one JSON element.
    *
-   * The row cap travels, but its DEFAULT does not: without `.top()`, awaiting the
-   * builder takes the server default of 100 rows while `toQuery().toSpec()` falls back
-   * to {@link DOMAIN_QUERY_ROW_LIMIT} — the same builder, two row counts. Pin one with
-   * `.top()` when the two forms must agree.
+   * The row cap travels; without `.top()` the awaited builder reads every matching row
+   * and `toQuery().toSpec()` up to {@link DOMAIN_QUERY_ROW_LIMIT} rows.
    *
    * A {@link search} is REFUSED rather than dropped: `DomainQuery` is the `DomainQuery`
    * function's parameters, and the function takes no search — a query that carried one
@@ -1765,6 +1779,9 @@ export class DomainQueryBuilder<TRow, TColumn extends string = string,
  * the limit {@link DomainQuery.toSpec} writes when the query declares none, so a spec
  * never silently inherits the server's default of 100. */
 export const DOMAIN_QUERY_ROW_LIMIT = 10000000;
+
+/** The server's JSON row cap: the page size of an awaited {@link DomainQueryBuilder}. */
+const _DOMAIN_QUERY_PAGE = 10000;
 
 /** List-typed `DomainQuery` parameters, in the order {@link DomainQuery.toUrlParams} emits them. */
 const _DOMAIN_QUERY_LISTS = ['columns', 'filters', 'joins', 'aggregations', 'groupBy', 'orderBy'] as const;

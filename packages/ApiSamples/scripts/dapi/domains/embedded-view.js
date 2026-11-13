@@ -12,7 +12,7 @@ issues.showFilters();                       // server-backed facets and histogra
 console.log(issues.query);                  // {schema, table, filters, orderBy, limit}
 
 // Embedded: the same view scoped to a subset, mounted inside your own layout.
-const [project] = await grok.dapi.domains.table('grit.project').query({limit: 1});
+const [project] = (await grok.dapi.domains.table('grit.project').query({limit: 1})).rows;
 if (project != null) {
   const scoped = DG.DomainView.create({schema: 'grit', table: 'issue', embedded: true,
     permanentFilter: `project_id = "${project.id}"`});   // invisible, always applied

@@ -64,7 +64,7 @@ category('Dapi: domain external', () => {
   test('identity: id is the key as a string, composite ids carry the order id', async () => {
     if (skipped())
       return;
-    const rows = await orders().query({limit: 3, sort: 'order_id'});
+    const rows = (await orders().query({limit: 3, sort: 'order_id'})).rows;
     expect(rows.length, 3);
     expect(rows[0].id, '10248');
     expect(rows[0].order_id, 10248, 'the key column keeps its declared int type');
@@ -75,7 +75,7 @@ category('Dapi: domain external', () => {
     expect(line.id, '10248,11');
     expect(line.order_id, '10248', 'a ref value on the wire is the target id');
     expect(line.product_id, 11);
-    const ofOrder = await lines().query({filter: 'order_id = "10248"'});
+    const ofOrder = (await lines().query({filter: 'order_id = "10248"'})).rows;
     expect(ofOrder.length, 3, JSON.stringify(ofOrder));
     for (const l of ofOrder)
       expect(l.id.startsWith('10248,'), true, l.id);
@@ -84,7 +84,7 @@ category('Dapi: domain external', () => {
   test('projection: a columns list returns id and those columns only', async () => {
     if (skipped())
       return;
-    const [row] = await orders().query({limit: 1, columns: ['ship_country']});
+    const [row] = (await orders().query({limit: 1, columns: ['ship_country']})).rows;
     expect(Object.keys(row).sort().join(','), 'id,ship_country', JSON.stringify(row));
   });
 
@@ -137,9 +137,9 @@ category('Dapi: domain external', () => {
     await withRestrictedUser('ext', async (probe) => {
       await orders().grant(probe.group, 'View');
       try {
-        expect((await probe.asUser(() => orders().query({limit: 1}))).length, 1,
+        expect((await probe.asUser(() => orders().query({limit: 1}))).rows.length, 1,
           'a table View grant must read rows without any right on the connection');
-        expect((await probe.asUser(() => lines().query({limit: 1}))).length, 0,
+        expect((await probe.asUser(() => lines().query({limit: 1}))).rows.length, 0,
           'no View on order_detail answers no rows, not 403');
       } finally {
         await orders().revoke(probe.group, 'View');

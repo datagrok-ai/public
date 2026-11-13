@@ -99,12 +99,12 @@ export function isDefinitiveRefusal(e: unknown): boolean {
 }
 
 /** Every page of a query. */
-async function allPages<T>(read: (offset: number) => Promise<T[]>): Promise<T[]> {
+async function allPages<T>(read: (offset: number) => Promise<DG.DomainQueryResult<T>>): Promise<T[]> {
   const out: T[] = [];
   for (let offset = 0; ; offset += PAGE) {
-    const page = await read(offset);
-    out.push(...page);
-    if (page.length < PAGE) return out;
+    const {rows, hasMore} = await read(offset);
+    out.push(...rows);
+    if (!hasMore) return out;
   }
 }
 
@@ -382,9 +382,9 @@ export class EmsNcaRepository implements NcaRepository {
   private async readStudies(): Promise<StudyHeader[]> {
     const [studies, analyses] = await Promise.all([
       allPages((offset) => ncaDb.studies.query({columns: ['label', 'kind', 'updated_at'], withAccess: true,
-        sort: 'label', limit: PAGE, offset}) as Promise<Bag[]>),
+        sort: 'label', limit: PAGE, offset}) as Promise<DG.DomainQueryResult<Bag>>),
       allPages((offset) => ncaDb.analyses.query({columns: LIGHT_ANALYSIS_COLUMNS, sort: 'label',
-        limit: PAGE, offset}) as Promise<Bag[]>),
+        limit: PAGE, offset}) as Promise<DG.DomainQueryResult<Bag>>),
     ]);
     const byStudy = new Map<string, AnalysisHeader[]>();
     for (const a of analyses) {
@@ -406,10 +406,10 @@ export class EmsNcaRepository implements NcaRepository {
       ncaDb.studies.get(studyId, {withAccess: true}) as Promise<Bag | null>,
       allPages((offset) => ncaDb.analyses.query({filter: eq('study_id', studyId),
         columns: STUDY_ANALYSIS_COLUMNS, expand: ['pipeline_run'], sort: 'label', limit: PAGE,
-        offset}) as Promise<Bag[]>),
+        offset}) as Promise<DG.DomainQueryResult<Bag>>),
       allPages((offset) => ncaDb.analysisResults.query({filter: eq('study_id', studyId),
         columns: RESULT_COLUMNS_WITHOUT_CURVE as AnalysisResultColumn[], sort: 'analysis_id,ord', limit: PAGE,
-        offset}) as Promise<Bag[]>),
+        offset}) as Promise<DG.DomainQueryResult<Bag>>),
     ]);
     if (study === null || study === undefined) throw new Error(`Study '${studyId}' is not available.`);
     const byAnalysis = groupBy(results, 'analysis_id');
@@ -426,8 +426,8 @@ export class EmsNcaRepository implements NcaRepository {
   async loadCurves(ids: readonly string[]): Promise<Map<string, CompoundCurve | null>> {
     const out = new Map<string, CompoundCurve | null>();
     for (let i = 0; i < ids.length; i += PAGE) {
-      const rows = await ncaDb.analysisResults.query({filter: eq('id', ids.slice(i, i + PAGE)), columns: ['curve'],
-        limit: PAGE}) as Bag[];
+      const {rows} = await ncaDb.analysisResults.query({filter: eq('id', ids.slice(i, i + PAGE)), columns: ['curve'],
+        limit: PAGE}) as DG.DomainQueryResult<Bag>;
       for (const r of rows) out.set(r.id, (r.curve ?? null) as CompoundCurve | null);
     }
     return out;
@@ -437,18 +437,18 @@ export class EmsNcaRepository implements NcaRepository {
    *  overrides, review decisions, pipeline flags and result rows (full — a later write diffs them). */
   private async readAggregate(analysisId: string): Promise<{a: Bag; results: Bag[]; lz: Bag[]; decisions: Bag[];
     flags: Bag[]}> {
-    const byAnalysis = (q: (offset: number) => Promise<Bag[]>): Promise<Bag[]> => allPages(q);
+    const byAnalysis = (q: (offset: number) => Promise<DG.DomainQueryResult<Bag>>): Promise<Bag[]> => allPages(q);
     const [rows, lz, decisions, flags, results] = await Promise.all([
       ncaDb.analyses.query({filter: eq('id', analysisId), expand: ['study_id', 'pipeline_run'], withAccess: true,
-        limit: 1}) as Promise<Bag[]>,
+        limit: 1}).then((r) => r.rows as Bag[]),
       byAnalysis((offset) => ncaDb.lzOverrides.query({filter: eq('analysis_id', analysisId), limit: PAGE,
-        offset}) as Promise<Bag[]>),
+        offset}) as Promise<DG.DomainQueryResult<Bag>>),
       byAnalysis((offset) => ncaDb.reviewDecisions.query({filter: eq('analysis_id', analysisId), limit: PAGE,
-        offset}) as Promise<Bag[]>),
+        offset}) as Promise<DG.DomainQueryResult<Bag>>),
       byAnalysis((offset) => ncaDb.pipelineFlags.query({filter: eq('analysis_id', analysisId), limit: PAGE,
-        offset}) as Promise<Bag[]>),
+        offset}) as Promise<DG.DomainQueryResult<Bag>>),
       byAnalysis((offset) => ncaDb.analysisResults.query({filter: eq('analysis_id', analysisId), sort: 'ord',
-        limit: PAGE, offset}) as Promise<Bag[]>),
+        limit: PAGE, offset}) as Promise<DG.DomainQueryResult<Bag>>),
     ]);
     if (rows.length === 0) throw new Error(`Analysis '${analysisId}' is not available.`);
     return {a: rows[0], results, lz, decisions, flags};
@@ -509,7 +509,7 @@ export class EmsNcaRepository implements NcaRepository {
       const study = await ncaDb.studies.get(studyId) as Bag | null;
       if (study === null || study === undefined) return; // already gone
       const rows = await allPages((offset) => ncaDb.analyses.query({filter: eq('study_id', studyId),
-        columns: ['source_file'], limit: PAGE, offset}) as Promise<Bag[]>);
+        columns: ['source_file'], limit: PAGE, offset}) as Promise<DG.DomainQueryResult<Bag>>);
       try {
         await grok.dapi.domains.transaction('nca', [
           {op: 'update', table: 'study', id: studyId, expectedVersion: study.version, values: {updated_at: nowIso()}},
@@ -565,7 +565,7 @@ export class EmsNcaRepository implements NcaRepository {
   async createStandalone(input: NewAnalysisInput): Promise<{studyId: string; analysisId: string; label: string;
     source: SourcePointer}> {
     const taken = new Set((await allPages((offset) => ncaDb.studies.query({filter: eq('kind', 'standalone'),
-      columns: ['label'], sort: 'label', limit: PAGE, offset}) as Promise<Bag[]>)).map((r) => r.label as string));
+      columns: ['label'], sort: 'label', limit: PAGE, offset}) as Promise<DG.DomainQueryResult<Bag>>)).map((r) => r.label as string));
     const label = uniqueLabel(input.label.trim() || 'Analysis', taken);
     const snap = await this.writeSnapshot(input.df, nowIso());
     const id = input.id ?? newId();
@@ -610,7 +610,7 @@ export class EmsNcaRepository implements NcaRepository {
   /** Every analysis label of a study, all pages (SD-6: a label check must not stop at one page). */
   private async analysisLabels(studyId: string): Promise<Set<string>> {
     return new Set((await allPages((offset) => ncaDb.analyses.query({filter: eq('study_id', studyId),
-      columns: ['label'], sort: 'label', limit: PAGE, offset}) as Promise<Bag[]>)).map((r) => r.label as string));
+      columns: ['label'], sort: 'label', limit: PAGE, offset}) as Promise<DG.DomainQueryResult<Bag>>)).map((r) => r.label as string));
   }
 
   private async trackedOf(analysisId: string): Promise<Tracked> {
@@ -740,8 +740,8 @@ export class EmsNcaRepository implements NcaRepository {
   }
 
   async renameAnalysis(analysisId: string, label: string): Promise<void> {
-    const rows = await ncaDb.analyses.query({filter: eq('id', analysisId), expand: ['study_id'],
-      columns: ['study_id', 'label'], limit: 1}) as Bag[];
+    const {rows} = await ncaDb.analyses.query({filter: eq('id', analysisId), expand: ['study_id'],
+      columns: ['study_id', 'label'], limit: 1}) as DG.DomainQueryResult<Bag>;
     if (rows.length === 0) throw new Error('The analysis no longer exists.');
     const r = rows[0];
     const now = nowIso();
@@ -759,8 +759,8 @@ export class EmsNcaRepository implements NcaRepository {
   }
 
   async deleteAnalysis(analysisId: string): Promise<void> {
-    const rows = await ncaDb.analyses.query({filter: eq('id', analysisId), expand: ['study_id'],
-      columns: ['study_id', 'source_file'], limit: 1}) as Bag[];
+    const {rows} = await ncaDb.analyses.query({filter: eq('id', analysisId), expand: ['study_id'],
+      columns: ['study_id', 'source_file'], limit: 1}) as DG.DomainQueryResult<Bag>;
     if (rows.length === 0) return;
     const r = rows[0];
     if (r['study_id.kind'] === 'standalone') await this.deleteContainer(r.study_id);
@@ -785,14 +785,14 @@ export class EmsNcaRepository implements NcaRepository {
     label?: string; passthroughCols?: MoveResult['passthroughCols']; summaryCache?: SummaryCache;
   } = {}): Promise<MoveResult> {
     const [rows, resultRows, decisionRows] = await Promise.all([
-      ncaDb.analyses.query({filter: eq('study_id', standaloneId), expand: ['study_id'], limit: 2}) as Promise<Bag[]>,
+      ncaDb.analyses.query({filter: eq('study_id', standaloneId), expand: ['study_id'], limit: 2}).then((r) => r.rows as Bag[]),
       // Whole rows when a fresh summary comes along: it is compared with them (decision 2).
       allPages((offset) => ncaDb.analysisResults.query({filter: eq('study_id', standaloneId),
         columns: opts.summaryCache !== undefined ? ['analysis_id', ...RESULT_COLUMNS] as AnalysisResultColumn[] :
           ['ord', 'analysis_id'],
-        sort: 'ord', limit: PAGE, offset}) as Promise<Bag[]>),
+        sort: 'ord', limit: PAGE, offset}) as Promise<DG.DomainQueryResult<Bag>>),
       allPages((offset) => ncaDb.reviewDecisions.query({filter: eq('study_id', standaloneId), columns: ['unit_key'],
-        limit: PAGE, offset}) as Promise<Bag[]>),
+        limit: PAGE, offset}) as Promise<DG.DomainQueryResult<Bag>>),
     ]);
     const r = rows[0];
     if (r === undefined || r['study_id.kind'] !== 'standalone')
@@ -820,7 +820,7 @@ export class EmsNcaRepository implements NcaRepository {
       ops.push({op: 'update', table: 'study', id: targetId, expectedVersion: t.version, values: {updated_at: now}});
     } else {
       const studies = new Set((await allPages((offset) => ncaDb.studies.query({filter: eq('kind', 'study'),
-        columns: ['label'], sort: 'label', limit: PAGE, offset}) as Promise<Bag[]>)).map((x) => x.label as string));
+        columns: ['label'], sort: 'label', limit: PAGE, offset}) as Promise<DG.DomainQueryResult<Bag>>)).map((x) => x.label as string));
       targetLabel = uniqueLabel(target.label.trim() || 'New study', new Set([...studies, STANDALONE_ROUTE_SEGMENT]));
       targetId = '$t';
       ops.push({op: 'insert', table: 'study', ref: 't', values: {label: targetLabel, kind: 'study', updated_at: now}});
@@ -876,18 +876,18 @@ export class EmsNcaRepository implements NcaRepository {
   async pipelineBase(owner: string, studyKey: string): Promise<PipelineBase> {
     const s = await ncaDb.studies.getByKey({pipeline_owner: owner, pipeline_study_key: studyKey}) as Bag | null;
     if (s === null || s === undefined) return {study: undefined};
-    const pages = (q: (offset: number) => Promise<Bag[]>): Promise<Bag[]> => allPages(q);
+    const pages = (q: (offset: number) => Promise<DG.DomainQueryResult<Bag>>): Promise<Bag[]> => allPages(q);
     const [rows, results, lz, decisions, flags] = await Promise.all([
       pages((offset) => ncaDb.analyses.query({filter: eq('study_id', s.id), expand: ['pipeline_run'], limit: PAGE,
-        offset}) as Promise<Bag[]>),
+        offset}) as Promise<DG.DomainQueryResult<Bag>>),
       pages((offset) => ncaDb.analysisResults.query({filter: eq('study_id', s.id), sort: 'analysis_id,ord',
-        limit: PAGE, offset}) as Promise<Bag[]>),
+        limit: PAGE, offset}) as Promise<DG.DomainQueryResult<Bag>>),
       pages((offset) => ncaDb.lzOverrides.query({filter: eq('analysis_id.study_id', s.id), limit: PAGE,
-        offset}) as Promise<Bag[]>),
+        offset}) as Promise<DG.DomainQueryResult<Bag>>),
       pages((offset) => ncaDb.reviewDecisions.query({filter: eq('study_id', s.id), limit: PAGE,
-        offset}) as Promise<Bag[]>),
+        offset}) as Promise<DG.DomainQueryResult<Bag>>),
       pages((offset) => ncaDb.pipelineFlags.query({filter: eq('analysis_id.study_id', s.id), limit: PAGE,
-        offset}) as Promise<Bag[]>),
+        offset}) as Promise<DG.DomainQueryResult<Bag>>),
     ]);
     const [byResults, byLz, byDecisions, byFlags] =
       [results, lz, decisions, flags].map((x) => groupBy(x, 'analysis_id'));

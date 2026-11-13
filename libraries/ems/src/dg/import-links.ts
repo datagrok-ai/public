@@ -65,13 +65,13 @@ export class ImportLinks {
       const filter: DG.DomainConditionTree = conditions.flatMap((c, i) => i === 0 ? [c] : ['and' as const, c]);
       const expand = [...new Set(fields.filter((f) => f.path.includes('.')).map((f) => f.prop.name!))];
       for (let offset = 0; ; offset += PAGE) {
-        const rows = await grok.dapi.domains.table(link.target.address)
-          .query({filter, expand, sort: 'id', limit: PAGE, offset}) as RowView[];
-        for (const row of rows) {
+        const page = await grok.dapi.domains.table(link.target.address)
+          .query({filter, expand, sort: 'id', limit: PAGE, offset});
+        for (const row of page.rows as RowView[]) {
           const key = JSON.stringify(fields.map((f) => ImportLinks._read(row[f.path])));
           found.set(key, [...found.get(key) ?? [], String(row.id)]);
         }
-        if (rows.length < PAGE)
+        if (!page.hasMore)
           break;
       }
     }

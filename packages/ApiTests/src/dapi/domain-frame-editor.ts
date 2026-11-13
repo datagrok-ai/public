@@ -319,8 +319,8 @@ category('Dapi: domain frame editor', () => {
       expect(addedId != null && `${addedId}` !== '', true, 'the inserted row did not get its id');
 
       // Server readback: value for value.
-      const server = await items().query({filter: {property: 'sku', operator: 'like',
-        value: `${prefix}%`} as any, sort: 'sku'});
+      const server = (await items().query({filter: {property: 'sku', operator: 'like',
+        value: `${prefix}%`} as any, sort: 'sku'})).rows;
       expect(server.length, 3, 'the server does not show the expected rows');
       expect(server.find((r: any) => r.id === ids[0])!.name, 'Saved name', 'the edit did not land');
       expect(server.find((r: any) => r.id === ids[1])!.quantity, 42, 'the second edit did not land');
@@ -348,8 +348,8 @@ category('Dapi: domain frame editor', () => {
    * test left staged (or landed) in the trash has to come back first. */
   async function cleanupTrash(prefix: string): Promise<void> {
     try {
-      for (const row of await items().query({filter: {property: 'sku', operator: 'like',
-        value: `${prefix}%`} as any, deleted: 'only'}))
+      for (const row of (await items().query({filter: {property: 'sku', operator: 'like',
+        value: `${prefix}%`} as any, deleted: 'only'})).rows)
         await items().restore(row.id);
     } catch (e) {
       console.error(`frame-editor trash ${prefix} not cleaned up: ${e}`);
@@ -390,10 +390,11 @@ category('Dapi: domain frame editor', () => {
       expect(df.get(DG.DOMAIN_DELETED_COLUMN, 0), false, 'the restored row still reads as deleted in the frame');
       expect(df.get('version', 0) > versionBefore, true, 'the version did not move');
 
-      const live = await items().query({filter: {property: 'sku', operator: 'like', value: `${prefix}%`} as any});
+      const live =
+        (await items().query({filter: {property: 'sku', operator: 'like', value: `${prefix}%`} as any})).rows;
       expect(live.length, 2, 'the restored row is not in a default query');
       expect((await items().query({filter: {property: 'sku', operator: 'like',
-        value: `${prefix}%`} as any, deleted: 'only'})).length, 0, 'the row is still in the trash');
+        value: `${prefix}%`} as any, deleted: 'only'})).rows.length, 0, 'the row is still in the trash');
       editor.detach();
     } finally {
       await cleanupTrash(prefix);
@@ -423,7 +424,7 @@ category('Dapi: domain frame editor', () => {
       expect(editor.isDirty, false, 'the editor stayed dirty after discard');
       expect(df.get(DG.DOMAIN_DELETED_COLUMN, deletedRow), true, 'discard changed the deletion flag');
       expect((await items().query({filter: {property: 'sku', operator: 'like',
-        value: `${prefix}%`} as any, deleted: 'only'})).length, 1, 'a discarded restore reached the server');
+        value: `${prefix}%`} as any, deleted: 'only'})).rows.length, 1, 'a discarded restore reached the server');
 
       // unmarkRestored says the same thing through the explicit member.
       editor.markRestored(deletedRow);
@@ -706,8 +707,8 @@ category('Dapi: domain frame editor', () => {
       expect(editor.isSaving, false, 'the editor stayed closed after the save');
       expect(grid.props.allowEdit, editor.writableColumns != null, 'the grid stayed locked after the save');
       expect(editor.isDirty, false, 'the save left the batch pending');
-      const server = await items().query({filter: {property: 'sku', operator: 'like',
-        value: `${prefix}%`} as any, sort: 'sku'});
+      const server = (await items().query({filter: {property: 'sku', operator: 'like',
+        value: `${prefix}%`} as any, sort: 'sku'})).rows;
       expect(server[0].name, 'Saved under the lock', 'the edit did not reach the server');
       grid.detach();
     } finally {

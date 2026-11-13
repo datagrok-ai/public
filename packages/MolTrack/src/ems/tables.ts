@@ -159,7 +159,7 @@ export class MolTrackTables {
       MolTrackTables._asked = null;
       const ids = [...asked.keys()];
       const rows = await moltrackDb.compounds.query({filter: DG.cond('id', '=', ids), columns: ['common_name'],
-        limit: ids.length}).catch(() => null);
+        limit: ids.length}).then((page) => page.rows, () => null);
       for (const [id, resolve] of asked) {
         if (rows === null)
           MolTrackTables._names.delete(id);

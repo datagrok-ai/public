@@ -27,7 +27,7 @@ grok.shell.info(`insert: ${access.can.insert}, edit: ${access.can.edit}, delete:
 
 // Batched display-name resolution: ids → 'name column value → business key → id'.
 // Requests coalesce into one fetch per table — cheap to call per rendered cell.
-const [row] = await grok.dapi.domains.table(table).query({limit: 1});
+const [row] = (await grok.dapi.domains.table(table).query({limit: 1})).rows;
 if (row != null) {
   const names = await grok.dapi.domains.registry.resolveNames(table, [row.id]);
   grok.shell.info(`${row.id} → ${names[row.id]}`);

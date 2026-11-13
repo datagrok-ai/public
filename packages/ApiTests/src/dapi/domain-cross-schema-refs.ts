@@ -81,11 +81,11 @@ category('Dapi: domain cross-schema refs', () => {
       const [ins] = await plates().insert({barcode: barcode, source_query: query.id});
       plateId = ins.id;
 
-      const filtered = await plates().query({filter: `source_query.friendlyName = "${name}"`});
+      const filtered = (await plates().query({filter: `source_query.friendlyName = "${name}"`})).rows;
       expect(filtered.length, 1, `filter through the ref: ${JSON.stringify(filtered)}`);
       expect(filtered[0].id, plateId);
 
-      const [expanded] = await plates().query({filter: `barcode = "${barcode}"`, expand: ['source_query']});
+      const [expanded] = (await plates().query({filter: `barcode = "${barcode}"`, expand: ['source_query']})).rows;
       expect(expanded['source_query.friendlyName'], name, `expand: ${JSON.stringify(expanded)}`);
 
       const res = await plates().facets({facets: [
@@ -118,9 +118,9 @@ category('Dapi: domain cross-schema refs', () => {
       await grok.dapi.queries.delete(query);
 
       expect((await plates().get(plateId)).source_query, query.id, 'the dangling id must stay on the row');
-      const [expanded] = await plates().query({filter: `barcode = "${barcode}"`, expand: ['source_query']});
+      const [expanded] = (await plates().query({filter: `barcode = "${barcode}"`, expand: ['source_query']})).rows;
       expect(expanded['source_query.friendlyName'] == null, true, `expand: ${JSON.stringify(expanded)}`);
-      expect((await plates().query({filter: `source_query.friendlyName = "${name}"`})).length, 0);
+      expect((await plates().query({filter: `source_query.friendlyName = "${name}"`})).rows.length, 0);
     } finally {
       if (plateId != null)
         await plates().delete(plateId);

@@ -47,15 +47,15 @@ category('Grit: issue CRUD', () => {
       const [comment] = await gritDb.comments.insert({issue_id: issue.id, text: 'On it'});
       expect(comment.created, true);
       // one expand query returns the issue with its comments embedded (what the app renders from)
-      const expanded: (IssueRow & {comment?: CommentRow[]})[] = await gritDb.issues.query(
-        {filter: `project_id = "${project.id}" and number = 1`, expand: ['details:comment']});
+      const expanded: (IssueRow & {comment?: CommentRow[]})[] = (await gritDb.issues.query(
+        {filter: `project_id = "${project.id}" and number = 1`, expand: ['details:comment']})).rows;
       expect(expanded.length, 1);
       expect(expanded[0].comment?.length, 1, 'expanded payload must embed the comment');
       expect(expanded[0].comment![0].text, 'On it');
 
       // ref expand resolves the lookup name in the same query (what badges/grids show)
-      const [withNames] = await gritDb.issues.query(
-        {filter: `id = "${issue.id}"`, expand: ['status_id']});
+      const [withNames] = (await gritDb.issues.query(
+        {filter: `id = "${issue.id}"`, expand: ['status_id']})).rows;
       expect((withNames as any)['status_id.name'], 'in progress');
 
       const audit = await gritDb.issues.audit(issue.id);
@@ -70,7 +70,7 @@ category('Grit: issue CRUD', () => {
       await gritDb.issues.delete(issue.id);
       await gritDb.projects.delete(project.id);
     }
-    expect((await gritDb.comments.query({filter: `issue_id = "${issue.id}"`})).length, 0,
+    expect((await gritDb.comments.query({filter: `issue_id = "${issue.id}"`})).rows.length, 0,
       'comments must cascade with their issue');
   });
 
@@ -153,13 +153,13 @@ category('Grit: issue CRUD', () => {
     const [label] = await gritDb.labels.insert({name: unique('bug'), color: '#ff0000'});
     try {
       await gritDb.issueLabels.insert({issue_id: issue.id, label_id: label.id});
-      expect((await gritDb.issueLabels.query({filter: `issue_id = "${issue.id}"`})).length, 1);
+      expect((await gritDb.issueLabels.query({filter: `issue_id = "${issue.id}"`})).rows.length, 1);
 
       const [dup] = await gritDb.issueLabels.insert({issue_id: issue.id, label_id: label.id});
       expect(dup.status, 'duplicate', 'the same label attached twice');
 
       await gritDb.issues.delete(issue.id);
-      expect((await gritDb.issueLabels.query({filter: `issue_id = "${issue.id}"`})).length, 0,
+      expect((await gritDb.issueLabels.query({filter: `issue_id = "${issue.id}"`})).rows.length, 0,
         'issue_label rows must cascade with their issue');
     } finally {
       await gritDb.labels.delete(label.id);

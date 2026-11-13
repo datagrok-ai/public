@@ -47,7 +47,7 @@ category('U2: domain bulk', () => {
     .pop()!;
   /** A refusal, said inside the dialog. */
   const refusal = () => document.querySelector('.u2-dialog [data-u2-part="error-row"]')?.textContent ?? '';
-  const quantities = async () => (await items().query({filter: query, sort: 'sku'}))
+  const quantities = async () => (await items().query({filter: query, sort: 'sku'})).rows
     .map((r) => r.quantity).join();
 
   /** What holds the button: its tooltip. */

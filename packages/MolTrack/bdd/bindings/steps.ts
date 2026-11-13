@@ -85,7 +85,7 @@ async function sweep(page: Page, structure: string): Promise<void> {
   const left = await page.evaluate(async ([schema, s]) => {
     const compounds = grok.dapi.domains.table(`${schema}.compound`);
     const filter = {property: 'structure', operator: '=', value: s};
-    const ids: string[] = (await compounds.query({filter, columns: ['structure']})).map((r: any) => r.id);
+    const ids: string[] = (await compounds.query({filter, columns: ['structure'], limit: 10000})).rows.map((r: any) => r.id);
     if (ids.length > 0) {
       const batches = grok.dapi.domains.table(`${schema}.compound_batch`);
       const owned = {property: 'compound_id', operator: '=', value: ids};
@@ -120,7 +120,7 @@ export const rememberCompound = When('user remembers the compound the breadcrumb
 export const openCompoundByGrokId = Given('user opens the compound {string} of MolTrack by its Grok ID',
   async (page: Page, name: string) => {
     const molregno: number | null = await page.evaluate(async ([schema, n]) => {
-      const rows = await grok.dapi.domains.table(`${schema}.compound`)
+      const {rows} = await grok.dapi.domains.table(`${schema}.compound`)
         .query({filter: {property: 'common_name', operator: '=', value: n}, columns: ['molregno'], limit: 1});
       return rows.length === 0 ? null : rows[0].molregno;
     }, [SCHEMA, name] as const);

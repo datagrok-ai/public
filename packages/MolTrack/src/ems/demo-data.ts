@@ -76,9 +76,9 @@ export class DemoData {
     }
     if (await moltrackDb.assayResults.count() > 0)
       return;
-    const runOf = new Map((await moltrackDb.assayRuns.query({columns: ['cell_lot', 'run_date'], limit: ALL}))
+    const runOf = new Map((await moltrackDb.assayRuns.query({columns: ['cell_lot', 'run_date'], limit: ALL})).rows
       .map((r) => [`${r.cell_lot}|${DemoData.day(r.run_date)}`, r.id]));
-    const batchOf = new Map((await moltrackDb.compoundBatches.query({columns: ['epa_batch_id'], limit: ALL}))
+    const batchOf = new Map((await moltrackDb.compoundBatches.query({columns: ['epa_batch_id'], limit: ALL})).rows
       .map((b) => [b.epa_batch_id, b.id]));
     await moltrackDb.assayResults.batch(DemoData.records(await DemoData.table('assay_results'))
       .map((r): AssayResultInsert => {

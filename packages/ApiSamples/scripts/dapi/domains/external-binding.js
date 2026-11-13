@@ -14,9 +14,9 @@ const access = await orders.access();
 const s = access.support;
 
 // Rows carry the REMOTE primary key as their id (percent-encoded, comma-joined for a composite key).
-const [first] = await orders.query({limit: 1, sort: 'order_id'});
+const [first] = (await orders.query({limit: 1, sort: 'order_id'})).rows;
 grok.shell.info(`First order: id "${first.id}" shipped to ${first.ship_country}`);
-const lines = await grok.dapi.domains.table('northwind.order_detail').query({filter: `order_id = "${first.id}"`, limit: 3});
+const lines = (await grok.dapi.domains.table('northwind.order_detail').query({filter: `order_id = "${first.id}"`, limit: 3})).rows;
 grok.shell.info(`${lines.length} lines; a line's id is its composite key, e.g. "${lines[0]?.id}"`);
 const same = await orders.get(first.id);
 grok.shell.info(same.id === first.id ? 'get(id) round-trips the key' : 'unexpected');

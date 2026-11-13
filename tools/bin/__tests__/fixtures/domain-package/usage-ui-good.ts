@@ -12,7 +12,7 @@ export async function goodUi(): Promise<void> {
   void schema;
 
   // the data clients are the ones db.ts exports — rows keep their row type
-  const rows: SampleRow[] = await db.data.samples.query({columns: ['name', 'count']});
+  const rows: SampleRow[] = (await db.data.samples.query({columns: ['name', 'count']})).rows;
   const name: string = rows[0].name;
   void name;
 

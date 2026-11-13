@@ -157,8 +157,8 @@ category('Dapi: domain parity', () => {
       ids.push(r.id);
     const viaBuilder = await items().query()
       .where('name', '=', `${p} b`).orderBy('quantity', true).top(2);
-    const viaSpec = await items().query({filter: [{property: 'name', operator: '=', value: `${p} b`}],
-      sort: '!quantity', limit: 2});
+    const viaSpec = (await items().query({filter: [{property: 'name', operator: '=', value: `${p} b`}],
+      sort: '!quantity', limit: 2})).rows;
     expect(viaBuilder.map((r: any) => r.id).join(','), viaSpec.map((r) => r.id).join(','),
       'builder and spec form must produce identical results');
     expect(viaBuilder[0].quantity, 30);
@@ -185,8 +185,8 @@ category('Dapi: domain parity', () => {
     const viaWhere = await items().query().where('name', '=', name).top(2);
     expect(viaWhere.length, 1);
     expect(viaWhere[0].name, name);
-    const viaHelpers = await items().query({filter: DG.or(DG.cond('name', '=', name),
-      DG.cond('quantity', '>', 1000000000))});
+    const viaHelpers = (await items().query({filter: DG.or(DG.cond('name', '=', name),
+      DG.cond('quantity', '>', 1000000000))})).rows;
     expect(viaHelpers.length, 1);
     // Mixing a raw string filter with conditions is a clear client-side error
     // — in BOTH orders (string→condition and condition→string).
@@ -251,7 +251,7 @@ category('Dapi: domain parity', () => {
     try {
       // Assert the premise: the free project really is the older one, so the
       // per-row loop reaches (and must roll back) a completed delete.
-      const ordered = await projects.query({filter: `key starts "${key}"`, sort: 'created_on'});
+      const ordered = (await projects.query({filter: `key starts "${key}"`, sort: 'created_on'})).rows;
       expect(ordered[0].key, `${key}A`, 'premise: the free project must be older');
       const err = await thrown(() => projects.deleteWhere(`key starts "${key}"`));
       expect(err instanceof DG.DomainRestrictError, true,
@@ -275,8 +275,8 @@ category('Dapi: domain parity', () => {
     ids.push(item.id);
     const [ev] = await grok.dapi.domains.table('apitests.item_event')
       .insert({item_id: item.id, kind: 'dt', amount: 1});
-    const [expanded] = await withDetails.query(
-      {filter: [{property: 'id', operator: '=', value: item.id}], expand: ['details:item_event']});
+    const [expanded] = (await withDetails.query(
+      {filter: [{property: 'id', operator: '=', value: item.id}], expand: ['details:item_event']})).rows;
     const child = (expanded as any).item_event[0];
     expect(typeof child.created_on, 'object', 'child created_on must be dayjs, not a string');
     // The INSTANT matches the same row fetched top-level — guards a tz shift

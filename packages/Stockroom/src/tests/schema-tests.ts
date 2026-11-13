@@ -69,7 +69,7 @@ category('Stockroom: trash', () => {
     const [probe] = await client.insert({name, kind: 'cabinet', site: 'Main campus'});
     try {
       await client.delete(probe.id);
-      expect((await client.query({filter: `id = "${probe.id}"`})).length, 0, 'gone from the live rows');
+      expect((await client.query({filter: `id = "${probe.id}"`})).rows.length, 0, 'gone from the live rows');
 
       const trashed = await client.get(probe.id, {deleted: 'only'});
       expect(trashed['~is_deleted'], true, 'a trash row carries ~is_deleted');
@@ -77,7 +77,7 @@ category('Stockroom: trash', () => {
 
       const restored = await client.restore(probe.id);
       expect(restored.restored, true);
-      expect((await client.query({filter: `id = "${probe.id}"`})).length, 1, 'back among the live rows');
+      expect((await client.query({filter: `id = "${probe.id}"`})).rows.length, 1, 'back among the live rows');
 
       const audit = await client.audit(probe.id);
       expect(audit.map((a) => a.op).join(','), 'insert,delete,undelete');

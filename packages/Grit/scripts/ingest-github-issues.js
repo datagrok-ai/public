@@ -97,7 +97,7 @@ grok.shell.info(`Issues: ${report.inserted} inserted, ${report.updated} updated,
 // 6. The N:N issue ↔ label links: query the issue numbers back (system columns like
 // `id` always ride along), then bulk-upsert the junction rows — the
 // (issue_id, label_id) key dedupes.
-const issues = await table('issue').query(
+const {rows: issues} = await table('issue').query(
   {filter: `project_id = "${projectId}"`, columns: ['number'], limit: 10000});
 const issueIds = new Map(issues.map((r) => [r.number, r.id]));
 const links = data.issues.flatMap((i) => i.labels

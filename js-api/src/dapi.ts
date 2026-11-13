@@ -76,6 +76,7 @@ import {
   DomainTableVersion,
   DomainTransactionOp,
   DomainUpdateReport,
+  DomainQueryResult,
   DomainUpdateResult,
   DomainValidationError,
   DomainRowAccess,
@@ -1858,34 +1859,36 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
     return row;
   }
 
-  /** Bare `query()` returns an awaitable {@link DomainQueryBuilder} (it used to resolve
-   * all-defaults rows — `await table.query()` behaves identically, and everything chains:
-   * `await table.query().where('sku', '=', key).orderBy('created_on', true).top(5)`).
+  /** Bare `query()` returns an awaitable {@link DomainQueryBuilder}: `await table.query()`
+   * reads every row, and everything chains:
+   * `await table.query().where('sku', '=', key).orderBy('created_on', true).top(5)`.
    * Prefer the builder's condition forms and the `cond`/`and`/`or` helpers over
    * template-built filter strings — condition values are bound server-side, so any string
    * value is safe (apostrophes included). */
   query(): DomainQueryBuilder<TRow, TColumn, TExpand, TRow, DataFrame>;
   /** {@link query} with `withAccess`: every row also carries the {@link DomainRowAccess} keys. */
   query(spec: DomainQuerySpec<TColumn, keyof TExpand & string> & {withAccess: true}):
-    Promise<(TRow & DomainRowAccess)[]>;
-  /** Runs a filtered, sorted, paginated query; resolves to an array of row objects (10k row cap).
+    Promise<DomainQueryResult<TRow & DomainRowAccess>>;
+  /** Runs a filtered, sorted, paginated query; resolves to `{rows, hasMore}` — up to `limit`
+   * rows (default 100, 10k cap), `hasMore` when more match (page with `offset` while it is set).
    * A declared many-to-many relation expands under its own name into a
    * {@link DomainRelationLink}`[]` (`expand: ['labels']` → `row.labels = [{id, name}, ...]`,
    * capped at 100, ordered by display name, `[]` when there are no visible links). */
-  query(spec: DomainQuerySpec<TColumn, keyof TExpand & string>): Promise<TRow[]>;
+  query(spec: DomainQuerySpec<TColumn, keyof TExpand & string>): Promise<DomainQueryResult<TRow>>;
   query(spec?: DomainQuerySpec<TColumn, keyof TExpand & string>): any {
     if (spec === undefined)
       return new DomainQueryBuilder<TRow, TColumn, TExpand, TRow, DataFrame>(this);
     const datetimes = this._datetimes();
     return domainCall(api.grok_Dapi_Domains_Query(this.dart, this.schema, this.table, spec))
-      .then(async (rows: any) => {
+      .then(async (res: any) => {
         const dt = await datetimes;
-        return rows.map((r: any) => this._fromWire(r, dt));
+        return {rows: res.rows.map((r: any) => this._fromWire(r, dt)), hasMore: res.hasMore};
       });
   }
 
-  /** Runs the same query as {@link query} but resolves to a typed DataFrame (d42 wire format,
-   * 10M row cap). Columns carry the db property tags (`dbPropertySchema`/`dbPropertyName`),
+  /** Runs the same query as {@link query} but resolves to a typed DataFrame (d42 wire format).
+   * Without `limit` it reads up to 10M rows (100k on an external table), not the JSON default of 100.
+   * Columns carry the db property tags (`dbPropertySchema`/`dbPropertyName`),
    * `.choices`, and semantic types; system columns are untagged. `'details:'` expand is
    * JSON-only — use {@link query}; master expand yields flat `'<fk_column>.<name>'` columns.
    * A relation expand yields TWO columns: `'<relation>'` with the display names joined by
@@ -2125,7 +2128,7 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
 
   /** First matching row or null; shorthand for query({...spec, limit: 1}). */
   async first(spec?: DomainQuerySpec<TColumn, keyof TExpand & string>): Promise<TRow | null> {
-    const rows = await this.query({...spec, limit: 1});
+    const {rows} = await this.query({...spec, limit: 1});
     return rows.length === 0 ? null : rows[0];
   }
 

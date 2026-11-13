@@ -25,8 +25,9 @@ let lookupsLoading: Promise<Map<string, string>> | null = null;
 
 export function warmLookups(): Promise<Map<string, string>> {
   return lookupsLoading ??= Promise
-    .all([gritDb.statuses.query({}), gritDb.priorities.query({}), gritDb.issueTypes.query({})])
-    .then((tables) => lookupNames = new Map(tables.flat().map((r) => [r.id, r.name])));
+    .all([gritDb.statuses.query({limit: 10000}), gritDb.priorities.query({limit: 10000}),
+      gritDb.issueTypes.query({limit: 10000})])
+    .then((tables) => lookupNames = new Map(tables.flatMap((t) => t.rows).map((r) => [r.id, r.name])));
 }
 
 export function lookupName(id?: string): string | null {

@@ -23,7 +23,7 @@ else {
 
   // The subtree of its root — that node and everything below it.
   const root = path.length === 0 ? leaf : path[0];
-  const subtree = await locations.query({filter: `id under "${root.id}"`});
+  const subtree = (await locations.query({filter: `id under "${root.id}"`})).rows;
   grok.shell.info(`${subtree.length} locations under ${root.name}`);
 
   // The same term through a ref column INTO the tree: every container stored anywhere

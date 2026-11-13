@@ -226,9 +226,9 @@ category('NCA EMS: platform', () => {
       const [run] = await ncaDb.pipelineRuns.insert({study_id: sid, run_id: 'r1', run_user: 'probe',
         mapping: '{"b":1,"a":2}'});
       await ncaDb.analyses.update(aid, {pipeline_run: run.id, origin_kind: 'pipeline'} as never);
-      const rows = await ncaDb.analyses.query({
+      const rows = (await ncaDb.analyses.query({
         filter: eq('study_id', sid), expand: ['study_id', 'pipeline_run'], withAccess: true, limit: 10,
-      }) as Bag[];
+      })).rows as Bag[];
       expect(rows.length, 1);
       const r = rows[0];
       expect(r['study_id.label'], `${PROBE} ac03`, 'the study columns must come with the expand');
@@ -238,7 +238,7 @@ category('NCA EMS: platform', () => {
       // Child → parent filter through the expanded ref (the Ungrouped list reads standalone analyses so).
       const byKind = await ncaDb.analyses.query({
         filter: [eq('study_id.kind', 'study'), eq('id', aid)], expand: ['study_id'], limit: 10});
-      expect(byKind.length, 1, 'a filter on study_id.kind must work');
+      expect(byKind.rows.length, 1, 'a filter on study_id.kind must work');
       return `study + run expand ok, ~can_edit ${r['~can_edit']}, ~can_share ${r['~can_share']}, ` +
         'filter on study_id.kind ok';
     } finally {await softDelete([sid]);}
@@ -254,17 +254,17 @@ category('NCA EMS: platform', () => {
           action: 'force-out'});
         // pipelineBase: the overrides of every analysis of a study, without first reading the analyses.
         const viaPath = await ncaDb.lzOverrides.query({filter: eq('analysis_id.study_id', a.sid), limit: 10});
-        expect(viaPath.length, 1, 'a filter through analysis_id.study_id must work');
+        expect(viaPath.rows.length, 1, 'a filter through analysis_id.study_id must work');
         // loadCurves: rows by an id list (= ANY).
         const [r2] = await ncaDb.analysisResults.insert({analysis_id: b.aid, study_id: b.sid, ord: 1,
           curve: {series: []}});
-        const byIds = await ncaDb.analysisResults.query({filter: eq('id', [r2.id]), columns: ['curve'],
-          limit: 10}) as Bag[];
+        const byIds = (await ncaDb.analysisResults.query({filter: eq('id', [r2.id]), columns: ['curve'],
+          limit: 10})).rows as Bag[];
         expect(byIds.length === 1 && Array.isArray(byIds[0].curve?.series), true, 'an id-list filter must work');
         // A deleted analysis: its result rows (no soft delete, not stamped by the cascade) are not listed.
         await ncaDb.analyses.delete(b.aid);
         const left = await ncaDb.analysisResults.query({filter: eq('study_id', b.sid), limit: 10});
-        expect(left.length, 0, 'the result rows of a deleted analysis must not be listed by study');
+        expect(left.rows.length, 0, 'the result rows of a deleted analysis must not be listed by study');
         return 'ref-path filter ok; id list ok; a deleted analysis\'s result rows are not listed';
       } finally {await softDelete([a.sid, b.sid]);}
     }, {timeout: TIMEOUT});
@@ -323,7 +323,7 @@ category('NCA EMS: platform', () => {
       ]);
       const moved = await ncaDb.analyses.get(a.aid);
       expect(moved !== null && moved.study_id === b.sid, true, 'the re-parented analysis must stay live in the target');
-      const gone = (await ncaDb.studies.query({filter: eq('id', a.sid), deleted: 'only', limit: 1})) as Bag[];
+      const gone = (await ncaDb.studies.query({filter: eq('id', a.sid), deleted: 'only', limit: 1})).rows as Bag[];
       expect(gone.length === 1 && gone[0].moved_to === b.sid, true,
         'the deleted container must keep the values written in the same transaction');
       return 'analysis live in target; container deleted with moved_to';
@@ -340,9 +340,9 @@ category('NCA EMS: platform', () => {
       for (let i = 1; i <= 3; i++)
         await ncaDb.analysisResults.insert({analysis_id: aid, study_id: sid, ord: i, curve: {series: []}});
       const page = await ncaDb.analysisResults.query({filter: eq('study_id', sid), sort: 'ord', limit: 2, offset: 2});
-      expect(page.length, 2, 'offset paging must return the rest');
-      const light = await ncaDb.analysisResults.query({filter: eq('study_id', sid), columns: ['ord', 'has_curve'],
-        limit: 10}) as Bag[];
+      expect(page.rows.length, 2, 'offset paging must return the rest');
+      const light = (await ncaDb.analysisResults.query({filter: eq('study_id', sid), columns: ['ord', 'has_curve'],
+        limit: 10})).rows as Bag[];
       expect(light.every((r) => r.curve === undefined), true, 'a light select must not carry the json column');
       out.push(`paging ok; light select keys: ${Object.keys(light[0]).sort().join(',')}`);
 
