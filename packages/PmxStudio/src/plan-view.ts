@@ -540,14 +540,17 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
         {meta: m, onMenu: dayMenu, onNote: addNote}));
     }
   });
-  // an offered endpoint is for the plan in view: an edit retires it
+  // an offered endpoint is for the plan in view: an edit hides it (its line keeps its place, the notes their height)
   form.effect(() => {
-    if (stale.value)
-      growthNotes.querySelectorAll('.pmx-endpoint-offer').forEach((e) => e.remove());
+    const hide = stale.value;
+    growthNotes.querySelectorAll<HTMLElement>('.pmx-endpoint-offer')
+      .forEach((e) => e.style.visibility = hide ? 'hidden' : '');
   });
   const detectable =signal<{of: PlanFrames, mde: Map<string, number | null>} | null>(null);
   const endSummary = div([], 'pmx-plan-end-summary');
   Object.assign(endSummary.style, {margin: '0 0 var(--dg-space-s)', lineHeight: '1.45'});
+  // the endpoint offer of the plan shown: its line is held while its search runs, so the notes keep their height
+  let offerOf: {r: PlanFrames, line: HTMLElement} | null = null;
   form.effect(() => {
     const r = result.value;
     if (!r)
@@ -561,25 +564,30 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     // not. Not with a last day fixed: there the controls are not followed to the endpoint
     const d = declared.get(r);
     if (d && !d.lastDay && v('p_endpoint_not_reached') > ENDPOINT_RISK) {
-      // ponytail: the calls of an offer a newer plan overtook are not cancelled, only ignored (cached by inputs)
-      void safeEndpoint(d).then((x) => {
-        // (a plan's effect runs again when its smallest detectable effects arrive: one offer)
-        if (result.peek() !== r || stale.peek() || growthNotes.querySelector('.pmx-endpoint-offer'))
-          return;
-        const use = (x: number) => {
-          const field = form.getInput('endpoint');
-          if (field)
-            field.value = x;
-          call.setParamValue('endpoint', x);
-          auto.changed(0);
-        };
-        const offer = div(x === null ?
-          [`No lower endpoint avoids it: plan to end on day ${v('study_end')} even if they have not reached it`] :
-          [`A ${x} mm³ endpoint avoids it: `, hintLink('use it', () => use(x), `Sets the endpoint volume to ${x} mm³`)],
-        'ui-label-details pmx-endpoint-offer');
-        offer.style.marginLeft = '16px';
-        growthNotes.append(offer);
-      }, () => {}); // a failed search costs the line under the warning only
+      // (a plan's effect runs again when its smallest detectable effects arrive: the same line, searched once)
+      if (offerOf?.r !== r) {
+        const line = div([' '], 'ui-label-details pmx-endpoint-offer');
+        line.style.marginLeft = '16px';
+        offerOf = {r, line};
+        // ponytail: the calls of an offer a newer plan overtook are not cancelled, only ignored (cached by inputs)
+        void safeEndpoint(d).then((x) => {
+          if (offerOf?.line !== line || result.peek() !== r)
+            return;
+          const use = (x: number) => {
+            const field = form.getInput('endpoint');
+            if (field)
+              field.value = x;
+            call.setParamValue('endpoint', x);
+            auto.changed(0);
+          };
+          line.replaceChildren(...(x === null ?
+            [`No lower endpoint avoids it: plan to end on day ${v('study_end')} even if they have not reached it`] :
+            [`A ${x} mm³ endpoint avoids it: `,
+              hintLink('use it', () => use(x), `Sets the endpoint volume to ${x} mm³`)]));
+        }, () => {}); // a failed search leaves the line empty: it costs that line only
+      }
+      offerOf.line.style.visibility = stale.peek() ? 'hidden' : '';
+      growthNotes.append(offerOf.line);
     }
 
     // the control first, then each arm: what it expects, the animals it gets and the power they give (a table built
