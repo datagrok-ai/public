@@ -7,7 +7,6 @@ import {debounceTime, distinctUntilChanged, map, skip} from 'rxjs/operators';
 import {queries} from '../package-api';
 
 export const DEV_HOST = 'dev.datagrok.ai';
-export const JIRA_BROWSE = 'https://reddata.atlassian.net/browse/';
 export const JENKINS_TEST_JOB = 'https://ops.datagrok.ai/job/test-build/';
 const SLOW_FACTOR = 1.25;
 const MIN_SLOW_MS = 1000; // ignore sub-second tests — a +% on a few-ms test is noise, not a regression
@@ -192,11 +191,6 @@ export function isDevHost(): boolean {
   if (root.includes(DEV_HOST))
     return true;
   return typeof window !== 'undefined' && window.location.hostname === DEV_HOST;
-}
-
-/** Default next-release version to prefill the tickets filter (current client build). */
-export function defaultNextVersion(): string {
-  return grok.shell.build?.client?.version ?? '';
 }
 
 export function median(xs: number[]): number {

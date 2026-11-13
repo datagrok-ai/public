@@ -2,6 +2,17 @@
 
 ## v.next
 
+* Test dashboard: Removed the Jira ticket columns and verdicts (`GetTicketsVerdict`)
+* Test dashboard: Removed the Watch a jira ticket action
+* Release dashboard: Removed the Jira Tickets tab and its Overview card
+* Test Track: Changed Request Ticket to file a report and request a GitHub issue through `grok.dapi.reports.fileTicket`
+* Test Track: Changed the Ticket pane to show only with the `RequestTickets` permission
+* Test Track: Changed report links in reasons to open the report
+* Test Track: Changed report links in reasons to be saved as the test's tickets
+* Test Track: Removed the Jira links of GROK keys in reasons
+* Removed creating Jira tickets: the `CreateJiraTicket` function and the Jira swagger
+* Removed the Platform version package setting
+* Reports: Removed the Jira column
 * Release dashboard: Fixed the Overview, Tests and Benchmarks showing no data: the per-build pivot relied on `first()` of string columns, which the dataframe pivot drops
 * Release dashboard: The Overview fills each card as soon as its own source answers instead of waiting for the slowest one, and logs a source that fails
 * Release dashboard: Stress summaries are cached per build, so the Stress card and tab no longer wait minutes for a 20-build aggregation

@@ -59,7 +59,7 @@ export class TestGridCellHandler extends DG.ObjectHandler {
         // }, 'Should be used after test is fixed so analyzers can ignore previous failures. Expects that tests passes.');
 
         const triageTextInput = ui.input.textArea('Description');
-        ui.tooltip.bind(triageTextInput.root, 'Consider adding JIRA tickets to the description');
+        ui.tooltip.bind(triageTextInput.root, 'Consider adding ticket links to the description');
         const triageButton = ui.button('Mark as triaged', async () => {
           let keys = DG.Column.fromStrings('', [semValue.cell.value]);
           keys.semType = semValue.semType;

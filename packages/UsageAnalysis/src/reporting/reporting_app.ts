@@ -92,9 +92,6 @@ export class ReportingApp {
       table.getCol('description').semType = 'Text';
       table.getCol('error_stack_trace').semType = 'Text';
 
-      table.getCol('jira').semType = 'JIRA Ticket';
-      table.getCol('jira').setTag('cell.renderer', 'JIRA Ticket');
-
       this.applyStyle(grid);
       const users = await loadUsers();
       setupUserIconRenderer(grid, users, ['reporter', 'assignee']);
@@ -118,7 +115,6 @@ export class ReportingApp {
             for (let i = 0; i < length; i++) {
               if (idCol.get(i) === r.id) {
                 table.cell(i, 'is_resolved').value = r.isResolved;
-                table.cell(i, 'jira').value = r.jiraTicket;
                 table.cell(i, 'assignee').value = r.assignee?.friendlyName;
                 table.fireValuesChanged();
               }
@@ -167,10 +163,7 @@ export class ReportingApp {
   }
 
   applyStyle(viewer: DG.Grid) {
-    viewer.columns.setOrder(['date', 'auto', 'number', 'users', 'errors_count', 'reporter', 'assignee', 'description', 'jira', 'labels', 'error_stack_trace', 'id', 'last_occurrence', 'first_occurrence']);
-
-    viewer.col('jira')!.cellType = 'html';
-    viewer.col('jira')!.width = 55;
+    viewer.columns.setOrder(['date', 'auto', 'number', 'users', 'errors_count', 'reporter', 'assignee', 'description', 'labels', 'error_stack_trace', 'id', 'last_occurrence', 'first_occurrence']);
 
     viewer.col('id')!.visible = false;
     viewer.col('error_stack_trace_hash')!.visible = false;

@@ -37,9 +37,9 @@ Declare the item's actions once (`Action[]`), then:
 ```ts
 const actionsOf = (r: Report): Action[] => [
   {text: 'Copy description', icon: 'copy', run: () => copy(r.description)},
-  ...(r.jiraTicket ? [{text: `Open ${r.jiraTicket}`, icon: 'external-link-alt',
+  ...(r.url ? [{text: 'Open', icon: 'external-link-alt',
     run: () => {
-      window.open(ticketUrl(r));                     // a run returns a promise or nothing, not the window
+      window.open(r.url);                            // a run returns a promise or nothing, not the window
     }}] : []),
   {text: 'Copy id', run: () => copy(r.id)},          // no icon — menu only
 ];

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Reports browser: Removed the Jira ticket row and action
 * Inputs: Added the Chained choices sub-demo: five choices, each loading its options from every pick above it from a mock 500 ms server, beside the code that builds them
 * FuncCalls, Functions: Changed Run to wait while a field's choices or computed default load ("Wait for Level3 to load"), so a run never takes a pick that a reload is about to clear
 * FuncCalls: Fixed a red balloon from the deliberately broken `seed` default staying after leaving the page: the default is given to the u2 form alone and shown on its field, and the page puts the function's default back when it closes

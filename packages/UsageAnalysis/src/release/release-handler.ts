@@ -9,12 +9,11 @@ import {ReleaseOverviewView} from './overview';
 import {TestsView} from './tests';
 import {BenchmarksView} from './benchmarks';
 import {ManualTestsView} from './manual';
-import {ReleaseTicketsView} from './tickets';
 import {ReleaseContext, ENV_CHOICES, DEFAULT_ENV, DEFAULT_BRANCH, ALL_BRANCHES, fetchTestBranches,
   defaultBranchForEnv} from './data';
 
-// Assembles the focused /release dashboard: a MultiView of Overview + Tests + Stress +
-// Vulnerabilities + Tickets. Stress and Vulnerabilities are reused verbatim from the main app; all
+// Assembles the focused /release dashboard: a MultiView of Overview + Tests + Benchmarks + Manual +
+// Stress + Vulnerabilities. Stress and Vulnerabilities are reused verbatim from the main app; all
 // tabs are toolbox-independent, so we skip the shared UaToolbox (markToolboxReady unblocks init).
 export class ReleaseHandler {
   public static NAME = 'Release';
@@ -55,7 +54,7 @@ export class ReleaseHandler {
     overview.switchTab = (name) => this.changeTab(name);
     const views: UaView[] = [overview, new TestsView(this.ctx), new BenchmarksView(this.ctx),
       new ManualTestsView(this.ctx), new StressView(undefined, this.ctx),
-      new VulnerabilitiesView(undefined, this.ctx), new ReleaseTicketsView(this.ctx)];
+      new VulnerabilitiesView(undefined, this.ctx)];
     for (const v of views) {
       v.markToolboxReady();
       this.view.addView(v.name, () => {

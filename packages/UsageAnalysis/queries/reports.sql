@@ -4,7 +4,7 @@
 select id, number, created_on as time,
 case when description = 'Auto report' then error_message else description end as description,
 error_message as error, error_stack_trace, error_stack_trace_hash, is_resolved, reporter_id as reporter,
-    assignee_id as assignee, jira_ticket as jira, array_to_string(labels, ',') as labels
+    assignee_id as assignee, array_to_string(labels, ',') as labels
 from reports
 order by (is_resolved is true) asc, time desc;
 --end
@@ -28,7 +28,7 @@ WHERE t.error_stack_trace_hash = @stackTraceHash or t.friendly_name = @errorMess
 select id report_id, number, created_on as time,
 case when description = 'Auto report' then error_message else description end as description,
 error_message as error, error_stack_trace, error_stack_trace_hash, is_resolved, reporter_id as reporter,
-    assignee_id as assignee, jira_ticket as jira, array_to_string(labels, ',') as label
+    assignee_id as assignee, array_to_string(labels, ',') as label
 from reports
 order by (is_resolved is true) asc, time desc limit 20
 --end
@@ -39,7 +39,7 @@ order by (is_resolved is true) asc, time desc limit 20
 select id, number, created_on as time,
 case when description = 'Auto report' then error_message else description end as description,
 error_message as error, error_stack_trace, error_stack_trace_hash, is_resolved, reporter_id as reporter,
-    assignee_id as assignee, jira_ticket as jira, array_to_string(labels, ',') as labels
+    assignee_id as assignee, array_to_string(labels, ',') as labels
 from reports
 where number = @reportNumber;
 --end

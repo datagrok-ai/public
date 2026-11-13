@@ -24,15 +24,10 @@ const map = {
 
 
 export const errorSeverityLevels : any[] = [MINORFAIL, CRITICALFAIL, BLOCKFAIL];
-export const errorSeverityLevelJiraNames : { [id: string]: string; } = {
-  [MINORFAIL]: 'MinorError',
-  [CRITICALFAIL]: 'CriticalError',
-  [BLOCKFAIL]: 'Blocker'
-}
 export const TicketPriorityLevel : { [id: string]: string; } = {
   [MINORFAIL]: 'Low',
-  [CRITICALFAIL]: 'Medium',
-  [BLOCKFAIL]: 'Blocker'
+  [CRITICALFAIL]: 'High',
+  [BLOCKFAIL]: 'Urgent'
 }
 
 export async function loadFileAsText(name: string): Promise<string> {

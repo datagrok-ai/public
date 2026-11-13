@@ -6,8 +6,7 @@ import {UaView} from '../tabs/ua';
 import {UaToolbox} from '../ua-toolbox';
 import {fetchVexIndex, criticalHighCount, toDashboardImages, vexReleaseDelta} from '../tabs/vulnerabilities';
 import {computeTestAlerts, fetchReleaseBenchmarks, computeBenchmarkAlerts, stressRegression, fetchStressSummary,
-  defaultNextVersion, ReleaseContext, ReleasePivot, BenchmarkPivot, STALE_DAYS, BENCH_SLOW_PCT} from './data';
-import {fetchReleaseTickets, isActionable, hasMainLabel} from './tickets';
+  ReleaseContext, ReleasePivot, BenchmarkPivot, STALE_DAYS, BENCH_SLOW_PCT} from './data';
 
 type Band = 'green' | 'orange' | 'red' | 'info';
 const BAND_CLASS: Record<Band, string> = {
@@ -47,7 +46,6 @@ export class ReleaseOverviewView extends UaView {
       this.makeCard('Benchmarks', 'slower than baseline', 'Benchmarks'),
       this.makeCard('Stress', 'latest build', 'Stress'),
       this.makeCard('Vulnerabilities', 'platform images', 'Vulnerabilities'),
-      this.makeCard('Tickets', 'unresolved', 'Tickets'),
     ], 'ua-metrics-cards-row');
 
     this.root.append(ui.div([header, cardsRow, this.bannerHost], 'ua-metrics-root'));
@@ -101,7 +99,6 @@ export class ReleaseOverviewView extends UaView {
         (p) => this.applyBenchmarks(p)),
       load(['Stress'], fetchStressSummary(20), (df) => this.applyStress(df)),
       load(['Vulnerabilities'], fetchVexIndex(), (vex) => this.applyVex(vex)),
-      load(['Tickets'], fetchReleaseTickets(defaultNextVersion()), (issues) => this.applyTickets(issues)),
     ];
     this.renderBanner([], true);
     await Promise.all(all);
@@ -170,14 +167,6 @@ export class ReleaseOverviewView extends UaView {
       band: delta.newCritical > 0 ? 'red' : 'orange', tab: 'Vulnerabilities',
       groups: {'': delta.images.map((x) => `${x.repo}: ${x.dCritical >= 0 ? '+' : ''}${x.dCritical} critical, ` +
         `${x.dHigh >= 0 ? '+' : ''}${x.dHigh} high`)}}];
-  }
-
-  private applyTickets(issues: any[] | null): AlertNode[] {
-    // Card counts only actionable tickets (not Done / Won't Fix), split by the MAIN label.
-    const open = (issues ?? []).filter(isActionable).length;
-    const mainOpen = (issues ?? []).filter((r: any) => isActionable(r) && hasMainLabel(r)).length;
-    this.setCard('Tickets', `${open}`, open === 0 ? 'green' : 'info', `${mainOpen} MAIN, ${open - mainOpen} other`);
-    return [];
   }
 
   private renderBanner(alerts: AlertNode[], loading: boolean): void {

@@ -48,13 +48,6 @@ export function releaseDashboardApp(path?: string) : any {
   return PackageFunctions.releaseDashboardApp(path);
 }
 
-//input: column<string> ticketColumn 
-//input: column<string> resultColumn 
-//meta.vectorFunc: true
-export async function getTicketsVerdict(ticketColumn: DG.Column, resultColumn: DG.Column) : Promise<void> {
-  await PackageFunctions.getTicketsVerdict(ticketColumn, resultColumn);
-}
-
 //output: dataframe result
 export async function vexImages() : Promise<any> {
   return await PackageFunctions.vexImages();
@@ -137,10 +130,4 @@ export function _specificClicksPanel() : any {
 //meta.role: autostart
 export function describeCurrentObj() : void {
   PackageFunctions.describeCurrentObj();
-}
-
-//name: Create JIRA ticket
-//description: Creates JIRA ticket using current error log
-export function createJiraTicket() : void {
-  PackageFunctions.createJiraTicket();
 }

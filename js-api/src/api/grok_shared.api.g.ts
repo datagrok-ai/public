@@ -177,8 +177,11 @@ export class Permission {
   /** Export every chat and its comments to server storage. */
   static EXPORT_CHATS = 'ExportChats';
 
-  /** Create Jira tickets from user reports. */
-  static CREATE_JIRA_TICKETS = 'CreateJiraTickets';
+  /** Request tickets for user reports. */
+  static REQUEST_TICKETS = 'RequestTickets';
+
+  /** @deprecated Use {@link REQUEST_TICKETS}. */
+  static CREATE_JIRA_TICKETS = 'RequestTickets';
 
   /** View and manage cluster workloads, nodes, resources, scaling and placement. */
   static ADMIN_CLUSTER = 'AdminCluster';

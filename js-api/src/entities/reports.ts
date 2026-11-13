@@ -26,10 +26,6 @@ export class UserReport extends Entity {
     return api.grok_UserReport_IsResolved(this.dart);
   }
 
-  get jiraTicket(): string {
-    return api.grok_UserReport_JiraTicket(this.dart);
-  }
-
   get assignee(): User {
     return toJs(api.grok_UserReport_Assignee(this.dart));
   }
@@ -44,6 +40,11 @@ export class UserReport extends Entity {
 
   get createdOn(): dayjs.Dayjs {
     return dayjs(api.grok_UserReport_CreatedOn(this.dart));
+  }
+
+  /** @deprecated Jira is retired; tickets are requested with {@link UserReportsDataSource.requestTicket}. Always undefined. */
+  get jiraTicket(): string | undefined {
+    return undefined;
   }
 }
 

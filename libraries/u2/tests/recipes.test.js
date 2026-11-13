@@ -94,9 +94,8 @@ const BLOCKS = {
     const preview = div(['α-Aminoisobutyric acid']);
     const panel = div();`},
   'docs/recipes/list-item-rendering.md › Actions: one list, two surfaces': {run: 'list', given: `
-    interface Report { id: string; description: string; jiraTicket?: string; createdOn: Date; }
+    interface Report { id: string; description: string; url?: string; createdOn: Date; }
     const copy = (_: string): void => {};
-    const ticketUrl = (r: Report) => \`https://example.com/browse/\${r.jiraTicket}\`;
     const primaryLine = (r: Report) => span(r.description);`},
   'docs/recipes/list-item-rendering.md › Adaptive rendering: `u2-adaptive` + `u2-p*`': {run: 'list', given: `
     const list = new VirtualList<{assignee: string}>({itemHeight: 28, render: (x) => span(x.assignee)});

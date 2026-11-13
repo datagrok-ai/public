@@ -2066,10 +2066,11 @@ export interface IDartApi {
   grok_Test_GetTestDataGeneratorByType(type: String): any;
   grok_Reports_Get(num: Num): Promise<any>;
   grok_Reports_Find(id: String): Promise<any>;
+  grok_Reports_RequestTicket(id: String, summary: String, description: String, priority: String, source: String): Promise<any>;
+  grok_Reports_FileTicket(summary: String, description: String, priority: String, source: String): Promise<any>;
   grok_UserReport_FromJson(json: String): any;
   grok_UserReport_Id(report: any): any;
   grok_UserReport_IsResolved(report: any): any;
-  grok_UserReport_JiraTicket(report: any): any;
   grok_UserReport_Assignee(report: any): any;
   grok_UserReport_Reporter(report: any): any;
   grok_UserReport_Description(report: any): any;

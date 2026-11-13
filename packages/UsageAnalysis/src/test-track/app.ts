@@ -3,11 +3,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 
-import { colors, CRITICALFAIL, MINORFAIL, BLOCKFAIL, getIcon, getStatusIcon, PASSED, SKIPPED, Status, errorSeverityLevels, errorSeverityLevelJiraNames, TicketPriorityLevel as ticketPriorityLevel } from './utils';
+import { colors, CRITICALFAIL, MINORFAIL, BLOCKFAIL, getIcon, getStatusIcon, PASSED, SKIPPED, Status, errorSeverityLevels, TicketPriorityLevel as ticketPriorityLevel } from './utils';
 import { _package } from '../package';
 import { Subscription } from 'rxjs';
 import { testSchema } from '../test-analysis/sticky-meta-initialization';
 
+const REPORT_URL = /https?:\/\/[^\s,]+\/apps\/usage\/reports\/(\d+)/;
 const NEW_TESTING = 'New Testing';
 const BATCHNAME_STORAGE_KEY = 'Datagrok/UsageAnalysis/TestTrack/BatchName';
 const TEST_TRACK_FOLDER = 'TestTrack';
@@ -72,7 +73,7 @@ export class TestTrack extends DG.ViewBase {
   loadingFiles: { [key: string]: (Category | TestCase) } = {};
   nodes: { [key: string]: (DG.TreeViewNode<any>) } = {};
 
-  jiraBaseUrl = 'https://reddata.atlassian.net/browse/';
+  canRequestTickets = false;
   gitHubBaseUrl = 'https://github.com/datagrok-ai/public/issues/';
   list: Category[] = [];
   expanded: boolean = false;
@@ -137,6 +138,9 @@ export class TestTrack extends DG.ViewBase {
   init() {
     if (this.isInitializing)
       return;
+    grok.dapi.permissions.checkGlobal(DG.Permission.REQUEST_TICKETS)
+      .then((canRequest) => this.canRequestTickets = canRequest)
+      .catch(() => {});
 
     if (this.inited) {
       grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.3);
@@ -863,48 +867,27 @@ export class TestTrack extends DG.ViewBase {
 
     const ticketSummary = ui.input.string('Summary');
     const ticketDescription = ui.input.textArea('Description');
-    const createTicketBtn = ui.button('Create Ticket', () => {
+    const createTicketBtn = ui.button('Request Ticket', async () => {
       createTicketBtn.disabled = true;
-      let errorLabel = 'CriticalError';
-      if (errorTypeSelector.value === BLOCKFAIL)
-        errorLabel = 'Blocker'
-      if (errorTypeSelector.value === MINORFAIL)
-        errorLabel = 'MinorError'
-      console.log(ticketPriorityLevel[errorLabel]);
-      console.log(errorTypeSelector.value);
-      grok.functions.call('UsageAnalysis:JiraCreateIssue', {
-        'createRequest': JSON.stringify({
-          'fields': {
-            'project': {
-              'key': 'GROK',
-            },
-            'summary': (ticketSummary?.value || '').toString(),
-            'description': `Test Track\n Test Case: ${node.value.path.replace(/:\s[^:]+$/, '')} \n${(ticketDescription?.value ?? '').toString()}`,
-            'issuetype': {
-              'name': 'Bug',
-            },
-            'labels': [
-              'TestTrack'
-            ],
-            'priority': {
-              'name': ticketPriorityLevel[errorTypeSelector.value]
-            },
-            'customfield_10439': this.testingName
-          },
-        }),
-        'updateHistory': false,
-      }).then((t) => {
-        var ticketResult = JSON.parse(t.stringResult)
-        console.log(t);
-        window.open(this.jiraBaseUrl + ticketResult.key, "_blank");
+      try {
+        const testCase = node.value.path.replace(/:\s[^:]+$/, '');
+        const number = await grok.dapi.reports.fileTicket(ticketSummary.value, {
+          description: `Test Track: ${this.testingName}\nTest Case: ${testCase}\n${ticketDescription.value ?? ''}`,
+          priority: ticketPriorityLevel[errorTypeSelector.value],
+          source: 'test-track',
+        });
+        grok.shell.info(`Ticket requested from Report ${number}`);
         ticketSummary.value = '';
         ticketDescription.value = '';
         if (textInput.value.length > 0)
           textInput.value = `${textInput.value}\n`;
-        textInput.value = `${textInput.value}${ticketResult.key}`;
-        createTicketBtn.disabled = false;
-      });
-    })
+        textInput.value = `${textInput.value}${window.location.origin}/apps/usage/reports/${number}`;
+      } catch (e: any) {
+        grok.shell.error(`Ticket not requested: ${e?.message ?? e}`);
+      } finally {
+        createTicketBtn.disabled = ticketSummary.value.length === 0 || errorTypeSelector.value == '';
+      }
+    });
 
     createTicketBtn.disabled = true;
     const errorTypeSelector = ui.input.choice('Severity', {
@@ -922,7 +905,7 @@ export class TestTrack extends DG.ViewBase {
     const createTicketButtonTooltip = ui.tooltip.bind(createTicketBtn, 'Ensure that you selected severity level and wrote ticket summary.')
 
     createTicketBtn.classList.add('create-ticket-button');
-    const jiraTicketsTab = ui.divH([ui.divV([ticketSummary, ticketDescription]), createTicketBtn]);
+    const ticketTab = ui.divH([ui.divV([ticketSummary, ticketDescription]), createTicketBtn]);
 
     errorTypeSelector.addValidator((value) => {
       if (value == '')
@@ -945,9 +928,9 @@ export class TestTrack extends DG.ViewBase {
     dialog.onOK(() => {
       edit ? this.changeNodeReason(node, status, textInput.value) : this.changeNodeStatus(node, status, textInput.value);
     });
-    if (errorSeverityLevels.includes(status)) {
+    if (errorSeverityLevels.includes(status) && this.canRequestTickets) {
       const accordion = ui.accordion();
-      accordion.addPane('Jira Tickets', () => jiraTicketsTab)
+      accordion.addPane('Ticket', () => ticketTab);
       dialog.add(accordion);
     }
 
@@ -957,9 +940,10 @@ export class TestTrack extends DG.ViewBase {
     const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];
   }
 
-  reportJiraTickets(reason: string, oldReason: string, params: any) {
-    const newTickets: string[] = (reason ?? '').match(/GROK-\d{1,6}/g) || [];
-    const oldTickets: string[] = oldReason.match(/GROK-\d{1,6}/g) || [];
+  reportTickets(reason: string, oldReason: string, params: any) {
+    const ticketRe = new RegExp(`GROK-\\d{1,6}|${REPORT_URL.source}`, 'g');
+    const newTickets: string[] = (reason ?? '').match(ticketRe) || [];
+    const oldTickets: string[] = oldReason.match(ticketRe) || [];
     const combinedTickets = new Set([...newTickets, ...oldTickets]);
     const finalTickets = newTickets.some((ticket) => oldTickets.includes(ticket)) ||
       newTickets.every((ticket) => oldTickets.includes(ticket))
@@ -1030,7 +1014,7 @@ export class TestTrack extends DG.ViewBase {
     };
     if (reportData) {
       grok.shell.reportTest('manual', params);
-      this.reportJiraTickets(reason ?? '', oldReason, params);
+      this.reportTickets(reason ?? '', oldReason, params);
     }
     this.updateGroupStatusRecursiveUp(node.parent as DG.TreeViewGroup);
     let reasonTooltipValue = ui.div(this.getReason(reason ?? ''));
@@ -1088,7 +1072,7 @@ export class TestTrack extends DG.ViewBase {
     });
     if (reportData) {
       grok.shell.reportTest('manual', params);
-      this.reportJiraTickets(reason ?? '', oldReason, params);
+      this.reportTickets(reason ?? '', oldReason, params);
     }
     this.updateReportData(node);
   }
@@ -1246,11 +1230,11 @@ export class TestTrack extends DG.ViewBase {
   getReason(reason: string): HTMLElement {
     const result = ui.label('');
     for (let str of reason.split('\n')) {
-      const jira = str.match(/GROK-\d{1,6}\b/);
       const gh1 = str.match(/#(\d{3,5})\b/);
       const gh2 = str.match(/https:\/\/github\.com\/datagrok-ai\/public\/issues\/(\d{3,5})/);
       const slack = str.includes('datagrok.slack.com');
-      if (jira) result.append(this.getReasonLink(str, this.jiraBaseUrl + jira[0], jira[0]));
+      const report = str.match(REPORT_URL);
+      if (report) result.append(this.getReasonLink(str, report[0], `Report ${report[1]}`));
       else if (gh1) result.append(this.getReasonLink(str, this.gitHubBaseUrl + gh1[1], gh1[0]));
       else if (gh2) result.append(this.getReasonLink(str, str, `#${gh2[1]}`));
       else if (slack) result.append(this.getReasonLink(str, str, 'SLACK'));
@@ -1261,23 +1245,23 @@ export class TestTrack extends DG.ViewBase {
   }
 
   hasAnyLink(reason: string): boolean {
-    const jira = reason.match(/GROK-\d{1,6}\b/);
     const gh1 = reason.match(/#(\d{3,5})\b/);
     const gh2 = reason.match(/https:\/\/github\.com\/datagrok-ai\/public\/issues\/(\d{3,5})/);
     const slack = reason.includes('datagrok.slack.com');
-    return (jira || gh1 || gh2 || slack) ? true : false
+    const report = reason.match(REPORT_URL);
+    return (gh1 || gh2 || slack || report) ? true : false
   }
 
   openReasonLink(reason: string) {
     let hasLink = false;
     for (let str of reason.split('\n')) {
-      const jira = str.match(/GROK-\d{1,6}\b/);
       const gh1 = str.match(/#(\d{3,5})\b/);
       const gh2 = str.match(/https:\/\/github\.com\/datagrok-ai\/public\/issues\/(\d{3,5})/);
       const slack = str.includes('datagrok.slack.com');
+      const report = str.match(REPORT_URL);
       let linkToOpen: string = "";
-      if (jira) {
-        linkToOpen = this.jiraBaseUrl + jira[0];
+      if (report) {
+        linkToOpen = report[0];
       }
       else if (gh1) {
         linkToOpen = this.gitHubBaseUrl + gh1[1];

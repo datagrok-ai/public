@@ -357,26 +357,6 @@
                           }
                         },
                         {
-                          "isColorCoded": true,
-                          "width": 52,
-                          "columnName": "ignore status",
-                          "colorCodingType": "Categorical",
-                          "colorCodingCategorical": {
-                            "Fixed": "#2ca02c",
-                            "Partially Fixed (Lowest)": "#ffe51c",
-                            "Partially Fixed (Low)": "#ffa500",
-                            "Partially Fixed (Medium)": "#ff5a00",
-                            "Partially Fixed (Blocker)": "#7b2d24",
-                            "Wasn't Fixed (Lowest)": "#ffe51c",
-                            "Wasn't Fixed (Low)": "#ffa500",
-                            "Wasn't Fixed (Medium)": "#ff5a00",
-                            "Wasn't Fixed (Blocker)": "#7b2d24"
-                          },
-                          "headerCellStyle": {
-                            "textWrap": "words"
-                          }
-                        },
-                        {
                           "width": 84,
                           "columnName": "1 duration",
                           "cellType": "number",
@@ -390,26 +370,6 @@
                           "columnName": "1 result",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "isColorCoded": true,
-                          "width": 54,
-                          "columnName": "1 tickets status",
-                          "colorCodingType": "Categorical",
-                          "colorCodingCategorical": {
-                            "Fixed": "#2ca02c",
-                            "Partially Fixed (Lowest)": "#ffe51c",
-                            "Partially Fixed (Low)": "#ffa500",
-                            "Partially Fixed (Medium)": "#ff5a00",
-                            "Partially Fixed (Blocker)": "#7b2d24",
-                            "Wasn't Fixed (Lowest)": "#ffe51c",
-                            "Wasn't Fixed (Low)": "#ffa500",
-                            "Wasn't Fixed (Medium)": "#ff5a00",
-                            "Wasn't Fixed (Blocker)": "#7b2d24"
-                          },
-                          "headerCellStyle": {
                             "textWrap": "words"
                           }
                         },

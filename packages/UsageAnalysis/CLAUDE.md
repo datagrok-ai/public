@@ -7,7 +7,7 @@ events, sessions, errors, and operational health.
 
 - Tabs architecture (app entry, `ViewHandler`/`MultiView`, shared toolbox, viewers, drilldown, routing):
   [src/tabs/TABS.md](src/tabs/TABS.md)
-- Release-readiness dashboard (dev-only `/release` app; Tests/Stress/Vulnerabilities/Tickets + overview):
+- Release-readiness dashboard (dev-only `/release` app; Tests/Benchmarks/Manual/Stress/Vulnerabilities + overview):
   [src/release/RELEASE.md](src/release/RELEASE.md)
 
 ## Build note

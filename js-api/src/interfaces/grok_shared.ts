@@ -11,8 +11,6 @@ export interface IUserReport {
    * See also [DataSourceType]. */
   type: string;
 
-  jiraTicket: string;
-
   isAuto: boolean;
 
   isResolved: boolean;

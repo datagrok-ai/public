@@ -27,13 +27,6 @@ export async function registerDGUserHandler() {
   }, (value) => imageRenderer(value as string));
   exp.addDefaultHeaderReplacerColumns(['type']); // name is already default
 
-  exp.addCustomRenderer((_, colName, value) => {
-    return colName?.toLowerCase() === 'jira_ticket' && typeof value === 'string' && !!value;
-  },
-  (value) => {
-    const jiraUrl = `https://reddata.atlassian.net/browse/${value}`;
-    return ui.link(value.toString(), jiraUrl);
-  });
 
 
   console.log('Datagrok user object handlers registered');

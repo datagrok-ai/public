@@ -16,7 +16,7 @@ UsageAnalysis with this app only to dev.)
 
 ## Structure
 
-`ReleaseHandler` (`src/release/release-handler.ts`) owns a `DG.MultiView` with five tabs. All tabs are
+`ReleaseHandler` (`src/release/release-handler.ts`) owns a `DG.MultiView` with six tabs. All tabs are
 toolbox-independent, so — unlike the main `ViewHandler` — it builds **no shared `UaToolbox`**. Each tab
 extends `UaView`; the handler calls `markToolboxReady()` (added to `src/tabs/ua.ts`) to unblock
 `initViewers()` without a toolbox, then registers a lazy factory (`addView(name, factory, false)`).
@@ -29,14 +29,13 @@ extends `UaView`; the handler calls `markToolboxReady()` (added to `src/tabs/ua.
 | Manual         | `src/release/manual.ts`     | `UsageAnalysis:ReleaseManualTests` query — Test Track batches |
 | Stress         | `src/tabs/stress-tests.ts`  | **reused**; `fetchStressSummary` (`StressTestsBuilds` + cached `StressTestsBuildSummary`), `StressTestsRaw` |
 | Vulnerabilities| `src/tabs/vulnerabilities.ts`| **reused**; VEX `index.json` — core shown as bleeding-edge only (`toDashboardImages`) |
-| Tickets        | `src/release/tickets.ts`    | `JiraConnect:GetJiraTicketsByFilter` (fixVersion)           |
 
 Shared, pure helpers live in `src/release/data.ts` (host check, `ReleaseTests` fetch + client-side
 pivot, alert computation, `stressRegression`) so Overview and the tabs never duplicate logic.
 
 ## Loading and speed
 
-- **Overview never waits for its slowest source.** Each of the five sources sets its own cards and
+- **Overview never waits for its slowest source.** Each of the four sources sets its own cards and
   alert nodes when it answers; a failure turns only its cards to `n/a` and is logged
   (`grok.log.warning`), so a broken source is visible in the console instead of looking like "no data".
 - **One tests pivot for Overview and Tests.** `ReleaseContext.tests()` keeps the last pivot per
@@ -69,7 +68,7 @@ The selection is shared through `ReleaseContext` (a `BehaviorSubject<string>` in
 and subscribe to it to re-fetch on change (guarded by `initialized` so a lazy tab loads once, with the
 current env). The other tabs have no per-instance dimension in the DB, so the picker is a no-op there:
 Stress (`stress_tests` has no `instance` column — runs in a dedicated job), Manual (Test Track
-batches), Vulnerabilities (VEX docker images), Tickets (Jira fixVersion).
+batches), Vulnerabilities (VEX docker images).
 
 ## Tests tab
 
@@ -133,18 +132,6 @@ Deep link (dev only): `https://dev.datagrok.ai/apps/usage/release` (per-tab
 
 ## Known limitations / follow-ups
 
-- **Tickets tab still reads Jira**; new tickets are GitHub issues, so porting it to GitHub
-  milestones (`datagrok-ai/core`, `datagrok-ai/public`) is pending.
-- **Tickets tab** — the JiraConnect 410 is **fixed**: `loadIssues`
-  (`public/packages/JiraConnect/src/api/data.ts:66`) now calls the token-paginated
-  `/rest/api/3/search/jql`, so `GetJiraTicketsByFilter` returns data again.
-  `GetJiraTicketsByFilter` still builds equality-only JQL, so the fix version is passed quoted
-  (`fixVersion = "<next>"`). The version itself comes from `defaultNextVersion()` =
-  `grok.shell.build.client.version`, i.e. whatever the host is running (dev reports `1.28.0`).
-- **Ticket counts are status-name sensitive.** Jira's status is spelled `Won't fix` (lowercase f);
-  `isActionable` compares case-insensitively for exactly that reason. Resolution is `null` on those
-  tickets, so the resolution clause cannot be relied on to exclude them — a case-sensitive
-  comparison here silently counts every Won't-fix ticket as open (20 of them on 1.28.0).
 - **Jenkins deep-link** is the `test-build` job page, not the specific build — the `builds` table
   stores no build URL. Proper fix: persist `build_url` in test ingestion
   (`core/server/datlas/lib/src/services/action_logger_service.dart`) and surface it here.
