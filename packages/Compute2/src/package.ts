@@ -49,6 +49,7 @@ import {ModelCatalogView,
   setModelCatalogEventHandlers,
   setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import dayjs from 'dayjs';
+import {Compute2ModelHandler} from './model-handler';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -113,7 +114,7 @@ export class PackageFunctions {
 
     modelCatalogOptions.roleOnlyFilter = isRoleOnlyModelFilter();
 
-    setModelCatalogHandler();
+    setModelCatalogHandler(new Compute2ModelHandler());
     setModelCatalogEventHandlers(modelCatalogOptions);
 
     try {
