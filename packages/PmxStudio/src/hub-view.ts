@@ -20,7 +20,7 @@ import {newStudyTable, tableOf} from './study-file';
 import {PLAN_TAG, myPlans, parsePlan} from './plan-file';
 import {LibraryEntry, libraryReader, matches} from './library';
 import {dayToday} from './calendar';
-import {Brought, OPENED_EXTS, OpenStage, bring, readFile, suggestedStage} from './open-study';
+import {Brought, OPENED_EXTS, OpenStage, bring, fileText, readFile, suggestedStage} from './open-study';
 import {Question, studySummary, waiting} from './study-reader';
 
 /** The home view. */
@@ -517,8 +517,8 @@ export function openStudyDialog(first?: File[]): void {
     loadingName = files.map((f) => f.name).join(', ');
     render();
     const started = Date.now();
-    const reads = await Promise.all(files.map((f) => f.text().then((t) => readFile(f.name, t),
-      () => readFile(f.name, ''))));
+    const reads = await Promise.all(files.map((f) => fileText(f).then((t) => readFile(f.name, t),
+      (e) => ({kind: 'bad' as const, file: f.name, why: plainError(e, 'The file could not be read.')}))));
     // the bar shows for a moment even for a small file: the change of state reads as the file being taken in
     await new Promise((r) => setTimeout(r, Math.max(0, 450 - (Date.now() - started))));
     if (mine !== latest)

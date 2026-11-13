@@ -3,14 +3,15 @@
    never the groups, so a blinded study stays blind until it is analyzed; a table says how many animals it read in
    each group, and how, as nothing may be lost unseen in reading it. */
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 import {PLAN_EXT, SavedPlan, parsePlan} from './plan-file';
 import {STUDY_EXT, SavedStudy, VOLUME_TAG, WEIGHT_TAG, oneDecimal, parseStudy} from './study-file';
-import {Answers, TableRead, readStudy} from './study-reader';
+import {Answers, TableRead, cellsOfFrame, csvOf, readStudy, studySheets} from './study-reader';
 import {plainError} from './ui';
 import {cellsOf, separatorOf} from './wide-table';
 
-export const OPENED_EXTS = [PLAN_EXT, STUDY_EXT, 'csv', 'tsv', 'txt'];
+export const OPENED_EXTS = [PLAN_EXT, STUDY_EXT, 'csv', 'tsv', 'txt', 'xlsx'];
 
 /** A table of measurements, as far as the hub reads it. */
 export interface MeasuredTable {kind: 'table', file: string, df: DG.DataFrame, animals: number | null,
@@ -42,8 +43,8 @@ export function readFile(name: string, text: string, answers: Answers = {}): Fil
       // read now, as a plan is: a damaged or newer study is said so here, not on opening it
       return {kind: 'study', file: name, text, saved: parseStudy(text)};
     }
-    if (ext === 'csv' || ext === 'tsv' || ext === 'txt') {
-      // an .xlsx plugs in here: a sheet's cells as text, read by readStudy as a CSV's are
+    if (ext === 'csv' || ext === 'tsv' || ext === 'txt' || ext === 'xlsx') {
+      // an .xlsx comes here as the text of its sheet (fileText), read as a CSV's
       const cells = cellsOf(text);
       if (!cells.some((row) => row.some((c) => c !== '')))
         return {kind: 'bad', file: name, why: 'The table has no rows: open the file with the measurements.'};
@@ -63,7 +64,7 @@ export function readFile(name: string, text: string, answers: Answers = {}): Fil
     return {kind: 'bad', file: name, why: 'The table could not be read. Save it again as .csv or .tsv from your ' +
       'spreadsheet.'};
   }
-  return {kind: 'bad', file: name, why: 'PMX Studio opens .pmxplan, .pmxstudy, .csv and .tsv files.'};
+  return {kind: 'bad', file: name, why: 'PMX Studio opens .pmxplan, .pmxstudy, .csv, .tsv and .xlsx files.'};
 }
 
 /** A read as the study table the stages take (emptyStudy's columns, body weight when read, the table's other
@@ -124,4 +125,35 @@ export function suggestedStage(b: Brought): OpenStage {
     return running ? 'monitor' : 'analyze';
   }
   return 'plan';
+}
+
+/** What a file holds as text: an Excel file's sheet, read through PowerPack (a soft dependency) and written as CSV.
+ *  With several sheets that read as a study, the user picks one. Throws a plain Error when it cannot be read. */
+export async function fileText(f: File): Promise<string> {
+  if (extOf(f.name) !== 'xlsx')
+    return f.text();
+  const fn = DG.Func.find({package: 'PowerPack', name: 'XlsxFileHandler'})[0];
+  if (!fn) {
+    throw new Error('Reading Excel files needs the PowerPack package. Save the sheet as CSV, or ask your ' +
+      'administrator to install PowerPack.');
+  }
+  const frames: DG.DataFrame[] = await fn.apply({bytes: new Uint8Array(await f.arrayBuffer())});
+  const sheets = frames.filter((df) => df.rowCount > 0).map((df) => ({name: df.name, cells: cellsOfFrame(df)}));
+  if (sheets.length === 0)
+    throw new Error('The workbook has no rows: open the file with the measurements.');
+  let pick = sheets[0];
+  if (sheets.length > 1) {
+    const names = studySheets(sheets);
+    if (names.length === 0) {
+      throw new Error('No sheet of the workbook reads as a table of measurements (sheets tried: ' +
+        `${sheets.map((s) => s.name).join(', ')}). Each needs a row per measurement, or a column per day or animal.`);
+    }
+    const name = names.length === 1 ? names[0] : await new Promise<string>((resolve, reject) => {
+      const input = ui.input.choice('Sheet', {value: names[0], items: names});
+      ui.dialog('Which sheet holds the measurements?').add(input).onOK(() => resolve(input.value!))
+        .onCancel(() => reject(new Error('No sheet was chosen.'))).show();
+    });
+    pick = sheets.find((s) => s.name === name)!;
+  }
+  return csvOf(pick.cells);
 }

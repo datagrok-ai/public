@@ -9,6 +9,8 @@
   found from its own volumes). Dates and week numbers become days. Every number is read or listed as not read, with
   the reason; what it cannot tell (two volume columns, day or month first, an implausible unit) it asks. A blinded
   study's summary names no group. Where a study's volumes come from is saved with it.
+  Excel (.xlsx) files open too, through the PowerPack package: with several sheets, the one that reads as a study, or
+  the user's pick.
 
 * Plain messages from Open a study to Monitor (2026-11-12): what is missing, empty or failed says what happened and
   what to do; no technical text reaches the user (it goes to the console), and no failure is dropped silently (a

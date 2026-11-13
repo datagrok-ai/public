@@ -1,6 +1,7 @@
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {FORMULAS, type TableRead, type VolumeFormula, dateOrder, deduceFormula, readStudy, roleOf, studySummary,
+import {FORMULAS, type SheetFrame, type TableRead, type VolumeFormula, cellsOfFrame, csvOf, dateOrder, deduceFormula,
+  readStudy, roleOf, studySheets, studySummary,
   volumeSourceOf, waiting} from '../study-reader';
 import {cellsOf} from '../wide-table';
 
@@ -322,5 +323,41 @@ category('Study reader', () => {
     const rows = Array.from({length: 14}, (_, i) => `m1,V,${i},x`).join('\n');
     const r = read(`Animal,Group,Day,Volume\n${rows}\nm2,V,0,50\n`);
     expect(r.ignored[0], '14 cells that are not a plain number (D2, D3, D4, D5, D6, D7, … and 8 more)');
+  });
+});
+
+/** A sheet as PowerPack hands it over: every cell a string, a blank as null. */
+const frame = (name: string, head: string[], rows: (string | null)[][]): SheetFrame => ({name, rowCount: rows.length,
+  columns: {length: head.length, byIndex: (i) => ({name: head[i], getString: (r) => rows[r][i] as string})}});
+const dated = (d: string) => `${d} 00:00:00 GMT+0100 (Central European Standard Time)`;
+
+category('Excel sheets', () => {
+  test('a sheet as cells: the names, then the rows, blanks as empty text', async () => {
+    const cells = cellsOfFrame(frame('S', ['Animal', 'Group', 'Day'], [['m1', 'A', '0'], ['m2', null, '7']]));
+    expect(JSON.stringify(cells), '[["Animal","Group","Day"],["m1","A","0"],["m2","","7"]]');
+  });
+
+  test('Excel dates read as days through the reader', async () => {
+    const f = frame('S', ['Animal', 'Group', 'Date', 'Volume'], [['m1', 'A', dated('Mon Nov 02 2026'), '100'],
+      ['m1', 'A', dated('Mon Nov 09 2026'), '150'], ['m2', 'B', dated('Mon Nov 02 2026'), '90'],
+      ['m2', 'B', dated('Mon Nov 09 2026'), '95']]);
+    const cells = cellsOfFrame(f);
+    expect(cells[1][2], '2026-11-02');
+    const r = readStudy(cells);
+    expect(r.error === null, true);
+    expect(JSON.stringify(r.rows.filter((x) => x.animal === 'm1').map((x) => x.day)), '[0,7]');
+  });
+
+  test('a sheet through CSV text reads the same, quoted cells included', async () => {
+    const cells = [['Animal', 'Group', 'Day', 'Volume'], ['m1', 'A, high', '0', '100'], ['m1', 'A, high', '7', '150']];
+    expect(JSON.stringify(cellsOf(csvOf(cells))), JSON.stringify(cells));
+  });
+
+  test('which sheets read as a study: none, one, several', async () => {
+    const study = [['Animal', 'Group', 'Day', 'Volume'], ['m1', 'A', '0', '100'], ['m1', 'A', '7', '150']];
+    const notes = [['Remark'], ['hello']];
+    expect(studySheets([{name: 'Notes', cells: notes}]).length, 0);
+    expect(studySheets([{name: 'Notes', cells: notes}, {name: 'Data', cells: study}]).join(), 'Data');
+    expect(studySheets([{name: 'A', cells: study}, {name: 'B', cells: study}]).join(), 'A,B');
   });
 });

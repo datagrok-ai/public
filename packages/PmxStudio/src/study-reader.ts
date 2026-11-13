@@ -587,3 +587,40 @@ export const waiting = (read: TableRead): boolean => read.questions.some((q) => 
 export const volumeSourceOf = (x: any): VolumeSource | undefined =>
   ['given', 'computed', 'deduced'].includes(x?.source) && (x.formula === null || x.formula in FORMULAS) ?
     {formula: x.formula, source: x.source} : undefined;
+
+// ---- an Excel sheet as cells ---------------------------------------------------------------------------------------
+
+/** What a sheet's frame needs to be read as cells: DG.DataFrame fits it. */
+export interface SheetFrame {name: string, rowCount: number,
+  columns: {length: number, byIndex(i: number): {name: string, getString(i: number): string}}}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// an Excel date as the sheet reader hands it over (Date.toString: Mon Nov 13 2026 00:00:00 GMT+0100 (...)), as written
+const JS_DATE = /^[A-Z][a-z]{2} ([A-Z][a-z]{2}) (\d{2}) (\d{4}) \d{2}:\d{2}:\d{2} GMT[+-]\d{4}(?: \(.*\))?$/;
+
+/** A sheet's cells as text: the column names, then a row per line; a date cell as yyyy-mm-dd, a blank as ''. */
+export function cellsOfFrame(df: SheetFrame): string[][] {
+  const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
+  const rows = Array.from({length: df.rowCount}, (_, r) => cols.map((c) => {
+    const s = (c.getString(r) ?? '').trim();
+    const m = JS_DATE.exec(s);
+    return m && MONTHS.includes(m[1]) ? `${m[3]}-${String(MONTHS.indexOf(m[1]) + 1).padStart(2, '0')}-${m[2]}` : s;
+  }));
+  return [cols.map((c) => c.name), ...rows];
+}
+
+/** Cells as CSV text, as a file's would be. */
+export const csvOf = (cells: string[][]): string =>
+  cells.map((r) => r.map((c) => /[",\n\r]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c).join(',')).join('\n');
+
+/** The sheets (with data rows) that read as a study. */
+export function studySheets(sheets: {name: string, cells: string[][]}[]): string[] {
+  return sheets.filter((s) => {
+    try {
+      const r = readStudy(s.cells);
+      return r.rows.length > 0 || r.questions.length > 0;
+    } catch {
+      return false;
+    }
+  }).map((s) => s.name);
+}
