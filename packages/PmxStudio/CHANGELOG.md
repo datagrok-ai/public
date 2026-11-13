@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+* One reader for tables of measurements (2026-11-13): Open a study reads one row per measurement, a column per day or
+  a column per animal, and says what it read before opening: the groups, the days, the units (converted, or assumed
+  and said: mm, mm³, g), day 0 (a randomization or treatment-start date column, else the first measurement) and the
+  volumes (as given; computed from length and width, L×W²/2 unless another formula is chosen; or the lab's formula
+  found from its own volumes). Dates and week numbers become days. Every number is read or listed as not read, with
+  the reason; what it cannot tell (two volume columns, day or month first, an implausible unit) it asks. A blinded
+  study's summary names no group. Where a study's volumes come from is saved with it.
+
 * Plain messages from Open a study to Monitor (2026-11-12): what is missing, empty or failed says what happened and
   what to do; no technical text reaches the user (it goes to the console), and no failure is dropped silently (a
   saved-plans list that could not be read no longer says there are none). The atlas file is downloaded once.
