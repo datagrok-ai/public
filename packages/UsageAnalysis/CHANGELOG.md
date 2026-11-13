@@ -12,7 +12,7 @@
 * Metrics: Added data growth (Postgres tables and categories, storage by nature and location, GC deleted and pending, growth alerts)
 * Metrics: Added a drill-down from a route's error rate to its failed requests, their errors and log
 * Metrics: Removed the Share button; the Metrics app URL no longer repeats `/metrics`
-* Metrics, Reports, Service Logs, Cloud Logs: Moved from Browse > Platform > Admin to Platform > Observability, next to Alerts
+* Metrics, Reports, Service Logs, Cloud Logs: Moved from Browse > Platform > Admin to Platform > Health, next to Alerts
 * Cloud Logs: Opens on this instance's platform events of the last hour instead of an empty CloudWatch form; choosing CloudWatch loads its log groups
 * Cloud Logs: Fixed the Platform events source, which failed on every run
 * AI Usage: Added a dashboard of the assistant's requests: counters of requests, users, tokens and estimated cost, usage over time by model, usage by user and by group, filters, the requests grid, and a request's details, prompt, answer, tool calls and chat in the context panel
