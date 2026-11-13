@@ -13,6 +13,7 @@ import {markStage, plainError, stageOf} from './ui';
 import {steps} from './study-header';
 import type {Stage} from './ui';
 import {openStage, showStage} from './stages';
+import {_package} from './package';
 import {planView} from './plan-view';
 import {analyzeView} from './analyze-view';
 import {monitorView, openStudyFile} from './monitor-view';
@@ -187,7 +188,11 @@ function hubContent(self: ViewHost): ViewContent {
       studies.reload();
   });
 
-  const title = h('h1', 'pmx-hub-title pmx-rise', ['PMX Studio']);
+  // the logo is decoration beside the name it would repeat: empty alt; width and height set, so the title keeps its
+  // size before the image arrives
+  const logo = h('img', 'pmx-hub-logo', [], {src: `${_package.webRoot.replace(/\/?$/, '/')}img/pmx-studio-logo.svg`,
+    alt: '', width: '32', height: '32', draggable: 'false'});
+  const title = h('h1', 'pmx-hub-title pmx-rise', [logo, 'PMX Studio']);
   const lede = h('p', 'pmx-hub-lede pmx-rise', ['Xenograft and syngeneic efficacy studies, from design to analysis.']);
   lede.style.animationDelay = '.08s';
   const page = h('div', 'pmx-hub-page', [title, lede, flow, under, strip, studies.root]);
