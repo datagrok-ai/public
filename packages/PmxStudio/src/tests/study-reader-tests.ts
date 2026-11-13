@@ -10,8 +10,10 @@ const near = (a: number | null, b: number) => a !== null && Math.abs(a - b) < 1e
 
 /** A long table with length and width (and height when `h`): two animals, two days. */
 const caliper = (head: string, h = false, vol?: VolumeFormula) => {
-  const rows = [['m1', 'Vehicle', 0, 10, 8, 6], ['m1', 'Vehicle', 3, 12, 9, 7], ['m2', 'Cpd', 0, 11, 7, 5],
-    ['m2', 'Cpd', 3, 11.5, 7.5, 6]] as const;
+  const rows: [string, string, number, number, number, number][] = [['m1', 'Vehicle', 0, 10, 8, 6],
+    ['m1', 'Vehicle', 3, 12, 9, 7], ['m2', 'Cpd', 0, 11, 7, 5], ['m2', 'Cpd', 3, 11.5, 7.5, 6]];
+  if (vol)
+    rows.push(['m1', 'Vehicle', 1, 10.5, 8.5, 6.5], ['m1', 'Vehicle', 2, 11, 8.8, 6.8]);
   return head + '\n' + rows.map(([a, g, d, l, w, hh]) => [a, g, d, l, w, ...h ? [hh] : [],
     ...vol ? [Math.round(FORMULAS[vol].v(l, w, hh) * 100) / 100] : []].join(',')).join('\n') + '\n';
 };
@@ -56,10 +58,12 @@ category('Study reader', () => {
       expect(studySummary(r)[1], `Volumes match ${FORMULAS[f].label}.`, f);
     }
     expect(deduceFormula([{l: 10, w: 8, h: null, v: 999}]), null);
+    // fewer than five rows: no formula is deduced, the volumes are as given
+    expect(deduceFormula([1, 2, 3, 4].map((i) => ({l: 10 + i, w: 8, h: null, v: (10 + i) * 32}))), null);
     expect(JSON.stringify(volumeSourceOf({formula: 'LWH/2', source: 'deduced'})),
       JSON.stringify({formula: 'LWH/2', source: 'deduced'}));
-    expect(volumeSourceOf({formula: 'L*W', source: 'computed'}), undefined);
-    expect(volumeSourceOf(undefined), undefined);
+    expect(volumeSourceOf({formula: 'L*W', source: 'computed'}) === undefined, true);
+    expect(volumeSourceOf(undefined) === undefined, true);
   });
 
   test('volumes that follow no formula are used as given, and said so', async () => {
@@ -181,5 +185,91 @@ category('Study reader', () => {
     expect(lines(read('Animal,Group,Day 0 (mm3),Day 3 (mm3)\nV1,Vehicle,37.9,51.8\n')).includes('assumed'), false);
     expect(read('Animal,Group,Baseline,D3,D7\nm1,V,100,150,160\n').error!
       .startsWith('Not read: column C ("Baseline")'), true);
+  });
+  test('numbers under an empty heading are listed, wherever the column is', async () => {
+    const r = read('Animal,Group,Day,Volume,,Note\n1,A,0,100,55,x\n2,A,0,120,66,y\n');
+    expect(r.error, null);
+    expect(r.ignored.join('|'), 'column E, with no heading');
+    expect(studySummary(r).includes('Not read: column E, with no heading.'), true, lines(r));
+  });
+
+  test('an animal id in two groups: only the shared ids renamed, never by the group\'s name', async () => {
+    const csv = 'Animal,Group,Day,Volume\n1,Alpha,0,100\n2,Alpha,0,110\n1,Beta,0,120\n3,Beta,0,90\n';
+    const r = read(csv);
+    expect(r.rows.map((x) => x.animal).join('|'), '1 (g1)|2|1 (g2)|3');
+    expect(studySummary(r).includes('Animal ids repeat across groups: read as different animals (1 id).'), true);
+    expect(r.rows.some((x) => /Alpha|Beta/.test(x.animal)), false);
+    expect(studySummary(r, true).some((l) => /Alpha|Beta/.test(l)), false, studySummary(r, true).join('|'));
+    expect(r.groups.map(([, n]) => n).join(), '2,2');
+  });
+
+  test('length and width but no volume, and no formula: left out and said', async () => {
+    const r = read('Animal,Group,Day,Length,Width,Volume\n1,A,0,10,8,500\n1,A,3,12,9,\n');
+    expect(r.ignored.join('|'), 'row 3, length and width but no volume, and no formula matches the volumes given');
+    expect(r.rows[1].volume, null);
+  });
+
+  test('a day column that is not headed as a day says so; weeks are multiplied by 7; visit is no day', async () => {
+    const t = read('Animal,Group,Time,Volume\nm1,V,0,100\nm1,V,3,150\n');
+    expect(t.notes.includes('Days read from column C ("Time").'), true, lines(t));
+    const d = read('Animal,Group,Day,Volume\nm1,V,0,100\nm1,V,3,150\n');
+    expect(d.notes.some((n) => n.startsWith('Days read')), false);
+    const w = read('Animal,Group,Week,Volume\nm1,V,0,100\nm1,V,2,150\n');
+    expect(w.rows.map((x) => x.day).join(), '0,14');
+    expect(w.notes.includes('Weeks in column C ("Week") read as days (× 7).'), true, lines(w));
+    expect(waiting(read('Animal,Group,Visit,Volume\nm1,V,0,100\nm1,V,2,150\n')), true);
+  });
+
+  test('the height formulas first, and a formula chosen only when it beats the others', async () => {
+    const sets = [[10, 8, 6], [12, 9, 7], [11, 7, 5], [11.5, 7.5, 6], [9, 6, 5]]
+      .map(([l, w, h]) => ({l, w, h, v: FORMULAS['pi/6*LWH'].v(l, w, h)}));
+    expect(deduceFormula(sets), 'pi/6*LWH');
+    // the same volumes without a height column: the width-only formulas, none matching
+    expect(deduceFormula(sets.map((x) => ({...x, h: null}))), null);
+  });
+
+  test('missing volumes filled from the deduced formula are counted', async () => {
+    const csv = caliper('Animal,Group,Day,Length,Width,Volume', false, 'LW2/2').replace(/,323.44\n/, ',\n');
+    const r = read(csv);
+    expect(r.error, null);
+    expect(studySummary(r)[1], 'Volumes match length × width² / 2; 1 missing volume computed with it.');
+    expect(near(r.rows[3].volume, 11.5 * 7.5 * 7.5 / 2), true);
+  });
+
+  test('a day above 1000 is a date: the table is refused', async () => {
+    expect(read('Animal,Group,Day,Volume\nm1,V,20260301,100\nm1,V,20260304,150\n').error, 'Not read: column C ' +
+      '("Day") holds 20260301, not a study day: write dates as 2026-03-01.');
+    expect(read('Animal,Group,Day 0,20260301\nV1,Vehicle,37.9,51.8\n').error!.startsWith('Not read: column D ' +
+      '("20260301") holds 20260301, not a study day'), true);
+  });
+
+  test('a randomization date after the first measurement: negative days, said', async () => {
+    const r = read('Animal,Group,Date,Randomization date,Volume\nm1,V,2026-03-01,2026-03-03,100\n' +
+      'm1,V,2026-03-05,2026-03-03,150\n');
+    expect(r.rows.map((x) => x.day).join(), '-2,2');
+    expect(r.notes.includes('Measurements before day 0 are at negative days.'), true, lines(r));
+  });
+
+  test('a start-date column with no dates is not the start: kept as an extra column', async () => {
+    const r = read('Animal,Group,Date,Randomized,Volume\nm1,V,2026-03-01,Yes,100\nm1,V,2026-03-05,Yes,150\n');
+    expect(r.error, null);
+    expect(r.rows.map((x) => x.day).join(), '0,4');
+    expect(r.extra.map(([n]) => n).join(), 'Date,Randomized');
+  });
+
+  test('body weights that are very small for grams: the unit is asked', async () => {
+    const csv = 'Animal,Group,Day,Volume (mm3),BW\nm1,V,0,100,0.02\nm2,C,0,120,0.021\n';
+    const q = read(csv);
+    expect(waiting(q), true);
+    expect(q.questions[0].text, 'The body weights are very small for grams. In which unit are they?');
+    expect(q.questions[0].options.map(([, l]) => l).join('|'), 'g, as they are|kg: multiplied by 1000');
+    expect(read(csv, {'unit:weight': 'kg'}).rows[0].weight, 20);
+    expect(read(csv, {'unit:weight': 'g'}).rows[0].weight, 0.02);
+  });
+
+  test('cells that are not numbers: at most six named, the rest counted', async () => {
+    const rows = Array.from({length: 14}, (_, i) => `m1,V,${i},x`).join('\n');
+    const r = read(`Animal,Group,Day,Volume\n${rows}\nm2,V,0,50\n`);
+    expect(r.ignored[0], '14 cells that are not a plain number (D2, D3, D4, D5, D6, D7, … and 8 more)');
   });
 });

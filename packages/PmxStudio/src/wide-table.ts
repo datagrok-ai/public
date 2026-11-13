@@ -36,6 +36,13 @@ export function dayOf(cell: string): number | null {
   return m ? Number(m[1]) : null;
 }
 
+/** A day above 1000 is a date written as a number (20260301), said so. */
+export function dayWord(day: number): string {
+  const t = String(day);
+  const example = /^\d{8}$/.test(t) ? `${t.slice(0, 4)}-${t.slice(4, 6)}-${t.slice(6)}` : '2026-03-01';
+  return `${t}, not a study day: write dates as ${example}`;
+}
+
 /** The separator the first lines of a delimited text use most, outside quotes. */
 export function separatorOf(text: string): string {
   const head = text.replace(/^\uFEFF/, '').split('\n', 5).join('\n').replace(/"[^"]*"/g, '');
@@ -278,6 +285,8 @@ function readByAnimal(cells: string[][], filled: number[], decimalComma: boolean
       return no(at(r, 0) === '' ? `row ${r + 1} has no day in column A` :
         `row ${r + 1} does not start with a day (0, 7, D7 or Day 7; dates are not read)`);
     }
+    if (day > 1000)
+      return no(`row ${r + 1} holds ${dayWord(day)}`);
     if (day <= previous)
       return no(`the day in row ${r + 1} does not come after the day above it`);
     previous = day;
@@ -324,6 +333,8 @@ function readByDay(cells: string[][], filled: number[], decimalComma: boolean): 
       continue;
     if (dayOf(head[c]) === null)
       return no(`column ${letter(c)} is headed "${head[c]}", not a day (0, 7, D7 or Day 7)`);
+    if (dayOf(head[c])! > 1000)
+      return no(`column ${letter(c)} ("${head[c]}") holds ${dayWord(dayOf(head[c])!)}`);
     if (c > first && dayOf(head[c])! <= dayOf(head[lastDay])!)
       return no(`the day "${head[c]}" (column ${letter(c)}) does not come after the one before it`);
     if (c > lastDay + 1)

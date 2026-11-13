@@ -1,4 +1,4 @@
-import {SUMMARY, dayOf, letter, numberOf, readWide} from './wide-table';
+import {SUMMARY, dayOf, dayWord, letter, numberOf, readWide} from './wide-table';
 
 /** The answers given to the reader's questions, by question id. */
 export type Answers = {[id: string]: string};
@@ -47,8 +47,8 @@ const SYNONYMS: {readonly [r in Role]: readonly string[]} = Object.freeze({
   animal: ['animal', 'animal_id', 'animalid', 'animal_no', 'animal_number', 'mouse', 'mouse_id', 'mouseid', 'mouse_no',
     'rat', 'rat_id', 'subject', 'subject_id', 'subjid', 'id', 'tag', 'ear_tag', 'tumor_id', 'tumour_id'],
   group: ['group', 'groups', 'group_name', 'arm', 'treatment', 'treatment_group', 'cohort', 'tx', 'dose_group'],
-  day: ['day', 'days', 'study_day', 'studyday', 'day_of_study', 'time', 'timepoint', 'time_point', 'dpi', 'visit',
-    'days_post_implant', 'days_post_inoculation'],
+  day: ['day', 'days', 'study_day', 'studyday', 'day_of_study', 'time', 'timepoint', 'time_point', 'dpi',
+    'days_post_implant', 'days_post_inoculation', 'week', 'weeks', 'wk', 'wks'],
   date: ['date', 'measurement_date', 'date_of_measurement', 'meas_date', 'visit_date', 'assessment_date'],
   start: ['randomization_date', 'randomisation_date', 'rand_date', 'randomization', 'randomisation',
     'date_of_randomization', 'date_of_randomisation', 'treatment_start', 'treatment_start_date', 'start_date',
@@ -142,20 +142,32 @@ export function dateOrder(values: string[]): 'dmy' | 'mdy' | 'unknown' | 'mixed'
 
 // ---- volumes -------------------------------------------------------------------------------------------------------
 
-/** The formula a lab's volumes follow from its lengths and widths (and heights): the first whose volumes are within
- *  1% of the given ones at the median and within 2% in 90% of the rows with all of them; null when none is. */
+/** The formula a lab's volumes follow from its lengths and widths (and heights): the one whose volumes come
+ *  within 1% of the given ones at the median and within 2% in 90% of the rows with all of them, closest first; null
+ *  when none does, or with fewer than five rows to tell by. */
 export function deduceFormula(sets: {l: number, w: number, h: number | null, v: number}[]): VolumeFormula | null {
   const usable = sets.filter((x) => x.v > 0);
-  for (const f of Object.keys(FORMULAS) as VolumeFormula[]) {
+  // five rows at least: fewer cannot tell a formula from a coincidence
+  if (usable.length < 5)
+    return null;
+  // with a height column the formulas with a height come first; one is chosen only if it beats the others
+  const tall = usable.some((x) => x.h !== null);
+  const all = Object.keys(FORMULAS) as VolumeFormula[];
+  const order = tall ? [...all.filter((f) => FORMULAS[f].height), ...all.filter((f) => !FORMULAS[f].height)] : all;
+  let best: VolumeFormula | null = null;
+  let bestError = Infinity;
+  for (const f of order) {
     const rows = FORMULAS[f].height ? usable.filter((x) => x.h !== null) : usable;
     if (rows.length === 0 || FORMULAS[f].height && rows.length < usable.length)
       continue;
     const errors = rows.map((x) => Math.abs(FORMULAS[f].v(x.l, x.w, x.h ?? 0) - x.v) / x.v).sort((a, b) => a - b);
     const median = errors[Math.floor((errors.length - 1) / 2)];
-    if (median < 0.01 && errors.filter((e) => e <= 0.02).length >= 0.9 * errors.length)
-      return f;
+    if (median < 0.01 && errors.filter((e) => e <= 0.02).length >= 0.9 * errors.length && median < bestError) {
+      best = f;
+      bestError = median;
+    }
   }
-  return null;
+  return best;
 }
 
 const median = (xs: number[]) => {
@@ -166,6 +178,9 @@ const median = (xs: number[]) => {
 // ---- the reader ----------------------------------------------------------------------------------------------------
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+/** At most six cells named, the rest counted. */
+const fewOf = (xs: string[]) =>
+  xs.length > 6 ? `${xs.slice(0, 6).join(', ')}, … and ${xs.length - 6} more` : xs.join(', ');
 const listed = (xs: string[]) => `${xs.slice(0, 6).join(', ')}${xs.length > 6 ? ', …' : ''}`;
 const andList = (xs: string[]) => xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : xs[0];
 const empty = (shape: TableRead['shape']): TableRead => ({shape, rows: [], groups: [], notes: [], ignored: [],
@@ -180,11 +195,13 @@ function counted(rows: StudyRow[]): [string, number][] {
 }
 
 /** The questions on a unit assumed, asked when the volumes come out as no study's. */
-const UNIT_QUESTIONS: {[kind in 'volume' | 'length']: Question} = {
+const UNIT_QUESTIONS: {[kind in 'volume' | 'length' | 'weight']: Question} = {
   volume: {id: 'unit:volume', text: 'The volumes are very small or very large for mm³. In which unit are they?',
     options: [['mm3', 'mm³ (or µL), as they are'], ['cm3', 'cm³ (or mL): multiplied by 1000']]},
   length: {id: 'unit:length', text: 'The volumes come out very small or very large from lengths in mm. In which ' +
     'unit are the lengths and widths?', options: [['mm', 'mm, as they are'], ['cm', 'cm: multiplied by 10']]},
+  weight: {id: 'unit:weight', text: 'The body weights are very small for grams. In which unit are they?',
+    options: [['g', 'g, as they are'], ['kg', 'kg: multiplied by 1000']]},
 };
 const STANDARD: {[kind in 'length' | 'volume' | 'weight']: Unit} = {length: 'mm', volume: 'mm3', weight: 'g'};
 const KIND_WORD = {length: 'Lengths', volume: 'Volumes', weight: 'Body weights'};
@@ -196,8 +213,14 @@ function withUnits(read: TableRead, units: [kind: 'length' | 'volume' | 'weight'
   from: 'length' | 'volume'): TableRead {
   const vs = read.rows.flatMap((r) => has(r.volume) && r.volume > 0 ? [r.volume] : []);
   const m = median(vs);
+  const ws = read.rows.flatMap((r) => has(r.weight) && r.weight > 0 ? [r.weight] : []);
+  const asked: Question[] = [];
   if (units.some(([k, u]) => k === from && u === null) && (m < 1 || m > 50000))
-    return {...read, rows: [], notes: [], ignored: [], extra: [], questions: [...read.questions, UNIT_QUESTIONS[from]]};
+    asked.push(UNIT_QUESTIONS[from]);
+  if (units.some(([k, u]) => k === 'weight' && u === null) && median(ws) < 1)
+    asked.push(UNIT_QUESTIONS.weight);
+  if (asked.length)
+    return {...read, rows: [], notes: [], ignored: [], extra: [], questions: [...read.questions, ...asked]};
   const converted = units.filter(([, u]) => u && UNITS[u].factor !== 1)
     .filter(([k], i, all) => all.findIndex(([x]) => x === k) === i)
     .map(([k, u]) => `${KIND_WORD[k]} converted from ${UNITS[u!].name} to ${UNITS[STANDARD[k]].name}.`);
@@ -296,8 +319,23 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
     }
     [dateCol, dayCol] = [dayCol, undefined];
   }
+  const notes: string[] = [];
+  let weeks = 1;
+  if (dayCol !== undefined) {
+    const big = values(dayCol).map((s) => dayOf(s)!).find((d) => d > 1000);
+    if (big !== undefined)
+      return refused('long', `Not read: ${name(dayCol)} holds ${dayWord(big)}.`);
+    const key = nameOf(head[dayCol]).key;
+    if (/^(weeks?|wks?)$/.test(key)) {
+      weeks = 7;
+      notes.push(`Weeks in ${name(dayCol)} read as days (× 7).`);
+    } else if (!['day', 'days', 'study_day', 'studyday', 'd'].includes(key))
+      notes.push(`Days read from ${name(dayCol)}.`);
+  }
   let order: 'dmy' | 'mdy' = 'dmy';
-  const startCol = dayCol === undefined ? col.start : undefined;
+  // a start-date column with no date in it is no start date: it stays among the other columns
+  const startCol = dayCol === undefined && col.start !== undefined && values(col.start).some(isDate) ? col.start :
+    undefined;
   if (dateCol !== undefined) {
     const dated = [dateCol, ...startCol === undefined ? [] : [startCol]];
     const bad = dated.find((c) => values(c).some((s) => !isDate(s)));
@@ -341,7 +379,8 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
         skipped.add(r);
       }
     };
-    const when = dayCol !== undefined ? dayOf(at(r, dayCol)) : dateOf(at(r, dateCol!), order);
+    const day = dayCol !== undefined ? dayOf(at(r, dayCol)) : null;
+    const when = dayCol !== undefined ? day === null ? null : day * weeks : dateOf(at(r, dateCol!), order);
     if (SUMMARY.test(id))
       leave(`a summary row (${id.replace(/[\s=]+$/, '')})`);
     else if (id === '')
@@ -369,13 +408,13 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
   }
   if (notNumbers.length) {
     ignored.push(`${plural(notNumbers.length, 'cell')} that ${notNumbers.length === 1 ? 'is' : 'are'} not a plain ` +
-      `number (${listed(notNumbers)})`);
+      `number (${fewOf(notNumbers)})`);
   }
-  // numbers in a column with no heading are no one's measurement
-  const width = Math.max(...rest.map((r) => cells[r].length));
-  const unheaded = Array.from({length: Math.max(0, width - head.length)}, (_, k) => head.length + k)
-    .filter((c) => rest.some((r) => /\d/.test(at(r, c))));
-  unheaded.forEach((c) => ignored.push(`column ${letter(c)}, with no heading`));
+  // numbers in a column with no heading (inside the header's width or past it) are no one's measurement
+  const width = Math.max(head.length, ...rest.map((r) => cells[r].length));
+  Array.from({length: width}, (_, c) => c).filter((c) => head[c] === undefined || head[c] === '')
+    .filter((c) => rest.some((r) => /\d/.test(at(r, c))))
+    .forEach((c) => ignored.push(`column ${letter(c)}, with no heading`));
 
   // the check, cell by cell, that every number in a measurement column is placed, or in a row or cell left out
   const lost: string[] = [];
@@ -393,7 +432,6 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
     return refused('long', 'Not read: no measurements under the header.');
 
   // day 0 is each animal's own randomization date when the table has them, else the study's first measurement
-  const notes: string[] = [];
   const first = Math.min(...raws.map((x) => x.when));
   const starts = new Map<string, Raw>();
   if (dateCol !== undefined && startCol !== undefined) {
@@ -417,12 +455,19 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
     notes.push(`Day 0 is the first measurement, ${isoOf(first)}.`);
   const dayOfRaw = (x: Raw) => dateCol === undefined ? x.when : x.when - (startCol !== undefined ?
     starts.get(x.animal)!.start! : first);
+  if (dateCol !== undefined && startCol !== undefined && raws.some((x) => dayOfRaw(x) < 0))
+    notes.push('Measurements before day 0 are at negative days.');
 
   // one row per animal and day; an id found in two groups is two animals
   const groupsOf = new Map<string, Set<string>>();
   raws.forEach((x) => groupsOf.set(x.animal, (groupsOf.get(x.animal) ?? new Set()).add(x.group)));
-  const shared = [...groupsOf.values()].some((g) => g.size > 1);
-  const animal = (x: Raw) => shared ? `${x.group} ${x.animal}` : x.animal;
+  const shared = new Set([...groupsOf].filter(([, g]) => g.size > 1).map(([id]) => id));
+  // only the shared ids are told apart, by the order their group first appears (never by its name: a blinded study)
+  const groupNo = new Map<string, number>();
+  raws.forEach((x) => groupNo.has(x.group) || groupNo.set(x.group, groupNo.size + 1));
+  const animal = (x: Raw) => shared.has(x.animal) ? `${x.animal} (g${groupNo.get(x.group)})` : x.animal;
+  if (shared.size)
+    notes.push(`Animal ids repeat across groups: read as different animals (${plural(shared.size, 'id')}).`);
   const seen = new Map<string, number>();
   for (const x of raws) {
     const key = `${animal(x)}\u0000${dayOfRaw(x)}`;
@@ -440,8 +485,9 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
     const formula = deduceFormula(raws.flatMap((x) => has(x.m.length) && has(x.m.width) && has(x.m.volume) ?
       [{l: x.m.length, w: x.m.width, h: x.m.height ?? null, v: x.m.volume}] : []));
     volume = {formula, source: formula ? 'deduced' : 'given'};
-    notes.unshift(formula ? `Volumes match ${FORMULAS[formula].label}.` : 'The volumes given do not follow a known ' +
-      'formula from length and width: they are used as given.');
+    const tested = raws.filter((x) => has(x.m.length) && has(x.m.width) && has(x.m.volume) && x.m.volume > 0).length;
+    notes.unshift(formula ? `Volumes match ${FORMULAS[formula].label}.` : tested < 5 ? 'Volumes as given.' :
+      'The volumes given do not follow a known formula from length and width: they are used as given.');
   } else if (col.volume !== undefined) {
     volume = {formula: null, source: 'given'};
     notes.unshift('Volumes as given.');
@@ -463,6 +509,20 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
   };
   const rows: StudyRow[] = raws.map((x) => ({animal: animal(x), group: x.group, day: dayOfRaw(x), volume: volumeOf(x),
     weight: x.m.weight ?? null}));
+  if (volume.source === 'deduced') {
+    const filled = raws.filter((x) => !has(x.m.volume) && has(volumeOf(x))).length;
+    if (filled)
+      notes[0] = `${notes[0].slice(0, -1)}; ${plural(filled, 'missing volume')} computed with it.`;
+  }
+  // length and width but no volume, and no formula to compute it: left out, said
+  if (col.volume !== undefined && caliper && !volume.formula) {
+    const no = raws.filter((x) => !has(x.m.volume) && has(x.m.length) && has(x.m.width)).map((x) => x.r + 1);
+    const why = 'length and width but no volume, and no formula matches the volumes given';
+    if (no.length > 3)
+      ignored.push(`${no.length} rows (${listed(no.map(String))}), ${why}`);
+    else
+      no.forEach((r) => ignored.push(`row ${r}, ${why}`));
+  }
 
   // the other columns, kept as they are (the caliper's readings, a date, a cage, a comment)
   const taken = [col.animal, col.group, dayCol, col.volume, col.weight];
