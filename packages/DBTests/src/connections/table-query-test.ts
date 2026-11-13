@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {requireConnection} from './reachable';
 
 category('TableQueryBuilder', () => {
     const testTableName: string = 'products';
@@ -8,6 +9,7 @@ category('TableQueryBuilder', () => {
 
     before(async () => {
         northwind = await grok.functions.eval('DbTests:PostgresTest');
+        await requireConnection(northwind);
     });
 
     test('no fields', async () => {
