@@ -1228,7 +1228,7 @@ export class PeptidesModel {
     this.subs.push(grok.events.onAccordionConstructed.subscribe((acc) => {
       const o = acc.context;
       const col = o instanceof DG.SemanticValue ? o.cell?.column : o instanceof DG.Column ? o : null;
-      if (!col || !this.df.columns.toList().includes(col))
+      if (!col || !this.df.columns.contains(col.name))
         return;
 
       const actionsPane = acc.getPane('Actions');
