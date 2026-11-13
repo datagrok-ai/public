@@ -28,7 +28,7 @@ const STUB = `
 import {DartWidget, JsViewer, Viewer, platform} from '${DOUBLES}';
 import {levenshteinDistance, jaroWinklerDistance} from '${DISTANCES}';
 export {BitSet, Column, DartWidget, DataFrame, DataQuery, Entity, EventType, FileInfo, FilterGroup, Func,
-  Grid, JsViewer, ObjectPropertyBag, Package, Property, PropertyGrid, Row, Script, TableQuery, User, View, Viewer,
+  Grid, JsViewer, ObjectPropertyBag, Package, Project, Property, PropertyGrid, Row, Script, TableQuery, User, View, Viewer,
   ViewerMetaHelper, Widget, WidgetDescriptor, platform,
   FuncCall, FuncCallParam, FuncParam} from '${DOUBLES}';
 
@@ -107,6 +107,11 @@ export class ObjectHandler {
   static register(handler) { ObjectHandler.registered.push(handler); }
 
   static forEntity(x) { return ObjectHandler.registered.find((h) => h.isApplicable(x)) ?? null; }
+
+  /** What a double-click on \`x\` would run: recorded, newest last. */
+  static defaultActions = [];
+
+  static runDefaultAction(x) { ObjectHandler.defaultActions.push(x); }
 }
 
 /** The js-api domain handler's slice the domain handle uses (domains-ui.ts): rows built locally
@@ -227,6 +232,7 @@ export const events = {onTableAdded: shell.dart.tableAdded, onTableRemoved: shel
 export const data = {parseCsv: () => new DataFrame()};
 
 export const userSettings = {values: {}, get: (name) => userSettings.values[name],
+  getValue: (name, key) => userSettings.values[name]?.[key],
   add: (name, key, value) => (userSettings.values[name] ??= {})[key] = value,
   delete: (name, key) => delete userSettings.values[name]?.[key]};
 
