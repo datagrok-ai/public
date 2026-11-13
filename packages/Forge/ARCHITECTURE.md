@@ -2012,7 +2012,7 @@ generated `package-api.ts` types `object`, `map` and `list` as `any`).
   `overview`, `apiRef`, `docsRef`) says what Forge does, where its UI is and which functions it has.
 - `agents/skills.md` is the assistant's skill: a routing table from the user's intent to a function, every signature
   with its result shape and error sentences, `datagrok_exec` recipes and the rules (no upload unless a copy is asked
-  for, apply only a model that fits, confirm a delete, `ML | Models` is not Forge). It is self-contained: the runtime
+  for, apply only a model that fits, confirm a delete, where Forge is in the UI). It is self-contained: the runtime
   reads a package's `agents/` in its clone of the public repository's `master` (`workspace/packages/Forge/agents/`)
   and, for an installed package that is not in the clone, syncs the published flat `agents/` files from
   `packages/published/files/<name>/<version>/<buildHash>/<buildNumber>/agents/` as `Forge-package-knowledge.yaml` and

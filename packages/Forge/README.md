@@ -1044,8 +1044,9 @@ panel. The platform asks to confirm and links the model to the Space; everyone w
 and apply it. Dropping it again links nothing twice. The platform has no **Add to** command for models yet.
 
 On a server with Forge, **ML | Models**, **Browse > Platform > Predictive models** and the table's **Models** pane are
-Forge's. Models of the earlier predictive modeling tool are not shown; a column predicted by such a model says so in
-**Predicted by**. Forge needs Datagrok **<minimum platform version: TBD>** or later: on an older server the earlier
+Forge's. Models of the earlier predictive modeling tool are not listed in Forge's catalog; where the platform still
+lists one (**Recent**, **Favorites**, **Shared with me**, project links), it shows only a note and offers no commands.
+A column predicted by such a model says so in **Predicted by**. Forge needs Datagrok **<minimum platform version: TBD>** or later: on an older server the earlier
 tool stays in **ML | Models** and a table shows two **Models** panes.
 
 ## Methods

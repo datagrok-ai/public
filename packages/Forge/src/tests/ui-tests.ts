@@ -3729,6 +3729,7 @@ category('UI: Table panel', () => {
       if (header()?.getAttribute('aria-expanded') !== 'true')
         header()?.click();
       await awaitCheck(() => paneLine(panel(), name) !== undefined, 'The pane does not list the model', WAIT_MS);
+      expect(headers().filter((h) => h.textContent?.trim() === PANEL_TABLE_MODELS).length, 1);
       // Expanding any accordion pane makes the platform drop unforced current-object changes for 2 s.
       const other = headers().find((h) => h !== header());
       if (other === undefined)
@@ -3739,29 +3740,6 @@ category('UI: Table panel', () => {
       paneParts(panel(), name).link.click();
       await awaitCheck(() => grok.shell.o instanceof DG.DomainRow && grok.shell.o.values?.name === name,
         `The click left ${String(grok.shell.o)} as the current object`, WAIT_MS);
-    } finally {
-      grok.shell.windows.showContextPanel = isPanelShown;
-      tableView.close();
-    }
-  }, {timeout: TIMEOUT});
-
-  test('the context panel has one Models pane', async () => {
-    const {name, iris} = paneFixture();
-    const tableView = grok.shell.addTableView(iris);
-    const isPanelShown = grok.shell.windows.showContextPanel;
-    grok.shell.windows.showContextPanel = true;
-    const panel = () => document.querySelector<HTMLElement>('.grok-prop-panel') ?? ui.div();
-    const modelsHeaders = () => Array.from(panel().querySelectorAll<HTMLElement>('.d4-accordion-pane-header'))
-      .filter((h) => h.textContent?.trim() === PANEL_TABLE_MODELS);
-    try {
-      await awaitCheck(() => {
-        if (!(grok.shell.o instanceof DG.DataFrame && grok.shell.o.dart === iris.dart))
-          grok.shell.setCurrentObject(iris, false, true);
-        for (const header of modelsHeaders().filter((h) => h.getAttribute('aria-expanded') !== 'true'))
-          header.click();
-        return paneLine(panel(), name) !== undefined;
-      }, 'Forge\'s Models pane does not list the model', WAIT_MS);
-      expect(modelsHeaders().length, 1);
     } finally {
       grok.shell.windows.showContextPanel = isPanelShown;
       tableView.close();

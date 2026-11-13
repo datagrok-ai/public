@@ -38,7 +38,7 @@
 * GROK-20932: Added every EDA method to the Train view with the suggested default, live retraining (a right-aligned Train button with a tooltip for a method too slow to retrain on every change), data storage modes (reference, copy), a resizable splitter between the inputs and the results, and the `Fix the settings.` hint for an invalid setting
 * GROK-20932: Added the Preparation section: one-hot encoding with recorded categories (on by default for up to 20 categories), skipping unique categories (recorded columns), Predict probability with a validated cutoff and AUC-ROC
 * GROK-20932: Added Insights & Tips, the results in resizable rows of platform viewers (scatter plots, residuals, distributions, statistics, a ROC curve with the cutoff marked, confusion matrix, wrong predictions, class balance, PC and correlation plots, the method's own viewers; kept while a retrain keeps the data; a tooltip on every panel title; short insights with the numbers and a pointer to their panel in the tooltip, shown as that panel's viewer description) with the metrics in the Performance panel, and Run Evaluation with an Evaluation column, metric values below a threshold or overfitting marked in the metrics grid, a model card of one height and a rich model tooltip
-* GROK-20932: Added the table pane Forge models in the built-in Models pane's look (the fitting models with the run icon, the model's tooltip and menu, and Train)
+* GROK-20932: Added the table pane Models in the built-in Models pane's look (the fitting models with the run icon, the model's tooltip and menu, and Train)
 * GROK-20932: Added the catalog's description for the AI assistant
 * GROK-20932: Added the model's tooltip to the catalog grid's Name cells
 * GROK-20932: Added the Runs grid of the Train view: every training of the view that a change did not stop, newest first; click a run to set its inputs again when they differ from the form's
@@ -53,9 +53,9 @@
 * GROK-20932: Added the BDD features of the Apply dialog, the catalog, the app and the menus (bdd/)
 * GROK-20932: Fixed the shown model's Details (Last run, Applications) and Activity staying stale after an application until another row was clicked
 * GROK-20932: Fixed the Activity and Performance grids of the model's context panel being narrower than the panel
-* GROK-20932: Added the BDD features of preparation and training with gaps, the Train view on demog and the table pane Forge models (bdd/)
+* GROK-20932: Added the BDD features of preparation and training with gaps, the Train view on demog and the table pane Models (bdd/)
 * GROK-20932: Fixed the Train view's results keeping aria-invalid after a cancelled training was followed by a completed one
-* GROK-20932: Fixed a click on a model's name in the table pane Forge models doing nothing right after the pane was expanded
+* GROK-20932: Fixed a click on a model's name in the table pane Models doing nothing right after the pane was expanded
 * GROK-20932: Added the API functions Forge:listMethods, listModels, getModel, updateModel, evaluateModel and shareModel
 * GROK-20932: Fixed the model's context panel not following an edit or delete made outside the catalog
 * GROK-20932: Added the package knowledge for Datagrok AI (agents/)

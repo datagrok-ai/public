@@ -5,7 +5,8 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
 ## Entry points
 
 - `src/package.ts` — annotated functions only, each delegating: `forgeApp`, `forgeModels`, `forgeTrain`, `forgeApply`
-  (no menus: the core's `ML | Models` and Browse node call them), the API `applyModel`, `trainModel`, `deleteModel`, `listMethods` (`training/train-api.ts` over
+  (no menus: the core's `ML | Models` and Browse node call `forgeApp`, `forgeTrain`, `forgeApply`; `forgeModels` opens or
+  focuses the app for BDD and API callers), the API `applyModel`, `trainModel`, `deleteModel`, `listMethods` (`training/train-api.ts` over
   `engines/method-list.ts`, whose `methodColumns` the app's Methods grid, `methodsFrame`, shares), `listModels`, `getModel`, `updateModel` (`catalog/list-models.ts`,
   `get-model.ts`, `model-edit.ts`), `evaluateModel` (`training/evaluate-api.ts`), `shareModel` (`openShareDialog` in
   `ui/model-actions.ts`), `_initForge` (autostart), the column panel
@@ -90,7 +91,8 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
   second and ignores the next plain set: the catalog sets with `setCurrentObject(x, true, true)`.
 - Tests type a tag chip into `input.d4-tags-selector-input` (`typeTag`); assigning the Tags `value` skips Enter.
 - The core calls `forgeTrain`, `forgeApply`, `forgeApp` and `applyModel` (inputs by name) by name: renaming one or its
-  inputs breaks `ML | Models` and `grok.ml.applyModel` (core#1518).
+  inputs breaks `ML | Models`, Browse > Platform > Predictive models (and `/models`) and `grok.ml.applyModel`
+  (core#1518).
 - A panel function's widget is never detached: a pane holds no subscription. `grok s functions list --filter
   'name = "X"'` matches the friendly name. A JS `ui.bind` row gets only **Properties...**: use `ui.contextActions(row)`.
 - A row reaches a Space only by the platform's drag of a model element (`ui.bind` / `ui.makeDraggable` with the row).

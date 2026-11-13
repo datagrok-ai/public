@@ -16,8 +16,9 @@ import '../../css/forge.css';
 const PANE_COLUMNS = [...CARD_COLUMNS, 'dataset_name'] as const;
 type PaneModelRow = Pick<ModelRow, typeof PANE_COLUMNS[number] | 'id' | 'author_id' | 'created_on' | 'updated_on'>;
 
-/** **Forge models**, the built-in **Models** pane's look: the models that fit [table], newest first, each a line of
- * the run icon (apply), the name as a link (the model's tooltip, menu and drag) and the menu arrow; then **Train**.
+/** **Models**, in the look of the platform's own **Models** pane: the models that fit [table], newest first, each a
+ * line of the run icon (apply), the name as a link (the model's tooltip, menu and drag) and the menu arrow; then
+ * **Train**.
  * Built when the pane opens; it holds no subscription, as the platform never detaches it. */
 export function tableModelsPane(table: DG.DataFrame): HTMLElement {
   return ui.wait(async () => {

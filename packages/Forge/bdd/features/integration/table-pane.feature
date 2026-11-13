@@ -16,8 +16,8 @@ Feature: The table pane Models: the models that fit a table, their tooltip, menu
   current again, a platform issue: a step sets the table as the current object instead); step 4's cell click back to
   the table (a click on a cell of the iris grid makes the cell the current object, not the table: the same step sets
   the table again); "newest first" beyond the two iris models; the run icon's colour and "no model icon" (visual);
-  that the context panel has one Models pane only (the package test UI: Table panel "the context panel has one Models
-  pane"); the values of the tooltip's
+  that the context panel has one Models pane only (the package test UI: Table panel "a click on a name right after the
+  pane is expanded shows the model"); the values of the tooltip's
   Created by, Created and Updated (the account's name and the times of the run; the Created by caption is claimed); the
   menu items Edit..., Clone, Delete and Watch
   of step 3 (the row menu of a line lists Open, Share..., History, Copy link, Apply... and Download); step 8 (the

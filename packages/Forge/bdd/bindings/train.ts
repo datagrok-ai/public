@@ -530,12 +530,6 @@ export const balloonsClosed = Given('no balloon is shown', async (page: Page) =>
   await expect(page.locator('.d4-balloon').filter({visible: true}), 'balloons after closing them').toHaveCount(0);
 }, {tier: 'api', description: 'DG.Balloon.closeAll(), as the shell reset between features does'});
 
-/* LIB-PROMOTE: an area of a canvas below the visible part of a scrolling panel (the Runs grid under the rows of
-   results) cannot take a pointer gesture; a person scrolls to it first. */
-export const scrollIntoView = When('user scrolls {element} into view', async (page: Page, target: ElementRef) => {
-  await (await locate(page, target)).first().scrollIntoViewIfNeeded();
-}, {tier: 'ui', description: 'scrolls the nearest scrolling ancestors until the element is in view'});
-
 /* LIB-PROMOTE: every cancellable task-bar progress could use it; the entry's cross is the user's cancel. A running
    job replaces the entry's text with its progress ("Rows 1-1 of 6497"), so the entry is the one that showed the text
    since "user counts the task bar entries". */

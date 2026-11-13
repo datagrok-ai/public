@@ -10,7 +10,8 @@ fails the call with one sentence that says what to fix.
 
 Any request to predict a column from other columns, or to train, apply, evaluate, compare, find, describe, rename,
 tag, share or delete a model. Not for clustering or PCA. Not for models of the earlier predictive modeling tool: Forge
-does not list or open them.
+does not list or open them; where the platform still lists one (Recent, Favorites, Shared with me, project links), it
+shows only a note and offers no commands.
 
 ## User intent -> call
 
