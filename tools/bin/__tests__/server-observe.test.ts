@@ -473,6 +473,24 @@ describe('metrics', () => {
     expect((await observe('metrics', 'sessions', [], {}, () => sessions, 'quiet')).printed).not.toContain('now:');
   });
 
+  it('containers: a summary, then the containers not stopped unless --all', async () => {
+    const answer = () => ({states: {running: 2, stopped: 1, error: 0}, stale: {package: 1, image: 0}, images: {ready: 3},
+      spawner: {workloads: 3, replicas: 3, ready: 2, orphans: ['gone']},
+      containers: [
+        {container: 'a', package: 'Chem', version: '1.0', currentVersion: '1.1', state: 'running', stale: 'package', replicas: 1, ready: 1},
+        {container: 'b', package: 'Chem', version: '1.1', currentVersion: '1.1', state: 'running', replicas: 2, ready: 1},
+        {container: 'c', package: 'Chem', version: '1.1', currentVersion: '1.1', state: 'stopped'}]});
+    const {calls, printed} = await observe('metrics', 'containers', [], {}, answer, 'table');
+    expect(calls[0].path).toBe('/admin/metrics/containers');
+    expect(printed).toContain('containers: 2 running, 1 stopped, 0 error; stale: 1 package, 0 image');
+    expect(printed).toContain('spawner: 3 workloads, 3 replicas, 2 ready; orphans: gone');
+    expect(printed).toMatch(/a\s+Chem\s+1\.0\s+1\.1\s+running\s+package/);
+    expect(printed).not.toMatch(/\bc\s+Chem/);
+    expect((await observe('metrics', 'containers', [], {all: true}, answer, 'table')).printed).toMatch(/c\s+Chem\s+1\.1\s+1\.1\s+stopped/);
+    expect((await observe('metrics', 'containers', [], {}, () => ({states: {}, containers: []}), 'table')).printed)
+      .toContain('spawner: did not answer');
+  });
+
   it('queue, disk and storage read their routes', async () => {
     expect((await observe('metrics', 'queue', [], {limit: 4})).calls[0].path).toBe('/admin/metrics/queue?limit=4');
     const disk = await observe('metrics', 'disk', [], {}, () => ({mount: '/', usedPct: 72}), 'table');

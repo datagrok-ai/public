@@ -585,6 +585,7 @@ grok s o metrics database --section unhealthy               # cacheMisses, unhea
 grok s o metrics growth --area storage --days 7             # size and count now and their change over 1, 7, 30 days; * marks an alert holding
 grok s o metrics sessions --since 2h                        # session counts now and before, the latest sessions
 grok s o metrics queue                                      # function calls queued and running now
+grok s o metrics containers                                 # package containers: state, versions, stale, ready replicas, errors; --all adds the stopped
 grok s o metrics failures --method GET --route '/users/{id}' --since 1h   # failed requests of a route, with their session's error
 grok s o metrics request-log --session <id> --time 2026-11-13T10:00       # what a session logged around a time
 grok s o metrics disk                                       # the server's data disk (df)
@@ -614,6 +615,7 @@ to endpoints only, so `groups add --kind metrics` starts with no destination; `g
 | `GET /admin/metrics/growth` | `metrics growth` |
 | `GET /admin/metrics/sessions` | `metrics sessions` |
 | `GET /admin/metrics/queue` | `metrics queue` |
+| `GET /admin/metrics/containers` | `metrics containers` |
 | `GET /admin/metrics/failures` | `metrics failures` |
 | `GET /admin/metrics/request_log` | `metrics request-log` |
 | `GET /admin/metrics/disk` | `metrics disk` |

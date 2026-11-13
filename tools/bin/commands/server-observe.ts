@@ -50,6 +50,9 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
   metrics sessions [<window>] [--limit 10]
                                        Session counts of the window and the previous one, the latest sessions
   metrics queue [--limit 10]           Function calls queued and running now, the oldest first
+  metrics containers [--all]           Package containers: state, package version and the current one, stale,
+                                       replicas and ready ones, errors; then what Grok Spawner runs. Without
+                                       --all, stopped containers are left out of the table
   metrics failures --method <M> --route <route> [<window>]
                                        The failed requests of a route (metrics routes), with the error
                                        their session logged
@@ -764,6 +767,22 @@ async function metrics(dapi: NodeDapi, verb: string | undefined, rest: string[],
     case 'queue':
       printOutput(await dapi.raw('GET', `/admin/metrics/queue${buildQuery({limit: argv.limit})}`) ?? [], output);
       return true;
+    case 'containers': {
+      const c = await dapi.raw('GET', '/admin/metrics/containers');
+      if (!table) {
+        printOutput(c, output);
+        return true;
+      }
+      const n = (m: any) => Object.entries(m ?? {}).map(([k, v]) => `${v} ${k}`).join(', ');
+      say(`containers: ${n(c?.states)}; stale: ${n(c?.stale)}; images: ${n(c?.images)}`);
+      say(c?.spawner ? `spawner: ${c.spawner.workloads} workloads, ${c.spawner.replicas} replicas` +
+        `${c.spawner.ready == null ? '' : `, ${c.spawner.ready} ready`}` +
+        `${c.spawner.orphans?.length ? `; orphans: ${c.spawner.orphans.join(', ')}` : ''}` : 'spawner: did not answer');
+      const rows: any[] = (c?.containers ?? []).filter((r: any) => flag(argv.all) || r.state !== 'stopped');
+      printOutput(rows.map((r) => ({container: r.container, package: r.package, version: r.version, current: r.currentVersion,
+        state: r.state, stale: r.stale ?? '', replicas: r.replicas ?? '', ready: r.ready ?? '', error: oneLine(r.error)})), output);
+      return true;
+    }
     case 'failures': {
       if (argv.method === undefined || argv.route === undefined)
         throw new Error('Usage: grok s observe metrics failures --method <M> --route <route> ' +
