@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#745](https://github.com/datagrok-ai/core/issues/745): Domain schemas: per-table icons, and domain rows resolved in Favorites and the Space tree
 * [core#637](https://github.com/datagrok-ai/core/issues/637): Viewers, color, inputs: Added tests for the color alpha: removed scatter plot and line chart opacity props read, written and migrated from layouts through the color alpha, `setMarkerOpacity`, formula line opacity folded once, `AnnotationRegionsHelper.getFillColor`, `Color.opaqueIfNoAlpha` and a color input with `useAlphaChannel`
 * [#3924](https://github.com/datagrok-ai/public/issues/3924): Viewers: Added `Viewers: category order` (the per-viewer `categoryOrder` properties, a custom `categoryOrderer` function)
 * Connections, containers: Added `Widgets: containers` 'empty takes out text and comments, and kills the elements' and `Dapi: connection` 'getCatalogs lists the databases of the server, the connection's own among them' (development only, skipped)
