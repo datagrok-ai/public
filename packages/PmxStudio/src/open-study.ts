@@ -146,13 +146,14 @@ export async function fileText(f: File): Promise<string> {
     console.error(e);
     throw new Error('The Excel file could not be read: open it in Excel and save it again as .xlsx or .csv.');
   }
-  // a refused sheet with rows is the better thing to tell than an empty one
-  const refused = [...frames].sort((a, b) => +(b.rowCount > 0) - +(a.rowCount > 0))
-    .flatMap((df) => sheetProblem(df) ?? []);
+  // an empty sheet (0 columns) is refused too; only a refused sheet with rows is worth telling over the reader's own
+  // message, and an empty one only when nothing else is left
+  const refusedAll = frames.flatMap((df) => sheetProblem(df) ?? []);
+  const refused = frames.filter((df) => df.rowCount > 0).flatMap((df) => sheetProblem(df) ?? []);
   const usable = frames.filter((df) => df.rowCount > 0 && !sheetProblem(df));
   const sheets = usable.map((df) => ({name: df.name, cells: cellsOfFrame(df)}));
   if (sheets.length === 0)
-    throw new Error(refused[0] ?? 'The workbook has no rows: open the file with the measurements.');
+    throw new Error(refused[0] ?? refusedAll[0] ?? 'The workbook has no rows: open the file with the measurements.');
   let pick = sheets[0];
   if (sheets.length > 1 || refused.length) {
     const names = studySheets(sheets);
