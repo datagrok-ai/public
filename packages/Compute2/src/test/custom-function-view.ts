@@ -248,6 +248,22 @@ category('Custom function view', () => {
     expect(opened.funcCall!.inputs['a'], 2);
   }));
 
+  test('A run saved from a custom view is a Compute2 run that previews in the view', () => withRunStorage(async (f) => {
+    const view = await openEditor();
+    view.funcCall!.inputs['a'] = 2;
+    view.funcCall!.inputs['b'] = 3;
+    await view.funcCall!.call();
+    const saved = await view.saveRun(view.funcCall!, {name: `CFV handler ${Date.now()}`});
+    f.track(saved.id);
+
+    const run = await grok.dapi.functions.calls.allPackageVersions().include('session.user,func.package').find(saved.id);
+    const handler = DG.ObjectHandler.forEntity(run);
+    expect(handler?.type, 'ComputeRun');
+    const preview = await handler!.renderPreview(run) as unknown as CustomFunctionView;
+    expect(preview.funcCall!.id, saved.id);
+    expect(preview.funcCall!.inputs['a'], 2);
+  }));
+
   test('A deep link to a run that fails to load opens a new call', async () => {
     const missing = missingRunId();
     const view = await openFromLink(missing);

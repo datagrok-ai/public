@@ -30,8 +30,15 @@ function openComputeRun(id: string): Promise<any> {
   return DG.Func.byName('Compute2:OpenWorkflowRun').prepare({id: id}).call();
 }
 
+// as in OpenWorkflowRun: a run saved from a custom view opens in it, unless that view is gone
+function computeRunFuncOf(call: any): any {
+  const customView = call.options ? call.options['customView'] : null;
+  return (customView && DG.Func.byName(customView)) || call.func;
+}
+
 function computeRunEditorOf(call: any): string | null {
-  const editor = call.func && call.func.options ? call.func.options['editor'] : null;
+  const func = computeRunFuncOf(call);
+  const editor = func && func.options ? func.options['editor'] : null;
   return typeof editor === 'string' && editor.startsWith('Compute2:') ? editor : null;
 }
 
@@ -128,7 +135,7 @@ class ComputeRunHandler extends DG.ObjectHandler {
 
   async renderPreview(x: any): Promise<any> {
     const call = DG.toJs(x);
-    const editorCall = call.func.prepare({});
+    const editorCall = computeRunFuncOf(call).prepare({});
     editorCall.aux.initialRunId = call.id;
     // Return the editor view directly so the docked preview is the view RFV/TreeWizard controls
     // (wrapping it makes a separate view the tracked preview — see compute-utils ModelHandler).
