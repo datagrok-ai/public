@@ -738,7 +738,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
         access.applied.push(op.label);
       } catch (e) {
         const message = DomainErrors.message(e);
-        const gone = op.group !== undefined && /Unknown group/i.test(message);
+        const gone = op.group !== undefined && DomainErrors.codeOf(e) === 'unknown-group';
         failed.push({op, message: gone ? `group ${op.group!.label} no longer exists` : message, final: gone});
         if (op.kind === 'restrict')
           broken.add(op.table);
