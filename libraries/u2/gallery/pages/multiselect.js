@@ -47,9 +47,9 @@ function button(text, onClick) {
 function readout(ms) {
   const value = el('code');
   const state = el('code');
-  bindText(ms.scope, value, computed(() => JSON.stringify(ms.value.value)));
-  bindText(ms.scope, state, computed(() =>
-    `${ms.machineState.value}${ms.isOpen.value ? ', open' : ''}, ${ms.value.value.length} selected`));
+  bindText(value, computed(() => JSON.stringify(ms.value)), {owner: ms.scope});
+  bindText(state, computed(() =>
+    `${ms.machineState.value}${ms.isOpen.value ? ', open' : ''}, ${ms.value.length} selected`), {owner: ms.scope});
   const row = el('p', 'u2-gallery-status');
   row.append('value = ', value, '  ·  machine = ', state);
   return row;
@@ -137,9 +137,9 @@ export async function render(main) {
     'setItems prunes values that no longer exist, without counting as a user edit.'));
   const buttons = el('p');
   buttons.append(
-    button('Set Lipinski set', () => descriptors.value.value = ['mw', 'logP', 'hba', 'hbd']),
+    button('Set Lipinski set', () => descriptors.value = ['mw', 'logP', 'hba', 'hbd']),
     ' ',
-    button('Clear', () => descriptors.value.value = []),
+    button('Clear', () => descriptors.value = []),
     ' ',
     button('setItems: first 6 only', () => descriptors.setItems(DESCRIPTORS.slice(0, 6))),
     ' ',
@@ -161,9 +161,9 @@ export async function render(main) {
   columns.addValidator((v) => v.length === 0 ? 'At least one column is required' : null);
   form.addAll([name, columns]);
   const formStatus = el('code');
-  bindText(form.scope, formStatus, computed(() =>
-    `{"Report name": ${JSON.stringify(name.value.value)}, "Columns": ` +
-    `${JSON.stringify(columns.value.value)}} · validity = ${form.validity.value ?? 'ok'}`));
+  bindText(formStatus, computed(() =>
+    `{"Report name": ${JSON.stringify(name.value)}, "Columns": ` +
+    `${JSON.stringify(columns.value)}} · validity = ${form.validity.value ?? 'ok'}`), {owner: form.scope});
   const formLine = el('p', 'u2-gallery-status');
   formLine.append('form = ', formStatus);
   main.append(form.root, formLine);

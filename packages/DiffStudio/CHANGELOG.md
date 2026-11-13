@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
+* Hub: The header is u2's `AppHeader` (moved out of `@datagrok-libraries/utils`): the same icon, bullets and Learn more
 * Tests: The catalog feature puts the library manifest back at feature end; fitting and sensitivity analysis no longer repeat open-model's and LibTests' claims
 * Fixed the model inputs jumping up half a second after a model or a preview opened: the inputs dock loses its title bar as it is docked, not 500 ms later
 * Save to Library: Fixed overwriting a library model on a file storage that ignores case — the unused name is now picked ignoring case (a saved PK-PD landed on the library's pk-pd.ivp)

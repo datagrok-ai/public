@@ -1,15 +1,3 @@
-/* Noun phrases → resolution plans. Pure: the compiler runs it to validate and explain a phrase,
-   the runtime runs it again to build the Playwright locator. Resolution order, at every level:
-     1. the whole phrase is a registered element (or alias) — the active context's names first,
-        then the global ones; an override always wins, so "save button inside toolbar" can be
-        pinned to one selector regardless of composition;
-     2. a leading ordinal ("second", "last");
-     3. composition: "<inner> in|inside|within|on|under|of <outer>" — the inner phrase resolved
-        inside the outer one (recursively; "of" also names a registered part);
-     4. a registered element, else a generic kind by longest matching suffix
-        ("sequence column input" → kind `input`, qualifier "sequence column").
-   Inside a context, generic kinds and the context's own names are looked up in the context root
-   first (the runtime's job); global names keep their global meaning. */
 import {ContextEntry, ElementEntry, KindEntry, kindNames, lookupElement, lookupKind, normalizePhrase} from './registry.js';
 
 export type Ordinal = number | 'last';

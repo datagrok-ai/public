@@ -32,19 +32,28 @@ export interface C0Options {
  * never throws; it returns `null` when every method in the chain fails. With
  * the default chain that cannot happen — `'set0'` always answers — so `null`
  * is reachable only through a caller-supplied `methods` list.
+ *
+ * `usedIndices` are the input indices the answering method read: the dose-time
+ * point (`c0`), the two post-dose points (`logslope`), the first post-dose point
+ * (`c1`), the minimum (`cmin`), none (`set0`). A caller that differentiates c0
+ * (the sparse IV-bolus SE) reads them here, so it cannot pick other points than
+ * the chain did.
  */
 export function estimateC0Detailed(
   time: Float64Array, conc: Float64Array, blqMask: Uint8Array,
   options: C0Options = {},
-): {value: number; method: C0Method} | null {
+): {value: number; method: C0Method; usedIndices: readonly number[]} | null {
   const timeDose = options.timeDose ?? 0;
   const methods = options.methods ?? C0_DEFAULT_METHODS;
   for (const m of methods) {
-    const v = applyMethod(m, time, conc, blqMask, timeDose);
-    if (v !== null) return {value: v, method: m};
+    const r = applyMethod(m, time, conc, blqMask, timeDose);
+    if (r !== null) return {value: r.value, method: m, usedIndices: r.idx};
   }
   return null;
 }
+
+/** A selector's answer: the value and the input indices it read. */
+type Pick = {value: number; idx: number[]};
 
 /**
  * Estimate the dose-time concentration for an IV bolus profile — the value
@@ -63,13 +72,13 @@ function applyMethod(
   method: C0Method,
   time: Float64Array, conc: Float64Array, blqMask: Uint8Array,
   timeDose: number,
-): number | null {
+): Pick | null {
   switch (method) {
   case 'c0': return c0AtDose(time, conc, blqMask, timeDose);
   case 'logslope': return c0LogSlope(time, conc, blqMask, timeDose);
   case 'c1': return c0FirstPostDose(time, conc, blqMask, timeDose);
   case 'cmin': return c0CMin(conc, blqMask);
-  case 'set0': return 0;
+  case 'set0': return {value: 0, idx: []};
   }
 }
 
@@ -77,12 +86,12 @@ function applyMethod(
 function c0AtDose(
   time: Float64Array, conc: Float64Array, blqMask: Uint8Array,
   timeDose: number,
-): number | null {
+): Pick | null {
   for (let i = 0; i < time.length; i++) {
     if (time[i] !== timeDose) continue;
     if (blqMask[i] !== 0) continue;
     const c = conc[i];
-    if (Number.isFinite(c) && c > 0) return c;
+    if (Number.isFinite(c) && c > 0) return {value: c, idx: [i]};
   }
   return null;
 }
@@ -98,7 +107,7 @@ function c0AtDose(
 function c0LogSlope(
   time: Float64Array, conc: Float64Array, blqMask: Uint8Array,
   timeDose: number,
-): number | null {
+): Pick | null {
   let i1 = -1;
   let i2 = -1;
   for (let i = 0; i < time.length; i++) {
@@ -116,37 +125,37 @@ function c0LogSlope(
   const t1 = time[i1];
   const t2 = time[i2];
   const slope = (Math.log(c2) - Math.log(c1)) / (t2 - t1);
-  return Math.exp(Math.log(c1) - slope * (t1 - timeDose));
+  return {value: Math.exp(Math.log(c1) - slope * (t1 - timeDose)), idx: [i1, i2]};
 }
 
 /** "c1" — use the first post-dose measurable concentration as c0. */
 function c0FirstPostDose(
   time: Float64Array, conc: Float64Array, blqMask: Uint8Array,
   timeDose: number,
-): number | null {
+): Pick | null {
   for (let i = 0; i < time.length; i++) {
     if (time[i] <= timeDose) continue;
     if (blqMask[i] !== 0) continue;
     const c = conc[i];
-    if (Number.isFinite(c)) return c;
+    if (Number.isFinite(c)) return {value: c, idx: [i]};
   }
   return null;
 }
 
 /** "cmin" — minimum non-zero, non-BLQ concentration. */
-function c0CMin(conc: Float64Array, blqMask: Uint8Array): number | null {
+function c0CMin(conc: Float64Array, blqMask: Uint8Array): Pick | null {
   let cmin = Infinity;
-  let found = false;
+  let at = -1;
   for (let i = 0; i < conc.length; i++) {
     if (blqMask[i] !== 0) continue;
     const c = conc[i];
     if (!Number.isFinite(c) || c <= 0) continue;
     if (c < cmin) {
       cmin = c;
-      found = true;
+      at = i;
     }
   }
-  return found ? cmin : null;
+  return at >= 0 ? {value: cmin, idx: [at]} : null;
 }
 
 /**

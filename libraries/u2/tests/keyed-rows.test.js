@@ -3,9 +3,10 @@
    selection follows its keys; items are reported and revealed whether rendered or not; a tree box
    shows its node, never a click the owner refused. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {signal} from '../src/core/signals.js';
 import {span} from '../src/core/elements.js';
@@ -39,7 +40,7 @@ function bigList(options = {}, count = 10000) {
     ...options,
   });
   document.body.append(list.root);
-  list.root.clientHeight = 400;
+  layout(list.root, {clientHeight: 400});
   list.setItems(items);
   return {list, items, calls};
 }
@@ -126,7 +127,7 @@ scoped('a signal bound in render follows its item and stops with the row', async
   const names = Array.from({length: 100}, (_, i) => signal(`n${i}`));
   const list = new VirtualList({itemHeight: 20, keyOf: (s) => names.indexOf(s).toString(), render: (s) => span(s)});
   document.body.append(list.root);
-  list.root.clientHeight = 200;
+  layout(list.root, {clientHeight: 200});
   const before = Scope.liveCount;
   list.setItems(names);
   assert.equal(Scope.liveCount - before, list.renderedCount, 'one live scope per row that binds');
@@ -146,7 +147,7 @@ scoped('scrolling back and forth ten times: every row shows its own item, bindin
   const names = Array.from({length: 1000}, (_, i) => signal(`n${i}`));
   const list = new VirtualList({itemHeight: 20, keyOf: (s) => s.peek(), render: (s) => span(s)});
   document.body.append(list.root);
-  list.root.clientHeight = 200;
+  layout(list.root, {clientHeight: 200});
   list.setItems(names);
   for (let round = 0; round < 10; round++) {
     scrollTo(list, (round % 2 === 0 ? 400 + round * 13 : round * 7) * 20);
@@ -177,7 +178,7 @@ scoped('a Ctrl-selection of three keys survives setItems of a reordered list', (
 
 scoped('items report every item, not the window; rows carry data-u2-item', () => {
   const {list} = bigList();
-  list.root.clientHeight = 340;
+  layout(list.root, {clientHeight: 340});
   scrollTo(list, 0);
   assert.equal(list.renderedCount, 20);
   const items = list.getItems();
@@ -195,7 +196,7 @@ scoped('items report every item, not the window; rows carry data-u2-item', () =>
 scoped('keys default to the string item, then name or id, then the position', () => {
   const list = new VirtualList({render: (x) => span(String(x?.label ?? x))});
   document.body.append(list.root);
-  list.root.clientHeight = 200;
+  layout(list.root, {clientHeight: 200});
   list.setItems(['a', 1, {name: 'n'}, {id: 'i'}, {label: 'plain'}, null]);
   assert.deepEqual(list.getItems().list.map((i) => i.key), ['a', '1', 'n', 'i', '#4', '#5']);
   list.dispose();
@@ -215,7 +216,7 @@ scoped('revealItem scrolls item 900 into the window and resolves to its row', as
 scoped('an ambiguous label rejects naming the candidates', async () => {
   const list = new VirtualList({keyOf: (x) => x.id, labelOf: (x) => x.name, render: (x) => span(x.name)});
   document.body.append(list.root);
-  list.root.clientHeight = 200;
+  layout(list.root, {clientHeight: 200});
   list.setItems([{id: 'a', name: 'Same'}, {id: 'b', name: 'Other'}, {id: 'c', name: 'same'}]);
   await assert.rejects(list.revealItem('Same'), {message: 'u2: 2 items match "Same": a, c'});
   assert.equal(await list.revealItem('c'), rowAt(list, 2), 'the key wins over a label');
@@ -225,7 +226,7 @@ scoped('an ambiguous label rejects naming the candidates', async () => {
 function checkTree(onCheck) {
   const tree = new VirtualTree({onCheck});
   document.body.append(tree.root);
-  tree.root.querySelector('.u2-list').clientHeight = 220;
+  layout(tree.root.querySelector('.u2-list'), {clientHeight: 220});
   tree.setRoots([{id: 'a', label: 'Alpha', checked: false}, {id: 'b', label: 'Beta', checked: true}]);
   return tree;
 }
@@ -262,7 +263,7 @@ scoped('tree: the owner\'s answer re-renders that row only; no onCheck disables 
 
   const passive = new VirtualTree();
   document.body.append(passive.root);
-  passive.root.querySelector('.u2-list').clientHeight = 220;
+  layout(passive.root.querySelector('.u2-list'), {clientHeight: 220});
   passive.setRoots([{id: 'a', label: 'Alpha', checked: true}]);
   assert.equal(treeRow(passive, 0).querySelector('.u2-tree-check').disabled, true, 'nothing would answer it');
   passive.dispose();
@@ -276,7 +277,7 @@ scoped('tree: a node changed in place shows once the roots are set again, and on
     return span(node.label);
   }});
   document.body.append(tree.root);
-  tree.root.querySelector('.u2-list').clientHeight = 220;
+  layout(tree.root.querySelector('.u2-list'), {clientHeight: 220});
   tree.setRoots(roots);
   renders.length = 0;
   roots[1].label = 'Bravo';
@@ -289,7 +290,7 @@ scoped('tree: a node changed in place shows once the roots are set again, and on
 scoped('tree: items are the visible nodes with level, expansion, checks and selection; reveal opens ancestors', async () => {
   const tree = new VirtualTree();
   document.body.append(tree.root);
-  tree.root.querySelector('.u2-list').clientHeight = 220;
+  layout(tree.root.querySelector('.u2-list'), {clientHeight: 220});
   tree.setRoots([
     {id: 'p', label: 'Project', children: [
       {id: 'p/t', label: 'Tables', children: [{id: 'p/t/demog', label: 'demog'}]},
@@ -319,7 +320,7 @@ scoped('tree: a lazy read is owned by the tree, not by the rebuild that started 
   let fail = true;
   const tree = new VirtualTree();
   document.body.append(tree.root);
-  tree.root.querySelector('.u2-list').clientHeight = 220;
+  layout(tree.root.querySelector('.u2-list'), {clientHeight: 220});
   tree.setRoots([
     {id: 'lazy', label: 'Lazy', children: () => {
       signals.push(Scope.ambient.abortSignal);
@@ -347,7 +348,7 @@ scoped('tree: a lazy read is owned by the tree, not by the rebuild that started 
 scoped('tree: expandPath keeps the branches opened or closed while it awaited a lazy read', async () => {
   const tree = new VirtualTree();
   document.body.append(tree.root);
-  tree.root.querySelector('.u2-list').clientHeight = 220;
+  layout(tree.root.querySelector('.u2-list'), {clientHeight: 220});
   let answer;
   tree.setRoots([
     {id: 'lazy', label: 'Lazy', children: () => new Promise((resolve) => answer = resolve)},
@@ -376,7 +377,7 @@ scoped('tree: a lazy read is dropped once its node leaves the tree; a collapsed 
   const y = lazy('y');
   const tree = new VirtualTree();
   document.body.append(tree.root);
-  tree.root.querySelector('.u2-list').clientHeight = 220;
+  layout(tree.root.querySelector('.u2-list'), {clientHeight: 220});
   tree.setRoots([x, y]);
   tree.expanded.value = new Set(['x', 'y']);
   await flush();

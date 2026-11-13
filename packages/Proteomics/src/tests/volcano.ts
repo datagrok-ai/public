@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import {ensureNegLog10Column, ensureDirectionColumn, ensureLocationColumn,
   createVolcanoPlot, recomputeVolcano, applyTopNLabels, VOLCANO_LABEL_COL, readVolcanoState,
   showVolcanoBusy, updateVolcanoBusy, hideVolcanoBusy,
@@ -512,7 +512,7 @@ category('Proteomics: 14-02', () => {
     // factory returns, so a synchronous query races and reads null.
     const counterText = (): string =>
       (sp.root.querySelector('[data-volcano-counter]') as HTMLElement | null)?.textContent ?? '';
-    await awaitCheck(() => counterText().includes('Visible Proteins'),
+    await waitUntil(() => counterText().includes('Visible Proteins'),
       'volcano counter overlay never rendered', 3000);
     const text = counterText();
     // Total row reflects df.filter.trueCount.
@@ -537,7 +537,7 @@ category('Proteomics: 14-02', () => {
     df.filter.fireChanged();
     const counterText = (): string =>
       (sp.root.querySelector('[data-volcano-counter]') as HTMLElement | null)?.textContent ?? '';
-    await awaitCheck(() => counterText().includes('Total: 2'),
+    await waitUntil(() => counterText().includes('Total: 2'),
       'volcano counter Total did not update to 2 after filter change', 3000);
   }, {skipReason: 'Quarantined: counter overlay not refreshing on filter change on newer Datagrok runtime — see BACKLOG'});
 
@@ -548,7 +548,7 @@ category('Proteomics: 14-02', () => {
     df.filter.fireChanged();
     const counterText = (): string =>
       (sp.root.querySelector('[data-volcano-counter]') as HTMLElement | null)?.textContent ?? '';
-    await awaitCheck(() => counterText().includes('Total: 0'),
+    await waitUntil(() => counterText().includes('Total: 0'),
       'volcano counter Total did not reach 0 on empty filter', 3000);
   }, {skipReason: 'Quarantined: counter overlay not refreshing on filter change on newer Datagrok runtime — see BACKLOG'});
 
@@ -575,7 +575,7 @@ category('Proteomics: 14-02', () => {
     // debounced recompute rather than a fixed sleep.
     const counterText = (): string =>
       (sp.root.querySelector('[data-volcano-counter]') as HTMLElement | null)?.textContent ?? '';
-    await awaitCheck(() => counterText().includes('Unknown'),
+    await waitUntil(() => counterText().includes('Unknown'),
       'volcano counter did not show a location row after color switch', 3000);
   });
 

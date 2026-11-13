@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {before, category, expect, test,  expectExceptionAsync, after} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, test,  expectExceptionAsync, after,
+  waitUntilAsync} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 
 category('Packages: migrations', () => {
@@ -21,7 +22,8 @@ category('Packages: migrations', () => {
       {method: 'GET', credentials: 'include'});
     key = await response.json();
 
-    await publish(packageWithMigration, 'apitestsdb', false);    
+    await publish(packageWithMigration, 'apitestsdb', false);
+    await waitForFunc('apitestsdb:AccessTableA');
   });
 
   after(async () => {
@@ -34,8 +36,11 @@ category('Packages: migrations', () => {
     expect(uploadResponse.status, 200);
     let text = await uploadResponse.text();
     expect(text.indexOf('ApiError'), -1);
-    console.log('wait 10 seconds to fully init package');
-    await DG.delay(10000);
+  }
+
+  async function waitForFunc(name: string) {
+    await waitUntilAsync(async () => (await grok.functions.eval(name).catch(() => null)) instanceof DG.Func,
+      `${name} is not resolvable after the publish`);
   }
 
   async function deletePackage(packageName: string) {
@@ -52,6 +57,7 @@ category('Packages: migrations', () => {
   test('Upload new migration', async () => {
     // in release: published, updated
     await publish(packageWithSecondMigration, 'apitestsdb', false);
+    await waitForFunc('apitestsdb:AccessTableB');
     await grok.functions.call('apitestsdb:AccessTableB');
     
     // previous versions should be disabled 

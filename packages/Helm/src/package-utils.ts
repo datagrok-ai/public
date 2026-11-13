@@ -1,8 +1,6 @@
 /* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 
-import {Unsubscribable} from 'rxjs';
-
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
@@ -53,10 +51,6 @@ export class HelmPackage extends DG.Package {
     return this._libHelper.getMonomerLib();
   }
 
-  private _monomerLibSub?: Unsubscribable;
-
-  private _initialized: boolean = false;
-
   // -- Wrapping (line-break) width --
 
   /**
@@ -95,10 +89,7 @@ export class HelmPackage extends DG.Package {
     this._libHelper = libHelper;
 
     const lib = this.monomerLib;
-    this._monomerLibSub = lib.onChanged
-      .subscribe(this.monomerLibOnChangedHandler.bind(this));
-
-    this._initialized = true;
+    lib.onChanged.subscribe(this.monomerLibOnChangedHandler.bind(this));
   }
 
   monomerLibOnChangedHandler(): void {

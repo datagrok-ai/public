@@ -2,10 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {from, fromEvent, interval, merge, Observable, Subject, Subscription} from 'rxjs';
+import {from, fromEvent, interval, merge, Observable, Subject, Subscription, timer} from 'rxjs';
 import {filter, first, map, switchMap} from 'rxjs/operators';
 import {Track} from './track';
 import {awardBadge} from './utils/badges-utils';
+import {Shortcuts} from './shortcuts';
 
 
 /** What a step can point a hint at: an element, or a function that resolves one every time the
@@ -78,22 +79,32 @@ export abstract class Tutorial extends DG.Widget {
   progressDiv: HTMLDivElement = ui.divV([], 'tutorials-root-progress');
   progress: HTMLProgressElement = ui.element('progress');
   progressSteps: HTMLDivElement = ui.divText('');
-  private barSection: HTMLElement = ui.span([], 'tutorials-bar-section');
+  private barTitle: HTMLDivElement = ui.divText('', 'tutorials-bar-title');
+  private barSection: HTMLDivElement = ui.divText('', 'tutorials-bar-section');
+  private barRing: HTMLDivElement = ui.div([], 'tutorials-bar-ring');
+  private barCount: HTMLSpanElement = ui.span([], 'tutorials-bar-count');
   private barInstruction: HTMLElement = ui.element('b');
   private barDescription: HTMLElement = ui.div([], 'tutorials-root-description');
-  private barStep: HTMLDivElement = ui.div([this.barInstruction, this.barDescription],
+  private barStep: HTMLDivElement = ui.divV([this.barInstruction, this.barDescription],
     'tutorials-bar-step grok-tutorial-step-description');
   private allStepsIcon: HTMLElement = ui.iconFAB('list', () => this.showAllSteps(!this.allStepsShown), 'All steps');
-  private titleSeparator: HTMLDivElement = ui.div([], 'd4-ribbon-separator');
-  private barRow: HTMLDivElement = ui.divH([this.allStepsIcon, ui.div([], 'd4-ribbon-separator'), this.barSection,
-    ui.div([], 'd4-ribbon-separator'), this.barStep], 'tutorials-bar-row');
-  private bar: HTMLDivElement = ui.div([this.barRow], 'tutorials-bar');
+  private barActions: HTMLDivElement = ui.divH([this._closeButton()]);
+  private bar: HTMLDivElement = ui.div(ui.div([
+    ui.divV([
+      ui.divH([this.barTitle, ui.iconFAB('link', () => this._copyLink(), 'Copy the tutorial link')]),
+      this.barSection,
+      ui.divH([this.barRing, this.barCount, this.allStepsIcon]),
+    ], 'tutorials-bar-meta'),
+    this.barStep,
+    this.barActions,
+  ], 'tutorials-bar-row'), 'tutorials-bar');
   private appPane: {element: HTMLElement, ratio: number} | null = null;
 
   static DATA_STORAGE_KEY: string = 'tutorials';
   static SKIP_DELAY_MS: number = 30000;
   // docked once: docking the bar again to fit a step takes the keyboard focus from the view
-  private static readonly BAR_HEIGHT: number = 72;
+  private static readonly BAR_HEIGHT: number = 90;
+  private static readonly STEPS_WIDTH: number = 260;
   static SERVICES: {[service: string]: string} = {
     'jupyter': 'Jupyter',
     'grokCompute': 'GrokCompute',
@@ -228,6 +239,7 @@ export abstract class Tutorial extends DG.Widget {
 
     try {
       await this._run();
+      await this.cleanup();
     } catch (error) {
       // If the tutorial was closed during execution, exit without error
       if (!this.closed) {
@@ -343,9 +355,11 @@ export abstract class Tutorial extends DG.Widget {
   _addHeader(): void {
     this.progressDiv.append(this.progress);
     this.progress.max = this.steps;
-    this.progress.setAttribute('role', 'progressbar');
-    this.progress.setAttribute('aria-label', 'Tutorial progress');
-    this._updateProgressAria();
+    for (const el of [this.progress, this.barRing]) {
+      el.setAttribute('role', 'progressbar');
+      el.setAttribute('aria-label', 'Tutorial progress');
+    }
+    this._showProgress();
 
     this.progressSteps = ui.divText(`Step: ${this.progress.value} of ${this.steps}`);
     this.progressDiv.append(this.progressSteps);
@@ -356,23 +370,28 @@ export abstract class Tutorial extends DG.Widget {
     // }, 'Self-paced mode');
     // if (this.manualMode)
     //   $(manualMode.firstChild).toggleClass('fal fas');
-    const closeTutorial = ui.button(ui.iconFA('times-circle'), () => {
+    const closeTutorial = this._closeButton();
+
+    // manualMode.style.minWidth = '30px';
+    closeTutorial.style.minWidth = '30px';
+    this.header.textContent = this.barTitle.textContent = this.name;
+    this.headerDiv.append(ui.divH([this.header, ui.button(ui.iconFA('link'), () => this._copyLink(),
+      'Copy the tutorial link')], {style: {alignItems: 'center'}}));
+    // this.headerDiv.append(ui.div([manualMode, closeTutorial]));
+    this.headerDiv.append(closeTutorial);
+  }
+
+  private _closeButton(): HTMLButtonElement {
+    return ui.button(ui.iconFA('times-circle'), () => {
       if (this.completed)
         this.updateProgress(this.track);
       this.close();
     }, 'Close');
+  }
 
-    const linkIcon = ui.button(ui.iconFA('link'), () => {
-      navigator.clipboard.writeText(this.url);
-      grok.shell.info('Link copied to clipboard');
-    }, `Copy the tutorial link`);
-
-    // manualMode.style.minWidth = '30px';
-    closeTutorial.style.minWidth = '30px';
-    this.header.textContent = this.name;
-    this.headerDiv.append(ui.divH([this.header, linkIcon], {style: {alignItems: 'center'}}));
-    // this.headerDiv.append(ui.div([manualMode, closeTutorial]));
-    this.headerDiv.append(closeTutorial);
+  private _copyLink(): void {
+    navigator.clipboard.writeText(this.url);
+    grok.shell.info('Link copied to clipboard');
   }
 
   private _enterBarMode(): void {
@@ -385,8 +404,7 @@ export abstract class Tutorial extends DG.Widget {
       this.appPane = {element, ratio: node.container.containerElement.offsetWidth / dm.element.clientWidth};
       dm.close(node);
     }
-    this.headerDiv.append(this.titleSeparator);
-    this.barRow.prepend(this.mainHeader);
+    this.mainHeader.remove();
     if (dm.findNode(this.bar) == null)
       dm.dock(this.bar, DG.DOCK_TYPE.TOP, null, Tutorial.APP_TITLE, Tutorial.BAR_HEIGHT / dm.element.clientHeight);
   }
@@ -397,7 +415,6 @@ export abstract class Tutorial extends DG.Widget {
       return null;
     this.appPane = null;
     grok.shell.dockManager.close(this.bar);
-    this.titleSeparator.remove();
     this.root.prepend(this.mainHeader);
     return pane;
   }
@@ -426,7 +443,7 @@ export abstract class Tutorial extends DG.Widget {
     // docked next to the bar's sibling, the pane goes under the bar
     const bar = dm.findNode(this.bar)!;
     const rest = Array.from(bar.parent.children).find((n) => !n.container.containerElement.contains(this.bar))!;
-    dm.dock(pane.element, DG.DOCK_TYPE.LEFT, rest, Tutorial.APP_TITLE, pane.ratio);
+    dm.dock(pane.element, DG.DOCK_TYPE.LEFT, rest, Tutorial.APP_TITLE, Tutorial.STEPS_WIDTH / dm.element.clientWidth);
     this.root.querySelector('[aria-current="step"]')?.scrollIntoView({block: 'nearest'});
   }
 
@@ -447,6 +464,11 @@ export abstract class Tutorial extends DG.Widget {
       this.activity.append(h3);
   }
 
+  private renderShortcuts(): void {
+    for (const root of [this.root, this.bar])
+      Shortcuts.render(root, () => this.renderShortcuts());
+  }
+
   describe(text: string): void {
     const div = ui.div();
     div.innerHTML = text;
@@ -454,6 +476,7 @@ export abstract class Tutorial extends DG.Widget {
       this.currentSection.append(div);
     else
       this.activity.append(div);
+    this.renderShortcuts();
     div.scrollIntoView();
   }
 
@@ -545,14 +568,17 @@ export abstract class Tutorial extends DG.Widget {
       this.activity.append(entry);
       this.activity.append(descriptionDiv);
     }
-    descriptionDiv.scrollIntoView();
+    this.renderShortcuts();
+    if (this.appPane)
+      $(descriptionDiv).hide();
+    (this.appPane ? entry : descriptionDiv).scrollIntoView();
 
     const skipped = new Subject<void>();
     let stepDone = false;
     let skipTimer: ReturnType<typeof setTimeout> | undefined;
     const showSkipLater = () => {
       if (!stepDone) {
-        skipTimer = setTimeout(() => this.appPane ? this.barInstruction.after(skipIcon!) : entry.append(skipIcon!),
+        skipTimer = setTimeout(() => this.appPane ? this.barActions.prepend(skipIcon!) : entry.append(skipIcon!),
           Tutorial.SKIP_DELAY_MS);
       }
     };
@@ -613,17 +639,22 @@ export abstract class Tutorial extends DG.Widget {
       $(chevron).toggleClass('tutorials-chevron-expanded');
       $(descriptionDiv).toggle();
     });
-    ui.tooltip.bind(entry, description);
+    ui.tooltip.bind(entry, () => descriptionDiv.innerHTML);
 
     this.progress.value++;
     this.progressSteps.innerHTML = '';
     this.progressSteps.append(`Step: ${this.progress.value} of ${this.steps}`);
-    this._updateProgressAria();
+    this._showProgress();
   }
 
-  _updateProgressAria(): void {
+  _showProgress(): void {
+    const step = Math.min(this.progress.value, this.steps);
     this.progress.setAttribute('aria-valuenow', `${this.progress.value}`);
     this.progress.setAttribute('aria-valuemax', `${this.steps}`);
+    this.barRing.setAttribute('aria-valuenow', `${step}`);
+    this.barRing.setAttribute('aria-valuemax', `${this.steps}`);
+    this.barRing.style.setProperty('--tutorials-progress', `${100 * step / this.steps}%`);
+    this.barCount.textContent = `${step}/${this.steps}`;
   }
 
   clearRoot(): void {
@@ -671,8 +702,12 @@ export abstract class Tutorial extends DG.Widget {
     }).catch((_) => (console.log('Closing tutorial', this.name), false));
   }
 
+  /** Removes what the tutorial created on the server; runs when the tutorial finishes and when it is closed. */
+  protected async cleanup(): Promise<void> {}
+
   /** Closes all visual components that were added when working on tutorial, e.g., table views. */
   _closeAll(): void {
+    this.cleanup();
     // TODO: Take into account dialogs and other views
     if (this.t?.name) {
       grok.shell.tableView(this.t.name)?.close();
@@ -864,7 +899,7 @@ export abstract class Tutorial extends DG.Widget {
       console.error('Tutorial step skipped: no column input', this.name, caption);
       return;
     }
-    const source = interval(intervalPeriod).pipe(
+    const source = timer(0, intervalPeriod).pipe(
       map((_) => this.getElement(columnInput, valueSelector)?.textContent),
       filter((value) => value === columnName));
     return this.action(instructions, source, columnInput, description);

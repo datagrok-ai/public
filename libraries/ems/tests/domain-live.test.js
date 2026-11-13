@@ -1,11 +1,6 @@
-/* `live: true` (WO 3-11) on fake timers: one probe per interval — the collection counted and
-   dated in ONE call under the source's own filter, search and `deleted` mode — refreshing the
-   rows while there is nothing to lose, marking the source stale while the session has changes of
-   its own, and asking nothing at all while the tab is hidden, while a batch is being written
-   back, or after the source is disposed. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test, mock} from 'node:test';
+import {mock} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
@@ -32,7 +27,7 @@ function scoped(name, body) {
       await body();
     } finally {
       mock.timers.reset();
-      document.hidden = false;
+      delete document.hidden;
       for (const key of Object.keys(backends))
         delete backends[key];
       Object.assign(backends, saved);
@@ -203,10 +198,10 @@ scoped('a probe that fails keeps the baseline, and a run of failures stops the t
 scoped('nothing is asked while the tab is hidden, and nothing after dispose', async () => {
   const be = counted();
   const src = await started(be);
-  document.hidden = true;
+  Object.defineProperty(document, 'hidden', {configurable: true, value: true});
   await tick(3);
   assert.deepEqual(be.probes, [], 'a background tab is throttled and has no one reading it');
-  document.hidden = false;
+  delete document.hidden;
   await tick();
   assert.equal(be.probes.length, 1);
 
@@ -257,8 +252,7 @@ scoped('a backend that cannot probe is simply not polled', async () => {
   src.dispose();
 });
 
-/* The app's half of WO 3-11: the status bar carries the stale mark, and `refresh()` is what the
-   word "Refresh" in it stands for — through the unsaved gate, since a reload drops the changes. */
+// the app's half: `refresh()` is what "Refresh" in the status bar stands for, through the unsaved gate
 
 /** A `DgDomainTable` over a stubbed js-api client, with what the poll asked for counted. */
 async function platformTable(support = {}, can = {}) {
@@ -416,7 +410,7 @@ scoped('the app says "Data changed — Refresh" and its Refresh goes through the
   const be = counted();
   emsBackends.domain = be.backend;
   const table = await domains.table('grit.issue');
-  const app = domains.app({table, base: '/apps/T/Issues', pageSize: 10});
+  const app = testOwner().build(() => domains.app({table, base: '/apps/T/Issues', pageSize: 10}));
   document.body.append(app.root);
   await flush();
   app.listSource.live.value = true;
@@ -448,7 +442,8 @@ scoped('DomainAppOptions.live reaches the list source — the option the apps ac
   const be = counted();
   emsBackends.domain = be.backend;
   const table = await domains.table('grit.issue');
-  const app = domains.app({table, base: '/apps/T/Issues', pageSize: 10, live: true, liveMs: 1000});
+  const app = testOwner().build(() => domains.app({table, base: '/apps/T/Issues', pageSize: 10, live: true,
+    liveMs: 1000}));
   document.body.append(app.root);
   await flush();
   assert.equal(app.listSource.live.value, true, 'the app asked for it, so the list polls');
@@ -471,7 +466,7 @@ scoped('the caption follows the values a save writes back into the row', async (
   const be = counted();
   emsBackends.domain = be.backend;
   const table = await domains.table('grit.issue');
-  const app = domains.app({table, base: '/apps/T/Issues', pageSize: 10});
+  const app = testOwner().build(() => domains.app({table, base: '/apps/T/Issues', pageSize: 10}));
   document.body.append(app.root);
   await flush();
   assert.equal(await app.goTo('entity', 'i1'), true);
@@ -497,7 +492,7 @@ scoped('the trash reads newest-deleted first, and leaving it gives the order bac
   const be = counted();
   emsBackends.domain = be.backend;
   const table = await domains.table('grit.issue');
-  const app = domains.app({table, base: '/apps/T/Issues', pageSize: 10});
+  const app = testOwner().build(() => domains.app({table, base: '/apps/T/Issues', pageSize: 10}));
   document.body.append(app.root);
   await flush();
   assert.equal(app.listSource.sort.value, '', 'a live list is in the table order');

@@ -2,6 +2,7 @@
    they have (port of `files_input.dart`). dg, because every loaded file becomes a platform
    `FileInfo`. */
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Input, InputOptions} from '../../core/input-base.js';
 import {signal, Signal} from '../../core/signals.js';
@@ -28,7 +29,9 @@ interface FileLoad {
 /** Picks or accepts a drop of several files at once: each gets a row with its own percentage and
  * a ✕ that cancels the read or drops the file, and the value — the loaded `FileInfo`s — appears
  * once every read has settled (`files_input.dart:250`). Files are keyed by name, so re-adding one
- * replaces it rather than duplicating it (`:100-102`).
+ * replaces it rather than duplicating it (`:100-102`). Where the platform has it
+ * (`ui.pickFileFromFiles`), "Add file from Files" adds share files as well, already loaded and keyed by
+ * their share path; a folder, or a file `accept` does not name, is refused as a dropped one is.
  *
  * Two deliberate divergences from Dart: the value is written whenever the reads settle, failures
  * and all (the platform input withholds it while invalid, which hides a partial load from a form
@@ -92,9 +95,18 @@ export class FilesInput extends Input<DG.FileInfo[], FilesInputOptions> {
     });
 
     this.effect(() => this._render(this._items.value));
-    this.effect(() => this._adopt(this.value.value));
+    this.effect(() => this._adopt(this.value));
     this.addValidator(() => this._check());
     return editor;
+  }
+
+  // the rows, not the value: a file still loading, or one that failed, is not nothing
+  protected isEmptyValue(): boolean {
+    return this._items.value.length === 0;
+  }
+
+  protected get emptyMessage(): string {
+    return 'At least one file is required.';
   }
 
   private _check(): string | null {
@@ -103,8 +115,6 @@ export class FilesInput extends Input<DG.FileInfo[], FilesInputOptions> {
       return 'Files are still loading.';
     if (items.some((i) => i.error !== null))
       return 'Some files failed to load.';
-    if (items.length === 0 && !this.nullable)
-      return 'At least one file is required.';
     return null;
   }
 
@@ -122,8 +132,8 @@ export class FilesInput extends Input<DG.FileInfo[], FilesInputOptions> {
     this._summary.hidden = loading > 0 || items.length === 0;
     this._summary.textContent = failed > 0 ? `${loaded} loaded, ${failed} failed` : `${loaded} loaded`;
     if (loading > 0)
-      this._progress.value.value = loaded / items.length;
-    this.refreshEnabled();
+      this._progress.value = loaded / items.length;
+    this.refreshDisabled();
   }
 
   /** A value written from outside replaces the rows, as the platform input rebuilds its tags
@@ -134,13 +144,39 @@ export class FilesInput extends Input<DG.FileInfo[], FilesInputOptions> {
       return;
     for (const item of this._items.peek())
       this._cancel(item);
-    this._items.value = files.map((f) => {
-      const item = this._item(f.fileName ?? f.path);
-      item.info = f;
-      item.loading = false;
-      item.status.textContent = '';
-      return item;
-    });
+    this._items.value = files.map((f) => this._loaded(f, f.fileName ?? f.path));
+  }
+
+  private _loaded(file: DG.FileInfo, name: string): FileLoad {
+    const item = this._item(name);
+    item.info = file;
+    item.loading = false;
+    item.status.textContent = '';
+    return item;
+  }
+
+  private async _pickFromFiles(): Promise<void> {
+    const files = await ui.pickFileFromFiles({multiple: true});
+    if (files === null || this.scope.isDisposed)
+      return;
+    const items = [...this._items.peek()];
+    let added = false;
+    for (const file of files) {
+      if (!file.isFile || !this._accepts(file.fileName)) {
+        grok.shell.warning(file.isFile ? `${file.fullPath} is not ${this.options.accept!.join(' or ')}.` :
+          `${file.fullPath} is a folder.`);
+        continue;
+      }
+      const existing = items.findIndex((x) => x.key === file.fullPath);
+      if (existing >= 0)
+        this._drop(items[existing], items, existing);
+      items.push(this._loaded(file, file.fullPath));
+      added = true;
+    }
+    if (!added)
+      return;
+    this._items.value = items;
+    this._settle();
   }
 
   private _item(name: string): FileLoad {
@@ -227,14 +263,15 @@ export class FilesInput extends Input<DG.FileInfo[], FilesInputOptions> {
       return;
     this._echo = true;
     try {
-      this.value.value = items.map((i) => i.info).filter((f): f is DG.FileInfo => f !== null);
+      this.value = items.map((i) => i.info).filter((f): f is DG.FileInfo => f !== null);
     } finally {
       this._echo = false;
     }
   }
 
   /** The picker on the shared options rail, where the platform input puts its own summary
-   * affordance (`files_input.dart:44` through `InputBase.addOptions`). */
+   * affordance (`files_input.dart:44` through `InputBase.addOptions`), and the platform's Files dialog
+   * after it, as `inputs.dart` `_initInputCustomizations` adds it. */
   private _addPicker(): void {
     const picker = document.createElement('input');
     picker.type = 'file';
@@ -250,8 +287,12 @@ export class FilesInput extends Input<DG.FileInfo[], FilesInputOptions> {
     };
     picker.addEventListener('change', onChange);
     this.own(() => picker.removeEventListener('change', onChange));
-    this.addOptions(picker);
-    this.addOptions(iconButton('folder-open', () => picker.click(), {tooltip: 'Open files'}));
+    this.addRail(picker, {edits: true});
+    this.addOptions(iconButton('folder-open', () => picker.click(), {tooltip: 'Open files'}), {edits: true});
+    if (typeof ui.pickFileFromFiles === 'function') {
+      this.addOptions(iconButton('folder-tree', () => this._pickFromFiles().catch((e) => grok.shell.error(String(e))),
+        {tooltip: 'Add file from Files'}), {edits: true});
+    }
   }
 }
 

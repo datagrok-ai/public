@@ -1,12 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as rxjs from 'rxjs';
-
-export const ClaudeModel = {
-  Haiku: 'claude-haiku-5-5',
-  Sonnet: 'claude-sonnet-5-5',
-  Opus: 'claude-opus-5-5',
-} as const;
-export type ClaudeModel = typeof ClaudeModel[keyof typeof ClaudeModel];
+import {AiFeature} from './ai-feature';
+import {TurnLog} from './turn-log';
 
 export type ChunkEvent = {sessionId: string, content: string};
 export type ImageAttachment = {mediaType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp', data: string};
@@ -17,6 +12,7 @@ export type ToolActivityEvent = {sessionId: string, summary: string, name: strin
 export type RevisionStartEvent = {sessionId: string};
 /** Per-turn token, cost and timing metrics the runtime reports on `final` (see docs/BENCHMARK.md). */
 export type TurnServerMetrics = {
+  model?: string,
   inputTokens: number | null, outputTokens: number | null,
   cacheReadTokens: number | null, cacheCreationTokens: number | null,
   costUsd: number | null, numTurns: number | null,
@@ -49,6 +45,7 @@ export class ClaudeRuntimeClient {
   public onClose = new rxjs.Subject<void>();
   private _skillNames: string[] | null = null;
   private _resumable = new Set<string>();
+  private _turnLog = new TurnLog();
 
   private constructor() {}
 
@@ -117,7 +114,7 @@ export class ClaudeRuntimeClient {
     }
 
     if (!this.ws)
-      throw new Error('Claude runtime container is not running');
+      throw new Error('AI runtime container is not running');
 
     this.ws.onmessage = (event: MessageEvent) => {
       let data: any;
@@ -130,35 +127,43 @@ export class ClaudeRuntimeClient {
 
       switch (data.type) {
       case 'chunk':
+        this._turnLog.chunk(data.sessionId, data.content);
         this.onChunk.next({sessionId: data.sessionId, content: data.content});
         break;
       case 'tool_activity':
+        this._turnLog.toolActivity(data.sessionId, data.name, data.summary);
         this.onToolActivity.next({sessionId: data.sessionId, summary: data.summary, name: data.name});
         break;
       case 'revision_start':
+        this._turnLog.revisionStart(data.sessionId);
         this.onRevisionStart.next({sessionId: data.sessionId});
         break;
       case 'final':
         this._resumable.add(data.sessionId);
-        this.onFinal.next({
+        const final: FinalEvent = {
           sessionId: data.sessionId, content: data.content,
           ...(data.structured_output ? {structured_output: data.structured_output} : {}),
           ...(data.unverified ? {unverified: true} : {}),
           ...(data.metrics ? {metrics: data.metrics} : {}),
           ...(data.revision ? {revision: data.revision} : {}),
-        });
+        };
+        this.onFinal.next(final);
+        this._turnLog.finish(final, 'ok');
         break;
       case 'error':
         this._resumable.add(data.sessionId);
         this.onError.next({sessionId: data.sessionId, message: data.message});
+        this._turnLog.finish({sessionId: data.sessionId, content: '', metrics: data.metrics}, 'error');
         break;
       case 'session_reset':
         this._resumable.delete(data.sessionId);
+        this._turnLog.drop(data.sessionId);
         this.onSessionReset.next({sessionId: data.sessionId});
         break;
       case 'aborted':
         this._resumable.add(data.sessionId);
         this.onAborted.next({sessionId: data.sessionId});
+        this._turnLog.finish({sessionId: data.sessionId, content: '', metrics: data.metrics}, 'aborted');
         break;
       case 'input_request':
         this.onInputRequest.next({sessionId: data.sessionId, requestId: data.requestId, toolName: data.toolName, input: data.input});
@@ -173,6 +178,7 @@ export class ClaudeRuntimeClient {
 
     this.ws.onclose = () => {
       this.ws = null;
+      this._turnLog.clear();
       this.onClose.next();
     };
 
@@ -190,9 +196,9 @@ export class ClaudeRuntimeClient {
     this._resumable.add(sessionId);
   }
 
-  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string; model?: ClaudeModel;
+  send(sessionId: string, message: string, options?: {outputSchema?: object; systemPromptMode?: string;
     taskId?: string; clientTools?: {name: string; description: string; inputSchema?: object}[];
-    images?: ImageAttachment[]}): void {
+    images?: ImageAttachment[]; logPrompt?: string}): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN)
       throw new Error('ClaudeRuntimeClient: WebSocket is not connected');
     this.ws.send(JSON.stringify({
@@ -202,11 +208,11 @@ export class ClaudeRuntimeClient {
       ...(this._resumable.has(sessionId) ? {resumeExpected: true} : {}),
       ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
       ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
-      ...(options?.model ? {model: options.model} : {}),
       ...(options?.taskId ? {taskId: options.taskId} : {}),
       ...(options?.clientTools?.length ? {clientTools: options.clientTools} : {}),
       ...(options?.images?.length ? {images: options.images} : {}),
     }));
+    this._turnLog.start(sessionId, options?.logPrompt);
   }
 
   async syncUserFiles(
@@ -247,12 +253,12 @@ export class ClaudeRuntimeClient {
     this.ws.send(payload);
   }
 
-  async query(message: string, options?: {sessionId?: string, outputSchema?: object, model?: ClaudeModel,
-    systemPromptMode?: string, timeoutMs?: number}): Promise<any> {
+  async query(message: string, options: {feature: AiFeature, sessionId?: string, outputSchema?: object,
+    systemPromptMode?: string, timeoutMs?: number, logPrompt?: string}): Promise<any> {
     await this.ensureConnected();
-    const sid = options?.sessionId ?? `query-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+    const sid = options.sessionId ?? `${options.feature}-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
     // Bounds a turn whose socket or runtime vanished: no final or error arrives then.
-    const timeoutMs = options?.timeoutMs ?? 120_000;
+    const timeoutMs = options.timeoutMs ?? 120_000;
     return new Promise((resolve, reject) => {
       const subs: {unsubscribe: () => void}[] = [];
       const timer = window.setTimeout(() => {
@@ -267,7 +273,7 @@ export class ClaudeRuntimeClient {
       subs.push(this.onFinal.subscribe((evt) => {
         if (evt.sessionId !== sid) return;
         cleanup();
-        resolve(options?.outputSchema && evt.structured_output ? evt.structured_output : evt.content);
+        resolve(options.outputSchema && evt.structured_output ? evt.structured_output : evt.content);
       }));
       subs.push(this.onError.subscribe((evt) => {
         if (evt.sessionId !== sid) return;
@@ -275,9 +281,9 @@ export class ClaudeRuntimeClient {
         reject(new Error(evt.message));
       }));
       this.send(sid, message, {
-        ...(options?.outputSchema ? {outputSchema: options.outputSchema} : {}),
-        ...(options?.model ? {model: options.model} : {}),
-        ...(options?.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
+        ...(options.outputSchema ? {outputSchema: options.outputSchema} : {}),
+        ...(options.systemPromptMode ? {systemPromptMode: options.systemPromptMode} : {}),
+        logPrompt: options.logPrompt,
       });
     });
   }

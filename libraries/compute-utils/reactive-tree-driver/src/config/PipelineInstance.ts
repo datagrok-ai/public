@@ -44,7 +44,9 @@ export function normalizeIdRef<T extends {id: ItemId}>(s: ItemId | T): T {
   return typeof s === 'string' ? ({id: s} as T) : s;
 }
 
-export function normalizePipelineInstanceConfig<I extends {id?: ItemId}>(c: InstanceConfBodyInput & I): InstanceConfBody & I {
+export function normalizePipelineInstanceConfig<I extends {id?: ItemId}>(
+  c: InstanceConfBodyInput & I,
+): InstanceConfBody & I {
   return {
     ...c,
     steps: c.steps?.map((s) => normalizePipelineInstanceConfig(normalizeIdRef(s))),
@@ -76,19 +78,27 @@ export function isFuncCallSerializedState(state: PipelineSerializedState): state
   return state.type === 'funccall';
 }
 
-export function isStaticPipelineState<S extends {type: 'funccall'}, T>(state: PipelineStateRec<S, T>): state is PipelineStateStatic<S, T> {
+export function isStaticPipelineState<S extends {type: 'funccall'}, T>(
+  state: PipelineStateRec<S, T>,
+): state is PipelineStateStatic<S, T> {
   return state.type === 'static';
 }
 
-export function isDynamicPipelineState<S extends {type: 'funccall'}, T>(state: PipelineStateRec<S, T>): state is PipelineStateDynamic<S, T> {
+export function isDynamicPipelineState<S extends {type: 'funccall'}, T>(
+  state: PipelineStateRec<S, T>,
+): state is PipelineStateDynamic<S, T> {
   return isDynamicType(state.type);
 }
 
-export function isStaticSerializedPipelineState(state: PipelineSerializedState): state is PipelineStateStatic<StepFunCallSerializedState, {}> {
+export function isStaticSerializedPipelineState(
+  state: PipelineSerializedState,
+): state is PipelineStateStatic<StepFunCallSerializedState, {}> {
   return state.type === 'static';
 }
 
-export function isDynamicSerializedPipelineState(state: PipelineSerializedState): state is PipelineStateDynamic<StepFunCallSerializedState, {}> {
+export function isDynamicSerializedPipelineState(
+  state: PipelineSerializedState,
+): state is PipelineStateDynamic<StepFunCallSerializedState, {}> {
   return isDynamicType(state.type);
 }
 
@@ -129,7 +139,7 @@ export type PipelineInstanceRuntimeData = {
   actions: ViewAction[] | undefined;
   disableHistory: boolean;
   customExports: CustomExport[] | undefined;
-  disableDefaultExport?: boolean;
+  disableDefaultExport: boolean;
   compactView: boolean;
   structureCheckResults?: ValidationResult | undefined;
   forceNavigate: boolean;

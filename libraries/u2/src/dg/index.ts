@@ -1,10 +1,8 @@
-/* The ONLY layer allowed to import datagrok-api (enforced by eslint). Bridges u2's
-   platform-free core onto the platform's existing lifecycle and event surfaces. */
 export {asDartInput, dartInputFor, DartInput} from './inputs/input-bridge.js';
 export type {DartInputOptions, PropertyInputBuilder} from './inputs/input-bridge.js';
 export {columnInput, tableInput, tablesInput, ColumnPicker} from './inputs/pickers.js';
 export type {ColumnInputOptions, ColumnPickerOptions} from './inputs/pickers.js';
-export {ObjectForm, propertyForm, objectForm, inputForProperty, PlatformInputs} from './forms/object-form.js';
+export {ObjectForm, propertyForm, objectForm, inputForProperty, kindOf, PlatformInputs} from './forms/object-form.js';
 export type {IProperty} from '../core/property-like.js';
 export type {PropertySource, ObjectFormOptions, FieldOverride,
   PropertyInputOptions, InputFactory} from './forms/object-form.js';
@@ -12,8 +10,8 @@ export {propertyEditor, PropertyEditor} from './forms/property-editor.js';
 export type {PropertyEditorOptions} from './forms/property-editor.js';
 export {fromDartInput, PlatformInput} from './inputs/from-dart-input.js';
 export type {DartInputLike} from './inputs/from-dart-input.js';
-export {userInput} from './inputs/user-input.js';
-export {groupInput} from './inputs/group-input.js';
+export {userInput, userPick} from './inputs/user-input.js';
+export {groupInput, groupPick, groupIcon} from './inputs/group-input.js';
 export type {GroupInputOptions} from './inputs/group-input.js';
 export {dapiSource, dapiPager, sanitizeFilterValue} from './entities/dapi-source.js';
 export type {DapiSourceLike, DapiSourceOptions, DapiPagerSourceLike, DapiPagerOptions} from './entities/dapi-source.js';
@@ -45,9 +43,12 @@ export {columnsInput, ColumnsInput, columnsMapInput, ColumnsMapInput, aggregated
   AggregatedColumnsInput, aggregationsFor, defaultAggregation} from './inputs/columns.js';
 export type {ColumnsInputOptions, ColumnsMapInputOptions, ColumnKey, ColumnAggregation,
   AggregatedColumnsInputOptions} from './inputs/columns.js';
-export {appView} from './shell/app-view.js';
-export {host} from './shell/host.js';
-export type {AppViewOptions} from './shell/app-view.js';
+export {ViewHost} from './shell/view-host.js';
+export type {ViewSignals, ViewHostOptions, ViewContent, ViewDockOptions, ChromeItem} from './shell/view-host.js';
+export {host, isView} from './shell/host.js';
+export {Platform} from './shell/platform.js';
+export {TableViewChrome} from './shell/table-view-chrome.js';
+export type {RibbonOptions, RibbonAction, RibbonButton, ChromeCrumbs} from './shell/table-view-chrome.js';
 export {SpecNodeRef, SpecNodesRef, specTree, brokenCount, nodeLabel, idPath} from './designer/node-ref.js';
 export type {SpecTree} from './designer/node-ref.js';
 export {registerSpecNodeHandler} from './designer/handler.js';
@@ -77,11 +78,15 @@ export {FilterSchemas, filterRenderer, filterRef, frameLike, toBitSet} from './f
 export type {DataFrameFilterSchema} from './filter/index.js';
 // side-effect only: filling `backends` is what makes the data sources work in the platform
 import './shell/source-backends.js';
+// side-effect only: on a platform page u2's notifications go into the platform's balloon stack
+import './shell/balloons.js';
 
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
 import {Scope, debug} from '../core/scope.js';
 import {signal, ReadonlySignal, rawEffect} from '../core/signals.js';
+import {Ownership} from '../core/owner.js';
+import type {Owner} from '../core/owner.js';
 import {PlatformInputs} from './forms/object-form.js';
 import {FileInput} from './inputs/file-input.js';
 
@@ -89,11 +94,10 @@ import {FileInput} from './inputs/file-input.js';
 // wired here instead of imported there
 PlatformInputs.register('file', (prop, options) => new FileInput(options));
 
-/** Mirrors an rxjs observable into a signal owned by `scope`. */
-export function toSignal<T>(observable: Observable<T>, initial: T, scope: Scope): ReadonlySignal<T> {
+/** Mirrors an rxjs observable into a signal, unsubscribed when `owner` goes (whoever is building by default). */
+export function toSignal<T>(observable: Observable<T>, initial: T, options?: {owner?: Owner}): ReadonlySignal<T> {
   const s = signal(initial);
-  const sub = observable.subscribe((v) => s.value = v);
-  scope.own(() => sub.unsubscribe());
+  Ownership.scopeOf(options?.owner, 'toSignal()').subscribe(observable, (v) => s.value = v);
   return s;
 }
 

@@ -14,13 +14,25 @@ catalog:
   '@types/node': ^22.0.0
   '@types/wu': ^2.1.44
 
+# Security floors for what Notebooks' @jupyterlab 2.x chain pins. They mirror the "overrides"
+# in packages/Notebooks/package.json, which the npm audit of the published package reads.
+overrides:
+  'url-parse@<1.5.10': ^1.5.10
+  'marked@<4.0.10': ^4.3.0
+  'sanitize-html@<2.17.0': ^2.17.0
+  'codemirror@>=5.0.0 <5.58.2': ^5.58.2
+
 # pnpm 10 blocks postinstall scripts unless allowed here. puppeteer is deliberately not
 # allowed: its Chromium download is ~150 MB per version and irrelevant to building.
+# sharp (NLP, via @xenova/transformers) is ignored: unused in the browser, and its build
+# downloads from GitHub, which corporate proxies block.
 onlyBuiltDependencies:
   - esbuild
   - '@swc/core'
-  - sharp
   - bufferutil
   - utf-8-validate
   - core-js
   - core-js-pure
+
+ignoredBuiltDependencies:
+  - sharp

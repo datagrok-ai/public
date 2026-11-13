@@ -184,7 +184,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
 
   const listCliffsLink = ui.button(`${linesRes.linesDf.rowCount} cliffs`, () => {
     if (!linesDfGrid.root.isConnected) {
-      const viewerExists = wu(view.viewers).some((v: DG.Viewer) => v.dataFrame.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`);
+      const viewerExists = wu(view.viewers).some((v: DG.Viewer) => v.dataFrame?.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`);
       if (demo && !viewerExists) // Ensure the grid viewer is added only once if not already present in the demo app
         view.addViewer(linesDfGrid);
       view.dockManager.dock(linesDfGrid, 'down', null, 'Activity cliffs', cliffsDockRatio ?? 0.2);
@@ -447,7 +447,7 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
     //open cliffs grid in case it was closed or not opened yet
     if (!linesDfGrid?.dataFrame) {
       linesDfGrid = createLinesGrid();
-      const viewerExists = wu(view.viewers).some((v) => v.dataFrame.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`);
+      const viewerExists = wu(view.viewers).some((v) => v.dataFrame?.name === `${CLIFFS_DF_NAME}${activityCliffsIdx}`);
       if (demo && !viewerExists) // Ensure the grid viewer is added only once if not already present in the demo app
         view.addViewer(linesDfGrid);
       view.dockManager.dock(linesDfGrid, 'down', undefined, 'Activity cliffs', cliffsDockRatio ?? 0.2);

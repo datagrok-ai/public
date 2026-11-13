@@ -2,9 +2,20 @@
 
 ## v.next
 
+- InputForm: Removed the multiple choice overrides for condensed forms, outdated by the platform layout
+- DockManager: Esc no longer closes the active panel
+- Viewer: An options change no longer re-sets the frame and fires `viewer-data-frame-changed` for frames created in JS
+- Viewer: A frame set on the viewer itself is kept on later options changes, and its `viewer-data-frame-changed` fires outside the Dart event
+- Viewer: Removed the unused `viewer-type-changed` event and `getViewerEventObservable`
+- Viewer: A failed viewer creation, or a throwing frame or options apply, no longer stops the element from applying later changes
+- InputForm: `destroy()` cancels a form still being built
+- ToggleInput: A value set by the host is no longer sent back as `value-changed`
+- ValidationIcon: A `disabled` or `restricted` input whose value is consistent shows a link icon
+- ValidationIcon: An inconsistent value shows a broken link icon instead of the handshake, matching the link icon of workflow-set values
 - InputForm: Added the `skipLogic` property
-- DockManager: Fixed views opened in the background splitting their panels evenly instead of by the declared ratios
+- DockManager: Fixed views opened, or re-rendered, in the background splitting their panels evenly instead of by the declared ratios
 - ValidationIcon: Advice actions send their `additionalParams` with the action request
+- InputForm: Fixed a form opened with invalid or missing required values reporting itself valid
 
 ## 1.4.6 (2026-09-23)
 

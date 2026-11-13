@@ -3,7 +3,6 @@ import {category, test, before} from '@datagrok-libraries/test/src/test';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
-import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
 import {DriverLogger} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
@@ -317,7 +316,8 @@ category('ComputeUtils: Driver error handling: error content', async () => {
       });
       cold('--a').subscribe(() => {
         expectDeepEqual(logger.errors[0].error instanceof Error, true, {prefix: 'Has Error instance'});
-        expectDeepEqual(logger.errors[0].error!.message, 'Handler error: bad value', {prefix: 'Error message preserved'});
+        expectDeepEqual(logger.errors[0].error!.message, 'Handler error: bad value',
+          {prefix: 'Error message preserved'});
       });
     });
   });

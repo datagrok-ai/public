@@ -1,0 +1,17 @@
+chemprop==2.0.0
+lightning>=2.6.6
+rdkit
+numpy<2.0.0
+pandas
+Flask
+werkzeug
+flask-cors
+scikit-learn
+pyyaml
+requests
+urllib3>=2.8
+idna>=3.15
+certifi>=2026.10.18
+filelock>=4.2.1
+pillow>=13.0.0
+setuptools>=84.1.0

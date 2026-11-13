@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, awaitCheck, before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {DEFAULT_FORMATS} from '../apps/common/model/const';
 import {convert} from '../apps/translator/model/conversion-utils';
 import {NUCLEOTIDES_FORMAT} from '../apps/translator/view/const';
@@ -42,7 +42,7 @@ category('Translator: app', () => {
     const type = async (sequence: string, shown: (translations: string) => boolean): Promise<void> => {
       textArea.value = sequence;
       textArea.dispatchEvent(new Event('input'));
-      await awaitCheck(() => shown(translations()), '', 5000).catch(() => {
+      await waitUntil(() => shown(translations()), '', 5000).catch(() => {
         throw new Error(`the translations of ${sequence}: ${translations()}`);
       });
     };

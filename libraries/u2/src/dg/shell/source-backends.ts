@@ -1,12 +1,15 @@
-/* Fills the sources' platform seam (Q5) at dg-index import: functions through `DG.Func`, server
-   collections and entities through `grok.dapi.*`, the open tables through `grok.shell`. The
-   sources themselves stay platform-free and headless-testable — this is the only file that knows
-   what a Datagrok function or a dapi collection actually is. */
+/* Fills the platform seam (Q5) at dg-index import: functions through `DG.Func`, server
+   collections and entities through `grok.dapi.*`, the open tables through `grok.shell`, a
+   principal's picture through the groups, the formatting through the user's settings and
+   `DG.format`. The sources and components themselves stay platform-free and headless-testable —
+   this is the only file that knows what a Datagrok function or a dapi collection actually is. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {backends, FuncDescriptorLike} from '../../sources/backends.js';
 import type {DataFrameLike} from '../../sources/df-bindings.js';
 import type {DapiPagerSourceLike} from '../entities/dapi-source.js';
+import {groupIcon} from '../inputs/group-input.js';
+import {Platform} from './platform.js';
 
 type Collection = () => DapiPagerSourceLike<unknown>;
 
@@ -101,7 +104,7 @@ backends.dapiFind = async (collection, id) => {
 
 backends.workspace = {
   table: (name) => (grok.shell.table(name) as unknown as DataFrameLike) ?? null,
-  tableNames: () => grok.shell.tableNames,
+  tableNames: () => Platform.tableNames(),
   onTablesChanged: {
     subscribe: (next) => {
       const subs = [grok.events.onTableAdded, grok.events.onTableRemoved]
@@ -116,3 +119,34 @@ backends.workspace = {
 
 backends.tableFromRows = (rows) =>
   (DG.DataFrame.fromObjects(rows) ?? DG.DataFrame.create(0)) as unknown as DataFrameLike;
+
+const GROUP_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A principal's group, looked up once a session; null where none answers. */
+const principalGroups = new Map<string, Promise<DG.Group | null>>();
+
+async function principalGroup(principal: string): Promise<DG.Group | null> {
+  const by = GROUP_ID.test(principal) ? 'id' : 'friendlyName';
+  return await grok.dapi.groups.filter(`${by} = "${principal}"`).first() ?? null;
+}
+
+/** An empty avatar at once, so the names stay in line; the group's picture once the group is found. */
+backends.principalIcon = (principal) => {
+  if (principal === '' || principal.includes('"'))
+    return null;
+  let group = principalGroups.get(principal);
+  if (group === undefined)
+    principalGroups.set(principal, group = principalGroup(principal).catch(() => null));
+  const box = document.createElement('div');
+  box.className = 'u2-avatar';
+  void group.then((g) => {
+    if (g !== null)
+      box.replaceWith(groupIcon(g));
+  });
+  return box;
+};
+
+backends.format = {
+  dateFormat: () => grok.shell.settings.dateFormat,
+  number: (x, format) => DG.format(x, format),
+};

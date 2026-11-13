@@ -4,7 +4,6 @@ import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tre
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
-import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {createTestScheduler} from '../../../test-utils';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 

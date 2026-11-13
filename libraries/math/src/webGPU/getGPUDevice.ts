@@ -46,13 +46,9 @@ export async function getGPUAdapterDescription() {
     console.error('WebGPU is not supported in this browser');
     return null;
   }
-  if (!gpuAdapter) {
-    // reason: only here we get the gpuAdapter
-    // eslint-disable-next-line no-restricted-syntax
-    gpuAdapter = await navigator.gpu.requestAdapter();
-    if (gpuAdapter == null)
-      return null;
-  }
+  // the adapter getGPUDevice computes on: requesting another here would leave getGPUDevice the wrong one
+  if (!gpuAdapter && !(await getGPUDevice()))
+    return null;
 
   let info: GPUAdapterInfo | null = null;
   if ('info' in (gpuAdapter as any))
@@ -69,5 +65,28 @@ export async function getGPUAdapterDescription() {
 
 function replaceEmptyString(str: string, replacement: string) {
   return !str || str == '' ? replacement : str;
+}
+
+/** The GPU the browser draws and computes on, as WebGL names it (Chrome on Windows:
+ * "ANGLE (AMD, AMD Radeon(TM) 860M Graphics (0x00001114) Direct3D11 vs_5_0 ps_5_0, D3D11)"); null if hidden. */
+export function getGPURenderer(): string | null {
+  const gl = document.createElement('canvas').getContext('webgl');
+  if (!gl)
+    return null;
+  const ext = gl.getExtension('WEBGL_debug_renderer_info');
+  const renderer = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) as string : null;
+  gl.getExtension('WEBGL_lose_context')?.loseContext();
+  return renderer;
+}
+
+/** Whether a renderer string (see getGPURenderer) names a GPU built into the CPU: Intel's but Arc A/B cards,
+ * AMD's Radeon "Graphics" without RX, Pro or Instinct. */
+// ponytail: name heuristic (no web API tells integrated from discrete); add names here as they show up
+export function isIntegratedGPU(renderer: string): boolean {
+  if (/intel/i.test(renderer))
+    return !/arc\(tm\)\s*[ab]\d{3}/i.test(renderer);
+  if (/amd|radeon/i.test(renderer))
+    return /graphics/i.test(renderer) && !/\brx\b|\bpro\b|instinct/i.test(renderer);
+  return false;
 }
 

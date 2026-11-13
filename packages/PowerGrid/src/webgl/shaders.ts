@@ -17,10 +17,14 @@ uniform vec2 u_origin;   // the GL canvas' top-left in device pixels of the view
 uniform vec2 u_size;     // the GL canvas in device pixels
 uniform float u_dpr;
 uniform bool u_selection;     // selected rows take the selection color, as ScatterPlotCore.getColor paints them
-uniform vec3 u_selectedColor;
+uniform vec4 u_selectedColor;
 
 vec2 screen() { return vec2(u_xform.x + u_xform.y * a_x, u_xform.z + u_xform.w * a_y); }
-vec3 rowColor() { return u_selection && a_selected > 0.5 ? u_selectedColor : a_color.zyx; }
+// a color without an alpha (0xRRGGBB) is opaque, as Color.opaqueIfNoAlpha reads it
+vec4 rowColor() {
+  vec4 c = u_selection && a_selected > 0.5 ? u_selectedColor : a_color.zyxw;
+  return c.a == 0.0 ? vec4(c.rgb, 1.0) : c;
+}
 bool inViewBox(vec2 p) { return p.x >= u_viewBox.x && p.x <= u_viewBox.z && p.y >= u_viewBox.y && p.y <= u_viewBox.w; }
 vec4 clip(vec2 device) {
   vec2 p = (device - u_origin) / u_size * 2.0 - 1.0;
@@ -36,7 +40,7 @@ void main() {
   vec2 p = screen();
   gl_PointSize = 1.0;
   gl_Position = inViewBox(p) ? clip(floor(p * u_dpr) + 0.5) : CULLED;
-  v_color = vec4(rowColor(), 1.0);
+  v_color = vec4(rowColor().rgb, 1.0);
 }`;
 
 export const DOT_FRAGMENT = `#version 300 es
@@ -63,7 +67,7 @@ export const SHAPE_VERTEX = `${VERTEX_COMMON}
 ${MARKER_TYPES}
 uniform float u_border;
 uniform bool u_markerCache;  // the viewer canvas is large enough for Marker.draw to cache markers
-flat out vec3 v_color;
+flat out vec4 v_color;
 flat out vec2 v_center;
 flat out float v_size;
 flat out int v_type;
@@ -96,8 +100,7 @@ const int MARKER_KIND = ${kind};
 uniform vec2 u_size;
 uniform float u_dpr;
 uniform float u_border;
-uniform float u_alpha;
-flat in vec3 v_color;
+flat in vec4 v_color;
 flat in vec2 v_center;
 flat in float v_size;
 flat in int v_type;
@@ -186,7 +189,7 @@ void main() {
   if (kind == GRADIENT) {
     // a canvas gradient fades to transparent black interpolating unpremultiplied colors, which darkens it
     float g = max(1.0 - length(p) / (v_size * 0.5), 0.0);
-    o = vec4(v_color * g, 1.0) * (g * u_alpha);
+    o = vec4(v_color.rgb * g, 1.0) * (g * v_color.a);
   }
   else {
     vec2 d = marker(p);
@@ -205,8 +208,8 @@ void main() {
     else
       c = coverage(d, 1.0);
     // The border is the body color darkened by 50 per channel (Color.darken), stroked over the body.
-    vec4 bodyColor = vec4(v_color, 1.0) * (c.x * u_alpha);
-    vec4 edgeColor = vec4(max(v_color - 50.0 / 255.0, 0.0), 1.0) * (c.y * u_alpha);
+    vec4 bodyColor = vec4(v_color.rgb, 1.0) * (c.x * v_color.a);
+    vec4 edgeColor = vec4(max(v_color.rgb - 50.0 / 255.0, 0.0), 1.0) * (c.y * v_color.a);
     o = edgeColor + bodyColor * (1.0 - edgeColor.a);
   }
   if (o.a <= 0.0)

@@ -11,6 +11,7 @@ import {readDataframe, loadFileAsText} from './utils';
 
 import {getSdfString} from '../utils/sdf-utils';
 import {_importSdfString} from '../open-chem/sdf-importer';
+import {isCruxRequested} from '../engine/chem-engine';
 
 category('save as sdf', async () => {
   let inputDf: DG.DataFrame;
@@ -45,6 +46,21 @@ category('save as sdf', async () => {
   });
 });
 
+/** RDKit's canonical SMILES of a molecule string (Chem's RDKit, unsanitized where it cannot sanitize, as getMolSafe
+ * reads it), null for no molecule. */
+function canonical(molecule: string): string | null {
+  let mol = null;
+  try {
+    const module = chemCommonRdKit.getRdKitModule();
+    mol = module.get_mol(molecule) ?? module.get_mol(molecule, JSON.stringify({sanitize: false}));
+    return mol?.get_smiles() ?? null;
+  } catch {
+    return null;
+  } finally {
+    mol?.delete();
+  }
+}
+
 function expectSdf(actual: string, expected: string) {
   const actualDF = _importSdfString(actual)[0];
   const expectedDF = _importSdfString(expected)[0];
@@ -58,7 +74,12 @@ function expectSdf(actual: string, expected: string) {
     for (let i = 0; i < expectedDF.rowCount; i++) {
       const expectedVal = expectedCol.get(i);
       const actualVal = actualCol.get(i);
-      if (typeof expectedVal === 'number' && typeof actualVal === 'number')
+      if (isCruxRequested() && typeof expectedVal === 'string' && actualVal !== expectedVal) {
+        // the stand's engine: in Crux mode RDKit.js 2026.03.6's MOL blocks and SMILES (the product owner, 2026-10-23),
+        // the same molecules as these files' RDKit 2024.09 ones
+        expect(canonical(expectedVal) !== null, true, `Column ${col}, row ${i} differs: actual ${actualVal}, expected ${expectedVal}`);
+        expect(canonical(actualVal), canonical(expectedVal), `Column ${col}, row ${i}: another molecule`);
+      } else if (typeof expectedVal === 'number' && typeof actualVal === 'number')
         expect((isNaN(actualVal) && isNaN(expectedVal)) || (actualVal as number).toFixed(2) === expectedVal.toFixed(2), true, `Column ${col}, row ${i} differs: actual ${actualVal}, expected ${expectedVal}`);
       else
         expect(actualVal, expectedVal, `Column ${col}, row ${i} differs: actual ${actualVal}, expected ${expectedVal}`);

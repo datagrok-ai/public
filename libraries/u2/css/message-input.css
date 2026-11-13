@@ -62,7 +62,7 @@
   gap: var(--dg-space-xs);
 }
 
-.u2-msg-send:disabled {
+.u2-msg-send:is(:disabled, [aria-disabled='true']) {
   cursor: default;
   opacity: 0.5;
 }

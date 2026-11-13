@@ -4,7 +4,8 @@ Feature: The Multi curve viewer from the Add Viewer dialog, its curve columns, U
   and 7. The MultiCurveViewer card of the Add Viewer dialog is enabled on a table with curve columns and
   disabled on one without (GROK-19014, GROK-14069); added, the viewer takes one of the five curve
   columns and draws the curves of the current row, the Curves editor's All takes all five, the selected
-  rows add theirs; Merge Cell Series draws one curve per cell (GROK-19028); General > Use in Trellis
+  rows add theirs and with Show Selected Rows Curves unchecked only the current row's stay (scenario 3,
+  step 5); Merge Cell Series draws one curve per cell (GROK-19028); General > Use in Trellis
   puts it into a trellis as the inner viewer (GROK-19025); a closed viewer leaves no error behind
   (Curves 1.13.1). The curves table is ready once the Context Panel shows the value of its current
   cell: until then the platform may still replace the viewer's properties opened from its menu.
@@ -65,6 +66,10 @@ Feature: The Multi curve viewer from the Add Viewer dialog, its curve columns, U
     And user checks "Merge Cell Series" property in context panel
     Then the "curves" reading of MultiCurveViewer viewer should be 15
     When user unchecks "Merge Cell Series" property in context panel
+    Then the "curves" reading of MultiCurveViewer viewer should be 21
+    When user unchecks "Show Selected Rows Curves" property in context panel
+    Then the "curves" reading of MultiCurveViewer viewer should be 7
+    When user checks "Show Selected Rows Curves" property in context panel
     Then the "curves" reading of MultiCurveViewer viewer should be 21
     When user clears the row selection
     Then the "curves" reading of MultiCurveViewer viewer should be 7

@@ -160,10 +160,12 @@ category('Flow: clipboard', () => {
       const r = el.getBoundingClientRect();
       const init = {bubbles: true, cancelable: true, button: 2,
         clientX: r.left + r.width / 2, clientY: r.top + 8};
+      let reachedNode = 0;
+      el.addEventListener('pointerdown', () => reachedNode++);
+      el.addEventListener('pointerup', () => reachedNode++);
       el.dispatchEvent(new PointerEvent('pointerdown', init));
-      await new Promise((res) => setTimeout(res, 60));
       el.dispatchEvent(new PointerEvent('pointerup', init));
-      await new Promise((res) => setTimeout(res, 60));
+      expect(reachedNode, 0, 'the editor swallows both halves of the right-click before rete sees them');
       expect(e.flow.getSelectedNodeIds().length, 2,
         'right-click must not clear the selection Duplicate acts on');
     } finally {

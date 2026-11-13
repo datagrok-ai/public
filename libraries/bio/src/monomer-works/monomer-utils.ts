@@ -8,103 +8,13 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
 import {
-  HELM_FIELDS, HELM_CORE_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict,
-  MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME, HELM_REQUIRED_FIELD,
+  HELM_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict, SDF_MONOMER_NAME, HELM_REQUIRED_FIELD,
 } from '../utils/const';
 import {ISeqSplitted} from '../utils/macromolecule/types';
 import {splitAlignedSequences} from '../utils/splitter';
 import {GAP_SYMBOL} from '../utils/macromolecule/consts';
 import {ISeqHelper} from '../utils/seq-helper';
 import {getMonomerLibHelper} from '../types/monomer-library';
-
-export function encodeMonomers(col: DG.Column, seqHelper: ISeqHelper): DG.Column | null {
-  let encodeSymbol = MONOMER_ENCODE_MIN;
-  const monomerSymbolDict: { [key: string]: number } = {};
-  const sh = seqHelper.getSeqHandler(col);
-  const encodedStringArray = [];
-  const rowCount = col.length;
-  for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
-    let encodedMonomerStr = '';
-    const monomers = sh.getSplitted(rowIdx);
-    for (let posIdx = 0; posIdx < rowCount; ++posIdx) {
-      const cm = monomers.getCanonical(posIdx);
-      if (!monomerSymbolDict[cm]) {
-        if (encodeSymbol > MONOMER_ENCODE_MAX) {
-          grok.shell.error(`Not enough symbols to encode monomers`);
-          return null;
-        }
-        monomerSymbolDict[cm] = encodeSymbol;
-        encodeSymbol++;
-      }
-      encodedMonomerStr += String.fromCodePoint(monomerSymbolDict[cm]);
-    }
-    encodedStringArray.push(encodedMonomerStr);
-  }
-  return DG.Column.fromStrings('encodedMolecules', encodedStringArray);
-}
-
-export function getMolfilesFromSeq(
-  col: DG.Column, monomersLibObject: any[], seqHelper: ISeqHelper
-): any[][] | null {
-  const sh = seqHelper.getSeqHandler(col);
-  const monomersDict = createMomomersMolDict(monomersLibObject);
-  const molFiles = [];
-  const rowCount = col.length;
-  for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
-    const monomers = sh.getSplitted(rowIdx);
-    const molFilesForSeq = [];
-    for (let j = 0; j < rowCount; ++j) {
-      const cm = monomers.getCanonical(j);
-      if (cm) {
-        if (!monomersDict[cm]) {
-          grok.shell.warning(`Monomer ${cm} is missing in HELM library. Structure cannot be created`);
-          return null;
-        }
-        // what is the reason of double conversion?
-        molFilesForSeq.push(JSON.parse(JSON.stringify(monomersDict[cm])));
-      }
-    }
-    molFiles.push(molFilesForSeq);
-  }
-  return molFiles;
-}
-
-export function getMolfilesFromSingleSeq(
-  cell: DG.Cell, monomersLibObject: any[], seqHelper: ISeqHelper
-): any[][] | null {
-  const sh = seqHelper.getSeqHandler(cell.column);
-  const monomersDict = createMomomersMolDict(monomersLibObject);
-  const molFiles = [];
-  const monomers = sh.getSplitted(cell.rowIndex);
-  const molFilesForSeq = [];
-  for (let j = 0; j < monomers.length; ++j) {
-    const cm = monomers.getCanonical(j);
-    if (cm) {
-      if (!monomersDict[cm]) {
-        grok.shell.warning(`Monomer ${cm} is missing in HELM library. Structure cannot be created`);
-        return null;
-      }
-      molFilesForSeq.push(JSON.parse(JSON.stringify(monomersDict[cm])));
-    }
-  }
-  molFiles.push(molFilesForSeq);
-  return molFiles;
-}
-
-export function createMomomersMolDict(lib: any[]): { [key: string]: string | any } {
-  const dict: { [key: string]: string | any } = {};
-  lib.forEach((it) => {
-    if (it['polymerType'] === 'PEPTIDE') {
-      const monomerObject: { [key: string]: any } = {};
-      HELM_CORE_FIELDS.forEach((field) => {
-        monomerObject[field] = it[field];
-      });
-      dict[it[HELM_FIELDS.SYMBOL]] = monomerObject;
-    }
-  });
-  return dict;
-}
-
 
 export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
   const resultLib = [];

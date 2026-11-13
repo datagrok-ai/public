@@ -14,7 +14,7 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {check, clickOn, expand, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {autostartsCompleted, closeAllViews, openDataset, packageInstalled, simpleModeOff} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewer, addViewerWith, clickArea, hoverArea, noErrors, readingIs, readingReads, reportsNoError} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewer, addViewerWith, clickArea, hoverArea, loadLayout, noErrors, readingIs, readingReads, reportsNoError, saveLayoutToServer, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {innerPropertyShouldBe, noSuchReading, pickInnerViewer} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -22,7 +22,7 @@ test.describe("The Multi curve viewer inside a Trellis plot", () => {
   const session = feature(test, "features/viewers/curves-in-trellis.feature", import.meta.url);
   test("The Multi curve viewer inside a Trellis plot", {tag: ["@journey"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 6, page);
+    const run = journey(test, 7, page);
     await session.step(19, "Given user is logged in", () => loggedIn(page));
     await session.step(20, "And simple mode is off", () => simpleModeOff(page));
     await session.step(21, "And the package autostarts have completed", () => autostartsCompleted(page));
@@ -64,27 +64,34 @@ test.describe("The Multi curve viewer inside a Trellis plot", () => {
       await session.step(59, "And \"Merge Column Series\" property in context panel should be visible", () => shouldBe(page, el("\"Merge Column Series\" property in context panel"), "visible"));
       await session.step(60, "And no errors should have been logged", () => noErrors(page));
     });
+    await run.scenario("A layout saved and applied again keeps Log Y of the inner viewer", async () => {
+      await session.step(63, "When user saves the layout of the current table view to the server", () => saveLayoutToServer(page));
+      await session.step(64, "And user loads the saved layout", () => loadLayout(page));
+      await session.step(65, "Then the open tableview should have 1 trellis plot viewer", () => viewerCount(page, 1, "trellis plot"));
+      await session.step(66, "And \"logY\" inner property of trellis plot viewer should be \"true\"", () => innerPropertyShouldBe(page, "logY", el("trellis plot viewer"), "true"));
+      await session.step(67, "And no errors should have been logged", () => noErrors(page));
+    });
     await run.scenario("On a table without curves every cell says it needs a curve column", async () => {
-      await session.step(63, "Given user closes all views", () => closeAllViews(page));
-      await session.step(64, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-      await session.step(65, "And user adds a trellis plot viewer with:", () => addViewerWith(page, "trellis plot", [["X Column Names","SEX"]]), [["X Column Names","SEX"]]);
-      await session.step(67, "When user picks \"Curves\" in the viewer selector of trellis plot viewer", () => pickInnerViewer(page, "Curves", el("trellis plot viewer")));
-      await session.step(68, "Then the \"inner viewer type\" reading of trellis plot viewer should be \"MultiCurveViewer\"", () => readingReads(page, "inner viewer type", el("trellis plot viewer"), "MultiCurveViewer"));
-      await session.step(69, "When user hovers over the \"cell body F | High\" area of trellis plot viewer", () => hoverArea(page, "cell body F | High", el("trellis plot viewer")));
-      await session.step(70, "And user hovers over the \"cell body M | Low\" area of trellis plot viewer", () => hoverArea(page, "cell body M | Low", el("trellis plot viewer")));
-      await session.step(71, "Then \"The MultiCurveViewer viewer requires a minimum of 1 curves column.\" text in trellis plot viewer should be visible", () => shouldBe(page, el("\"The MultiCurveViewer viewer requires a minimum of 1 curves column.\" text in trellis plot viewer"), "visible"));
-      await session.step(72, "And no errors should have been logged", () => noErrors(page));
+      await session.step(70, "Given user closes all views", () => closeAllViews(page));
+      await session.step(71, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+      await session.step(72, "And user adds a trellis plot viewer with:", () => addViewerWith(page, "trellis plot", [["X Column Names","SEX"]]), [["X Column Names","SEX"]]);
+      await session.step(74, "When user picks \"Curves\" in the viewer selector of trellis plot viewer", () => pickInnerViewer(page, "Curves", el("trellis plot viewer")));
+      await session.step(75, "Then the \"inner viewer type\" reading of trellis plot viewer should be \"MultiCurveViewer\"", () => readingReads(page, "inner viewer type", el("trellis plot viewer"), "MultiCurveViewer"));
+      await session.step(76, "When user hovers over the \"cell body F | High\" area of trellis plot viewer", () => hoverArea(page, "cell body F | High", el("trellis plot viewer")));
+      await session.step(77, "And user hovers over the \"cell body M | Low\" area of trellis plot viewer", () => hoverArea(page, "cell body M | Low", el("trellis plot viewer")));
+      await session.step(78, "Then \"The MultiCurveViewer viewer requires a minimum of 1 curves column.\" text in trellis plot viewer should be visible", () => shouldBe(page, el("\"The MultiCurveViewer viewer requires a minimum of 1 curves column.\" text in trellis plot viewer"), "visible"));
+      await session.step(79, "And no errors should have been logged", () => noErrors(page));
     });
     await run.scenario("Switching the inner viewer of a trellis on a table without curves logs no error", async () => {
-      await session.step(75, "When user picks \"Scatter plot\" in the viewer selector of trellis plot viewer", () => pickInnerViewer(page, "Scatter plot", el("trellis plot viewer")));
-      await session.step(76, "Then the \"inner viewer type\" reading of trellis plot viewer should be \"Scatter plot\"", () => readingReads(page, "inner viewer type", el("trellis plot viewer"), "Scatter plot"));
-      await session.step(77, "When user picks \"Bar chart\" in the viewer selector of trellis plot viewer", () => pickInnerViewer(page, "Bar chart", el("trellis plot viewer")));
-      await session.step(78, "Then the \"inner viewer type\" reading of trellis plot viewer should be \"Bar chart\"", () => readingReads(page, "inner viewer type", el("trellis plot viewer"), "Bar chart"));
-      await session.step(79, "When user picks \"Box plot\" in the viewer selector of trellis plot viewer", () => pickInnerViewer(page, "Box plot", el("trellis plot viewer")));
-      await session.step(80, "Then the \"inner viewer type\" reading of trellis plot viewer should be \"Box plot\"", () => readingReads(page, "inner viewer type", el("trellis plot viewer"), "Box plot"));
-      await session.step(81, "When user picks \"Curves\" in the viewer selector of trellis plot viewer", () => pickInnerViewer(page, "Curves", el("trellis plot viewer")));
-      await session.step(82, "Then the \"inner viewer type\" reading of trellis plot viewer should be \"MultiCurveViewer\"", () => readingReads(page, "inner viewer type", el("trellis plot viewer"), "MultiCurveViewer"));
-      await session.step(83, "And no errors should have been logged", () => noErrors(page));
+      await session.step(82, "When user picks \"Scatter plot\" in the viewer selector of trellis plot viewer", () => pickInnerViewer(page, "Scatter plot", el("trellis plot viewer")));
+      await session.step(83, "Then the \"inner viewer type\" reading of trellis plot viewer should be \"Scatter plot\"", () => readingReads(page, "inner viewer type", el("trellis plot viewer"), "Scatter plot"));
+      await session.step(84, "When user picks \"Bar chart\" in the viewer selector of trellis plot viewer", () => pickInnerViewer(page, "Bar chart", el("trellis plot viewer")));
+      await session.step(85, "Then the \"inner viewer type\" reading of trellis plot viewer should be \"Bar chart\"", () => readingReads(page, "inner viewer type", el("trellis plot viewer"), "Bar chart"));
+      await session.step(86, "When user picks \"Box plot\" in the viewer selector of trellis plot viewer", () => pickInnerViewer(page, "Box plot", el("trellis plot viewer")));
+      await session.step(87, "Then the \"inner viewer type\" reading of trellis plot viewer should be \"Box plot\"", () => readingReads(page, "inner viewer type", el("trellis plot viewer"), "Box plot"));
+      await session.step(88, "When user picks \"Curves\" in the viewer selector of trellis plot viewer", () => pickInnerViewer(page, "Curves", el("trellis plot viewer")));
+      await session.step(89, "Then the \"inner viewer type\" reading of trellis plot viewer should be \"MultiCurveViewer\"", () => readingReads(page, "inner viewer type", el("trellis plot viewer"), "MultiCurveViewer"));
+      await session.step(90, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

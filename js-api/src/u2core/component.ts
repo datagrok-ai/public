@@ -1,6 +1,8 @@
-import {Scope} from './scope.js';
+import {Scope, whenActive} from './scope.js';
+import type {TaskContext, TaskOptions, TaskRun} from './scope.js';
 import {Signal, batch, computed, isWritableSignal, signal} from './signals.js';
 import {describeScope, registry} from './debug.js';
+import {Usage} from './usage.js';
 import {propertyFields} from './property-fields.js';
 import type {IProperty} from './property-fields.js';
 import type {BindProp, BindSource, ComponentMetaBase, FuncLike, NamedProperty, ObservableLike,
@@ -52,7 +54,20 @@ export interface ComponentState {
   /** The ambient scope that adopted this component and the release it registered there — dropped
    * on {@link Component.dispose} so a long-lived owner does not pile up dead closures. */
   adopter?: {scope: Scope, release: () => void};
+  /** Disposed because its owner went, not by hand. */
+  byOwner?: boolean;
+  /** With u2 debug on: the components whose constructors were running when this one was built, by class name. */
+  builtDuring?: string[];
 }
+
+/** The members a field of a subclass must not take: overriding one breaks the identity, the lifecycle or the
+ * automation u2 runs on every control. An accessor is taken by any own value, a method by a non-function. */
+const RESERVED_ACCESSORS = ['name', 'root', 'scope', 'visible', 'rootId'];
+const RESERVED_METHODS = ['effect', 'own', 'on', 'dispose', 'runInScope', 'build', 'task', 'subscribe', 'getState',
+  'getItems', 'onEvent', 'fireEvent'];
+/** With u2 debug on: the classes of the components whose field check is pending (their constructors may still be
+ * running), with how many of each. */
+const constructing = new Map<string, number>();
 
 /** Base of every u2 component, visual or not: a name, an effect/cleanup scope, and the widget
  * introspection surface (DD7) generated from {@link componentMeta} — what the shell, the context
@@ -62,14 +77,20 @@ export interface ComponentState {
  * so the kill channel and the introspection surface are this class's own — nothing wires or
  * delegates. Standalone hosts (gallery, tests) call {@link dispose} directly. */
 export class Component implements BindSource {
+  /** A root has no owner by design (a dialog): built with none, it is not reported as `owner-missing`. */
+  static isRoot = false;
+
   /** Minted on first use; assigned before {@link _scopeMinted} fires, so the hook's own
-   * `this.scope.own(...)` reads the stored scope instead of re-entering the mint. */
+   * `this.scope.own(...)` reads the stored scope instead of re-entering the mint. Lazy: counted and tracked only
+   * once it owns something, so a static control costs nothing. */
   get scope(): Scope {
     const u2 = this._u2;
     if (u2.scope === undefined) {
-      u2.scope = new Scope();
+      u2.scope = new Scope(undefined, {lazy: true});
       scopeOwners.set(u2.scope, this);
       describeScope(u2.scope, this);
+      if (u2.adopter === undefined && this.ambientAdoption && !(this.constructor as typeof Component).isRoot)
+        whenActive(u2.scope, () => Component._reportUnowned(this));
       this._scopeMinted(u2.scope);
     }
     return u2.scope;
@@ -113,9 +134,87 @@ export class Component implements BindSource {
     }
     const owner = self.ambientAdoption ? Scope.ambient : undefined;
     if (owner && owner !== it._u2.scope) {
-      const release = () => self.dispose();
+      if (owner.isDisposed) {
+        Usage.report('owner-disposed', `${self.constructor.name} was built under a scope already disposed ` +
+          `(${owner.label}), so it was disposed at once — a handler that closed its own owner and then built? Build ` +
+          'it under a live owner; one that must outlive it under `Scope.root(\'<what>\')`.');
+      }
+      const release = () => {
+        it._u2.byOwner = true;
+        self.dispose();
+      };
       it._u2.adopter = {scope: owner, release};
       owner.own(release);
+    }
+    if (registry.enabled)
+      Component._watchFields(self);
+    else if (Usage.strict)
+      queueMicrotask(() => Component._checkReserved(self));
+  }
+
+  private static _reportUnowned(self: Component): void {
+    const type = self.constructor.name || 'A control';
+    Usage.report('owner-missing', `${type} was built with no owner and now owns something nobody will dispose. ` +
+      `Build it under an owner (\`owner.build(() => new ${type}(…))\`, \`component((self) => …)\`); after an ` +
+      '`await`, `owner.task(async (t) => … t.build(…))`; a new root on purpose, under `Scope.root(\'<what>\')`.');
+  }
+
+  /** With u2 debug on: notes which components' constructors are running (their `new X` frames), and checks this
+   * one's fields a microtask later, once its constructor has run. A best-effort check: the `new X (` frame is V8's
+   * stack format, a minified build's class names can match the wrong frame or none, and each child built during
+   * another's constructor captures a 40-frame stack. */
+  private static _watchFields(self: Component): void {
+    const type = self.constructor.name;
+    if (constructing.size > 0) {
+      const E = Error as {stackTraceLimit?: number};
+      const limit = E.stackTraceLimit;
+      E.stackTraceLimit = 40;
+      const stack = new Error().stack ?? '';
+      E.stackTraceLimit = limit;
+      const during = [...constructing.keys()].filter((name) => stack.includes(`new ${name} (`));
+      if (during.length > 0)
+        self._u2.builtDuring = during;
+    }
+    constructing.set(type, (constructing.get(type) ?? 0) + 1);
+    queueMicrotask(() => {
+      const left = constructing.get(type)! - 1;
+      if (left === 0)
+        constructing.delete(type);
+      else
+        constructing.set(type, left);
+      Component._checkFields(self);
+    });
+  }
+
+  private static _checkReserved(self: Component): Set<string> {
+    const taken = new Set<string>();
+    const fields = self as unknown as Record<string, unknown>;
+    for (const key of Object.keys(self)) {
+      const method = RESERVED_METHODS.includes(key);
+      if (RESERVED_ACCESSORS.includes(key) || method && typeof fields[key] !== 'function') {
+        taken.add(key);
+        Usage.report('reserved-key', `${self.constructor.name}.${key} overrides Control's own ` +
+          `\`${key}${method ? '()' : ''}\`, which u2 runs on every control — name the field for what it holds ` +
+          `(\`${key}Input\`, \`${key}Text\`).`);
+      }
+    }
+    return taken;
+  }
+
+  /** A field that takes one of the control's own members (`reserved-key`), and a child control its constructor
+   * built outside its scope — owned by whoever was building this one, so it outlives this one (a warning). */
+  private static _checkFields(self: Component): void {
+    const type = self.constructor.name;
+    const taken = Component._checkReserved(self);
+    for (const key of Object.keys(self)) {
+      const value = (self as unknown as Record<string, unknown>)[key];
+      if (taken.has(key) || value === self || !(value instanceof Component) || !value._u2.builtDuring?.includes(type))
+        continue;
+      const adopter = value._u2.adopter?.scope;
+      if (adopter !== undefined && adopter === self._u2.adopter?.scope) {
+        console.warn(`u2: ${type}.${key} holds a control built outside ${type}'s scope: it belongs to whoever built ` +
+          `${type} and outlives it unless disposed by hand. Build it under \`this.build(() => new …)\`.`);
+      }
     }
   }
 
@@ -149,9 +248,10 @@ export class Component implements BindSource {
     return proto === Object.prototype || proto === null;
   }
 
-  /** Runs `fn` with this component's scope ambient: what it builds is owned by this component. */
+  /** Runs `fn` with this component's scope ambient: what it builds is owned by this component.
+   * @deprecated Use the owner verb `build(fn)` ({@link OwnerVerbs.build}): `this.build(fn)`, `dialog.build(fn)`. */
   runInScope<T>(fn: () => T): T {
-    return Scope.runWith(this.scope, fn);
+    return this.scope.build(fn);
   }
 
   /** Runs `fn` now and on every change of the signals it reads, until this component is disposed.
@@ -582,6 +682,14 @@ export class Control extends Component {
     this._stampName();
   }
 
+  /** Disposes the control; disposed by hand, it also leaves the page — a dead control left on show looks alive. One
+   * its owner disposes leaves the DOM to whoever holds it: a region swapping its content, a spec re-rendering. */
+  dispose(): void {
+    super.dispose();
+    if (this._u2.byOwner !== true)
+      this.root.remove();
+  }
+
   /** Hidden ⇔ the root carries the `hidden` attribute. */
   get visible(): boolean {
     return !this.root.hidden;
@@ -606,12 +714,14 @@ export class Control extends Component {
     const root = this.root;
     const busy = root.getAttribute('aria-busy');
     const items = this.getItems();
+    const enabled = root.getAttribute('aria-disabled') !== 'true' && !root.hasAttribute('disabled');
     return Control._defined({
       kind: root.dataset.u2 ?? this.componentMeta?.tag?.replace(/^u2-/, '') ?? 'control',
       tag: this.componentMeta?.tag ?? root.dataset.u2Tag,
       name: root.dataset.u2Name,
       label: this.accessibleLabel(),
-      enabled: root.getAttribute('aria-disabled') !== 'true' && !root.hasAttribute('disabled'),
+      enabled,
+      disabledReason: enabled ? undefined : root.getAttribute('aria-description') || undefined,
       visible: root.isConnected && root.closest('[hidden]') === null &&
         (typeof root.getClientRects !== 'function' || root.getClientRects().length > 0),
       focused: this._hasFocus(),
@@ -828,19 +938,122 @@ export class Control extends Component {
     };
   }
 
-  /** Builds a control out of plain elements: `builder` runs with the new control's scope
-   * ambient, so signal bindings and nested components inside it are owned by the result.
-   * The ambient scope only spans the synchronous part of `builder` — components constructed after
-   * an `await` inside it are adopted by nobody and must be disposed by hand, or constructed before
-   * the first await. */
-  static build(builder: () => HTMLElement | (HTMLElement | Control | string)[]): Control {
-    const scope = new Scope();
-    const built = Scope.runWith(scope, builder);
-    if (!Array.isArray(built))
-      return new Control(built, scope);
+  /** The function component {@link component} makes, under its old name.
+   * @deprecated Use {@link component}: one spelling, apart from an owner's `build(fn)`. */
+  static build(builder: (self: Scope) => BuiltRoot, options?: ControlBuildOptions): Control;
+  static build<R extends BuiltHandle>(builder: (self: Scope) => R, options?: ControlBuildOptions):
+    Control & Omit<R, 'root'>;
+  static build(builder: (self: Scope) => unknown, options?: ControlBuildOptions): Control {
+    const scope = new Scope(undefined, {lazy: true});
+    let built: unknown;
+    try {
+      built = scope.build(() => builder(scope));
+    }
+    catch (e) {
+      scope.dispose();
+      throw e;
+    }
+    const handle = Control._isHandle(built) ? built : undefined;
+    const content = handle === undefined ? built : handle.root;
+    const root = content == null ? undefined : content instanceof HTMLElement ? content :
+      Control._wrap(content as BuiltRoot);
+    const control = new Control(root, scope);
+    if (handle !== undefined)
+      Control._attach(control, handle);
+    if (options?.name !== undefined)
+      control.name = options.name;
+    return control;
+  }
+
+  private static _isHandle(x: unknown): x is {root: unknown} {
+    return typeof x === 'object' && x !== null && !Array.isArray(x) && !(x instanceof HTMLElement) &&
+      !Control.is(x) && 'root' in x;
+  }
+
+  private static _wrap(content: BuiltRoot): HTMLElement {
     const root = document.createElement('div');
-    for (const child of built)
+    for (const child of Array.isArray(content) ? content : [content])
       root.append(Control.is(child) ? child.root : child);
-    return new Control(root, scope);
+    return root;
+  }
+
+  private static _attach(control: Control, handle: object): void {
+    for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(handle))) {
+      if (key === 'root')
+        continue;
+      if (key in control) {
+        Usage.report('reserved-key', `component()'s handle has \`${key}\`, a member every control has — name it ` +
+          `for what it holds (\`${key}Text\`, \`${key}Input\`); it was not copied.`);
+        continue;
+      }
+      Object.defineProperty(control, key, descriptor);
+    }
   }
 }
+
+/** The content a {@link component} builder answers: an element, a control, a text, or several (in a `div`). */
+export type BuiltRoot = HTMLElement | Control | string | (HTMLElement | Control | string)[];
+
+/** A handle a {@link component} builder answers: the content under `root`, beside the API the control carries;
+ * no other key may be a Control member. */
+export type BuiltHandle = {root: BuiltRoot} & {[K in Exclude<keyof Control, 'root'> | 'fireEvent' | keyof OwnerVerbs]?:
+  never};
+
+/** Options of {@link component}. */
+export interface ControlBuildOptions {
+  /** The automation id, stamped as `data-u2-name`. */
+  name?: string;
+}
+
+/** Builds a control — the function component: `builder` runs now with the new control's scope ambient and gets
+ * it as `self`, so what it builds is owned by the result; after an `await` it gets back in with
+ * `self.task(async (t) => … t.build(…))`. It answers the content (an element, a control, a text, or several, which
+ * go into a `div`), or a handle `{root, ...api}`: the result is then `Control & api`, the api's properties copied
+ * onto it as they are (getters stay live). A handle key that is a Control member is a type error, and reported
+ * (`reserved-key`) and skipped at run time. `name` is the automation id (`data-u2-name`). A built control is a
+ * root: built with no owner, it is not reported.
+ * @example
+ * const counter = DG.U2.component((self) => {
+ *   const count = DG.U2.signal(0);
+ *   const text = ui.divText('0');
+ *   self.effect(() => text.textContent = String(count.value));
+ *   return {root: text, increment: () => count.value++};
+ * }, {name: 'counter'});
+ * @see {@link https://public.datagrok.ai/js/samples/ui/widgets/u2-build} */
+export function component(builder: (self: Scope) => BuiltRoot, options?: ControlBuildOptions): Control;
+export function component<R extends BuiltHandle>(builder: (self: Scope) => R, options?: ControlBuildOptions):
+  Control & Omit<R, 'root'>;
+export function component(builder: (self: Scope) => unknown, options?: ControlBuildOptions): Control {
+  return Control.build(builder as (self: Scope) => BuiltRoot, options);
+}
+
+/** The owner verbs every component has, its {@link Component.scope}'s: `build(fn)` runs `fn` with it ambient, `task`
+ * runs async work for it, `subscribe` owns a stream. The engine puts them on every component; their types come with
+ * u2 (`@datagrok-libraries/u2` declares them on `Component`), so a platform class that has a member of one of these
+ * names of its own (a function view's `build()`) keeps it and still compiles. */
+export interface OwnerVerbs {
+  /** Runs `fn` now with this owner ambient: what it builds is owned here. See {@link Scope.build}. */
+  build<T>(fn: () => T): T;
+  /** Async work owned here. See {@link Scope.task}. */
+  task<R>(fn: (t: TaskContext) => R | PromiseLike<R>, options?: TaskOptions): TaskRun;
+  /** Subscribes `handler` to `source` until this owner is disposed. See {@link Scope.subscribe}. */
+  subscribe<T>(source: ObservableLike<T>, handler: (value: T) => void): () => void;
+}
+
+/** `task` and `subscribe` are typed on every component, `DG.Widget`, viewers and views included; `build` only with
+ * u2, as compute-utils' function views (`DG.ViewBase` subclasses) declare a `build(): void` of their own. */
+export interface Component extends Pick<OwnerVerbs, 'task' | 'subscribe'> {}
+
+const OWNER_VERBS: {[K in keyof OwnerVerbs]: (this: Component, ...args: Parameters<OwnerVerbs[K]>) => unknown} = {
+  build: function(fn) {
+    return this.scope.build(fn);
+  },
+  task: function(fn, options) {
+    return this.scope.task(fn, options);
+  },
+  subscribe: function(source, handler) {
+    return this.scope.subscribe(source, handler);
+  },
+};
+for (const [name, value] of Object.entries(OWNER_VERBS))
+  Object.defineProperty(Component.prototype, name, {value, writable: true, configurable: true});

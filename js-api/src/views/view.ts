@@ -120,6 +120,9 @@ export class ViewBase extends Widget {
   get parentCall(): FuncCall | undefined { return toJs(api.grok_View_Get_ParentCall(this.dart)); }
   set parentCall(s: FuncCall | undefined) { api.grok_View_Set_ParentCall(this.dart, toDart(s)); }
 
+  /** The view this one was opened from. While it is open, the ribbon shows it before this view's name as a link that
+   * makes it current (a {@link TableView} only with {@link TableView.showParentCrumb}), and closing this view while it
+   * is current makes the parent current. */
   get parentView(): ViewBase { return toJs(api.grok_View_Get_ParentView(this.dart)); }
   set parentView(s: ViewBase) { api.grok_View_Set_ParentView(this.dart, toDart(s)); }
 
@@ -137,6 +140,16 @@ export class ViewBase extends Widget {
    * view's own relative path. */
   get basePath(): string { return api.grok_View_Get_BasePath(this.dart); }
   set basePath(s: string) { api.grok_View_Set_BasePath(this.dart, s); }
+
+  /** Whether the view is saved with the project. Only views that can be reopened are saved: their type
+   * restores them from {@link saveStateMap}, or they belong to an app. A new view is listed in the Save project
+   * dialog but left out until the user includes it, unless {@link saveToProjectByDefault} is true; a view of a
+   * saved project stays in it. */
+  get saveToProject(): boolean { return api.grok_View_Get_SaveToProject(this.dart); }
+  set saveToProject(x: boolean) { api.grok_View_Set_SaveToProject(this.dart, x); }
+
+  /** Override to return true for a view type whose new views go into the project without the user including them. */
+  get saveToProjectByDefault(): boolean { return false; }
 
   /** View toolbox.
    *  Sample: {@link https://public.datagrok.ai/js/samples/ui/views/toolbox} */
@@ -641,6 +654,26 @@ export class TableView extends View {
 
   get syncCurrentObject(): boolean { return api.grok_TableView_Get_SyncCurrentObject(this.dart); }
   set syncCurrentObject(x: boolean) { api.grok_TableView_Set_SyncCurrentObject(this.dart, x); }
+
+  /** Whether the ribbon shows {@link parentView} as a crumb before the table's name: "Parent › Table", the
+   * parent a link as in {@link ui.breadcrumbs}, the table's name as the ribbon shows it, and a click on the parent
+   * makes it current. Off by default, since a table opened from a view's tree inherits that view as its parent.
+   * Takes effect at once, also on the current view.
+   * @example
+   * const home = grok.shell.newView('Home');
+   * const tv = grok.shell.addTableView(grok.data.demo.demog());
+   * tv.parentView = home;
+   * tv.showParentCrumb = true;
+   * @see {@link https://public.datagrok.ai/js/samples/ui/views/table-view-parent-crumb} */
+  get showParentCrumb(): boolean { return api.grok_TableView_Get_ShowParentCrumb(this.dart); }
+  set showParentCrumb(x: boolean) { api.grok_TableView_Set_ShowParentCrumb(this.dart, x); }
+
+  /** Whether the ribbon shows the Save button, which saves the table's project (on by default). An app that
+   * saves the data its own way turns it off; the rest of the ribbon, `getRibbonPanels()` /
+   * `setRibbonPanels()` round-trips included, stays as it is.
+   * @see {@link https://public.datagrok.ai/js/samples/ui/views/table-view-no-save} */
+  get showSaveButton(): boolean { return api.grok_TableView_Get_ShowSaveButton(this.dart); }
+  set showSaveButton(x: boolean) { api.grok_TableView_Set_ShowSaveButton(this.dart, x); }
 
   saveState(): string {
     return api.grok_TableView_SaveState(this.dart);

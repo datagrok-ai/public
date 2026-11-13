@@ -47,6 +47,65 @@ export namespace funcs {
   }
 
   /**
+   * Run a compute workflow without UI and return the state of every step.
+   * @param {string} nqName - Qualified name of the workflow function to run
+   * @param {string} version - Workflow version to run
+   * @param {any} instanceConfig - Optional initial pipeline configuration
+   */
+  export async function runWorkflow(nqName: string , version: string , instanceConfig: any ): Promise<any> {
+    return await grok.functions.call('Compute2:RunWorkflow', { nqName, version, instanceConfig });
+  }
+
+  /**
+   * Save the state returned by RunWorkflow as a new workflow run in history.
+   * @param {string} nqName - Qualified name of the workflow function
+   * @param {string} version - Workflow version
+   * @param {any} state - The state of a RunWorkflow result
+   * @param {any} metadata - Optional title, description and tags
+   */
+  export async function saveWorkflowRun(nqName: string , version: string , state: any , metadata: any ): Promise<any> {
+    return await grok.functions.call('Compute2:SaveWorkflowRun', { nqName, version, state, metadata });
+  }
+
+  /**
+   * The default Excel report of a run, as its export menu builds it: [DG.FileInfo, ExcelJS.Workbook].
+   * @param {any} funcCall - The run to report
+   * @param {any} validationState - Validation results by input
+   * @param {any} consistencyState - Consistency by input
+   * @param {any} viewersHook - The viewers hook of a workflow step, in place of the function's own
+   * @param {any} metaState - Meta values by output, for the hook
+   * @param {boolean} isOutputOutdated - Names the file Not completed when true
+   */
+  export async function reportFuncCallExcel(funcCall: any , validationState?: any , consistencyState?: any , viewersHook?: any , metaState?: any , isOutputOutdated?: boolean ): Promise<any> {
+    return await grok.functions.call('Compute2:ReportFuncCallExcel', { funcCall, validationState, consistencyState, viewersHook, metaState, isOutputOutdated });
+  }
+
+  /**
+   * The exports of a function's runs as its Export menu lists them, [{id, name}]; the first is default.
+   */
+  export async function callExports(func: any ): Promise<any> {
+    return await grok.functions.call('Compute2:CallExports', { func });
+  }
+
+  /**
+   * Exports a run as its Export menu does, with the id CallExports gives; returns the file.
+   * @param {any} funcCall - The run to export
+   * @param {string} exportId - The export id
+   * @param {any} args - The args a custom export gets (CustomExportArgs)
+   */
+  export async function exportCall(funcCall: any , exportId: string , args?: any ): Promise<DG.FileInfo> {
+    return await grok.functions.call('Compute2:ExportCall', { funcCall, exportId, args });
+  }
+
+  /**
+   * Load a saved workflow run without UI and return the state of every step, as RunWorkflow does.
+   * @param {string} id - Meta FuncCall id of the saved workflow run
+   */
+  export async function loadWorkflowRun(id: string ): Promise<any> {
+    return await grok.functions.call('Compute2:LoadWorkflowRun', { id });
+  }
+
+  /**
    * Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.
    * @param {string} id - Meta FuncCall id of the saved workflow run
    */
@@ -69,6 +128,13 @@ export namespace funcs {
     return await grok.functions.call('Compute2:CompareRuns', {});
   }
 
+  /**
+   * Browse saved runs of any model in My runs and in spaces, and open or compare them
+   */
+  export async function browseRuns(): Promise<void> {
+    return await grok.functions.call('Compute2:BrowseRuns', {});
+  }
+
   export async function viewerTestApp(): Promise<void> {
     return await grok.functions.call('Compute2:ViewerTestApp', {});
   }
@@ -77,8 +143,12 @@ export namespace funcs {
     return await grok.functions.call('Compute2:FormTestApp', {});
   }
 
-  export async function historyTestApp(): Promise<void> {
-    return await grok.functions.call('Compute2:HistoryTestApp', {});
+  export async function failingViewersHookMaker(): Promise<any> {
+    return await grok.functions.call('Compute2:FailingViewersHookMaker', {});
+  }
+
+  export async function slowViewersHookMaker(): Promise<any> {
+    return await grok.functions.call('Compute2:SlowViewersHookMaker', {});
   }
 
   /**
@@ -93,6 +163,24 @@ export namespace funcs {
    */
   export async function mockPipeline2(params: any ): Promise<any> {
     return await grok.functions.call('Compute2:MockPipeline2', { params });
+  }
+
+  /**
+   * Workflow with fixed steps, a reorderable list and an invalid step, used for testing keyboard use.
+   */
+  export async function mockKeyboardPipeline(params: any ): Promise<any> {
+    return await grok.functions.call('Compute2:MockKeyboardPipeline', { params });
+  }
+
+  export async function mockTreeWizardPipeline(params: any ): Promise<any> {
+    return await grok.functions.call('Compute2:MockTreeWizardPipeline', { params });
+  }
+
+  /**
+   * Nested workflow of the Mock Tree Wizard Pipeline.
+   */
+  export async function mockTreeWizardGroup(params: any ): Promise<any> {
+    return await grok.functions.call('Compute2:MockTreeWizardGroup', { params });
   }
 
   /**
@@ -137,30 +225,40 @@ export namespace funcs {
     return await grok.functions.call('Compute2:TestCustomView', {});
   }
 
-  /**
-   * Test for optimization: multiple scalars output
-   */
-  export async function fitTestFunc(x1: number , x2: number , y: DG.DataFrame , bool: boolean ): Promise<{integer: number, float1: number, float2: number, table1: DG.DataFrame, table2: DG.DataFrame}> {
-    return await grok.functions.call('Compute2:FitTestFunc', { x1, x2, y, bool });
-  }
-
-  /**
-   * Test for optimization: multiple scalars output
-   */
-  export async function testFittingOutputs(): Promise<void> {
-    return await grok.functions.call('Compute2:TestFittingOutputs', {});
-  }
-
   export async function testCustomExportModel(a: number ): Promise<number> {
     return await grok.functions.call('Compute2:TestCustomExportModel', { a });
   }
 
-  export async function testCustomExportRecorder(funcCall: any , startDownload: boolean ): Promise<string> {
-    return await grok.functions.call('Compute2:TestCustomExportRecorder', { funcCall, startDownload });
+  export async function testPreferredExportModel(a: number ): Promise<number> {
+    return await grok.functions.call('Compute2:TestPreferredExportModel', { a });
   }
 
-  export async function testUrlInputsFixture(a: number , b: number , flag: boolean , s: string , when: any , df: DG.DataFrame , opt: number | undefined, nul: number | null): Promise<number> {
-    return await grok.functions.call('Compute2:TestUrlInputsFixture', { a, b, flag, s, when, df, opt, nul });
+  export async function testCustomExportRecorder(funcCall: any ): Promise<DG.FileInfo> {
+    return await grok.functions.call('Compute2:TestCustomExportRecorder', { funcCall });
+  }
+
+  export async function testNoDefaultExportModel(a: number ): Promise<number> {
+    return await grok.functions.call('Compute2:TestNoDefaultExportModel', { a });
+  }
+
+  export async function testCustomExportNoFile(funcCall: any ): Promise<string> {
+    return await grok.functions.call('Compute2:TestCustomExportNoFile', { funcCall });
+  }
+
+  export async function testBlobExportModel(a: number ): Promise<number> {
+    return await grok.functions.call('Compute2:TestBlobExportModel', { a });
+  }
+
+  export async function testCustomExportBlob(funcCall: any , startDownload: boolean ): Promise<any> {
+    return await grok.functions.call('Compute2:TestCustomExportBlob', { funcCall, startDownload });
+  }
+
+  export async function testCustomExportHookArgs(funcCall: any , viewersHook?: any , metaState?: any ): Promise<DG.FileInfo> {
+    return await grok.functions.call('Compute2:TestCustomExportHookArgs', { funcCall, viewersHook, metaState });
+  }
+
+  export async function testRfvTabs(rows: number ): Promise<{first: DG.DataFrame, middle: DG.DataFrame, last: DG.DataFrame}> {
+    return await grok.functions.call('Compute2:TestRfvTabs', { rows });
   }
 
   export async function testProjectExportSingleOut(x: number ): Promise<DG.DataFrame> {

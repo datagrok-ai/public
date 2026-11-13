@@ -18,7 +18,8 @@ Feature: Box plot property surface
       | Value      | AGE |
       | Category 1 | SEX |
 
-  Scenario: Context menus as property paths
+  @realizes:public#1379
+  Scenario: Context menus as property paths, and Show Outside Values off takes the outlier markers away (public#1379)
     Then "Show Inside Values" property of box plot viewer should be "true"
     When user picks "Misc > Show Inside Values" from the context menu of box plot viewer
     Then "Show Inside Values" property of box plot viewer should be "false"
@@ -26,11 +27,13 @@ Feature: Box plot property surface
     When user picks "Misc > Show Outside Values" from the context menu of box plot viewer
     Then "Show Outside Values" property of box plot viewer should be "false"
     And box plot viewer should have less ink than before
+    And box plot viewer should not have a "marker" area
     When user picks "Misc > Show Inside Values" from the context menu of box plot viewer
     And user picks "Misc > Show Outside Values" from the context menu of box plot viewer
     Then "Show Inside Values" property of box plot viewer should be "true"
     And "Show Outside Values" property of box plot viewer should be "true"
     And box plot viewer should have more ink than before
+    And box plot viewer should have a "marker" area
     When user sets "Marker Size Column" property of box plot viewer to "WEIGHT"
     And user opens the context menu of box plot viewer
     And user hovers over Markers menu item in context menu
@@ -127,6 +130,7 @@ Feature: Box plot property surface
     Then "Marker Color" column input in box plot viewer should be hidden
     When user sets "Show Category Selector" property of box plot viewer to "false"
     Then box plot viewer should have repainted by at least 2000 pixels
+    And category1 column input in box plot viewer should be hidden
     When user sets "Show Value Axis" property of box plot viewer to "false"
     Then box plot viewer should have repainted by at least 2000 pixels
     And box plot viewer should not have a "y axis" area
@@ -149,6 +153,7 @@ Feature: Box plot property surface
     When user hovers over box plot viewer
     Then "Marker Size" column input in box plot viewer should be hidden
     And Value column input in box plot viewer should be visible
+    And category1 column input in box plot viewer should be visible
     And "Marker Color" column input in box plot viewer should be visible
 
   Scenario: Axis font
@@ -162,8 +167,16 @@ Feature: Box plot property surface
     And user sets "Category 1 Map" property of box plot viewer to "month"
     Then box plot viewer should have repainted
     And "Category 1 Map" property of box plot viewer should be "month"
+    And box plot viewer should have a "category January" area
+    And box plot viewer should have a "category December" area
+    And box plot viewer should have a "June values" area
+    And box plot viewer should not have a "category Q1" area
     When user sets "Category 1 Map" property of box plot viewer to "quarter"
     Then box plot viewer should have repainted
+    And box plot viewer should have a "category Q1" area
+    And box plot viewer should have a "category Q4" area
+    And box plot viewer should have a "Q3 values" area
+    And box plot viewer should not have a "category January" area
     When user sets "Category 1" property of box plot viewer to "RACE"
     Then "Category 1" property of box plot viewer should be "RACE"
     And no errors should have been logged

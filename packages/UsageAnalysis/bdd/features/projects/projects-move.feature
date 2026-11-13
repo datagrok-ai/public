@@ -13,12 +13,14 @@ Feature: A project moved between spaces, and access through a shared space
   from the shared space and from its child space, and no longer finds it after the move to the
   unshared space. A second project, iris saved as BDDMoveStay, is moved into the child space (Move to
   Space... offers root spaces only, so it goes into the first space and is dragged on) and stays
-  there: each "no longer sees" claim follows a claim that this project is listed in the same gallery,
-  so an absence cannot be read off a gallery that has not filled. Kept without two claims, restored
-  with the phrases (see the request document): that the sharing user is listed under "Inherited from"
-  in the project's Share dialog (the dialog's grant rows have no element), and that the recipient's
-  Save dialog has Save original project disabled (one option of the dialog's radio group has no
-  reading).
+  there; linked into the second space before it moves on, its link there still opens it (core#382:
+  an error until the tree was refreshed). Each "no longer sees" claim follows a claim that this
+  project is listed in the same gallery, so an absence cannot be read off a gallery that has not
+  filled. The recipient's Save dialog opens in
+  its Save a copy mode, its Name "Copy of <name>". Kept without two claims: that the sharing user is
+  listed under "Inherited from" in the project's Share dialog (the dialog's grant rows have no
+  element), and that the recipient's Save original project option is disabled (one option of a Dart
+  radio group has no reading).
 
   Names are letters and digits only (the Dashboards search misses "-" and "_") and carry the run's
   time. The two projects and the three spaces (the child is removed with its root, and is swept by name
@@ -81,6 +83,7 @@ Feature: A project moved between spaces, and access through a shared space
     When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
 
+  @realizes:core#625
   Scenario: The space is shared, and the project's access is inherited from it
     Given the browse panel is open
     And Spaces tree node inside browse tree is expanded
@@ -93,6 +96,9 @@ Feature: A project moved between spaces, and access through a shared space
     Then the "Share BDDMoveA{time}" dialog should close
     When user double-clicks on BDDMoveA{time} tree node inside browse tree
     Then the "BDDMoveA{time}" view should be current
+    And "BDDMoveProj{time}" link in gallery should be visible
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
     When user picks "Share..." from the context menu of "BDDMoveProj{time}" link in gallery
     Then "Share BDDMoveProj{time}" dialog should be visible
     And "Share BDDMoveProj{time}" dialog should contain text "Inherited from"
@@ -112,6 +118,11 @@ Feature: A project moved between spaces, and access through a shared space
     Then the "cars" view should be current
     And the table should have 30 rows
     And "Data loading error" dialog should be absent
+    When user clicks on Save ribbon item
+    Then "Save project" dialog should be visible
+    And Name text input in "Save project" dialog should have value "Copy of BDDMoveProj{time}"
+    When user clicks on CANCEL button in "Save project" dialog
+    Then the "Save project" dialog should close
     When user picks "Close All" from the context menu of browse tab
     And user signs in as themselves again
     Then the running account should be signed in
@@ -177,7 +188,8 @@ Feature: A project moved between spaces, and access through a shared space
     When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
 
-  Scenario: A second project is saved and moved into the child space
+  @realizes:core#382
+  Scenario: A second project is saved and moved into the child space, and its link left in the second space opens it
     Given the browse panel is open
     And Files tree node inside browse tree is expanded
     And Files---Demo tree node inside browse tree is expanded
@@ -205,6 +217,11 @@ Feature: A project moved between spaces, and access through a shared space
     Given Spaces tree node inside browse tree is expanded
     When user double-clicks on BDDMoveA{time} tree node inside browse tree
     Then the "BDDMoveA{time}" view should be current
+    When user drags "BDDMoveStay{time}" link in gallery to BDDMoveB{time} tree node inside browse tree
+    Then Move entity dialog should be visible
+    And choice input in Move entity dialog should have value "Link"
+    When user clicks on YES button in Move entity dialog
+    Then Move entity dialog should be hidden
     Given BDDMoveA{time} tree node inside browse tree is expanded
     When user drags "BDDMoveStay{time}" link in gallery to BDDMoveAChild{time} tree node inside browse tree
     Then Move entity dialog should be visible
@@ -215,6 +232,15 @@ Feature: A project moved between spaces, and access through a shared space
     Then the "BDDMoveAChild{time}" view should be current
     And "BDDMoveStay{time}" link in gallery should be visible
     And "BDDMoveProj{time}" link in gallery should be absent
+    # the link left in the second space follows the project it was made from, with no refresh of the tree
+    Given the context panel is open
+    When user double-clicks on BDDMoveB{time} tree node inside browse tree
+    Then the "BDDMoveB{time}" view should be current
+    And "BDDMoveStay{time}" link in gallery should be visible
+    When user clicks on "BDDMoveStay{time}" link in gallery
+    Then the context panel should show "BDDMoveStay{time}"
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
 
   Scenario: After the move to the unshared space, the second account no longer sees the project
     When user signs in as the sharing user

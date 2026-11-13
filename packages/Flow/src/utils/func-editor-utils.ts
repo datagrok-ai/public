@@ -36,19 +36,20 @@ export function hasEditorShortcut(func: DG.Func, inputName: string): boolean {
 }
 
 export async function pollDialogCreation(timeout = 30_000): Promise<DG.Dialog | null> {
+  const open = DG.Dialog.getOpenDialogs()[0];
+  if (open)
+    return open;
   return new Promise((res) => {
-    let timeoutNum: any = null;
-    const pollInterval = setInterval(() => {
-      const cur = DG.Dialog.getOpenDialogs();
-      const newD = cur[0];
-      if (newD) {
+    const sub = grok.events.onDialogShown.subscribe(() => {
+      const dialog = DG.Dialog.getOpenDialogs()[0];
+      if (dialog) {
         clearTimeout(timeoutNum);
-        clearInterval(pollInterval);
-        res(newD);
+        sub.unsubscribe();
+        res(dialog);
       }
-    }, 100);
-    timeoutNum = setTimeout(() => {
-      clearInterval(pollInterval);
+    });
+    const timeoutNum = setTimeout(() => {
+      sub.unsubscribe();
       res(null);
     }, timeout);
   });

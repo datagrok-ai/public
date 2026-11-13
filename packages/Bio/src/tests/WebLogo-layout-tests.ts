@@ -4,10 +4,10 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 
-import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, settled, test, uiSettled} from '@datagrok-libraries/test/src/test';
 
 import {awaitGrid} from './utils';
-import {Debounces, WebLogoViewer} from '../viewers/web-logo-viewer';
+import {WebLogoViewer} from '../viewers/web-logo-viewer';
 
 import {_package} from '../package-test';
 
@@ -21,14 +21,14 @@ category('WebLogo.layout', () => {
       {sequenceColumnName: col.name}) as unknown as WebLogoViewer;
     view.dockManager.dock(wlViewer);
 
-    await delay(Debounces.render * 2);
+    await settled(wlViewer);
     await wlViewer.awaitRendered();
     await awaitGrid(view.grid);
 
     const viewLayout = view.saveLayout();
     const viewLayoutJsonStr = viewLayout.toJson();
     view.loadLayout(viewLayout);
-    await delay(Debounces.render * 2);
+    await uiSettled('the WebLogo layout');
     await wlViewer.awaitRendered();
     await awaitGrid(view.grid);
 

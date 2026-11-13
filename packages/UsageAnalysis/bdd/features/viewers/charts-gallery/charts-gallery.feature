@@ -3,18 +3,19 @@ Feature: The Add viewer gallery for Charts viewers, Surface plot, Globe and Grou
   The ribbon's Add viewer gallery disables a Charts viewer when the table cannot feed it and says
   why in the card's tooltip; a card is disabled through aria-disabled, so its state is read as it
   is. The Globe draws with WebGL, which no pixel step reads, so what it placed is its `points`
-  reading; the Surface plot is claimed by its properties and a silent console; Group Analysis by
-  its inner grid's readings, and its layout is saved and applied from the toolbox's Layouts pane,
-  under the run-unique name its table gets.
+  reading, which follows the table's filter (72 earthquakes of MagType Mb); the Surface plot is
+  claimed by its properties and a silent console; Group Analysis by its inner grid's readings, and
+  its layout is saved and applied from the toolbox's Layouts pane, under the run-unique name its
+  table gets.
   Translated from the TestTrack case Charts/charts-other-viewers. The Surface plot is checked on
-  demog: on earthquakes.csv it is not shown.
+  demog-1000: on earthquakes.csv it is not shown.
 
   Background:
     Given user is logged in
     And the package autostarts have completed
 
   Scenario: The gallery disables the Charts viewers a table cannot feed and says why
-    Given user opens demog dataset
+    Given user opens demog-1000 dataset
     When user clicks on "Add viewer" icon
     Then "Add Viewer" dialog should be visible
     And the following elements should be enabled:
@@ -57,13 +58,17 @@ Feature: The Add viewer gallery for Charts viewers, Surface plot, Globe and Grou
     And user clicks on first "Globe" card in "Add Viewer" dialog
     Then globe viewer should be visible
     And the "points" reading of globe viewer should be 2426
+    When user filters rows where "MagType" is "Mb"
+    Then the "points" reading of globe viewer should be 72
+    When user resets the filter
+    Then the "points" reading of globe viewer should be 2426
     And no errors should have been logged
     When user clicks on close icon of globe viewer
     Then globe viewer should be absent
     And no errors should have been logged
 
-  Scenario: Surface plot on demog takes its columns, Projection and Wireframe
-    Given user opens demog dataset
+  Scenario: Surface plot on demog-1000 takes its columns, Projection and Wireframe
+    Given user opens demog-1000 dataset
     When user clicks on "Add viewer" icon
     And user clicks on first "Surface plot" card in "Add Viewer" dialog
     Then surface plot viewer should be visible
@@ -83,7 +88,7 @@ Feature: The Add viewer gallery for Charts viewers, Surface plot, Globe and Grou
     And no errors should have been logged
 
   Scenario: Group Analysis adds an analysed column and keeps it in a layout (GROK-19039, GROK-19047)
-    Given user opens demog dataset keeping the first 5850 rows as "GroupAnalysis-{time}"
+    Given user opens demog-1000 dataset keeping the first 1000 rows as "GroupAnalysis-{time}"
     And the layouts named "GroupAnalysis-{time}" are deleted when the feature ends
     When user clicks on "Add viewer" icon
     And user clicks on first "Group Analysis" card in "Add Viewer" dialog

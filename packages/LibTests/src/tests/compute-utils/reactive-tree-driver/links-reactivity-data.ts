@@ -6,7 +6,6 @@ import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
-import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {of} from 'rxjs';
 import {delay, mapTo} from 'rxjs/operators';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
@@ -56,7 +55,8 @@ category('ComputeUtils: Driver links reactivity: data', async () => {
         inNode.getItem().getStateStore().setState('b', 1);
         link.trigger();
       });
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 1});
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !')
+        .toBe('a b', {a: undefined, b: 1});
     });
   });
 
@@ -72,7 +72,8 @@ category('ComputeUtils: Driver links reactivity: data', async () => {
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 1});
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !')
+        .toBe('a b', {a: undefined, b: 1});
     });
   });
 
@@ -108,7 +109,8 @@ category('ComputeUtils: Driver links reactivity: data', async () => {
         inNode.getItem().getStateStore().setState('b', 1);
         inNode.getItem().getStateStore().setState('b', 2);
       });
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 2});
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !')
+        .toBe('a b', {a: undefined, b: 2});
     });
   });
 
@@ -148,7 +150,8 @@ category('ComputeUtils: Driver links reactivity: data', async () => {
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 2});
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !')
+        .toBe('a b', {a: undefined, b: 2});
     });
   });
 
@@ -189,7 +192,8 @@ category('ComputeUtils: Driver links reactivity: data', async () => {
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a 100ms b', {a: undefined, b: 2});
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !')
+        .toBe('a 100ms b', {a: undefined, b: 2});
     });
   });
 
@@ -233,7 +237,8 @@ category('ComputeUtils: Driver links reactivity: data', async () => {
       cold('50ms a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 2);
       });
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a 149ms b', {a: undefined, b: 3});
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !')
+        .toBe('a 149ms b', {a: undefined, b: 3});
     });
   });
 
@@ -271,7 +276,8 @@ category('ComputeUtils: Driver links reactivity: data', async () => {
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 1});
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !')
+        .toBe('a b', {a: undefined, b: 1});
       expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$).toBe('a b', {
         a: {},
         b: {
@@ -349,7 +355,8 @@ category('ComputeUtils: Driver links reactivity: data', async () => {
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
-      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$, '^ 1000ms !').toBe('a', {a: {}});
+      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$, '^ 1000ms !')
+        .toBe('a', {a: {}});
       expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a', {a: undefined});
     });
   });
@@ -383,7 +390,8 @@ category('ComputeUtils: Driver links reactivity: data', async () => {
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
-      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$, '^ 1000ms !').toBe('a', {a: {}});
+      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$, '^ 1000ms !')
+        .toBe('a', {a: {}});
       expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a', {a: undefined});
     });
   });
@@ -417,7 +425,9 @@ category('ComputeUtils: Driver links reactivity: data', async () => {
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
-      expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$, '^ 1000ms !').toBe('a b', {
+      expectObservable(
+        (outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$, '^ 1000ms !',
+      ).toBe('a b', {
         a: {},
         b: {a: {type: 'restricted', assignedValue: 7}},
       });
@@ -459,7 +469,8 @@ category('ComputeUtils: Driver links reactivity: data', async () => {
       cold('-a').subscribe(() => {
         inNode.getItem().getStateStore().setState('b', 1);
       });
-      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !').toBe('a b', {a: undefined, b: 2});
+      expectObservable(outNode.getItem().getStateStore().getStateChanges('a'), '^ 1000ms !')
+        .toBe('a b', {a: undefined, b: 2});
       expectObservable((outNode.getItem().getStateStore() as FuncCallInstancesBridge).inputRestrictions$).toBe('a b', {
         a: {},
         b: {

@@ -42,7 +42,7 @@ category('AI: Widgets: FilterGroup Advanced', () => {
   });
 
   test('updateOrAdd with requestFilter=false adds filter without immediate filtering', async () => {
-    // settleMs=100: the group must be fully initialized for requestFilter=false to be honored.
+    // settle: the group must be fully initialized for requestFilter=false to be honored.
     await withFilterGroup(demog(), async (fg, tv) => {
       const df = tv.dataFrame;
       const rowCount = df.rowCount;
@@ -52,7 +52,7 @@ category('AI: Widgets: FilterGroup Advanced', () => {
       // dataframe's filtered bitset is not yet narrowed.
       expect(fg.getStates('age', DG.FILTER_TYPE.HISTOGRAM).length > 0, true);
       expect(df.filter.trueCount, rowCount);
-    }, 100);
+    }, true);
   });
 
   test('getStates reflects updated min/max after updateOrAdd with histogram range', async () => {
@@ -82,7 +82,7 @@ category('AI: Widgets: FilterGroup Advanced', () => {
       state.active = true;
       state.selected = [cats[0]];
       filter.applyState(state);
-      await until(() => filter.isFiltering === true, 5000);
+      await until(() => filter.isFiltering === true);
       expect(filter.isFiltering, true);
       expect(filter.isActive, true);
     });

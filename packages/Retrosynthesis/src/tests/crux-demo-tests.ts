@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {awaitCheck, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {waitUntil, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {PackageFunctions} from '../package';
 import {DEMO_MOLECULE} from '../const';
 
@@ -54,12 +54,12 @@ category('Crux', () => {
       const view = grok.shell.v;
       expect(view.name, 'Retrosynthesis Demo');
       let crux: CruxElement | null = null;
-      await awaitCheck(() => {
+      await waitUntil(() => {
         crux = view.root.querySelector<CruxElement>('.crux-sketcher crux-sketch');
         return crux !== null && crux.positions.atoms.length > 0 && !crux.isPending;
       }, 'Crux did not show the demo\'s molecule', 30000);
       // opening it: the molecule the demo sets, one change, the pane asked once (for the demo's own molecule)
-      await awaitCheck(() => asked.length === 1, `the pane was asked ${asked.length} times on opening`, 5000);
+      await waitUntil(() => asked.length === 1, `the pane was asked ${asked.length} times on opening`, 5000);
       expect(asked[0], DEMO_MOLECULE);
       await delay(SETTLE_MS);
       expect(asked.length, 1);
@@ -68,16 +68,16 @@ category('Crux', () => {
       const atoms = crux!.positions.atoms.length;
       press(crux!, 'toolbar.bond.single');
       pressAt(crux!, crux!.positions.atoms[0]!);
-      await awaitCheck(() => crux!.positions.atoms.length === atoms + 1, 'the bond was not drawn', 5000);
-      await awaitCheck(() => asked.length === 2, `after one edit the pane was asked ${asked.length} times`, 5000);
+      await waitUntil(() => crux!.positions.atoms.length === atoms + 1, 'the bond was not drawn', 5000);
+      await waitUntil(() => asked.length === 2, `after one edit the pane was asked ${asked.length} times`, 5000);
       await delay(SETTLE_MS);
       expect(asked.length, 2);
       expect(asked[1], crux!.smiles);
 
       // and a second: one more
       pressAt(crux!, crux!.positions.atoms[1]!);
-      await awaitCheck(() => crux!.positions.atoms.length === atoms + 2, 'the second bond was not drawn', 5000);
-      await awaitCheck(() => asked.length === 3, `after two edits the pane was asked ${asked.length} times`, 5000);
+      await waitUntil(() => crux!.positions.atoms.length === atoms + 2, 'the second bond was not drawn', 5000);
+      await waitUntil(() => asked.length === 3, `after two edits the pane was asked ${asked.length} times`, 5000);
       await delay(SETTLE_MS);
       expect(asked.length, 3);
       expect(asked[2], crux!.smiles);

@@ -1,9 +1,3 @@
-/* MemoryDomainBackend (WO-7): a schema.json as properties, info and access; queries evaluated by
-   the filter feature's own `toMask`, sorted, paged, projected, with the per-row access columns on
-   demand; transactions all-or-nothing with `$ref` resolution, the schema's rules and version
-   conflicts; the rows as a frame with the writer attached. The cases every backend must agree on
-   are listed in docs/domain-backend-contract.md. */
-
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {MemoryDomainBackend, MemoryTable} from '../src/core/memory-domain.js';
@@ -478,10 +472,17 @@ test('updateWhere: the filter selects, the cap limits, hasMore says the filter m
 
   assert.deepEqual(await issue.updateWhere('done = false', {priority: 'high'}, {limit: 1}),
     {updated: 1, hasMore: true}, 'the cap stops at limit and reports the rest');
-  assert.deepEqual(await issue.updateWhere('done = false', {priority: 'low'}, {limit: 9999}),
+  assert.deepEqual(await issue.updateWhere('done = false', {title: 'Clamped'}, {limit: 9999}),
     {updated: 2, hasMore: false}, 'and a limit past the cap is clamped down to it');
   assert.deepEqual(await issue.updateWhere('title starts "zzz"', {priority: 'high'}),
     {updated: 0, hasMore: false});
+});
+
+test('updateWhere: a date sent again as a new Date is not rewritten', async () => {
+  const issue = await backend().table('grit.issue');
+  const due = () => ({due: new Date('2026-02-01T00:00:00Z')});
+  assert.equal((await issue.updateWhere('id = "i1"', due())).updated, 1);
+  assert.equal((await issue.updateWhere('id = "i1"', due())).updated, 0);
 });
 
 test('updateWhere: the Edit predicate narrows the selection silently', async () => {

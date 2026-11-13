@@ -166,7 +166,6 @@ category('ComputeUtils: Driver state tree init', async () => {
     const state = tree.toSerializedState({disableNodesUUID: true});
     await snapshotCompare(state, 'Process initial config with additional data');
   });
-
 });
 
 category('ComputeUtils: Driver init calls', async () => {

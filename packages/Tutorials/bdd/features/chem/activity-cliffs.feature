@@ -39,7 +39,7 @@ Feature: The Activity Cliffs tutorial
     And the "cliffs" reading of scatter plot viewer should be 15
 
     And the tutorial step "Hover over data points for molecule information" should be current
-    When user hovers over the first "marker" area of scatter plot viewer
+    When user hovers over the first free "marker" area of scatter plot viewer
     Then the tutorial step "Hover over data points for molecule information" should be done
     And tooltip should be visible
     When user toggles "Show only cliffs" input in scatter plot viewer
@@ -48,7 +48,7 @@ Feature: The Activity Cliffs tutorial
 
     When user remembers the "x axis span" reading of scatter plot viewer
     And user drags a zoom box over the "view" area of scatter plot viewer
-    Then the tutorial step "Use Alt + Mouse Drag to zoom in" should be done
+    Then the tutorial step "Zoom in" should be done
     And the "x axis span" reading of scatter plot viewer should be lower than remembered
 
     When user hovers over the first free "line" area of scatter plot viewer

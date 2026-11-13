@@ -8,7 +8,7 @@
     "email": "askalkin@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
     "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",
     "dayjs": "catalog:",

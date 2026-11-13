@@ -1,3 +1,5 @@
+import type {ProviderCredentials} from './credentials';
+
 // Browser ↔ runtime WebSocket protocol
 
 export type PromptMode = 'datagrok' | 'bash' | 'none';
@@ -25,7 +27,6 @@ export interface UserMessage {
   mcpServerUrl?: string;
   outputSchema?: object;
   systemPromptMode?: PromptMode;
-  model?: string;
   clientTools?: ClientToolDef[];
   /** Per-turn gate switches, for A/B experiments (benchmark arms, dev harness). Both default
    * true; the gates are quality mechanisms, not security boundaries, so a client may turn its
@@ -50,6 +51,7 @@ export interface InputResponseMessage {
 }
 
 export interface TurnMetrics {
+  model?: string;
   inputTokens: number | null;
   outputTokens: number | null;
   cacheReadTokens: number | null;
@@ -70,10 +72,10 @@ export type OutgoingMessage =
   | {type: 'revision_start'; sessionId: string}
   | {type: 'final'; sessionId: string; content: string; structured_output?: unknown; unverified?: boolean;
       metrics?: TurnMetrics; revision?: 'kept' | 'replaced'}
-  | {type: 'error'; sessionId: string; message: string}
+  | {type: 'error'; sessionId: string; message: string; metrics?: TurnMetrics}
   | {type: 'session_reset'; sessionId: string}
   | {type: 'queued'; sessionId: string}
-  | {type: 'aborted'; sessionId: string}
+  | {type: 'aborted'; sessionId: string; metrics?: TurnMetrics}
   | {type: 'input_request'; sessionId: string; requestId: string; toolName: string; input: unknown}
   | {type: 'sync_status'; status: 'done' | 'error'; message?: string; files?: string[]};
 
@@ -93,7 +95,6 @@ export interface AgentTurnRequest {
   systemPrompt: string;
   /** Reasoning effort; without one the agent asks for no thinking where the model allows it. */
   effort?: 'high';
-  model?: string;
   cwd: string;
   userDir?: string;
   /** The browser holds a transcript for this session: if the runtime has none, the turn resets instead. */
@@ -108,10 +109,12 @@ export interface AgentTurnRequest {
   awaitBrowser: (toolName: string, input: unknown, timeoutMs: number) => Promise<unknown>;
   /** Aborts the turn: the agent is cancelled, nothing more is sent to it, and the event stream ends. */
   signal: AbortSignal;
+  credentials: ProviderCredentials;
 }
 
 export type AgentEvent =
   | {type: 'text'; text: string}
+  | {type: 'usage'; metrics: TurnMetrics}
   | {type: 'tool_activity'; name: string; summary: string}
   | {type: 'activity'}
   | {type: 'result'; text: string; structuredOutput?: unknown; metrics: TurnMetrics}
@@ -128,7 +131,7 @@ export type AgentCommand =
   | ({type: 'turn';
       /** The stored Hermes session a reloaded process continues. */
       restore?: string} &
-      Omit<AgentTurnRequest, 'sessionKey' | 'resumeExpected' | 'gates' | 'awaitBrowser' | 'signal'>)
+      Omit<AgentTurnRequest, 'sessionKey' | 'resumeExpected' | 'gates' | 'awaitBrowser' | 'signal' | 'credentials'>)
   | {type: 'continue'; text: string}
   | {type: 'cancel'}
   | {type: 'browser_result'; id: string; value?: unknown; error?: string};
@@ -142,6 +145,7 @@ export type AgentProcessEvent =
   | {type: 'tool_start'; name: string; args: Record<string, unknown>}
   | {type: 'tool_end'; name: string; args: Record<string, unknown>; result: string}
   | {type: 'browser_call'; id: string; name: string; input: unknown; timeoutMs: number}
+  | {type: 'usage'; metrics: TurnMetrics}
   | {type: 'stopped'; text: string; structuredOutput?: unknown; metrics: TurnMetrics}
   | {type: 'limit'; kind: 'turns' | 'budget'}
   | {type: 'error'; message: string}

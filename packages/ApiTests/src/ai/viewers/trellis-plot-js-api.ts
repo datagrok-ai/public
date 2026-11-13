@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {df, expectRoundTripPropAndLook, expectNoThrow, withAttachedViewer, until} from '../helpers';
+import {category, expect, settled, test} from '@datagrok-libraries/test/src/test';
+import {demog, df, expectRoundTripPropAndLook, expectNoThrow, withAttachedViewer, withTableView, until} from '../helpers';
 
 // DG.TrellisPlotViewer: x/yCategoriesCount are the product of resolved X/Y column category counts,
 // null until columns resolve on attach. oneColumnOnly reads look only (no attach needed).
@@ -56,5 +56,19 @@ category('AI: Viewers: Trellis Plot', () => {
     // Columns may be unresolved pre-attach: the getter must degrade to null, not throw.
     expectNoThrow(() => v.xCategoriesCount);
     expectNoThrow(() => v.yCategoriesCount);
+  });
+
+  test('the inner box plot look survives the view\'s table being replaced (public#3692)', async () => {
+    await withTableView(demog(100), async (tv) => {
+      const v = DG.Viewer.trellisPlot(tv.dataFrame, {xColumnNames: ['sex'], viewerType: DG.VIEWER.BOX_PLOT});
+      tv.addViewer(v);
+      await settled(v);
+      v.setOptions({innerViewerLook: {'#type': 'BoxPlotLook', showStatistics: false}});
+      await until(() => v.getOptions(true).look.innerViewerLook?.showStatistics === false);
+      tv.dataFrame = demog(80);
+      await settled(v);
+      expect(v.dataFrame.rowCount, 80);
+      expect(v.getOptions(true).look.innerViewerLook?.showStatistics, false);
+    });
   });
 }, {owner: 'agolovko@datagrok.ai'});

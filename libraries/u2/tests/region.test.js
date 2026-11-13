@@ -27,7 +27,7 @@ function rows(items, options = {}) {
   const host = document.createElement('div');
   document.body.append(host);
   const built = [];
-  Scope.runWith(scope, () => each(host, items, (item) => item.id, (item) => {
+  scope.build(() => each(host, items, (item) => item.id, (item) => {
     built.push(item.id);
     const row = document.createElement('div');
     const input = document.createElement('input');
@@ -35,8 +35,19 @@ function rows(items, options = {}) {
     row.append(input);
     return row;
   }, options));
-  const ids = () => host.children.map((c) => c.dataset.u2Item);
+  const ids = () => [...host.children].map((c) => c.dataset.u2Item);
   return {scope, host, built, ids};
+}
+
+/** What a browser does and the shim does not: a node that leaves `host` takes the focus with it, even when it is
+ * put straight back (an `insertBefore` of a connected node removes it first). */
+function dropFocusOnMove(host) {
+  const removeChild = host.removeChild.bind(host);
+  host.removeChild = (node) => {
+    if (node.contains(document.activeElement))
+      document.activeElement.blur();
+    return removeChild(node);
+  };
 }
 
 ui('a kept key keeps its element and the focus inside it while another item changes', () => {
@@ -61,7 +72,7 @@ ui('a removed key\'s scope is disposed: what its build started stops', () => {
   const items = signal(['a', 'b']);
   const scope = new Scope();
   const host = document.createElement('div');
-  Scope.runWith(scope, () => each(host, items, (id) => id, (id) => {
+  scope.build(() => each(host, items, (id) => id, (id) => {
     Scope.ambient.effect(() => {
       tick.value;
       runs[id]++;
@@ -95,6 +106,24 @@ ui('a reorder moves nodes without building any; a node already in place is not m
   scope.dispose();
 });
 
+ui('the focused row never leaves the document: rows inserted ahead of it and rows reordered behind it move instead', () => {
+  const items = signal(['a', 'b', 'c'].map((id) => ({id, text: id})));
+  const {scope, host, ids} = rows(items);
+  dropFocusOnMove(host);
+  const [a, b, c] = items.value;
+  const row = host.children[2];
+  const input = row.querySelector('input');
+  input.focus();
+  items.value = [{id: 'x', text: 'x'}, c, a, b];
+  assert.deepEqual(ids(), ['x', 'c', 'a', 'b']);
+  assert.equal(host.children[1] === row, true, 'kept');
+  assert.equal(document.activeElement === input, true, 'still focused');
+  items.value = [a, b, c];
+  assert.deepEqual(ids(), ['a', 'b', 'c']);
+  assert.equal(document.activeElement === input, true);
+  scope.dispose();
+});
+
 ui('a changed item without update, or with update answering false, is rebuilt; a function source works too', () => {
   let list = [{id: 'a', text: 'A'}];
   const version = signal(0);
@@ -119,7 +148,7 @@ ui('an empty list shows the empty build; items replace it; an own data-u2-item i
   const items = signal([]);
   const scope = new Scope();
   const host = document.createElement('div');
-  Scope.runWith(scope, () => each(host, items, (x) => x, (x) => {
+  scope.build(() => each(host, items, (x) => x, (x) => {
     const el = document.createElement('span');
     if (x === 'own')
       el.dataset.u2Item = 'mine';
@@ -131,9 +160,9 @@ ui('an empty list shows the empty build; items replace it; an own data-u2-item i
   }}));
   assert.equal(host.textContent, 'Nothing');
   items.value = ['x', 'own'];
-  assert.deepEqual(host.children.map((c) => [c.tagName, c.dataset.u2Item]), [['SPAN', 'x'], ['SPAN', 'mine']]);
+  assert.deepEqual([...host.children].map((c) => [c.tagName, c.dataset.u2Item]), [['SPAN', 'x'], ['SPAN', 'mine']]);
   items.value = [];
-  assert.deepEqual(host.children.map((c) => c.tagName), ['EM']);
+  assert.deepEqual([...host.children].map((c) => c.tagName), ['EM']);
   scope.dispose();
 });
 
@@ -145,9 +174,9 @@ ui('a repeated key is warned about once and suffixed', () => {
     const items = signal(['a', 'a', 'a']);
     const scope = new Scope();
     const host = document.createElement('div');
-    Scope.runWith(scope, () => each(host, items, (x) => x, () => document.createElement('span')));
+    scope.build(() => each(host, items, (x) => x, () => document.createElement('span')));
     items.value = ['a', 'a'];
-    assert.deepEqual(host.children.map((c) => c.dataset.u2Item), ['a', 'a#2']);
+    assert.deepEqual([...host.children].map((c) => c.dataset.u2Item), ['a', 'a#2']);
     assert.deepEqual(warnings, ['u2: each(): duplicate key "a"']);
     scope.dispose();
   } finally {
@@ -161,7 +190,7 @@ ui('show builds a branch while its condition holds, each in its own scope, dispo
   let runs = 0;
   const scope = new Scope();
   const host = document.createElement('div');
-  Scope.runWith(scope, () => show(host, on, () => {
+  scope.build(() => show(host, on, () => {
     Scope.ambient.effect(() => {
       tick.value;
       runs++;
@@ -190,7 +219,7 @@ ui('show without an otherwise empties the host; the same verdict builds nothing 
   let builds = 0;
   const scope = new Scope();
   const host = document.createElement('div');
-  Scope.runWith(scope, () => show(host, () => on.value, () => {
+  scope.build(() => show(host, () => on.value, () => {
     builds++;
     return document.createElement('b');
   }));

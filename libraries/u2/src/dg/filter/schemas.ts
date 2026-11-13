@@ -8,6 +8,7 @@ import {moleculeRenderer} from '../inputs/molecule.js';
 import {dapiSource} from '../entities/dapi-source.js';
 import type {DapiSourceLike} from '../entities/dapi-source.js';
 import {HandlerRenderer} from '../entities/entity.js';
+import {Platform} from '../shell/platform.js';
 
 /** The entity types whose rows a dapi collection lists — the ref values of {@link FilterSchemas.forEntityType}. */
 const ENTITY_SOURCES: Record<string, () => DapiSourceLike<DG.Entity>> = {
@@ -58,8 +59,8 @@ export interface DataFrameFilterSchema extends FilterSchema {
 }
 
 export class FilterSchemas {
-  /** One property per column; string columns offer their categories as values, molecules render
-   * through the sketcher depiction. The frame's min/max and categories never become
+  /** One property per listed column ({@link Platform.listedColumns}); string columns offer their categories as
+   * values, molecules render through the sketcher depiction. The frame's min/max and categories never become
    * `min`/`max`/`choices` — those validate as hard bounds, and a filter may name what the frame lacks. */
   static forDataFrame(df: DG.DataFrame): DataFrameFilterSchema {
     const categories = new Map<string, string[]>();
@@ -69,7 +70,7 @@ export class FilterSchemas {
         categories.set(col.name, list = col.categories.filter((c) => c));
       return list;
     };
-    const properties = () => df.columns.toList().map((col) => {
+    const properties = () => Platform.listedColumns(df).map((col) => {
       const prop: FilterProperty = {name: col.name, type: col.type};
       if (col.semType)
         prop.semType = col.semType;

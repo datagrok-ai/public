@@ -5,7 +5,10 @@ Feature: Scatter plot selection and viewport navigation
   jitter change leaves it alone. The viewport answers to an Alt-drag, a plain drag, the wheel and
   the axis range slider, and Reset View, a double-click on empty space and the H key all bring it
   home. Ctrl+A selects what the filter passes, Ctrl+Shift+A and Escape clear it, and L turns on the
-  lasso. A zoom is animated over a few frames and must not touch the selection, which is what the
+  lasso. Closed issues last: Show Selected Rows = false draws no selection highlight (public#3613), a
+  click on a marker after a zoom makes its row current (public#801), a selection box takes the
+  markers whose Color value is empty (public#1174), the range slider moves a logarithmic axis
+  (public#376), and Mouse Drag = Select turns a plain drag into a selection (public#2089). A zoom is animated over a few frames and must not touch the selection, which is what the
   `rows selected` claim after each zoom says. Read from what the plot reports: `rows selected`,
   `x axis min` / `x axis span`, `hovered row`, and the `empty space` and `marker of row <n>` hit
   areas. One journey on demog-1000, X = WEIGHT, Y = HEIGHT (872 of the 1000 rows have a HEIGHT);
@@ -150,5 +153,77 @@ Feature: Scatter plot selection and viewport navigation
     When user presses l
     Then "Lasso Tool" property of scatter plot viewer should be "false"
     When user clicks on the "empty space" area of scatter plot viewer
+    Then no rows should be selected
+    And no errors should have been logged
+
+  @realizes:public#3613
+  Scenario: Show Selected Rows = false draws the selected markers without the highlight (public#3613)
+    When user selects rows where "SEX" is "F"
+    Then scatter plot viewer should show a selection highlight
+    When user sets "showSelectedRows" property of scatter plot viewer to "false"
+    Then 553 rows should be selected
+    And scatter plot viewer should show no selection highlight
+    When user sets "showSelectedRows" property of scatter plot viewer to "true"
+    Then scatter plot viewer should show a selection highlight
+    When user clears the row selection
+    Then no rows should be selected
+    And no errors should have been logged
+
+  @realizes:public#801
+  Scenario: After a zoom a click on a marker makes its row current (public#801)
+    When user scrolls the mouse wheel up 2 times over the "view" area of scatter plot viewer
+    Then scatter plot viewer should show fewer rows than before
+    When user clicks on the first "marker of row" area of scatter plot viewer
+    Then the "hovered row" reading of scatter plot viewer should be the current row
+    And the "hovered row" reading of scatter plot viewer should not be "1"
+    When user picks "Reset View" from the context menu of scatter plot viewer
+    Then all rows should pass the filter
+    And scatter plot viewer should show 872 rows
+    And no errors should have been logged
+
+  @realizes:public#1174
+  Scenario: A selection box takes the markers whose Color value is empty (public#1174)
+    When user adds a calculated column "RACE_F" with formula "if(${SEX} == \"F\", ${RACE}, null)"
+    And user sets "Color" property of scatter plot viewer to "RACE_F"
+    And user drags a selection box over the "view" area of scatter plot viewer
+    Then some rows where "SEX" is "M" should be selected
+    And some rows where "SEX" is "F" should be selected
+    When user clears the row selection
+    And user sets "Color" property of scatter plot viewer to ""
+    And user removes "RACE_F" column
+    Then no rows should be selected
+    And no errors should have been logged
+
+  @realizes:public#376
+  Scenario: The range slider moves a logarithmic axis (public#376)
+    When user sets properties of scatter plot viewer:
+      | Zoom and Filter | no action   |
+      | X Axis Type     | logarithmic |
+    And user remembers the "x axis min" reading of scatter plot viewer
+    And user drags the min handle of the "x" range slider of scatter plot viewer by 30 pixels
+    Then the "x axis min" reading of scatter plot viewer should be higher than remembered
+    And the "x axis min" reading of scatter plot viewer should be a finite number
+    And the "x axis max" reading of scatter plot viewer should be a finite number
+    When user picks "Reset View" from the context menu of scatter plot viewer
+    Then the "x axis min" reading of scatter plot viewer should be as remembered
+    When user sets properties of scatter plot viewer:
+      | X Axis Type     | linear         |
+      | Zoom and Filter | filter by zoom |
+    Then all rows should pass the filter
+    And scatter plot viewer should show 872 rows
+    And no errors should have been logged
+
+  @realizes:public#2089
+  Scenario: Mouse Drag = Select makes a plain drag select instead of pan (public#2089)
+    When user sets "Zoom and Filter" property of scatter plot viewer to "no action"
+    And user remembers the "x axis min" reading of scatter plot viewer
+    And user sets "mouseDrag" property of scatter plot viewer to "Select"
+    And user drags across the "view" area of scatter plot viewer
+    Then some rows should be selected
+    And the "x axis min" reading of scatter plot viewer should be as remembered
+    When user clears the row selection
+    And user sets properties of scatter plot viewer:
+      | mouseDrag       | Pan            |
+      | Zoom and Filter | filter by zoom |
     Then no rows should be selected
     And no errors should have been logged

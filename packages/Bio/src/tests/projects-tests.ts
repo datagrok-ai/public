@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {after, awaitCheck, category, delay, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BYPASS_LARGE_DATA_WARNING} from '@datagrok-libraries/ml/src/functionEditors/consts';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
@@ -53,7 +53,7 @@ category('projects', () => {
   async function dataFrameContainsColumns(colArr: string[]): Promise<void> {
     let col = '';
     const getError = () => `${col} hasn't been added to dataframe`;
-    await awaitCheck(() => {
+    await waitUntil(() => {
       if (!grok.shell.tv.dataFrame)
         return false;
       for (const colName of colArr) {
@@ -63,11 +63,11 @@ category('projects', () => {
         }
       }
       return true;
-    }, getError(), 5000);
+    }, getError, 5000);
   }
 
   async function checkViewerAdded(viewerType: string): Promise<void> {
-    await awaitCheck(() => {
+    await waitUntil(() => {
       for (const v of grok.shell.tv.viewers) {
         if (v.type === viewerType)
           return true;
@@ -88,12 +88,9 @@ category('projects', () => {
       await grok.data.detectSemanticTypes(tv.dataFrame);
     } else
       tv = await createTableView(tableName);
-    await delay(100);
     await analysisFunc(tv);
-    await delay(10);
     const project = await saveAndOpenProject(tv, dataSync);
     try {
-      await delay(10);
       await dataFrameContainsColumns(colList);
       if (viewerType)
         await checkViewerAdded(viewerType);
@@ -118,7 +115,6 @@ category('projects', () => {
       options: {[BYPASS_LARGE_DATA_WARNING]: true},
       clusterEmbeddings: true,
     }).call(undefined, undefined, {processed: false});
-    await delay(10);
   }
 
   async function runActivityCliffs(tv: DG.TableView): Promise<void> {
@@ -136,7 +132,6 @@ category('projects', () => {
       preprocessingFunction: DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0],
       options: {[BYPASS_LARGE_DATA_WARNING]: true},
     }).call(undefined, undefined, {processed: false});
-    await delay(10);
   }
 
   async function checkActivityCliffsInit(tv: DG.TableView): Promise<void> {
@@ -145,7 +140,7 @@ category('projects', () => {
       if (v.type === DG.VIEWER.SCATTER_PLOT)
         sp = v;
     }
-    await awaitCheck(() => {
+    await waitUntil(() => {
       const link = sp?.root.getElementsByClassName('scatter_plot_link');
       return !link || !link.length ? false : (link[0] as HTMLElement).innerText.toLowerCase().includes('cliffs');
     }, 'Initialization function hasn\'t been applied on scatter plot', 5000);
@@ -164,7 +159,9 @@ category('projects', () => {
 
     const project = await saveAndOpenProject(tv);
     try {
-      await awaitCheck(() => grok.shell.tv?.dataFrame?.rowCount === 20, 'the project\'s table has not opened', 10000);
+      await waitUntil(() => grok.shell.tv?.dataFrame?.rowCount === 20 &&
+        grok.shell.tv.dataFrame.col('AntibodyHC')?.semType === DG.SEMTYPE.MACROMOLECULE,
+      'the project\'s table has not opened', 10000);
       const reopened = grok.shell.tv.dataFrame;
       const seqCol = reopened.getCol('AntibodyHC');
       const aligned = reopened.getCol('AntibodyHC (aligned)');
@@ -189,7 +186,6 @@ category('projects', () => {
 
     await runSaveAndOpenProjectTest('tests/100_3_clustests.csv', runSequenceSpace,
       ['sequence', 'Embed_X_1', 'Embed_Y_1', 'Cluster (DBSCAN)'], DG.VIEWER.SCATTER_PLOT);
-    await delay(100);
 
     await setUserLibSettings(userLibSettings);
     await monomerLibHelper.loadMonomerLib(true);
@@ -202,7 +198,6 @@ category('projects', () => {
 
     await runSaveAndOpenProjectTest('tests/100_3_clustests.csv', runSequenceSpace,
       ['sequence', 'Embed_X_1', 'Embed_Y_1', 'Cluster (DBSCAN)'], DG.VIEWER.SCATTER_PLOT, true);
-    await delay(100);
 
     await setUserLibSettings(userLibSettings);
     await monomerLibHelper.loadMonomerLib(true);
@@ -216,7 +211,6 @@ category('projects', () => {
     await runSaveAndOpenProjectTest('tests/100_3_clustests.csv', runActivityCliffs,
       ['sequence', 'Activity', 'Embed_X_1', 'Embed_Y_1'],
       DG.VIEWER.SCATTER_PLOT, false, checkActivityCliffsInit);
-    await delay(100);
 
     await setUserLibSettings(userLibSettings);
     await monomerLibHelper.loadMonomerLib(true);
@@ -230,7 +224,6 @@ category('projects', () => {
     await runSaveAndOpenProjectTest('tests/100_3_clustests.csv', runActivityCliffs,
       ['sequence', 'Activity', 'Embed_X_1', 'Embed_Y_1'],
       DG.VIEWER.SCATTER_PLOT, true, checkActivityCliffsInit);
-    await delay(100);
 
     await setUserLibSettings(userLibSettings);
     await monomerLibHelper.loadMonomerLib(true);

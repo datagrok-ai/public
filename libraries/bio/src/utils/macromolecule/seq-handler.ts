@@ -100,7 +100,6 @@ export interface ISeqHandler {
   getValue(rowIdx: number, options?: any): SeqValueBase;
   getHelm(rowIdx: number): string;
 
-  getMonomerAtPosition(rowIdx: number, position: number, canonical: boolean): string;
   getMonomersAtPosition(position: number, canonical: boolean): string[];
 
   getAlphabetSize(): number;

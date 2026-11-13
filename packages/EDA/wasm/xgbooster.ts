@@ -56,7 +56,7 @@ export function xgbWasmUrl(): string {
 let module_: XgbWasmModule | null = null;
 let initPromise: Promise<void> | undefined;
 
-/** Initialize the main-thread module (idempotent). Called from package init. */
+/** Initialize the main-thread module (idempotent). Called lazily before fit and apply. */
 export async function initXgboost(): Promise<void> {
   initPromise ??= XGBoostFactory({locateFile: () => xgbWasmUrl()})
     .then((m) => {module_ = m;});

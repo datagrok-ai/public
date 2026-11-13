@@ -64,6 +64,12 @@ export async function runVerification(
         'This says nothing about the action itself, which may well have succeeded: ' +
         're-read the live state with a corrected read-only assertion before redoing anything.'};
   }
+  // A comparison can be true for the wrong reason (`undefined === undefined` when both names are wrong).
+  if (res.error == null && res.value === true) {
+    return {passed: false, observed: true,
+      error: 'assertion returned bare `true` — return the values it read (e.g. `{type: col.meta.colors.getType()}`), ' +
+        'so the observed state shows. The action itself may well have succeeded: re-read, do not redo it.'};
+  }
   return {passed: res.error == null && !!res.value, observed: res.value, error: res.error?.error ?? null};
 }
 

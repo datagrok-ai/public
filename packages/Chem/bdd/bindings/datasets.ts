@@ -34,3 +34,10 @@ dataset('smiles-only', {path: 'System:DemoFiles/chem/smiles_only.csv', aliases: 
   description: '1000 molecules in canonical_smiles and no other column'});
 dataset('drugs-props-train', {path: 'System:AppData/Eda/drugs-props-train.csv', aliases: ['drugs_props_train'],
   description: '663 drugs with a boolean CNS column and a dozen numeric properties: the pMPO training set of the EDA package'});
+dataset('sar-matrix-demo', {path: 'System:AppData/Chem/demo_files/sar-matrix-demo.csv', aliases: ['sar_matrix_demo'],
+  description: 'the SAR Matrix demo set: 10,000 molecules in "smiles" with hERG_pIC50'});
+dataset('protac-degraders', {path: 'System:AppData/Chem/demo_files/protac-degraders-2792.csv',
+  aliases: ['protac-degraders-2792'],
+  description: '2,792 PROTACs with Warhead, Linker and E3 Ligand columns and a predicted solubility'});
+dataset('sar-matrix-para', {path: 'System:AppData/Chem/tests/sar-matrix-para.csv',
+  description: '16 para-disubstituted benzenes, four substituents on each side, with pIC50 and one compound never assayed (PARA-10)'});

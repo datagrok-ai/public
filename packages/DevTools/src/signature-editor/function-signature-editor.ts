@@ -128,8 +128,10 @@ async function openFse(v: DG.View, functionCode: string) {
     originalContent.forEach((el) => el.classList.remove('dt-fse-hidden'));
     v.setRibbonPanels(originalRibbonPanels);
     const editor = (v.root.querySelector('.CodeMirror') as any).CodeMirror;
-    const doc = editor.getDoc();
-    doc.setValue(myCM.getDoc().getValue());
+    // The regenerated header drops annotations the editor does not model, so write back only actual edits.
+    const fseCode = myCM.getDoc().getValue();
+    if (fseCode !== initialCode)
+      editor.getDoc().setValue(fseCode);
     editor.refresh();
   };
 
@@ -569,6 +571,7 @@ async function openFse(v: DG.View, functionCode: string) {
     }
     refreshPreview();
   });
+  const initialCode = myCM.getDoc().getValue();
 
   paramsGrid.onCellValueEdited.subscribe((editedCell) => {
     const rowIndex = functionParamsCopy.findIndex((param) => param.name === (editedCell.tableRow as any)['Name']);

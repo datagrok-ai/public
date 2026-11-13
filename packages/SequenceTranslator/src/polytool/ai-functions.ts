@@ -117,7 +117,7 @@ function helmEnumeratorFunctions(): DG.Func[] {
       }),
 
     aiFunc('setHelmEnumeratorOptions', 'dynamic setHelmEnumeratorOptions(widget widget, map options)',
-      'Set HELM Enumerator options. Keys: enumeratorType (single, parallel or matrix), keepOriginal, toAtomicLevel, generateHelm, chiralityEngine, highlightMonomers (booleans), trivialName (string)',
+      'Set HELM Enumerator options. Keys: enumeratorType (single, parallel or matrix), keepOriginal, toAtomicLevel, generateHelm, highlightMonomers (booleans), trivialName (string)',
       async (widget: any, options: {[key: string]: unknown}) => {
         const ctx = helmCtxOf(widget);
         if (!options || !Object.keys(options).length)

@@ -6,8 +6,9 @@ Operates on plain `Float64Array` / `Uint8Array` inputs.
 | Capability | Scope |
 |---|---|
 | **Parameters** | Cmax, Tmax, AUClast, AUCinf, %AUCextrap, λz, t½, CL (or CL/F), Vz (or Vz/F), AUMClast, AUMCinf, MRT, Vss (IV only), Tlag (extravascular only), %AUMCextrap |
-| **Routes**     | IV bolus (with `c0` back-extrapolation), IV infusion (with the `T_inf/2` MRT correction), extravascular (PO/SC/IM treated uniformly) |
+| **Routes**     | IV bolus (with `c0` back-extrapolation), IV infusion (with the `T_inf/2` MRT correction), extravascular (PO/SC/IM/IP/other treated uniformly) |
 | **AUC / AUMC methods** | linear, log-linear, linear-up/log-down — each as both naive Float64 and Neumaier-compensated summation |
+| **Interval AUC** | `aucInterval(inputs, rules, start, end)` — AUC over `[start, end]` with PKNCA `aucint.last` semantics: bounds interpolated (log on a log interval), no extrapolation past tlast (`truncatedAtTlast`) |
 | **BLQ rules**  | `set-zero`, `set-half-lloq`, `exclude`, `missing` — per-phase configurable (`preFirstMeasurable`, `embedded`, `afterLast`, `consecutiveAfterLast`). Substituted values reach AUC/AUMC and the λz filter; Cmax and Tlag read the BLQ mask under every rule — the per-rule table is on the `BlqRule` TSDoc |
 | **λz**         | auto best-fit (subset search; PKNCA/WinNonlin flat-tolerance tie-break — most points within `adjRSquaredFactor` of the global-max adjusted R²) + manual point selection |
 | **Sparse sampling** | composite AUClast with a Holder standard error, Nedelman-Jia df and Student-t CI; stratified bootstrap with a BCa interval for the nonlinear parameters |
@@ -26,7 +27,7 @@ const inputs: nca.ProfileInputs = {
   doseUnits:          'mg',
   concentrationUnits: 'mg/L',
   timeUnits:          'h',
-  route:              nca.ROUTE_PO,         // 0=IV-bolus, 1=IV-infusion, 2=PO, 3=SC, 4=IM, 5=other
+  route:              nca.ROUTE_PO,         // 0=IV-bolus, 1=IV-infusion, 2=PO, 3=SC, 4=IM, 5=other, 6=IP
   infusionDuration:   null,
   bodyWeight:         null,
 };

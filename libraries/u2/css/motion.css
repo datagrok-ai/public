@@ -1,0 +1,21 @@
+/* Reduced motion for the components whose sheets keep no block of their own (async.css, catalog-table.css
+   and progress.css swap in a still look themselves). Last in all.css, so each rule outranks the one it stills
+   by order at equal specificity. The notify countdown goes: a bar that never shrinks says nothing. */
+@media (prefers-reduced-motion: reduce) {
+  .u2-dialog-busy {
+    animation: none;
+  }
+
+  .u2-notify-timer {
+    display: none;
+  }
+
+  .u2-section-chevron,
+  .u2-accordion-chevron,
+  .u2-multi-choice-chevron,
+  .u2-choice-chip > .u2-choice-chip-caret,
+  .u2-propgrid-chevron,
+  .u2-input-switch-thumb {
+    transition: none;
+  }
+}

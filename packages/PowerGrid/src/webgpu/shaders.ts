@@ -19,7 +19,6 @@ struct Frame {
   size: vec2f,         // the GPU canvas in device pixels
   mouse: vec2f,
   dpr: f32,
-  alpha: f32,
   border: f32,
   markerSize: f32,
   color: u32,          // ARGB, every row's when colors are not per row
@@ -27,7 +26,7 @@ struct Frame {
   selectedColor: u32,
   flags: u32,
   count: u32,
-  pad: u32,
+  pad: vec2u,
 };
 
 const ROW_COLORS = ${FLAGS.rowColors}u;
@@ -81,11 +80,13 @@ fn clip(device: vec2f) -> vec4f {
 const CULLED = vec4f(2.0, 2.0, 2.0, 1.0);
 
 // selected rows take the selection color, as ScatterPlotCore.getColor paints them
-fn rowColor(row: u32) -> vec3f {
+fn rowColor(row: u32) -> vec4f {
   var c = frame.color;
   if ((frame.flags & ROW_COLORS) != 0u) { c = colors[row]; }
   if ((frame.flags & SELECTION) != 0u && ((selection[row >> 5u] >> (row & 31u)) & 1u) != 0u) { c = frame.selectedColor; }
-  return vec3f(f32((c >> 16u) & 255u), f32((c >> 8u) & 255u), f32(c & 255u)) / 255.0;
+  // a color without an alpha (0xRRGGBB) is opaque, as Color.opaqueIfNoAlpha reads it
+  let a = select((c >> 24u) & 255u, 255u, (c >> 24u) == 0u);
+  return vec4f(f32((c >> 16u) & 255u), f32((c >> 8u) & 255u), f32(c & 255u), f32(a)) / 255.0;
 }
 
 // the markers whose body is a 3-pixel stroke rather than a fill
@@ -101,7 +102,7 @@ ${DRAW_PRELUDE}
 
 struct DotVarying {
   @builtin(position) position: vec4f,
-  @location(0) @interpolate(flat) color: vec3f,
+  @location(0) @interpolate(flat) color: vec4f,
 };
 
 @vertex fn dotVertex(@builtin(vertex_index) i: u32) -> DotVarying {
@@ -114,12 +115,12 @@ struct DotVarying {
 }
 
 @fragment fn dotFragment(v: DotVarying) -> @location(0) vec4f {
-  return vec4f(v.color, 1.0);
+  return vec4f(v.color.rgb, 1.0);
 }
 
 struct ShapeVarying {
   @builtin(position) position: vec4f,
-  @location(0) @interpolate(flat) color: vec3f,
+  @location(0) @interpolate(flat) color: vec4f,
   @location(1) @interpolate(flat) center: vec2f,
   @location(2) @interpolate(flat) size: f32,
   @location(3) @interpolate(flat) kind: u32,
@@ -231,7 +232,7 @@ fn coverage(d: vec2f, ramps: f32) -> vec2f { return clamp(0.5 - d * frame.dpr * 
   if (v.kind == GRADIENT) {
     // a canvas gradient fades to transparent black interpolating unpremultiplied colors, which darkens it
     let g = max(1.0 - length(p) / (v.size * 0.5), 0.0);
-    o = vec4f(v.color * g, 1.0) * (g * frame.alpha);
+    o = vec4f(v.color.rgb * g, 1.0) * (g * v.color.a);
   }
   else {
     let d = marker(v, p);
@@ -250,8 +251,8 @@ fn coverage(d: vec2f, ramps: f32) -> vec2f { return clamp(0.5 - d * frame.dpr * 
       c = coverage(d, 1.0);
     }
     // The border is the body color darkened by 50 per channel (Color.darken), stroked over the body.
-    let body = vec4f(v.color, 1.0) * (c.x * frame.alpha);
-    let edge = vec4f(max(v.color - 50.0 / 255.0, vec3f(0.0)), 1.0) * (c.y * frame.alpha);
+    let body = vec4f(v.color.rgb, 1.0) * (c.x * v.color.a);
+    let edge = vec4f(max(v.color.rgb - 50.0 / 255.0, vec3f(0.0)), 1.0) * (c.y * v.color.a);
     o = edge + body * (1.0 - edge.a);
   }
   if (o.a <= 0.0) { discard; }

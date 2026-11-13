@@ -159,6 +159,40 @@ export function makeMultiOutputFunc(): DG.Func {
 }
 
 /**
+ * Every target kind at once: int and float scalars plus two DataFrames on
+ * t = 1..5, with DataFrame and bool fixed inputs. line.y = x1*t + shift,
+ * square.y = x2*t^2 + ref.rowCount.
+ */
+export function makeMixedTargetsFunc(): DG.Func {
+  return buildScript([
+    '//name: MixedTargets',
+    '//language: javascript',
+    '//meta.workerSafe: true',
+    '//input: double x1',
+    '//input: double x2',
+    '//input: dataframe ref',
+    '//input: bool shift',
+    '//output: int count',
+    '//output: double dist',
+    '//output: dataframe line',
+    '//output: dataframe square',
+    '',
+    'const off = shift ? 1 : 0;',
+    'const tArr = new Float32Array([1, 2, 3, 4, 5]);',
+    'count = Math.round(10 * x1);',
+    'dist = (x1 - 1) ** 2 + (x2 - 1) ** 2;',
+    'line = DG.DataFrame.fromColumns([',
+    "  DG.Column.fromFloat32Array('t', tArr),",
+    "  DG.Column.fromFloat32Array('y', tArr.map((t) => x1 * t + off)),",
+    ']);',
+    'square = DG.DataFrame.fromColumns([',
+    "  DG.Column.fromFloat32Array('t', tArr),",
+    "  DG.Column.fromFloat32Array('y', tArr.map((t) => x2 * t * t + ref.rowCount)),",
+    ']);',
+  ]);
+}
+
+/**
  * Const-DataFrame fixture: takes a `refDf` input and folds its `rowCount`
  * into the simulation, so a worker that loses the DataFrame (vs reifies
  * it as a LiteDataFrame) produces a different cost. f(t) = a * t * refDf.rowCount.

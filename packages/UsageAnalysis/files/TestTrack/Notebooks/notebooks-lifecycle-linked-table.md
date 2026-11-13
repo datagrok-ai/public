@@ -210,5 +210,5 @@ Expected:
   renaming by Scenario 5; deleting by Scenario 6. Sharing uses the standard platform
   sharing dialog and is exercised separately in notebooks-context-menu-smoke.md
   (Scenario 5).
-- See: public/help/compute/jupyter-notebook.md#Create a notebook
-- See: public/help/compute/jupyter-notebook.md#Apply existing notebooks into tables
+- See: help/compute/jupyter-notebook.md#Create a notebook
+- See: help/compute/jupyter-notebook.md#Apply existing notebooks into tables

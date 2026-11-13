@@ -46,6 +46,11 @@ ui('icon: a brand name picks the brands face on its own; an explicit variant sti
   assert.equal(icon('star', {variant: 'brands'}).classList.contains('fab'), true);
 });
 
+ui('icon: an svg- name is the platform\'s picture of that name, no Font Awesome glyph', () => {
+  assert.equal(icon('svg-view-layout').className, 'grok-icon u2-icon svg-icon svg-view-layout');
+  assert.equal(icon('svg-view-layout', {size: 'small'}).classList.contains('u2-icon-small'), true);
+});
+
 ui('icon: size adds a sizing class, and no size adds none', () => {
   for (const size of ['small', 'medium', 'large'])
     assert.equal(icon('cog', {size}).classList.contains(`u2-icon-${size}`), true);

@@ -12,7 +12,7 @@ import {FlowEntityHandler} from '../entity/flow-entity-handler';
 import {FuncFlowView} from '../funcflow-view';
 import {FuncFlowDocument, FlowSettings} from '../serialization/flow-schema';
 import {_package} from '../package';
-import {makeEditor, destroyEditor, addNode, TestEditor} from './test-utils';
+import {makeEditor, destroyEditor, addNode, until, TestEditor} from './test-utils';
 import {SpacePicker, spaceEntityName} from '../ui/space-picker';
 
 const SETTINGS = {scriptName: 'EntityFlow', scriptDescription: 'entity test', tags: ['funcflow']};
@@ -347,7 +347,7 @@ category('Flow: entity server round-trip', () => {
       saved = fetched;
     } finally {
       destroyEditor(e);
-      await new Promise((r) => setTimeout(r, 120));
+      await (view as unknown as {editorReady: Promise<void>}).editorReady;
       ((view as any).flow)?.destroy?.();
       view.root.remove();
       if (saved != null)
@@ -379,11 +379,56 @@ category('Flow: entity server round-trip', () => {
       destroyEditor(e);
       if (saved != null)
         await grok.dapi.scripts.delete(saved).catch(() => {});
-      await new Promise((r) => setTimeout(r, 120)); // let the deferred initEditor run before teardown
+      await (view as unknown as {editorReady: Promise<void>}).editorReady;
       ((view as any).flow)?.destroy?.();
       view.root.remove();
     }
   }, {timeout: 120000});
+  test('project state: a saved flow, an unsaved graph and a missing script reopen', async () => {
+    const e = makeEditor();
+    const views: FuncFlowView[] = [];
+    let saved: DG.Script | null = null;
+    const reopen = async (state: object): Promise<FuncFlowView> => {
+      const v = new FuncFlowView();
+      views.push(v);
+      await (v as unknown as {editorReady: Promise<void>}).editorReady;
+      v.loadStateMap(state);
+      return v;
+    };
+    const nodes = (v: FuncFlowView) => (v as unknown as {flow: {getNodeCount(): number} | null}).flow?.getNodeCount() ?? 0;
+    try {
+      await buildPassThroughFlow(e);
+      saved = await grok.dapi.scripts.save(DG.Script.create(
+        flowScriptText(e.flow, {...SETTINGS, scriptName: `FFProject${Math.floor(Math.random() * 1e6)}`})));
+      const doc = serializeFlow(e.flow, SETTINGS as FlowSettings);
+
+      const bound = await reopen({scriptId: saved.id, flow: null});
+      expect(JSON.stringify(bound.saveStateMap()), JSON.stringify({scriptId: saved.id, flow: null}), 'a save during the restore keeps its state');
+      expect(await until(() => nodes(bound) === 2, 15000), true, 'the saved flow did not load');
+      expect(JSON.stringify(bound.saveStateMap()), JSON.stringify({scriptId: saved.id, flow: null}), 'a reopened saved flow has no unsaved changes');
+
+      const unsaved = await reopen({scriptId: null, flow: doc});
+      expect(await until(() => nodes(unsaved) === 2, 15000), true, 'the unsaved graph did not load');
+      const state = unsaved.saveStateMap() as {scriptId: string | null; flow: FuncFlowDocument | null};
+      expect(state.scriptId === null && state.flow?.nodes.length === 2, true, 'the unsaved graph is saved again as a graph');
+
+      expect(DG.Func.find({package: 'Flow', name: 'flowView'})[0]?.friendlyName, FuncFlowView.TYPE,
+        'a project reopens Flow views by the friendly name of the flowView function');
+
+      const missing = await reopen({scriptId: '00000000-0000-0000-0000-000000000000', flow: doc});
+      expect(await until(() => nodes(missing) === 2, 15000), true, 'a missing script lost the unsaved graph');
+      expect((missing.saveStateMap() as {scriptId: string | null}).scriptId, null);
+    } finally {
+      destroyEditor(e);
+      for (const v of views) {
+        ((v as any).flow)?.destroy?.();
+        v.root.remove();
+      }
+      if (saved != null)
+        await grok.dapi.scripts.delete(saved).catch(() => {});
+    }
+  }, {timeout: 120000});
+
 });
 
 category('Flow: space binding', () => {
@@ -527,7 +572,8 @@ category('Flow: save button + auto-pin', () => {
 
       // serializeFlow stamps fresh timestamps each call — the delay makes them differ if they leaked
       const snap = probe.currentSnapshot();
-      await new Promise((r) => setTimeout(r, 5));
+      const snappedAt = Date.now();
+      expect(await until(() => Date.now() > snappedAt, 3000, 1), true, 'the clock moved on');
       expect(probe.currentSnapshot(), snap, 'snapshot is stable across calls (no volatile timestamps)');
       expect(probe.saveAvailability().tooltip.toLowerCase().includes('no changes'), true,
         'still clean after a delay — no false "changed"');
@@ -537,7 +583,7 @@ category('Flow: save button + auto-pin', () => {
       expect(probe.saveAvailability().tooltip.toLowerCase().includes('no changes'), false,
         'a parameter edit marks the flow dirty (onGraphEdited path)');
     } finally {
-      await new Promise((r) => setTimeout(r, 120));
+      await probe.editorReady;
       probe.flow?.destroy?.();
       view.root.remove();
     }
@@ -561,7 +607,7 @@ category('Flow: save button + auto-pin', () => {
       probe.teardownAutoPin();
       expect(probe.autoPinHandler, null, 'teardown disarms the handler');
     } finally {
-      await new Promise((r) => setTimeout(r, 120));
+      await probe.editorReady;
       probe.flow?.destroy?.();
       view.root.remove();
     }

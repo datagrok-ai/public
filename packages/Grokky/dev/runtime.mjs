@@ -9,8 +9,7 @@
 //   dist/    -> /app/dist          `npm run watch` on the host recompiles in ~1s; restart picks it up
 //   plugin/  -> /app/plugin        skills are plain .md — edits need no restart at all
 //
-// The Anthropic API key comes from the host env (ANTHROPIC_API_KEY) and is passed by name, so it
-// never appears on a command line.
+// The runtime reads model credentials only from Datagrok, so a turn on this container ends in a credentials error.
 //
 // Usage:  node dev/runtime.mjs up | down | restart | logs | status
 
@@ -40,10 +39,6 @@ const mount = (host, container, mode = 'rw') =>
   ['-v', `${path.resolve(host).replace(/\\/g, '/')}:${container}:${mode}`];
 
 function up() {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error('runtime: set ANTHROPIC_API_KEY in the environment first.');
-    process.exit(1);
-  }
   const dist = path.join(RUNTIME, 'dist');
   if (!fs.existsSync(path.join(dist, 'server.js'))) {
     console.error('runtime: dist/server.js missing — run `npm run build` in dockerfiles/claude-runtime.');
@@ -56,11 +51,10 @@ function up() {
     '-p', `${PORT}:5355`,
     ...mount(dist, '/app/dist'),
     ...mount(path.join(RUNTIME, 'plugin'), '/app/plugin', 'ro'),
-    '-e', 'apiKey',
     // host.docker.internal is implicit on Docker Desktop but not on plain Linux daemons.
     '--add-host', 'host.docker.internal:host-gateway',
     IMAGE,
-  ], {env: {...process.env, apiKey: process.env.ANTHROPIC_API_KEY}});
+  ]);
   console.log(`runtime: ${NAME} up on ws://localhost:${PORT}/ws`);
   waitHealthy();
 }

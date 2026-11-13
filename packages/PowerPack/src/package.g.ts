@@ -93,6 +93,17 @@ export async function editDomainBinding(schema: string) : Promise<boolean> {
   return await PackageFunctions.editDomainBinding(schema);
 }
 
+//description: The chat compose box with @-mentions of users (u2)
+//tags: chatInput
+//input: string value { optional: true }
+//input: string placeholder { optional: true }
+//input: bool sendOnEnter { optional: true }
+//input: string draftKey { optional: true }
+//output: widget result
+export function chatMessageInput(value?: string, placeholder?: string, sendOnEnter?: boolean, draftKey?: string) : any {
+  return PackageFunctions.chatMessageInput(value, placeholder, sendOnEnter, draftKey);
+}
+
 //input: column col 
 //output: bool result
 export function isFormulaColumn(col: DG.Column) : boolean {

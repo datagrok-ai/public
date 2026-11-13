@@ -522,6 +522,7 @@ grok s o problems list --alert-status open                 # the open alerts; --
 grok s o problems get 'health:Jupyter@<server>'            # by id or kind:key; history <id> for its records
 grok s o problems status connection:<connection id> --data '{"status": "muted", "reason": "maintenance", "until": "2026-10-04T06:00:00Z"}'
 grok s o problems ack 'health:Jupyter@<server>' --reason x  # resolve <id> --reason ... closes the alert
+grok s o problems severity dashboard:<project id> critical --reason 'board meeting'   # pin; none unpins
 grok s o rules get > rules.json                             # Settings > Alerts problem rules; rules put --json rules.json
 grok s o rules test                                         # evaluates the saved rules once, now
 grok s o logger get exportSettings                          # the logger settings, or one path of them
@@ -541,10 +542,26 @@ grok s o logs archive list --prefix cw/ --since 1d           # keys in the log a
 grok s o logs archive read <key>                             # one archived object decoded to events
 grok s o logs container                                      # docker containers and their status
 grok s o logs container scripting-python_1 --since 1h --grep 'Kernel (started|shutdown)'   # one container's log lines
+grok s o logs match 'level in (error, warning) and not text ~ ResizeObserver' --since 2h   # what a log filter matches
+grok s o logs match --level error --package Chembl --grep 'time(d )?out'   # flags add conditions joined by and; --grep is a regex
+grok s o logs match --level audit --space Chem   # audit of entities in the Chem space and its subspaces (case-sensitive)
+grok s o logs match 'space startsWith Chem: or space endsWith :Assays'   # space: the entity's space path; = ~ =~ startsWith endsWith
+grok s o groups                                             # log groups (Settings > Logger): name, kind, levels, filter, where to
+grok s o groups add --name Chembl --levels error,warning --filter 'package = Chembl' --to db,grafana:otlp
+grok s o groups set Chembl --when 'level = error and package = Chembl' --scope session --for 15m --before 60s --flags db
+grok s o groups set Chembl --enabled false                  # only the flags given change; groups rm Chembl deletes it
+grok s o groups put --json groups.json                      # replace every log group (the GROK_PARAMETERS settings.logger.logGroups shape)
+grok s o groups reset                                       # back to the default groups; the audit group can only be switched off, not removed
+grok s o endpoints                                          # where groups can send records; endpoints rm grafana
+grok s o logs activations                                   # triggered groups on now; logs activations stop <group id> <key>
 ```
 
 Problems need `ManageAlerts`, errors, another session's timeline and `logs cloud`/`logs archive` `ViewTelemetry`,
-`rules test` both, logger and rules changes and `logs capture` `EditPluginsSettings`. `capture` is an expiring
+`rules test` both, logger and rules changes, `groups`/`endpoints` changes, `logs activations stop` and `logs capture`
+`EditPluginsSettings`; `logs match` and `logs activations` need `ViewTelemetry`, and changing the audit group or an
+endpoint it sends to also needs `EditAuditLogging`. `logs match` takes the whole filter as one quoted argument; `--grep`
+is a regex and `--space` matches the space and its subspaces, both case-sensitive, as `=~` is. `groups add|set|rm`
+need a server that returns its default log groups; on an older one, replace them all with `groups put`. `capture` is an expiring
 `userGroupSettings` entry with `saveHttpRequests` on (seeded from the All Users entry, with `usage` saved); on an entry
 that already expires later it keeps that time. `capture stop` removes only an expiring entry that holds nothing but the
 capture; for any other entry use `logger set --user <login> --remove`. Read what it recorded with

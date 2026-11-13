@@ -16,8 +16,8 @@ OUT_DIR="api/py"
 python "$SCRIPT" "$SRC_DIR" "$OUT_DIR"
 
 # Copy the python-api.md file to api/py as index.md
-cp ../help/develop/python-api.md api/py/index.md
+cp ../../help/develop/python-api.md api/py/index.md
 
 # Copy the api-overview.md file to api as index.md
-cp ../help/develop/api-overview.md api/index.md
+cp ../../help/develop/api-overview.md api/index.md
 

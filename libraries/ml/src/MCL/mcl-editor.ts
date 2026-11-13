@@ -33,6 +33,10 @@ export class MCLEditor extends MultiColumnDimReductionEditor {
       });
     }
 
+    protected override get vectorizesNumericalColumns(): boolean {
+      return false;
+    }
+
     public getEditor(): HTMLElement {
       const div = ui.div([
         this.tableInput.root,

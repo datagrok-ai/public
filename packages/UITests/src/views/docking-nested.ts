@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {awaitCheck, before, category, test} from '@datagrok-libraries/test/src/test';
+import {before, category, test, waitUntil} from '@datagrok-libraries/test/src/test';
 
 category('View: DockingNested', () => {
   let df: DG.DataFrame;
@@ -23,17 +23,17 @@ category('View: DockingNested', () => {
     tv.dockManager.dock(leftDiv, DG.DOCK_TYPE.LEFT, null, 'L-M', 0.2);
     tv.dockManager.dock(rightDiv, DG.DOCK_TYPE.RIGHT, null, 'R-M', 0.2);
 
-    await awaitCheck(() => {
+    await waitUntil(() => {
       const resLeftDiv = tv.root.querySelector(`div.${tlmClass}`);
       if (!resLeftDiv) throw new Error('LEFT OF MAIN div not found');
       return isLeftOf(resLeftDiv, tv.grid.root);
-    }, 'isLeftOf failed', 100);
+    }, 'isLeftOf failed');
 
-    await awaitCheck(() => {
+    await waitUntil(() => {
       const resRightDiv = tv.root.querySelector(`div.${trmClass}`);
       if (!resRightDiv) throw new Error('LEFT OF MAIN div not found');
       return isRightOf(resRightDiv, tv.grid.root);
-    }, 'isRightOf failed', 100);
+    }, 'isRightOf failed');
   });
 
   test('top-and-down', async () => {
@@ -47,17 +47,17 @@ category('View: DockingNested', () => {
     tv.dockManager.dock(topDiv, DG.DOCK_TYPE.TOP, null, 'T-M', 0.2);
     tv.dockManager.dock(downDiv, DG.DOCK_TYPE.DOWN, null, 'D-M', 0.2);
 
-    await awaitCheck(() => {
+    await waitUntil(() => {
       const resTopDiv = tv.root.querySelector(`div.${ttmClass}`);
       if (!resTopDiv) throw new Error('TOP OF MAIN div not found');
       return isTopOf(resTopDiv, tv.grid.root);
-    }, 'isTopOf failed', 100);
+    }, 'isTopOf failed');
 
-    await awaitCheck(() => {
+    await waitUntil(() => {
       const resDownDiv = tv.root.querySelector(`div.${tdmClass}`);
       if (!resDownDiv) throw new Error('DOWN OF MAIN div not found');
       return isDownOf(resDownDiv, tv.grid.root);
-    }, 'isDownOf failed', 100);
+    }, 'isDownOf failed');
   });
 
   test('down-of-right', async () => {
@@ -71,7 +71,7 @@ category('View: DockingNested', () => {
     const rightDn = tv.dockManager.dock(rightDiv, DG.DOCK_TYPE.RIGHT, null, 'R-M', 0.2);
     tv.dockManager.dock(downOfRightDiv, DG.DOCK_TYPE.DOWN, rightDn, 'D-R-M', 0.2);
 
-    await awaitCheck(() => {
+    await waitUntil(() => {
       const resRightDiv = tv.root.querySelector('div.test-right-of-main');
       if (!resRightDiv) throw new Error('RIGHT OF MAIN div not found');
 
@@ -97,7 +97,7 @@ category('View: DockingNested', () => {
     const downOfRightDn = tv.dockManager.dock(downOfRightDiv, DG.DOCK_TYPE.DOWN, rightDn, 'D-R-M', 0.2);
     tv.dockManager.dock(fillOfDownOfRight, DG.DOCK_TYPE.FILL, downOfRightDn, 'F-D-R-M');
 
-    await awaitCheck(() => {
+    await waitUntil(() => {
       const resRightDiv = tv.root.querySelector(`div.${trmClass}`);
       if (!resRightDiv) throw new Error('RIGHT OF MAIN div not found');
 
@@ -115,7 +115,7 @@ category('View: DockingNested', () => {
         isDownOf(resDownOfRightDiv, resRightDiv) &&
         isDownOf(resFillOfDownOfRightDiv, resRightDiv)
       );
-    }, 'FILL OF DOWN OF RIGHT OF MAIN failed', 100);
+    }, 'FILL OF DOWN OF RIGHT OF MAIN failed');
   });
 
   test('fill-of-down-and-fill-of-right', async () => {
@@ -136,7 +136,7 @@ category('View: DockingNested', () => {
     const downOfRightDn = tv.dockManager.dock(downOfRightDiv, DG.DOCK_TYPE.DOWN, rightDn, 'D-R-M', 0.2);
     tv.dockManager.dock(fillOfDownOfRightDiv, DG.DOCK_TYPE.FILL, downOfRightDn, 'F-D-R-M');
 
-    await awaitCheck(() => {
+    await waitUntil(() => {
       // TODO: resRightDiv can not be found (not rendered behind resFillOfRightDiv?)
       // const resRightDiv = tv.root.querySelector(`div.${trmClass}`);
       // if (!resRightDiv) throw new Error('RIGHT OF MAIN div not found');
@@ -160,7 +160,7 @@ category('View: DockingNested', () => {
         // isDownOf(resFillOfDownOfRightDiv, resRightDiv) &&
         isDownOf(resFillOfDownOfRightDiv, resFillOfRightDiv)
       );
-    }, 'FILL OF DOWN AND FILL OF RIGHT OF MAIN failed', 100);
+    }, 'FILL OF DOWN AND FILL OF RIGHT OF MAIN failed');
   });
 
   test('fill-of-down-and-fill-of-right-2', async () => {
@@ -181,7 +181,7 @@ category('View: DockingNested', () => {
     tv.dockManager.dock(fillOfRightDiv, DG.DOCK_TYPE.FILL, rightDn, 'F-R-M');
     tv.dockManager.dock(fillOfDownOfRightDiv, DG.DOCK_TYPE.FILL, downOfRightDn, 'F-D-R-M');
 
-    await awaitCheck(() => {
+    await waitUntil(() => {
       // TODO: resRightDiv can not be found (not rendered behind resFillOfRightDiv?)
       // const resRightDiv = tv.root.querySelector(`div.${trmClass}`);
       // if (!resRightDiv) throw new Error('RIGHT OF MAIN div not found');
@@ -205,7 +205,7 @@ category('View: DockingNested', () => {
         // isDownOf(resFillOfDownOfRightDiv, resRightDiv) &&
         isDownOf(resFillOfDownOfRightDiv, resFillOfRightDiv)
       );
-    }, 'FILL OF DOWN AND FILL OF RIGHT OF MAIN failed', 100);
+    }, 'FILL OF DOWN AND FILL OF RIGHT OF MAIN failed');
   });
 
   test('left-of-fill-of-down-and-fill-of-right', async () => {
@@ -230,7 +230,7 @@ category('View: DockingNested', () => {
     tv.dockManager.dock(fillOfDownOfRightDiv, DG.DOCK_TYPE.FILL, downOfRightDn, 'F-D-R-M');
     tv.dockManager.dock(leftOfRightDiv, DG.DOCK_TYPE.LEFT, rightDn.parent.parent, 'L-R-M', 0.2);
 
-    await awaitCheck(() => {
+    await waitUntil(() => {
       // TODO: resRightDiv can not be found (not rendered behind resFillOfRightDiv?)
       // const resRightDiv = tv.root.querySelector(`div.${trmClass}`);
       // if (!resRightDiv) throw new Error('RIGHT OF MAIN div not found');
@@ -262,7 +262,7 @@ category('View: DockingNested', () => {
         //isDownOf(resFillOfDownOfRightDiv, resRightDiv) &&
         isDownOf(resFillOfDownOfRightDiv, resFillOfRightDiv)
       );
-    }, 'LEFT OF FILL OF DOWN AND FILL OF RIGHT OF MAIN failed', 1000);
+    }, 'LEFT OF FILL OF DOWN AND FILL OF RIGHT OF MAIN failed');
   });
 }, { owner: 'aparamonov@datagrok.ai' });
 

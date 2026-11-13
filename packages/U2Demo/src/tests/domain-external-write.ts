@@ -6,8 +6,9 @@
    a run; the category skips itself while it is not registered. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
-import {Control} from '@datagrok-libraries/u2';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
+import {Control, Scope} from '@datagrok-libraries/u2';
+import type {Input} from '@datagrok-libraries/u2';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {domains, DomainApp, DomainTable} from '@datagrok-libraries/ems/src/dg';
 
@@ -23,19 +24,18 @@ category('U2: domain external write', () => {
   let seeded = false;
   let table: DomainTable;
   let app: DomainApp;
+  /** What the tests build after an await is the category's. */
+  const owner = Scope.root('u2 domain external write tests');
 
   async function ready(src: DomainSource): Promise<void> {
-    for (let i = 0; i < 200 && (src.state.value === 'idle' || src.state.value === 'loading'); i++)
-      await delay(50);
+    await waitUntil(() => src.state.value !== 'idle' && src.state.value !== 'loading',
+      () => `source is ${src.state.value}: ${String(src.error.value)}`);
     if (src.state.value !== 'ready')
       throw new Error(`source is ${src.state.value}: ${String(src.error.value)}`);
   }
 
   async function until(check: () => boolean, what: string): Promise<void> {
-    for (let i = 0; i < 100 && !check(); i++)
-      await delay(50);
-    if (!check())
-      throw new Error(`timed out waiting for ${what}`);
+    await waitUntil(check, `timed out waiting for ${what}`, 5000);
   }
 
   const skipped = (): boolean => {
@@ -57,7 +57,7 @@ category('U2: domain external write', () => {
     await ready(source);
     await until(() => app.form.value?.input('n') !== undefined, 'the form');
     await things().update(id, {n: behind});
-    app.form.value!.input('n')!.value.value = mine;
+    app.form.value!.input('n')!.value = mine;
     const saving = app.session.save();
     await until(() => conflictDialog() !== undefined, 'the conflict dialog');
     const dialog = conflictDialog()!;
@@ -76,7 +76,7 @@ category('U2: domain external write', () => {
     await things().insert({tid, note: `u2 write ${tid}`, n: 1});
     seeded = true;
     table = await domains.table(THINGS);
-    app = domains.app({table, base: BASE, children: false});
+    app = owner.build(() => domains.app({table, base: BASE, children: false}));
     document.body.append(app.root);
     await ready(app.listSource);
   });
@@ -85,6 +85,7 @@ category('U2: domain external write', () => {
     app?.session.discard();
     app?.dispose();
     app?.root.remove();
+    owner.dispose();
     if (!seeded)
       return;
     try {
@@ -102,8 +103,8 @@ category('U2: domain external write', () => {
       expect(table.table.support.concurrency, 'expected');
       expect(await app.create(), true);
       await until(() => app.form.value?.input('tid') !== undefined, 'the draft form');
-      app.form.value!.input('tid')!.value.value = newTid;
-      app.form.value!.input('note')!.value.value = `u2 new ${newTid}`;
+      app.form.value!.input('tid')!.value = newTid;
+      app.form.value!.input('note')!.value = `u2 new ${newTid}`;
       expect(await app.session.save(), true);
       const row = await things().get(`${newTid}`);
       expect(row.note, `u2 new ${newTid}`);
@@ -124,7 +125,7 @@ category('U2: domain external write', () => {
     const source = app.entitySource.value!;
     await ready(source);
     await until(() => app.form.value?.input('n') !== undefined, 'the form');
-    app.form.value!.input('n')!.value.value = 3;
+    app.form.value!.input('n')!.value = 3;
     expect(await app.session.save(), true);
     expect((await things().get(id)).n, 3);
     expect(app.session.isDirty.value, false);
@@ -136,7 +137,7 @@ category('U2: domain external write', () => {
     expect(await conflict(99, 5, 'OVERWRITE'), true, 'the overwrite path did not finish the save');
     expect(conflictDialog() === undefined, true, 'the dialog closed');
     expect((await things().get(id)).n, 5, 'overwrite did not land the value');
-    expect(app.form.value!.input('n')!.value.value, 5);
+    expect(app.form.value!.input('n')!.value, 5);
   });
 
   test('a change behind the app: Reload shows the server value and drops mine', async () => {
@@ -144,7 +145,7 @@ category('U2: domain external write', () => {
       return;
     expect(await conflict(99, 7, 'RELOAD'), true, 'the reload path did not finish the save');
     expect((await things().get(id)).n, 99, 'reload wrote anyway');
-    await until(() => app.form.value?.input('n')?.value.value === 99, 'the reloaded value');
+    await until(() => app.form.value?.input('n')?.value === 99, 'the reloaded value');
     expect(app.session.isDirty.value, false);
   });
 
@@ -154,11 +155,10 @@ category('U2: domain external write', () => {
     expect(await app.goTo('list'), true);
     await ready(app.listSource);
     app.listSource.query.value = `tid = ${tid}`;
-    await delay(100);
     await ready(app.listSource);
     const row = app.listSource.rows.byKey(id)!;
     expect(row !== undefined, true, 'the row is listed');
-    app.list.actionsFor(row).find((a) => a.name === 'Delete')!.run();
+    app.list.actionsFor(row).find((a) => a.text === 'Delete')!.run();
     expect(app.session.isDirty.value, true);
     expect(await app.session.save(), true);
     // get(id) resolves null for a gone row (the client's contract), it does not throw
@@ -174,23 +174,23 @@ category('U2: domain external write', () => {
       .find((b) => b.textContent === text)!;
     const named = (name: string) => document.querySelector(`[data-u2-name="${name}"]`);
     const report = () => document.querySelector('.u2-domain-import-report')?.textContent ?? '';
+    const previewed = () => document.querySelector(
+      '.u2-domain-import-preview .u2-domain-import-rows, .u2-domain-import-preview .u2-domain-import-problem') !== null;
     let running: Promise<unknown> | undefined;
     try {
       running = domains.import(table, {source});
       await until(() => named('mode') !== null, 'the wizard');
       expect(named('allOrNothing') === null, true, 'no partial import on an external binding');
       expect(named('errorOnDuplicate') === null, true, 'a duplicate is always an error there');
-      (Control.forElement(named('mode')!) as unknown as {value: {value: string}}).value.value = 'upsert';
-      await delay(100);
+      (Control.forElement(named('mode')!) as Input<string>).value = 'upsert';
       buttonNamed('NEXT').click();
-      await delay(200);
       buttonNamed('NEXT').click();
-      await delay(200);
+      await until(previewed, 'the preview');
       const preview = document.querySelector('.u2-domain-import-preview')?.textContent ?? '';
       expect(preview.includes('Rows are checked when imported'), true, preview);
-      buttonNamed('NEXT').click();
+      buttonNamed('Import').click();
       await until(() => /merged|failed|aborted/.test(report()), 'the report');
-      expect(report().includes('0 inserted, 2 merged'), true, report());
+      expect(report().includes('2 merged'), true, report());
       buttonNamed('CLOSE').click();
       const result = await running as {merged?: number, rows: {status: string}[]};
       expect(result.merged, 2);

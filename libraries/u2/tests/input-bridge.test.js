@@ -2,7 +2,7 @@
    the `DG.TYPE` constants come from tests/dg-stub.mjs; everything under test is the shipped
    `DartInput`. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
@@ -69,7 +69,7 @@ bridge('a value set before the build lands in the editor when it appears', () =>
   assert.equal(dart.getValue(), 'aspirin', 'readable while the editor is still missing');
 
   dart.getInput();
-  assert.equal(dart.u2.value.peek(), 'aspirin');
+  assert.equal(dart.u2.peek(), 'aspirin');
   assert.equal(dart.getValue(), 'aspirin');
   assert.equal(dart.u2.root.querySelector('input').value, 'aspirin');
   dart.detach();
@@ -172,7 +172,7 @@ bridge('a kill severs a handed-over input and leaves it alive', async () => {
   host.append(dart.getInput());
   globalThis.grok_Widget_Kill(host);
   assert.equal(input.scope.isDisposed, false, 'never owned by the bridge');
-  input.value.value = 'after';
+  input.value = 'after';
   await flush();
   assert.deepEqual(dart.fired, {input: 0, changed: 0});
   input.dispose();
@@ -211,9 +211,9 @@ bridge('one edit is one pair of events, however many writes it took', async () =
   const dart = dartInputFor(() => new TextInput({}));
   dart.getInput();
   const input = dart.u2;
-  input.value.value = 'a';
-  input.value.value = 'ab';
-  input.value.value = 'abc';
+  input.value = 'a';
+  input.value = 'ab';
+  input.value = 'abc';
   await flush();
   assert.deepEqual(dart.fired, {input: 1, changed: 1});
   assert.equal(dart.getValue(), 'abc');
@@ -231,12 +231,12 @@ bridge('a subscriber that writes the signal back cannot trip the cycle guard', a
   dart.fireChanged = () => {
     dart.fired.changed++;
     if (hops < 150)
-      dart.u2.value.value = `hop ${hops++}`;
+      dart.u2.value = `hop ${hops++}`;
   };
   type(dart.u2, 'start');
   await flush();
   assert.equal(hops, 150, 'every round trip ran');
-  assert.equal(dart.u2.value.peek(), 'hop 149');
+  assert.equal(dart.u2.peek(), 'hop 149');
   assert.equal(dart.fired.changed, 151, 'one event per round trip, none of them lost');
 
   type(dart.u2, 'after');
@@ -248,13 +248,13 @@ bridge('a subscriber that writes the signal back cannot trip the cycle guard', a
 bridge('a value the input prunes on its own is not reported as a user edit', async () => {
   const items = new ChoiceInput({items: ['age', 'sex']});
   const dart = asDartInput(items);
-  items.value.value = 'sex';
+  items.value = 'sex';
   await flush();
   assert.deepEqual(dart.fired, {input: 1, changed: 1});
 
   items.setItems(['age']);
   await flush();
-  assert.equal(items.value.peek(), null, 'the item it stood for is gone');
+  assert.equal(items.peek(), null, 'the item it stood for is gone');
   assert.deepEqual(dart.fired, {input: 1, changed: 2}, 'changed alone, as Dart does');
   dart.detach();
   items.dispose();
@@ -316,10 +316,10 @@ bridge('an empty value the u2 input refuses reaches the platform as not nullable
   const dart = asDartInput(name);
   document.body.append(dart.getInput());
   assert.equal(dart.nullable, true);
-  name.value.value = '';
+  name.value = '';
   await flush();
   assert.equal(dart.nullable, false, 'the platform refuses the empty value through nullable');
-  name.value.value = 'Caffeine';
+  name.value = 'Caffeine';
   await flush();
   assert.equal(dart.nullable, true);
   dart.detach();

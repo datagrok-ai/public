@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, waitUntilAsync} from '@datagrok-libraries/test/src/test';
 
 //@ts-ignore
 import { _package } from '../test-package';
@@ -68,10 +68,8 @@ category('Dapi: entities: recent', () => {
       await grok.dapi.tables.save(tableInfo);
       await grok.dapi.projects.save(project);
       await (await grok.dapi.projects.find(project.id)).open();
-      let recent = false;
-      for (const start = Date.now(); !recent && Date.now() - start < 30000; await delay(200))
-        recent = (await grok.dapi.entities.getRecentEntities()).some((e) => e.id === project.id);
-      expect(recent, true, `the project ${project.name} is not among the recent entities 30 s after it was opened`);
+      await waitUntilAsync(async () => (await grok.dapi.entities.getRecentEntities()).some((e) => e.id === project.id),
+        `the project ${project.name} is not among the recent entities after it was opened`, 30000, 200);
     }
     finally {
       grok.shell.closeAll();

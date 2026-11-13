@@ -51,9 +51,6 @@ export class DataConnectorsTutorial extends Tutorial {
       providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "New connection..."`,
       () => Tutorial.runContextMenu($(providerRoot).find('.d4-tree-view-group-label')[0]!, 'New connection...'));
 
-    // UI generation delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
     await this.dlgInputAction(dlg, 'Set "Name" to "Starbucks"', 'Name', 'Starbucks');
     await this.dlgInputAction(dlg, 'Set "Server" to "db.datagrok.ai"', 'Server', 'db.datagrok.ai');
     await this.dlgInputAction(dlg, 'Set "Port" to "54324"', 'Port', '54324');
@@ -70,8 +67,6 @@ export class DataConnectorsTutorial extends Tutorial {
       'Open the context menu on Postgres | Starbucks and click "New Query..."',
       () => Tutorial.runContextMenu(starbucksNode()!, 'New Query...'));
 
-    // UI generation delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
     await this.textInpAction(dqv.root, 'Set "Name" to "Get Starbucks US"', 'Name', 'Get Starbucks US');
 
     await this.action('Add "select * from starbucks_us" to the editor and hit "Play"',

@@ -1096,10 +1096,14 @@ export namespace chem {
     });
   }
 
-  export function drawMolecule(molString: string, w?: number, h?: number, popupMenu: boolean = false): HTMLDivElement {
+  /** Draws a molecule (Chem's renderer). `cache: false` keeps no picture in the renderer's caches afterwards: for
+   * very large one-off drawings, such as a full-screen dialog's. */
+  export function drawMolecule(molString: string, w?: number, h?: number, popupMenu: boolean = false,
+    cache: boolean = true): HTMLDivElement {
     const molDiv = ui.div();
+    // `cache` only when off: the call stays as it was for a Chem without the parameter
     grok.functions.call('Chem:drawMolecule', {
-      'molStr': molString, 'w': w, 'h': h, 'popupMenu': popupMenu
+      'molStr': molString, 'w': w, 'h': h, 'popupMenu': popupMenu, ...(cache ? {} : {'cache': false}),
     })
       .then((res: HTMLElement) => molDiv.append(res));
     return molDiv;

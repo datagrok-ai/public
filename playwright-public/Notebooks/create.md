@@ -142,7 +142,7 @@ gate_verdicts:
 - GROK-13999: `localStorage` DOMException when rendering HTML from a `data:` URL context.
 - This is the smoke scenario for the notebooks chain (pyramid_layer: ui-smoke per notebooks chain
   analysis). It produces the `demog-notebook-persisted` fixture consumed by `edit.md` and `browser.md`.
-- See: `public/help/compute/jupyter-notebook.md#Create a notebook` (navigation pointer).
+- See: `help/compute/jupyter-notebook.md#Create a notebook` (navigation pointer).
 
 ---
 {

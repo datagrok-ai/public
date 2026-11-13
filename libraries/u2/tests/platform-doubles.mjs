@@ -9,9 +9,11 @@
    `DG.Viewer`, whose doubles below keep root, subs, look and events behind the handle.)
    tests/dg-stub.mjs and tests/platform-stub.mjs serve these same classes to the modules under test
    as `datagrok-api/dg` and `datagrok-api/grok`; dg-stub also installs the kill-walk globals over
-   {@link platform}. */
+   {@link platform}. Where users' platforms are hostile, so are the doubles: a shell opens with a nameless
+   table ({@link strayTables}), a molecule column brings Chem's hidden `~` column, and a {@link Row} throws on a
+   name its frame has no column of. */
 
-import {Control, TYPE, dfBindings, signal} from 'datagrok-api/u2core';
+import {Control, SEMTYPE, TYPE, dfBindings, signal} from 'datagrok-api/u2core';
 export {TYPE, COLUMN_TYPE, SEMTYPE} from 'datagrok-api/u2core';
 
 /** `DG.TAGS` — the column tags u2 writes; u2core does not re-export them (js-api const.ts:360). */
@@ -27,6 +29,13 @@ function getters(cls, ...keys) {
 function fields(cls, ...keys) {
   for (const key of keys)
     Object.defineProperty(cls.prototype, key, {get() { return this.dart[key]; }, set(x) { this.dart[key] = x; }});
+}
+
+/** `button` off with no reason, as platform code leaves one: u2's own `disabled = true` reports that
+ * (`reason-missing`). */
+export function reasonless(button) {
+  button.setAttribute('aria-disabled', 'true');
+  return button;
 }
 
 /** The rxjs shape u2 subscribes to, plus what a test needs to drive it: `fire` and `count`. */
@@ -503,17 +512,92 @@ class ColumnList {
 const EVENTS = ['onCurrentRowChanged', 'onValuesChanged', 'onSelectionChanged', 'onFilterChanged',
   'onColumnsChanged', 'onColumnNameChanged', 'onRowsAdded', 'onRowsRemoved'];
 
-/** As much of a frame as u2 reads: cells, the current row, the column list and the events. The
+/** What Chem adds to a frame once a molecule column is searched or filtered: the column's canonical SMILES in a
+ * hidden `~<name>.canonicalSmiles` column, molecule-typed as well and appended, as Chem adds it. Every frame double
+ * with a molecule column carries one (unless the test gave it), as users' frames do: a column the platform's pickers
+ * never list. */
+function withCanonical(columns) {
+  const given = new Set(columns.map((c) => c.name));
+  const hidden = columns.filter((c) => c.semType === SEMTYPE.MOLECULE && !c.name.startsWith('~') &&
+    !given.has(`~${c.name}.canonicalSmiles`));
+  return [...columns, ...hidden.map((c) => ({name: `~${c.name}.canonicalSmiles`, type: TYPE.STRING,
+    semType: SEMTYPE.MOLECULE, source: c.name}))];
+}
+
+/** A `DG.Row` (js-api row.ts): a Proxy that reads any name it does not know as a column, so a name the frame has no
+ * column of throws `No such column: <name>`, as the platform's does; `then` and symbol keys are no column (a row can
+ * be awaited) — `get('then')` reads a column of that name. */
+export class Row {
+  constructor(table, idx) {
+    this.table = table;
+    this.idx = idx;
+    return new Proxy(this, {
+      get(target, name) {
+        if (typeof name === 'symbol' || name === 'then' || ROW_MEMBERS.has(name) || Object.hasOwn(target, name))
+          return target[name];
+        return target.get(name);
+      },
+      set(target, name, value) {
+        if (Object.hasOwn(target, name))
+          target[name] = value;
+        else
+          target.table.set(target._column(name).name, target.idx, value);
+        return true;
+      },
+    });
+  }
+
+  get(name) { return this._column(name).get(this.idx); }
+
+  toMap() { return Object.fromEntries(this.table.columns.toList().map((c) => [c.name, c.get(this.idx)])); }
+
+  toDart() { return {table: this.table.dart, idx: this.idx}; }
+
+  _column(name) {
+    const column = this.table.columns.byName(name);
+    if (column === null)
+      throw new Error(`No such column: ${String(name)}`);
+    return column;
+  }
+}
+const ROW_MEMBERS = new Set(['get', 'toMap', 'toDart', '_column']);
+
+/** The frame's rows (js-api `RowList`): every row a {@link Row}, `addNew` appending one. */
+class RowList {
+  constructor(table) { this.dart = {table}; }
+
+  addNew(values = null, notify = true) {
+    const table = this.dart.table;
+    table.dart.rows.push(Object.fromEntries(table.columns.toList().map((c, i) => [c.name, values?.[i] ?? null])));
+    if (notify)
+      table.onRowsAdded.fire();
+    return table.row(table.rowCount - 1);
+  }
+
+  * [Symbol.iterator]() {
+    for (let i = 0; i < this.dart.table.rowCount; i++)
+      yield this.dart.table.row(i);
+  }
+}
+
+/** As much of a frame as u2 reads: cells, the current row, the rows, the column list and the events. The
  * rows are the records given, behind the handle (`dart.rows`); the handle also counts the reads,
  * the writes and the row-index writes, which is what the laziness and echo tests assert on. */
 export class DataFrame {
   constructor(columns = [], rows = [], name = 'table') {
-    this.dart = {name, rows: rows.map((r) => ({...r})), currentRowIdx: rows.length > 0 ? 0 : -1,
+    const listed = withCanonical(columns);
+    const hidden = listed.filter((c) => c.source !== undefined);
+    this.dart = {name, currentRowIdx: rows.length > 0 ? 0 : -1,
+      rows: rows.map((r) => Object.assign(Object.fromEntries(hidden.map((c) => [c.name, r[c.source]])), r)),
       selection: new BitSet(rows.length), filter: new BitSet(rows.length),
       reads: 0, writes: [], idxWrites: 0,
       events: Object.fromEntries(EVENTS.map((event) => [event, new Stream()]))};
-    this.dart.columns = new ColumnList(this, columns);
+    this.dart.columns = new ColumnList(this, listed);
   }
+
+  row(idx) { return new Row(this, idx); }
+
+  get rows() { return this.dart.rowList ??= new RowList(this); }
 
   static fromByteArray(bytes) {
     const frame = new DataFrame();
@@ -554,19 +638,30 @@ getters(DataFrame, 'columns', 'selection', 'filter');
 for (const event of EVENTS)
   Object.defineProperty(DataFrame.prototype, event, {get() { return this.dart.events[event]; }});
 
+/** The tables a user's workspace holds besides the ones a test opens: one renamed to null, which the shell lists as
+ * `undefined` (SEAM S-23), and one named ''. Every {@link Shell} starts with them; a test that resets the shell puts
+ * them back (`shell.dart.tables = strayTables()`). */
+export function strayTables() {
+  const nameless = new DataFrame([{name: 'x', type: TYPE.INT}], [{x: 1}], 'nameless');
+  nameless.name = undefined;
+  return [nameless, new DataFrame([{name: 'x', type: TYPE.INT}], [{x: 2}], '')];
+}
+
 /** The shell: the current object — which the platform rebuilds the property panel for on EVERY
  * assignment, so `dart.writes` is what a test counts — the balloons, and the open tables. The
- * tables are FRAMES on the handle (`dart.tables`); `tableNames` derives from them, and its
+ * tables are FRAMES on the handle (`dart.tables`), {@link strayTables} first; `tableNames` derives from them, and its
  * setter keeps platform-stub's `resetShell` name-list reset clearing the same backing store. */
 export class Shell {
   constructor() {
-    const dart = {o: null, writes: [], tables: [], t: null, tableAdded: new Stream(),
+    const dart = {o: null, writes: [], tables: strayTables(), t: null, views: [], tableAdded: new Stream(),
       tableRemoved: new Stream(), windows: {showContextPanel: false}};
     Object.defineProperty(dart, 'tableNames', {
       get: () => dart.tables.map((table) => table.name),
       set: (names) => dart.tables = dart.tables.filter((table) => names.includes(table.name)),
     });
     dart.user = {id: 'user-1', login: 'tester', friendlyName: 'Tester'};
+    // the user's settings (`SettingsInterface`), the date format not chosen
+    dart.settings = {dateFormat: null};
     this.dart = dart;
   }
 
@@ -609,8 +704,8 @@ export class Shell {
     this.dart.tableRemoved.fire();
   }
 }
-getters(Shell, 'windows', 'tableNames', 'tables');
-fields(Shell, 't');
+getters(Shell, 'windows', 'tableNames', 'tables', 'views');
+fields(Shell, 't', 'v', 'settings');
 
 /** What the kill-walk globals of tests/dg-stub.mjs work over: the elements killed, the cleanups
  * registered and not yet run, and the widgets the platform knows of — every viewer built, every
@@ -808,7 +903,7 @@ export class PropertyGrid extends DartWidget {
   update(src, props) { this.dart.updates.push({src, props, table: undefined}); }
 }
 
-/** A platform view over a root (js-api view.ts): what `appView` builds on. */
+/** A platform view over a root (js-api view.ts): what `ViewHost.create` builds on. */
 export class View {
   constructor(root) { this.dart = {root, name: '', ribbonPanels: [], statusBarPanels: [], toolbox: null, closed: 0}; }
 
@@ -1033,6 +1128,9 @@ export class Grid extends Viewer {
       toList: () => columns.map((c) => held.get(c.name)),
     };
   }
+
+  get onColumnResized() { return this.onEvent('d4-grid-column-resized'); }
+  get onCellClick() { return this.onEvent('d4-grid-cell-click'); }
 
   /** The editor host hook (grid.ts `attachEditor`): one editor at a time, released on detach. */
   get editor() { return this._editor ?? null; }

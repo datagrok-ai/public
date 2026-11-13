@@ -1,9 +1,4 @@
-/* The backend conformance suite run headless over the memory backend (holistic review 4, A4): the
-   scenarios in conformance/scenarios.mjs are what BOTH backends must answer, and U2Demo's
-   `U2: domain conformance` runs the same module against the platform's over the stand. Server
-   semantics asserted here belong in the scenarios, never in memory-domain.test.js — a memory-only
-   assertion of a server rule is how the backends drifted four times in one day. */
-
+// a server rule belongs in conformance/scenarios.mjs (U2Demo runs it on the stand), never in memory-domain.test.js
 import {backends} from '@datagrok-libraries/u2';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';

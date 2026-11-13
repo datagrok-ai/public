@@ -63,6 +63,60 @@ export async function StartWorkflow(nqName: string, version: string, instanceCon
   return await PackageFunctions.StartWorkflow(nqName, version, instanceConfig);
 }
 
+//description: Run a compute workflow without UI and return the state of every step.
+//input: string nqName { description: Qualified name of the workflow function to run }
+//input: string version { description: Workflow version to run }
+//input: object instanceConfig { description: Optional initial pipeline configuration }
+//output: object result
+export async function RunWorkflow(nqName: string, version: string, instanceConfig?: any) {
+  return await PackageFunctions.RunWorkflow(nqName, version, instanceConfig);
+}
+
+//description: Save the state returned by RunWorkflow as a new workflow run in history.
+//input: string nqName { description: Qualified name of the workflow function }
+//input: string version { description: Workflow version }
+//input: object state { description: The state of a RunWorkflow result }
+//input: object metadata { description: Optional title, description and tags }
+//output: funccall run
+export async function SaveWorkflowRun(nqName: string, version: string, state: any, metadata?: any) {
+  return await PackageFunctions.SaveWorkflowRun(nqName, version, state, metadata);
+}
+
+//description: The default Excel report of a run, as its export menu builds it: [DG.FileInfo, ExcelJS.Workbook].
+//input: funccall funcCall { description: The run to report }
+//input: object validationState { description: Validation results by input; optional: true }
+//input: object consistencyState { description: Consistency by input; optional: true }
+//input: object viewersHook { description: The viewers hook of a workflow step, in place of the function's own; optional: true }
+//input: object metaState { description: Meta values by output, for the hook; optional: true }
+//input: bool isOutputOutdated { description: Names the file Not completed when true; optional: true }
+//output: object result
+export async function ReportFuncCallExcel(funcCall: DG.FuncCall, validationState?: any, consistencyState?: any, viewersHook?: any, metaState?: any, isOutputOutdated?: boolean) {
+  return await PackageFunctions.ReportFuncCallExcel(funcCall, validationState, consistencyState, viewersHook, metaState, isOutputOutdated);
+}
+
+//description: The exports of a function's runs as its Export menu lists them, [{id, name}]; the first is default.
+//input: func func 
+//output: object result
+export function CallExports(func: any) {
+  return PackageFunctions.CallExports(func);
+}
+
+//description: Exports a run as its Export menu does, with the id CallExports gives; returns the file.
+//input: funccall funcCall { description: The run to export }
+//input: string exportId { description: The export id }
+//input: object args { description: The args a custom export gets (CustomExportArgs); optional: true }
+//output: file result
+export async function ExportCall(funcCall: DG.FuncCall, exportId: string, args?: any) : Promise<any> {
+  return await PackageFunctions.ExportCall(funcCall, exportId, args);
+}
+
+//description: Load a saved workflow run without UI and return the state of every step, as RunWorkflow does.
+//input: string id { description: Meta FuncCall id of the saved workflow run }
+//output: object result
+export async function LoadWorkflowRun(id: string) {
+  return await PackageFunctions.LoadWorkflowRun(id);
+}
+
 //description: Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.
 //input: string id { description: Meta FuncCall id of the saved workflow run }
 export async function OpenWorkflowRun(id: string) : Promise<void> {
@@ -83,6 +137,12 @@ export async function CompareRuns() : Promise<void> {
   await PackageFunctions.CompareRuns();
 }
 
+//name: Browse Runs
+//description: Browse saved runs of any model in My runs and in spaces, and open or compare them
+export async function BrowseRuns() : Promise<void> {
+  await PackageFunctions.BrowseRuns();
+}
+
 //name: ViewerTestApp
 export async function ViewerTestApp() : Promise<void> {
   await PackageFunctions.ViewerTestApp();
@@ -93,9 +153,14 @@ export async function FormTestApp() : Promise<void> {
   await PackageFunctions.FormTestApp();
 }
 
-//name: HistoryTestApp
-export async function HistoryTestApp() : Promise<void> {
-  await PackageFunctions.HistoryTestApp();
+//output: object hook
+export async function FailingViewersHookMaker() {
+  return await PackageFunctions.FailingViewersHookMaker();
+}
+
+//output: object hook
+export async function SlowViewersHookMaker() {
+  return await PackageFunctions.SlowViewersHookMaker();
 }
 
 //name: Mock Pipeline 1
@@ -114,6 +179,32 @@ export async function MockPipeline1(params: any) {
 //editor: Compute2:TreeWizardEditor
 export async function MockPipeline2(params: any) {
   return await PackageFunctions.MockPipeline2(params);
+}
+
+//name: Mock Keyboard Pipeline
+//description: Workflow with fixed steps, a reorderable list and an invalid step, used for testing keyboard use.
+//input: object params 
+//output: object result
+//editor: Compute2:TreeWizardEditor
+export async function MockKeyboardPipeline(params: any) {
+  return await PackageFunctions.MockKeyboardPipeline(params);
+}
+
+//name: Mock Tree Wizard Pipeline
+//input: object params 
+//output: object result
+//editor: Compute2:TreeWizardEditor
+export async function MockTreeWizardPipeline(params: any) {
+  return await PackageFunctions.MockTreeWizardPipeline(params);
+}
+
+//name: Mock Tree Wizard Group
+//description: Nested workflow of the Mock Tree Wizard Pipeline.
+//input: object params 
+//output: object result
+//editor: Compute2:TreeWizardEditor
+export async function MockTreeWizardGroup(params: any) {
+  return await PackageFunctions.MockTreeWizardGroup(params);
 }
 
 //name: Mock Single Step Pipeline
@@ -183,54 +274,68 @@ export async function TestCustomView() {
   return await PackageFunctions.TestCustomView();
 }
 
-//description: Test for optimization: multiple scalars output
-//input: double x1 = 1 { caption: param1; min: -3; max: 3 }
-//input: double x2 = -1 { caption: param2; min: -3; max: 3 }
-//input: dataframe y { caption: table }
-//input: bool bool 
-//output: int integer
-//output: double float1
-//output: double float2
-//output: dataframe table1 { viewer: Line chart(block:60) | Grid(block:40) }
-//output: dataframe table2 { viewer: Line chart(block:60) | Grid(block:40) }
-//meta.features: {"fitting": true, "sens-analysis": true}
-//meta.runOnOpen: true
-//meta.runOnInput: true
-//editor: Compute2:RichFunctionViewEditor
-export function fitTestFunc(x1: number, x2: number, y: DG.DataFrame, bool: boolean) {
-  return PackageFunctions.fitTestFunc(x1, x2, y, bool);
-}
-
-//description: Test for optimization: multiple scalars output
-export async function testFittingOutputs() : Promise<void> {
-  await PackageFunctions.testFittingOutputs();
-}
-
 //input: double a 
 //output: double result
-//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]
+//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"},{"name":"none","function":"Compute2:TestCustomExportNoFile"},{"name":"hook","function":"Compute2:TestCustomExportHookArgs"}]
 export async function TestCustomExportModel(a: number) : Promise<number> {
   return await PackageFunctions.TestCustomExportModel(a);
 }
 
-//input: funccall funcCall 
-//input: bool startDownload 
-//output: string result
-export async function TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean) : Promise<string> {
-  return await PackageFunctions.TestCustomExportRecorder(funcCall, startDownload);
+//input: double a 
+//output: double result
+//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"},{"name":"none","function":"Compute2:TestCustomExportNoFile","preferred":true},{"name":"hook","function":"Compute2:TestCustomExportHookArgs","preferred":true}]
+export async function TestPreferredExportModel(a: number) : Promise<number> {
+  return await PackageFunctions.TestPreferredExportModel(a);
 }
 
-//input: int a 
-//input: double b 
-//input: bool flag 
-//input: string s 
-//input: datetime when 
-//input: dataframe df 
-//input: double opt { optional: true }
-//input: int nul { nullable: true }
+//input: funccall funcCall 
+//output: file result
+export async function TestCustomExportRecorder(funcCall: DG.FuncCall) : Promise<any> {
+  return await PackageFunctions.TestCustomExportRecorder(funcCall);
+}
+
+//input: double a 
 //output: double result
-export async function TestUrlInputsFixture(a: number, b: number, flag: boolean, s: string, when: any, df: DG.DataFrame, opt: number, nul: number) : Promise<number> {
-  return await PackageFunctions.TestUrlInputsFixture(a, b, flag, s, when, df, opt, nul);
+//meta.features: {"export": false}
+//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]
+export async function TestNoDefaultExportModel(a: number) : Promise<number> {
+  return await PackageFunctions.TestNoDefaultExportModel(a);
+}
+
+//input: funccall funcCall 
+//output: string result
+export async function TestCustomExportNoFile(funcCall: DG.FuncCall) : Promise<string> {
+  return await PackageFunctions.TestCustomExportNoFile(funcCall);
+}
+
+//input: double a 
+//output: double result
+//meta.customExports: [{"name":"blob","function":"Compute2:TestCustomExportBlob"}]
+export async function TestBlobExportModel(a: number) : Promise<number> {
+  return await PackageFunctions.TestBlobExportModel(a);
+}
+
+//input: funccall funcCall 
+//input: bool startDownload 
+//output: object result
+export async function TestCustomExportBlob(funcCall: DG.FuncCall, startDownload: boolean) : Promise<any> {
+  return await PackageFunctions.TestCustomExportBlob(funcCall, startDownload);
+}
+
+//input: funccall funcCall 
+//input: object viewersHook { optional: true }
+//input: object metaState { optional: true }
+//output: file result
+export async function TestCustomExportHookArgs(funcCall: DG.FuncCall, viewersHook?: any, metaState?: any) : Promise<any> {
+  return await PackageFunctions.TestCustomExportHookArgs(funcCall, viewersHook, metaState);
+}
+
+//input: int rows 
+//output: dataframe first
+//output: dataframe middle
+//output: dataframe last
+export async function TestRfvTabs(rows: number) : Promise<any> {
+  return await PackageFunctions.TestRfvTabs(rows);
 }
 
 //input: int x 

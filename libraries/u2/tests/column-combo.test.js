@@ -6,10 +6,11 @@
    live binding proves the platform path. Tables are the getter-backed frames of
    tests/platform-doubles.mjs. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {Input} from '../src/core/input-base.js';
 import {DataFrame} from './platform-doubles.mjs';
@@ -35,8 +36,9 @@ function combo(name, body) {
   });
 }
 
+// `~height.cache` is hidden, as Chem's `~<column>.canonicalSmiles` is: the platform lists neither
 const DEMO = () => new DataFrame([
-  {name: 'age', type: 'int'}, {name: 'height', type: 'double'},
+  {name: 'age', type: 'int'}, {name: 'height', type: 'double'}, {name: '~height.cache', type: 'double'},
   {name: 'sex', type: 'string', semType: 'Sex'}, {name: 'started', type: 'datetime'},
 ]);
 
@@ -64,9 +66,9 @@ function open(input) {
   fire(control(input), 'click');
   const list = popup();
   assert.ok(list, 'the native popup opens');
-  // the shim lays nothing out: give the list a viewport — and rewind the highlight scroll,
-  // which the layoutless shim never clamps — so every row is rendered
-  list.clientHeight = 400;
+  // the test DOM lays nothing out: give the list a viewport — and rewind the highlight scroll,
+  // which it never clamps — so every row is rendered
+  layout(list, {clientHeight: 400});
   list.scrollTop = 0;
   fire(list, 'scroll');
   return list;
@@ -74,7 +76,7 @@ function open(input) {
 
 /** In index order — recycling appends rendered rows in render order, not list order. */
 function rows(list) {
-  return list.querySelectorAll('.u2-list-row').sort((a, b) => Number(a.dataset.index) - Number(b.dataset.index));
+  return [...list.querySelectorAll('.u2-list-row')].sort((a, b) => Number(a.dataset.index) - Number(b.dataset.index));
 }
 
 function rowName(row) {
@@ -92,7 +94,7 @@ function searchBox() {
 /** Every value write and who spoke it — `[value, isSystemWrite]`, the pickers convention. */
 function track(input) {
   const writes = [];
-  input.effect(() => writes.push([input.value.value, Input.isSystemWrite]));
+  input.effect(() => writes.push([input.value, Input.isSystemWrite]));
   writes.length = 0;
   return writes;
 }
@@ -108,9 +110,9 @@ combo('the value is the column name, shown on the editor; the placeholder covers
   assert.equal(ctl.getAttribute('aria-haspopup'), 'listbox');
   assert.equal(summary(input), 'sex');
 
-  input.value.value = 'age';
+  input.value = 'age';
   assert.equal(summary(input), 'age');
-  input.value.value = null;
+  input.value = null;
   assert.equal(summary(input), 'Pick a column');
   input.dispose();
 
@@ -140,7 +142,7 @@ combo('changeTable closes the popup, retargets the offer and clears the value', 
   const other = new DataFrame([{name: 'x', type: 'int'}, {name: 'y', type: 'string'}], [], 'other');
   input.changeTable(other, (c) => c.isNumerical);
   assert.equal(popup(), null, 'the open popup goes with the old table');
-  assert.equal(input.value.value, null, 'the selection belonged to the old table');
+  assert.equal(input.value, null, 'the selection belonged to the old table');
   assert.deepEqual(input.names(), ['x'], 'the new filter rides along');
   assert.equal(table.liveSubscriptions(), 0, 'the old table is let go');
   input.dispose();
@@ -258,7 +260,7 @@ combo('Esc and an outside click both close without a write', () => {
   fire(searchBox(), 'keydown', {key: 'ArrowDown'});
   fire(searchBox(), 'keydown', {key: 'Escape'});
   assert.equal(popup(), null, 'Esc closes');
-  assert.equal(input.value.value, 'sex');
+  assert.equal(input.value, 'sex');
 
   open(input);
   fire(document.body, 'pointerdown');
@@ -325,11 +327,11 @@ combo('closed-combo arrows step through the passing columns as user edits', () =
   assert.deepEqual(writes.splice(0), [['height', false]],
     'ArrowDown is the next passing column, a real user edit');
   fire(ctl, 'keydown', {key: 'ArrowRight'});
-  assert.equal(input.value.value, 'started', 'ArrowRight steps too, skipping what fails the filter');
+  assert.equal(input.value, 'started', 'ArrowRight steps too, skipping what fails the filter');
   fire(ctl, 'keydown', {key: 'ArrowUp'});
-  assert.equal(input.value.value, 'height', 'ArrowUp steps back');
+  assert.equal(input.value, 'height', 'ArrowUp steps back');
   fire(ctl, 'keydown', {key: 'ArrowLeft'});
-  assert.equal(input.value.value, 'age');
+  assert.equal(input.value, 'age');
   assert.equal(popup(), null, 'stepping never opens the popup');
   input.dispose();
 });
@@ -349,7 +351,7 @@ combo('Space and Enter open the popup; a printable key opens it with the search 
   const list = popup();
   assert.ok(list, 'a printable key opens');
   assert.equal(searchBox().value, 'h', 'seeded with what was typed');
-  list.clientHeight = 400;
+  layout(list, {clientHeight: 400});
   fire(list, 'scroll');
   assert.deepEqual(rows(list).map(rowName).filter((name) => name !== ''), ['height'],
     'and already filtering');
@@ -444,6 +446,18 @@ combo('platform backend: Enter with no walked row commits the grid\'s verdict �
   input.dispose();
 });
 
+combo('platform backend: a hidden ~ column the search also matches is no rival — the listed one lands', () => {
+  DG._installColumnGrid(FakeColumnGrid);
+  const input = make();
+  const writes = track(input);
+  fire(control(input), 'click');
+  const cg = FakeColumnGrid.calls[0];
+  cg.search.value = 'height';
+  fire(cg.search, 'keydown', {key: 'Enter'});
+  assert.deepEqual(writes, [['height', false]], 'height, not a tie with ~height.cache');
+  input.dispose();
+});
+
 combo('platform backend: Esc closes the grid without a write', () => {
   DG._installColumnGrid(FakeColumnGrid);
   const input = make({value: 'sex'});
@@ -455,7 +469,7 @@ combo('platform backend: Esc closes the grid without a write', () => {
   assert.ok(cg.closed > 0, 'Esc tears the grid down');
   assert.ok(!cg.root.isConnected);
   assert.deepEqual(writes, [], 'and writes nothing');
-  assert.equal(input.value.value, 'sex');
+  assert.equal(input.value, 'sex');
   input.dispose();
 });
 
@@ -471,7 +485,7 @@ combo('platform backend: Esc from the search box closes even though the Dart box
   assert.ok(cg.closed > 0, 'the capture-phase listener closes before the swallow');
   assert.ok(!cg.root.isConnected);
   assert.deepEqual(writes, [], 'no write');
-  assert.equal(input.value.value, 'sex');
+  assert.equal(input.value, 'sex');
   assert.equal(document.activeElement, control(input), 'focus returns to the combo editor');
   input.dispose();
 });

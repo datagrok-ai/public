@@ -2,6 +2,24 @@
 
 ## v.next
 
+* InputForm: Fixed inputs hidden by a `visible` expression showing when a standalone form opens
+* Added `onPress`, the Enter/Space key handler shared by Tabs, ribbon icons and IconFA
+* IconFA: A clickable icon takes the keyboard focus and is pressed with Enter or Space
+* BigButton: Added `disabledReason`; a disabled button no longer emits clicks, stays focusable, and shows the reason as a warning when pressed and as its tooltip where the host keeps pointer events on it
+* Ribbon: Panel icons take the keyboard focus, are pressed with Enter or Space, and report `aria-disabled`
+* IconFA, BigButton: Fixed `isDisabled` and the button styling being lost when the parent sets or changes the class
+* Button: Fixed the button styling being lost when the parent sets a class
+* Removed the unused `IconImage` component and the `nullable` prop of `ToggleInput`
+* DockManager: Removed `saveLayout`, `loadLayout` and `setActivePanel`; use `preferredPanelTitle` to pick the active tab
+* `provideDgViewService`: the service is disposed when the app unmounts, so callers no longer call `dispose()`
+* InputForm: Toggling `isReadonly` alone updates whether the inputs are enabled
+* InputForm: Clearing `callMeta` drops the meta of the previous call
+* ResizeHandle: A cancelled pointer ends the drag, and only the primary button starts one
+* tooltip: The directive follows changes of its value
+* ValidationIcon: Forwards the dataframe diff request as `showDataFrameDiff`
+* Tabs: Added a tab strip styled like `ui.tabControl`, with closable tabs and an optional + tab; every pane stays mounted, inactive ones are hidden, and a pane taller than the strip's host scrolls; headers and + work from the keyboard (Enter, Space) and are linked to their panes for screen readers
+* InputForm: Added the `hiddenInputs` prop; the `hidden` meta still hides an input
+* InputForm: A dataframe input with the `mutateOnly` annotation is disabled under the `restricted` or `info` restriction
 * IconFA, ComboPopup: the tooltip is also the `aria-label`, with role `button` for clickable items and `img` for status icons
 * InputForm: Added the `skipLogic` prop; literal `choices` fill the items under it, as under `skipInit`
 * RibbonPanel: an icon item carries its tooltip as `aria-label` (and drops it when an update removes the tooltip), so assistive tools and tests can name it

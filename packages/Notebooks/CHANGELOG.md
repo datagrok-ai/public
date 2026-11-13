@@ -2,6 +2,15 @@
 
 ## v.next
 
+* Dependencies: Restored the security floors the pnpm migration dropped for the @jupyterlab 2.x chain (url-parse 1.5.10, marked 4.3.0, sanitize-html 2.18, codemirror 5.65), now also in effect for the workspace build through pnpm-workspace.yaml `overrides`; the bundle no longer ships url-parse 1.4.7 (GHSA-hgjh-723h-mx2j, critical), marked 0.8.2, sanitize-html 1.20.1 with postcss 7, or codemirror 5.53
+* Docker: Moved the jupyter-notebook image from Ubuntu onto Wolfi (TeX Live, pandoc 3.13, antiword and gnuplot installed from upstream; moment 2.31.0 in the nbclassic static files)
+* Container: Fixed the PDF export of a notebook failing in LaTeX: the hide-input-pdf template's license header used HTML-template comments, which reached the .tex file
+* [public#4535](https://github.com/datagrok-ai/public/issues/4535): Notebooks: Jupyter editor opens unstyled, dist/styles/jupyter-styles.css returns 404
+
+## 1.6.4 (2026-11-03)
+
+* Docker: rebuilt the jupyter-notebook image with patched dependencies (underscore 1.13.8 in the nbclassic static files)
+* Container: Fixed script environments failing to build when a conda package has a non-PEP 440 version (tzdata 2026e)
 * GROK-20991: Fixed the package failing to load since the rspack migration (CodeMirror is not defined, process is not defined), so no notebook could be opened
 * Notebooks: Read the session token from `grok.dapi.token` instead of the `auth` cookie, which is now HttpOnly
 * GROK-20477: Guard mountNotebook against a null iframe browsing context and defer to the 'load' handler

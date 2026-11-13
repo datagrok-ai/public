@@ -66,13 +66,16 @@ export function setModelCatalogEventHandlers(options: ModelCatalogConfig) {
     }
   });
 
-  grok.events.onCurrentViewChanged.subscribe(async () => {
-    let prevSyncState = true;
+  let hubHelpSync: boolean | null = null;
+  grok.events.onCurrentViewChanged.subscribe(() => {
+    const help = grok.shell.windows.help;
     if (grok.shell.v?.name === options.viewName) {
-      prevSyncState = grok.shell.windows.help.syncCurrentObject;
-      grok.shell.windows.help.syncCurrentObject = false;
-    } else
-      grok.shell.windows.help.syncCurrentObject = prevSyncState;
+      hubHelpSync ??= help.syncCurrentObject;
+      help.syncCurrentObject = false;
+    } else if (hubHelpSync !== null) {
+      help.syncCurrentObject = hubHelpSync;
+      hubHelpSync = null;
+    }
   });
 }
 

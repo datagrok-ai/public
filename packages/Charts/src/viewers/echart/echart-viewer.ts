@@ -15,6 +15,7 @@ export class EChartViewer extends DG.JsViewer {
   animationDuration?: number;
   animationDurationUpdate?: number;
   tableName?: string;
+  viewerFilter: DG.BitSet | null = null;
 
   constructor() {
     super();
@@ -85,7 +86,30 @@ export class EChartViewer extends DG.JsViewer {
     add();
   }
 
+  protected filterByClick(match: (index: number) => boolean, event: MouseEvent): void {
+    this.viewerFilter ??= DG.BitSet.create(this.dataFrame.rowCount);
+    this.viewerFilter.handleClick(match, event);
+    if (this.viewerFilter.trueCount === 0)
+      this.viewerFilter = null;
+    this.dataFrame.rows.requestFilter();
+  }
+
+  protected addViewerFilterSub(): void {
+    this.subs.push(this.dataFrame.onRowsFiltering.subscribe(() => {
+      if (this.viewerFilter)
+        this.dataFrame.filter.and(this.viewerFilter);
+    }));
+  }
+
+  protected clearViewerFilter(): void {
+    if (this.viewerFilter === null)
+      return;
+    this.viewerFilter = null;
+    this.dataFrame.rows.requestFilter();
+  }
+
   detach(): void {
+    this.clearViewerFilter();
     this.signals.reset();
     super.detach();
   }
@@ -113,7 +137,9 @@ export class EChartViewer extends DG.JsViewer {
 
   updateTable() {
     const dataFrame = grok.shell.tables.find((df: DG.DataFrame) => df.name === this.tableName);
-    if (dataFrame)
-      this.dataFrame = dataFrame!;
+    if (dataFrame) {
+      this.clearViewerFilter();
+      this.dataFrame = dataFrame;
+    }
   }
 }

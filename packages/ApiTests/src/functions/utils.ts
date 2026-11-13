@@ -505,7 +505,7 @@ export const FUNC_TESTS: {[f: string]: {[test: string]: any}} = {
     'Med([-100, null, 100])': 0,
     'Med([null, 0.3, 0.7])': 0.5,
     'Med([null, 1, 0.7, 0.3])': 0.7,
-    'Med([null, null])': 0,
+    'Med([null, null])': null,
   },
   Min: {
     'Min([1.5, -2, 1.9])': -2,
@@ -534,7 +534,7 @@ export const FUNC_TESTS: {[f: string]: {[test: string]: any}} = {
     'Q1([5, -5, 1, -1, 3, -3, 0])': -3,
     'Q1([1, 2, 3])': 1,
     'Q1([1, null, 2, 3])': 1,
-    'Q1([null, null])': 0,
+    'Q1([null, null])': null,
   },
   Q2: {
     'Q2([1, 2, 3])': 2,
@@ -543,14 +543,14 @@ export const FUNC_TESTS: {[f: string]: {[test: string]: any}} = {
     'Q2([-100, null, 100])': 0,
     'Q2([null, 0.3, 0.7])': 0.5,
     'Q2([null, 1, 0.7, 0.3])': 0.7,
-    'Q2([null, null])': 0,
+    'Q2([null, null])': null,
   },
   Q3: {
     'Q3([-5, -3, -1, 0, 1, 3, 5])': 3,
     'Q3([5, -5, 1, -1, 3, -3, 0])': 3,
     'Q3([1, 2, 3])': 3,
     'Q3([1, null, 2, 3])': 3,
-    'Q3([null, null])': 0,
+    'Q3([null, null])': null,
   },
   Skew: {
     'Skew([1, 2, 3])': 0,

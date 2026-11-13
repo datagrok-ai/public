@@ -1,14 +1,22 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {WorkerMessageBusClient} from '../worker-message-bus-client';
-import {Fingerprint, hasNewLines} from '../utils/chem-common';
+import {Fingerprint, hasNewLines, withinSmilesLimit} from '../utils/chem-common';
 import {compileCrux, loadCrux, noteCruxError} from '../engine/crux-module';
-import {DescriptorTiming, INT_NONE, PackedDescriptorValues, isNoneValue} from './crux-api';
+import {DescriptorTiming, INT_NONE, PackedDescriptorValues, ToxicityAlert, isNoneValue} from './crux-api';
+import {BIOPOLYMER_LIBRARIES, BIOPOLYMER_LIBRARY_MISSING, CLUSTER_MCS_TIMEOUT_S, CruxAssembledBatch,
+  assembleOptionsJson} from './crux-api';
+import {batchRowCount, pickRows, rowMonomerCount, sliceBatch} from './biopolymer-batch';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import type {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import type {IFpResult} from '../rdkit-service/rdkit-service-worker-similarity';
 import type {RuleId} from '../panels/structural-alerts';
+import type {FingerprintOptions} from '../utils/fingerprint-options';
+import type {IMmpFragmentsResult, IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
+import type {RGroupCluster} from './crux-analysis-jobs';
+import {AsmBatch, AsmLayout, AssembleOptions, AssembleResult}
+  from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
 
 const CRUX_INDEX_TAG = '.crux-index';
 /** Rows per segment in the first round over the workers: small, so the first hits come early; doubles each round. */
@@ -26,9 +34,14 @@ const CHUNK_SIZE = 1000;
 const JOB_BASE_MS = 30000;
 /** How a job's timeout starts its message. */
 const JOB_TIMEOUT = 'a Crux job took longer than';
-const JOB_MS_PER_MOLECULE = {descriptors: 500, fingerprints: 20, alerts: 50, scaffoldTree: 200};
+/** How long past its own deadline a long call may keep its worker before the worker is replaced (idleWorkerJob). */
+const IDLE_JOB_MARGIN_MS = 2000;
+const JOB_MS_PER_MOLECULE = {descriptors: 500, fingerprints: 20, alerts: 50, scaffoldTree: 200, properties: 20, qed: 20,
+  toxicityAlerts: 50, notation: 50,
+  // the job runs crux-sketch's InChI library too (jobs/inchi.ts), which takes seconds on a 10,000-atom peptide
+  inchi: 50};
 // Rascal's options for an activity cliff's MCS (CruxService.pairUncommonAtomsAndBonds): RDKit's defaults but these
-// three, measured on the cliffs of Chem's tests and demo at their cutoffs (2026-10-21)
+// three, measured on the cliffs of Chem's tests and demo at their cutoffs
 /** get_mces' 0.5 gave one cliff of the cutoff-20 test no MCES, 0.4 none. */
 const PAIR_MCS_SIMILARITY_THRESHOLD = 0.3;
 /** RDKit's 1000 gave 22 of 24 triterpenoid and 185 of 185 peptide cliffs no MCES ("too many matching bond pairs"),
@@ -37,6 +50,68 @@ const PAIR_MCS_MAX_BOND_MATCH_PAIRS = 10000;
 /** Seconds; RDKit's 60 is over a Crux job's limit, which restarts the pool. Past it Rascal gives its best MCES so far
  * (36 of the 185 peptide cliffs, 6.9 s at most with the setup; every other cliff took under 0.1 s). */
 const PAIR_MCS_TIMEOUT_S = 5;
+/**
+ * The analyses' time limits (CruxService.mmpGetFragments and the rest): per molecule (`mmpa`, `rGroups`, `link`,
+ * `molzip`) or per cluster, a cluster being one job (`clusterMCS`: FMCS's Timeout on Crux, crux-analysis-jobs.ts;
+ * `clusterRGroups`: RdKitService.clusterRGroups' minute; both plus JOB_BASE_MS); `mcs` for one FMCS: RDKit's default
+ * FMCS Timeout, an hour.
+ */
+const ANALYSIS_MS = {mmpa: 50, rGroups: 100, link: 20, molzip: 20, clusterMCS: CLUSTER_MCS_TIMEOUT_S * 1000,
+  clusterRGroups: 60000, mcs: 3600000,
+  // A macromolecule batch's (CruxService.assembleMacromolecules): a chunk's limit is JOB_BASE_MS plus `biopolymer` per
+  // row and `biopolymerMonomer` per monomer, more per monomer in rows past BIOPOLYMER_SUPERLINEAR_FROM monomers
+  // (biopolymerChunkMs); a long row's (alone on an idle worker, BIOPOLYMER_LONG_ROW) JOB_BASE_MS
+  // plus `biopolymerLongMonomer` per monomer; `markStereo` per MOL block (CruxService.markStereoAbsolute).
+  // TODO(bio-crux §7): set them from the vendored file's measured speed (S2's native profile: ~3 ms a golden row with
+  // the depictor, whose time grows faster than the monomers past ~100; non-linear rows past a size use coordgen).
+  biopolymer: 5, biopolymerMonomer: 1, biopolymerLongMonomer: 50, markStereo: 5};
+/** A row of more monomers than this is assembled alone on an idle worker (CruxService.assembleMacromolecules): one
+ * huge row does not take a chunk past its limit, which would restart the pool. */
+export const BIOPOLYMER_LONG_ROW = 400;
+/** Past this many monomers a row's non-linear depiction takes more than `ANALYSIS_MS.biopolymerMonomer` a monomer: the
+ * depictor's time grows faster than the row (about 1-1.5 ms a monomer at 250-400 monomers, more on a loaded machine),
+ * and a chunk of such rows ran past a limit linear in its monomers, which restarted the pool and failed the column. */
+const BIOPOLYMER_SUPERLINEAR_FROM = 150;
+
+/** A chunk's time beyond JOB_BASE_MS (CruxService.assembleMacromolecules): `ANALYSIS_MS.biopolymer` per row and
+ * `ANALYSIS_MS.biopolymerMonomer` per monomer, times n / {@link BIOPOLYMER_SUPERLINEAR_FROM} for a row of n monomers
+ * past that. */
+export function biopolymerChunkMs(batch: AsmBatch, rows: ArrayLike<number>): number {
+  let ms = 0;
+  for (let k = 0; k < rows.length; k++) {
+    const n = rowMonomerCount(batch, rows[k]);
+    ms += ANALYSIS_MS.biopolymer + n * ANALYSIS_MS.biopolymerMonomer * Math.max(1, n / BIOPOLYMER_SUPERLINEAR_FROM);
+  }
+  return ms;
+}
+/** A Synthon Space Search job's limit: scripts/synthon_search.py's own (RDKit's SynthonSpaceSearchParams.timeOut). */
+const SYNTHON_MS = 600000;
+
+/** Whether `e` is a wasm trap, as the worker reports one (`RuntimeError: ...`; out of memory; a stack overflow out of a
+ * wasm call, which leaves the instance's stack pointer wrong: crux-api.ts `isWasmTrap`): its instance may be broken. */
+export const isTrap = (e: unknown): boolean =>
+  /RuntimeError|unreachable|out of bounds|memory|Maximum call stack|too much recursion/i
+    .test(String((e as Error)?.message ?? e));
+
+/** `work`'s result, or 'late' when it takes longer than `ms`. */
+async function withLimit<T>(work: Promise<T>, ms: number): Promise<T | 'late'> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<'late'>((resolve) => timer = setTimeout(() => resolve('late'), ms));
+  try {
+    return await Promise.race([work, late]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+/** A promise that `done()` resolves (once; later calls do nothing). */
+function signal(): {promise: Promise<void>, done: () => void} {
+  let done!: () => void;
+  const promise = new Promise<void>((resolve) => done = resolve);
+  return {promise, done};
+}
+
+/** How the calls of a worker CruxService.restartWorker replaced fail: not a reason to restart the pool (job()). */
+const WORKER_REPLACED = 'a Crux worker past its time limit was replaced';
 /**
  * crux keeps ~380 bytes per indexed molecule (~1.1 GB at the limit, spread over the workers); least recently used
  * column indexes are dropped past this many rows.
@@ -51,7 +126,7 @@ const MAX_INDEXED_ROWS = 3000000;
 const MAX_WORKERS = 16;
 /**
  * The fields of a CXSMILES extension the Crux module reads as RDKit does (checked against RDKit 2026.03 and Chem's
- * RDKit.js on Chem's datasets, 2026-10-20): coordinates, stereo groups (&n, on, a, r), wedges (w, wU, wD), radicals
+ * RDKit.js on Chem's datasets): coordinates, stereo groups (&n, on, a, r), wedges (w, wU, wD), radicals
  * (^n) and atom labels (checked apart: {@link CX_QUERY_LABEL}). Its reader skips the query features (positional
  * variation m:, ring bond count rb:, unsaturation u:, substitution s:, c:/t: bond lists, link nodes LN:, ...), so a
  * query holding any other field runs on RDKit.
@@ -63,7 +138,7 @@ const CX_FIELDS_CRUX_READS = [/^\([^)]*\)/, /^\$(?!_AV:)[^$]*\$/, /^(?:&|o)\d+:\
 const CX_QUERY_LABEL = /_[pe]$/;
 
 /** Whether the Crux module reads the CXSMILES extension of `molString`, if it has one, as RDKit does. */
-function cruxReadsCxExtension(molString: string): boolean {
+export function cruxReadsCxExtension(molString: string): boolean {
   const extension = hasNewLines(molString) ? null : /\s\|([^|]*)\|\s*$/.exec(molString);
   let rest = extension?.[1] ?? '';
   while (rest !== '') {
@@ -80,9 +155,41 @@ function cruxReadsCxExtension(molString: string): boolean {
   return true;
 }
 
+/** `m` as Chem hands it to Crux's calculations (properties, QED; utils/chem-common.ts `withinSmilesLimit`), and null
+ * for a CXSMILES whose query features Crux's reader skips ({@link cruxReadsCxExtension}): what a molecule Crux cannot
+ * read gets. */
+export function withinCruxReader(m: unknown): string | null {
+  const s = withinSmilesLimit(m);
+  return s !== null && cruxReadsCxExtension(s) ? s : null;
+}
+
+/** `arg` with no holes: a hole (`toList()`'s empty cell) as null, the empty cell it is. */
+function withoutHoles(arg: unknown): unknown {
+  if (!Array.isArray(arg))
+    return arg;
+  for (let i = 0; i < arg.length; i++) {
+    if (!(i in arg))
+      return Array.from(arg, (v) => v === undefined ? null : v);
+  }
+  return arg;
+}
+
 class CruxWorkerClient extends WorkerMessageBusClient {
+  /**
+   * The monomer libraries sent to this worker (CruxService.assembleMacromolecules), by key, the most recently used
+   * last, as the worker keeps them (jobs/biopolymer.ts, the last BIOPOLYMER_LIBRARIES): each load's count of monomers
+   * Crux does not read. A new worker (a restart, a replaced one) has none.
+   */
+  readonly biopolymerLibraries = new Map<string, Promise<number>>();
+
   constructor() {
     super(new Worker(new URL('./crux.worker', import.meta.url)));
+  }
+
+  /** Every call, its array arguments without holes: `DG.Column.toList()` leaves an empty cell a hole, which the
+   * worker's `map` keeps and the joins of the chunks' results (`flat`, `flatMap`) drop, moving every row after it. */
+  override call(op: string, args: any[] = [], gated = true): Promise<any> {
+    return super.call(op, args.map(withoutHoles), gated);
   }
 
   moduleInit(module: WebAssembly.Module): Promise<unknown> {
@@ -108,17 +215,36 @@ class CruxWorkerClient extends WorkerMessageBusClient {
   scaffoldTree = (smiles: string[], ringCutoff: number, discharge: boolean): Promise<string> =>
     this.call('scaffoldTree', [smiles, ringCutoff, discharge]);
 
-  getFingerprints = (type: Fingerprint, molecules: string[], smiles: boolean):
-    Promise<IFpResult & {unread: number[]}> => this.call('getFingerprints', [type, molecules, smiles]);
+  getFingerprints = (type: Fingerprint, molecules: string[], smiles: boolean, options?: FingerprintOptions | null):
+    Promise<IFpResult & {unread: number[]}> => this.call('getFingerprints', [type, molecules, smiles, options]);
 
   getStructuralAlerts = (alerts: {[rule in RuleId]?: string[]}, molecules: string[]):
-    Promise<{alerts: {[rule in RuleId]?: boolean[]}, unread: number[]}> =>
+    Promise<{alerts: {[rule in RuleId]?: boolean[]}, unread: number[], unreadSmarts: {[rule in RuleId]?: number[]}}> =>
     this.call('getStructuralAlerts', [alerts, molecules]);
+
+  chemProperties = (molecules: (string | null)[], names: string[]):
+    Promise<{[name: string]: (number | string | null)[]}> => this.call('chemProperties', [molecules, names]);
+
+  convertMolNotation = (molecules: string[], targetNotation: string, kekulize: boolean):
+    Promise<{results: string[], none: string, unconverted: number[]}> =>
+    this.call('convertMolNotation', [molecules, targetNotation, kekulize]);
+
+  chemQed = (molecules: (string | null)[]): Promise<{[key: string]: (number | null)[]}> =>
+    this.call('chemQed', [molecules]);
+
+  chemAlerts = (molecules: (string | null)[], catalogs: string[], atoms: boolean):
+    Promise<{[catalog: string]: (ToxicityAlert[] | string[] | null)[]}> =>
+    this.call('chemAlerts', [molecules, catalogs, atoms]);
 
   pairUncommonAtomsAndBonds = (molecule1: string, molecule2: string, details: string): Promise<ISubstruct[] | null> =>
     this.call('pairUncommonAtomsAndBonds', [molecule1, molecule2, details]);
 
+  /** A job of the worker's job tables by name (crux.worker.ts `JOBS`). */
+  run = <R>(op: string, args: unknown[]): Promise<R> => this.call(op, args);
+
   failForTests = (message: string): Promise<unknown> => this.call('fail::test', [message]);
+
+  pausesForTests = (every: number | null): Promise<unknown> => this.call('pauses::test', [every]);
 
   busyForTests = (ms: number): Promise<unknown> => this.call('busy::test', [ms]);
 }
@@ -137,6 +263,8 @@ export interface CruxSegment {
   failed: Uint32Array | null;
   unparsed: string[] | null;
   built: Promise<void> | null;
+  /** Whether its worker holds the search types' keys of it (crux-search-types.ts), freed with the collection. */
+  keyed?: boolean;
 }
 
 export interface CruxColumnIndex {
@@ -177,7 +305,7 @@ export class CruxService {
       await service.startWorkers();
     } catch (e) {
       // The workers that did start are let go: the next search creates the service again, and each failed attempt
-      // used to leave a pool running (hundreds of workers once the page had no room for another WebAssembly memory)
+      // would leave a pool running (hundreds of workers once the page has no room for another WebAssembly memory)
       for (const worker of service.workers)
         worker.terminate();
       throw e;
@@ -280,6 +408,21 @@ export class CruxService {
       }), isCancelled);
   }
 
+  /**
+   * The search types beside Contains (crux-search-types.ts): `run` on each segment, one at a time per worker, in row
+   * order, as {@link search} runs; `call` runs a job of jobs/search-types.ts on the segment's worker within a job's
+   * time (`msPerRow` per row of the segment, {@link job}) and marks the segment as holding its keys (`keyed`).
+   */
+  async eachSegment(index: CruxColumnIndex, run: (segment: CruxSegment,
+    call: <R>(op: string, args: unknown[], msPerRow: number) => Promise<R>) => Promise<void>,
+  isCancelled: () => boolean): Promise<void> {
+    await this.use(index, (segment, worker) => isCancelled() ? Promise.resolve() :
+      run(segment, (op, args, msPerRow) => {
+        segment.keyed = true;
+        return this.job(worker.run(op, args), JOB_BASE_MS + (segment.end - segment.start) * msPerRow);
+      }), isCancelled);
+  }
+
   /** Builds the segments not built yet. */
   async build(index: CruxColumnIndex, isCancelled: () => boolean): Promise<void> {
     await this.use(index, (segment) => this.ensureBuilt(segment), isCancelled);
@@ -306,7 +449,9 @@ export class CruxService {
         }
       }));
     } finally {
-      if (--index.users === 0 && !index.lost)
+      // released when its last user is done, a lost one too (a worker replaced by restartWorker left its segments on
+      // the others; a drop sent to a new worker for keys it never had does nothing)
+      if (--index.users === 0)
         this.release(index);
     }
   }
@@ -357,24 +502,27 @@ export class CruxService {
   }
 
   /**
-   * Fingerprints as the RDKit pool's `getFingerprints` gives them (the same worker code, run on Crux): one per molecule
-   * (null where none), the canonical SMILES when asked, and the rows whose molecule Crux cannot read (`unread`).
+   * Fingerprints as the RDKit pool's `getFingerprints` gives them (the same calls, on Crux: jobs/batch.ts): one per
+   * molecule (null where none), the canonical SMILES when asked, and the rows whose molecule Crux cannot read
+   * (`unread`).
+   * `options`: radius, size, chirality, features (utils/fingerprint-options.ts).
    */
-  async getFingerprints(type: Fingerprint, molecules: string[], smiles: boolean):
+  async getFingerprints(type: Fingerprint, molecules: string[], smiles: boolean, options?: FingerprintOptions | null):
     Promise<IFpResult & {unread: number[]}> {
     const starts: number[] = [];
     const parts = await this.inChunks(molecules, JOB_MS_PER_MOLECULE.fingerprints,
-      (worker, chunk) => worker.getFingerprints(type, chunk, smiles), CHUNK_SIZE, JOB_BASE_MS, starts);
+      (worker, chunk) => worker.getFingerprints(type, chunk, smiles, options), CHUNK_SIZE, JOB_BASE_MS, starts);
     return {fps: parts.flatMap((part) => part.fps), smiles: smiles ? parts.flatMap((part) => part.smiles!) : null,
       unread: parts.flatMap((part, k) => part.unread.map((row) => starts[k] + row))};
   }
 
   /**
-   * Which molecules match each group's SMARTS, as the RDKit pool's `getStructuralAlerts` gives it (the same worker
-   * code, run on Crux): `[group, a flag per molecule]` per group, and the rows whose molecule Crux cannot read.
+   * Which molecules match each group's SMARTS, as the RDKit pool's `getStructuralAlerts` gives it (the same matching,
+   * on Crux: jobs/batch.ts): `[group, a flag per molecule]` per group, the rows whose molecule Crux cannot read, and
+   * by group the SMARTS Crux reads nothing from (indices into its list).
    */
   async getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, molecules: string[]):
-    Promise<{alerts: [RuleId, boolean[]][], unread: number[]}> {
+    Promise<{alerts: [RuleId, boolean[]][], unread: number[], unreadSmarts: {[rule in RuleId]?: number[]}}> {
     const starts: number[] = [];
     const parts = await this.inChunks(molecules, JOB_MS_PER_MOLECULE.alerts,
       (worker, chunk) => worker.getStructuralAlerts(alerts, chunk), CHUNK_SIZE, JOB_BASE_MS, starts);
@@ -384,7 +532,61 @@ export class CruxService {
         result[rule] = (result[rule] ?? []).concat(part.alerts[rule]!);
     }
     return {alerts: Object.entries(result) as [RuleId, boolean[]][],
-      unread: parts.flatMap((part, k) => part.unread.map((row) => starts[k] + row))};
+      unread: parts.flatMap((part, k) => part.unread.map((row) => starts[k] + row)),
+      unreadSmarts: parts[0].unreadSmarts};
+  }
+
+  /**
+   * Chem's property table (widgets/properties.ts: MW, HBA, ..., `Molecular formula`) by crux's `chemProperties`
+   * (RDKit's definitions), the molecules in chunks across the workers: a value or null per molecule for each name.
+   */
+  async chemProperties(molecules: (string | null)[], names: string[]):
+    Promise<{[name: string]: (number | string | null)[]}> {
+    const parts = await this.inChunks(molecules, JOB_MS_PER_MOLECULE.properties,
+      (worker, chunk) => worker.chemProperties(chunk, names));
+    return Object.fromEntries(names.map((name) => [name, parts.flatMap((part) => part[name])]));
+  }
+
+  /**
+   * The molecules in `targetNotation`, as the RDKit pool's `convertMolNotation` gives them (the same worker code, run
+   * on Crux), the rows it left unconverted (a molecule Crux cannot read, a writer it refuses) and what such a row
+   * holds.
+   */
+  async convertMolNotation(molecules: string[], targetNotation: string, kekulize: boolean):
+    Promise<{results: string[], none: string, unconverted: number[]}> {
+    const starts: number[] = [];
+    const parts = await this.inChunks(molecules, JOB_MS_PER_MOLECULE.notation,
+      (worker, chunk) => worker.convertMolNotation(chunk, targetNotation, kekulize), CHUNK_SIZE, JOB_BASE_MS, starts);
+    return {results: parts.flatMap((part) => part.results), none: parts[0]?.none ?? '',
+      unconverted: parts.flatMap((part, k) => part.unconverted.map((row) => starts[k] + row))};
+  }
+
+  /** The InChIs (the keys when `keys`) of the molecules, null where Crux cannot read one (jobs/inchi.ts: InChI's input
+   * and crux-sketch's InChI library, both in the workers), the molecules in chunks across the workers. */
+  async inchis(molecules: string[], keys: boolean): Promise<(string | null)[]> {
+    return (await this.inChunks(molecules, JOB_MS_PER_MOLECULE.inchi,
+      (worker, chunk) => worker.run<(string | null)[]>('inchis', [chunk, keys]))).flat();
+  }
+
+  /**
+   * Crux mode's drug-likeness (widgets/drug-likeness.ts) by crux's `chemQed`: RDKit's QED and its eight properties
+   * (`QED`, `MW`, `ALOGP`, `HBA`, `HBD`, `PSA`, `ROTB`, `AROM`, `ALERTS`), a value or null per molecule, the molecules
+   * in chunks across the workers.
+   */
+  async chemQed(molecules: (string | null)[]): Promise<{[key: string]: (number | null)[]}> {
+    const parts = await this.inChunks(molecules, JOB_MS_PER_MOLECULE.qed, (worker, chunk) => worker.chemQed(chunk));
+    return Object.fromEntries(Object.keys(parts[0] ?? {}).map((key) => [key, parts.flatMap((part) => part[key])]));
+  }
+
+  /**
+   * Crux mode's toxicity alerts (widgets/toxicity.ts) by crux's `chemAlerts`: per catalog (`Brenk`, `NIH`) and
+   * molecule, null (not read) or the matching alerts' names, the molecules in chunks across the workers.
+   */
+  async chemAlertNames(molecules: (string | null)[], catalogs: string[]):
+    Promise<{[catalog: string]: (string[] | null)[]}> {
+    const parts = await this.inChunks(molecules, JOB_MS_PER_MOLECULE.toxicityAlerts,
+      (worker, chunk) => worker.chemAlerts(chunk, catalogs, false));
+    return Object.fromEntries(catalogs.map((c) => [c, parts.flatMap((part) => part[c] as (string[] | null)[])]));
   }
 
   /**
@@ -392,10 +594,11 @@ export class CruxService {
    * chunk's first row in `starts`. Fewer than `chunkSize` molecules per worker are split evenly over the workers. A
    * worker runs its calls one after another, so each worker is handed its next chunk when the last one is done, and a
    * chunk's time limit runs from its own start; a failed chunk ends the call (the chunks not started are not run).
+   * `chunkMs`, where given, is a chunk's time beyond `baseMs` in place of `msPerMolecule` per molecule.
    */
   private async inChunks<M, R>(molecules: M[], msPerMolecule: number,
     job: (worker: CruxWorkerClient, chunk: M[]) => Promise<R>, chunkSize = CHUNK_SIZE, baseMs = JOB_BASE_MS,
-    starts: number[] = []): Promise<R[]> {
+    starts: number[] = [], chunkMs?: (chunk: M[]) => number): Promise<R[]> {
     const size = Math.max(1, Math.min(chunkSize, Math.ceil(molecules.length / Math.max(1, this.workers.length))));
     const chunks: M[][] = [];
     for (let start = 0; start < molecules.length; start += size) {
@@ -413,7 +616,8 @@ export class CruxService {
       while (!failed && next < chunks.length) {
         const i = next++;
         try {
-          results[i] = await this.job(job(worker, chunks[i]), baseMs + chunks[i].length * msPerMolecule);
+          results[i] = await this.job(job(worker, chunks[i]),
+            baseMs + (chunkMs ? chunkMs(chunks[i]) : chunks[i].length * msPerMolecule));
         } catch (e) {
           failed = true;
           throw e;
@@ -423,10 +627,67 @@ export class CruxService {
     return results;
   }
 
+  /**
+   * A column's job: the worker job `op` (crux.worker.ts `JOBS`) over `items` in chunks across the workers
+   * ({@link inChunks}: `msPerItem` each), each chunk the job's first argument, then `args`; the chunks' results in
+   * order, and each chunk's first row in `starts` when it is given.
+   */
+  jobInChunks<R>(op: string, items: unknown[], msPerItem: number, args: unknown[] = [], starts?: number[]):
+    Promise<R[]> {
+    return this.inChunks(items, msPerItem, (worker, chunk) => worker.run<R>(op, [chunk, ...args]), CHUNK_SIZE,
+      JOB_BASE_MS, starts);
+  }
+
+  /**
+   * One long call: the worker job `op` on a worker with no call in flight ({@link idleWorker}: a queue is not the
+   * call's time). The job's own deadline (`timeoutMs`, in its options) throws and leaves the worker as it was; a worker
+   * still busy {@link IDLE_JOB_MARGIN_MS} past it is replaced, alone (as a cluster past its limit is), and the call
+   * throws "`op`: timed out ...".
+   */
+  async idleWorkerJob<R>(op: string, args: unknown[], timeoutMs: number): Promise<R> {
+    const w = await this.idleWorker();
+    try {
+      const done = await withLimit(this.workers[w].run<R>(op, args), timeoutMs + IDLE_JOB_MARGIN_MS);
+      if (done === 'late') {
+        this.restartWorker(w);
+        throw new Error(`${op}: timed out after ${timeoutMs} ms (the worker was replaced)`);
+      }
+      return done;
+    } catch (e) {
+      if (isTrap(e))
+        this.restartWorker(w); // its instance may be broken
+      throw e;
+    }
+  }
+
+  /**
+   * The 3D Structure pane's coordinates (widgets/structure3d.ts): crux's `chemEmbed3d` of `molecule` with `options`
+   * ({@link idleWorkerJob}), the MOL block or null where Crux makes none. Its deadline (`timeoutMs`) ends a molecule
+   * ETKDG would not finish ("chemEmbed3d: timed out ...").
+   */
+  embed3d(molecule: string, options: {timeoutMs: number}): Promise<string | null> {
+    return this.idleWorkerJob<string | null>('chemEmbed3d', [molecule, JSON.stringify(options)], options.timeoutMs);
+  }
+
   /** scripts/scaffold_tree.py's JSON of the molecules, from one worker. */
   scaffoldTree(smiles: string[], ringCutoff: number, discharge: boolean): Promise<string> {
     return this.job(this.workers[0].scaffoldTree(smiles, ringCutoff, discharge),
       JOB_BASE_MS + smiles.length * JOB_MS_PER_MOLECULE.scaffoldTree);
+  }
+
+  /**
+   * A Synthon Space Search job (jobs/synthon-search.ts) on the worker that keeps the libraries, the last; within the
+   * script's own time limit (600 s).
+   */
+  synthonJob<R>(op: string, args: unknown[]): Promise<R> {
+    return this.job(this.workers[this.workers.length - 1].run<R>(op, args), SYNTHON_MS);
+  }
+
+  /** The `n` parts of a synthon library's fingerprint build on the last `n` workers (at most the pool), at once. */
+  synthonFingerprintParts(key: string, text: string, n: number): Promise<Uint8Array[]> {
+    const workers = this.workers.slice(-Math.min(n, this.workers.length));
+    return Promise.all(workers.map((w, k) =>
+      this.job(w.run<Uint8Array>('synthonFingerprintPart', [key, text, k, workers.length]), SYNTHON_MS)));
   }
 
   /**
@@ -442,11 +703,322 @@ export class CruxService {
       JOB_BASE_MS);
   }
 
+  // Analyses (engine/analysis-jobs.ts sends them, crux-analysis-jobs.ts runs them): the RDKit worker's own code on
+  // Crux, so the results have the RDKit pool's shapes; molzip, which Chem's RDKit.js lacks.
+
+  /**
+   * MMPA fragments as the RDKit pool's `mmpGetFragments` gives them, the molecules in chunks across the workers, and
+   * the rows whose molecule Crux did not read (`unread`).
+   */
+  async mmpGetFragments(molecules: string[]): Promise<IMmpFragmentsResult & {unread: number[]}> {
+    const starts: number[] = [];
+    const parts = await this.inChunks(molecules, ANALYSIS_MS.mmpa, (worker, chunk) =>
+      worker.run<IMmpFragmentsResult & {unread: number[]}>('mmpGetFragments', [chunk]), CHUNK_SIZE, JOB_BASE_MS,
+    starts);
+    // concat, not flatMap: a molecule RDKit's code does not read leaves its row empty, and the rows stay in place
+    return {frags: ([] as [string, string][][]).concat(...parts.map((part) => part.frags)),
+      smiles: ([] as string[]).concat(...parts.map((part) => part.smiles)),
+      unread: parts.flatMap((part, k) => part.unread.map((row) => starts[k] + row))};
+  }
+
+  /** The RDKit pool's `getRGroups` (one decomposition, on the least busy worker); null where Crux cannot read a
+   * molecule. */
+  rGroupAnalysis(molecules: string[], core: string, coreIsQMol: boolean, options?: string):
+    Promise<IRGroupAnalysisResult | null> {
+    return this.job(this.leastBusy().run('rGroupAnalysis', [molecules, core, coreIsQMol, options]),
+      JOB_BASE_MS + molecules.length * ANALYSIS_MS.rGroups);
+  }
+
+  /** The RDKit pool's `getMCS` (FMCS's SMARTS, on the least busy worker); null where Crux cannot read a molecule. */
+  mostCommonStructure(molecules: string[], exactAtoms: boolean, exactBonds: boolean): Promise<string | null> {
+    return this.job(this.leastBusy().run('mostCommonStructure', [molecules, exactAtoms, exactBonds]),
+      JOB_BASE_MS + ANALYSIS_MS.mcs);
+  }
+
+  /**
+   * Each cluster's FMCS SMARTS, as the RDKit pool's `clusterMCS(clusters, ..., rawSmarts)` gives it ('' for one whose
+   * FMCS ran past the RDKit pool's 45 s), each cluster a job ({@link eachCluster}): null for a cluster Crux cannot do
+   * (the RDKit pool does it); `timedOut`, the clusters past their time limit (no MCS).
+   */
+  clusterMCS(clusters: string[][], exactAtoms: boolean, exactBonds: boolean):
+    Promise<{results: (string | null)[], timedOut: number[]}> {
+    return this.eachCluster<string>(clusters, JOB_BASE_MS + ANALYSIS_MS.clusterMCS, 'clusterMCS',
+      [exactAtoms, exactBonds]);
+  }
+
+  /** Each cluster's R-group decomposition, as the RDKit pool's `clusterRGroups` gives it, each cluster a job
+   * ({@link eachCluster}): null for a cluster Crux cannot do; `timedOut`, the clusters past their time limit (none). */
+  clusterRGroups(clusters: RGroupCluster[]): Promise<{results: (IRGroupAnalysisResult | null)[], timedOut: number[]}> {
+    return this.eachCluster<IRGroupAnalysisResult>(clusters, JOB_BASE_MS + ANALYSIS_MS.clusterRGroups,
+      'clusterRGroups', []);
+  }
+
+  /**
+   * The analysis job `op` per cluster, as the RDKit pool's processClusterQueue runs it: each cluster goes to a worker
+   * with no call in flight, so its time limit runs from its own start (a busy worker's queue is not its time), and a
+   * worker takes the next cluster when its last is done; a cluster past `limitMs` is listed in `timedOut` and its
+   * worker replaced ({@link restartWorker}), and the other clusters go on. A cluster whose call fails (a trap, a lost
+   * worker) is null.
+   */
+  private async eachCluster<R>(clusters: unknown[], limitMs: number, op: string, args: unknown[]):
+    Promise<{results: (R | null)[], timedOut: number[]}> {
+    const results = new Array<R | null>(clusters.length).fill(null);
+    const timedOut: number[] = [];
+    limitMs = this.clusterLimitForTests ?? limitMs;
+    let next = 0;
+    // every cluster taken: a busy worker stops waiting (another job may keep it busy long after the clusters are done)
+    const allTaken = signal();
+    if (clusters.length === 0)
+      allTaken.done();
+    await Promise.all(this.workers.map(async (_, w) => {
+      while (next < clusters.length) {
+        if (this.workers[w].pendingCalls > 0) { // busy (a search, a long FMCS, its own init): look again once it is not
+          await Promise.race([this.workers[w].whenIdle(), allTaken.promise]);
+          continue;
+        }
+        const i = next++;
+        if (next >= clusters.length)
+          allTaken.done();
+        try {
+          const done = await withLimit(this.workers[w].run<(R | null)[]>(op, [[clusters[i]], ...args]), limitMs);
+          if (done === 'late') {
+            timedOut.push(i);
+            this.restartWorker(w);
+          } else
+            results[i] = done[0];
+        } catch (e) {
+          if (isTrap(e))
+            this.restartWorker(w); // its instance may be broken
+        }
+      }
+    }));
+    return {results, timedOut};
+  }
+
+  /** The worker with the fewest calls in flight (on a tie a later one: worker 0 takes the one-worker jobs). */
+  private leastBusy(): CruxWorkerClient {
+    return this.workers.reduceRight((best, worker) => worker.pendingCalls < best.pendingCalls ? worker : best);
+  }
+
+  /** The index of a worker with no call in flight (a later one first, as {@link leastBusy}), waiting while all are
+   * busy. */
+  private async idleWorker(): Promise<number> {
+    for (;;) {
+      for (let w = this.workers.length - 1; w >= 0; w--) {
+        if (this.workers[w].pendingCalls === 0)
+          return w;
+      }
+      await Promise.race(this.workers.map((worker) => worker.whenIdle()));
+    }
+  }
+
+  /**
+   * Replaces worker `w`, stuck in a call past its limit, as the RDKit pool replaces one (RdKitService.restartWorker):
+   * the column indexes with a segment on it are dropped (a search running on one fails and falls back to RDKit; the
+   * next search indexes the column again); the other workers and the other indexes stay.
+   */
+  private restartWorker(w: number): void {
+    this.workers[w].terminate(WORKER_REPLACED);
+    this.workers[w] = new CruxWorkerClient();
+    this.workers[w].moduleInit(this.module!).catch(() => {}); // a failed init is logged by the worker client
+    for (const index of [...this.indexes.values()]) {
+      if (index.segments.some((segment) => segment.worker === w)) {
+        index.lost = true;
+        this.dropIndex(index);
+      }
+    }
+  }
+
+  /** The RDKit pool's `linkRGroupFragments`, joined by molzip, the rows in chunks across the workers. */
+  async linkRGroupFragments(cores: string[], fragmentColumns: string[][], attachIdx: (number | number[])[]):
+    Promise<string[]> {
+    const rows = cores.map((core, i) => [core, ...fragmentColumns.map((column) => column[i])]);
+    return (await this.inChunks(rows, ANALYSIS_MS.link, (worker, chunk) =>
+      worker.run<string[]>('linkRGroupFragments', [chunk, attachIdx]))).flat();
+  }
+
+  /** The RDKit pool's `mmpLinkFragments` (each core joined with its fragment at `[*:1]`, canonical SMILES, '' for
+   * none), run on Crux, the rows in chunks across the workers. */
+  async mmpLinkFragments(cores: string[], fragments: string[]): Promise<string[]> {
+    const rows = cores.map((core, i) => [core, fragments[i]]);
+    return (await this.inChunks(rows, ANALYSIS_MS.link, (worker, chunk) =>
+      worker.run<string[]>('mmpLinkFragments', [chunk]))).flat();
+  }
+
+  /** RDKit's molzip of each molecule's pieces (`details`: MolzipParams as JSON), the molecules in chunks across the
+   * workers: the joined molecules' SMILES ('' where one is not zipped) and the first refusal's message. */
+  async molzip(molecules: string[], details: string): Promise<{smiles: string[], error: string | null}> {
+    const parts = await this.inChunks(molecules, ANALYSIS_MS.molzip, (worker, chunk) =>
+      worker.run<{smiles: string[], error: string | null}>('molzip', [chunk, details]));
+    return {smiles: parts.flatMap((part) => part.smiles), error: parts.find((part) => part.error)?.error ?? null};
+  }
+
+  // Macromolecules (engine/biopolymer.ts sends them, jobs/biopolymer.ts runs them; Crux in both engines): Bio's
+  // sequences assembled from the templates of a monomer library.
+
+  /**
+   * The rows of `batch` (chem-meta's AsmBatch) assembled from monomer library `json` (Pistoia JSON; `key` names it in
+   * the workers, so another JSON needs another key) and laid out per `options` (read as a row's are,
+   * `assembleOptionsJson`; its `map` is a single row's): a V3000 MOL block (null where the row has an error), an
+   * AsmLayout (passed through as Crux gives it) and an error per row, in row order.
+   * - The library: sent to every worker at the first call, each worker's chunks waiting for its own load; a worker
+   *   that has not got it (a new one after {@link restart} or {@link restartWorker}, one that dropped it) is sent it
+   *   again, once more where a batch finds it gone.
+   * - The rows: in chunks across the workers ({@link inChunks}; a chunk's limit grows with its rows and monomers,
+   *   {@link biopolymerChunkMs}), then each row of more than {@link BIOPOLYMER_LONG_ROW} monomers alone on an idle
+   *   worker with a limit of its own ({@link assembleLongRows}): past it, or on a trap, that worker alone is replaced
+   *   and the row gets the failure as its error.
+   * - Datagrok's row errors (`batch.rowError`) are the rows' errors; those rows are not sent.
+   */
+  async assembleMacromolecules(batch: AsmBatch, key: string, json: string, options: AssembleOptions):
+    Promise<AssembleResult> {
+    const n = batchRowCount(batch);
+    const result: AssembleResult = {molblocks: new Array<string | null>(n).fill(null),
+      layouts: new Uint8Array(n).fill(AsmLayout.ERROR), errors: new Array<string | null>(n).fill(null)};
+    const rows: number[] = [];
+    const longRows: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const error = batch.rowError[i]; // a hole (a sparse array) is no error
+      if (error)
+        result.errors[i] = error;
+      else
+        (rowMonomerCount(batch, i) > BIOPOLYMER_LONG_ROW ? longRows : rows).push(i);
+    }
+    if (rows.length === 0 && longRows.length === 0)
+      return result;
+    const details = assembleOptionsJson(options, false); // as engine/biopolymer.ts's rows
+    const put = (part: CruxAssembledBatch, at: number[]): void => {
+      for (let k = 0; k < at.length; k++) {
+        const i = at[k];
+        result.errors[i] = part.errors[k] ?? null;
+        result.molblocks[i] = result.errors[i] ? null : part.molblocks[k] ?? null;
+        result.layouts[i] = part.layouts[k] ?? AsmLayout.ERROR;
+      }
+    };
+    for (const worker of this.workers) // all at once; a chunk waits for its own worker's load, and fails with it
+      this.loadLibrary(worker, key, json).catch(() => {});
+    if (rows.length > 0) {
+      const parts = await this.inChunks(rows, 0, async (worker, chunk) =>
+        ({chunk, part: await this.assembleOn(worker, pickRows(batch, chunk), key, json, details)}), CHUNK_SIZE,
+      JOB_BASE_MS, [], (chunk) => biopolymerChunkMs(batch, chunk));
+      for (const {chunk, part} of parts)
+        put(part, chunk);
+    }
+    if (longRows.length > 0) {
+      await this.assembleLongRows(batch, longRows, key, json, details, put, (i, error) => {
+        result.errors[i] = error;
+        result.layouts[i] = AsmLayout.ERROR;
+      });
+    }
+    return result;
+  }
+
+  // A batch's long rows after its chunks, each alone on a worker with no call in flight, as eachCluster runs clusters
+  // (a worker's queue is not the row's time). One late or trapped gets `fail` and its worker replaced; the others go
+  // on. Another failure ends the call.
+  private async assembleLongRows(batch: AsmBatch, rows: number[], key: string, json: string, details: string,
+    put: (part: CruxAssembledBatch, at: number[]) => void, fail: (row: number, error: string) => void): Promise<void> {
+    let next = 0;
+    let failure: {error: unknown} | null = null;
+    // every row taken, or a failure: a busy worker stops waiting (another job may keep it busy long after)
+    const noneLeft = signal();
+    if (rows.length === 0)
+      noneLeft.done();
+    await Promise.all(this.workers.map(async (_, w) => {
+      while (!failure && next < rows.length) {
+        if (this.workers[w].pendingCalls > 0) { // busy: look again once it is not
+          await Promise.race([this.workers[w].whenIdle(), noneLeft.promise]);
+          continue;
+        }
+        const row = rows[next++];
+        if (next >= rows.length)
+          noneLeft.done();
+        const limitMs = JOB_BASE_MS + rowMonomerCount(batch, row) * ANALYSIS_MS.biopolymerLongMonomer;
+        this.biopolymerLongRowsForTests++;
+        try {
+          const work = this.assembleOn(this.workers[w], sliceBatch(batch, row, row + 1), key, json, details);
+          work.catch(() => {}); // a late one fails once its worker is replaced: handled here, not left unhandled
+          const done = await withLimit(work, limitMs);
+          if (done === 'late') {
+            this.restartWorker(w);
+            fail(row, `biopolymer: the row took longer than ${limitMs} ms (its Crux worker was replaced)`);
+          } else
+            put(done, [row]);
+        } catch (e) {
+          if (!isTrap(e)) {
+            failure = {error: e};
+            noneLeft.done();
+            return;
+          }
+          this.restartWorker(w); // its instance may be broken
+          fail(row, `biopolymer: ${String((e as Error)?.message ?? e)}`);
+        }
+      }
+    }));
+    if (failure)
+      throw (failure as {error: unknown}).error;
+  }
+
+  // Sent only where the worker's mirror (its last BIOPOLYMER_LIBRARIES) lacks it; a failed load is forgotten, so the
+  // next call sends it again.
+  private loadLibrary(worker: CruxWorkerClient, key: string, json: string): Promise<number> {
+    const loads = worker.biopolymerLibraries;
+    let load = loads.get(key);
+    if (load)
+      loads.delete(key);
+    else {
+      const sent = worker.run<{errors: number}>('biopolymer::library', [key, json]).then(({errors}) => {
+        if (errors > 0 && !this.biopolymerLibraryWarned.has(key)) {
+          this.biopolymerLibraryWarned.add(key);
+          console.warn(`Chem | monomer library ${key}: ${errors} monomers Crux does not read (their rows get errors)`);
+        }
+        return errors;
+      });
+      sent.catch(() => {
+        if (loads.get(key) === sent)
+          loads.delete(key);
+      });
+      load = sent;
+      while (loads.size >= BIOPOLYMER_LIBRARIES)
+        loads.delete(loads.keys().next().value!);
+    }
+    loads.set(key, load);
+    return load;
+  }
+
+  private biopolymerLibraryWarned = new Set<string>();
+
+  // The library once more where the worker answers that it no longer holds it.
+  private async assembleOn(worker: CruxWorkerClient, batch: AsmBatch, key: string, json: string, details: string):
+    Promise<CruxAssembledBatch> {
+    await this.loadLibrary(worker, key, json);
+    try {
+      return await worker.run<CruxAssembledBatch>('biopolymer::assemble', [batch, key, details]);
+    } catch (e) {
+      if (!String((e as Error)?.message ?? e).startsWith(BIOPOLYMER_LIBRARY_MISSING))
+        throw e;
+      worker.biopolymerLibraries.delete(key);
+      await this.loadLibrary(worker, key, json);
+      return await worker.run<CruxAssembledBatch>('biopolymer::assemble', [batch, key, details]);
+    }
+  }
+
+  /** Each MOL block with every specified stereocentre in one ABS group, V3000 (null where one does not read), the MOL
+   * blocks in chunks across the workers: a column's call of engine/biopolymer.ts's `markStereoAbsolute`. */
+  async markStereoAbsolute(molblocks: (string | null)[]): Promise<(string | null)[]> {
+    const starts: number[] = [];
+    const parts = await this.jobInChunks<(string | null)[]>('biopolymer::markStereoAbsolute', molblocks,
+      ANALYSIS_MS.markStereo, [], starts);
+    const result = new Array<string | null>(molblocks.length).fill(null);
+    parts.forEach((part, k) => part.forEach((m, i) => result[starts[k] + i] = m ?? null));
+    return result;
+  }
+
   /**
    * A job's result within `timeoutMs`. A wasm trap (the worker reports `RuntimeError: ...`; out of memory), a timeout
    * or a worker gone restarts the workers: they may hold a broken instance or a call that never ends; the next jobs and
-   * searches get new ones. Another failure (a molecule Crux refuses, a "not supported by Crux" call) keeps them and
-   * their search indexes.
+   * searches get new ones. Another failure (a molecule Crux refuses, a "not supported by Crux" call, a worker
+   * restartWorker replaced: WORKER_REPLACED) keeps them and their search indexes.
    */
   private async job<R>(work: Promise<R>, timeoutMs: number): Promise<R> {
     const generation = this.generation;
@@ -456,8 +1028,8 @@ export class CruxService {
     try {
       return await Promise.race([work, timeout]);
     } catch (e: any) {
-      if (/RuntimeError|unreachable|out of bounds|memory|Worker terminated/i.test(String(e?.message ?? e)) ||
-        String(e?.message ?? e).startsWith(JOB_TIMEOUT))
+      const message = String(e?.message ?? e);
+      if (isTrap(e) || /Worker terminated/i.test(message) || message.startsWith(JOB_TIMEOUT))
         this.restart(generation);
       throw e;
     } finally {
@@ -472,6 +1044,40 @@ export class CruxService {
     for (const index of this.indexes.values())
       index.lost = true;
     this.indexes.clear();
+  }
+
+  /** Tests: the time limit of every cluster of {@link eachCluster} (null: each kind's own). */
+  clusterLimitForTests: number | null = null;
+
+  /** Tests: the long rows {@link assembleMacromolecules} has sent alone. */
+  biopolymerLongRowsForTests = 0;
+
+  /** Tests: each worker's monomer libraries (jobs/biopolymer.ts): the keys it holds, the libraries it has compiled. */
+  biopolymerLibrariesForTests(): Promise<{keys: string[], compiled: number}[]> {
+    return Promise.all(this.workers.map((worker) =>
+      this.job(worker.run<{keys: string[], compiled: number}>('biopolymer::libraries::test', []), JOB_BASE_MS)));
+  }
+
+  /** Tests: every worker drops library `key`, its client still counting it as sent. */
+  async forgetBiopolymerLibraryForTests(key: string): Promise<void> {
+    await Promise.all(this.workers.map((worker) =>
+      this.job(worker.run('biopolymer::forget::test', [key]), JOB_BASE_MS)));
+  }
+
+  /** Tests: replaces worker `w`, as a cluster past its time limit does ({@link restartWorker}). */
+  restartWorkerForTests(w: number): void {
+    this.restartWorker(w);
+  }
+
+  /** Tests: a job that keeps worker `w` busy `ms` (as a long FMCS does), timed as jobs are ({@link job}). */
+  busyWorkerForTests(w: number, ms: number): Promise<unknown> {
+    return this.job(this.workers[w].busyForTests(ms), JOB_BASE_MS + ms);
+  }
+
+  /** Tests: every worker's RDKit-shaped code pauses every `every` molecules, as the RDKit pool's does (null: no
+   * pauses, the default; crux.worker.ts `pauses::test`). */
+  async pausesForTests(every: number | null): Promise<void> {
+    await Promise.all(this.workers.map((worker) => worker.pausesForTests(every)));
   }
 
   /** Tests: a job that fails in its worker with `message` (by default as a trapped instance would: a restart). */
@@ -568,7 +1174,7 @@ export class CruxService {
   private release(index: CruxColumnIndex): void {
     const keys: string[][] = this.workers.map(() => []);
     for (const segment of index.released.splice(0)) {
-      if (segment.built)
+      if (segment.built || segment.keyed)
         keys[segment.worker].push(segment.key);
     }
     for (let w = 0; w < this.workers.length; w++) {
@@ -589,7 +1195,7 @@ function readColumn(col: DG.Column): string[] {
   return values;
 }
 
-function hashStrings(values: string[], start: number, end: number): number {
+export function hashStrings(values: string[], start: number, end: number): number {
   let hash = 0x811c9dc5;
   for (let row = start; row < end; row++) {
     const value = values[row];

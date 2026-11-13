@@ -24,6 +24,9 @@ Feature: Map viewer layers, zoom, selection and the point tooltip
   panel starts hidden, so those areas are absent until the layers button is clicked — the
   `layer "<name>" visible` READINGS need no panel and are what the claims below rest on.
 
+  With the map open, a click on a word of a word cloud selects exactly that word's rows and logs
+  nothing (core#255: it threw errors).
+
   Fixture: earthquakes, 2426 rows; MagType is Mw 2312, Mb 72, Me 25, ML 7, Unk 6, Ms 4.
 
   Background:
@@ -159,6 +162,20 @@ Feature: Map viewer layers, zoom, selection and the point tooltip
     And user hovers over the "point 5" area of map viewer
     Then tooltip should be hidden
     And no errors should have been logged
+
+  @realizes:core#255
+  Scenario: With the map open a click on a word of a word cloud selects that word's rows and logs nothing (core#255)
+    When user adds a word cloud viewer
+    Then the "column" reading of word cloud viewer should be "MagType"
+    And the "rows of word \"Mb\"" reading of word cloud viewer should be 72
+    When user clears the row selection
+    And user clicks on the "word \"Mb\"" area of word cloud viewer
+    Then 72 rows should be selected
+    And only rows where "MagType" is "Mb" should be selected
+    And no errors should have been logged
+    When user clears the row selection
+    And user clicks on close icon of word cloud viewer
+    Then the open tableview should have 0 word cloud viewers
 
   Scenario: Closing the map under the pointer disposes it without an error
     Given user remembers the place of map viewer

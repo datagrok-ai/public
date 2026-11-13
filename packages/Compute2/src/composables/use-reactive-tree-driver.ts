@@ -48,7 +48,7 @@ export function useReactiveTreeDriver(
   const logs = useObservable(driver.logger.logs$.pipe(bufferDuringLock(globalLock$)));
   const links = useObservable(driver.currentLinks$.pipe(bufferDuringLock(globalLock$)));
   const hiddenActions = useObservable(driver.hiddenActions$.pipe(bufferDuringLock(globalLock$)));
-  const result = useObservable(driver.result$);
+  const result = useObservable(driver.result$.pipe(map((x) => Vue.markRaw(x))));
 
   if (overlayService) {
     Vue.watch(isGlobalLocked, (locked) => {
@@ -128,7 +128,9 @@ export function useReactiveTreeDriver(
     states.meta[k] = val ? Vue.markRaw(val) : undefined;
   }));
 
-  Vue.watch([() => providerFunc.value, () => version.value, () => instanceConfig.value], ([providerFunc, version, instanceConfig]) => {
+  Vue.watch([
+    () => providerFunc.value, () => version.value, () => instanceConfig.value,
+  ], ([providerFunc, version, instanceConfig]) => {
     initPipeline(providerFunc, version, instanceConfig);
   });
 
@@ -162,7 +164,7 @@ export function useReactiveTreeDriver(
   };
 
   const saveDynamicItem = (uuid:string, metaData?: ItemMetadata) => {
-    driver.sendCommand({event: 'saveDynamicItem', uuid, ...metaData});
+    return driver.sendCommand({event: 'saveDynamicItem', uuid, ...metaData});
   };
 
   const runStep = async (uuid: string) => {
@@ -170,7 +172,9 @@ export function useReactiveTreeDriver(
     driver.sendCommand({event: 'runStep', uuid});
   };
 
-  const runSequence = async (startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean, includeInfo?: boolean) => {
+  const runSequence = async (
+    startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean, includeInfo?: boolean,
+  ) => {
     await overlayService?.show();
     driver.sendCommand({event: 'runSequence', startUuid, rerunWithConsistent, includeNonNested, includeInfo});
   };

@@ -46,9 +46,6 @@ export const positionSeparator: string = ', ';
 
 export const monomerRe: RegExp = /(?:\[([A-Za-z0-9_\-,()]+)\])|([A-Za-z\-])/g;
 
-export const helmRe: RegExp = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
-export const helmPp1Re: RegExp = /\[([^\[\]]+)]/g;
-
 export const Alphabets = new class {
   fasta = {
     peptide: new Set<string>([
@@ -86,4 +83,5 @@ export const MONOMER_CANONICALIZER_FUNC_TAG = '.%monomer-canonicalizer-func';
 
 /** Column temp key for the cached IMonomerCanonicalizer instance */
 export const MONOMER_CANONICALIZER_TEMP = 'monomer-canonicalizer';
-export const NOTATION_PROVIDER_CONSTRUCTOR_ROLE = 'notationProviderConstructor';
+/** Defined in types.ts (no run-time import cycle with it) */
+export {NOTATION_PROVIDER_CONSTRUCTOR_ROLE} from './types';

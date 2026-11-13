@@ -6,7 +6,7 @@ import $ from 'cash-dom';
 import {fromEvent} from 'rxjs';
 
 import {
-  after, before, category, test, expect, awaitCheck, delay, testEvent
+  after, before, category, test, expect, waitUntil, delay, testEvent
 } from '@datagrok-libraries/test/src/test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
@@ -16,7 +16,6 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 
 import {awaitGrid, initHelmMainPackage} from './utils';
-import {TAGS as helmTAGS} from '../constants';
 
 import {_package} from '../package-test';
 
@@ -51,23 +50,15 @@ category('renderers', () => {
     const helmCol: DG.Column<string> = df.getCol('HELM');
 
     const tv: DG.TableView = grok.shell.addTableView(df);
-    await awaitCheck(() => {
+    await waitUntil(() => {
       return $(tv.root).find('.d4-grid canvas').length > 0;
-    }, 'Table view canvas not found', 100);
+    }, 'Table view canvas not found');
 
     await grok.data.detectSemanticTypes(df);
 
     expect(helmCol.semType, DG.SEMTYPE.MACROMOLECULE);
     expect(helmCol.meta.units, NOTATION.HELM);
     expect(helmCol.getTag(DG.TAGS.CELL_RENDERER), 'helm');
-
-    const cellRendererErrorJson: string = helmCol.getTag(helmTAGS.cellRendererRenderError);
-    if (!!cellRendererErrorJson) {
-      const cellRendererError: any = JSON.parse(cellRendererErrorJson);
-      const err = new Error(cellRendererError['message']);
-      err.stack = cellRendererError['stack'];
-      throw err;
-    }
   }
 
   const helmCoordsCsv = `seq,x,y

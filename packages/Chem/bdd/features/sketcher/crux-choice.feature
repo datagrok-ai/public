@@ -5,7 +5,10 @@ Feature: Crux as a sketcher choice
   Crux sketcher category reads the setting). Picking it in the menu is the account's choice, kept in its
   sketcher/selected setting, which a reload takes up again; the account's own choice comes back when the feature ends.
   Switching sketchers in place keeps the molecule, its stereo included (the same switch with a SMARTS is the package
-  test "a switch keeps a SMARTS"). The sketcher is the cell editor of a molecule cell, OpenChemLib pinned as the
+  test "a switch keeps a SMARTS"). Ketcher picked in the sketcher of the molecule's filter card becomes the session's
+  sketcher and the account's choice, and so does OpenChemLib picked back; after that switch the card's sketcher closes
+  and opens again, OpenChemLib checked in its menu (TestTrack Sketchers/filter-panel-cross-context.md, blocks B and C,
+  ChemDraw left out). The sketcher is the cell editor of a molecule cell, OpenChemLib pinned as the
   session's sketcher; Crux is read through its status, its "smiles" reading compared with the molecule by RDKit.
   The feature is about the choice of sketcher (@sketcher-controls): a run that pins another sketcher skips it.
 
@@ -70,4 +73,26 @@ Feature: Crux as a sketcher choice
     When user clicks on "Options" icon in sketcher dialog
     And user picks "Crux" from the open menu
     Then the "smiles" reading of crux sketcher widget should be the molecule "C[C@H](N)C(=O)O"
+    And no errors should have been logged
+
+  # Sketchers/filter-panel-cross-context.md, blocks B and C (GROK-12581, GROK-12905)
+  Scenario: Ketcher picked in the filter card's sketcher is the session's and the account's, and the card's sketcher reopens after the switch back
+    When user clicks on filter icon in toolbar
+    Then "molecule" filter card should be visible
+    When user clicks on "Sketch" text in "molecule" filter card
+    Then sketcher dialog should be visible
+    When user clicks on "Options" icon in sketcher dialog
+    And user picks "Ketcher" from the open menu
+    Then Ketcher canvas should be visible
+    And the session's sketcher and the account's choice should be "Ketcher"
+    When user clicks on "Options" icon in sketcher dialog
+    And user picks "OpenChemLib" from the open menu
+    Then the session's sketcher and the account's choice should be "OpenChemLib"
+    When user clicks on CANCEL button in sketcher dialog
+    Then sketcher dialog should be absent
+    When user clicks on "Sketch" text in "molecule" filter card
+    Then sketcher dialog should be visible
+    When user clicks on "Options" icon in sketcher dialog
+    Then "OpenChemLib" menu item should be selected
+    And "Ketcher" menu item should not be selected
     And no errors should have been logged

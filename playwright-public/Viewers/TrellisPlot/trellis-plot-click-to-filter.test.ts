@@ -256,8 +256,7 @@ test('Trellis plot: click-to-filter, click-to-select, events, keyboard navigatio
     });
     expect(after.filterCount).toBe(expected);
     expect(after.filterCount).toBeLessThan(fullRowCount);
-    expect(after.filters).toContain('SEX: F');
-    expect(after.filters).toContain('RACE: Caucasian');
+    expect(after.filters).toContain('SEX: F, RACE: Caucasian');
   });
 
   await softStep('Scenario 1 Step 6', async () => {
@@ -355,6 +354,9 @@ test('Trellis plot: click-to-filter, click-to-select, events, keyboard navigatio
 
   await softStep('Scenario 1 Step 10', async () => {
     const panelOnly = await panelOnlyRowCount(page, PANEL_COLUMN, panelSelected);
+    // Step 9 left M/Asian selected, and clicking the only selected cell clears the trellis filter
+    await page.keyboard.press('Escape');
+    await waitForFilterCount(page, panelOnly, 3000);
 
     const idx = await cellIndexFor(page, 'M', 'Asian');
     await cellLocator.nth(idx).click({position: {x: 6, y: 6}});
@@ -369,7 +371,7 @@ test('Trellis plot: click-to-filter, click-to-select, events, keyboard navigatio
       const filters: string[] = [];
       for (const f of df.rows.filters) filters.push(f);
       return {filterCount: df.filter.trueCount, hasSex: filters.some((s) => s.startsWith('SEX:')),
-        hasRace: filters.some((s) => s.startsWith('RACE:'))};
+        hasRace: filters.some((s) => s.includes('RACE:'))};
     });
     expect(after.filterCount).toBe(panelOnly);
     expect(after.hasSex).toBe(false);
@@ -466,8 +468,7 @@ test('Trellis plot: click-to-filter, click-to-select, events, keyboard navigatio
       return {filterCount: df.filter.trueCount, filters};
     });
     expect(after.filterCount).toBe(expected);
-    expect(after.filters).toContain('SEX: F');
-    expect(after.filters).toContain('RACE: Black');
+    expect(after.filters).toContain('SEX: F, RACE: Black');
 
     await page.evaluate(() => {
       const df = grok.shell.tv.dataFrame;

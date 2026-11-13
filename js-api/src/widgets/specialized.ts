@@ -8,7 +8,7 @@ import * as rxjs from "rxjs";
 import {fromEvent, Observable} from "rxjs";
 import {filter, map} from 'rxjs/operators';
 import {__obs, StreamSubscription} from "../events";
-import {Func, TableInfo, TableQuery} from "../entities";
+import {Entity, Func, TableInfo, TableQuery} from "../entities";
 import {IDartApi} from "../api/grok_api.g";
 import {Grid} from "../grid";
 import {DartWidget, TypedEventArgs, Widget} from "./base";
@@ -29,6 +29,22 @@ export class FilesWidget extends DartWidget {
    * [path] accepts a full-qualified name (see [Entity.nqName]). */
   static create(params: {path?: string, dataSourceFilter?: fileShares[]} = {}): FilesWidget {
     return toJs(api.grok_FilesWidget(params));
+  }
+}
+
+/** A chat: its comments, and a box to post, reply and edit. */
+export class ChatWidget extends DartWidget {
+  /** The chat [chatId]; when it does not exist yet, the first post creates it with [options]. */
+  static async create(chatId: string, options?: {friendlyName?: string, entityIds?: string[]}): Promise<ChatWidget> {
+    const chat = await api.grok_Dapi_Chats_Find(chatId);
+    return new ChatWidget(api.grok_ChatWidget(chat ?? {id: chatId, friendlyName: options?.friendlyName ?? null,
+      entities: (options?.entityIds ?? []).map((id) => ({id}))}, chat != null));
+  }
+
+  /** All chats on [entity], as the Chats context panel shows them: the most recently active one is
+   * open, the others are a pick away, and "New chat" starts another. */
+  static forEntity(entity: Entity): DartWidget {
+    return new DartWidget(api.grok_EntityChatsWidget(toDart(entity)));
   }
 }
 

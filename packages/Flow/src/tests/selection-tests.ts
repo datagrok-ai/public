@@ -22,33 +22,53 @@ function pointer(target: EventTarget, type: string, init: PointerEventInit): voi
   target.dispatchEvent(new PointerEvent(type, {bubbles: true, cancelable: true, button: 0, ...init}));
 }
 
-const tick = (ms = 30): Promise<void> => new Promise((res) => setTimeout(res, ms));
+const signalCounts = new WeakMap<FlowEditor, Map<string, number>>();
+
+/** How many `type` signals went through every area pipe — a pipe appended last sees a signal only after
+ *  the selectable extension and the editor's own pipes have finished with it. */
+function signalsSeen(e: TestEditor, type: string): number {
+  let counts = signalCounts.get(e.flow);
+  if (!counts) {
+    const fresh = new Map<string, number>();
+    e.flow.area.addPipe((context) => {
+      if (context && typeof context === 'object' && 'type' in context)
+        fresh.set(context.type, (fresh.get(context.type) ?? 0) + 1);
+      return context;
+    });
+    signalCounts.set(e.flow, counts = fresh);
+  }
+  return counts.get(type) ?? 0;
+}
+
+async function dispatchAndSettle(e: TestEditor, el: HTMLElement, type: string, signal: string,
+  init: PointerEventInit): Promise<void> {
+  const before = signalsSeen(e, signal);
+  pointer(el, type, init);
+  if (!await until(() => signalsSeen(e, signal) > before))
+    throw new Error(`${type}: the area never finished the '${signal}' signal`);
+}
 
 /** Dispatch on the area holder, not the container — the container's own AreaPlugin listeners would start a phantom pan whose click-release clears the selection. */
 function canvasBg(e: TestEditor): HTMLElement {
   return e.container.firstElementChild as HTMLElement;
 }
 
-/** The tick between down and up lets rete's async `nodepicked` add settle, as a real click would. */
+/** Rete's async `nodepicked` add must settle before the release, as it does in a real click — a release
+ *  that beats it is read as an empty-canvas click and unselects all. */
 async function clickNode(e: TestEditor, node: FlowNode, init: PointerEventInit = {}): Promise<void> {
   const el = nodeEl(e, node);
   const r = el.getBoundingClientRect();
   const at = {clientX: r.left + r.width / 2, clientY: r.top + 8};
-  pointer(el, 'pointerdown', {...at, ...init});
-  await tick();
-  pointer(el, 'pointerup', {...at, ...init});
-  await tick();
+  await dispatchAndSettle(e, el, 'pointerdown', 'nodepicked', {...at, ...init});
+  await dispatchAndSettle(e, el, 'pointerup', 'pointerup', {...at, ...init});
 }
 
 /** Events target the canvas background (not `window`) so the editor's window-capture handlers run before rete's window-bubble ones, as with real events. */
-async function dragMarquee(e: TestEditor, from: {x: number; y: number}, to: {x: number; y: number},
-  upInit: PointerEventInit = {}): Promise<void> {
+function dragMarquee(e: TestEditor, from: {x: number; y: number}, to: {x: number; y: number},
+  upInit: PointerEventInit = {}): void {
   pointer(canvasBg(e), 'pointerdown', {clientX: from.x, clientY: from.y, shiftKey: true});
-  await tick();
   pointer(canvasBg(e), 'pointermove', {clientX: to.x, clientY: to.y, shiftKey: true});
-  await tick();
   pointer(canvasBg(e), 'pointerup', {clientX: to.x, clientY: to.y, shiftKey: true, ...upInit});
-  await tick();
 }
 
 function marqueeOver(e: TestEditor, nodes: FlowNode[]): {from: {x: number; y: number}; to: {x: number; y: number}} {
@@ -141,7 +161,7 @@ category('Flow: selection', () => {
       const [a, b, c] = await threeNodes(e);
       await e.flow.selectNode(c.id);
       const {from, to} = marqueeOver(e, [a, b]);
-      await dragMarquee(e, from, to);
+      dragMarquee(e, from, to);
       expect(await until(() => isSelected(e, a) && isSelected(e, b)), true, 'a and b selected');
       expect(isSelected(e, c), true, 'existing selection kept (additive, never replaces)');
     } finally {
@@ -155,7 +175,7 @@ category('Flow: selection', () => {
       const [a, b, c] = await threeNodes(e);
       for (const n of [a, b, c]) await e.flow.selectNode(n.id, true);
       const {from, to} = marqueeOver(e, [a, b]);
-      await dragMarquee(e, from, to, {ctrlKey: true});
+      dragMarquee(e, from, to, {ctrlKey: true});
       expect(await until(() => !isSelected(e, a) && !isSelected(e, b)), true, 'a and b removed');
       expect(isSelected(e, c), true, 'node outside the marquee stays selected');
     } finally {
@@ -225,7 +245,7 @@ category('Flow: selection', () => {
       const [a, b] = await threeNodes(e);
       const {from, to} = marqueeOver(e, [a, b]);
       const before = changes;
-      await dragMarquee(e, from, to);
+      dragMarquee(e, from, to);
       expect(await until(() => changes > before), true, 'marquee reports a selection change');
       expect(isSelected(e, a) && isSelected(e, b), true, 'marquee selected the nodes');
 
@@ -265,7 +285,7 @@ category('Flow: selection', () => {
 
       const ax = a.pos.x;
       key('ArrowRight');
-      await new Promise((r) => setTimeout(r, 50));
+      expect(isSelected(e, a), false, 'a is not in the selection the nudge moves');
       expect(a.pos.x, ax, 'an unselected node does not move');
 
       await e.flow.selectNode(a.id);
@@ -281,7 +301,6 @@ category('Flow: selection', () => {
       const [nx, ny] = [a.pos.x, a.pos.y];
       key('ArrowLeft', true);
       expect(await until(() => e.flow.area.area.transform.x !== t0x), true, 'Ctrl+arrow panned the canvas');
-      await new Promise((r) => setTimeout(r, 50));
       expect(a.pos.x === nx && a.pos.y === ny, true, 'Ctrl+arrow left the selection in place');
     } finally {
       destroyEditor(e);

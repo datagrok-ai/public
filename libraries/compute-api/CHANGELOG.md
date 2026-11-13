@@ -2,6 +2,11 @@
 
 ## v.next
 
+* Added `getCallExports` and `exportCall`, which list a run's exports as its Export menu does and run one, returning its file
+* Added `reportFuncCallExcel`, the default Excel report of a run as a named `DG.FileInfo` and its workbook, for RFV custom exports to start from; pass it the args the export gets (`CustomExportArgs`)
+* Added `loadWorkflowRun`, which loads a saved workflow run without UI and returns its state as `runWorkflow` does
+* Removed `createCFV`: it read `window.compute.CFV`, which no package sets, and `CustomFunctionView` is abstract, so it could never create a working view; `CustomFunctionView` is now exported as the class, so a custom view subclasses it and is returned by a function with `editor: 'Compute2:CustomFunctionViewEditor'`
+* Added `runWorkflow`, which runs a workflow without UI, and `saveWorkflowRun`, which saves its result to history
 * Exported the `isFuncCallState`, `isStaticPipelineState` and `isDynamicPipelineState` guards; the newly exported workflow types come through with the type re-export
 
 ## 0.8.0 (2026-09-23)

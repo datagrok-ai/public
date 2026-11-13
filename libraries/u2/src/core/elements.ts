@@ -1,17 +1,18 @@
 /* Fluent element factories (L3). Every text/child slot takes `T | ReadonlySignal<T>`; a signal
    is bound through the ambient Scope, so live values never outlive their owner. */
 import {Signal, ReadonlySignal, batch} from './signals.js';
-import {Scope} from './scope.js';
+import {Scope, Usage} from './scope.js';
 import {Control} from './component.js';
+import {Ownership} from './owner.js';
+import type {ObservableLike} from './widget-like.js';
 import {bindText} from './bind.js';
 import {Dates} from './dates.js';
+import {Format} from './format.js';
 import {Tooltip} from './tooltip.js';
+import {Reason} from './reason.js';
 
 export type Child = HTMLElement | Control | string | ReadonlySignal<unknown>;
 export type Text = string | ReadonlySignal<unknown>;
-
-const NO_OWNER = 'u2: signal binding needs an owner — ' +
-  'wrap the code in Control.build(...) or component.runInScope(...)';
 
 function isSignal(x: unknown): x is ReadonlySignal<unknown> {
   return x instanceof Signal;
@@ -19,8 +20,10 @@ function isSignal(x: unknown): x is ReadonlySignal<unknown> {
 
 function owner(): Scope {
   const scope = Scope.ambient;
-  if (!scope)
-    throw new Error(NO_OWNER);
+  if (!scope) {
+    Usage.fail('owner-missing', 'a signal binding needs an owner — build under `owner.build(…)` or ' +
+      '`component((self) => …)`; after an `await`, inside `owner.task(async (t) => … t.build(…))`');
+  }
   return scope;
 }
 
@@ -35,10 +38,16 @@ function element<K extends keyof HTMLElementTagNameMap>(tag: K,
 
 function setText<T extends HTMLElement>(el: T, text: Text): T {
   if (isSignal(text))
-    bindText(owner(), el, text);
+    bindText(el, text, {owner: owner()});
   else
     el.textContent = text;
   return el;
+}
+
+/** What a {@link Text} says now: a signal's value, untracked. */
+function textOf(text: Text | undefined): string {
+  const value = isSignal(text) ? text.peek() : text;
+  return value === null || value === undefined ? '' : String(value);
 }
 
 function node(child: Child): HTMLElement | string {
@@ -74,16 +83,34 @@ function listen<E extends Event>(el: HTMLElement, type: string, handler: (e: E) 
   });
 }
 
-export function div(children?: Child[], cls?: string): HTMLDivElement {
-  return fill(element('div', 'u2-div', cls), children);
+/** A step of the spacing scale, `--dg-space-<size>`: 2, 4, 8, 12, 16 and 24px. */
+export type SpaceSize = 'xs' | 's' | 'm' | 'l' | 'xl' | 'xxl';
+
+export interface DivOptions {
+  /** The space between the children: the `u2-gap-<size>` class, which works on any flex or grid element. */
+  gap?: SpaceSize;
+  cls?: string;
 }
 
-export function divV(children?: Child[], cls?: string): HTMLDivElement {
-  return fill(element('div', 'u2-div', 'u2-div-v', cls), children);
+function divClasses(options?: string | DivOptions): (string | undefined)[] {
+  if (typeof options !== 'object')
+    return [options];
+  return [options.gap === undefined ? undefined : `u2-gap-${options.gap}`, options.cls];
 }
 
-export function divH(children?: Child[], cls?: string): HTMLDivElement {
-  return fill(element('div', 'u2-div', 'u2-div-h', cls), children);
+/** A block; the second argument is an extra class, or `{gap, cls}`. */
+export function div(children?: Child[], options?: string | DivOptions): HTMLDivElement {
+  return fill(element('div', 'u2-div', ...divClasses(options)), children);
+}
+
+/** A column: `divV(children, {gap: 'm'})` puts 8px between them. */
+export function divV(children?: Child[], options?: string | DivOptions): HTMLDivElement {
+  return fill(element('div', 'u2-div', 'u2-div-v', ...divClasses(options)), children);
+}
+
+/** A row, its children centred: `divH([cancel, save], {gap: 'm'})` puts 8px between them. */
+export function divH(children?: Child[], options?: string | DivOptions): HTMLDivElement {
+  return fill(element('div', 'u2-div', 'u2-div-h', ...divClasses(options)), children);
 }
 
 export function panel(children?: Child[]): HTMLDivElement {
@@ -100,8 +127,8 @@ export function span(text: Text, cls?: string): HTMLSpanElement {
 
 export interface DateLike { toDate(): Date }
 
-/** Timestamp, full truth on hover (docs/recipes/list-item-rendering.md): the locale date with its
- * year — the form a grid cell shows — and the time of day where the value carries one, with the
+/** Timestamp, full truth on hover (docs/recipes/list-item-rendering.md): the date spelled out with its
+ * year (`Format.spelled`, Oct 2, 2026) and the time of day where the value carries one, with the
  * full date-time in the tooltip. Accepts anything date-shaped (`dayjs` satisfies {@link DateLike});
  * an invalid date renders empty. */
 export function timestamp(value: Date | number | string | DateLike, cls?: string,
@@ -112,18 +139,16 @@ export function timestamp(value: Date | number | string | DateLike, cls?: string
   const el = element('span', 'u2-timestamp', cls);
   if (!(date instanceof Date) || isNaN(date.getTime()))
     return el;
-  const day: Intl.DateTimeFormatOptions = {month: 'short', day: 'numeric', year: 'numeric'};
-  const full: Intl.DateTimeFormatOptions = {...day, hour: '2-digit', minute: '2-digit'};
   // a value that falls on midnight UTC is a DATE, not a moment: read in the local zone it would
   // be the day before for half the world (`2026-10-02T00:00:00Z` → "Oct 1, 2026, 08:00 PM"), so
   // it is both decided and printed in UTC. Everything else is a real moment and stays local.
   if (options.utcDates === true && Dates.isDateOnly(date)) {
-    el.textContent = el.title = date.toLocaleDateString(undefined, {...day, timeZone: 'UTC'});
+    el.textContent = el.title = Format.spelled(date, {utc: true});
     return el;
   }
   const midnight = date.getHours() === 0 && date.getMinutes() === 0;
-  el.textContent = midnight ? date.toLocaleDateString(undefined, day) : date.toLocaleString(undefined, full);
-  el.title = date.toLocaleString(undefined, full);
+  el.textContent = Format.spelled(date, {time: !midnight});
+  el.title = Format.spelled(date, {time: true});
   return el;
 }
 
@@ -177,18 +202,28 @@ export function effect(fn: () => void): void {
   owner().effect(fn);
 }
 
+/** Subscribes `handler` to `source` — an rxjs observable, a platform event stream (`grok.events.onViewRemoved`,
+ * `df.onValuesChanged`), anything with `subscribe(next)` — and unsubscribes when whoever is building is disposed
+ * (throws when nobody is). The handler runs as every u2 handler does: batched, a throw reported to the owner
+ * rather than thrown at the stream, and never once the owner is gone. With an owner at hand — after an `await`,
+ * nothing is building — call it on the owner: `owner.subscribe(source, handler)`. Answers the unsubscribe. */
+export function subscribe<T>(source: ObservableLike<T>, handler: (value: T) => void): () => void {
+  return Ownership.scopeOf(undefined, 'subscribe()').subscribe(source, handler);
+}
+
 export interface ButtonOptions {
   primary?: boolean;
-  /** Hover text; a function is asked at hover time. */
-  tooltip?: string | (() => string);
-  /** `true`, or WHY the button is disabled — the reason becomes its tooltip, so the user learns what
-   * to fix; `false`, `null` or `''` enable it. A signal is followed live. */
-  disabled?: boolean | string | null | ReadonlySignal<boolean | string | null>;
+  /** Hover text; a signal is read at hover time. */
+  tooltip?: Text;
+  /** WHY the button is off — the reason becomes its tooltip, shown on hover and on keyboard focus, so the
+   * user learns what to fix; `null` or `''` leave it on. A signal is followed live. The button keeps its
+   * tab stop while off ({@link Reason.focusable}). */
+  disabled?: Reason;
 }
 
 export function button(text: Text | HTMLElement, onClick: (e: MouseEvent) => void,
   options?: ButtonOptions): HTMLButtonElement {
-  const el = element('button', 'u2-btn', options?.primary ? 'u2-btn-primary' : undefined);
+  const el = Reason.focusable(element('button', 'u2-btn', options?.primary ? 'u2-btn-primary' : undefined));
   el.type = 'button';
   el.dataset.u2 = 'button';
   if (text instanceof HTMLElement)
@@ -197,23 +232,18 @@ export function button(text: Text | HTMLElement, onClick: (e: MouseEvent) => voi
     setText(el, text);
   listen<MouseEvent>(el, 'click', (e) => onClick(e));
   const disabled = options?.disabled;
-  const apply = (x: boolean | string | null | undefined) => el.disabled = x === true || (typeof x === 'string' && x !== '');
   if (isSignal(disabled))
-    owner().effect(() => apply(disabled.value as boolean | string | null));
+    owner().effect(() => Reason.apply(el, Reason.read(disabled)));
   else
-    apply(disabled);
+    Reason.apply(el, Reason.now(disabled));
   if (disabled !== undefined || options?.tooltip !== undefined) {
-    const text = () => {
-      const x = isSignal(disabled) ? disabled.peek() : disabled;
-      const tip = options?.tooltip;
-      return typeof x === 'string' && x !== '' ? x : typeof tip === 'function' ? tip() : tip ?? '';
-    };
+    const text = () => Reason.now(disabled) ?? textOf(options?.tooltip);
     // no owner to release the hover listeners with: the browser's own title, as iconButton does
     const scope = Scope.ambient;
     if (scope === undefined)
       el.title = text();
     else
-      Tooltip.bind(el, text, scope);
+      Tooltip.bind(el, text, {owner: scope});
   }
   return el;
 }

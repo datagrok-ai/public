@@ -1,9 +1,10 @@
 /* RangeSlider: handle and band dragging over a faked track rect, snapping and clamping, the
    vertical orientation, keyboard steps, two-way signals, and listener death on dispose. */
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope, RangeSlider, signal} from '../src/index.js';
 
 function smoke(name, body) {
@@ -21,10 +22,10 @@ function smoke(name, body) {
 
 /** Mounts a slider whose 200px track starts at 0 — clientX 2×value for a 0…100 range. */
 function mount(options) {
-  const slider = new RangeSlider(options);
+  const slider = testOwner().build(() => new RangeSlider(options));
   document.body.append(slider.root);
   const track = slider.root.querySelector('.u2-range-track');
-  track.rect = options?.vertical ? new DOMRect(0, 0, 16, 200) : new DOMRect(0, 0, 200, 16);
+  layout(track, {rect: options?.vertical ? new DOMRect(0, 0, 16, 200) : new DOMRect(0, 0, 200, 16)});
   return slider;
 }
 

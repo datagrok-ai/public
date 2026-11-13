@@ -10,15 +10,13 @@ const ALONG = [0.5, 0.3, 0.7, 0.15, 0.85];
 
 const linkName = (d: any): string => `${categoryName(d?.source?.name)} -> ${categoryName(d?.target?.name)}`;
 
-/** A point of [path] that a click lands on — the path itself or another link of the same pair, which
- * selects the same rows. Links cross, so the middle of one can be under another. */
+/** A point of [path] that a click lands on. Links cross, so the middle of one can be under another. */
 function linkPoint(svg: SVGSVGElement, path: SVGPathElement): {x: number, y: number} | null {
-  const name = linkName((path as any).__data__);
   const length = path.getTotalLength();
   for (const t of ALONG) {
     const local = path.getPointAtLength(length * t);
     const p = svgPoint(path, local.x, local.y);
-    if (svgHits(svg, p, (hit) => hit.classList.contains('link') && linkName((hit as any).__data__) === name))
+    if (svgHits(svg, p, (hit) => hit === path))
       return p;
   }
   return null;
@@ -46,7 +44,7 @@ export function sankeyStatus(v: SankeyViewer): DG.IWidgetStatus & {values: Readi
   }
 
   const links = Array.from(svg?.querySelectorAll<SVGPathElement>('path.link') ?? []);
-  // every row draws its own link; a pair is placed by its topmost one, the last drawn
+  // Link Color splits a pair into a link per color; the pair is placed by its topmost one, the last drawn
   const tried = new Set<string>();
   for (const path of links.slice().reverse()) {
     const name = `link ${linkName((path as any).__data__)}`;

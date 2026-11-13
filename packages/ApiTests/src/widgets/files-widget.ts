@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {before, category, expect, test, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 
 
 category('Widgets', () => {
@@ -25,7 +25,7 @@ category('Widgets', () => {
     if (testConnection) {
       const testFW = ui.fileBrowser({path: testConnection.nqName});
       grok.shell.newView('', [testFW.root]);
-      await awaitCheck(()=> !testFW.root.querySelector('.grok-loader') &&
+      await waitUntil(()=> !testFW.root.querySelector('.grok-loader') &&
         testFW.root.querySelector('div.d4-tree-view-tri-expanded[name="tree-expander-My-files"]') !== null, 'Home timeout', 30000);
     
       const label = $(testFW.root).find(labelSelector)[0];
@@ -38,7 +38,7 @@ category('Widgets', () => {
       const packageDir = 'datasets';
       const testFW = ui.fileBrowser({path: `${packageDataConnection.nqName}/${packageName}/${packageDir}`});
       grok.shell.newView('', [testFW.root]);
-      await awaitCheck(()=> !testFW.root.querySelector('.grok-loader') &&
+      await waitUntil(()=> !testFW.root.querySelector('.grok-loader') &&
         testFW.root.querySelector(`div[name="tree-App-Data---${packageName}---${packageDir}"]`) !== null, 'AppData timeout', 30000);
       
       const labels = $(testFW.root).find(labelSelector);

@@ -108,6 +108,9 @@ Feature: Tile viewer form designer
     And the "fields shown" reading of tile viewer should be 9
     And the "fields" reading of tile viewer should not contain "AGE"
     And tile viewer should not have a "field AGE of row 1" area
+    # the M lane too (core#1088): row 4 is the first M row
+    And tile viewer should not have a "field AGE of row 4" area
+    And tile viewer should have a "field DEMOG of row 4" area
     And the "form designed" reading of tile viewer should be "true"
     And no errors should have been logged
 

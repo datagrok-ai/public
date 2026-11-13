@@ -419,10 +419,11 @@ export function createFuncTableViewWidget(sf: DG.Func, inputParams: Record<strin
         sf.inputs.map((i: any) => i.propertyType === DG.TYPE.STRING ? `"${inputParams[i.name]}"` : inputParams[i.name]).join(',');
       if (inputParams && Object.keys(inputParams).length > 0)
         tv.dataFrame.setTag(DG.Tags.CreationScript, `Result = ${sf.nqName}(${argumentList})`);
-      setTimeout(() => {
+      // set up once its root, returned below, is in the document
+      ui.tools.waitForElementInDom(tv.root).then(() => {
         processPowerSearchTableView(tv);
         tv._onAdded();
-      }, 200);
+      });
       return tv.root;
     } catch (e) {
       console.error(e);

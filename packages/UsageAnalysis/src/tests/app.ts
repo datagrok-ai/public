@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {before, after, category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {before, after, category, test, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import {ViewHandler} from '../view-handler';
 
 
@@ -25,7 +25,7 @@ category('App', () => {
       handler.changeTab(tab);
       const view = handler.getCurrentView();
       expect(view.name === tab, true, `expected tab "${tab}", got "${view.name}"`);
-      await awaitCheck(() => view.root.children.length > 0, `"${tab}" failed to initialize`, 30000);
+      await waitUntil(() => view.root.children.length > 0, `"${tab}" failed to initialize`, 30000);
     });
   }
 
@@ -43,5 +43,26 @@ category('App', () => {
     const session = (await grok.dapi.users.currentSession()).id;
     const rows = await grok.dapi.log.getTimeline({session, from: new Date(Date.now() - 3600000), to: new Date(), limit: 5});
     expect(Array.isArray(rows), true);
+  });
+  test('a project reopens the tab, its sub-view and the filters', async () => {
+    // a tag filter is shown on the Functions tab only, so it is applied only once that tab is current
+    const tag: string | undefined = (handler as any).toolbox?.tagsInput?.choices?._store?.choices?.[0]?.value;
+    expect(typeof tag, 'string', 'the stand should offer a function tag to filter by');
+    const reopened = new ViewHandler();
+    reopened.view.loadStateMap({tab: 'Functions', rout: '/ExecutionTime', filters: {date: 'this month', tags: [tag!]}});
+    expect(reopened.saveState()?.rout, '/ExecutionTime', 'a save while the app loads keeps the state it restores');
+    grok.shell.addView(reopened.view);
+    try {
+      await reopened.init();
+      await waitUntil(() => reopened.getCurrentView().name === 'Functions' && reopened.getCurrentView().rout === '/ExecutionTime',
+        'the tab and its sub-view were not restored', 30000);
+      const path = reopened.view.path;
+      expect(path.includes('date=this%20month'), true, `the date filter was not applied: ${path}`);
+      expect(path.includes('groups='), true, `the groups filter is not in the address: ${path}`);
+      expect(new URLSearchParams(path.split('?')[1] ?? '').get('tags'), tag!.toLowerCase(),
+        `the tag filter of the Functions tab was not applied: ${path}`);
+    } finally {
+      reopened.view.close();
+    }
   });
 }, {clear: false, timeout: 60000});

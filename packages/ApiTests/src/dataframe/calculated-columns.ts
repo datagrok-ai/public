@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
 import dayjs from 'dayjs';
-import {after, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 
 
 category('DataFrame: Calculated columns', () => {
@@ -77,77 +77,81 @@ category('DataFrame: Calculated columns', () => {
     expect(DG.Qnum.getValue(qnum.get(1)), 5);
   });
 
-  test('Add new column dialog', () => new Promise(async (resolve, reject) => {
+  test('Add new column dialog', async () => {
     if ((await grok.dapi.packages.filter('PowerPack').list({pageSize: 5})).length > 0)
-      resolve('Skipped because PowerPack is installed');
-    else {
-      let tv: DG.TableView;
-      subs.push(grok.events.onDialogShown.subscribe((d: any) => {
-        if (d.title == 'Add New Column')
-          resolve('OK');
-        dialogs.push(d);
-      }));
-      setTimeout(() => {
-        // eslint-disable-next-line prefer-promise-reject-errors
-        reject('Dialog not found');
-      }, 1000);
-      try {
-        tv = grok.shell.addTableView(df);
-        await df.dialogs.addNewColumn();
-      } finally {
-        tv!.close();
-        grok.shell.closeTable(df);
-      }
+      return 'Skipped because PowerPack is installed';
+    let shown = false;
+    subs.push(grok.events.onDialogShown.subscribe((d: any) => {
+      if (d.title == 'Add New Column')
+        shown = true;
+      dialogs.push(d);
+    }));
+    const tv = grok.shell.addTableView(df);
+    try {
+      await df.dialogs.addNewColumn();
+      await waitUntil(() => shown, 'Dialog not found');
+    } finally {
+      tv.close();
+      grok.shell.closeTable(df);
     }
-  }));
+  });
 
-  test('Edit formula dialog', () => new Promise(async (resolve, reject) => {
+  test('Edit formula dialog', async () => {
     if ((await grok.dapi.packages.filter('PowerPack').list({pageSize: 5})).length > 0)
-      resolve('Skipped because PowerPack is installed');
-    else {
-      subs.push(grok.events.onDialogShown.subscribe((d: DG.Dialog) => {
-        if (d.title == 'Add New Column')
-          resolve('OK');
-        dialogs.push(d);
-      }));
-      try {
-        setTimeout(() => {
-          // eslint-disable-next-line prefer-promise-reject-errors
-          reject('Dialog not found');
-        }, 1000);
-        const column = await df.columns.addNewCalculated('editable', '0');
-        column.meta.dialogs.editFormula();
-      } finally {
-        df.columns.remove('editable');
-      }
+      return 'Skipped because PowerPack is installed';
+    let shown = false;
+    subs.push(grok.events.onDialogShown.subscribe((d: DG.Dialog) => {
+      if (d.title == 'Add New Column')
+        shown = true;
+      dialogs.push(d);
+    }));
+    try {
+      const column = await df.columns.addNewCalculated('editable', '0');
+      column.meta.dialogs.editFormula();
+      await waitUntil(() => shown, 'Dialog not found');
+    } finally {
+      df.columns.remove('editable');
     }
-  }));
+  });
 
-  test('Calculated columns addition event', () => new Promise(async (resolve, reject) => {
+  test('Calculated columns addition event', async () => {
     const t = df.clone();
+    let added = false;
     subs.push(t.onColumnsAdded.subscribe((data: any) =>
       data.args.columns.forEach((column: DG.Column) => {
         if (column.meta.formula !== null && column.name === 'calculated column')
-          resolve('OK');
+          added = true;
       })));
 
-    setTimeout(() => reject(new Error('Failed to add a calculated column')), 50);
     t.columns.addNewInt('regular column').init(1);
     await t.columns.addNewCalculated('calculated column', '${x}+${y}-${z}');
-  }));
+    await waitUntil(() => added, 'Failed to add a calculated column');
+  });
 
-  test('Calculated columns deletion event', () => new Promise(async (resolve, reject) => {
+  test('Calculated columns deletion event', async () => {
     const t = df.clone();
+    let removed = false;
     subs.push(t.onColumnsRemoved.subscribe((data: any) =>
       data.args.columns.forEach((column: DG.Column) => {
         if (column.meta.formula !== null && column.name === 'calculated column')
-          resolve('OK');
+          removed = true;
       })));
 
     await t.columns.addNewCalculated('calculated column', '${x}+${y}-${z}');
-    setTimeout(() => reject(new Error('Failed to delete a calculated column')), 100);
     t.columns.remove('calculated column');
-  }));
+    await waitUntil(() => removed, 'Failed to delete a calculated column');
+  });
+
+  test('A formula naming its column as a string recalculates after an edit', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromList(DG.TYPE.FLOAT, 'x', [1, 2, 3])]);
+    await t.columns.addNewCalculated('ctrl', 'Avg($[x])');
+    await t.columns.addNewCalculated('byName', 'Avg(Column("x"))');
+    await t.columns.addNewCalculated('first', 'Value("x", 0)');
+    t.col('x')!.set(0, 10);
+    await waitUntil(() => t.col('ctrl')!.get(0) === 5 && t.col('byName')!.get(0) === 5 && t.col('first')!.get(0) === 10,
+      () => `after x[0] = 10: Avg($[x]) ${t.col('ctrl')!.get(0)}, Avg(Column("x")) ${t.col('byName')!.get(0)}, ` +
+        `Value("x", 0) ${t.col('first')!.get(0)}`);
+  });
 
   after(async () => {
     subs.forEach((sub) => sub.unsubscribe());

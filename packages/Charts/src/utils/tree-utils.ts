@@ -4,6 +4,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as utils from './utils';
 
+const SELECTED_COUNT = '~selectedCount';
+
 export class TreeUtils {
   static colorCache: DG.LruCache = new DG.LruCache<string, Record<string, string>>();
 
@@ -24,6 +26,9 @@ export class TreeUtils {
       .groupBy(splitByColumnNames)
       .count()
       .whereRowMask(rowMask);
+
+    if (markSelected && !selection)
+      builder.add(DG.AGG.SELECTED_ROWS_COUNT, splitByColumnNames[0], SELECTED_COUNT);
 
     for (const aggregation of aggregations) {
       data[aggregation.propertyName] = utils.data.aggToStat(dataFrame, aggregation.columnName, aggregation.type);
@@ -51,28 +56,7 @@ export class TreeUtils {
     const aggrColumns = aggregated.columns.byNames(propNames);
     const parentNodes: (TreeDataType | null)[] = columns.map((_) => null);
 
-    const selectedPaths: string[] = [];
-    const selectedNodeStyle = { color: DG.Color.toRgb(DG.Color.selectedRows) };
-
-    const markSelectedNodes = (node: TreeDataType): boolean => {
-      if (selectedPaths.includes(node.path!)) {
-        node.itemStyle = selectedNodeStyle;
-        node.lineStyle = selectedNodeStyle;
-        return true;
-      }
-      if (node.children && node.children.length > 0) {
-        let parentSelected = true;
-        for (const child of node.children)
-          parentSelected = markSelectedNodes(child) && parentSelected;
-
-        if (parentSelected) {
-          node.itemStyle = selectedNodeStyle;
-          node.lineStyle = selectedNodeStyle;
-          return true;
-        }
-      }
-      return false;
-    };
+    const selectedCountCol = aggregated.col(SELECTED_COUNT);
 
     const precomputeCategoryColors = (column: DG.Column) => {
       const colors: Record<string, string> = {};
@@ -149,9 +133,6 @@ export class TreeUtils {
       const aggrValues = aggrColumns.reduce((obj, col) =>
         (obj[col.name] = col.get(i), obj), <{ [key: string]: number }>{});
 
-      if (aggregated.selection.get(i) && !selection)
-        selectedPaths.push(columns.map((col) => col.getString(i)).join(' ||| '));
-
       for (let colIdx = idx; colIdx < columns.length; colIdx++) {
         const value = columns[colIdx].get(i);
         const parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
@@ -166,6 +147,7 @@ export class TreeUtils {
           collapsed: false,
           path: parentNode?.path == null ? name : parentNode.path + ' ||| ' + name,
           value: 0,
+          selectedCount: 0,
         };
 
         node.itemStyle = {
@@ -184,15 +166,16 @@ export class TreeUtils {
           visitNode(node);
       }
 
-      for (let i = 0; i < parentNodes.length; i++)
+      const selectedCount = selectedCountCol?.get(i) ?? 0;
+      for (let i = 0; i < parentNodes.length; i++) {
         parentNodes[i]!.value += value;
+        parentNodes[i]!.selectedCount! += selectedCount;
+      }
       data.value += value;
     }
 
     if (aggregations.length > 0)
       aggregateParentNodes();
-
-    if (markSelected) markSelectedNodes(data);
 
     return data;
   }
@@ -253,5 +236,5 @@ export class TreeUtils {
 }
 
 export type TreeDataType = { name: string, collapsed: boolean, value: number, semType?: null | string, path?: null | string, label?: {}, children?: TreeDataType[],
-  itemStyle?: { color?: string }, [prop: string]: any };
+  selectedCount?: number, itemStyle?: { color?: string | object }, [prop: string]: any };
 export type AggregationInfo = { type: DG.AggregationType, columnName: string, propertyName: string };

@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 // minimist sets every boolean option to false when it is absent, and commands such as `grok api`
-// reject any key they do not expect — so each boolean reaches only the commands that read it.
-const commandBooleans = {dartium: ['test', 'stresstest'], 'send-email': ['server', 's']};
+// reject any key they do not expect — so an absent boolean reaches only the commands that read it.
+const commandBooleans = {dartium: ['test', 'stresstest'], 'send-email': ['server', 's'],
+  'read-only': ['connect-folder'], foreground: ['connect-folder'], force: ['connect-folder'], follow: ['connect-folder'],
+  explain: ['src'], fix: ['src']};
 const argv = require('minimist')(process.argv.slice(2), {
   alias: {k: 'key', h: 'help', r: 'recursive'},
   boolean: Object.keys(commandBooleans),
-  // keep versions verbatim — minimist would coerce '1.10' to the number 1.1
-  string: ['version', 'prefix'],
+  // keep these verbatim — minimist would coerce '1.10' to the number 1.1
+  string: ['version', 'prefix', 'url', 'dir', '_'],
 });
 // minimist maps `--no-retry` to `{retry: false}`, so the `args['no-retry']` checks in
 // test.ts / playwright-runner.ts never fired and `--no-retry` was silently ignored
@@ -43,6 +45,8 @@ const commands = {
   server: lazy('server', 'server'),
   s: lazy('server', 'server'),
   setup: lazy('setup', 'setup'),
+  src: lazy('src', 'src'),
+  'connect-folder': lazy('connect-folder', 'connectFolder'),
 };
 
 // `--version` is a string option (grok publish --version 1.10), so a bare `grok --version` parses as ''.
@@ -63,14 +67,13 @@ function printUsage(command) {
 
 const command = argv['_'][0];
 for (const [flag, owners] of Object.entries(commandBooleans))
-  if (!owners.includes(command))
+  if (!owners.includes(command) && argv[flag] === false)
     delete argv[flag];
 if (command in commands) {
   try {
-    if (argv['help']) {
+    if (argv['help'])
       console.log(help[command]);
-      exitWithCode(1);
-    } else if (argv.all && onPackageCommandNames.includes(command)) {
+    else if (argv.all && onPackageCommandNames.includes(command)) {
       runAllCommand(process.cwd(),
         `grok ${process.argv.slice(2).join(' ')}`.replace('--all', ''), {});
     } else {

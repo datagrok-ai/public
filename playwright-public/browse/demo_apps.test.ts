@@ -133,12 +133,14 @@ async function expandByTreeName(page: Page, name: string): Promise<void> {
   await node.waitFor({ state: 'visible', timeout: 20_000 });
   const tri = node.locator(TREE_EXPAND_ARROW).first();
   const isExpanded = () => tri.evaluate((el) => el.classList.contains('d4-tree-view-tri-expanded')).catch(() => false);
-  if (await isExpanded()) return;
-  if (await tri.isVisible().catch(() => false)) await tri.click();
-  else await node.click();
-  // Children of a group that has not finished expanding are display:none, so the next step
-  // would look for them too early. Wait for the group to report itself expanded.
-  await expect.poll(isExpanded, { timeout: 20_000, intervals: [100, 200, 400, 800] }).toBe(true);
+  // A click that lands flips the class synchronously; under nightly load a row shifting under the
+  // cursor loses it (the node ends up selected, not expanded), so re-check and click again.
+  await expect(async () => {
+    if (await isExpanded()) return;
+    if (await tri.isVisible().catch(() => false)) await tri.click({ timeout: 5_000 });
+    else await node.click({ timeout: 5_000 });
+    await expect.poll(isExpanded, { timeout: 3_000, intervals: [100, 200, 400] }).toBe(true);
+  }).toPass({ timeout: 30_000, intervals: [500] });
 }
 
 /**

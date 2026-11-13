@@ -1,15 +1,15 @@
 /* BasicTable and tableFromMap on the node DOM shim. Same contract as smoke.test.js — every test
    leaves the live-scope count where it found it. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, computed, Scope, Control} from '../src/index.js';
 import {span} from '../src/core/elements.js';
 import {BasicTable, tableFromMap} from '../src/components/collections/table.js';
 
-function table(name, body) {
-  test(name, async () => {
+function table(name, body, options = {}) {
+  test(name, options, async () => {
     const live = Scope.liveCount;
     try {
       await body();
@@ -35,11 +35,11 @@ function columns() {
 }
 
 function rows(t) {
-  return t.root.querySelectorAll('.u2-table-row');
+  return [...t.root.querySelectorAll('.u2-table-row')];
 }
 
 function cells(row) {
-  return row.querySelectorAll('td').map((td) => td.textContent);
+  return [...row.querySelectorAll('td')].map((td) => td.textContent);
 }
 
 table('renders a header, one row per item and the declared widths', () => {
@@ -48,7 +48,7 @@ table('renders a header, one row per item and the declared widths', () => {
 
   assert.equal(t.root.tagName, 'TABLE');
   assert.equal(t.root.dataset.u2, 'table');
-  assert.deepEqual(t.root.querySelectorAll('th').map((th) => th.textContent), ['Name', 'MW']);
+  assert.deepEqual([...t.root.querySelectorAll('th')].map((th) => th.textContent), ['Name', 'MW']);
   assert.equal(t.root.querySelectorAll('col')[0].style.width, '60%');
   assert.equal(rows(t).length, 3);
   assert.deepEqual(cells(rows(t)[0]), ['Aspirin', '180.16']);
@@ -198,7 +198,7 @@ table('tableFromMap: two columns, muted keys, element values', () => {
   assert.equal(map.tagName, 'TABLE');
   assert.equal(map.classList.contains('u2-table-map'), true);
   assert.equal(map.querySelectorAll('thead').length, 0);
-  const all = map.querySelectorAll('.u2-table-row');
+  const all = [...map.querySelectorAll('.u2-table-row')];
   assert.equal(all.length, 4);
   assert.deepEqual(all.map((r) => r.querySelectorAll('td')[0].textContent), ['Name', 'MW', 'Status', 'Missing']);
   assert.equal(all[0].querySelectorAll('td')[0].classList.contains('u2-table-key'), true);
@@ -206,6 +206,19 @@ table('tableFromMap: two columns, muted keys, element values', () => {
   assert.equal(all[2].querySelectorAll('td')[1].children[0], value);
   assert.equal(all[3].querySelectorAll('td')[1].textContent, '');
 });
+
+table('tableFromMap: an element value\'s cell takes the element\'s height and does not clip it', () => {
+  const drawing = document.createElement('div');
+  drawing.style.width = '160px';
+  drawing.style.height = '100px';
+  const map = tableFromMap({ID: 'V004044', Name: 'Reference compound', Structure: drawing});
+  document.body.append(map);
+  const cell = getComputedStyle(drawing.parentElement);
+  const height = /^([\d.]+)px$/.exec(cell.height)?.[1];
+  assert.ok(height === undefined || +height >= 100, `the 100px drawing is held in a cell ${cell.height} high`);
+  assert.ok(!['hidden', 'clip'].includes(cell.overflow), `the cell clips what it holds (overflow: ${cell.overflow})`);
+  assert.equal(getComputedStyle(map.querySelector('.u2-table-key')).height, '22px', 'a text row keeps its height');
+}, {skip: typeof CSSStyleSheet !== 'function' && 'needs a DOM with the CSS cascade'});
 
 table('dispose: listeners and effects die with the component scope', () => {
   const items = signal(ITEMS);

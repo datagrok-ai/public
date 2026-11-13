@@ -5,8 +5,8 @@ import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
 import {isPipelineStepConfig} from '../config/config-utils';
-import {FuncCallAdapter} from './FuncCallAdapters';
-import {saveFuncCall, saveInstanceState} from './funccall-utils';
+import {FuncCallAdapter, MockResults} from './FuncCallAdapters';
+import {completedOption, saveFuncCall, saveInstanceState} from './funccall-utils';
 import {FuncCallNode, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions} from './StateTreeNodes';
 import {indexFromEnd, pruneByKeys} from '../utils';
 import {LinksState} from './LinksState';
@@ -24,6 +24,9 @@ export interface TreeUpdateData {
 }
 
 export class LockError extends Error {}
+
+/** Mock outputs of a step run by its config id, from the step's io values */
+export type MockRun = (configId: string, state: Record<string, any>) => Record<string, any>;
 
 export class StateTree {
   private closed$ = new Subject<true>();
@@ -336,12 +339,20 @@ export class StateTree {
     });
   }
 
-  public runSequence(startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean, includeInfo?: boolean) {
+  public runSequence(
+    startUuid: string, rerunWithConsistent?: boolean, includeNonNested?: boolean, includeInfo?: boolean,
+    mockRun?: MockRun,
+  ) {
     return this.withTreeLock(() => {
-      const startNode = includeNonNested ? this.nodeTree.root : this.nodeTree.find((item) => item.uuid === startUuid)?.[0];
+      if (!this.mockMode && mockRun)
+        throw new Error(`Mock run passed to runSequence while mock mode is off`);
+      const startNode = includeNonNested ?
+        this.nodeTree.root :
+        this.nodeTree.find((item) => item.uuid === startUuid)?.[0];
       if (startNode == null)
         return of(undefined);
-      const nodesSeq = this.nodeTree.traverse(startNode, (acc, node) => [...acc, node.getItem()], [] as StateTreeNode[]);
+      const nodesSeq = this.nodeTree.traverse(
+        startNode, (acc, node) => [...acc, node.getItem()], [] as StateTreeNode[]);
       const startIdx = nodesSeq.findIndex((node) => node.uuid === startUuid);
       if (startIdx < 0)
         return of(undefined);
@@ -349,18 +360,19 @@ export class StateTree {
         concatMap((node) => {
           if (!isFuncCallNode(node) || node.isReadonly || node.pendingDependencies$.value?.length)
             return of(undefined);
+          const mockResults: MockResults | undefined = mockRun && ((state) => mockRun(node.config.id, state));
           if (rerunWithConsistent) {
             return node.getStateStore().overrideToConsistent(includeInfo).pipe(
               concatMap(() => this.linksState.waitForLinks()),
               withLatestFrom(node.getStateStore().isRunable$, node.getStateStore().isOutputOutdated$),
               filter(([, runable, outdated]) => runable && outdated),
-              concatMap(() => node.getStateStore().run()),
+              concatMap(() => node.getStateStore().run(mockResults)),
               concatMap(() => this.linksState.waitForLinks()),
             );
           } else {
             if (!node.getStateStore().isRunable$.value || !node.getStateStore().isOutputOutdated$.value)
               return of(undefined);
-            return node.getStateStore().run().pipe(
+            return node.getStateStore().run(mockResults).pipe(
               concatMap(() => this.linksState.waitForLinks()),
             );
           }
@@ -473,7 +485,9 @@ export class StateTree {
   // locking, tree mutation and deps tracking
   //
 
-  private mutateTree<R>(fn: () => Observable<readonly [TreeUpdateData?, R?]>, waitForLinks = true, disableLinks = true) {
+  private mutateTree<R>(
+    fn: () => Observable<readonly [TreeUpdateData?, R?]>, waitForLinks = true, disableLinks = true,
+  ) {
     return defer(() => {
       if (this.logger)
         this.logger.logTreeUpdates('treeUpdateStarted');
@@ -586,10 +600,12 @@ export class StateTree {
   private treeLock() {
     if (this.globalROLocked$.value)
       throw new LockError(`Changes double lock`);
+    this.linksState.skipDebounce = true;
     this.globalROLocked$.next(true);
   }
 
   private treeUnlock() {
+    this.linksState.skipDebounce = false;
     if (this.globalROLocked$.value)
       this.globalROLocked$.next(false);
   }
@@ -616,7 +632,11 @@ export class StateTree {
       const state = StateTree.toSerializedStateRec(root, {disableNodesUUID: true});
       const item = root.getItem();
       const version = !isFuncCallNode(item) ? item.config.version : undefined;
-      return saveInstanceState(nqName, state, metaData, version);
+      const completed = this.nodeTree.traverse(root, (acc, node) => {
+        const step = node.getItem();
+        return acc && (!isFuncCallNode(step) || step.instancesWrapper.isOutputOutdated$.value === false);
+      }, true);
+      return saveInstanceState(nqName, state, metaData, version, {callOptions: completedOption(completed)});
     });
   }
 }

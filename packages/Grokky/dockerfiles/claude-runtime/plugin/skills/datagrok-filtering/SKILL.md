@@ -143,6 +143,7 @@ t.filter.invert();
 | "filter to X" / "show only X" / "hide ..."  | `view.getFiltersGroup({createDefaultFilters:true}).updateOrAdd({type, column, ...})` (the matching widget) | no — hide-only |
 | "give me a new table of just the filtered rows" | `t.clone(t.filter)`                                         | no — clones the DF |
 | "remove rows where X" / "drop rows where X" | `t.rows.removeWhereIdx((i) => pred(i))`                         | **yes** — rows gone |
+| "remove rows where X is missing"            | `t.rows.removeWhereIdx((i) => t.getCol('X').isNone(i))` — a missing value is neither `null` nor `NaN`, so test it with `isNone` | **yes** |
 | "delete the currently-hidden rows"          | `t.rows.removeWhereIdx((i) => !t.filter.get(i))`                | **yes** |
 
 "Filter" / "show only" / "hide" is a **hide-only** (reversible) operation → the

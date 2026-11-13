@@ -123,7 +123,7 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
   // bound row renders the chip in place of its editor (UB-7b). Bind/unbind flips a row between
   // chip and editor, and the platform ignores a same-identity `shell.o` write — so the rows are
   // rebuilt here, in place, under their own scope, whenever a set-bind lands on the node
-  const pickFor = (name: string, label = name) => () => Scope.runWith(owner, () => bindPicker(x.instance,
+  const pickFor = (name: string, label = name) => () => owner.build(() => bindPicker(x.instance,
     (path) => reissue(editor, {op: 'set-bind', node, name, path}, x),
     {prop: label, current: node.bind?.[name]}));
   const chipsFor = (props: NamedProperty[]): Record<string, FieldOverride> | undefined => {
@@ -197,7 +197,7 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
     rowChannels = [];
     rowScope?.dispose();
     rowScope = new Scope();
-    Scope.runWith(rowScope, () => {
+    rowScope.build(() => {
       if (!tier) {
         for (const section of propsFor(x, true)) {
           const patch: FormChannel['patch'] = (name, value) => {
@@ -281,7 +281,7 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
     for (const name of rows) {
       const input = channel.form.input(name);
       if (input !== undefined) {
-        bindPickerButton(input, name, () => Scope.runWith(owner, () =>
+        bindPickerButton(input, name, () => owner.build(() =>
           bindPicker(x.instance, (path) => commit(editor, channel, name, path),
             {prop: name, current: node.bind?.[name]})));
       }
@@ -295,7 +295,7 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
       pick.root.setAttribute('data-u2-prop', ADD_BINDING);
       channel.form.add(pick);
       bindPickerButton(pick, ADD_BINDING, () => {
-        const name = pick.value.peek();
+        const name = pick.peek();
         if (name === null) {
           grok.shell.warning('Add binding: pick the property first');
           return;
@@ -316,7 +316,7 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
       channels.splice(channels.indexOf(bound), 1);
     bindScope?.dispose();
     bindScope = new Scope();
-    bound = Scope.runWith(bindScope, bindings);
+    bound = bindScope.build(bindings);
     host.replaceChildren(bound.form.root);
   };
   // a source's params bind there too, so its section is up before the first one is picked
@@ -345,7 +345,7 @@ export function propEditors(x: SpecNodeRef, editor: SpecEditor, events: Record<s
     for (const name of Object.keys(events)) {
       const input = channel.form.input(name);
       if (input !== undefined) {
-        bindPickerButton(input, name, () => Scope.runWith(owner, () => funcPicker({
+        bindPickerButton(input, name, () => owner.build(() => funcPicker({
           title: `${name}: pick a function`, instance: x.instance, pick: eventPick(node.on?.[name]),
           onPick: (picked) => apply(editor,
             {op: 'set-event', node, event: name, command: eventEntry(picked)}),

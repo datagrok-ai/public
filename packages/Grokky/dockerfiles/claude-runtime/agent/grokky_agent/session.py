@@ -7,13 +7,16 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from . import browser_tools, guard, hermes, models, structured
-from .models import Usage
+from . import browser_tools, formats, guard, hermes, skills, structured
+from .hermes import Usage
 from .protocol import BrowserResultCommand, ContinueCommand, Emit, JsonObject, McpServer, Metrics, TurnCommand
 from .providers import Provider
 
 MAX_STRUCTURED_ATTEMPTS = 5
 HEARTBEAT_SECONDS = 30
+# A model call that writes a long tool call without streaming it is busy, not hung, for this long; Hermes' own
+# stale-stream detector waits 180 s.
+MODEL_CALL_BUSY_SECONDS = 240
 # Node answers every browser call within its own timeout; this only frees a thread whose call Node dropped.
 BROWSER_GRACE_SECONDS = 30
 # Hermes stamps its activity clock with this for every stream event (`_count_chunk`, agent/chat_completion_helpers.py).
@@ -21,12 +24,17 @@ STREAM_EVENT = 'receiving stream response'
 # Bounds the connect, the MCP handshake and the tool listing: Node's idle watchdog ends a silent turn after 90 s.
 MCP_CONNECT_TIMEOUT = 30
 MCP_SERVER = 'datagrok'
-# Hermes reports a failed call as "Error code: 400 - {...'message': '<provider text>'}"; the user sees the text.
-PROVIDER_MESSAGE = re.compile(r"'message': '((?:[^'\\]|\\.)*)'|\"message\": \"((?:[^\"\\]|\\.)*)\"")
+# Hermes reports a failed call as "Error code: 400 - {...'message': '<provider text>'}" (a text with an apostrophe in
+# double quotes, JSON in double quotes), or with the HTML page a proxy or gateway answered instead; the user sees the
+# text, or the page's title. The title is trimmed in code: trimming it in the pattern backtracks on an unclosed one.
+PROVIDER_MESSAGE = re.compile(r"""['"]message['"]: (?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")|"""
+                              r'(?i:<title>([^<]*)</title>)')
 # api_request_error's reason when the provider's safety filter stops an answer; its message is the cut-off answer.
 SAFETY_FILTER = 'content_policy_blocked'
 SAFETY_FILTER_MESSAGE = "The model provider's safety filter stopped this answer. Try rewording the request."
 BASE_TOOLSETS = ['file', 'terminal', 'skills', 'web', browser_tools.TOOLSET]
+# The connection test's call: no system prompt, no tools, a reply of a word or two. Hermes may call again after an
+# empty reply, which a limit of one would refuse and report as the provider's error.
 RETRY_STRUCTURED = ('Your reply did not match the required JSON schema: {}. '
                     'Reply again with only the corrected JSON object.')
 
@@ -50,7 +58,8 @@ class Tokens:
 class Turn:
     """One browser message, with its gate follow-ups and structured-output retries."""
 
-    def __init__(self, cmd: TurnCommand) -> None:
+    def __init__(self, cmd: TurnCommand, model: str) -> None:
+        self.model = model
         self.system_prompt = cmd['systemPrompt']
         self.schema = cmd.get('outputSchema')
         self.cwd = cmd['cwd']
@@ -60,16 +69,20 @@ class Turn:
         self.started = time.time()
         self.api_calls = 0
         self.api_seconds = 0.0
-        self.cost = 0.0
+        # None once a call had no price: then only the call limit bounds the turn.
+        self.cost: float | None = 0.0
         self.tokens = Tokens()
         self.limit: Literal['turns', 'budget'] | None = None
         self.api_error: str | None = None
         self.cancelled = False
         self.segment_start = True
         self.in_flight: set[str] = set()
+        self.model_call_since: float | None = None
+        self.approvals = guard.Approvals()
+        self.redirected = False
 
     def metrics(self) -> Metrics:
-        return {'inputTokens': self.tokens.input, 'outputTokens': self.tokens.output,
+        return {'model': self.model, 'inputTokens': self.tokens.input, 'outputTokens': self.tokens.output,
                 'cacheReadTokens': self.tokens.cache_read, 'cacheCreationTokens': self.tokens.cache_write,
                 'costUsd': self.cost, 'numTurns': self.api_calls,
                 'durationMs': round((time.time() - self.started) * 1000),
@@ -106,7 +119,8 @@ class Heartbeat:
             self._busy = False
             return
         activity = agent.get_activity_summary()
-        self._busy = self._busy or bool(turn.in_flight) or self.streamed(self._last_at, activity)
+        calling = turn.model_call_since is not None and now - turn.model_call_since < MODEL_CALL_BUSY_SECONDS
+        self._busy = self._busy or bool(turn.in_flight) or calling or self.streamed(self._last_at, activity)
         self._last_at = activity.get('last_activity_at')
         if self._busy and now - self._sent >= HEARTBEAT_SECONDS:
             self._emit({'type': 'activity'})
@@ -124,7 +138,6 @@ class Session:
         self.spillover = spillover
         self.key = uuid.uuid4().hex
         self.agent: hermes.Agent | None = None
-        self.model = models.DEFAULT
         self.history: list[JsonObject] = []
         self.hermes_session: str | None = None
         # The turn whose run is in progress (the hooks act for it), and the latest one received, which gate feedback
@@ -137,6 +150,7 @@ class Session:
         # The stored session this process reloads, until a turn has restored it.
         self.restore: str | None = None
         self.calls: dict[str, BrowserCall] = {}
+        self.skills: list[skills.Skill] = []
         self.hooks_registered = False
         browser_tools.register(registry, self.call_browser)
         threading.Thread(target=self._beat_every_second, daemon=True).start()
@@ -159,8 +173,12 @@ class Session:
             return {'action': 'block', 'message': 'No turn is in progress.'}
         args = args or {}
         self.emit({'type': 'tool_start', 'name': tool_name, 'args': args})
-        why = guard.violation(tool_name, args, t.user_dir, self.homes, self.spillover)
+        why = guard.violation(tool_name, args, t.user_dir, self.homes, self.spillover) or \
+            t.approvals.check(tool_name, args)
         if why:
+            return {'action': 'block', 'message': why}
+        if not t.redirected and (why := skills.redirect(tool_name, args, self.skills)):
+            t.redirected = True
             return {'action': 'block', 'message': why}
         t.in_flight.add(tool_call_id or tool_name)
         path = guard.absolute_edit_path(tool_name, args, t.cwd)
@@ -175,6 +193,7 @@ class Session:
         t.segment_start = True
         # Hermes reports a call the guard refused too; it never ran.
         if status != 'blocked':
+            t.approvals.record(tool_name, result)
             self.emit({'type': 'tool_end', 'name': tool_name, 'args': args or {},
                        'result': result if isinstance(result, str) else json.dumps(result, default=str)})
 
@@ -182,12 +201,14 @@ class Session:
         # Every attempt, retries included: the error of the one before no longer stands.
         if self.turn:
             self.turn.api_error = None
+            self.turn.model_call_since = time.time()
 
     def post_api_request(self, usage: Usage | None = None, api_duration: float | None = None,
                          finish_reason: str | None = None, **_: Any) -> None:
         t = self.turn
         if t is None:
             return
+        t.model_call_since = None
         t.api_calls += 1
         self._account(t, usage or {}, api_duration)
         # The reply's tools must not run when no call is left to answer them with.
@@ -199,12 +220,14 @@ class Session:
         t = self.turn
         if t is None:
             return
+        t.model_call_since = None
         if reason == SAFETY_FILTER:
             t.api_error = SAFETY_FILTER_MESSAGE
             return
         raw = (error and error['message']) or reason or 'The model request failed.'
         m = PROVIDER_MESSAGE.search(raw)
-        text = f'API Error: {status_code} {m.group(1) or m.group(2)}' if m and status_code else raw
+        message = (m.group(1) or m.group(2) or m.group(3) or '').strip() if m else ''
+        text = f'API Error: {status_code} {message}' if message and status_code else raw
         t.api_error = text + self.provider.error_hint(status_code)
 
     def pre_auxiliary_call(self, api_request_id: str = '', **_: Any) -> None:
@@ -219,39 +242,35 @@ class Session:
         t.in_flight.discard(f'aux:{api_request_id}')
         self._account(t, usage or {}, api_duration)
 
-    def llm_request(self, request: JsonObject | None = None, **_: Any) -> hermes.RequestOverride:
+    def llm_request(self, request: JsonObject | None = None, api_mode: str = '', **_: Any) -> hermes.RequestOverride:
         t = self.turn
         if t is None or request is None:
-            return {'request': self.provider.refused_request(), 'source': 'grokky'}
+            return {'request': formats.refused(api_mode), 'source': 'grokky'}
         # Hermes also calls the model on its own: after an empty or thinking-only reply, for a summary at its own limit.
         if t.api_calls >= t.max_calls:
             self._stop(t, 'turns')
-            return {'request': self.provider.refused_request(), 'source': 'grokky'}
+            return {'request': formats.refused(api_mode), 'source': 'grokky'}
         # Hermes sends its own request when this raises, so a patch that fails sends the refusal.
         try:
-            patched = self.provider.patch_request(request, t.system_prompt, t.schema)
+            patched = self.provider.patch_request(api_mode, request, t.system_prompt, t.schema)
         except Exception:
-            patched = self.provider.refused_request()
+            patched = formats.refused(api_mode)
         return {'request': patched, 'source': 'grokky'}
 
     def receive(self, cmd: TurnCommand | ContinueCommand) -> Turn:
         """The turn a `turn` or `continue` command runs, taken when the command arrives."""
         if cmd['type'] == 'turn':
-            self.latest = Turn(cmd)
+            self.latest = Turn(cmd, self.provider.model)
         assert self.latest is not None, 'a continue follows its turn'
         return self.latest
 
     def start_turn(self, cmd: TurnCommand, t: Turn) -> None:
         self.restore = cmd.get('restore') or self.restore
-        model = cmd.get('model') or models.DEFAULT
-        if model not in models.PRICES:
-            self.emit({'type': 'error', 'message': f'Unknown model "{model}": use one of {", ".join(models.PRICES)}'})
-            return
         problem = structured.schema_error(t.schema) if t.schema is not None else None
         if problem:
             self.emit({'type': 'error', 'message': f'The output schema cannot be used: {problem}'})
             return
-        agent = self._prepare(cmd, model)
+        agent = self._prepare(cmd)
         if agent is None:
             self.emit({'type': 'session_lost'})
             return
@@ -290,25 +309,24 @@ class Session:
             raise RuntimeError(call.error)
         return call.value
 
-    def build_agent(self, model: str, hermes_session: str | None = None) -> hermes.Agent:
+    def build_agent(self, hermes_session: str | None = None) -> hermes.Agent:
         self.hermes_session = hermes_session or uuid.uuid4().hex
-        self.agent = hermes.new_agent(model, self.provider.connection(), self.hermes_session, self.store,
-                                      self._toolsets(), self._on_delta)
-        self.model = model
+        self.agent = hermes.new_agent(self.provider.model, self.provider.connection(), self.hermes_session,
+                                      self.store, self._toolsets(), self._on_delta)
         self.emit({'type': 'session', 'id': self.hermes_session})
         return self.agent
 
-    def _prepare(self, cmd: TurnCommand, model: str) -> hermes.Agent | None:
-        """The agent for this turn's model and stored session, with this turn's tools; None when the stored session
-        to continue is gone."""
+    def _prepare(self, cmd: TurnCommand) -> hermes.Agent | None:
+        """The agent for this turn's stored session, with this turn's tools; None when the stored session to
+        continue is gone."""
         if self.restore:
-            agent = self.build_agent(model, self.restore)
+            agent = self.build_agent(self.restore)
             self.history = self.store.get_messages_as_conversation(self.restore, repair_alternation=True)
             if not self.history:
                 return None
             self.restore = None
-        elif self.agent is None or model != self.model:
-            agent = self.build_agent(model, self.hermes_session)
+        elif self.agent is None:
+            agent = self.build_agent(self.hermes_session)
         else:
             agent = self.agent
         hermes.set_terminal_cwd(self.key, cmd['cwd'])
@@ -403,8 +421,10 @@ class Session:
     def _account(self, t: Turn, usage: Usage, api_duration: float | None) -> None:
         t.tokens.add(usage)
         t.api_seconds += api_duration or 0.0
-        t.cost += models.cost(self.model, usage)
-        if t.cost > t.max_cost:
+        cost = self.provider.cost(usage)
+        t.cost = None if cost is None or t.cost is None else t.cost + cost
+        self.emit({'type': 'usage', 'metrics': t.metrics()})
+        if t.cost is not None and t.cost > t.max_cost:
             self._stop(t, 'budget')
 
     def _stop(self, t: Turn, limit: Literal['turns', 'budget']) -> None:

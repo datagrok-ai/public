@@ -3,7 +3,8 @@ Feature: Filter panel persistence
   What a saved layout and a saved project carry: the cards, the criterion each one holds and the
   rows they leave — and what they must not carry, the header search that was open when the layout
   was saved (GROK-16677). A project reopened from the server brings its filter panel back with the
-  same criterion (GROK-19152). One journey on demog-1000, where RACE is Caucasian in 896 rows and
+  same criterion (GROK-19152). A card a layout brought back with unchecked categories shows its
+  indicator, and Select all from it takes the categories back (public#377). One journey on demog-1000, where RACE is Caucasian in 896 rows and
   633 of those are aged 30 to 60.
 
   Background:
@@ -13,7 +14,8 @@ Feature: Filter panel persistence
     Then the filter panel should have 0 filters
     And all rows should pass the filter
 
-  Scenario: A saved layout brings the cards and their criteria back
+  @realizes:public#377
+  Scenario: A saved layout brings the cards and their criteria back, with the card's indicator at hand (public#377)
     When user adds a card for "RACE" to the filter panel
     And user clicks on the "category Caucasian of RACE" area of filter panel
     And user adds a range filter on "AGE" from 30 to 60
@@ -32,6 +34,11 @@ Feature: Filter panel persistence
     And the "min of AGE" reading of filter panel should be 30
     And the "max of AGE" reading of filter panel should be 60
     And 633 rows should pass the filter
+    When user hovers over caption of "RACE" filter card
+    Then indicator of "RACE" filter card should be visible
+    When user picks "Select all" from the indicator menu of the "RACE" filter card
+    Then the "selected categories of RACE" reading of filter panel should be "Asian, Black, Caucasian, Other"
+    And 708 rows should pass the filter
     And no errors should have been logged
 
   Scenario: A layout saved while the header search was open carries no residue

@@ -336,8 +336,8 @@ function collectionsViewOf(view: any): MonomerCollectionsView {
   return mcView;
 }
 
-function canEditCollection(c: MonomerCollection): boolean {
-  return CollectionDialogs.canEdit(c, DG.User.current().login);
+function canEditCollection(view: any, c: MonomerCollection): boolean {
+  return CollectionDialogs.canEdit(c, collectionsViewOf(view).access);
 }
 
 /** Which of [symbols] the merged monomer library does not know (any polymer type). */
@@ -351,7 +351,7 @@ function collectionsFunctions(): DG.Func[] {
   return [
     aiFunc('getMonomerCollectionsState', 'dynamic getMonomerCollectionsState(view view)',
       'The saved monomer collections - name, monomer count, tags, author and whether the current user can edit each. Call this first',
-      async () => {
+      async (view: any) => {
         const manager = await libManager();
         const names = await manager.listMonomerCollections();
         const collections = await Promise.all(names.map(async (name) => {
@@ -361,7 +361,7 @@ function collectionsFunctions(): DG.Func[] {
             monomers: c.monomerSymbols?.length ?? 0,
             ...(c.tags?.length ? {tags: c.tags} : {}),
             ...(c.updatedBy ? {author: c.updatedBy} : {}),
-            canEdit: canEditCollection(c),
+            canEdit: canEditCollection(view, c),
           };
         }));
         return {total: collections.length, collections};
@@ -369,7 +369,7 @@ function collectionsFunctions(): DG.Func[] {
 
     aiFunc('getMonomerCollectionDetails', 'dynamic getMonomerCollectionDetails(view view, string name)',
       'Full detail of one monomer collection - its monomer symbols, description and tags',
-      async (_view: any, name: string) => {
+      async (view: any, name: string) => {
         const manager = await libManager();
         const fileName = await resolveCollectionName(manager, name);
         if (!fileName)
@@ -381,7 +381,7 @@ function collectionsFunctions(): DG.Func[] {
           ...(c.description ? {description: c.description} : {}),
           ...(c.tags?.length ? {tags: c.tags} : {}),
           ...(c.updatedBy ? {author: c.updatedBy} : {}),
-          canEdit: canEditCollection(c),
+          canEdit: canEditCollection(view, c),
         };
       }),
 
@@ -412,8 +412,8 @@ function collectionsFunctions(): DG.Func[] {
         if (!fileName)
           return {success: false, error: `No collection '${name}' — call getMonomerCollectionsState for names`};
         const existing = await manager.readMonomerCollection(fileName);
-        if (!canEditCollection(existing))
-          return {success: false, error: `Collection '${name}' belongs to ${existing.updatedBy} — only its author can edit it`};
+        if (!canEditCollection(view, existing))
+          return {success: false, error: CollectionDialogs.onlyAuthor(existing, `collection '${name}'`)};
         const symbols = Array.isArray(monomerSymbols) && monomerSymbols.length ? monomerSymbols : existing.monomerSymbols;
         const unknown = await unknownMonomerSymbols(symbols);
         await manager.addOrUpdateMonomerCollection(fileName.replace(/\.json$/i, ''), symbols,
@@ -432,8 +432,8 @@ function collectionsFunctions(): DG.Func[] {
         if (!fileName)
           return {success: false, error: `No collection '${name}' — call getMonomerCollectionsState for names`};
         const existing = await manager.readMonomerCollection(fileName);
-        if (!canEditCollection(existing))
-          return {success: false, error: `Collection '${name}' belongs to ${existing.updatedBy} — only its author can delete it`};
+        if (!canEditCollection(view, existing))
+          return {success: false, error: CollectionDialogs.onlyAuthor(existing, `collection '${name}'`)};
         await manager.deleteMonomerCollection(fileName);
         await collectionsViewOf(view).refresh();
         return {success: true, deleted: fileName.replace(/\.json$/i, '')};

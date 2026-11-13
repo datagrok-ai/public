@@ -1,6 +1,6 @@
 # Grokky
 
-Grokky is the [AI for Datagrok](../../help/explore/ai/ai.md), enabling the following:
+Grokky is the [AI for Datagrok](../../../help/explore/ai/ai.md), enabling the following:
 1. A generic AI JS API for core and other plugins to use LLMs
 2. [Datagrok MCP server](dockerfiles/mcp-server/) so that Datagrok can be used by others
 3. [AI runtime](dockerfiles/claude-runtime) for
@@ -231,8 +231,9 @@ per context (connection ID, view, etc.), each with full message history and UI s
 ### Claude Runtime Client (`src/claude/runtime-client.ts`)
 
 Singleton WebSocket client. Discovers `claude-runtime` and `mcp-server` containers via `grok.dapi.docker`,
-then exposes RxJS subjects for streaming events. API: `send()`, `abort()`, `respondToInput()`, and
-promise-based `query()` for one-shot structured-output calls.
+then exposes RxJS subjects for streaming events. API: `send()`, `abort()`, `respondToInput()`,
+promise-based `query()` for one-shot structured-output calls, and `models()`, the runtime's model ids with its
+default and fast model.
 
 ### Executable Blocks (`src/claude/exec-blocks.ts`)
 
@@ -275,10 +276,11 @@ by active code. All active AI features now route through `ClaudeRuntimeClient`.
 
 ## Model credentials
 
-The only model credential is the `claude-runtime` container's `apiKey`, an Anthropic Console API key; the
-browser names each turn's model, and `agent/grokky_agent/models.yaml` lists the models a turn may use with
-their prices. Claude subscription logins are not supported: Anthropic allows them only in its own
-applications. Details: [Credentials](docs/CLAUDE_CODE_FLOW.md#credentials).
+The model provider, key and model are the Grokky package's credentials, per group: `provider`, `apiKey`, `model`
+(the one model every turn runs on) and, where a provider needs them, `baseUrl`, `region`, `apiFormat` and
+`service`. The runtime reads the user's set with the container token of their WebSocket (`src/credentials.ts`);
+it has no other source, so a user without credentials gets an error. Wire formats are classes in `agent/grokky_agent/formats.py`, providers in `agent/grokky_agent/providers/`.
+Claude subscription logins are not supported. Details: [Credentials](docs/CLAUDE_CODE_FLOW.md#credentials).
 
 ## Rebuilding the container images
 

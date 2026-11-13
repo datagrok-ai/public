@@ -125,7 +125,8 @@ export class Events {
   /** Fires after a context menu closes. */
   get onContextMenuClosed(): rxjs.Observable<any> { return __obs(EVENT_TYPE.CONTEXT_MENU_CLOSED); }
 
-  /** Fires after the Browse tree finished rebuilding and re-resolving the current path. */
+  /** Fires once a Refresh or Find path of the Browse tree has ended: the tree rebuilt and the current path
+   * re-resolved, or a step of it failed. */
   get onBrowseTreeRefreshed(): rxjs.Observable<EventData<BrowseTreeRefreshArgs>> { return __obs(EVENT_TYPE.BROWSE_TREE_REFRESHED); }
 
   /** Fires once every child a tree group's expansion asked for is in the DOM; emits that group.

@@ -55,13 +55,14 @@ export type {BitPredicate} from './src/u2core/bit-array.js';
 import * as grok from './grok';
 import * as ui from './ui';
 
-$(function () {
-  (<any>window).$ = $;
-  (<any>window).dayjs = dayjs;
-  (<any>window).wu = wu;
-  (<any>window).grok = grok;
-  (<any>window).ui = ui;
+// Not on DOM-ready: the client can evaluate a package's bundle, which reads these, before DOMContentLoaded
+(<any>window).$ = $;
+(<any>window).dayjs = dayjs;
+(<any>window).wu = wu;
+(<any>window).grok = grok;
+(<any>window).ui = ui;
 
+$(function () {
   window.addEventListener("error", function (e) {
     if (e.error?.message == '[object ProgressEvent]')
       return;
