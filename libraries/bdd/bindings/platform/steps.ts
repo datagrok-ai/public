@@ -1,4 +1,7 @@
 // setup goes through @datagrok-libraries/test's openers: they keep the provenance tags the UI would set
+import {existsSync, mkdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {dirname, join} from 'node:path';
 import {type Locator, type Page, test} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {DatasetEntry, Given, Then, When} from '../../src/registry.js';
@@ -2730,6 +2733,47 @@ export const userSettingsPutBack = Given('the {string} user settings are put bac
     await putSettingsBack(page, name, before);
   });
 }, {tier: 'api', description: 'the whole map is remembered now and written back at feature end, the server read back until it holds it'});
+
+/* A package's settings (Platform > Plugins > a plugin > Settings) are kept on the server as one map per group. A
+   feature that saves them puts back, at feature end, the map of every group it changed (none: the group's map is
+   cleared) through `Package.setSettings`, which also refreshes the page's `_package.settings`. The maps wait in a file
+   until then: a killed run's are put back when the feature starts again. */
+type GroupSettings = Record<string, Record<string, unknown>>;
+
+async function putPackageSettingsBack(page: Page, name: string, before: GroupSettings, now: GroupSettings): Promise<void> {
+  const changed = [...new Set([...Object.keys(before), ...Object.keys(now)])]
+    .filter((g) => JSON.stringify(before[g]) !== JSON.stringify(now[g]));
+  await page.evaluate(async ([n, maps, groups]) => {
+    const pkg = await grok.dapi.packages.filter(`name = "${n}"`).first();
+    for (const g of groups)
+      await pkg.setSettings(maps[g] ?? null, await grok.dapi.groups.find(g));
+  }, [name, before, changed] as [string, GroupSettings, string[]]);
+}
+
+export const packageSettingsPutBack = Given('the {string} package settings are put back at feature end', async (page: Page, name: string) => {
+  const api = await serverRequests(page);
+  // the package itself: `grok.dapi.packages` and a function's `package` are its published versions
+  const [{id}] = await api.get<{id: string}[]>(`/packages?text=${encodeURIComponent(`name = "${name}"`)}`);
+  const stored = async () => {
+    const maps = await api.get<Record<string, any>>(`/packages/${id}/properties?result=false`);
+    if (maps['#type'] === 'ApiError')
+      throw new Error(`the "${name}" package settings: ${JSON.stringify(maps)}`);
+    return maps as GroupSettings;
+  };
+  const file = join(tmpdir(), 'grok-bdd', `package-settings-${new URL(page.url()).host}-${name}.json`);
+  if (existsSync(file))
+    await putPackageSettingsBack(page, name, JSON.parse(readFileSync(file, 'utf8')), await stored());
+  const before = await stored();
+  mkdirSync(dirname(file), {recursive: true});
+  writeFileSync(file, JSON.stringify(before));
+  atFeatureEnd(page, async () => {
+    await putPackageSettingsBack(page, name, before, await stored());
+    await expect.poll(async () => JSON.stringify(await stored()),
+      {message: `the "${name}" package settings put back`, timeout: pollMs(15000)}).toBe(JSON.stringify(before));
+    rmSync(file, {force: true});
+  });
+}, {tier: 'api', description: 'every group\'s settings of the package are remembered now (and a killed run\'s put back) and ' +
+  'written back at feature end where they changed, then read back; the page\'s settings follow'});
 
 /* `grok.shell.settings` are the user's own (Settings > Beta and the rest), kept in the browser's localStorage
    (`grok-settings`): a demo or a feature that flips one (Domain Databases turns on `enableDomainDatabases`)

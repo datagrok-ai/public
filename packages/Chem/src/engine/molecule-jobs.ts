@@ -18,11 +18,11 @@ const MS_PER_MOLECULE = {coordGen: 200, flatten: 20, beautify: 100, elements: 20
 
 /** The molecule job `op` (crux/jobs/molecule-jobs.ts) over `molecules` on the Crux workers: each chunk's result and
  * the rows the RDKit side does (the chunks' `rest` and the skipped CXSMILES), as column rows. */
-async function moleculeJob<R extends {rest: number[]}>(op: string, molecules: string[], msPerMolecule: number):
-  Promise<{parts: R[], starts: number[], rest: number[]}> {
+async function moleculeJob<R extends {rest: number[]}>(op: string, molecules: string[], msPerMolecule: number,
+  args: unknown[] = []): Promise<{parts: R[], starts: number[], rest: number[]}> {
   const {input, skipped} = cruxInput(molecules);
   const starts: number[] = [];
-  const parts = await (await getCruxService()).jobInChunks<R>(op, input, msPerMolecule, [], starts);
+  const parts = await (await getCruxService()).jobInChunks<R>(op, input, msPerMolecule, args, starts);
   return {parts, starts, rest: [...parts.flatMap((part, k) => part.rest.map((row) => starts[k] + row)), ...skipped]};
 }
 
@@ -32,9 +32,9 @@ async function moleculeJob<R extends {rest: number[]}>(op: string, molecules: st
  * `done` for is logged as a fallback.
  */
 async function resultsByEngine<T>(call: string, op: string, molecules: string[], msPerMolecule: number,
-  rdkit: (molecules: string[]) => Promise<T[]>, done: (result: T) => boolean): Promise<T[]> {
+  rdkit: (molecules: string[]) => Promise<T[]>, done: (result: T) => boolean, args: unknown[] = []): Promise<T[]> {
   return byEngineAsync(call, async () => {
-    const {parts, rest} = await moleculeJob<MoleculeJobResult<T>>(op, molecules, msPerMolecule);
+    const {parts, rest} = await moleculeJob<MoleculeJobResult<T>>(op, molecules, msPerMolecule, args);
     const results = parts.flatMap((part) => part.results);
     await rdkitForRows(call, rest, (rows) => rdkit(rows.map((i) => molecules[i])),
       (patch, k, row) => done(results[row] = patch[k]), (row) => molecules[row]);
@@ -48,10 +48,12 @@ export function coordGenCoordsByEngine(molecules: string[]): Promise<string[]> {
     async (rows) => (await getRdKitService()).getCoordGenCoords(rows), (r) => !!r);
 }
 
-/** Transform | Flatten Molecules: `RdKitService.flattenMolecules(molecules)` (SMILES without stereo) by the engine. */
-export function flattenMoleculesByEngine(molecules: string[]): Promise<string[]> {
+/** Transform | Flatten Molecules: `RdKitService.flattenMolecules(molecules, flattenDoubleBonds)` (SMILES without
+ * stereocenters, and without E/Z with `flattenDoubleBonds`) by the engine. */
+export function flattenMoleculesByEngine(molecules: string[], flattenDoubleBonds = false): Promise<string[]> {
   return resultsByEngine('flattenMolecules', 'flattenMolecules', molecules, MS_PER_MOLECULE.flatten,
-    async (rows) => (await getRdKitService()).flattenMolecules(rows), (r) => !!r);
+    async (rows) => (await getRdKitService()).flattenMolecules(rows, flattenDoubleBonds), (r) => !!r,
+    [flattenDoubleBonds]);
 }
 
 /** `beautifyMols` (Bio's To Atomic Level): `RdKitService.beautifyMolsV3K(molecules)` by the engine. */

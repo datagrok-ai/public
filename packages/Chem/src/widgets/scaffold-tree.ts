@@ -704,8 +704,9 @@ function renderMolecule(node: DG.TreeViewGroup, width: number, height: number, s
         if (color) {
           try {
             const matches: ISubstruct[] = JSON.parse(mol.get_substruct_matches(substrMol));
-            highlights = matches[0];
-            _addColorsToBondsAndAtoms(highlights, color);
+            highlights = matches[0] ?? null;
+            if (highlights)
+              _addColorsToBondsAndAtoms(highlights, color);
           } catch (e) {
             if (crux)
               throw e;

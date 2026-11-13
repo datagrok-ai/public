@@ -30,3 +30,15 @@
   pointer-events: auto;
   cursor: default;
 }
+
+/* a condensed platform form sizes .grok-wait to the full row, wrapping the options column (validation icon)
+   below a select and leaving a multiple choice list, its empty sibling, no width; size it as a plain editor */
+.compute2-scope .ui-form.ui-form-condensed .ui-input-root > .grok-wait {
+  width: 0;
+  flex-grow: 10000;
+}
+
+.compute2-scope .ui-form.ui-form-condensed .ui-input-root.ui-input-multi-choice > .grok-wait {
+  flex-grow: 0;
+  min-width: 0;
+}

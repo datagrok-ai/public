@@ -9,3 +9,6 @@ test-console-output.log
 bdd/test-results/
 bdd/e2e/
 bdd/.auth.json
+
+# the SQL Server fixture of identifiers-catalogs.feature: its passwords and the connection that holds one
+bdd/features/identifiers/.catalogs-db/

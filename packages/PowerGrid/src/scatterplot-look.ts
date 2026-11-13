@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 
 const LOOK_PROPERTIES = [
   'xColumnName', 'yColumnName', 'xAxisType', 'yAxisType', 'invertXAxis', 'invertYAxis', 'xMap', 'yMap',
-  'markerType', 'markersColumnName', 'markersMap', 'sizeColumnName', 'markerOpacity', 'markerDrawBorder',
+  'markerType', 'markersColumnName', 'markersMap', 'sizeColumnName', 'markerDrawBorder',
   'markerBorderWidth', 'markerMinSize', 'markerMaxSize', 'markerSizeScaling', 'showMarkersWithEmptySize',
   'colorColumnName', 'colorMap', 'colorAxisType', 'colorMin', 'colorMax', 'invertColorScheme', 'linearColorScheme',
   'categoricalColorScheme', 'filteredRowsColor', 'filteredOutRowsColor', 'selectedRowsColor', 'missingValueColor',

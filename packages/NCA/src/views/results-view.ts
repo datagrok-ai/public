@@ -2327,13 +2327,21 @@ export function buildC0TooltipSpec(
     }
   };
   const c0 = readC0();
-  if (c0 === null || c0.method === 'observed') return null;
-  const pct = c0.pctAucBackExtrap;
+  if (c0 === null) return null;
+  const line = c0ShareLine(c0.method, c0.pctAucBackExtrap);
+  return line === null ? null : {...header, extra: [line]};
+}
+
+/**
+ * The ONE `back-extrapolated: N % of AUC₀–∞` line of a `C0_EXTRAP` cell — the dense results grid
+ * ({@link buildC0TooltipSpec}) and the Sparse NCA grid (an IV-bolus composite) both print it. Null
+ * on a measured dose-time value (`observed`: nothing extrapolated — omitted, never `0 %`) and when
+ * the share does not exist (no AUC₀–∞).
+ */
+export function c0ShareLine(method: unknown, pct: unknown): HTMLElement | null {
+  if (method == null || method === 'observed') return null;
   if (typeof pct !== 'number' || !Number.isFinite(pct)) return null;
-  return {
-    ...header,
-    extra: [ui.divText(`back-extrapolated: ${pct.toFixed(1)} % of AUC₀–∞`, 'nca-richtip-summary')],
-  };
+  return ui.divText(`back-extrapolated: ${pct.toFixed(1)} % of AUC₀–∞`, 'nca-richtip-summary');
 }
 
 /** The columns that rest on the profile's FIRST-row body weight when the weight varies (AD-2). */
@@ -3067,7 +3075,8 @@ type FixedGridSpec = Readonly<Record<string,
 const DOSE_PROP_FIXED: FixedGridSpec = {
   ROUTE: {header: 'Route', width: 72, desc: 'Route of administration.'},
   SEX: {header: 'Sex', width: 44, desc: 'Sex stratum.'},
-  PARAMETER: {header: 'Parameter', width: 84, desc: 'Exposure metric: AUC or Cmax.'},
+  PARAMETER: {header: 'Parameter', width: 84,
+    desc: 'Exposure metric: AUC or Cmax. Per study day, the AUC basis itself (AUC∞, AUC0–τ, AUClast).'},
   BASIS: {header: 'AUC basis', width: 70,
     desc: 'AUC integration basis (AUCinf default, AUClast fallback). Blank for Cmax.'},
   BETA: {header: 'β', width: 52, format: '0.000',
@@ -3096,12 +3105,55 @@ const DOSE_PROP_FIXED: FixedGridSpec = {
   MIN_N_PER_GROUP: {header: 'Min n/group', width: 92, format: '0',
     desc: 'Smallest animals/group for a conclusive verdict at this IIV. ' +
       'Blank if already conclusive or infeasible (> 50/group).'},
+  // Per-occasion mode (tk-study-day-stratification F2 / F4) — present only on a repeat-dose frame.
+  OCCASION: {header: 'Day', width: 52,
+    desc: 'Study day (occasion). Single-dose and repeated-dose exposure are analysed separately ' +
+      '(ICH S3A); each day has its own fit.'},
+  N_BY_DOSE: {header: 'N per dose', width: 80,
+    desc: 'Animals in the fit per dose level, lowest dose first.'},
+  NOTE: {header: 'Note', width: 260,
+    desc: 'Basis fallback, a verdict that differs on the other AUC basis, or attrition. ' +
+      'Parameter is the AUC basis: AUC∞ carries the Day-1 verdict only when it is valid for every animal ' +
+      '(%AUCextrap ≤ 20 %, λz within τ); AUC0–τ carries it otherwise and on later days. A row with an empty ' +
+      'Verdict is shown beside the verdict row (β and CI only).'},
+};
+
+/** Δβ across occasions (the "Dose Proportionality over time" tab, F3a). No colour, flag or
+ *  p-value: a CI that excludes 0 is not shown as a cue until its false-alarm rate is known. */
+const DOSE_PROP_DELTA_FIXED: FixedGridSpec = {
+  ROUTE: {header: 'Route', width: 72, desc: 'Route of administration.'},
+  SEX: {header: 'Sex', width: 44, desc: 'Sex stratum.'},
+  OCCASION_FIRST: {header: 'First day', width: 72, desc: 'The reference occasion.'},
+  OCCASION_LATER: {header: 'Later day', width: 72, desc: 'The occasion compared with the first one.'},
+  PARAMETER: {header: 'Parameter', width: 84,
+    desc: 'The ONE AUC basis both slopes use (AUC0–τ; AUClast only when both days have equal sampling spans).'},
+  METHOD: {header: 'Method', width: 76,
+    desc: 'paired: regression of the per-animal log-AUC difference on log dose (exact CI, df = paired − 2). ' +
+      'two-fits: no animal key — two independent fits, Welch–Satterthwaite df (conservative). ' +
+      'suppressed: no common AUC basis.'},
+  DELTA_BETA: {header: 'Δβ', width: 60, format: '0.000',
+    desc: 'β(later) − β(first). A change of the power slope between occasions can come from saturation of ' +
+      'clearance or absorption, enzyme induction or inhibition, or accumulation (ICH S3A Note 3).'},
+  CI_LOW: {header: '90% CI low', width: 82, format: '0.000', desc: 'Lower bound of the 90% CI on Δβ.'},
+  CI_HIGH: {header: '90% CI high', width: 86, format: '0.000', desc: 'Upper bound of the 90% CI on Δβ.'},
+  DF: {header: 'df', width: 52, format: '0.0', desc: 'Degrees of freedom of the CI.'},
+  N_FIRST: {header: 'N first', width: 56, format: '0', desc: 'Animals with the AUC on the first day.'},
+  N_LATER: {header: 'N later', width: 56, format: '0', desc: 'Animals with the AUC on the later day.'},
+  N_PAIRED: {header: 'N paired', width: 64, format: '0', desc: 'Animals observed on both days (paired method).'},
+  N_BY_DOSE_FIRST: {header: 'N per dose (first)', width: 96,
+    desc: 'Profiles per dose group on the first day, ascending dose.'},
+  N_BY_DOSE_LATER: {header: 'N per dose (later)', width: 96,
+    desc: 'Profiles per dose group on the later day, ascending dose.'},
+  NOTE: {header: 'Note', width: 260, desc: 'Attrition, basis and method notes.'},
 };
 
 /** Per-subject dose-normalized exposure (the "Dose-Normalized" tab). */
 const DOSE_PROP_DN_FIXED: FixedGridSpec = {
   ROUTE: {header: 'Route', width: 72, desc: 'Route of administration.'},
   SEX: {header: 'Sex', width: 44, desc: 'Sex stratum.'},
+  OCCASION: {header: 'Day', width: 52, desc: 'Study day (occasion).'},
+  SUBJECT: {header: 'Subject', width: 84, desc: 'The profile this row comes from.'},
+  ANIMAL: {header: 'Animal', width: 72, desc: 'The animal the profile belongs to.'},
   DOSE: {header: 'Dose', width: 64, format: '0.###', desc: 'Dose level (per subject), in the mapped units.'},
   DN_AUC: {header: 'AUC/Dose', width: 96, format: '0.000',
     desc: 'Dose-normalized AUC. Flat across doses ⇒ dose-proportional.'},
@@ -3191,6 +3243,11 @@ export function configureDoseProportionalityDnGrid(grid: DG.Grid): void {
   applyFixedGridSpec(grid, DOSE_PROP_DN_FIXED);
 }
 
+/** Friendly headers + tooltips for the "Dose Proportionality over time" (Δβ) grid. */
+export function configureDoseProportionalityDeltaGrid(grid: DG.Grid): void {
+  applyFixedGridSpec(grid, DOSE_PROP_DELTA_FIXED);
+}
+
 // ── UC-04 sparse panels — friendly headers + tooltips ──────────────────────
 // Units are the canonical basis `computeSparseStrata` converts every input to (BUG-19): conc →
 // mg/L, dose → mg or mg/kg, time → h ⇒ AUC mg·h/L, Cmax mg/L, t½/MRT/Tmax h; CL / Vz / Vss and
@@ -3210,8 +3267,9 @@ const SPARSE_NCA_FIXED: FixedGridSpec = {
     desc: 'Sampling design derived from the animal × nominal-time table: ' +
       'destructive (1 sample/animal) / batch (partial overlap) / serial (full).'},
   AUC_LAST: {header: 'AUClast', width: 80, format: '0.000',
-    desc: 'Closed-form composite AUClast (mg·h/L), linear trapezoid from (0, 0) — the regulatory headline. ' +
-      'The linear rule can overestimate a convex decline across wide sampling gaps (see Notes).'},
+    desc: 'Closed-form composite AUClast (mg·h/L), linear trapezoid from (0, 0) — from (0, C_0) on an ' +
+      'IV-bolus composite — the regulatory headline. The linear rule can overestimate a convex decline ' +
+      'across wide sampling gaps (see Notes).'},
   AUC_SE: {header: 'SE', width: 64, format: '0.000',
     desc: 'Holder/Bailer standard error of AUClast (mg·h/L).'},
   // The Satterthwaite df floor is the sparse path's OWN threshold — it is not
@@ -3231,6 +3289,11 @@ const SPARSE_NCA_FIXED: FixedGridSpec = {
   AUC_CI_METHOD: {header: 'CI method', width: 78,
     desc: 'Closed-form variance used: Bailer (destructive, r_ij = 0) / Holder (batch/serial).'},
   CMAX: {header: 'Cmax', width: 70, format: '0.000', desc: 'Composite peak mean concentration (mg/L).'},
+  // The dense grid's column (name, header, format), on the composite: the start of AUClast.
+  C0_EXTRAP: {header: 'C_0', width: 64, format: '0.000',
+    desc: 'Concentration at the dose time of the composite (mg/L), where AUClast starts. IV bolus only. ' +
+      'Measured when a t = 0 mean exists, otherwise estimated from the composite means — Notes say ' +
+      'when it could not be back-extrapolated.'},
   TMAX: {header: 'Tmax', width: 56, format: '0.##', desc: 'Time of the composite Cmax (h).'},
   AUC_INF: {header: 'AUCinf', width: 76, format: '0.000',
     desc: 'Composite AUC extrapolated to infinity (mg·h/L): the linear AUClast of this row + Clast / λz. ' +
@@ -3338,6 +3401,9 @@ export interface SparseCohort {
   readonly maxPerTimepoint: number;
   /** The composite's violated acceptance criteria (short form), empty unless Flagged. */
   readonly reasons: ReadonlyArray<string>;
+  /** IV bolus: how the composite's C0 was obtained and its back-extrapolated share of AUCinf (the
+   *  `C0_EXTRAP` cell's tooltip line); null on every other route. */
+  readonly c0?: {readonly method: string; readonly pctAucBackExtrap: number} | null;
 }
 
 /** The pooled-cohort cue that leads every composite verdict surface (AC-S4.8.0; R1/LBC-3): the
@@ -3380,6 +3446,11 @@ export function configureSparseNcaGrid(
     headerLegend: (name) => {const r = banded[name]; return r !== undefined ? legendRows(r) : [];},
     cellTip: (name, i) => {
       if (name === PIPELINE_COL) return pipelineTipAt(df, i);
+      if (name === 'C0_EXTRAP') {
+        const c0 = cohorts[i]?.c0 ?? null;
+        const line = c0 !== null ? c0ShareLine(c0.method, c0.pctAucBackExtrap) : null;
+        return line === null ? null : {title: 'C_0', summary: SPARSE_NCA_FIXED.C0_EXTRAP.desc, extra: [line]};
+      }
       if (isSparseLzDependentCol(name)) {
         const d = excludedAt(i);
         return d !== null ? excludedCellTipSpec(d, true) : null;
@@ -3427,6 +3498,9 @@ export function configureSparseNcaGrid(
   });
   applyReasonPillColours(grid, thresholds);
   hideRouteUnlessVarying(grid);
+  // `C0_EXTRAP` hides on a frame with no IV-bolus composite — the dense grid's route rule, called.
+  const c0Col = grid.columns.byName('C0_EXTRAP');
+  if (c0Col !== null && df !== null) c0Col.visible = !routeSuppressed(df).has('C0_EXTRAP');
 }
 
 /**

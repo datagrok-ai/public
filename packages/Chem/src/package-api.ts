@@ -1020,12 +1020,13 @@ export namespace funcs {
   }
 
   /**
-   * Removes stereochemistry from molecules and adds a column with flat SMILES.
+   * Removes stereocenters (and optionally the E/Z of double bonds) and adds a column with flat SMILES.
    * @param {DG.Column} molecules
    *   semType: Molecule
+   * @param {boolean} flattenDoubleBonds - Also remove the E/Z (cis/trans) configuration of double bonds
    */
-  export async function flattenMolecules(data: DG.DataFrame , molecules: DG.Column , overwrite: boolean , join: boolean ): Promise<DG.Column> {
-    return await grok.functions.call('Chem:FlattenMolecules', { data, molecules, overwrite, join });
+  export async function flattenMolecules(data: DG.DataFrame , molecules: DG.Column , overwrite: boolean , join: boolean , flattenDoubleBonds: boolean ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:FlattenMolecules', { data, molecules, overwrite, join, flattenDoubleBonds });
   }
 
   /**

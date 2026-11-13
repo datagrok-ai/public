@@ -500,11 +500,11 @@ export class RdKitService {
     (data: string[][]) => ([] as string[]).concat(...data)));
   }
 
-  /** Returns SMILES with stereochemistry removed for the provided molecules.
+  /** Returns SMILES without stereocenters (and without E/Z with `flattenDoubleBonds`) for the provided molecules.
    * Malformed molecules result in an empty string. */
-  async flattenMolecules(molecules: string[]): Promise<string[]> {
+  async flattenMolecules(molecules: string[], flattenDoubleBonds = false): Promise<string[]> {
     return withChemCriticalSection(() => this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
-      this.parallelWorkers[i].flattenMolecules(segment),
+      this.parallelWorkers[i].flattenMolecules(segment, flattenDoubleBonds),
     (data: string[][]) => ([] as string[]).concat(...data)));
   }
 

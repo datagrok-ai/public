@@ -3,19 +3,21 @@ import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject} from 'rxjs';
 import {first} from 'rxjs/operators';
 import {unzipSync} from 'fflate';
+import dayjs from 'dayjs';
 import type ExcelJS from 'exceljs';
-import {category, test, before, expect} from '@datagrok-libraries/test/src/test';
+import {category, test, before, expect, expectExceptionAsync} from '@datagrok-libraries/test/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import type {PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import type {
-  ExportCbInput, ExportSummaryItem,
+  ExportCbInput, ExportSummaryItem, ExportUtils,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import type {
   FuncCallStateInfo,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {getExportSummary, reportSummary, reportTree, SUMMARY_FILE_NAME} from '../components/TreeWizard/tree-export';
-import {DEFAULT_EXPORT, exportCall, exportWorkflow} from '../run-exports';
+import {DEFAULT_EXPORT, TreeExportContext, exportCall, exportWorkflow, treeExportUtils} from '../run-exports';
 import {friendlyIoName} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/run-summary';
+import {replaceForWindowsPath} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 
 const callState = (isOutputOutdated: boolean, runError?: string): FuncCallStateInfo =>
   ({isRunning: false, isRunnable: true, isOutputOutdated, runError, pendingDependencies: []});
@@ -140,7 +142,7 @@ category('Export: workflow summary', () => {
 
   test('Tree export adds the summary file next to the step files', async () => {
     const cbInputs: ExportCbInput[] = [];
-    const [, zip, , summary] = await reportTree({
+    const [, zip, summary] = await reportTree({
       treeState, ...states, cb: async (input) => {cbInputs.push(input);},
     });
     const stepFiles = summary.filter((item) => item.fileName).map((item) => [...item.path, item.fileName].join('/'));
@@ -177,20 +179,22 @@ category('Export: workflow summary', () => {
 category('Export: custom export utils', () => {
   let fc: DG.FuncCall;
   const zipped = (file: DG.FileInfo) => unzipSync(file.data);
+  const callName = (call: DG.FuncCall) => `${replaceForWindowsPath(`${call.func.nqName} - ${call.started}`)}.xlsx`;
   // a workflow whose custom export hands back what its handler builds with the utils
-  const withExport = (steps: any[], handler: (state: PipelineState, utils: any) => Promise<DG.FileInfo>) =>
+  const withExport = (steps: any[],
+    handler: (state: PipelineState, utils: ExportUtils, startDownload: boolean) => Promise<DG.FileInfo | Blob>) =>
     ({...(workflow('root', steps) as any), customExports: [{id: 'custom', handler}]}) as PipelineState;
 
   before(async () => {
     fc = await DG.Func.byName('Compute2:ViewersHookModel').prepare({n: 2}).call();
   });
 
-  test('reportFuncCallExcel applies the step\'s viewers hook and meta, as the step file does', async () => {
+  test('reportStepExcel applies the step\'s viewers hook and meta, as the step file does', async () => {
     const applied: any[] = [];
     const state = withExport([{...step('hooked', fc), viewersHook: (ioName: string, type: string, _v: any, meta: any) =>
       applied.push([ioName, type, meta])}], async (_state, utils) => {
-      const [blob] = await utils.reportFuncCallExcel(fc, 'hooked');
-      return DG.FileInfo.fromBytes('step.xlsx', new Uint8Array(await blob.arrayBuffer()));
+      const [file] = await utils.reportStepExcel(fc, 'hooked');
+      return file;
     });
     await exportWorkflow(state, 'custom', {
       states: {callInfoStates: {hooked: callState(false)}},
@@ -201,13 +205,13 @@ category('Export: custom export utils', () => {
 
   test('reportStateExcel writes a callback\'s workbook changes, unless it replaced the file', async () => {
     const state = withExport([step('first', fc), step('second', fc)], async (state, utils) => {
-      const [blob, , fileName] = await utils.reportStateExcel(state, async (input: ExportCbInput) => {
+      const [file] = await utils.reportStateExcel(state, async (input: ExportCbInput) => {
         if (input.fileName.startsWith('001_'))
           input.wb.addWorksheet('Extra');
         else
           input.archive[[...input.path, input.fileName].join('/')] = [new TextEncoder().encode('replaced'), {}];
       });
-      return DG.FileInfo.fromBytes(fileName, new Uint8Array(await blob.arrayBuffer()));
+      return file;
     });
     const zip = zipped(await exportWorkflow(state, 'custom', {
       states: {callInfoStates: {first: callState(false), second: callState(false)}},
@@ -215,6 +219,62 @@ category('Export: custom export utils', () => {
     const file = (prefix: string) => zip[Object.keys(zip).find((key) => key.startsWith(prefix))!];
     expect(!!(await loadWorkbook(file('001_'))).getWorksheet('Extra'), true, 'the added sheet should be in the file');
     expect(new TextDecoder().decode(file('002_')), 'replaced');
+  });
+
+  test('A workflow export is told not to download and fails for a Blob', async () => {
+    let asked: boolean | undefined;
+    const state = withExport([], async (_state, _utils, startDownload) => {
+      asked = startDownload;
+      return new Blob(['zip']);
+    });
+    await expectExceptionAsync(async () => {await exportWorkflow(state, 'custom', {states: {}});});
+    expect(asked, false);
+  });
+
+  test('A call file is named after its run date, or Not completed', async () => {
+    expect((await exportCall(fc, DEFAULT_EXPORT, {completed: true})).fileName,
+      callName(fc));
+    expect((await exportCall(fc, DEFAULT_EXPORT, {completed: false})).fileName,
+      'Compute2_ViewersHookModel - Not completed.xlsx');
+  });
+
+  test('A workflow file is named after its run date, Not completed, or edited', async () => {
+    const started = dayjs();
+    const name = async (ctx: Partial<TreeExportContext>) => (await exportWorkflow(workflow('root', [step('s', fc)]),
+      DEFAULT_EXPORT, {states: {callInfoStates: {s: callState(false)}}, meta: {title: 't', started}, ...ctx})).fileName;
+    expect(await name({completed: true}), `root - t - ${replaceForWindowsPath(`${started}`)}.zip`);
+    expect(await name({completed: false}), 'root - t - Not completed.zip');
+    expect(await name({completed: true, hasNotSavedEdits: true}), 'root - t - edited.zip');
+    expect(await name({completed: false, meta: {title: 't'}}), 'root - t - Not completed.zip');
+  });
+
+  test('The default report utils return files named after the run', async () => {
+    const names: string[] = [];
+    const state = withExport([step('s', fc)], async (state, utils) => {
+      const [stepFile] = await utils.reportStepExcel(fc, 's');
+      const [zip] = await utils.reportStateExcel(state);
+      const [summary] = await utils.reportSummaryExcel(state);
+      names.push(stepFile.fileName, zip.fileName, summary.fileName);
+      return zip;
+    });
+    await exportWorkflow(state, 'custom',
+      {states: {callInfoStates: {s: callState(false)}}, meta: {title: 't', started: dayjs()}, completed: false});
+    expectDeepEqual(names, [callName(fc), 'root - t - Not completed.zip',
+      'root - t - Not completed - summary.xlsx']);
+  });
+
+  test('A step file is named after its run date, failed, or Not completed', async () => {
+    const keys = async (info: FuncCallStateInfo) => Object.keys((await reportTree({
+      treeState: workflow('root', [step('s', fc)]), callInfoStates: {s: info}}))[1]);
+    expect((await keys(callState(false))).includes(`001_${replaceForWindowsPath(`s - ${fc.started}`)}.xlsx`), true);
+    expect((await keys(callState(true))).includes('001_s - Not completed.xlsx'), true);
+    expect((await keys(callState(true, 'boom'))).includes('001_s - failed.xlsx'), true);
+  });
+
+  test('getFuncCallCustomExports lists the step exports in menu order', async () => {
+    const call = DG.Func.byName('Compute2:TestPreferredExportModel').prepare({a: 1});
+    expectDeepEqual(treeExportUtils(workflow('root', []), {states: {}}).getFuncCallCustomExports(call),
+      ['none', 'hook', 'rec']);
   });
 
   test('Default Excel takes a table with no columns', async () => {
@@ -246,8 +306,12 @@ category('Export: custom export utils', () => {
 
   test('ReportFuncCallExcel builds a run\'s default Excel with its viewers hook', async () => {
     const applied = grok.events.onCustomEvent('compute2-test-viewers-hook-applied').pipe(first()).toPromise();
-    const [blob, wb] = await DG.Func.byName('Compute2:ReportFuncCallExcel').apply({funcCall: fc});
-    expect(blob instanceof Blob && blob.size > 0, true, 'a workbook file');
+    const [file, wb] = await DG.Func.byName('Compute2:ReportFuncCallExcel').apply({funcCall: fc});
+    expect(file instanceof DG.FileInfo && file.data.length > 0, true, 'a workbook file');
+    expect(file.fileName, callName(fc));
+    const [outdated] = await DG.Func.byName('Compute2:ReportFuncCallExcel')
+      .apply({funcCall: fc, isOutputOutdated: true});
+    expect(outdated.fileName, 'Compute2_ViewersHookModel - Not completed.xlsx');
     expect(wb.worksheets.length > 0, true, 'the workbook itself, to add to');
     expectDeepEqual(await applied, {ioName: 'df', type: 'Grid'});
   });

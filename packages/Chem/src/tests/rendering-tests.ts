@@ -8,6 +8,8 @@ import {RDKitCellRenderer} from '../rendering/rdkit-cell-renderer';
 import {showEnlargedMolecule} from '../rendering/render-molecule';
 import {FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG, SCAFFOLD_TREE_HIGHLIGHT} from '../constants';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
+import {HIGHLIGHT_COLOR, UNSPECIFIED_STEREO_IS_UNKNOWN, renderingDefault, renderingOptions, setRenderingValue}
+  from '../rendering/rendering-settings';
 
 category('rendering', () => {
   let rdkitModule: any;
@@ -148,6 +150,21 @@ category('rendering', () => {
     const res = smiles.map((s) => rdKitCellRenderer
       ._fetchMol(s, [], false, false, {}, true).molCtx.useMolBlockWedging);
     expectArray(res, new Array(5).fill(false));
+  });
+
+  test('a column overrides the Rendering settings, the package\'s value removes the override', async () => {
+    const col = DG.Column.fromStrings('smiles', ['CCO']);
+    DG.DataFrame.fromColumns([col]);
+    const packageOptions = renderingOptions();
+    expect(JSON.stringify(renderingOptions(col)), JSON.stringify(packageOptions));
+    setRenderingValue(HIGHLIGHT_COLOR, col, '#0000ff');
+    setRenderingValue(UNSPECIFIED_STEREO_IS_UNKNOWN, col, String(!packageOptions.unspecifiedStereoIsUnknown));
+    expectArray(renderingOptions(col).highlightColour, [0, 0, 255 / 256, 1]);
+    expect(renderingOptions(col).unspecifiedStereoIsUnknown, !packageOptions.unspecifiedStereoIsUnknown);
+    expect(renderingOptions(col).simplifiedStereoGroupLabel, packageOptions.simplifiedStereoGroupLabel);
+    setRenderingValue(HIGHLIGHT_COLOR, col, renderingDefault(HIGHLIGHT_COLOR));
+    expect(col.tags.has(HIGHLIGHT_COLOR.tag), false, 'the package\'s color removes the override');
+    expectArray(renderingOptions(col).highlightColour, packageOptions.highlightColour);
   });
 
   test('Enlarge draws the molecule again at the window\'s size', async () => {

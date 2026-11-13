@@ -68,15 +68,33 @@ export namespace funcs {
   }
 
   /**
-   * The default Excel report of a run, as its export menu builds it: [Blob, ExcelJS.Workbook].
+   * The default Excel report of a run, as its export menu builds it: [DG.FileInfo, ExcelJS.Workbook].
    * @param {any} funcCall - The run to report
    * @param {any} validationState - Validation results by input
    * @param {any} consistencyState - Consistency by input
    * @param {any} viewersHook - The viewers hook of a workflow step, in place of the function's own
    * @param {any} metaState - Meta values by output, for the hook
+   * @param {boolean} isOutputOutdated - Names the file Not completed when true
    */
-  export async function reportFuncCallExcel(funcCall: any , validationState?: any , consistencyState?: any , viewersHook?: any , metaState?: any ): Promise<any> {
-    return await grok.functions.call('Compute2:ReportFuncCallExcel', { funcCall, validationState, consistencyState, viewersHook, metaState });
+  export async function reportFuncCallExcel(funcCall: any , validationState?: any , consistencyState?: any , viewersHook?: any , metaState?: any , isOutputOutdated?: boolean ): Promise<any> {
+    return await grok.functions.call('Compute2:ReportFuncCallExcel', { funcCall, validationState, consistencyState, viewersHook, metaState, isOutputOutdated });
+  }
+
+  /**
+   * The exports of a function's runs as its Export menu lists them, [{id, name}]; the first is default.
+   */
+  export async function callExports(func: any ): Promise<any> {
+    return await grok.functions.call('Compute2:CallExports', { func });
+  }
+
+  /**
+   * Exports a run as its Export menu does, with the id CallExports gives; returns the file.
+   * @param {any} funcCall - The run to export
+   * @param {string} exportId - The export id
+   * @param {any} args - The args a custom export gets (CustomExportArgs)
+   */
+  export async function exportCall(funcCall: any , exportId: string , args?: any ): Promise<DG.FileInfo> {
+    return await grok.functions.call('Compute2:ExportCall', { funcCall, exportId, args });
   }
 
   /**
@@ -219,8 +237,20 @@ export namespace funcs {
     return await grok.functions.call('Compute2:TestCustomExportRecorder', { funcCall });
   }
 
+  export async function testNoDefaultExportModel(a: number ): Promise<number> {
+    return await grok.functions.call('Compute2:TestNoDefaultExportModel', { a });
+  }
+
   export async function testCustomExportNoFile(funcCall: any ): Promise<string> {
     return await grok.functions.call('Compute2:TestCustomExportNoFile', { funcCall });
+  }
+
+  export async function testBlobExportModel(a: number ): Promise<number> {
+    return await grok.functions.call('Compute2:TestBlobExportModel', { a });
+  }
+
+  export async function testCustomExportBlob(funcCall: any , startDownload: boolean ): Promise<any> {
+    return await grok.functions.call('Compute2:TestCustomExportBlob', { funcCall, startDownload });
   }
 
   export async function testCustomExportHookArgs(funcCall: any , viewersHook?: any , metaState?: any ): Promise<DG.FileInfo> {

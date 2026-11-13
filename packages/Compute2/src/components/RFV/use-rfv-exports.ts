@@ -7,8 +7,10 @@ import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-drive
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {canUseResults} from '../../utils';
 import {saveCallToProject, DfExportEntry} from '../../project-export';
-import {downloadFile} from '../TreeWizard/tree-export';
-import {DEFAULT_EXPORT, callExports, exportCall} from '../../run-exports';
+import {downloadFile} from '../../call-export';
+import {callExports, exportCall} from '../../run-exports';
+
+const PROJECT_EXPORT = 'project';
 
 interface ExportItem {
   id: string,
@@ -37,6 +39,8 @@ export function useRfvExports(currentCall: Readonly<Vue.Ref<DG.FuncCall>>, deps:
         validation: validationState.value,
         consistency: consistencyState.value,
         isOutputOutdated: isOutputOutdated.value,
+        runError: deps.callState()?.runError,
+        completed: isOutputOutdated.value === false,
       }));
     } catch (e: any) {
       grok.shell.error(e);
@@ -47,17 +51,14 @@ export function useRfvExports(currentCall: Readonly<Vue.Ref<DG.FuncCall>>, deps:
     ...callExports(currentCall.value.func, deps.hideDefaultExport())
       .map(({id, name}) => ({id, name, handler: () => runExport(id)})),
     {
-      id: 'project',
+      id: PROJECT_EXPORT,
       name: 'Save as project...',
       handler: () => saveCallToProject(currentCall.value, deps.collectDfExportEntries()),
     },
   ]);
 
-  // The Excel report (or a sole export) also gets a direct ribbon icon next to the menu
-  const directExport = Vue.computed(() => {
-    const list = exports.value;
-    return list.find((e) => e.id === DEFAULT_EXPORT) ?? (list.length === 1 ? list[0] : null);
-  });
+  // The first export of the menu also gets a direct ribbon icon next to the menu
+  const directExport = Vue.computed(() => exports.value.find((e) => e.id !== PROJECT_EXPORT) ?? null);
 
   // On autorun the export icons stay put regardless of isOutputOutdated
   // (no ribbon rebuild/flicker); guard the click so a stale/in-flight run surfaces a shell

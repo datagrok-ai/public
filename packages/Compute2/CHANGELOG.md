@@ -2,15 +2,18 @@
 
 ## v.next
 
-* Export: A custom export with `preferred: true` (in `meta.customExports` or a workflow's `customExports`) comes first in the Export menu, before the default Excel report, and is the default of the Runs export; several keep their order
-* Custom function views: Exports declared in `meta.customExports` of the view's function, as for RFV, show in the view's Export menu and export its runs in the Runs export
+* Export: The default Excel report is several times faster with charts; fixed its charts being squashed vertically
+* RFV: Fixed multiple choice inputs showing no list, and the empty line below selects and multiple choice inputs, in a narrow form
+* Export: Added `CallExports` and `ExportCall`, which list a run's exports as its Export menu does and run one, returning its file
+* Export: A custom export with `preferred: true` (in `meta.customExports` or a workflow's `customExports`) comes first in the Export menu, before the default Excel report, and is the default of the Runs export; several keep their order; the report icon of RFV runs the first export of the menu
 * RFV, Workflows: A viewers hook that can't be made, because its function is missing or fails, shows a warning and the viewers and exports go on without it; in a workflow it used to keep the workflow from opening
-* Workflows: Fixed custom export changes to a step workbook in the `reportStateExcel` callback being lost, and `reportFuncCallExcel` building the step without its viewers hook and meta
-* Export: Added `ReportFuncCallExcel`, the default Excel report of a run, for RFV custom exports to start from; it takes the `viewersHook` and `metaState` a custom export gets
-* Export: RFV custom exports get the call's `viewersHook` (a workflow step's own when the step sets one) and, in a workflow, the step's `metaState`
+* Workflows: Fixed custom export changes to a step workbook in the `reportStateExcel` callback being lost, and `reportStepExcel` (then `reportFuncCallExcel`) building the step without its viewers hook and meta
+* Export: Added `ReportFuncCallExcel`, the default Excel report of a run as a named `DG.FileInfo` and its workbook, for RFV custom exports to start from; it takes the `viewersHook`, `metaState` and `isOutputOutdated` a custom export gets
+* Export: RFV custom exports get the call's `viewersHook` (a workflow step's own when the step sets one) and, in a workflow, the step's `metaState`; every export menu, a workflow step and the Runs export pass an export function the same arguments, `runError` included
 * Runs: Export saves the runs of a space, with its subspaces or without, or of My runs into one zip, each run with the export picked for its model (the first one of its export menu by default); a search or filter narrows what is exported, and runs that aren't completed (outdated outputs or unrun workflow steps) are left out and marked in the run lists
 * Workflows: Added `LoadWorkflowRun`, which loads a saved workflow run without UI and returns its state as `RunWorkflow` does
-* Export: A custom export returns its file (`DG.FileInfo`) and Compute2 downloads it; the `startDownload` argument is removed, and an export that returns no file shows an error
+* Export: A run's file name says Not completed, in place of the run's date, when the run isn't completed by Compute2's flags (current outputs for a function, every step current for a workflow); a workflow with unsaved edits stays edited; a step file in the workflow zip says Not completed in place of edited, and a function run's file name has `:` and other characters Windows can't take replaced, as a workflow's has
+* Export: A custom export (an RFV export function or a workflow handler) returns its file as `DG.FileInfo` and Compute2 downloads it; an export that returns no file shows an error. Legacy `meta.customExports` functions keep working: they get `startDownload`, always false, and the `Blob` they return is named after the run, with `.xlsx` for an Excel Blob
 * Workflows: A step with inconsistent inputs shows a broken link icon in the steps tree, like the inputs themselves (needs WebComponents v.next)
 * Keyboard: Ctrl/Cmd+Enter presses Run, Ctrl/Cmd+Shift+Enter presses Update and Ctrl/Cmd+S saves the run, with the same checks as their buttons; a warning says why when the button is disabled. In a workflow Run and Update act on the step focused in the steps tree (Update on a workflow row updates its substeps), else on the open step
 * RFV, Workflows: Tab and Shift+Tab go round the form and the steps tree (outputs, run history and the ribbon are left to the pointer) instead of leaving for the page, buttons show the keyboard focus, and the Keyboard shortcuts ribbon icon lists the keys; Tab does nothing in the Update confirmation, where Enter confirms and Esc cancels

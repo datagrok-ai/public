@@ -2,6 +2,7 @@
 
 ## v.next
 
+* InputForm: Fixed inputs hidden by a `visible` expression showing when a standalone form opens
 * Added `onPress`, the Enter/Space key handler shared by Tabs, ribbon icons and IconFA
 * IconFA: A clickable icon takes the keyboard focus and is pressed with Enter or Space
 * BigButton: Added `disabledReason`; a disabled button no longer emits clicks, stays focusable, and shows the reason as a warning when pressed and as its tooltip where the host keeps pointer events on it

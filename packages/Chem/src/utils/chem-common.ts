@@ -144,14 +144,15 @@ export function hasNewLines(s: string): boolean {
   return s.includes('\n') || s.includes('\r');
 }
 
-export function hexToPercentRgb(hex: string): number[] | null {
+/** An RGBA percent array of a `#rrggbb` (with `alpha`) or `#rrggbbaa` color. */
+export function hexToPercentRgb(hex: string, alpha: number = 0.3): number[] | null {
   const result = hex.length === 7 ? /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex) :
     /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? [
     parseInt(result[1], 16) / 256,
     parseInt(result[2], 16) / 256,
     parseInt(result[3], 16) / 256,
-    result.length > 4 ? parseInt(result[4], 16) / 256 : 0.3,
+    result[4] ? parseInt(result[4], 16) / 256 : alpha,
   ] : null;
 }
 

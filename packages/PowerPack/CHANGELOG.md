@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#637](https://github.com/datagrok-ai/core/issues/637): Formula Lines: Removed the Opacity sliders - lines and bands take one RGBA color, regions an RGBA fill, outline and title color; an opacity saved earlier is folded into the color
 * Enrichments: Fixed an enrichment saved for a catalog other than the connection's own (Databricks, Snowflake, SQL Server) being run in the connection's own catalog, where it failed or joined the rows of a table with the same name
 * DB explorer: Added catalogs to Configure Identifiers: on a database that has them (Databricks, Snowflake, SQL Server) the dialog asks for the catalog first - it opens on the connection's own, lists the others with a search, and reads the schemas of the picked catalog alone; the configuration is listed as catalog.schema, and the Explore pane of a query result explores the catalog the result came from
 * DB explorer: Fixed Configure Identifiers showing nothing until the schemas were read, and nothing at all when they could not be: the dialog opens at once and reports the error with a way to retry; a configuration that cannot be loaded says so in its view instead of loading forever; the editor opens on the configurations as the server has them now, not as they were when the page loaded

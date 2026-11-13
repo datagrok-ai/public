@@ -29,9 +29,12 @@ import type {
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {CUSTOM_VIEW_OPTION, loadViewersHook} from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {applyCustomExport, callExcelReport} from './components/TreeWizard/tree-export';
-import {callExports} from './run-exports';
+import {callExcelReport} from './call-export';
+import {callExports, exportCall} from './run-exports';
 import type {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
+import type {
+  CustomExportArgs,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import type {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {loadSavedTree, readRun, runWorkflow, saveWorkflowRun} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
@@ -167,9 +170,6 @@ export class PackageFunctions {
 
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     const detach = attachRunStorage(view, call.func);
-    view.hostExports = callExports(call.func, true).map(({id, name}) => ({
-      name, export: (fc: DG.FuncCall) => applyCustomExport(fc, id, {}, call.func),
-    }));
     if (call.aux.initialRunId) {
       await view.loadRun(call.aux.initialRunId)
         .catch((e) => grok.shell.error(`Couldn't open the run: ${e?.message ?? e}`));
@@ -318,7 +318,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'ReportFuncCallExcel',
-    description: 'The default Excel report of a run, as its export menu builds it: [Blob, ExcelJS.Workbook].',
+    description: 'The default Excel report of a run, as its export menu builds it: [DG.FileInfo, ExcelJS.Workbook].',
     outputs: [{type: 'object', name: 'result'}],
   })
   static async ReportFuncCallExcel(
@@ -332,10 +332,42 @@ export class PackageFunctions {
       viewersHook?: ViewersHook,
     @grok.decorators.param({type: 'object', options: {
       description: 'Meta values by output, for the hook', optional: true}})
-      metaState?: Record<string, BehaviorSubject<any>>) {
+      metaState?: Record<string, {value: any}>,
+    @grok.decorators.param({type: 'bool', options: {
+      description: 'Names the file Not completed when true', optional: true}})
+      isOutputOutdated?: boolean) {
     return callExcelReport(funcCall, {
       viewersHook: viewersHook ?? await loadViewersHook(funcCall.func), metaState,
       validation: validationState, consistency: consistencyState,
+      completed: isOutputOutdated == null ? undefined : !isOutputOutdated,
+    });
+  }
+
+  @grok.decorators.func({
+    name: 'CallExports',
+    description: 'The exports of a function\'s runs as its Export menu lists them, [{id, name}]; the first is default.',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static CallExports(@grok.decorators.param({type: 'func'}) func: DG.Func) {
+    return callExports(func);
+  }
+
+  @grok.decorators.func({
+    name: 'ExportCall',
+    description: 'Exports a run as its Export menu does, with the id CallExports gives; returns the file.',
+    outputs: [{type: 'file', name: 'result'}],
+  })
+  static async ExportCall(
+    @grok.decorators.param({type: 'funccall', options: {description: 'The run to export'}}) funcCall: DG.FuncCall,
+    @grok.decorators.param({options: {description: 'The export id'}}) exportId: string,
+    @grok.decorators.param({type: 'object', options: {
+      description: 'The args a custom export gets (CustomExportArgs)', optional: true}}) args?: CustomExportArgs,
+  ): Promise<DG.FileInfo> {
+    const {validationState, consistencyState, isOutputOutdated, runError, viewersHook, metaState} = args ?? {};
+    return exportCall(funcCall, exportId, {
+      validation: validationState, consistency: consistencyState, isOutputOutdated, runError, metaState,
+      viewersHook: viewersHook ?? await loadViewersHook(funcCall.func),
+      completed: isOutputOutdated == null ? undefined : !isOutputOutdated,
     });
   }
 
@@ -1076,7 +1108,6 @@ export class PackageFunctions {
     name: 'Custom View (Compute 2 Test)',
     editor: 'Compute2:CustomFunctionViewEditor',
     // meta: { role: 'model' },
-    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]'},
     outputs: [{type: 'object', name: 'result'}],
   })
   static async TestCustomView() {
@@ -1107,9 +1138,26 @@ export class PackageFunctions {
     return DG.FileInfo.fromString('recorded.txt', `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}`);
   }
 
+  @grok.decorators.func({meta: {
+    features: '{"export": false}', customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]'}})
+  static async TestNoDefaultExportModel(a: number): Promise<number> {
+    return a;
+  }
+
   @grok.decorators.func()
   static async TestCustomExportNoFile(funcCall: DG.FuncCall): Promise<string> {
     return funcCall.func.nqName;
+  }
+
+  @grok.decorators.func({meta: {customExports: '[{"name":"blob","function":"Compute2:TestCustomExportBlob"}]'}})
+  static async TestBlobExportModel(a: number): Promise<number> {
+    return a;
+  }
+
+  // A legacy export: it gets startDownload and returns a Blob
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  static async TestCustomExportBlob(funcCall: DG.FuncCall, startDownload: boolean): Promise<Blob> {
+    return new Blob([`${funcCall.func.nqName}|${startDownload}`]);
   }
 
   @grok.decorators.func()
@@ -1117,7 +1165,7 @@ export class PackageFunctions {
     funcCall: DG.FuncCall,
     @grok.decorators.param({type: 'object', options: {optional: true}}) viewersHook?: ViewersHook,
     @grok.decorators.param({type: 'object', options: {optional: true}})
-      metaState?: Record<string, BehaviorSubject<any>>,
+    metaState?: Record<string, BehaviorSubject<any>>,
   ): Promise<DG.FileInfo> {
     return DG.FileInfo.fromString('hook.txt', `${typeof viewersHook}|${metaState?.['a']?.value}`);
   }
