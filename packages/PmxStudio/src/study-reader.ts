@@ -593,7 +593,7 @@ export const volumeSourceOf = (x: any): VolumeSource | undefined =>
 /** What a sheet's frame needs to be read as cells: DG.DataFrame fits it. */
 export interface SheetFrame {name: string, rowCount: number,
   columns: {length: number, byIndex(i: number): {name: string, type?: string, getString(i: number): string,
-    get?(i: number): any}}}
+    get?(i: number): any, isNone?(i: number): boolean}}}
 
 // an Excel date as the sheet reader hands it over (Date.toString: Mon Nov 13 2026 00:00:00 GMT+0100 (...)), as written
 const JS_DATE = /^[A-Z][a-z]{2} [A-Z][a-z]{2} \d{2} \d{4} \d{2}:\d{2}:\d{2} GMT[+-]\d{4}(?: \(.*\))?$/;
@@ -601,11 +601,12 @@ const JS_DATE = /^[A-Z][a-z]{2} [A-Z][a-z]{2} \d{2} \d{4} \d{2}:\d{2}:\d{2} GMT[
 const dayText = (s: string): string => JS_DATE.test(s) ? new Date(s).toISOString().slice(0, 10) : s;
 
 /** A sheet's cells as text: the column names, then a row per line; a date cell as yyyy-mm-dd, a blank as ''.
- *  A number column is written as the number itself, not as the column's format rounds it. */
+ *  A date column (PowerPack's reader makes one of the cells it recognises as dates) is read from its stored UTC
+ *  instant; every other cell as written (getString: PowerPack sets each number column's format to its decimals). */
 export function cellsOfFrame(df: SheetFrame): string[][] {
   const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
-  const rows = Array.from({length: df.rowCount}, (_, r) => cols.map((c) => dayText(
-    (c.type === 'double' && c.get ? (c.get(r) == null ? '' : String(c.get(r))) : c.getString(r) ?? '').trim())));
+  const rows = Array.from({length: df.rowCount}, (_, r) => cols.map((c) => c.type === 'datetime' && c.get ?
+    (c.isNone?.(r) ? '' : c.get(r).toISOString().slice(0, 10)) : dayText((c.getString(r) ?? '').trim())));
   return [cols.map((c) => dayText(c.name.trim())), ...rows];
 }
 
@@ -613,7 +614,10 @@ export function cellsOfFrame(df: SheetFrame): string[][] {
  *  not start with its column names loses cells. */
 export function sheetProblem(df: SheetFrame): string | null {
   const names = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i).name);
-  if (names.length < 2 || names.some((n) => /^col\d+$/.test(n) || / \(\d+\)$/.test(n))) {
+  // PowerPack's own names for what the first row left blank: colN at position N, and "Name (1)" beside "Name"
+  const invented = (n: string, i: number) => n === `col${i + 1}` || (/ \(\d+\)$/.test(n) &&
+    names.includes(n.replace(/ \(\d+\)$/, '')));
+  if (names.length < 2 || names.some(invented)) {
     return `Sheet «${df.name}»: the first row must hold the column names (Animal, Day, …). Delete the rows above ` +
       'them, start the table in row 1, or save the sheet as CSV.';
   }

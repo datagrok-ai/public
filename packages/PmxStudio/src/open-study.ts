@@ -141,24 +141,26 @@ export async function fileText(f: File): Promise<string> {
   let frames: DG.DataFrame[];
   try {
     const r = await fn.apply({bytes: new Uint8Array(await f.arrayBuffer())});
-    frames = Array.isArray(r) ? r : [r];
+    frames = Array.isArray(r) ? r : r ? [r] : [];
   } catch (e) {
     console.error(e);
     throw new Error('The Excel file could not be read: open it in Excel and save it again as .xlsx or .csv.');
   }
-  const refused = frames.flatMap((df) => sheetProblem(df) ?? []);
+  // a refused sheet with rows is the better thing to tell than an empty one
+  const refused = [...frames].sort((a, b) => +(b.rowCount > 0) - +(a.rowCount > 0))
+    .flatMap((df) => sheetProblem(df) ?? []);
   const usable = frames.filter((df) => df.rowCount > 0 && !sheetProblem(df));
   const sheets = usable.map((df) => ({name: df.name, cells: cellsOfFrame(df)}));
   if (sheets.length === 0)
     throw new Error(refused[0] ?? 'The workbook has no rows: open the file with the measurements.');
   let pick = sheets[0];
-  if (sheets.length > 1) {
+  if (sheets.length > 1 || refused.length) {
     const names = studySheets(sheets);
     if (names.length === 0) {
-      throw new Error('No sheet of the workbook reads as a table of measurements (sheets tried: ' +
+      throw new Error(refused[0] ?? 'No sheet of the workbook reads as a table of measurements (sheets tried: ' +
         `${sheets.map((s) => s.name).join(', ')}). Each needs a row per measurement, or a column per day or animal.`);
     }
-    const name = names.length === 1 ? names[0] : await new Promise<string>((resolve, reject) => {
+    const name = names.length === 1 || sheets.length === 1 ? names[0] : await new Promise<string>((resolve, reject) => {
       const input = ui.input.choice('Sheet', {value: names[0], items: names});
       const none = () => reject(new Error('No sheet was chosen.'));
       const d = ui.dialog(`Which sheet of ${f.name} holds the measurements?`);

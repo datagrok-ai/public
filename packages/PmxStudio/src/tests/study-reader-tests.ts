@@ -330,9 +330,12 @@ category('Study reader', () => {
 /** A sheet as PowerPack hands it over: every cell a string, a blank as null. */
 const frame = (name: string, head: string[], rows: (string | null)[][]): SheetFrame => ({name, rowCount: rows.length,
   columns: {length: head.length, byIndex: (i) => ({name: head[i], getString: (r) => rows[r][i] as string})}});
+// DG's get() on a number column gives a float sentinel for a blank, never null; a date column gives a dayjs
 const typed = (name: string, cols: [string, string, (string | null)[]][]): SheetFrame => ({name,
   rowCount: cols[0][2].length, columns: {length: cols.length, byIndex: (i) => ({name: cols[i][0], type: cols[i][1],
-    getString: (r) => cols[i][2][r] as string, get: (r) => cols[i][2][r] == null ? null : Number(cols[i][2][r])})}});
+    getString: (r) => cols[i][2][r] ?? '', isNone: (r) => cols[i][2][r] == null,
+    get: (r) => cols[i][1] === 'datetime' ? {toISOString: () => `${cols[i][2][r]}T00:00:00.000Z`} :
+      cols[i][2][r] == null ? 2.68e-34 : Number(cols[i][2][r]) + 1e-5})}});
 const dated = (d: string) => `${d} 01:00:00 GMT+0100 (Central European Standard Time)`;
 
 category('Excel sheets', () => {
@@ -379,6 +382,9 @@ category('Excel sheets', () => {
     expect(sheetProblem(frame('T', [], [])), msg('T'));
     expect(sheetProblem(frame('T', ['Animal', 'col2'], [['x', 'y']])), msg('T'));
     expect(sheetProblem(frame('T', ['Animal', 'Day', 'Day (1)'], [['x', 'y', 'z']])), msg('T'));
+    expect(sheetProblem(frame('T', ['Animal', 'Day', 'Dose (1)'], [['x', 'y', 'z']])), null);
+    expect(sheetProblem(frame('T', ['Animal', 'Day', 'col1'], [['x', 'y', 'z']])), null);
+    expect(sheetProblem(frame('T', ['Animal', 'Day', 'col3'], [['x', 'y', 'z']])), msg('T'));
     expect(sheetProblem(frame('T', ['Animal', 'Day'], [['x', 'y']])), null);
   });
 
@@ -396,6 +402,13 @@ category('Excel sheets', () => {
       ['Volume', 'double', ['100', '90']]]);
     expect(readStudy(cellsOfFrame(int)).error, 'Not read: rows 2 and 3 are one animal on one day (7, day 0); keep ' +
       'one row per animal and day.');
+  });
+
+  test('date columns come from the stored day; number columns as written, blanks blank', async () => {
+    const t = typed('D', [['Animal', 'string', ['m1', 'm2']], ['Date', 'datetime', ['2026-11-02', null]],
+      ['Volume', 'double', ['100.1', null]]]);
+    const cells = cellsOfFrame(t);
+    expect(JSON.stringify(cells.slice(1)), '[["m1","2026-11-02","100.1"],["m2","",""]]');
   });
 
   test('a wide sheet keeps ids like 007 and 1.10 as headings', async () => {
