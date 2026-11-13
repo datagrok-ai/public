@@ -12,7 +12,8 @@ import {after, before, category, expect, test} from '@datagrok-libraries/test/sr
 // advertises supportsDdl (WO-B5..B8); on an older stack the `before` dryRun probe fails and
 // every round trip self-skips cleanly.
 category('Dapi: connector ddl', () => {
-  const rnd = () => DG.Utils.randomString(8);
+  // lower case: the checks below name the table in plain SQL, unquoted, which Postgres folds to lower case
+  const rnd = () => DG.Utils.randomString(8).toLowerCase();
   // Same writable-Postgres target convention as `Dapi: connector writes`: the local compose
   // demo `world` DB by default, overridable via a `dgConnectorWritesDb` global.
   const dbCfg = {
