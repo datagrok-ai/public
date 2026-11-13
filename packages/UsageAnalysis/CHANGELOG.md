@@ -2,6 +2,11 @@
 
 ## v.next
 
+* Release dashboard: Fixed the Overview, Tests and Benchmarks showing no data: the per-build pivot relied on `first()` of string columns, which the dataframe pivot drops
+* Release dashboard: The Overview fills each card as soon as its own source answers instead of waiting for the slowest one, and logs a source that fails
+* Release dashboard: Stress summaries are cached per build, so the Stress card and tab no longer wait minutes for a 20-build aggregation
+* Release dashboard: The tests query returns only actual runs, Overview and Tests share one result, and the queries no longer run three times on open
+* Release dashboard: The Vulnerabilities card counts the platform's bleeding-edge images; plugin and tool images are shown as a separate figure
 * Metrics: Moved to the platform: Browse > Platform > Health > Metrics
 * Cloud Logs, Service Logs: Moved to the platform as one explorer with stored and live service logs: Browse > Platform > Health > Logs
 * [core#239](https://github.com/datagrok-ai/core/issues/239): Projects: The app is saved with a project and reopens on the same tab, sub-view and filters

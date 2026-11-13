@@ -48,7 +48,7 @@ export class ReleaseHandler {
         this.selectEnv(this.ctx.env.value);
       })
       .catch((e) => grok.log.warning(`Release: could not list test branches: ${e}`));
-    this.refreshIcon = ui.iconFA('sync-alt', () => this.ctx.refresh.next(), 'Refresh the current data');
+    this.refreshIcon = ui.iconFA('sync-alt', () => this.ctx.reload(), 'Refresh the current data');
     this.refreshIcon.classList.add('ua-release-ribbon-refresh');
 
     const overview = new ReleaseOverviewView(this.ctx);

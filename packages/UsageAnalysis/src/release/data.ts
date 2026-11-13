@@ -1,7 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {BehaviorSubject, Subject} from 'rxjs';
+import {BehaviorSubject, Observable, Subject, combineLatest} from 'rxjs';
+import {debounceTime, distinctUntilChanged, map, skip} from 'rxjs/operators';
 
 import {queries} from '../package-api';
 
@@ -25,9 +26,33 @@ export class ReleaseContext {
   readonly env: BehaviorSubject<string>;
   readonly branch: BehaviorSubject<string>;
   readonly refresh = new Subject<void>();
+  /** Fires when the env or the branch really changes. Switching instance re-points the branch too,
+   * so the pair is debounced into one event; re-asserting the current values fires nothing. */
+  readonly scopeChanged: Observable<string>;
+  private lastTests: {key: string, pivot: Promise<ReleasePivot | null>} | null = null;
   constructor(env: string = DEFAULT_ENV, branch: string = DEFAULT_BRANCH) {
     this.env = new BehaviorSubject(env);
     this.branch = new BehaviorSubject(branch);
+    this.scopeChanged = combineLatest([this.env, this.branch]).pipe(debounceTime(0),
+      map(([e, b]) => `${e}|${b}`), distinctUntilChanged(), skip(1));
+  }
+
+  /** The tests pivot for the current env and branch. Overview and Tests open on the same one, so the
+   * last answer is kept and the second tab does not run the query again; `force` re-fetches. */
+  tests(lastBuilds: number, force = false): Promise<ReleasePivot | null> {
+    const key = `${this.env.value}|${this.branch.value}|${lastBuilds}`;
+    if (force || this.lastTests?.key !== key) {
+      const pivot = fetchReleaseTests(this.env.value, lastBuilds, this.branch.value);
+      const entry = this.lastTests = {key, pivot};
+      pivot.catch(() => { if (this.lastTests === entry) this.lastTests = null; });
+    }
+    return this.lastTests!.pivot;
+  }
+
+  /** Ribbon Refresh: drops the kept pivot once, then lets every tab re-fetch. */
+  reload(): void {
+    this.lastTests = null;
+    this.refresh.next();
   }
 }
 
@@ -223,57 +248,84 @@ export interface StressRegression {
   detail: string;
 }
 
-function renameCol(df: DG.DataFrame, from: string, to: string): void {
-  const c = df.columns.byName(from);
-  if (c) {
-    c.name = to;
-    c.setTag('friendlyName', to);
+interface PivotValue { col: string; suffix: string; type?: DG.ColumnType; }
+
+/** One row per distinct `keys` combination, with a `${index}${suffix}` column per index value and
+ * value column; a cell with no source row stays empty. Hand-rolled because DataFrame pivot keeps
+ * numeric aggregates only: `first()` of a string column (status, result) yields no column at all. */
+function pivotByIndex(raw: DG.DataFrame, keys: string[], indexName: string,
+  values: PivotValue[]): {df: DG.DataFrame, indexes: number[]} {
+  const keyCols = keys.map((k) => raw.getCol(k));
+  const indexCol = raw.getCol(indexName);
+  const rowOf = new Map<string, number>();
+  const firstRows: number[] = [];
+  const target = new Int32Array(raw.rowCount);
+  const found = new Set<number>();
+  for (let i = 0; i < raw.rowCount; i++) {
+    const key = keyCols.map((c) => c.get(i) ?? '').join('\u0001');
+    let row = rowOf.get(key);
+    if (row === undefined) {
+      row = firstRows.length;
+      rowOf.set(key, row);
+      firstRows.push(i);
+    }
+    target[i] = row;
+    if (!indexCol.isNone(i))
+      found.add(indexCol.get(i));
   }
+  const indexes = [...found].sort((a, b) => a - b);
+  const df = DG.DataFrame.fromColumns(
+    keyCols.map((c) => DG.Column.fromStrings(c.name, firstRows.map((i) => c.get(i) ?? ''))));
+  for (const v of values) {
+    const src = raw.getCol(v.col);
+    const cols = new Map(indexes.map((idx) => [idx, df.columns.addNew(`${idx}${v.suffix}`, v.type ?? src.type)]));
+    for (let i = 0; i < raw.rowCount; i++) {
+      if (!indexCol.isNone(i) && !src.isNone(i))
+        cols.get(indexCol.get(i))!.set(target[i], src.get(i), false);
+    }
+  }
+  return {df, indexes};
+}
+
+/** The first non-empty value of `col` among the rows whose `indexName` equals `index`. */
+function valueAt(raw: DG.DataFrame, indexName: string, index: number, col: string): string {
+  const indexCol = raw.getCol(indexName);
+  const valueCol = raw.getCol(col);
+  for (let i = 0; i < raw.rowCount; i++) {
+    if (indexCol.get(i) === index && !valueCol.isNone(i))
+      return valueCol.get(i);
+  }
+  return '';
 }
 
 /** Runs ReleaseTests and pivots it client-side into one row per test with per-build columns. */
 export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: number,
   branchFilter: string = DEFAULT_BRANCH): Promise<ReleasePivot | null> {
-  const raw: DG.DataFrame = await queries.releaseTests(instanceFilter,
-    branchFilter === ALL_BRANCHES ? null : branchFilter, lastBuildsNum);
+  const [raw, schemas, mutesSchema] = await Promise.all([
+    queries.releaseTests(instanceFilter, branchFilter === ALL_BRANCHES ? null : branchFilter, lastBuildsNum),
+    grok.dapi.stickyMeta.getSchemas(),
+    getReleaseMutesSchema(),
+  ]);
   if (raw.rowCount === 0)
     return null;
 
-  const biCol = raw.getCol('build_index');
-  const buildIndexes = Array.from(new Set(Array.from({length: biCol.length}, (_, i) => biCol.get(i))))
-    .filter((v) => v != null).map(Number).sort((a, b) => a - b);
+  const {df: pivot, indexes: buildIndexes} = pivotByIndex(raw, ['package', 'test', 'owner'], 'build_index', [
+    {col: 'status', suffix: ''}, {col: 'duration', suffix: ' ms', type: DG.TYPE.FLOAT},
+    {col: 'flaking', suffix: ' flaking'}, {col: 'result', suffix: ' result'}]);
   const latest = buildIndexes[buildIndexes.length - 1];
-
-  const pivot = raw.groupBy(['package', 'test', 'owner'])
-    .pivot('build_index')
-    .first('status')
-    .avg('duration')
-    .first('flaking')
-    .first('result')
-    .first('build_commit')
-    .aggregate();
 
   // Per-build success (1 pass / 0 fail / gap for skipped & did-not-run) for the success sparkline.
   for (const bi of buildIndexes) {
-    const sc = pivot.getCol(`${bi} first(status)`);
+    const sc = pivot.getCol(`${bi}`);
     pivot.columns.addNewFloat(`${bi} ok`).init((i) => {
       const s = sc.get(i);
       return s === 'passed' ? 1 : s === 'failed' ? 0 : null;
     });
   }
 
-  const latestCommit = pivot.columns.addNewString('latest_commit');
-  latestCommit.init((i) => pivot.get(`${latest} first(build_commit)`, i) ?? '');
-  const latestResult = pivot.columns.addNewString('latest_result');
-
-  for (const bi of buildIndexes) {
-    renameCol(pivot, `${bi} first(status)`, `${bi}`);
-    renameCol(pivot, `${bi} avg(duration)`, `${bi} ms`);
-    renameCol(pivot, `${bi} first(result)`, `${bi} result`);
-    renameCol(pivot, `${bi} first(flaking)`, `${bi} flaking`);
-    pivot.columns.remove(`${bi} first(build_commit)`);
-  }
-  latestResult.init((i) => pivot.get(`${latest} result`, i) ?? '');
+  const latestCommit = valueAt(raw, 'build_index', latest, 'build_commit');
+  pivot.columns.addNewString('latest_commit').init(() => latestCommit);
+  pivot.columns.addNewString('latest_result').init((i) => pivot.get(`${latest} result`, i) ?? '');
 
   const statusCols = buildIndexes.map((bi) => `${bi}`);
   const durationCols = buildIndexes.map((bi) => `${bi} ms`);
@@ -282,11 +334,7 @@ export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: n
 
   // Release version + per-test baselines (last-run date, previous-release avg duration), read from the raw
   // result up front so the derived flags below (slower, stale) can use them.
-  const buildCol = raw.getCol('build');
-  let latestBuildName = '';
-  for (let i = 0; i < raw.rowCount; i++)
-    if (Number(biCol.get(i)) === latest) { latestBuildName = buildCol.get(i) ?? ''; break; }
-  const version = versionFromBuild(latestBuildName);
+  const version = versionFromBuild(valueAt(raw, 'build_index', latest, 'build'));
   const nowMs = Date.now();
   const rawTestCol = raw.getCol('test');
   const lastRunByTest = new Map<string, number>();
@@ -305,7 +353,8 @@ export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: n
   if (rawPrev) {
     for (let i = 0; i < raw.rowCount; i++) {
       const t = rawTestCol.get(i);
-      if (!prevReleaseByTest.has(t)) { const v: any = rawPrev.get(i); prevReleaseByTest.set(t, v == null ? NaN : Number(v)); }
+      if (!prevReleaseByTest.has(t))
+        prevReleaseByTest.set(t, rawPrev.isNone(i) ? NaN : Number(rawPrev.get(i)));
     }
   }
 
@@ -321,7 +370,7 @@ export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: n
   });
   pivot.columns.addNewBool('carried_forward').init((i) => {
     const latestS = pivot.get(`${latest}`, i);
-    return (latestS == null || latestS === 'did not run') && pivot.get('effective_status', i) !== '';
+    return (!latestS || latestS === 'did not run') && pivot.get('effective_status', i) !== '';
   });
 
   pivot.columns.addNewBool('failing').init((i) => pivot.get('effective_status', i) === 'failed');
@@ -367,23 +416,21 @@ export async function fetchReleaseTests(instanceFilter: string, lastBuildsNum: n
     return `${latestMs}ms — ${parts.join(', ')}`;
   });
 
-  const schemas = await grok.dapi.stickyMeta.getSchemas();
   const schema = schemas.find((s) => s.name === 'Autotests');
   pivot.getCol('test').semType = 'autotest';
   pivot.getCol('owner').semType = 'User';
   pivot.getCol('owner').setTag('cell.renderer', 'User');
-  if (schema) {
-    const meta = await grok.dapi.stickyMeta.getAllValues(schema, pivot.getCol('test'));
-    for (const name of ['ignore?', 'ignoreReason', 'lastResolved']) {
-      const c = meta.col(name);
-      if (c)
-        pivot.columns.add(c);
-    }
+  const [meta, mutes] = await Promise.all([
+    schema ? grok.dapi.stickyMeta.getAllValues(schema, pivot.getCol('test')) : null,
+    grok.dapi.stickyMeta.getAllValues(mutesSchema, pivot.getCol('test')),
+  ]);
+  for (const name of ['ignore?', 'ignoreReason', 'lastResolved']) {
+    const c = meta?.col(name);
+    if (c)
+      pivot.columns.add(c);
   }
   // Version-bound mutes (own schema). 'mutedForVersion' drives the grid icon; 'muted' = global ignore OR
   // muted-for-this-version and gates needs_attention and every failing/flaky count.
-  const mutesSchema = await getReleaseMutesSchema();
-  const mutes = await grok.dapi.stickyMeta.getAllValues(mutesSchema, pivot.getCol('test'));
   const mvCol = mutes.col(MUTED_VERSIONS);
   if (mvCol)
     pivot.columns.add(mvCol);
@@ -486,17 +533,13 @@ export async function fetchReleaseManual(lastBatches: number): Promise<ManualPiv
   for (let i = 0; i < raw.rowCount; i++)
     if (Number(biCol.get(i)) === latest) { latestBatchName = raw.get('batch_name', i) ?? ''; break; }
 
-  const pivot = raw.groupBy(['test']).pivot('batch_index').first('status').first('result').aggregate();
+  const pivot = pivotByIndex(raw, ['test'], 'batch_index',
+    [{col: 'status', suffix: ''}, {col: 'result', suffix: ' result'}]).df;
   for (const bi of idxs) {
-    const sc = pivot.getCol(`${bi} first(status)`);
+    const sc = pivot.getCol(`${bi}`);
     pivot.columns.addNewFloat(`${bi} ok`).init((i) => { const s = sc.get(i); return s === 'passed' ? 1 : s === 'failed' ? 0 : null; });
   }
-  const latestResult = pivot.columns.addNewString('latest_result');
-  for (const bi of idxs) {
-    renameCol(pivot, `${bi} first(status)`, `${bi}`);
-    renameCol(pivot, `${bi} first(result)`, `${bi} result`);
-  }
-  latestResult.init((i) => pivot.get(`${latest} result`, i) ?? '');
+  pivot.columns.addNewString('latest_result').init((i) => pivot.get(`${latest} result`, i) ?? '');
   pivot.columns.addNewBool('failing').init((i) => pivot.get(`${latest}`, i) === 'failed');
   pivot.getCol('test').semType = 'autotest';
   pivot.name = 'Manual tests';
@@ -552,29 +595,14 @@ export async function fetchReleaseBenchmarks(instanceFilter: string, lastBuildsN
   if (raw.rowCount === 0)
     return null;
 
-  const biCol = raw.getCol('build_index');
-  const buildIndexes = Array.from(new Set(Array.from({length: biCol.length}, (_, i) => biCol.get(i))))
-    .filter((v) => v != null).map(Number).sort((a, b) => a - b);
+  const {df: pivot, indexes: buildIndexes} = pivotByIndex(raw, ['package', 'test', 'owner'], 'build_index', [
+    {col: 'status', suffix: ''}, {col: 'duration', suffix: ' ms', type: DG.TYPE.FLOAT},
+    {col: 'result', suffix: ' result'}]);
   const latest = buildIndexes[buildIndexes.length - 1];
 
-  const pivot = raw.groupBy(['package', 'test', 'owner'])
-    .pivot('build_index')
-    .first('status')
-    .avg('duration')
-    .first('result')
-    .first('build_commit')
-    .aggregate();
-
-  const latestCommit = pivot.columns.addNewString('latest_commit');
-  latestCommit.init((i) => pivot.get(`${latest} first(build_commit)`, i) ?? '');
-  const latestResult = pivot.columns.addNewString('latest_result');
-  for (const bi of buildIndexes) {
-    renameCol(pivot, `${bi} first(status)`, `${bi}`);
-    renameCol(pivot, `${bi} avg(duration)`, `${bi} ms`);
-    renameCol(pivot, `${bi} first(result)`, `${bi} result`);
-    pivot.columns.remove(`${bi} first(build_commit)`);
-  }
-  latestResult.init((i) => pivot.get(`${latest} result`, i) ?? '');
+  const latestCommit = valueAt(raw, 'build_index', latest, 'build_commit');
+  pivot.columns.addNewString('latest_commit').init(() => latestCommit);
+  pivot.columns.addNewString('latest_result').init((i) => pivot.get(`${latest} result`, i) ?? '');
   const statusCols = buildIndexes.map((bi) => `${bi}`);
   const durationCols = buildIndexes.map((bi) => `${bi} ms`);
 
@@ -608,11 +636,7 @@ export async function fetchReleaseBenchmarks(instanceFilter: string, lastBuildsN
     });
   }
 
-  const buildCol = raw.getCol('build');
-  let latestBuildName = '';
-  for (let i = 0; i < raw.rowCount; i++)
-    if (Number(biCol.get(i)) === latest) { latestBuildName = buildCol.get(i) ?? ''; break; }
-  const version = versionFromBuild(latestBuildName);
+  const version = versionFromBuild(valueAt(raw, 'build_index', latest, 'build'));
 
   const prevReleaseByTest = new Map<string, number>();
   const rawPrev = raw.columns.byName('prev_release_ms');
@@ -620,7 +644,8 @@ export async function fetchReleaseBenchmarks(instanceFilter: string, lastBuildsN
   if (rawPrev) {
     for (let i = 0; i < raw.rowCount; i++) {
       const t = rawTestCol.get(i);
-      if (!prevReleaseByTest.has(t)) { const v: any = rawPrev.get(i); prevReleaseByTest.set(t, v == null ? NaN : Number(v)); }
+      if (!prevReleaseByTest.has(t))
+        prevReleaseByTest.set(t, rawPrev.isNone(i) ? NaN : Number(rawPrev.get(i)));
     }
   }
 
@@ -702,7 +727,33 @@ export function computeBenchmarkAlerts(p: BenchmarkPivot): BenchmarkAlerts {
   return a;
 }
 
-/** Compares the latest build's worst-case p95 to the median of prior builds (from StressTestsSummary). */
+const STRESS_PARALLEL = 4;
+
+/** The StressTestsSummary table (one row per build x threads, newest build first), assembled from
+ * per-build summaries. Summarizing 20 builds in one query reads millions of rows and takes minutes;
+ * per build the server caches the answer, so only a new or re-run build is computed. Uncached builds
+ * are fetched a few at a time so a cold cache does not flood the database. */
+export async function fetchStressSummary(lastBuilds: number): Promise<DG.DataFrame> {
+  const builds = await queries.stressTestsBuilds(lastBuilds);
+  const names = builds.getCol('build');
+  const runs = builds.getCol('runs');
+  const parts: DG.DataFrame[] = new Array(builds.rowCount);
+  let next = 0;
+  await Promise.all(Array.from({length: Math.min(STRESS_PARALLEL, parts.length)}, async () => {
+    while (next < parts.length) {
+      const i = next++;
+      parts[i] = await queries.stressTestsBuildSummary(names.get(i), runs.get(i));
+    }
+  }));
+  if (parts.length === 0)
+    return builds;
+  const df = parts[0].clone();
+  for (const part of parts.slice(1))
+    df.append(part, true);
+  return df;
+}
+
+/** Compares the latest build's worst-case p95 to the median of prior builds (from fetchStressSummary). */
 export function stressRegression(df: DG.DataFrame, factor = 1.2): StressRegression {
   const n = df.rowCount;
   if (n === 0)
