@@ -575,7 +575,7 @@ the listing with `--prefix` first. `logs` read with the server's AWS role, or wi
 What the Health center shows (Admin > Health), one command per view:
 
 ```bash
-grok s o metrics --since 24h                                # requests now and before, queue, database, process totals
+grok s o metrics --since 24h                                # requests now and before, queue (RabbitMQ messages: total, ready, unacknowledged), database, process totals
 grok s o metrics routes --date "this week" --limit 20       # the slowest routes: count, p50, p95, p99, errPct
 grok s o metrics statements --by mostCalled                 # pg_stat_statements: slowest (default), mostCalled, worstCacheHit
 grok s o metrics statements reset                           # clear pg_stat_statements: the rankings start over
