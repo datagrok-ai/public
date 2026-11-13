@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {
   delay,
+  waitUntilAsync,
   category,
   expect,
   test,
@@ -40,32 +41,8 @@ category('Docker', () => {
     expect(container.status.startsWith('stop'), true);
   }, {timeout: 240000, skipReason: 'Tool long'});
 
-  test('Get response and logs: Incorrect', async () => {
-    let response = await grok.dapi.docker.dockerContainers.fetchProxy(incorrectId, '/square?number=4');
-    // container not found
-    expect(response.status, 404, 'Status should be 404 indicating that container doesn\'t exist');
-    const container = await startContainer(containerSimple);
-    try {
-      response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/foo?number=4');
-      // response from docker with 404 - no such path mapping
-      expect(response.status, 404, 'Status should be 404 indicating that in container there is not mapping for this url');
-      response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/square?number=-0.01244');
-      // response from docker
-      expect(response.status, 500, 'Status should be 500 indicating that something went wrong in container');
-      await grok.dapi.docker.dockerContainers.stop(container.id, true);
-      response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/square?number=4');
-      // response from server, container status is stopped
-      expect(response.status, 400, 'Status should be 400 indicating that container is stopped and it is bad request');
-
-      // requesting logs of container with incorrect id
-      await expectExceptionAsync(async () => {
-        await grok.dapi.docker.dockerContainers.getContainerLogs(incorrectId);
-      });
-    } finally {
-      grok.dapi.docker.dockerContainers.run(container.id).then((_) => {}).catch((_) => {});
-    }
-  }, {timeout: 240000 /*stressTest: true*/});
-
+  // Declared before the test that stops this container: before() already queued its start, so
+  // the socket test joins that start instead of paying a second stop/start cycle (~25s on CI).
   test('Proxy WebSocket', async () => {
     let ws: WebSocket | undefined;
     try {
@@ -103,6 +80,32 @@ category('Docker', () => {
     }
     // startContainer alone measured 27s on the CI stand — nothing left of the 30s default.
   }, {timeout: 240000}); // browser WebSocket global with cookie-session auth
+
+  test('Get response and logs: Incorrect', async () => {
+    let response = await grok.dapi.docker.dockerContainers.fetchProxy(incorrectId, '/square?number=4');
+    // container not found
+    expect(response.status, 404, 'Status should be 404 indicating that container doesn\'t exist');
+    const container = await startContainer(containerSimple);
+    try {
+      response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/foo?number=4');
+      // response from docker with 404 - no such path mapping
+      expect(response.status, 404, 'Status should be 404 indicating that in container there is not mapping for this url');
+      response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/square?number=-0.01244');
+      // response from docker
+      expect(response.status, 500, 'Status should be 500 indicating that something went wrong in container');
+      await grok.dapi.docker.dockerContainers.stop(container.id, true);
+      response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/square?number=4');
+      // response from server, container status is stopped
+      expect(response.status, 400, 'Status should be 400 indicating that container is stopped and it is bad request');
+
+      // requesting logs of container with incorrect id
+      await expectExceptionAsync(async () => {
+        await grok.dapi.docker.dockerContainers.getContainerLogs(incorrectId);
+      });
+    } finally {
+      grok.dapi.docker.dockerContainers.run(container.id).then((_) => {}).catch((_) => {});
+    }
+  }, {timeout: 240000 /*stressTest: true*/});
 });
 // Tests are browser-only by default. This category has no node-capable tests yet:
 // under the Node runtime the docker proxy returns 401 where the browser (cookie
@@ -153,17 +156,14 @@ async function startContainer(containerName: string): Promise<DG.DockerContainer
 /// `run(id, true)` returns once the platform marks the container started, which is earlier
 /// than the app inside binding its port — opening the WebSocket proxy right then fails with
 /// `Connection refused, errno = 111`. Poll a cheap HTTP path until it answers.
-async function waitUntilAnswering(containerId: string, attempts: number = 45): Promise<void> {
-  for (let i = 0; i < attempts; i++) {
+async function waitUntilAnswering(containerId: string, timeout: number = 90000): Promise<void> {
+  await waitUntilAsync(async () => {
     try {
-      const response = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, '/square?number=4');
-      if (response.status === 200)
-        return;
+      return (await grok.dapi.docker.dockerContainers.fetchProxy(containerId, '/square?number=4')).status === 200;
+    } catch (_) {
+      return false;
     }
-    catch (_) {}
-    await delay(2000);
-  }
-  throw new Error(`Container ${containerId} did not answer within ${attempts * 2}s of being reported started`);
+  }, `Container ${containerId} did not answer after being reported started`, timeout, 500);
 }
 
 async function testResponse(containerId: string): Promise<void> {

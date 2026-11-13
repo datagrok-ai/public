@@ -13,8 +13,8 @@ The shared instructions for this repository live in [CLAUDE.md](CLAUDE.md) and
 - Read `.claude/settings.json` and relevant referenced hooks. They do not execute
   automatically in Codex; follow their applicable constraints with available tools.
   In particular, regenerate `.g.ts` and `.api.g.ts` with `grok api` instead of editing them.
-- When this checkout is the core repository's `public/` submodule, also read the
-  enclosing repository's `AGENTS.md`, `CLAUDE.md`, and relevant `.claude/` guidance.
+- When this checkout is `public/` in the datagrok umbrella, also read the sibling `core/`
+  repository's `AGENTS.md`, `CLAUDE.md`, and relevant `.claude/` guidance.
   Keep changes and Git operations scoped to the appropriate repository.
 
 For BDD work, read [libraries/bdd/CLAUDE.md](libraries/bdd/CLAUDE.md), its README, and

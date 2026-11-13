@@ -93,7 +93,7 @@ export function canonicalRow(row: Bag, columns: readonly string[]): string {
  * (set by the write that owns them), `updated_at` and `results_computed_at` (set by the writer).
  */
 export const ENTRY_COLUMNS = [
-  'label', 'engine_version', 'results_basis', 'has_cache',
+  'label', 'engine_version', 'results_basis', 'derived_basis', 'has_cache',
   'tier_n_subjects', 'tier_n_compounds', 'tier_route', 'tier_dose', 'tier_status', 'tier_flag_summary',
   'results_snapshot_hash', 'group_keys',
   'row_count', 'source_kind', 'source_file', 'source_ref',
@@ -529,6 +529,7 @@ export function entryCols(e: AnalysisEntry, resultsHash: string | null, recipeVe
   const stored = e.source.kind === 'stored';
   return {
     label: e.label, engine_version: e.engineVersion ?? null, results_basis: e.resultsBasis ?? null,
+    derived_basis: e.derivedBasis ?? null,
     ...tierCols(e.summaryCache),
     results_snapshot_hash: e.summaryCache === null ? null : resultsHash,
     ...signatureCols(e.sourceSignature),
@@ -558,6 +559,7 @@ export function entryOf(a: Bag, results: readonly Bag[], children: {
     id: a.id, label: a.label, source, sourceSignature: signatureOf(a),
     summaryCache: summaryCacheOf(a, results, children.curves),
     engineVersion: a.engine_version ?? null, resultsBasis: a.results_basis ?? null,
+    derivedBasis: a.derived_basis ?? null,
     resultsComputedAt: isoOf(a.results_computed_at),
     confirmed: confirmedOf(a, recipe),
     lzOverrides: lzOverridesOf(children.lz ?? []),

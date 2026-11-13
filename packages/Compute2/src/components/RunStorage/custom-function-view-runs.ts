@@ -18,7 +18,7 @@ export function attachRunStorage(view: CustomFunctionView, customView?: DG.Func)
       return result ? {metadata: result.metadata, target: result.target} : null;
     },
     openDialog: async (func: DG.Func) => {
-      const [run] = await openRunBrowserDialog({title: 'Open run', model: func}) ?? [];
+      const [run] = await openRunBrowserDialog({title: 'Open run', model: func, allowExport: false}) ?? [];
       return run ? historyUtils.loadRun(run.id) : null;
     },
   };

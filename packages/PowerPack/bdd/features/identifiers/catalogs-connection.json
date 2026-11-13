@@ -4,15 +4,15 @@
   "friendlyName": "Catalogs Demo",
   "parameters": {
     "server": "host.docker.internal",
-    "port": 14333,
+    "port": 14330,
     "db": "archive"
   },
   "credentials": {
     "parameters": {
-      "login": "sa",
+      "login": "catalogs_demo",
       "password": "<password>"
     }
   },
   "dataSource": "MS SQL",
-  "description": "SQL Server with several catalogs: the fixture of identifiers-catalogs.feature"
+  "description": "SQL Server with several catalogs: the fixture of identifiers-catalogs.feature, made by catalogs-db.mjs"
 }

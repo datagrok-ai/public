@@ -2,7 +2,7 @@ import type {
   ProfileInputs, NcaRules, ComputeResult, ParameterValues,
   ParameterWarning, AucMethod, LambdaZResult, C0Provenance,
 } from './types';
-import {ROUTE_IV_BOLUS, ROUTE_IV_INFUSION} from './types';
+import {ROUTE_IV_BOLUS, ROUTE_IV_INFUSION, isKnownRouteCode} from './types';
 import {applyBlqStrategy} from './blq';
 import {augmentProfile} from './augment';
 import {lambdaZBestFit, lambdaZManual} from './lambda-z';
@@ -21,12 +21,14 @@ import {
   meanResidenceTime, volumeSteadyState, pctExtrapolatedAumc, tlag as tlagOf,
 } from './derived';
 
-type AucFn = (
+export type AucFn = (
   time: Float64Array, conc: Float64Array,
   startIdx: number, endIdx: number,
 ) => number;
 
-function pickAucFn(method: AucMethod, compensated: boolean): AucFn {
+/** AUC kernel for a method/summation choice. Module-internal (shared with
+ *  `auc-interval.ts`); not re-exported from the namespace. */
+export function pickAucFn(method: AucMethod, compensated: boolean): AucFn {
   if (compensated) {
     if (method === 'linear') return aucLinearCompensated;
     if (method === 'log-linear') return aucLogLinearCompensated;
@@ -88,30 +90,31 @@ const NAN_VALUES: ParameterValues = Object.freeze({
  * PKNCA the augmented profile. A deliberate, documented divergence.
  *
  * Status:
- * - `'failed'`  — no measurable point (every conc was BLQ).
+ * - `'failed'`  — no measurable point (every conc was BLQ), or `inputs.route`
+ *                 is not a known `RouteCode` (`UNKNOWN_ROUTE_CODE`, nothing
+ *                 computed).
  * - `'partial'` — Cmax/AUClast obtained but lambda_z could not be fit
  *                 (no AUCinf, t½, CL, Vz).
  * - `'ok'`      — every parameter computed.
  */
 export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResult {
+  // An unknown route code is rejected, never computed as extravascular: it may be
+  // an intravascular dose, and the (0, 0) anchor would understate early AUC and
+  // inflate CL with no warning.
+  if (!isKnownRouteCode(inputs.route)) {
+    return failedResult(inputs, rules, [{
+      code: 'UNKNOWN_ROUTE_CODE',
+      severity: 'error',
+      message: `route code ${String(inputs.route)} is not a known RouteCode (0–6); ` +
+        `the profile was not computed`,
+    }]);
+  }
+
   // Steps 1–3: the augmentation kernel.
   const aug = augmentProfile(inputs, rules.blq);
-  if (aug === null) {
-    // No measurable point. The BLQ trace is still reported (the kernel bails
-    // after Step 2, so re-run Step 1 for the provenance the auditor expects).
-    return {
-      values: NAN_VALUES,
-      provenance: {
-        lambdaZ: null,
-        blqApplied: applyBlqStrategy(inputs.conc, inputs.blqMask, inputs.lloq, 0, rules.blq),
-        aucMethod: rules.aucMethod,
-        compensated: rules.compensatedSummation,
-        warnings: [],
-        c0: null,
-      },
-      status: 'failed',
-    };
-  }
+  // No measurable point. The BLQ trace is still reported (the kernel bails after
+  // Step 2, so `failedResult` re-runs Step 1 for the provenance the auditor expects).
+  if (aug === null) return failedResult(inputs, rules, []);
   const {time: augTime, conc: augConc, blqMask: augBlq, dropMask, observedCmax} = aug;
   const cmaxIdxForFit = aug.cmaxIdx;
 
@@ -385,8 +388,10 @@ export function computeNca(inputs: ProfileInputs, rules: NcaRules): ComputeResul
   };
 }
 
-/** Build dense Float64Arrays of (time, conc) skipping the drop set and NaN entries. */
-function collectMeasurable(
+/** Build dense Float64Arrays of (time, conc) skipping the drop set and NaN entries.
+ *  Module-internal (shared with `auc-interval.ts`, so an interval AUC integrates
+ *  exactly the profile AUClast does); not re-exported from the namespace. */
+export function collectMeasurable(
   time: Float64Array, conc: Float64Array, dropMask: Uint8Array,
 ): {time: Float64Array; conc: Float64Array; idx: Int32Array} {
   const tBuf: number[] = [];
@@ -419,6 +424,24 @@ function collectMeasurable(
   return {
     time: Float64Array.from(tBuf), conc: Float64Array.from(cBuf),
     idx: Int32Array.from(iBuf),
+  };
+}
+
+/** A `'failed'` result: NaN values, the Step 1 BLQ trace, and `warnings`. */
+function failedResult(
+  inputs: ProfileInputs, rules: NcaRules, warnings: ParameterWarning[],
+): ComputeResult {
+  return {
+    values: NAN_VALUES,
+    provenance: {
+      lambdaZ: null,
+      blqApplied: applyBlqStrategy(inputs.conc, inputs.blqMask, inputs.lloq, 0, rules.blq),
+      aucMethod: rules.aucMethod,
+      compensated: rules.compensatedSummation,
+      warnings,
+      c0: null,
+    },
+    status: 'failed',
   };
 }
 

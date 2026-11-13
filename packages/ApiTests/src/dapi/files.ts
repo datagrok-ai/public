@@ -131,7 +131,9 @@ category('Dapi: files', () => {
 }, {owner: 'aparamonov@datagrok.ai'});
 
 category('Dapi: files: formats', () => {
-  const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xml', 'zip', 'kmz', 'kml'];
+  // The formats the core opens. kml and kmz are opened by the GIS package's file importer, which also
+  // adds a table view and, a second later, a map viewer to it: they belong to the GIS tests.
+  const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xml', 'zip'];
 
   for (const ext of extensions) {
     test(ext, async () => {

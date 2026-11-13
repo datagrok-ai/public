@@ -138,8 +138,9 @@ export type SparseNcaWarningCode =
   | 'PER_KG_NOT_FORMED'
   | 'COMPOSITE_BW_PARTIAL'
   | 'COMPOSITE_NOT_WEIGHT_BASED'
-  // sparse-auc-method-mix: IV bolus — AUClast from (0, 0), the derived row from the C0-anchored curve.
-  | 'SPARSE_IV_BOLUS_C0_ANCHOR';
+  // sparse-iv-bolus-anchor F4: the dense run's own C0_FALLBACK, copied — the composite's C0 fell
+  // back to c1 / cmin / set0 (one C0 for the row: `sparseAuc` and the dense run use the same chain).
+  | 'C0_FALLBACK';
 
 export interface SparseNcaWarning {
   readonly code: SparseNcaWarningCode;
@@ -208,6 +209,14 @@ export interface SparseGroupResult {
   readonly vzAbs: number;
   readonly vssAbs: number;
   readonly pctExtrap: number;
+  /** IV bolus only: the dose-time anchor of `aucLast` (`sparseAuc`'s own Ĉ0 and its method); null on
+   *  every other route. The `C0_EXTRAP` column shows this value — the anchor of the shown AUClast. */
+  readonly c0: {readonly value: number; readonly method: nca.C0Method | 'observed'} | null;
+  /** IV bolus only: the dense run's C0 provenance on the same composite (value, method, the
+   *  back-extrapolated share of AUCinf — the `C0_EXTRAP` tooltip line); null on every other route. */
+  readonly c0Provenance: nca.C0Provenance | null;
+  /** The `SPARSE_TERMINAL_OVEREST` estimated excess, % of AUClast; NaN when the note does not fire. */
+  readonly terminalExcessPct: number;
   // Fragility inputs for the honest-uncertainty surface (AD-9).
   /** Terminal-phase R² of the composite λz fit (`NaN` when λz not estimable). */
   readonly lambdaZR2: number;
@@ -420,14 +429,11 @@ function compositeNca(
   routeCode: nca.RouteCode, concUnit: nca.ConcentrationUnit,
   prebuilt?: nca.CompositeProfileResult,
 ): nca.ComputeResult {
-  // Reuse the composite already built by `sparseAuc` for the point estimate
-  // (architect SIMPLIFY-1); the bootstrap path rebuilds per resample.
+  // The point estimate passes the composite it built once; the bootstrap path rebuilds per resample.
   const comp = prebuilt ?? nca.buildCompositeProfile(input, 'set-zero');
-  const tps = comp.timepoints;
-  const time = Float64Array.from(tps.map((t) => t.time));
-  // Composite mean per timepoint; a fully-BLQ-majority timepoint contributes 0.
-  const conc = Float64Array.from(tps.map((t) => (t.n > 0 && t.nBlq / t.n > 0.5 ? 0 : t.mean)));
-  const blqMask = Uint8Array.from(tps.map((t) => (t.mean > 0 ? 0 : 1)));
+  // The SAME arrays `sparseAuc` integrates (one copy of the > 50 % BLQ rule, sci-comp), so the IV-bolus
+  // C0 chain picks the same points on both sides.
+  const {time, conc, blqMask} = nca.compositeProfileArrays(comp);
   const profile: nca.ProfileInputs = {
     time, conc, blqMask, lloq: input.lloq,
     dose: doseMg, doseUnits: 'mg', concentrationUnits: concUnit, timeUnits: 'h',
@@ -543,11 +549,6 @@ export function computeSparseNca(
     const declared = options.declaredTopology ??
       (typeCol !== null ? dominantLabel(typeCol, g.rows) : undefined);
 
-    // --- Closed-form AUC (the headline).
-    const sa = nca.sparseAuc(input, {ciLevel, blqRule: 'set-zero', declaredTopology: declared});
-    const aucCiMethod: AucCiMethod = Number.isFinite(sa.ci[0]) ?
-      (sa.topology === 'destructive' ? 'Bailer' : 'Holder') : 'none';
-
     // --- Dose for CL/Vz/Vss (nca-cl-bw-normalised-units AD-5, amending uc-04 SF-1).
     // Over the POOLED rows only (`kept`): an animal whose sample AD-7 dropped contributes no
     // concentration, so it contributes no body weight or dose either — PKNCA with the row removed
@@ -572,6 +573,28 @@ export function computeSparseNca(
       bodyWeightKg: usingAbsolute ? absolute!.perKgDivisor : meanBwKg,
       bodyWeightRangeKg: null, perKgDose: !usingAbsolute,
     };
+
+    // --- Derived params from the composite (dense computeNca on the composite mean). It runs BEFORE
+    // the closed-form AUC because the terminal-overestimate check needs its t½ (F5) — so the composite
+    // is built here once and `sparseAuc` builds its own: two builds of K timepoints where there was one
+    // (sparse-iv-bolus-anchor, reversing uc-04 SIMPLIFY-1 on purpose; a `prebuilt` option on the
+    // published `sparseAuc` would widen its signature to save a K-element pass). A per-kg run carries
+    // no weight (the engine's per-kg pass-through); an absolute run keeps the group mean.
+    const comp = nca.buildCompositeProfile(input, 'set-zero');
+    const engineBw = usingAbsolute ? meanBwKg : null;
+    const dense = compositeNca(input, engineDose, engineBw, routeCode, concUnit, comp);
+    const dv = dense.values;
+
+    // --- Closed-form AUC (the headline). On an IV-bolus composite it starts at the same Ĉ0 as the
+    // dense run (sci-comp ≥ 0.12.0), so the row has ONE AUClast: AUCinf = AUClast + Clast/λz and
+    // %AUCextrap, CL, Vz, MRT and Vss rest on the shown number on every route.
+    const halfLife = Number.isFinite(dv.halfLife) && dv.halfLife > 0 ? dv.halfLife : undefined;
+    const sa = nca.sparseAuc(input, {
+      ciLevel, blqRule: 'set-zero', declaredTopology: declared, route: routeCode,
+      ...(halfLife !== undefined ? {estimatedHalfLife: halfLife} : {}),
+    });
+    const aucCiMethod: AucCiMethod = Number.isFinite(sa.ci[0]) ?
+      (sa.topology === 'destructive' ? 'Bailer' : 'Holder') : 'none';
 
     const warnings: SparseNcaWarning[] = [...sa.warnings.map((w) => ({
       code: w.code, message: w.message, group: groupKey,
@@ -606,21 +629,11 @@ export function computeSparseNca(
       });
     }
 
-    // --- Derived params from the composite (dense computeNca on the composite mean).
-    // Reuse `sa.composite` (already built by sparseAuc) — no second composite build. A per-kg run
-    // carries no weight (the engine's per-kg pass-through); an absolute run keeps the group mean.
-    const engineBw = usingAbsolute ? meanBwKg : null;
-    const dense = compositeNca(input, engineDose, engineBw, routeCode, concUnit, sa.composite);
-    const dv = dense.values;
-    // One AUC method per row holds on every route but IV bolus: there the dense run starts the curve
-    // at the back-extrapolated C0, while the closed-form AUClast (and its SE) starts at (0, 0). Say so
-    // with both numbers until the anchor is decided (TODO IMPL-GAP-SPARSE-IV-BOLUS-ANCHOR, SCIENCE-FLAG).
-    if (routeCode === nca.ROUTE_IV_BOLUS && Number.isFinite(dv.aucLast) &&
-        Math.abs(dv.aucLast - sa.auc) > 1e-9 * Math.max(1, Math.abs(sa.auc))) {
-      warnings.push({code: 'SPARSE_IV_BOLUS_C0_ANCHOR', group: groupKey,
-        message: `IV bolus: AUClast (${sa.auc.toPrecision(4)}) and its SE are integrated from (0, 0); AUCinf, ` +
-          '%AUCextrap, CL, Vz, MRT and Vss come from the composite curve that starts at the back-extrapolated ' +
-          `C0, whose AUClast is ${dv.aucLast.toPrecision(4)}.`});
+    // The composite's C0 fell back to c1 / cmin / set0: the dense run's own warning, copied (it is the
+    // same C0 — one chain on the same arrays). No other dense warning reaches the sparse row.
+    for (const w of dense.provenance.warnings) {
+      if (w.code === 'C0_FALLBACK')
+        warnings.push({code: 'C0_FALLBACK', message: w.message, group: groupKey});
     }
     const norm = normaliseClVolumes(dv, engineDoseNorm, perKgBw);
     const lz = dense.provenance.lambdaZ;
@@ -643,7 +656,10 @@ export function computeSparseNca(
     const bootOpts = {iterations, masterSeed: seed, ciLevel, minNPerTimepoint: minN};
     const denseVals = (r: nca.SparseInput): nca.ParameterValues =>
       compositeNca(r, engineDose, engineBw, routeCode, concUnit).values;
-    const bAuc = nca.summarizeBootstrap(input, (r) => nca.sparseAuc(r).auc, bootOpts);
+    // The route goes into the resampled AUC too: an IV-bolus resample is anchored at its own Ĉ0. A
+    // resample can flip the chain from logslope to c1 (a rising first pair), so this exploratory
+    // distribution can be bimodal on a composite with a shallow first decline (architect 7).
+    const bAuc = nca.summarizeBootstrap(input, (r) => nca.sparseAuc(r, {route: routeCode}).auc, bootOpts);
     const bCmax = nca.summarizeBootstrap(input, (r) => denseVals(r).cmax, bootOpts);
     const bHl = nca.summarizeBootstrap(input, (r) => denseVals(r).halfLife, bootOpts);
     // The CL interval shares the point estimate's basis and unit (per kg, mL/min/kg — AD-5).
@@ -658,6 +674,8 @@ export function computeSparseNca(
         group: groupKey,
       });
     } else {
+      // Exploratory, and on an IV-bolus composite possibly bimodal: a resample can flip Ĉ0's chain
+      // logslope ↔ c1 (sci-comp `SparseAucOptions.route`). The closed-form CI stays the headline.
       warnings.push({
         code: 'SPARSE_BOOTSTRAP_AUC_EXPLORATORY',
         message: 'The bootstrap AUC CI is exploratory — not for regulatory use. The ' +
@@ -674,7 +692,10 @@ export function computeSparseNca(
       cmax: dv.cmax, tmax: dv.tmax, aucInf: dv.aucInf, lambdaZ: dv.lambdaZ,
       halfLife: dv.halfLife, cl: norm.cl, vz: norm.vz, mrt: dv.mrt, vss: norm.vss,
       clAbs: norm.clAbs, vzAbs: norm.vzAbs, vssAbs: norm.vssAbs,
-      pctExtrap: dv.pctExtrap, lambdaZR2, lambdaZAdjR2, spanRatio, lambdaZNPoints, acceptance,
+      pctExtrap: dv.pctExtrap,
+      c0: sa.c0 ?? null, c0Provenance: dense.provenance.c0 ?? null,
+      terminalExcessPct: sa.terminalExcessPct ?? NaN,
+      lambdaZR2, lambdaZAdjR2, spanRatio, lambdaZNPoints, acceptance,
       nAnimals, maxTimepointN,
       minTimepointN: Number.isFinite(minTimepointN) ? minTimepointN : 0,
       varianceModeled, bootstrapSuppressed: bAuc.suppressed,
@@ -729,8 +750,9 @@ function groupMean(col: DG.Column, rows: number[]): number | null {
  * Short, human-readable label for a sparse advisory code — shared by the toast
  * summary (view) and the persistent NOTES column, so both stay concise and
  * consistent. The full sentence lives in `result.warnings` (audit / provenance).
+ * `terminalExcessPct` (the composite's `SPARSE_TERMINAL_OVEREST` size) is appended to that note.
  */
-export function shortSparseNote(code: string): string {
+export function shortSparseNote(code: string, terminalExcessPct = NaN): string {
   switch (code) {
   case 'SPARSE_COMPOSITE_BW': return 'CL abs. on group-mean BW';
   case 'SPARSE_NO_DOSE_NO_CL': return 'CL/Vss N/A (no dose)';
@@ -743,12 +765,18 @@ export function shortSparseNote(code: string): string {
   case 'SPARSE_TOPOLOGY_MISMATCH': return 'topology ≠ declared label';
   case 'SPARSE_ANIMAL_ID_ABSENT_ASSUMED_DESTRUCTIVE': return 'no animal-ID → destructive';
   case 'SPARSE_VARIANCE_MODELED': return 'variance modeled (n=1)';
-  case 'SPARSE_TERMINAL_OVEREST': return 'terminal AUC may overestimate';
+  case 'SPARSE_TERMINAL_OVEREST':
+    return Number.isFinite(terminalExcessPct) ?
+      `terminal AUC may overestimate (≈ ${terminalExcessPct.toFixed(1)} %)` : 'terminal AUC may overestimate';
+  case 'C0_FALLBACK': return 'C0 not back-extrapolated';
   case 'SPARSE_DF_UNAVAILABLE': return 'df unavailable';
   case 'SPARSE_LLOQ_VARIES': return 'LLOQ varies (largest used)';
   case 'SPARSE_CONC_MISSING_DROPPED': return 'missing conc dropped';
   case 'SPARSE_DOSE_SPELLING_MERGED': return 'dose spellings merged';
   case 'SPARSE_BLQ_FLAG_WITH_VALUE': return 'BLQ flag with a value → 0';
+  // Retired (sparse-iv-bolus-anchor): no compute raises it since sci-comp 0.12.0. Kept only so the
+  // stored warnings of an analysis saved before then read as words until it is recomputed (TODO
+  // IMPL-GAP-SPARSE-IV-ANCHOR-NOTE-RETIRE: remove once no stored row carries it).
   case 'SPARSE_IV_BOLUS_C0_ANCHOR': return 'IV bolus: AUClast from (0, 0), AUCinf from C0';
   default: return code;
   }
@@ -759,7 +787,7 @@ function groupNotes(g: SparseGroupResult): string {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const w of g.warnings) {
-    const s = shortSparseNote(w.code);
+    const s = shortSparseNote(w.code, g.terminalExcessPct);
     if (!seen.has(s)) {seen.add(s); out.push(s);}
   }
   return out.join('; ');
@@ -799,7 +827,7 @@ function doseLevelColumn(values: ArrayLike<number>, unit: string): DG.Column {
 
 /** Sparse parameter-table columns tagged with a unit (the per-kg family + companions + BW). */
 const SPARSE_UNIT_TAGGED: ReadonlySet<string> =
-  new Set(['CL', 'VZ', 'VSS', 'CL_ABS', 'VZ_ABS', 'VSS_ABS', 'BW_KG']);
+  new Set(['CL', 'VZ', 'VSS', 'CL_ABS', 'VZ_ABS', 'VSS_ABS', 'BW_KG', 'C0_EXTRAP']);
 
 function buildParameterTable(groups: ReadonlyArray<SparseGroupResult>, doseLevelUnit: string): DG.DataFrame {
   const m = groups.length;
@@ -809,7 +837,8 @@ function buildParameterTable(groups: ReadonlyArray<SparseGroupResult>, doseLevel
   const aucInfOut = mk(); const hlOut = mk(); const clOut = mk(); const vzOut = mk();
   const mrtOut = mk(); const vssOut = mk(); const extrapOut = mk(); const r2Out = mk();
   const clAbsOut = mk(); const vzAbsOut = mk(); const vssAbsOut = mk(); const bwOut = mk();
-  const adjR2Out = mk(); const acceptOut = new Array<string>(m); const reasonsOut = new Array<string>(m);
+  const adjR2Out = mk(); const c0Out = mk();
+  const acceptOut = new Array<string>(m); const reasonsOut = new Array<string>(m);
   const methodOut = new Array<string>(m); const topoOut = new Array<string>(m);
   const fragilityOut = new Array<string>(m); const bootCiOut = new Array<string>(m);
   const notesOut = new Array<string>(m);
@@ -821,6 +850,7 @@ function buildParameterTable(groups: ReadonlyArray<SparseGroupResult>, doseLevel
     mrtOut[i] = g.mrt; vssOut[i] = g.vss; extrapOut[i] = g.pctExtrap; r2Out[i] = g.lambdaZR2;
     clAbsOut[i] = g.clAbs; vzAbsOut[i] = g.vzAbs; vssAbsOut[i] = g.vssAbs;
     bwOut[i] = g.meanBodyWeightKg ?? NaN;
+    c0Out[i] = g.c0?.value ?? NaN;
     adjR2Out[i] = g.lambdaZAdjR2; acceptOut[i] = g.acceptance.verdict;
     reasonsOut[i] = reasonsCellValue(g.acceptance);
     methodOut[i] = g.aucCiMethod; topoOut[i] = g.topology;
@@ -844,6 +874,9 @@ function buildParameterTable(groups: ReadonlyArray<SparseGroupResult>, doseLevel
     f64Column('AUC_CI_HIGH', ciHiOut),
     DGNS.Column.fromList(DGNS.COLUMN_TYPE.STRING, 'AUC_CI_METHOD', methodOut),
     f64Column('CMAX', cmaxOut),
+    // IV bolus: the dose-time anchor of AUClast (the dense grid's column, name and unit); blank on every
+    // other route, where the grid hides it (`routeSuppressed`).
+    f64Column('C0_EXTRAP', c0Out),
     f64Column('TMAX', tmaxOut),
     f64Column('AUC_INF', aucInfOut),
     f64Column('HALF_LIFE', hlOut),
@@ -1211,9 +1244,15 @@ const SPARSE_BOOTSTRAP_CODE = /^SPARSE_BOOTSTRAP_/;
 /** Informational codes no composite number depends on (BUG-19 AD-9): also kept out of the
  *  fingerprint. The rule: a code enters the fingerprint only if the composite's numbers depend on
  *  it — so `SPARSE_CONC_MISSING_DROPPED`, `SPARSE_DOSE_SPELLING_MERGED` and (user decision (a),
- *  the rows are zeroed) `SPARSE_BLQ_FLAG_WITH_VALUE` stay in. */
+ *  the rows are zeroed) `SPARSE_BLQ_FLAG_WITH_VALUE` stay in.
+ *
+ *  A composite review decision attests the λz FIT and its acceptance (sparse-iv-bolus-anchor,
+ *  user decision (A) at build entry 2026-11-10) — what the Review pane asks and what the
+ *  fingerprint encodes (points, λz, adj. R², AUCinf, %AUCextrap, verdict, flag codes). So the
+ *  AUClast-only notes stay out as well: `SPARSE_TERMINAL_OVEREST` (the linear tail of AUClast) and
+ *  `C0_FALLBACK` (the C0 anchor of AUClast); they are on the row whatever the review state. */
 const SPARSE_NUMBER_FREE_CODES: ReadonlySet<string> =
-  new Set(['SPARSE_LLOQ_VARIES', 'SPARSE_IV_BOLUS_C0_ANCHOR']); // the IV note restates numbers, it sets none
+  new Set(['SPARSE_LLOQ_VARIES', 'SPARSE_TERMINAL_OVEREST', 'C0_FALLBACK']);
 // (The per-kg notes — nca-cl-bw-normalised-units AD-5 — are left out by `computeDecisionFingerprint`
 // itself, `BASIS_NOTE_CODES`, for dense profiles and composites alike.)
 

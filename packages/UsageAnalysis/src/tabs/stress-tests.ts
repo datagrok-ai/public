@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 import {queries} from '../package-api';
-import {stressRegression, openInWorkspaceIcon, ReleaseContext} from '../release/data';
+import {stressRegression, fetchStressSummary, openInWorkspaceIcon, ReleaseContext} from '../release/data';
 
 const LAST_BUILDS = 20;
 
@@ -76,7 +76,7 @@ export class StressView extends UaView {
     this.byBuildHost.append(ui.loader());
     this.summaryHost.innerHTML = '';
     try {
-      const df = await queries.stressTestsSummary(LAST_BUILDS);
+      const df = await fetchStressSummary(LAST_BUILDS);
       this.summaryDf = df;
       if (df.rowCount === 0) {
         this.byBuildHost.innerHTML = '';
@@ -101,7 +101,7 @@ export class StressView extends UaView {
       StressView.mount(this.summaryHost, grid.root, '100%');
     } catch (e) {
       this.byBuildHost.innerHTML = '';
-      this.byBuildHost.append(ui.divText(`StressTestsSummary failed: ${e}`, 'ua-metrics-degraded'));
+      this.byBuildHost.append(ui.divText(`Stress summary failed: ${e}`, 'ua-metrics-degraded'));
     }
   }
 

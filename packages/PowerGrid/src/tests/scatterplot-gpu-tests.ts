@@ -7,6 +7,7 @@ import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {isWebGLAvailable, scWebGLPointHitTest, scWebGLRender} from '../webgl/scatterplot';
 import {scWebGPUPointHitTest, scWebGPURender} from '../webgpu/scatterplot';
 import {isGpuRenderValid} from '../scatterplot-gpu';
+import {isGpuRenderable, readCheckLook} from '../scatterplot-look';
 
 const FLOAT_NONE = Math.fround(DG.FLOAT_NULL);
 
@@ -148,6 +149,30 @@ for (const backend of backends) {
       expect(drawn.size, sp.dataFrame.col('race')!.categories.length);
     });
 
+    gpuTest('Markers take the alpha of their colors', async () => {
+      // the most common alpha is a marker interior covered once: edges ramp and overlaps add up
+      const commonAlpha = (sp: DG.ScatterPlotViewer): number => {
+        const {pixels} = renderPixels(backend, sp);
+        const counts = new Array(256).fill(0);
+        for (let i = 3; i < pixels.length; i += 4)
+          counts[pixels[i]]++;
+        counts[0] = 0;
+        return counts.indexOf(Math.max(...counts));
+      };
+      const sp = await scatterPlot(30, {markerType: DG.MARKER_TYPE.CIRCLE, markerDefaultSize: 12,
+        filteredRowsColor: 0x80FF0000});
+      const markerAlpha = commonAlpha(sp);
+      expect(Math.abs(markerAlpha - 0x80) <= 2, true, `marker color alpha: ${markerAlpha}`);
+      sp.props.filteredRowsColor = 0xFFFF0000;
+      await rendered(sp);
+      expect(commonAlpha(sp), 0xFF);
+      sp.dataFrame.col('sex')!.meta.colors.setCategorical({M: 0x800000FF, F: 0x8000FF00});
+      sp.props.colorColumnName = 'sex';
+      await rendered(sp);
+      const categoryAlpha = commonAlpha(sp);
+      expect(Math.abs(categoryAlpha - 0x80) <= 2, true, `category color alpha: ${categoryAlpha}`);
+    });
+
     gpuTest('Hit test matches the CPU', async () => {
       const sp = await scatterPlot(200000);
       for (const props of [{markerType: DG.MARKER_TYPE.DOT}, {markerType: DG.MARKER_TYPE.CIRCLE, sizeColumnName: 'age'},
@@ -181,10 +206,29 @@ for (const backend of backends) {
 }
 
 category('Scatter plot: GPU', () => {
+  const categoryOrder: TestOptions = {};
+  before(async () => {
+    if (!DG.Viewer.scatterPlot(grok.data.demo.demog(10)).props.hasProperty('xCategoryOrder'))
+      categoryOrder.skipReason = 'the platform has no category order yet';
+  });
+
   test('Leaves jittered and packed plots to the CPU', async () => {
     const sp = await scatterPlot(60000, {jitterSize: 5});
     expect(isGpuRenderValid(sp), false);
     Object.assign(sp.props, {jitterSize: 0, zoomAndFilter: 'pack and zoom by filter'});
     expect(isGpuRenderValid(sp), false);
   });
+
+  test('Leaves category-ordered plots to the CPU', async () => {
+    const sp = await scatterPlot(60000, {zoomAndFilter: 'filter by zoom'});
+    // no GPU needed: a browser without one falls back for any plot
+    const renderable = () => isGpuRenderable(sp, readCheckLook(sp));
+    sp.props.xColumnName = 'race';
+    expect(renderable(), true);
+    sp.props.xCategoryOrder = '{"manual":["Other"]}';
+    expect(renderable(), false);
+    // an order left on an axis turned numeric does not apply
+    sp.props.xColumnName = 'height';
+    expect(renderable(), true);
+  }, categoryOrder);
 });

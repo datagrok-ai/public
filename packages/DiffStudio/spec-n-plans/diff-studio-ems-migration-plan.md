@@ -15,8 +15,8 @@ EMS status at time of writing: **Beta**, behind a feature flag, v1 merged into m
 **additive and behind a feature flag**, not a hard cutover.
 
 EMS documentation:
-- dev: `public/help/develop/how-to/db/domain-schemas.md`
-- user: `public/help/govern/catalog/domains.md`
+- dev: `help/develop/how-to/db/domain-schemas.md`
+- user: `help/govern/catalog/domains.md`
 - UI library: `public/libraries/domain-ui/README.md`
 - reference packages: **Grit** (full app on domain-ui), **Inventory** (batch/upsert/aggregate),
   **PlatesFixture** (security modes)

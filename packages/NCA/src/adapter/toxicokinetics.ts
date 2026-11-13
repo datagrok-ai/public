@@ -428,7 +428,7 @@ export function computeAccumulationRatios(
   cols.push(DGNS.Column.fromList(DGNS.COLUMN_TYPE.BOOL, 'RAC_DIVERGENCE', divergenceOut));
 
   const table = DGNS.DataFrame.fromColumns(cols);
-  table.name = 'Accumulation';
+  table.name = 'Day N / Day 1';
   return {table, day1, dayN, warnings};
 }
 

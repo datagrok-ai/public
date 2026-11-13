@@ -1020,12 +1020,13 @@ export namespace funcs {
   }
 
   /**
-   * Removes stereochemistry from molecules and adds a column with flat SMILES.
+   * Removes stereocenters (and optionally the E/Z of double bonds) and adds a column with flat SMILES.
    * @param {DG.Column} molecules
    *   semType: Molecule
+   * @param {boolean} flattenDoubleBonds - Also remove the E/Z (cis/trans) configuration of double bonds
    */
-  export async function flattenMolecules(data: DG.DataFrame , molecules: DG.Column , overwrite: boolean , join: boolean ): Promise<DG.Column> {
-    return await grok.functions.call('Chem:FlattenMolecules', { data, molecules, overwrite, join });
+  export async function flattenMolecules(data: DG.DataFrame , molecules: DG.Column , overwrite: boolean , join: boolean , flattenDoubleBonds: boolean ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:FlattenMolecules', { data, molecules, overwrite, join, flattenDoubleBonds });
   }
 
   /**
@@ -1233,6 +1234,17 @@ export namespace funcs {
    */
   export async function getProperties(molecules: DG.Column , selected?: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:GetProperties', { molecules, selected });
+  }
+
+  /**
+   * Computes one chemical property for a column of molecules so that the platform can sort and order them by it.
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   * @param {string} property
+   *   choices: ["MW","HBA","HBD","LogP","LogS","PSA","Rotatable bonds","Stereo centers","Molecule charge"]
+   */
+  export async function molecularProperty(molecules: DG.Column , property: string ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:MolecularProperty', { molecules, property });
   }
 
   /**

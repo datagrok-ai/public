@@ -13,3 +13,7 @@ plot.setOptions({
   showRegressionLine: true,
   markerType: 'square'
 });
+
+// marker opacity is the alpha of the marker colors
+plot.setMarkerOpacity(50);
+plot.props.regressionLineColor = DG.Color.setAlpha(plot.props.regressionLineColor, 77);

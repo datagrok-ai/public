@@ -70,6 +70,45 @@ const missingRunId = () => {
 const ribbonIcons = (view: CustomFunctionView) => view.buildRibbonPanels().flat();
 const hasIcon = (view: CustomFunctionView, name: string) =>
   ribbonIcons(view).some((icon) => icon.classList.contains(`fa-${name}`));
+const exportIcon = (view: CustomFunctionView) =>
+  ribbonIcons(view).find((icon) => icon.classList.contains('fa-arrow-to-bottom'));
+
+async function newView() {
+  const view = new CountingView(DAY_CALCULATION);
+  await view.isReady.pipe(filter((ready) => ready), take(1)).toPromise();
+  return view;
+}
+
+const openEditor = (): Promise<CustomFunctionView> =>
+  grok.functions.call('Compute2:CustomFunctionViewEditor', {call: DG.Func.byName(TEST_CUSTOM_VIEW).prepare({})});
+
+/** Opens the custom view editor as the page does when its link has the run id. */
+async function openFromLink(runId: string) {
+  const handled = globalThis.initialURLHandled;
+  // the start URL can't be set otherwise; the own property hides the prototype getter until deleted
+  Object.defineProperty(grok.shell, 'startUri', {get: () => `${location.origin}/?id=${runId}`, configurable: true});
+  globalThis.initialURLHandled = false;
+  try {
+    return await openEditor();
+  } finally {
+    delete (grok.shell as any).startUri;
+    globalThis.initialURLHandled = handled;
+  }
+}
+
+/** Records the names of the files downloaded during the action instead of downloading them. */
+async function withDownloads(action: (downloads: string[]) => Promise<void>) {
+  const download = DG.Utils.download;
+  const downloads: string[] = [];
+  DG.Utils.download = (fileName: string) => {
+    downloads.push(fileName);
+  };
+  try {
+    await action(downloads);
+  } finally {
+    DG.Utils.download = download;
+  }
+}
 
 category('Custom function view', () => {
   test('Save asks the host, then saves the run with its details', () => withRunStorage(async (f) => {
@@ -188,6 +227,76 @@ category('Custom function view', () => {
     expect(view.counts.afterLoad, 1);
     expect(view.funcCall!.id, saved.id);
   }));
+
+  test('A new view starts with the default inputs', async () => {
+    const view = new CountingView(DAY_CALCULATION);
+    await view.isReady.pipe(filter((ready) => ready), take(1)).toPromise();
+    expect(view.funcCall!.inputs['incomingVolume'], 1);
+    expect(view.funcCall!.inputs['maximumGrowthRate'], 0.4);
+  });
+
+  test('A deep link opens its run in the editor', () => withRunStorage(async (f) => {
+    const view = await openEditor();
+    view.funcCall!.inputs['a'] = 2;
+    view.funcCall!.inputs['b'] = 3;
+    await view.funcCall!.call();
+    const saved = await view.saveRun(view.funcCall!, {name: `CFV deep link ${Date.now()}`});
+    f.track(saved.id);
+
+    const opened = await openFromLink(saved.id);
+    expect(opened.funcCall!.id, saved.id);
+    expect(opened.funcCall!.inputs['a'], 2);
+  }));
+
+  test('A run saved from a custom view is a Compute2 run that previews in the view', () => withRunStorage(async (f) => {
+    const view = await openEditor();
+    view.funcCall!.inputs['a'] = 2;
+    view.funcCall!.inputs['b'] = 3;
+    await view.funcCall!.call();
+    const saved = await view.saveRun(view.funcCall!, {name: `CFV handler ${Date.now()}`});
+    f.track(saved.id);
+
+    const run = await grok.dapi.functions.calls.allPackageVersions().include('session.user,func.package').find(saved.id);
+    const handler = DG.ObjectHandler.forEntity(run);
+    expect(handler?.type, 'ComputeRun');
+    const preview = await handler!.renderPreview(run) as unknown as CustomFunctionView;
+    expect(preview.funcCall!.id, saved.id);
+    expect(preview.funcCall!.inputs['a'], 2);
+  }));
+
+  test('A deep link to a run that fails to load opens a new call', async () => {
+    const missing = missingRunId();
+    const view = await openFromLink(missing);
+    expect(!!view.funcCall && view.funcCall.id !== missing, true);
+  });
+
+  test('The Export icon downloads the first export', () => withDownloads(async (downloads) => {
+    const view = await newView();
+    view.exports = [
+      {name: 'First', export: async () => DG.FileInfo.fromString('first.txt', '1')},
+      {name: 'Second', export: async () => DG.FileInfo.fromString('second.txt', '2')},
+    ];
+    exportIcon(view)!.click();
+    await awaitCheck(() => downloads.length > 0, 'the export should download', 3000);
+    expect(JSON.stringify(downloads), JSON.stringify(['first.txt']));
+  }));
+
+  test('Export turned off greys the icon and downloads nothing', () => withDownloads(async (downloads) => {
+    const view = await newView();
+    view.exports = [{name: 'First', export: async () => DG.FileInfo.fromString('first.txt', '1')}];
+    view.exportEnabled = false;
+    const icon = exportIcon(view)!;
+    expect(icon.classList.contains('d4-disabled'), true);
+    icon.click();
+    expect(downloads.length, 0);
+    view.exportEnabled = true;
+    expect(exportIcon(view)!.classList.contains('d4-disabled'), false);
+  }));
+
+  test('Without exports there is no Export icon', async () => {
+    const view = await newView();
+    expect(exportIcon(view) == null, true);
+  });
 
   test('The editor setup gives the view both dialogs and takes them back', () => withRunStorage(async (f) => {
     const view = await readyView(f);

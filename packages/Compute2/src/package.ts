@@ -3,7 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {filter, take} from 'rxjs/operators';
+import {BehaviorSubject, of} from 'rxjs';
+import {concatMap, filter, finalize, map, take} from 'rxjs/operators';
 
 import {ViewerTestApp as ViewerAppInstance} from './apps/ViewerTestApp';
 import {FormTestApp as FormAppInstance} from './apps/FormTestApp';
@@ -11,7 +12,7 @@ import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RFVApp} from './apps/RFVApp';
 import {provideDgViewService} from '@datagrok-libraries/webcomponents-vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
-import type {PipelineConfiguration} from
+import type {PipelineConfiguration, ViewersHook} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
 import './tailwind.css';
@@ -27,8 +28,15 @@ import type {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
-import {CUSTOM_VIEW_OPTION} from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {runWorkflow, saveWorkflowRun} from
+import {CUSTOM_VIEW_OPTION, loadViewersHook} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {callExcelReport} from './call-export';
+import {callExports, exportCall} from './run-exports';
+import type {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
+import type {
+  CustomExportArgs,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import type {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {loadSavedTree, readRun, runWorkflow, saveWorkflowRun} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 import type {RunState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 import type {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
@@ -41,6 +49,7 @@ import {ModelCatalogView,
   setModelCatalogEventHandlers,
   setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import dayjs from 'dayjs';
+import {Compute2ModelHandler} from './model-handler';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -105,7 +114,7 @@ export class PackageFunctions {
 
     modelCatalogOptions.roleOnlyFilter = isRoleOnlyModelFilter();
 
-    setModelCatalogHandler();
+    setModelCatalogHandler(new Compute2ModelHandler());
     setModelCatalogEventHandlers(modelCatalogOptions);
 
     try {
@@ -162,8 +171,12 @@ export class PackageFunctions {
 
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     const detach = attachRunStorage(view, call.func);
-    if (call.aux.initialRunId) {
-      await view.loadRun(call.aux.initialRunId)
+    // as in RFVApp: a programmatic open passes the id via call.aux, deep links via the start URL
+    const runId = call.aux.initialRunId ??
+      (globalThis.initialURLHandled ? null : new URL(grok.shell.startUri).searchParams.get('id'));
+    globalThis.initialURLHandled = true;
+    if (runId) {
+      await view.loadRun(runId)
         .catch((e) => grok.shell.error(`Couldn't open the run: ${e?.message ?? e}`));
     }
 
@@ -183,8 +196,10 @@ export class PackageFunctions {
     const view = DG.toJs(DG.toDart(new DG.ViewBase())) as DG.View;
     setViewHierarchyData(call, view);
 
+    const viewersHook = await loadViewersHook(call.func);
+
     const app = Vue.createApp(RFVApp,
-      {funcCall: Vue.markRaw(call), initialRunId: call.aux.initialRunId});
+      {funcCall: Vue.markRaw(call), initialRunId: call.aux.initialRunId, viewersHook});
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
@@ -307,6 +322,75 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
+    name: 'ReportFuncCallExcel',
+    description: 'The default Excel report of a run, as its export menu builds it: [DG.FileInfo, ExcelJS.Workbook].',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async ReportFuncCallExcel(
+    @grok.decorators.param({type: 'funccall', options: {description: 'The run to report'}}) funcCall: DG.FuncCall,
+    @grok.decorators.param({type: 'object', options: {description: 'Validation results by input', optional: true}})
+      validationState?: Record<string, ValidationResult>,
+    @grok.decorators.param({type: 'object', options: {description: 'Consistency by input', optional: true}})
+      consistencyState?: Record<string, ConsistencyInfo>,
+    @grok.decorators.param({type: 'object', options: {
+      description: 'The viewers hook of a workflow step, in place of the function\'s own', optional: true}})
+      viewersHook?: ViewersHook,
+    @grok.decorators.param({type: 'object', options: {
+      description: 'Meta values by output, for the hook', optional: true}})
+      metaState?: Record<string, {value: any}>,
+    @grok.decorators.param({type: 'bool', options: {
+      description: 'Names the file Not completed when true', optional: true}})
+      isOutputOutdated?: boolean) {
+    return callExcelReport(funcCall, {
+      viewersHook: viewersHook ?? await loadViewersHook(funcCall.func), metaState,
+      validation: validationState, consistency: consistencyState,
+      completed: isOutputOutdated == null ? undefined : !isOutputOutdated,
+    });
+  }
+
+  @grok.decorators.func({
+    name: 'CallExports',
+    description: 'The exports of a function\'s runs as its Export menu lists them, [{id, name}]; the first is default.',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static CallExports(@grok.decorators.param({type: 'func'}) func: DG.Func) {
+    return callExports(func);
+  }
+
+  @grok.decorators.func({
+    name: 'ExportCall',
+    description: 'Exports a run as its Export menu does, with the id CallExports gives; returns the file.',
+    outputs: [{type: 'file', name: 'result'}],
+  })
+  static async ExportCall(
+    @grok.decorators.param({type: 'funccall', options: {description: 'The run to export'}}) funcCall: DG.FuncCall,
+    @grok.decorators.param({options: {description: 'The export id'}}) exportId: string,
+    @grok.decorators.param({type: 'object', options: {
+      description: 'The args a custom export gets (CustomExportArgs)', optional: true}}) args?: CustomExportArgs,
+  ): Promise<DG.FileInfo> {
+    const {validationState, consistencyState, isOutputOutdated, runError, viewersHook, metaState} = args ?? {};
+    return exportCall(funcCall, exportId, {
+      validation: validationState, consistency: consistencyState, isOutputOutdated, runError, metaState,
+      viewersHook: viewersHook ?? await loadViewersHook(funcCall.func),
+      completed: isOutputOutdated == null ? undefined : !isOutputOutdated,
+    });
+  }
+
+
+  @grok.decorators.func({
+    name: 'LoadWorkflowRun',
+    description: 'Load a saved workflow run without UI and return the state of every step, as RunWorkflow does.',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async LoadWorkflowRun(
+    @grok.decorators.param({options: {description: 'Meta FuncCall id of the saved workflow run'}}) id: string) {
+    return loadSavedTree(id).pipe(
+      concatMap(({tree}) => of(tree).pipe(map(readRun), finalize(() => tree.close()))),
+    ).toPromise();
+  }
+
+
+  @grok.decorators.func({
     name: 'OpenWorkflowRun',
     // eslint-disable-next-line max-len
     description: 'Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.',
@@ -383,6 +467,21 @@ export class PackageFunctions {
     app.mount(view.root);
     view.name = 'FormTestApp';
     grok.shell.addView(view);
+  }
+
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'hook'}]})
+  static async FailingViewersHookMaker() {
+    throw new Error('broken hook');
+  }
+
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'hook'}]})
+  static async SlowViewersHookMaker() {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    grok.events.fireCustomEvent('compute2-test-viewers-hook-made', null);
+    return (ioName: string, type: string) =>
+      grok.events.fireCustomEvent('compute2-test-viewers-hook-applied', {ioName, type});
   }
 
 
@@ -739,8 +838,8 @@ export class PackageFunctions {
       customExports: [{
         id: 'recorder',
         friendlyName: 'Record export',
-        handler: async (state, utils) =>
-          grok.shell.info(`Exported ${state.configId} with ${Object.keys(utils).sort().join(', ')}`),
+        handler: async (state, utils) => DG.FileInfo.fromString('recorder.txt',
+          `Exported ${state.configId} with ${Object.keys(utils).sort().join(', ')}`),
       }],
     };
     return c;
@@ -1024,15 +1123,56 @@ export class PackageFunctions {
 
   // Fixtures for the custom-export report-handler test (see test/custom-export.ts).
   @grok.decorators.func({
-    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]'},
+    // eslint-disable-next-line max-len
+    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"},{"name":"none","function":"Compute2:TestCustomExportNoFile"},{"name":"hook","function":"Compute2:TestCustomExportHookArgs"}]'},
   })
   static async TestCustomExportModel(a: number): Promise<number> {
     return a;
   }
 
+  @grok.decorators.func({
+    // eslint-disable-next-line max-len
+    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"},{"name":"none","function":"Compute2:TestCustomExportNoFile","preferred":true},{"name":"hook","function":"Compute2:TestCustomExportHookArgs","preferred":true}]'},
+  })
+  static async TestPreferredExportModel(a: number): Promise<number> {
+    return a;
+  }
+
   @grok.decorators.func()
-  static async TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean): Promise<string> {
-    return `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}|${startDownload}`;
+  static async TestCustomExportRecorder(funcCall: DG.FuncCall): Promise<DG.FileInfo> {
+    return DG.FileInfo.fromString('recorded.txt', `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}`);
+  }
+
+  @grok.decorators.func({meta: {
+    features: '{"export": false}', customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]'}})
+  static async TestNoDefaultExportModel(a: number): Promise<number> {
+    return a;
+  }
+
+  @grok.decorators.func()
+  static async TestCustomExportNoFile(funcCall: DG.FuncCall): Promise<string> {
+    return funcCall.func.nqName;
+  }
+
+  @grok.decorators.func({meta: {customExports: '[{"name":"blob","function":"Compute2:TestCustomExportBlob"}]'}})
+  static async TestBlobExportModel(a: number): Promise<number> {
+    return a;
+  }
+
+  // A legacy export: it gets startDownload and returns a Blob
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  static async TestCustomExportBlob(funcCall: DG.FuncCall, startDownload: boolean): Promise<Blob> {
+    return new Blob([`${funcCall.func.nqName}|${startDownload}`]);
+  }
+
+  @grok.decorators.func()
+  static async TestCustomExportHookArgs(
+    funcCall: DG.FuncCall,
+    @grok.decorators.param({type: 'object', options: {optional: true}}) viewersHook?: ViewersHook,
+    @grok.decorators.param({type: 'object', options: {optional: true}})
+    metaState?: Record<string, BehaviorSubject<any>>,
+  ): Promise<DG.FileInfo> {
+    return DG.FileInfo.fromString('hook.txt', `${typeof viewersHook}|${metaState?.['a']?.value}`);
   }
 
   // Fixture for the RFV tab tests (see test/rfv-view.ts): empty outputs get no tab, so `last` has one only

@@ -1003,7 +1003,7 @@ export class DomainError extends Error {
   /** Server discriminant: 'validation' | 'version-conflict' | 'access-conflict' | 'restrict' | 'filter' |
    * 'forbidden' | 'not-found' | 'unsupported' | 'manifest-validation' | 'invalid-mode' | 'id-collision' |
    * 'destructive-confirmation-required' | 'not-user-managed' | 'not-package-managed' |
-   * 'schema-management-unavailable' | 'apply-failed' | 'delete-failed' | '' (transport). */
+   * 'schema-management-unavailable' | 'apply-failed' | 'delete-failed' | 'unknown-group' | '' (transport). */
   get code(): string { return `${this.body['error'] ?? ''}`; }
   /** Index of the failing op in a transaction ops list; undefined otherwise. */
   get opIndex(): number | undefined { return this.body['opIndex']; }

@@ -2,9 +2,9 @@ chem-wasm: Chem's Crux engine (crux-core crates/chem-wasm), one WebAssembly file
 
 crate: chem-wasm
 features: ['chem']
-crux_core_rev: 8392cf0d62037fc3900eab41493e1a91a44e8379
+crux_core_rev: a15e103b40586a894713ca21148d482270a54daf
 crux_core_dirty: False
-built_utc: 2026-11-03T06:39:28.933Z
+built_utc: 2026-11-12T09:32:07.293Z
 cargo.profile: wasm-ship
 cargo.target: wasm32-unknown-unknown
 cargo.rustc: rustc 1.95.0 (59807616e 2026-04-14)
@@ -13,18 +13,18 @@ wasm_bindgen.version: 0.2.129
 wasm_bindgen.flags: --target web --remove-name-section
 wasm_opt.version: wasm-opt version 133 (version_133)
 wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-bulk-memory-opt --enable-call-indirect-overlong --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
-files.chem_wasm_bg.wasm.raw: 6202069
-files.chem_wasm_bg.wasm.gzip9: 2402394
-files.chem_wasm_bg.wasm.brotli11: 1754322
-files.chem_wasm.js.raw: 166212
-files.chem_wasm.js.gzip9: 25434
-files.chem_wasm.js.brotli11: 21237
-cargo_artifact.raw: 7856391
-cargo_artifact.gzip9: 2804472
-cargo_artifact.brotli11: 1980681
+files.chem_wasm_bg.wasm.raw: 6510694
+files.chem_wasm_bg.wasm.gzip9: 2530427
+files.chem_wasm_bg.wasm.brotli11: 1847724
+files.chem_wasm.js.raw: 170742
+files.chem_wasm.js.gzip9: 26024
+files.chem_wasm.js.brotli11: 21764
+cargo_artifact.raw: 8253059
+cargo_artifact.gzip9: 2951075
+cargo_artifact.brotli11: 2084036
 
-vendored from: a clean build of crux-core main 8392cf0d6 (build-ship.sh chem)
-chem_wasm_bg.wasm: 6,202,069 B raw, sha256 f88d762f480b7c7e
+vendored from: a clean build of crux-core main a15e103b4 (build-ship.sh chem)
+chem_wasm_bg.wasm: 6,510,694 B raw, sha256 242cdab450ea16ab
 NOTICE: the build's (crux-core tools/wasm_notices.py)
-includes: night 2026-11-02 batches 1 and 2, landed as 76a70ad0b and 8392cf0d6 (batch 1: n1102-chem-speed pattern-fp speed, n1102-bio-speed-3 biopolymer/depictor speed + memory, n1102-chem-edge edge-case fixes, n1102-fuzz differential-fuzz fixes; batch 2: n1102-chem-speed-3 substructure existence/count search, CIP-rank skip, drawing caches, n1102-b3 stack-overflow fix, the empty-query guard)
+includes: crux-core main 8392cf0d6..a15e103b4 (49 lands): draw-unknown-stereo (MolDraw2D unspecifiedStereoIsUnknown: RDKit markUnspecifiedStereoAsUnknown drawn, no RDKit fallback; a too-short wavy bond an error, not a trap) and 48 other teams' lands (moldraw2d-place, scheme-draw, chem-wasm-rxnmap, chem-wasm-similarity, smiles-valence, query-parts, ...); the wasm is byte-identical to the spike build Chem was validated on (00d347981)
 files: chem_wasm.js (glue, wasm-bindgen --target web), chem_wasm.d.ts, chem_wasm_bg.wasm, NOTICE.chem-wasm, VERSION.chem-wasm (both emitted to dist)

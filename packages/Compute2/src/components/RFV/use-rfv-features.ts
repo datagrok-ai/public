@@ -13,11 +13,9 @@ export function useRfvFeatures(currentCall: Readonly<Vue.Ref<DG.FuncCall>>, stan
   const features = Vue.computed(() => Utils.getFeatures(func()));
   return {
     isSAenabled: Vue.computed(() => Utils.getFeature(features.value, 'sens-analysis', false)),
-    isReportEnabled: Vue.computed(() => Utils.getFeature(features.value, 'export', true)),
     isFittingEnabled: Vue.computed(() => Utils.getFeature(features.value, 'fitting', false)),
     allowRerun: Vue.computed(() => Utils.getFeature(features.value, 'rerun', false)),
     runLabel: Vue.computed(() => Utils.getRunLabel(func()) ?? 'Run'),
-    customExports: Vue.computed(() => Utils.getCustomExports(func())),
     dockSpawnConfig: Vue.computed(() => Utils.getDockSpawnConfig(func()) as Record<string, DockSpawnConfigItem>),
     formAsTab: Vue.computed(() => Utils.getFormAsTab(func())),
     autorun: Vue.computed(() => standalone.value && Utils.isRunningOnInput(func())),

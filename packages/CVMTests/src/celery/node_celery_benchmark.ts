@@ -52,8 +52,7 @@ category('Celery: node worker benchmark', () => {
   }
 
   test('Cold start: spin-up + first call', async () => {
-    // stop → explicit run(await) → first call: call-triggered auto-start only
-    // exists for on-demand containers, the auto queue container is a regular one
+    // stop (when something already started it) → explicit run(await) → first call
     const container = await queueContainer();
     if (!`${container.status}`.includes('stopped'))
       await grok.dapi.docker.dockerContainers.stop(container.id, true);

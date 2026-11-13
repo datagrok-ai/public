@@ -13,8 +13,6 @@ import {ReportsWidget} from './widgets/reports-widget';
 import {ReportingApp} from './reporting/reporting_app';
 import {TestAnalysisManager} from './test-analysis/test-analysis-manager';
 import {getDate} from './utils';
-import {ServiceLogsApp} from './service_logs/service_logs';
-import {CloudLogsApp} from './cloud-logs/cloud-logs';
 import {TestGridCellHandler} from './handlers/test-grid-cell-handler';
 import {initTestStickyMeta} from './test-analysis/sticky-meta-initialization';
 import {TestDashboardWidget} from './viewers/ua-test-dashboard-viewer';
@@ -26,8 +24,6 @@ import {isDevHost} from './release/data';
 export const _package = new DG.Package();
 export let _properties: any;
 export * from './package.g';
-
-let AVAILABLE_SERVICES: string[];
 
 
 const highestPriorityIndex = 3;
@@ -336,20 +332,6 @@ export class PackageFunctions {
   }
 
   @grok.decorators.app({
-    'url': '/metrics',
-    'name': 'Metrics',
-    'icon': 'images/icons/metrics.svg',
-    'meta': {'role': 'adminApp', 'browsePath': 'Observability'},
-  })
-  static metricsApp(
-    @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string): DG.ViewBase | null {
-    const handler = new ViewHandler('metrics');
-    handler.view.parentCall = grok.functions.getCurrentCall();
-    handler.init(undefined, undefined, undefined, undefined, undefined, undefined, path);
-    return handler.view;
-  }
-
-  @grok.decorators.app({
     'url': '/tests/manager',
     'name': 'Test Track',
     'icon': 'images/icons/test-track.svg',
@@ -377,86 +359,6 @@ export class PackageFunctions {
     return app.view;
   }
 
-
-  @grok.decorators.app({
-    'url': '/service-logs',
-    'name': 'Service Logs',
-    'icon': 'images/icons/service-logs.svg',
-    'meta': {'role': 'adminApp', 'browsePath': 'Observability'},
-  })
-  static serviceLogsApp(
-    @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string,
-    @grok.decorators.param({'type': 'map', 'options': {'optional': true}}) params?: any,
-    @grok.decorators.param({'type': 'int', 'options': {'optional': true}}) limit?: number): DG.ViewBase {
-    if (path && path.startsWith('/'))
-      path = path.slice(1);
-    const view = DG.View.fromViewAsync(async () => {
-      const currentCall = grok.functions.getCurrentCall();
-      AVAILABLE_SERVICES ??= await grok.dapi.docker.getAvailableServices();
-      const app = new ServiceLogsApp(currentCall, AVAILABLE_SERVICES, path, limit);
-      if (AVAILABLE_SERVICES.length > 0)
-        app.getLogs().then((_) => {});
-      //@ts-ignore
-      return app as DG.View;
-    });
-    view.name = ServiceLogsApp.APP_NAME;
-    return view;
-  }
-
-
-  @grok.decorators.app({
-    'url': '/cloud-logs',
-    'name': 'Cloud Logs',
-    'icon': 'images/icons/service-logs.svg',
-    'meta': {'role': 'adminApp', 'browsePath': 'Observability'},
-  })
-  static cloudLogsApp(): DG.ViewBase {
-    return new CloudLogsApp(grok.functions.getCurrentCall());
-  }
-
-
-  @grok.decorators.appTreeBrowser({app: 'Service Logs'})
-  static async serviceLogsAppTreeBrowser(treeNode: DG.TreeViewGroup) {
-    const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
-    loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
-    const loaderItem = treeNode.item(loaderDiv);
-    try {
-      AVAILABLE_SERVICES ??= await grok.dapi.docker.getAvailableServices();
-      const services = ['datagrok', 'grok_pipe', 'grok-pipe', 'rabbitmq', 'jkg', 'spawner', 'grok-connect', 'grok_connect'];
-
-      const getItem = (service: string) => {
-        let icon: HTMLElement;
-        if (services.some((s) => service.includes(s)))
-          icon = ui.image('/images/entities/grok.png', 10, 10);
-
-        else
-          icon = ui.iconFA('server');
-        icon.style.marginRight = '3px';
-        const span = ui.span([icon, ' ', service]);
-        span.style.display = 'flex';
-        span.style.alignItems = 'center';
-        return span;
-      };
-
-      let currentView: DG.View;
-      for (const service of AVAILABLE_SERVICES) {
-        const node = treeNode.item(getItem(service));
-        node.onSelected.subscribe(async (_) => {
-          currentView?.close();
-          currentView= DG.View.fromViewAsync(async () => {
-            const app = new ServiceLogsApp(grok.functions.getCurrentCall(), AVAILABLE_SERVICES, service, ServiceLogsApp.DEFAULT_LIMIT, true);
-            await app.getLogs();
-            //@ts-ignore
-            return app as DG.View;
-          });
-          currentView.name = service;
-          grok.shell.addPreview(currentView);
-        });
-      }
-    } finally {
-      loaderItem.remove();
-    }
-  }
 
   @grok.decorators.appTreeBrowser({app: 'Reports'})
   static async reportsAppTreeBrowser(treeNode: DG.TreeViewGroup) {
@@ -528,7 +430,7 @@ export class PackageFunctions {
           return widget;
         }));
         const UAlink = ui.link('', async () => {
-          grok.shell.v.path = `/apps/UsageAnalysis/Packages?date=this%20week&users=${(await grok.dapi.groups.getGroupsLookup('All users'))[0].id}&packages=${ent.name}`;
+          grok.shell.v.path = `/apps/UsageAnalysis/Packages?date=this%20week&groups=${(await grok.dapi.groups.getGroupsLookup('All users'))[0].id}&packages=${ent.name}`;
           grok.functions.eval('UsageAnalysis:usageAnalysisApp()');
         }, 'Open Usage Analysis');
         UAlink.style.marginLeft = '3px';

@@ -392,3 +392,37 @@
 .c2-runs-docked .c2-runs-buttons {
   padding: 0 4px 8px;
 }
+
+.c2-export-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.c2-export-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--grey-5);
+}
+
+.c2-export-models {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
+  gap: 6px 12px;
+  align-items: center;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  align-content: start;
+}
+
+.c2-export-failed {
+  max-height: 120px;
+  overflow: auto;
+}
+
+.c2-runs-not-completed {
+  color: var(--grey-4);
+  margin-right: 4px;
+}

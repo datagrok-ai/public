@@ -28,8 +28,8 @@ import {
 } from '../constants';
 import {hexToPercentRgb} from '../utils/chem-common';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
-import {drawErrorCross, drawRdKitMoleculeToOffscreenCanvas,
-  RDKIT_COMMON_RENDER_OPTS} from '../utils/chem-common-rdkit';
+import {createRenderingOpts, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
+import {renderingOptions} from './rendering-settings';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
 import {ChemicalEngine, engineGeneration, renderingModule} from '../engine/chem-engine';
 import {cruxModuleSync, noteCruxError} from '../engine/crux-module';
@@ -74,23 +74,21 @@ export interface IHighlightTagInfo {
 
 export const NO_SCAFFOLD_COLOR = 'none';
 
+/** Colors the atoms and bonds of `tempSubstr` (or `mainSubstr`) in `mainSubstr`; without a `color`, the drawing's
+ * `highlightColour` (the Highlight color rendering setting) colors them. */
 export function _addColorsToBondsAndAtoms(mainSubstr: ISubstruct, color?: string, tempSubstr?: ISubstruct): void {
-  const colorArr = color ? hexToPercentRgb(color) : [1.0, 0.7, 0.7, 1.0];
+  const colorArr = color ? hexToPercentRgb(color) : null;
+  const paint = (colors: {[key: number]: number[] | null}, indices?: number[]) => {
+    for (const i of indices ?? []) {
+      if (colorArr)
+        colors[i] = colorArr;
+      else
+        delete colors[i];
+    }
+  };
   const substrToTakeAtomsFrom = tempSubstr ?? mainSubstr;
-  if (substrToTakeAtomsFrom) {
-    if (substrToTakeAtomsFrom.atoms) {
-      for (let j = 0; j < substrToTakeAtomsFrom.atoms.length; j++) {
-        mainSubstr.highlightAtomColors ??= {};
-        mainSubstr.highlightAtomColors[substrToTakeAtomsFrom.atoms[j]] = colorArr;
-      }
-    }
-    if (substrToTakeAtomsFrom.bonds) {
-      for (let j = 0; j < substrToTakeAtomsFrom.bonds.length; j++) {
-        mainSubstr.highlightBondColors ??= {};
-        mainSubstr.highlightBondColors[substrToTakeAtomsFrom.bonds[j]] = colorArr;
-      }
-    }
-  }
+  paint(mainSubstr.highlightAtomColors ??= {}, substrToTakeAtomsFrom.atoms);
+  paint(mainSubstr.highlightBondColors ??= {}, substrToTakeAtomsFrom.bonds);
 }
 
 export class GridCellRendererProxy extends DG.GridCellRenderer {
@@ -570,6 +568,7 @@ M  END
     molRegenerateCoords: boolean, scaffoldRegenerateCoords: boolean,
     alignByFirstSubstructure: boolean, details: object = {}, substructureObj?: ISubstruct, renderOptions?: {[key: string]: any}): ImageData {
     this._syncEngine();
+    renderOptions = {...renderingOptions(), ...renderOptions};
     const name = width + ' || ' + height + ' || ' +
       molString + ' || ' + JSON.stringify(scaffolds) + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords + ' || ' +
@@ -718,9 +717,10 @@ M  END
 
     const colTemp = gridCell.cell.column.temp;
     const highlightInfo = this.getHighlightTagInfo(colTemp, gridCell);
+    const renderOpts = renderingOptions(gridCell.cell.column);
     // fixed scale enabled by default, if explicitely set to false - then disabled
-    const fixedScaleEnabled = gridCell.cell.column.getTag(FIXED_SCALE_TAG) !== 'false';
-    const renderOpts = fixedScaleEnabled ? undefined : {fixedScale: null};
+    if (gridCell.cell.column.getTag(FIXED_SCALE_TAG) === 'false')
+      renderOpts.fixedScale = null;
     let mhSubstruct: ISubstruct | undefined;
     try {
       const mhData = getMonomerHover();
@@ -935,28 +935,24 @@ M  END
 
   _molToSvg(
     molString: string, w: number, h: number, scaffolds: IColoredScaffold[] = [], alignByFirstSubstructure = false,
-    engine?: ChemicalEngine,
+    engine?: ChemicalEngine, renderOpts?: {[key: string]: any},
   ): string | null {
     // Mol is owned by molCache — DO NOT delete it.
     const molRenderingInfo = this._fetchMol(molString, scaffolds, false, false, {}, alignByFirstSubstructure, engine);
     if (molRenderingInfo.engine === ChemicalEngine.Crux) {
-      return cruxOrRdKit('drawing', () => this._infoToSvg(molRenderingInfo, w, h, scaffolds),
-        () => this._molToSvg(molString, w, h, scaffolds, alignByFirstSubstructure, ChemicalEngine.RDKit));
+      return cruxOrRdKit('drawing', () => this._infoToSvg(molRenderingInfo, w, h, scaffolds, renderOpts),
+        () => this._molToSvg(molString, w, h, scaffolds, alignByFirstSubstructure, ChemicalEngine.RDKit, renderOpts));
     }
-    return this._infoToSvg(molRenderingInfo, w, h, scaffolds);
+    return this._infoToSvg(molRenderingInfo, w, h, scaffolds, renderOpts);
   }
 
   private _infoToSvg(molRenderingInfo: IMolRenderingInfo, w: number, h: number, scaffolds: IColoredScaffold[],
-  ): string | null {
+    renderOpts?: {[key: string]: any}): string | null {
     const mol = molRenderingInfo.molCtx.mol;
     if (!mol || !mol.is_valid())
       return null;
 
-    const details: {[k: string]: any} = {};
-    for (const k of Object.keys(RDKIT_COMMON_RENDER_OPTS))
-      details[k] = RDKIT_COMMON_RENDER_OPTS[k];
-    details.width = w;
-    details.height = h;
+    const details = createRenderingOpts({...renderOpts, width: w, height: h});
     // Scaffold-derived highlights (substructure filter, align, scaffold tree, highlight-by-scaffold).
     const substruct = scaffolds.length ? molRenderingInfo.substruct : null;
     details.atoms = substruct?.atoms ?? [];
@@ -981,7 +977,8 @@ M  END
       this.getHighlightTagInfo(gridCell.cell.column.temp, gridCell) :
       undefined;
     return this._molToSvg(gridCell.cell.value, w, h,
-      highlightInfo?.scaffolds ?? [], highlightInfo?.alignByFirstSubstructure ?? false);
+      highlightInfo?.scaffolds ?? [], highlightInfo?.alignByFirstSubstructure ?? false, undefined,
+      renderingOptions(gridCell.cell.column));
   }
 }
 

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Tests: A connection is tested once per run, and every test on it starts from that answer: the `Providers:` test, the query tests (`--test:` annotations) and the categories on the test Postgres fail at once with the provider's reason when the connection is refused or does not answer, instead of each waiting out its 30 s timeout as `EXECUTION TIMEOUT` (27 Snowflake tests cost 13.5 minutes a night). A functional run asks the connections at its start, four at a time, which also starts the on-demand `PostgresDocker` container and warms Athena up ahead of their tests
+* Tests: Fixed the two `Database Meta: DbSchemaInfo` deleted-field tests on a stand served over plain HTTP, where `crypto.subtle` does not exist: the entity id is hashed with a local SHA-1
 * Docker: Rebuilt the dbtests image on postgres:17-alpine with ICU en-US collation to clear the Debian CVEs
 * Tests: Added `Database Meta: DbSchemaInfo` tests that one deleted table or column field leaves the others, that a column's string-list Values round-trip, and that a table's or a column's annotation is absent on its namesakes
 * Tests: Added the `Queries: expected rows` category: every query declaring `meta.testExpectedRows` returns that count for its default inputs, and a `PostgresByStringChoices` choice filters the rows to that country

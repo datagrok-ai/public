@@ -25,7 +25,7 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 
 export const DAY_CALCULATION = 'Bioreactorworkflowdemo:DayCalculation';
-const BIOREACTOR_WORKFLOW = 'Bioreactorworkflowdemo:BioreactorWorkflow';
+export const BIOREACTOR_WORKFLOW = 'Bioreactorworkflowdemo:BioreactorWorkflow';
 
 let counter = 0;
 export const uniqueName = (prefix: string) => `${prefix} ${Date.now()}-${counter++}`;

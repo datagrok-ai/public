@@ -38,6 +38,7 @@ browser or a logged-in session.
 | Check server + per-module health                            | `grok s healthcheck [--module <name>]`                 |
 | Server build, uptime, DB pool, requests in flight           | `grok s status`                                        |
 | Problems, alerts, problem rules, logger settings, errors, cloud logs | `grok s observe problems list --alert-status open` (alias `grok s o`) |
+| Health center metrics: requests, DB, instances, growth      | `grok s o metrics`, `grok s o metrics instances`, `grok s o metrics growth` |
 | Bulk operations in one round-trip                           | `grok s batch <entity> <verb> --json items.json`       |
 | Move entities dev to prod (bundle, or instance to instance) | `grok s pull ... --out ./bundle` / `grok s migrate ... --from dev --to prod` |
 | Browse / query / edit domain-table rows                    | `grok s domains query grit.issue --filter 'status = "open"'` / `domains insert` / `domains upload` |
@@ -552,6 +553,7 @@ grok s o groups set Chembl --when 'level = error and package = Chembl' --scope s
 grok s o groups set Chembl --enabled false                  # only the flags given change; groups rm Chembl deletes it
 grok s o groups put --json groups.json                      # replace every log group (the GROK_PARAMETERS settings.logger.logGroups shape)
 grok s o groups reset                                       # back to the default groups; the audit group can only be switched off, not removed
+grok s o groups set Metrics --to grafana                    # push the health gauges every minute (kind metrics: endpoints only); --to '' stops it
 grok s o endpoints                                          # where groups can send records; endpoints rm grafana
 grok s o logs activations                                   # triggered groups on now; logs activations stop <group id> <key>
 ```
@@ -567,6 +569,60 @@ that already expires later it keeps that time. `capture stop` removes only an ex
 capture; for any other entry use `logger set --user <login> --remove`. Read what it recorded with
 `timeline --session <id>`. `logs container` reads the container's latest `--limit` lines (20000) and only then cuts `--since`/`--from`/`--to` (UTC, matched across the container's own offset) and `--grep`, so a window older than those lines comes back empty: raise `--limit`. `logs archive list --since` filters only the page the server returned (`--limit`), so narrow
 the listing with `--prefix` first. `logs` read with the server's AWS role, or with `--connection <id>`. In durations `m` means minutes (in `grok s pull --since` it means months).
+
+### Health metrics
+
+What the Health center shows (Admin > Health), one command per view:
+
+```bash
+grok s o metrics --since 24h                                # requests now and before, queue (RabbitMQ messages: total, ready, unacknowledged), database, process totals
+grok s o metrics routes --date "this week" --limit 20       # the slowest routes: count, p50, p95, p99, errPct
+grok s o metrics statements --by mostCalled                 # pg_stat_statements: slowest (default), mostCalled, worstCacheHit
+grok s o metrics statements reset                           # clear pg_stat_statements: the rankings start over
+grok s o metrics instances                                  # per server instance: sockets, requests, DB pool, disk
+grok s o metrics instances --isolates                       # one row per isolate of every instance
+grok s o metrics database --section unhealthy               # cacheMisses, unhealthy, offenders, largest, health; all without --section
+grok s o metrics growth --area storage --days 7             # size and count now and their change over 1, 7, 30 days; * marks an alert holding
+grok s o metrics sessions --since 2h                        # session counts now and before, the latest sessions
+grok s o metrics queue                                      # function calls queued and running now
+grok s o metrics containers                                 # package containers: state, versions, stale, ready replicas, errors; --all adds the stopped
+grok s o metrics failures --method GET --route '/users/{id}' --since 1h   # failed requests of a route, with their session's error
+grok s o metrics request-log --session <id> --time 2026-11-13T10:00       # what a session logged around a time
+grok s o metrics disk                                       # the server's data disk (df)
+grok s o metrics storage                                    # the storage root's size and its top prefixes
+grok s o metrics export                                     # the gauges a Metrics log group pushes, as they are now
+grok s o health --instances                                 # health records of the services, with every instance's sockets
+grok s o metric-alerts get                                  # metric alerts (Settings > Alerts); --output json > alerts.json
+grok s o metric-alerts put --json alerts.json               # replace them; the server checks them first
+```
+
+The window of `metrics`, `routes`, `sessions` and `failures` is `--since`, `--date` or `--from` [`--to`], as in
+`errors top`; without one the server takes the last 24 h. The reads need `ViewTelemetry` (`metrics storage` and
+`health` without `--instances` need none), `statements reset` needs `RunServerMaintenance` and `metric-alerts put`
+`EditPluginsSettings`.
+`metrics database` shows the queries of `offenders` only to holders of `RunServerMaintenance`.
+`metrics export` lists every point the metrics export sends (`instance` per server, `deployment`, `growth`) whatever
+the log groups say; a log group of kind `metrics` (the default **Metrics** group) pushes them every minute to the
+endpoints it ticks: OTLP metrics to an OpenTelemetry endpoint, one record per value elsewhere. A metrics group sends
+to endpoints only, so `groups add --kind metrics` starts with no destination; `groups` lists its levels as `-`.
+
+| Route | Command |
+|---|---|
+| `GET /admin/metrics` | `metrics [overview]`, `metrics routes`, `metrics statements` (also `errors top`) |
+| `POST /admin/metrics/statements/reset` | `metrics statements reset` |
+| `GET /admin/connections` | `metrics instances [--isolates]` |
+| `GET /admin/metrics/database` | `metrics database` |
+| `GET /admin/metrics/growth` | `metrics growth` |
+| `GET /admin/metrics/sessions` | `metrics sessions` |
+| `GET /admin/metrics/queue` | `metrics queue` |
+| `GET /admin/metrics/containers` | `metrics containers` |
+| `GET /admin/metrics/failures` | `metrics failures` |
+| `GET /admin/metrics/request_log` | `metrics request-log` |
+| `GET /admin/metrics/disk` | `metrics disk` |
+| `GET /admin/metrics/export` | `metrics export` |
+| `GET /info/storage` | `metrics storage` |
+| `GET /admin/health` | `health` |
+| `GET`/`POST /admin/plugins/alerts/settings` (`metricAlerts`) | `metric-alerts get`/`put` |
 
 ### Logging one command (`--log`)
 

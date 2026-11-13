@@ -1,7 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {runTests, tests, TestContext, test as _test, category, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
+import {runTests, tests, TestContext, test as _test, category, before, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
+import {answered, guardQueryTests, prewarm, reachable} from './connections/reachable';
 import './connections/queries-test';
 import './benchmarks/benchmark';
 import './cache/cache-test';
@@ -24,6 +25,14 @@ export {tests};
 export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean,
                            skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean): Promise<DG.DataFrame> {
     console.log(category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail);
+    // A functional run asks the connections of its tests at the start, a few at a time: an unreachable one is
+    // known by the time its tests come, and the on-demand container is up. Timings are left undisturbed.
+    // Nothing is awaited here: runTests takes the package from the current call.
+    if (!stressTest && !DG.Test.isInBenchmark) {
+      const selected = (name: string) => !category || name.toLowerCase().startsWith(category.toLowerCase().trim());
+      prewarm([...Object.entries(queryConnections), ...Object.entries(providerConnections)]
+        .filter(([name, _]) => selected(name)).flatMap(([_, connections]) => connections));
+    }
     const data = await runTests({ category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail });
     return DG.DataFrame.fromObjects(data)!;
 }
@@ -118,6 +127,9 @@ const skipReasons: {[dataSource: string]: string} = {
 const timeouts: {[dataSource: string]: number} = {
   'Athena': 150000,
 };
+// The connections of the `Providers:` categories and of the query tests (`--test:` annotations), by category.
+const providerConnections: {[category: string]: DG.DataConnection[]} = {};
+let queryConnections: {[category: string]: DG.DataConnection[]} = {};
 
 //tags: init
 export async function initPackageTests() {
@@ -129,17 +141,30 @@ export async function initPackageTests() {
     categories[cat] ??= [];
     categories[cat].push(c);
   }
-  for (const cat of Object.keys(categories))
+  for (const cat of Object.keys(categories)) {
+    const tested = categories[cat].filter((c) => c.friendlyName);
+    if (!skipReasons[cat])
+      providerConnections['Providers: ' + cat] = tested;
     category('Providers: ' + cat, () => {
-      for (const conn of categories[cat]) {
-        if (!conn.friendlyName) continue;
+      // The connections are tested together, so one that does not answer costs the category its wait once;
+      // each test then reports the answer of its connection.
+      before(async () => await answered(tested));
+      for (const conn of tested) {
         _test(conn.friendlyName, async () => {
-          const res = await conn.test();
+          const res = await reachable(conn, (timeouts[cat] ?? 30000) - 5000);
           if (res !== 'ok')
             throw new Error(res);
         }, {skipReason: skipReasons[cat], timeout: timeouts[cat]});
       }
     });
+  }
+  // The query tests are registered here, as runTests would do later, to learn which connection each one needs.
+  try {
+    await initTests(_package);
+    queryConnections = await guardQueryTests(_package.id);
+  } catch (e: any) {
+    console.warn(`DBTests: the query tests run without the check of their connections: ${e?.message ?? e}`);
+  }
 }
 
 //name: initAutoTests

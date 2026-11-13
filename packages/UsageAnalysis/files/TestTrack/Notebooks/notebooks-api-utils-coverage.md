@@ -156,5 +156,5 @@ Expected:
   DOM, which automated tests cannot reach.
 - The environment-selection input is deferred — it is currently disabled in the
   rendering pipeline, so there's no surface to automate against.
-- See: `public/help/compute/jupyter-notebook.md#Environments` for background on notebook
+- See: `help/compute/jupyter-notebook.md#Environments` for background on notebook
   environments.

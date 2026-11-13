@@ -802,13 +802,17 @@ export interface IBarChartSettings {
    * when the *Split* value is not present. */
   includeNulls: boolean;
 
-  /** Whether to sort bars *by category* or *by value*.
+  /** Whether to sort bars *by category*, *by value*, or in a *custom* order (see *Category Order*).
    * See also *Bar Sort Order* */
   barSortType: string;
 
   /** Whether the bars should be sorted in ascending or descending order.
    * See also *Bar Sort Type*. */
   barSortOrder: string;
+
+  /** How the categories are ordered under the *custom* sort type: by name, row count, an aggregated value, or manually;
+   * by default, in the column's own order. */
+  categoryOrder: string;
 
   axisType: keyof typeof AxisType;
 
@@ -1025,6 +1029,10 @@ export interface IPieChartSettings {
   pieSortType: string;
 
   pieSortOrder: string;
+
+  /** How the categories are ordered under the *custom* sort type: by name, row count, an aggregated value, or manually;
+   * by default, in the column's own order. */
+  categoryOrder: string;
 
   includeNulls: boolean;
 
@@ -1889,6 +1897,15 @@ export interface IScatterPlot3dSettings {
 
   showZSelector: boolean;
 
+  /** How the X axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  xCategoryOrder: string;
+
+  /** How the Y axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  yCategoryOrder: string;
+
+  /** How the Z axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  zCategoryOrder: string;
+
   color: string;
   colorColumnName: string;
 
@@ -2056,6 +2073,12 @@ export interface IScatterPlotSettings {
 
   showYSelector: boolean;
 
+  /** How the X axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  xCategoryOrder: string;
+
+  /** How the Y axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  yCategoryOrder: string;
+
   /** Shows a distribution histogram along the X axis (at the top) */
   showXHistogram: boolean;
 
@@ -2140,6 +2163,7 @@ export interface IScatterPlotSettings {
   /** By default - automatic sizing based on current dataframe */
   markerDefaultSize: number;
 
+  /** @deprecated Kept for plugins built before the color alpha: the alpha of the marker colors. */
   markerOpacity: number;
 
   /** Randomly shift (x, y) marker position up to the *Jitter Size* pixels.
@@ -2233,6 +2257,7 @@ export interface IScatterPlotSettings {
 
   backColor: number;
 
+  /** Its alpha is the opacity of all markers colored by the Color column too; a missing value keeps the Missing Value Color alpha. */
   filteredRowsColor: number;
 
   filteredOutRowsColor: number;
@@ -2370,8 +2395,6 @@ export interface IScatterPlotSettings {
 
   regressionLineColor: number;
 
-  regressionLineTransparency: number;
-
   /** Gives all category lines the same slope, with a confidence band. Fitted by ANCOVA. Needs numerical X and Y. */
   regressionCommonSlope: boolean;
 
@@ -2398,8 +2421,6 @@ export interface IScatterPlotSettings {
   movingAveragePerCategory: boolean;
 
   movingAverageLineColor: number;
-
-  movingAverageLineTransparency: number;
 
   annotationRegions: string;
 
@@ -2525,6 +2546,9 @@ export interface IBoxPlotSettings {
 
   /** Display subcategories - category combinations in the x axis table. */
   showMinorCategories: boolean;
+
+  /** How the categories are ordered: by name, row count, an aggregated value, or manually. */
+  categoryOrder: string;
 
   value: string;
   valueColumnName: string;
@@ -2903,6 +2927,9 @@ export interface ILineChartSettings {
   segment: string;
   segmentColumnName: string;
 
+  /** How the X axis categories are ordered: by name, row count, an aggregated value, or manually. */
+  xCategoryOrder: string;
+
   invertXAxis: boolean;
 
   showXAxis: boolean;
@@ -2968,8 +2995,6 @@ export interface ILineChartSettings {
 
   markerSize: number;
 
-  markerOpacity: number;
-
   /** A boolean column that determines whether to show markers. */
   showMarkers: keyof typeof VisibilityMode;
 
@@ -2977,8 +3002,6 @@ export interface ILineChartSettings {
   markersVisibilityColumnName: string;
 
   lineWidth: number;
-
-  lineTransparency: number;
 
   lineColoringType: string;
 
@@ -3245,8 +3268,6 @@ export interface ILineChartSettings {
 
   regressionLineColor: number;
 
-  regressionLineTransparency: number;
-
   /** Moving (rolling) average line visibility. */
   showMovingAverageLine: boolean;
 
@@ -3267,8 +3288,6 @@ export interface ILineChartSettings {
   movingAveragePerCategory: boolean;
 
   movingAverageLineColor: number;
-
-  movingAverageLineTransparency: number;
 
   annotationRegions: string;
 

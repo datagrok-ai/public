@@ -209,5 +209,5 @@ Expected:
   a notebook) is not covered here — it runs in a sandboxed iframe not reachable by
   browser automation. Scenario 2 (Edit) only checks that the ribbon switches to edit
   mode, not what happens inside the editor.
-- See: public/help/compute/jupyter-notebook.md#Notebooks browser
-- See: public/help/compute/jupyter-notebook.md#Apply existing notebooks into tables
+- See: help/compute/jupyter-notebook.md#Notebooks browser
+- See: help/compute/jupyter-notebook.md#Apply existing notebooks into tables

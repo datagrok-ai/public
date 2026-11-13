@@ -13,11 +13,13 @@ const RunBrowserDialog = Vue.defineComponent({
     allowAllModels: {type: Boolean, default: false},
     stepHistory: {type: Boolean, default: false},
     openSeveral: {type: Boolean, default: false},
+    allowExport: {type: Boolean, default: true},
   },
   emits: {done: (_runs: DG.FuncCall[] | null) => true},
   setup(props, {emit}) {
     return () => <RunBrowser model={props.model} selectModel={props.selectModel}
       allowAllModels={props.allowAllModels} stepHistory={props.stepHistory} openSeveral={props.openSeveral}
+      allowExport={props.allowExport}
       roleOnlyFilter={isRoleOnlyModelFilter()} layout='dialog'
       onOpen={(run: DG.FuncCall) => emit('done', [run])}
       onOpenSeveral={(runs: DG.FuncCall[]) => emit('done', runs)} onCancel={() => emit('done', null)}/>;
@@ -27,18 +29,18 @@ const RunBrowserDialog = Vue.defineComponent({
 /** The run browser as a dialog; resolves the runs to open (one unless openSeveral), or null. */
 export function openRunBrowserDialog(options: {
   title: string, model?: DG.Func, selectModel?: boolean, allowAllModels?: boolean, stepHistory?: boolean,
-  openSeveral?: boolean, size?: DialogSize,
+  openSeveral?: boolean, allowExport?: boolean, size?: DialogSize,
 }) {
   const {title, size, ...props} = options;
   return showVueDialog<DG.FuncCall[]>(title, RunBrowserDialog, props, size ?? {width: 980, height: 600});
 }
 
 /** Model Hub's Browse Runs: runs of every model, or of the one chosen, opened in the model's own view. */
-export async function browseRuns() {
+export async function browseRuns(model?: DG.Func) {
   // a blocking dialog of its own, so it takes most of the window
   const size = {width: Math.round(window.innerWidth * 0.9), height: Math.round(window.innerHeight * 0.9),
     fullScreen: true};
-  const runs = await openRunBrowserDialog({title: 'Browse runs', selectModel: true, allowAllModels: true,
+  const runs = await openRunBrowserDialog({title: 'Browse runs', model, selectModel: true, allowAllModels: true,
     openSeveral: true, size});
   for (const run of runs ?? []) {
     try {
