@@ -288,7 +288,10 @@ category('Analyze', () => {
       const r = {q025: 8, median: 15, q975: 25 as number | null};
       const f = await bandFactors('MC38');
       const w = widenedEnd(r, f);
-      expect((Math.log(15) - Math.log(w.q025)) / (Math.log(15) - Math.log(8)) - 1.21 < 1e-9, true, JSON.stringify(w));
+      // rounded outward to whole days: 8.08 to 25.16 becomes 8 to 26 (MC38's 1.21 in log days before rounding)
+      expect(JSON.stringify(w), JSON.stringify({q025: 8, median: 15, q975: 26}));
+      const wide = widenedEnd({q025: 8.4, median: 15, q975: 25.4}, f);
+      expect(Number.isInteger(wide.q025) && Number.isInteger(wide.q975!) && wide.q025 <= 8 && wide.q975! >= 25, true);
       expect(widenedEnd({...r, q975: null}, f).q975, null);
       expect(await bandFactors('4T1'), null);
       expect(widenedEnd(r, await bandFactors('4T1')), r);
@@ -299,8 +302,23 @@ category('Analyze', () => {
       expect(endRange(r, null, p, false), r);
       // Monitor: the same factor and the same hull; no factor, no change
       const m = {median: 15, q10: 8, q90: 25 as number | null};
-      expect(monitorEnd(m, f, null).q10, w.q025);
+      expect(monitorEnd(m, f, null).q10 === w.q025 && monitorEnd(m, f, null).q90 === w.q975, true);
+      expect(monitorEnd(m, f, null).q10 < m.q10 + 1e-9 && w.q975! > m.q90!, true, 'widened, not unchanged');
       expect(monitorEnd(m, f, p).q90, 40);
+      // an open printed top stays open; a printed range that is not a number is not used; no plan, no hull
+      expect(endRange(r, f, {durationQ10: 5, durationQ90: null}, false).q975, null);
+      expect(monitorEnd(m, f, {durationQ10: 5, durationQ90: null}).q90, null);
+      expect(JSON.stringify(endRange(r, f, {durationQ10: NaN, durationQ90: 40}, false)), JSON.stringify(w));
+      expect(JSON.stringify(endRange(r, f, null, false)), JSON.stringify(w));
+      // a median or q10 that is not a number: Monitor's range as it was
+      expect(JSON.stringify(monitorEnd({median: NaN, q10: 8, q90: 25}, f, p)), JSON.stringify({q10: 8, q90: 25}));
+      expect(monitorEnd({median: 15, q10: null as any, q90: 25}, f, p).q10, null);
+      // every printed (rounded) day gets the verdict the printed range gives, with no plan and reanchored
+      for (const re of [false, true]) {
+        const e = endRange(r, f, null, re);
+        for (let day = Math.round(e.q025); day <= Math.round(e.q975!); day++)
+          expect(endVerdict(day, day, e), 'As predicted', `day ${day} reanchored ${re}`);
+      }
       expect(JSON.stringify(monitorEnd(m, null, p)), JSON.stringify({q10: 8, q90: 25}));
     });
 

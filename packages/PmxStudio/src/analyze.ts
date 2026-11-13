@@ -230,13 +230,12 @@ export interface PlanComparison {
   notes: string[];
 }
 
-/** Whether x falls in a 95% range (an open top: no upper limit). */
 /** The end's range Analyze checks: Plan's widened one (no factor: as it was) and, unless the study was reanchored (its
  *  range is predicted from another start), with the plan's printed range inside it. */
-export function endRange(end: Range, f: BandFactors | null, p: {durationQ10: number, durationQ90: number | null},
+export function endRange(end: Range, f: BandFactors | null, p: {durationQ10: number, durationQ90: number | null} | null,
   reanchored: boolean): Range {
   const w = widenedEnd(end, f);
-  return reanchored || w === end ? w : withPrinted(w, p.durationQ10, p.durationQ90);
+  return reanchored || !p || w === end ? w : withPrinted(w, p.durationQ10, p.durationQ90);
 }
 
 /** The end of the study against its range: `reached` the first day the median control was at the endpoint, null when
@@ -247,6 +246,7 @@ export function endVerdict(reached: number | null, lastDay: number, r: Range): P
   return within(reached, r) ? 'As predicted' : reached < r.q025 ? 'Earlier than predicted' : 'Later than predicted';
 }
 
+/** Whether x falls in a 95% range (an open top: no upper limit). */
 const within = (x: number, r: Range) => x >= r.q025 && (r.q975 === null || x <= r.q975);
 
 /** The days with a tumor measured: a study weighed on other days has rows with no volume, and those days are not
@@ -636,7 +636,7 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
     reanchored = true;
   }
   // the end as widened in the lines the validation measured, and no narrower than the range Plan printed (its 8 in 10)
-  c = {...c, end: endRange(c.end, await bandFactors(d.line), p, reanchored)};
+  c = {...c, end: endRange(c.end, await bandFactors(d.line), d.plan ? p : null, reanchored)};
 
   // the controls' growth: their mean slope of log V to the evaluation day (the test's own quantity)
   const slope = arms.length ? arms[0].slopeControl : null;

@@ -12,23 +12,29 @@ import {BandFactors, linePrior, widened} from './priors';
 export interface Range {q025: number, median: number, q975: number | null}
 
 /** The end's range widened as Plan prints it (files/band_calibration_v1.json, log half-widths around the median, at
- *  least half a day); a range that never closes stays open, a line with no factor keeps its range. */
+ *  least half a day) and rounded outward to whole days, as Plan shows it; a range that never closes stays open, a line
+ *  with no factor keeps its range. */
 export function widenedEnd(r: Range, f: BandFactors | null): Range {
   const s = f?.end80 ?? null;
-  return s === null ? r : {q025: widened(r.median, r.q025, s, 0.5), median: r.median,
-    q975: r.q975 === null ? null : widened(r.median, r.q975, s, 0.5)};
+  return s === null ? r : {q025: Math.floor(widened(r.median, r.q025, s, 0.5)), median: r.median,
+    q975: r.q975 === null ? null : Math.ceil(widened(r.median, r.q975, s, 0.5))};
 }
 
 /** The range with the plan's printed one (day Q10 to Q90, rounded) inside it: a day Plan showed is never called off. */
 export function withPrinted(r: Range, q10: number, q90: number | null): Range {
+  // an open printed top stays open; a printed range that is not a number (a hand-edited file) is not used
+  if (!Number.isFinite(q10) || (q90 !== null && !Number.isFinite(q90)))
+    return r;
   return {...r, q025: Math.min(r.q025, Math.round(q10)),
-    q975: r.q975 === null || q90 === null ? r.q975 : Math.max(r.q975, Math.round(q90))};
+    q975: q90 === null || r.q975 === null ? null : Math.max(r.q975, Math.round(q90))};
 }
 
 /** Monitor's end range (8 in 10 studies, q10 to q90) as Plan prints it: widened by the line's factor, and with the
  *  plan's printed range inside it when a plan is attached (no factor: as it was). */
 export function monitorEnd(r: {median: number, q10: number, q90: number | null}, f: BandFactors | null,
   plan?: {durationQ10: number, durationQ90: number | null} | null): {q10: number, q90: number | null} {
+  if (!Number.isFinite(r.median) || !Number.isFinite(r.q10))
+    return {q10: r.q10, q90: r.q90};
   const w = widenedEnd({q025: r.q10, median: r.median, q975: r.q90}, f);
   const h = plan && f?.end80 != null ? withPrinted(w, plan.durationQ10, plan.durationQ90) : w;
   return {q10: h.q025, q90: h.q975};
