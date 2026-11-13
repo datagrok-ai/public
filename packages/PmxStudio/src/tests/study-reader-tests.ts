@@ -267,6 +267,57 @@ category('Study reader', () => {
     expect(read(csv, {'unit:weight': 'g'}).rows[0].weight, 0.02);
   });
 
+  test('rows labelled as a summary with a group after the word are left out, said by the word alone', async () => {
+    for (const label of ['Mean Vehicle', 'n=5 Vehicle', 'Mean, Vehicle']) {
+      const r = read(`Animal,Group,Day,Volume\n"${label}",Vehicle,0,105\n1,Vehicle,0,100\n2,Vehicle,0,110\n`);
+      expect(r.error, null, label);
+      expect(r.rows.map((x) => x.animal).join(), '1,2', label);
+      expect(r.ignored.length, 1, label);
+      expect(/Vehicle/.test(r.ignored[0]), false, r.ignored[0]);
+      expect(/^row 2, a summary row \((Mean|n)\)$/.test(r.ignored[0]), true, r.ignored[0]);
+    }
+    // a by-day table with the same label is refused, naming no group
+    const w = read('Animal,Group,Day 0,Day 7\n1,Vehicle,100,200\n"Mean, Vehicle",,105,205\n');
+    expect(w.error, 'Not read: row 3 looks like a summary row; leave its animal cell blank, or write only Mean (or ' +
+      'n, SD).');
+    // N-acetyl and SD-1 are names
+    const names = read('Animal,Group,Day,Volume\nSD-1,N-acetyl,0,100\nSD-2,N-acetyl,0,110\n');
+    expect(names.rows.length, 2);
+    expect(names.ignored.length, 0);
+  });
+
+  test('a number in an extra column of a row that is left out is told, not dropped', async () => {
+    const r = read('Animal,Group,Day,Volume,Notes\n1,A,0,100,\nMean,,0,105,n=5\n,,,,12\n');
+    expect(r.error, null);
+    expect(r.ignored.join(' | '), 'row 3, a summary row (Mean) | row 4, with no animal');
+  });
+
+  test('two columns that differ only in case are numbered once, in the reader, as the table will name them',
+    async () => {
+      const r = read('Animal,Group,Day,Volume,Cage,Cage,Comment,comment,Volume (as given)\n1,A,0,100,3,4,x,y,7\n' +
+        '2,A,0,110,3,4,x,y,8\n');
+      expect(r.extra.map(([n]) => n).join(), 'Cage,Cage (2),Comment,comment (2),Volume (as given)');
+      expect(lines(r).includes('Also kept: Cage, Cage (2), Comment, comment (2), Volume (as given).'), true);
+    });
+
+  test('body weights with a median above 1000 are asked about: in mg?', async () => {
+    const csv = 'Animal,Group,Day,Volume,Weight\n1,A,0,100,2100\n2,A,0,120,2200\n';
+    const q = read(csv);
+    expect(waiting(q), true);
+    expect(q.questions[0].text, 'The body weights are very large for grams. In which unit are they?');
+    expect(q.questions[0].options.map(([, l]) => l).join('|'), 'g, as they are|mg: divided by 1000');
+    expect(read(csv, {'unit:weight': 'mg'}).rows[0].weight, 2.1);
+    expect(read(csv, {'unit:weight': 'g'}).rows[0].weight, 2100);
+  });
+
+  test('an empty Day column beside a filled Date column: the dates are used', async () => {
+    const r = read('Animal,Group,Date,Volume,Day\n1,A,2026-03-02,100,\n2,A,2026-03-02,110,\n' +
+      '1,A,2026-03-09,150,\n');
+    expect(r.error, null);
+    expect(r.rows.map((x) => x.day).join(), '0,0,7');
+    expect(r.notes.includes('Day 0 is the first measurement, 2026-03-02.'), true, lines(r));
+  });
+
   test('cells that are not numbers: at most six named, the rest counted', async () => {
     const rows = Array.from({length: 14}, (_, i) => `m1,V,${i},x`).join('\n');
     const r = read(`Animal,Group,Day,Volume\n${rows}\nm2,V,0,50\n`);

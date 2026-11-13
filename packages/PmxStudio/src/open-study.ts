@@ -78,13 +78,8 @@ function studyTable(read: TableRead): DG.DataFrame {
   const weight = rows.some((r) => r.weight !== null);
   if (weight)
     cols.push(floats('body_weight', rows.map((r) => r.weight)));
-  const used = new Set(cols.map((c) => c.name));
-  for (const [title, xs] of read.extra) {
-    // two columns with one heading: the later one numbered
-    let name = title;
-    for (let k = 2; used.has(name); k++)
-      name = `${title} (${k})`;
-    used.add(name);
+  // the reader has numbered the names that read alike
+  for (const [name, xs] of read.extra) {
     cols.push(xs.every((x) => typeof x !== 'string') ? floats(name, xs) :
       DG.Column.fromStrings(name, xs.map((x) => x === null ? '' : String(x))));
   }

@@ -47,7 +47,7 @@ function unaccounted(csv: string, w: WideRead): string[] {
     for (let k = c; byAnimal && k >= 1 && !group; k--)
       group = cells[top][k] ?? '';
     if (x.day !== numberIn(byAnimal ? cells[r][0] : cells[top][c]) ||
-      byAnimal && (x.group !== group || !x.animal.endsWith(cells[ids][c])))
+      byAnimal && (x.group !== group || !x.animal.startsWith(cells[ids][c])))
       out.push(`${String.fromCharCode(65 + c)}${r + 1} placed as ${x.animal}, ${x.group}, day ${x.day}`);
   }
   return out;
@@ -111,12 +111,16 @@ category('Wide tables', () => {
 
   test('anything else is refused with the two shapes that are read', async () => {
     expect(read(',Vehicle,,Cpd\nDay,m1,m2,m3\n0,100,101,99\n3,150,151,120\n3,155,156,125\n').error,
-      `Not read: the day in row 5 does not come after the day above it. ${SHAPES}`);
+      'Not read: the day in row 5 does not come after the day above it.');
     expect(read(',Vehicle,,Cpd,,Vehicle,\nDay,a,b,c,d,e,f\n0,1,2,3,4,5,6\n').error!
       .startsWith('Not read: the group named in column F starts again after another group.'), true);
-    expect(SHAPES, 'PMX Studio reads two wide shapes. A column per animal: ",Vehicle,,Cpd-A" / "Day,V1,V2,C1" / ' +
-      '"0,37.9,41.2,39.5" (each group\'s name over its first animal). A column per day: "Animal,Group,Day 0,Day 3" / ' +
-      '"V1,Vehicle,37.9,51.8" / "V2,,41.2,55.0". Or open it as one row per measurement (animal, group, day, volume).');
+    // the shapes are told where the table's shape was not recognised, not after a refusal about one cell
+    expect(SHAPES, 'PMX Studio reads one row per measurement (animal, group, day, volume), a column per day ' +
+      '(Animal, Group, Day 0, Day 3…), or a column per animal (group names over the first animal of each group, a ' +
+      'Day column).');
+    expect(read('Foo,Bar,Day 0,Day 3\nV1,Vehicle,1,2\n').error, 'Not read: no column is headed as the animals ' +
+      `(Animal, Mouse, ID). ${SHAPES}`);
+    expect(read('Animal,Group,Day 0,Day 3\nV1,Vehicle,x,2\n').error!.includes(SHAPES), false);
     expect(read(',,,Vehicle,,Cpd,\nDay,m0,m00,m1,m2,m3,m4\n0,1,2,100,101,99,98\n').error!
       .startsWith('Not read: the first animal (column B) has no group name above it.'), true);
     expect(read('Animal,Group,Arm,D0,D3\nm1,1,V,100,150\n').error!
@@ -155,6 +159,41 @@ category('Wide tables', () => {
       expect(lines.some((l) => /Alpha|Beta|Gamma/.test(l)), false, lines.join(' | '));
     }
   });
+
+  test('ids that repeat across groups: only those ids are told apart, by the order of the groups, never by name',
+    async () => {
+      const byAnimal = ',Vehicle,,Cpd-A,\nDay,1,2,1,2\n0,100,110,120,130\n7,200,210,220,230\n';
+      const byDay = 'Animal,Group,Day 0,Day 7\n1,Vehicle,100,200\n2,,110,210\n1,Cpd-A,120,220\n2,,130,230\n';
+      const note = 'Animal ids repeat across groups: read as different animals (2 ids).';
+      for (const csv of [byAnimal, byDay]) {
+        const w = read(csv);
+        expect(w.error, null);
+        expect(w.rows.filter((r) => r.day === 0).map((r) => r.animal).join(), '1 (g1),2 (g1),1 (g2),2 (g2)');
+        expect(wideSummary(w).join(' | '),
+          `Read 2 groups: Vehicle 2 animals, Cpd-A 2 animals, days 0–7. | ${note}`);
+        expect(wideSummary(w, true).join(' | '), `Read 2 groups: 2 and 2 animals, days 0–7. | ${note}`);
+        expect(w.rows.some((r) => /Vehicle|Cpd/.test(r.animal)), false);
+      }
+      // ids that are not shared keep their own names
+      expect(read(',Vehicle,,Cpd-A\nDay,1,2,1\n0,1,2,3\n').rows.map((r) => r.animal).join(), '1 (g1),2,1 (g2)');
+    });
+
+  test('a header that is not a day is refused without quoting it (it may be a group)', async () => {
+    const w = read('Animal,Group,Day 0,Day 7,Vehicle mean\n1,Vehicle,100,200,\n2,,110,210,\n');
+    expect(w.error, 'Not read: column E is not a day (0, 7, D7 or Day 7).');
+  });
+
+  test('a long table with underscored headings, after a pandas index column, is left to the long reading',
+    async () => {
+      expect(readWide(cellsOf(',mouse_id,treatment,study_day,tumor_volume_mm3\n0,1,A,0,100\n1,1,A,7,200\n')), null);
+      expect(readWide(cellsOf(',subject_id,dose_group,day_of_study,tumour_vol_mm3\n0,1,A,0,100\n1,1,A,7,200\n')),
+        null);
+      const r = readStudy(cellsOf(',mouse_id,treatment,study_day,tumor_volume_mm3\n0,1,A,0,100\n1,1,A,7,200\n' +
+        '2,2,B,0,110\n3,2,B,7,210\n'));
+      expect(r.error, null);
+      expect(r.rows.length, 4);
+      expect(r.ignored.join(), 'column A, with no heading');
+    });
 
   test('the separator is the one the first lines use; a comma is a decimal only between semicolons', async () => {
     expect(JSON.stringify(cellsOf('"a;b",c,d\n1;2,3,4\n')), JSON.stringify([['a;b', 'c', 'd'], ['1;2', '3', '4']]));

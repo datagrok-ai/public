@@ -1,4 +1,4 @@
-import {SUMMARY, dayOf, dayWord, letter, numberOf, readWide} from './wide-table';
+import {SUMMARY, SUMMARY_LIKE, dayOf, dayWord, letter, numberOf, readWide} from './wide-table';
 
 /** The answers given to the reader's questions, by question id. */
 export type Answers = {[id: string]: string};
@@ -63,13 +63,14 @@ const ROLE_WORD: {[r in Role]: string} = {animal: 'animal', group: 'group', day:
   start: 'randomization or treatment start date', volume: 'tumor volume', length: 'tumor length',
   width: 'tumor width', height: 'tumor height', weight: 'body weight'};
 
-type Unit = 'mm' | 'cm' | 'mm3' | 'cm3' | 'ml' | 'ul' | 'g' | 'kg';
+type Unit = 'mm' | 'cm' | 'mm3' | 'cm3' | 'ml' | 'ul' | 'g' | 'kg' | 'mg';
 /** Each unit in the study's own (mm, mm³, g), and the roles it may be read for. */
 const UNITS: {[u in Unit]: {factor: number, of: 'length' | 'volume' | 'weight', name: string}} = {
   mm: {factor: 1, of: 'length', name: 'mm'}, cm: {factor: 10, of: 'length', name: 'cm'},
   mm3: {factor: 1, of: 'volume', name: 'mm³'}, ul: {factor: 1, of: 'volume', name: 'µL'},
   cm3: {factor: 1000, of: 'volume', name: 'cm³'}, ml: {factor: 1000, of: 'volume', name: 'mL'},
   g: {factor: 1, of: 'weight', name: 'g'}, kg: {factor: 1000, of: 'weight', name: 'kg'},
+  mg: {factor: 0.001, of: 'weight', name: 'mg'},
 };
 const KIND: {[r in Role]?: 'length' | 'volume' | 'weight'} = {length: 'length', width: 'length', height: 'length',
   volume: 'volume', weight: 'weight'};
@@ -195,20 +196,23 @@ function counted(rows: StudyRow[]): [string, number][] {
 }
 
 /** The questions on a unit assumed, asked when the volumes come out as no study's. */
-const UNIT_QUESTIONS: {[kind in 'volume' | 'length' | 'weight']: Question} = {
+const UNIT_QUESTIONS: {[kind in 'volume' | 'length' | 'weight' | 'weightBig']: Question} = {
   volume: {id: 'unit:volume', text: 'The volumes are very small or very large for mm³. In which unit are they?',
     options: [['mm3', 'mm³ (or µL), as they are'], ['cm3', 'cm³ (or mL): multiplied by 1000']]},
   length: {id: 'unit:length', text: 'The volumes come out very small or very large from lengths in mm. In which ' +
     'unit are the lengths and widths?', options: [['mm', 'mm, as they are'], ['cm', 'cm: multiplied by 10']]},
   weight: {id: 'unit:weight', text: 'The body weights are very small for grams. In which unit are they?',
     options: [['g', 'g, as they are'], ['kg', 'kg: multiplied by 1000']]},
+  weightBig: {id: 'unit:weight', text: 'The body weights are very large for grams. In which unit are they?',
+    options: [['g', 'g, as they are'], ['mg', 'mg: divided by 1000']]},
 };
 const STANDARD: {[kind in 'length' | 'volume' | 'weight']: Unit} = {length: 'mm', volume: 'mm3', weight: 'g'};
 const KIND_WORD = {length: 'Lengths', volume: 'Volumes', weight: 'Body weights'};
 
 /** The units of the measurements read (`units`: each kind's units as named or answered, null when assumed): what
  *  was converted and what assumed, in words; or the question on the unit the volumes come from (`from`), when it was
- *  assumed and they are not a study's (a median below 1 or above 50 000 mm³). */
+ *  assumed and they are not a study's (a median below 1 or above 50 000 mm³), or the weights'
+ *  (below 1 or above 1000 g). */
 function withUnits(read: TableRead, units: [kind: 'length' | 'volume' | 'weight', unit: Unit | null][],
   from: 'length' | 'volume'): TableRead {
   const vs = read.rows.flatMap((r) => has(r.volume) && r.volume > 0 ? [r.volume] : []);
@@ -217,8 +221,8 @@ function withUnits(read: TableRead, units: [kind: 'length' | 'volume' | 'weight'
   const asked: Question[] = [];
   if (units.some(([k, u]) => k === from && u === null) && (m < 1 || m > 50000))
     asked.push(UNIT_QUESTIONS[from]);
-  if (units.some(([k, u]) => k === 'weight' && u === null) && median(ws) < 1)
-    asked.push(UNIT_QUESTIONS.weight);
+  if (units.some(([k, u]) => k === 'weight' && u === null) && (median(ws) < 1 || median(ws) > 1000))
+    asked.push(median(ws) < 1 ? UNIT_QUESTIONS.weight : UNIT_QUESTIONS.weightBig);
   if (asked.length)
     return {...read, rows: [], notes: [], ignored: [], extra: [], questions: [...read.questions, ...asked]};
   const converted = units.filter(([, u]) => u && UNITS[u].factor !== 1)
@@ -248,8 +252,8 @@ export function readStudy(cells: string[][], answers: Answers = {}, decimalComma
   const unit: Unit | null = named ?? unitOf(answers['unit:volume'] ?? '');
   const f = UNITS[unit ?? 'mm3'].factor;
   return withUnits({...empty(wide.shape), ignored: wide.ignored, volume: {formula: null, source: 'given'},
-    notes: ['Volumes as given.'], rows: wide.rows.map((x) => ({animal: x.animal, group: x.group, day: x.day,
-      volume: x.volume * f, weight: null}))}, [['volume', unit]], 'volume');
+    notes: ['Volumes as given.', ...wide.notes], rows: wide.rows.map((x) => ({animal: x.animal, group: x.group,
+      day: x.day, volume: x.volume * f, weight: null}))}, [['volume', unit]], 'volume');
 }
 
 /** One row per measurement: a header row naming the columns, then a row per animal and day. */
@@ -308,9 +312,11 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
 
   // the days as numbers, or dates counted from day 0
   const values = (c: number | undefined) => c === undefined ? [] : rest.map((r) => at(r, c)).filter((s) => s !== '');
-  let dayCol = col.day;
+  // a Day column with nothing in it, beside a filled date column, is no day: the dates are used
+  const emptyDay = col.day !== undefined && col.date !== undefined && values(col.day).length === 0;
+  let dayCol = emptyDay ? undefined : col.day;
   // a table with both counts its days as given, its dates kept as they are
-  let dateCol = col.day === undefined ? col.date : undefined;
+  let dateCol = dayCol === undefined ? col.date : undefined;
   if (dayCol !== undefined && !values(dayCol).every((s) => dayOf(s) !== null)) {
     if (!values(dayCol).every(isDate)) {
       const bad = rest.find((r) => at(r, dayCol!) !== '' && dayOf(at(r, dayCol!)) === null)!;
@@ -374,7 +380,8 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
   for (const r of rest) {
     const id = at(r, col.animal!);
     const leave = (why: string) => {
-      if (measured.some((role) => /\d/.test(at(r, col[role]!)))) {
+      // a number anywhere in the row, in an extra column too, is told
+      if (cells[r].some((s) => /\d/.test(s))) {
         ignored.push(`row ${r + 1}, ${why}`);
         skipped.add(r);
       }
@@ -383,6 +390,8 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
     const when = dayCol !== undefined ? day === null ? null : day * weeks : dateOf(at(r, dateCol!), order);
     if (SUMMARY.test(id))
       leave(`a summary row (${id.replace(/[\s=]+$/, '')})`);
+    else if (SUMMARY_LIKE.test(id))
+      leave(`a summary row (${/^[a-z]+/i.exec(id)![0]})`);
     else if (id === '')
       leave('with no animal');
     else if (at(r, col.group!) === '')
@@ -525,9 +534,9 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
   }
 
   // the other columns, kept as they are (the caliper's readings, a date, a cage, a comment)
-  const taken = [col.animal, col.group, dayCol, col.volume, col.weight];
+  const taken = [col.animal, col.group, dayCol, col.volume, col.weight, ...emptyDay ? [col.day] : []];
   const canonical = ['animal', 'group', 'day', 'volume', 'body_weight'];
-  const extra: TableRead['extra'] = head.flatMap((title, c) => {
+  const extraRaw: TableRead['extra'] = head.flatMap((title, c) => {
     if (taken.includes(c) || title === '')
       return [];
     const texts = raws.map((x) => at(x.r, c));
@@ -535,6 +544,16 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
     const numeric = texts.some((s) => s !== '') && nums.every((x) => x === null || !Number.isNaN(x));
     return [[canonical.includes(title.toLowerCase()) ? `${title} (as given)` : title,
       numeric ? nums : texts.map((s) => s === '' ? null : s)]];
+  });
+  // two columns that read alike (Datagrok's names ignore case): the later one numbered, once, here
+  const used = new Set(['animal', 'group', 'day', 'volume',
+    ...rows.some((x) => x.weight !== null) ? ['body_weight'] : []]);
+  const extra = extraRaw.map(([title, xs]): TableRead['extra'][number] => {
+    let named = title;
+    for (let k = 2; used.has(named.toLowerCase()); k++)
+      named = `${title} (${k})`;
+    used.add(named.toLowerCase());
+    return [named, xs];
   });
 
   // the units the volumes come from are the lengths' when computed, the volumes' when given
