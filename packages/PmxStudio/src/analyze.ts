@@ -22,9 +22,9 @@ import {Correction, EffectMetric, HUMANE, LAB_WEEKDAYS, StudyDeclaration, StudyD
   finite, isFiniteNumber as ok, median} from './engine';
 import {PlanInputs, armColors, declarationOf} from './frames';
 import {gpu} from './gpu';
-import {LineDensity, linePrior, tumourDensity} from './priors';
+import {BandFactors, LineDensity, bandFactors, linePrior, tumourDensity} from './priors';
 import {PLAN_TAG, SavedPlan, parsePlan, powerAt} from './plan-file';
-import {ChecksInput, PlanChecks, Range, planChecks} from './plan-checks';
+import {ChecksInput, PlanChecks, Range, planChecks, widenedEnd, withPrinted} from './plan-checks';
 
 /** `volume`: NaN where the row has none; `weight`: the body weight (g) of each row, null when the study has none;
  *  `mass`: the tumor's ex vivo weight (g) on the row of the day it was excised, null when the study has none;
@@ -228,6 +228,22 @@ export interface PlanComparison {
   /** the plan's power target (0–1; null: no plan) */
   powerTarget: number | null;
   notes: string[];
+}
+
+/** The end's range Analyze checks: Plan's widened one (no factor: as it was) and, unless the study was reanchored (its
+ *  range is predicted from another start), with the plan's printed range inside it. */
+export function endRange(end: Range, f: BandFactors | null, p: {durationQ10: number, durationQ90: number | null} | null,
+  reanchored: boolean): Range {
+  const w = widenedEnd(end, f);
+  return reanchored || !p || w === end ? w : withPrinted(w, p.durationQ10, p.durationQ90);
+}
+
+/** The end of the study against its range: `reached` the first day the median control was at the endpoint, null when
+ *  it never was (later than planned only if the study was measured beyond the range's top). */
+export function endVerdict(reached: number | null, lastDay: number, r: Range): PlanComparison['end']['verdict'] {
+  if (reached === null)
+    return r.q975 !== null && lastDay > r.q975 ? 'Later than predicted' : 'Endpoint not reached';
+  return within(reached, r) ? 'As predicted' : reached < r.q025 ? 'Earlier than predicted' : 'Later than predicted';
 }
 
 /** Whether x falls in a 95% range (an open top: no upper limit). */
@@ -607,6 +623,7 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
   // its end predicted again from its own start, by the plan's model, line and schedule (the .pmxplan unchanged; each
   // arm's range stays the plan's: it moves little with the start, and the plan keeps no kill rate to compute it again)
   let c = p.checks;
+  let reanchored = false;
   if (d.plan && start !== null && Math.abs(Math.log(start / p.vRand)) > Math.log(REANCHOR)) {
     const pd = declarationOf(d.plan.inputs as unknown as PlanInputs);
     const own = await checksAt({line: p.line, vRand: start, endpoint: p.endpoint, humane: pd.humane,
@@ -616,7 +633,10 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
       `end are predicted from ${Math.round(start)} mm³, the median control reaching ${p.endpoint} mm³ about day ` +
       `${Math.round(own.end.median)} (the plan: day ${Math.round(c.end.median)})`);
     c = {...c, end: own.end, notReached: own.notReached, controlSlope: own.controlSlope, controls: own.controls};
+    reanchored = true;
   }
+  // the end as widened in the lines the validation measured, and no narrower than the range Plan printed (its 8 in 10)
+  c = {...c, end: endRange(c.end, await bandFactors(d.line), d.plan ? p : null, reanchored)};
 
   // the controls' growth: their mean slope of log V to the evaluation day (the test's own quantity)
   const slope = arms.length ? arms[0].slopeControl : null;
@@ -630,10 +650,7 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
   const reached = evaluationDay({...d, endpoint: p.endpoint});
   const lastDay = Math.max(...volumeDays(d.data));
   const end: PlanComparison['end'] = {observed: reached.fromEndpoint ? reached.day : null, range: c.end,
-    notReached: c.notReached, verdict: !reached.fromEndpoint ?
-      (c.end.q975 !== null && lastDay > c.end.q975 ? 'Later than predicted' : 'Endpoint not reached') :
-      within(reached.day, c.end) ? 'As predicted' :
-        reached.day < c.end.q025 ? 'Earlier than predicted' : 'Later than predicted'};
+    notReached: c.notReached, verdict: endVerdict(reached.fromEndpoint ? reached.day : null, lastDay, c.end)};
 
   const pairs = d.plan ? pairGroups(treated, p.arms, notes) : new Map<string, SavedPlan['predicted']['arms'][0]>();
   const groups = arms.map((a) => {

@@ -1,7 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {OBSERVED, PREDICTED, REANCHOR} from '../analyze';
+import {OBSERVED, PREDICTED, REANCHOR, endRange, endVerdict} from '../analyze';
+import {HUMANE, LAB_WEEKDAYS, designStudy} from '../engine';
+import {monitorEnd, planChecks, widenedEnd} from '../plan-checks';
+import {bandFactors} from '../priors';
 import {exampleStudy} from './example-study';
 import {PLAN_TAG, parsePlan, powerAt} from '../plan-file';
 import {noEffectNote} from '../plan-vs-observed';
@@ -252,6 +255,72 @@ category('Analyze', () => {
         `end ${o.analysis.get('end_median', 0)} vs the plan's ${plan.predicted.checks.end.median}`);
       expect(notes(o).includes('Randomized at'), true, notes(o));
     }, {timeout: 300000});
+
+  test('the end range: Analyze and Monitor never call a day Plan printed earlier or later than predicted', async () => {
+    const hull: string[] = [];
+    for (const line of ['MC38', 'CT26', 'B16F10']) {
+      const f = await bandFactors(line);
+      const s = await designStudy({line, vRand: 100, endpoint: 1500, power: 0.8, alpha: 0.05, correction: 'holm',
+        n: null, arms: [{name: 'x', therapy: 'small_molecule', metric: 'TGI', effect: 60}], preLoss: 0, postLoss: 0,
+        lossRule: 'confident', confidence: 0.9, weekdays: LAB_WEEKDAYS, startWeekday: 0, humane: HUMANE,
+        schedules: false, lastDay: null});
+      const checks = await planChecks({line, vRand: 100, endpoint: 1500, humane: HUMANE, weekdays: LAB_WEEKDAYS,
+        startWeekday: 0, endpointDay: s.endpointDay, nControl: 10, arms: []});
+      const r = endRange(checks.end, f, s, false);
+      const [q10, q90] = [Math.round(s.durationQ10), Math.round(s.durationQ90 ?? s.durationQ10)];
+      let needed = 0;
+      for (let day = q10; day <= q90; day++) {
+        expect(endVerdict(day, day, r), 'As predicted',
+          `${line} day ${day} in ${q10}-${q90} against ${JSON.stringify(r)}`);
+        if (day < widenedEnd(checks.end, f).q025 || day > (widenedEnd(checks.end, f).q975 ?? Infinity))
+          needed++;
+      }
+      hull.push(`${line}: ${needed} of ${q90 - q10 + 1} days needed the hull`);
+      // Monitor shows a range with Plan's printed one inside it
+      const m = monitorEnd({median: checks.end.median, q10: checks.end.q025, q90: checks.end.q975}, f, s);
+      expect(m.q10 <= q10 && (m.q90 === null || m.q90 >= q90), true, `${line} Monitor ${JSON.stringify(m)}`);
+    }
+    console.log(hull.join('; '));
+  }, {timeout: 300000});
+
+  test('the end range: widened by the line factor, open stays open, no factor unchanged, reanchored without hull',
+    async () => {
+      const r = {q025: 8, median: 15, q975: 25 as number | null};
+      const f = await bandFactors('MC38');
+      const w = widenedEnd(r, f);
+      // rounded outward to whole days: 8.08 to 25.16 becomes 8 to 26 (MC38's 1.21 in log days before rounding)
+      expect(JSON.stringify(w), JSON.stringify({q025: 8, median: 15, q975: 26}));
+      const wide = widenedEnd({q025: 8.4, median: 15, q975: 25.4}, f);
+      expect(Number.isInteger(wide.q025) && Number.isInteger(wide.q975!) && wide.q025 <= 8 && wide.q975! >= 25, true);
+      expect(widenedEnd({...r, q975: null}, f).q975, null);
+      expect(await bandFactors('4T1'), null);
+      expect(widenedEnd(r, await bandFactors('4T1')), r);
+      // a printed range wider than the widened one is kept; a reanchored study is widened only
+      const p = {durationQ10: 5, durationQ90: 40 as number | null};
+      expect(endRange(r, f, p, false).q025, 5);
+      expect(endRange(r, f, p, true).q025 === w.q025 && endRange(r, f, p, true).q975 === w.q975, true);
+      expect(endRange(r, null, p, false), r);
+      // Monitor: the same factor and the same hull; no factor, no change
+      const m = {median: 15, q10: 8, q90: 25 as number | null};
+      expect(monitorEnd(m, f, null).q10 === w.q025 && monitorEnd(m, f, null).q90 === w.q975, true);
+      expect(monitorEnd(m, f, null).q10 < m.q10 + 1e-9 && w.q975! > m.q90!, true, 'widened, not unchanged');
+      expect(monitorEnd(m, f, p).q90, 40);
+      // an open printed top stays open; a printed range that is not a number is not used; no plan, no hull
+      expect(endRange(r, f, {durationQ10: 5, durationQ90: null}, false).q975, null);
+      expect(monitorEnd(m, f, {durationQ10: 5, durationQ90: null}).q90, null);
+      expect(JSON.stringify(endRange(r, f, {durationQ10: NaN, durationQ90: 40}, false)), JSON.stringify(w));
+      expect(JSON.stringify(endRange(r, f, null, false)), JSON.stringify(w));
+      // a median or q10 that is not a number: Monitor's range as it was
+      expect(JSON.stringify(monitorEnd({median: NaN, q10: 8, q90: 25}, f, p)), JSON.stringify({q10: 8, q90: 25}));
+      expect(monitorEnd({median: 15, q10: null as any, q90: 25}, f, p).q10, null);
+      // every printed (rounded) day gets the verdict the printed range gives, with no plan and reanchored
+      for (const re of [false, true]) {
+        const e = endRange(r, f, null, re);
+        for (let day = Math.round(e.q025); day <= Math.round(e.q975!); day++)
+          expect(endVerdict(day, day, e), 'As predicted', `day ${day} reanchored ${re}`);
+      }
+      expect(JSON.stringify(monitorEnd(m, null, p)), JSON.stringify({q10: 8, q90: 25}));
+    });
 
   test('no clear effect: what the study could have detected, said with it', async () => {
     // with a plan, the power it gave the arm with these animals, and the animals it needed

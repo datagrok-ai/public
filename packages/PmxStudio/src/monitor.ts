@@ -11,7 +11,8 @@ import {gpu} from './gpu';
 import {SavedPlan} from './plan-file';
 import {oneDecimal} from './study-file';
 import {WEEKDAY_NAMES, weekdaysOf} from './frames';
-import {LinePrior, linePrior} from './priors';
+import {LinePrior, bandFactors, linePrior} from './priors';
+import {monitorEnd} from './plan-checks';
 import {metaOf, weekdayOf} from './study-meta';
 
 type Study = {animal: string[], group: string[], day: Float64Array, volume: Float64Array};
@@ -261,6 +262,8 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
       attention: [...reasonsOf(a, latest, d.humane, l.day, l.volume, previous), ...w.reasons].join('; ')};
   });
   const study = (r.named as any).study.value;
+  const end = monitorEnd({median: study.end_median, q10: study.end_q10, q90: study.end_q90 ?? null},
+    await bandFactors(d.line), d.plan?.predicted);
   // the chance of success only on a planned review: between them, an empty table (MONITOR_DESIGN.md §3)
   // a review planned for a day that is not measured (day 10, a Thursday, of a Monday-Wednesday-Friday study) is
   // held on the first measurement from that day on
@@ -284,7 +287,7 @@ export async function monitorFrames(x: MonitorInputs): Promise<MonitorFrames> {
   }
   return {
     status: DG.DataFrame.fromObjects([{line: d.line, control: d.control, day: latest, next_day: future[0],
-      end_median: study.end_median, end_lower: study.end_q10, end_upper: study.end_q90,
+      end_median: study.end_median, end_lower: end.q10, end_upper: end.q90,
       planned_end: d.plan?.predicted.studyEnd ?? null, plan: d.plan?.name ?? null,
       attention: animals.filter((a) => a.attention).length, animals: animals.length,
       next_look: looks.find((l) => l > latest) ?? null, at_look: atLook, looks: looks.join(', '), humane: d.humane,

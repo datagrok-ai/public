@@ -12,6 +12,9 @@
   Excel (.xlsx) files open too, through the PowerPack package: with several sheets, the one that reads as a study, or
   the user's pick.
 
+* Analyze and Monitor check the study's end against the same widened range Plan prints for MC38, CT26 and B16F10, so a
+  study ending inside Plan's range is never called earlier or later than predicted.
+
 * Plain messages from Open a study to Monitor (2026-11-12): what is missing, empty or failed says what happened and
   what to do; no technical text reaches the user (it goes to the console), and no failure is dropped silently (a
   saved-plans list that could not be read no longer says there are none). The atlas file is downloaded once.
