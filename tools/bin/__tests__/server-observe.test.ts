@@ -503,6 +503,18 @@ describe('metrics', () => {
       await expect(observe('metrics', 'request-log', [], argv)).rejects.toThrow('Usage: grok s observe metrics request-log');
   });
 
+  it('export lists the points with their attributes', async () => {
+    const exported = {collectedAt: 't', points: [
+      {scope: 'instance', name: 'datagrok.server.sockets', unit: '{socket}', value: 40, attributes: {server: 'pod-1'}},
+      {scope: 'deployment', name: 'datagrok.db.connections', unit: '{connection}', value: 3, attributes: {state: 'active'}}]};
+    const {calls, printed} = await observe('metrics', 'export', [], {}, () => exported, 'table');
+    expect(calls[0].path).toBe('/admin/metrics/export');
+    const lines = printed.split('\n');
+    expect(lines[0]).toMatch(/^scope\s+name\s+attributes\s+value\s+unit\s*$/);
+    expect(lines[2]).toMatch(/^instance\s+datagrok\.server\.sockets\s+server=pod-1\s+40\s+\{socket\}\s*$/);
+    expect(JSON.parse((await observe('metrics', 'export', [], {}, () => exported)).printed)).toEqual(exported);
+  });
+
   it('an unknown verb fails with the usage', async () => {
     await expect(observe('metrics', 'speed', [], {})).rejects.toThrow(/Unknown command 'metrics speed'\nUsage: grok s observe/);
   });
@@ -620,6 +632,18 @@ describe('groups', () => {
     expect(posted((await observe('groups', 'reset', [], {}, answer(current()))).calls).logGroups).toBeNull();
   });
 
+  it('adds a metrics group with no destination unless --to names one; its levels list as -', async () => {
+    const g = posted((await observe('groups', 'add', [], {name: 'Push', kind: 'metrics'}, answer(current()))).calls).logGroups[1];
+    expect(g).toMatchObject({kind: 'metrics', saveTo: []});
+    const to = posted((await observe('groups', 'add', [], {name: 'Push', kind: 'metrics', to: 'grafana'}, answer(current()))).calls);
+    expect(to.logGroups[1].saveTo).toEqual([{destination: 'grafana'}]);
+    const settings: any = current();
+    settings.logGroups.push({id: 'm', name: 'Metrics', kind: 'metrics', levels: [], saveTo: []});
+    const {printed} = await observe('groups', 'list', [], {}, answer(settings), 'table');
+    expect(printed.split('\n').find((l) => l.startsWith('Metrics'))).toMatch(/^Metrics\s+metrics\s+true\s+always\s+-\s/);
+    await expect(observe('groups', 'add', [], {name: 'x', kind: 'gauges'}, answer(current()))).rejects.toThrow('--kind is one of');
+  });
+
   it('lists groups as a table', async () => {
     const {printed} = await observe('groups', 'list', [], {}, answer(current()), 'table');
     expect(printed).toContain('Errors');
@@ -645,7 +669,7 @@ describe('groups', () => {
 
   it('checks flag values before saving', async () => {
     const set = (argv: any) => observe('groups', 'set', ['Errors'], argv, answer(current()));
-    await expect(set({kind: 'record'})).rejects.toThrow('--kind is one of records, alerts, drop');
+    await expect(set({kind: 'record'})).rejects.toThrow('--kind is one of records, alerts, metrics, drop');
     await expect(set({scope: 'team'})).rejects.toThrow('--scope is one of session, user, global');
     await expect(set({'min-severity': 'error'})).rejects.toThrow('--min-severity is one of info, warning, critical');
     await expect(set({levels: 'error,fatal'})).rejects.toThrow('--levels is one of');

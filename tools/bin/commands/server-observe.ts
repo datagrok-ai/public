@@ -1,7 +1,7 @@
 /// `grok s observe` (alias `grok s o`): problems, problem rules, logger settings, errors, health metrics, the timeline
 /// and cloud logs, over `/problems`, `/admin/plugins/<key>/settings`, `/alerts/Test_rules`, `/log`, `/admin/metrics`,
-/// `/admin/metrics/*`, `/admin/connections`, `/admin/health`, `/info/storage`, `/log/timeline`, `/log/cloud/*`,
-/// `/log/archive/*`, `/log/match`, `/log/activations` and `/docker/containers`.
+/// `/admin/metrics/*` (`/admin/metrics/export` included), `/admin/connections`, `/admin/health`, `/info/storage`,
+/// `/log/timeline`, `/log/cloud/*`, `/log/archive/*`, `/log/match`, `/log/activations` and `/docker/containers`.
 import * as fs from 'fs';
 import {randomUUID} from 'crypto';
 import {NodeDapi, UUID_RE, buildQuery, tryParseJson} from '../utils/node-dapi';
@@ -57,6 +57,8 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
                                        What a session logged around a time
   metrics disk                         The server's data disk
   metrics storage                      The storage root's size and its top prefixes
+  metrics export                       The gauges a Metrics log group pushes every minute, as they are now:
+                                       scope, name, attributes, value, unit
   health [--module <m>] [--instances]  The health records of the services; --instances adds the sockets
                                        of every instance
   metric-alerts get                    The metric alerts (Settings > Alerts), as rows; --output json for the
@@ -97,7 +99,7 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
                                        its logId), gathered from every instance's memory; once only
   groups [list]                        Log groups (Settings > Logger): what is recorded and where it goes
   groups get <name|id>
-  groups add --name <n> [--kind records|alerts|drop] [--levels error,warning] [--flags db,auth]
+  groups add --name <n> [--kind records|alerts|metrics|drop] [--levels error,warning] [--flags db,auth]
              [--filter '<filter>'] [--to db,console,<endpoint name>[:format]] [--who <group ids>]
              [--until 2h|<ISO> [--reason <text>]] [--when '<filter>' --scope session|user|global --for 15m --before 60s]
              [--alert-kinds health,storage] [--min-severity warning] [--audit-types t1,t2] [--usage-types t1,t2]
@@ -436,7 +438,7 @@ function findGroup(groups: any[], ref: string): any {
 /// `groups add|set` flags applied to [g]; only the flags given change it.
 function applyGroupFlags(g: any, argv: any): any {
   if (argv.name !== undefined) g.name = String(argv.name);
-  if (argv.kind !== undefined) g.kind = oneOf(String(argv.kind), '--kind', ['records', 'alerts', 'drop']);
+  if (argv.kind !== undefined) g.kind = oneOf(String(argv.kind), '--kind', ['records', 'alerts', 'metrics', 'drop']);
   if (argv.enabled !== undefined) g.enabled = argv.enabled === true || argv.enabled === 'true';
   if (argv.who !== undefined) g.who = list(argv, 'who');
   if (argv.levels !== undefined) g.levels = list(argv, 'levels', LEVELS);
@@ -524,7 +526,8 @@ async function logGroups(dapi: NodeDapi, command: string, verb: string | undefin
     case undefined:
     case 'list':
       printOutput(output === 'table' ? groups.map((g) => ({name: g.name ?? '', kind: g.kind ?? 'records',
-        enabled: g.enabled !== false, active: g.activation ?? 'always', levels: (g.levels ?? []).join(',') || 'all',
+        enabled: g.enabled !== false, active: g.activation ?? 'always',
+        levels: g.kind === 'alerts' || g.kind === 'metrics' ? '-' : (g.levels ?? []).join(',') || 'all',
         filter: g.filter ?? '', to: (g.saveTo ?? []).map((t: any) => t.format ? `${t.destination}:${t.format}` : t.destination).join(','),
         id: g.id})) : groups, output);
       return true;
@@ -533,11 +536,11 @@ async function logGroups(dapi: NodeDapi, command: string, verb: string | undefin
       return true;
     case 'add': {
       if (argv.name === undefined)
-        throw new Error('Usage: grok s observe groups add --name <name> [--kind records|alerts|drop] [--levels error,warning] ' +
+        throw new Error('Usage: grok s observe groups add --name <name> [--kind records|alerts|metrics|drop] [--levels error,warning] ' +
           '[--flags db] [--filter \'<filter>\'] [--to db,console,<endpoint>[:format]] [--who <group ids>] [--until 2h|<ISO>] ' +
           '[--when \'<filter>\' --scope session --for 15m --before 60s]');
       const g = applyGroupFlags({id: randomUUID(), kind: 'records', enabled: true, who: [], levels: [], debugFlags: [],
-        activation: 'always', saveTo: [{destination: 'db'}]}, argv);
+        activation: 'always', saveTo: argv.kind === 'metrics' ? [] : [{destination: 'db'}]}, argv);
       current.logGroups = [...groups, g];
       await save(current);
       printOutput(g, output === 'table' ? 'json' : output);
@@ -789,6 +792,13 @@ async function metrics(dapi: NodeDapi, verb: string | undefined, rest: string[],
         say('(no disk statistics: the server has no df)');
       else
         printOutput(table ? fieldRows(disk) : disk, output);
+      return true;
+    }
+    case 'export': {
+      const exported = await dapi.raw('GET', '/admin/metrics/export');
+      printOutput(!table ? exported : (exported?.points ?? []).map((p: any) => ({scope: p.scope, name: p.name,
+        attributes: Object.entries(p.attributes ?? {}).map(([k, v]) => `${k}=${v}`).join(','), value: p.value, unit: p.unit})),
+        output);
       return true;
     }
     case 'storage': {

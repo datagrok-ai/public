@@ -553,6 +553,7 @@ grok s o groups set Chembl --when 'level = error and package = Chembl' --scope s
 grok s o groups set Chembl --enabled false                  # only the flags given change; groups rm Chembl deletes it
 grok s o groups put --json groups.json                      # replace every log group (the GROK_PARAMETERS settings.logger.logGroups shape)
 grok s o groups reset                                       # back to the default groups; the audit group can only be switched off, not removed
+grok s o groups set Metrics --to grafana                    # push the health gauges every minute (kind metrics: endpoints only)
 grok s o endpoints                                          # where groups can send records; endpoints rm grafana
 grok s o logs activations                                   # triggered groups on now; logs activations stop <group id> <key>
 ```
@@ -588,6 +589,7 @@ grok s o metrics failures --method GET --route '/users/{id}' --since 1h   # fail
 grok s o metrics request-log --session <id> --time 2026-11-13T10:00       # what a session logged around a time
 grok s o metrics disk                                       # the server's data disk (df)
 grok s o metrics storage                                    # the storage root's size and its top prefixes
+grok s o metrics export                                     # the gauges a Metrics log group pushes, as they are now
 grok s o health --instances                                 # health records of the services, with every instance's sockets
 grok s o metric-alerts get                                  # metric alerts (Settings > Alerts); --output json > alerts.json
 grok s o metric-alerts put --json alerts.json               # replace them; the server checks them first
@@ -598,6 +600,10 @@ The window of `metrics`, `routes`, `sessions` and `failures` is `--since`, `--da
 `health` without `--instances` need none), `statements reset` needs `RunServerMaintenance` and `metric-alerts put`
 `EditPluginsSettings`.
 `metrics database` shows the queries of `offenders` only to holders of `RunServerMaintenance`.
+`metrics export` lists every point the metrics export sends (`instance` per server, `deployment`, `growth`) whatever
+the log groups say; a log group of kind `metrics` (the default **Metrics** group) pushes them every minute to the
+endpoints it ticks: OTLP metrics to an OpenTelemetry endpoint, one record per value elsewhere. A metrics group sends
+to endpoints only, so `groups add --kind metrics` starts with no destination; `groups` lists its levels as `-`.
 
 | Route | Command |
 |---|---|
@@ -611,6 +617,7 @@ The window of `metrics`, `routes`, `sessions` and `failures` is `--since`, `--da
 | `GET /admin/metrics/failures` | `metrics failures` |
 | `GET /admin/metrics/request_log` | `metrics request-log` |
 | `GET /admin/metrics/disk` | `metrics disk` |
+| `GET /admin/metrics/export` | `metrics export` |
 | `GET /info/storage` | `metrics storage` |
 | `GET /admin/health` | `health` |
 | `GET`/`POST /admin/plugins/alerts/settings` (`metricAlerts`) | `metric-alerts get`/`put` |

@@ -3,6 +3,7 @@
 ## v.next
 
 * Added `grok s o metrics [overview|routes|statements [reset]|instances [--isolates]|database|growth|sessions|queue|failures|request-log|disk|storage]`, `grok s o health [--instances]` and `grok s o metric-alerts get|put`: every view of the Health center from the command line, as tables or `--output json`
+* Added `grok s o metrics export` (the gauges a Metrics log group pushes) and `grok s o groups add --kind metrics`
 
 ## 6.7.11 (2026-11-11)
 
