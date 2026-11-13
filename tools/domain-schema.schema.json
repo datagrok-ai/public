@@ -177,6 +177,11 @@
           "maxLength": 256,
           "description": "Explicit plural display name (view titles); defaults to a guess from the table name."
         },
+        "icon": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "Font Awesome 5 icon name for the table's rows, such as \"flask\"; none shows the table icon."
+        },
         "columns": {
           "type": "object",
           "description": "Relational columns keyed by column name. System columns (id, is_deleted, version, created_on, updated_on, author_id, idempotency_key, data) are generated and must not be declared.",
