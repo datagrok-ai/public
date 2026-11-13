@@ -1,6 +1,7 @@
-/// `grok s observe` (alias `grok s o`): problems, problem rules, logger settings, errors, the timeline and cloud logs,
-/// over `/problems`, `/admin/plugins/<key>/settings`, `/alerts/Test_rules`, `/log`, `/admin/metrics`, `/log/timeline`,
-/// `/log/cloud/*`, `/log/archive/*`, `/log/match`, `/log/activations` and `/docker/containers`.
+/// `grok s observe` (alias `grok s o`): problems, problem rules, logger settings, errors, health metrics, the timeline
+/// and cloud logs, over `/problems`, `/admin/plugins/<key>/settings`, `/alerts/Test_rules`, `/log`, `/admin/metrics`,
+/// `/admin/metrics/*` (`/admin/metrics/export` included), `/admin/connections`, `/admin/health`, `/info/storage`,
+/// `/log/timeline`, `/log/cloud/*`, `/log/archive/*`, `/log/match`, `/log/activations` and `/docker/containers`.
 import * as fs from 'fs';
 import {randomUUID} from 'crypto';
 import {NodeDapi, UUID_RE, buildQuery, tryParseJson} from '../utils/node-dapi';
@@ -33,6 +34,39 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
   errors get <signature|problem> [--since 7d] [--limit 50]
                                        Each occurrence of an error (a signature from errors top, or the
                                        id or kind:key of its problem): time, user, function, session
+  metrics [overview] [<window>] [--limit 10]
+                                       The Health center: requests, queue, database and process totals;
+                                       <window> is --since 24h | --date "this week" | --from <ISO> [--to <ISO>]
+  metrics routes [<window>] [--limit 10]
+                                       The slowest routes: count, p50, p95, p99, errPct
+  metrics statements [--by slowest|mostCalled|worstCacheHit] [--limit 10]
+                                       pg_stat_statements rankings; metrics statements reset clears them
+  metrics instances [--isolates]       Per server instance: sockets, requests, DB pools, disk; --isolates,
+                                       one row per isolate
+  metrics database [--section cacheMisses|unhealthy|offenders|largest|health] [--limit 10]
+                                       Tables: cache misses, dead rows, sequential scans, size, vacuum
+  metrics growth [--area database|storage|gc|all] [--days 30]
+                                       Data growth: size and count now, their change over 1, 7 and 30 days
+  metrics sessions [<window>] [--limit 10]
+                                       Session counts of the window and the previous one, the latest sessions
+  metrics queue [--limit 10]           Function calls queued and running now, the oldest first
+  metrics containers [--all]           Package containers: state, package version and the current one, stale,
+                                       replicas and ready ones, errors; then what Grok Spawner runs. Without
+                                       --all, stopped containers are left out of the table
+  metrics failures --method <M> --route <route> [<window>]
+                                       The failed requests of a route (metrics routes), with the error
+                                       their session logged
+  metrics request-log --session <id> --time <ISO|-1h>
+                                       What a session logged around a time
+  metrics disk                         The server's data disk
+  metrics storage                      The storage root's size and its top prefixes
+  metrics export                       The gauges a Metrics log group pushes every minute, as they are now:
+                                       scope, name, attributes, value, unit
+  health [--module <m>] [--instances]  The health records of the services; --instances adds the sockets
+                                       of every instance
+  metric-alerts get                    The metric alerts (Settings > Alerts), as rows; --output json for the
+                                       JSON that metric-alerts put --json takes
+  metric-alerts put --json alerts.json Replace them
   logs container [<name|id> [--since 1h | --from <ISO> [--to <ISO>]] [--grep <regex>] [--limit 20000]]
                                        A docker container's log lines (its latest --limit, then the
                                        window and --grep); no name, the containers and their status
@@ -68,7 +102,7 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
                                        its logId), gathered from every instance's memory; once only
   groups [list]                        Log groups (Settings > Logger): what is recorded and where it goes
   groups get <name|id>
-  groups add --name <n> [--kind records|alerts|drop] [--levels error,warning] [--flags db,auth]
+  groups add --name <n> [--kind records|alerts|metrics|drop] [--levels error,warning] [--flags db,auth]
              [--filter '<filter>'] [--to db,console,<endpoint name>[:format]] [--who <group ids>]
              [--until 2h|<ISO> [--reason <text>]] [--when '<filter>' --scope session|user|global --for 15m --before 60s]
              [--alert-kinds health,storage] [--min-severity warning] [--audit-types t1,t2] [--usage-types t1,t2]
@@ -242,6 +276,22 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
     case 'rules test':
       console.log(await dapi.raw('POST', '/alerts/Test_rules'));
       return true;
+    case 'metric-alerts get': {
+      const text = (await settings('alerts'))?.metricAlerts;
+      const alerts: any[] = text ? (typeof text === 'string' ? JSON.parse(text) : text) : [];
+      printOutput(output === 'table' ? alerts.map((a) => ({name: a.name, enabled: a.enabled !== false, metric: a.metric,
+        key: a.key ?? '', above: a.above ?? '', below: a.below ?? '',
+        growth: !a.growth ? '' : `${a.growth.percent !== undefined ? `${a.growth.percent}%` : a.growth.by} in ${a.growth.days}d`,
+        severity: a.severity ?? 'warning'})) : alerts, output);
+      return true;
+    }
+    case 'metric-alerts put': {
+      const alerts = readBody(argv);
+      await saveSettings('alerts', {metricAlerts: typeof alerts === 'string' ? alerts : JSON.stringify(alerts)});
+      if (output !== 'quiet')
+        console.log('Saved the metric alerts');
+      return true;
+    }
     case 'logger get': {
       let value = await settings('logger');
       for (const key of rest[0] ? String(rest[0]).split('.') : [])
@@ -264,15 +314,8 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
       return true;
     }
     case 'errors top': {
-      if (argv.since !== undefined && (argv.from !== undefined || argv.date !== undefined))
-        throw new Error('--since is not used with --from or --date');
-      if (argv.date !== undefined && argv.from !== undefined)
-        throw new Error('--date is not used with --from');
-      const metrics = await dapi.raw('GET', `/admin/metrics${buildQuery({
-        date_start: argv.since !== undefined ? new Date(Date.now() - parseDuration(argv.since, '--since')).toISOString()
-          : iso(argv.from, '--from'),
-        date_end: iso(argv.to, '--to'), date: argv.date, limit: argv.limit, errors_by: argv.by,
-        package: argv.package, user: argv.user, source: argv.source})}`);
+      const metrics = await dapi.raw('GET', `/admin/metrics${buildQuery({...windowQuery(argv), limit: argv.limit,
+        errors_by: argv.by, package: argv.package, user: argv.user, source: argv.source})}`);
       // The server answers the top `limit` of every source, in the global order.
       const top = (metrics?.errors?.top ?? []).slice(0, Number(argv.limit ?? 10));
       printOutput(output === 'json' ? {...metrics?.errors, top} : top, output);
@@ -314,6 +357,17 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
     return capture(dapi, rest, argv, await settings('logger'), saveLogger, output);
   if (command === 'logs')
     return logs(dapi, verb, rest, argv, output);
+  if (command === 'metrics')
+    return metrics(dapi, verb, rest, argv, output);
+  if (command === 'health') {
+    if (verb !== undefined)
+      throw new Error('Usage: grok s observe health [--module <m>] [--instances]');
+    const records: any[] = await dapi.raw('GET', `/admin/health${buildQuery({module: argv.module,
+      instances: flag(argv.instances) ? 'true' : undefined})}`) ?? [];
+    printOutput(output === 'table' ? records.map((r) => ({key: r.key, name: r.name, type: r.type, status: r.status,
+      enabled: r.enabled, time: r.time, description: r.description ?? ''})) : records, output);
+    return true;
+  }
   if (command === 'timeline') {
     if (argv.session === undefined)
       throw new Error('Usage: grok s observe timeline --session <id> [--from <ISO|-15m>] [--to <ISO>] [--limit 500]');
@@ -332,6 +386,19 @@ const needFrom = (argv: any) => {
   if (argv.to !== undefined && argv.from === undefined)
     throw new Error('--to needs --from');
 };
+
+/** The window of `/admin/metrics` and its siblings: `--since`, `--date` or `--from` [`--to`]; none, the server's 24 h. */
+export function windowQuery(argv: any): {date_start?: string, date_end?: string, date?: string} {
+  if (argv.since !== undefined && (argv.from !== undefined || argv.date !== undefined))
+    throw new Error('--since is not used with --from or --date');
+  if (argv.date !== undefined && argv.from !== undefined)
+    throw new Error('--date is not used with --from');
+  return {date_start: argv.since !== undefined ? new Date(Date.now() - parseDuration(argv.since, '--since')).toISOString()
+    : iso(argv.from, '--from'), date_end: iso(argv.to, '--to'), date: argv.date};
+}
+
+/** A flag such as `--isolates`, given bare or as `--isolates true`. */
+const flag = (value: any) => value !== undefined && value !== false && value !== 'false';
 
 const oneOf = (value: string, flag: string, choices?: string[]): string => {
   if (choices && !choices.includes(value))
@@ -374,7 +441,7 @@ function findGroup(groups: any[], ref: string): any {
 /// `groups add|set` flags applied to [g]; only the flags given change it.
 function applyGroupFlags(g: any, argv: any): any {
   if (argv.name !== undefined) g.name = String(argv.name);
-  if (argv.kind !== undefined) g.kind = oneOf(String(argv.kind), '--kind', ['records', 'alerts', 'drop']);
+  if (argv.kind !== undefined) g.kind = oneOf(String(argv.kind), '--kind', ['records', 'alerts', 'metrics', 'drop']);
   if (argv.enabled !== undefined) g.enabled = argv.enabled === true || argv.enabled === 'true';
   if (argv.who !== undefined) g.who = list(argv, 'who');
   if (argv.levels !== undefined) g.levels = list(argv, 'levels', LEVELS);
@@ -388,8 +455,6 @@ function applyGroupFlags(g: any, argv: any): any {
   if (argv.to !== undefined) {
     const old: any[] = g.saveTo ?? [];
     const to = list(argv, 'to');
-    if (!to.length)
-      throw new Error('--to needs a value');
     g.saveTo = to.map((t) => {
       const [destination, format] = t.split(':');
       return {...(old.find((x) => x.destination === destination) ?? {}), destination, ...(format ? {format} : {})};
@@ -462,7 +527,8 @@ async function logGroups(dapi: NodeDapi, command: string, verb: string | undefin
     case undefined:
     case 'list':
       printOutput(output === 'table' ? groups.map((g) => ({name: g.name ?? '', kind: g.kind ?? 'records',
-        enabled: g.enabled !== false, active: g.activation ?? 'always', levels: (g.levels ?? []).join(',') || 'all',
+        enabled: g.enabled !== false, active: g.activation ?? 'always',
+        levels: g.kind === 'alerts' || g.kind === 'metrics' ? '-' : (g.levels ?? []).join(',') || 'all',
         filter: g.filter ?? '', to: (g.saveTo ?? []).map((t: any) => t.format ? `${t.destination}:${t.format}` : t.destination).join(','),
         id: g.id})) : groups, output);
       return true;
@@ -471,11 +537,11 @@ async function logGroups(dapi: NodeDapi, command: string, verb: string | undefin
       return true;
     case 'add': {
       if (argv.name === undefined)
-        throw new Error('Usage: grok s observe groups add --name <name> [--kind records|alerts|drop] [--levels error,warning] ' +
+        throw new Error('Usage: grok s observe groups add --name <name> [--kind records|alerts|metrics|drop] [--levels error,warning] ' +
           '[--flags db] [--filter \'<filter>\'] [--to db,console,<endpoint>[:format]] [--who <group ids>] [--until 2h|<ISO>] ' +
           '[--when \'<filter>\' --scope session --for 15m --before 60s]');
       const g = applyGroupFlags({id: randomUUID(), kind: 'records', enabled: true, who: [], levels: [], debugFlags: [],
-        activation: 'always', saveTo: [{destination: 'db'}]}, argv);
+        activation: 'always', saveTo: argv.kind === 'metrics' ? [] : [{destination: 'db'}]}, argv);
       current.logGroups = [...groups, g];
       await save(current);
       printOutput(g, output === 'table' ? 'json' : output);
@@ -593,6 +659,181 @@ async function logs(dapi: NodeDapi, verb: string | undefined, rest: string[], ar
   throw new Error('Usage: grok s observe logs cloud [--group <g>] ... | logs container [<name|id>] | ' +
     'logs match [<filter>] | logs archive list [--prefix <p>] | logs archive read <key> | logs request <logId> | logs capture [<login|group>] | ' +
     'logs capture stop <login|group>');
+}
+
+/** [text] on one line, cut to [max] characters, for a table cell. */
+const oneLine = (text: any, max: number = 120): string => {
+  const line = String(text ?? '').replace(/\s+/g, ' ').trim();
+  return line.length > max ? `${line.substring(0, max - 1)}…` : line;
+};
+
+const STATEMENT_RANKINGS = ['slowest', 'mostCalled', 'worstCacheHit'];
+const DATABASE_SECTIONS = ['cacheMisses', 'unhealthy', 'offenders', 'largest', 'health'];
+
+/// `metrics ...`: what the Health center shows, from `/admin/metrics`, its siblings, `/admin/connections` and `/info/storage`.
+async function metrics(dapi: NodeDapi, verb: string | undefined, rest: string[], argv: any,
+                       output: OutputFormat): Promise<boolean> {
+  const table = output === 'table';
+  const say = (line: string) => {
+    if (output !== 'quiet')
+      console.log(line);
+  };
+  const overview = () => dapi.raw('GET', `/admin/metrics${buildQuery({...windowQuery(argv), limit: argv.limit})}`);
+  switch (verb) {
+    case undefined:
+    case 'overview': {
+      const m = await overview();
+      printOutput(!table ? m : fieldRows({window: m?.window, http: {now: m?.http?.now, previous: m?.http?.previous},
+        queue: m?.queue, database: {sizeBytes: m?.database?.sizeBytes, cacheHitPct: m?.database?.cacheHitPct,
+          statsReset: m?.database?.statsReset, connections: m?.database?.connections}, process: m?.process}), output);
+      return true;
+    }
+    case 'routes': {
+      const http = (await overview())?.http;
+      printOutput(output === 'json' ? http : http?.routes ?? [], output);
+      return true;
+    }
+    case 'statements': {
+      if (rest[0] === 'reset') {
+        await dapi.raw('POST', '/admin/metrics/statements/reset');
+        printOutput({reset: true}, output);
+        return true;
+      }
+      if (rest[0] !== undefined)
+        throw new Error('Usage: grok s observe metrics statements [--by slowest|mostCalled|worstCacheHit] [--limit 10] | statements reset');
+      const by = oneOf(String(argv.by ?? 'slowest'), '--by', STATEMENT_RANKINGS);
+      const statements = (await overview())?.database?.statements;
+      if (statements?.available === false)
+        throw new Error(`pg_stat_statements is not available${statements.error ? `: ${statements.error}` : ''}`);
+      const ranked: any[] = statements?.[by] ?? [];
+      // The query last, on one line, keeps the table readable.
+      printOutput(!table ? ranked : ranked.map(({query, ...r}) => ({...r, query: oneLine(query)})), output);
+      return true;
+    }
+    case 'instances': {
+      const instances: any[] = await dapi.raw('GET', '/admin/connections') ?? [];
+      if (!table)
+        printOutput(instances, output);
+      else if (flag(argv.isolates))
+        printOutput(instances.flatMap((i) => (i.isolates ?? []).map((isolate: any) => ({instance: i.instance, ...isolate}))), output, 20);
+      else
+        printOutput(instances.map((i) => ({instance: i.instance, sockets: i.openSockets, filesLimit: i.openFilesLimit,
+          http: i.httpConnections, db: i.dbConnections, req5m: i.requests5m, req60m: i.requests60m, inFlight: i.requestsInFlight,
+          pool: i.dbPoolConnections, inUse: i.dbInUse, waiting: i.dbWaiting, poolMax: i.dbMax, 'disk%': i.disk?.usedPct,
+          diskFree: i.disk?.freeBytes})), output, 20);
+      return true;
+    }
+    case 'database': {
+      const section = argv.section === undefined ? undefined : oneOf(String(argv.section), '--section', DATABASE_SECTIONS);
+      const db = await dapi.raw('GET', `/admin/metrics/database${buildQuery({limit: argv.limit})}`) ?? {};
+      if (!table) {
+        printOutput(section ? db[section] : db, output);
+        return true;
+      }
+      for (const name of section ? [section] : DATABASE_SECTIONS) {
+        if (!section)
+          say(`== ${name} ==`);
+        const value = db[name];
+        if (name === 'unhealthy') {
+          say(`count: ${value?.count ?? 0}, maxDeadPct: ${value?.maxDeadPct ?? 0}`);
+          printOutput(value?.tables ?? [], output);
+        }
+        else
+          printOutput(value ?? [], output);
+      }
+      return true;
+    }
+    case 'growth': {
+      const area = argv.area === undefined ? undefined : oneOf(String(argv.area), '--area', ['database', 'storage', 'gc', 'all']);
+      const growth = await dapi.raw('GET', `/admin/metrics/growth${buildQuery({area, days: argv.days})}`);
+      printOutput(!table ? growth : (growth?.rows ?? []).map((r: any) => {
+        const change = r.bytes ?? r.count;
+        return {area: r.area, key: r.key, bytes: r.bytes?.now ?? '', count: r.count?.now ?? '', d1: change?.d1 ?? '',
+          d7: change?.d7 ?? '', d30: change?.d30 ?? '', usedPct: r.usedPct ?? '', gcPending: r.gc?.pending ?? '',
+          alerts: (r.alerts ?? []).map((a: any) => a.holding ? `${a.name}*` : a.name).join(',')};
+      }), output);
+      return true;
+    }
+    case 'sessions': {
+      const sessions = await dapi.raw('GET', `/admin/metrics/sessions${buildQuery({...windowQuery(argv), limit: argv.limit})}`);
+      if (!table) {
+        printOutput(sessions, output);
+        return true;
+      }
+      say(`now: ${sessions?.now ?? 0}, previous: ${sessions?.previous ?? 0}`);
+      printOutput(sessions?.rows ?? [], output);
+      return true;
+    }
+    case 'queue':
+      printOutput(await dapi.raw('GET', `/admin/metrics/queue${buildQuery({limit: argv.limit})}`) ?? [], output);
+      return true;
+    case 'containers': {
+      const c = await dapi.raw('GET', '/admin/metrics/containers');
+      if (!table) {
+        printOutput(c, output);
+        return true;
+      }
+      const n = (m: any) => Object.entries(m ?? {}).map(([k, v]) => `${v} ${k}`).join(', ');
+      say(`containers: ${n(c?.states)}; stale: ${n(c?.stale)}; images: ${n(c?.images)}`);
+      say(c?.spawner ? `spawner: ${c.spawner.workloads} workloads, ${c.spawner.replicas} replicas` +
+        `${c.spawner.ready == null ? '' : `, ${c.spawner.ready} ready`}` +
+        `${c.spawner.orphans?.length ? `; orphans: ${c.spawner.orphans.join(', ')}` : ''}` : 'spawner: did not answer');
+      const rows: any[] = (c?.containers ?? []).filter((r: any) => flag(argv.all) || r.state !== 'stopped');
+      printOutput(rows.map((r) => ({container: r.container, package: r.package, version: r.version, current: r.currentVersion,
+        state: r.state, stale: r.stale ?? '', replicas: r.replicas ?? '', ready: r.ready ?? '', error: oneLine(r.error)})), output);
+      return true;
+    }
+    case 'failures': {
+      if (argv.method === undefined || argv.route === undefined)
+        throw new Error('Usage: grok s observe metrics failures --method <M> --route <route> ' +
+          '[--since 24h | --date <d> | --from <ISO> [--to <ISO>]]');
+      const rows: any[] = await dapi.raw('GET', `/admin/metrics/failures${buildQuery({method: String(argv.method).toUpperCase(),
+        route: argv.route, ...windowQuery(argv)})}`) ?? [];
+      printOutput(table ? rows.map((r) => ({time: r.time, status: r.status, ms: r.ms, user: r.user, sessionId: r.sessionId,
+        level: r.level, error: oneLine(r.error)})) : rows, output);
+      return true;
+    }
+    case 'request-log': {
+      if (argv.session === undefined || argv.time === undefined)
+        throw new Error('Usage: grok s observe metrics request-log --session <id> --time <ISO|-1h>');
+      const rows: any[] = await dapi.raw('GET', `/admin/metrics/request_log${buildQuery({session: argv.session,
+        time: iso(argv.time, '--time')})}`) ?? [];
+      printOutput(table ? rows.map((r) => ({time: r.time, level: r.level, message: oneLine(r.message)})) : rows, output);
+      return true;
+    }
+    case 'disk': {
+      const disk = await dapi.raw('GET', '/admin/metrics/disk');
+      if ((disk === null || disk === undefined) && output === 'json')
+        console.log('null');
+      else if (disk === null || disk === undefined)
+        say('(no disk statistics: the server has no df)');
+      else
+        printOutput(table ? fieldRows(disk) : disk, output);
+      return true;
+    }
+    case 'export': {
+      const exported = await dapi.raw('GET', '/admin/metrics/export');
+      printOutput(!table ? exported : (exported?.points ?? []).map((p: any) => ({scope: p.scope, name: p.name,
+        attributes: Object.entries(p.attributes ?? {}).map(([k, v]) => `${k}=${v}`).join(','), value: p.value, unit: p.unit})),
+        output);
+      return true;
+    }
+    case 'storage': {
+      // The route answers JSON as text/plain.
+      const text = await dapi.raw('GET', '/info/storage');
+      const storage = typeof text === 'string' ? JSON.parse(text) : text;
+      if (!table) {
+        printOutput(storage, output);
+        return true;
+      }
+      const {topPrefixes, ...totals} = storage ?? {};
+      printOutput(fieldRows(totals), output);
+      say('');
+      printOutput(topPrefixes ?? [], output);
+      return true;
+    }
+  }
+  throw new Error(`Unknown command 'metrics ${verb}'\n${OBSERVE_USAGE}`);
 }
 
 /// `GET /log/requests/<logId>`: what every isolate of every instance kept in memory for the id, as JSON lines,
