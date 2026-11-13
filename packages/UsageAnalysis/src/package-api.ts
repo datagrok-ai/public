@@ -410,6 +410,14 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:ManualTests', { lastBatchesNum });
   }
 
+  export async function stressTestsBuilds(lastBuildsNum: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:StressTestsBuilds', { lastBuildsNum });
+  }
+
+  export async function stressTestsBuildSummary(build: string , runs: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:StressTestsBuildSummary', { build, runs });
+  }
+
   /**
    * @param {string} build
    *   choices: Query("select b.name from builds b where exists (select 1 from stress_tests s where s.build_name = b.name) order by b.build_date desc")
