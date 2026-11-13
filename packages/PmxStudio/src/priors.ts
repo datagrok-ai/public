@@ -148,6 +148,10 @@ export interface BandFactors {end80: number | null, volume90: number | null}
 export interface BandCalibration {version: number, provenance: string, lines: {[line: string]: BandFactors}}
 export const bandCalibration = cachedJson<BandCalibration>('band_calibration_v1.json');
 
+/** The line's factors, null where there are none or the file cannot be read: shared by Plan, Analyze and Monitor. */
+export const bandFactors = (line: string): Promise<BandFactors | null> =>
+  bandCalibration().then((c) => c.lines[line] ?? null).catch(() => null);
+
 /** A quantile `x` moved `s` times as far from the median, in log scale (`floor`: the least any of them may be). */
 export function widened(median: number, x: number, s: number, floor = 0): number {
   const [m, q] = [Math.max(median, floor), Math.max(x, floor)];

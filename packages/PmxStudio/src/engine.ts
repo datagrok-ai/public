@@ -9,7 +9,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import {crux, CruxResult, EngineError, MAX_SETS, named, rows} from './crux';
-import {BandFactors, MeasurementError, PriorFit, bandCalibration, enginePriors, linePrior, widened} from './priors';
+import {BandFactors, MeasurementError, PriorFit, bandFactors, enginePriors, linePrior, widened} from './priors';
 import {ARCHETYPES, Archetype, Therapy} from './archetypes';
 
 export type EffectMetric = 'TGI' | 'TC';
@@ -511,7 +511,7 @@ export async function designStudy(d: StudyDeclaration): Promise<StudyDesign> {
     }
   }
   // the bands as wide as the validation found them, in the lines it measured; an unreadable file leaves the engine's
-  const factors = (await bandCalibration().catch(() => null))?.lines[d.line];
+  const factors = await bandFactors(d.line);
   return calibrated({
     declaration: d, studyEnd: first['evaluation_day'], endpointDay: first['endpoint_day'], duration, schedules,
     durationQ10: first['duration_q10'],

@@ -6,10 +6,33 @@
 import {crux, CruxResult, named, rows} from './crux';
 import {lineModel, weekdaysParam} from './engine';
 import {ARCHETYPES, Therapy} from './archetypes';
-import {linePrior} from './priors';
+import {BandFactors, linePrior, widened} from './priors';
 
 /** 2.5 / 50 / 97.5% quantiles over the studies (q975 null: more than 2.5% never got there). */
 export interface Range {q025: number, median: number, q975: number | null}
+
+/** The end's range widened as Plan prints it (files/band_calibration_v1.json, log half-widths around the median, at
+ *  least half a day); a range that never closes stays open, a line with no factor keeps its range. */
+export function widenedEnd(r: Range, f: BandFactors | null): Range {
+  const s = f?.end80 ?? null;
+  return s === null ? r : {q025: widened(r.median, r.q025, s, 0.5), median: r.median,
+    q975: r.q975 === null ? null : widened(r.median, r.q975, s, 0.5)};
+}
+
+/** The range with the plan's printed one (day Q10 to Q90, rounded) inside it: a day Plan showed is never called off. */
+export function withPrinted(r: Range, q10: number, q90: number | null): Range {
+  return {...r, q025: Math.min(r.q025, Math.round(q10)),
+    q975: r.q975 === null || q90 === null ? r.q975 : Math.max(r.q975, Math.round(q90))};
+}
+
+/** Monitor's end range (8 in 10 studies, q10 to q90) as Plan prints it: widened by the line's factor, and with the
+ *  plan's printed range inside it when a plan is attached (no factor: as it was). */
+export function monitorEnd(r: {median: number, q10: number, q90: number | null}, f: BandFactors | null,
+  plan?: {durationQ10: number, durationQ90: number | null} | null): {q10: number, q90: number | null} {
+  const w = widenedEnd({q025: r.q10, median: r.median, q975: r.q90}, f);
+  const h = plan && f?.end80 != null ? withPrinted(w, plan.durationQ10, plan.durationQ90) : w;
+  return {q10: h.q025, q90: h.q975};
+}
 
 export interface PlanChecks {
   /** the evaluation day: the first measurement day the median control is at or above the endpoint */
