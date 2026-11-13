@@ -32,14 +32,14 @@ test.describe("Sequence Activity Cliffs", () => {
     await session.step(17, "And user opens FASTA_sample dataset", () => openDataset(page, ds("FASTA_sample")));
     await session.step(18, "And the Bio package is initialized", () => bioInitialized(page));
     await session.step(19, "Then \"Sequence\" column should have semantic type \"Macromolecule\"", () => columnSemType(page, "Sequence", "Macromolecule"));
-    await run.scenario("The editor opens with the sequence column, the first numeric column as the activity, and a cutoff", async () => {
+    await run.scenario("The editor opens with the sequence column, the column named like an activity, and a cutoff", async () => {
       await session.step(22, "When user picks \"Bio > Analyze > Activity Cliffs...\" from the top menu", () => pickFromTopMenu(page, "Bio > Analyze > Activity Cliffs..."));
       await session.step(23, "Then \"Sequence Activity Cliffs\" dialog should be visible", () => shouldBe(page, el("\"Sequence Activity Cliffs\" dialog"), "visible"));
       await session.step(24, "And editor of Column input in \"Sequence Activity Cliffs\" dialog should have text \"Sequence\"", () => shouldHaveText(page, el("editor of Column input in \"Sequence Activity Cliffs\" dialog"), "Sequence"));
       await session.step(25, "And Method input in \"Sequence Activity Cliffs\" dialog should have value \"UMAP\"", () => shouldHaveValue(page, el("Method input in \"Sequence Activity Cliffs\" dialog"), "UMAP"));
       await session.step(26, "And Similarity input in \"Sequence Activity Cliffs\" dialog should have value \"Hamming\"", () => shouldHaveValue(page, el("Similarity input in \"Sequence Activity Cliffs\" dialog"), "Hamming"));
       await session.step(27, "And \"Similarity cutoff\" input in \"Sequence Activity Cliffs\" dialog should have value \"80\"", () => shouldHaveValue(page, el("\"Similarity cutoff\" input in \"Sequence Activity Cliffs\" dialog"), "80"));
-      await session.step(28, "And editor of Activities input in \"Sequence Activity Cliffs\" dialog should have text \"Length\"", () => shouldHaveText(page, el("editor of Activities input in \"Sequence Activity Cliffs\" dialog"), "Length"));
+      await session.step(28, "And editor of Activities input in \"Sequence Activity Cliffs\" dialog should have text \"Activity\"", () => shouldHaveText(page, el("editor of Activities input in \"Sequence Activity Cliffs\" dialog"), "Activity"));
     });
     await run.scenario("Running on the Activity column docks a cliff scatter plot", async () => {
       await session.step(31, "When user selects \"Activity\" in Activities input in \"Sequence Activity Cliffs\" dialog", () => selectIn(page, "Activity", el("Activities input in \"Sequence Activity Cliffs\" dialog")));

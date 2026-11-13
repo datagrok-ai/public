@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 
 category('DataFrame: Methods: Link', () => {
   let DF1: DG.DataFrame;
@@ -123,6 +123,26 @@ category('DataFrame: Methods: Link', () => {
       const r = races[i];
       df1.selection.init((j) => race.get(j) === r);
       expect(df2.selection.trueCount, arr[i], r);
+    }
+  });
+
+  test('filter to filter: closing the source table releases the target', async () => {
+    const df1 = DF1.clone();
+    const df2 = DF2.clone();
+    const race = df1.getCol('race');
+    const tv1 = grok.shell.addTableView(df1);
+    grok.shell.addTableView(df2);
+    try {
+      grok.data.linkTables(df1, df2, ['race'], ['race'], [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+      df1.filter.init((j) => race.get(j) === 'Asian');
+      expect(df2.filter.trueCount, 4);
+      tv1.close();
+      await waitUntil(() => df2.filter.trueCount === df2.rowCount,
+        () => `the target keeps ${df2.filter.trueCount} of ${df2.rowCount} rows after the source was closed`);
+    }
+    finally {
+      grok.shell.closeTable(df1);
+      grok.shell.closeTable(df2);
     }
   });
 }, {owner: 'drizhinashvili@datagrok.ai'});

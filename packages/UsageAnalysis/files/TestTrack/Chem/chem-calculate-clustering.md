@@ -244,4 +244,4 @@ Steps:
   whenever the source spelling was not already canonical. Do not restore that check either.
 - derived_from: atlas entry `chem.cp.calculate-clustering` references
   `public/packages/Chem/src/package.ts#L797` (BitBIRCH registration) and
-  `public/help/datagrok/solutions/domains/chem/scripts/butina-cluster.md` for the Butina script.
+  `help/datagrok/solutions/domains/chem/scripts/butina-cluster.md` for the Butina script.

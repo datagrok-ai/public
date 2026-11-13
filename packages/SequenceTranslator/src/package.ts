@@ -229,10 +229,10 @@ export class PackageFunctions {
     table: DG.DataFrame,
     @grok.decorators.param({options: {caption: 'Sequence'}}) seqCol: DG.Column,
     @grok.decorators.param({options: {initialValue: 'true', description: 'Also produce a HELM column alongside the molfiles'}}) generateHelm: boolean,
-    @grok.decorators.param({options: {initialValue: 'true', description: 'Use the chirality engine when building structures'}}) chiralityEngine: boolean,
     @grok.decorators.param({type: 'object'}) rules: string[]
   ): Promise<DG.Column<string>> {
-    const ptConvertRes = await polyToolConvert(seqCol, generateHelm, false, chiralityEngine, false, rules);
+    // no chiralityEngine input any more (stereo is always absolute); the platform drops it where a caller still passes it
+    const ptConvertRes = await polyToolConvert(seqCol, generateHelm, false, true, false, rules);
     return ptConvertRes[0];
   }
 
@@ -243,7 +243,8 @@ export class PackageFunctions {
     'description': 'Dialog for configuring enumeration of a HELM sequence'
   })
   static async polyToolEnumerateHelmTopMenu(): Promise<void> {
-    await polyToolEnumerateHelmUI(grok.shell.currentTableView?.dataFrame.currentCell);
+    const view = grok.shell.v;
+    await polyToolEnumerateHelmUI(view instanceof DG.TableView ? view.dataFrame.currentCell : undefined);
   }
 
 
@@ -253,10 +254,9 @@ export class PackageFunctions {
     'description': 'Enumerate cores and R-group lists into a molecule table (Zip or Cartesian)'
   })
   static async chemEnumerateMarkushTopMenu(): Promise<void> {
-    let cell: DG.Cell | undefined = undefined;
-    if (grok.shell.tv?.dataFrame && grok.shell.tv.dataFrame.currentCell && grok.shell.tv.dataFrame.currentCell.column.semType === DG.SEMTYPE.MOLECULE)
-      cell = grok.shell.tv.dataFrame.currentCell;
-    polyToolEnumerateChemUI(cell);
+    // a table view has no current column until the grid picks one
+    const current = grok.shell.tv?.dataFrame.currentCell;
+    polyToolEnumerateChemUI(current?.column?.semType === DG.SEMTYPE.MOLECULE ? current : undefined);
   }
 
 

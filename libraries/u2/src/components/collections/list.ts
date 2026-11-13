@@ -14,6 +14,7 @@
 import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
 import {batch, signal, untracked, Signal, ReadonlySignal} from '../../core/signals.js';
+import {Tooltip} from '../../core/tooltip.js';
 import {Action, ActionGroup, actionsMenu} from '../actions/actions.js';
 import {ITEMS_CAP} from '../../core/widget-like.js';
 import type {IItemState, IItemsState} from '../../core/widget-like.js';
@@ -46,6 +47,7 @@ export function complement(a: IndexRange, b: IndexRange): IndexRange[] {
 const OVERSCAN = 3;
 let rowsCount = 0;
 const NONE: ReadonlySet<number> = new Set<number>();
+const PICK_KEYS = new Set(['ArrowDown', 'ArrowUp', 'Home', 'End', 'PageDown', 'PageUp', 'Enter', ' ']);
 
 /** A rendered row: the pooled element, the item and key it shows, and the scope its render owns. */
 interface Row<T> {
@@ -78,7 +80,7 @@ export interface VirtualRowsOptions<T> {
 }
 
 /** The chrome a row shape names itself by: `host` is the scroller's class, and `<host>-content`,
- * `<host>-row` and `<host>-row-selected` follow from it. */
+ * `<host>-row`, `<host>-row-selected` and `<host>-row-current` follow from it. */
 interface RowsChrome {
   host: string;
   u2: string;
@@ -98,7 +100,7 @@ export abstract class VirtualRows<T> extends Control {
    * item still present when items have keys (see {@link VirtualRowsOptions.keyOf}), else the lead. */
   readonly selectedIndices: ReadonlySignal<ReadonlySet<number>>;
 
-  protected readonly itemHeight: number;
+  readonly itemHeight: number;
   protected readonly content = document.createElement('div');
   protected items: readonly T[] = [];
   /** Identity of an item; a subclass whose items bring their own key replaces it in `setItems`. */
@@ -108,6 +110,7 @@ export abstract class VirtualRows<T> extends Control {
   private readonly _labelOf: ((item: T) => string) | undefined;
   private readonly _live: boolean;
   private readonly _selected = signal<ReadonlySet<number>>(NONE);
+  private _seeded = false;
   private readonly _source = signal<ReadonlySignal<readonly T[]>>(signal<readonly T[]>([]));
   private readonly _rows = new Map<number, Row<T>>();
   private readonly _pool: HTMLElement[] = [];
@@ -147,6 +150,7 @@ export abstract class VirtualRows<T> extends Control {
       const index = this.indexOf(e);
       if (index < 0)
         return;
+      this._unseed();
       const mouse = e as MouseEvent;
       if (mouse.ctrlKey || mouse.metaKey)
         this._toggle(index);
@@ -154,6 +158,15 @@ export abstract class VirtualRows<T> extends Control {
         this._range(index);
       else
         this._single(index);
+    });
+    // a cut line reads in full on hover
+    scope.listen(this.content, 'mouseover', (e) => {
+      for (let el = e.target as HTMLElement | null; el !== null && el !== this.content; el = el.parentElement) {
+        if (el.scrollWidth > el.clientWidth) {
+          Tooltip.titleIfCut(el);
+          return;
+        }
+      }
     });
     scope.listen(this.content, 'dblclick', (e) => {
       const index = this.indexOf(e);
@@ -219,7 +232,7 @@ export abstract class VirtualRows<T> extends Control {
       else
         this.root.setAttribute('aria-activedescendant', this._idPrefix + index);
       for (const [i, row] of this._rows)
-        this.setSelected(row.el, selected.has(i));
+        this._mark(row.el, i, selected, index);
     });
   }
 
@@ -434,13 +447,16 @@ export abstract class VirtualRows<T> extends Control {
     const last = this.items.length - 1;
     if (last < 0 || e.target !== this.root)
       return;
+    const seeded = this._seeded && PICK_KEYS.has(e.key);
+    if (seeded)
+      this._unseed();
     const current = this.selectedIndex.value;
     if (current >= 0 && this.rowKey(e, current))
       return;
     const page = Math.max(1, Math.floor(this.viewport / this.itemHeight) - 1);
     let next: number;
     switch (e.key) {
-      case 'ArrowDown': next = current + 1; break;
+      case 'ArrowDown': next = seeded ? current : current + 1; break;
       case 'ArrowUp': next = current < 0 ? last : current - 1; break;
       case 'PageDown': next = current + page; break;
       case 'PageUp': next = current < 0 ? last : current - page; break;
@@ -556,7 +572,7 @@ export abstract class VirtualRows<T> extends Control {
     const kept = this._hook(row, () => this.placeRow(row.el, index)) &&
       (same || !this._live && this._hook(row, () => this.patchRow(row.el, index)));
     if (kept)
-      this.setSelected(row.el, this._selected.peek().has(index));
+      this._mark(row.el, index);
     else
       this._rerender(row, index);
   }
@@ -683,7 +699,26 @@ export abstract class VirtualRows<T> extends Control {
     this._place(row.el, index);
     row.el.dataset.u2Item = row.key;
     untracked(() => row.scope.run(() => this.fillRow(row.el, index)));
-    this.setSelected(row.el, this._selected.peek().has(index));
+    this._mark(row.el, index);
+  }
+
+  /** Leads with `index` for the user without drawing it picked until they pick; the first Down lands on it. */
+  seed(index: number): void {
+    this.selectedIndex.value = index;
+    this._seeded = true;
+    this.root.classList.add(`${this._chrome.host}-seeded`);
+  }
+
+  private _unseed(): void {
+    this._seeded = false;
+    this.root.classList.remove(`${this._chrome.host}-seeded`);
+  }
+
+  /** The selection, and apart from it the lead row the keys act on. */
+  private _mark(el: HTMLElement, index: number, selected = this._selected.peek(),
+    lead = this.selectedIndex.peek()): void {
+    this.setSelected(el, selected.has(index));
+    el.classList.toggle(`${this._chrome.host}-row-current`, index === lead);
   }
 
   private _place(el: HTMLElement, index: number): void {

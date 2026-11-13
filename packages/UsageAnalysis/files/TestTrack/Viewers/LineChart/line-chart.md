@@ -107,7 +107,7 @@ expected_results:
       (no-error floor).
   - anchor: "Line styling"
     expectation: >-
-      Driving Line Width, Line Transparency, and Line Coloring Type through
+      Driving Line Width, Line Color alpha, and Line Coloring Type through
       non-default values and back raises no console or page errors and leaves
       the chart alive (no-error floor).
   - anchor: "Axis tickmarks modes"
@@ -214,10 +214,10 @@ All scenarios should start with the following sequence of events:
 ## Line styling
 
 1. Go to the Context Panel > Lines, set Line Width to 3
-2. Set Line Transparency to 0.5
+2. Set the alpha of Line Color to 128 (half transparent)
 3. Set Line Coloring Type to Custom
 4. Set Line Width to 1
-5. Set Line Transparency to 0
+5. Set the alpha of Line Color back to 255
 6. Set Line Coloring Type to Auto
 
 ## Axis tickmarks modes
@@ -394,6 +394,7 @@ here are Pack Categories (Data) and Multi Axis (Controls). Multi Axis behavior
 (enable/disable with canvas signals) is owned by multi-axis-and-split.md; this
 step's own signal is the non-default combo surviving a layout
 save/close/restore round-trip with a no-error guard.
+
 ---
 {
   "order": 2,

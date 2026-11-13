@@ -16,26 +16,19 @@
     "@datagrok-libraries/utils": "workspace:^",
     "@datagrok-libraries/webcomponents": "workspace:^",
     "@datagrok-libraries/webcomponents-vue": "workspace:^",
-    "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",
     "dayjs": "catalog:",
-    "fast-equals": "^5.2.2",
-    "fflate": "^0.8.2",
-    "lodash.clonedeepwith": "^4.5.0",
     "rxjs": "catalog:",
-    "vue": "catalog:",
-    "wu": "catalog:"
+    "vue": "catalog:"
   },
-  "devDependencies": {
-    "@types/lodash.clonedeepwith": "^4.5.9",
-    "@types/wu": "catalog:"
+  "overrides": {
+    "uuid": "^11.1.1"
   },
   "scripts": {
     "build": "grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src",
-    "test": "grok test",
-    "vite-build": "grok api && grok check --soft && vite build --config vite.config.js && vite build --config vite-tests.config.js"
+    "test": "grok test"
   },
   "canEdit": [
     "Administrators"
@@ -44,6 +37,11 @@
     "Administrators"
   ],
   "category": "Development",
+  "grok": {
+    "testDependencies": [
+      "@datagrok/webcomponents"
+    ]
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
@@ -51,5 +49,9 @@
   },
   "sources": [
     "common/vue.js"
-  ]
+  ],
+  "devDependencies": {
+    "@vue/babel-plugin-jsx": "^1.2.4",
+    "babel-loader": "^9.2.1"
+  }
 }

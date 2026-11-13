@@ -4,8 +4,9 @@ Feature: Bar chart property surface
   missing-values bar (Include Nulls), bar style, labels, the on-chart selectors and the axes
   (Controls), the value aggregation and the value column, the stack legend and its position, title
   and description, values in place of category names, the context menu as a path to properties,
-  and the Data panel — row source, table, filter and color column through a layout round-trip.
-  Selection overlays, sorting and orientation, stacking and the value axis have features of their
+  and the Data panel — row source, table, filter and color column through a layout round-trip;
+  after the Table is switched in the context panel, the column properties of the same panel offer
+  the new table's columns (public#405, cars as the second table). Selection overlays, sorting and orientation, stacking and the value axis have features of their
   own. One journey on demog-1000 with a bar chart of average AGE by RACE; every scenario puts back
   what it changed.
 
@@ -150,7 +151,7 @@ Feature: Bar chart property surface
     When user sets "Legend Position" property of bar chart viewer to "Top"
     Then the legend of bar chart viewer should be on the top
     When user sets "Legend Position" property of bar chart viewer to "Bottom"
-    Then "Legend Position" property of bar chart viewer should be "Bottom"
+    Then the legend of bar chart viewer should be on the bottom
     And legend of bar chart viewer should be visible
     When user sets properties of bar chart viewer:
       | Stack             |      |
@@ -243,3 +244,19 @@ Feature: Bar chart property surface
       | Value Aggr Type | avg  |
     Then bar chart viewer should be bound to table "demog-1000"
     And bar chart viewer should show 1000 rows
+
+  @realizes:public#405
+  Scenario: After a Table switch in the context panel the column properties offer the new table's columns (public#405)
+    Given user opens cars dataset
+    And user switches to the "demog-1000" table view
+    And the context panel is open
+    When user clicks on settings icon of bar chart viewer
+    Then the context panel should show "Bar chart"
+    When user selects "cars" in "Table" property in context panel
+    Then bar chart viewer should be bound to table "cars"
+    Given "X Axis" category in context panel is expanded
+    Then "Split" property in context panel should offer the columns "model"
+    And "Split" property in context panel should not offer the column "RACE"
+    When user selects "demog-1000" in "Table" property in context panel
+    Then bar chart viewer should be bound to table "demog-1000"
+    And no errors should have been logged

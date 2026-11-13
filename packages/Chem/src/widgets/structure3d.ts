@@ -8,10 +8,14 @@ import {cruxReady, isCruxRequested} from '../engine/chem-engine';
 import {ChemWasm, cruxModuleSync, noteCruxError} from '../engine/crux-module';
 import {warnCruxFallback} from '../engine/fallback';
 import {getCruxService} from '../crux/crux-searches';
+import {getMacromoleculeAssembler} from '../engine/biopolymer';
+import {nglStageOnPage} from '@datagrok-libraries/utils/src/ngl-stage';
 import type NGL from 'ngl';
+import type {Subscription} from 'rxjs';
 
 const WIDTH = 300;
 const HEIGHT = 300;
+export const NO_3D_VIEW = 'No 3D view: the viewer could not read the structure';
 
 /** crux's `chemEmbed3d` options (its JSON). */
 export interface Embed3dOptions {
@@ -84,40 +88,58 @@ export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
       `No 3D coordinates: the embedding took longer than ${embed3dOptions().timeoutMs / 1000} s` :
       'Molecule has no atoms or malformed'));
   }
+  // NGL reads V2000 only: a V3000 block (enhanced stereo, as a CXSMILES' `|a:...|`, is written so) goes to V2000
+  // where it fits, its 3D coordinates kept (the stereo groups go: the coordinates show the stereo)
+  if (sdf.split('\n', 4)[3]?.includes('V3000')) {
+    try {
+      sdf = await getMacromoleculeAssembler().toV2000(sdf);
+    } catch {
+      // more than 999 atoms or bonds: the message below
+    }
+  }
   const stringBlob = new Blob([sdf], {type: 'text/plain'});
 
   const nglHost = ui.div([], {classes: 'd4-ngl-viewer', id: 'ngl-3d-host'});
   nglHost.style.width = `${WIDTH}px`;
   nglHost.style.height = `${HEIGHT}px`;
+  // a square where the pane's stylesheet sets the size to `initial` (an accordion pane): the stage sizes its canvas
+  // by the host it is made in, which would otherwise be a line high
+  nglHost.style.aspectRatio = '1';
   nglHost.style.backgroundColor = 'white';
 
   await DG.Utils.loadJsCss(['/js/common/ngl_viewer/ngl.js']);
-  //@ts-ignore
-  const stage = new NGL.Stage(nglHost, {backgroundColor: 'white'}) as NGL;
-  stage.loadFile(stringBlob, {ext: 'sdf'}).then(function(comp: NGL.StructureComponent) {
-    stage.setSize(WIDTH, HEIGHT);
-    comp.addRepresentation('ball+stick');
-    comp.autoView();
-  });
-  ui.tools.waitForElementInDom(nglHost).then(() => {
-    if (nglHost.closest('.dialog-floating')) {
-      const accPanel = nglHost.closest('.panel-content') as HTMLElement;
-      if (accPanel) {
-        ui.onSizeChanged(accPanel).subscribe((_) => {
-          const w = Math.max(accPanel.clientWidth, 300);
-          const h = Math.max(accPanel.clientHeight, 300);
-          nglHost.style.width = `${w}px`;
-          nglHost.style.height = `${h}px`;
-          const waitParentEl = nglHost.parentElement;
-          if (waitParentEl?.classList.contains('grok-wait')) {
-            waitParentEl.style.width = `${w}px`;
-            waitParentEl.style.height = `${h}px`;
-          }
-          stage.handleResize();
-        });
-      }
+  // what NGL cannot read: a message, not an empty box (a V3000 block loads as a structure without atoms)
+  const unreadable = () => nglHost.replaceChildren(ui.divText(NO_3D_VIEW));
+  const subs: Subscription[] = [];
+  // the stage while the pane is on the page (WebGL contexts are few)
+  nglStageOnPage(nglHost, (host) => {
+    //@ts-ignore
+    const stage = new NGL.Stage(host, {backgroundColor: 'white'}) as NGL.Stage;
+    stage.loadFile(stringBlob, {ext: 'sdf'}).then((loaded) => {
+      const comp = loaded as NGL.StructureComponent;
+      if (!comp?.structure?.atomCount)
+        return unreadable();
+      stage.handleResize();
+      comp.addRepresentation('ball+stick');
+      comp.autoView();
+    }, unreadable);
+    const accPanel = host.closest('.dialog-floating') ? host.closest('.panel-content') as HTMLElement | null : null;
+    if (accPanel) {
+      subs.push(ui.onSizeChanged(accPanel).subscribe((_) => {
+        const w = Math.max(accPanel.clientWidth, 300);
+        const h = Math.max(accPanel.clientHeight, 300);
+        host.style.width = `${w}px`;
+        host.style.height = `${h}px`;
+        const waitParentEl = host.parentElement;
+        if (waitParentEl?.classList.contains('grok-wait')) {
+          waitParentEl.style.width = `${w}px`;
+          waitParentEl.style.height = `${h}px`;
+        }
+        stage.handleResize();
+      }));
     }
-  });
+    return stage;
+  }, () => subs.forEach((sub) => sub.unsubscribe())).catch(unreadable);
 
   return new DG.Widget(nglHost);
 }

@@ -5,17 +5,34 @@ import {iconButton, ownScope} from './buttons.js';
 import {Menu} from '../navigation/menu.js';
 import {Access} from '../../core/access.js';
 import type {Capability} from '../../core/access.js';
+import type {Reason} from '../../core/reason.js';
 
 export interface Action {
-  name: string;
+  /** The caption: the menu item's text and the row icon's tooltip. */
+  text: string;
+  /** The automation id: the row icon's `data-u2-item` (the text by default). */
+  name?: string;
   /** Platform icon name (see `icon()`); an action without one appears only in menus. */
   icon?: string;
-  /** An action that does not apply to the current object stays visible and greyed out. */
-  enabled?: boolean;
+  /** Why the action does not apply to the current object: it stays visible, greyed out, the reason as its
+   * tooltip. `null` or absent while it applies; a signal is followed by the row's icon, read on open by a menu. */
+  disabled?: Reason;
   /** The capability the action needs (`'delete'`, a custom permission name): denied by the
    * access in force, the action is not rendered at all — permission ⇒ hidden, state ⇒ disabled. */
   requires?: Capability;
-  run: () => void;
+  /** The key shown beside it in menus ("Del"). */
+  shortcut?: string;
+  /** A check mark beside it in menus; a toggle shown unchecked when false. */
+  check?: boolean;
+  /** Grey text after the name in a menu ("3 issues"). */
+  detail?: string;
+  /** Throws something away: after a separator in menus, red in the row's icons. */
+  destructive?: boolean;
+  /** Starts a new section of a menu: a separator above it. */
+  separator?: boolean;
+  /** Returns a promise or nothing — no value is read from it (a `DG.Row` handed back is a type error); a rejection,
+   * like a throw, is reported to the action's owner. */
+  run: () => void | Promise<void>;
 }
 
 export interface ActionsOptions {
@@ -31,7 +48,28 @@ export interface ActionsOptions {
 export function allowedActions(actions: Action[], options?: ActionsOptions): Action[] {
   const table = options?.access ?? Access.full;
   const access = options?.row === undefined ? table : table.row(options.row);
-  return actions.filter((action) => action.requires === undefined || access.can(action.requires));
+  const out: Action[] = [];
+  // a denied section head passes its separator to the next allowed action
+  let separator = false;
+  for (const action of actions) {
+    if (action.requires !== undefined && !access.can(action.requires)) {
+      separator ||= action.separator === true;
+      continue;
+    }
+    out.push(separator && !action.separator ? {...action, separator: true} : action);
+    separator = false;
+  }
+  return out;
+}
+
+function addItems(menu: Menu, actions: Action[]): void {
+  for (const [i, action] of actions.entries()) {
+    const previous = actions[i - 1];
+    if (previous !== undefined && (action.separator || action.destructive && !previous.destructive))
+      menu.separator();
+    menu.item(action.text, action.run,
+      {disabled: action.disabled, shortcut: action.shortcut, detail: action.detail, check: action.check});
+  }
 }
 
 /** The hover-revealed action block, Slack/Outlook style: an icon button per icon-bearing action,
@@ -47,10 +85,11 @@ export function rowActions(actions: Action[], options?: ActionsOptions): HTMLEle
     for (const action of allowedActions(actions, options)) {
       if (!action.icon)
         continue;
-      const button = iconButton(action.icon, () => action.run(), {tooltip: action.name});
-      button.dataset.u2Item = action.name;
-      if (action.enabled === false)
-        button.disabled = true;
+      const button = iconButton(action.icon, () => action.run(),
+        {tooltip: action.text, ...action.disabled !== undefined ? {disabled: action.disabled} : {}});
+      button.dataset.u2Item = action.name ?? action.text;
+      if (action.destructive)
+        button.classList.add('u2-row-action-destructive');
       el.append(button);
     }
     return el;
@@ -60,7 +99,7 @@ export function rowActions(actions: Action[], options?: ActionsOptions): HTMLEle
 /** A submenu under the flat list: what a wider target than the clicked object offers — the rows of
  * a multi-selection, run as one. */
 export interface ActionGroup {
-  label: string;
+  text: string;
   actions: Action[];
 }
 
@@ -72,8 +111,7 @@ export interface ActionsMenuOptions extends ActionsOptions {
 export function actionsMenu(actions: Action[], options?: ActionsMenuOptions): Menu {
   const menu = new Menu();
   const flat = allowedActions(actions, options);
-  for (const action of flat)
-    menu.item(action.name, action.run, {icon: action.icon, enabled: action.enabled});
+  addItems(menu, flat);
   let anything = flat.length > 0;
   for (const group of options?.groups ?? []) {
     const allowed = allowedActions(group.actions, options);
@@ -82,9 +120,8 @@ export function actionsMenu(actions: Action[], options?: ActionsMenuOptions): Me
     if (anything)
       menu.separator();
     anything = true;
-    menu.group(group.label);
-    for (const action of allowed)
-      menu.item(action.name, action.run, {icon: action.icon, enabled: action.enabled});
+    menu.group(group.text);
+    addItems(menu, allowed);
     menu.endGroup();
   }
   return menu;

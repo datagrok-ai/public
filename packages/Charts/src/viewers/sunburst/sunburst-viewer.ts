@@ -8,7 +8,7 @@ import {TreeUtils, TreeDataType} from '../../utils/tree-utils';
 import * as echarts from 'echarts';
 import {fromEvent, Observable} from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
-import {ERROR_CLASS, MessageHandler} from '../../utils/utils';
+import {ERROR_CLASS, MessageHandler, subscribeToColumnRemoval} from '../../utils/utils';
 import {laidOutSegmentCount, sunburstStatus} from './sunburst-status';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
@@ -41,7 +41,6 @@ export class SunburstViewer extends EChartViewer {
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
   private moleculeRenderErrorLogged: boolean = false;
   private latestRenderToken = 0;
-  viewerFilter: DG.BitSet | null = null;
 
   /** Fires after every render pass — what automation settles on together with [isRenderPending]. */
   get onRendered(): Observable<void> {return this.signals.rendered;}
@@ -98,33 +97,16 @@ export class SunburstViewer extends EChartViewer {
     return pixel[3] === 0;
   }
 
-  applySelectionFilter(bitset: DG.BitSet, path: string[], event: any) {
-    bitset.handleClick((index: number) => {
-      if (!this.filter.get(index) && this.rowSource !== 'Selected')
-        return false;
-
-      return path.every((segment, j) => {
-        const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
-        return columnValue == null ? segment === ' ' : columnValue.toString() === segment;
-      });
-    }, event);
+  matchesPath(index: number, path: string[]): boolean {
+    return path.every((segment, j) => {
+      const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
+      return columnValue == null ? segment === ' ' : columnValue.toString() === segment;
+    });
   }
 
-  handleDataframeFiltering(path: string[], event: MouseEvent) {
-    if (this.viewerFilter === null)
-      this.viewerFilter = DG.BitSet.create(this.dataFrame.rowCount);
-
-    this.viewerFilter.handleClick((index: number) => {
-      return path.every((segment, j) => {
-        const columnValue = this.dataFrame.getCol(this.eligibleHierarchyNames[j]).get(index);
-        return columnValue == null ? segment === ' ' : columnValue.toString() === segment;
-      });
-    }, event);
-
-    if (this.viewerFilter.trueCount === 0)
-      this.viewerFilter = null;
-
-    this.dataFrame.rows.requestFilter();
+  applySelectionFilter(bitset: DG.BitSet, path: string[], event: any) {
+    bitset.handleClick((index: number) =>
+      (this.filter.get(index) || this.rowSource === 'Selected') && this.matchesPath(index, path), event);
   }
 
   initEventListeners(): void {
@@ -143,10 +125,9 @@ export class SunburstViewer extends EChartViewer {
       else if (isMultiDeselect && isSectorSelected)
         selectedSectors = selectedSectors.filter((sector) => sector !== pathString);
 
-      if (this.onClick === 'Filter') {
-        this.handleDataframeFiltering(path, event);
-        return;
-      } else
+      if (this.onClick === 'Filter')
+        this.filterByClick((index) => this.matchesPath(index, path), event);
+      else
         this.applySelectionFilter(this.dataFrame.selection, path, event);
     };
 
@@ -181,10 +162,8 @@ export class SunburstViewer extends EChartViewer {
       const clickX = (event.clientX - left) * scaleX;
       const clickY = (event.clientY - top) * scaleY;
 
-      if (this.isCanvasEmpty(canvas.getContext('2d'), clickX, clickY)) {
-        this.viewerFilter = null;
-        this.dataFrame.rows.requestFilter();
-      }
+      if (this.isCanvasEmpty(canvas.getContext('2d'), clickX, clickY))
+        this.clearViewerFilter();
     };
 
     this.chart.on('click', handleChartClick);
@@ -192,7 +171,14 @@ export class SunburstViewer extends EChartViewer {
     this.chart.getDom().ondblclick = handleCanvasDblClick;
 
     this.subs.push(ui.onSizeChanged(this.root).subscribe((_) => {
-      requestAnimationFrame(() => this.chart?.resize());
+      requestAnimationFrame(() => {
+        const {clientWidth, clientHeight} = this.root;
+        if (this.chart.getWidth() === clientWidth && this.chart.getHeight() === clientHeight)
+          return;
+        this.chart.resize();
+        if (this.renderError === null && this.dataFrame?.selection.anyTrue)
+          this.drawSeries();
+      });
     }));
 
     fromEvent(this.chart, 'mouseover')
@@ -201,10 +187,7 @@ export class SunburstViewer extends EChartViewer {
   }
 
   onContextMenuHandler(menu: DG.Menu): void {
-    menu.item('Reset View', () => {
-      this.viewerFilter = null;
-      this.dataFrame.rows.requestFilter();
-    });
+    menu.item('Reset View', () => this.clearViewerFilter());
   }
 
   onPropertyChanged(p: DG.Property | null, render: boolean = true): void {
@@ -217,6 +200,13 @@ export class SunburstViewer extends EChartViewer {
 
     case 'onClick':
       this.rowSource = rowSourceMap[this.onClick as onClickOptions] || this.rowSource;
+      this.clearViewerFilter();
+      break;
+
+    // a click filter holds the rows of a segment of the old hierarchy; a removed column changes the hierarchy too
+    case 'hierarchyColumnNames':
+      this.clearViewerFilter();
+      this.render();
       break;
 
     default:
@@ -234,32 +224,26 @@ export class SunburstViewer extends EChartViewer {
         this.render();
     }));
     this.subs.push(this.dataFrame.onValuesChanged.subscribe((_) => this.render()));
+    this.subs.push(this.signals.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
-    this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
-      const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
-      this.hierarchyColumnNames = this.hierarchyColumnNames.filter((columnName) =>
-        !columnNamesToRemove.includes(columnName));
-      this.render();
-    }));
-    this.subs.push(this.dataFrame.onRowsFiltering.subscribe(() => {
-      if (this.viewerFilter)
-        this.dataFrame.filter.and(this.viewerFilter);
-    }));
-    this.subs.push(DG.debounce(grok.events.onResetFilterRequest, 10).subscribe(() => {
-      this.viewerFilter = null;
-    }));
+    this.subs.push(subscribeToColumnRemoval(this, {hierarchyColumnNames: () => this.defaultHierarchy()}));
+    this.addViewerFilterSub();
+    this.subs.push(DG.debounce(grok.events.onResetFilterRequest, 10).subscribe(() => this.clearViewerFilter()));
+  }
+
+  defaultHierarchy(): string[] {
+    return [...this.dataFrame.columns.categorical]
+      .sort((col1, col2) => col1.categories.length - col2.categories.length)
+      .filter((col: DG.Column) => col.stats.missingValueCount != col.length && !col.name.startsWith('~'))
+      .slice(0, this.hierarchyLevel).map((col) => col.name);
   }
 
   onTableAttached(propertyChanged?: boolean): void {
-    let categoricalColumns = [...this.dataFrame.columns.categorical].sort((col1, col2) =>
-      col1.categories.length - col2.categories.length);
-    categoricalColumns = categoricalColumns.filter((col: DG.Column) => col.stats.missingValueCount != col.length &&
-      !col.name.startsWith('~'));
-
-    if (categoricalColumns.length < 1)
+    const hierarchy = this.defaultHierarchy();
+    if (hierarchy.length < 1)
       return;
 
-    this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
+    this.hierarchyColumnNames = hierarchy;
 
     this.addSubs();
     this.render();
@@ -446,7 +430,42 @@ export class SunburstViewer extends EChartViewer {
     });
 
     this.option.series[0].label.formatter = (params: any) => this.formatLabel(params);
+    this.drawSeries();
+  }
+
+  private drawSeries(): void {
+    if (this.dataFrame.selection.anyTrue)
+      this.paintSelection();
     this.chart.setOption(this.option, false, true);
+  }
+
+  private paintSelection(): void {
+    const [x, y] = [this.chart.getWidth() / 2, this.chart.getHeight() / 2];
+    const radius = Math.min(x, y) * parseFloat(this.option.series[0].radius) / 100;
+    if (radius === 0)
+      return;
+
+    const ringWidth = radius / this.eligibleHierarchyNames.length;
+    const selected = DG.Color.toRgb(DG.Color.selectedRows);
+    const paint = (nodes: TreeDataType[], r0: number): void => {
+      const r = r0 + ringWidth;
+      for (const node of nodes) {
+        paint(node.children ?? [], r);
+        const color = node.baseColor ??= node.itemStyle?.color;
+        if (node.selectedCount === node.value)
+          node.itemStyle = {color: selected};
+        else if (node.selectedCount && color) {
+          const cut = Math.sqrt(r0 * r0 + node.selectedCount! / node.value * (r * r - r0 * r0));
+          const underLabel = cut > (r0 + r) / 2 ? DG.Color.selectedRows : DG.Color.fromHtml(color);
+          node.label = {color: DG.Color.toHtml(DG.Color.getContrastColor(underLabel))};
+          node.itemStyle = {color: {type: 'radial', x, y, r: radius, global: true, colorStops: [
+            {offset: 0, color: selected}, {offset: cut / radius, color: selected},
+            {offset: cut / radius, color}, {offset: 1, color},
+          ]}};
+        }
+      }
+    };
+    paint(this.option.series[0].data ?? [], 0);
   }
 
   detach() {

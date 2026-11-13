@@ -1,17 +1,6 @@
-/* The `molecules` tier: Crux Sketch, Chem's own molecule sketcher (Chem's src/crux/crux-sketcher.ts), as features of
-   any package drive it wherever a host opens it (a cell editor, a molecule input's dialog, an inline host in an app).
-   Its root is named `cruxSketch` (data-u2-name). The sketcher reports its status to the platform (getWidgetStatus): a
-   hit area for every atom and bond it draws, "atom 0", "bond 0"; its parts, "canvas", "actions" (the top toolbar),
-   "tools" (the left one), "elements" (the element palette), "templates" (the ring bar) and "label editor" while it is
-   open; "tool <name>" for each control a toolbar shows, by Crux's name for it ("tool ring.benzene", "tool undo"); and
-   the readings "ready", "pending", "smiles" (Crux's own), "atoms", "bonds", "mode", "selected atoms", "selected bonds",
-   "tool", "query", "empty" and "changes". The viewers tier's area and reading steps take it as "crux sketcher widget",
-   and its gestures settle on its isRenderPending and onRendered. The same parts are elements here (`<part> of crux
-   sketcher widget`), and Crux's own controls are found by their test ids (crux-sketch's docs/conventions/test-ids.md),
-   in its open shadow root. A feature that draws on them pins Crux (`the molecule sketcher is "Crux"`) and is tagged
-   @sketcher-controls. */
 import {element} from '../../../src/registry.js';
 
+// Crux's own controls go by their test ids (crux-sketch docs/conventions/test-ids.md), in its open shadow root
 const ROOT = '[data-u2-name="cruxSketch"]';
 
 element('crux sketcher widget', {selector: ROOT,

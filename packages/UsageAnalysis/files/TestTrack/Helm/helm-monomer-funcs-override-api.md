@@ -10,18 +10,15 @@ realized_as:
 related_bugs: []
 ---
 
-# Helm — monomer-funcs swap path (overrideMonomersFuncs + buildMonomersFuncsFromLib)
+# Helm — monomer-funcs path (buildMonomersFuncsFromLib)
 
-Exercises the API that lets a plugin temporarily swap out how the HELM editor
-looks up monomers: `overrideMonomersFuncs` installs a substitute
-monomer-lookup implementation and `revertOriginalMonomersFuncs` restores the
-original, while `buildMonomersFuncsFromLib` builds a monomer-lookup
-implementation backed by the Datagrok monomer library. Confirms the
-override/revert state machine (tracked via `hh.originalMonomersFuncs`) behaves
-correctly, including that double-applying an override or reverting with
-nothing to revert no longer throw. Reflects the 2026 HELM editor rewrite: the
-override no longer touches a global `Monomers` dictionary (that mechanism,
-along with `rewriteLibraries`, is gone), and bracketed monomer symbols like
+Exercises `buildMonomersFuncsFromLib`, which builds a monomer-lookup
+implementation backed by the Datagrok monomer library (SequenceTranslator's
+PolyTool enumeration uses it). Reflects the 2026 HELM editor rewrite: the editor
+reads Bio's monomer library directly, so there is no global `Monomers`
+dictionary to patch (that mechanism, `rewriteLibraries` and the
+`overrideMonomersFuncs` / `revertOriginalMonomersFuncs` /
+`originalMonomersFuncs` swap path are gone), and bracketed monomer symbols like
 `[meI]` are no longer unwrapped by this layer; see grok-browser
 `references/helm.md` § "Monomer-override contract (CHANGED)".
 
@@ -38,50 +35,10 @@ along with `rewriteLibraries`, is gone), and bracketed monomer symbols like
    .then(h => h.getMonomerLib());`
    The library carries at least one peptide monomer (`A`, `meI`, `hHis`, …)
    when the default library is loaded.
-5. Baseline hygiene: if `hh.originalMonomersFuncs != null` at start, call
-   `hh.revertOriginalMonomersFuncs()` once so the swap state is clean.
 
 ## Scenarios
 
-### Scenario 1: overrideMonomersFuncs swaps the adapter funcs and revert restores them (state-machine contract)
-
-Steps:
-1. Confirm the clean baseline: `hh.originalMonomersFuncs === null`.
-2. Build a sentinel `MonomersFuncs` whose handlers are recognisable stubs:
-   `const sentinel = { getMonomer: (a, name) => ({id: 'S1'}), getMonomerSet: (a) => null };`.
-3. Call `const previous = hh.overrideMonomersFuncs(sentinel);`. Confirm
-   `previous != null` and that `hh.originalMonomersFuncs` is now **non-null**
-   (the override is recorded).
-4. Double-apply: call `hh.overrideMonomersFuncs(anotherSentinel)` while the
-   first override is still in effect.
-   * **Behaviour change:** this **no longer throws** (the old
-     `originalGetMonomer is overridden already` guard was removed). Record
-     that it returns without throwing.
-5. Restore: `const outgoing = hh.revertOriginalMonomersFuncs();`. Confirm
-   `outgoing != null` and that `hh.originalMonomersFuncs` is back to `null`.
-6. Pre-revert (no override in effect): call `hh.revertOriginalMonomersFuncs()`
-   again.
-   * **Behaviour change:** this **no longer throws** (the old `Unable to
-     revert original getMonomer` guard was removed). Record that it returns
-     without throwing.
-
-Expected:
-- `overrideMonomersFuncs` returns the previous funcs (non-null) and flips
-  `hh.originalMonomersFuncs` from `null` to non-null.
-- Double-apply does NOT throw (changed behaviour).
-- `revertOriginalMonomersFuncs` returns the outgoing funcs (non-null) and
-  flips `hh.originalMonomersFuncs` back to `null`.
-- Pre-revert does NOT throw (changed behaviour).
-- No error balloon; the teardown leaves `hh.originalMonomersFuncs === null`
-  so subsequent scenarios run cleanly.
-
-> NOTE: there is no `window.org.helm.webeditor.Monomers` to assert against in
-> the new build. The override's effect on monomer lookups is internal to the
-> `editorAdapter`; the durable, observable contract is the
-> `originalMonomersFuncs` null↔non-null state machine plus the non-null
-> return values above.
-
-### Scenario 2: buildMonomersFuncsFromLib reads symbols from the Datagrok IMonomerLib
+### Scenario 1: buildMonomersFuncsFromLib reads symbols from the Datagrok IMonomerLib
 
 Steps:
 1. Build the `MonomersFuncs` from the Datagrok lib:
@@ -114,20 +71,15 @@ Expected:
   changed behaviour).
 - `getMonomerSet` is callable and does not throw.
 
-### Scenario 3 (REMOVED in the new build): rewriteLibraries
+### Removed scenarios: the override swap path and rewriteLibraries
 
-The previous Scenario 3 verified `rewriteLibraries(monomerLib)` by reading and
-mutating the Pistoia dictionary via
-`org.helm.webeditor.Monomers.getMonomer / addOneMonomer / clear`. In the new
-build:
-
-- `rewriteLibraries` is not a method on `IHelmHelper` and the bundled module is
-  not import()-able from the apitest layer.
-- `org.helm.webeditor.Monomers` (and `addOneMonomer` / `clear`) no longer exist.
-
-There is therefore **no automatable surface** for a direct rewrite-libraries
-test. The lib→editor sync is exercised indirectly by Scenario 2
+The previous scenarios verified the `overrideMonomersFuncs` /
+`revertOriginalMonomersFuncs` state machine (tracked via
+`hh.originalMonomersFuncs`) and `rewriteLibraries(monomerLib)`, which mutated
+the Pistoia dictionary via `org.helm.webeditor.Monomers.getMonomer /
+addOneMonomer / clear`. In the new build none of these is part of `IHelmHelper`
+and `org.helm.webeditor.Monomers` no longer exists, so there is **no surface**
+left to test. The lib→editor sync is exercised by Scenario 1
 (`buildMonomersFuncsFromLib`) and by the cross-feature interaction
 `helm-input-bio-monomer-lib` (monomer-lib reload re-renders the renderer /
-input / properties surfaces). This scenario is intentionally a no-op placeholder
-documenting the removal.
+input / properties surfaces).

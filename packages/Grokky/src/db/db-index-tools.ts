@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getSchemaDescriptor} from '@datagrok-libraries/db-explorer/src/utils';
 import {ClaudeRuntimeClient} from '../claude/runtime-client';
+import {AiFeature} from '../claude/ai-feature';
 
 type DBIDWithSchema = `${string}.${string}`;
 type DBReference = `${string}.${string} -> ${string}.${string}`;
@@ -317,7 +318,7 @@ const HiddenRelationsSchema = {
 
 async function queryLLM(systemPrompt: string, userPrompt: string, outputSchema: object): Promise<any> {
   const client = ClaudeRuntimeClient.getInstance();
-  const result = await client.query(`${systemPrompt}\n\n${userPrompt}`, {outputSchema});
+  const result = await client.query(`${systemPrompt}\n\n${userPrompt}`, {outputSchema, feature: AiFeature.DbIndex});
   return typeof result === 'string' ? JSON.parse(result) : result;
 }
 

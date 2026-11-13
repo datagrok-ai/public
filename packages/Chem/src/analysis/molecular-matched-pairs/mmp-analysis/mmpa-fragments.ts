@@ -78,51 +78,60 @@ function getBestFragmentPair(
   return core === null ? null : [core, r1!, r2!];
 }
 
+/**
+ * Where {@link fillRules} finds a fragment in `smilesFrags` (its first index) and a rule by its fragments (`sr1`, then
+ * `sr2`: the last rule with them), kept as the rules are built instead of searching the arrays for every pair.
+ */
+export interface MmpRulesIndex {
+  frags: Map<number, number>;
+  rules: Map<number, Map<number, number>>;
+}
+
+export function newMmpRulesIndex(): MmpRulesIndex {
+  return {frags: new Map(), rules: new Map()};
+}
+
+function addRule(mmpRules: MmpRules, index: MmpRulesIndex, sr1: number, sr2: number,
+  pair: {fs: number, ss: number, core: number}): void {
+  mmpRules.rules.push({sr1, sr2, pairs: [pair]});
+  let bySr2 = index.rules.get(sr1);
+  if (!bySr2)
+    index.rules.set(sr1, bySr2 = new Map());
+  bySr2.set(sr2, mmpRules.rules.length - 1);
+}
+
+function addFrag(mmpRules: MmpRules, index: MmpRulesIndex, frag: number): number {
+  mmpRules.smilesFrags.push(frag);
+  const at = mmpRules.smilesFrags.length - 1;
+  if (!index.frags.has(frag))
+    index.frags.set(frag, at);
+  return at;
+}
+
 function fillRules(
-  mmpRules: MmpRules,
+  mmpRules: MmpRules, index: MmpRulesIndex,
   rFirst:number, idxFirst: number,
   rSecond: number, idxSecond: number,
   core: number, ruleCounter: number, allCasesCounter: number) {
-  let ruleSmiles1 = mmpRules.smilesFrags.indexOf(rFirst);
-  let ruleSmiles2 = mmpRules.smilesFrags.indexOf(rSecond);
-  let ruleIndexStraight = -1;
-  let ruleIndexInverse = -1;
+  let ruleSmiles1 = index.frags.get(rFirst) ?? -1;
+  let ruleSmiles2 = index.frags.get(rSecond) ?? -1;
+  const ruleIndexStraight = index.rules.get(ruleSmiles1)?.get(ruleSmiles2) ?? -1;
+  const ruleIndexInverse = index.rules.get(ruleSmiles2)?.get(ruleSmiles1) ?? -1;
 
-  for (let ind = 0; ind < mmpRules.rules.length; ind++) {
-    if (mmpRules.rules[ind].sr1 === ruleSmiles1 && mmpRules.rules[ind].sr2 === ruleSmiles2)
-      ruleIndexStraight = ind;
-    if (mmpRules.rules[ind].sr1 === ruleSmiles2 && mmpRules.rules[ind].sr2 === ruleSmiles1)
-      ruleIndexInverse = ind;
-  }
-
-  if (ruleSmiles1 === -1) {
-    mmpRules.smilesFrags.push(rFirst);
-    ruleSmiles1 = mmpRules.smilesFrags.length -1;
-  }
-  if (ruleSmiles2 === -1) {
-    mmpRules.smilesFrags.push(rSecond);
-    ruleSmiles2 = mmpRules.smilesFrags.length -1;
-  }
+  if (ruleSmiles1 === -1)
+    ruleSmiles1 = addFrag(mmpRules, index, rFirst);
+  if (ruleSmiles2 === -1)
+    ruleSmiles2 = addFrag(mmpRules, index, rSecond);
 
   const indxFirst = ruleSmiles1 < ruleSmiles2;
   if (ruleIndexStraight === -1) {
-    mmpRules.rules.push({
-      sr1: indxFirst ? ruleSmiles1: ruleSmiles2,
-      sr2: indxFirst ? ruleSmiles2: ruleSmiles1,
-      pairs: [],
-    });
-    mmpRules.rules[ruleCounter].pairs
-      .push({fs: indxFirst ? idxFirst : idxSecond,
+    addRule(mmpRules, index, indxFirst ? ruleSmiles1: ruleSmiles2, indxFirst ? ruleSmiles2: ruleSmiles1,
+      {fs: indxFirst ? idxFirst : idxSecond,
         ss: indxFirst ? idxSecond : idxFirst,
         core});
     ruleCounter++;
-    mmpRules.rules.push({
-      sr1: indxFirst ? ruleSmiles2: ruleSmiles1,
-      sr2: indxFirst ? ruleSmiles1: ruleSmiles2,
-      pairs: [],
-    });
-    mmpRules.rules[ruleCounter].pairs
-      .push({fs: indxFirst ? idxSecond : idxFirst,
+    addRule(mmpRules, index, indxFirst ? ruleSmiles2: ruleSmiles1, indxFirst ? ruleSmiles1: ruleSmiles2,
+      {fs: indxFirst ? idxSecond : idxFirst,
         ss: indxFirst ? idxFirst : idxSecond,
         core});
     ruleCounter++;
@@ -170,8 +179,9 @@ function encodeFragments(fragsOut: IMmpFragmentsResult): MmpFragments {
   return {fragCodes: res, idToName: fragIdToFragName, sizes: fragSizes};
 }
 
-function getMmpRulesCPU(fragsOut: MmpFragments, fragmentCutoff: number): [MmpRules, number, boolean] {
+export function getMmpRulesCPU(fragsOut: MmpFragments, fragmentCutoff: number): [MmpRules, number, boolean] {
   const mmpRules: MmpRules = {rules: [], smilesFrags: []};
+  const index = newMmpRulesIndex();
   const dim = fragsOut.fragCodes.length;
 
   const pairs: MolecularPair[] = [];
@@ -197,7 +207,7 @@ function getMmpRulesCPU(fragsOut: MmpFragments, fragmentCutoff: number): [MmpRul
   let allCasesCounter = 0;
 
   for (let i = 0; i < pairs.length; i++) {
-    [ruleCounter, allCasesCounter] = fillRules(mmpRules,
+    [ruleCounter, allCasesCounter] = fillRules(mmpRules, index,
       pairs[i].firstR, pairs[i].first, pairs[i].secondR, pairs[i].second, pairs[i].core,
       ruleCounter, allCasesCounter);
   }
@@ -207,19 +217,24 @@ function getMmpRulesCPU(fragsOut: MmpFragments, fragmentCutoff: number): [MmpRul
 
 async function getMmpRulesGPU(fragsOut: MmpFragments, fragmentCutoff: number):
   Promise<[MmpRules, number, boolean]> {
-  const mmpRules: MmpRules = {rules: [], smilesFrags: []};
-
   //const [encodedFrags, fragIdToFragName, fragSizes] = encodeFragments(fragsOut);
   const pairs = await webGPUMMP(fragsOut.fragCodes, fragsOut.sizes, fragmentCutoff);
+  const [mmpRules, allCasesCounter] = mmpRulesOfPairs(pairs!.frag1Idx, pairs!.mol1Idx, pairs!.frag2Idx,
+    pairs!.mol2Idx, pairs!.coreIdx);
+  return [mmpRules, allCasesCounter, true];
+}
 
+/** The rules of the pairs in order, pair `i` the fragments `frag1[i]` of molecule `mol1[i]` and `frag2[i]` of
+ * `mol2[i]` around the fragment `core[i]` (the GPU's pairs), and the number of cases. */
+export function mmpRulesOfPairs(frag1: ArrayLike<number>, mol1: ArrayLike<number>, frag2: ArrayLike<number>,
+  mol2: ArrayLike<number>, core: ArrayLike<number>): [MmpRules, number] {
+  const mmpRules: MmpRules = {rules: [], smilesFrags: []};
+  const index = newMmpRulesIndex();
   let ruleCounter = 0;
   let allCasesCounter = 0;
-
-  for (let i = 0; i < pairs!.coreIdx.length; i++) {
-    [ruleCounter, allCasesCounter] = fillRules(mmpRules,
-      pairs!.frag1Idx[i], pairs!.mol1Idx[i], pairs!.frag2Idx[i],
-      pairs!.mol2Idx[i], pairs!.coreIdx[i], ruleCounter, allCasesCounter);
+  for (let i = 0; i < core.length; i++) {
+    [ruleCounter, allCasesCounter] = fillRules(mmpRules, index, frag1[i], mol1[i], frag2[i], mol2[i], core[i],
+      ruleCounter, allCasesCounter);
   }
-
-  return [mmpRules, allCasesCounter, true];
+  return [mmpRules, allCasesCounter];
 }

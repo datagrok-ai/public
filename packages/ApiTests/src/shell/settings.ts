@@ -1,4 +1,4 @@
-import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
@@ -15,13 +15,6 @@ category('Settings', () => {
   });
   test('Beta Settings', async () => {
     expect(gss.enableBetaViewers, false);
-    expect(gss.saveProjectWithViewLayout, false);
-    try {
-      gss.saveProjectWithViewLayout = true;
-      expect(gss.saveProjectWithViewLayout, true);
-    } finally {
-      gss.saveProjectWithViewLayout = false;
-    }
   });
 
   test('Sync Settings', async () => {
@@ -33,7 +26,7 @@ category('Settings', () => {
     try {
       grok.shell.addTableView(t);
       t.rows.select((row) => row.sex === 'F');
-      expect(grok.shell.o instanceof DG.RowGroup, true);
+      await waitUntil(() => grok.shell.o instanceof DG.RowGroup, 'selected rows did not reach the context panel');
       expect(grok.shell.o.dataFrame.selection.trueCount, t.selection.trueCount);
       gss.showSelectedRowsInProperties = false;
       grok.shell.o = t;

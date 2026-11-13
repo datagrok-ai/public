@@ -2,7 +2,7 @@
    AsyncValue source drives. Same contract as the other UI suites — every test leaves the
    live-scope count where it found it. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {signal, Scope} from '../src/index.js';

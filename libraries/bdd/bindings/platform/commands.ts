@@ -1,7 +1,3 @@
-/* The top menu and what a command of it does: a path picked by real pointer moves, the
-   function call it starts awaited through the platform's own call events, and the columns it
-   added to the table read against the columns it started with. A dialog a command shows in
-   between is driven with the base steps (`OK button in "Sequence Space" dialog`). */
 import {Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';

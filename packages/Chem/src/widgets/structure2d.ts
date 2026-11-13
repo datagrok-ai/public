@@ -14,7 +14,7 @@ export function structure2dWidget(molecule: string): DG.Widget {
   const readable = byEngineModule('structure2d', getRdKitModule(), (module, crux) => {
     const mol = getMolSafe(molecule, {}, module, true, crux ? noteCruxError : undefined).mol;
     mol?.delete();
-    return mol ? true : crux ? null : false;
+    return mol ? true : null; // (a molecule neither module reads is no fallback)
   });
   const resultWidget = readable ?
     new DG.Widget(get2dMolecule(molecule, WIDTH, HEIGHT)) : new DG.Widget(ui.divText('Molecule is possibly malformed'));

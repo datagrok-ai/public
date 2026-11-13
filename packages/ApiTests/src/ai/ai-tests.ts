@@ -77,6 +77,7 @@ import './viewers/viewer-events';
 import './viewers/viewer-geometry';
 import './viewers/viewer-layout-backward-compat';
 import './viewers/viewer-lifecycle-events';
+import './viewers/viewer-shared-rules';
 
 // Widget JS API
 import './widgets/dialog-js-api';

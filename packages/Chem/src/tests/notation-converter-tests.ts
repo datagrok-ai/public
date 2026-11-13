@@ -1,4 +1,4 @@
-import {category, expectArray, test, before, awaitCheck, expect} from '@datagrok-libraries/test/src/test';
+import {category, expectArray, test, before, waitUntil, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
@@ -74,7 +74,7 @@ category('converters', async () => {
     if (chemblPackInstalled) {
       const df = await readDataframe('tests/names_to_smiles.csv');
       await PackageFunctions.namesToSmiles(df, df.col('Name')!);
-      await awaitCheck(() => df.columns.names().includes(`canonical_smiles`),
+      await waitUntil(() => df.columns.names().includes(`canonical_smiles`),
         `Column with names has not been converted to smiles`, 5000);
       expect(df.get('canonical_smiles', 4) === '');
       let mol1; let mol2; let smiles1; let smiles2;
@@ -137,7 +137,7 @@ category('converters', async () => {
 
     const testColumnAdded = async (colName: string, convertFrom: DG.chem.Notation, convertTo: DG.chem.Notation) => {
       await PackageFunctions.convertNotation(df, df.col(colName)!, convertTo, false);
-      await awaitCheck(() => df.columns.names().includes(`${colName}_${convertTo}`),
+      await waitUntil(() => df.columns.names().includes(`${colName}_${convertTo}`),
         `Column with ${convertFrom} has not been converted to ${convertTo}`, 5000);
     };
 

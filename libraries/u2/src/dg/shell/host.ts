@@ -13,3 +13,8 @@ export function host(control: Control): HTMLElement {
   DG.Widget.registerCleanup(root, () => control.dispose());
   return root;
 }
+
+/** The same platform view, whichever wrapper each side holds. */
+export function isView(a: DG.ViewBase | null | undefined, b: DG.ViewBase | null | undefined): boolean {
+  return a != null && b != null && a.dart === b.dart;
+}

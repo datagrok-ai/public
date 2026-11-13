@@ -7,6 +7,7 @@ import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
 import {untracked} from '../../core/signals.js';
 import {button} from '../../core/elements.js';
+import {icon} from './icon.js';
 
 export interface AsyncViewOptions {
   empty?: string;
@@ -25,6 +26,36 @@ export function loader(text?: string): HTMLElement {
     label.className = 'u2-loader-text';
     label.textContent = text;
     el.append(label);
+  }
+  return el;
+}
+
+export interface EmptyStateOptions {
+  /** Platform icon name, drawn above the text. */
+  icon?: string;
+  /** The way forward ("New issue", "Clear filter"). */
+  actions?: HTMLElement[];
+  /** A failure rather than an absence: drawn in the error colour. */
+  error?: boolean;
+}
+
+/** "Nothing here" or "this failed": an icon, a sentence and the actions out of it, centred. */
+export function emptyState(text: string, options?: EmptyStateOptions): HTMLElement {
+  const el = document.createElement('div');
+  el.className = options?.error ? 'u2-empty-state u2-empty-state-error' : 'u2-empty-state';
+  el.dataset.u2 = 'empty-state';
+  el.setAttribute('role', options?.error ? 'alert' : 'status');
+  if (options?.icon !== undefined)
+    el.append(icon(options.icon, {cls: 'u2-empty-state-icon'}));
+  const line = document.createElement('div');
+  line.className = 'u2-empty-state-text';
+  line.textContent = text;
+  el.append(line);
+  if ((options?.actions ?? []).length > 0) {
+    const actions = document.createElement('div');
+    actions.className = 'u2-empty-state-actions';
+    actions.append(...options!.actions!);
+    el.append(actions);
   }
   return el;
 }
@@ -60,7 +91,7 @@ export class AsyncView<T> extends Control {
     this._skeleton = options?.skeleton ?? false;
     this.root.classList.add('u2-async-view');
     this.root.dataset.u2 = 'async-view';
-    this._retry = this.runInScope(() => button('Retry', () => source.retry()));
+    this._retry = this.build(() => button('Retry', () => source.retry()));
     this.own(() => this._releaseContent());
     this.effect(() => this._apply(source.state.value));
   }
@@ -97,7 +128,7 @@ export class AsyncView<T> extends Control {
     this._releaseContent();
     const scope = new Scope();
     this._content = scope;
-    const content = Scope.runWith(scope, () => this._build(state));
+    const content = scope.build(() => this._build(state));
     this.root.setAttribute('aria-busy', String(state.kind === 'loading'));
     this.root.replaceChildren(...(content ? [content] : []));
   }

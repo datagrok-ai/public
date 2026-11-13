@@ -11,6 +11,8 @@ export abstract class ChoiceInputBase {
         this.choices = choices;
         this.field = field;
         this.emptyLabel = emptyLabel;
+        // ui.input.choice starts disabled without items, and Choices keeps the state it is created with.
+        choices.enable();
     }
 
     static async queryValues(funcName: string, colName: string): Promise<string[]> {
@@ -24,6 +26,11 @@ export abstract class ChoiceInputBase {
             return categories;
         else
             return [this.emptyLabel];
+    }
+
+    setItems(items: string[]) {
+        this.choices.removeActiveItems(-1);
+        this.addItems(items.map((i) => i.toLowerCase()));
     }
 
     addItems(items: string[]) {

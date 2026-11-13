@@ -1,3 +1,9 @@
+.grokky-content-log-notice {
+  color: var(--grey-5);
+  font-size: 11px;
+  margin-top: 4px;
+}
+
 .ai-panel-question {
   font-style: italic;
 }
@@ -568,6 +574,10 @@
   border-left: 2px solid var(--red-3);
   padding: 3px 0 3px 12px;
   margin-top: 8px;
+}
+
+.grokky-markdown-fallback {
+  white-space: pre-wrap;
 }
 
 .grokky-exec-sep {

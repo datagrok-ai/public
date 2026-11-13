@@ -257,8 +257,8 @@ async function processMarkdownContent(
     let content = await fsPromises.readFile(sourceFilePath, 'utf-8');
     const dirName = path.dirname(sourceFilePath);
     
-    // Replace ../../help/ with ../../../ in the content before extracting references
-    content = content.replace(/\.\.\/\.\.\/help\//g, "../../../");
+    // Replace ../../../help/ with ../../../ in the content before extracting references
+    content = content.replace(/\.\.\/\.\.\/\.\.\/help\//g, "../../../");
 
     // Replace TypeScript file references with GitHub URLs
     const updatedContent = await replaceTypeScriptReferences(content, dirName, sourceRoot, sourceDirRoot);

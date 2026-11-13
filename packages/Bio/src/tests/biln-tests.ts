@@ -73,6 +73,15 @@ export const detectorTestsDataForBiln: {name: string, seqs: string[], negative: 
       'D-T-H-F-P-I-C(1,3)-I-F-C(2,3)-C(3,3)-G-C(2,3)-C(4,3)-H-R-S-K-C(3,3)-G-M-C(4,3)-C(1,3)-K-T'
     ], negative: false
   }, {
+    name: 'Biln with a free chain in one value',
+    seqs: [
+      'A-C(1,3)-G-G-H-A-V-E-A-K-Y-L-V-C(3,3)-S.G-I-V-E-A-C(2,3)-C(1,3)-T-S-I-C(2,3)-S-L-Y-Q-L-E-N-Y-C(3,3)-Y',
+      'A-C(1,3)-G-G-H-A-V-E-A-T-Y-L-V-C(3,3)-G.G-I-V-E-A-C(2,3)-C(1,3)-K-S-I-C(2,3)-S-L-Y-Q-L-E-N-Y-C(3,3)-Y',
+      'A-C(1,3)-G-G-H-L-V-E-A-K-Y-L-V-C(3,3)-G.G-I-V-E-A-C(2,3)-C(1,3)-T-S-I-C(2,3)-S-L-Y-Q-L-E-N-Y-C(3,3)-N',
+      'C-C(1,3)-S-W-P-A-R-C(2,3)-L-H-Q-D-L-C(3,3)-NH2.C(1,1)(2,2)(3,3)',
+      'A-C(1,3)-G-G-H-A-V-E-A-K-Y-L-V-C(1,3)-S.G-I-V-E-A-W-L-K-S-I-F-S-L-Y-Q-L-E-N-Y-W-Y',
+    ], negative: false,
+  }, {
     name: 'Simple Separator Neg',
     seqs: [
       'meI/hHis/Aca/N/T/dE/Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me',

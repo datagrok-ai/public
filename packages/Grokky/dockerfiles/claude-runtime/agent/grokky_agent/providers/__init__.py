@@ -1,4 +1,4 @@
-"""The providers the container credentials can name: each module of this package defines one Provider subclass, which
+"""The providers the Grokky credentials can name: each module of this package defines one Provider subclass, which
 registers it under its `name`."""
 import importlib
 import pkgutil
@@ -14,7 +14,7 @@ PROVIDERS: dict[str, type[Provider]] = {p.name: p for p in Provider.__subclasses
 def from_credentials(credentials: Credentials) -> Provider:
     name = credentials.get('provider') or 'Anthropic'
     if name not in PROVIDERS:
-        raise ProviderError(f'The provider container credential must be one of {", ".join(PROVIDERS)}')
+        raise ProviderError(f'The provider Grokky credential must be one of {", ".join(PROVIDERS)}')
     return PROVIDERS[name](credentials)
 
 

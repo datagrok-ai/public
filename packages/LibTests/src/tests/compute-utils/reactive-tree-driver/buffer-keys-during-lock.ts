@@ -1,7 +1,6 @@
 import {category, test, before} from '@datagrok-libraries/test/src/test';
 import {TestScheduler} from 'rxjs/testing';
 import {BehaviorSubject, merge} from 'rxjs';
-import {map, switchMap} from 'rxjs/operators';
 import {bufferKeysDuringLock} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {createTestScheduler} from '../../../test-utils';
 
@@ -33,7 +32,7 @@ category('ComputeUtils: Driver bufferKeysDuringLock', async () => {
 
   test('Buffer during lock and flush on unlock', async () => {
     testScheduler.run((helpers) => {
-      const {cold, hot, expectObservable} = helpers;
+      const {hot, expectObservable} = helpers;
       const lock$ = hot(' f--t--------f--', {t: true, f: false});
       const source$ = hot('---a--b--c-----', {
         a: ['A', 1] as const,
@@ -51,7 +50,7 @@ category('ComputeUtils: Driver bufferKeysDuringLock', async () => {
 
   test('Deduplicate by key keeping latest value', async () => {
     testScheduler.run((helpers) => {
-      const {cold, hot, expectObservable} = helpers;
+      const {hot, expectObservable} = helpers;
       const lock$ = hot(' f-t-----------f--', {t: true, f: false});
       const source$ = hot('--a--b--c--d-----', {
         a: ['A', 1] as const,
@@ -69,7 +68,7 @@ category('ComputeUtils: Driver bufferKeysDuringLock', async () => {
 
   test('No emissions during lock produces nothing on unlock', async () => {
     testScheduler.run((helpers) => {
-      const {cold, hot, expectObservable} = helpers;
+      const {hot, expectObservable} = helpers;
       const lock$ = hot(' f-t---f----', {t: true, f: false});
       const source$ = hot('a---------b', {
         a: ['A', 1] as const,

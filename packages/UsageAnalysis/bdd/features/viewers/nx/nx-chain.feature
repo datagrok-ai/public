@@ -65,8 +65,8 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
   once the Chem filters of every view have finished computing.
   Not translated: resizing the grid when the layout is changed (closing the filter panel is the
   change); a new linear color scheme set on the first scatter plot itself (the scheme is changed on
-  the column later, as the md's next steps do); the regression line drawn — with Row Source
-  FilteredSelected and nothing selected the plot draws no rows, so the property is claimed; the
+  the column later, as the md's next steps do); the regression line drawn (here nothing is
+  selected, so only the property is claimed; the line itself is in `nx-regression-line.feature`); the
   trellis plot's legend and the box plot's (neither draws one here); the
   Context Panel as the place a Legend Position is read.
   The calc-columns layout, saved before Chemical Space X was renamed, is applied after the rename and

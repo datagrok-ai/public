@@ -1,4 +1,3 @@
-/* Outcome checks over Playwright's retrying `expect`, so a feature never needs a wait step. */
 import {Locator, Page} from '@playwright/test';
 import {expect} from './patience.js';
 import type {ElementRef} from './args.js';

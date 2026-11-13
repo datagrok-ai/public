@@ -57,11 +57,14 @@ Feature: Suspend Simulation freezes the layout, and the Layout menu says so too
     And no errors should have been logged
 
   Scenario: Reset View leaves the graph and its counts where they were
-    When user remembers the "layout signature" reading of network diagram viewer
+    # the simulation the scenario before turned back on may still be settling: frozen, only Reset View could move it
+    When user sets "suspendSimulation" property of network diagram viewer to "true"
+    And user remembers the "layout signature" reading of network diagram viewer
     And user picks "Reset View" from the context menu of network diagram viewer
     Then the "nodes" reading of network diagram viewer should be 4
     And the "edges" reading of network diagram viewer should be 4
     And the "rows of node \"F\"" reading of network diagram viewer should be 553
     And the "layout signature" reading of network diagram viewer should be as remembered
     And network diagram viewer should have a "node \"F\"" area
-    And no errors should have been logged
+    When user sets "suspendSimulation" property of network diagram viewer to "false"
+    Then no errors should have been logged

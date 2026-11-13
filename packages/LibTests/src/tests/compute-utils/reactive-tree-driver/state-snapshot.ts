@@ -7,7 +7,7 @@ import {
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {
-  CONFIG_PATH, OUTPUT_OUTDATED_PATH, loadFuncCall, readOutputOutdated,
+  CONFIG_PATH, OUTPUT_OUTDATED_PATH, loadFuncCall, readOutputOutdated, readRunCompleted,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {
   StateSnapshot, StepSnapshot, loadStateSnapshot, saveStateSnapshot, snapshotCall, snapshotState,
@@ -17,6 +17,7 @@ import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-drive
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {deleteRuns, savedCallIds} from '../../../test-utils';
+import {NESTED_ENTITY_OPTION, getRunName} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 
 // step1 ran, step2 got its a from the link and never ran
 async function liveTree() {
@@ -111,9 +112,35 @@ category('ComputeUtils: Driver state snapshots', async () => {
       expectDeepEqual(fromSnapshot!.toSerializedState(options), fromTree!.toSerializedState(options),
         {prefix: 'Structure'});
       expectDeepEqual(stepValues(fromSnapshot!), stepValues(fromTree!), {prefix: 'Values'});
-      expectDeepEqual(metaCall.options['title'], treeCall!.options['title'], {prefix: 'Title'});
+      expectDeepEqual([metaCall.friendlyName, treeCall!.friendlyName], ['Snapshot', 'Snapshot'], {prefix: 'Name'});
+      const nested = async (id: string) =>
+        (await historyUtils.shallowLoadRun(id)).options[NESTED_ENTITY_OPTION] ?? null;
+      const stepIds = [...callIds(snapshot), ...savedCallIds(tree.toSerializedState())];
+      expectDeepEqual(await Promise.all(stepIds.map(nested)), stepIds.map(() => 'true'), {prefix: 'Steps nested'});
+      expectDeepEqual(await Promise.all([metaCall.id, treeCall!.id].map(nested)), [null, null],
+        {prefix: 'Workflow runs not nested'});
     } finally {
       await deleteRuns([metaCall?.id, ...callIds(snapshot), treeCall?.id, ...savedCallIds(tree.toSerializedState())]);
+      tree.close();
+    }
+  });
+
+  test('A saved snapshot records whether every step is completed', async () => {
+    const {tree} = await liveTree();
+    const ids: (string | undefined)[] = [];
+    const savedCompleted = async () => {
+      const snapshot = snapshotOf(tree);
+      const metaCall = await saveStateSnapshot(snapshot);
+      ids.push(metaCall.id, ...callIds(snapshot));
+      return readRunCompleted(await historyUtils.shallowLoadRun(metaCall.id));
+    };
+    try {
+      expectDeepEqual(await savedCompleted(), false, {prefix: 'A step never ran'});
+      await tree.runStep((tree.nodeTree.getItem([{idx: 1}]) as FuncCallNode).uuid).toPromise();
+      await tree.linksState.waitForLinks().toPromise();
+      expectDeepEqual(await savedCompleted(), true, {prefix: 'Every step ran'});
+    } finally {
+      await deleteRuns(ids);
       tree.close();
     }
   });
@@ -149,8 +176,9 @@ category('ComputeUtils: Driver state snapshots', async () => {
       const saved = await saveStateSnapshot(snapshot, {title: 'Step'});
       expectDeepEqual(saved.id !== call.id, true, {prefix: 'New run'});
       const loaded = await historyUtils.loadRun(saved.id);
-      expectDeepEqual([loaded.options['title'], loaded.inputs['a'], readOutputOutdated(loaded)], ['Step', 1, true]);
+      expectDeepEqual([getRunName(loaded), loaded.inputs['a'], readOutputOutdated(loaded)], ['Step', 1, true]);
       expectDeepEqual(loaded.options[OUTPUT_OUTDATED_PATH] != null, true, {prefix: 'Outdated flag saved'});
+      expectDeepEqual(loaded.options[NESTED_ENTITY_OPTION] ?? null, null, {prefix: 'A step saved on its own'});
     } finally {
       await deleteRuns(callIds(snapshot));
     }
@@ -190,7 +218,7 @@ category('ComputeUtils: Driver state snapshots', async () => {
         ['Error: Test error', true, -1], {prefix: 'Failed step'});
       expectDeepEqual([overriddenRun.restrictions, overriddenRun.isOutputOutdated, overriddenRun.adapter.getState('a')],
         [{a: {type: 'restricted', assignedValue: 2}}, true, 5], {prefix: 'Overridden step'});
-      expectDeepEqual(overriddenRun.adapter.getFuncCall().options['title'], 'Step', {prefix: 'Title'});
+      expectDeepEqual(getRunName(overriddenRun.adapter.getFuncCall()), 'Step', {prefix: 'Name'});
     } finally {
       await deleteRuns([...callIds(failed), ...callIds(overridden)]);
       tree.close();

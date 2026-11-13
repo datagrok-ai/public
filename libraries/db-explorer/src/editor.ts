@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {DBExplorerConfig, ExplicitReference, QueryJoinOptions} from './types';
 import * as rxjs from 'rxjs';
 import {renderExampleCard} from './renderer';
+import {explicitCatalog, hasCatalogs, listCatalogs, ownCatalog} from './utils';
 
 type EntryPoint = DBExplorerConfig['entryPoints'][string];
 
@@ -22,6 +23,7 @@ interface DBExplorerState {
   connectionName: string | null;
   connectionNqName: string | null;
   connectionProvider: string | null;
+  catalogName: string | null;
   schemaName: string | null;
   entryPoints: {[semanticType: string]: EntryPoint};
   joinOptions: JoinOption[];
@@ -37,6 +39,7 @@ export class DBExplorerEditor {
     connectionName: null,
     connectionNqName: null,
     connectionProvider: null,
+    catalogName: null,
     schemaName: null,
     entryPoints: {},
     joinOptions: [],
@@ -50,16 +53,19 @@ export class DBExplorerEditor {
   private schemaInfo: any[] = [];
   private tableNames: string[] = [];
   private columnNamesByTable: {[tableName: string]: string[]} = {};
-  private schemaInfoCache: {[schemaName: string]: SchemaCacheEntry} = {};
+  private schemaInfoCache: {[schemaKey: string]: SchemaCacheEntry} = {};
+  private schemasRequest = 0;
   private validationErrors: string[] = [];
   private onSave?: (config: any) => void;
 
   private rootDiv!: HTMLDivElement;
   private connectionInput!: DG.ChoiceInput<string | null>;
+  private catalogInput!: DG.ChoiceInput<string | null>;
   private schemaInput!: DG.ChoiceInput<string | null>;
   private accordionDiv!: HTMLDivElement;
 
-  constructor(onSave?: (config: any) => void, private showConnectionSection: boolean = true) {
+  /** @param boundConnection - the one connection the editor works with; without it, every connection is listed to choose from */
+  constructor(onSave?: (config: any) => void, private showConnectionSection: boolean = true, private boundConnection?: DG.DataConnection) {
     this.onSave = onSave;
   }
 
@@ -132,8 +138,7 @@ export class DBExplorerEditor {
     const connectionForm = ui.divV([], 'db-explorer-connection-form ui-form');
     connectionForm.style.maxHeight = 'fit-content';
 
-    // Get all connections
-    this.connections = await grok.dapi.connections.list();
+    this.connections = this.boundConnection ? [this.boundConnection] : await grok.dapi.connections.list();
     const connectionBqNames = this.connections.map((c) => c.nqName).sort();
 
     this.connectionInput = ui.input.choice('Connection', {
@@ -144,6 +149,15 @@ export class DBExplorerEditor {
     });
     ui.tooltip.bind(this.connectionInput.input, 'Database connection to use for exploration');
 
+    this.catalogInput = ui.input.choice('Catalog', {
+      value: this.state.catalogName,
+      nullable: true,
+      items: [] as string[],
+      tooltipText: 'Select a catalog'
+    });
+    ui.tooltip.bind(this.catalogInput.input, 'Catalog (database) where the schemas are located');
+    this.catalogInput.root.style.display = 'none';
+
     this.schemaInput = ui.input.choice('Schema', {
       value: this.state.schemaName,
       nullable: true,
@@ -152,56 +166,91 @@ export class DBExplorerEditor {
     });
     ui.tooltip.bind(this.schemaInput.input, 'Database schema name where the identifiers are located');
 
-    // Handle connection change
     this.connectionInput.onChanged.subscribe(async () => {
       const selectedConnection = this.connectionInput.value ?
         this.connections.find((c) => c.nqName === this.connectionInput.value) : null;
-
-      if (!selectedConnection) {
-        this.schemaInput.items = [];
-        this.schemaInput.value = null;
-        this.state.connectionName = null;
-        this.state.connectionNqName = null;
-        this.state.connectionProvider = null;
-        this.schemaInfoCache = {};
-        this.clearAdvancedSections();
-        return;
-      }
-
-      this.state.connectionNqName = this.connectionInput.value;
-      this.state.connectionName = selectedConnection.name || null;
-      this.state.connectionProvider = selectedConnection.dataSource || null;
-      this.schemaInfoCache = {};
-      const schemas = await grok.dapi.connections.getSchemas(selectedConnection);
-      const oldSchemaValue = this.schemaInput.value;
-      this.schemaInput.items = schemas.sort();
-      if (oldSchemaValue && schemas.includes(oldSchemaValue))
-        this.schemaInput.value = oldSchemaValue;
-      else
-        this.schemaInput.value = null;
+      this.state.connectionNqName = selectedConnection?.nqName ?? null;
+      this.state.connectionName = selectedConnection?.name || null;
+      this.state.connectionProvider = selectedConnection?.dataSource || null;
+      this.state.catalogName = null;
+      this.loadCatalogs();
+      await this.loadSchemas();
     });
 
-    // Handle schema change
+    this.catalogInput.onChanged.subscribe(async () => {
+      const connection = this.dataConnection;
+      this.state.catalogName = connection ? explicitCatalog(connection, this.catalogInput.value) ?? null : null;
+      await this.loadSchemas();
+    });
+
     this.schemaInput.onChanged.subscribe(async () => {
       this.state.schemaName = this.schemaInput.value;
-
-      if (!this.state.connectionName || !this.state.schemaName) {
-        this.clearAdvancedSections();
-        return;
-      }
-
-      await this.loadSchemaInfo();
-      await this.buildAdvancedSections();
+      await this.showSchema();
     });
 
-    // Handle data source change
-
     connectionForm.appendChild(this.connectionInput.root);
+    connectionForm.appendChild(this.catalogInput.root);
     connectionForm.appendChild(this.schemaInput.root);
 
     this.rootDiv.appendChild(connectionForm);
     if (!this.showConnectionSection)
       connectionForm.style.display = 'none';
+  }
+
+  /** Changes an input without its change handler running */
+  private silently(input: DG.InputBase, change: () => void): void {
+    input.notify = false;
+    change();
+    input.notify = true;
+  }
+
+  /** Offers the catalogs of a connection that has them, on the one the tables are read from: the connection's own
+   * unless the configuration names another. They are listed only where the choice is shown */
+  private loadCatalogs(): void {
+    const connection = this.dataConnection;
+    const withCatalogs = !!connection && hasCatalogs(connection);
+    this.catalogInput.root.style.display = withCatalogs ? '' : 'none';
+    const current = withCatalogs ? this.state.catalogName ?? ownCatalog(connection) : null;
+    const show = (catalogs: string[]) => this.silently(this.catalogInput, () => {
+      this.catalogInput.items = catalogs;
+      this.catalogInput.value = catalogs.find((c) => c.toLowerCase() === current?.toLowerCase()) ?? current;
+    });
+    show(current ? [current] : []);
+    if (!withCatalogs || !this.showConnectionSection)
+      return;
+    listCatalogs(connection).then((catalogs) => {
+      if (this.dataConnection === connection)
+        show(catalogs);
+    }).catch((e) => grok.shell.warning(`Could not list the catalogs of ${connection.name}: ${e?.message ?? e}`));
+  }
+
+  /** Offers the schemas of the chosen catalog and shows the chosen schema; a schema picked before is dropped
+   * when the catalog has none of that name, unless [keepSchema] (a loaded configuration names its schema itself) */
+  private async loadSchemas(keepSchema: boolean = false): Promise<void> {
+    const request = ++this.schemasRequest;
+    this.schemaInfoCache = {};
+    // the sections of the connection or catalog being left would stay usable until the new ones arrive
+    this.clearAdvancedSections();
+    const connection = this.dataConnection;
+    const schemas = connection ? (await grok.dapi.connections.getSchemas(connection, this.state.catalogName)).sort() : [];
+    if (request !== this.schemasRequest)
+      return;
+    if (!connection || (!keepSchema && this.state.schemaName && !schemas.includes(this.state.schemaName)))
+      this.state.schemaName = null;
+    this.silently(this.schemaInput, () => {
+      this.schemaInput.items = schemas;
+      this.schemaInput.value = this.state.schemaName;
+    });
+    await this.showSchema();
+  }
+
+  private async showSchema(): Promise<void> {
+    if (!this.state.connectionName || !this.state.schemaName) {
+      this.clearAdvancedSections();
+      return;
+    }
+    await this.loadSchemaInfo();
+    await this.buildAdvancedSections();
   }
 
   private async loadSchemaInfo(): Promise<void> {
@@ -213,34 +262,40 @@ export class DBExplorerEditor {
     this.columnNamesByTable = entry.columnNamesByTable;
   }
 
+  /** Two catalogs can hold schemas of one name, and a schema asked for before the catalog changed answers after */
+  private schemaKey(schemaName: string): string {
+    return `${this.state.connectionNqName}/${this.state.catalogName ?? ''}/${schemaName}`;
+  }
+
   private async ensureSchemaLoaded(schemaName: string | null): Promise<SchemaCacheEntry | null> {
     if (!schemaName)
       return null;
-    if (this.schemaInfoCache[schemaName])
-      return this.schemaInfoCache[schemaName];
+    const key = this.schemaKey(schemaName);
+    if (this.schemaInfoCache[key])
+      return this.schemaInfoCache[key];
     const connection = this.dataConnection;
     if (!connection)
       return null;
-    const schemaInfo = await grok.dapi.connections.getSchema(connection, schemaName);
+    const schemaInfo = await grok.dapi.connections.getSchema(connection, schemaName, null, this.state.catalogName);
     const tableNames = schemaInfo.map((t) => t.friendlyName).sort();
     const columnNamesByTable: {[tableName: string]: string[]} = {};
     for (const table of schemaInfo)
       columnNamesByTable[table.friendlyName] = table.columns.map((c: any) => c.name).sort();
     const entry: SchemaCacheEntry = {schemaInfo, tableNames, columnNamesByTable};
-    this.schemaInfoCache[schemaName] = entry;
+    this.schemaInfoCache[key] = entry;
     return entry;
   }
 
   private getSchemaTableNames(schemaName: string | null): string[] {
     if (!schemaName)
       return [];
-    return this.schemaInfoCache[schemaName]?.tableNames ?? [];
+    return this.schemaInfoCache[this.schemaKey(schemaName)]?.tableNames ?? [];
   }
 
   private getSchemaColumnNames(schemaName: string | null, tableName: string | null): string[] {
     if (!schemaName || !tableName)
       return [];
-    return this.schemaInfoCache[schemaName]?.columnNamesByTable?.[tableName] ?? [];
+    return this.schemaInfoCache[this.schemaKey(schemaName)]?.columnNamesByTable?.[tableName] ?? [];
   }
 
   private clearAdvancedSections(): void {
@@ -250,8 +305,24 @@ export class DBExplorerEditor {
     this.columnNamesByTable = {};
   }
 
+  /** What the hidden connection form would show for a database with catalogs: where the tables are read from, and
+   * that a catalog other than the connection's own brings no foreign keys */
+  private targetNote(connection: DG.DataConnection): HTMLElement {
+    const catalog = this.state.catalogName ?? ownCatalog(connection);
+    const note = ui.divV([ui.divText(`${connection.friendlyName ?? connection.name}: ${catalog ? `${catalog}.` : ''}${this.state.schemaName}`,
+      {style: {fontWeight: 'bold'}})], {style: {margin: '4px 0 8px 4px'}});
+    if (this.state.catalogName) {
+      note.appendChild(ui.divText(`Links between tables are read from the database only for the connection's own catalog. ` +
+        `For ${catalog}, add them under Explicit References.`, {style: {color: 'var(--grey-5)', fontSize: '12px', marginTop: '2px'}}));
+    }
+    return note;
+  }
+
   private async buildAdvancedSections(): Promise<void> {
     this.accordionDiv.innerHTML = '';
+    const connection = this.dataConnection;
+    if (connection && !this.showConnectionSection && hasCatalogs(connection))
+      this.accordionDiv.appendChild(this.targetNote(connection));
 
     const accordion = ui.accordion('db-explorer-advanced-accordion');
     const tryGetPaneHeaderRoot = (paneRoot: HTMLElement) => paneRoot.getElementsByClassName('d4-accordion-pane-header')?.item(0) as HTMLElement ?? paneRoot;
@@ -264,7 +335,7 @@ export class DBExplorerEditor {
     ui.tooltip.bind(tryGetPaneHeaderRoot(joinPane.root), 'Define how to include data from related tables');
 
     // Explicit References Section
-    const explicitRefsPane = accordion.addPane('Explicit References', () => this.createExplicitReferencesSection(), false, null, false);
+    const explicitRefsPane = accordion.addPane('Explicit References', () => this.createExplicitReferencesSection(), !!this.state.catalogName, null, false);
     ui.tooltip.bind(tryGetPaneHeaderRoot(explicitRefsPane.root), 'Define references between schema-table-columns that are not in schema metadata');
 
     // Header Names Section
@@ -500,7 +571,7 @@ export class DBExplorerEditor {
       }
       const card = renderExampleCard(
         this.dataConnection, this.state.schemaName, tableInput.value, {joinOptions: this.state.joinOptions, customRenderers: this.state.customRenderers,
-          uniqueColumns: this.state.uniqueColumns, customSelectedColumns: this.state.customSelectedColumns
+          uniqueColumns: this.state.uniqueColumns, customSelectedColumns: this.state.customSelectedColumns, catalogName: this.state.catalogName ?? undefined
         });
       previewCardDiv.appendChild(card);
     };
@@ -823,7 +894,7 @@ export class DBExplorerEditor {
         const previewSchema = fromSchemaInput.value ?? this.state.schemaName!;
         const card = renderExampleCard(
           this.dataConnection, previewSchema, fromTableInput.value!, {joinOptions: tempJoinOptions, customRenderers: this.state.customRenderers,
-            uniqueColumns: this.state.uniqueColumns, // note: specifically leaving out custom selected columns to show all columns in preview
+            uniqueColumns: this.state.uniqueColumns, catalogName: this.state.catalogName ?? undefined, // note: specifically leaving out custom selected columns to show all columns in preview
           });
         previewCardDiv.appendChild(card);
       }, 500);
@@ -1216,7 +1287,7 @@ export class DBExplorerEditor {
           delete modifiedSelection[tableInput.value];
         const card = renderExampleCard(
           this.dataConnection, this.state.schemaName, tableInput.value, {joinOptions: this.state.joinOptions, customRenderers: this.state.customRenderers,
-            uniqueColumns: this.state.uniqueColumns, customSelectedColumns: modifiedSelection,
+            uniqueColumns: this.state.uniqueColumns, customSelectedColumns: modifiedSelection, catalogName: this.state.catalogName ?? undefined,
           });
         previewCardDiv.appendChild(card);
       }, 500);
@@ -1648,6 +1719,7 @@ export class DBExplorerEditor {
     const config: DBExplorerConfig = {
       connectionName: this.state.connectionName!,
       nqName: this.state.connectionNqName ?? undefined,
+      catalogName: this.state.catalogName ?? undefined,
       schemaName: this.state.schemaName!,
       dataSourceName: this.dataConnection?.dataSource || undefined,
       entryPoints: this.state.entryPoints,
@@ -1701,6 +1773,7 @@ export class DBExplorerEditor {
       connectionName: config.connectionName || null,
       connectionNqName: config.nqName || null,
       connectionProvider: config.dataSourceName || null,
+      catalogName: config.catalogName || null,
       schemaName: config.schemaName || null,
       entryPoints: config.entryPoints || {},
       joinOptions: config.joinOptions || [],
@@ -1711,34 +1784,33 @@ export class DBExplorerEditor {
       explicitReferences: config.explicitReferences || []
     };
 
-    // Update UI inputs
-    if (this.connectionInput && this.state.connectionName) {
-      if (this.dataConnection) { this.connectionInput.value = this.dataConnection.nqName; } else {
-        // if the nqName is not set (which can be, trust me), try to find it from connection name
-        const connections = this.connections;
-        const con = connections.find((c) => c.name.toLowerCase() === this.state.connectionName!.toLowerCase() &&
-                (!this.state.connectionProvider || c.dataSource === this.state.connectionProvider));
-        if (con) {
-          this.state.connectionNqName = con.nqName;
-          this.state.connectionName = con.name;
-          this.state.connectionProvider = con.dataSource;
-          this.connectionInput.value = con.nqName;
-        }
-      }
-    }
-
-    // Trigger schema load if connection and schema are set
-    if (this.state.connectionName && this.state.schemaName && this.dataConnection) {
-      const connection = this.dataConnection;
-      const schemas = await grok.dapi.connections.getSchemas(connection);
-      this.schemaInput.items = schemas.sort();
-      this.schemaInput.value = this.state.schemaName ?? config.schemaName ?? null;
-      await this.loadSchemaInfo();
-      await this.buildAdvancedSections();
-    } else {
+    if (!this.connectionInput) {
       if (warnIfNotFound)
         grok.shell.warning('Error loading configuration: Connection or schema not found.');
+      return;
     }
+
+    // Update UI inputs
+    if (this.state.connectionName && !this.dataConnection) {
+      // if the nqName is not set (which can be, trust me), try to find it from connection name
+      const connections = this.connections;
+      const con = connections.find((c) => c.name.toLowerCase() === this.state.connectionName!.toLowerCase() &&
+              (!this.state.connectionProvider || c.dataSource === this.state.connectionProvider));
+      if (con) {
+        this.state.connectionNqName = con.nqName;
+        this.state.connectionName = con.name;
+        this.state.connectionProvider = con.dataSource;
+      }
+    }
+    const connection = this.dataConnection;
+    if (connection)
+      this.state.catalogName = explicitCatalog(connection, this.state.catalogName) ?? null;
+    this.silently(this.connectionInput, () => this.connectionInput.value = connection?.nqName ?? null);
+
+    this.loadCatalogs();
+    await this.loadSchemas(true);
+    if (!this.state.schemaName && warnIfNotFound)
+      grok.shell.warning('Error loading configuration: Connection or schema not found.');
   }
 
   private importConfig(): void {
@@ -1753,9 +1825,15 @@ export class DBExplorerEditor {
     dialog.addButton('Import', async () => {
       try {
         const config = JSON.parse(textArea.value);
-        await this.setConfig(config);
+        // an editor opened on one schema of one connection stays on it: a configuration made elsewhere, such as
+        // for the same tables in another catalog, brings its identifiers there
+        const target = this.boundConnection && this.state.schemaName ? this.getConfig() : null;
+        const place = (c: Partial<DBExplorerConfig>) => `${c.connectionName}.${c.catalogName ? `${c.catalogName}.` : ''}${c.schemaName}`;
+        await this.setConfig(target ? {...config, connectionName: target.connectionName, nqName: target.nqName,
+          dataSourceName: target.dataSourceName, catalogName: target.catalogName, schemaName: target.schemaName} : config);
 
-        grok.shell.info('Configuration imported successfully');
+        grok.shell.info(target && place(config) !== place(target) ?
+          `Configuration of ${place(config)} imported into ${place(target)}` : 'Configuration imported successfully');
         dialog.close();
       } catch (e: any) {
         grok.shell.error(`Failed to import configuration: ${e.message}`);

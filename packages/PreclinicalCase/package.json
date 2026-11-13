@@ -9,6 +9,7 @@
   "description": "PreclinicalCase package",
   "dependencies": {
     "@datagrok-libraries/utils": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/gridext": "workspace:^",
     "datagrok-api": "workspace:^",
     "rxjs": "catalog:",

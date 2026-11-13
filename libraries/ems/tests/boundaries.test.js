@@ -8,12 +8,8 @@ const SRC = new URL('../src/', import.meta.url);
 
 const U2CORE = 'datagrok-api/u2core';
 
-// deep paths: the u2 dg barrel loads the whole platform layer, and authoring must not
-const DEEP_U2 = {
-  'dg/authoring/manifest-panel.ts': ['@datagrok-libraries/u2/src/dg/forms/object-form.js'],
-  'dg/authoring/binding-dialog.ts': ['@datagrok-libraries/u2/src/dg/inputs/group-input.js'],
-  'dg/authoring/binding-edit-dialog.ts': ['@datagrok-libraries/u2/src/dg/inputs/group-input.js'],
-};
+const U2_ENTRIES = ['@datagrok-libraries/u2', '@datagrok-libraries/u2/dg', '@datagrok-libraries/u2/filter',
+  '@datagrok-libraries/u2/dg/filter'];
 
 function sources(dir = SRC, prefix = '') {
   const out = [];
@@ -59,23 +55,11 @@ test('src/dg is the only layer that imports the platform API', () => {
   }
 });
 
-test('u2 is consumed through its entry points, bar the recorded deep paths', () => {
+test('u2 is consumed through its entry points', () => {
   for (const file of FILES) {
     for (const s of specifiers(file.text)) {
-      if (!s.startsWith('@datagrok-libraries/u2/src/'))
-        continue;
-      const allowed = s === '@datagrok-libraries/u2/src/dg/index.js' ||
-        (DEEP_U2[file.path] ?? []).includes(s);
-      assert.ok(allowed, `${file.path} imports ${s}; add it to DEEP_U2 with the reason, or use an entry point`);
+      if (s.startsWith('@datagrok-libraries/u2'))
+        assert.ok(U2_ENTRIES.includes(s), `${file.path} imports ${s}; use an entry point`);
     }
-  }
-});
-
-test('every recorded deep path is still used — the list does not rot', () => {
-  for (const [file, specs] of Object.entries(DEEP_U2)) {
-    const found = FILES.find((f) => f.path === file);
-    assert.ok(found, `DEEP_U2 names ${file}, which is gone`);
-    for (const s of specs)
-      assert.ok(specifiers(found.text).includes(s), `${file} no longer imports ${s}`);
   }
 });

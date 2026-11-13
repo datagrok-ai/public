@@ -769,8 +769,7 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
     if (options.testContext!.catchUnhandled && (!DG.Test.isInBenchmark)) {
       let error: string | undefined;
       try {
-        if (!options.nodeOnly)
-          await uiSettled('the last test');
+        await uiSettled('the last test');
         error = await grok.shell.lastError;
       }
       catch (e: any) {
@@ -954,11 +953,17 @@ export async function settled(viewer: _DG.Viewer, timeout: number = 10000): Prom
 }
 
 /** Resolves once nothing is on its way to the screen, on two checks in a row: no viewer shown in a table view is
- * rendering, and no loader (`ui.wait`, `ui.setUpdateIndicator`) or busy region (`aria-busy`) is shown; rejects
- * after [timeout] ms, naming [what] was still loading. */
+ * rendering, and the current view and open dialogs show no loader (`ui.wait`, `ui.setUpdateIndicator`) or busy region
+ * (`aria-busy`); rejects after [timeout] ms, naming [what] was still loading. The rest of the shell is not looked at:
+ * a test runner's tree and the context panel show loaders of their own while tests run. Resolves at once under
+ * Node.js, which has no UI. */
 export async function uiSettled(what: string, timeout: number = 20000): Promise<void> {
-  const busy = () => Array.from(document.querySelectorAll<HTMLElement>(
-    '.grok-wait .grok-loader, .d4-update-shadow, [aria-busy="true"]')).some((e) => e.offsetParent !== null) ||
+  if (typeof process !== 'undefined')
+    return;
+  const loading = '.grok-wait .grok-loader, .d4-update-shadow, [aria-busy="true"]';
+  const busy = () => [grok.shell.v?.root, ...document.querySelectorAll('.d4-dialog')]
+    .some((root) => root != null && Array.from(root.querySelectorAll<HTMLElement>(loading))
+      .some((e) => e.offsetParent !== null)) ||
     Array.from(grok.shell.tableViews).some((tv) => Array.from(tv.viewers)
       .some((v) => v.root.offsetParent !== null && renderPending(v)));
   let held = 0;

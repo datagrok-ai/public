@@ -17,13 +17,19 @@ Feature: Running a query with parameters
   stands, and several are substructure searches the database computes; the parameter dialog and the
   Source pane they would exercise are the ones claimed here on NorthwindTest.
 
+  Toolbox > Run query... on a parameterized query typed in the editor and never saved (on
+  System:Datagrok, named with the run's time) asks for its parameters and runs with them (core#641); it
+  runs on a stand that does not reach PostgresTest, which only the two NorthwindTest scenarios need.
+  The dialog's checks (min and max, a validator, a nullable left empty) are ApiTests `Widgets: InputForm
+  validation and events` and `Widgets: InputForm skipLogic`.
+
   Background:
     Given user is logged in
-    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
 
   Scenario: The Orders query asks for its eight typed parameters
-    Given Databases tree node inside browse tree is expanded
+    Given the stand has a reachable "PostgresTest" connection
+    And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
     When user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---Orders tree node inside browse tree
@@ -43,7 +49,8 @@ Feature: Running a query with parameters
     And no error or warning balloon should have been shown
 
   Scenario: A string choice runs the query, and REFRESH runs it again with another
-    Given Databases tree node inside browse tree is expanded
+    Given the stand has a reachable "PostgresTest" connection
+    And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
     When user picks "Run" from the context menu of Databases---Postgres---NorthwindTest---PostgresByStringChoices tree node inside browse tree
@@ -58,3 +65,21 @@ Feature: Running a query with parameters
     Then the table should have 122 rows
     And no errors should have been logged
     And no error or warning balloon should have been shown
+
+  @realizes:core#641
+  Scenario: Run query... on an unsaved parameterized query asks for its parameters
+    Given no query named "BDDQUnsaved{time}" is on the server
+    And Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    When user picks "New Query..." from the context menu of Databases---Postgres---Datagrok tree node inside browse tree
+    Then the current view should be a DataQueryView view
+    When user enters "BDDQUnsaved{time}" into Name input
+    And user replaces the code of code editor with '--input: string typeName = "Project"'
+    And user appends "select name from entity_types where name = @typeName" to code editor
+    Given the toolbox pane is shown
+    When user clicks on "Run query..." action in toolbox
+    Then "BDDQUnsaved{time}" dialog should be visible
+    When user clicks on OK button in "BDDQUnsaved{time}" dialog
+    Then the current view should be a TableView view
+    And the table should have 1 row
+    And no errors should have been logged

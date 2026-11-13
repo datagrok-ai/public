@@ -164,7 +164,10 @@ function iframe(src: string, caption?: string): DG.Widget {
 export async function pubChemSearch(s: string): Promise<DG.Widget | null> {
   return s !== 'aspirin' ?
     null :
-    iframe( 'https://pubchem.ncbi.nlm.nih.gov/compound/aspirin#section=3D-Conformer&embed=true', 'PubChem');
+    DG.Widget.fromRoot(ui.divH([
+      ui.link('PubChem: aspirin', 'https://pubchem.ncbi.nlm.nih.gov/compound/aspirin'),
+      ui.image('https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/aspirin/PNG', 200, 150),
+    ]));
 }
 
 export async function pdbSearch(s: string): Promise<DG.Widget | null> {

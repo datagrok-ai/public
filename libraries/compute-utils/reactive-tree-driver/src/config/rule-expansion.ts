@@ -45,9 +45,6 @@ export function isCheckLink(
 export function annotationRules(
   nqName: string, io: FuncCallIODescription[], logger?: DriverLogger,
 ): PipelineRuleConfiguration<LinkSpecString>[] {
-  // without the platform evaluation (before 1.28) the rules would only ever be off
-  if (typeof (DG.FuncCall.prototype as any).evalParamChoices !== 'function')
-    return [];
   const inputs = io.filter((item) => item.direction === 'input');
   // aliases next to the io names the template queries produce
   const free = (name: string): string => inputs.some((other) => other.id === name) ? free(`${name}_`) : name;

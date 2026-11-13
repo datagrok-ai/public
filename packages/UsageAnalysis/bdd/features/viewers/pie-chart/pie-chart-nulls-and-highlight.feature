@@ -1,7 +1,7 @@
 @journey @viewers @realizes:viewers.pie-chart
 Feature: Pie chart missing values and the mouse-over row group
   A category column with gaps gets a wedge of its own, named "(no value)": it is clickable like any
-  other, Include Nulls takes it away and puts it back, and the legend counts the empty category
+  other, Include Nulls takes it away and puts it back — under Row Source All too (core#982) — and the legend counts the empty category
   with the rest. And the mouse-over row group, which paints its share of the wedge it belongs to
   only while Show Mouse Over Row Group is on. One journey on demog-1000 with a calculated
   RACE_GAPS — RACE with the rows whose AGE is a multiple of ten blanked, so 112 blanks and
@@ -40,7 +40,8 @@ Feature: Pie chart missing values and the mouse-over row group
     Then no rows should be selected
     And no errors should have been logged
 
-  Scenario: Include Nulls off drops the wedge and the legend item with it
+  @realizes:core#982
+  Scenario: Include Nulls off drops the wedge and the legend item with it, under Row Source All too (core#982)
     Then pie chart viewer should have a "slice (no value)" area
     And the legend of pie chart viewer should list 5 items
     When user sets "Include Nulls" property of pie chart viewer to "false"
@@ -50,7 +51,12 @@ Feature: Pie chart missing values and the mouse-over row group
     And the "angle value of Caucasian" reading of pie chart viewer should be 793
     And the "share of Caucasian" reading of pie chart viewer should be between 89.3 and 89.31
     And pie chart viewer should have repainted by at least 500 pixels
-    And no errors should have been logged
+    When user sets "Row Source" property of pie chart viewer to "All"
+    Then pie chart viewer should not have a "slice (no value)" area
+    And the "slices" reading of pie chart viewer should be 4
+    And the "angle value of Caucasian" reading of pie chart viewer should be 793
+    When user sets "Row Source" property of pie chart viewer to "Filtered"
+    Then no errors should have been logged
 
   Scenario: Include Nulls on brings both back
     When user sets "Include Nulls" property of pie chart viewer to "true"

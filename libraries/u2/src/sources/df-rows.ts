@@ -5,7 +5,8 @@
    the platform grid keeps it until the save — a list shows it struck through with Restore. */
 import {signal, Signal} from '../core/signals.js';
 import type {ReadonlySignal} from '../core/signals.js';
-import type {Scope} from '../core/scope.js';
+import {Ownership} from '../core/owner.js';
+import type {Owner} from '../core/owner.js';
 import type {DataFrameLike} from './df-bindings.js';
 import {Rows} from './rows-like.js';
 import type {RowsLike, RowView} from './rows-like.js';
@@ -23,6 +24,8 @@ export interface FrameRowsOptions {
   /** Takes every write made through a row instead of `df.set` — how a source hands its edits to
    * the state that tracks them. */
   onWrite?: (id: string, column: string, value: unknown) => void;
+  /** Holds the frame's subscriptions: whoever is building by default. */
+  owner?: Owner;
 }
 
 export class FrameRows implements RowsLike<RowView> {
@@ -35,8 +38,8 @@ export class FrameRows implements RowsLike<RowView> {
   private readonly _idColumn: string;
   private readonly _onWrite: FrameRowsOptions['onWrite'];
 
-  constructor(private readonly _df: ReadonlySignal<DataFrameLike | undefined>, scope: Scope,
-    options: FrameRowsOptions = {}) {
+  constructor(private readonly _df: ReadonlySignal<DataFrameLike | undefined>, options: FrameRowsOptions = {}) {
+    const scope = Ownership.scopeOf(options.owner, 'FrameRows');
     this._idColumn = options.idColumn ?? 'id';
     this._onWrite = options.onWrite;
     this._items = signal<readonly RowView[]>([]);
@@ -188,8 +191,7 @@ export class FrameRows implements RowsLike<RowView> {
   }
 }
 
-/** Key-addressed live rows over a (possibly repointing) frame signal; subscriptions live on `scope`. */
-export function frameRows(df: ReadonlySignal<DataFrameLike | undefined>, scope: Scope,
-  options?: FrameRowsOptions): FrameRows {
-  return new FrameRows(df, scope, options);
+/** Key-addressed live rows over a (possibly repointing) frame signal; subscriptions live on `options.owner`. */
+export function frameRows(df: ReadonlySignal<DataFrameLike | undefined>, options?: FrameRowsOptions): FrameRows {
+  return new FrameRows(df, options);
 }

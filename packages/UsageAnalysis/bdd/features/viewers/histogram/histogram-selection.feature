@@ -6,6 +6,8 @@ Feature: Histogram bin selection, row markers and mouse-over
   are dots on the baseline, the second one driven from another viewer, and hovering a bin shows the
   bin's tooltip and dims every other bin behind the rows of the group. One journey on demog-1000
   with a histogram of AGE; bin 8 is [42.85, 46.4] — AGE 43 to 46, 99 rows.
+  Closed issue: under the viewer's own Filter a bin click selects only the rows the bar counts
+  (core#998).
 
   Background:
     Given user is logged in
@@ -124,4 +126,16 @@ Feature: Histogram bin selection, row markers and mouse-over
     And user sets "Show Mouse Over Row Group" property of histogram viewer to "true"
     And user clicks on close icon of bar chart viewer
     Then bar chart viewer should be absent
+    And no errors should have been logged
+
+  @realizes:core#998
+  Scenario: Under the viewer's own Filter a bin click selects only the rows the bar counts (core#998)
+    When user sets "Filter" property of histogram viewer to "${SEX} == \"F\""
+    Then histogram viewer should show 553 rows
+    When user clicks on the "bin 8" area of histogram viewer
+    Then 53 rows should be selected
+    And no rows where "SEX" is "M" should be selected
+    When user clears the row selection
+    And user sets "Filter" property of histogram viewer to ""
+    Then histogram viewer should show 1000 rows
     And no errors should have been logged

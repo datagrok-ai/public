@@ -7,7 +7,7 @@
 import type {
   HelmType, PolymerType, MonomerType,
   HelmAtomLike, HelmBondLike, HelmMolLike, HelmAtomBioLike,
-  AppLike, JSDraw2EditorLike, MonomerExplorerLike, MonomersFuncsLike,
+  AppLike, JSDraw2EditorLike, MonomersFuncsLike,
   IWebEditorMonomerLike,
 } from '@datagrok-libraries/hwe';
 import type {MonomerNumberingTypes} from './consts';
@@ -26,22 +26,18 @@ export interface Point {
 // (`buildHelmMolView`, `LegacyEditorWrapper`, `LegacyAppWrapper`). Phantom
 // generic parameters preserve the legacy call sites (e.g.
 // `Mol<HelmType, IHelmBio>`, `Editor<HelmType, IHelmBio, IHelmEditorOptions>`).
-export type IBio<_TBio = unknown> = HelmAtomBioLike;
 export type IHelmBio = HelmAtomBioLike;
 export type Atom<_T = unknown, _TBio = unknown> = HelmAtomLike;
 export type Bond<_T = unknown, _TBio = unknown> = HelmBondLike;
 export type Mol<_T = unknown, _TBio = unknown> = HelmMolLike;
 export type Editor<_T = unknown, _TBio = unknown, _O = unknown> = JSDraw2EditorLike;
-export type IJsAtom = HelmAtomLike;
 
 export type HelmAtom = HelmAtomLike;
-export type HelmBond = HelmBondLike;
 export type HelmMol = HelmMolLike;
 export type HelmEditor = JSDraw2EditorLike;
 export type HelmString = string;
 
 export type App = AppLike;
-export type MonomerExplorer = MonomerExplorerLike;
 export type MonomersFuncs = MonomersFuncsLike;
 
 // ---- Datagrok-flavored monomer interfaces (Pistoia HELMmonomer-shaped) ------

@@ -1,11 +1,11 @@
 /* Source: https://github.com/jupyterlab/jupyterlab/blob/master/packages/ui-components/style/base.css */
 
 /* Sibling imports */
-@import '../node_modules/@jupyterlab/ui-components/style/deprecated.css';
-@import '../node_modules/@jupyterlab/ui-components/style/deprecatedExtra.css';
-@import '../node_modules/@jupyterlab/ui-components/style/icons.css';
-@import '../node_modules/@jupyterlab/ui-components/style/iconsalt.css';
-@import '../node_modules/@jupyterlab/ui-components/style/iconshover.css';
+@import '~@jupyterlab/ui-components/style/deprecated.css';
+@import '~@jupyterlab/ui-components/style/deprecatedExtra.css';
+@import '~@jupyterlab/ui-components/style/icons.css';
+@import '~@jupyterlab/ui-components/style/iconsalt.css';
+@import '~@jupyterlab/ui-components/style/iconshover.css';
 
 /* Override Blueprint's _reset.scss styles */
 .grok-notebook-view html {

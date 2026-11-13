@@ -111,6 +111,9 @@ export interface IControlState {
   label?: string;
   /** No `aria-disabled="true"` / `disabled` on the root. */
   enabled: boolean;
+  /** Why it is disabled — the root's `aria-description` while it is; absent when enabled or disabled without a
+   * reason. */
+  disabledReason?: string;
   /** Connected, not under a `hidden` element, and laid out. */
   visible: boolean;
   /** `document.activeElement` is the root or inside it (or inside a popup this control owns). */

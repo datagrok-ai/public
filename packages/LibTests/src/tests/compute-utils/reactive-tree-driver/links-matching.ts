@@ -1184,15 +1184,15 @@ category('ComputeUtils: Driver links matching', async () => {
                   id: 'step1',
                   nqName: 'LibTests:TestMul2',
                   tags: ['taggedStep'],
-                }
-              ]
+                },
+              ],
             },
             {
               id: 'step2',
               nqName: 'LibTests:TestMul2',
               tags: ['taggedStep'],
             },
-          ]
+          ],
         },
         {
           id: 'pipeline4',
@@ -1213,15 +1213,15 @@ category('ComputeUtils: Driver links matching', async () => {
                   id: 'step1',
                   nqName: 'LibTests:TestMul2',
                   tags: ['taggedStep'],
-                }
-              ]
+                },
+              ],
             },
             {
               id: 'step2',
               nqName: 'LibTests:TestMul2',
               tags: ['taggedStep'],
             },
-          ]
+          ],
         },
         {
           id: 'step3',
@@ -1236,15 +1236,15 @@ category('ComputeUtils: Driver links matching', async () => {
         from: 'in1:#same(@base,taggedStep)/res',
         to: 'out1:#after(@base,taggedStep)/a',
         type: 'meta',
-        handler() {}
+        handler() {},
       }, {
         id: 'link2',
         base: 'base:#expand(taggedPipeline)/expand(pipeline3|pipeline5)/#expand(taggedStep)',
         from: 'in1:#same(@base,taggedStep)/res',
         to: 'out1:#after(@base,taggedStep)/a',
         type: 'meta',
-        handler() {}
-      }]
+        handler() {},
+      }],
     };
     const pconf = await getProcessedConfig(config);
     const tree = StateTree.fromPipelineConfig({config: pconf});
@@ -1591,7 +1591,8 @@ category('ComputeUtils: Driver link path shorthands', async () => {
 
   test('Context-level constraint: self-ref forms still rejected where bare in is rejected', async () => {
     // In ioType='input'/'output' contexts, a path that ends with a non-`first` selector throws.
-    // Bare self-ref skips that check today. The new alias forms must skip it identically (not bypass any *added* checks).
+    // Bare self-ref skips that check today. The new alias forms must skip it identically
+    // (not bypass any *added* checks).
     // We verify equivalence at parse time across all relevant ioTypes — if a downstream check rejects bare 'in',
     // identical AST guarantees the new forms are rejected the same way.
     const baseForms = ['in', 'in:', 'in:.', 'in:./'];
@@ -1618,7 +1619,8 @@ category('ComputeUtils: Driver link path shorthands', async () => {
 
   test('same(@base, x|y) still parses with ids', async () => {
     const [parsed] = parseLinkIO('in1:same(@base,x|y)/step1/res', 'input');
-    expectDeepEqual(parsed.segments[0], {type: 'selector', selector: 'same', ids: ['x', 'y'], stopIds: [], ref: 'base'});
+    expectDeepEqual(parsed.segments[0],
+      {type: 'selector', selector: 'same', ids: ['x', 'y'], stopIds: [], ref: 'base'});
   });
 
   test('Reject before(@base) without ids', async () => {

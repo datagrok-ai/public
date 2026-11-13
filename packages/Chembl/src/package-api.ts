@@ -205,18 +205,18 @@ export namespace queries {
   }
 
   /**
-   * Searches compound structures by FRAC (Fungicide Resistance Action Committee) classification hierarchy levels.
+   * Searches compound structures by the four levels of the WHO ATC (Anatomical Therapeutic Chemical) classification, each level's choices depending on the level above.
    * @param {string} level1
-   *   choices: Query("SELECT DISTINCT level1_description FROM frac_classification")
+   *   choices: Query("SELECT DISTINCT level1_description FROM atc_classification ORDER BY 1")
    * @param {string} level2
-   *   choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")
+   *   choices: Query("SELECT DISTINCT level2_description FROM atc_classification WHERE level1_description = @level1 ORDER BY 1")
    * @param {string} level3
-   *   choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")
+   *   choices: Query("SELECT DISTINCT level3_description FROM atc_classification WHERE level2_description = @level2 ORDER BY 1")
    * @param {string} level4
-   *   choices: Query("SELECT DISTINCT level4_description FROM frac_classification where level3_description = @level3")
+   *   choices: Query("SELECT DISTINCT level4_description FROM atc_classification WHERE level3_description = @level3 ORDER BY 1")
    */
-  export async function fracClassification(level1: string , level2: string | null, level3: string | null, level4: string | null): Promise<DG.DataFrame> {
-    return await grok.data.query('ChEMBL:FracClassification', { level1, level2, level3, level4 });
+  export async function atcClassification(level1: string , level2: string | null, level3: string | null, level4: string | null): Promise<DG.DataFrame> {
+    return await grok.data.query('ChEMBL:AtcClassification', { level1, level2, level3, level4 });
   }
 
   /**
@@ -262,20 +262,20 @@ export namespace queries {
   }
 
   /**
-   * Combines FRAC classification hierarchy search with molecular substructure matching.
+   * Combines the four-level WHO ATC classification search with molecular substructure matching.
    * @param {string} level1
-   *   choices: Query("SELECT DISTINCT level1_description FROM frac_classification")
+   *   choices: Query("SELECT DISTINCT level1_description FROM atc_classification ORDER BY 1")
    * @param {string} level2
-   *   choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")
+   *   choices: Query("SELECT DISTINCT level2_description FROM atc_classification WHERE level1_description = @level1 ORDER BY 1")
    * @param {string} level3
-   *   choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")
+   *   choices: Query("SELECT DISTINCT level3_description FROM atc_classification WHERE level2_description = @level2 ORDER BY 1")
    * @param {string} level4
-   *   choices: Query("SELECT DISTINCT level4_description FROM frac_classification where level3_description = @level3")
+   *   choices: Query("SELECT DISTINCT level4_description FROM atc_classification WHERE level3_description = @level3 ORDER BY 1")
    * @param {string} substructure
    *   semType: Substructure
    */
-  export async function fracClassificationWithSubstructure(level1: string , level2: string | null, level3: string | null, level4: string | null, substructure: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('ChEMBL:FracClassificationWithSubstructure', { level1, level2, level3, level4, substructure });
+  export async function atcClassificationWithSubstructure(level1: string , level2: string | null, level3: string | null, level4: string | null, substructure: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('ChEMBL:AtcClassificationWithSubstructure', { level1, level2, level3, level4, substructure });
   }
 
   /**

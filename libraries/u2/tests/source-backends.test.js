@@ -6,13 +6,16 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
+import {flush} from './dom-shim.js';
 import {Property} from './platform-doubles.mjs';
 
 register('./dg-stub.mjs', import.meta.url);
 
 const DG = await import('datagrok-api/dg');
+const grok = await import('datagrok-api/grok');
 await import('../src/dg/shell/source-backends.js');
 const {backends} = await import('../src/sources/backends.js');
+const {Format} = await import('../src/core/format.js');
 
 /** A query that reports the cap it was actually executed under, after an await. */
 function query(Kind, rows = 830) {
@@ -73,4 +76,48 @@ test('find reports the kind the design-time policy defaults on', () => {
   query(DG.Func);
   assert.equal(backends.funcRunner.find('Orders').kind, 'function');
   assert.equal(backends.funcRunner.find('Nope'), null);
+});
+
+test('principalIcon: an empty avatar at once, the group\'s picture once found; by id or by name, once each', async () => {
+  const ANN = 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6';
+  const groups = {
+    'friendlyName = "Chemists"': {personal: false, friendlyName: 'Chemists'},
+    [`id = "${ANN}"`]: {personal: true, friendlyName: 'Ann Lee', user: {login: 'ann', friendlyName: 'Ann Lee'}},
+  };
+  const asked = [];
+  const filter = grok.dapi.groups.filter;
+  grok.dapi.groups.filter = (query) => {
+    asked.push(query);
+    return {first: async () => groups[query] ?? null};
+  };
+  try {
+    const host = document.createElement('div');
+    host.append(backends.principalIcon('Chemists'), backends.principalIcon(ANN), backends.principalIcon('Nobody'),
+      backends.principalIcon('Chemists'));
+    assert.deepEqual([...host.children].map((c) => c.className), ['u2-avatar', 'u2-avatar', 'u2-avatar', 'u2-avatar'],
+      'the names stay in line while the groups are asked');
+    await flush();
+    assert.deepEqual([...host.children].map((c) => c.className), ['u2-avatar u2-avatar-group', 'u2-avatar u2-avatar-3',
+      'u2-avatar', 'u2-avatar u2-avatar-group'], 'a group\'s icon, a user\'s initials; nothing found, nothing drawn');
+    assert.equal(host.children[1].textContent, 'AL');
+    assert.deepEqual(asked, ['friendlyName = "Chemists"', `id = "${ANN}"`, 'friendlyName = "Nobody"'],
+      'an id by id, a name by name, each once');
+    assert.equal(backends.principalIcon('Say "hi"'), null, 'a name the filter cannot quote is asked nothing');
+    assert.equal(asked.length, 3);
+  }
+  finally {
+    grok.dapi.groups.filter = filter;
+  }
+});
+
+test('format: dates read in the user\'s date format (Settings), else the platform default', () => {
+  const settings = grok.shell.settings;
+  assert.equal(Format.value(new Date(2026, 5, 29)), '6/29/2026', 'no date format chosen: the platform default');
+  grok.shell.settings = {dateFormat: 'dd.MM.yyyy'};
+  try {
+    assert.equal(Format.value(new Date(2026, 5, 29)), '29.06.2026');
+  }
+  finally {
+    grok.shell.settings = settings;
+  }
 });

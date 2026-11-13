@@ -72,24 +72,18 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
               this.props = new BioFilterProps(webEditorValue, undefined, _package.logger);
             } catch (err: any) {
               this.logger.error(err);
-            } finally {
-              $(webEditorHost).empty();
-              webEditorHost = null;
-              webEditorApp = null;
             }
           })
-          .onCancel(() => {
-            $(webEditorHost).empty();
-            webEditorHost = null;
-            webEditorApp = null;
-          })
           .show({modal: true, fullScreen: true});
-        // const onCloseSub = dlg.onClose.subscribe(() => {
-        //   onCloseSub.unsubscribe();
-        //   $(editorDiv).empty();
-        //   editorDiv = undefined;
-        //   webEditor = undefined;
-        // });
+        // OK, Cancel and Escape close the dialog, after its OK handler: the editor goes with it (its document
+        // listeners, and the monomer that follows the mouse, which stayed on the page after Escape)
+        const onCloseSub = dlg.onClose.subscribe(() => {
+          onCloseSub.unsubscribe();
+          webEditorApp?.destroy();
+          $(webEditorHost).empty();
+          webEditorHost = null;
+          webEditorApp = null;
+        });
       }));
       this.viewSubs.push(ui.onSizeChanged(this._filterPanel).subscribe((_: any) => {
         try {

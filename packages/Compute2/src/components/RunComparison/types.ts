@@ -75,6 +75,8 @@ export interface EntrySnapshot {
   metadata: ItemMetadata;
   // resolves the saved run; absent when the snapshot can't be saved
   save?: (metadata: ItemMetadata) => Promise<DG.FuncCall>;
+  // the model the run is saved under
+  model?: DG.Func;
 }
 
 export interface ScalarBinding {

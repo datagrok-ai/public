@@ -1,0 +1,546 @@
+/* NCA Hub — app view styling (mirrors DiffStudio's diff-studio-hub-* classes
+ * with nca- prefix). Loaded by nca-app-view.ts via the //@ts-ignore CSS import
+ * shim; the bundler's default style-loader + css-loader rule picks it up.
+ *
+ * @see packages/DiffStudio/css/app-styles.css
+ */
+
+.nca-hub-header {
+  margin-bottom: 24px;
+}
+
+.nca-hub-section {
+  margin-bottom: 24px;
+}
+
+/* "New analysis" section = ONE ui.form holding the title, the Table input and
+ * the Run row (no Analysis name input since hub-ungrouped-polish, 2026-10-06).
+ * - A fixed 400px (user-directed 2026-10-06), NOT max-content: a shrink-wrapped
+ *   form trips DG's form-resize script (js-api `handleFormResize`: clientWidth −
+ *   label < the table input's 200px minimum) into the tall `ui-form-condensed`
+ *   layout, label above a clipped select.
+ * - `flex-grow: 0`: DG gives `.ui-form` flex-grow 1, and the Hub root is a flex
+ *   column — the form must not swallow the height and push Studies down. */
+.nca-hub-new-analysis {
+  width: 400px;
+  flex-grow: 0;
+}
+
+/* The Table select fills the row, so the input (dropdown + icons + underline)
+ * ends at the form's right edge. DG's form-resize script (js-api
+ * `getInputsMinWidths`) writes an INLINE width + max-width on a choice select
+ * (widest option + 30px), which caps flex-grow; `!important` lifts the cap — the
+ * same way DG's own ui.css frees inputs embedded in a `.d4-table`.
+ * `min-width: 0` lets a very long table name shrink instead of overflowing. */
+.nca-hub-new-analysis .ui-input-root > select.ui-input-editor {
+  flex-grow: 1;
+  max-width: none !important;
+  min-width: 0;
+}
+
+/* Run row: Run (a raised `bigButton`) sits at the form's right edge (= the
+ * input's right edge). `justify-content: flex-end` states it here; DG's own
+ * `.ui-form .ui-btn {margin-left: auto}` does the same, so the layout does not
+ * hang on that platform rule alone. The right margin is zeroed so the visible
+ * button box ends exactly on the edge. */
+.nca-hub-run-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 8px;
+}
+
+/* "Open demo dataset" opens the Run row, under the Table select (its left margin is measured in
+ * nca-app-view.ts); `margin-right: auto` keeps Run on the right edge. */
+.nca-hub-run-row > a {
+  margin-right: auto;
+}
+
+.nca-hub-run-row > button.ui-btn {
+  margin-right: 0;
+}
+
+.nca-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.nca-hub-card {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.nca-hub-card * {
+  cursor: inherit;
+}
+
+.nca-hub-card:hover {
+  background-color: var(--grey-1);
+}
+
+.nca-hub-card-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.nca-hub-card-header {
+  align-items: center;
+  gap: 8px;
+}
+
+.nca-hub-tooltip-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.nca-hub-tooltip-name {
+  color: var(--blue-1);
+  font-weight: bold;
+}
+
+.nca-hub-tooltip-header {
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.nca-hub-tooltip-desc {
+  color: var(--grey-5);
+  font-size: 12px;
+  max-width: 280px;
+}
+
+/* Mapping pane (docked left in table view) */
+
+/* A fixed-height column: the mapping form scrolls in `.nca-mapping-pane-scroll`, and the action
+ * form (Discard + Confirm/Apply) stays pinned below it (user-directed 2026-10-13). */
+.nca-mapping-pane {
+  padding: 12px;
+  overflow: hidden;
+  height: 100%;
+}
+
+.nca-mapping-pane-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* DG gives every `.ui-form` flex-grow 1 — the action form must keep its own height. */
+.nca-mapping-pane > .nca-mapping-actions {
+  flex: 0 0 auto;
+  padding-top: 8px;
+}
+
+/* Section headers inside the single ui.form of the mapping pane. `ui.form` is
+ * a CSS grid (label column + editor column); `grid-column: 1 / -1` makes the
+ * `ui.h2` span the full row so it visually anchors the inputs that follow.
+ * Pattern: DiffStudio app.ts:1750-1769 getInputsForm + css/app-styles.css. */
+.nca-mapping-pane form h2 {
+  grid-column: 1 / -1;
+  margin-top: 12px;
+  margin-bottom: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--grey-5);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.nca-mapping-pane form h2:first-child {
+  margin-top: 0;
+}
+
+/* Inline unit rows (mapping-pane-inline-units, 2026-07-28). One form row that
+ * carries a value control plus the unit picker that scales it, built by
+ * `unitRow()` in nca-mapping-pane.ts. The row itself needs no `display: flex` —
+ * `ui.divH` supplies that via the `d4-flex-row` class and sets no inline style,
+ * which is what lets `setControlVisible`/`updateWgts` hide and restore the row
+ * without collapsing it (measured on the live platform, probe 2026-07-28). */
+.nca-unit-row {
+  align-items: center;
+  gap: 6px;
+}
+
+/* The value control absorbs the row's free space. `min-width: 0` is load-bearing:
+ * flex items default to `min-width: auto` and refuse to shrink below their content,
+ * which is exactly what overflows the pane at its narrow end (default width 0.18 ≈
+ * 346px on 1920, 246px on 1366 — see the mount comment in nca-mapping-pane.ts). */
+.nca-unit-row > .ui-input-root:not(.nca-unit-picker) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The unit picker never grows and is sized to its content, not to DG's 200px
+ * default editor width (measured) — it shows a unit token, never a column name.
+ * Widest tokens in the four lists are `µmol/L` / `nmol/L` at 6 characters. */
+.nca-unit-row > .nca-unit-picker {
+  flex: 0 0 auto;
+}
+
+.nca-unit-row > .nca-unit-picker .ui-input-editor {
+  width: 76px;
+  min-width: 76px;
+}
+
+/* Sub-section header (h3) — lighter weight than h2; used inside the
+ * `Settings` section to label AUC / BLQ / λz / Extrapolation groups. */
+.nca-mapping-pane form h3 {
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  margin-bottom: 4px;
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--grey-4);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Section-header chevrons (collapsible groups) — all styling is applied
+ * as inline styles in `appendCollapsibleSection` to bypass the FA
+ * cascade. See nca-mapping-pane.ts:appendCollapsibleSection for the
+ * fixed-width anti-jump trick. */
+
+.nca-mapping-pane-error-panel {
+  margin-top: 8px;
+}
+
+.nca-mapping-pane-error-panel-title {
+  font-weight: 600;
+  color: var(--red-3);
+  margin-bottom: 4px;
+}
+
+.nca-mapping-pane-error-item {
+  font-size: 12px;
+  color: var(--red-3);
+}
+
+/* Sparse-design guidance hint (UC-04). Conservative default: muted neutral text, small. Shown only when the Sparse
+ * toggle is on but no nominal-time column is mapped. */
+.nca-mapping-pane-sparse-hint {
+  font-size: 12px;
+  color: var(--grey-5);
+  margin: 4px 0 2px 0;
+}
+
+/* Structured ("rich") input tooltips — built by `richTip()` in
+ * nca-mapping-pane.ts and bound via `ui.tooltip.bind`. Used for the long,
+ * multi-clause parameter explanations where a flat `tooltipText` string buries
+ * the formula / default / standard reference. Width + muted-text conventions
+ * mirror `.nca-hub-tooltip-desc`. */
+.nca-richtip {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 300px;
+}
+
+.nca-richtip h3 {
+  margin: 0 0 2px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--grey-6);
+}
+
+.nca-richtip-summary {
+  font-size: 12px;
+  color: var(--grey-6);
+}
+
+/* Monospace formula line, boxed to read as code (e.g. `score = adj-R² + factor · n`). */
+.nca-richtip-formula {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  color: var(--grey-6);
+  background-color: var(--grey-1);
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin: 2px 0;
+}
+
+.nca-richtip-detail {
+  font-size: 12px;
+  color: var(--grey-5);
+}
+
+/* Standard / convention reference (e.g. CDISC / ICH) — muted italic. */
+.nca-richtip-note {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--grey-5);
+}
+
+/* Default-value footer — smallest, most muted. */
+.nca-richtip-default {
+  font-size: 11px;
+  color: var(--grey-4);
+  margin-top: 2px;
+}
+
+/* Y-axis toggle on the analysis-view ribbon is a plain `ui.input.toggle`
+ * with its built-in label — no custom class required; platform owns the
+ * styling. */
+
+/* Compute notices (compute-notices.ts) — persistent dismissible banners
+ * overlaid as a thin top strip over each result panel's grid, replacing the
+ * transient grok.shell balloons. Conservative default: neutral grey, small text, no
+ * per-severity hue (severity is categorical → icon-led).
+ * Mirrors the .nca-mapping-pane-sparse-hint muted-neutral precedent. */
+
+/* Banner-host strip: the inner div of the ABOVE-the-grid pane of the ui.splitV that
+ * attachBannerHost docks in place of the bare viewer root (bug grid-banner-header-
+ * overlap). Holds the banner container(s) in normal flow; the enclosing split pane is
+ * flex:0 0 auto so it hugs this content and collapses to zero height with no notices —
+ * UNLESS a persistent leading control (the results grid's Compact toggle, passed to
+ * attachBannerHost) is present, in which case it hugs that control's height instead of
+ * collapsing. DG's ui-split-v owns the split geometry — do NOT re-style the split here. */
+.nca-notice-host {
+  width: 100%;
+}
+
+/* Persistent leading control on the results grid's banner strip (the Compact toggle).
+ * Sits as the host's first child, ABOVE any banner rows in the same strip; unlike a
+ * banner row it is never torn down by resetNotices, so the results strip no longer
+ * collapses to zero — it permanently reserves this control's height above the grid
+ * Neutral, no severity hue; small
+ * padding so the toggle does not jam the strip edge. */
+.nca-results-control-slot {
+  padding: 2px 8px;
+}
+
+/* Banner container: one per host, holds one row per notice (stacked). A flow strip
+ * above the grid — the grid loses only the strip's height, never scrolls (spec
+ * §Visual Design intent preserved: per-panel, zero global-viewport cost). */
+.nca-notice-banner {
+  gap: 0;
+}
+
+.nca-notice-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--grey-6);
+  background-color: var(--grey-1);
+  border-bottom: 1px solid var(--grey-2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Severity marker — muted neutral icon, NOT a hue (C-05). info-circle / triangle
+ * are the only severity signal beyond the message text. */
+.nca-notice-icon {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  /* Fixed, centered glyph box so the info-circle and exclamation-triangle render
+   * at a consistent footprint / alignment. */
+  width: 14px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--grey-5);
+  /* Expanded banner: the severity icon is non-interactive (its click is a no-op
+   * when the row is already open), so it keeps the normal cursor. The collapsed
+   * rule below switches it to a pointer, where the icon IS the restore control. */
+  cursor: default;
+}
+
+/* The info glyph reads smaller than the warning triangle at the same size; give
+ * it a touch more height and width so it carries equal visual weight. */
+.nca-notice-icon.fa-info-circle {
+  width: 15px;
+  font-size: 13px;
+}
+
+.nca-notice-text {
+  flex: 1 1 auto;
+  white-space: normal;
+}
+
+.nca-notice-close {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  cursor: pointer;
+  color: var(--grey-4);
+}
+
+.nca-notice-close:hover {
+  color: var(--grey-6);
+}
+
+/* Collapsed-badge overlay: an absolute container pinned to the grid's top-left corner,
+ * INSIDE the viewer root, that {@link attachBannerHost} creates (bug grid-banner-header-
+ * overlap). `z-index` lifts it above the grid canvas; `width:fit-content` keeps it to
+ * the badges so it never blocks grid clicks (empty → zero size). Dismissed rows are
+ * reparented here and STACK vertically (flex column), so several notices dismissed on
+ * one panel stay individually visible + clickable — matching the pre-split overlay. */
+.nca-notice-collapsed-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 30;
+  width: fit-content;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+/* Dismissed state: the × collapses the row to its icon alone — the message text and ×
+ * hide, and the row shrinks to a small badge (positioning comes from the overlay
+ * container above, into which the row is reparented). The icon keeps the full message
+ * as a tooltip and restores the row on click, so a notice is tucked away but never lost
+ * (honest uncertainty). The now-empty strip above the grid collapses to zero, so the grid
+ * reclaims the space (no empty reserved band). */
+.nca-notice-collapsed {
+  width: fit-content;
+  align-self: flex-start;
+  /* Banner hidden: the icon stands alone with no grey strip behind it. */
+  background-color: transparent;
+  border-bottom: none;
+  box-shadow: none;
+  padding: 2px 4px;
+}
+
+.nca-notice-collapsed .nca-notice-text,
+.nca-notice-collapsed .nca-notice-close {
+  display: none;
+}
+
+.nca-notice-collapsed .nca-notice-icon {
+  margin-top: 0;
+  cursor: pointer;
+  /* Solid (fas) glyph for the collapsed badge — Datagrok maps the FA Pro weights
+   * on one font family (fal→300 … fas→900), so font-weight is the switch. The
+   * filled-in glyph + severity tint reads clearly at the small badge size. */
+  font-weight: 900;
+}
+
+/* Collapsed badge: tint the glyph itself so the tucked-away notice still reads as
+ * a severity at a glance (info → blue, warning → orange; user-directed). The
+ * expanded row stays hue-free per the icon-not-background decision. */
+.nca-notice-collapsed .nca-notice-icon.fa-info-circle {
+  color: var(--blue-1);
+}
+
+.nca-notice-collapsed .nca-notice-icon.fa-exclamation-triangle {
+  color: var(--orange-2);
+}
+
+/* Facet small-multiples: dashed grey separators between tiles
+ * (facet-plot-title-verdict-separators). One class carries both layouts — the
+ * split `ui.splitH(ui.splitV(...))` grid and the scrolling CSS grid — because both
+ * reuse the same `plot.root` tiles from buildFacetGrid. `--grey-2` matches the
+ * border token already used elsewhere in this sheet; `box-sizing: border-box` keeps
+ * the 1px off the DG viewer's drawing area. */
+.nca-facet-tile {
+  box-sizing: border-box;
+  border-right: 1px dashed var(--grey-2);
+  border-bottom: 1px dashed var(--grey-2);
+}
+/* Trim the grid's OUTER right/bottom edge: a separator divides two tiles, so the
+ * rightmost column and the bottom row carry none (top/left are already clean —
+ * only right/bottom borders are drawn). `tagFacetEdgeTiles` assigns these classes
+ * by row-major position, so partial last rows trim correctly on both layouts. */
+.nca-facet-tile.nca-facet-last-col { border-right: none; }
+.nca-facet-tile.nca-facet-last-row { border-bottom: none; }
+/* Facet tile TITLE (subject) + DESCRIPTION (violated-criteria caption) take the tile's
+ * verdict hue — the same colour as its line/markers — so the label matches its chart
+ * (user-directed 2026-09-02). `--nca-tile-color` is set per tile in `buildFacetGrid`
+ * and refreshed on override in `refreshFacetSubject`. Multiple d4 class candidates are
+ * listed because the viewer's title/description class differs across DG builds; an
+ * unmatched selector is a harmless no-op. */
+.nca-facet-tile .d4-viewer-title,
+.nca-facet-tile .d4-viewer-description,
+.nca-facet-tile .d4-title,
+.nca-facet-tile .d4-description {
+  color: var(--nca-tile-color, inherit);
+}
+
+/* ── Stage strip (nca-workflow-stages F-S3.1 / D16; approved design 2026-09-26) ──────────
+   One row above the dock content: the stage chain, then the next-action hint beside it
+   (user-directed 2026-09-30), baseline-aligned. Neutral by design —
+   the current stage is bold (no severity colour); the ONLY colour is the amber remaining-count
+   set inline from status-palette. Links use the hub blue; unreachable stages are muted. */
+.nca-stage-strip {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  /* Neutral warm-grey band, the platform's --warm-grey-1 (user-directed 2026-09-30): the row reads
+     as navigation chrome, like the dock tab bar — no hue — edged by thin top + bottom borders. */
+  background: var(--warm-grey-1, #F7F6F4);
+  border-top: 1px solid var(--grey-2, #D7DAE0);
+  border-bottom: 1px solid var(--grey-2, #D7DAE0);
+  font-size: 13px;
+  line-height: 18px;
+  align-items: baseline;
+  gap: 24px;
+}
+/* The chain is a `ui.h1` (h1 font size, user-directed 2026-09-30): made a flex row, with the
+   heading's own margin and bold reset so only the CURRENT stage is bold.
+   The line height is a FIXED ratio, never `normal`: the ✓ / ● marks come from a fallback font, and
+   under `normal` the browser sizes the line to that font's taller metrics. The marks change at the
+   first Confirm (● Setup → ✓ Setup, ● Review λz), so the strip grew and the whole dock area below
+   jumped. A fixed ratio sizes every line from the primary font alone, whichever marks are shown. */
+.nca-stage-chain {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0;
+  font-weight: normal;
+  line-height: 1.2;
+}
+/* Stage separator — a CSS chevron, larger and centred on the text line (user-directed 2026-09-29).
+   The chain is `align-items: center`, so the rotated square sits on the text midline. */
+.nca-stage-sep {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin: 0 3px 0 1px;
+  border-right: 1.5px solid var(--grey-4, #9497A0);
+  border-bottom: 1.5px solid var(--grey-4, #9497A0);
+  transform: rotate(-45deg);
+}
+.nca-stage-item {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 2px 3px 2px;
+}
+/* Current stage: bold only — no underline (user-directed 2026-09-29), no severity fill. */
+.nca-stage-current { font-weight: 600; }
+.nca-stage-link { color: var(--blue-1, #2083D5); cursor: pointer; }
+.nca-stage-link:hover .nca-stage-text { text-decoration: underline; }
+.nca-stage-muted { color: var(--grey-4, #9497A0); }
+/* Remaining count — the one coloured element: amber TEXT (set inline from status-palette, the
+   charts' Flagged hue), no fill (user-directed 2026-09-29). */
+.nca-stage-count { font-weight: 600; }
+/* margin-left: auto pushes the hint to the row's RIGHT edge (user-directed 2026-09-30). */
+.nca-stage-hint { color: var(--grey-5, #7D8086); font-size: 12px; margin-left: auto; }
+/* The Review-stage hint is an action: "Review N profiles →" starts the review. */
+.nca-stage-hint.nca-stage-hint-action { color: var(--blue-1, #2083D5); cursor: pointer; width: max-content; }
+.nca-stage-hint.nca-stage-hint-action:hover { text-decoration: underline; }
+/* The study name inside the hint — a link to the study (the rest of the line is text). */
+.nca-stage-hint-link { color: var(--blue-1, #2083D5); cursor: pointer; }
+.nca-stage-hint-link:hover { text-decoration: underline; }
+
+/* Review pane choice (user-directed 2026-10-12): an untitled radio — the empty label column is
+   dropped so the options start at the pane's left edge, stacked one per row, and the long
+   "Adjust λz points…" option wraps inside the context panel instead of overflowing it. */
+.nca-review-choice > label.ui-input-label { display: none; }
+.nca-review-choice .ui-input-editor { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.nca-review-choice .ui-input-editor label { white-space: normal; }
+
+
+/* Two-option radios laid out horizontally (DG stacks radio options vertically by default): the
+   Add-to-study New/Existing study radio — user-directed 2026-10-05 (study-add-multiple-analyses) —
+   and the mapping form's Value/Column source radios — user-directed 2026-10-19
+   (mapping-source-radio). */
+.nca-study-dest .ui-input-editor,
+.nca-radio-row .ui-input-editor { display: flex; flex-direction: row; gap: 16px; align-items: center; }
+.nca-study-dest .ui-input-editor label,
+.nca-radio-row .ui-input-editor label { margin: 0; }

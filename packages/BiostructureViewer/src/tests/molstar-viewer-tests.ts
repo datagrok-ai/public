@@ -5,13 +5,13 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import wu from 'wu';
 
-import {awaitCheck, category, delay, expect, test, testEvent} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, testEvent, waitUntil} from '@datagrok-libraries/test/src/test';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
 import {BiostructureProps, IBiostructureViewer} from '@datagrok-libraries/bio/src/viewers/molstar-viewer';
 
-import {awaitGrid} from './utils';
+import {awaitGrid, awaitViewerUpdated} from './utils';
 import {PdbGridCellRendererBack} from '../utils/pdb-grid-cell-renderer';
-import {DebounceIntervals, MolstarViewer, PROPS as msvPROPS} from '../viewers/molstar-viewer/molstar-viewer';
+import {MolstarViewer, PROPS as msvPROPS} from '../viewers/molstar-viewer/molstar-viewer';
 
 import {_package} from '../package-test';
 
@@ -46,26 +46,26 @@ category('MolstarViewer', () => {
     // expect(viewer.ligands.selected.length, 0);
 
     df.currentRowIdx = 0;
-    await delay(DebounceIntervals.ligands * 2.5); // await for debounce onRebuildViewLigands
+    await awaitViewerUpdated(viewer);
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
     expect(viewer.ligands.current != null, true, 'The current ligand expected.');
     expect(viewer.ligands.current!.rowIdx, 0, 'The current ligand of rowIdx = 0.');
     expect(viewer.ligands.selected.length, 0);
 
     df.selection.init((rowI) => rowI === 1 || rowI === 2);
-    await delay(DebounceIntervals.ligands * 2.5); // await for debounce onRebuildViewLigands
+    await awaitViewerUpdated(viewer);
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
     expect(viewer.ligands.current != null, true, 'The current ligand expected.');
     expect(viewer.ligands.current!.rowIdx, 0, 'The current ligand of rowIdx = 0.');
     expect(viewer.ligands.selected.length, 2);
 
     df.currentRowIdx = 3;
-    await delay(DebounceIntervals.ligands * 2.5); // await for debounce onRebuildViewLigands
+    await awaitViewerUpdated(viewer);
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
     expect(viewer.ligands.current != null, true, 'The current ligand expected.');
     expect(viewer.ligands.current!.rowIdx, 3, 'The current ligand of rowIdx = 3.');
     expect(viewer.ligands.selected.length, 2);
-    await delay(DebounceIntervals.ligands * 2.5); // await for debounce onRebuildViewLigands
+    await awaitViewerUpdated(viewer);
   }, {timeout: 45000,});
 
   test('ligands-Molecule3D', async () => {
@@ -91,26 +91,26 @@ category('MolstarViewer', () => {
     view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.4);
 
     df.currentRowIdx = 0;
-    await delay(50); // await for debounce onRebuildViewLigands
+    await awaitViewerUpdated(viewer);
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
     expect(viewer.ligands.current != null, true, 'The current ligand expected');
     expect(viewer.ligands.current!.rowIdx, 0, 'The current ligand of rowIdx = 0.');
     expect(viewer.ligands.selected.length, 0);
 
     df.selection.init((rowI) => rowI === 2 || rowI === 3);
-    await delay(50); // await for debounce onRebuildViewLigands
+    await awaitViewerUpdated(viewer);
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
     expect(viewer.ligands.current != null, true, 'The current ligand expected');
     expect(viewer.ligands.current!.rowIdx, 0, 'The current ligand of rowIdx = 0.');
     expect(viewer.ligands.selected.length, 2);
 
     df.currentRowIdx = 1;
-    await delay(50); // await for debounce onRebuildViewLigands
+    await awaitViewerUpdated(viewer);
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
     expect(viewer.ligands.current != null, true, 'The current ligand expected');
     expect(viewer.ligands.current!.rowIdx, 1, 'The current ligand of rowIdx = 1.');
     expect(viewer.ligands.selected.length, 2);
-    await delay(50);
+    await awaitViewerUpdated(viewer);
   }, {timeout: 45000});
 
   const pdbIdCsv: string = `pdb_id
@@ -139,7 +139,7 @@ category('MolstarViewer', () => {
     _package.logger.debug(`${logPrefix}, df.currentRowIdx = ${df.currentRowIdx}`);
     const t1 = window.performance.now();
     await awaitGrid(tv.grid);
-    await delay(DebounceIntervals.currentRow * 2.5);
+    await awaitViewerUpdated(viewer);
     await viewer.awaitRendered(15000);
     const t2 = window.performance.now();
     _package.logger.debug(`${logPrefix}, awaitRendered for currentRow ET: ${t2 - t1}`);
@@ -151,12 +151,12 @@ category('MolstarViewer', () => {
     df.currentRowIdx = 2;
     _package.logger.debug(`${logPrefix}, df.currentRowIdx = ${df.currentRowIdx}`);
     await awaitGrid(tv.grid);
-    await delay(DebounceIntervals.currentRow * 2.5);
+    await awaitViewerUpdated(viewer);
     await viewer.awaitRendered(15000);
     expect(aViewer.dataEff != null, true, 'dataEff is null');
     expect(aViewer.dataEff.options.name, '2BDJ');
     expect((aViewer.dataEffStructureRefs?.length ?? 0) >= 2, true, 'Structure in the viewer not found');
-    await delay(DebounceIntervals.currentRow * 2.5);
+    await awaitViewerUpdated(viewer);
   }, {timeout: 50000});
 
   test('bcif_id_binary', async () => {
@@ -177,7 +177,7 @@ category('MolstarViewer', () => {
     _package.logger.debug(`${logPrefix}, df.currentRowIdx = ${df.currentRowIdx}`);
     await awaitGrid(tv.grid);
 
-    await delay(DebounceIntervals.currentRow * 2.5);
+    await awaitViewerUpdated(viewer);
     await viewer.awaitRendered(15000);
     const aViewer = viewer as any;
     expect(aViewer.dataEff != null, true, 'dataEff is null');
@@ -187,12 +187,12 @@ category('MolstarViewer', () => {
     df.currentRowIdx = 2;
     _package.logger.debug(`${logPrefix}, df.currentRowIdx = ${df.currentRowIdx}`);
     await awaitGrid(tv.grid);
-    await delay(DebounceIntervals.currentRow * 2.5);
+    await awaitViewerUpdated(viewer);
     await viewer.awaitRendered(15000);
     expect(aViewer.dataEff != null, true, 'dataEff is null');
     expect(aViewer.dataEff.options.name, '2BDJ');
     expect((aViewer.dataEffStructureRefs?.length ?? 0) >= 2, true, 'Structure in the viewer not found');
-    await delay(DebounceIntervals.currentRow * 2.5);
+    await awaitViewerUpdated(viewer);
   }, {timeout: 50000});
 
   test('pdb_data', async () => {
@@ -212,14 +212,14 @@ category('MolstarViewer', () => {
     _package.logger.debug(`${logPrefix}, df.currentRowIdx = ${df.currentRowIdx}`);
     
     await awaitGrid(tv.grid);
-    await delay(DebounceIntervals.currentRow * 2.5);
+    await awaitViewerUpdated(viewer);
     await viewer.awaitRendered(15000);
     const aViewer = viewer as any;
 
     expect(!!aViewer.dataEff, true, 'Viewer dataEff is empty.');
     expect(aViewer.dataEff.data.includes(pdbName), true, `Viewer dataEff must be '${pdbName}' for row ${df.currentRowIdx}.`);
     expect((aViewer.dataEffStructureRefs?.length ?? 0) >= 2, true, 'Structure in the viewer not found');
-    await delay(DebounceIntervals.currentRow * 2.5);
+    await awaitViewerUpdated(viewer);
   }, {timeout: 70000});
 
   test('auto-columns', async () => {
@@ -245,14 +245,14 @@ category('MolstarViewer', () => {
     const pdbData: BiostructureData = {binary: true, ext: 'pdb',
       data: await _package.files.readAsBytes('samples/1bdq-wo-ligands.pdb')};
     viewer.setOptions({[msvPROPS.dataJson]: BiostructureDataJson.fromData(pdbData)});
-    await awaitCheck(() => viewer.root.querySelector('.msp-plugin') != null,
+    await waitUntil(() => viewer.root.querySelector('.msp-plugin') != null,
       'the structure chosen for a viewer with a ligand column is not shown', 15000);
     await viewer.awaitRendered(15000);
   }, {timeout: 60000});
 
   test('open_file_shares', async () => {
     const waitForElement = async (selector: string, errorMsg: string, timeout = 2000) => {
-      await awaitCheck(() => !!viewer.root.querySelector(selector), errorMsg, timeout);
+      await waitUntil(() => !!viewer.root.querySelector(selector), errorMsg, timeout);
       return viewer.root.querySelector(selector) as HTMLElement;
     };
   
@@ -265,7 +265,8 @@ category('MolstarViewer', () => {
       const expander = node!.querySelector('.d4-tree-view-tri') as HTMLElement;
       if (expander && !expander.classList.contains('d4-tree-view-tri-expanded'))
         expander.click();
-      await delay(timeout);
+      const children = node!.querySelector<HTMLElement>(':scope > .d4-tree-view-group-host');
+      await waitUntil(() => children?.dataset.state === 'loaded', errorMsg, timeout);
       return node as HTMLElement;
     };
 
@@ -278,7 +279,7 @@ category('MolstarViewer', () => {
     await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
 
     (await waitForElement('.fa-folder-tree', 'File tree icon not found')).click();
-    await awaitCheck(() => DG.Dialog.getOpenDialogs().length > 0, 'Cannot open "Select a file" dialog', 2000);
+    await waitUntil(() => DG.Dialog.getOpenDialogs().length > 0, 'Cannot open "Select a file" dialog', 2000);
   
     const selectDialog = returnDialog('Select a file')?.root;
     expect(selectDialog != null, true, 'Select a file dialog is missing');
@@ -296,7 +297,7 @@ category('MolstarViewer', () => {
     const okButton = selectDialog!.querySelector('.ui-btn-ok') as HTMLElement;
     okButton.click();
 
-    await awaitCheck(() => viewer.root.querySelector('canvas') != null, 'Canvas not rendered', 10000);
+    await waitUntil(() => viewer.root.querySelector('canvas') != null, 'Canvas not rendered', 10000);
   }, {timeout: 60000})
 })
 

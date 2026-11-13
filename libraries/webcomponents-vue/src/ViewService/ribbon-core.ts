@@ -3,26 +3,15 @@ import {RibbonItemBase, RibbonMenuItem, RibbonPanelItem} from './ribbon-types';
 export const resolveReason = (item: RibbonItemBase): string | null =>
   (typeof item.disabledReason === 'function' ? item.disabledReason() : item.disabledReason) ?? null;
 
-export type ClickResolution = {kind: 'run'} | {kind: 'warn', reason: string} | {kind: 'ignore'};
-
-export const resolveClick = (item: RibbonItemBase): ClickResolution => {
-  if (!item.disabled)
-    return {kind: 'run'};
-  const mode = item.disabledReasonMode ?? 'tooltip';
-  if (mode === 'popup' || mode === 'both') {
-    const reason = resolveReason(item);
-    if (reason)
-      return {kind: 'warn', reason};
-  }
-  return {kind: 'ignore'};
-};
-
 export const dispatchClick = (item: RibbonItemBase, warn: (reason: string) => void): void => {
-  const resolution = resolveClick(item);
-  if (resolution.kind === 'run')
+  if (!item.disabled) {
     item.onClick();
-  else if (resolution.kind === 'warn')
-    warn(resolution.reason);
+    return;
+  }
+  const mode = item.disabledReasonMode ?? 'tooltip';
+  const reason = mode === 'popup' || mode === 'both' ? resolveReason(item) : null;
+  if (reason)
+    warn(reason);
 };
 
 export const tooltipReason = (item: RibbonItemBase): string | null => {

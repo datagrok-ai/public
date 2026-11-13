@@ -966,8 +966,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     if (this.dataFrame && (hasValidDataProvider || isPdbColumn)) {
       this.viewSubs.push(this.viewSyncer.debounce(this.dataFrame.onCurrentRowChanged, DebounceIntervals.currentRow).subscribe(
         this.dataFrameOnCurrentRowChangedDebounced.bind(this)));
-      [this.dataEff, this.dataEffStructureRefs] = await this.rebuildViewCurrentRow(
-        null, this.dataFrame.currentRowIdx, logIndent + 1, callLog);
+      // a table that has no current row yet gets its structure when a row becomes current
+      const rowIdx = this.dataFrame.currentRowIdx;
+      if (rowIdx != null && rowIdx >= 0) {
+        [this.dataEff, this.dataEffStructureRefs] = await this.rebuildViewCurrentRow(
+          null, rowIdx, logIndent + 1, callLog);
+      }
     } else if (this.dataEff) {
       // display a structure of this.dataEff
       this.dataEffStructureRefs = await parseAndVisualsData(plugin, this.dataEff, callLog);
@@ -1182,6 +1186,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     const logIndent: number = 0;
     const oldStructureRefs: string[] | null = this.dataEffStructureRefs;
     const newCurrentRowIdx = this.dataFrame.currentRowIdx;
+    if (newCurrentRowIdx == null || newCurrentRowIdx < 0)
+      return;
     const callLog = `dataFrameOnCurrentRowChangedDebounced( newCurrentRowIdx = ${newCurrentRowIdx} )`;
     const logPrefix = `${margin(logIndent)}${this.viewerToLog()}.${callLog}`;
     this.viewSyncer.sync(logPrefix, async () => {

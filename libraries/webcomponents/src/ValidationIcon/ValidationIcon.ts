@@ -3,13 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subject, BehaviorSubject, combineLatest} from 'rxjs';
-import $ from 'cash-dom';
 import {debounceTime, distinctUntilChanged, takeUntil} from 'rxjs/operators';
-import {hasValidationIssue, isLinkedRestriction} from '@datagrok-libraries/utils/src/validation-utils';
+import {isLinkedRestriction} from '@datagrok-libraries/utils/src/validation-utils';
 
-//
-// TODO: probably a separate type lib (?)
-//
 export type RestrictionType = 'disabled' | 'restricted' | 'info' | 'none';
 
 export type ConsistencyInfo = {
@@ -69,12 +65,52 @@ function injectPopoverStyles(): void {
   document.head.appendChild(style);
 }
 
+type IconSpec = {name: string, color: string};
+
+const CATEGORIES = ['errors', 'warnings', 'notifications'] as const;
+
+const CATEGORY_ICONS: Record<typeof CATEGORIES[number], IconSpec> = {
+  errors: {name: 'exclamation-circle', color: 'var(--red-3)'},
+  warnings: {name: 'exclamation-circle', color: 'var(--orange-2)'},
+  notifications: {name: 'info-circle', color: 'var(--blue-1)'},
+};
+
+const inconsistentIcon = (restriction?: string): IconSpec =>
+  ({name: 'unlink', color: isLinkedRestriction(restriction) ? 'var(--red-3)' : 'var(--blue-1)'});
+
+// an inconsistent workflow-set value outranks validation, an inconsistent free value ranks last
+function statusIcon({validation, consistency}: ValidationIconInput): IconSpec | undefined {
+  if (consistency?.inconsistent && isLinkedRestriction(consistency.restriction))
+    return inconsistentIcon(consistency.restriction);
+  const category = CATEGORIES.find((c) => validation?.[c]?.length);
+  if (category)
+    return CATEGORY_ICONS[category];
+  if (consistency?.inconsistent)
+    return inconsistentIcon(consistency.restriction);
+}
+
+function coloredIcon(spec: IconSpec, handler?: () => void, tooltip?: string) {
+  const icon = ui.iconFA(spec.name, handler, tooltip);
+  icon.style.setProperty('color', spec.color, 'important');
+  return icon;
+}
+
+function sectionIcon(spec: IconSpec) {
+  const icon = coloredIcon(spec);
+  icon.style.marginRight = '4px';
+  return icon;
+}
+
+const indentedLink = (text: string, handler: () => void) =>
+  ui.link(text, handler, undefined, {style: {paddingLeft: '20px'}});
+
 export class ValidationIcon extends HTMLElement {
+  isDataFrame = false;
+
   private destroyed$ = new Subject<boolean>();
 
   private status$ = new BehaviorSubject<ValidationIconInput | undefined>(undefined);
   private isScalar$ = new BehaviorSubject(true);
-  private isDataFrame$ = new BehaviorSubject(false);
   private hover$ = new BehaviorSubject(false);
   private currentIcon?: HTMLElement;
   private currentPopover?: HTMLElement;
@@ -82,21 +118,19 @@ export class ValidationIcon extends HTMLElement {
   constructor() {
     super();
 
-    combineLatest([this.status$.pipe(distinctUntilChanged()), this.isScalar$.pipe(distinctUntilChanged()), this.hover$.pipe(distinctUntilChanged())]).pipe(
+    combineLatest([
+      this.status$.pipe(distinctUntilChanged()),
+      this.isScalar$.pipe(distinctUntilChanged()),
+      this.hover$.pipe(distinctUntilChanged()),
+    ]).pipe(
       debounceTime(0),
-      takeUntil(this.destroyed$)
+      takeUntil(this.destroyed$),
     ).subscribe(() => this.update());
   }
 
   public destroy() {
     this.destroyed$.next(true);
     ui.empty(this);
-  }
-
-  connectedCallback() {
-  }
-
-  disconnectedCallback() {
   }
 
   set validationStatus(s: ValidationIconInput | undefined) {
@@ -123,14 +157,6 @@ export class ValidationIcon extends HTMLElement {
     return this.isScalar$.value;
   }
 
-  set isDataFrame(v: boolean) {
-    this.isDataFrame$.next(v);
-  }
-
-  get isDataFrame() {
-    return this.isDataFrame$.value;
-  }
-
   consistencyReset() {
     this.dispatchEvent(new CustomEvent('consistency-reset'));
   }
@@ -143,163 +169,81 @@ export class ValidationIcon extends HTMLElement {
     this.dispatchEvent(new CustomEvent('show-dataframe-diff', {detail: cval}));
   }
 
-  update() {
-    if (!this.status$.value) {
-      while (this.firstChild && this.removeChild(this.firstChild));
-      this.currentIcon = undefined;
-      this.currentPopover = undefined;
-      $(this).css('display', 'none');
-      return;
+  private update() {
+    const status = this.status$.value;
+    const spec = status && statusIcon(status);
+    this.currentIcon = undefined;
+    this.currentPopover = undefined;
+    if (spec && this.hover$.value) {
+      this.currentIcon = coloredIcon(spec);
+      ui.tooltip.bind(this.currentIcon, () => this.renderValidationResults());
+    } else if (spec) {
+      this.currentIcon = coloredIcon(spec, () => this.displayValidation(), 'Show validation');
+      this.currentIcon.style.pointerEvents = 'all';
+      this.currentIcon.classList.toggle('fal');
+      this.currentIcon.classList.toggle('far');
+      this.currentPopover = this.createPopover();
+    } else if (status && this.isLinked(status.consistency)) {
+      this.currentIcon = ui.iconFA('link', null, status.consistency!.restriction === 'disabled' ?
+        'Set by the workflow' : 'Set by the workflow. Editing it makes the value inconsistent');
+      this.currentIcon.style.setProperty('color', 'var(--grey-4)', 'important');
+      this.currentIcon.style.pointerEvents = 'all';
     }
-    const {validation, consistency} = this.status$.value;
-
-    $(this).addClass('rfv2-validation-icon');
-    while (this.firstChild && this.removeChild(this.firstChild));
-    this.rerenderValidations();
-
-    if (this.currentIcon)
-      this.appendChild(this.currentIcon);
-
-    if (this.currentPopover)
-      this.appendChild(this.currentPopover);
-
-    const isAnythingToShow =
-      hasValidationIssue(validation, consistency) ||
-      !!validation?.notifications?.length ||
-      this.isLinked(consistency);
-
-    $(this).css('display', isAnythingToShow ? 'flex': 'none');
-  }
-
-  rerenderValidations() {
-    if (!this.status$.value)
-      return;
-    const {validation, consistency} = this.status$.value;
-
-    const iconOptions = (() => {
-      if (consistency?.inconsistent && isLinkedRestriction(consistency?.restriction))
-        return {name: 'handshake-slash', color: 'var(--red-3)'};
-      if (validation?.errors && validation.errors.length) return {name: 'exclamation-circle', color: 'var(--red-3)'};
-      if (validation?.warnings && validation.warnings.length)
-        return {name: 'exclamation-circle', color: 'var(--orange-2)'};
-      if (validation?.notifications && validation.notifications.length)
-        return {name: 'info-circle', color: 'var(--blue-1)'};
-      if (consistency?.inconsistent && !isLinkedRestriction(consistency?.restriction))
-        return {name: 'handshake-slash', color: 'var(--blue-1)'};
-      return null;
-    })();
-
-    if (!iconOptions) {
-      this.currentIcon = undefined;
-      this.currentPopover = undefined;
-      if (this.isLinked(consistency)) {
-        this.currentIcon = ui.iconFA('link', null, consistency!.restriction === 'disabled' ?
-          'Set by the workflow' : 'Set by the workflow. Editing it makes the value inconsistent');
-        this.currentIcon.style.setProperty('color', 'var(--grey-4)', 'important');
-        $(this.currentIcon).css({'pointer-events': 'all'});
-      }
-      return null;
-    }
-
-    if (this.hover$.value) {
-      const icon = ui.iconFA(iconOptions.name);
-      ui.tooltip.bind(icon, () => this.renderValidationResults());
-      if (iconOptions.color) icon.style.setProperty('color', iconOptions.color, 'important');
-
-      this.currentIcon = icon;
-      this.currentPopover = undefined;
-    } else {
-      const icon = ui.iconFA(iconOptions.name, () => this.displayValidation(), 'Show validation');
-      $(icon).css({'pointer-events': 'all'});
-      if (iconOptions.color) icon.style.setProperty('color', iconOptions.color, 'important');
-
-      $(icon).toggleClass('fal far');
-      const popover = this.addPopover(icon);
-      this.currentIcon = icon;
-      this.currentPopover = popover;
-    }
+    // the popover is the icon's sibling, so a click inside it does not reach the icon's handler
+    this.replaceChildren(...[this.currentIcon, this.currentPopover].filter((el): el is HTMLElement => !!el));
+    this.style.display = this.currentIcon ? 'flex' : 'none';
   }
 
   private renderValidationResults() {
     const root = ui.divV([], {style: {gap: '10px'}});
+    const {validation, consistency} = this.status$.value ?? {};
 
-    const status = this?.status$.value;
-    if (status?.validation) {
-      (['errors', 'warnings', 'notifications'] as const)
-        .filter((category) => !!status.validation?.[category]?.length)
-        .flatMap((category) => status.validation![category]!.map((advice) =>({category, advice})))
-        .forEach(({category, advice}) => {
-          const sectionIconOptions = this.getIconOptions(category)!;
-          const icon = ui.iconFA(sectionIconOptions.name);
-          icon.style.setProperty('color', sectionIconOptions.color, 'important');
-          $(icon).css('margin-right', '4px');
-          const description = typeof advice === 'string' ? advice : advice.description;
-          const actions = typeof advice !== 'string' ? (advice.actions ?? []) : [];
-          root.appendChild(ui.divV([
-            ui.divH([
-              icon,
-              ui.divText(description),
-            ], {style: {alignItems: 'center'}}),
-            ...(actions).map(
-              (action) => ui.link(
-                action.actionName,
-                () => this.requestAction(action.action, action.additionalParams),
-                undefined, {style: {paddingLeft: '20px'}})),
-          ]));
-        });
+    for (const category of CATEGORIES) {
+      for (const advice of validation?.[category] ?? []) {
+        const description = typeof advice === 'string' ? advice : advice.description;
+        const actions = typeof advice === 'string' ? [] : (advice.actions ?? []);
+        root.appendChild(ui.divV([
+          ui.divH([sectionIcon(CATEGORY_ICONS[category]), ui.divText(description)], {style: {alignItems: 'center'}}),
+          ...actions.map((action) =>
+            indentedLink(action.actionName, () => this.requestAction(action.action, action.additionalParams))),
+        ]));
+      }
     }
 
-    if (status?.consistency?.inconsistent) {
-      const sectionIconOptions = this.getIconOptions('inconsistent', status?.consistency?.restriction)!;
-      const icon = ui.iconFA(sectionIconOptions.name);
-      icon.style.setProperty('color', sectionIconOptions.color, 'important');
-      $(icon).css('margin-right', '4px');
-
-      const consistentValue = status.consistency.assignedValue;
+    if (consistency?.inconsistent) {
+      const consistentValue = consistency.assignedValue;
       root.appendChild(ui.divV([
         ui.divH([
-          icon,
-          ui.divText(`Current value is incosistent. Computed value was ${
+          sectionIcon(inconsistentIcon(consistency.restriction)),
+          ui.divText(`Current value is inconsistent. Computed value was ${
             this.isScalar$.value ? consistentValue : 'different'
           }`),
         ]),
-        ...(this.isDataFrame$.value ? [
-          ui.link(
-            'Show dataframes diff',
-            () => this.showDataFrameDiff(consistentValue),
-            undefined, { style: { paddingLeft: '20px' } },
-          ),
-        ] : []),
-        ui.link(
-          'Reset to consistent value',
-          () => this.consistencyReset(),
-          undefined, {style: {paddingLeft: '20px'}},
-        ),
+        ...(this.isDataFrame ?
+          [indentedLink('Show dataframes diff', () => this.showDataFrameDiff(consistentValue))] : []),
+        indentedLink('Reset to consistent value', () => this.consistencyReset()),
       ]));
     }
 
     return root;
   }
 
-  private getIconOptions(category: 'errors' | 'warnings' | 'notifications' | 'inconsistent', restrictionType?: string) {
-    if (category === 'errors') return {name: 'exclamation-circle', color: 'var(--red-3)'};
-    if (category === 'warnings')
-      return {name: 'exclamation-circle', color: 'var(--orange-2)'};
-    if (category === 'notifications')
-      return {name: 'info-circle', color: 'var(--blue-1)'};
-    if (category === 'inconsistent')
-      return {name: 'handshake-slash', color: isLinkedRestriction(restrictionType) ? 'var(--red-3)' : 'var(--blue-1)'};
-  }
-
   private isLinked(consistency?: ConsistencyInfo) {
     return !!consistency && !consistency.inconsistent && isLinkedRestriction(consistency.restriction);
   }
 
-  private addPopover(icon: HTMLElement) {
+  private createPopover() {
     injectPopoverStyles();
     const popover = ui.div([], `d4-tooltip ${POPOVER_CLASS}`);
-    this.stylePopover(popover);
-    icon.appendChild(popover);
+    popover.popover = 'auto';
+    Object.assign(popover.style, {
+      fontStyle: 'normal',
+      pointerEvents: 'all',
+      maxWidth: '300px',
+      overflowY: 'auto',
+      cursor: 'default',
+    });
+    popover.style.setProperty('text-wrap', 'pretty');
     return popover;
   }
 
@@ -309,8 +253,7 @@ export class ValidationIcon extends HTMLElement {
       return;
     this.alignPopover(icon, popover);
     ui.empty(popover);
-    const content = this.renderValidationResults();
-    popover.appendChild(content);
+    popover.appendChild(this.renderValidationResults());
     popover.showPopover();
   }
 
@@ -340,18 +283,6 @@ export class ValidationIcon extends HTMLElement {
       popover.style.bottom = 'unset';
       popover.style.maxHeight = Math.min(POPOVER_MAX_HEIGHT, viewportHeight - 2 * margin) + 'px';
     }
-  }
-
-  private stylePopover(popover: HTMLElement): void {
-    popover.popover = 'auto';
-    $(popover).css({
-      'font-style': 'normal',
-      'pointer-events': 'all',
-      'max-width': '300px',
-      'overflow-y': 'auto',
-      'cursor': 'default',
-      'text-wrap': 'pretty',
-    });
   }
 }
 

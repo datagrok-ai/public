@@ -3,6 +3,12 @@
 ## v.next
 
 * [core#1110](https://github.com/datagrok-ai/core/issues/1110): Demo app: Fixed demos and demo scripts renaming an unrelated view or failing with "Cannot set properties of null"
+
+## 1.7.11 (2026-11-05)
+
+* Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
+* [#4437](https://github.com/datagrok-ai/public/issues/4437): Tutorials: Show both Windows and Mac keyboard shortcuts in step instructions
+* Tutorial: Column inputs are checked at once instead of after the first second (core#1146)
 * Tutorial: A running tutorial shows its current step in a bar docked on top; `showAllSteps()` opens the full pane
 * Tutorial: `cleanup()` removes what a tutorial created on the server; it runs when the tutorial finishes and when it is closed
 

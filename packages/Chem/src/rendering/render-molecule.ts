@@ -5,11 +5,12 @@ import $ from 'cash-dom';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation, asSmiles} from '../utils/convert-notation-utils';
 
-/** Renders the molecule and returns div with the canvas inside. */
+/** Renders the molecule and returns div with the canvas inside. `cache: false` draws without the renderer's caches,
+ * keeping nothing afterwards (very large one-off drawings); the default keeps the picture for the next draw. */
 export function renderMolecule(
   molStr: string,
   options?: {renderer?: 'RDKit',
-  width?: number, height?: number, popupMenu?: boolean}): HTMLElement {
+  width?: number, height?: number, popupMenu?: boolean, cache?: boolean}): HTMLElement {
   options ??= {};
   options.renderer ??= 'RDKit';
   options.width ??= 200;
@@ -25,11 +26,15 @@ export function renderMolecule(
   moleculeHost.style.width = (options.width).toString() + 'px';
   moleculeHost.style.height = (options.height).toString() + 'px';
 
+  // 'RDKit' names the Molecule cell renderer, which draws by the engine in effect
   const renderFunctions = DG.Func.find({meta: {chemRendererName: options.renderer}});
   if (renderFunctions.length > 0) {
     renderFunctions[0].apply().then((rendndererObj) => {
-      rendndererObj.render(moleculeHost.getContext('2d')!, 0, 0, options!.width, options!.height,
-        DG.GridCell.fromValue(molStr));
+      const g = moleculeHost.getContext('2d')!;
+      if (options!.cache === false)
+        rendndererObj.renderUncached(g, 0, 0, options!.width, options!.height, molStr);
+      else
+        rendndererObj.render(g, 0, 0, options!.width, options!.height, DG.GridCell.fromValue(molStr));
     });
   }
 
@@ -65,10 +70,14 @@ export function renderMolecule(
   return div;
 }
 
-export function _svgDiv(mol: any): HTMLDivElement {
-  const root = ui.div();
-  root.innerHTML = mol.get_svg();
-  return root;
+/** The molecule drawn again to fill most of the window, in a full-screen dialog: a small depiction (a context
+ *  panel's, a SAR matrix cell's) scaled up would only be blurred. */
+export function showEnlargedMolecule(molStr: string): DG.Dialog {
+  const width = Math.max(200, window.innerWidth - 200);
+  const height = Math.max(100, window.innerHeight - 200);
+  // uncached: the renderer would otherwise keep a picture this large for the session
+  return ui.dialog({title: 'Molecule'})
+    .add(renderMolecule(molStr, {width, height, popupMenu: false, cache: false})).showModal(true);
 }
 
 function showMoleculeMenu(molStr: string) {
@@ -84,12 +93,13 @@ function showMoleculeMenu(molStr: string) {
     navigator.clipboard.writeText(molFile);
     grok.shell.info('Molfile copied to clipboard');
   });
+  menu.item('Enlarge', () => showEnlargedMolecule(molStr));
   menu.item('Sketch', () => {
     const sketcher = new DG.chem.Sketcher();
     DG.chem.isMolBlock(molStr) ? sketcher.setMolFile(molStr) : sketcher.setSmiles(molStr);
     ui.dialog()
       .add(sketcher)
-      .show();
+      .show({resizable: true});
   });
   menu.item('Explore', () => {
     grok.shell.o = DG.SemanticValue.fromValueType(molStr, DG.SEMTYPE.MOLECULE);

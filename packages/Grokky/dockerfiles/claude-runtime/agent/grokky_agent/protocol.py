@@ -75,6 +75,7 @@ Command = TurnCommand | ContinueCommand | CancelCommand | BrowserResultCommand
 
 
 class Metrics(TypedDict):
+    model: str
     inputTokens: int
     outputTokens: int
     cacheReadTokens: int
@@ -87,12 +88,6 @@ class Metrics(TypedDict):
 
 class ReadyEvent(TypedDict):
     type: Literal['ready']
-
-
-class CheckedEvent(TypedDict):
-    """The answer of `python -m grokky_agent --check`: why the model could not be reached, if it could not."""
-    type: Literal['checked']
-    error: str | None
 
 
 class FatalEvent(TypedDict):
@@ -135,6 +130,11 @@ class BrowserCallEvent(TypedDict):
     timeoutMs: int
 
 
+class UsageEvent(TypedDict):
+    type: Literal['usage']
+    metrics: Metrics
+
+
 class StoppedEvent(TypedDict):
     type: Literal['stopped']
     text: str
@@ -160,6 +160,7 @@ class SessionLostEvent(TypedDict):
     type: Literal['session_lost']
 
 
-Event = (ReadyEvent | CheckedEvent | FatalEvent | SessionEvent | TextEvent | ActivityEvent | ToolStartEvent |
-         ToolEndEvent | BrowserCallEvent | StoppedEvent | LimitEvent | ErrorEvent | CancelledEvent | SessionLostEvent)
+Event = (ReadyEvent | FatalEvent | SessionEvent | TextEvent | ActivityEvent | ToolStartEvent |
+         ToolEndEvent | BrowserCallEvent | UsageEvent | StoppedEvent | LimitEvent | ErrorEvent |
+         CancelledEvent | SessionLostEvent)
 Emit = Callable[[Event], None]

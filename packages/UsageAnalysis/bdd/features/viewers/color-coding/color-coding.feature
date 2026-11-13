@@ -8,7 +8,8 @@ Feature: Colour coding across columns
   kept, and a categorical colouring (RACE to a copy of it) and a linear scheme (STARTED to HEIGHT)
   applied to other columns (through the colouring's own copy, the step the md's Pick Up / Apply
   performs, not the header menu) — and a layout and a project: a categorical colouring
-  comes back when the saved layout is applied to the table opened anew, and a linked colouring (a
+  comes back when the saved layout is applied to the table opened anew, and Color Coding > Off in
+  the header menu then takes it away (public#1071), and a linked colouring (a
   link to a link, RACE to AGE, HEIGHT to RACE) comes back from a layout and from a project.
   Not translated: the md's "Grid Color Coding" header-menu ladder (All / scheme / None / Auto),
   which is `grid/grid-appearance.feature`'s, and the SPGI_v2 Edit Color Scheme dialog, which the
@@ -187,7 +188,8 @@ Feature: Colour coding across columns
     Then the table should not have a column "Race_copy"
     And no errors should have been logged
 
-  Scenario: A column's colouring comes back from a saved layout on the reopened table
+  @realizes:public#1071
+  Scenario: A column's colouring comes back from a saved layout on the reopened table, and Off in the header menu takes it away (public#1071)
     When user colors "SEX" column categorically:
       | M | #3366CC |
       | F | #CC6699 |
@@ -204,8 +206,11 @@ Feature: Colour coding across columns
     And the "color of cell 1 of SEX" and "color of cell 4 of SEX" readings of grid should differ
     When user clicks on close icon of scatter plot viewer
     Then "SEX" column should be color-coded categorically
-    When user removes the coloring of "SEX" column
-    Then no errors should have been logged
+    When user picks "Color Coding > Off" from the context menu of the "header SEX" area of grid
+    Then "SEX" column should have no color coding
+    And the "color of cell 1 of SEX" and "color of cell 4 of SEX" readings of grid should be the same
+    And the "color of cell 1 of SEX" reading of grid should be "#ffffff"
+    And no errors should have been logged
 
   Scenario: Linked colourings come back from a saved layout and from a saved project
     When user colors "AGE" column conditionally:

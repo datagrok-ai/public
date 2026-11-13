@@ -33,7 +33,7 @@ export interface TagsInputOptions<T> extends InputOptions<T[]> {
   /** How that item is built; identity for `T = string`. */
   createItem?: (text: string) => T;
   /** Items it returns false for keep their chip but lose the ✕ (Dart `deleteEnabled`). */
-  deleteEnabled?: (item: T) => boolean;
+  deletable?: (item: T) => boolean;
   placeholder?: string;
   /** Below it the popup shows a hint row and an async source is never queried. */
   minChars?: number;
@@ -69,7 +69,7 @@ export class TagsInput<T> extends Input<T[], TagsInputOptions<T>> {
 
   /** The tags, keyed by their text. */
   getItems(opts?: {all?: boolean}): IItemsState {
-    return Input.itemsState(this.value.peek().map((item, index) => {
+    return Input.itemsState(this.peek().map((item, index) => {
       const text = this._itemText(item);
       return {key: text, label: text, index, rendered: true};
     }), opts?.all);
@@ -90,7 +90,7 @@ export class TagsInput<T> extends Input<T[], TagsInputOptions<T>> {
       const state = this._view.value;
       if (state.kind !== 'ready')
         return [];
-      const taken = new Set(this.value.value.map((item) => this._itemText(item)));
+      const taken = new Set(this.value.map((item) => this._itemText(item)));
       return state.items.filter((item) => !taken.has(this._itemText(item)));
     });
 
@@ -127,7 +127,7 @@ export class TagsInput<T> extends Input<T[], TagsInputOptions<T>> {
       onRetry: () => this._source?.retry(),
     });
 
-    bindValue(this.scope, input, this._text);
+    bindValue(input, this._text, {owner: this.scope});
     this.scope.listen(input, 'input', () => this._onInput());
     this.scope.listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
     this.scope.listen(input, 'blur', () => this._list.dismiss());
@@ -137,7 +137,7 @@ export class TagsInput<T> extends Input<T[], TagsInputOptions<T>> {
     });
 
     this.effect(() => input.setAttribute('aria-expanded', String(this._list.isOpen.value)));
-    each(this._chips, this.value, (item) => this._itemText(item), (item) => this._chip(item));
+    each(this._chips, this.signal, (item) => this._itemText(item), (item) => this._chip(item));
     return editor;
   }
 
@@ -180,16 +180,16 @@ export class TagsInput<T> extends Input<T[], TagsInputOptions<T>> {
    * Dart's `displayEnteredItems` (`tags_input.dart:232-249`). */
   add(item: T): void {
     const key = this._itemText(item);
-    const current = this.value.peek();
+    const current = this.peek();
     if (!current.some((existing) => this._itemText(existing) === key))
-      this.value.value = [...current, item];
+      this.value = [...current, item];
     this._text.value = '';
     this._list.dismiss();
   }
 
   remove(item: T): void {
     const key = this._itemText(item);
-    this.value.value = this.value.peek().filter((existing) => this._itemText(existing) !== key);
+    this.value = this.peek().filter((existing) => this._itemText(existing) !== key);
   }
 
   private _accept(index: number): boolean {
@@ -210,15 +210,15 @@ export class TagsInput<T> extends Input<T[], TagsInputOptions<T>> {
   }
 
   private _removeLast(): void {
-    const current = this.value.peek();
+    const current = this.peek();
     const last = current[current.length - 1];
     if (last !== undefined && this._deletable(last))
-      this.value.value = current.slice(0, current.length - 1);
+      this.value = current.slice(0, current.length - 1);
   }
 
   private _deletable(item: T): boolean {
-    const deleteEnabled = this.options.deleteEnabled;
-    return deleteEnabled === undefined || deleteEnabled(item);
+    const deletable = this.options.deletable;
+    return deletable === undefined || deletable(item);
   }
 
   private _onKeyDown(e: KeyboardEvent): void {

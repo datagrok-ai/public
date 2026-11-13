@@ -7,6 +7,12 @@ category('Packages: Docker', () => {
   // first) another package's container, e.g. an errored cvm-tests one.
   const containerName: string = 'api-tests-apitests-docker-test1';
 
+  test('Get status', async () => {
+    const status = await grok.dapi.docker.getStatus();
+    expect(typeof status.enabled, 'boolean');
+    expect(typeof status.isActive, 'boolean');
+  });
+
   test('Get response', async () => {
     const container = await grok.dapi.docker.dockerContainers.filter(`name = "${containerName}"`).first();
     if (container.status !== 'started' && container.status !== 'checking')

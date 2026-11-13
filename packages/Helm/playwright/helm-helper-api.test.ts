@@ -5,7 +5,6 @@ test.use(specTestOptions);
 
 const HELM_PEPTIDE = 'PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D-Tyr_Et}$$$$';
 const HELM_PEPTIDE_EXPECTED_ATOMS = 9;
-const HELM_RNA_SHORT = 'RNA1{r(A)p.r(C)p.r(G)p.r(U)p}$$$$';
 
 test('Helm / HelmHelper accessor + factories + hit-test API surface — Helm:getHelmHelper / createHelmInput / createHelmWebEditor / getHoveredAtom', async ({page}) => {
   // Pure JS-API surface spec: getHelmHelper + factory/hit-test calls, no full-screen
@@ -48,9 +47,8 @@ test('Helm / HelmHelper accessor + factories + hit-test API surface — Helm:get
           result.isSingleton = hh === hh2;
           result.kind = hh ? (hh.constructor?.name ?? typeof hh) : null;
           const methodNames = [
-            'parse', 'removeGaps', 'getMolfiles', 'getHoveredAtom',
+            'getMolfiles', 'getHoveredAtom',
             'createHelmInput', 'createHelmWebEditor', 'createWebEditorApp',
-            'overrideMonomersFuncs', 'revertOriginalMonomersFuncs',
             'buildMonomersFuncsFromLib',
           ];
           result.methods = methodNames.filter((m) => typeof hh?.[m] === 'function');
@@ -68,9 +66,8 @@ test('Helm / HelmHelper accessor + factories + hit-test API surface — Helm:get
         out.methods,
         `IHelmHelper method surface mismatch; methods present: ${JSON.stringify(out.methods)}`,
       ).toEqual([
-        'parse', 'removeGaps', 'getMolfiles', 'getHoveredAtom',
+        'getMolfiles', 'getHoveredAtom',
         'createHelmInput', 'createHelmWebEditor', 'createWebEditorApp',
-        'overrideMonomersFuncs', 'revertOriginalMonomersFuncs',
         'buildMonomersFuncsFromLib',
       ]);
       expect(out.errBalloons, 'error balloon count after S1').toBe(0);
@@ -165,13 +162,16 @@ test('Helm / HelmHelper accessor + factories + hit-test API surface — Helm:get
     });
 
     await softStep('S4: HelmHelper.getHoveredAtom — exact-coord match, far-away null, height-arg sweep, immutability', async () => {
+      // The molecule is the view-only editor's laid-out mol (what HelmInput hit-tests).
       const out = await page.evaluate(async (helmStr) => {
-        const result: any = {parseOk: false, atomsCount: 0, hoveredAtomSameRef: false, farReturnedNull: 'NOT_TESTED', heightSweepOk: false, immutableAtoms: false, errBalloons: 0, err: null};
+        const result: any = {molOk: false, atomsCount: 0, hoveredAtomSameRef: false, farReturnedNull: 'NOT_TESTED', heightSweepOk: false, immutableAtoms: false, errBalloons: 0, err: null};
         try {
           const hh = (window as any).__hh;
           if (!hh) throw new Error('Scenario 1 prelude missing: window.__hh is undefined');
-          const mol = hh.parse(helmStr);
-          result.parseOk = mol != null;
+          const editor = hh.createHelmWebEditor(document.createElement('div'), {}).editor;
+          editor.setHelm(helmStr);
+          const mol = editor.m;
+          result.molOk = mol != null;
           result.atomsCount = mol?.atoms?.length ?? 0;
           if (mol && Array.isArray(mol.atoms) && mol.atoms.length > 0) {
             const initialCount = mol.atoms.length;
@@ -194,33 +194,13 @@ test('Helm / HelmHelper accessor + factories + hit-test API surface — Helm:get
         result.errBalloons = document.querySelectorAll('.d4-balloon.error').length;
         return result;
       }, HELM_PEPTIDE);
-      expect(out.parseOk, `parse() err: ${out.err ?? ''}`).toBe(true);
+      expect(out.molOk, `editor mol err: ${out.err ?? ''}`).toBe(true);
       expect(out.atomsCount, 'fixture atom count').toBe(HELM_PEPTIDE_EXPECTED_ATOMS);
       expect(out.hoveredAtomSameRef, 'getHoveredAtom at atom-0 coord returns atom-0 by reference').toBe(true);
       expect(out.farReturnedNull, 'getHoveredAtom(-10000,-10000) returns null').toBe('null');
       expect(out.heightSweepOk, 'getHoveredAtom does not throw across height sweep').toBe(true);
       expect(out.immutableAtoms, 'mol.atoms not mutated by getHoveredAtom').toBe(true);
       expect(out.errBalloons, 'error balloon count after S4').toBe(0);
-    });
-
-    await softStep('S4-supp: HelmHelper.parse on RNA fixture yields a non-empty HelmMol (smoke)', async () => {
-      const out = await page.evaluate(async (helmStr) => {
-        const result: any = {parseOk: false, atomsCount: 0, errBalloons: 0, err: null};
-        try {
-          const hh = (window as any).__hh;
-          if (!hh) throw new Error('Scenario 1 prelude missing: window.__hh is undefined');
-          const mol = hh.parse(helmStr);
-          result.parseOk = mol != null;
-          result.atomsCount = mol?.atoms?.length ?? 0;
-        } catch (e) {
-          result.err = String(e).slice(0, 400);
-        }
-        result.errBalloons = document.querySelectorAll('.d4-balloon.error').length;
-        return result;
-      }, HELM_RNA_SHORT);
-      expect(out.parseOk, `parse(RNA) err: ${out.err ?? ''}`).toBe(true);
-      expect(out.atomsCount, 'RNA fixture atom count > 0').toBeGreaterThan(0);
-      expect(out.errBalloons, 'error balloon count after S4-supp').toBe(0);
     });
   } finally {
     await page.evaluate(() => {

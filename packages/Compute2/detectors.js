@@ -9,6 +9,7 @@
 class Compute2PackageDetectors extends DG.Package {
     //name: autostart
     //meta.role: autostart
+    //meta.autostartImmediate: true
     //description: Registers the Compute2 run handler at platform startup
     autostart() {
         if (DG.ObjectHandler.list().some((h) => h.type === 'ComputeRun'))
@@ -44,138 +45,66 @@ class ComputeRunHandler extends DG.ObjectHandler {
     async refresh(x) {
         return this.getById(DG.toJs(x).id);
     }
-    // The run name is its title; a run saved without one falls back to the model name.
+    // The run name: the legacy title when set, otherwise the friendly name, else the model name.
     getCaption(x) {
         const call = DG.toJs(x);
-        return call.options['title'] || this.modelName(call);
+        return call.options['title'] || call.friendlyName || this.modelName(call);
     }
     modelName(call) {
         return (call.func && (call.func.friendlyName || call.func.name)) || 'Run';
     }
-    startedText(call) {
+    // Copies of the run browser rules (compute-utils getRunCreated, Compute2 useRunDetails and runVersion):
+    // runs saved before the createdById option fall back to their start time and platform author.
+    savedText(call) {
         try {
-            const started = call.started;
-            return started && started.isValid() ? started.format('YYYY-MM-DD HH:mm') : '';
+            const saved = call.options['createdById'] ? dayjs(call.options['createdAt']) : call.started;
+            return saved && saved.isValid() ? saved.format('YYYY-MM-DD HH:mm') : '';
         }
         catch (_) {
             return '';
         }
     }
-    subtitleText(call, author) {
-        const tags = (call.options['tags'] || []).map((t) => '#' + t).join(' ');
-        return [this.modelName(call), this.startedText(call), author, tags].filter((s) => s).join(' · ');
+    // after someone else edited the details, the platform author is the last editor
+    async authors(run) {
+        const authorId = run.options['createdById'];
+        const lastEditor = run.author;
+        if (!authorId || authorId === (lastEditor && lastEditor.id))
+            return { by: (lastEditor && lastEditor.friendlyName) || '' };
+        const author = await grok.dapi.users.find(authorId).then((user) => (user && user.friendlyName) || '', () => '');
+        return { by: author, modifiedBy: lastEditor && lastEditor.friendlyName };
     }
-    async authorOf(call) {
-        if (call.author && call.author.friendlyName)
-            return call.author.friendlyName;
-        try {
-            const full = await grok.dapi.functions.calls.allPackageVersions()
-                .include('session.user,func.package').find(call.id);
-            return (full && full.author && full.author.friendlyName) || '';
-        }
-        catch (_) {
-            return '';
-        }
-    }
-    renderIcon(x) {
-        const call = DG.toJs(x);
-        const icon = ui.iconFA('play-circle');
-        // The gallery and the Browse tree consult only renderIcon on JS handlers (caption/markup/card
-        // go through the unbridged Dart meta, whose fallback caption is the raw call signature), so
-        // the item is reworked from inside the returned icon: run title as the name, plus
-        // model/date/author/tags as the gallery subtitle. Unrecognized hosts are left untouched.
-        void this.patchHostItem(icon, call);
-        return icon;
-    }
-    // The icon is returned detached and inserted later, so poll until it lands in a known host;
-    // re-assert once afterwards in case the host rewrites the caption on a late render pass.
-    async patchHostItem(icon, call) {
-        const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-        for (let attempt = 0; attempt < 20; attempt++) {
-            await sleep(attempt === 0 ? 0 : 100);
-            if (!icon.isConnected)
-                continue;
-            if (this.tryPatchOnce(icon, call))
-                setTimeout(() => this.tryPatchOnce(icon, call), 1000);
-            return;
-        }
-    }
-    tryPatchOnce(icon, call) {
-        const treeItem = icon.closest('.d4-tree-view-item');
-        if (treeItem) {
-            const label = treeItem.querySelector('.d4-tree-view-item-label');
-            if (!label)
-                return false;
-            for (const n of Array.from(label.childNodes)) {
-                if (n.nodeType === Node.TEXT_NODE)
-                    n.remove();
-            }
-            const started = this.startedText(call);
-            label.appendChild(document.createTextNode(this.getCaption(call) + (started ? ' (' + started + ')' : '')));
-            return true;
-        }
-        const linkLabel = icon.closest('.d4-link-label');
-        if (!linkLabel || !linkLabel.closest('.grok-gallery-grid'))
-            return false;
-        const label = linkLabel.querySelector('label');
-        if (label)
-            label.textContent = this.getCaption(call);
-        const subtitle = Array.from(linkLabel.children)
-            .find((el) => el.tagName === 'SPAN' && el !== icon.parentElement);
-        if (subtitle) {
-            subtitle.textContent = ' ' + this.subtitleText(call, (call.author && call.author.friendlyName) || '');
-            void this.authorOf(call).then((author) => {
-                subtitle.textContent = ' ' + this.subtitleText(call, author);
-            });
-        }
-        return true;
-    }
-    renderMarkup(x) {
-        const call = DG.toJs(x);
-        const markup = ui.span([ui.iconFA('play-circle'), ui.label(this.getCaption(call))]);
-        markup.ondblclick = () => void openComputeRun(call.id);
-        return markup;
+    renderIcon(_x) {
+        return ui.iconFA('file-chart-line');
     }
     renderTooltip(x) {
         const call = DG.toJs(x);
         return ui.divV([
             ui.divText(this.getCaption(call)),
-            ui.divText(this.subtitleText(call, (call.author && call.author.friendlyName) || '')),
+            ui.divText([this.modelName(call), this.savedText(call)].filter((s) => s).join(' · ')),
         ]);
-    }
-    renderCard(x) {
-        const call = DG.toJs(x);
-        const subtitle = ui.divText(this.subtitleText(call, (call.author && call.author.friendlyName) || ''), { style: { color: 'var(--grey-4)' } });
-        void this.authorOf(call).then((author) => {
-            subtitle.textContent = this.subtitleText(call, author);
-        });
-        const card = ui.divV([
-            ui.divH([ui.iconFA('play-circle'), ui.divText(this.getCaption(call), { style: { fontWeight: 'bold' } })], { style: { alignItems: 'center', gap: '6px' } }),
-            subtitle,
-        ], 'd4-gallery-item');
-        card.ondblclick = () => void openComputeRun(call.id);
-        return card;
     }
     renderProperties(x) {
         const call = DG.toJs(x);
-        const info = ui.div([]);
-        const fill = (author) => {
-            ui.empty(info);
-            const map = { 'Model': this.modelName(call), 'Started': this.startedText(call) };
-            if (author)
-                map['Author'] = author;
-            const tags = (call.options['tags'] || []).join(', ');
+        return ui.wait(async () => {
+            const run = await this.getById(call.id);
+            const { by, modifiedBy } = await this.authors(run);
+            const map = { 'Model': this.modelName(run), 'Saved': this.savedText(run), 'By': by };
+            if (modifiedBy)
+                map['Modified by'] = modifiedBy;
+            const tags = (run.options['tags'] || []).join(', ');
             if (tags)
                 map['Tags'] = tags;
-            info.appendChild(ui.tableFromMap(map));
-        };
-        fill((call.author && call.author.friendlyName) || '');
-        void this.authorOf(call).then(fill);
-        return ui.divV([
-            ui.h2(this.getCaption(call)),
-            info,
-            ui.div([ui.bigButton('Open run', () => void openComputeRun(call.id))], { style: { marginTop: '8px' } }),
-        ]);
+            const version = run.options['version'] || (run.func && run.func.package && run.func.package.version);
+            if (version)
+                map['Version'] = version;
+            const description = run.options['description'];
+            return ui.divV([
+                ui.h2(this.getCaption(run)),
+                ...description ? [ui.divText(description)] : [],
+                ui.tableFromMap(map),
+                ui.div([ui.bigButton('Open run', () => void openComputeRun(run.id))], { style: { marginTop: '8px' } }),
+            ]);
+        });
     }
     async renderPreview(x) {
         const call = DG.toJs(x);

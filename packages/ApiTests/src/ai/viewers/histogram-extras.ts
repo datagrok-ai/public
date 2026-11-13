@@ -1,5 +1,6 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, expectArray, settled, test} from '@datagrok-libraries/test/src/test';
 import {demog, expectCleared, expectRoundTrip, findProp, look} from '../helpers';
 
 // Histogram look extras: clearing *ColumnName via empty string, formula filter, linearColorScheme, prop introspection.
@@ -42,5 +43,20 @@ category('AI: Viewers: Histogram extras', () => {
 
   test('aggTooltipColumns string round-trip', async () => {
     expectRoundTrip(v(), {aggTooltipColumns: 'avg(age), count(race)'});
+  });
+
+  test('renders on a table with no rows (core#998)', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('x', new Float32Array(0))]);
+    grok.shell.clearLastError();
+    const tv = grok.shell.addTableView(t);
+    try {
+      const h = tv.histogram({value: 'x', bins: 5});
+      await settled(h);
+      expect(h.props.bins, 5);
+      expect(await grok.shell.lastError ?? '', '');
+    } finally {
+      tv.close();
+      grok.shell.closeTable(t);
+    }
   });
 });

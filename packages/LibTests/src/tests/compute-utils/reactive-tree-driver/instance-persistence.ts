@@ -1,3 +1,4 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, test} from '@datagrok-libraries/test/src/test';
 import {PipelineConfiguration, historyUtils} from '@datagrok-libraries/compute-utils';
@@ -57,10 +58,14 @@ category('ComputeUtils: Driver state tree persistence', async () => {
       expectDeepEqual(!!(lc as any).steps[1].funcCallId, true, {prefix: 'pipeline step2 saved funcCall uuid'});
 
       expectDeepEqual(sc.uuid !== lc.uuid, true, {prefix: 'pipeline different node uuid'});
-      expectDeepEqual((sc as any).steps[0].uuid !== (lc as any).steps[0].uuid, true, {prefix: 'pipeline step1 different node uuid'});
-      expectDeepEqual((sc as any).steps[1].uuid !== (lc as any).steps[1].uuid, true, {prefix: 'pipeline step2 different node uuid'});
-      expectDeepEqual((sc as any).steps[0].funcCallId !== (lc as any).steps[0].funcCallId, true, {prefix: 'pipeline step1 different funcCall uuid'});
-      expectDeepEqual((sc as any).steps[1].funcCallId !== (lc as any).steps[1].funcCallId, true, {prefix: 'pipeline step2 different funcCall uuid'});
+      expectDeepEqual((sc as any).steps[0].uuid !== (lc as any).steps[0].uuid, true,
+        {prefix: 'pipeline step1 different node uuid'});
+      expectDeepEqual((sc as any).steps[1].uuid !== (lc as any).steps[1].uuid, true,
+        {prefix: 'pipeline step2 different node uuid'});
+      expectDeepEqual((sc as any).steps[0].funcCallId !== (lc as any).steps[0].funcCallId, true,
+        {prefix: 'pipeline step1 different funcCall uuid'});
+      expectDeepEqual((sc as any).steps[1].funcCallId !== (lc as any).steps[1].funcCallId, true,
+        {prefix: 'pipeline step2 different funcCall uuid'});
     } finally {
       await deleteRuns([metaCall?.id, ...savedCallIds(tree.toSerializedState())]);
     }
@@ -76,7 +81,8 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     const metaCall = await tree.save().toPromise();
     try {
       // create outer pipeline
-      const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockWrapper3', {version: '1.0'}).toPromise();
+      const outerConfig = await callHandler<PipelineConfiguration>('LibTests:MockWrapper3', {version: '1.0'})
+        .toPromise();
       const outerPconf = await getProcessedConfig(outerConfig);
       const outerTree = StateTree.fromPipelineConfig({config: outerPconf});
       await outerTree.init().toPromise();
@@ -157,7 +163,8 @@ category('ComputeUtils: Driver state tree persistence', async () => {
       // the reference resolves back to the original dataframe
       const restored = await deserializeRestrictions(blob);
       expectDeepEqual(restored['df']?.type, 'restricted', {prefix: 'restored restriction type'});
-      expectDeepEqual(restored['df']?.assignedValue instanceof DG.DataFrame, true, {prefix: 'restored assignedValue is a dataframe'});
+      expectDeepEqual(restored['df']?.assignedValue instanceof DG.DataFrame, true,
+        {prefix: 'restored assignedValue is a dataframe'});
       expectDeepEqual(restored['df']?.assignedValue?.rowCount, 3, {prefix: 'restored dataframe content'});
     } finally {
       await deleteRuns([metaCall?.id, ...savedCallIds(tree.toSerializedState())]);
@@ -178,6 +185,48 @@ category('ComputeUtils: Driver state tree persistence', async () => {
       expectDeepEqual(meta?.id, savedId, {prefix: 'Loaded metaCall id'});
       expectDeepEqual(meta?.title, 'meta title', {prefix: 'Loaded title'});
       expectDeepEqual(meta?.description, 'meta desc', {prefix: 'Loaded description'});
+    } finally {
+      const steps = (driver.currentState$.value as PipelineStateStatic<StepFunCallState, {}> | undefined)?.steps ?? [];
+      const stepIds = steps.map((step) => (step as StepFunCallState).funcCall?.id);
+      await deleteRuns([driver.currentMetaCallData$.value?.id, ...stepIds]);
+      driver.close();
+    }
+  });
+
+  test('Driver savePipeline with a space target links only the workflow run there', async () => {
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {}).toPromise();
+    const pconf = await getProcessedConfig(config);
+    const driver = new Driver();
+    const space = await grok.dapi.spaces.createRootSpace(`Driver save target ${Date.now()}`);
+    try {
+      await driver.sendCommand({event: 'initPipeline', provider: '', config: pconf});
+      await driver.sendCommand({event: 'savePipeline', title: 'space title', target: {spaceId: space.id}});
+      const meta = driver.currentMetaCallData$.value;
+      expectDeepEqual(meta?.title, 'space title', {prefix: 'Saved title'});
+      const linked = await historyUtils.listSpaceRuns(space.id);
+      expectDeepEqual(linked.map((run) => run.id), [meta?.id], {prefix: 'Linked runs'});
+    } finally {
+      const steps = (driver.currentState$.value as PipelineStateStatic<StepFunCallState, {}> | undefined)?.steps ?? [];
+      const stepIds = steps.map((step) => (step as StepFunCallState).funcCall?.id);
+      await grok.dapi.spaces.delete(space);
+      await deleteRuns([driver.currentMetaCallData$.value?.id, ...stepIds]);
+      driver.close();
+    }
+  });
+
+  test('Driver savePipeline that fails only to link into the space keeps the run', async () => {
+    const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper1', {}).toPromise();
+    const pconf = await getProcessedConfig(config);
+    const driver = new Driver();
+    const space = await grok.dapi.spaces.createRootSpace(`Driver deleted space ${Date.now()}`);
+    await grok.dapi.spaces.delete(space);
+    try {
+      await driver.sendCommand({event: 'initPipeline', provider: '', config: pconf});
+      const saved = await driver.sendCommand({event: 'savePipeline', title: 'unlinked', target: {spaceId: space.id}});
+      expectDeepEqual(saved != null, true, {prefix: 'Save resolves with the run'});
+      const meta = driver.currentMetaCallData$.value;
+      expectDeepEqual(meta?.title, 'unlinked', {prefix: 'Saved title'});
+      expectDeepEqual((await historyUtils.loadRun(meta!.id!)).id, meta?.id, {prefix: 'Saved run'});
     } finally {
       const steps = (driver.currentState$.value as PipelineStateStatic<StepFunCallState, {}> | undefined)?.steps ?? [];
       const stepIds = steps.map((step) => (step as StepFunCallState).funcCall?.id);

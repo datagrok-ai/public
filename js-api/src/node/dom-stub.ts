@@ -207,7 +207,7 @@ export function installDomStub(): void {
     createTextNode: (text: string) => new FakeText(text),
     createDocumentFragment: () => new FakeDocumentFragment(),
     createEvent: () => new FakeEvent(),
-    querySelector: () => null,
+    querySelector: (selector: string) => selector === 'head' ? document.head : null,
     querySelectorAll: () => [],
     getElementById: () => null,
     getElementsByClassName: () => [],

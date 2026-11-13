@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, test, expect, delay, testEvent} from '@datagrok-libraries/test/src/test';
+import {after, before, category, test, expect, testEvent, uiSettled} from '@datagrok-libraries/test/src/test';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {
   getUserLibSettings, setUserLibSettings
@@ -71,9 +71,7 @@ category('bio-substructure-filters', async () => {
       await testEvent(df.onRowsFiltered, () => {}, () => {
         bf.props = new BioFilterProps('PEPTIDE1{C}$$$$V2.0', undefined, _package.logger);
       }, 20000);
-      setTimeout(() => view.grid.invalidate(), 500);
       await awaitGrid(view.grid);
-      await delay(1000);
       _package.logger.debug(`${logPrefix}, filter 2 changed.`);
       expect(filter.dataFrame!.filter.trueCount, 2);
       expect(filter.dataFrame!.filter.toBinaryString(), '1001');
@@ -81,7 +79,7 @@ category('bio-substructure-filters', async () => {
       dlg.close();
     }
     await filter.awaitRendered();
-    await delay(3000); //TODO: await for grid.onLookChanged
+    await uiSettled('helm-dialog');
   }, {});
 
 
@@ -127,9 +125,6 @@ category('bio-substructure-filters', async () => {
       await awaitGrid(view.grid);
       //debugger;
 
-      _package.logger.debug('Bio tests: substructureFilters/sync-helm, before changed event');
-      await delay(f1.debounceTime * 2);
-      _package.logger.debug('Bio tests: substructureFilters/sync-helm, after changed event');
       expect(df.filter.trueCount, fTrueCount);
 
       await f1.awaitRendered();
@@ -141,7 +136,7 @@ category('bio-substructure-filters', async () => {
     }
     await Promise.all([f1.awaitRendered(), f2.awaitRendered()]);
     await awaitGrid(view.grid);
-    await delay(3000); //TODO: await for grid.onLookChanged
+    await uiSettled('sync-helm');
   });
 
 

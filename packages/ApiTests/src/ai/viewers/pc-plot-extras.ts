@@ -1,7 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, expect, expectFloat, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectFiresWithin, expectNoThrow, subscribeAll, until, withAttachedViewer} from '../helpers';
+import {after, before, category, expect, expectFloat, settled, test} from '@datagrok-libraries/test/src/test';
+import {
+  demog, expectFiresWithin, expectNoThrow, look, subscribeAll, until, withAttachedViewer, withTableView,
+} from '../helpers';
 
 // PcPlot layout getters, canvas/overlay handles, render side effects, and render events.
 // Read-only geometry/handle/event checks share one attached+rendered plot (clear:false) to
@@ -73,5 +75,25 @@ category('AI: Viewers: PcPlot Extras', () => {
 
   test('Full event sweep via subscribeAll', async () => {
     subscribeAll([v.onResetView, v.onBeforeDrawOverlay, v.onAfterDrawOverlay, v.onViewerRendered])();
+  });
+
+  test('a layout with Line Width 0 and density on draws and takes a hover without an error (core#967)', async () => {
+    await withTableView(demog(100), async (view) => {
+      await settled(view.addViewer(DG.VIEWER.PC_PLOT, {columnNames: columns, showDensity: true, lineWidth: 0}));
+      view.loadLayout(view.saveLayout());
+      let plot: DG.Viewer | undefined;
+      await until(() => (plot = Array.from(view.viewers).find((x) => x.type === DG.VIEWER.PC_PLOT)) != null);
+      await settled(plot!);
+      grok.shell.clearLastError();
+      const overlay = plot!.root.querySelector('canvas[name="overlay"]')!;
+      const r = overlay.getBoundingClientRect();
+      overlay.dispatchEvent(new MouseEvent('mousemove',
+        {bubbles: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2}));
+      await settled(plot!);
+      expect(look(plot!)['lineWidth'], 0);
+      expect(plot!.getWidgetStatus().values?.['density style'], 'circles');
+      expect(plot!.getWidgetStatus().values?.['error'], '');
+      expect(await grok.shell.lastError ?? '', '');
+    });
   });
 }, {owner: 'agolovko@datagrok.ai', clear: false});

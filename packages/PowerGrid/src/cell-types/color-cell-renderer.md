@@ -1,4 +1,4 @@
-[//]: # (doc max 10 lines: public/help/visualize/viewers/grid#color: color cell renderer)
+[//]: # (doc max 10 lines: help/visualize/viewers/grid#color: color cell renderer)
 
 # Color Cell Renderer
 

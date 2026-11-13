@@ -57,9 +57,9 @@ test.describe("The Files section of the Browse tree", () => {
     await session.step(29, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(30, "And Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
     await session.step(49, "Given Files---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Files---Demo tree node inside browse tree")));
-    await session.step(50, "When user clicks on Files---Demo---demog.csv tree node inside browse tree", () => clickOn(page, el("Files---Demo---demog.csv tree node inside browse tree")));
-    await session.step(51, "Then the \"demog\" view should be current", () => viewIsCurrent(page, "demog"));
-    await session.step(52, "And grid should show 5850 rows", () => showsRows(page, el("grid"), 5850));
+    await session.step(50, "When user clicks on Files---Demo---demog-1000.csv tree node inside browse tree", () => clickOn(page, el("Files---Demo---demog-1000.csv tree node inside browse tree")));
+    await session.step(51, "Then the \"demog-1000\" view should be current", () => viewIsCurrent(page, "demog-1000"));
+    await session.step(52, "And grid should show 1000 rows", () => showsRows(page, el("grid"), 1000));
     await session.step(53, "And no errors should have been logged", () => noErrors(page));
     await session.step(54, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
@@ -70,10 +70,10 @@ test.describe("The Files section of the Browse tree", () => {
     await session.step(30, "And Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
     await session.step(57, "Given user watches downloads", () => watchDownloads(page));
     await session.step(58, "And Files---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Files---Demo tree node inside browse tree")));
-    await session.step(59, "When user opens the context menu of Files---Demo---demog.csv tree node inside browse tree", () => openContextMenu(page, el("Files---Demo---demog.csv tree node inside browse tree")));
+    await session.step(59, "When user opens the context menu of Files---Demo---demog-1000.csv tree node inside browse tree", () => openContextMenu(page, el("Files---Demo---demog-1000.csv tree node inside browse tree")));
     await session.step(60, "And user downloads a file through \"Download\" menu item in context menu", () => downloadThrough(page, el("\"Download\" menu item in context menu")));
-    await session.step(61, "Then a file \"demog.csv\" should have been downloaded", () => fileDownloaded(page, "demog.csv"));
-    await session.step(62, "And the downloaded file \"demog.csv\" should contain text \"USUBJID\"", () => downloadContains(page, "demog.csv", "USUBJID"));
+    await session.step(61, "Then a file \"demog-1000.csv\" should have been downloaded", () => fileDownloaded(page, "demog-1000.csv"));
+    await session.step(62, "And the downloaded file \"demog-1000.csv\" should contain text \"USUBJID\"", () => downloadContains(page, "demog-1000.csv", "USUBJID"));
     await session.step(63, "And no errors should have been logged", () => noErrors(page));
     await session.step(64, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });

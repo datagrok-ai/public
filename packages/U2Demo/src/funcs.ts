@@ -1,8 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {signal, computed, Scope, div, divV, divH, span, h3, button} from '@datagrok-libraries/u2';
-import {funcForm, FuncCallForm, functionsBrowser} from '@datagrok-libraries/u2/src/dg/index.js';
-import {ensureFuncs, ensureTable, fmt, gateTitle, prose} from './func-convergence';
+import type {Reason} from '@datagrok-libraries/u2';
+import {funcForm, FuncCallForm, functionsBrowser} from '@datagrok-libraries/u2/dg';
+import {ensureFuncs, ensureTable, fmt, gateReason, prose} from './func-convergence';
 import {readout} from './pages/common';
 
 const INTRO = 'One FuncCall, two editors: the platform\'s `DG.InputForm.forFuncCall` on the ' +
@@ -115,7 +116,7 @@ export function funcsPage(): HTMLElement {
       // captions, `editor:` hints) — one side failing still leaves the other side working
       let form: FuncCallForm | undefined;
       try {
-        form = Scope.runWith(shown, () => funcForm(call));
+        form = shown.build(() => funcForm(call));
         u2Column.append(form.root);
         if (form.unsupported.length > 0)
           u2Column.append(prose('Parameters not supported by this form yet: ' +
@@ -125,9 +126,14 @@ export function funcsPage(): HTMLElement {
         u2Column.append(span(String(e?.message ?? e), 'u2demo-error'));
       }
 
-      Scope.runWith(shown, () => {
+      shown.build(() => {
         const result = signal('');
         const failed = signal(false);
+        const gate = form;
+        const off: Reason = gate === undefined ? 'The u2 form failed to build' :
+          gate.inputs.length === 0 && gate.unsupported.length > 0 ?
+            'Nothing to run with: this form can\'t edit ' + gate.unsupported.map((name) => `'${name}'`).join(', ') :
+            computed(() => gateReason(gate));
         const run = button('Run', async () => {
           try {
             await call.call();
@@ -139,26 +145,7 @@ export function funcsPage(): HTMLElement {
             failed.value = true;
             result.value = 'Run failed: ' + String(e?.message ?? e);
           }
-        }, {primary: true});
-        if (form === undefined) {
-          run.disabled = true;
-          run.title = 'The u2 form failed to build';
-        }
-        else if (form.inputs.length === 0 && form.unsupported.length > 0) {
-          run.disabled = true;
-          run.title = 'Nothing to run with: this form can\'t edit ' +
-            form.unsupported.map((name) => `'${name}'`).join(', ');
-        }
-        else {
-          const gate = form;
-          const blocked = computed(() =>
-            gate.missingRequired.value.length > 0 || gate.invalidFields.value.length > 0);
-          Scope.ambient!.effect(() => {
-            run.disabled = blocked.value;
-            run.title = gateTitle(blocked.value, gate.missingRequired.value,
-              gate.invalidFields.value);
-          });
-        }
+        }, {primary: true, disabled: off});
         const status = readout('result', result);
         Scope.ambient!.effect(() => status.classList.toggle('u2demo-error', failed.value));
         detail.append(divH([run], 'u2demo-row'), status);
@@ -185,8 +172,9 @@ export function funcsPage(): HTMLElement {
 
   // the native u2 browser over the same registry the Dart FunctionsWidget read; the pane keeps
   // its old surface — names only, no signatures or play icons, panes behind the filter icon
-  const fb = Scope.runWith(scope, () => functionsBrowser(
+  const fb = scope.build(() => functionsBrowser(
     {showSignature: false, showRunButton: false, showTags: false}));
+  fb.root.classList.add('u2demo-funcs-browser');
   list.append(fb.root);
   fb.effect(() => {
     const item = fb.selected.value;

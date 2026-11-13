@@ -26,12 +26,12 @@ class DatabricksProvider(Provider):
     def routes(self, credentials: Credentials) -> dict[ApiMode, Route]:
         workspace = credentials.get('baseUrl') or ''
         if not WORKSPACE.fullmatch(workspace):
-            raise ProviderError('The baseUrl container credential is not a Databricks workspace URL: set '
+            raise ProviderError('The baseUrl Grokky credential is not a Databricks workspace URL: set '
                                 'https://<workspace>.cloud.databricks.com, https://adb-<id>.<n>.azuredatabricks.net '
                                 'or https://<id>.<n>.gcp.databricks.com')
         service = (credentials.get('service') or '').strip()
         if service and not SERVICE.fullmatch(service):
-            raise ProviderError('The service container credential must name a model service as '
+            raise ProviderError('The service Grokky credential must name a model service as '
                                 '<catalog>.<schema>.<name>, such as workspace.default.claude-haiku-5-5-ext')
         self.service = service
         base = workspace.rstrip('/')
@@ -48,7 +48,7 @@ class DatabricksProvider(Provider):
 
     def error_hint(self, status: int | None) -> str:
         if status in (401, 403):
-            return (' (check the apiKey container credential: a token of this workspace whose user or service '
+            return (' (check the apiKey Grokky credential: a token of this workspace whose user or service '
                     'principal may query the model' +
                     (', and that model is a model id the service allows)' if self.service else ')'))
-        return ' (check the model and service container credentials)' if status == 404 and self.service else ''
+        return ' (check the model and service Grokky credentials)' if status == 404 and self.service else ''

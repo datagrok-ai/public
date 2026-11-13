@@ -1,7 +1,3 @@
-/* What a viewer's pixels say: repainted, ink, colors, the selection highlight, the value range
-   and the color scale — every "than before" against the snapshot the last change took. A throw
-   inside an `expect.poll` callback ends the poll, so a read the viewer may be between layouts of
-   returns `false` and keeps the reason for the failure that follows. */
 import {Page} from '@playwright/test';
 import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
@@ -224,9 +220,11 @@ export async function expectAreaColors(page: Page, target: ElementRef, area: str
   }
 }
 
-/** One area has a significant color the other has nothing near. */
+/** One area has a significant hue the other has nothing near. Greys are the chrome over a color (a label,
+ * a cell's text, an edge), and their ink depends on the glyph and where it lands: "M" crossed the floor
+ * where "F" did not. */
 const hasOwnColor = (mine: AreaColor[], theirs: AreaColor[]): boolean =>
-  mine.some((c) => c.count >= SIGNIFICANT_PX && !theirs.some((d) => d.count >= COLOR_MIN_PX && near(c.hex, d.hex)));
+  mine.some((c) => c.count >= SIGNIFICANT_PX && hsl(c.hex).s >= GREY_SATURATION && !theirs.some((d) => d.count >= COLOR_MIN_PX && near(c.hex, d.hex)));
 
 /** Two areas painted in different colors (`same` = false), or in the same ones: every significant
  * color of either has a near color in the other (a linked color coding, a category and its swatch). */

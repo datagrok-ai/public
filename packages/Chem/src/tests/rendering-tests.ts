@@ -1,12 +1,15 @@
-import {category, test, expect, expectArray, before} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray, before, waitUntil} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {readDataframe} from './utils';
 import {scrollTable} from '../utils/demo-utils';
 import * as DG from 'datagrok-api/dg';
 import {RDKitCellRenderer} from '../rendering/rdkit-cell-renderer';
+import {showEnlargedMolecule} from '../rendering/render-molecule';
 import {FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG, SCAFFOLD_TREE_HIGHLIGHT} from '../constants';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
+import {HIGHLIGHT_COLOR, UNSPECIFIED_STEREO_IS_UNKNOWN, renderingDefault, renderingOptions, setRenderingValue}
+  from '../rendering/rendering-settings';
 
 category('rendering', () => {
   let rdkitModule: any;
@@ -147,5 +150,34 @@ category('rendering', () => {
     const res = smiles.map((s) => rdKitCellRenderer
       ._fetchMol(s, [], false, false, {}, true).molCtx.useMolBlockWedging);
     expectArray(res, new Array(5).fill(false));
+  });
+
+  test('a column overrides the Rendering settings, the package\'s value removes the override', async () => {
+    const col = DG.Column.fromStrings('smiles', ['CCO']);
+    DG.DataFrame.fromColumns([col]);
+    const packageOptions = renderingOptions();
+    expect(JSON.stringify(renderingOptions(col)), JSON.stringify(packageOptions));
+    setRenderingValue(HIGHLIGHT_COLOR, col, '#0000ff');
+    setRenderingValue(UNSPECIFIED_STEREO_IS_UNKNOWN, col, String(!packageOptions.unspecifiedStereoIsUnknown));
+    expectArray(renderingOptions(col).highlightColour, [0, 0, 255 / 256, 1]);
+    expect(renderingOptions(col).unspecifiedStereoIsUnknown, !packageOptions.unspecifiedStereoIsUnknown);
+    expect(renderingOptions(col).simplifiedStereoGroupLabel, packageOptions.simplifiedStereoGroupLabel);
+    setRenderingValue(HIGHLIGHT_COLOR, col, renderingDefault(HIGHLIGHT_COLOR));
+    expect(col.tags.has(HIGHLIGHT_COLOR.tag), false, 'the package\'s color removes the override');
+    expectArray(renderingOptions(col).highlightColour, packageOptions.highlightColour);
+  });
+
+  test('Enlarge draws the molecule again at the window\'s size', async () => {
+    const dialog = showEnlargedMolecule('O=C(O)c1ccccc1');
+    try {
+      const canvas = dialog.root.querySelector('canvas')!;
+      expect(canvas.style.width, `${Math.max(200, window.innerWidth - 200)}px`);
+      await waitUntil(() => {
+        const data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+        return data.some((v, i) => i % 4 === 0 && v < 100 && data[i + 3] > 200); // a bond: dark and opaque
+      }, 'nothing drawn', 5000);
+    } finally {
+      dialog.close();
+    }
   });
 });

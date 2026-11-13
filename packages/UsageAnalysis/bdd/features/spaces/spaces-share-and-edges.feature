@@ -9,7 +9,7 @@ Feature: Sharing a space
 
   The share is claimed in the Sharing pane of the context panel, not through
   grok.dapi.permissions: that answers with the edit and view buckets only, and a share made in the
-  dialog lands in neither — the pane calls it "has special permissions". The old spec asserted the
+  dialog lands in neither — the pane names it by its level ("can view and use"; "has special permissions" before core#977). The old spec asserted the
   user was in `view` and not in `edit`; on dev, 2026-09-10, a share through the dialog puts them in
   neither, so that claim would only ever have held for a share made another way.
 

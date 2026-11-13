@@ -1,19 +1,11 @@
-/* One browser page for all the scenarios of a feature. The first scenario opens it (inside a test,
-   so Playwright applies the project's context options — login storage state, viewport — and
-   records traces and screenshots per scenario as usual), every scenario ends with the shell reset
-   (dialogs and popups gone, `grok.shell.closeAll()`, back on the Home view), the last one closes
-   it. The generated spec keeps calling `test()` itself, so reports point at the spec line.
-   The page's console errors and uncaught exceptions are collected from the moment it opens, so a
-   scenario can assert a zero-error floor (`no errors should have been logged`). A scenario that passed
-   is audited (audit.ts): layout and console errors before the reset, leaks after it. */
 import {join, sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {randomUUID} from 'node:crypto';
 import type {Browser, Page, PlaywrightTestArgs, PlaywrightTestOptions, PlaywrightWorkerArgs, PlaywrightWorkerOptions,
   TestType} from '@playwright/test';
 import {leave} from './args.js';
-import {type AuditOutcome, auditScenario, leakCheck, type LoggedError, markLeakBaseline, settleAudit, shouldAudit,
-  trackLeaks} from './audit.js';
+import {auditAfterStep, type AuditOutcome, auditScenario, leakCheck, type LoggedError, markLeakBaseline, settleAudit,
+  shouldAudit, startScenarioAudit, strictU2, trackLeaks} from './audit.js';
 import {failure, isSkip, isWaitFailure, journeyFailure, reasonOf, StepFailure} from './failure.js';
 import {DIALOG_CLOSE} from './gestures.js';
 import * as guide from './guide.js';
@@ -28,7 +20,8 @@ export {auditModes, markLeakBaseline} from './audit.js';
 type Test = TestType<PlaywrightTestArgs & PlaywrightTestOptions, PlaywrightWorkerArgs & PlaywrightWorkerOptions>;
 
 export interface FeatureSession {
-  /** Resolves {run} to this feature instance's unique suffix and {time} to its start in epoch ms. */
+  /** Resolves {run} to this feature instance's unique suffix, {time} to its start in epoch ms and {login} to
+   * the login of the account the run started as (global-setup's DATAGROK_RUN_LOGIN). */
   text(value: string): string;
   /** The feature's page — opened on first use, shared by the scenarios that follow. */
   page(browser: Browser): Promise<Page>;
@@ -67,6 +60,7 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
       try {
         if (page) {
           takeErrors(page);
+          startScenarioAudit(page);
           await takeBalloons(page).catch(() => undefined);
         }
         await test.step(name, options?.knownFailure ? () => whileExpectedToFail(body) : body);
@@ -93,7 +87,7 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
         failed.push({name, error: new Error(KNOWN_FAILURE_PASSED)});
       else if (page && usable(page)) {
         const info = test.info();
-        const error = settleAudit(await audited(() => auditScenario(page, () => takeLoggedErrors(page))),
+        const error = settleAudit(await audited(() => auditScenario(page, () => stackedErrors(page))),
           `${info.title} › ${name}`, info, name);
         if (error)
           failed.push({name, error});
@@ -230,6 +224,8 @@ function ignoredError(text: string, url: string): boolean {
   return text.startsWith('Permissions policy violation') && /^https:\/\/(www\.)?youtube\.com\//.test(url);
 }
 
+const LOOK_BELOW = /Look below, ID = (\S+)/;
+
 /** Starts collecting the page's console errors and uncaught exceptions. */
 export function watchErrors(page: Page): void {
   if (errors.has(page))
@@ -244,12 +240,14 @@ export function watchErrors(page: Page): void {
       return;
     const continuation = /^Stack trace (\S+)/.exec(text);
     if (continuation && announced.has(continuation[1])) {
-      const parent = list.findIndex((e) => new RegExp(`Look below, ID = ${continuation[1]}(\\s|$)`).test(e.message));
-      if (parent >= 0)
+      const parent = list.findIndex((e) => LOOK_BELOW.exec(e.message)?.[1] === continuation[1]);
+      if (parent >= 0) {
         list[parent].message += `\n${text}`;
+        stackJoined.get(page)?.();
+      }
       return;
     }
-    const id = /Look below, ID = (\S+)/.exec(text);
+    const id = LOOK_BELOW.exec(text);
     if (id)
       announced.add(id[1]);
     list.push({message: text, url: m.location().url ?? ''});
@@ -260,6 +258,37 @@ export function watchErrors(page: Page): void {
   // through beforeunload, and dismissing it, Playwright's default, cancels the navigation, which then waits
   // out its timeout. A listener ends that default for every dialog, so the others are dismissed here.
   page.on('dialog', (d) => (d.type() === 'beforeunload' ? d.accept() : d.dismiss()).catch(() => undefined));
+}
+
+const stackJoined = new WeakMap<Page, () => void>();
+const awaitsStack = (e: LoggedError): boolean => {
+  const id = LOOK_BELOW.exec(e.message)?.[1];
+  return id !== undefined && !e.message.includes(`\nStack trace ${id}`);
+};
+
+/** The translator's first answer loads the client's source maps, which takes the longest. */
+const STACK_MS = 30000;
+
+/** Until every error on the record has its translated stack, for a check about to report them; a stack that
+ * never comes (a stand without source maps) ends the wait at `ms`. With no such error, returns at once. */
+export async function stacksLogged(page: Page, ms = STACK_MS): Promise<void> {
+  const list = errors.get(page) ?? [];
+  const deadline = Date.now() + ms;
+  while (list.some(awaitsStack) && Date.now() < deadline) {
+    await new Promise<void>((done) => {
+      const timer = setTimeout(done, deadline - Date.now());
+      stackJoined.set(page, () => {
+        clearTimeout(timer);
+        done();
+      });
+    });
+  }
+  stackJoined.delete(page);
+}
+
+async function stackedErrors(page: Page): Promise<LoggedError[]> {
+  await stacksLogged(page);
+  return takeLoggedErrors(page);
 }
 
 /** The errors logged since the last call (or since the page opened), and clears them. */
@@ -312,6 +341,9 @@ async function afterFeature(page: Page, path: string): Promise<void> {
   await page.close().catch(() => undefined);
 }
 
+/** One browser page for all the scenarios of a feature, opened inside the first test so Playwright applies the
+ * project's context options and records per scenario; the generated spec keeps calling `test()` itself, so
+ * reports point at the spec line. */
 export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   let page: Page | undefined;
   // the cleanups of a page that crashed during the feature: none of them ran
@@ -320,7 +352,15 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
   // a login takes only [a-z0-9._-], and a user can never be deleted, so a fixture user is named by
   // when it was made; two features of one worker never start in the same millisecond
   const time = String(lastTime = Math.max(Date.now(), lastTime + 1));
-  const text = (value: string): string => value.replaceAll('{run}', runId).replaceAll('{time}', time);
+  const text = (value: string): string => {
+    const resolved = value.replaceAll('{run}', runId).replaceAll('{time}', time);
+    if (!resolved.includes('{login}'))
+      return resolved;
+    const login = process.env.DATAGROK_RUN_LOGIN;
+    if (!login)
+      throw new Error(`"${value}" names {login}, and the run has no login: global-setup sets DATAGROK_RUN_LOGIN`);
+    return resolved.replaceAll('{login}', login);
+  };
   const file = path && specUrl ? featureFile(specUrl, path) : undefined;
   test.afterEach(async () => {
     const p = page;
@@ -331,7 +371,7 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
     const info = test.info();
     const audit = shouldAudit(info);
     const outcome: AuditOutcome = audit && !inJourney ?
-      await audited(() => auditScenario(p, () => takeLoggedErrors(p))) : {ran: [], findings: []};
+      await audited(() => auditScenario(p, () => stackedErrors(p))) : {ran: [], findings: []};
     if (!audit)
       await scenarioRestores.get(p)?.().catch((r) =>
         console.warn(`bdd: what "${info.title}" changed could not be put back: ${r instanceof Error ? r.message.split('\n')[0] : r}`));
@@ -410,11 +450,15 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
         shared ??= await (await browser.newContext()).newPage();
         watchErrors(shared);
         watchPictures(shared);
+        await strictU2(shared);
         await trackLeaks(shared);
         await guide.attach(shared);
         page = shared;
       }
       await markLeakBaseline(page);
+      startScenarioAudit(page);
+      // the balloons an earlier test left on the record (it failed, or showed no u2) are not this one's
+      await page.evaluate(() => { (window as any).__bdd?.takeBalloons?.(); }).catch(() => undefined);
       return page;
     },
     async step(line: number, title: string, body: () => Promise<unknown>, table?: string[][], caption?: string): Promise<void> {
@@ -434,6 +478,8 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
           await guide.end(page);
         }
       }, {location: file ? {file, line, column: 1} : undefined});
+      if (page && usable(page))
+        await auditAfterStep(page);
     },
   };
 }
@@ -530,6 +576,25 @@ export async function resetShell(page: Page): Promise<void> {
     // the next one without the links it looks for
     for (const key of Object.keys(localStorage).filter((k) => /^(Accordion:|card-view-render-mode-|domains-render-mode-)/.test(k)))
       localStorage.removeItem(key);
+    // the Browse tree keeps (and saves) every group a feature opened: the tree each later feature met grew, its
+    // Refresh refetched every open group, and a node further down left the panel's view
+    try {
+      const browse = w.grok.shell.browsePanel ? w.DG.toJs(w.grok.shell.browsePanel) : null;
+      const open: any[] = [];
+      const stack: any[] = browse?.mainTree ? [w.DG.toJs(browse.mainTree)] : [];
+      while (stack.length > 0)
+        for (const child of stack.pop().children)
+          if (child instanceof w.DG.TreeViewGroup) {
+            stack.push(child);
+            if (child.expanded)
+              open.push(child);
+          }
+      for (const group of open.reverse())
+        group.expanded = false;
+    }
+    catch (e) {
+      console.warn(`bdd: the Browse tree was not collapsed: ${e}`);
+    }
     return Array.from(document.querySelectorAll('.d4-dialog, [data-u2="dialog"]'))
       .filter((e) => (e as HTMLElement).offsetParent !== null).map((e) => e.getAttribute('name') ?? e.tagName).join(', ');
   }, NOTICES).catch(() => '');

@@ -56,6 +56,8 @@ const FILTER = str('Smart search filter, e.g. name="Chem"');
 const LIMIT = {type: 'number' as const, desc: 'Max items to return (default 50)'};
 const OFFSET = {type: 'number' as const, desc: 'Items to skip, for paging (default 0)'};
 const PAGING = {limit: LIMIT, offset: OFFSET};
+// Every operation shares these; the dry-run note of a destructive op already says what `confirm` is for.
+const SELF_EVIDENT = new Set<Param>([LIMIT, OFFSET, CONFIRM]);
 
 export const DOMAINS: Domain[] = [
   {
@@ -93,7 +95,9 @@ export const DOMAINS: Domain[] = [
       create_script: {
         desc: 'Create a new script.',
         params: {
-          script: str('Script source code', true),
+          script: str('Script source, starting with the header the platform reads: `#name: X`, `#language: python`, ' +
+            'one `#input: <type> <name>` per input and one `#output: <type> <name>` per output ' +
+            '(types: int, double, string, bool, dataframe, column); the body assigns each output variable', true),
           name: str('Script name'),
           language: str('python | r | julia | nodejs | grok | octave (default python)'),
         },
@@ -289,8 +293,17 @@ export const DOMAINS: Domain[] = [
 ];
 
 /** One-line operation menu for a domain — what goes in the tool description. */
+/** Each operation with its purpose and every parameter's type and meaning, e.g.
+ *  `get — Full details of one function…; id: string — Function ID or name`: enough to call it right without
+ *  first listing the domain. */
 export function opMenu(d: Domain): string {
-  return Object.keys(d.ops).join(', ');
+  return Object.entries(d.ops).map(([name, op]) => {
+    const params = Object.entries(op.params ?? {}).map(([p, meta]) => {
+      const desc = SELF_EVIDENT.has(meta) ? '' : ` — ${meta.desc}`;
+      return `\n    ${p}${meta.required ? '' : '?'}: ${meta.type}${desc}`;
+    }).join('');
+    return `- ${name} — ${op.desc}${params}`;
+  }).join('\n');
 }
 
 /** Full schema for a domain, returned when a call omits `op` or names an unknown one. */

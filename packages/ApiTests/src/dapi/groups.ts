@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, test, expect} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectExceptionAsync} from '@datagrok-libraries/test/src/test';
 
 category('Dapi: groups', () => {
   test('find group', async () => {
@@ -119,4 +119,31 @@ category('Dapi: groups', () => {
     }
   }, {stressTest: true});
 
+  test('a name a group or role already has is refused', async () => {
+    const name = `js-api-test-taken_${DG.Utils.randomString(8)}`;
+    await grok.dapi.groups.createNew(name);
+    try {
+      await expectExceptionAsync(() => grok.dapi.groups.createNew(name),
+        (e) => String(e?.message ?? e).includes('A group or role with the same name already exists'));
+      expect((await grok.dapi.groups.filter(`shortName="${name}"`).list()).length, 1);
+    } finally {
+      for (const group of await grok.dapi.groups.filter(`shortName="${name}"`).list())
+        await grok.dapi.groups.delete(group);
+    }
+  });
+
+  // the account that creates a group is its only admin
+  test('the only admin cannot leave a group or lose Admin', async () => {
+    const me = grok.shell.user.group;
+    const group = await grok.dapi.groups.createNew(`js-api-test-admin_${DG.Utils.randomString(8)}`);
+    const refused = (e: any) => String(e?.message ?? e).includes('should have at least one admin user');
+    try {
+      await expectExceptionAsync(() => grok.dapi.groups.removeMember(group, me), refused);
+      await expectExceptionAsync(() => grok.dapi.groups.addMember(group, me), refused);
+      const saved = await grok.dapi.groups.include('children.child').find(group.id);
+      expect(saved.adminMembers.some((m) => m.id === me.id), true);
+    } finally {
+      await grok.dapi.groups.delete(group);
+    }
+  });
 }, {owner: 'aparamonov@datagrok.ai'});

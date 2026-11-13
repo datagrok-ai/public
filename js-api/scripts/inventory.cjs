@@ -43,7 +43,7 @@ function readAll(d) {
 }
 const testsText = readAll(path.resolve(root, '../packages/ApiTests/src'));
 const samplesText = readAll(path.resolve(root, '../packages/ApiSamples/scripts'));
-const helpText = readAll(path.resolve(root, '../help/develop'));
+const helpText = readAll(path.resolve(root, '../../help/develop'));
 
 const members = [];
 const fileStats = {};

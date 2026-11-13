@@ -19,10 +19,7 @@ Feature: A second grid as a viewer, and column tooltips
   gated on a data cell); the scenario carried `@known-failure` until the fix reached the stand, and
   its zero-error floor — Columns, All, OK, then the AGE header — now guards the fix.
 
-  Not translated, and why: from `grid.md` "Column Tooltip Settings", that None shows no tooltip -
-  the tooltip appears on a debounce after the pointer rests, and no signal says a hover has been
-  processed, so an absence right after the hover holds whatever the setting (the menu mark of None
-  is claimed instead). From `grid-ui.md` "Pick Up / Apply", the formatting and the per-column style,
+  Not translated, and why: from `grid-ui.md` "Pick Up / Apply", the formatting and the per-column style,
   and a changed colour scheme on Average Mass - the colouring of a column is the table's, so both grids show it whatever Pick Up does;
   the grid-wide Color Coding is what the second grid only gets from Apply.
 
@@ -90,6 +87,10 @@ Feature: A second grid as a viewer, and column tooltips
     And user hovers over "Current Column" menu item in context menu
     Then "Columns" menu item in context menu should be selected
     When user closes the context menu
+    And user clicks on the "cell 2 of AGE" area of grid
+    And user hovers over the "cell 3 of AGE" area of grid
+    Then the tooltip should show "AGE" as "58"
+    When user moves the pointer away from grid
     And user picks "Tooltip > Current Column > None" from the context menu of the "header AGE" area of grid
     And user right-clicks on the "header AGE" area of grid
     And user hovers over "Tooltip" menu item in context menu
@@ -97,6 +98,10 @@ Feature: A second grid as a viewer, and column tooltips
     Then "None" menu item in context menu should be selected
     And "Default" menu item in context menu should not be selected
     When user closes the context menu
+    And user clicks on the "cell 2 of AGE" area of grid
+    And user hovers over the "cell 3 of AGE" area of grid
+    Then tooltip should be hidden
+    When user moves the pointer away from grid
     And user right-clicks on the "header AGE" area of grid
     And user hovers over "Tooltip" menu item in context menu
     And user hovers over "Current Column" menu item in context menu

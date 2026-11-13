@@ -1,6 +1,6 @@
 # Grokky
 
-Grokky is the [AI for Datagrok](../../help/explore/ai/ai.md), enabling the following:
+Grokky is the [AI for Datagrok](../../../help/explore/ai/ai.md), enabling the following:
 1. A generic AI JS API for core and other plugins to use LLMs
 2. [Datagrok MCP server](dockerfiles/mcp-server/) so that Datagrok can be used by others
 3. [AI runtime](dockerfiles/claude-runtime) for
@@ -276,9 +276,10 @@ by active code. All active AI features now route through `ClaudeRuntimeClient`.
 
 ## Model credentials
 
-The model provider, key and model are the `claude-runtime` container's credentials: `provider`, `apiKey`, `model`
+The model provider, key and model are the Grokky package's credentials, per group: `provider`, `apiKey`, `model`
 (the one model every turn runs on) and, where a provider needs them, `baseUrl`, `region`, `apiFormat` and
-`service`. Wire formats are classes in `agent/grokky_agent/formats.py`, providers in `agent/grokky_agent/providers/`.
+`service`. The runtime reads the user's set with the container token of their WebSocket (`src/credentials.ts`);
+it has no other source, so a user without credentials gets an error. Wire formats are classes in `agent/grokky_agent/formats.py`, providers in `agent/grokky_agent/providers/`.
 Claude subscription logins are not supported. Details: [Credentials](docs/CLAUDE_CODE_FLOW.md#credentials).
 
 ## Rebuilding the container images

@@ -1,18 +1,20 @@
 import * as DG from 'datagrok-api/dg';
-import {Observable, defer, of} from 'rxjs';
-import {concatMap, finalize, map, mapTo} from 'rxjs/operators';
+import {Observable, defer, from, of, throwError} from 'rxjs';
+import {catchError, concatMap, finalize, map, mapTo} from 'rxjs/operators';
+import {getRunName, getStartedOrNull} from '../../../shared-utils/utils';
 import {TreeNode} from '../data/BaseTree';
 import {PipelineConfiguration, RunSummaryItem, StepStatus} from '../config/PipelineConfiguration';
 import {PipelineConfigurationProcessed, getProcessedConfig} from '../config/config-processing-utils';
-import {PipelineInstanceConfig} from '../config/PipelineInstance';
+import {PipelineInstanceConfig, isFuncCallSerializedState} from '../config/PipelineInstance';
 import {ItemId, NqName, ValidationResult} from '../data/common-types';
 import {DriverLogger} from '../data/Logger';
 import {ItemMetadata} from '../view/ViewCommunication';
 import {callHandler, copyDataFrame, mergeValidationResults} from '../utils';
 import {MockRun, StateTree} from './StateTree';
-import {ConsistencyInfo, StateTreeNode, isFuncCallNode} from './StateTreeNodes';
+import {ConsistencyInfo, MetaCallInfo, StateTreeNode, isFuncCallNode} from './StateTreeNodes';
 import {RunStates, getRunSummary, statesToStatus} from './run-summary';
 import {toInstanceConfigRec} from './StateTreeSerializer';
+import {loadInstanceState} from './funccall-utils';
 
 type NodeRunState = {
   id: ItemId;
@@ -40,17 +42,22 @@ export type WorkflowRunState = NodeRunState & {
 /** A workflow or step with its values and run status; a valid instance config, so it can start a workflow again. */
 export type RunState = StepRunState | WorkflowRunState;
 
-export type HeadlessResult = {
-  /** false when a step ready to run had validation errors, then nothing ran */
-  isRun: boolean;
-  state: RunState;
+export type LoadedRun = {
+  /** The workflow at the root of the tree */
+  state: WorkflowRunState;
   summary: RunSummaryItem[];
+};
+
+export type HeadlessResult = LoadedRun & {
+  /** Whether the workflow ran. Steps not waiting for earlier ones are checked first; if any of them has
+   * validation errors, no step runs and this is false */
+  isRun: boolean;
 };
 
 const valuesOf = <T>(subjects: Record<string, {value: T}>) =>
   Object.fromEntries(Object.entries(subjects).map(([uuid, subj]) => [uuid, subj.value]));
 
-function readStates(tree: StateTree): RunStates {
+export function readStates(tree: StateTree): RunStates {
   const pipelineValidations: Record<string, ValidationResult | undefined> = {};
   const descriptions: Record<string, Record<string, string>> = {};
   tree.nodeTree.traverse(tree.nodeTree.root, (acc, node) => {
@@ -112,6 +119,14 @@ function hasReadyStepErrors(tree: StateTree) {
 const treeOptions = (config: PipelineConfigurationProcessed, mockMode = false, logger?: DriverLogger) =>
   ({config, isReadonly: false, annotationChecks: true, batchLinks: true, mockMode, logger});
 
+/** The state of a workflow and its summary, as a headless run returns them. */
+export function readRun(tree: StateTree): LoadedRun {
+  const states = readStates(tree);
+  const root = tree.nodeTree.root;
+  const state = toRunState(root, toInstanceConfigRec(root), states) as WorkflowRunState;
+  return {state, summary: getRunSummary(tree.toState(), states)};
+}
+
 /** Creates the workflow from the instance config, then, unless a step ready to run has validation errors,
  * runs every step that can run, as the Run ready steps button does. */
 export function runWorkflowConfig({config, instanceConfig, mockMode, mockRun, logger}: {
@@ -133,15 +148,7 @@ export function runWorkflowConfig({config, instanceConfig, mockMode, mockRun, lo
         const rootUuid = tree.nodeTree.root.getItem().uuid;
         return tree.runSequence(rootUuid, false, true, false, mockRun).pipe(mapTo(true));
       }),
-      map((isRun) => {
-        const states = readStates(tree);
-        const root = tree.nodeTree.root;
-        return {
-          isRun,
-          state: toRunState(root, toInstanceConfigRec(root), states),
-          summary: getRunSummary(tree.toState(), states),
-        };
-      }),
+      map((isRun) => ({isRun, ...readRun(tree)})),
       finalize(() => tree.close()),
     );
   });
@@ -163,11 +170,48 @@ export function saveWorkflowConfig({config, state, metadata}: {
   });
 }
 
-const loadConfig = (provider: NqName, version?: string) =>
-  callHandler<PipelineConfiguration>(provider, {version}).pipe(concatMap((conf) => getProcessedConfig(conf)));
+export const loadWorkflowConfig = (provider: NqName, version?: string, logger?: DriverLogger) =>
+  callHandler<PipelineConfiguration>(provider, {version}).pipe(concatMap((conf) => getProcessedConfig(conf, logger)));
+
+export const metaCallInfo = (metaCall?: DG.FuncCall): MetaCallInfo => ({
+  id: metaCall?.id,
+  title: metaCall ? getRunName(metaCall) : undefined,
+  description: metaCall?.options.description,
+  tags: metaCall?.options.tags,
+  started: getStartedOrNull(metaCall),
+});
+
+/** Loads a saved workflow run as the editor opens it, with the config of the run's version unless one is given. */
+export function loadSavedTree(funcCallId: string, {config, isReadonly = false, mockMode = false, logger}: {
+  config?: PipelineConfigurationProcessed,
+  isReadonly?: boolean,
+  mockMode?: boolean,
+  logger?: DriverLogger,
+} = {}): Observable<{tree: StateTree, metaCall: DG.FuncCall}> {
+  return from(loadInstanceState(funcCallId)).pipe(
+    concatMap(([state, metaCall]) => {
+      if (isFuncCallSerializedState(state))
+        throw new Error(`Wrong pipeline config in wrapper FuncCall ${funcCallId}`);
+      if (!state.nqName)
+        throw new Error(`Pipeline config in wrapper FuncCall ${funcCallId} missing nqName`);
+      return (config ? of(config) : loadWorkflowConfig(state.nqName, state.version, logger)).pipe(
+        map((conf) => StateTree.fromInstanceState({
+          state, config: conf, isReadonly, annotationChecks: true, batchLinks: true, mockMode, logger,
+        })),
+        concatMap((tree) => tree.init().pipe(
+          mapTo({tree, metaCall}),
+          catchError((e) => {
+            tree.close();
+            return throwError(e);
+          }),
+        )),
+      );
+    }),
+  );
+}
 
 export function runWorkflow(provider: NqName, version?: string, instanceConfig?: PipelineInstanceConfig) {
-  return loadConfig(provider, version).pipe(
+  return loadWorkflowConfig(provider, version).pipe(
     concatMap((config) => runWorkflowConfig({config, instanceConfig})),
   ).toPromise() as Promise<HeadlessResult>;
 }
@@ -175,7 +219,7 @@ export function runWorkflow(provider: NqName, version?: string, instanceConfig?:
 export function saveWorkflowRun(
   provider: NqName, version: string | undefined, state: RunState, metadata?: ItemMetadata,
 ) {
-  return loadConfig(provider, version).pipe(
+  return loadWorkflowConfig(provider, version).pipe(
     concatMap((config) => saveWorkflowConfig({config, state, metadata})),
   ).toPromise() as Promise<DG.FuncCall>;
 }

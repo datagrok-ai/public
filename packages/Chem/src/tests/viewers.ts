@@ -2,19 +2,19 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 //import * as ui from 'datagrok-api/ui';
 
-import {awaitCheck, category, test, testViewer} from '@datagrok-libraries/test/src/test';
+import {waitUntil, category, test, testViewer} from '@datagrok-libraries/test/src/test';
 
 async function awaitChemSearchViewer(viewer: DG.Viewer): Promise<void> {
-  await awaitCheck(()=> {
+  await waitUntil(()=> {
     const className = viewer.type === 'Chem Similarity Search' ? 'chem-viewer-grid' : 'chem-diversity-search';
-    const el = document.getElementsByClassName(className);
-    const errEl = document.getElementsByClassName('chem-malformed-molecule-error');
-    return (el.length && el[0].children.length === 12) || !!errEl.length;
+    const el = viewer.root.getElementsByClassName(className);
+    const error = viewer.root.classList.contains('chem-malformed-molecule-error');
+    return (el.length && el[0].children.length === 12) || error;
   }, 'Viewer hasn\'t been rendered', 3000);
 }
 
 async function awaitScaffoldTree(viewer: DG.Viewer): Promise<void> {
-  await awaitCheck(() => document.getElementsByClassName('mol-host').length > 0,
+  await waitUntil(() => document.getElementsByClassName('mol-host').length > 0,
     'scaffold tree has not been generated', 150000);
 }
 

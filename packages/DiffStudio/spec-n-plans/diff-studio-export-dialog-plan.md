@@ -319,7 +319,7 @@ Caveat: if the platform **caches** an accordion that was built while Diff Studio
 ### 6.4 What does NOT change
 
 - `src/package.ts` — untouched.
-- The existing `@grok.decorators.fileHandler({ext: 'ipv'})` double-click behavior — untouched.
+- The existing `@grok.decorators.fileHandler({ext: 'ivp'})` double-click behavior — untouched.
 - The ribbon Download icon — untouched.
 - No new package-level functions, no new `//tags: init`, no new `ObjectHandler`.
 

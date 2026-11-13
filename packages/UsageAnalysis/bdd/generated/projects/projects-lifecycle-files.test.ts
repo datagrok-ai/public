@@ -76,7 +76,7 @@ test.describe("A project built from a file, shared and renamed", () => {
       await session.step(66, "When user clicks on BDDLifeFiles{time} gallery card", () => clickOn(page, el(session.text("BDDLifeFiles{time} gallery card"))));
       await session.step(67, "Then the context panel should show \"BDDLifeFiles{time}\"", () => contextPanelShows(page, session.text("BDDLifeFiles{time}")));
       await session.step(68, "And the sharing pane should list the sharing user", () => sharingPaneLists(page));
-      await session.step(69, "And Sharing pane in context panel should contain text \"has special permissions\"", () => shouldContainText(page, el("Sharing pane in context panel"), "has special permissions"));
+      await session.step(69, "And Sharing pane in context panel should contain text \"can view and use\"", () => shouldContainText(page, el("Sharing pane in context panel"), "can view and use"));
     });
     await run.scenario("With View and use the second account opens the project", async () => {
       await session.step(72, "When user signs in as the sharing user", () => signInAsSharingUser(page));

@@ -2,13 +2,27 @@
 
 ## v.next
 
+* [public#4552](https://github.com/datagrok-ai/public/issues/4552): Grokky: suggestions use an ID column (USUBJID) for categorical slots
+* [public#4551](https://github.com/datagrok-ai/public/issues/4551): Grokky: AI panel hangs for good when the final answer fails to render (markdown RangeError)
+* Docker: Moved the claude-runtime image to Wolfi and raised @hono/node-server to 2.x in claude-runtime and mcp-server, so both images have no known CVEs; the runtime no longer ships npm or virtualenv
+* Docker: Fixed the claude-runtime container exiting at start (`exec /app/entrypoint.sh failed`) when its image is built from a Windows checkout with CRLF line endings
+
+## 1.0.5 (2026-11-03)
+
+* AI: Introduced per-group model credentials in the package's credentials (Plugins | Grokky | Credentials...): each user's chat runs on the key and model of their group, read by the runtime container through the platform and never sent to the browser. They are the only source: the runtime no longer takes credentials from its container's environment
+* Docker: Rebuilt the claude-runtime, mcp-server and queue images; claude-runtime has setuptools 78.1.1+ in place of Debian's 66.1.1
+* AI: Every completed turn is logged as an `ai-turn` usage event with its feature, status, model, tokens, cost and duration, including failed and stopped turns
+* AI: Prompts moved from the `ai-request` usage events to `ai-turn-content`, logged by default, up to 2500 bytes each, with a notice in the AI panel and AI search
+* AI: Added settings to turn off prompt logging and to opt in to logging responses and tool calls
 * Runtime, MCP server: Updated the Node.js base images to 22.23.4 (Node.js October 2026 security release)
 
 * AI: The assistant runs on Claude and GPT models through Anthropic, OpenRouter, OpenAI, Microsoft Azure, Amazon Bedrock, Databricks or your own Anthropic- or OpenAI-compatible endpoint; Claude subscription sign-in is not supported
-* AI: The `claude-runtime` container now needs a `model` credential naming the model to run, as the provider names it (e.g. `claude-sonnet-5-5`): a container with only an API key no longer starts
-* AI: At startup the AI runtime checks its provider and model with one short call, and logs whether it answered
+* AI: The model credentials need a `model` naming the model to run, as the provider names it (e.g. `claude-sonnet-5-5`)
 * AI: A turn's cost limit applies only where the AI runtime knows the model's price (OpenAI, OpenRouter, older Claude models); on Claude 5.5, Bedrock, Azure, Databricks and custom endpoints only the call limit bounds a turn
 * AI: Web addresses the assistant writes as plain text, such as a documentation link, are clickable
+* AI: Qwen, Kimi and Gemini models run through OpenRouter (Chat Completions) and Amazon Bedrock (Converse), and pick the matching skill more reliably
+* AI: Spaces the assistant creates are real spaces, not plain projects
+* AI: The assistant uses Datagrok's skills and server tools before reading the platform's source code, so non-Claude models answer with fewer steps
 * AI: Deleting a project, space or file always waits for you to approve it on a confirmation card, even after you declined an earlier one
 * AI: Box plots and pivot tables the assistant adds are split by the columns you asked for, and the averages and medians it reports skip missing values
 * AI: On GPT models the assistant works through its skills and the view's functions instead of searching the platform's source code, and answers a question about the data without detours, in about a quarter fewer steps

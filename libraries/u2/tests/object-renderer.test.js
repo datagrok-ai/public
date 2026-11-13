@@ -2,7 +2,7 @@
    and explicit callbacks win over the renderer's members. The dg handlerRenderer implements
    the same interface over ObjectHandler and is exercised in the platform (U2Demo). */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
@@ -60,13 +60,13 @@ smoke('renderer alone: rows from listItem, filtering and text from caption', asy
   await flush();
 
   const popup = document.body.querySelector('.u2-typeahead-popup');
-  assert.deepEqual(popup.querySelectorAll('.test-project').map((el) => el.textContent),
+  assert.deepEqual([...popup.querySelectorAll('.test-project')].map((el) => el.textContent),
     ['Chem (ada)', 'Bio (bruno)', 'Curves (chen)']);
 
   input.value = 'cur';
   fire(input, 'input');
   await flush();
-  assert.deepEqual(popup.querySelectorAll('.test-project').map((el) => el.textContent),
+  assert.deepEqual([...popup.querySelectorAll('.test-project')].map((el) => el.textContent),
     ['Curves (chen)']);
 
   fire(input, 'keydown', {key: 'ArrowDown'});
@@ -82,7 +82,7 @@ smoke('renderer without listItem falls back to markup', async () => {
   open(picker);
   await flush();
   const popup = document.body.querySelector('.u2-typeahead-popup');
-  assert.deepEqual(popup.querySelectorAll('.u2-typeahead-option span').map((el) => el.textContent),
+  assert.deepEqual([...popup.querySelectorAll('.u2-typeahead-option span')].map((el) => el.textContent),
     ['#Chem', '#Bio', '#Curves']);
   picker.dispose();
 });
@@ -92,7 +92,7 @@ smoke('caption-only renderer renders the default text rows', async () => {
   open(picker);
   await flush();
   const popup = document.body.querySelector('.u2-typeahead-popup');
-  assert.deepEqual(popup.querySelectorAll('.u2-typeahead-text').map((el) => el.textContent),
+  assert.deepEqual([...popup.querySelectorAll('.u2-typeahead-text')].map((el) => el.textContent),
     ['Chem', 'Bio', 'Curves']);
   picker.dispose();
 });
@@ -112,7 +112,7 @@ smoke('explicit itemText and render win over the renderer members', async () => 
   const input = open(picker);
   await flush();
   const popup = document.body.querySelector('.u2-typeahead-popup');
-  assert.deepEqual(popup.querySelectorAll('.test-override').map((el) => el.textContent),
+  assert.deepEqual([...popup.querySelectorAll('.test-override')].map((el) => el.textContent),
     ['ada', 'bruno', 'chen']);
   assert.equal(popup.querySelectorAll('.test-project').length, 0);
 

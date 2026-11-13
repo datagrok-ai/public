@@ -78,7 +78,7 @@ function processMarkdownFile(filePath) {
 
 // Main function
 function main() {
-  const targetFolder = path.resolve(__dirname, '../../../help');
+  const targetFolder = path.resolve(__dirname, '../../../../help');
   console.log(`Scanning folder: ${path.resolve(targetFolder)}`);
 
   // Find all markdown files

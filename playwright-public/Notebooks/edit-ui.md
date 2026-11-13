@@ -128,7 +128,7 @@ Atlas `manual_only`: `notebooks.editor.edit-mode`, `notebooks.editor.commands.ce
 - Steps 3–5 are manual-only because the JupyterLab editor runs inside a sandboxed iframe whose
   DOM and WebSocket kernel channel are proxied through the Notebooks Docker container. These
   surfaces are not accessible via Datagrok platform selectors.
-  See: `public/help/compute/jupyter-notebook.md#Notebooks browser`
+  See: `help/compute/jupyter-notebook.md#Notebooks browser`
 - Known regression risk: **GROK-6630** — after saving a notebook and re-entering Edit, the editor
   may serve stale (pre-save) content instead of the current persisted state. If step 3 is run
   immediately after a prior save, verify the content reflects the saved version before adding code.

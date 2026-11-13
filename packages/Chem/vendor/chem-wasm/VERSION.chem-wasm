@@ -2,9 +2,9 @@ chem-wasm: Chem's Crux engine (crux-core crates/chem-wasm), one WebAssembly file
 
 crate: chem-wasm
 features: ['chem']
-crux_core_rev: 9be67471802f738158ff07170b755589dad18306
+crux_core_rev: a15e103b40586a894713ca21148d482270a54daf
 crux_core_dirty: False
-built_utc: 2026-10-23T12:39:12.623Z
+built_utc: 2026-11-12T09:32:07.293Z
 cargo.profile: wasm-ship
 cargo.target: wasm32-unknown-unknown
 cargo.rustc: rustc 1.95.0 (59807616e 2026-04-14)
@@ -13,18 +13,18 @@ wasm_bindgen.version: 0.2.129
 wasm_bindgen.flags: --target web --remove-name-section
 wasm_opt.version: wasm-opt version 133 (version_133)
 wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-bulk-memory-opt --enable-call-indirect-overlong --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
-files.chem_wasm_bg.wasm.raw: 5829135
-files.chem_wasm_bg.wasm.gzip9: 2164503
-files.chem_wasm_bg.wasm.brotli11: 1561712
-files.chem_wasm.js.raw: 141405
-files.chem_wasm.js.gzip9: 21633
-files.chem_wasm.js.brotli11: 18195
-cargo_artifact.raw: 7371882
-cargo_artifact.gzip9: 2521504
-cargo_artifact.brotli11: 1764285
+files.chem_wasm_bg.wasm.raw: 6510694
+files.chem_wasm_bg.wasm.gzip9: 2530427
+files.chem_wasm_bg.wasm.brotli11: 1847724
+files.chem_wasm.js.raw: 170742
+files.chem_wasm.js.gzip9: 26024
+files.chem_wasm.js.brotli11: 21764
+cargo_artifact.raw: 8253059
+cargo_artifact.gzip9: 2951075
+cargo_artifact.brotli11: 2084036
 
-vendored from: a clean build of crux-core main 9be674718 (build-ship.sh chem)
-chem_wasm_bg.wasm: 5,829,135 B raw, sha256 11e9205d9e12b74d
+vendored from: a clean build of crux-core main a15e103b4 (build-ship.sh chem)
+chem_wasm_bg.wasm: 6,510,694 B raw, sha256 242cdab450ea16ab
 NOTICE: the build's (crux-core tools/wasm_notices.py)
-includes: chem-wasm-opt-levels-2 (the product owner's 1.3x bar, past RDKit_minimal by their decision): the cdylib built alone (-139 KB gzip, the same exports), rascal and chem-wasm at opt-level 3; FMCS 1.61-1.71x, Rascal MCES 1.76x, R-groups 1.21-1.25x, MMPA and reactions 1.15x, alignment 1.18x faster than 6d5178d11's, outputs byte-identical; on top of ed3e1aebd's
+includes: crux-core main 8392cf0d6..a15e103b4 (49 lands): draw-unknown-stereo (MolDraw2D unspecifiedStereoIsUnknown: RDKit markUnspecifiedStereoAsUnknown drawn, no RDKit fallback; a too-short wavy bond an error, not a trap) and 48 other teams' lands (moldraw2d-place, scheme-draw, chem-wasm-rxnmap, chem-wasm-similarity, smiles-valence, query-parts, ...); the wasm is byte-identical to the spike build Chem was validated on (00d347981)
 files: chem_wasm.js (glue, wasm-bindgen --target web), chem_wasm.d.ts, chem_wasm_bg.wasm, NOTICE.chem-wasm, VERSION.chem-wasm (both emitted to dist)

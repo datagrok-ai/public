@@ -20,8 +20,8 @@ import '../bindings/common/kinds.js';
 import '../bindings/platform/elements.js';
 import {noSpaceOnServer} from '../bindings/platform/steps.js';
 import {el} from '../src/runtime/args.js';
-import {clear, keysOf, press, pressIn, readExpanded, select, setExpanded, typeInto, withKeys} from '../src/runtime/gestures.js';
-import {atFeatureEnd, feature, takeErrors, watchErrors} from '../src/runtime/harness.js';
+import {clear, hover, keysOf, press, pressIn, readExpanded, select, setExpanded, typeInto, withKeys} from '../src/runtime/gestures.js';
+import {atFeatureEnd, feature, stacksLogged, takeErrors, watchErrors} from '../src/runtime/harness.js';
 import {expectState, expectText} from '../src/runtime/assertions.js';
 import {whileExpectedToFail} from '../src/runtime/patience.js';
 import {locate, locateActionable} from '../src/runtime/locate.js';
@@ -322,6 +322,16 @@ scenario('tooltip text assertions ignore hidden content retained between hovers'
   await expectText(page!, el('tooltip'), 'Pearson R', {negate: true});
 });
 
+scenario('a hover enters a row wider than the panel that clips it', async () => {
+  await page!.setContent('<div style="width:200px;overflow:hidden"><div data-u2="list" data-u2-name="clipped">' +
+    '<div class="u2-list-row" role="option" style="width:900px">wide</div></div></div>' +
+    '<div style="position:absolute;left:200px;top:0;width:900px;height:400px"></div>');
+  await page!.locator('.u2-list-row').evaluate((e) =>
+    e.addEventListener('mouseenter', () => (window as any).__rowEntered = true));
+  await hover(page!, el('item in clipped list'));
+  assert.equal(await page!.evaluate(() => (window as any).__rowEntered), true);
+});
+
 scenario('space cleanup deletes existing fixtures even when server filters return no matches', async () => {
   let afterAll!: () => Promise<void>;
   const api = {afterEach: () => undefined, afterAll: (hook: () => Promise<void>) => { afterAll = hook; }};
@@ -403,6 +413,17 @@ test('a run suffix is stable within a feature and distinct across feature instan
   assert.equal(a.text('u{time}.{time}').split('.')[0], `u${a.text('{time}')}`);
   assert.match(a.text('{time}'), /^\d{13,}$/);
   assert.notEqual(a.text('{time}'), b.text('{time}'));
+  const was = process.env.DATAGROK_RUN_LOGIN;
+  process.env.DATAGROK_RUN_LOGIN = 'someone';
+  try {
+    assert.equal(a.text('type-{login}'), 'type-someone');
+  }
+  finally {
+    if (was === undefined)
+      delete process.env.DATAGROK_RUN_LOGIN;
+    else
+      process.env.DATAGROK_RUN_LOGIN = was;
+  }
 });
 
 test('the translated stack trace of a logged error is not a second error', () => {
@@ -423,10 +444,47 @@ test('the translated stack trace of a logged error is not a second error', () =>
   assert.equal(takeErrors(fake).length, 1);
 });
 
+test('a check waits for the translated stack of an error it is about to report', async () => {
+  const listeners: ((m: unknown) => void)[] = [];
+  const fake = {on: (event: string, fn: (m: unknown) => void) => { if (event === 'console') listeners.push(fn); }} as unknown as Page;
+  const log = (text: string) => listeners.forEach((fn) => fn({type: () => 'error', text: () => text, location: () => ({url: ''})}));
+  watchErrors(fake);
+  const idle = Date.now();
+  await stacksLogged(fake, 50);
+  assert.ok(Date.now() - idle < 45, 'with no error awaiting its stack, the check does not wait');
+  log('NullError: y on null\nTranslating stack trace... Look below, ID = Cd2');
+  log('NullError: z on null\nTranslating stack trace... Look below, ID = Ef3');
+  const waited = stacksLogged(fake, 60000);
+  log('Stack trace Cd2\n\tpackages/d4/src/w.dart 1:1');
+  setImmediate(() => log('Stack trace Ef3\n\tpackages/d4/src/z.dart 1:1'));
+  await waited;
+  const reported = takeErrors(fake);
+  assert.match(reported[0], /w\.dart/);
+  assert.match(reported[1], /z\.dart/);
+
+  log('NullError: x on null\nTranslating stack trace... Look below, ID = Ab1');
+  const start = Date.now();
+  await stacksLogged(fake, 50);
+  assert.ok(Date.now() - start >= 45, 'a stack that never comes is waited for until the bound');
+  assert.match(takeErrors(fake)[0], /ID = Ab1/);
+});
+
 scenario('a "name = value" status line is a readout by its label, and its value part is the value alone', async () => {
   await page!.setContent('<div role="status"><label>search = </label><output>Kinase</output></div>');
   assert.equal(await text('value of search readout'), 'Kinase');
   const readout = await locate(page!, el('search readout'));
   assert.equal(await readout.count(), 1);
   assert.equal(await readout.evaluate((e) => e.getAttribute('role')), 'status');
+});
+
+scenario('a parent crumb is one link: the crumb itself, or the link an app\'s crumb holds', async () => {
+  await page!.setContent('<div class="d4-view-ribbon">' +
+    '<span class="d4-ribbon-name"><a class="ui-link">Hit Design</a></span>' +
+    '<span class="d4-ribbon-name grok-ns-entity-name">DMT1-1</span></div>' +
+    '<div class="d4-view-ribbon"><span class="d4-ribbon-name">Projects</span></div>');
+  assert.equal(await count('"Hit Design" link'), 1);
+  assert.equal(await text('"Hit Design" link'), 'Hit Design');
+  assert.equal(await (await locate(page!, el('"Hit Design" link'))).evaluate((e) => e.tagName), 'A');
+  assert.equal(await count('"Projects" link'), 1);
+  assert.equal(await count('"DMT1-1" link'), 0);
 });

@@ -3,7 +3,7 @@
    Card's handler and selection (P83), and no page listener while a tab menu or a menu is closed
    (P24). Every test leaves the live-scope count where it found it. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
@@ -55,7 +55,7 @@ function content(text) {
   return el;
 }
 
-const footer = (w, text) => w.root.querySelectorAll('.u2-wizard-buttons button').find((b) => b.textContent === text);
+const footer = (w, text) => [...w.root.querySelectorAll('.u2-wizard-buttons button')].find((b) => b.textContent === text);
 
 // --- tabs ------------------------------------------------------------------------------------------
 
@@ -64,7 +64,7 @@ ui('TabStrip: closing the same tab id twice notifies twice, through the option a
   const strip = new TabStrip({onTabClosed: (id, s) => seen.push(`option ${id} ${s === strip}`)});
   strip.on('tabClosed', (id) => seen.push(`event ${id}`));
   for (let i = 0; i < 2; i++) {
-    strip.addTab({id: 'x', label: 'X', closable: true, content: content('x')});
+    strip.addTab({id: 'x', title: 'X', closable: true, content: content('x')});
     strip.closeTab('x');
   }
   assert.deepEqual(seen, ['option x true', 'event x', 'option x true', 'event x']);
@@ -74,11 +74,11 @@ ui('TabStrip: closing the same tab id twice notifies twice, through the option a
 
 ui('TabStrip: tab headers are addressable items; the state names the current tab', async () => {
   const strip = new TabStrip({tabs: [
-    {id: 'data', label: 'Data', content: content('d')},
-    {id: 'style', label: 'Style', closable: true, content: content('s')},
+    {id: 'data', title: 'Data', content: content('d')},
+    {id: 'style', title: 'Style', closable: true, content: content('s')},
   ]});
   document.body.append(strip.root);
-  const headers = strip.root.querySelectorAll('[role="tab"]');
+  const headers = [...strip.root.querySelectorAll('[role="tab"]')];
   assert.deepEqual(headers.map((h) => h.dataset.u2Item), ['data', 'style']);
   assert.equal(headers[1].querySelector('[data-u2-part="item-label"]').textContent, 'Style');
   assert.notEqual(headers[1].querySelector('[data-u2-part="close"]'), null);
@@ -93,8 +93,8 @@ ui('TabStrip: tab headers are addressable items; the state names the current tab
 
 ui('TabStrip: setInvalid marks a tab whose content needs fixing, in the header and its item', () => {
   const strip = new TabStrip({tabs: [
-    {id: 'main', label: 'Main', content: content('m')},
-    {id: 'rgroups', label: 'R-groups', content: content('r')},
+    {id: 'main', title: 'Main', content: content('m')},
+    {id: 'rgroups', title: 'R-groups', content: content('r')},
   ]});
   document.body.append(strip.root);
   const header = strip.root.querySelector('[data-u2-item="rgroups"]');
@@ -116,9 +116,9 @@ ui('TabStrip: a tab\'s validity marks it live; a Form as content answers for its
   const name = new TextInput({label: 'Name', required: true});
   form.add(name);
   const strip = new TabStrip({tabs: [
-    {id: 'monomer', label: 'Monomer', content: form},
-    {id: 'rgroups', label: 'R-groups', content: content('r'), validity: problem},
-    {id: 'meta', label: 'Meta', content: () => content('m')},
+    {id: 'monomer', title: 'Monomer', content: form},
+    {id: 'rgroups', title: 'R-groups', content: content('r'), validity: problem},
+    {id: 'meta', title: 'Meta', content: () => content('m')},
   ]});
   document.body.append(strip.root);
   const invalid = () => state(strip.root).items.list.filter((i) => i.invalid).map((i) => i.key);
@@ -129,7 +129,7 @@ ui('TabStrip: a tab\'s validity marks it live; a Form as content answers for its
   form.validate();
   assert.deepEqual(invalid(), ['monomer', 'rgroups'], 'after a Save attempt the form shows its verdict');
   problem.value = null;
-  name.value.value = 'meI';
+  name.value = 'meI';
   assert.deepEqual(invalid(), []);
   strip.closeTab('rgroups');
   problem.value = 'gone';
@@ -140,7 +140,7 @@ ui('TabStrip: a tab\'s validity marks it live; a Form as content answers for its
 });
 
 ui('TabStrip: the page is watched only while the overflow menu is open (P24)', () => tracked((listeners) => {
-  const strip = new TabStrip({tabs: [{id: 'a', label: 'A', content: content('a')}]});
+  const strip = new TabStrip({tabs: [{id: 'a', title: 'A', content: content('a')}]});
   document.body.append(strip.root);
   assert.equal(listeners('pointerdown') + listeners('keydown'), 0, 'closed: nothing on the document');
   strip.root.querySelector('.u2-tabs-overflow').click();
@@ -215,7 +215,7 @@ ui('Wizard: Esc and ✕ abort the running finish; its signal says so, and the ru
   const scope = new Scope();
   let ctx;
   let settle;
-  const w = Scope.runWith(scope, () => new Wizard({
+  const w = scope.build(() => new Wizard({
     steps: [{id: 'one', title: 'One', content: content('1')}],
     onFinish: (c) => {
       ctx = c;
@@ -248,7 +248,7 @@ ui('Wizard: finish, cancel and step are events; onActivate content lives until t
   const scope = new Scope();
   const events = [];
   const built = [];
-  const w = Scope.runWith(scope, () => new Wizard({
+  const w = scope.build(() => new Wizard({
     steps: [
       {id: 'one', title: 'One', content: content('1')},
       {id: 'two', title: 'Two', content: content('2'), onActivate: () => built.push(Scope.ambient)},
@@ -279,7 +279,7 @@ ui('Wizard: the steps are items with the current one, the completed ones and the
     {id: 'name', title: 'Name', content: content('2'), canProceed: () => name.value ? null : 'Enter a name'},
     {id: 'review', title: 'Review', content: content('3')},
   ]});
-  const markers = w.root.querySelectorAll('.u2-wizard-step');
+  const markers = [...w.root.querySelectorAll('.u2-wizard-step')];
   assert.deepEqual(markers.map((m) => m.dataset.u2Item), ['source', 'name', 'review']);
   w.next();
   w.next();
@@ -323,7 +323,7 @@ ui('Card: a selected card shows it even when a click cannot change it; compact i
 
 ui('Card: in dev, a click on a card its owner disposed while it stayed on the page warns (P83)', () => tracked(() => {
   const owner = new Scope();
-  const card = Scope.runWith(owner, () => new Card({title: 'Orphan', onClick: () => {}}));
+  const card = owner.build(() => new Card({title: 'Orphan', onClick: () => {}}));
   document.body.append(card.root);
   owner.dispose();
   const warnings = [];
@@ -351,7 +351,8 @@ ui('Section reports expanded and its title; Accordion lists its panes', () => {
   accordion.addPane('Advanced', content('a'));
   const s = state(accordion.root);
   assert.deepEqual(s.items.list.map((i) => [i.key, i.expanded]), [['General', true], ['Advanced', false]]);
-  assert.deepEqual(accordion.root.querySelectorAll('[data-u2-item]').map((h) => h.dataset.u2Item), ['General', 'Advanced']);
+  assert.deepEqual([...accordion.root.querySelectorAll('[data-u2-item]')].map((h) => h.dataset.u2Item),
+    ['General', 'Advanced']);
   accordion.dispose();
 
   const splitter = new Splitter([content('l'), content('r')], {direction: 'horizontal', sizes: [0.3, 0.7]});
@@ -371,7 +372,7 @@ ui('Menu: a context menu at a point is on the overlay stack — no page listener
   assert.equal(menu.isOpen.value, true);
   assert.equal(listeners('keydown'), 1, 'the overlay stack\'s one');
   const panel = document.body.querySelector('.u2-menu');
-  assert.deepEqual(panel.querySelectorAll('[data-u2-item]').map((el) => el.dataset.u2Item), ['Copy', 'Export']);
+  assert.deepEqual([...panel.querySelectorAll('[data-u2-item]')].map((el) => el.dataset.u2Item), ['Copy', 'Export']);
   const s = state(panel);
   assert.equal(s.kind, 'menu');
   assert.equal(s.open, true);
@@ -389,7 +390,7 @@ ui('Menu: a context menu at a point is on the overlay stack — no page listener
 ui('Menu: an item\'s handler runs owned by whoever added it, after the menu closed', () => {
   const owner = new Scope();
   let ran;
-  const menu = Scope.runWith(owner, () => Menu.popup().item('Open', () => ran = Scope.ambient));
+  const menu = owner.build(() => Menu.popup().item('Open', () => ran = Scope.ambient));
   const anchor = button('More', () => {});
   document.body.append(anchor);
   menu.show({anchor});
@@ -405,7 +406,7 @@ ui('Menu: a detail is grey text after the label; a label with none runs on acros
   menu.show({x: 10, y: 10});
   const panel = document.body.querySelector('.u2-menu');
   assert.equal(panel.classList.contains('u2-menu-detailed'), true);
-  const items = panel.querySelectorAll('.u2-menu-item');
+  const items = [...panel.querySelectorAll('.u2-menu-item')];
   assert.deepEqual(items.map((el) => el.querySelector('.u2-menu-detail')?.textContent),
     ['hydrogen · [*:1][H]', 'hydroxyl · O[*:1]', undefined]);
   assert.equal(items[0].querySelector('.u2-menu-label').textContent, 'H', 'the label stays the item\'s name');
@@ -422,8 +423,8 @@ ui('Menu: a detail is grey text after the label; a label with none runs on acros
 });
 
 ui('MenuBar and Toolbar list their items; a toolbar toggle is selected while pressed', () => {
-  const bar = new MenuBar({items: [{label: 'File', build: (m) => m.item('New', () => {})},
-    {label: 'Edit', build: () => {}, enabled: false}]});
+  const bar = new MenuBar({items: [{text: 'File', build: (m) => m.item('New', () => {})},
+    {text: 'Edit', build: () => {}, disabled: 'Open a document first'}]});
   assert.deepEqual(bar.getItems().list.map((i) => [i.key, i.disabled]), [['File', false], ['Edit', true]]);
   bar.dispose();
 
@@ -468,15 +469,15 @@ ui('Breadcrumbs: items by text, the last one current; the handler gets the event
 ui('button() roots carry data-u2; icon and group handlers get the event; a group reports its selection', () => {
   const scope = new Scope();
   const got = [];
-  Scope.runWith(scope, () => {
+  scope.build(() => {
     const plain = button('Save', (e) => got.push(`save ${e.type}`));
     assert.equal(plain.dataset.u2, 'button');
     const icon = iconButton('cog', (e) => got.push(`icon ${e.type}`), {tooltip: 'Settings'});
     plain.click();
     icon.click();
   });
-  const group = new ButtonGroup({toggle: 'single', items: [{id: 'a', label: 'A', onClick: (e, g) =>
-    got.push(`group ${e.type} ${g === group}`)}, {id: 'b', label: 'B'}]});
+  const group = new ButtonGroup({toggle: 'single', items: [{id: 'a', text: 'A', onClick: (e, g) =>
+    got.push(`group ${e.type} ${g === group}`)}, {id: 'b', text: 'B'}]});
   group.root.querySelector('[data-u2-item="a"]').click();
   const s = state(group.root);
   assert.deepEqual([s.value, s.current, s.selection], ['a', 'a', ['a']]);
@@ -487,7 +488,7 @@ ui('button() roots carry data-u2; icon and group handlers get the event; a group
 
 ui('dropDownButton: its listeners and its open menu live in a scope of its own under the builder', () => {
   const scope = new Scope();
-  const root = Scope.runWith(scope, () => dropDownButton('Export', (m) => m.item('CSV', () => {})));
+  const root = scope.build(() => dropDownButton('Export', (m) => m.item('CSV', () => {})));
   document.body.append(root);
   root.click();
   assert.notEqual(document.body.querySelector('.u2-menu'), null);
@@ -501,7 +502,7 @@ ui('dropDownButton: its listeners and its open menu live in a scope of its own u
 
 ui('ProgressBar and StatCard report what they show', () => {
   const bar = new ProgressBar({showPercent: true, description: 'Uploading'});
-  bar.value.value = 0.25;
+  bar.value = 0.25;
   assert.deepEqual([state(bar.root).value, state(bar.root).text, state(bar.root).busy, state(bar.root).label],
     [0.25, '25%', false, 'Uploading']);
   bar.indeterminate = true;
@@ -574,7 +575,8 @@ ui('Section: the hint says what a fold holds, the validity marks the header and 
 
 ui('Section: persistKey keeps the user\'s own open or close, and userSet says there is one', () => {
   const store = new Map();
-  globalThis.localStorage = {getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v)};
+  Object.defineProperty(globalThis, 'localStorage', {configurable: true,
+    value: {getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v)}});
   try {
     const first = new Section({title: 'Details', persistKey: 'test.details', expanded: false});
     document.body.append(first.root);
@@ -594,9 +596,9 @@ ui('Section: persistKey keeps the user\'s own open or close, and userSet says th
 });
 
 ui('TabStrip: content waits for the first activation, unless the strip is eager', () => {
-  const lazy = new TabStrip({tabs: [{id: 'a', label: 'A', content: content('a')}, {id: 'b', label: 'B', content: content('b')}]});
-  const eager = new TabStrip({eager: true, tabs: [{id: 'a', label: 'A', content: content('a')},
-    {id: 'b', label: 'B', content: content('b')}, {id: 'c', label: 'C', content: () => content('c')}]});
+  const lazy = new TabStrip({tabs: [{id: 'a', title: 'A', content: content('a')}, {id: 'b', title: 'B', content: content('b')}]});
+  const eager = new TabStrip({eager: true, tabs: [{id: 'a', title: 'A', content: content('a')},
+    {id: 'b', title: 'B', content: content('b')}, {id: 'c', title: 'C', content: () => content('c')}]});
   document.body.append(lazy.root, eager.root);
   const panel = (strip, i) => strip.root.querySelectorAll('.u2-tabs-panel')[i];
   assert.equal(panel(lazy, 1).childElementCount ?? panel(lazy, 1).children.length, 0, 'a tab not visited holds nothing');
@@ -638,7 +640,8 @@ ui('Accordion: a pane\'s hint, a live summary element, and its validity in place
 
 ui('Accordion: persistKey keeps the user\'s own open or close, and the older (expanded, icon) arguments still work', () => {
   const store = new Map();
-  globalThis.localStorage = {getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v)};
+  Object.defineProperty(globalThis, 'localStorage', {configurable: true,
+    value: {getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v)}});
   try {
     const first = new Accordion();
     document.body.append(first.root);

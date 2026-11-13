@@ -63,9 +63,6 @@ export async function getSdfString(
   exportOptions: DG.CsvExportOptions & {molBlockFormat?: DG.chem.Notation} = {selectedColumnsOnly: false, visibleColumnsOnly: true, filteredRowsOnly: false, selectedRowsOnly: false},
 ): Promise<string> {
   let result = '';
-  //console.time('SDF export');
-  // const rowIndexes = Array.from(table.rows.indexes({onlyFiltered: exportOptions.filteredRowsOnly, onlySelected: exportOptions.selectedRowsOnly}));
-  // table.rows.
   const mask = DG.BitSet.create(table.rowCount);
   mask.setAll(true);
   if (exportOptions.filteredRowsOnly)
@@ -99,7 +96,6 @@ export async function getSdfString(
     molBlockFormat = DG.chem.Notation.MolBlock;
   }
 
-  //const molBlockFormat = exportOptions?.molBlockFormat ?? DG.chem.Notation.MolBlock;
   const molList = maskedStructureCol.toList();
   const molBlockCheck = dontTouchMolblocks ? ((mol: string) => DG.chem.isMolBlock(mol)) : (molBlockFormat === DG.chem.Notation.MolBlock ? (mol: string) => DG.chem.isMolBlock(mol) && mol.includes('V2000') :
     (mol: string) => DG.chem.isMolBlock(mol) && mol.includes('V3000'));
@@ -114,9 +110,6 @@ export async function getSdfString(
 
   const rowCount = maskedTable.rowCount;
   for (let rowIdx = 0; rowIdx < rowCount; rowIdx++) {
-    // const molecule: string = structureColumn.get(rowIdx);
-    // const mol = DG.chem.isMolBlock(molecule) ? molecule :
-    //   _convertMolNotation(molecule, DG.chem.Notation.Unknown, exportOptions?.molBlockFormat ?? DG.chem.Notation.MolBlock, chemCommonRdKit.getRdKitModule());
     const mol = maskedStructureCol.isNone(rowIdx) ? '' : convertedStructures[rowIdx] ?? '';
     result += `${mol}\n`;
 
@@ -133,7 +126,6 @@ export async function getSdfString(
     }
     result += '$$$$\n';
   }
-  //console.timeEnd('SDF export');
   return result;
 }
 

@@ -11,4 +11,10 @@ module.exports = bundler({
     'rxjs': path.resolve(__dirname, 'node_modules/rxjs'),
   }},
   optimization: {concatenateModules: false, splitChunks: false, runtimeChunk: false, chunkIds: 'deterministic'},
+  // webcomponents-vue emits its .tsx components as Vue JSX; same transform as Compute2
+  rules: [{test: /\.jsx$/, loader: 'babel-loader', options: {
+    babelrc: false,
+    configFile: false,
+    plugins: [['@vue/babel-plugin-jsx', {isCustomElement: (tag) => tag.startsWith('dg-') || tag === 'dock-spawn-ts'}]],
+  }}],
 });

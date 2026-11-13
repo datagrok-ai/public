@@ -1,6 +1,5 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {RdKitService} from '../rdkit-service/rdkit-service';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {alertsByEngine} from '../engine/worker-jobs';
 import {HIGHLIGHT_BY_SCAFFOLD_TAG} from '../constants';
@@ -24,7 +23,7 @@ const FAMILY_LETTER_TO_ID: {[letter: string]: PharmFamilyId} = {
 
 export async function runPharmacophoreDetection(
   moleculeCol: DG.Column<string>, familySet: PharmFamilySet,
-  featuresDf: DG.DataFrame, rdkitService: Pick<RdKitService, 'getStructuralAlerts'>,
+  featuresDf: DG.DataFrame, matcher: typeof alertsByEngine,
 ): Promise<DG.DataFrame> {
   const familyCol: DG.Column<string> = featuresDf.getCol('family');
   const smartsCol: DG.Column<string> = featuresDf.getCol('smarts');
@@ -42,7 +41,7 @@ export async function runPharmacophoreDetection(
   }
 
   // Reuse the structural alerts worker — it accepts any {groupName: string[]} map
-  const result = await (rdkitService as any).getStructuralAlerts(smarts, moleculeCol.toList());
+  const result = await (matcher as any).getStructuralAlerts(smarts, moleculeCol.toList());
 
   const resultDf = DG.DataFrame.create(moleculeCol.length);
   for (const [familyName, boolArray] of result)
@@ -83,13 +82,12 @@ export function buildPharmacophoreHighlightColumn(
 export async function getPharmacophoreFeaturesByFamilies(
   molecules: DG.Column<string>, familySet: PharmFamilySet,
 ): Promise<DG.DataFrame | undefined> {
-  // by the "Chemical engine" setting: the RDKit pool, or in Crux mode the Crux pool (RDKit's behind it)
-  const rdkitService = alertsByEngine;
   const featuresDf = await grok.data.loadTable(
     chemCommonRdKit.getRdKitWebRoot() + 'files/pharmacophore-features.csv');
   const progress = DG.TaskBarProgressIndicator.create('Detecting pharmacophores...');
   try {
-    const resultDf = await runPharmacophoreDetection(molecules, familySet, featuresDf, rdkitService);
+    // by the "Chemical engine" setting: the RDKit pool, or in Crux mode the Crux pool (RDKit's behind it)
+    const resultDf = await runPharmacophoreDetection(molecules, familySet, featuresDf, alertsByEngine);
     resultDf.columns.insert(buildPharmacophoreHighlightColumn(molecules, familySet, featuresDf), 0);
     return resultDf;
   } catch (e) {

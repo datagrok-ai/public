@@ -1,10 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {waitUntil, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {ChemSearchBaseViewer} from '../analysis/chem-search-base-viewer';
+import {ChemSearchBaseViewer, sameRows} from '../analysis/chem-search-base-viewer';
 import {ChemSimilarityViewer} from '../analysis/chem-similarity-viewer';
 
 /** The rows the viewer's cards show, as its status reports them. */
@@ -13,17 +13,16 @@ function cardRows(v: ChemSearchBaseViewer): number[] {
   return set === '' ? [] : set.split(', ').map(Number);
 }
 
-/** Waits for the viewer to settle on cards that satisfy [holds]. */
+/** Waits for the viewer to search the rows its row source has now and settle on cards that satisfy [holds]. */
 async function cardsWhere(v: ChemSearchBaseViewer, claim: string, holds: (rows: number[]) => boolean):
   Promise<number[]> {
   let rows: number[] = [];
-  for (const end = Date.now() + 15000; Date.now() < end;) {
-    await delay(100);
+  await waitUntil(() => {
     rows = cardRows(v);
-    if (!v.isRenderPending && rows.length > 0 && holds(rows))
-      return rows;
-  }
-  throw new Error(`${claim}, but the cards show rows ${rows.join(', ')}`);
+    return !v.isRenderPending && sameRows(v.getRowSourceIndexes(), v['searchedRows']) && rows.length > 0 &&
+      holds(rows);
+  }, () => `${claim}, but the cards show rows ${rows.join(', ')}`, 15000);
+  return rows;
 }
 
 async function withViewer(type: string, body: (df: DG.DataFrame, v: ChemSearchBaseViewer) => Promise<void>) {
@@ -35,8 +34,8 @@ async function withViewer(type: string, body: (df: DG.DataFrame, v: ChemSearchBa
     // the menu's addViewer returns before the package has created the viewer, so it hands back the platform's
     // wrapper; the viewer itself comes from the package's bundle, whose classes are not this bundle's
     let v: ChemSearchBaseViewer | undefined;
-    await awaitCheck(() => (v = Array.from(tv.viewers)
-      .find((x) => x.type === type && 'isRenderPending' in x) as unknown as ChemSearchBaseViewer) !== undefined,
+    await waitUntil(() => (v = Array.from(tv.viewers)
+      .find((x) => x.type === type && 'getRowSourceIndexes' in x) as unknown as ChemSearchBaseViewer) !== undefined,
     `${type} was not added`, 10000);
     await cardsWhere(v!, `${type} opens with its cards`, () => true);
     await body(df, v!);

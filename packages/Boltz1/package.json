@@ -9,7 +9,7 @@
   },
   "description": "Integrates Datagrok with Boltz-1",
   "dependencies": {
-    "@datagrok-libraries/utils": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
     "boltz-api": "0.46.2",
     "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",

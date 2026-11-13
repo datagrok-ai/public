@@ -53,6 +53,8 @@ export const ResizeHandle = Vue.defineComponent({
     const ghost = Vue.ref<GhostState | null>(null);
 
     const onPointerDown = (e: PointerEvent) => {
+      if (e.button !== 0)
+        return;
       e.preventDefault();
       const handle = e.currentTarget as HTMLElement;
       handle.setPointerCapture(e.pointerId);
@@ -80,13 +82,16 @@ export const ResizeHandle = Vue.defineComponent({
               emit('update:size', lastSize);
             });
           }
-        } else {
+        } else
           ghost.value = {pos: handleStart + (lastSize - startSize) * direction, crossStart, crossSize};
-        }
       };
-      const onUp = () => {
+      // a cancelled pointer (lost capture, touch taken over by the browser) ends the drag like a release
+      const onEnd = () => {
         handle.removeEventListener('pointermove', onMove);
-        handle.releasePointerCapture(e.pointerId);
+        handle.removeEventListener('pointerup', onEnd);
+        handle.removeEventListener('pointercancel', onEnd);
+        if (handle.hasPointerCapture(e.pointerId))
+          handle.releasePointerCapture(e.pointerId);
         if (pendingFrame) {
           cancelAnimationFrame(pendingFrame);
           pendingFrame = 0;
@@ -96,7 +101,8 @@ export const ResizeHandle = Vue.defineComponent({
         emit('resizeEnd', lastSize);
       };
       handle.addEventListener('pointermove', onMove);
-      handle.addEventListener('pointerup', onUp, {once: true});
+      handle.addEventListener('pointerup', onEnd);
+      handle.addEventListener('pointercancel', onEnd);
     };
 
     return () => (

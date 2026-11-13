@@ -13,10 +13,9 @@ import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS,
 import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals, describeElements} from '../utils';
 // PLS1 migrated to Rust + WASM (sci-comp-ml).
 import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/eda-api';
-import {carsDataframe} from '../data-generators';
+import {carsDataframe, carsMvaResults} from '../data-generators';
 
 const min = Math.min;
-const max = Math.max;
 
 /** PLS analysis results */
 export type PlsOutput = {
@@ -737,30 +736,45 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   grok.shell.v.append(dlg.root);
 } // runMVA
 
-/** Run multivariate analysis demo */
-export async function runDemoMVA(): Promise<void> {
+/** Run multivariate analysis demo. The results are precomputed, so the demo opens without fitting the model. */
+export function runDemoMVA(): void {
   const table = carsDataframe();
   grok.shell.addTableView(table);
   grok.shell.windows.help.visible = true;
   grok.shell.windows.help.showHelp(ui.markdown(DEMO_INTRO_MD));
   grok.shell.windows.showContextPanel = false;
-  grok.shell.windows.showContextPanel = false;
 
-  const cols = table.columns.toList();
-  const numCols = cols.filter((col) =>
-    ((col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.FLOAT)) &&
-    (col.stats.missingValueCount === 0));
-  const names = cols.find((col) =>
-    (col.type === DG.COLUMN_TYPE.STRING) && (col.stats.uniqueCount === table.rowCount));
-
-  await performMVA({
+  const cols = table.columns;
+  const input: MvaInput = {
     table: table,
-    features: numCols.slice(0, -1),
-    predict: numCols[numCols.length - 1],
-    components: min(numCols.length - 1, COMPONENTS.DEFAULT as number),
+    features: cols.toList().slice(1, -1),
+    predict: cols.byName('price'),
+    components: COMPONENTS.DEFAULT,
     isQuadratic: false,
-    names: names,
-  }, PLS_ANALYSIS.DEMO);
+    names: cols.byName('model'),
+  };
+  const names = getMvaNames(input, false);
+  const results = carsMvaResults();
+
+  const resultNames = [...names.xScores, names.prediction, ...names.yScores];
+  results.columns.forEach((col, idx) => {
+    col.name = resultNames[idx];
+    cols.add(col);
+  });
+
+  results.analysis.name = names.analysisTable;
+  grok.shell.addTable(results.analysis);
+  results.explVars.name = names.explVarTable;
+  grok.shell.addTable(results.explVars);
+
+  table.setTag(MVA_MODEL_TAG, JSON.stringify({
+    features: results.analysis.col(TITLE.FEATURE)!.toList(),
+    coefficients: results.analysis.col(TITLE.REGR_COEFS)!.toList(),
+    bias: results.bias,
+    prediction: names.prediction,
+  } as MvaModel));
+
+  addMvaViewers(input, names, PLS_ANALYSIS.DEMO);
 }
 
 function setPredictionTooltip(view: DG.TableView, predCol: DG.Column, modelTerms: Map<string, number>): void {

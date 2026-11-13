@@ -7,7 +7,6 @@ import {serialize, deserialize} from '@datagrok-libraries/utils/src/json-seriali
 import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
 import {AdapterInitData} from './StateTreeNodes';
 import {ItemMetadata} from '../view/ViewCommunication';
-import {loadIsFavorite, saveIsFavorite} from '../../../shared-utils/history';
 import dayjs from 'dayjs';
 
 export const RESTRICTIONS_PATH = 'INPUT_RESTRICTIONS';
@@ -15,9 +14,19 @@ export const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
 export const RUN_ERROR_PATH = 'RUN_ERROR';
 
 export const CONFIG_PATH = 'PIPELINE_CONFIG';
+/** On a workflow run: whether every step's outputs were current when it was saved */
+export const RUN_COMPLETED_PATH = 'RUN_COMPLETED';
 
 export const readOutputOutdated = (fc: DG.FuncCall): boolean =>
   deserialize(fc.options[OUTPUT_OUTDATED_PATH] ?? 'false');
+
+/** Undefined for a workflow run saved before the flag existed. */
+export const readRunCompleted = (metaCall: DG.FuncCall): boolean | undefined => {
+  const value = metaCall.options[RUN_COMPLETED_PATH];
+  return value == null ? undefined : value === 'true';
+};
+
+export const completedOption = (completed: boolean) => ({[RUN_COMPLETED_PATH]: String(completed)});
 
 /** The serialized workflow state of a saved meta-call, undefined for a plain function run. */
 export function readInstanceState(metaCall: DG.FuncCall): PipelineSerializedState | undefined {
@@ -62,16 +71,14 @@ export async function deserializeRestrictions(str: string): Promise<Record<strin
   return restrictions;
 }
 
-// the platform evaluates the annotation's default as GrokScript (1.28+); a bare word such as
+// the platform evaluates the annotation's default as GrokScript; a bare word such as
 // `= high` is not an expression and falls back to its literal text, as annotation authors intend
 async function annotationDefault(fc: DG.FuncCall, prop: DG.Property) {
   const text = prop.options.default;
-  if (typeof (fc as any).evalParamDefault === 'function') {
-    try {
-      return await fc.evalParamDefault(prop.name);
-    } catch {
-      // not an expression: use the literal text
-    }
+  try {
+    return await fc.evalParamDefault(prop.name);
+  } catch {
+    // not an expression: use the literal text
   }
   try {
     return JSON.parse(text);
@@ -89,7 +96,7 @@ function setDefault(fc: DG.FuncCall, name: string, value: any) {
 }
 
 /** The annotation defaults of a new call; initial values win. Choices never fill a value: they are metadata. */
-async function initNewCall(fc: DG.FuncCall, initialValues: Record<string, any>) {
+export async function initNewCall(fc: DG.FuncCall, initialValues: Record<string, any>) {
   const defaults = fc.func.inputs.filter((prop) => prop.options.default != null && !(prop.name in initialValues));
   const values = await Promise.all(defaults.map((prop) => annotationDefault(fc, prop)));
   defaults.forEach((prop, idx) => setDefault(fc, prop.name, values[idx]));
@@ -121,22 +128,25 @@ export async function saveFuncCall(bridge: FuncCallInstancesBridge) {
     throw new Error(`Attempting to save an empty FuncCall adapter`);
   if (bridge.isRunning$.value)
     throw new Error(`FuncCall node saving during being updated`);
-  return saveCallState(fc, bridge.inputRestrictions$.value, bridge.isOutputOutdated$.value, bridge.runError$.value);
+  return saveCallState(fc, bridge.inputRestrictions$.value, bridge.isOutputOutdated$.value, bridge.runError$.value,
+    undefined, true);
 }
 
-/** Saves the call as a new run with its restrictions and run status. */
+/** Saves the call as a new run with its restrictions and run status; a nested one is a step of a workflow save. */
 export async function saveCallState(
   fc: DG.FuncCall,
   restrictions: Record<string, RestrictionState | undefined>,
   isOutputOutdated: boolean,
   runError?: string,
+  metaData?: ItemMetadata,
+  nested = false,
 ) {
   fc.options[RESTRICTIONS_PATH] = await serializeRestrictions(restrictions);
   fc.options[OUTPUT_OUTDATED_PATH] = serialize(isOutputOutdated, {useJsonDF: false});
   fc.options[RUN_ERROR_PATH] = runError;
 
   fc.newId();
-  await historyUtils.saveRun(fc);
+  await historyUtils.saveRun(fc, {...runSaveOptions(metaData), nested});
   return fc;
 }
 
@@ -158,10 +168,13 @@ export async function makeMetaCall(nqName: string) {
   return metaCall;
 }
 
-export function setRunMetadata(call: DG.FuncCall, metaData?: ItemMetadata) {
-  if (metaData?.title) call.options['title'] = metaData.title;
-  if (metaData?.description) call.options['description'] = metaData.description;
-  if (metaData?.tags) call.options['tags'] = metaData.tags;
+// a save without a name keeps the call's metadata as it is
+export function runSaveOptions(metaData?: ItemMetadata) {
+  return {
+    metadata: metaData?.title ?
+      {name: metaData.title, description: metaData.description, tags: metaData.tags} : undefined,
+    target: metaData?.target,
+  };
 }
 
 export async function saveInstanceState(
@@ -173,7 +186,6 @@ export async function saveInstanceState(
 ) {
   const metaCall = opts?.metaCall ?? await makeMetaCall(nqName);
   metaCall.options[CONFIG_PATH] = serialize(state, {useJsonDF: false});
-  setRunMetadata(metaCall, metaData);
   if (version) metaCall.options['version'] = version;
   for (const [key, value] of Object.entries(opts?.callOptions ?? {}))
     metaCall.options[key] = value;
@@ -181,14 +193,12 @@ export async function saveInstanceState(
     metaCall.newId();
   await metaCall.call(undefined, undefined, {processed: true, report: false});
   metaCall.started = dayjs();
-  await historyUtils.saveRun(metaCall);
-  await saveIsFavorite(metaCall, metaData?.isFavorite ?? false);
+  await historyUtils.saveRun(metaCall, runSaveOptions(metaData));
   return metaCall;
 }
 
 export async function loadInstanceState(id: string) {
   const metaCall = await historyUtils.loadRun(id);
-  const isFavorite = await loadIsFavorite(metaCall);
   const config = readInstanceState(metaCall) ?? {} as PipelineSerializedState;
-  return [config, metaCall, isFavorite] as const;
+  return [config, metaCall] as const;
 }

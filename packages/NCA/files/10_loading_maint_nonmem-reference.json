@@ -1,0 +1,75 @@
+{
+  "dataset": "10_loading_maint_nonmem",
+  "pknca_version": "0.12.1",
+  "config": {
+    "auc_method": "lin up/log down",
+    "min_points": 3,
+    "min_r_squared": 0.85,
+    "exclude_cmax": true,
+    "min_span_ratio": 2
+  },
+  "dataset_meta": {
+    "route": "extravascular",
+    "conc_unit": "mg/L",
+    "union_ladder": [0, 24, 48, 72],
+    "dose_of_record": {
+      "S1_Day1": 200,
+      "S1_Day2": 100
+    },
+    "model": "oral 1-cmt ka=1,k=0.2,V=10,F=1; interval0 dose=200, interval1 dose=100"
+  },
+  "profiles": [
+    {
+      "profile_key": {
+        "subject": "S1_Day1",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 13.37461907,
+        "tmax": 2,
+        "auclast": 93.243310330073,
+        "aucinf": 98.343864153965,
+        "pct_aucextrap": 5.186448455907,
+        "lambda_z": 0.1997924776965,
+        "half_life": 3.469335725506,
+        "cl": 2.033680511952,
+        "vz": 10.178964370426
+      },
+      "provenance": {
+        "lambda_z_n_points": null,
+        "lambda_z_r_squared": null,
+        "lambda_z_adj_r_squared": null,
+        "lambda_z_time_first": null,
+        "lambda_z_time_last": null,
+        "clast_obs": null,
+        "c0_extrapolated": null
+      }
+    },
+    {
+      "profile_key": {
+        "subject": "S1_Day2",
+        "route": "extravascular"
+      },
+      "parameters": {
+        "cmax": 6.687309535,
+        "tmax": 2,
+        "auclast": 46.621655165184,
+        "aucinf": 49.171932076724,
+        "pct_aucextrap": 5.186448455107,
+        "lambda_z": 0.1997924777088,
+        "half_life": 3.469335725293,
+        "cl": 2.033680511963,
+        "vz": 10.178964369855
+      },
+      "provenance": {
+        "lambda_z_n_points": null,
+        "lambda_z_r_squared": null,
+        "lambda_z_adj_r_squared": null,
+        "lambda_z_time_first": null,
+        "lambda_z_time_last": null,
+        "clast_obs": null,
+        "c0_extrapolated": null
+      }
+    }
+  ]
+}

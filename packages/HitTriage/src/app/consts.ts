@@ -38,6 +38,7 @@ export const i18n = {
 export const HDCampaignsGroupingLSKey = 'HDCampaignsGrouping';
 export const HDCampaignTableColumnsLSKey = 'HDCampaignTableColumns';
 export const HDCampaignsTableSortingLSKey = 'HDCampaignsTableSorting';
+export const HDCampaignsCollapsedLSKey = 'HDCampaignsCollapsed';
 
 export enum CampaignGrouping {
   None = 'None',
@@ -47,36 +48,38 @@ export enum CampaignGrouping {
   LastModifiedUser = 'Last Modified User',
 }
 
-export type CampaignGroupingType = CampaignGrouping | `campaignFields.${string}`;
+/** The column of the last saver's name — the caption the Last Modified User grouping is offered under too. */
+export const LastModifiedByColumn = 'Last Modified by';
 
 export const DefaultCampaignTableInfoGetters = {
   'Name': (info: HitDesignCampaign) => info.friendlyName ?? info.name,
   'Code': (info: HitDesignCampaign) => info.name,
   'Created': (info: HitDesignCampaign) => info.createDate,
   'Author': (info: HitDesignCampaign) => info.authorUserFriendlyName ?? '',
-  'Last Modified by': (info: HitDesignCampaign) => info.lastModifiedUserName ?? '',
+  [LastModifiedByColumn]: (info: HitDesignCampaign) => info.lastModifiedUserName ?? '',
   'Molecules': (info: HitDesignCampaign) => (info.rowCount ?? 0).toString(),
   'Status': (info: HitDesignCampaign) => info.status,
 } as const;
 
-export type CampaignTableColumns = keyof typeof DefaultCampaignTableInfoGetters | `campaignFields.${string}`;
+export const HDDefaultCampaignTableColumns = ['Code', 'Created', 'Author', LastModifiedByColumn, 'Molecules', 'Status'];
 
 export const HTCampaignsGroupingLSKey = 'HTCampaignsGrouping';
 export const HTCampaignTableColumnsLSKey = 'HTCampaignTableColumns';
 export const HTCampaignsTableSortingLSKey = 'HTCampaignsTableSorting';
+export const HTCampaignsCollapsedLSKey = 'HTCampaignsCollapsed';
 
 export const HTDefaultCampaignTableInfoGetters = {
   'Name': (info: HitTriageCampaign) => info.friendlyName ?? info.name,
   'Code': (info: HitTriageCampaign) => info.name,
   'Created': (info: HitTriageCampaign) => info.createDate,
   'Author': (info: HitTriageCampaign) => info.authorUserFriendlyName ?? '',
-  'Last Modified by': (info: HitTriageCampaign) => info.lastModifiedUserName ?? '',
+  [LastModifiedByColumn]: (info: HitTriageCampaign) => info.lastModifiedUserName ?? '',
   'Total': (info: HitTriageCampaign) => (info.rowCount ?? 0).toString(),
   'Selected': (info: HitTriageCampaign) => (info.filteredRowCount ?? 0).toString(),
   'Status': (info: HitTriageCampaign) => info.status,
 } as const;
 
-export type HTCampaignTableColumns = keyof typeof HTDefaultCampaignTableInfoGetters | `campaignFields.${string}`;
+export const HTDefaultCampaignTableColumns = ['Created', 'Author', 'Total', 'Selected', 'Status'];
 
 export const PepTriageDataSourceTag = 'pepTriageDataSource';
 

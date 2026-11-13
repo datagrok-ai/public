@@ -1,0 +1,11 @@
+{
+  "name": "submit-dialog",
+  "entry": "submit-dialog.ts",
+  "title": "Submit dialog: read-only rows with edit and download icons",
+  "source": "B-1: the pencil and download on read-only rows were inert; Enter/Escape while editing reached the dialog",
+  "bad": {
+    "bad-edits-option": ["enter-saves", "escape-cancels", "pencil-edits"],
+    "bad-dialog-keys": ["enter-saves", "escape-cancels"],
+    "bad-disabled-rows": ["download-works", "summary-rows"]
+  }
+}

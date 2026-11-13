@@ -3,21 +3,22 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
-import {Chem} from '../scripts-api';
 import {PackageFunctions} from '../package';
 import {getMCS} from '../utils/most-common-subs';
 import {IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
 import {_rdKitService, cancelChemOp} from '../utils/chem-common-rdkit';
 import {rGroupsByEngine} from '../engine/analysis-jobs';
-import {isCruxRequested} from '../engine/chem-engine';
-import {_convertMolNotationByRdKit} from '../utils/convert-notation-utils';
+import {byEngineModule, isCruxRequested} from '../engine/chem-engine';
+import {coreMolblocksByCrux} from '../engine/molecule-jobs';
+import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {SCAFFOLD_COL, SCAFFOLD_COL_SYNC, setSyncTag} from '../constants';
 import {hasNewLines, hexToPercentRgb, newChemOpId, runCancellableChemOp, withChemCriticalSection} from '../utils/chem-common';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
-import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
+import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import {Subscription} from 'rxjs';
 
 const R_GROUP_PARAMS_STORAGE_NAME = 'r-group-params';
@@ -106,10 +107,17 @@ export function rGroupAnalysis(col: DG.Column): void {
       const mcsSmarts = await getMCS(molCol, mcsExactAtomsCheck.value!, mcsExactBondsCheck.value!);
       if (mcsSmarts !== null) {
         ui.setUpdateIndicator(sketcher.root, false);
-        const mol = getQueryMolSafe(mcsSmarts, '', PackageFunctions.getRdKitModule());
-        if (mol)
-          sketcher.setMolFile(mol.get_molblock());
-        mol?.delete();
+        // "Chemical engine": the MCS query's MOL block by the main thread's module (Crux's in Crux mode)
+        const molBlock = byEngineModule('R-group MCS', PackageFunctions.getRdKitModule(), (module) => {
+          const mol = getQueryMolSafe(mcsSmarts, '', module);
+          try {
+            return mol ? mol.get_molblock() : null;
+          } finally {
+            mol?.delete();
+          }
+        });
+        if (molBlock)
+          sketcher.setMolFile(molBlock);
       }
     } catch (e: any) {
       grok.shell.error(e);
@@ -170,10 +178,8 @@ export function rGroupAnalysis(col: DG.Column): void {
           grok.shell.error('No core was provided');
           return;
         }
-        if (replaceLatest.value) {
+        if (replaceLatest.value)
           removeLatestAnalysis(col);
-          await DG.delay(50);
-        }
         const funcCall = await DG.Func.find({name: 'rGroupDecomposition'})[0].prepare({
           df: col.dataFrame,
           molColName: columnInput.value!,
@@ -236,7 +242,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     }
     return prefixIdx;
   };
-  const rGroupPrefixRe = `${params.rGroupName}\\d+`;
+  const rGroupPrefixRe = `${StringUtils.escapeRegExp(params.rGroupName)}\\d+`;
   const corePrefixRe = `Core`;
   const rGroupPrefixIdx = getPrefixIdx(rGroupPrefixRe);
   const corePrefixIdx = getPrefixIdx(corePrefixRe);
@@ -253,7 +259,8 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
   let canceled = false;
   try {
     const coreSmarts = core;
-    core = _convertMolNotationByRdKit(core, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock,
+    // "Chemical engine": the core's MOL block by the engine (Crux's in Crux mode, which decomposes on it)
+    core = _convertMolNotation(core, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock,
       PackageFunctions.getRdKitModule());
     const labelledRGroups = !!MolfileHandler.getInstance(core)
       .atomTypes.filter((it) => it.startsWith('R')).length;
@@ -297,39 +304,24 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     if (rgRes === undefined) return;
     const {rGroups, highlightCol} = rgRes;
 
-    const rdkit = PackageFunctions.getRdKitModule();
     if (rGroups.length) {
       //unmatched are those items for which all R group cols are empty
       const unmatchedItems = new Uint8Array(rGroups[0].length).fill(0);
       latestAnalysisCols[col.dataFrame.name] = [];
       for (const resCol of rGroups) {
         if (canceled) return;
-        const molsArray = new Array<string>(resCol.length);
-        for (let i = 0; i < resCol.length; i++) {
-          if (canceled) return;
-          const molStr = resCol.get(i);
-          if (resCol.name !== 'Core') { //R Group columns
+        let molsArray: string[];
+        if (resCol.name === 'Core') //Core column - need to create molblock to align initial molecule by core
+          molsArray = await coreMolblocks(resCol.toList());
+        else { //R Group columns
+          molsArray = new Array<string>(resCol.length);
+          for (let i = 0; i < resCol.length; i++) {
+            if (canceled) return;
+            const molStr = resCol.get(i);
             if (!molStr)
               unmatchedItems[i] += 1;
             else
               molsArray[i] = molStr;
-          } else { //Core column - need to create molblock to align initial molecule by core
-            let mol: RDMol | null = null;
-            if (molStr) {
-              try {
-                if (!hasNewLines(molStr) && molStr.length > MAX_SMILES_LENGTH)
-                  continue; // do not attempt to parse very long SMILES, will cause MOB.
-                mol = rdkit.get_mol(molStr); //try to get mol. In case fail - try to get qmol
-                if (!mol)
-                  mol = rdkit.get_qmol(molStr);
-                if (mol)
-                  molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
-              } catch (e) {
-                //do nothing here, molsArray[i] is empty for invalid molecules
-              } finally {
-                mol?.delete();
-              }
-            }
           }
         }
         if (canceled) return;
@@ -383,6 +375,40 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
 }
 
 
+/**
+ * The Core column's MOL blocks, which align each molecule by its core: a core's molecule (else its query) with the ISO
+ * line written as RGP, none where neither reads. "Chemical engine": in Crux mode from the Crux workers (a main-thread
+ * loop over a large column froze the page) and {@link rdkitCoreMolblock} for the cores they leave; in RDKit mode, that.
+ */
+async function coreMolblocks(cores: string[]): Promise<string[]> {
+  const crux = await coreMolblocksByCrux(cores);
+  const rdkit = PackageFunctions.getRdKitModule();
+  const blocks = new Array<string>(cores.length);
+  cores.forEach((core, i) => {
+    const block = crux && crux[i] !== undefined ? crux[i] || null : rdkitCoreMolblock(rdkit, core);
+    if (block !== null)
+      blocks[i] = block;
+  });
+  return blocks;
+}
+
+/** A core's MOL block for the Core column by RDKit's module; null for none. */
+function rdkitCoreMolblock(rdkit: RDModule, molStr: string): string | null {
+  if (!molStr || (!hasNewLines(molStr) && molStr.length > MAX_SMILES_LENGTH))
+    return null; // do not attempt to parse very long SMILES, will cause MOB.
+  let mol: RDMol | null = null;
+  try {
+    mol = rdkit.get_mol(molStr); //try to get mol. In case fail - try to get qmol
+    if (!mol)
+      mol = rdkit.get_qmol(molStr);
+    return mol ? mol.get_molblock().replace('ISO', 'RGP') : null;
+  } catch {
+    return null; // empty for invalid molecules
+  } finally {
+    mol?.delete();
+  }
+}
+
 // Section-protected entry — safe for any caller.
 export async function rGroupsMinilib(molecules: DG.Column<string>, coreMolecule: string,
   coreIsQMol: boolean, rGroupPrefixIdx: number,
@@ -435,36 +461,6 @@ async function rGroupsMinilibRaw(molecules: DG.Column<string>, coreMolecule: str
   return {rGroups: resCols, highlightCol: substructCol};
 }
 
-export async function rGroupsPython(col: DG.Column<string>, core: string, prefix: string, withCore: boolean,
-  onlyMatchAtRGroups: boolean):
-  Promise<RGroupsRes> {
-  const resCols = [];
-  const res = withCore ? await Chem.findRGroupsWithCore(col.name, col.dataFrame, core, onlyMatchAtRGroups) :
-    await Chem.findRGroups(col.name, col.dataFrame, core, prefix);
-  const module = PackageFunctions.getRdKitModule();
-  if (res.rowCount) {
-    for (const resCol of res.columns) {
-      const molsArray = new Array<string>(resCol.length);
-      for (let i = 0; i < resCol.length; i++) {
-        const molStr = resCol.get(i);
-        try {
-          if (molStr && !hasNewLines(molStr) && molStr.length > MAX_SMILES_LENGTH)
-            continue; // do not attempt to parse very long SMILES, will cause MOB.
-          const mol = module.get_mol(molStr);
-          molsArray[i] = mol.get_molblock().replace('ISO', 'RGP');
-          mol.delete();
-        } catch (e) {
-          console.warn(`RGroupAnalysisWarning: skipping invalid molecule '${molStr}' at index ${i}`);
-        }
-      }
-      const rCol = DG.Column.fromStrings(resCol.name, molsArray);
-      rCol.semType = DG.SEMTYPE.MOLECULE;
-      rCol.meta.units = DG.chem.Notation.MolBlock;
-      resCols.push(rCol);
-    }
-  }
-  return {rGroups: resCols};
-}
 function removeLatestAnalysis(col: DG.Column) {
   if (latestTrellisPlot[col.dataFrame.name] && latestTrellisPlot[col.dataFrame.name]!.dataFrame)
     latestTrellisPlot[col.dataFrame.name]!.close();

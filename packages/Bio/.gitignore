@@ -38,3 +38,6 @@ src/**/*.d.ts.map
 bdd/test-results/
 bdd/e2e/
 bdd/.auth.json
+
+# Playwright report written by grok test
+test-playwright-report.json

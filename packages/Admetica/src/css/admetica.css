@@ -1,8 +1,3 @@
-.admetica-dialog-tree {
-  max-height: 400px;
-  width: 200px;
-}
-
 .admetica-dialog-select-all {
   margin-left: 6px;
   margin-right: 12px;
@@ -21,35 +16,9 @@
   margin-left: -55px;
 }
 
-.admetica-input-form {
-  display: flex;
-  justify-content: flex-start;
-  gap: 10px;
-  width: 315px;
-}
-
 .admetica-pane-header {
   display: flex;
   align-items: center;
-}
-
-.admetica-tree {
-  overflow: hidden;
-  min-height: 250px;
-}
-
-.admetica-tab-content {
-  gap: 10px;
-}
-
-.admetica-descriptor-name {
-  text-align: center;
-  font-weight: bold;
-}
-
-.admetica-save-button {
-  margin-left: 20px!important;
-  visibility: hidden;
 }
 
 .admetica-rdkit-error {
@@ -61,16 +30,35 @@
   color: red; 
 }
 
-.d4-flex-col.ui-div.admetica-input-form .ui-input-textarea.ui-input-root {
-  resize: none;
-  overflow: hidden;
-  flex-shrink: unset!important;
+.admetica-editor {
+  width: 640px;
 }
 
-.admetica-div {
-  position: absolute;
-  visibility: hidden;
-  font: 13px Roboto;
-  width: 200px;
-  white-space: normal;
+.admetica-editor-models {
+  height: 360px;
+}
+
+.admetica-editor-tree {
+  height: 100%;
+}
+
+.admetica-editor-tree > .u2-list {
+  border: none;
+}
+
+.admetica-editor-detail {
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0 var(--dg-space-l);
+  overflow-y: auto;
+}
+
+.admetica-editor-detail h3 {
+  margin-top: 0;
+}
+
+.admetica-color-scheme {
+  width: 100px;
+  height: 20px;
+  pointer-events: none;
 }

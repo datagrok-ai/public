@@ -77,6 +77,11 @@ Feature: Tile viewer persistence
     And the "fields shown" reading of tile viewer should be 9
     And the "fields" reading of tile viewer should not contain "WEIGHT"
     And the "form designed" reading of tile viewer should be "true"
+    # every lane rebuilds its cards (core#1088): row 101 is the first Black row, row 10 the first Asian one
+    And tile viewer should not have a "field WEIGHT of row 101" area
+    And tile viewer should not have a "field WEIGHT of row 10" area
+    And tile viewer should have a "field AGE of row 101" area
+    And tile viewer should have a "field AGE of row 10" area
     When user saves the layout of the current table view
     And user clicks on close icon of tile viewer
     Then tile viewer should be absent

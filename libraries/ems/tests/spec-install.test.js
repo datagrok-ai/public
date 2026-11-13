@@ -1,11 +1,5 @@
-/* ems as a u2 plugin (WO-C14, P6, P92, P94): `installEms` registers the source, every domain
-   control and the spec session in one install, once; the sources of one spec share one session
-   whatever else the registry has installed; and every spec the repo ships — the packages'
-   `*.spec.json` and the JSON blocks of the recipes — renders on the memory backend with no
-   placeholder. `DG` comes from tests/dg-stub.mjs. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {readdirSync, readFileSync, existsSync} from 'node:fs';
@@ -20,7 +14,7 @@ import {Property, WidgetDescriptor, platform} from '@datagrok-libraries/u2/tests
 import {backend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
-const {registerPlatformComponents} = await import('@datagrok-libraries/u2/src/dg/index.js');
+const {registerPlatformComponents} = await import('@datagrok-libraries/u2/dg');
 const {installEms, emsPlugin, registerEmsComponents} = await import('../src/dg/registrations.js');
 
 const PACKAGES = fileURLToPath(new URL('../../../packages/', import.meta.url));
@@ -104,7 +98,7 @@ scoped('P94: two sources of one spec share one session after an unrelated use() 
   const headless = new Registry();
   registerAll(headless);
   headless.use(emsSourcesPlugin);
-  const alone = renderSpec(spec, new SpecContext(), headless);
+  const alone = testOwner().build(() => renderSpec(spec, new SpecContext(), headless));
   await settle();
   assert.equal(alone.node('issues').session, SharedSession.of(alone), 'the headless install brings the session');
   alone.dispose();

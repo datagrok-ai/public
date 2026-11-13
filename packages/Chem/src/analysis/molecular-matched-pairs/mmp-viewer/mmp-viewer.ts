@@ -77,7 +77,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   totalData: string;
   totalDataUpdated: boolean = false;
   onPropertyChangedObs : Subject<DG.Property | null> = new Subject<DG.Property | null>();
-  hintsShown: {[key: string]: boolean} = {};
 
   moleculesCol: DG.Column | null = null;
   activitiesCols: DG.ColumnList | null = null;
@@ -86,7 +85,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   parentTable: DG.DataFrame | null = null;
   parentTableView: DG.TableView | null = null;
 
-  //mmpRules: MmpRules | null = null;
   colorPalette: PaletteCodes | null = null;
 
   pairedGrids: MmpPairedGrids | null = null;
@@ -105,12 +103,12 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   corrGrid: DG.Grid | null = null;
   generationsGridDiv = ui.div();
 
+  /** RDKit's module: the pair panel and tooltips run by engine, with it behind Crux's. */
   rdkitModule: RDModule | null = null;
   currentTab = '';
   mmpFilters: MmpFilters | null = null;
 
   calculatedOnGPU: boolean | null = null;
-  parentTableFilterBackup: DG.BitSet | null = null;
   mWCalulationsReady = false;
 
   fragSortingInfo: SortData = {fragmentIdxs: [], frequencies: []};
@@ -122,7 +120,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   tp: DG.Viewer | null = null;
   activityMeanNames: string[] = [];
   fragmentsDiv = ui.div();
-  filterStatesUpdatedCondition: () => boolean = () => true;
 
   spCorrDiv = ui.divV([]);
   showFragmentsChoice: DG.InputBase | null = null;
@@ -167,23 +164,15 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   onPropertyChangedDebounced() {
     if (!this.dataFrame)
       return;
-    if (this.totalDataUpdated && this.moleculesColumnName) {
-      this.moleculesCol = this.dataFrame.col(this.moleculesColumnName);
-      this.activitiesCols = DG.DataFrame.fromColumns(this.dataFrame.columns.byNames(this.activities!)).columns;
-      this.render();
-      return;
-    }
-
     this.moleculesCol = this.dataFrame.col(this.moleculesColumnName!);
     this.activitiesCols = DG.DataFrame.fromColumns(this.dataFrame.columns.byNames(this.activities!)).columns;
-    if (this.moleculesColumnName && this.activities && this.fragmentCutoff && this.scalings) {
+    // a saved analysis (totalData) needs only the molecules
+    const inputsSet = !!(this.activities && this.fragmentCutoff && this.scalings);
+    if (this.moleculesColumnName && (this.totalDataUpdated || inputsSet))
       this.render();
-      return;
-    }
   }
 
   onPropertyChanged(property: DG.Property | null): void {
-    console.log(property!.name);
     super.onPropertyChanged(property);
     if (property?.name === 'totalData')
       this.totalDataUpdated = true;
@@ -606,7 +595,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.cutoffMasks = new Array<DG.BitSet>(this.mmpFilters.activitySliderInputs.length);
     this.totalCutoffMask = DG.BitSet.create(this.parentTable!.rowCount);
     this.setupFilters(this.mmpFilters, linesActivityCorrespondance);
-    console.log(`created mmpa filters`);
 
     this.sp = getMmpScatterPlot(this.parentTable!, this.spAxesNames,
       this.moleculesCol!.name, this.activitiesCols!.byIndex(0).name);
@@ -760,19 +748,18 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   //cliffs filters on scatter plot
   setupFilters(mmpFilters: MmpFilters, linesActivityCorrespondance: Uint32Array): void {
+    const refilter = (): void => {
+      this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
+        mmpFilters.activityActiveInputs.map((ai) => ai.value));
+      this.parentTable?.rows.requestFilter();
+    };
     for (let i = 0; i < mmpFilters.activitySliderInputs.length; i++) {
-      DG.debounce(mmpFilters.activityActiveInputs[i].onChanged, 300).subscribe(() => {
-        this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
-          mmpFilters.activityActiveInputs.map((ai) => ai.value));
-        this.parentTable?.rows.requestFilter();
-      });
+      DG.debounce(mmpFilters.activityActiveInputs[i].onChanged, 300).subscribe(refilter);
 
       DG.debounce(mmpFilters.activitySliderInputs[i].onChanged, 300).subscribe(() => {
         mmpFilters.activityValuesDivs[i].innerText = mmpFilters.activitySliderInputs[i].value === 0 ? '0' :
           getSigFigs(mmpFilters.activitySliderInputs[i].value, 4).toString();
-        this.refilterCliffs(mmpFilters.activitySliderInputs.map((si) => si.value),
-          mmpFilters.activityActiveInputs.map((ai) => ai.value));
-        this.parentTable?.rows.requestFilter();
+        refilter();
       });
 
       mmpFilters.activityColorInputs[i].value = this.colorPalette!.hex[i];
@@ -1060,7 +1047,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   }
 
   async runMMP(mmpInput: MmpInput) {
-    //console.profile('MMP');
     const showHints = grok.userSettings.getValue(STORAGE_NAME, KEY);
     if (showHints === 'false')
       this.showHints = false;
@@ -1107,7 +1093,6 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     this.fillAll(mmpInput, palette, mmpa, mmpa.allCasesBased.diffs, pairedGrids, activityMeanNames);
 
     this.totalData = mmpa.toJSON();
-    //console.profileEnd('MMP');
   }
 
 

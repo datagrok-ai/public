@@ -279,6 +279,34 @@ category('Functions: TableParams', () => {
     }
   });
 
+  const shapes = (cols: any, lst: any) =>
+    `${cols instanceof DG.ColumnList}|${Array.isArray(lst)}|${cols.names().join(',')}|${lst.map((c: DG.Column) => c.name).join(',')}`;
+
+  const shapesFunc = grok.functions.register({
+    signature: 'string paramEvalColListShapes(dataframe df, column_list cols, list<column> lst)',
+    run: (_df: DG.DataFrame, cols: any, lst: any) => shapes(cols, lst),
+  });
+
+  const shapesScript = () => DG.Script.create([
+    '//name: paramEvalColListShapesScript',
+    '//language: javascript',
+    '//input: dataframe df',
+    '//input: column_list cols',
+    '//input: list<column> lst',
+    '//output: string res',
+    'res = `${cols instanceof DG.ColumnList}|${Array.isArray(lst)}|${cols.names().join(",")}|${lst.map((c) => c.name).join(",")}`;',
+  ].join('\n'));
+
+  for (const [name, func] of [['function', () => shapesFunc], ['script', shapesScript]] as [string, () => DG.Func][]) {
+    test(`a JS ${name} gets column_list as a ColumnList and list<column> as an array`, async () => {
+      const df = DG.DataFrame.fromCsv('age,sex,height\n25,M,180\n31,F,165');
+      expect(await func().apply({df, cols: [df.col('age')!, df.col('height')!], lst: [df.col('sex')!]}),
+        'true|true|age,height|sex');
+      expect(await func().apply({df, cols: df.columns, lst: [df.col('sex')!, df.col('age')!]}),
+        'true|true|age,sex,height|sex,age');
+    });
+  }
+
   test('parentTableParamName answers both annotation link shapes', async () => {
     const get = (window as any).grok_Property_Get;
     expect(typeof get, 'function');
