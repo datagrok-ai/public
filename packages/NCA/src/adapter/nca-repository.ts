@@ -23,6 +23,8 @@ import type {
 } from './study-schema';
 import {INSTALLED_ENGINE_VERSION} from './engine-version';
 import {RESULTS_BASIS} from './unit-conversion';
+import {DERIVED_BASIS} from './study-schema';
+import {isOccasionName} from './occasion';
 
 // ─── Shared constants (moved from the deleted StudyCoordinator) ─────────────────
 
@@ -64,6 +66,8 @@ export interface StalenessStamp {
   readonly engineVersion?: string | null;
   readonly resultsBasis?: string | null;
   readonly hasCache: boolean;
+  /** tk-study-day-stratification F6 — read by {@link isDerivedBasisStale} with the recipe parts. */
+  readonly derivedBasis?: string | null;
 }
 
 /**
@@ -85,14 +89,40 @@ export function isBasisStale(a: StalenessStamp): boolean {
  */
 export function isStale(a: StalenessStamp, installed: string = INSTALLED_ENGINE_VERSION): boolean {
   if (!a.hasCache) return false;
-  return a.engineVersion == null || a.engineVersion !== installed || isBasisStale(a);
+  return a.engineVersion == null || a.engineVersion !== installed || isBasisStale(a) || isDerivedBasisStale(a);
+}
+
+/** The parts of an entry {@link isDerivedBasisStale} reads (all optional on a bare header). */
+type DerivedStampSource = Partial<Pick<AnalysisEntry, 'derivedBasis' | 'summaryCache' | 'groupByCols' |
+  'passthroughCols' | 'derived' | 'columns'>>;
+
+/**
+ * tk-study-day-stratification F6 (SF-STALE, narrowed by the user 2026-11-10): was a cached %F
+ * computed before %F was stratified per occasion, on an analysis where that moves it? True iff
+ * the cache holds a %F value, the analysis is multi-occasion and `derivedBasis` is not
+ * `DERIVED_BASIS`. A fresh entry always carries the current stamp, so only legacy entries are
+ * tested, and "multi-occasion" for them = the ONE occasion-name matcher (`isOccasionName`)
+ * matches a column the recipe names. Accepted residuals (cue-only): a legacy repeat-dose
+ * analysis whose occasion column the recipe never named is not marked; a legacy analysis grouped
+ * by `Period` or by a single-valued `Day` reads stale although its %F does not move.
+ */
+export function isDerivedBasisStale(a: StalenessStamp & DerivedStampSource): boolean {
+  if (!a.hasCache || a.derivedBasis === DERIVED_BASIS) return false;
+  const tiers = a.summaryCache?.compoundTier ?? [];
+  if (!tiers.some((t) => t.fPct !== null && Number.isFinite(t.fPct.mean))) return false;
+  const c = a.columns;
+  const named = [
+    ...(a.groupByCols ?? []), ...(a.passthroughCols ?? []).map((p) => p.name),
+    ...(a.derived?.occasionCol !== undefined ? [a.derived.occasionCol] : []),
+    ...(c !== undefined ? Object.values(c).filter((v): v is string => typeof v === 'string') : []),
+  ];
+  return named.some((n) => isOccasionName(n));
 }
 
 /** {@link isStale} for a full entry (its cache present or not). */
-export function isEntryStale(e: Pick<AnalysisEntry, 'engineVersion' | 'resultsBasis' | 'summaryCache'>,
-  installed: string = INSTALLED_ENGINE_VERSION): boolean {
-  return isStale({engineVersion: e.engineVersion, resultsBasis: e.resultsBasis, hasCache: e.summaryCache !== null},
-    installed);
+export function isEntryStale(e: Pick<AnalysisEntry, 'engineVersion' | 'resultsBasis' | 'summaryCache'> &
+  DerivedStampSource, installed: string = INSTALLED_ENGINE_VERSION): boolean {
+  return isStale({...e, hasCache: e.summaryCache !== null}, installed);
 }
 
 // ─── Snapshot hash (PR-3 / PR-13) ───────────────────────────────────────────────

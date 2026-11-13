@@ -93,9 +93,10 @@ export const MOLECULE_JOBS: {[op: string]: WorkerJob} = {
     const results = await rdkitWorker().getCoordGenCoords(molecules);
     return {results, rest: emptyRows(molecules, results)};
   },
-  /** Transform | Flatten Molecules (RdKitServiceWorker.flattenMolecules: SMILES without stereo). */
-  flattenMolecules: async ({rdkitWorker}, molecules: string[]): Promise<MoleculeJobResult<string>> => {
-    const results = await rdkitWorker().flattenMolecules(molecules);
+  /** Transform | Flatten Molecules (RdKitServiceWorker.flattenMolecules: SMILES without stereocenters, and E/Z). */
+  flattenMolecules: async ({rdkitWorker}, molecules: string[], flattenDoubleBonds: boolean):
+    Promise<MoleculeJobResult<string>> => {
+    const results = await rdkitWorker().flattenMolecules(molecules, flattenDoubleBonds);
     return {results, rest: emptyRows(molecules, results)};
   },
   /** `beautifyMols` (RdKitServiceWorker.beautifyMoleculesV3K: new coordinates, normalized and straightened, V3000). */

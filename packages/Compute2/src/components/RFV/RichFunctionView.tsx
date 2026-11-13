@@ -123,7 +123,7 @@ export const RichFunctionView = Vue.defineComponent({
     const callMetaValues = useUnwrappedCallMeta(() => props.callMeta);
 
     const {
-      isSAenabled, isReportEnabled, isFittingEnabled, allowRerun, runLabel, customExports, dockSpawnConfig,
+      isSAenabled, isFittingEnabled, allowRerun, runLabel, dockSpawnConfig,
       formAsTab, autorun, inputToggles,
     } = useRfvFeatures(currentCall, Vue.toRef(props, 'standalone'));
 
@@ -199,7 +199,7 @@ export const RichFunctionView = Vue.defineComponent({
     const pressRun = () => pressControl(run.value, () => emit('runClicked'));
 
     const {exports, directExport, guardedExport, exportsVisible} = useRfvExports(currentCall, {
-      isReportEnabled, hideDefaultExport: () => props.hideDefaultExport, customExports, autorun,
+      hideDefaultExport: () => props.hideDefaultExport, autorun,
       callState: () => props.callState, isOutputOutdated, viewersHook, callMeta, validationState, consistencyState,
       collectDfExportEntries,
     });
@@ -463,7 +463,7 @@ export const RichFunctionView = Vue.defineComponent({
     return () => (
       Vue.withDirectives(<div class={`w-full h-full flex outline-none ${SCOPE_CLASS}`} tabindex={-1}>
         { exportsVisible.value && !uiBlocked.value && exports.value.length > 1 &&
-          <RibbonMenu groupName='Step exports' items={stepExportsItems.value}/> }
+          <RibbonMenu groupName={props.standalone ? 'Export' : 'Step exports'} items={stepExportsItems.value}/> }
         <RibbonMenu groupName='Panels' items={panelsItems.value}/>
         <RibbonPanel items={ribbonItems.value}/>
         <DockManager class='block h-full'
@@ -487,6 +487,7 @@ export const RichFunctionView = Vue.defineComponent({
                 key={historyFunc().nqName}
                 model={historyFunc()}
                 stepHistory={historyMode.value === 'step'}
+                viewersHook={historyMode.value === 'step' ? viewersHook.value : undefined}
                 openLabel={historyReadonly.value ? 'Open read-only' : 'Open'}
                 onOpen={(chosenCall: DG.FuncCall) => onHistoryRunChosen(chosenCall, historyReadonly.value)}
                 class='h-full'

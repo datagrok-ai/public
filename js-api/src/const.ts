@@ -319,6 +319,11 @@ export const FUNC_TYPES = {
   /** Converts values. Has one input and one output */
   CONVERTER: 'converter',
 
+  /** Computes a comparable number for each value of a semantic type; viewers order categories by it.
+   *  A second input with choices gives one property per choice.
+   *  Signature: categoryOrderer(values: Column, property?: string): Column */
+  CATEGORY_ORDERER: 'categoryOrderer',
+
   WIDGET: 'widget',
   WIDGETS: 'widgets',
   EDITOR: 'editor',

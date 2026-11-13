@@ -70,6 +70,8 @@ export interface IDartApi {
   grok_View_Set_Path(v: any, s: String): any;
   grok_View_Get_BasePath(v: any): any;
   grok_View_Set_BasePath(v: any, s: String): any;
+  grok_View_Get_SaveToProject(v: any): any;
+  grok_View_Set_SaveToProject(v: any, x: Boolean): any;
   grok_View_Get_Description(v: any): any;
   grok_View_Set_Description(v: any, s: String): any;
   grok_View_Get_Type(v: any): any;
@@ -369,6 +371,7 @@ export interface IDartApi {
   grok_Viewer_Filters(t: any, json: String): any;
   grok_Viewer_ScatterPlot(t: any, json: String): any;
   grok_Viewer_LineChart(t: any, json: String): any;
+  grok_Viewer_SetMarkerOpacity(v: any, opacity: Num): any;
   grok_Viewer_GetInfo(v: any): any;
   grok_Viewer_Get_Look(v: any): any;
   grok_Viewer_Get_ImmediateRendering(v: any): any;
@@ -462,6 +465,7 @@ export interface IDartApi {
   grok_FormulaLineHelper_SetDefaultParams(formulaItem: any): any;
   grok_FormulaLineHelper_GetMeta(formulaItem: any): any;
   grok_FormulaLineHelper_GetMetaByFormula(formula: String, type: String): any;
+  grok_AnnotationRegion_GetFillColor(region: any): any;
   grok_CanvasViewer_RunPostponedComputations(v: any): any;
   grok_CanvasViewportViewer_Get_Viewport(s: any): any;
   grok_CanvasViewportViewer_SetViewport(s: any, x: Num, y: Num, width: Num, height: Num): any;
@@ -642,8 +646,8 @@ export interface IDartApi {
   grok_Project_Close(p: any): any;
   grok_Shell_Get_Projects(): any;
   grok_Project_AddTableView(p: any, t: any): any;
-  grok_ColorPicker(color: Num, onChanged: any, colorDiv: any, onOk: any, onCancel: any): any;
-  grok_ColorPicker_Show(color: Num, onChanged: any, onOk: any, onCancel: any): any;
+  grok_ColorPicker(color: Num, onChanged: any, colorDiv: any, onOk: any, onCancel: any, useAlphaChannel?: Bool): any;
+  grok_ColorPicker_Show(color: Num, onChanged: any, onOk: any, onCancel: any, useAlphaChannel?: Bool): any;
   grok_CodeEditor(script: String, mode: String, placeholder: String, root: any): any;
   grok_TaskBarProgressIndicator_Create(name: String, cancelable: Bool, pausable: Bool, spinner: Bool): any;
   grok_TaskBarProgressIndicator_Close(pi: any): any;
@@ -753,6 +757,7 @@ export interface IDartApi {
   grok_ColumnsInput_SetAdditionalColumnProperties(input: any, props: any): any;
   grok_ColumnsInput_SetShowSelectedColsOnTop(input: any, x: Bool): any;
   grok_ColorInput_SetShowOnlyColorBox(input: any, x: Bool): any;
+  grok_ColorInput_SetUseAlphaChannel(input: any, x: Bool): any;
   grok_FilesInput_Set_AcceptExtensions(input: any, x: any): any;
   grok_PropertyGrid(): any;
   grok_PropertyGrid_Update(propGrid: any, src: any, props: any, table?: any): any;

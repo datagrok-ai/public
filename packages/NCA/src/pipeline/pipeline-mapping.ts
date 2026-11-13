@@ -21,7 +21,7 @@ import * as DG from 'datagrok-api/dg';
 import {detectMapping, isCompoundIdColumnName} from '../adapter/column-autodetect';
 import {
   ROUTE_STRING_TO_CODE, CONC_TO_MG_L, TIME_TO_HOUR, DOSE_TO_MG, BW_TO_KG, SEX_SYNONYMS,
-  defaultSexAssignment, uniqueSexValues,
+  defaultSexAssignment, uniqueSexValues, isOccasionName, splitsProfiles, numAt, normOccasionName,
 } from '../adapter';
 import type {BodyWeightUnit, ConcentrationUnit, DoseUnit, SexCode, TimeUnit} from '../adapter';
 
@@ -76,26 +76,48 @@ export interface MappingDetection {
 /** `F_PCT_REASON` when the mapping has no sex column. */
 export const NO_SEX_COLUMN = 'no sex column';
 
-const norm = (name: string): string => name.toLowerCase().replace(/[\s_-]+/g, '');
+const norm = normOccasionName;
 
 const STUDY_NAME = /^(study|studyid|studyno|studynumber|studycode)$/;
-const PERIOD_NAME = /^(period|visitdy|visit|visitday|occasion|occ)$/;
+/** Occasion names a profile key was taken from unconditionally before the shared matcher
+ *  (`isOccasionName`) existed. They stay unconditional so that no existing pipeline's profile
+ *  key changes (AC-1.9 golden); the names the shared list adds (`StudyDay`, `Day`, `NOMDY`,
+ *  `Week`) must also pass `splitsProfiles`, because a `Day` that is a per-row nominal day of
+ *  one daily-sampled profile would otherwise split it. */
+const LEGACY_PERIOD_KEY = /^(period|visitdy|visit|visitday|occasion|occ)$/;
 const COMMENT_NAME = /^(comment|comments|remark|remarks|note|notes|crocomment)$/;
 const NOMINAL_NAME = /^(nominal|nom|nominaltime|nomtime|nominaltime(h|hr|hrs|hours|min)?|pctptnum)$/;
 const CONC_LIKE = /(conc|concentration|^dv$|^aval$)/;
 
-/** True for a column named like a period / occasion key (the crossover dimension). */
-export const isPeriodColumnName = (name: string): boolean => PERIOD_NAME.test(norm(name));
-
-/** Grouping columns found by name, in profile-key order: study, compound, period. */
-export function detectGroupByColumns(df: DG.DataFrame, exclude: ReadonlySet<string>): string[] {
-  const cols = df.columns.toList().filter((c) => !exclude.has(c.name));
+/**
+ * Grouping columns found by name, in profile-key order: study, compound, occasion. An occasion
+ * column (the ONE matcher `isOccasionName`, shared with the app) becomes a profile key when it
+ * is not the time column and, for a name outside the legacy period list, when it splits each
+ * subject into genuine profiles (`splitsProfiles`: ≥ 3 times per block, time restarting per
+ * block) — AC-1.9.
+ */
+export function detectGroupByColumns(df: DG.DataFrame, exclude: ReadonlySet<string>,
+  roles: {subject?: string; time?: string} = {}): string[] {
+  const cols = df.columns.toList().filter((c) => !exclude.has(c.name) && c.name !== roles.time);
   const pick = (test: (n: string) => boolean): string[] =>
     cols.filter((c) => test(norm(c.name))).map((c) => c.name);
+  const subj = roles.subject !== undefined ? df.col(roles.subject) : null;
+  const time = roles.time !== undefined ? df.col(roles.time) : null;
+  const splits = (name: string): boolean => {
+    if (subj === null || time === null) return false;
+    const c = df.col(name)!;
+    const n = df.rowCount;
+    const t = new Float64Array(n);
+    for (let i = 0; i < n; i++) t[i] = numAt(time, i);
+    return splitsProfiles(
+      Array.from({length: n}, (_, i) => subj.getString(i)),
+      Array.from({length: n}, (_, i) => c.isNone(i) ? '' : c.getString(i)), t);
+  };
   return [
     ...pick((n) => STUDY_NAME.test(n)),
     ...pick((n) => isCompoundIdColumnName(n)),
-    ...pick((n) => isPeriodColumnName(n)),
+    ...cols.filter((c) => isOccasionName(c.name) &&
+      (LEGACY_PERIOD_KEY.test(norm(c.name)) || splits(c.name))).map((c) => c.name),
   ];
 }
 
@@ -177,7 +199,7 @@ export function detectPipelineMapping(df: DG.DataFrame,
     ...(comment !== undefined ? {comment} : {}),
     ...(nominalTime !== undefined ? {nominalTime} : {}),
     ...(sex !== undefined ? {sex} : {}),
-    groupBy: detectGroupByColumns(df, mapped),
+    groupBy: detectGroupByColumns(df, mapped, {subject: d.subject.name, time: d.time.name}),
     units,
   };
   return {mapping, confidence: issues.length === 0 ? 'high' : 'low', issues};

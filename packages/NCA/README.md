@@ -118,11 +118,17 @@ rest still compute.
 ### Stratify
 - **Group by** — aggregate to group-level mean ± CV by route, status, sex, dose, study day, or any
   carried metadata column.
-- **Bioavailability** — F% per route × sex stratum, with CL and CL/F.
+- **Bioavailability** — F% per route × sex stratum (× study day on a confirmed repeat-dose
+  design), with CL and CL/F.
 - **Dose proportionality** — Smith power-model slope with 90% CI and a proportional /
-  sub / super verdict, plus a dose-normalized view.
-- **Accumulation & exposure margin** — Rac(AUC), Rac(Cmax), human/animal exposure margin, and
-  sex fold-change for repeat-dose TK.
+  sub / super verdict per route × sex × study day, plus a dose-normalized view.
+- **Sex comparison** — female / male fold-change per dose (× study day when the study has
+  several days).
+- **Day N / Day 1 & exposure margin** — Rac(AUC), Rac(Cmax) and human/animal exposure margin for
+  repeat-dose TK.
+
+The study day (or period / occasion) column is detected by name and confirmed in Settings,
+together with the animal key and the design (repeat-dose, crossover, escalation).
 - **Sparse NCA** — pooled composite AUClast with Bailer/Holder bootstrap CI, a composite profile,
   and an AUC-vs-dose scatter.
 

@@ -82,6 +82,41 @@ export async function SaveWorkflowRun(nqName: string, version: string, state: an
   return await PackageFunctions.SaveWorkflowRun(nqName, version, state, metadata);
 }
 
+//description: The default Excel report of a run, as its export menu builds it: [DG.FileInfo, ExcelJS.Workbook].
+//input: funccall funcCall { description: The run to report }
+//input: object validationState { description: Validation results by input; optional: true }
+//input: object consistencyState { description: Consistency by input; optional: true }
+//input: object viewersHook { description: The viewers hook of a workflow step, in place of the function's own; optional: true }
+//input: object metaState { description: Meta values by output, for the hook; optional: true }
+//input: bool isOutputOutdated { description: Names the file Not completed when true; optional: true }
+//output: object result
+export async function ReportFuncCallExcel(funcCall: DG.FuncCall, validationState?: any, consistencyState?: any, viewersHook?: any, metaState?: any, isOutputOutdated?: boolean) {
+  return await PackageFunctions.ReportFuncCallExcel(funcCall, validationState, consistencyState, viewersHook, metaState, isOutputOutdated);
+}
+
+//description: The exports of a function's runs as its Export menu lists them, [{id, name}]; the first is default.
+//input: func func 
+//output: object result
+export function CallExports(func: any) {
+  return PackageFunctions.CallExports(func);
+}
+
+//description: Exports a run as its Export menu does, with the id CallExports gives; returns the file.
+//input: funccall funcCall { description: The run to export }
+//input: string exportId { description: The export id }
+//input: object args { description: The args a custom export gets (CustomExportArgs); optional: true }
+//output: file result
+export async function ExportCall(funcCall: DG.FuncCall, exportId: string, args?: any) : Promise<any> {
+  return await PackageFunctions.ExportCall(funcCall, exportId, args);
+}
+
+//description: Load a saved workflow run without UI and return the state of every step, as RunWorkflow does.
+//input: string id { description: Meta FuncCall id of the saved workflow run }
+//output: object result
+export async function LoadWorkflowRun(id: string) {
+  return await PackageFunctions.LoadWorkflowRun(id);
+}
+
 //description: Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.
 //input: string id { description: Meta FuncCall id of the saved workflow run }
 export async function OpenWorkflowRun(id: string) : Promise<void> {
@@ -116,6 +151,16 @@ export async function ViewerTestApp() : Promise<void> {
 //name: FormTestApp
 export async function FormTestApp() : Promise<void> {
   await PackageFunctions.FormTestApp();
+}
+
+//output: object hook
+export async function FailingViewersHookMaker() {
+  return await PackageFunctions.FailingViewersHookMaker();
+}
+
+//output: object hook
+export async function SlowViewersHookMaker() {
+  return await PackageFunctions.SlowViewersHookMaker();
 }
 
 //name: Mock Pipeline 1
@@ -231,16 +276,58 @@ export async function TestCustomView() {
 
 //input: double a 
 //output: double result
-//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]
+//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"},{"name":"none","function":"Compute2:TestCustomExportNoFile"},{"name":"hook","function":"Compute2:TestCustomExportHookArgs"}]
 export async function TestCustomExportModel(a: number) : Promise<number> {
   return await PackageFunctions.TestCustomExportModel(a);
 }
 
+//input: double a 
+//output: double result
+//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"},{"name":"none","function":"Compute2:TestCustomExportNoFile","preferred":true},{"name":"hook","function":"Compute2:TestCustomExportHookArgs","preferred":true}]
+export async function TestPreferredExportModel(a: number) : Promise<number> {
+  return await PackageFunctions.TestPreferredExportModel(a);
+}
+
+//input: funccall funcCall 
+//output: file result
+export async function TestCustomExportRecorder(funcCall: DG.FuncCall) : Promise<any> {
+  return await PackageFunctions.TestCustomExportRecorder(funcCall);
+}
+
+//input: double a 
+//output: double result
+//meta.features: {"export": false}
+//meta.customExports: [{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]
+export async function TestNoDefaultExportModel(a: number) : Promise<number> {
+  return await PackageFunctions.TestNoDefaultExportModel(a);
+}
+
+//input: funccall funcCall 
+//output: string result
+export async function TestCustomExportNoFile(funcCall: DG.FuncCall) : Promise<string> {
+  return await PackageFunctions.TestCustomExportNoFile(funcCall);
+}
+
+//input: double a 
+//output: double result
+//meta.customExports: [{"name":"blob","function":"Compute2:TestCustomExportBlob"}]
+export async function TestBlobExportModel(a: number) : Promise<number> {
+  return await PackageFunctions.TestBlobExportModel(a);
+}
+
 //input: funccall funcCall 
 //input: bool startDownload 
-//output: string result
-export async function TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean) : Promise<string> {
-  return await PackageFunctions.TestCustomExportRecorder(funcCall, startDownload);
+//output: object result
+export async function TestCustomExportBlob(funcCall: DG.FuncCall, startDownload: boolean) : Promise<any> {
+  return await PackageFunctions.TestCustomExportBlob(funcCall, startDownload);
+}
+
+//input: funccall funcCall 
+//input: object viewersHook { optional: true }
+//input: object metaState { optional: true }
+//output: file result
+export async function TestCustomExportHookArgs(funcCall: DG.FuncCall, viewersHook?: any, metaState?: any) : Promise<any> {
+  return await PackageFunctions.TestCustomExportHookArgs(funcCall, viewersHook, metaState);
 }
 
 //input: int rows 

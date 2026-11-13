@@ -20,6 +20,7 @@ import {category, test, expect, expectFloat, before} from '@datagrok-libraries/t
 import {computeSparseNca} from '../adapter/sparse-nca';
 import type {SparseNcaResult} from '../adapter/sparse-nca';
 import {unmappedGridColumns} from '../views/results-view';
+import {loadSparseFrame, runSparse} from './sparse-iv-anchor-tests';
 
 const TIMEOUT = 60000;
 const FIXTURE_PATH_PREFIX = 'System:AppData/Nca';
@@ -151,13 +152,15 @@ category('Adapter: sparse NCA (UC-04)', () => {
     }
   }, {timeout: TIMEOUT});
 
-  // REGRESSION_PIN for the old bug (the PKNCA test above is the ground truth). Scoped to this
-  // extravascular fixture: on an IV-bolus composite the dense run back-extrapolates C0 while
-  // `sparseAuc` anchors at (0, 0), so %AUCextrap is not relative to the shown AUClast there.
+  // REGRESSION_PIN for the old bug (the PKNCA test above is the ground truth). Since sci-comp 0.12.0
+  // it holds on IV-bolus composites too (sparse-iv-bolus-anchor AC-3.2): `sparseAuc` starts at the
+  // same Ĉ0 as the dense run, so the row has one AUClast — the IV fixture and the mouse run as IV bolus.
   test('AUC method mix: AUCinf ≥ AUClast and %AUCextrap rests on the shown AUClast', async () => {
-    const res = runMouse(mouse);
-    for (const g of res.groups) {
-      const d = `dose ${g.doseMgKg}`;
+    const iv = await loadSparseFrame('07_iv_bolus_sparse.csv');
+    const groups = [...runMouse(mouse).groups, ...runSparse(mouse, 'IV-bolus', 0.001).groups,
+      ...runSparse(iv, 'IV-bolus', 1e-6).groups];
+    for (const g of groups) {
+      const d = `${g.route} dose ${g.doseMgKg}`;
       expect(g.aucInf >= g.aucLast, true, `${d}: AUCinf ${g.aucInf} < AUClast ${g.aucLast}`);
       const pct = (g.aucInf - g.aucLast) / g.aucInf * 100;
       expectFloat(g.pctExtrap, pct, 1e-9, `${d}: %AUCextrap is relative to the shown AUClast`);
@@ -169,27 +172,20 @@ category('Adapter: sparse NCA (UC-04)', () => {
     }
   }, {timeout: TIMEOUT});
 
-  // REGRESSION_PIN of the disclosed IV-bolus residual (TODO IMPL-GAP-SPARSE-IV-BOLUS-ANCHOR, user
-  // decision 2026-11-09: disclose now, decide the anchor in its own cycle). Measured on this composite
-  // as IV bolus: closed-form AUClast 3.821 from (0, 0), dense AUClast 3.983 from the back-extrapolated C0.
-  test('AUC method mix: an IV-bolus composite discloses its two AUClast anchors; PO does not', async () => {
-    const po = runMouse(mouse);
-    for (const g of po.groups)
-      expect(g.warnings.some((w) => w.code === 'SPARSE_IV_BOLUS_C0_ANCHOR'), false, `PO dose ${g.doseMgKg}: no note`);
-    const iv = computeSparseNca(mouse, {
-      concCol: 'Conc', nominalTimeCol: 'NominalTime_hr', animalIdCol: 'MouseID', blqCol: 'BLQflag',
-      doseCol: 'Dose_mg_kg', bodyWeightCol: 'BodyWeight_kg', groupCol: 'Dose_mg_kg',
-      route: 'IV-bolus', concUnit: 'mg/L', lloq: 0.001, bootstrapIterations: 200,
-    });
-    for (const g of iv.groups) {
-      const d = `IV dose ${g.doseMgKg}`;
-      const note = g.warnings.find((w) => w.code === 'SPARSE_IV_BOLUS_C0_ANCHOR');
-      expect(note !== undefined, true, `${d}: the anchor note is present`);
-      expect(note!.message.includes(g.aucLast.toPrecision(4)), true, `${d}: the note names the shown AUClast`);
-      expect(g.aucInf >= g.aucLast, true, `${d}: AUCinf ${g.aucInf} < AUClast ${g.aucLast}`);
+  // sparse-iv-bolus-anchor AC-3.4 (replaces the pin of the retired two-anchor disclosure). Measured on
+  // the mouse 10 mg/kg composite as IV bolus: the shown AUClast was 3.821 from (0, 0) beside a dense
+  // AUClast of 3.983 from the back-extrapolated C0; now the row shows the one C0-anchored AUClast.
+  test('IV bolus: one AUClast on the row — no two-anchor note, AUClast = the dense AUClast', async () => {
+    for (const res of [runMouse(mouse), runSparse(mouse, 'IV-bolus', 0.001)]) {
+      for (const g of res.groups) {
+        const d = `${g.route} dose ${g.doseMgKg}`;
+        expect(g.warnings.some((w) => (w.code as string) === 'SPARSE_IV_BOLUS_C0_ANCHOR'), false, `${d}: no note`);
+        expect(res.parameterTable.col('NOTES')!.toList().some((s: string) => s.includes('AUClast from (0, 0)')),
+          false, `${d}: no short note`);
+      }
     }
-    expect(iv.parameterTable.col('NOTES')!.get(0).includes('IV bolus: AUClast from (0, 0)'), true,
-      'the short note reaches the Notes column');
+    const g10 = runSparse(mouse, 'IV-bolus', 0.001).groups.find((g) => g.doseMgKg === 10)!;
+    expectFloat(g10.aucLast, 3.983, 0.0005, 'mouse 10 mg/kg as IV bolus: the C0-anchored AUClast (was 3.821)');
   }, {timeout: TIMEOUT});
 
   test('AC-D1: composite means/SD/n/%BLQ match the oracle', async () => {

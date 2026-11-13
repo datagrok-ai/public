@@ -116,8 +116,35 @@ export {
   MIN_DOSE_LEVELS,
   MIN_ANIMALS_PER_LEVEL,
   SEX_INTERACTION_ALPHA,
+  DP_PARAMETER_ID,
+  AUCINF_VALID_EXTRAP_PCT,
+  VERDICT_DIFFERS_NOTE,
 } from './dose-proportionality';
+export {
+  isOccasionName,
+  isDayLikeOccasionName,
+  normOccasionName,
+  detectOccasionColumn,
+  occasionNumber,
+  orderOccasionLevels,
+  stripDayCode,
+  resolveAnimals,
+  classifyOccasionDesign,
+  resolveOccasion,
+  occasionNotices,
+  profileRowsOf,
+  splitsProfiles,
+  appendAucTauColumn,
+  AUC_TAU_COL,
+  AUC_TAU_TLAST_TOL_H,
+  OCCASION_DESIGNS,
+} from './occasion';
 export type {
+  OccasionDesign, OccasionResolution, DesignProposal, DerivedChoices, ProfileRow, ProfileFrameCols,
+  AnimalResolution, AnimalRule,
+} from './occasion';
+export type {
+  DeltaBetaRow,
   AucBasis,
   VerdictMode,
   DoseProportionalityVerdict,
@@ -296,7 +323,7 @@ export {
 
 export {
   STANDALONE_ROUTE_SEGMENT, NCA_APP_ROOT, NCA_STUDIES_CHANGED_EVENT, newId, uniqueLabel, isStale, isEntryStale,
-  isBasisStale,
+  isBasisStale, isDerivedBasisStale,
   computeSnapshotHash, snapshotSignature, snapshotDiff, SourceReplacedError, ContentChangedError,
   KeepsChangingError, SnapshotFidelityError, getNcaRepository, setNcaRepository,
   registerNcaRepositoryFactory, isCurvePending, pendingCurveIds, withCurves,

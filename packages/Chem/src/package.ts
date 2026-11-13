@@ -2006,16 +2006,19 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Flatten Molecules...',
     'name': 'Flatten Molecules',
-    'description': 'Removes stereochemistry from molecules and adds a column with flat SMILES.',
+    'description': 'Removes stereocenters (and optionally the E/Z of double bonds) and adds a column with flat SMILES.',
     'meta': {'role': 'transform'},
   })
   static async flattenMolecules(
     data: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column<string>,
     @grok.decorators.param({options: {initialValue: 'false'}}) overwrite: boolean = false,
-    @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true): Promise<DG.Column<string> | void> {
+    @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true,
+    @grok.decorators.param({options: {initialValue: 'false', caption: 'Flatten E/Z',
+      description: 'Also remove the E/Z (cis/trans) configuration of double bonds'}})
+    flattenDoubleBonds: boolean = false): Promise<DG.Column<string> | void> {
     // "Chemical engine": in Crux mode on the Crux workers, the RDKit pool behind them
-    const res = await flattenMoleculesByEngine(molecules.toList());
+    const res = await flattenMoleculesByEngine(molecules.toList(), flattenDoubleBonds);
     if (overwrite) {
       molecules.init((i) => res[i]);
       molecules.meta.units = DG.UNITS.Molecule.SMILES;
@@ -2538,6 +2541,23 @@ export class PackageFunctions {
     return DG.DataFrame.fromColumns(cols);
   }
 
+  @grok.decorators.func({
+    name: 'Molecular Property',
+    description: 'Computes one chemical property for a column of molecules so that the platform can sort and order them by it.',
+    meta: {role: 'categoryOrderer'},
+  })
+  static async molecularProperty(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({options: {choices: ['MW', 'HBA', 'HBD', 'LogP', 'LogS', 'PSA',
+      'Rotatable bonds', 'Stereo centers', 'Molecule charge']}}) property: string): Promise<DG.Column> {
+    const keys = (await getPropertiesAsColumns(molecules, [property]))[0];
+    // OpenChemLib reads an empty cell as an empty molecule, which would rank first instead of last
+    for (let i = 0; i < molecules.length; i++) {
+      if (molecules.isNone(i))
+        keys.set(i, null, false);
+    }
+    return keys;
+  }
 
   @grok.decorators.func({
     'top-menu': 'Chem | Calculate | Toxicity Risks...',

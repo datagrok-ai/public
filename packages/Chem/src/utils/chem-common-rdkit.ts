@@ -20,6 +20,7 @@ import {initRdKitFrom} from '../rdkit-service/rdkit-service-worker-api';
 import {byEngineModule, withMol} from '../engine/chem-engine';
 import {noteCruxError} from '../engine/crux-module';
 import {cruxReadsCxExtension} from '../crux/crux-service';
+import {renderingOptions} from '../rendering/rendering-settings';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
@@ -55,8 +56,6 @@ export const RDKIT_COMMON_RENDER_OPTS: {[key: string]: any} = {
     53: [0.247, 0.0, 0.498],
   },
   // addStereoAnnotation: true,
-  simplifiedStereoGroupLabel: true,
-  highlightColour: [1.0, 0.7, 0.7, 1.0],
   backgroundColour: [1, 1, 1, 1],
   queryColour: [0, 0, 0, 1],
 };
@@ -134,8 +133,9 @@ export function drawErrorCross(ctx: OffscreenCanvasRenderingContext2D, width: nu
   ctx.stroke();
 }
 
-function createRenderingOpts(addSettings: {[key: string]: any}): {[key: string]: any} {
-  return {...RDKIT_COMMON_RENDER_OPTS, ...addSettings};
+/** Chem's draw options: the common ones, the Rendering settings' (rendering-settings.ts), then `addSettings`. */
+export function createRenderingOpts(addSettings: {[key: string]: any}): {[key: string]: any} {
+  return {...RDKIT_COMMON_RENDER_OPTS, ...renderingOptions(), ...addSettings};
 }
 
 /**

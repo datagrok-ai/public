@@ -6,7 +6,7 @@ import {PipelineConfigurationProcessed} from '../config/config-processing-utils'
 import {PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
 import {isPipelineStepConfig} from '../config/config-utils';
 import {FuncCallAdapter, MockResults} from './FuncCallAdapters';
-import {saveFuncCall, saveInstanceState} from './funccall-utils';
+import {completedOption, saveFuncCall, saveInstanceState} from './funccall-utils';
 import {FuncCallNode, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions} from './StateTreeNodes';
 import {indexFromEnd, pruneByKeys} from '../utils';
 import {LinksState} from './LinksState';
@@ -632,7 +632,11 @@ export class StateTree {
       const state = StateTree.toSerializedStateRec(root, {disableNodesUUID: true});
       const item = root.getItem();
       const version = !isFuncCallNode(item) ? item.config.version : undefined;
-      return saveInstanceState(nqName, state, metaData, version);
+      const completed = this.nodeTree.traverse(root, (acc, node) => {
+        const step = node.getItem();
+        return acc && (!isFuncCallNode(step) || step.instancesWrapper.isOutputOutdated$.value === false);
+      }, true);
+      return saveInstanceState(nqName, state, metaData, version, {callOptions: completedOption(completed)});
     });
   }
 }

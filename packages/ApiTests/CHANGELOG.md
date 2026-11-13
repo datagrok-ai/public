@@ -2,6 +2,8 @@
 
 ## v.next
 
+* [core#637](https://github.com/datagrok-ai/core/issues/637): Viewers, color, inputs: Added tests for the color alpha: removed scatter plot and line chart opacity props read, written and migrated from layouts through the color alpha, `setMarkerOpacity`, formula line opacity folded once, `AnnotationRegionsHelper.getFillColor`, `Color.opaqueIfNoAlpha` and a color input with `useAlphaChannel`
+* [#3924](https://github.com/datagrok-ai/public/issues/3924): Viewers: Added `Viewers: category order` (the per-viewer `categoryOrder` properties, a custom `categoryOrderer` function)
 * Connections, containers: Added `Widgets: containers` 'empty takes out text and comments, and kills the elements' and `Dapi: connection` 'getCatalogs lists the databases of the server, the connection's own among them' (development only, skipped)
 * Viewers: Added `AI: Viewers: Shared rules` (a column rename followed by every viewer's settings, and by a viewer's Filter formula, core#1213) and a test moved from BDD: `AI: Viewers: PcPlot Extras` 'a layout with Line Width 0 and density on draws and takes a hover without an error (core#967)'
 * Viewers: Added a test moved from BDD: `AI: Viewers: BoxPlot extras` 'a pointer over a box plot shrunk under Auto Layout logs no error (core#960)'

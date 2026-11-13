@@ -47,11 +47,19 @@ export interface BioavailabilityOptions {
   readonly stratifyCols?: ReadonlyArray<string>;
   /** Central-tendency statistic for the IV denominator. Default `'mean'`. */
   readonly denominatorStat?: DenominatorStat;
+  /**
+   * The occasion column (tk-study-day-stratification F2), when it is one of `stratifyCols`
+   * (same-occasion pairing of a repeat-dose design). An extravascular cell whose IV reference
+   * exists only on another occasion takes that occasion's IV with a
+   * `CROSS_OCCASION_IV_REFERENCE` warning naming both occasions (P6), and the table gains an
+   * `IV_OCCASION` column.
+   */
+  readonly occasionCol?: string;
 }
 
 /** One stratum-level warning surfaced alongside the F% table. */
 export interface BioavailabilityWarning {
-  readonly code: 'NO_IV_REFERENCE_FOR_STRATUM';
+  readonly code: 'NO_IV_REFERENCE_FOR_STRATUM' | 'CROSS_OCCASION_IV_REFERENCE';
   readonly message: string;
   /** The stratum key that lacked an IV reference (e.g. `'SEX=M'`). */
   readonly stratum: string;
@@ -174,6 +182,20 @@ export function computeBioavailability(
   for (const [sKey, arr] of ivByStratum)
     ivRefByStratum.set(sKey, centralTendency(arr, stat));
 
+  // P6: the occasion-free stratum key → the IV strata on other occasions, in first-seen order.
+  const occIdx = options.occasionCol !== undefined ? stratifyCols.indexOf(options.occasionCol) : -1;
+  const keyOf = (vals: ReadonlyArray<string>, dropOcc: boolean): string =>
+    stratifyCols.map((s, j) => dropOcc && j === occIdx ? `${s}=*` : `${s}=${vals[j]}`).join('|');
+  const ivByOccFree = new Map<string, {occ: string; key: string}[]>();
+  if (occIdx >= 0) {
+    for (const sKey of ivByStratum.keys()) {
+      const vals = sKey.split('|').map((p) => p.substring(p.indexOf('=') + 1));
+      const free = keyOf(vals, true);
+      ivByOccFree.set(free, [...(ivByOccFree.get(free) ?? []), {occ: vals[occIdx], key: sKey}]);
+    }
+  }
+  const ivOccOut: string[] = [];
+
   // Build output rows (deterministic order: route, stratum, dose).
   const cellList = [...cells.values()].sort((a, b) =>
     a.route.localeCompare(b.route) ||
@@ -197,9 +219,32 @@ export function computeBioavailability(
 
   for (let r = 0; r < cellList.length; r++) {
     const cell = cellList[r];
-    const sKey = stratifyCols.map((s, j) => `${s}=${cell.stratumVals[j]}`).join('|');
+    let sKey = stratifyCols.map((s, j) => `${s}=${cell.stratumVals[j]}`).join('|');
     const dn = centralTendency(cell.dn, stat);
-    const ivRef = ivRefByStratum.get(sKey);
+    let ivRef = ivRefByStratum.get(sKey);
+    if (occIdx >= 0) {
+      let ivOcc = cell.stratumVals[occIdx];
+      if (ivRef === undefined) {
+        const other = ivByOccFree.get(keyOf(cell.stratumVals, true))?.[0];
+        if (other !== undefined) {
+          const ownKey = sKey;
+          sKey = other.key;
+          ivRef = ivRefByStratum.get(sKey);
+          ivOcc = other.occ;
+          if (!warnedStrata.has(`${ownKey}>${sKey}`)) {
+            warnedStrata.add(`${ownKey}>${sKey}`);
+            warnings.push({
+              code: 'CROSS_OCCASION_IV_REFERENCE',
+              message: `No IV arm on ${options.occasionCol} ${cell.stratumVals[occIdx]} for ${ownKey}; ` +
+                `%F uses the IV reference of ${options.occasionCol} ${other.occ} — exposure may differ ` +
+                'between occasions (accumulation, time-dependent clearance).',
+              stratum: ownKey,
+            });
+          }
+        }
+      }
+      ivOccOut.push(ivRef !== undefined ? ivOcc : '');
+    }
 
     routeOut[r] = cell.route;
     for (let j = 0; j < stratifyCols.length; j++) stratOut[j][r] = cell.stratumVals[j];
@@ -235,6 +280,7 @@ export function computeBioavailability(
   cols.push(DGNS.Column.fromInt32Array('N', nOut));
   cols.push(f64Column('IV_DN_AUC', ivDnOut));
   cols.push(DGNS.Column.fromInt32Array('IV_N', ivNOut));
+  if (occIdx >= 0) cols.push(DGNS.Column.fromList(DGNS.COLUMN_TYPE.STRING, 'IV_OCCASION', ivOccOut));
   const fpctCol = f64Column('F_PCT', fpctOut);
   fpctCol.setTag('label', stat === 'gmean' ? '%F (geom.)' : '%F (arith.)');
   cols.push(fpctCol);

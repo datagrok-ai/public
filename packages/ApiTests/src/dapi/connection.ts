@@ -109,11 +109,15 @@ FROM generate_series(1, 10) AS s(i);
   });
 
   test('getCatalogs lists the databases of the server, the connection\'s own among them', async () => {
-    const dc = await grok.dapi.connections.filter('name = "Datagrok"').first();
+    const dc = await grok.dapi.connections.filter('shortName = "CatalogsDemo"').first();
+    expect(dc != null, true, 'the CatalogsDemo connection');
+    const own = (dc.parameters as any)['db'];
+    expect(own, 'archive');
     const catalogs = await grok.dapi.connections.getCatalogs(dc);
-    expect(catalogs.includes((dc.parameters as any)['db']), true);
-  }, {skipReason:
-    'Development only: reads the database list of the stand\'s own server; unskip while working on catalogs'});
+    for (const catalog of [own, 'research', 'sales'])
+      expect(catalogs.includes(catalog), true, `${catalog} is not among the ${catalogs.length} catalogs`);
+  }, {skipReason: 'Development only: needs the CatalogsDemo connection to the SQL Server fixture that ' +
+    'PowerPack/bdd/features/identifiers/catalogs-db.mjs makes; unskip while working on catalogs'});
 
   after(async () => {
     // Safety net for any leaked test connections (names are randomized per run).

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* [core#637](https://github.com/datagrok-ai/core/issues/637): Added ui/components/color-picker.js (`ui.colorPicker` with an alpha channel) and data-frame/metadata/annotation-region-fill.js (`AnnotationRegionsHelper.getFillColor`); formula-lines.js, inputs.js and scatter-plot.js set opacity through the color alpha (`#rrggbbaa`, `useAlphaChannel`, `viewer.setMarkerOpacity`)
+* [#3924](https://github.com/datagrok-ai/public/issues/3924): Added ui/viewers/order-categories-by-property.js (a custom `categoryOrderer` function ordering a viewer's categorical axis)
 * Added data-access/db/catalogs.js (`grok.dapi.connections.getCatalogs`: the catalogs of a database server and the schemas of one of them)
 * Added dapi/docker-status.js (`grok.dapi.docker.getStatus()`: whether the server can run containers)
 * Added ui/widgets/u2-usage.js (`DG.U2.Usage`: a misuse reported, then thrown), u2-task.js (`Scope.root`, `build`, `task` with a serial queue, `subscribe`), u2-lens.js (`lens`, `afterFlush`), u2-operability.js (`DG.U2.operability`) and u2-build.js (`DG.U2.component` with a handle and a name)

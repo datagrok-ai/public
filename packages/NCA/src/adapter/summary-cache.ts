@@ -17,6 +17,7 @@ import {buildMeanSdProfile} from './mean-sd-profile';
 import {compositeGroupKey, KEY_SEP} from './composite-group-key';
 import {dedupGroupValuesByCanonical} from './study-grid';
 import {isLzDependentParam, REVIEW_COL, REVIEW_EXCLUDED} from './reportable';
+import {detectOccasionColumn, profileRowsOf, resolveOccasion} from './occasion';
 import type {
   AnalysisRecipe, SummaryCache, CompoundTierRow, MeanCv, CompoundCurve, CompoundWarning,
   GroupKeyValue, KeyInventoryEntry, KeyValueCount, PassthroughEntry,
@@ -242,6 +243,30 @@ interface FpctByCompound {
  * `sexCol` counts ONLY when it was carried into the results frame (constant-per-
  * subject); a non-carried designation → no column → no %F (safe degradation).
  */
+/**
+ * tk-study-day-stratification F2 (SF-FPCT-STUDY-GRID): on a repeat-dose analysis the occasion
+ * joins the tier key — "the analyst's Group by can never be narrower than the occasion stratum"
+ * (research P2) — so no tier row pools Day 1 with Day N, and %F inside a row pairs IV and
+ * extravascular profiles of the same occasion. Joined when the occasion resolves with ≥ 2 levels
+ * and the design (confirmed, else proposed) is `repeat-dose`; a crossover / unknown /
+ * escalation design keeps the analyst's keys (a crossover's %F pairs across periods). Uses the
+ * ONE resolution (`resolveOccasion`), never a local name test.
+ */
+export function withOccasionTierKey(resultsDf: DG.DataFrame, recipe: AnalysisRecipe): AnalysisRecipe {
+  const occasion = detectOccasionColumn(resultsDf.columns.names(), recipe.derived?.occasionCol ?? null);
+  if (occasion === null || recipe.groupByCols.includes(occasion)) return recipe;
+  const sex = recipe.columns.sexCol !== null && resultsDf.col(recipe.columns.sexCol) !== null ?
+    recipe.columns.sexCol : null;
+  const dose = recipe.columns.doseCol !== null && resultsDf.col(recipe.columns.doseCol) !== null ?
+    recipe.columns.doseCol : null;
+  const animal = recipe.derived?.animalCol !== undefined && resultsDf.col(recipe.derived.animalCol) !== null ?
+    recipe.derived.animalCol : null;
+  const res = resolveOccasion(occasion, profileRowsOf(resultsDf,
+    {subject: 'SUBJECT', occasion, sex, dose, route: ROUTE_COL, animal}), recipe.derived ?? {});
+  if (!res.stratify || (res.confirmed ?? res.proposal.design) !== 'repeat-dose') return recipe;
+  return {...recipe, groupByCols: [...recipe.groupByCols, occasion]};
+}
+
 function computeFpctByCompound(
   resultsDf: DG.DataFrame,
   recipe: AnalysisRecipe,
@@ -695,10 +720,11 @@ function buildPassthroughByTier(
 export function buildSummaryCache(
   resultsDf: DG.DataFrame,
   perProfile: ReadonlyArray<PerProfileResult>,
-  recipe: AnalysisRecipe,
+  recipeIn: AnalysisRecipe,
   label: string,
   observations: ObservationsCtx | null = null,
 ): SummaryCache {
+  const recipe = withOccasionTierKey(resultsDf, recipeIn);
   const nSubjects = perProfile.length;
   const failures = perProfile.filter((p) => p.result.status === 'failed').length;
   const warningCount = perProfile.reduce(

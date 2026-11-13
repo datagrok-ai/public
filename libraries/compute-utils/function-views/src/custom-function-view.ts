@@ -5,6 +5,7 @@ import {BehaviorSubject} from 'rxjs';
 import {CUSTOM_VIEW_OPTION, deepCopy} from '../../shared-utils/utils';
 import {historyUtils} from '../../history-utils';
 import type {RunMetadata, SaveTarget} from '../../history-utils/src/history-utils';
+import {initNewCall} from '../../reactive-tree-driver/src/runtime/funccall-utils';
 
 /** The Save and Open dialogs a host gives the view; each resolves null when the user cancels. */
 export interface RunStorageHost {
@@ -71,17 +72,22 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   public async init() {
     const startId = this.getStartId();
-    if (startId) {
+    if (startId)
       this.setAsLoaded();
-      const pulledRun = await historyUtils.loadRun(startId);
+    const pulledRun = startId ? await historyUtils.loadRun(startId).catch((e) => {
+      grok.shell.error(`Couldn't open the run: ${e?.message ?? e}`);
+      return null;
+    }) : null;
+    if (pulledRun)
       this.linkFunccall(pulledRun);
-      await this.onFuncCallReady();
-      await this.onAfterLoadRun(pulledRun);
-    } else {
-      const func = DG.Func.byName(this.funcNqName);
-      this.linkFunccall(func.prepare({}));
-      await this.onFuncCallReady();
+    else {
+      const call = DG.Func.byName(this.funcNqName).prepare({});
+      await initNewCall(call, {});
+      this.linkFunccall(call);
     }
+    await this.onFuncCallReady();
+    if (pulledRun)
+      await this.onAfterLoadRun(pulledRun);
     this.isReady.next(true);
   }
 
@@ -119,7 +125,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
       const result = await this.runStorage?.saveDialog(currentFuncCall);
       return result ? await this.saveRun(currentFuncCall, result.metadata, result.target) : null;
     } catch (e: any) {
-      grok.shell.error(e);
+      grok.shell.error(`Couldn't save the run: ${e?.message ?? e}`);
       return null;
     }
   }

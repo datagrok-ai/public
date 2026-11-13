@@ -1,0 +1,95 @@
+{
+  "dataset": "07_iv_bolus_sparse",
+  "pknca_version": "0.12.1",
+  "description": "Simulated destructive IV-bolus composites (sparse-iv-bolus-anchor F1; generator in regen-sparse-fixture.R block 4). c0 / c0_method = PKNCA pk.calc.c0 on the composite mean; sparse_auclast_c0 = PKNCA pk.calc.auciv (linear) = pk.calc.sparse_auclast with the t=0 anchor at c0; sparse_auclast / _se / _df = the (0, 0)-anchored PKNCA run; sparse_auc_se_const_c0 = PKNCA's SE with c0 a constant (Phoenix); delta_se / delta_df = hand-coded delta-method transcription check.",
+  "generator": {
+    "seed": 20261110,
+    "n_per_time": 3,
+    "omega": 0.3,
+    "sigma": 0.1,
+    "lloq_ng_ml": 0.001
+  },
+  "config": {
+    "auc_method": "linear",
+    "blq_rule": "set-zero",
+    "route": "IV-bolus"
+  },
+  "composites": [
+    {
+      "dose_mg_kg": 1,
+      "times": [0.083, 0.25, 0.5, 1, 2, 4, 8, 12, 24],
+      "path": "logslope",
+      "c0": 7.921774061461,
+      "c0_method": "logslope",
+      "sparse_auclast_c0": 8.499707657951,
+      "sparse_auclast": 8.1709540344,
+      "sparse_auc_se": 0.828257769906,
+      "sparse_auc_df": 5.461219543335,
+      "sparse_auc_se_const_c0": 0.828257769906,
+      "delta_se": 0.8265049606633,
+      "delta_df": 5.417194703316,
+      "composite": {
+        "nominal_time": [0.083, 0.25, 0.5, 1, 2, 4, 8, 12, 24],
+        "n": [3, 3, 3, 3, 3, 3, 3, 3, 3],
+        "mean": [6.901566666667, 5.2297, 2.9741, 1.644233333333, 0.8737, 0.4425366666667, 0.2201626666667, 0.043571, 0.0003374307333333]
+      }
+    },
+    {
+      "dose_mg_kg": 2,
+      "times": [0.25, 0.5, 1, 2, 4, 8, 24],
+      "path": "logslope",
+      "c0": 18.152975086775,
+      "c0_method": "logslope",
+      "sparse_auclast_c0": 20.825249545847,
+      "sparse_auclast": 18.55612766,
+      "sparse_auc_se": 2.051654665345,
+      "sparse_auc_df": 8.072124950864,
+      "sparse_auc_se_const_c0": 2.051654665345,
+      "delta_se": 2.170345716522,
+      "delta_df": 6.514374537317,
+      "composite": {
+        "nominal_time": [0.25, 0.5, 1, 2, 4, 8, 24],
+        "n": [3, 3, 3, 3, 3, 3, 3],
+        "mean": [12.016766666667, 7.954766666667, 3.591833333333, 2.257533333333, 1.167433333333, 0.2949266666667, 0.004644603333333]
+      }
+    },
+    {
+      "dose_mg_kg": 3,
+      "times": [0.25, 0.5, 1, 2, 4, 8, 12],
+      "path": "c1",
+      "c0": 2.342933333333,
+      "c0_method": "c1",
+      "sparse_auclast_c0": 11.967401666667,
+      "sparse_auclast": 11.674535,
+      "sparse_auc_se": 0.8918021687591,
+      "sparse_auc_df": 7.962116422167,
+      "sparse_auc_se_const_c0": 0.8918021687591,
+      "delta_se": 0.8922115956808,
+      "delta_df": 7.976678502909,
+      "composite": {
+        "nominal_time": [0.25, 0.5, 1, 2, 4, 8, 12],
+        "n": [3, 3, 3, 3, 3, 3, 3],
+        "mean": [2.342933333333, 2.541133333333, 1.642346666667, 1.657, 1.074836666667, 0.49667, 0.6037133333333]
+      }
+    },
+    {
+      "dose_mg_kg": 4,
+      "times": [0.25, 0.5, 1, 2, 3, 4, 6, 8, 10, 12],
+      "path": "logslope",
+      "c0": 20.183971303755,
+      "c0_method": "logslope",
+      "sparse_auclast_c0": 37.422141412969,
+      "sparse_auclast": 34.899145,
+      "sparse_auc_se": 2.841418654574,
+      "sparse_auc_df": 10.620333842708,
+      "sparse_auc_se_const_c0": 2.841418654574,
+      "delta_se": 2.993592029289,
+      "delta_df": 10.250045310277,
+      "composite": {
+        "nominal_time": [0.25, 0.5, 1, 2, 3, 4, 6, 8, 10, 12],
+        "n": [3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
+        "mean": [19.791333333333, 19.406333333333, 7.664633333333, 3.546566666667, 2.992533333333, 2.437123333333, 1.7597, 1.150146666667, 0.22608, 0.4588233333333]
+      }
+    }
+  ]
+}

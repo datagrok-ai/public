@@ -122,6 +122,81 @@ export class ChemMonomerLibrary {
 if (Symbol.dispose) ChemMonomerLibrary.prototype[Symbol.dispose] = ChemMonomerLibrary.prototype.free;
 
 /**
+ * A reaction read once (module docs), with the canvas layout last drawn: a repaint of the same box and options at
+ * any offset (a grid scrolling) draws it again without laying it out (Chem's grid, 2026-11-11: 0.7 ms a repaint).
+ */
+export class ChemReactionScheme {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        ChemReactionSchemeFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_chemreactionscheme_free(ptr, 0);
+    }
+    /**
+     * `draw_to_canvas(canvas, options)`: the reaction drawn on the canvas's 2D context in the box `width` x
+     * `height` at `offsetx`, `offsety` (the canvas's own size by default), through the molecules' command buffer.
+     * @param {any} canvas
+     * @param {string} options_json
+     */
+    draw_to_canvas(canvas, options_json) {
+        const ptr0 = passStringToWasm0(options_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemreactionscheme_draw_to_canvas(this.__wbg_ptr, canvas, ptr0, len0);
+        if (ret[1]) {
+            throw takeFromExternrefTable0(ret[0]);
+        }
+    }
+    /**
+     * `get_svg(options)`: the reaction as an SVG string.
+     * @param {string} options_json
+     * @returns {string}
+     */
+    get_svg(options_json) {
+        let deferred3_0;
+        let deferred3_1;
+        try {
+            const ptr0 = passStringToWasm0(options_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.chemreactionscheme_get_svg(this.__wbg_ptr, ptr0, len0);
+            var ptr2 = ret[0];
+            var len2 = ret[1];
+            if (ret[3]) {
+                ptr2 = 0; len2 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred3_0 = ptr2;
+            deferred3_1 = len2;
+            return getStringFromWasm0(ptr2, len2);
+        } finally {
+            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        }
+    }
+    /**
+     * `new ChemReactionScheme(text, notation)`: the reaction read (module docs).
+     * @param {string} text
+     * @param {string} notation
+     */
+    constructor(text, notation) {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(notation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.chemreactionscheme_new(ptr0, len0, ptr1, len1);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        this.__wbg_ptr = ret[0];
+        ChemReactionSchemeFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+}
+if (Symbol.dispose) ChemReactionScheme.prototype[Symbol.dispose] = ChemReactionScheme.prototype.free;
+
+/**
  * Groups of SMARTS compiled once (Chem's structural alert rule sets, its pharmacophore families), matched against
  * many molecules (`match`; chem-wasm's chem_batch.rs docs).
  */
@@ -3068,6 +3143,34 @@ export function chemInchiInputs(molecules) {
 }
 
 /**
+ * `chemMapReaction(rxn, canonicalize)`: one reaction's atom maps as JSON, `{"mapped_rxn", "confidence"}` or
+ * `{"error"}` (module docs).
+ * @param {string} rxn
+ * @param {boolean | null} [canonicalize]
+ * @returns {string}
+ */
+export function chemMapReaction(rxn, canonicalize) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(rxn, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemMapReaction(ptr0, len0, isLikeNone(canonicalize) ? 0xFFFFFF : canonicalize ? 1 : 0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * `chemMarkStereoAbsolute(molblocks)`: each block with every specified stereocentre in one ABS group, as V3000 (Bio's
  * replacement of `OCL.fromMolfile(m).toMolfileV3().replace('STERAC1', 'STEABS')`); null where a block is null, not a
  * string, or not read.
@@ -3208,7 +3311,7 @@ export function chemToV2000(molblock) {
 /**
  * Which parts this build holds: `"core"`, `"heavy"`, `"core,heavy"`, ...; the one file Chem loads (feature `chem`)
  * is `"core,heavy,search,descriptors,scaffold-tree,inchi-input,chem-scripts,chem-conformers,chem-identifiers,chem-murcko,
- * chem-filter-catalogs,synthon-search,biopolymer"`.
+ * chem-filter-catalogs,synthon-search,biopolymer,rxn-map"`.
  * @returns {string}
  */
 export function chemWasmModules() {
@@ -3571,6 +3674,19 @@ export function get_rxn(input, details) {
     var len1 = WASM_VECTOR_LEN;
     const ret = wasm.get_rxn(ptr0, len0, ptr1, len1);
     return ret === 0 ? undefined : Reaction.__wrap(ret);
+}
+
+/**
+ * Load the model from upstream's `pytorch_model.bin` bytes. Once per page; later calls are no-ops.
+ * @param {Uint8Array} bytes
+ */
+export function initRxnMapper(bytes) {
+    const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.initRxnMapper(ptr0, len0);
+    if (ret[1]) {
+        throw takeFromExternrefTable0(ret[0]);
+    }
 }
 
 /**
@@ -4135,6 +4251,9 @@ function __wbg_get_imports() {
 const ChemMonomerLibraryFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_chemmonomerlibrary_free(ptr, 1));
+const ChemReactionSchemeFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_chemreactionscheme_free(ptr, 1));
 const ChemSmartsSetFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_chemsmartsset_free(ptr, 1));

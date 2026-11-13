@@ -913,16 +913,17 @@ export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<a
 }
 
 //name: Flatten Molecules
-//description: Removes stereochemistry from molecules and adds a column with flat SMILES.
+//description: Removes stereocenters (and optionally the E/Z of double bonds) and adds a column with flat SMILES.
 //input: dataframe data 
 //input: column molecules { semType: Molecule }
 //input: bool overwrite = false 
 //input: bool join = true 
+//input: bool flattenDoubleBonds = false { caption: Flatten E/Z; description: Also remove the E/Z (cis/trans) configuration of double bonds }
 //output: column result
 //meta.role: transform
 //top-menu: Chem | Transform | Flatten Molecules...
-export async function flattenMolecules(data: DG.DataFrame, molecules: DG.Column<any>, overwrite: boolean, join: boolean) : Promise<any> {
-  return await PackageFunctions.flattenMolecules(data, molecules, overwrite, join);
+export async function flattenMolecules(data: DG.DataFrame, molecules: DG.Column<any>, overwrite: boolean, join: boolean, flattenDoubleBonds: boolean) : Promise<any> {
+  return await PackageFunctions.flattenMolecules(data, molecules, overwrite, join, flattenDoubleBonds);
 }
 
 //name: Convert Notation...
@@ -1162,6 +1163,16 @@ export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: D
 //meta.vectorFunc: true
 export async function getProperties(molecules: DG.Column, selected?: string[]) : Promise<any> {
   return await PackageFunctions.getProperties(molecules, selected);
+}
+
+//name: Molecular Property
+//description: Computes one chemical property for a column of molecules so that the platform can sort and order them by it.
+//input: column molecules { semType: Molecule }
+//input: string property { choices: ["MW","HBA","HBD","LogP","LogS","PSA","Rotatable bonds","Stereo centers","Molecule charge"] }
+//output: column result
+//meta.role: categoryOrderer
+export async function molecularProperty(molecules: DG.Column, property: string) : Promise<any> {
+  return await PackageFunctions.molecularProperty(molecules, property);
 }
 
 //name: Toxicity Risks

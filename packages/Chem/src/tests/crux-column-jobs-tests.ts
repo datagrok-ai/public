@@ -9,7 +9,7 @@
  */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import {PackageFunctions} from '../package';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {ChemicalEngine} from '../engine/chem-engine';
@@ -76,7 +76,8 @@ category('chemical engine: column jobs', () => {
     const molecules = [SALT, 'C[C@H](N)C(=O)O', 'C/C=C/C', '', 'C1CC(', UNREADABLE_BY_CRUX];
     const jobs: [string, (m: string[]) => Promise<string[]>, (mol: any) => string][] = [
       ['CoordGen coordinates', coordGenCoordsByEngine, (mol) => mol.get_new_coords(true)],
-      ['flattenMolecules', flattenMoleculesByEngine, (mol) => mol.get_smiles(JSON.stringify({doIsomericSmiles: false}))],
+      ['flattenMolecules', (m) => flattenMoleculesByEngine(m, true),
+        (mol) => mol.get_smiles(JSON.stringify({doIsomericSmiles: false}))],
       ['beautifyMols', beautifyMolsByEngine, (mol) => {
         mol.set_new_coords();
         mol.normalize_depiction(1);
@@ -109,6 +110,23 @@ category('chemical engine: column jobs', () => {
         expect(cruxFallbackCount(call), fallbacks + 1, `${call}: one fallback`);
       }
     });
+  });
+
+  test('flattening keeps E/Z unless asked, in both engines', async () => {
+    const molecules = ['C/C=C/[C@H](N)C', '[2H][C@](F)(Cl)Br', 'C1CC/C=C/CCC1', 'C[C@H](N)C(=O)O |&1:1|',
+      'C[S@@](=O)c1ccccc1', 'C/C=C(/F)[C@@H]1CC[C@H](C)CC1', '', 'C1CC('];
+    const expected: [boolean, string[]][] = [
+      [false, ['C/C=C/C(C)N', '[2H]C(F)(Cl)Br', 'C1=C/CCCCCC/1', 'CC(N)C(=O)O', 'CS(=O)c1ccccc1',
+        'C/C=C(/F)C1CCC(C)CC1', '', '']],
+      [true, ['CC=CC(C)N', '[2H]C(F)(Cl)Br', 'C1=CCCCCCC1', 'CC(N)C(=O)O', 'CS(=O)c1ccccc1', 'CC=C(F)C1CCC(C)CC1',
+        '', '']],
+    ];
+    for (const [flattenDoubleBonds, smiles] of expected) {
+      const {rdkit, crux} = await inBothEngines(() => flattenMoleculesByEngine(molecules, flattenDoubleBonds),
+        {noFallback: ['flattenMolecules']});
+      expectArray(rdkit, smiles);
+      expectArray(crux, smiles);
+    }
   });
 
   test('getCLogP: RDKit 2026.03\'s Crippen logP in Crux mode', async () => {
