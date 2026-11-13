@@ -161,7 +161,7 @@ category('Database Meta: DbSchemaInfo', async () => {
         const s2 = refreshed.find(x => x.name === publicSchema.name)!;
         const t2 = (await s2.getTables()).find(x => x.name === t.name)!;
         expect(t2.tags[DG.Tags.DbComment], 'table-comment');
-        expect(t2.tags[DG.Tags.DbTableRowCount], '123');
+        expect(t2.tags[DG.Tags.DbTableRowCount], 123);
 
         // full refresh
         const updatedInfo = (await grok.data.db.getInfo(conn, 'public'))[0];
@@ -169,7 +169,7 @@ category('Database Meta: DbSchemaInfo', async () => {
         const s3 = updatedSchemas.find(x => x.name === publicSchema.name)!;
         const t3 = (await s3.getTables()).find(x => x.name === t.name)!;
         expect(t3.tags[DG.Tags.DbComment], 'table-comment');
-        expect(t3.tags[DG.Tags.DbTableRowCount], '123');
+        expect(t3.tags[DG.Tags.DbTableRowCount], 123);
     });
 
     test('Annotate column', async () => {
@@ -191,8 +191,8 @@ category('Database Meta: DbSchemaInfo', async () => {
         const s2 = refreshed.find(x => x.name === s.name)!;
         const t2 = (await s2.getTables()).find(x => x.name === t.name)!;
         const c2 = t2.columns.find(x => x.name === col.name)!;
-        expect(c2.tags[DG.Tags.DbColumnMin], String(props.min));
-        expect(c2.tags[DG.Tags.DbColumnMax], String(props.max));
+        expect(c2.tags[DG.Tags.DbColumnMin], props.min);
+        expect(c2.tags[DG.Tags.DbColumnMax], props.max);
         expect(c2.tags[DG.Tags.DbComment], props.comment);
 
         // full refresh
@@ -201,8 +201,8 @@ category('Database Meta: DbSchemaInfo', async () => {
         const s3 = updatedSchemas.find(x => x.name === x.name)!;
         const t3 = (await s3.getTables()).find(x => x.name === t.name)!;
         const c3 = t3.columns.find(x => x.name === col.name)!;
-        expect(c3.tags[DG.Tags.DbColumnMin], String(props.min));
-        expect(c3.tags[DG.Tags.DbColumnMax], String(props.max));
+        expect(c3.tags[DG.Tags.DbColumnMin], props.min);
+        expect(c3.tags[DG.Tags.DbColumnMax], props.max);
         expect(c3.tags[DG.Tags.DbComment], props.comment);
     });
 
@@ -230,8 +230,8 @@ category('Database Meta: DbSchemaInfo', async () => {
         const c = (await readTable(conn, 'public', 'cars')).columns.find((x) => x.name === 'brand')!;
         expect(c.tags.get(DG.Tags.Quality) ?? null, null);
         expect(c.tags.get(DG.Tags.DbComment), comment);
-        expect(c.tags.get(DG.Tags.DbColumnUniqueCount), '5');
-        expectArray(JSON.parse(c.tags.get(DG.Tags.DbColumnValues)), ['Audi', 'BMW']);
+        expect(c.tags.get(DG.Tags.DbColumnUniqueCount), 5);
+        expectArray(c.tags.get(DG.Tags.DbColumnValues), ['Audi', 'BMW']);
     });
 
     test('Column values round trip', async () => {
@@ -240,8 +240,8 @@ category('Database Meta: DbSchemaInfo', async () => {
         await publicSchema.annotateColumn('cars', 'brand', {values: values, sampleValues: ['Audi']});
 
         const c = (await readTable(conn, 'public', 'cars')).columns.find((x) => x.name === 'brand')!;
-        expectArray(JSON.parse(c.tags.get(DG.Tags.DbColumnValues)), values);
-        expectArray(JSON.parse(c.tags.get(DG.Tags.DbColumnSampleValues)), ['Audi']);
+        expectArray(c.tags.get(DG.Tags.DbColumnValues), values);
+        expectArray(c.tags.get(DG.Tags.DbColumnSampleValues), ['Audi']);
     });
 
     test('A table annotation is absent on its namesakes', async () => {

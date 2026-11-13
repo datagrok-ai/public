@@ -857,12 +857,6 @@ category('DataFrame: RowList', () => {
     expectArray([...df.rows.get(0).cells].map((i) => i.value), ['France', 2]);
   });
 
-  test('setValues with epoch milliseconds for a datetime', async () => {
-    const df = DG.DataFrame.fromColumns([DG.Column.string('name', 1), DG.Column.dateTime('created', 1)]);
-    df.rows.setValues(0, ['x', 1739973761926]);
-    expect(df.get('created', 0).valueOf(), 1739973761926);
-  });
-
   test('toString', async () => {
     const str: string = createDf().rows.toString();
     expect(str.startsWith('(Instance of '), true);

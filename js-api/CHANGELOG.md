@@ -2,7 +2,6 @@
 
 ## v.next
 
-* [core#1407](https://github.com/datagrok-ai/core/issues/1407): DB annotations: Changed column and table annotations read from `tags` to text, like every tag: numbers as text, and `values` / `sampleValues` as JSON. Breaking for code that read the raw number or array
 * [core#637](https://github.com/datagrok-ai/core/issues/637): Added `useAlphaChannel` to the color input, `ui.colorPicker` and `ui.showColorPicker`
 * [core#637](https://github.com/datagrok-ai/core/issues/637): Viewer opacity is now the alpha of the viewer colors: removed `markerOpacity`, `lineTransparency`, `regressionLineTransparency` and `movingAverageLineTransparency` from the scatter plot and line chart properties, `IScatterPlotSettings` and `ILineChartSettings` (breaking: `viewer.props` no longer has the transparencies; the scatter plot keeps a hidden `markerOpacity` that reads and sets the marker color alpha; layouts and `setOptions` fold a saved value into the color alpha)
 * [core#637](https://github.com/datagrok-ai/core/issues/637): Added `Viewer.setMarkerOpacity(opacity)`, `AnnotationRegionsHelper.getFillColor(region)` and `Color.opaqueIfNoAlpha(color)`

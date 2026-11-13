@@ -2,7 +2,6 @@
 
 ## v.next
 
-* [core#1407](https://github.com/datagrok-ai/core/issues/1407): SQL tools: Fixed the schema description failing on DB column annotations, which the platform now returns as text (lists as JSON), and tagging every column with a saved "not unique" as [UNIQUE]
 * [public#4552](https://github.com/datagrok-ai/public/issues/4552): Grokky: suggestions use an ID column (USUBJID) for categorical slots
 * [public#4551](https://github.com/datagrok-ai/public/issues/4551): Grokky: AI panel hangs for good when the final answer fails to render (markdown RangeError)
 * Docker: Moved the claude-runtime image to Wolfi and raised @hono/node-server to 2.x in claude-runtime and mcp-server, so both images have no known CVEs; the runtime no longer ships npm or virtualenv
