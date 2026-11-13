@@ -361,6 +361,188 @@ describe('logs', () => {
   });
 });
 
+describe('metrics', () => {
+  const overview = {window: {start: 's', end: 'e'}, http: {now: {count: 5, p95: 100}, previous: {count: 3},
+    routes: [{method: 'GET', route: '/x', count: 5, p95: 100}]}, errors: {top: []}, queue: {queued: 1, running: 0, stale: 0},
+  database: {sizeBytes: 10, cacheHitPct: 99, statsReset: null, connections: {max: 400, active: 2},
+    statements: {available: true, slowest: [{query: 'select 1', meanMs: 2}], mostCalled: [{query: 'select 2', calls: 9}], worstCacheHit: []}},
+  process: {instances: 2}, instances: [{instance: 'a'}]};
+  const instances = [
+    {instance: 'pod-a', server: 's1', openSockets: 58, openFilesLimit: 65536, httpConnections: 1, dbConnections: 50, requests5m: 135,
+      requests60m: 321, requestsInFlight: 1, dbPoolConnections: 35, dbInUse: 0, dbWaiting: 0, dbMax: 400,
+      disk: {usedPct: 72, freeBytes: 1000}, isolates: [{isolate: 'controller', dbMax: 200}, {isolate: '1', dbMax: 100, requests5m: 9}]},
+    {instance: 'pod-b', server: 's2', openSockets: 40, disk: null, isolates: [{isolate: 'controller', dbMax: 200}]}];
+
+  it('overview reads the window and prints the totals without arrays', async () => {
+    const {calls, printed} = await observe('metrics', undefined, [], {since: '2h', limit: 3}, () => overview, 'table');
+    const [path, q] = query(calls[0].path);
+    expect(path).toBe('/admin/metrics');
+    expect(Date.now() - Date.parse(q.get('date_start')!)).toBeGreaterThanOrEqual(2 * 3600000 - 1000);
+    expect(q.get('limit')).toBe('3');
+    expect(printed).toMatch(/database\.connections\.max\s+400/);
+    expect(printed).toMatch(/queue\.queued\s+1/);
+    expect(printed).not.toContain('routes');
+    expect(printed).not.toMatch(/^instances/m);
+    expect(printed).not.toContain('statements');
+    expect(JSON.parse((await observe('metrics', 'overview', [], {}, () => overview)).printed)).toEqual(overview);
+  });
+
+  it('shares the window flags of errors top', async () => {
+    const {calls} = await observe('metrics', 'routes', [], {from: '2026-10-09T10:00', to: '2026-10-09T11:00'}, () => overview);
+    const q = query(calls[0].path)[1];
+    expect([q.get('date_start'), q.get('date_end')]).toEqual(['2026-10-09T10:00:00.000Z', '2026-10-09T11:00:00.000Z']);
+    expect((await observe('metrics', 'routes', [], {date: 'this week'}, () => overview)).calls[0].path).toContain('date=this%20week');
+    await expect(observe('metrics', 'routes', [], {since: '1h', date: 'today'})).rejects.toThrow('--since is not used with --from or --date');
+  });
+
+  it('routes prints the routes, json the http block', async () => {
+    expect((await observe('metrics', 'routes', [], {}, () => overview, 'table')).printed).toMatch(/GET\s+\/x\s+5/);
+    expect(JSON.parse((await observe('metrics', 'routes', [], {}, () => overview)).printed)).toEqual(overview.http);
+  });
+
+  it('statements ranks by --by, slowest by default, and reset posts', async () => {
+    expect(JSON.parse((await observe('metrics', 'statements', [], {}, () => overview)).printed)).toEqual([{query: 'select 1', meanMs: 2}]);
+    expect(JSON.parse((await observe('metrics', 'statements', [], {by: 'mostCalled'}, () => overview)).printed)[0].calls).toBe(9);
+    const long = {database: {statements: {available: true, slowest: [{query: `select\n  ${'x, '.repeat(60)}1`, calls: 2}]}}};
+    const line = (await observe('metrics', 'statements', [], {}, () => long, 'table')).printed.split('\n')[2];
+    expect(line).toMatch(/^2\s+select x, x, /);
+    expect(line.endsWith('…')).toBe(true);
+    await expect(observe('metrics', 'statements', [], {by: 'fastest'}, () => overview))
+      .rejects.toThrow('--by is one of slowest, mostCalled, worstCacheHit');
+    const {calls, printed} = await observe('metrics', 'statements', ['reset'], {}, () => null);
+    expect(calls).toEqual([{method: 'POST', path: '/admin/metrics/statements/reset', body: undefined}]);
+    expect(JSON.parse(printed)).toEqual({reset: true});
+  });
+
+  it('statements says when pg_stat_statements is unavailable', async () => {
+    await expect(observe('metrics', 'statements', [], {}, () => ({database: {statements: {available: false, error: 'no extension'}}})))
+      .rejects.toThrow('pg_stat_statements is not available: no extension');
+  });
+
+  it('instances prints a row per instance, or per isolate with --isolates', async () => {
+    const run = (argv: any, output: OutputFormat = 'table') => observe('metrics', 'instances', [], argv, () => instances, output);
+    const {calls, printed} = await run({});
+    expect(calls[0].path).toBe('/admin/connections');
+    const lines = printed.split('\n');
+    expect(lines[0]).toMatch(/^instance\s+sockets\s+filesLimit\s+http\s+db\s+req5m\s+req60m\s+inFlight\s+pool\s+inUse\s+waiting\s+poolMax\s+disk%\s+diskFree\s*$/);
+    expect(lines[2]).toMatch(/^pod-a\s+58\s+65536\s+1\s+50\s+135\s+321\s+1\s+35\s+0\s+0\s+400\s+72\s+1000\s*$/);
+    expect(lines.length).toBe(4);
+    const isolates = (await run({isolates: true})).printed.split('\n');
+    expect(isolates[0]).toMatch(/^instance\s+isolate\s+dbMax\s+requests5m\s*$/);
+    expect(isolates.slice(2).map((l) => l.split(/\s+/).slice(0, 2).join(' '))).toEqual(['pod-a controller', 'pod-a 1', 'pod-b controller']);
+    expect(JSON.parse((await run({isolates: true}, 'json')).printed)).toEqual(instances);
+  });
+
+  it('database prints every section, or the one of --section', async () => {
+    const db = {cacheMisses: [], unhealthy: {count: 1, maxDeadPct: 40, tables: [{table: 'events', deadPct: 40}]}, offenders: [],
+      largest: [{table: 'public.events', totalBytes: 9}], health: []};
+    const {calls, printed} = await observe('metrics', 'database', [], {limit: 5}, () => db, 'table');
+    expect(calls[0].path).toBe('/admin/metrics/database?limit=5');
+    expect(printed.match(/^== \w+ ==$/gm)).toEqual(['== cacheMisses ==', '== unhealthy ==', '== offenders ==', '== largest ==', '== health ==']);
+    expect(printed).toContain('count: 1, maxDeadPct: 40');
+    expect(printed).toContain('public.events');
+    const one = (await observe('metrics', 'database', [], {section: 'largest'}, () => db, 'table')).printed;
+    expect(one).not.toContain('==');
+    expect(one).toContain('public.events');
+    expect(JSON.parse((await observe('metrics', 'database', [], {}, () => db)).printed)).toEqual(db);
+    await expect(observe('metrics', 'database', [], {section: 'bloat'}, () => db)).rejects.toThrow('--section is one of');
+  });
+
+  it('growth flattens the rows: now, change of bytes else count, gc and the alerts holding', async () => {
+    const growth = {rows: [
+      {area: 'database', key: 'events', bytes: {now: 100, d1: 10, d7: 20, d30: null}, count: {now: 5, d1: 1}, gc: null,
+        alerts: [{name: 'table-growth', holding: true}, {name: 'database-growth', holding: false}]},
+      {area: 'gc', key: 'event_parameters', bytes: null, count: null, gc: {pending: 103}, alerts: []},
+      {area: 'storage', key: 'disk@x', bytes: {now: 7, d1: 1}, count: null, usedPct: 72, alerts: []}]};
+    const {calls, printed} = await observe('metrics', 'growth', [], {area: 'all', days: 7}, () => growth, 'table');
+    expect(calls[0].path).toBe('/admin/metrics/growth?area=all&days=7');
+    const lines = printed.split('\n');
+    expect(lines[0]).toMatch(/^area\s+key\s+bytes\s+count\s+d1\s+d7\s+d30\s+usedPct\s+gcPending\s+alerts\s*$/);
+    expect(lines[2]).toMatch(/^database\s+events\s+100\s+5\s+10\s+20\s+table-growth\*,database-growth\s*$/);
+    expect(lines[3]).toMatch(/^gc\s+event_parameters\s+103\s*$/);
+    expect(lines[4]).toMatch(/^storage\s+disk@x\s+7\s+1\s+72\s*$/);
+    await expect(observe('metrics', 'growth', [], {area: 'files'})).rejects.toThrow('--area is one of database, storage, gc, all');
+  });
+
+  it('sessions prints the counts, then the sessions', async () => {
+    const sessions = {now: 182, previous: 90, rows: [{started: 't', user: 'alice', type: 'internal'}]};
+    const {calls, printed} = await observe('metrics', 'sessions', [], {date: 'today', limit: 2}, () => sessions, 'table');
+    expect(calls[0].path).toBe('/admin/metrics/sessions?date=today&limit=2');
+    expect(printed.split('\n')[0]).toBe('now: 182, previous: 90');
+    expect(printed).toContain('alice');
+    expect((await observe('metrics', 'sessions', [], {}, () => sessions, 'quiet')).printed).not.toContain('now:');
+  });
+
+  it('queue, disk and storage read their routes', async () => {
+    expect((await observe('metrics', 'queue', [], {limit: 4})).calls[0].path).toBe('/admin/metrics/queue?limit=4');
+    const disk = await observe('metrics', 'disk', [], {}, () => ({mount: '/', usedPct: 72}), 'table');
+    expect(disk.calls[0].path).toBe('/admin/metrics/disk');
+    expect(disk.printed).toMatch(/usedPct\s+72/);
+    expect((await observe('metrics', 'disk', [], {}, () => null, 'table')).printed).toBe('(no disk statistics: the server has no df)');
+    const storage = JSON.stringify({type: 'S3', totalBytes: 9, topPrefixes: [{name: 'packages', bytes: 8}]});
+    const {calls, printed} = await observe('metrics', 'storage', [], {}, () => storage, 'table');
+    expect(calls[0].path).toBe('/info/storage');
+    expect(printed).toMatch(/totalBytes\s+9/);
+    expect(printed).not.toContain('topPrefixes');
+    expect(printed).toMatch(/packages\s+8/);
+    expect(JSON.parse((await observe('metrics', 'storage', [], {}, () => storage)).printed).topPrefixes).toHaveLength(1);
+  });
+
+  it('failures and request-log take their flags and need them', async () => {
+    const failures = await observe('metrics', 'failures', [], {method: 'get', route: '/users/{id}', since: '1h'},
+      () => [{time: 't', status: 500, error: 'boom', stackTrace: 'at x'}], 'table');
+    const [path, q] = query(failures.calls[0].path);
+    expect([path, q.get('method'), q.get('route'), q.has('date_start')]).toEqual(['/admin/metrics/failures', 'GET', '/users/{id}', true]);
+    expect(failures.printed).toContain('boom');
+    expect(failures.printed).not.toContain('at x');
+    const log = await observe('metrics', 'request-log', [], {session: 's1', time: '2026-10-09T10:00'});
+    expect(log.calls[0].path).toBe('/admin/metrics/request_log?session=s1&time=2026-10-09T10%3A00%3A00.000Z');
+    for (const argv of [{route: '/x'}, {method: 'GET'}])
+      await expect(observe('metrics', 'failures', [], argv)).rejects.toThrow('Usage: grok s observe metrics failures');
+    for (const argv of [{session: 's1'}, {time: '-1h'}])
+      await expect(observe('metrics', 'request-log', [], argv)).rejects.toThrow('Usage: grok s observe metrics request-log');
+  });
+
+  it('an unknown verb fails with the usage', async () => {
+    await expect(observe('metrics', 'speed', [], {})).rejects.toThrow(/Unknown command 'metrics speed'\nUsage: grok s observe/);
+  });
+});
+
+describe('health', () => {
+  const records = [{key: 'Core', name: 'Core', type: 'Service', status: 'Running', enabled: true, time: 't', description: '',
+    nextCheck: 'n'}];
+
+  it('reads the records, with the instances when asked', async () => {
+    const {calls, printed} = await observe('health', undefined, [], {}, () => records, 'table');
+    expect(calls[0].path).toBe('/admin/health');
+    expect(printed.split('\n')[0]).toMatch(/^key\s+name\s+type\s+status\s+enabled\s+time\s+description\s*$/);
+    expect((await observe('health', undefined, [], {module: 'Core', instances: true})).calls[0].path)
+      .toBe('/admin/health?module=Core&instances=true');
+    expect((await observe('health', undefined, [], {instances: 'false'})).calls[0].path).toBe('/admin/health');
+  });
+});
+
+describe('metric-alerts', () => {
+  const alerts = [{name: 'disk-low', metric: 'disk.free_bytes', key: '*', below: 20},
+    {name: 'table-growth', metric: 'db.bytes', key: '*', growth: {percent: 100, days: 1}, severity: 'critical'}];
+  const answer = (method: string) => method === 'GET'
+    ? JSON.stringify({settings: {problemRules: '[]', metricAlerts: JSON.stringify(alerts)}}) : null;
+
+  it('get prints them as rows, or the JSON put takes', async () => {
+    const {calls, printed} = await observe('metric-alerts', 'get', [], {}, answer, 'table');
+    expect(calls[0].path).toBe('/admin/plugins/alerts/settings');
+    expect(printed).toMatch(/disk-low\s+true\s+disk\.free_bytes\s+\*\s+20\s+warning/);
+    expect(printed).toMatch(/table-growth\s+true\s+db\.bytes\s+\*\s+100% in 1d\s+critical/);
+    expect(JSON.parse((await observe('metric-alerts', 'get', [], {}, answer)).printed)).toEqual(alerts);
+  });
+
+  it('put saves the alerts as text, round trip', async () => {
+    const {printed} = await observe('metric-alerts', 'get', [], {}, answer);
+    const {calls} = await observe('metric-alerts', 'put', [], {data: printed}, answer, 'quiet');
+    expect(calls).toEqual([{method: 'POST', path: '/admin/plugins/alerts/settings', body: {metricAlerts: JSON.stringify(alerts)}}]);
+  });
+});
+
 describe('an unknown command', () => {
   it('fails with the usage', async () => {
     await expect(observe('problem', 'list', [], {})).rejects.toThrow(/Unknown command 'problem list'\nUsage: grok s observe/);

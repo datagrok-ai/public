@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## v.next
+
+* Added `grok s o metrics [overview|routes|statements [reset]|instances [--isolates]|database|growth|sessions|queue|failures|request-log|disk|storage]`, `grok s o health [--instances]` and `grok s o metric-alerts get|put`: every view of the Health center from the command line, as tables or `--output json`
+
 ## 6.7.11 (2026-11-11)
 
 * `grok src`: Clones over HTTPS by default, leaves no empty folders for children not cloned; `grok src --help` prints the help
