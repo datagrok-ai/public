@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1038](https://github.com/datagrok-ai/core/issues/1038): Projects: Fixed grok.dapi.projects.open not finding a project by its short or namespace-qualified name
 * [core#239](https://github.com/datagrok-ai/core/issues/239): Views: Added `ViewBase.saveToProject` (whether a view is saved with the project) and `ViewBase.saveToProjectByDefault` (the default a view type overrides)
 * [core#239](https://github.com/datagrok-ai/core/issues/239): Settings: Removed `saveProjectWithViewLayout`; a project now always saves the arrangement of its views
 * [core#637](https://github.com/datagrok-ai/core/issues/637): Added `useAlphaChannel` to the color input, `ui.colorPicker` and `ui.showColorPicker`
