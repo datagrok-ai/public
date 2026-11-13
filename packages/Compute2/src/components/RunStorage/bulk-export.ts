@@ -18,7 +18,7 @@ export const modelKind = (model: DG.Func, stepHistory: boolean): ModelKind =>
 
 /** The exports of a model's runs as the menus list them; a workflow's come from its current config. */
 export async function modelExports(model: DG.Func, kind: ModelKind): Promise<ExportOption[]> {
-  // a custom view has only its own exportConfig, which needs the open view
+  // a custom view has only its own exports, which need the open view
   if (model.options['editor'] === 'Compute2:CustomFunctionViewEditor')
     return [];
   if (kind === 'call')

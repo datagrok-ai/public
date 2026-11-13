@@ -5,7 +5,7 @@
    while nothing it shows changed, so the list renders again only the nodes that did. */
 import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
-import {signal, computed, untracked, Signal, ReadonlySignal} from '../../core/signals.js';
+import {signal, computed, untracked, afterFlush, Signal, ReadonlySignal} from '../../core/signals.js';
 import {VirtualList} from './list.js';
 import type {VirtualListOptions} from './list.js';
 import {icon} from '../display/icon.js';
@@ -242,6 +242,20 @@ export class VirtualTree<T = unknown> extends Control {
   /** The base state, with the selection as the ids of the selected nodes, in selection order. */
   getState(): ReturnType<Control['getState']> {
     return {...super.getState(), selection: this.selectedNodes.peek().map((node) => node.id)};
+  }
+
+  /** Opens the inline rename of node `id` as F2 does, after the running handler's writes show (a node just added);
+   * false without `onRename` or such a node. */
+  async rename(id: string): Promise<boolean> {
+    if (!this._rename)
+      return false;
+    await new Promise<void>((resolve) => afterFlush(resolve));
+    if (await this.revealItem(id) === null)
+      return false;
+    const index = this._flat.peek().findIndex((r) => r.kind === 'node' && r.node.id === id);
+    this._select(index);
+    this._startRename(index);
+    return true;
   }
 
   /** Brings a node — by id, else by label among the nodes read so far — into view: opens its
@@ -524,6 +538,7 @@ export class VirtualTree<T = unknown> extends Control {
 
     const input = document.createElement('input');
     input.className = 'u2-tree-rename';
+    input.setAttribute('aria-label', `Rename ${row.node.label}`);
     input.value = row.node.label;
     label.replaceWith(input);
     input.focus();

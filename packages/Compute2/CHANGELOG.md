@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Custom function view: The editor opens a run from the page link, as RFV does; a run that fails to load shows the error and the view keeps a new call
+* Model Hub: The context panel shows a Launch button, the model's details (type, package, location, status, required groups, versions) and a My runs pane with my last runs and Show all, which opens Browse runs for the model; the Dev pane has only the model's name to copy
+* Model Hub: Fixed a model's context menu having two Add To Favorites items
 * Export: The default Excel report is several times faster with charts; fixed its charts being squashed vertically
 * RFV: Fixed multiple choice inputs showing no list, and the empty line below selects and multiple choice inputs, in a narrow form
 * Export: Added `CallExports` and `ExportCall`, which list a run's exports as its Export menu does and run one, returning its file

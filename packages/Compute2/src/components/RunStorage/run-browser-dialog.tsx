@@ -36,11 +36,11 @@ export function openRunBrowserDialog(options: {
 }
 
 /** Model Hub's Browse Runs: runs of every model, or of the one chosen, opened in the model's own view. */
-export async function browseRuns() {
+export async function browseRuns(model?: DG.Func) {
   // a blocking dialog of its own, so it takes most of the window
   const size = {width: Math.round(window.innerWidth * 0.9), height: Math.round(window.innerHeight * 0.9),
     fullScreen: true};
-  const runs = await openRunBrowserDialog({title: 'Browse runs', selectModel: true, allowAllModels: true,
+  const runs = await openRunBrowserDialog({title: 'Browse runs', model, selectModel: true, allowAllModels: true,
     openSeveral: true, size});
   for (const run of runs ?? []) {
     try {
