@@ -171,8 +171,12 @@ export class PackageFunctions {
 
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     const detach = attachRunStorage(view, call.func);
-    if (call.aux.initialRunId) {
-      await view.loadRun(call.aux.initialRunId)
+    // as in RFVApp: a programmatic open passes the id via call.aux, deep links via the start URL
+    const runId = call.aux.initialRunId ??
+      (globalThis.initialURLHandled ? null : new URL(grok.shell.startUri).searchParams.get('id'));
+    globalThis.initialURLHandled = true;
+    if (runId) {
+      await view.loadRun(runId)
         .catch((e) => grok.shell.error(`Couldn't open the run: ${e?.message ?? e}`));
     }
 
