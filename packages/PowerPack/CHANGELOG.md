@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1507](https://github.com/datagrok-ai/core/issues/1507): Fixed the Space row refusing to move a project into a space that links it
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Added `spaceSaveRow` (`meta.role: spaceSaveRow`), which provides u2's Space row to the Save project dialog through `ui.spaceSaveRow()`
 * [core#637](https://github.com/datagrok-ai/core/issues/637): Formula Lines: Removed the Opacity sliders - lines and bands take one RGBA color, regions an RGBA fill, outline and title color; an opacity saved earlier is folded into the color
 * Enrichments: Fixed an enrichment saved for a catalog other than the connection's own (Databricks, Snowflake, SQL Server) being run in the connection's own catalog, where it failed or joined the rows of a table with the same name
