@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {UaView} from './tabs/ua';
-import {UaToolbox} from './ua-toolbox';
+import {UaToolbox, UaViewState} from './ua-toolbox';
 import {EventsView} from './tabs/events';
 import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
@@ -23,15 +23,65 @@ export class ViewHandler {
   private static noPackagesTabs = ['Projects', 'Metrics', 'Stress', 'Vulnerabilities', 'System Activity', 'AI Usage'];
   private urlParams: Map<string, string> = new Map<string, string>();
   public view: DG.MultiView;
+  private toolbox?: UaToolbox;
+  private pendingState?: UaViewState;
+  /** The buttons that switch a tab between its sub-views, by tab name and route. */
+  private routButtons: {[tab: string]: {[rout: string]: HTMLButtonElement}} = {};
 
   /** [appTab]: the tab an app of its own opens (`metrics`); under that app's URL the tab needs no path segment. */
   constructor(private appTab?: string) {
     this.view = new DG.MultiView({viewFactories: {}});
     this.view.name = ViewHandler.UA_NAME;
     this.view.box = true;
+    this.view.saveStateMap = () => this.saveState();
+    this.view.loadStateMap = (state: object) => this.restore(state as UaViewState);
+  }
+
+  /** While a restore is under way, saving keeps the state it restores. */
+  saveState(): UaViewState | null {
+    if (this.pendingState)
+      return this.pendingState;
+    if (!this.toolbox)
+      return null;
+    const v = this.getCurrentView();
+    return {tab: v.name, rout: v.rout ?? null, filters: this.toolbox.getState()};
+  }
+
+  private restore(state: UaViewState): void {
+    this.loadState(state).catch((e) => grok.shell.error(`Cannot restore Usage Analysis: ${e instanceof Error ? e.message : e}`));
+  }
+
+  private async loadState(state: UaViewState): Promise<void> {
+    this.pendingState = state;
+    if (!this.toolbox)
+      return;
+    try {
+      if (state.filters)
+        this.toolbox.setState(state.filters);
+      if (state.tab && this.view.tabs.getPane(state.tab))
+        this.changeTab(state.tab);
+      if (state.filters)
+        this.toolbox.applyFilter();
+      const v = this.getCurrentView();
+      await v.viewersReady;
+      if (state.rout && this.getCurrentView() === v && v.rout !== state.rout)
+        this.routButtons[v.name]?.[state.rout]?.click();
+    } finally {
+      if (this.pendingState === state)
+        this.pendingState = undefined;
+    }
   }
 
   async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
+    try {
+      await this.build(date, groups, packages, tags, categories, projects, path);
+    } catch (e) {
+      this.pendingState = undefined;
+      throw e;
+    }
+  }
+
+  private async build(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
     const toolboxPromise = UaToolbox.construct(this);
     const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView,
       SystemActivityView, AiUsageView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
@@ -40,7 +90,7 @@ export class ViewHandler {
       const currentView = new viewClasses[i]();
       views.push(currentView);
       this.view.addView(currentView.name, () => {
-        currentView.tryToInitViewers(path);
+        currentView.viewersReady = currentView.tryToInitViewers(path);
         return currentView;
       }, false);
     }
@@ -111,6 +161,7 @@ export class ViewHandler {
       piButton.disabled = true;
     });
     puButton.disabled = true;
+    this.routButtons['Packages'] = {'/Usage': puButton, '/InstallationTime': piButton};
     const pButtons = ui.divH([puButton, piButton], 'ua-packages-buttons');
     pButtons.style.display = 'none';
     toolbox.filters.root.before(pButtons);
@@ -134,6 +185,7 @@ export class ViewHandler {
       feButton.disabled = true;
     });
     fuButton.disabled = true;
+    this.routButtons['Functions'] = {'/Usage': fuButton, '/ExecutionTime': feButton};
     const fButtons = ui.divH([fuButton, feButton], 'ua-packages-buttons');
     fButtons.style.display = 'none';
     toolbox.filters.root.before(fButtons);
@@ -178,6 +230,9 @@ export class ViewHandler {
         fButtons.style.display = 'none';
     });
     this.changeTab(urlTab);
+    this.toolbox = toolbox;
+    if (this.pendingState)
+      this.restore(this.pendingState);
   }
 
   static urlName(view: DG.ViewBase): string {
@@ -197,7 +252,8 @@ export class ViewHandler {
   }
 
   setUrlParam(key: string, value: string, saveDuringChangingView: boolean = false) {
-    const urlParams = new URLSearchParams(window.location.search);
+    const isCurrent = grok.shell.v?.root === this.view.root;
+    const urlParams = new URLSearchParams(isCurrent ? window.location.search : this.view.path.split('?')[1] ?? '');
     urlParams.set(key, value);
 
     const params: string[] = [];

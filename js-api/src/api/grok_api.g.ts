@@ -70,6 +70,8 @@ export interface IDartApi {
   grok_View_Set_Path(v: any, s: String): any;
   grok_View_Get_BasePath(v: any): any;
   grok_View_Set_BasePath(v: any, s: String): any;
+  grok_View_Get_SaveToProject(v: any): any;
+  grok_View_Set_SaveToProject(v: any, x: Boolean): any;
   grok_View_Get_Description(v: any): any;
   grok_View_Set_Description(v: any, s: String): any;
   grok_View_Get_Type(v: any): any;

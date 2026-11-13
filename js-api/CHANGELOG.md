@@ -2,6 +2,8 @@
 
 ## v.next
 
+* [core#239](https://github.com/datagrok-ai/core/issues/239): Views: Added `ViewBase.saveToProject` (whether a view is saved with the project) and `ViewBase.saveToProjectByDefault` (the default a view type overrides)
+* [core#239](https://github.com/datagrok-ai/core/issues/239): Settings: Removed `saveProjectWithViewLayout`; a project now always saves the arrangement of its views
 * [core#637](https://github.com/datagrok-ai/core/issues/637): Added `useAlphaChannel` to the color input, `ui.colorPicker` and `ui.showColorPicker`
 * [core#637](https://github.com/datagrok-ai/core/issues/637): Viewer opacity is now the alpha of the viewer colors: removed `markerOpacity`, `lineTransparency`, `regressionLineTransparency` and `movingAverageLineTransparency` from the scatter plot and line chart properties, `IScatterPlotSettings` and `ILineChartSettings` (breaking: `viewer.props` no longer has the transparencies; the scatter plot keeps a hidden `markerOpacity` that reads and sets the marker color alpha; layouts and `setOptions` fold a saved value into the color alpha)
 * [core#637](https://github.com/datagrok-ai/core/issues/637): Added `Viewer.setMarkerOpacity(opacity)`, `AnnotationRegionsHelper.getFillColor(region)` and `Color.opaqueIfNoAlpha(color)`
