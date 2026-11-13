@@ -179,3 +179,45 @@ export function testVectorFuncNonVectorizableParam(col: DG.Column, prefix: strin
   const res = DG.Column.string('result', col.length).init((i: number) => `${prefix}_${col.get(i)}_${postfix.get(i)}`);
   return res;
 }
+
+//name: canonicalizeApiTestsKey
+//description: The canonical form of an apitests-key value (trimmed, lower case); sticky meta of that semantic type is keyed by it
+//input: string key { semType: apitests-key }
+//output: string result { semType: apitests-key }
+//meta.role: canonicalizer
+export function canonicalizeApiTestsKey(key: string): string {
+  return key.trim().toLowerCase();
+}
+
+// The engine of `Dapi: models`: the tests have an engine on a stand that publishes no package with one.
+// It is never applicable, so the Train Model view does not offer it.
+
+//name: trainApiTestsEngine
+//input: dataframe df
+//input: column predictColumn
+//output: dynamic model
+//meta.mlname: ApiTests engine
+//meta.mlrole: train
+export function trainApiTestsEngine(df: DG.DataFrame, predictColumn: DG.Column): Uint8Array {
+  return new TextEncoder().encode(predictColumn.name);
+}
+
+//name: applyApiTestsEngine
+//input: dataframe df
+//input: dynamic model
+//output: dataframe result
+//meta.mlname: ApiTests engine
+//meta.mlrole: apply
+export function applyApiTestsEngine(df: DG.DataFrame, model: any): DG.DataFrame {
+  return DG.DataFrame.fromColumns([DG.Column.float(new TextDecoder().decode(model), df.rowCount)]);
+}
+
+//name: isApplicableApiTestsEngine
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+//meta.mlname: ApiTests engine
+//meta.mlrole: isApplicable
+export function isApplicableApiTestsEngine(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return false;
+}

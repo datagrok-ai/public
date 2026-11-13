@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 dayjs.extend(utc);
 import {getDataQueryTime} from '../benchmarks/benchmark';
+import {requireConnection} from '../connections/reachable';
 
 // The client-cache tests (IndexedDB-backed grok.functions.clientCache) live in
 // ApiTests ('DB: Client cache') — they need the browser, and DBTests runs fully
@@ -13,6 +14,7 @@ category('Server cache', () => {
   const testConnections: String[] = ['PostgreSQLDBTests', 'PostgreSQLDBTestsCached'];
 
   before(async () => {
+    await requireConnection('DbTests:PostgreSQLDBTests');
     await cleanCache(testConnections);
   });
 
