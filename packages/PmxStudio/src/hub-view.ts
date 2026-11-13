@@ -191,7 +191,8 @@ function hubContent(self: ViewHost): ViewContent {
   // the logo is decoration beside the name it would repeat: empty alt; width and height set, so the title keeps its
   // size before the image arrives
   const logo = h('img', 'pmx-hub-logo', [], {src: `${_package.webRoot.replace(/\/?$/, '/')}img/pmx-studio-logo.svg`,
-    alt: '', width: '32', height: '32', draggable: 'false'});
+    alt: '', width: '32', height: '32', draggable: 'false',
+    style: 'margin-right: 12px; vertical-align: -5px'}); // 32 px inside the title's 41 px line
   const title = h('h1', 'pmx-hub-title pmx-rise', [logo, 'PMX Studio']);
   const lede = h('p', 'pmx-hub-lede pmx-rise', ['Xenograft and syngeneic efficacy studies, from design to analysis.']);
   lede.style.animationDelay = '.08s';
