@@ -24,7 +24,7 @@ import {editLayout, panelGrid, Slot} from './panels';
 import {stagePage, studyHeader} from './study-header';
 import {followPlan} from './monitor-view';
 import {PLAN_ATLAS_NOTE, SavedPlan, atlasNote, downloadPlan, parsePlan, planOf, planSaved, plansFolder,
-  savePlan} from './plan-file';
+  savePlan, shownPath} from './plan-file';
 import {labHumane} from './study-file';
 import {StudyMeta, dateOf, dateText, dosingDays, emptyMeta, weekdayOf, withId} from './study-meta';
 import {CAL, MenuAt, WEEKDAYS, dayActions, icsOf, mark, marked, weeksGrid} from './calendar';
@@ -1029,7 +1029,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
     const r = ready();
     if (!r)
       return;
-    const where = span(`Saved to ${plansFolder()}. Share it from Files, or pick it in Analyze's Plan field.`);
+    const where = span(`Saved to ${shownPath(plansFolder())}. Share it from Files, or pick it in Analyze's ` +
+      'Plan field.');
     Object.assign(where.style, {color: 'var(--dg-text-color-muted, #68727f)', maxWidth: '360px', lineHeight: '1.45'});
     // a plan of the same name is replaced only when Save is pressed again for it (the dialog says so and stays open)
     let replacing: string | null = null;
@@ -1046,7 +1047,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
           meta.value = {...meta.peek(), id: ''};
         const path = await savePlan(await planFor(chosen, r));
         named.value = chosen;
-        grok.shell.info(`Plan saved: ${path}`);
+        grok.shell.info(`Plan saved: ${shownPath(path)}`);
       }, {text: 'Save'});
     }));
   };

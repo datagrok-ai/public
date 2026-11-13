@@ -17,7 +17,7 @@ import {analyzeView} from './analyze-view';
 import {BandChart} from './band-chart';
 import {WEEKDAY_NAMES, groupColors, weekdaysOf} from './frames';
 import {allocateGroups, MonitorFrames, monitorFrames, MonitorInputs, outsideBand, promptsByChance} from './monitor';
-import {FROZEN_ATLAS_NOTE, PLAN_TAG, SavedPlan, atlasNote, parsePlan} from './plan-file';
+import {FROZEN_ATLAS_NOTE, PLAN_TAG, SavedPlan, atlasNote, parsePlan, shownPath} from './plan-file';
 import {planInput} from './plan-vs-observed';
 import {openStage, showStage} from './stages';
 import {LIMITS_TAG, LINE_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf, newStudyTable, parseStudy,
@@ -724,7 +724,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     // through setMeta: the header shows the ID the study has just been given
     setMeta(withId(metaOf(df) ?? emptyMeta()));
     void Promise.resolve().then(() => saveStudy(studyOf(df, call.getParamValue('humane') ?? null,
-      call.getParamValue('weightLimit') ?? null))).then((p) => grok.shell.info(`Study saved: ${p}`),
+      call.getParamValue('weightLimit') ?? null))).then((p) => grok.shell.info(`Study saved: ${shownPath(p)}`),
       failed('The study could not be saved'));
   });
   saveButton.title = 'Save the plan, the measurements and the log to your files';

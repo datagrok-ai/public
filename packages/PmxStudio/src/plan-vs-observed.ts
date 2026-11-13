@@ -12,7 +12,7 @@ import {FileInput, FuncCallForm} from '@datagrok-libraries/u2/dg';
 import {AnalysisFrames, PREDICTED} from './analyze';
 import {BandChart} from './band-chart';
 import {finite} from './engine';
-import {SavedPlan, myPlans, parsePlan, plansFolder} from './plan-file';
+import {SavedPlan, myPlans, parsePlan, plansFolder, shownPath} from './plan-file';
 import {axisAt, block, guide, infoNote, noteLine, notes, notesBox, pct, plainError, pValue, sized, swatch,
   volumeAxis, whenSettled} from './ui';
 
@@ -155,7 +155,7 @@ export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: 
       'study with. Empty: the plan the study table carries, if any'}));
   planField.addOptions(form.build(() => iconButton('list', () => void myPlans().then((files) => {
     if (files.length === 0) {
-      grok.shell.info(`No saved plans yet: save one in Plan (it goes to ${plansFolder()})`);
+      grok.shell.info(`No saved plans yet: save one in Plan (it goes to ${shownPath(plansFolder())})`);
       return;
     }
     DG.Menu.popup().items(files.map((f) => f.name), (name: string) =>
