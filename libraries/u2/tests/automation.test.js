@@ -2,7 +2,7 @@
    (structure) + data-u2-owner (portaled popups), and the naming nudge. Doc:
    core/docs/features/ui2/AUTOMATION.md. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope, Control, Combobox, TextInput, ChoiceInput, Form, Dialog, Overlay,
@@ -105,7 +105,7 @@ check('Overlay: portaled content carries data-u2-owner from the nearest named an
   document.body.append(owner);
 
   const content = document.createElement('div');
-  const close = Overlay.show(anchor, content, scope);
+  const close = Overlay.show(anchor, content, {owner: scope});
   await flush();
   assert.equal(content.dataset.u2Owner, 'org', 'the popup names its owner across the portal');
   close();
@@ -113,7 +113,7 @@ check('Overlay: portaled content carries data-u2-owner from the nearest named an
   // reused content from an unnamed anchor must not keep a stale owner
   const bare = document.createElement('button');
   document.body.append(bare);
-  const reclose = Overlay.show(bare, content, scope);
+  const reclose = Overlay.show(bare, content, {owner: scope});
   await flush();
   assert.equal(content.dataset.u2Owner, undefined, 'no named ancestor, no owner link');
   reclose();

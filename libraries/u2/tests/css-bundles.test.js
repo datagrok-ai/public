@@ -1,7 +1,7 @@
 /* all.css against css/: it lists every sheet but the opt-in ones. The EMS bundle's own half of this
    test lives with EMS (`libraries/ems/tests/css-bundles.test.js`), which reads both folders. */
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {readdirSync, readFileSync} from 'node:fs';
 
@@ -34,7 +34,8 @@ function rules(text) {
     else {
       const decls = src.slice(open + 1, close).split(';').map((d) => d.split(':'))
         .filter((d) => d.length > 1).map(([prop, ...value]) => [prop.trim(), value.join(':').trim()]);
-      for (const selector of head.split(','))
+      // a comma inside parentheses (`:not(:disabled, [aria-disabled='true'])`) belongs to its selector
+      for (const selector of head.split(/,(?![^(]*\))/))
         out.push({selector: selector.replace(/\s+/g, ' ').trim(), decls});
     }
     i = close + 1;
@@ -64,7 +65,7 @@ test('no two sheets in all.css give one selector conflicting declarations; no ru
 test('a toggle chip is never an entity chip', async () => {
   await import('./dom-shim.js');
   const {ChipsInput} = await import('../src/components/inputs/chips-input.js');
-  const input = new ChipsInput({items: ['Sales', 'Chemists'], value: ['Sales']});
+  const input = testOwner().build(() => new ChipsInput({items: ['Sales', 'Chemists'], value: ['Sales']}));
   const chips = [...input.root.querySelectorAll('.u2-chips-chip')];
   assert.equal(chips.length, 2);
   assert.equal(chips.some((chip) => chip.classList.contains('u2-chip')), false);

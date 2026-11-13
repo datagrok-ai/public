@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Docker: Removed pip, setuptools and wheel from the cvmtests-docker-test1 and -test2 images and raised Werkzeug to 3.1.9, so they have no known CVEs
 * Tests: Raised the first `Celery: datagrok-celery-task` call to 15 min. On CI the cold start builds the worker image and overran the 300s budget, which timed out that case and took the other thirteen with it; the stand now allows 20 min for the container to reach STARTED
 * GROK-20642: Tests: `Docker`'s `Proxy WebSocket` now waits for the container to answer before opening the socket — `run(id, true)` returns when the platform marks it started, which is earlier than the app inside binding its port, so the proxy failed with `Connection refused, errno = 111` on a loaded stand
 * GROK-20642: Tests: Gave the per-language `Escaping` test a 180s budget (it makes one server round-trip per string against the 30s default) and raised the first test of each language category to 300s, since it pays the kernel cold start while the rest of the suite loads the same stand

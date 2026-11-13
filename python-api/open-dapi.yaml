@@ -132,7 +132,7 @@ paths:
     get:
       operationId: getSchemaAccess
       summary: get schema access
-      description: "The lossless access snapshot of a schema for its editor: {tables: {<logical>: {entityId, remote, canShare, grants, coreSchema: {entityId, canShare, grants}}}, columns: {'<table>.<column>': {state: unrestricted | restricted, schemaId?, canShare, view?, edit?, other?}}, version, incarnation}, read in one transaction. Grants are the DIRECT rows on the entity as [{group: {id, friendlyName, personal}, permissions}] — complete sets, nothing inherited — and are answered only where the caller holds Share on the target (a column's is its table's core schema); elsewhere `canShare: false` and the lists are null (unknown, not empty). The core schema's grants are informational: the apply edits table grants and relational column restrictions only. `version` and `incarnation` are what an edit sends back as ifVersion / ifIncarnation. Requires View or Edit on the schema entity."
+      description: "The lossless access snapshot of a schema for its editor: {tables: {<logical>: {entityId, remote, canShare, grants, coreSchema: {entityId, canShare, grants}}}, columns: {'<table>.<column>': {state: unrestricted | restricted, schemaId?, revision?, canShare, view?, edit?, other?}}, version, incarnation}, read in one transaction. Grants are the DIRECT rows on the entity as [{group: {id, friendlyName, personal}, permissions}] — complete sets, nothing inherited — and are answered only where the caller holds Share on the target (a column's is its table's core schema); elsewhere `canShare: false` and the lists are null (unknown, not empty). The core schema's grants are informational: the apply edits table grants and relational column restrictions only. `version` and `incarnation` are what an edit sends back as ifVersion / ifIncarnation. Requires View or Edit on the schema entity."
       tags:
         - domains
       parameters:
@@ -180,7 +180,7 @@ paths:
     post:
       operationId: applySchema
       summary: apply schema
-      description: "Applies a partial manifest: body {tables?, propertySchemas?, dropTables?, friendlyName?, description?, storage?, access?, ifVersion, ifIncarnation?, confirmDestructive?}. Named tables replace their current definition wholesale; untouched tables come from the registry. [dryRun] returns the change plan (with live row counts for anything dropped; registration-only, with what a drop loses and the filters it leaves broken, for an external binding; `metadata` for a rename) without applying; a destructive plan requires confirmDestructive; a stale ifVersion is a 409. `access` = {grant: [{table, group, permission}], revoke: [{table, group, permission}], restrict: [{table, column, grant?: [{group, permission}], revoke?: [{group, permission}]}], unrestrict: [{table, column}]} travels with the manifest change and is executed in the same transaction, after the registry write: a column added and restricted in one apply is never visible to existing readers, and `writable` turned on with an Edit revoked has no window. Every op is a delta by permission triple, idempotent (the answer reports each op's `effect`, `none` for a no-op, as resolved under the lock); `restrict` splits the column out of the everyone-visible core schema and applies its triples to the per-column schema; `unrestrict` merges it back. Every op needs Share on its target (a column's: the table's core schema) or the whole apply is refused (403 `access-forbidden`); a target the same apply drops is refused (`access-target-dropped`), an unknown group `unknown-group`. On a user-managed schema this requires Edit (re-checked under the lock) and ifVersion is required — the schema's apply counter, checked again under the deploy lock together with ifIncarnation (the manifest's `incarnation`: a schema deleted and re-created starts over at version 1, so a token from before answers 409 too). ifIncarnation stays optional on the wire; every client of ours sends it. On a package-managed schema it is the user-extension path instead: it requires Extend, the body additionally accepts `extend: {table: {columns: {...}}}` for tables the plugin opted in, only user-owned objects may be written, and ifVersion tracks ext_version while the plugin's own version stays frozen."
+      description: "Applies a partial manifest: body {tables?, propertySchemas?, dropTables?, friendlyName?, description?, storage?, access?, ifVersion, ifIncarnation?, confirmDestructive?}. Named tables replace their current definition wholesale; untouched tables come from the registry. [dryRun] returns the change plan (with live row counts for anything dropped; registration-only, with what a drop loses and the filters it leaves broken, for an external binding; `metadata` for a rename) without applying; a destructive plan requires confirmDestructive; a stale ifVersion is a 409. `access` = {grant: [{table, group, permission}], revoke: [{table, group, permission}], restrict: [{table, column, grant?: [{group, permission}], revoke?: [{group, permission}]}], unrestrict: [{table, column}]} travels with the manifest change and is executed in the same transaction, after the registry write: a column added and restricted in one apply is never visible to existing readers, and `writable` turned on with an Edit revoked has no window. Every op is a delta by permission triple, idempotent (the answer reports each op's `effect`, `none` for a no-op, as resolved under the lock); `restrict` splits the column out of the everyone-visible core schema and applies its triples to the per-column schema; `unrestrict` merges it back. Every op needs Share on its target (a column's: the table's core schema) or the whole apply is refused (403 `access-forbidden`); a target the same apply drops is refused (`access-target-dropped`), an unknown group `unknown-group`. A `restrict` / `unrestrict` op may carry `from` — the split state the editor loaded (`restricted` | `unrestricted`) — and is refused with 409 `access-conflict` when the column is in the other state under the lock (a standalone restrict or unrestrict moves no schema token); likewise `revision` — the restricted column's ACL revision the access snapshot answered — when any grant, revoke or re-restriction moved it. An apply that changes nothing — the registered declaration, no metadata, storage or access effect — writes nothing and answers the plan with `noop: true`, `applied: false` and the current `version`. On an external binding a registered table's or column's remote name is immutable (400 `remote-immutable`, with `path`); an unexpected failure answers 500 `apply-failed`. On a user-managed schema this requires Edit (re-checked under the lock) and ifVersion is required — the schema's apply counter, checked again under the deploy lock together with ifIncarnation (the manifest's `incarnation`: a schema deleted and re-created starts over at version 1, so a token from before answers 409 too, naming both incarnations). ifIncarnation stays optional on the wire; every client of ours sends it. On a package-managed schema it is the user-extension path instead: it requires Extend, the body additionally accepts `extend: {table: {columns: {...}}}` for tables the plugin opted in, only user-owned objects may be written, and ifVersion tracks ext_version while the plugin's own version stays frozen."
       tags:
         - domains
       parameters:
@@ -229,13 +229,18 @@ paths:
     delete:
       operationId: deleteSchema
       summary: delete schema
-      description: "Deletes (fully purges) a user-managed schema: the PostgreSQL schema with its data and audit partition, registry rows, entity types, promoted row entities, and permissions. Requires Delete on the schema entity."
+      description: "Deletes (fully purges) a user-managed schema: the PostgreSQL schema with its data and audit partition, registry rows, entity types, promoted row entities, saved filters and permissions. Requires Delete on the schema entity — re-checked under the deploy lock with the schema's identity: a schema gone meanwhile is 404, one deleted and re-created 409 `version-conflict` (both incarnations named), a Delete revoked while the request waited 403. [ifIncarnation] (the manifest's `incarnation`) pins the request to the life the caller saw."
       tags:
         - domains
       parameters:
         - name: schema
           in: path
           required: true
+          schema:
+            type: string
+        - name: ifIncarnation
+          in: query
+          required: false
           schema:
             type: string
       responses:
@@ -245,7 +250,7 @@ paths:
     post:
       operationId: ensureColumnSchema
       summary: ensure column schema
-      description: "Restricts a relational domain-table column (body {schema, table, column}): splits it out of the everyone-visible core property schema into its own single-column schema named '<schema>.<table>.<column>' — afterwards only its grantees (and admins) see the column. Idempotent; returns {id, name} of the per-column schema (a /domains/grants target). Requires Share on the table's core schema; jsonb columns are managed via their owning property schema instead (400)."
+      description: "Restricts a relational domain-table column (body {schema, table, column}): splits it out of the everyone-visible core property schema into its own single-column schema named '<schema>.<table>.<column>' — afterwards only its grantees (and admins) see the column. Idempotent; returns {id, name} of the per-column schema (a /domains/grants target). Requires Share on the table's core schema, re-checked with the column's registration under the deploy lock the split waits for — a schema deleted and re-created meanwhile is a 409 naming both incarnations; jsonb columns are managed via their owning property schema instead (400)."
       tags:
         - domains
       requestBody:
@@ -301,7 +306,7 @@ paths:
     post:
       operationId: grantPermission
       summary: grant permission
-      description: "Idempotently grants body 'permission' (View|Edit|Delete|Share) on a registry entity to body 'group' (a group id — sharing with a user resolves to their personal group on the client, as everywhere). Requires Share on the entity."
+      description: "Idempotently grants body 'permission' (View|Edit|Delete|Share) on a registry entity to body 'group' (a group id — sharing with a user resolves to their personal group on the client, as everywhere). Requires Share on the entity, proven under the deploy lock the grant waits for (an apply holds it from its access check to its commit)."
       tags:
         - domains
       parameters:
@@ -322,7 +327,7 @@ paths:
     delete:
       operationId: revokePermission
       summary: revoke permission
-      description: "Revokes 'permission' from 'group' on a registry entity; omitting 'permission' revokes all four common permissions for that group. Requires Share on the entity."
+      description: "Revokes 'permission' from 'group' on a registry entity; omitting 'permission' revokes all four common permissions for that group. Requires Share on the entity, proven under the deploy lock, as [grantPermission]."
       tags:
         - domains
       parameters:
@@ -958,6 +963,7 @@ paths:
     get:
       operationId: rowAudit
       summary: row audit
+      description: "The row's audit events, oldest first: the newest [limit] (clamps to [1, 1000]) below the audit id [before]."
       tags:
         - domains
       parameters:
@@ -976,6 +982,17 @@ paths:
           required: true
           schema:
             type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: before
+          in: query
+          required: false
+          schema:
+            type: number
       responses:
         "200":
           description: Successful response

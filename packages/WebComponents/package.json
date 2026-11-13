@@ -10,11 +10,8 @@
   "dependencies": {
     "@datagrok-libraries/dock-spawn-dg": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
-    "@datagrok-libraries/utils": "workspace:^",
     "@datagrok-libraries/webcomponents": "workspace:^",
-    "cash-dom": "catalog:",
-    "datagrok-api": "workspace:^",
-    "dayjs": "catalog:"
+    "datagrok-api": "workspace:^"
   },
   "scripts": {
     "build": "grok build",

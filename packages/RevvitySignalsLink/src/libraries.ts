@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 import { RevvityData } from "./revvity-api";
 import { openRevvityNode } from './view-utils';
 import { getAppHeader } from './utils';
@@ -70,9 +71,10 @@ export async function getLibrariesWithEntityTypes(): Promise<RevvityLibrary[]> {
   return libraries;
 }
 
-export async function createInitialSatistics(statsDiv: HTMLElement, libName?: string): Promise<HTMLDivElement> {
+export async function createInitialSatistics(view: DG.ViewBase, statsDiv: HTMLElement,
+  libName?: string): Promise<HTMLDivElement> {
 
-  const header = getAppHeader();
+  const header = getAppHeader(view);
   statsDiv.append(header);
 
   const tableDiv = ui.div('', {style: {position: 'relative', paddingTop: '15px'}});

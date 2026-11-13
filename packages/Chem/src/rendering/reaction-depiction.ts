@@ -1,7 +1,8 @@
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {_isSmarts, getMolSafe} from '../utils/mol-creation_rdkit';
 
-/** Prepare coordinates for drawing only; the source reaction and its atom maps stay unchanged. */
+/** Prepare coordinates for drawing only; the source reaction and its atom maps stay unchanged. RDKit's, as the reaction
+ * renderer's drawing is. */
 export function prepareReactionDepiction(
   rdkit: RDModule, reaction: string, molblocks: Map<string, string>,
 ): string | null {

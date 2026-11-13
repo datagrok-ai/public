@@ -8,54 +8,18 @@
 import {Page} from '@playwright/test';
 import {Given, When} from '@datagrok-libraries/bdd';
 import {type ElementRef, atFeatureEnd, expect, gestures, locate, pollMs} from '@datagrok-libraries/bdd/runtime';
+import {keyOf, removedAndReadBack} from './campaign.js';
 
 declare const grok: any;
 declare const DG: any;
 
 const CAMPAIGNS = 'System:AppData/HitTriage/Hit Design/campaigns';
 
-/** Removes every campaign of the feature's key (`<key>-<n>`) — its folder and its rows in the hitdesign
- * database — and returns what is still there: '' once all of it is gone. */
-function removeCampaigns(page: Page, key: string): Promise<string> {
-  return page.evaluate(async ([root, k]) => {
-    const ids: string[] = (await grok.dapi.files.list(root))
-      .filter((f: any) => f.isDirectory && f.name.startsWith(`${k}-`)).map((f: any) => f.name);
-    for (const id of ids)
-      await grok.dapi.files.delete(`${root}/${id}`);
-    const conn = (await grok.dapi.connections.filter('name = "hitdesign"').list())
-      .find((c: any) => c.nqName === 'HitTriage:hitdesign');
-    const where = `app_name = 'Hit Design' and campaign_id like '${k}-%'`;
-    for (const table of ['update_logs', 'campaign_locks', 'campaign_vids'])
-      await conn.query('bdd-hit-design-cleanup', `delete from hitdesign.${table} where ${where} returning campaign_id`)
-        .apply();
-    const left: string[] = [];
-    for (const id of ids)
-      if (await grok.dapi.files.exists(`${root}/${id}`))
-        left.push(`folder ${id}`);
-    for (const table of ['update_logs', 'campaign_locks', 'campaign_vids']) {
-      const rows = (await conn.query('bdd-hit-design-cleanup', `select campaign_id from hitdesign.${table} where ${where}`)
-        .apply()).rowCount;
-      if (rows > 0)
-        left.push(`${rows} row(s) in hitdesign.${table}`);
-    }
-    return left.join(', ');
-  }, [CAMPAIGNS, key] as [string, string]);
-}
-
-async function removedAndReadBack(page: Page, name: string, key: string): Promise<void> {
-  let left = '';
-  await expect.poll(async () => left = await removeCampaigns(page, key),
-    {message: `the Hit Design campaign "${name}" removed from the share and the hitdesign database`, timeout: pollMs(30000)})
-    .toBe('').catch((e) => {
-      throw new Error(`the Hit Design campaign "${name}" is still on the server: ${left || e?.message}`);
-    });
-}
-
 export const campaignOnServer = Given('the Hit Design campaign {string} with a table of:',
   async (page: Page, name: string, table: string[][]) => {
-    const key = 'BDD' + name.replace(/[^A-Za-z]/g, '').toUpperCase();
-    await removedAndReadBack(page, name, key);
-    atFeatureEnd(page, () => removedAndReadBack(page, name, key));
+    const key = keyOf(name);
+    await removedAndReadBack(page, 'Hit Design', name, key);
+    atFeatureEnd(page, () => removedAndReadBack(page, 'Hit Design', name, key));
     await page.evaluate(async ([root, n, k, rows]) => {
       const id = `${k}-1`;
       const csv = rows.map((r) => r.join(',')).join('\n') + '\n';
@@ -67,13 +31,43 @@ export const campaignOnServer = Given('the Hit Design campaign {string} with a t
       }
       await grok.dapi.files.writeAsText(`${root}/${id}/enriched_table.csv`, csv);
       await grok.dapi.files.writeAsText(`${root}/${id}/campaign.json`, JSON.stringify({
-        name: id, friendlyName: n, templateName: n, status: 'In Progress', createDate: '2026/10/15', campaignFields: {},
+        name: id, friendlyName: n, templateName: n, status: 'In Progress', createDate: '2999/12/31', campaignFields: {},
         columnSemTypes: semTypes, columnTypes: types, rowCount: rows.length - 1, filteredRowCount: rows.length - 1,
         savePath: `System.AppData/HitTriage/Hit Design/campaigns/${id}/enriched_table.csv`, version: 1,
         template: {name: n, key: k, campaignFields: [], stages: ['Design'],
           compute: {descriptors: {enabled: false, args: []}, functions: [], scripts: [], queries: []}}}));
     }, [CAMPAIGNS, name, key, table] as [string, string, string, string[][]]);
-  }, {tier: 'api', description: 'a campaign of that friendly name made through the JS API, its id "BDD" and the name\'s letters ("BDDBDDCOLUMNS-1"): its table the rows given (the first one the header), its template embedded (no compute, one "Design" stage); removed at feature end with its rows in the hitdesign database, read back, and swept the same way before it is made'});
+    await showFirstOnLanding(page);
+  }, {tier: 'api', description: 'a campaign of that friendly name made through the JS API, its id "BDD" and the name\'s letters ("BDDBDDCOLUMNS-1"): its table the rows given (the first one the header), its template embedded (no compute, one "Design" stage), created 2999/12/31 so the landing sorted newest first lists it at the top; removed at feature end with its rows in the hitdesign database, read back, and swept the same way before it is made'});
+
+/* The landing lists the campaigns the page read once (the package caches the list for the page) and keeps its
+   columns, grouping and sorting in the browser: a campaign made for a feature is listed only once the page drops its
+   copy, and is in view at the top of a table sorted by Created, newest first, with no grouping. The landing's
+   settings are put back at feature end. */
+const LANDING_SETTINGS = /^HDCampaign|^Accordion:Hit-Design-campaigns-group-/;
+
+async function showFirstOnLanding(page: Page): Promise<void> {
+  const saved: [string, string][] = await page.evaluate((re) => {
+    const keys = Object.keys(localStorage).filter((k) => new RegExp(re).test(k));
+    const out = keys.map((k) => [k, localStorage.getItem(k) ?? ''] as [string, string]);
+    for (const k of keys)
+      localStorage.removeItem(k);
+    localStorage.setItem('HDCampaignsTableSorting', JSON.stringify({columnName: 'Created', ascending: false}));
+    const cache = (window as any).hittriage?._package?.campaignsCache;
+    if (cache)
+      delete cache['Hit Design'];
+    return out;
+  }, LANDING_SETTINGS.source);
+  atFeatureEnd(page, () => page.evaluate(([re, back]) => {
+    for (const k of Object.keys(localStorage).filter((k) => new RegExp(re).test(k)))
+      localStorage.removeItem(k);
+    for (const [k, v] of back)
+      localStorage.setItem(k, v);
+    const cache = (window as any).hittriage?._package?.campaignsCache;
+    if (cache)
+      delete cache['Hit Design'];
+  }, [LANDING_SETTINGS.source, saved] as [string, [string, string][]]));
+}
 
 /** The Tags input of the Column Properties dialog is a key and value per row, with an empty row only
  * when the column has no tags: a new tag goes into that row, else into the one the first row's "+"

@@ -9,14 +9,14 @@ import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {getMCS} from '../utils/most-common-subs';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {getUncommonAtomsAndBonds} from '../utils/chem-common';
-import {isCruxRequested} from '../engine/chem-engine';
-import {cruxOrRdKitAsync} from '../engine/fallback';
+import {byEngineAsync, isCruxRequested} from '../engine/chem-engine';
 import {getCruxService} from '../crux/crux-searches';
 
 const canvasWidth = 200;
 const canvasHeight = 100;
 
-const cachedData: DG.LruCache<String, any> = new DG.LruCache<string, string>();
+/** Each pair's {@link cliffMcs}, by {@link pairKey}. */
+const cachedData = new DG.LruCache<string, string | ISubstruct[] | null>();
 /** A pair's key in {@link cachedData}: per engine (Crux mode's MCES, RDKit's FMCS), so that a switch computes it
  * again. */
 const pairKey = (molecule1: string, molecule2: string) =>
@@ -39,7 +39,8 @@ export function findMcsAndUpdateDrawings(params: ITooltipAndPanelParams, hosts: 
   drawMolecules(params, hosts, [molecule1, molecule2]);
 }
 
-async function drawMoleculesWithMcsAsync(params: ITooltipAndPanelParams, hosts: HTMLElement[], molecules: [string, string]) {
+async function drawMoleculesWithMcsAsync(params: ITooltipAndPanelParams, hosts: HTMLElement[],
+  molecules: [string, string]) {
   const key = pairKey(molecules[0], molecules[1]);
   const mcs = await cliffMcs(molecules);
   cachedData.set(key, mcs);
@@ -59,17 +60,16 @@ export async function cliffMcs(molecules: [string, string]): Promise<string | IS
     mcsDf.columns.addNewString('smiles').init((i) => molecules[i]);
     return getMCS(mcsDf.col('smiles')!, true, true);
   };
-  if (!isCruxRequested())
-    return fmcs();
-  return cruxOrRdKitAsync<string | ISubstruct[] | null>('activity cliffs MCS',
+  return byEngineAsync<string | ISubstruct[] | null>('activity cliffs MCS',
     async () => (await getCruxService()).pairUncommonAtomsAndBonds(molecules[0], molecules[1]), fmcs);
 }
 
 function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[], molecules: [string, string]) {
+  // a SMARTS is FMCS's (cliffMcs' RDKit side), highlighted on RDKit's module; Crux's MCES gives each molecule's atoms
   const rdkit = PackageFunctions.getRdKitModule();
   let mcsMol: RDMol | null = null;
   const mcsGenerated = cachedData.has(pairKey(molecules[0], molecules[1]));
-  const mcs: string | ISubstruct[] | null = cachedData.get(pairKey(molecules[0], molecules[1]));
+  const mcs = cachedData.get(pairKey(molecules[0], molecules[1])) ?? null;
   try {
     if (mcsGenerated && typeof mcs === 'string')
       mcsMol = rdkit.get_qmol(mcs);
@@ -154,7 +154,6 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
 function drawPropPanelElement(params: ITooltipAndPanelParams, element: HTMLDivElement,
   hosts: HTMLDivElement[], molIdx: number, idx: number, vertical?: boolean) {
   const activity = ui.divText(params.activityCol.get(molIdx).toFixed(2));
-  activity.style.paddingLeft = '15px';
   activity.style.paddingLeft = '10px';
   const molHost = ui.div([], 'chem-activity-cliffs-molecule');
   molHost.setAttribute('role', 'button');

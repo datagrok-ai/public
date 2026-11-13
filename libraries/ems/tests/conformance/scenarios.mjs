@@ -1,12 +1,5 @@
-/* What every domain backend must answer the same way (holistic review 4, A4). One module, two
-   harnesses: `tests/backend-conformance.test.js` runs it headless over `MemoryTable`, and U2Demo's
-   `U2: domain conformance` runs it on the stand over the platform's `DomainTable`. A backend that
-   drifts from the other is a red test here, not a surprise in the browser.
-
-   The fixture both harnesses build: table `folder` — `code` (string, required, the business key),
-   `name` (string, the name column), `parent_id` (ref → `folder`), `hierarchy: true`, soft delete
-   on. Plain ESM importing NOTHING, so a package with no u2 link can run it too. */
-
+// plain ESM importing nothing, so a package with no u2 link can run it too. The fixture both harnesses build: `folder`
+// with `code` (required, business key), `name` (name column), `parent_id` (ref → folder), hierarchy, soft delete
 /** @type {import('./scenarios.d.ts').ConformanceScenario[]} */
 export const scenarios = [
   {

@@ -1,7 +1,7 @@
 // Pure state transitions of the charted-value selection: single pick, multi-value mode,
 // and reconciliation when targets change. Transitions return the same object on a no-op.
 
-import {CandidateOverrides, ComparisonTarget, candidateId} from './types';
+import {CandidateOverrides, ColumnCandidate, ColumnTarget, ComparisonTarget, candidateId} from './types';
 
 export interface TargetSelection {
   selectedKey: string;
@@ -63,6 +63,43 @@ export function reconcileTargets(state: TargetSelection, keys: Set<string>): Tar
   if (next.multiMode && !keys.has(next.selectedKey) && kept.length > 0)
     next = {...next, selectedKey: kept[0]};
   return next;
+}
+
+/** The charted targets in chart order: the anchor first, then list order; targets of another kind are left out. */
+export function chartedTargets(state: TargetSelection, targets: ComparisonTarget[]): ComparisonTarget[] {
+  const anchor = targets.find((target) => target.key === state.selectedKey);
+  if (!anchor)
+    return [];
+  if (!state.multiMode)
+    return [anchor];
+  const selected = targets.filter((target) => target.kind === anchor.kind && state.multiKeys.includes(target.key));
+  const anchorIndex = selected.indexOf(anchor);
+  if (anchorIndex > 0)
+    selected.unshift(...selected.splice(anchorIndex, 1));
+  return selected;
+}
+
+/**
+ * Radio semantics: enabling a candidate makes it the run's pick and disables the run's
+ * other enabled candidates; disabling one leaves the run out of the target.
+ */
+export function withCandidateEnabled(
+  overrides: CandidateOverrides, target: ColumnTarget, candidate: ColumnCandidate, enabled: boolean,
+): CandidateOverrides {
+  const next = {...overrides[target.key]};
+  if (enabled) {
+    for (const other of target.candidates) {
+      if (other !== candidate && other.enabled && other.binding.entryId === candidate.binding.entryId)
+        next[candidateId(other.binding)] = false;
+    }
+  }
+  next[candidateId(candidate.binding)] = enabled;
+  return {...overrides, [target.key]: next};
+}
+
+export function withoutTargetOverrides(overrides: CandidateOverrides, targetKey: string): CandidateOverrides {
+  const {[targetKey]: _removed, ...rest} = overrides;
+  return rest;
 }
 
 /** Drops overrides whose target or candidate no longer resolves. */

@@ -7,6 +7,8 @@ import type {ComparisonEntry} from './types';
 /** Runs to load and entries to add; the model joins the model list, and is selected on request. */
 export interface ComparisonAddition {
   runIds?: string[];
+  // the names the runs go by here; a run with none keeps its saved name
+  runNames?: Map<string, string>;
   entries?: ComparisonEntry[];
   model?: DG.Func;
   selectModel?: boolean;

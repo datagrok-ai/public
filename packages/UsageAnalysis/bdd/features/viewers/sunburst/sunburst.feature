@@ -15,7 +15,9 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
   F | Asian 7, M | Caucasian 416, M | Other 14, M | Black 9, M | Asian 8.
   Translated from the TestTrack case Charts/sunburst. In ae.csv AESTDTC is a string column (its
   values are not parsed as dates), so the date column claimed missing is AEENDTC, as in the md. An
-  empty value's sector is `segment S_PART | (empty)` (github-2992).
+  empty value's sector is `segment S_PART | (empty)` (github-2992). The rows a Filter click filtered
+  out come back when On Click goes back to Select, when the sunburst is closed (public#4425) and when
+  the column of the clicked segment is removed (core#1174).
 
   Background:
     Given user is logged in
@@ -137,7 +139,8 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     And no rows where "RACE" is "Asian" should be selected
     And no errors should have been logged
 
-  Scenario: On Click = Filter; a double-click on empty space and Reset View clear it (github-2994, github-3097)
+  @realizes:public#4425
+  Scenario: On Click = Filter; a double-click on empty space and Reset View clear it, and so does a switch back to Select (github-2994, github-3097, public#4425)
     Given "Misc" category in context panel is expanded
     When user presses Escape in grid
     And user selects "Filter" in "On Click" property in context panel
@@ -153,8 +156,11 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     And the filter should pass exactly the rows where "SEX" is "M"
     When user picks "Reset View" from the context menu of the "view" area of sunburst viewer
     Then 1000 rows should pass the filter
+    When user clicks on the "segment F" area of sunburst viewer
+    Then 553 rows should pass the filter
     When user selects "Select" in "On Click" property in context panel
-    Then the "on click" reading of sunburst viewer should be "Select"
+    Then 1000 rows should pass the filter
+    And the "on click" reading of sunburst viewer should be "Select"
     And "Row Source" property in context panel should contain text "Filtered"
     And no errors should have been logged
 
@@ -203,7 +209,8 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     And the "rows of segment S_PART" reading of sunburst viewer should be 10
     And no errors should have been logged
 
-  Scenario: The viewer's filter and the Filter Panel combine (GROK-15543)
+  @realizes:core#1174 @realizes:public#4425
+  Scenario: The viewer's filter and the Filter Panel combine (GROK-15543); removing the clicked column or closing the viewer gives the rows back (core#1174, public#4425)
     Given "Misc" category in context panel is expanded
     When user selects "Filter" in "On Click" property in context panel
     And user clicks on the "segment F" area of sunburst viewer
@@ -217,7 +224,12 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     And user clicks on close of "RACE" filter card
     Then 553 rows should pass the filter
     And the filter should pass exactly the rows where "SEX" is "F"
-    When user double-clicks on empty plot space of sunburst viewer
+    When user scrolls the grid to the "SEX" column
+    And user picks "Remove" from the context menu of the "header SEX" area of grid
+    Then 1000 rows should pass the filter
+    When user clicks on the "segment Caucasian" area of sunburst viewer
+    Then 896 rows should pass the filter
+    When user clicks on close icon of sunburst viewer
     Then 1000 rows should pass the filter
     And no errors should have been logged
 

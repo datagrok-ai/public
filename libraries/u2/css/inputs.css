@@ -132,10 +132,10 @@ textarea.u2-input-editor,
 }
 
 /* read-only: the value stays readable and selectable; input-base.ts stops the gestures that would
-   change it, and the side controls take no pointer */
-.u2-input-readonly .u2-input-options,
-.u2-input-readonly .u2-input-clear,
-.u2-input-readonly input[type='range'] {
+   change it, and the side controls that edit take no pointer. A range keeps it: its value shows only
+   in the hover tooltip */
+.u2-input-readonly .u2-input-options > .u2-input-edit-option,
+.u2-input-readonly .u2-input-clear {
   pointer-events: none;
 }
 
@@ -205,6 +205,41 @@ textarea.u2-input-editor {
   padding: 0;
 }
 
+/* as wide as the platform input in it, so the verdict wraps under it instead of clipping beside it */
+.u2-input-root[data-u2='dart-input'] > .u2-input-box {
+  flex: 0 1 auto;
+}
+
+/* `fill: true` stretches a bridged input across its row, as it does a u2 one: the platform root inside grows, and
+   its editor with it (ui.css gives the editor flex: 1 already) */
+.u2-input-root.u2-input-fill[data-u2='dart-input'] > .u2-input-box,
+.u2-input-root.u2-input-fill[data-u2='dart-input'] > .u2-input-box > .ui-input-root {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* a bridged input's own caption carries the required asterisk, hanging as u2's own does */
+.u2-input-required[data-u2='dart-input'] .ui-input-label::after {
+  content: '*';
+  margin-left: var(--dg-space-xs);
+  color: var(--dg-error);
+}
+
+.u2-form:not(.u2-form-captions-left):not(.u2-form-tall) .u2-input-required[data-u2='dart-input'] .ui-input-label {
+  position: relative;
+  overflow: visible;
+}
+
+.u2-form:not(.u2-form-captions-left):not(.u2-form-tall) .u2-input-required[data-u2='dart-input'] .ui-input-label::after {
+  position: absolute;
+  left: 100%;
+  margin-left: 1px;
+}
+
+.u2-input-root[data-u2='dart-input'] .d4-input-molecule-canvas-hint {
+  color: var(--dg-text-color-light);
+}
+
 /* a whole line of its own under the editor, whatever room is left beside it: the editors are as
    wide as the platform pins them, so a message that fit beside a 100px color field but not beside a
    460px one would land off the pane on one row and under the field on the next. Long verdicts
@@ -238,6 +273,17 @@ textarea.u2-input-editor {
   display: inline-flex;
   align-items: center;
   min-width: 0;
+}
+
+/* Input.loading: the spinner (css/async.css) after the editor, once a load runs past the grace */
+.u2-input-loading {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-left: var(--dg-space-s);
+}
+
+.u2-input-loading[hidden] {
+  display: none;
 }
 
 /* a captioned editor gives way before it drops under its caption, as the platform's row never
@@ -409,7 +455,7 @@ textarea.u2-input-editor {
   padding: 0;
   font-size: var(--dg-font-size-xs);
   line-height: 1;
-  color: var(--dg-text-color-light);
+  color: var(--dg-accent);
   visibility: hidden;
   background: none;
   border: none;
@@ -423,8 +469,7 @@ textarea.u2-input-editor {
 }
 
 .u2-input-clear:hover {
-  color: var(--dg-text-color);
-  background: var(--dg-hover-subtle);
+  color: var(--dg-accent-secondary);
 }
 
 .u2-input-clear[hidden] {
@@ -939,13 +984,19 @@ textarea.u2-list-area {
 
 .u2-aggregations-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--dg-space-s);
 }
 
+/* in a narrow host the aggregation and the + and − go under the column instead of over its edge */
 .u2-aggregations-row > .u2-input-root {
-  flex: 1;
+  flex: 1 1 96px;
   min-width: 0;
+}
+
+.u2-aggregations-row > .u2-input-root:nth-child(2) {
+  flex: 0 0 72px;
 }
 
 /* property editor (u2/dg): the identity form and the type-dependent one under it, a form row apart
@@ -996,6 +1047,10 @@ textarea.u2-list-area {
   background: var(--dg-selection-bg);
 }
 
+.u2-suggest-option-current {
+  font-weight: var(--dg-font-weight-bold);
+}
+
 .u2-suggest-loading,
 .u2-suggest-empty,
 .u2-suggest-error,
@@ -1005,6 +1060,21 @@ textarea.u2-list-area {
   gap: var(--dg-space-m);
   padding: var(--dg-space-xs) var(--dg-space-m);
   color: var(--dg-text-color-light);
+}
+
+.u2-suggest-footer {
+  /* in view while the rows scroll */
+  position: sticky;
+  bottom: 0;
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+  background: var(--dg-bg);
+  border-top: var(--dg-border-width) solid var(--dg-border-subtle);
+}
+
+.u2-suggest-footer[hidden] {
+  display: none;
 }
 
 .u2-suggest-retry {

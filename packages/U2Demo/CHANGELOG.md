@@ -2,6 +2,22 @@
 
 ## v.next
 
+* Inputs: Added the Chained choices sub-demo: five choices, each loading its options from every pick above it from a mock 500 ms server, beside the code that builds them
+* FuncCalls, Functions: Changed Run to wait while a field's choices or computed default load ("Wait for Level3 to load"), so a run never takes a pick that a reload is about to clear
+* FuncCalls: Fixed a red balloon from the deliberately broken `seed` default staying after leaving the page: the default is given to the u2 form alone and shown on its field, and the page puts the function's default back when it closes
+* FuncCalls: Fixed the W4 Run gate never blocking: `cylinders` is now registered required (`nullable = false`), as the page says
+* FuncCalls, Functions: Changed Run to be off with its reason ("Fill Email to run", "The form is still building"), as u2 buttons are, instead of a bare `disabled`, which u2 reports where it is strict
+* TableView chrome: The campaign view's ribbon group is built under the view's host, so it no longer fails with a u2 `owner-missing` error where u2 is strict; the package tests build what they make after an `await` under an owner of their own
+* u2: Moved to the u2 v1 API: plain input values, off states with a reason (the Catalog's disabled samples, the menu's Delete), owners as receivers, the `@datagrok-libraries/u2/dg` entry point
+* Tests: Added the package test category "u2/dg: affordance parity": every platform `ui.input.X` with a u2/dg twin (file, files, folder, file on a connection, table, column, columns, user, group, molecule, choice, date), and the twin must offer the platform input's accessible affordances
+* Source panel: Fixed the Records, Dialogs and TableView chrome pages showing "Not bundled": every module of `src/` and `src/pages/` is bundled as text through one context, so a page added there needs no listing
+* Inputs: Added the Records sub-demo (u2 `RecordsInput`, `ChecklistInput`): a template's fields and orderable stages edited in place, a failing row named in the verdict, and the functions to run in order
+* Containers: Added the Dialogs sub-demo: `confirm()` with work that takes a moment, a sized and a resizable dialog, the first focus past read-only fields, required asterisks, the access grid's one-line headers
+* Platform: Added the TableView chrome sub-demo (u2/dg `ViewHost`: `ribbon`, `signals`, `build`, `show`): a campaign view whose ribbon group folds into "…", the crumb back, Save left off, a status line following the current row and a progress tracker pinned to the view
+
+* Collections: Added the Catalog table sub-demo (u2 `CatalogTable`) over 50 made-up campaigns: double-click sorting, groups with counts, the columns menu with a Campaign Fields submenu, row actions by access with a view-only mark, the context menu, the first load, a refresh that brings a campaign made elsewhere, and the empty and error states
+* Display: Added the App header sub-demo (u2 `AppHeader`, the app home's hero): the default and the titled header, link items and Learn more as an action
+* Filters: Apply, Run and Count are off while the query box or the builder refuses the condition (an unfinished regex among them), the refusal as their tooltip
 * u2: Stopped importing u2's stylesheets; u2 installs its stylesheet once per page
 * Shell: Added a ribbon Show navigation toggle that brings back the 148px nav rail when the pane is too narrow and the nav has folded away
 * Shell: The nav is now 180px wide and keeps that width across window resizes; double-clicking the sash resets it

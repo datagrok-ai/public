@@ -74,7 +74,7 @@ The Export Invariant Map command is shared by both SAR viewers (Sequence Variabi
 
 - **Setup composition.** SAR is launched via the top-menu entry path, mirroring sibling `export-mutation-cliffs.md`. The context-panel `Launch SAR` button entry path is owned by `sar.md`, so this scenario avoids duplicating that coverage.
 - **No related bugs.** No curated bug currently anchors the Export Invariant Map surface.
-- **See:** `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Table View`; `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Sequence Variability Map`.
+- **See:** `help/datagrok/solutions/domains/bio/peptides-sar.md#Table View`; `help/datagrok/solutions/domains/bio/peptides-sar.md#Sequence Variability Map`.
 
 ## Original trailing metadata
 

@@ -40,28 +40,28 @@ export class RadioInput extends Input<string | null, RadioInputOptions> {
   set itemTooltips(x: Record<string, string> | undefined) {
     this.options.itemTooltips = x ?? undefined;
     this._fill();
-    this._apply(this.value.peek());
+    this._apply(this.peek());
   }
 
   /** Replaces the item list, keeping the current value if it is still one of the items. */
   setItems(items: string[]): void {
     this._items = items;
     this._fill();
-    const value = this.value.peek();
-    this.value.value = value != null && items.includes(value) ? value : null;
-    this._apply(this.value.peek());
+    const value = this.peek();
+    this.value = value != null && items.includes(value) ? value : null;
+    this._apply(this.peek());
   }
 
   /** One item per radio, keyed by its value, the chosen one checked. */
   getItems(opts?: {all?: boolean}): IItemsState {
-    const value = this.value.peek();
+    const value = this.peek();
     return Input.itemsState(this._items.map((item, index) =>
       ({key: item, label: item, index, checked: item === value, rendered: true})), opts?.all);
   }
 
   /** The chosen item. */
   protected displayText(): string {
-    return this.value.peek() ?? '';
+    return this.peek() ?? '';
   }
 
   protected createEditor(): HTMLElement {
@@ -77,9 +77,9 @@ export class RadioInput extends Input<string | null, RadioInputOptions> {
 
     this.scope.listen(group, 'change', () => {
       const checked = this._radios.find((r) => r.checked);
-      this.value.value = checked ? checked.value : null;
+      this.value = checked ? checked.value : null;
     });
-    this.effect(() => this._apply(this.value.value));
+    this.effect(() => this._apply(this.value));
     return group;
   }
 
@@ -107,7 +107,7 @@ export class RadioInput extends Input<string | null, RadioInputOptions> {
       this._group.append(row);
       this._radios.push(radio);
     }
-    this.refreshEnabled();
+    this.refreshDisabled();
   }
 
   private _apply(value: string | null): void {

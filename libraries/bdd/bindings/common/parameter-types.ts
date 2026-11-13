@@ -1,10 +1,8 @@
-/* Custom parameter types the step expressions use. `{element}` is deliberately permissive — any
-   phrase — because resolution (registry → kind → error) is the compiler's job, with a proper
-   diagnostic, not the regex's. The Cucumber VS Code extension needs the same list in its
-   `cucumber.parameterTypes` setting (see README). */
 import {defineParameterType} from '../../src/registry.js';
 import {STATES} from '../../src/states.js';
 
+// the VS Code extension's `cucumber.parameterTypes` setting needs the same list (README); `{element}` takes any
+// phrase on purpose: resolving it is the compiler's job, with a proper diagnostic, not the regex's
 defineParameterType({name: 'element', regexp: /.+?/, description: 'an element phrase: "<qualifier> <kind>", a registered name, "X in Y"'});
 defineParameterType({name: 'dataset', regexp: /[\w./:-]+?/, description: 'a registered dataset alias or a platform path'});
 defineParameterType({name: 'viewer', regexp: /[\w -]+?/, description: 'a viewer type by its friendly name'});

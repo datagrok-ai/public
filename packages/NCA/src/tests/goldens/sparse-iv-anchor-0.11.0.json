@@ -1,0 +1,667 @@
+{
+ "sciCompVersion": "0.11.0",
+ "runs": {
+  "iv-fixture IV-bolus": {
+   "groups": [
+    {
+     "groupKey": "DOSE=1",
+     "route": "IV-bolus",
+     "topology": "destructive",
+     "aucLast": 8.170954042660432,
+     "aucSe": 0.828257770013284,
+     "aucDf": 5.461219546033323,
+     "aucCi": [
+      6.0948125049204975,
+      10.247095580400366
+     ],
+     "aucCiMethod": "Bailer",
+     "cmax": 6.901566666666667,
+     "tmax": 0.08299999684095383,
+     "aucInf": 8.500540706972739,
+     "lambdaZ": 0.4050517508495824,
+     "halfLife": 1.7112558558408708,
+     "cl": 1.9606595911005402,
+     "vz": 0.29043097633644926,
+     "mrt": 2.51339564355213,
+     "vss": 0.2956747964856479,
+     "clAbs": 0.0029436036094113746,
+     "vzAbs": 0.007267228454727737,
+     "vssAbs": 0.007398440488238875,
+     "pctExtrap": 0.009800033732782027,
+     "lambdaZR2": 0.9999999987432804,
+     "lambdaZAdjR2": 0.9999999974865608,
+     "spanRatio": 9.349858436065352,
+     "lambdaZNPoints": 3,
+     "verdict": "Flagged",
+     "bootstrapAucExploratory": {
+      "estimate": 8.170954042660432,
+      "ciLow": 7.1520203741087585,
+      "ciHigh": 9.41499550691473,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCmax": {
+      "estimate": 6.901566666666667,
+      "ciLow": 6.7094,
+      "ciHigh": 7.043,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapHalfLife": {
+      "estimate": 1.7112558558408708,
+      "ciLow": 0.8672303592264763,
+      "ciHigh": 1.921741255546831,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCl": {
+      "estimate": 1.9606595911005402,
+      "ciLow": 1.710124238831732,
+      "ciHigh": 2.2310365405412775,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "warnings": [
+      {
+       "code": "SPARSE_TERMINAL_OVEREST",
+       "message": "The terminal phase is steep with a wide last-interval gap; the linear-trapezoidal rule may over-estimate AUC over a convex decline (no t½ supplied; terminal mean < 20% Cmax). Interpret AUClast with care."
+      },
+      {
+       "code": "SPARSE_PER_KG_WEIGHT_BASED",
+       "message": "Per-kg composite CL, Vz and Vss assume every animal received the same dose per kg (dose per kg ÷ AUC of the mean concentration curve)."
+      },
+      {
+       "code": "SPARSE_COMPOSITE_BW",
+       "message": "CL abs., Vz abs. and Vss abs. use the group-mean body weight (0.025 kg) — the composite pools animals of differing BW (Phoenix/PKNCA convention). Supply an absolute mg dose (doseMgCol) to bypass body-weight normalization."
+      },
+      {
+       "code": "SPARSE_IV_BOLUS_C0_ANCHOR",
+       "message": "IV bolus: AUClast (8.171) and its SE are integrated from (0, 0); AUCinf, %AUCextrap, CL, Vz, MRT and Vss come from the composite curve that starts at the back-extrapolated C0, whose AUClast is 8.500."
+      },
+      {
+       "code": "SPARSE_BOOTSTRAP_AUC_EXPLORATORY",
+       "message": "The bootstrap AUC CI is exploratory — not for regulatory use. The closed-form Holder/Bailer CI is the AUC headline (NFR-04/05)."
+      }
+     ]
+    },
+    {
+     "groupKey": "DOSE=2",
+     "route": "IV-bolus",
+     "topology": "destructive",
+     "aucLast": 18.55612766,
+     "aucSe": 2.0516546653447323,
+     "aucDf": 8.072124950864126,
+     "aucCi": [
+      13.832351596214703,
+      23.2799037237853
+     ],
+     "aucCiMethod": "Bailer",
+     "cmax": 12.016766666666667,
+     "tmax": 0.25,
+     "aucInf": 20.84197694446335,
+     "lambdaZ": 0.277664413925768,
+     "halfLife": 2.496348634525612,
+     "cl": 1.599336445969359,
+     "vz": 0.3455977141666268,
+     "mrt": 2.4309517164649597,
+     "vss": 0.23327458071205087,
+     "clAbs": 0.0024744019672654285,
+     "vzAbs": 0.008911483946685892,
+     "vssAbs": 0.006015151709548166,
+     "pctExtrap": 0.08025821476053337,
+     "lambdaZR2": 0.9966565367465714,
+     "lambdaZAdjR2": 0.9949848051198571,
+     "spanRatio": 8.812871606045011,
+     "lambdaZNPoints": 4,
+     "verdict": "Accepted",
+     "bootstrapAucExploratory": {
+      "estimate": 18.55612766,
+      "ciLow": 15.669462190215706,
+      "ciHigh": 21.67621383209801,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCmax": {
+      "estimate": 12.016766666666667,
+      "ciLow": 9.413169735572524,
+      "ciHigh": 14.464666666666668,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapHalfLife": {
+      "estimate": 2.496348634525612,
+      "ciLow": 1.8554329029192924,
+      "ciHigh": 2.8786763044422927,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCl": {
+      "estimate": 1.599336445969359,
+      "ciLow": 1.3734366518298649,
+      "ciHigh": 1.8935503607804174,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "warnings": [
+      {
+       "code": "SPARSE_TERMINAL_OVEREST",
+       "message": "The terminal phase is steep with a wide last-interval gap; the linear-trapezoidal rule may over-estimate AUC over a convex decline (no t½ supplied; terminal mean < 20% Cmax). Interpret AUClast with care."
+      },
+      {
+       "code": "SPARSE_PER_KG_WEIGHT_BASED",
+       "message": "Per-kg composite CL, Vz and Vss assume every animal received the same dose per kg (dose per kg ÷ AUC of the mean concentration curve)."
+      },
+      {
+       "code": "SPARSE_COMPOSITE_BW",
+       "message": "CL abs., Vz abs. and Vss abs. use the group-mean body weight (0.026 kg) — the composite pools animals of differing BW (Phoenix/PKNCA convention). Supply an absolute mg dose (doseMgCol) to bypass body-weight normalization."
+      },
+      {
+       "code": "SPARSE_IV_BOLUS_C0_ANCHOR",
+       "message": "IV bolus: AUClast (18.56) and its SE are integrated from (0, 0); AUCinf, %AUCextrap, CL, Vz, MRT and Vss come from the composite curve that starts at the back-extrapolated C0, whose AUClast is 20.83."
+      },
+      {
+       "code": "SPARSE_BOOTSTRAP_AUC_EXPLORATORY",
+       "message": "The bootstrap AUC CI is exploratory — not for regulatory use. The closed-form Holder/Bailer CI is the AUC headline (NFR-04/05)."
+      }
+     ]
+    },
+    {
+     "groupKey": "DOSE=3",
+     "route": "IV-bolus",
+     "topology": "destructive",
+     "aucLast": 11.674534999999999,
+     "aucSe": 0.8918021687591213,
+     "aucDf": 7.962116422166687,
+     "aucCi": [
+      9.616331094773841,
+      13.732738905226157
+     ],
+     "aucCiMethod": "Bailer",
+     "cmax": 2.5411333333333332,
+     "tmax": 0.5,
+     "aucInf": 17.456121074164162,
+     "lambdaZ": 0.10999165534107491,
+     "halfLife": 6.301816064232818,
+     "cl": 2.8643247710971846,
+     "vz": 1.5624774964328811,
+     "mrt": 9.50223263874267,
+     "vss": 1.6330488196727277,
+     "clAbs": 0.004154907665737374,
+     "vzAbs": 0.03777475348337429,
+     "vssAbs": 0.0394808992323318,
+     "pctExtrap": 31.442949920993872,
+     "lambdaZR2": 0.8069449784606879,
+     "lambdaZAdjR2": 0.7425933046142505,
+     "spanRatio": 1.7455285726971053,
+     "lambdaZNPoints": 5,
+     "verdict": "Flagged",
+     "bootstrapAucExploratory": {
+      "estimate": 11.674534999999999,
+      "ciLow": 9.903091896485524,
+      "ciHigh": 12.811266523586417,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCmax": {
+      "estimate": 2.5411333333333332,
+      "ciLow": 2.2374666666666667,
+      "ciHigh": 2.9674333333333336,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapHalfLife": {
+      "estimate": 6.301816064232818,
+      "ciLow": 4.473144533550455,
+      "ciHigh": 10.561951756542609,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCl": {
+      "estimate": 2.8643247710971846,
+      "ciLow": 2.1632494683917893,
+      "ciHigh": 3.9473492718032106,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "warnings": [
+      {
+       "code": "SPARSE_PER_KG_WEIGHT_BASED",
+       "message": "Per-kg composite CL, Vz and Vss assume every animal received the same dose per kg (dose per kg ÷ AUC of the mean concentration curve)."
+      },
+      {
+       "code": "SPARSE_COMPOSITE_BW",
+       "message": "CL abs., Vz abs. and Vss abs. use the group-mean body weight (0.024 kg) — the composite pools animals of differing BW (Phoenix/PKNCA convention). Supply an absolute mg dose (doseMgCol) to bypass body-weight normalization."
+      },
+      {
+       "code": "SPARSE_IV_BOLUS_C0_ANCHOR",
+       "message": "IV bolus: AUClast (11.67) and its SE are integrated from (0, 0); AUCinf, %AUCextrap, CL, Vz, MRT and Vss come from the composite curve that starts at the back-extrapolated C0, whose AUClast is 11.97."
+      },
+      {
+       "code": "SPARSE_BOOTSTRAP_AUC_EXPLORATORY",
+       "message": "The bootstrap AUC CI is exploratory — not for regulatory use. The closed-form Holder/Bailer CI is the AUC headline (NFR-04/05)."
+      }
+     ]
+    },
+    {
+     "groupKey": "DOSE=4",
+     "route": "IV-bolus",
+     "topology": "destructive",
+     "aucLast": 34.899145,
+     "aucSe": 2.8414186545744875,
+     "aucDf": 10.620333842708499,
+     "aucCi": [
+      28.61783918109763,
+      41.180450818902365
+     ],
+     "aucCiMethod": "Bailer",
+     "cmax": 19.791333333333334,
+     "tmax": 0.25,
+     "aucInf": 38.814944779792526,
+     "lambdaZ": 0.32942434248983665,
+     "halfLife": 2.1041164575788147,
+     "cl": 1.7175515009717095,
+     "vz": 0.31282779311150005,
+     "mrt": 2.880474351099313,
+     "vss": 0.29684178271446815,
+     "clAbs": 0.0025660219424517333,
+     "vzAbs": 0.0077894120484763504,
+     "vssAbs": 0.007391360389590256,
+     "pctExtrap": 3.588317269868223,
+     "lambdaZR2": 0.8785414660951597,
+     "lambdaZAdjR2": 0.8633591493570547,
+     "spanRatio": 5.5842916667837885,
+     "lambdaZNPoints": 10,
+     "verdict": "Flagged",
+     "bootstrapAucExploratory": {
+      "estimate": 34.899145,
+      "ciLow": 30.69460905779024,
+      "ciHigh": 38.83953339081853,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCmax": {
+      "estimate": 19.791333333333334,
+      "ciLow": 15.430977304122942,
+      "ciHigh": 23.331333333333333,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapHalfLife": {
+      "estimate": 2.1041164575788147,
+      "ciLow": 1.6346400277150603,
+      "ciHigh": 2.3212365065965046,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCl": {
+      "estimate": 1.7175515009717095,
+      "ciLow": 1.5520269620512188,
+      "ciHigh": 1.986782294286506,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "warnings": [
+      {
+       "code": "SPARSE_TERMINAL_OVEREST",
+       "message": "The terminal phase is steep with a wide last-interval gap; the linear-trapezoidal rule may over-estimate AUC over a convex decline (no t½ supplied; terminal mean < 20% Cmax). Interpret AUClast with care."
+      },
+      {
+       "code": "SPARSE_PER_KG_WEIGHT_BASED",
+       "message": "Per-kg composite CL, Vz and Vss assume every animal received the same dose per kg (dose per kg ÷ AUC of the mean concentration curve)."
+      },
+      {
+       "code": "SPARSE_COMPOSITE_BW",
+       "message": "CL abs., Vz abs. and Vss abs. use the group-mean body weight (0.025 kg) — the composite pools animals of differing BW (Phoenix/PKNCA convention). Supply an absolute mg dose (doseMgCol) to bypass body-weight normalization."
+      },
+      {
+       "code": "SPARSE_IV_BOLUS_C0_ANCHOR",
+       "message": "IV bolus: AUClast (34.90) and its SE are integrated from (0, 0); AUCinf, %AUCextrap, CL, Vz, MRT and Vss come from the composite curve that starts at the back-extrapolated C0, whose AUClast is 37.42."
+      },
+      {
+       "code": "SPARSE_BOOTSTRAP_AUC_EXPLORATORY",
+       "message": "The bootstrap AUC CI is exploratory — not for regulatory use. The closed-form Holder/Bailer CI is the AUC headline (NFR-04/05)."
+      }
+     ]
+    }
+   ],
+   "fingerprints": [
+    "c2c96bde",
+    "c434ad52",
+    "e062d552",
+    "24598edc"
+   ]
+  },
+  "mouse PO": {
+   "groups": [
+    {
+     "groupKey": "DOSE=10",
+     "route": "PO",
+     "topology": "destructive",
+     "aucLast": 3.8210016380945846,
+     "aucSe": 0.7250832736643616,
+     "aucDf": 4.295270801068811,
+     "aucCi": [
+      1.8612691701790813,
+      5.780734106010088
+     ],
+     "aucCiMethod": "Bailer",
+     "cmax": 1.9750333251953123,
+     "tmax": 1,
+     "aucInf": 4.1558124144927895,
+     "lambdaZ": 0.22345955303170972,
+     "halfLife": 3.1018910185575517,
+     "cl": 40.10447297511336,
+     "vz": 10.768250208418447,
+     "mrt": 3.1092173669990952,
+     "vss": "NaN",
+     "clAbs": 0.07016277520223456,
+     "vzAbs": 0.31398422779570406,
+     "vssAbs": "NaN",
+     "pctExtrap": 8.056445840303116,
+     "lambdaZR2": 0.39949781645924165,
+     "lambdaZAdjR2": 0.09924672468886242,
+     "spanRatio": 3.2238398899811194,
+     "lambdaZNPoints": 4,
+     "verdict": "Flagged",
+     "bootstrapAucExploratory": {
+      "estimate": 3.8210016380945846,
+      "ciLow": 2.9499020201827286,
+      "ciHigh": 4.490063966444965,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCmax": {
+      "estimate": 1.9750333251953123,
+      "ciLow": 1.4050270628114345,
+      "ciHigh": 2.2934599609375,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapHalfLife": {
+      "estimate": 3.1018910185575517,
+      "ciLow": 1.1768193581332307,
+      "ciHigh": 11.848693918605873,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCl": {
+      "estimate": 40.10447297511336,
+      "ciLow": 26.811371504737586,
+      "ciHigh": 48.32645834096437,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "warnings": [
+      {
+       "code": "SPARSE_TERMINAL_OVEREST",
+       "message": "The terminal phase is steep with a wide last-interval gap; the linear-trapezoidal rule may over-estimate AUC over a convex decline (no t½ supplied; terminal mean < 20% Cmax). Interpret AUClast with care."
+      },
+      {
+       "code": "SPARSE_PER_KG_WEIGHT_BASED",
+       "message": "Per-kg composite CL, Vz and Vss assume every animal received the same dose per kg (dose per kg ÷ AUC of the mean concentration curve)."
+      },
+      {
+       "code": "SPARSE_COMPOSITE_BW",
+       "message": "CL abs., Vz abs. and Vss abs. use the group-mean body weight (0.029 kg) — the composite pools animals of differing BW (Phoenix/PKNCA convention). Supply an absolute mg dose (doseMgCol) to bypass body-weight normalization."
+      },
+      {
+       "code": "SPARSE_BOOTSTRAP_AUC_EXPLORATORY",
+       "message": "The bootstrap AUC CI is exploratory — not for regulatory use. The closed-form Holder/Bailer CI is the AUC headline (NFR-04/05)."
+      }
+     ]
+    },
+    {
+     "groupKey": "DOSE=50",
+     "route": "PO",
+     "topology": "destructive",
+     "aucLast": 28.918660166422526,
+     "aucSe": 6.460554209971009,
+     "aucDf": 2.7189289143272557,
+     "aucCi": [
+      7.10198602203554,
+      50.73533431080951
+     ],
+     "aucCiMethod": "Bailer",
+     "cmax": 9.86354345703125,
+     "tmax": 0.5,
+     "aucInf": 29.0331401300919,
+     "lambdaZ": 0.7631611974507738,
+     "halfLife": 0.90825789214035,
+     "cl": 28.702831646846583,
+     "vz": 2.2566266531414945,
+     "mrt": 1.8600624444863731,
+     "vss": "NaN",
+     "clAbs": 0.047646700944362616,
+     "vzAbs": 0.06243333794160305,
+     "vssAbs": "NaN",
+     "pctExtrap": 0.39430789489670115,
+     "lambdaZR2": 0.9909646012059581,
+     "lambdaZAdjR2": 0.9819292024119162,
+     "spanRatio": 6.606053249766687,
+     "lambdaZNPoints": 3,
+     "verdict": "Flagged",
+     "bootstrapAucExploratory": {
+      "estimate": 28.918660166422526,
+      "ciLow": 20.636686062645477,
+      "ciHigh": 42.06611526412255,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCmax": {
+      "estimate": 9.86354345703125,
+      "ciLow": 6.5110173321995735,
+      "ciHigh": 12.690072916666665,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapHalfLife": {
+      "estimate": 0.90825789214035,
+      "ciLow": 0.6118636690111482,
+      "ciHigh": 1.1752952662655842,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCl": {
+      "estimate": 28.702831646846583,
+      "ciLow": 19.364155866754036,
+      "ciHigh": 37.54667846670021,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "warnings": [
+      {
+       "code": "SPARSE_TERMINAL_OVEREST",
+       "message": "The terminal phase is steep with a wide last-interval gap; the linear-trapezoidal rule may over-estimate AUC over a convex decline (no t½ supplied; terminal mean < 20% Cmax). Interpret AUClast with care."
+      },
+      {
+       "code": "SPARSE_PER_KG_WEIGHT_BASED",
+       "message": "Per-kg composite CL, Vz and Vss assume every animal received the same dose per kg (dose per kg ÷ AUC of the mean concentration curve)."
+      },
+      {
+       "code": "SPARSE_COMPOSITE_BW",
+       "message": "CL abs., Vz abs. and Vss abs. use the group-mean body weight (0.028 kg) — the composite pools animals of differing BW (Phoenix/PKNCA convention). Supply an absolute mg dose (doseMgCol) to bypass body-weight normalization."
+      },
+      {
+       "code": "SPARSE_BOOTSTRAP_AUC_EXPLORATORY",
+       "message": "The bootstrap AUC CI is exploratory — not for regulatory use. The closed-form Holder/Bailer CI is the AUC headline (NFR-04/05)."
+      }
+     ]
+    }
+   ],
+   "fingerprints": [
+    "da23afc9",
+    "f2c82fa2"
+   ]
+  },
+  "mouse IV-bolus": {
+   "groups": [
+    {
+     "groupKey": "DOSE=10",
+     "route": "IV-bolus",
+     "topology": "destructive",
+     "aucLast": 3.8210016380945846,
+     "aucSe": 0.7250832736643616,
+     "aucDf": 4.295270801068811,
+     "aucCi": [
+      1.8612691701790813,
+      5.780734106010088
+     ],
+     "aucCiMethod": "Bailer",
+     "cmax": 1.9750333251953123,
+     "tmax": 1,
+     "aucInf": 4.317457835838818,
+     "lambdaZ": 0.22345955303170972,
+     "halfLife": 3.1018910185575517,
+     "cl": 38.602963364964936,
+     "vz": 10.365087419508182,
+     "mrt": 2.992808412828658,
+     "vss": 6.931876411127012,
+     "clAbs": 0.06753588414930355,
+     "vzAbs": 0.30222867285391897,
+     "vssAbs": 0.20212196224985732,
+     "pctExtrap": 7.754812881297221,
+     "lambdaZR2": 0.39949781645924165,
+     "lambdaZAdjR2": 0.09924672468886242,
+     "spanRatio": 3.2238398899811194,
+     "lambdaZNPoints": 4,
+     "verdict": "Flagged",
+     "bootstrapAucExploratory": {
+      "estimate": 3.8210016380945846,
+      "ciLow": 2.9499020201827286,
+      "ciHigh": 4.490063966444965,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCmax": {
+      "estimate": 1.9750333251953123,
+      "ciLow": 1.4050270628114345,
+      "ciHigh": 2.2934599609375,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapHalfLife": {
+      "estimate": 3.1018910185575517,
+      "ciLow": 1.2027658609891452,
+      "ciHigh": 10.554529735594548,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCl": {
+      "estimate": 38.602963364964936,
+      "ciLow": 26.483247044563175,
+      "ciHigh": 47.18421893165697,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "warnings": [
+      {
+       "code": "SPARSE_TERMINAL_OVEREST",
+       "message": "The terminal phase is steep with a wide last-interval gap; the linear-trapezoidal rule may over-estimate AUC over a convex decline (no t½ supplied; terminal mean < 20% Cmax). Interpret AUClast with care."
+      },
+      {
+       "code": "SPARSE_PER_KG_WEIGHT_BASED",
+       "message": "Per-kg composite CL, Vz and Vss assume every animal received the same dose per kg (dose per kg ÷ AUC of the mean concentration curve)."
+      },
+      {
+       "code": "SPARSE_COMPOSITE_BW",
+       "message": "CL abs., Vz abs. and Vss abs. use the group-mean body weight (0.029 kg) — the composite pools animals of differing BW (Phoenix/PKNCA convention). Supply an absolute mg dose (doseMgCol) to bypass body-weight normalization."
+      },
+      {
+       "code": "SPARSE_IV_BOLUS_C0_ANCHOR",
+       "message": "IV bolus: AUClast (3.821) and its SE are integrated from (0, 0); AUCinf, %AUCextrap, CL, Vz, MRT and Vss come from the composite curve that starts at the back-extrapolated C0, whose AUClast is 3.983."
+      },
+      {
+       "code": "SPARSE_BOOTSTRAP_AUC_EXPLORATORY",
+       "message": "The bootstrap AUC CI is exploratory — not for regulatory use. The closed-form Holder/Bailer CI is the AUC headline (NFR-04/05)."
+      }
+     ]
+    },
+    {
+     "groupKey": "DOSE=50",
+     "route": "IV-bolus",
+     "topology": "destructive",
+     "aucLast": 28.918660166422526,
+     "aucSe": 6.460554209971009,
+     "aucDf": 2.7189289143272557,
+     "aucCi": [
+      7.10198602203554,
+      50.73533431080951
+     ],
+     "aucCiMethod": "Bailer",
+     "cmax": 9.86354345703125,
+     "tmax": 0.5,
+     "aucInf": 29.787091790248155,
+     "lambdaZ": 0.7631611974507738,
+     "halfLife": 0.90825789214035,
+     "cl": 27.97632408029018,
+     "vz": 2.1995083744095676,
+     "mrt": 1.8129817432923772,
+     "vss": 3.0432338881198198,
+     "clAbs": 0.04644069837348621,
+     "vzAbs": 0.06085306554973502,
+     "vssAbs": 0.0841961382968785,
+     "pctExtrap": 0.3843274277177128,
+     "lambdaZR2": 0.9909646012059581,
+     "lambdaZAdjR2": 0.9819292024119162,
+     "spanRatio": 6.606053249766687,
+     "lambdaZNPoints": 3,
+     "verdict": "Flagged",
+     "bootstrapAucExploratory": {
+      "estimate": 28.918660166422526,
+      "ciLow": 20.636686062645477,
+      "ciHigh": 42.06611526412255,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCmax": {
+      "estimate": 9.86354345703125,
+      "ciLow": 6.5110173321995735,
+      "ciHigh": 12.690072916666665,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapHalfLife": {
+      "estimate": 0.90825789214035,
+      "ciLow": 0.6118636690111482,
+      "ciHigh": 1.1752952662655842,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "bootstrapCl": {
+      "estimate": 27.97632408029018,
+      "ciLow": 19.072412610338695,
+      "ciHigh": 36.18891574013785,
+      "method": "BCa",
+      "suppressed": false
+     },
+     "warnings": [
+      {
+       "code": "SPARSE_TERMINAL_OVEREST",
+       "message": "The terminal phase is steep with a wide last-interval gap; the linear-trapezoidal rule may over-estimate AUC over a convex decline (no t½ supplied; terminal mean < 20% Cmax). Interpret AUClast with care."
+      },
+      {
+       "code": "SPARSE_PER_KG_WEIGHT_BASED",
+       "message": "Per-kg composite CL, Vz and Vss assume every animal received the same dose per kg (dose per kg ÷ AUC of the mean concentration curve)."
+      },
+      {
+       "code": "SPARSE_COMPOSITE_BW",
+       "message": "CL abs., Vz abs. and Vss abs. use the group-mean body weight (0.028 kg) — the composite pools animals of differing BW (Phoenix/PKNCA convention). Supply an absolute mg dose (doseMgCol) to bypass body-weight normalization."
+      },
+      {
+       "code": "SPARSE_IV_BOLUS_C0_ANCHOR",
+       "message": "IV bolus: AUClast (28.92) and its SE are integrated from (0, 0); AUCinf, %AUCextrap, CL, Vz, MRT and Vss come from the composite curve that starts at the back-extrapolated C0, whose AUClast is 29.67."
+      },
+      {
+       "code": "SPARSE_BOOTSTRAP_AUC_EXPLORATORY",
+       "message": "The bootstrap AUC CI is exploratory — not for regulatory use. The closed-form Holder/Bailer CI is the AUC headline (NFR-04/05)."
+      }
+     ]
+    }
+   ],
+   "fingerprints": [
+    "db9a19f2",
+    "3cfb3d20"
+   ]
+  }
+ }
+}

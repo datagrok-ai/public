@@ -254,7 +254,7 @@ Expected:
   notebooks.service.get-notebook, notebooks.service.delete-notebook,
   notebooks.service.get-notebooks-filtered, notebooks.service.get-notebooks-count,
   notebooks.meta.open-tables-in-notebook, notebooks.meta.new-notebook.
-- See: public/help/compute/jupyter-notebook.md#Create a notebook
-- See: public/help/compute/jupyter-notebook.md#Apply existing notebooks into tables
+- See: help/compute/jupyter-notebook.md#Create a notebook
+- See: help/compute/jupyter-notebook.md#Apply existing notebooks into tables
 - # atlas entry derived from source: core/shared/grok_shared/lib/src/notebook.dart#L110
 - # atlas entry derived from source: core/server/datlas/lib/src/repositories/notebooks_repository.dart#L14

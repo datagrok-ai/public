@@ -4,7 +4,6 @@ import * as grok from 'datagrok-api/grok';
 
 import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
-import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {adjustGridcolAfterRender, updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
@@ -113,7 +112,8 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
       workingLength,
       Math.min(workingLength, this.limit),
       (i1: number, i2: number) => {
-        return distanceMatrixData[linearizeFunc(i1, i2)];
+        // the matrix holds the upper triangle only: its index needs i1 < i2
+        return distanceMatrixData[i1 < i2 ? linearizeFunc(i1, i2) : linearizeFunc(i2, i1)];
       }
     );
 

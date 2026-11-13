@@ -21,3 +21,14 @@ export declare function inchiFromInput(input: Uint8Array | null | undefined): Pr
  * @throws a `SketchError` (the promise rejects) as `inchiFromInput` does when the module cannot be loaded or has failed.
  */
 export declare function inchiKeyFromInchi(inchi: string): Promise<string>;
+/**
+ * The molecule of an InChI: RDKit's `MolFromInchi` (sanitized, its hydrogens removed) as RDKit's canonical SMILES of it,
+ * by the page's InChI module, loaded on the first call that needs it (spike inchi-to-mol): what Datagrok Chem's InChI
+ * converter gives (`Chem.MolToSmiles(Chem.MolFromInchi(id))`), the SMILES written under the new stereo perception.
+ *
+ * @returns `''` for `''` (which loads nothing).
+ * @throws a `SketchError` (the promise rejects), `format: 'inchi'`: for an InChI the library makes no structure of, an
+ *   InChIKey (a hash: no structure can be made of it), a structure RDKit cannot sanitize; as `inchiFromInput` does when the
+ *   module cannot be loaded or has failed.
+ */
+export declare function inchiToMol(inchi: string): Promise<string>;

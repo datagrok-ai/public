@@ -53,6 +53,19 @@
   --dg-hover-subtle: var(--dg-grey-1);
   --dg-selection-bg: #DCEAF8;
   --dg-selection-text: var(--dg-accent);
+  /* the grid's row states as d4 paints them (GridLook) */
+  --dg-grid-current-row: rgba(0, 255, 0, 0.196);
+  --dg-grid-selected-row: rgba(220, 220, 80, 0.196);
+  --dg-grid-mouse-over-row: rgba(184, 211, 237, 0.196);
+  --dg-grid-mouse-over-stripe: #48A6F2;
+  /* a table's row and header states, each to read apart from the others (scripts/check-tokens.mjs); hover and
+     current are tints laid over the base */
+  --u2-row-base-bg: var(--dg-bg);
+  --u2-row-hover-bg: var(--dg-grid-mouse-over-row);
+  --u2-row-hover-stripe: var(--dg-grid-mouse-over-stripe);
+  --u2-row-current-bg: var(--dg-grid-current-row);
+  --u2-row-selected-bg: var(--dg-selection-bg);
+  --u2-section-header-bg: var(--dg-bg-secondary);
   --dg-border: var(--dg-grey-2);
   --dg-border-subtle: var(--dg-grey-1);
   --dg-focus: var(--dg-blue-1);

@@ -4,7 +4,7 @@
    hidden and disabled inputs (P79) — and no definite-assignment field in a class whose
    createEditor runs inside the base constructor (P18). */
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {readFileSync, readdirSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
@@ -65,24 +65,83 @@ smoke('readOnly: native readOnly and aria-readonly on a text editor; the class; 
   input.dispose();
 });
 
+smoke('loading: busy at once, the spinner past the grace, the input usable throughout; live; a short load never blinks', async () => {
+  const grace = Input.loadingGraceMs;
+  Input.loadingGraceMs = 30;
+  try {
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const loading = signal(true);
+    const input = mount(new ChoiceInput({label: 'City', items: ['Paris'], value: 'Paris', loading}));
+    const spinner = () => input.root.querySelector('.u2-input-loading');
+    assert.equal(input.root.getAttribute('aria-busy'), 'true');
+    assert.equal(state(input.root).busy, true);
+    assert.equal(spinner(), null, 'no spinner inside the grace');
+    await sleep(60);
+    assert.equal(spinner()?.hidden, false, 'the spinner past the grace');
+    assert.ok(spinner().querySelector('.u2-loader-spinner'));
+    assert.equal(state(input.root).enabled, true, 'a loading input stays usable');
+    assert.equal(input.peek(), 'Paris', 'and keeps its value');
+    loading.value = false;
+    assert.equal(input.root.hasAttribute('aria-busy'), false);
+    assert.equal(spinner().hidden, true);
+    loading.value = true;
+    loading.value = false;
+    await sleep(60);
+    assert.equal(spinner().hidden, true, 'a load that ended inside the grace showed nothing');
+    input.loading = true;
+    input.dispose();
+    await sleep(60);
+    assert.equal(spinner().hidden, true, 'disposing cancels the pending spinner');
+  } finally {
+    Input.loadingGraceMs = grace;
+  }
+});
+
 smoke('readOnly: a checkbox, a switch and a number stepper ignore the user', async () => {
   const box = mount(new BoolInput({label: 'Active', value: false, readOnly: true}));
   fire(box.root.querySelector('input'), 'click');
   box.root.querySelector('input').click();
-  assert.equal(box.value.peek(), false, 'the box does not toggle');
+  assert.equal(box.peek(), false, 'the box does not toggle');
   const sw = mount(new BoolInput({label: 'On', value: false, switch: true, readOnly: true}));
   fire(sw.root.querySelector('[role="switch"]'), 'click');
   fire(sw.root.querySelector('[role="switch"]'), 'keydown', {key: ' '});
   fire(sw.root.querySelector('[role="switch"]'), 'keydown', {key: 'Enter'});
-  assert.equal(sw.value.peek(), false, 'the switch does not toggle');
+  assert.equal(sw.peek(), false, 'the switch does not toggle');
   const n = mount(new NumberInput({label: 'Count', value: 5, readOnly: true}));
   const field = n.root.querySelector('.u2-number-box input');
   assert.equal(field.readOnly, true);
   const step = fire(field, 'keydown', {key: 'ArrowUp'});
   assert.equal(step, false, 'the stepping key is cancelled');
-  assert.equal(n.value.peek(), 5);
+  assert.equal(n.peek(), 5);
   box.dispose();
   sw.dispose();
+  n.dispose();
+});
+
+smoke('readOnly: an option the caller adds works, one marked `edits` and the clicker do not', async () => {
+  const input = mount(new TextInput({label: 'Path', value: 'a/b', readOnly: true}));
+  let downloads = 0;
+  let picks = 0;
+  const download = document.createElement('button');
+  download.append(document.createElement('i'));
+  download.addEventListener('click', () => downloads++);
+  const pick = document.createElement('button');
+  pick.addEventListener('click', () => picks++);
+  input.addOptions(download);
+  input.addOptions(pick, {edits: true});
+  assert.equal(fire(download.firstChild, 'click'), true, 'a click on the glyph inside reaches the button');
+  assert.equal(downloads, 1);
+  assert.equal(fire(download, 'keydown', {key: ' '}), true, 'Space on it is not cancelled');
+  assert.equal(fire(pick, 'click'), false);
+  assert.equal(picks, 0, 'an editing option is stopped');
+  assert.equal(pick.classList.contains('u2-input-edit-option'), true, 'the class read-only takes the pointer from');
+  input.readOnly = false;
+  fire(pick, 'click');
+  assert.equal(picks, 1, 'editable again, it works');
+  const n = mount(new NumberInput({label: 'Count', value: 5, clicker: true, readOnly: true}));
+  fire(n.root.querySelector('.u2-number-click'), 'click');
+  assert.equal(n.peek(), 5, 'the clicker edits: read-only stops it');
+  input.dispose();
   n.dispose();
 });
 
@@ -99,11 +158,15 @@ smoke('required: aria-required; an empty value is invalid, shown only once touch
   assert.equal(s.error, null, 'state.error is what the user sees');
   assert.equal(s.required, true);
   fire(editor, 'focusout');
+  assert.equal(input.root.querySelector('[data-u2-part="error"]').textContent, '',
+    'focused from code and left, nobody was in it');
+  fire(editor, 'pointerdown');
+  fire(editor, 'focusout');
   assert.equal(input.root.querySelector('[data-u2-part="error"]').textContent, EMPTY, 'leaving it shows it');
   assert.equal(editor.getAttribute('aria-invalid'), 'true');
   s = state(input.root);
   assert.equal(s.error, EMPTY);
-  input.value.value = 'Ada';
+  input.value = 'Ada';
   assert.equal(input.validity.peek(), null);
   assert.equal(Input.isEmpty([]), true);
   assert.equal(Input.isEmpty(undefined), true);
@@ -111,14 +174,41 @@ smoke('required: aria-required; an empty value is invalid, shown only once touch
   input.dispose();
 });
 
-smoke('required: an added validator speaks first; the required verdict only when it has nothing to say', async () => {
+smoke('required: the required check speaks first; a validator judges only a value there is', async () => {
+  const seen = [];
   const input = mount(new TextInput({label: 'Code', required: true, value: 'x'}));
-  input.addValidator((v) => v === 'x' ? 'Not x' : null);
+  input.addValidator((v) => {
+    seen.push(v);
+    return /^\d+$/.test(v) ? null : 'Digits only';
+  });
   input.touch();
-  assert.equal(input.validity.peek(), 'Not x');
-  input.value.value = '';
-  assert.equal(input.validity.peek(), EMPTY);
+  assert.equal(input.validity.peek(), 'Digits only');
+  input.value = '';
+  assert.equal(input.validity.peek(), EMPTY, 'empty: the required verdict, not the format check');
+  input.value = '  ';
+  assert.equal(input.validity.peek(), EMPTY, 'blank text is empty');
+  assert.deepEqual([...new Set(seen)], ['x'], 'the validator never saw the empty or the blank value');
+  input.value = '42';
+  assert.equal(input.validity.peek(), null);
+  const optional = mount(new TextInput({label: 'Note'}));
+  optional.addValidator((v) => v === '' ? 'Say something' : null);
+  assert.equal(optional.validity.peek(), 'Say something', 'not required: the validators judge an empty value');
   input.dispose();
+  optional.dispose();
+});
+
+smoke('required: blank text is empty in the text kinds, and only there', async () => {
+  const name = mount(new TextInput({label: 'Name', required: true, value: ' \t '}));
+  assert.equal(name.validity.peek(), EMPTY);
+  assert.equal(name.root.classList.contains('u2-input-empty'), true);
+  const notes = mount(new TextArea({label: 'Notes', nullable: false, value: '\n\n'}));
+  assert.equal(notes.validity.peek(), EMPTY, 'nullable: false refuses blank text too');
+  name.value = ' Ada ';
+  assert.equal(name.validity.peek(), null);
+  const pick = mount(new ChoiceInput({label: 'Pick', items: [' ', 'a'], value: ' ', required: true}));
+  assert.equal(pick.validity.peek(), null, 'a choice of a blank item is a choice');
+  for (const x of [name, notes, pick])
+    x.dispose();
 });
 
 smoke('nullable: false is required: a cleared NumberInput fails after touch', async () => {
@@ -126,10 +216,24 @@ smoke('nullable: false is required: a cleared NumberInput fails after touch', as
   const field = input.root.querySelector('.u2-number-box input');
   field.value = '';
   fire(field, 'input');
-  assert.equal(input.value.peek(), null);
+  assert.equal(input.peek(), null);
   assert.equal(input.validity.peek(), EMPTY);
   assert.equal(input.root.querySelector('[data-u2-part="error"]').textContent, EMPTY, 'an edit touches it');
   input.dispose();
+});
+
+smoke('required: an editor holding text it cannot read is not empty — its own check speaks', async () => {
+  const n = mount(new NumberInput({label: 'Age', required: true}));
+  const field = n.root.querySelector('.u2-number-box input');
+  field.value = 'abc';
+  fire(field, 'input');
+  assert.equal(n.peek(), null);
+  assert.equal(n.validity.peek(), 'Not a number');
+  assert.equal(n.root.classList.contains('u2-input-empty'), false);
+  field.value = '';
+  fire(field, 'input');
+  assert.equal(n.validity.peek(), EMPTY);
+  n.dispose();
 });
 
 smoke('focus() lands on the focus target; a multi choice focuses its first box', async () => {
@@ -143,24 +247,63 @@ smoke('focus() lands on the focus target; a multi choice focuses its first box',
   multi.dispose();
 });
 
+smoke('focus({select}) selects the text a text editor holds; elsewhere it only focuses', async () => {
+  const input = mount(new TextInput({label: 'Name', value: 'Ada Lovelace'}));
+  const editor = editorOf(input);
+  let selected = 0;
+  editor.select = () => selected++;
+  input.focus();
+  assert.equal(selected, 0, 'a plain focus leaves the caret');
+  input.focus({select: true});
+  assert.equal(document.activeElement, editor);
+  assert.equal(selected, 1);
+  const box = mount(new BoolInput({label: 'Active'}));
+  const check = box.root.querySelector('input');
+  check.select = () => selected++;
+  box.focus({select: true});
+  assert.equal(document.activeElement, check);
+  assert.equal(selected, 1, 'a checkbox has no text to select');
+  input.dispose();
+  box.dispose();
+});
+
 smoke('onEnter/onEscape: called with the event and the input, the key kept from the document', async () => {
   const seen = [];
   const onDocument = (e) => seen.push(`document ${e.key}`);
   document.addEventListener('keydown', onDocument);
   try {
     const input = mount(new TextInput({label: 'Name', value: 'Ada',
-      onEnter: (e, it) => seen.push(`enter ${it.value.peek()} ${e.defaultPrevented}`),
+      onEnter: (e, it) => seen.push(`enter ${it.peek()} ${e.key}`),
       onEscape: (e, it) => seen.push(`escape ${it === input}`)}));
-    const n = mount(new NumberInput({label: 'Count', value: 1, onEnter: (_, it) => seen.push(`number ${it.value.peek()}`)}));
-    fire(editorOf(input), 'keydown', {key: 'Enter'});
+    const n = mount(new NumberInput({label: 'Count', value: 1, onEnter: (_, it) => seen.push(`number ${it.peek()}`)}));
+    assert.equal(fire(editorOf(input), 'keydown', {key: 'Enter'}), false, 'the default is prevented');
     fire(editorOf(input), 'keydown', {key: 'Escape'});
     fire(editorOf(input), 'keydown', {key: 'a'});
     const field = n.root.querySelector('.u2-number-box input');
     field.value = '7';
     fire(field, 'keydown', {key: 'Enter'});
-    assert.deepEqual(seen, ['enter Ada true', 'escape true', 'document a', 'number 7']);
+    assert.deepEqual(seen, ['enter Ada Enter', 'escape true', 'document a', 'number 7']);
     input.dispose();
     n.dispose();
+  } finally {
+    document.removeEventListener('keydown', onDocument);
+  }
+});
+
+smoke('onEnter/onEscape: a handler answering false declines the key, which goes on to the form or dialog', async () => {
+  const seen = [];
+  const onDocument = (e) => seen.push(`document ${e.key}`);
+  document.addEventListener('keydown', onDocument);
+  try {
+    const input = mount(new TextInput({label: 'Name', value: '',
+      onEnter: (_, it) => it.peek() !== '' ? undefined : false,
+      onEscape: () => false}));
+    assert.equal(fire(editorOf(input), 'keydown', {key: 'Enter'}), true, 'declined: not prevented');
+    assert.equal(fire(editorOf(input), 'keydown', {key: 'Escape'}), true);
+    input.value = 'Ada';
+    assert.equal(fire(editorOf(input), 'keydown', {key: 'Enter'}), false, 'handled: kept');
+    assert.deepEqual(seen, ['document Enter', 'document Escape']);
+    input.dispose();
   } finally {
     document.removeEventListener('keydown', onDocument);
   }
@@ -202,14 +345,14 @@ smoke('commitOn change: a NumberInput writes on blur or Enter only, and shows th
   const field = input.root.querySelector('.u2-number-box input');
   field.value = '42';
   fire(field, 'input');
-  assert.equal(input.value.peek(), 1, 'typing does not write');
+  assert.equal(input.peek(), 1, 'typing does not write');
   assert.equal(field.value, '42');
   fire(field, 'blur');
-  assert.equal(input.value.peek(), 42, 'leaving writes');
+  assert.equal(input.peek(), 42, 'leaving writes');
   field.value = '43';
   fire(field, 'input');
   fire(field, 'keydown', {key: 'Enter'});
-  assert.equal(input.value.peek(), 43, 'Enter writes');
+  assert.equal(input.peek(), 43, 'Enter writes');
   input.dispose();
 });
 
@@ -219,7 +362,7 @@ smoke('commitOn input: a NumberInput keeps the text being typed ("1." stays)', a
   field.value = '1.';
   fire(field, 'input');
   await flush();
-  assert.equal(input.value.peek(), 1);
+  assert.equal(input.peek(), 1);
   assert.equal(field.value, '1.', 'the echo of the edit never rewrites the field');
   input.dispose();
 });
@@ -231,7 +374,7 @@ smoke('change event: on(\'change\') gets the new value and the input; the initia
     if (typeof x === 'string')
       got.push([x, it === input]);
   });
-  input.value.value = 'b';
+  input.value = 'b';
   assert.deepEqual(got, [['b', true]]);
   input.dispose();
 });
@@ -254,8 +397,8 @@ smoke('state: bool checked; choice, radio and multi choice items; multi choice t
   assert.equal(row.querySelector('[data-u2-part="item-label"]').textContent, 'slow');
   assert.equal(row.querySelector('input').dataset.value, 'slow');
   assert.equal(await radio.revealItem('fast'), radio.root.querySelector('[data-u2-item="fast"]'));
-  const multi = mount(new MultiChoiceInput({label: 'Targets', items: [{value: 'gpcr', label: 'GPCR'},
-    {value: 'kin', label: 'Kinase'}, {value: 'ion', label: 'Ion channel'}], value: ['kin', 'ion']}));
+  const multi = mount(testOwner().build(() => new MultiChoiceInput({label: 'Targets', items: [{value: 'gpcr', label: 'GPCR'},
+    {value: 'kin', label: 'Kinase'}, {value: 'ion', label: 'Ion channel'}], value: ['kin', 'ion']})));
   s = state(multi.root);
   assert.equal(s.text, 'Kinase, Ion channel');
   assert.deepEqual(s.selection, ['kin', 'ion']);
@@ -275,13 +418,13 @@ smoke('form: hidden and disabled invalid inputs do not fail it; validate() touch
   const name = new TextInput({label: 'Name', name: 'name', required: true});
   form.addAll([hidden, disabled, name]);
   hidden.visible = false;
-  disabled.enabled = false;
+  disabled.disabled = 'Not editable in this test';
   assert.equal(form.validity.peek(), EMPTY, 'the visible empty field fails the form');
   assert.equal(name.root.querySelector('[data-u2-part="error"]').textContent, '', 'untouched, nothing shown');
-  name.value.value = 'Ada';
+  name.value = 'Ada';
   assert.equal(form.validity.peek(), null, 'the hidden and the disabled ones do not');
   assert.equal(form.validate(), true);
-  name.value.value = '';
+  name.value = '';
   assert.equal(form.validate(), false);
   assert.equal(name.root.querySelector('[data-u2-part="error"]').textContent, EMPTY, 'validate() touched it');
   assert.equal(document.activeElement, editorOf(name));
@@ -292,7 +435,7 @@ smoke('form: hidden and disabled invalid inputs do not fail it; validate() touch
   assert.deepEqual(s.items.list.map((i) => [i.key, i.label, i.invalid ?? false, i.disabled ?? false]),
     [['hidden', 'Hidden', true, false], ['disabled', 'Disabled', true, true], ['name', 'Name', true, false]]);
   hidden.visible = true;
-  name.value.value = 'Ada';
+  name.value = 'Ada';
   assert.equal(form.validity.peek(), EMPTY, 'shown again, it counts');
   // an ancestor hidden by other means is seen on the next read
   const section = document.createElement('div');
@@ -311,7 +454,7 @@ smoke('form: an input built in a keyed row leaves the form with its row; remove(
   form.addElement(rows);
   const keys = signal(['R1', 'R2']);
   const owner = new Scope();
-  Scope.runWith(owner, () => each(rows, keys, (k) => k, (k) => {
+  owner.build(() => each(rows, keys, (k) => k, (k) => {
     const row = document.createElement('div');
     form.add(new TextInput({label: k, name: k, required: true}), row);
     return row;
@@ -320,7 +463,7 @@ smoke('form: an input built in a keyed row leaves the form with its row; remove(
   assert.equal(form.validity.peek(), EMPTY);
   keys.value = ['R1'];
   assert.deepEqual(form.inputs.map((i) => i.name), ['R1'], 'the dropped row took its input out');
-  form.inputs[0].value.value = 'H';
+  form.inputs[0].value = 'H';
   assert.equal(form.validity.peek(), null, 'the gone input no longer fails the form');
   const extra = new TextInput({label: 'Extra', name: 'extra', required: true});
   form.add(extra);
@@ -343,7 +486,7 @@ smoke('reset: a fresh start for another record — no waiting verdict, no unread
   name.reset('');
   assert.equal(name.root.querySelector('[data-u2-part="error"]').textContent, '', 'the new record has not been touched');
   name.reset('Ada');
-  assert.equal(name.value.value, 'Ada');
+  assert.equal(name.value, 'Ada');
   assert.deepEqual(changes, [], 'a reset is no edit');
   const id = mount(new NumberInput({label: 'ID', value: 0}));
   const editor = id.root.querySelector('input');
@@ -368,18 +511,18 @@ smoke('onInput: the user\'s own edits only — never a write from code, a reset,
   select.value = 'B';
   fire(select, 'change');
   assert.deepEqual(inputs, ['B'], 'a pick in the editor is the user\'s');
-  lib.value.value = 'C';
+  lib.value = 'C';
   lib.reset('A');
   const source = signal('B');
   lib.follow(() => source.value);
   source.value = 'C';
-  Input.system(() => lib.value.value = 'A');
+  Input.system(() => lib.value = 'A');
   assert.deepEqual(inputs, ['B'], 'code, reset, follow and system writes are not');
   assert.deepEqual(changes, ['B', 'C', 'A'], 'onChanged still hears the program\'s writes');
   assert.deepEqual(events, ['B']);
   const button = document.createElement('button');
   document.body.append(button);
-  button.addEventListener('click', () => lib.value.value = 'B');
+  button.addEventListener('click', () => lib.value = 'B');
   fire(button, 'click');
   assert.deepEqual(inputs, ['B'], 'a write made by a click elsewhere is the program\'s');
   lib.dispose();
@@ -393,7 +536,7 @@ smoke('onInput: the input\'s own pruning inside a user\'s event is not the user\
   lib.root.addEventListener('change', () => batch(() => lib.setItems(['A'])));
   select.value = 'B';
   fire(select, 'change');
-  assert.equal(lib.value.value, null, 'B left the list and was dropped');
+  assert.equal(lib.value, null, 'B left the list and was dropped');
   assert.deepEqual(inputs, ['B'], 'the pick was the user\'s; the drop that followed is the input\'s own');
   lib.dispose();
 });
@@ -402,12 +545,12 @@ smoke('choice items as a signal: followed live, and the value may come before it
   const libs = signal(['HELMCoreLibrary.json']);
   const lib = mount(new ChoiceInput({label: 'Library', items: libs}));
   const select = lib.root.querySelector('select');
-  lib.value.value = 'zz-new.json';
+  lib.value = 'zz-new.json';
   libs.value = ['HELMCoreLibrary.json', 'zz-new.json'];
-  assert.equal(lib.value.value, 'zz-new.json');
+  assert.equal(lib.value, 'zz-new.json');
   assert.equal(select.value, 'zz-new.json', 'selected once its item arrived');
   libs.value = ['HELMCoreLibrary.json'];
-  assert.equal(lib.value.value, null, 'a value whose item left is dropped');
+  assert.equal(lib.value, null, 'a value whose item left is dropped');
   lib.dispose();
 });
 
@@ -423,7 +566,7 @@ smoke('a decimal in a whole-number field says so', async () => {
   id.dispose();
 });
 
-smoke('error and touched: what the input shows — a required verdict waits for the touch, validity does not', async () => {
+smoke('error and touched: what the input shows — every verdict waits for the touch, validity does not', async () => {
   const name = mount(new TextInput({label: 'Name', required: true}));
   assert.equal(name.validity.value, EMPTY);
   assert.equal(name.error.value, null, 'a fresh form shows nothing');
@@ -435,9 +578,50 @@ smoke('error and touched: what the input shows — a required verdict waits for 
   assert.equal(name.error.value, null);
   const id = mount(new NumberInput({label: 'ID', value: 1}));
   id.addValidator((v) => v > 0 ? 'Positive is taken' : null);
-  assert.equal(id.error.value, 'Positive is taken', 'a validator speaks at once');
+  assert.equal(id.validity.value, 'Positive is taken', 'a validator judges at once');
+  assert.equal(id.error.value, null, 'and shows nothing before the touch');
+  const field = id.root.querySelector('.u2-number-box input');
+  field.value = '2';
+  fire(field, 'input');
+  assert.equal(id.error.value, 'Positive is taken', 'an edit shows it');
   name.dispose();
   id.dispose();
+});
+
+smoke('a form shows no verdict until a field is touched or the form validated; validity is there from the start', async () => {
+  const name = new TextInput({label: 'Name', name: 'name', required: true});
+  const code = new TextInput({label: 'Code', name: 'code', value: 'x'});
+  code.addValidator((v) => v === 'x' ? 'Not x' : null);
+  const form = mount(new Form().addAll([name, code]));
+  const shown = (input) => input.root.querySelector('[data-u2-part="error"]').textContent;
+  assert.equal(form.validity.value, EMPTY, 'Save goes by the verdict from the start');
+  assert.deepEqual([shown(name), shown(code), form.error.value], ['', '', null]);
+  const editor = code.root.querySelector('input');
+  fire(editor, 'keydown', {key: 'Tab'});
+  fire(editor, 'focusout');
+  assert.deepEqual([shown(name), shown(code)], ['', 'Not x'], 'only the field the user left');
+  assert.equal(form.validate(), false);
+  assert.deepEqual([shown(name), shown(code)], [EMPTY, 'Not x'], 'validate shows them all');
+  assert.equal(document.activeElement, name.root.querySelector('input'), 'and focuses the first offender');
+  form.dispose();
+  name.dispose();
+  code.dispose();
+});
+
+smoke('shownProblem names the verdict the form shows: the field the user left, not the first one untouched', async () => {
+  const name = new TextInput({label: 'Name', name: 'name', required: true});
+  const code = new TextInput({label: 'Code', name: 'code', value: 'x'});
+  code.addValidator((v) => v === 'x' ? 'Not x' : null);
+  const form = mount(new Form().addAll([name, code]));
+  assert.equal(form.problem.value, `Name: ${EMPTY}`, 'the first verdict, named');
+  assert.equal(form.shownProblem.value, null, 'nothing shown yet');
+  code.touch();
+  assert.equal(form.shownProblem.value, 'Code: Not x', 'the verdict shown, named');
+  name.touch();
+  assert.equal(form.shownProblem.value, `Name: ${EMPTY}`, 'the first of the verdicts shown');
+  form.dispose();
+  name.dispose();
+  code.dispose();
 });
 
 smoke('addOptions: a caller puts its own icon on an input\'s options rail', async () => {

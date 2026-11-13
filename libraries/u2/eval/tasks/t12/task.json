@@ -1,0 +1,9 @@
+{
+  "name": "owned-subscription",
+  "entry": "current-view-badge.ts",
+  "title": "A badge that follows a platform event and stops with its owner",
+  "source": "Guard matrix 'silent ownership' and C-1 (owner handling copied 5x): a platform subscription nobody ends keeps a dead control updating",
+  "bad": {
+    "bad-raw-subscribe": ["quiet-after-dispose", "stops-listening"]
+  }
+}

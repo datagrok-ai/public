@@ -1,8 +1,3 @@
-/* EMS's kind catalog: one entry per `data-u2` value EMS stamps, in u2's shape (u2
-   `src/core/kinds.ts`). The manifest generator turns it into this library's manifest `kinds`;
-   tests/kinds.test.js fails while a stamped value has no entry. Contract:
-   core/docs/features/ui2/CONTRACT.md §4, §5.8. */
-
 import type {U2KindDef, U2StateKey} from '@datagrok-libraries/u2';
 
 const INPUT_PARTS: Record<string, string> = {
@@ -32,6 +27,7 @@ function input(kind: string, noun: string, focusRole: string, state: U2StateKey[
 const PICK: Partial<U2KindDef> = {items: {role: 'option', noun: 'item', gestures: ['pick']},
   gestures: ['type', 'open', 'pick']};
 
+/** One entry per `data-u2` value EMS stamps; tests/kinds.test.js fails while one has none. */
 export const EMS_KINDS: readonly U2KindDef[] = [
   composite('domain-app', 'domain app'),
   composite('domain-children', 'domain children'),
@@ -52,13 +48,14 @@ export const EMS_KINDS: readonly U2KindDef[] = [
   composite('domain-tree', 'domain tree', ['busy', 'items', 'selection'],
     {items: {role: 'treeitem', noun: 'tree node', gestures: ['select', 'expand', 'collapse']},
       gestures: ['select', 'expand', 'collapse']}),
-  input('pick-input', 'pick input', 'combobox', ['value', 'text', 'valid', 'error', 'open', 'placeholder'], PICK),
   button('save-button'),
   button('discard-button'),
   button('new-button'),
   button('refresh-button'),
   {kind: 'actions-menu', noun: 'dropdown button', family: 'action', role: 'button', nameFrom: ['aria', 'title'],
     parts: {}, state: ['label', 'open'], gestures: ['press', 'open', 'pick']},
+  {kind: 'sort-menu', noun: 'dropdown button', aliases: ['sort'], family: 'action', role: 'button',
+    nameFrom: ['aria', 'title'], parts: {}, state: ['label', 'open'], gestures: ['press', 'open', 'pick']},
   composite('binding-dialog', 'binding dialog'),
   composite('binding-edit-dialog', 'binding edit dialog'),
   composite('manifest-editor', 'manifest editor'),

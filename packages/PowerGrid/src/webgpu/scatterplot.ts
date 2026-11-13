@@ -237,12 +237,12 @@ class ScatterPlotGPU extends ScatterRenderer {
     f.set(frame.origin, 8);
     f.set(frame.size, 10);
     f.set([mouse?.x ?? 0, mouse?.y ?? 0], 12);
-    f.set([frame.dpr, frame.opacity, frame.border, frame.markerSize], 14);
-    u.set([outColor ?? frame.color, frame.markerType, frame.selectedColor], 18);
-    u[21] = (frame.rowColors && outColor == null ? FLAGS.rowColors : 0) | (frame.rowSizes ? FLAGS.rowSizes : 0) |
+    f.set([frame.dpr, frame.border, frame.markerSize], 14);
+    u.set([outColor ?? frame.color, frame.markerType, frame.selectedColor], 17);
+    u[20] = (frame.rowColors && outColor == null ? FLAGS.rowColors : 0) | (frame.rowSizes ? FLAGS.rowSizes : 0) |
       (frame.rowTypes ? FLAGS.rowTypes : 0) | (frame.selection && outColor == null ? FLAGS.selection : 0) |
       (frame.markerCache ? FLAGS.markerCache : 0);
-    u[22] = frame.rows[list];
+    u[21] = frame.rows[list];
     return buffer;
   }
 }

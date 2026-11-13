@@ -1,10 +1,10 @@
 ---
 name: bdd-answer
-description: Answer a "how do I …" question about the platform with a Gherkin scenario on @datagrok-libraries/bdd that is filmed into a how-to video (grok-bdd guide), so the answer is demonstrated, sent as a video plus numbered steps, and kept as a regression test; the same scenarios, filmed in help mode, are the GIFs of the help pages
-when-to-use: When a user or customer asks how to do something in Datagrok, when support wants a walkthrough video or GIF for a question, or when a help page needs a GIF recorded or replaced
+description: Answer a "how do I …" question about the platform with a Gherkin scenario on @datagrok-libraries/bdd that is filmed into a how-to video (grok-bdd guide), so the answer is demonstrated, sent as a video plus numbered steps, and kept as a regression test; the same scenarios, filmed in help mode, are the GIFs of the help pages, and filmed in demo mode (@demo) the clips of a showcase video
+when-to-use: When a user or customer asks how to do something in Datagrok, when support wants a walkthrough video or GIF for a question, when a help page needs a GIF recorded or replaced, or when a showcase video of a feature area is wanted (demo clips)
 context: fork
 effort: medium
-argument-hint: "<the question, or a features/guides/*.feature path> [<package>]"
+argument-hint: "<the question, a showcase to make, or a features/guides|demos/*.feature path> [<package>]"
 ---
 
 # Answering a question with a filmed scenario
@@ -83,7 +83,7 @@ What a guide shows, and what the runtime guarantees (`grok-bdd guide` sets it up
 2. Grep `features/` for a scenario that already does it — a test scenario often is the answer,
    only written for a checker rather than a reader. Prefer filming it as it is.
 3. Otherwise write `features/guides/<slug>.feature`: tag `@guide` (and `@help:<page dir>` when it
-   illustrates a help page under `public/help/`), a description that quotes the question, one
+   illustrates a help page under `help/`), a description that quotes the question, one
    scenario of 5–12 steps. Every `When` names the element a person would click, in the order they
    would; a `Then` after the decisive step shows the result. Step text is the caption of the video
    (`user clicks on X inside Y` → "Click on X in Y"), so it is written for the person asking; where a
@@ -150,7 +150,7 @@ strip or dimming, no zoom, and no set-up — every `Given` is left out, and the 
 before the first action and holds its result two seconds.
 
 1. **Write the feature** in `features/guides/` of the package that owns the area, tagged
-   `@guide @help:<page dir>` (the dir under `public/help/`), named by what it shows:
+   `@guide @help:<page dir>` (the dir under `help/`), named by what it shows:
    - one action and its result; set, then undone where the flow allows (a filter applied and reset,
      a column hidden and shown), ending where it started so the loop does not jump;
    - cause before effect: nothing changes on screen before the gesture that changes it;
@@ -166,11 +166,62 @@ before the first action and holds its result two seconds.
    `guide-thumb.png` and single frames at 800 px: nothing cut off, labels readable, cause before effect.
 3. **Film it on the stand the help is reviewed on**: `npx grok-bdd guide --help-pages` films every
    `@help:` feature of the package and puts each `<scenario slug>.gif` and `-thumb.png` into
-   `public/help/<page dir>/img/`. A GIF the page already has is not overwritten: the new one is
+   `help/<page dir>/img/`. A GIF the page already has is not overwritten: the new one is
    `<slug>.new.gif`, swapped in after the reviewer approves it; the old file goes only when nothing
-   else references it. `public/help` is the datagrok-ai/help submodule: the GIFs are committed there,
+   else references it. `help` is the datagrok-ai/help repository: the GIFs are committed there,
    the feature to `public`.
 4. **Leave the stand as it was.** What a feature makes goes at feature end (the library's rule), and a
    killed run's leftovers are swept by the fixture's own name family — so on a shared stand a fixture
    carries a name no person would use (the `BDD-` prefix). A step never saves a shared setting (stop
    before **Save and apply**).
+
+## 5. Demo clips
+
+A demo shows off what a feature can do, for a showcase video cut together from several clips: not a
+how-to, so no caption names each click and nothing a viewer would not want to watch is in it. A demo is
+a guide feature tagged `@guide @demo`, in `features/demos/` of the package that owns the area, one
+scenario per clip, filmed with the same `grok-bdd guide <feature>` (the tag films it as a demo;
+`--demo` films any guide so). What the runtime and the renderer do for it:
+
+- **A 1920×1080 video at 30 fps**, every clip, whatever its window — so clips cut together. The window is
+  1600×900 filmed at twice its density, the page 1.2× larger than on a 1080p screen; `@viewport:<w>x<h>` on
+  the feature picks another: `1920x1080` for a wide layout of many viewers, `1440x810` (1.33×) or `1280x720`
+  (1.5×) for a close-up (a monomer highlight, a small dialog). Keep it 16:9.
+- **A title card** over the first page, blurred: the feature's name small above, the scenario's name, and
+  the scenario's own description (the text under `Scenario:`; else the feature description's first
+  paragraph), all wrapped, never cut, for as long as they take to read (2.4–5.5 s). Write the description
+  as one or two sentences, 25 words at most.
+- **The shell with its sidebar only**: no Browse, Toolbox or Context Panel unless a step opens one, and no
+  unread-notification count.
+- **No caption strip, dimming or zoom**; every press still marked. A slightly quicker pace than a guide;
+  after each step the video rests as long as its change takes to take in (a ticked checkbox hardly at all,
+  a new view the longest, a tooltip long enough to read).
+- **Off camera**: every `Given` (and the `And`s after it) — wherever it stands in the scenario — and every
+  check (`Then`) the feature did not caption. Write the set-up a person never watches as `Given` steps in
+  the middle of the scenario where it is needed: `Given the "HELM" column of the grid is 600 px wide`,
+  `And the rows of the grid are 90 px tall`, `And the grid shows only the columns "a, b"`, `And the toolbox
+  pane is hidden`, `And the context panel is closed`, `And the notification balloons are closed`. A dialog
+  the clip has already walked through once runs again as `Given` steps too. What an action leads to is shown as the page the
+  steps after it settled on: an analysis that computes for seconds is cut to finished, its checks and the
+  column sizing after it included. So set-up that changes the page (another table, a dialog run again) follows
+  a note: a hover before it keeps its tooltip, and the note shows the page the set-up leads to.
+- **Text only where it explains**: `When the video says "Mutation cliffs: one substitution, a large jump in
+  activity"` puts a line over the page (at the bottom, or the top while the steps after it point down
+  there) for as long as it takes to read, over the steps that follow; a `# caption:` on a step does the
+  same from that step. A clip with no note at all is fine; one note per idea, under ten words where possible.
+- **Review**: `review-sheet.png` (the last frame of every step, its start and length) and `timeline.json`
+  next to `guide.mp4`. Read both, then single frames (`ffmpeg -ss <t> -i guide.mp4 -frames:v 1 x.png`) at
+  the moments that matter: a tooltip that must show, a result after a long computation, the end.
+- **A quiet stand**: nothing is published to it while clips are filmed. A package publish shows "<Pkg>
+  installed. Reload page" in every open page, and the clip filmed then carries it.
+- **The reel**: `py public/libraries/bdd/tool/guide-render.py --reel <out.mp4> <clip dir>…` (`python3` off
+  Windows) cuts the clips together in the order given, a clip dir being the `guides/<feature slug>/<scenario
+  slug>/` folder `grok-bdd guide` printed; each clip is also copied beside the reel as `NN - <scenario>.mp4`,
+  and `<out>.md` lists them with where each starts. The set is listed in that order in
+  `features/demos/INDEX.md` of the package that owns it (Bio's: the bioinformatics showcase, from four packages).
+
+What makes a good clip: one idea, 20–90 s; the data opened off camera unless opening it is the point (a
+file format: open the files from Browse); the window arranged off camera so the sequences and results are
+large; a tooltip on the monomer that matters (`user hovers over monomer 12 of the "cell 2 of sequence"
+area of grid`, Bio's step); a dialog walked through quickly and only through the choices that matter; the
+last frame showing the result. The clips of a set share their feature-name prefix, so their cards match.

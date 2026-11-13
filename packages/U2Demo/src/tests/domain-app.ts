@@ -7,7 +7,7 @@
    deleted afterwards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {Rows} from '@datagrok-libraries/u2';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {domains, DomainApp, DomainTable} from '@datagrok-libraries/ems/src/dg';
@@ -28,17 +28,14 @@ category('U2: domain app', () => {
   let alphaId: string;
 
   async function ready(src: DomainSource): Promise<void> {
-    for (let i = 0; i < 200 && (src.state.value === 'idle' || src.state.value === 'loading'); i++)
-      await delay(50);
+    await waitUntil(() => src.state.value !== 'idle' && src.state.value !== 'loading',
+      () => `source is ${src.state.value}: ${String(src.error.value)}`);
     if (src.state.value !== 'ready')
       throw new Error(`source is ${src.state.value}: ${String(src.error.value)}`);
   }
 
   async function until(check: () => boolean, what: string): Promise<void> {
-    for (let i = 0; i < 100 && !check(); i++)
-      await delay(50);
-    if (!check())
-      throw new Error(`timed out waiting for ${what}`);
+    await waitUntil(check, `timed out waiting for ${what}`, 5000);
   }
 
   const dialog = () => document.querySelector('.u2-dialog');
@@ -78,20 +75,16 @@ category('U2: domain app', () => {
     expect(app.list.root.querySelectorAll('.u2-list-row').length >= 2, true, 'rows rendered');
     expect(view.path, `${BASE}?q=${encodeURIComponent(query)}`);
     app.listSource.search.value = 'Beta';
-    await delay(100);
     await ready(app.listSource);
     expect(app.listSource.rows.items.value.map((r) => r.name).join(), 'Beta');
     app.listSource.search.value = '';
-    await delay(100);
     await ready(app.listSource);
     app.listSource.query.value = `${query} and quantity > 1`;
     expect(view.path.includes('?q='), true);
     expect(decodeURIComponent(view.path).endsWith('quantity > 1'), true);
-    await delay(100);
     await ready(app.listSource);
     expect(app.listSource.rows.items.value.map((r) => r.name).join(), 'Beta');
     app.listSource.query.value = query;
-    await delay(100);
     await ready(app.listSource);
   });
 
@@ -103,8 +96,9 @@ category('U2: domain app', () => {
     await ready(source);
     await until(() => app.form.value?.input('name') !== undefined, 'the form');
     expect(source.session === app.session, true, 'the entity source shares the session');
-    app.form.value!.input('name')!.value.value = 'Alpha A';
-    const kids = eventTable.source({query: `item_id = "${alphaId}"`, defaults: {item_id: alphaId}, session: app.session});
+    app.form.value!.input('name')!.value = 'Alpha A';
+    const kids = app.build(() =>
+      eventTable.source({query: `item_id = "${alphaId}"`, defaults: {item_id: alphaId}, session: app.session}));
     try {
       await ready(kids);
       const event = kids.newRow({kind: 'made', amount: 5});
@@ -128,7 +122,7 @@ category('U2: domain app', () => {
   test('Back through the gate: cancel keeps the page and the dirty state; the history pane lists the update', async () => {
     expect(app.page.value, 'entity');
     await until(() => app.form.value?.input('name') !== undefined, 'the form');
-    app.form.value!.input('name')!.value.value = 'Alpha B';
+    app.form.value!.input('name')!.value = 'Alpha B';
     expect(app.session.isDirty.value, true);
     const back = app.goTo('list');
     await until(() => dialog() !== null, 'the unsaved-changes dialog');
@@ -136,7 +130,7 @@ category('U2: domain app', () => {
     expect(await back, false);
     expect(app.page.value, 'entity');
     expect(app.session.isDirty.value, true);
-    expect(app.form.value!.input('name')!.value.value, 'Alpha B');
+    expect(app.form.value!.input('name')!.value, 'Alpha B');
     app.session.discard();
     expect(app.session.isDirty.value, false);
     const history = app.panes.querySelector('[data-u2="domain-history"]')!;
@@ -154,7 +148,7 @@ category('U2: domain app', () => {
     expect(view.path, `${BASE}?entity=${alphaId}`);
     await app.goTo('list');
     expect(DomainApp.activate(BASE, alphaId), true);
-    await delay(50);
+    await until(() => app.page.value === 'entity', 'the entity page');
     expect(grok.shell.v.dart === view.dart, true, 'the view comes to the front');
     expect(app.entity.value, alphaId);
     expect([...grok.shell.views].some((v) => v.dart === view.dart), true);
@@ -162,12 +156,12 @@ category('U2: domain app', () => {
 
   test('closing with pending changes asks first; dismiss keeps the view', async () => {
     await until(() => app.form.value?.input('name') !== undefined, 'the form');
-    app.form.value!.input('name')!.value.value = 'Alpha C';
+    app.form.value!.input('name')!.value = 'Alpha C';
     expect(app.session.isDirty.value, true);
     view.close();
     await until(() => dialog() !== null, 'the unsaved-changes dialog on close');
     dialogButton('CANCEL')!.click();
-    await delay(50);
+    await until(() => dialog() === null, 'the unsaved-changes dialog to close');
     expect([...grok.shell.views].some((v) => v.dart === view.dart), true, 'the view stays');
     expect(app.session.isDirty.value, true);
     app.session.discard();

@@ -6,6 +6,7 @@ import * as grok from 'datagrok-api/grok';
 import {Scope} from '../../core/scope.js';
 import {computed, Signal} from '../../core/signals.js';
 import {Component} from '../../core/component.js';
+import {Input} from '../../core/input-base.js';
 import type {LiveOption} from '../../core/input-base.js';
 import {Dialog} from '../../components/containers/dialog.js';
 import {ChoiceInput} from '../../components/inputs/choice-input.js';
@@ -124,13 +125,13 @@ function ask(title: string, owner: Scope | undefined, make: () => ChoiceInput): 
     owner?.own(cancel);
     scope.own(() => owner?.disown(cancel));
     try {
-      Scope.runWith(scope, () => {
+      scope.build(() => {
         const input = make();
         new Dialog(title)
           .add(input)
-          .onOK(() => finish(input.value.peek()))
+          .onOK(() => finish(input.peek()))
           .onCancel(cancel)
-          .okEnabled(computed(() => input.value.value !== null))
+          .okDisabled(computed(() => input.value !== null ? null : `Pick ${input.label || 'one'} first`))
           .show({modal: true, width: 360});
       });
     } catch (e) {
@@ -141,12 +142,12 @@ function ask(title: string, owner: Scope | undefined, make: () => ChoiceInput): 
 }
 
 export const ADD_FILTER: DesignerAction = {
-  name: 'Add filter for column…',
+  text: 'Add filter for column…',
   icon: 'filter',
   produce: async (node, built) => {
     const viewer = built instanceof DG.Viewer ? built : null;
     if (viewer?.dataFrame == null || viewer.dataFrame.columns.names().length === 0) {
-      grok.shell.warning(`${ADD_FILTER.name}: no table to pick a column from — bind \`table\` to a source first`);
+      grok.shell.warning(`${ADD_FILTER.text}: no table to pick a column from — bind \`table\` to a source first`);
       return null;
     }
     const df = viewer.dataFrame;
@@ -164,12 +165,12 @@ export const ADD_FILTER: DesignerAction = {
  * dialog leaves the list — the key itself when it was the last; the panes the platform built from
  * `columnNames` are not the document's to remove. */
 export const REMOVE_FILTER: DesignerAction = {
-  name: 'Remove filter…',
+  text: 'Remove filter…',
   icon: 'filter',
   produce: async (node, built) => {
     const filters = node.props?.filters as DG.FilterState[] | undefined ?? [];
     if (filters.length === 0) {
-      grok.shell.warning(`${REMOVE_FILTER.name}: the form names no filters — "${ADD_FILTER.name}" adds one`);
+      grok.shell.warning(`${REMOVE_FILTER.text}: the form names no filters — "${ADD_FILTER.text}" adds one`);
       return null;
     }
     const picked = await ask('Remove filter', Component.is(built) ? built.scope : undefined,
@@ -296,8 +297,6 @@ function functionInputMeta(): ComponentMeta {
     usage: 'The value is the nqName string (`Chem:SmilesToMw`) — the `FunctionName` semantic ' +
       'type. A row click, Enter or double-click in the popup commits and closes.',
     create: (props) => {
-      const value = props.value;
-      const bound = value instanceof Signal;
       return new FunctionInput({
         label: props.label as LiveOption<string> | undefined,
         name: lit<string>(props.name),
@@ -305,8 +304,7 @@ function functionInputMeta(): ComponentMeta {
         placeholder: lit<string>(props.placeholder),
         scalarOnly: lit<boolean>(props.scalarOnly),
         ignorePackages: lit<string[]>(props.ignorePackages),
-        value: bound ? undefined : value as string | undefined,
-        bind: bound ? value as Signal<string> : undefined,
+        ...Input.specValue<string>(props.value),
       });
     },
     props: [
@@ -371,16 +369,13 @@ function funcCallInputMeta(): ComponentMeta {
     usage: 'The value is the FuncCall id. Bind `functionName` to a FunctionsBrowser\'s ' +
       '`selected` step to scope the popup. A row click, Enter or double-click commits and closes.',
     create: (props) => {
-      const value = props.value;
-      const bound = value instanceof Signal;
       return new FuncCallInput({
         label: props.label as LiveOption<string> | undefined,
         name: lit<string>(props.name),
         nullable: lit<boolean>(props.nullable),
         placeholder: lit<string>(props.placeholder),
         functionName: props.functionName as LiveOption<string> | undefined,
-        value: bound ? undefined : value as string | undefined,
-        bind: bound ? value as Signal<string> : undefined,
+        ...Input.specValue<string>(props.value),
       });
     },
     props: [

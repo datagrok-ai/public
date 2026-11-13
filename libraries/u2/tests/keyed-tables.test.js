@@ -4,9 +4,10 @@
    each of them answers the state block's items. Every test leaves the live-scope count where it
    found it. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {signal, computed} from '../src/core/signals.js';
 import {span} from '../src/core/elements.js';
@@ -54,7 +55,7 @@ function drugTable(options = {}) {
   return {t, calls};
 }
 
-const tableRows = (t) => t.root.querySelectorAll('tbody tr');
+const tableRows = (t) => [...t.root.querySelectorAll('tbody tr')];
 const rowOf = (t, key) => tableRows(t).find((r) => r.dataset.u2Item === key);
 
 scoped('BasicTable: one item replaced re-renders that row only, the others keep their elements', () => {
@@ -169,7 +170,7 @@ function bigTable(options = {}, source = undefined) {
     {name: 'mw'},
   ], ...options});
   document.body.append(t.root);
-  t.root.clientHeight = 420;
+  layout(t.root, {clientHeight: 420});
   t.setItems(source ?? items);
   return {t, items, calls};
 }
@@ -239,15 +240,14 @@ function grid(items, options = {}) {
     return span(x);
   }, ...options});
   document.body.append(g.root);
-  g.root.clientWidth = 200;
-  g.root.clientHeight = 100;
+  layout(g.root, {clientWidth: 200, clientHeight: 100});
   fire(g.root, 'scroll');
   g.setItems(items);
   return {g, calls};
 }
 
 const ICONS = Array.from({length: 500}, (_, i) => `icon-${i}`);
-const cellOf = (g, key) => g.root.querySelectorAll('.u2-grid-cell').find((c) => c.dataset.u2Item === key);
+const cellOf = (g, key) => [...g.root.querySelectorAll('.u2-grid-cell')].find((c) => c.dataset.u2Item === key);
 
 scoped('VirtualGrid: cells are keyed and addressable; narrowing keeps the cells that stay', async () => {
   const {g, calls} = grid(ICONS);
@@ -298,7 +298,7 @@ function propertyGrid(count, options) {
   return {pg, props, values};
 }
 
-const pgRow = (pg, name) => pg.root.querySelectorAll('.u2-propgrid-row').find((r) => r.dataset.u2Item === name);
+const pgRow = (pg, name) => [...pg.root.querySelectorAll('.u2-propgrid-row')].find((r) => r.dataset.u2Item === name);
 
 scoped('PropertyGrid: one keystroke over 200 rows runs at most 2 row effects (was 201)', () => {
   const {pg} = propertyGrid(200);
@@ -383,7 +383,7 @@ function browser(options) {
   const fb = new FunctionsBrowser(options);
   document.body.append(fb.root);
   const list = fb.root.querySelector('.u2-list');
-  list.clientHeight = 280;
+  layout(list, {clientHeight: 280});
   fire(list, 'scroll');
   return fb;
 }
@@ -404,7 +404,7 @@ scoped('FunctionsBrowser: rows the selection effect scrolls into view outlive th
   const fb = browser({items: funcs(100),
     render: (item) => span(computed(() => `${item.label}/${tick.value}`))});
   const list = fb.root.querySelector('.u2-list');
-  const row = (key) => list.querySelectorAll('.u2-list-row').find((r) => r.dataset.u2Item === key);
+  const row = (key) => [...list.querySelectorAll('.u2-list-row')].find((r) => r.dataset.u2Item === key);
   // select the last function, then change the query so the list keeps it and the browser's
   // selection effect scrolls to it: its row is rendered INSIDE that effect run
   fb._list.selectedIndex.value = 99;

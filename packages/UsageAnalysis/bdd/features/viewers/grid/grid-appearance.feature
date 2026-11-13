@@ -81,7 +81,8 @@ Feature: Grid cell appearance
     Then the "text of cell 1 of AGE" reading of grid should be "26"
     And no errors should have been logged
 
-  Scenario: Conditional coding paints the cells its ranges name
+  @realizes:public#3856
+  Scenario: Conditional coding paints the cells its ranges name, and a header colour set over it shows too
     When user picks "Color Coding > Conditional" from the context menu of the "header HEIGHT" area of grid
     Then "HEIGHT" column should have tag ".color-coding-type" equal to "Conditional"
     When user colors "HEIGHT" column conditionally:
@@ -91,6 +92,10 @@ Feature: Grid cell appearance
     And the "cell 4 of HEIGHT" area of grid should contain the color "#FF0000"
     And the "cell 1 of HEIGHT" area of grid should not contain the color "#0000FF"
     And the "cell 1 of HEIGHT" area of grid should not contain the color "#FF0000"
+    When user sets the back color of the header of "HEIGHT" column to "#904040"
+    Then the "header HEIGHT" area of grid should contain the color "#904040"
+    And the "cell 2 of HEIGHT" area of grid should contain the color "#0000FF"
+    And the "cell 4 of HEIGHT" area of grid should contain the color "#FF0000"
     When user removes the coloring of "HEIGHT" column
     Then "HEIGHT" column should have no color coding
     And no errors should have been logged

@@ -57,7 +57,7 @@ export function svmWasmUrl(): string {
 let module_: SvmWasmModule | null = null;
 let initPromise: Promise<void> | undefined;
 
-/** Initialize the main-thread module (idempotent). Called from package init. */
+/** Initialize the main-thread module (idempotent). Called lazily before fit and apply. */
 export async function initSvm(): Promise<void> {
   initPromise ??= SVMFactory({locateFile: () => svmWasmUrl()})
     .then((m) => {module_ = m;});

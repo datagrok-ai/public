@@ -9,6 +9,7 @@ import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 
 import {MonomerLibManager} from './lib-manager';
 import {CollectionDialogs} from './collection-dialogs';
+import type {CollectionAccess} from './collection-dialogs';
 import {Control} from '@datagrok-libraries/u2';
 import type {MonomerCollectionsView} from './monomer-collections-view';
 import {SEM_TYPES} from '../constants';
@@ -59,8 +60,8 @@ export class MonomerCollectionHandler extends DG.ObjectHandler<MonomerCollection
 
   private renderSingleProperties(info: MonomerCollectionInfo): HTMLElement {
     const acc = ui.accordion('Monomer Collection');
-    const currentUser = DG.User.current().login;
-    const isOwner = CollectionDialogs.canEdit(info.data, currentUser);
+    const access = MonomerCollectionHandler._access();
+    const isOwner = CollectionDialogs.canEdit(info.data, access);
 
     // Details pane
     acc.addPane('Details', () => {
@@ -116,13 +117,13 @@ export class MonomerCollectionHandler extends DG.ObjectHandler<MonomerCollection
 
       const editBtn = ui.button('Edit', async () => {
         if (isOwner) await this.editCollection(info);
-      }, CollectionDialogs.notEditable(info.data, currentUser) ?? 'Edit this collection');
+      }, CollectionDialogs.notEditable(info.data, access) ?? 'Edit this collection');
       if (!isOwner) MonomerCollectionHandler.disableButton(editBtn);
       actions.push(editBtn);
 
       const deleteBtn = ui.button('Delete', async () => {
         if (isOwner) await this.deleteCollection(info);
-      }, CollectionDialogs.notEditable(info.data, currentUser) ?? 'Delete this collection');
+      }, CollectionDialogs.notEditable(info.data, access) ?? 'Delete this collection');
       if (!isOwner) MonomerCollectionHandler.disableButton(deleteBtn);
       actions.push(deleteBtn);
 
@@ -140,8 +141,8 @@ export class MonomerCollectionHandler extends DG.ObjectHandler<MonomerCollection
 
   private renderMultiProperties(items: MonomerCollectionInfo[]): HTMLElement {
     const acc = ui.accordion('Monomer Collections');
-    const currentUser = DG.User.current().login;
-    const allOwned = items.every((c) => CollectionDialogs.canEdit(c.data, currentUser));
+    const access = MonomerCollectionHandler._access();
+    const allOwned = items.every((c) => CollectionDialogs.canEdit(c.data, access));
 
     // Summary pane
     acc.addPane('Selection', () => {
@@ -162,7 +163,7 @@ export class MonomerCollectionHandler extends DG.ObjectHandler<MonomerCollection
 
       const deleteAllBtn = ui.button(`Delete ${items.length} Collections`, async () => {
         if (allOwned) await this.deleteMultipleCollections(items);
-      }, MonomerCollectionHandler._notAllEditable(items, currentUser) ?? 'Delete the selected collections');
+      }, MonomerCollectionHandler._notAllEditable(items, access) ?? 'Delete the selected collections');
       if (!allOwned) MonomerCollectionHandler.disableButton(deleteAllBtn);
       actions.push(deleteAllBtn);
 
@@ -210,7 +211,7 @@ export class MonomerCollectionHandler extends DG.ObjectHandler<MonomerCollection
   private static _view(): MonomerCollectionsView | null {
     const view = Array.from(grok.shell.views).find((v) => v.name === 'Monomer Collections');
     const root = view?.root.querySelector<HTMLElement>('.monomer-collections-view');
-    return root ? (Control.forElement(root) as MonomerCollectionsView | undefined) ?? null : null;
+    return root ? (Control.forElement(root) as (Control & MonomerCollectionsView) | undefined) ?? null : null;
   }
 
   /** Gets the current monomer lib (synchronous, returns null if not loaded). */
@@ -238,29 +239,34 @@ export class MonomerCollectionHandler extends DG.ObjectHandler<MonomerCollection
 
   /** Builds a context menu for a single collection. */
   static buildContextMenu(menu: DG.Menu, info: MonomerCollectionInfo, handler: MonomerCollectionHandler): void {
-    const currentUser = DG.User.current().login;
-    const isOwner = CollectionDialogs.canEdit(info.data, currentUser);
+    const access = MonomerCollectionHandler._access();
+    const isOwner = CollectionDialogs.canEdit(info.data, access);
 
     menu.item('Edit', () => { if (isOwner) handler.editCollection(info); }, null,
-      {isEnabled: () => CollectionDialogs.notEditable(info.data, currentUser)});
+      {isEnabled: () => CollectionDialogs.notEditable(info.data, access)});
     menu.item('Delete', () => { if (isOwner) handler.deleteCollection(info); }, null,
-      {isEnabled: () => CollectionDialogs.notEditable(info.data, currentUser)});
+      {isEnabled: () => CollectionDialogs.notEditable(info.data, access)});
     menu.item('Duplicate', () => handler.duplicateCollection(info));
   }
 
   /** Builds a context menu for multiple collections. */
   static buildMultiContextMenu(menu: DG.Menu, items: MonomerCollectionInfo[], handler: MonomerCollectionHandler): void {
-    const currentUser = DG.User.current().login;
-    const allOwned = items.every((c) => CollectionDialogs.canEdit(c.data, currentUser));
+    const access = MonomerCollectionHandler._access();
+    const allOwned = items.every((c) => CollectionDialogs.canEdit(c.data, access));
 
     menu.item('Merge', () => handler.mergeCollections(items));
     menu.item(`Delete ${items.length} Collections`, () => { if (allOwned) handler.deleteMultipleCollections(items); },
-      null, {isEnabled: () => MonomerCollectionHandler._notAllEditable(items, currentUser)});
+      null, {isEnabled: () => MonomerCollectionHandler._notAllEditable(items, access)});
   }
 
   /** Why one of `items` keeps the selection from being changed, naming it, or null. */
-  private static _notAllEditable(items: MonomerCollectionInfo[], user: string): string | null {
-    const locked = items.find((c) => !CollectionDialogs.canEdit(c.data, user));
-    return locked === undefined ? null : `Only ${locked.data.updatedBy} can change ${locked.displayName}`;
+  private static _notAllEditable(items: MonomerCollectionInfo[], access: CollectionAccess): string | null {
+    const locked = items.find((c) => !CollectionDialogs.canEdit(c.data, access));
+    return locked === undefined ? null : CollectionDialogs.onlyAuthor(locked.data, locked.displayName);
+  }
+
+  // the open view's, read when it opened; without one, the author's alone
+  private static _access(): CollectionAccess {
+    return MonomerCollectionHandler._view()?.access ?? {user: DG.User.current().login, shareEditor: false};
   }
 }

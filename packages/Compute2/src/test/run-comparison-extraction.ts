@@ -1,5 +1,8 @@
 import * as DG from 'datagrok-api/dg';
-import {historyUtils, PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import {getRunName} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
+import type {PipelineConfiguration} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {
   getProcessedConfig,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
@@ -19,7 +22,7 @@ import {
   entryFromLiveCall, loadRunEntries,
 } from '../components/RunComparison/entry-extraction';
 import {deleteSavedRun, deleteSavedWorkflow} from './utils';
-import {STEP_HISTORY_OPTION} from '../components/History/History';
+import {STEP_HISTORY_OPTION} from '../components/RunStorage/run-storage';
 
 category('RunComparison: annotation defaults', () => {
   test('parses the comparison JSON annotation', async () => {
@@ -387,7 +390,7 @@ category('RunComparison: saving snapshots', () => {
     try {
       const saved = await historyUtils.loadRun(runId);
       expect(saved.options[STEP_HISTORY_OPTION], 'true');
-      expect(saved.options['title'], 'rc saved step');
+      expect(getRunName(saved), 'rc saved step');
       const reloaded = await entryFromFuncCall(saved);
       expect(reloaded.sourceKind, 'function');
       expectArray(nodePaths(reloaded), nodePaths(entry));
@@ -413,7 +416,7 @@ category('RunComparison: saving snapshots', () => {
     try {
       expect(runId === call.id, false);
       const saved = await historyUtils.loadRun(runId);
-      expect(saved.options['title'], 'rc saved call');
+      expect(getRunName(saved), 'rc saved call');
       expect(saved.inputs['a'], 1);
       expect(readOutputOutdated(saved), false);
     } finally {

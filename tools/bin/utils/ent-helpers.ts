@@ -15,7 +15,7 @@ The app is the u2 defaults alone — list, search, filters, entity page with chi
 and history, editing under one session, permissions and deep links. src/app.spec.json
 is the same app as a designer-editable spec. To go further, run \`grok api --ui\` for
 typed handles (get<Schema>Db()) and declare on a table: actions.add(...),
-validators.add(column, ...), renderer, and app({app: <a DomainApp subclass>}) for
+validators.add(column, ...), renderer, and app({ribbon, shortcuts, menu, setup}) for
 presets and shortcuts — the Grit package is the reference.
 Read more at https://datagrok.ai/help/develop/how-to/build-an-app`;
 

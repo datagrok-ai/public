@@ -8,7 +8,7 @@ import $ from 'cash-dom';
 import {select, scaleLinear, scaleOrdinal, color, ScaleLinear, ScaleOrdinal} from 'd3';
 import {Observable} from 'rxjs';
 import {layoutConf, topSort} from './utils';
-import {MessageHandler, RenderSignals, unsubscribeAll} from '../../utils/utils';
+import {MessageHandler, RenderSignals, subscribeToColumnRemoval, unsubscribeAll} from '../../utils/utils';
 import {chordStatus} from './chord-status';
 
 import '../../../css/chord-viewer.css';
@@ -53,8 +53,6 @@ export class ChordViewer extends DG.JsViewer {
   chordConf: any;
   labelConf?: {};
 
-  strColumns?: DG.Column[];
-  numColumns?: DG.Column[];
 
   distinctCols?: boolean;
 
@@ -130,12 +128,22 @@ export class ChordViewer extends DG.JsViewer {
     this.initialized = true;
   }
 
+  strColumnNames(): string[] {
+    return this.dataFrame.columns.toList().filter((col) => col.type === 'string')
+      .sort((a, b) => a.categories.length - b.categories.length).map((col) => col.name);
+  }
+
+  numColumnNames(): string[] {
+    return [...this.dataFrame.columns.numerical].map((col) => col.name);
+  }
+
+  hasColumns(): boolean {
+    return [this.fromColumnName, this.toColumnName].every((name) => this.dataFrame.col(name!)) &&
+      (this.aggType !== 'sum' || !this.chordLengthColumnName || !!this.dataFrame.col(this.chordLengthColumnName));
+  }
+
   _testColumns() {
-    const strCols = this.dataFrame.columns.toList()
-      .filter((col) => col.type === 'string')
-      .sort((a, b) => a.categories.length - b.categories.length);
-    const numCols = [...this.dataFrame.columns.numerical];
-    return (strCols.length >= 2 && numCols.length >= 1);
+    return this.strColumnNames().length >= 2 && this.numColumnNames().length >= 1;
   }
 
   onTableAttached() {
@@ -143,16 +151,12 @@ export class ChordViewer extends DG.JsViewer {
     this.init();
     this.filter = this.dataFrame.filter;
 
-    this.strColumns = this.dataFrame.columns.toList()
-      .filter((col) => col.type === 'string')
-      .sort((a, b) => a.categories.length - b.categories.length);
-    this.numColumns = [...this.dataFrame.columns.numerical];
-
     // TODO: Choose the most relevant columns
     if (this._testColumns()) {
-      this.fromColumnName = this.strColumns[0].name;
-      this.toColumnName = this.strColumns[1].name;
-      this.chordLengthColumnName = this.numColumns[0].name;
+      const strColumns = this.strColumnNames();
+      this.fromColumnName = strColumns[0];
+      this.toColumnName = strColumns[1];
+      this.chordLengthColumnName = this.numColumnNames()[0];
     }
 
     this.addSubs();
@@ -163,6 +167,11 @@ export class ChordViewer extends DG.JsViewer {
     this.subs.push(this.signals.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(this.signals.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
     this.subs.push(this.signals.debounce(this.dataFrame.onFilterChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(subscribeToColumnRemoval(this, {
+      fromColumnName: () => this.strColumnNames().find((name) => name !== this.toColumnName),
+      toColumnName: () => this.strColumnNames().find((name) => name !== this.fromColumnName),
+      chordLengthColumnName: () => this.numColumnNames()[0],
+    }));
   }
 
   detach() {
@@ -278,7 +287,7 @@ export class ChordViewer extends DG.JsViewer {
     };
 
     if (this.aggType === 'sum' && this.chordLengthColumnName === null)
-      this.chordLengthColumnName = this.numColumns![0].name;
+      this.chordLengthColumnName = this.numColumnNames()[0];
 
 
     this._aggregate();
@@ -405,6 +414,10 @@ export class ChordViewer extends DG.JsViewer {
 
     if (!this._testColumns()) {
       this._showErrorMessage('The Chord viewer requires a minimum of 2 categorical and 1 numerical columns.');
+      return;
+    }
+    if (!this.hasColumns()) {
+      this._showErrorMessage('Select the From and To columns.');
       return;
     }
 

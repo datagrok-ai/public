@@ -6,7 +6,8 @@ Feature: Matched Molecular Pairs over molecules and their activities
   tabs, and fills the Generation tab. A second run with two activities picked names both, and its
   substitutions carry a mean difference for each (GROK-18517: two activities broke the run). The
   ticket's mmp_demo has 20 000 molecules, past what the analysis runs on a stand without a GPU; the
-  defect was in the two activities, which sar-small has.
+  defect was in the two activities, which sar-small has. A run on filtered data opens one view of the
+  rows that pass, "sar_small (Filtered)", beside the table's own (public#4435: it opened two).
 
   Background:
     Given user is logged in
@@ -76,3 +77,16 @@ Feature: Matched Molecular Pairs over molecules and their activities
     And the "fragment columns" reading of Matched Molecular Pairs Analysis viewer should contain "Δ In-vivo Activity"
     And the "pairs" reading of Matched Molecular Pairs Analysis viewer should be at least 1
     And no errors should have been logged
+
+  @realizes:public#4435
+  Scenario: A run on filtered data opens one view of the rows that pass
+    When user clicks on close icon of Matched Molecular Pairs Analysis viewer
+    And user filters rows where "Mol Wt." is between 300 and 1000
+    And user picks "Chem > Analyze > Matched Molecular Pairs..." from the top menu
+    And user clicks on editor of Activities input in "Matched Molecular Pairs" dialog
+    And user clicks on None label in "Select columns..." dialog
+    And user clicks on the "cell 6 of x" area of grid viewer in "Select columns..." dialog
+    And user clicks on OK button in "Select columns..." dialog
+    And user clicks on OK button in "Matched Molecular Pairs" dialog
+    Then Matched Molecular Pairs Analysis viewer should have finished its analysis
+    And the open table views should be exactly "sar_small, sar_small (Filtered)"

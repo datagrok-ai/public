@@ -34,7 +34,12 @@ export const ViewerTestApp = Vue.defineComponent({
       <div style={{width: '100%', height: '100%'}}>
         <button onClick={changeData}>change data</button>
         <button onClick={changeType}>change type</button>
-        <Viewer type={type.value} dataFrame={df.value} style={{width: '100%', height: '100%'}} onViewerChanged={changeViewer}></Viewer>
+        <Viewer
+          type={type.value}
+          dataFrame={df.value}
+          style={{width: '100%', height: '100%'}}
+          onViewerChanged={changeViewer}
+        ></Viewer>
       </div>
     );
   },

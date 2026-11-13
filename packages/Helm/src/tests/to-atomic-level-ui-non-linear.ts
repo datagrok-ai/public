@@ -2,14 +2,33 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {after, before, category, expect, test} from '@datagrok-libraries/test/src/test';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+
+/** Heavy atoms and bonds of a V3000 molblock, read from its atom and bond blocks (no chemistry engine). */
+function heavyAtomBondCounts(molfile: string): { atoms: number, bonds: number } {
+  const atomEl = new Map<number, string>();
+  let atoms = 0;
+  let bonds = 0;
+  let block: 'atom' | 'bond' | null = null;
+  for (const line of molfile.split('\n')) {
+    if (line.startsWith('M  V30 BEGIN ATOM')) block = 'atom';
+    else if (line.startsWith('M  V30 BEGIN BOND')) block = 'bond';
+    else if (line.startsWith('M  V30 END')) block = null;
+    else if (block && line.startsWith('M  V30 ')) {
+      const t = line.substring(7).trim().split(/\s+/);
+      if (block === 'atom') {
+        atomEl.set(parseInt(t[0]), t[1]);
+        if (t[1] !== 'H') ++atoms;
+      } else if (atomEl.get(parseInt(t[2])) !== 'H' && atomEl.get(parseInt(t[3])) !== 'H')
+        ++bonds;
+    }
+  }
+  return {atoms, bonds};
+}
 
 type TestDataTargetType = { atomCount: number, bondCount: number };
 type TestDataType = {
@@ -20,18 +39,13 @@ type TestDataType = {
 category('toAtomicLevel-ui', () => {
   let monomerLibHelper: IMonomerLibHelper;
   let userLibSettings: UserLibSettings;
-  let monomerLib: IMonomerLib;
-  let rdKitModule: RDModule;
 
   before(async () => {
-    rdKitModule = await getRdKitModule();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
 
     // Test 'helm' requires default monomer library loaded
     await monomerLibHelper.loadMonomerLibForTests(); // load default libraries
-
-    monomerLib = monomerLibHelper.getMonomerLib();
   });
 
   after(async () => {
@@ -82,15 +96,9 @@ category('toAtomicLevel-ui', () => {
     const molCol = df.col('molfile(seq)');
     expect(molCol?.semType, DG.SEMTYPE.MOLECULE);
     const resMolStr = molCol?.get(0)!;
-    const resRdMol = rdKitModule.get_mol(resMolStr);
-    expect(resRdMol != null, true, 'No molecule generated');
-    try {
-      const resAtomCount = resRdMol.get_num_atoms();
-      const resBondCount = resRdMol.get_num_bonds();
-      expect(resAtomCount, tgt.atomCount);
-      expect(resBondCount, tgt.bondCount);
-    } finally {
-      resRdMol.delete();
-    }
+    expect(!!resMolStr, true, 'No molecule generated');
+    const counts = heavyAtomBondCounts(resMolStr);
+    expect(counts.atoms, tgt.atomCount);
+    expect(counts.bonds, tgt.bondCount);
   }
 });

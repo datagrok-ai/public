@@ -25,6 +25,8 @@ Feature: The Share dialog and the Sharing pane
   Serial: the Queries view's search text is the account's own setting, shared with every feature
   that searches it.
 
+  OK stays disabled until someone is picked: a fresh dialog has nothing to share (core#980).
+
   Background:
     Given user is logged in
     And a query "ShareDialog1" on "System:Datagrok" reads "select 1 as x"
@@ -58,6 +60,7 @@ Feature: The Share dialog and the Sharing pane
     And Sharing section in context panel should contain text "You are the owner"
     And no errors should have been logged
 
+  @realizes:core#980
   Scenario: The dialog asks who and how much, and offers a message once someone is picked
     When user picks "Share..." from the context menu of "ShareDialog1" gallery card
     Then "Share ShareDialog1" dialog should be visible
@@ -65,11 +68,13 @@ Feature: The Share dialog and the Sharing pane
     And share access selector should contain text "View and use"
     And OK button in "Share ShareDialog1" dialog should be visible
     And CANCEL button in "Share ShareDialog1" dialog should be visible
+    And OK button in "Share ShareDialog1" dialog should be disabled
     And "Send notifications" input in "Share ShareDialog1" dialog should be hidden
     And share message should be hidden
     And "Remove" icon in "Share ShareDialog1" dialog should be hidden
     When user picks the sharing user in "User, group, or email" input in "Share ShareDialog1" dialog
     Then "Remove" icon in "Share ShareDialog1" dialog should be visible
+    And OK button in "Share ShareDialog1" dialog should be enabled
     And "Send notifications" input in "Share ShareDialog1" dialog should be visible
     And share message should be visible
     And the "sendNotificationOnShareCheckbox" shell setting should be true

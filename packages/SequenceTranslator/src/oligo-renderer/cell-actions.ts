@@ -110,7 +110,7 @@ export async function openOligoHelmEditorDialog(value: DG.SemanticValue): Promis
   const view = ui.div();
   view.style.height = '100%';
   const app = helmHelper.createWebEditorApp(view, String(cell.value ?? ''));
-  ui.dialog({showHeader: false, showFooter: true})
+  const dlg = ui.dialog({showHeader: false, showFooter: true})
     .add(view)
     .onOK(() => {
       const helmValue = app.canvas!.getHelm(true)
@@ -119,6 +119,12 @@ export async function openOligoHelmEditorDialog(value: DG.SemanticValue): Promis
       cell.value = helmValue;
     })
     .show({modal: true, fullScreen: true});
+  // OK, Cancel and Escape close the dialog, after its OK handler: the editor goes with it (its document listeners,
+  // and the monomer that follows the mouse, which stayed on the page after Escape)
+  const closeSub = dlg.onClose.subscribe(() => {
+    closeSub.unsubscribe();
+    app.destroy();
+  });
 }
 
 /* -------------------------------------------------------------------------- *

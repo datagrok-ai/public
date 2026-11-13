@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import { awaitCheck, category, expect, test } from '@datagrok-libraries/test/src/test';
+import { waitUntil, category, expect, test } from '@datagrok-libraries/test/src/test';
 import { openRevvityNode } from '../view-utils';
 import { Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { funcs } from '../package-api';
@@ -15,14 +15,16 @@ category('revvity signals app', () => {
   test('app initial statistics', async () => {
     const view = await funcs.revvitySignalsLinkApp();
     //check that statistics view has been created
-    await awaitCheck(() => view.root.getElementsByTagName('table').length > 0, 'Initial statistics hasn\'t been loaded', 30000);
+    await waitUntil(() => view.root.getElementsByTagName('table').length > 0,
+      'Initial statistics hasn\'t been loaded', 30000);
   }, {skipReason: ciSkip});
 
   test('open compounds|assets node', async () => {
     const node = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
     node.expanded = true;
     openRevvityNode(node, ['Compounds'], 'Assets', 'Compounds', 'asset');
-    await awaitCheck(() => grok.shell.tv?.dataFrame.rowCount === 100, 'Compounds -> Assets node hasn\'t been loaded', 30000);
+    await waitUntil(() => grok.shell.tv?.dataFrame.rowCount === 100,
+      'Compounds -> Assets node hasn\'t been loaded', 30000);
   }, {timeout: 60000, skipReason: ciSkip});
 
   test('open compounds|assets with pre-defined query', async () => {
@@ -40,7 +42,8 @@ category('revvity signals app', () => {
     const node = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
     node.expanded = true;
     openRevvityNode(node, ['Compounds'], 'Assets', 'Compounds', 'asset', query);
-    await awaitCheck(() => grok.shell.tv?.dataFrame.rowCount === 100, 'Compounds -> Assets node with pre-defined query hasn\'t been loaded', 30000);
+    await waitUntil(() => grok.shell.tv?.dataFrame.rowCount === 100,
+      'Compounds -> Assets node with pre-defined query hasn\'t been loaded', 30000);
   }, {timeout: 60000, skipReason: ciSkip});
 });
 
@@ -73,7 +76,7 @@ category('revvity signals functions', () => {
     };
     const df = await funcs.searchEntitiesWithStructures(JSON.stringify(query), '{}', 'assetType:686ecf60e3c7095c954bd94f', 'asset');
     expect(df.rowCount > 0, true, 'Returned empty dataframe');
-    await awaitCheck(() => !df.col(MOL_COL_NAME)!.isEmpty, 'Molecules column is not filling with values', 30000);
+    await waitUntil(() => !df.col(MOL_COL_NAME)!.isEmpty, 'Molecules column is not filling with values', 30000);
   }, {timeout: 60000, skipReason: ciSkip});
 
   test('getLibrariesWithEntityTypes', async () => {
@@ -98,7 +101,7 @@ category('revvity signals functions', () => {
 
   test('getWidget', async () => {
     const widget: DG.Widget = await funcs.entityTreeWidget(DG.SemanticValue.fromValueType('DGS-0000009-001', 'revvity-id'));
-    await awaitCheck(() => widget.root.querySelector('table') != null, 'Widget hasn\'t been created', 30000);
+    await waitUntil(() => widget.root.querySelector('table') != null, 'Widget hasn\'t been created', 30000);
   }, {timeout: 60000, skipReason: ciSkip});
 
 });

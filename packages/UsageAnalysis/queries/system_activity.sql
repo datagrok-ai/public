@@ -17,7 +17,8 @@ res as (
   where et.source = 'audit'
     and et.friendly_name in ('server-started', 'user-logged-in', 'user-logged-out', 'user-login-failed',
       'user-impersonated', 'impersonation-failed', 'admin-session-started', 'admin-session-ended',
-      'dev-key-generated', 'settings-changed', 'log-settings-changed')
+      'dev-key-generated', 'email-confirmation-requested', 'email-confirmed', 'email-confirmation-failed',
+      'password-reset-requested', 'password-changed', 'password-change-failed', 'settings-changed', 'log-settings-changed')
     and @date(e.event_time)
 ),
 params as (
@@ -69,7 +70,8 @@ res as (
   where et.source = 'audit'
     and et.friendly_name in ('server-started', 'user-logged-in', 'user-logged-out', 'user-login-failed',
       'user-impersonated', 'impersonation-failed', 'admin-session-started', 'admin-session-ended',
-      'dev-key-generated', 'settings-changed', 'log-settings-changed')
+      'dev-key-generated', 'email-confirmation-requested', 'email-confirmed', 'email-confirmation-failed',
+      'password-reset-requested', 'password-changed', 'password-change-failed', 'settings-changed', 'log-settings-changed')
     and @date(e.event_time)
     and (u.id is null or u.group_id in (select id from selected_groups))
 ),

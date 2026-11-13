@@ -14,8 +14,8 @@ import {taskBarFinished, taskBarShown, watchTaskBar} from '../bindings/platform/
 import {openTableOf, SKETCHER_CONTROLS_TAG, sketcherPin} from '../bindings/platform/steps.js';
 import {fixtureFamilies, isStaleFixture, RUN_SUFFIX, serviceGap} from '../src/runtime/server.js';
 import {el} from '../src/runtime/args.js';
-import {select} from '../src/runtime/gestures.js';
-import {hitArea, readValue} from '../src/runtime/viewers.js';
+import {columnSelectorChoices, select} from '../src/runtime/gestures.js';
+import {expectReading, hitArea, readValue} from '../src/runtime/viewers.js';
 import {locate} from '../src/runtime/locate.js';
 import {knownFailure} from '../src/runtime/harness.js';
 import {StepFailure} from '../src/runtime/failure.js';
@@ -133,6 +133,58 @@ scenario('a Dart property row opens its editor on the value before a choice is m
   assert.equal((await (await locate(page!, el('label of "Newick Tag" property'))).textContent())?.trim(), 'Newick Tag');
 });
 
+/** A Dart column property as `column_combo_box.dart` behaves: a press opens the picker, which over 20 columns shows
+ * its search box focused; a task later the focus goes to the search box or the selector, and Escape closes it. */
+async function columnProperty(p: Page, columns: string[]): Promise<void> {
+  await p.setContent(`<table><tr class="property-grid-item" name="prop-color"><td class="property-grid-item-name">
+    <div class="property-grid-item-name-text"><span>Color</span></div></td><td class="property-grid-item-value">
+    <div class="d4-column-selector" tabindex="0" style="width:120px;height:20px"></div></td></tr></table>`);
+  await p.evaluate((names) => {
+    const w = window as any;
+    w.DG = {Widget: {find: () => ({gridRowToTable: (r: number) => r,
+      dataFrame: {filter: {trueCount: names.length}, col: () => ({get: (i: number) => names[i]})}})}};
+    const selector = document.querySelector('.d4-column-selector') as HTMLElement;
+    selector.addEventListener('mousedown', (md) => {
+      md.preventDefault();
+      const picker = document.createElement('div');
+      picker.innerHTML = '<div class="d4-column-grid" style="width:100px;height:100px">' +
+        '<div class="d4-column-selector-backdrop"></div><div name="viewer-Grid" style="width:100px;height:80px"></div></div>';
+      document.body.append(picker);
+      let search: HTMLInputElement | null = null;
+      if (names.length > 20) {
+        search = document.createElement('input');
+        search.className = 'd4-column-selector-search-input';
+        picker.prepend(search);
+        search.focus();
+        search.addEventListener('keydown', (kd) => {
+          if (kd.key === 'Escape') {
+            picker.remove();
+            kd.stopImmediatePropagation();
+          }
+        });
+      }
+      setTimeout(() => {
+        (search ?? selector).focus();
+        document.addEventListener('keydown', (kd) => {
+          if (kd.key === 'Escape')
+            picker.remove();
+        }, {once: true});
+      }, 0);
+    });
+  }, columns);
+}
+
+scenario('a column property offers its columns in order and its picker closes, search box or not', async () => {
+  const few = ['AGE', 'SEX', 'RACE'];
+  await columnProperty(page!, few);
+  assert.deepEqual(await columnSelectorChoices(page!, el('"Color" property')), few);
+  assert.equal(await page!.locator('.d4-column-grid').count(), 0, 'the picker is dismissed');
+  const many = Array.from({length: 22}, (_, i) => `AE${i}`);
+  await columnProperty(page!, many);
+  assert.deepEqual(await columnSelectorChoices(page!, el('"Color" property')), many);
+  assert.equal(await page!.locator('.d4-column-grid').count(), 0, 'the picker with a search box is dismissed');
+});
+
 scenario('the task bar record keeps an entry the bar has already removed', async () => {
   await page!.setContent('<div class="d4-task-bar"></div>');
   await watchTaskBar(page!);
@@ -179,6 +231,24 @@ scenario('a widget outside any viewer that reports a status is found up from its
   assert.equal(await readValue(page!, el('Probe widget'), 'smiles'), 'CC');
   await assert.rejects(() => readValue(page!, el('Plain widget'), 'smiles'), /not a viewer/);
   await assert.rejects(() => readValue(page!, el('Card link'), 'smiles'), /not a viewer/);
+});
+
+scenario('a reading waits for a viewer the platform knows only after its element is on the page', async () => {
+  // an element can be on the page while the platform does not know it as a viewer (one being built): the read threw
+  // "the element is not a viewer", which `expect.poll` does not retry, and the step failed at once, reporting "no
+  // readings" (seen in the Peptides pane's WebLogo scenario, 2026-11-04)
+  await page!.setContent('<div name="viewer-Logo" style="width:100px;height:50px"></div>');
+  await standIn(page!, {seq: ['T']}); // the shell and the events the viewer runtime subscribes to
+  await page!.evaluate(() => {
+    const w = window as any;
+    const root = document.querySelector('[name="viewer-Logo"]')!;
+    const logo = {root, type: 'Logo', isRenderPending: false,
+      getWidgetStatus: () => ({parts: {}, hitAreas: {}, values: {'rows selected': 630}})};
+    let known = false;
+    setTimeout(() => known = true, 300);
+    w.DG = {Widget: {find: (e: Element) => known && e === root ? logo : null}};
+  });
+  await expectReading(page!, el('Logo viewer'), 'rows selected', 'equal', 630);
 });
 
 scenario('a table tag is compared with a file byte for byte', async () => {

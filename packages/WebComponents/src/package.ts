@@ -14,41 +14,26 @@ import './styles.css';
 export * from './package.g';
 export const _package = new DG.Package();
 
-let inited = false;
-
+const ELEMENTS: [string, CustomElementConstructor, ElementDefinitionOptions?][] = [
+  ['dg-viewer', Viewer],
+  ['dg-input-form', InputForm],
+  ['dg-button', DGButton, {extends: 'button'}],
+  ['dg-big-button', DGBigButton, {extends: 'button'}],
+  ['dg-icon-fa', DGIconFA],
+  ['dg-icon-image', DGIconImage],
+  ['dg-toggle-input', DGToggleInput],
+  ['dg-combo-popup', DGComboPopup],
+  ['dock-spawn-ts', DockSpawnTsWebcomponent],
+  ['dg-markdown', DGMarkdown],
+  ['dg-validation-icon', ValidationIcon],
+];
 
 export class PackageFunctions {
   @grok.decorators.init()
   static async init() {
-    if (inited) return;
-
-    customElements.define('dg-viewer', Viewer);
-    customElements.define('dg-input-form', InputForm);
-    customElements.define('dg-button', DGButton, {extends: 'button'});
-    customElements.define('dg-big-button', DGBigButton, {extends: 'button'});
-    customElements.define('dg-icon-fa', DGIconFA);
-    customElements.define('dg-icon-image', DGIconImage);
-    customElements.define('dg-toggle-input', DGToggleInput);
-    customElements.define('dg-combo-popup', DGComboPopup);
-    customElements.define('dock-spawn-ts', DockSpawnTsWebcomponent);
-    customElements.define('dg-markdown', DGMarkdown);
-    customElements.define('dg-validation-icon', ValidationIcon);
-    inited = true;
-
-    await Promise.all([
-      customElements.whenDefined('dg-viewer'),
-      customElements.whenDefined('dg-input-form'),
-      customElements.whenDefined('dg-button'),
-      customElements.whenDefined('dg-big-button'),
-      customElements.whenDefined('dg-icon-fa'),
-      customElements.whenDefined('dg-icon-image'),
-      customElements.whenDefined('dg-toggle-input'),
-      customElements.whenDefined('dg-combo-popup'),
-      customElements.whenDefined('dock-spawn-ts'),
-      customElements.whenDefined('dg-markdown'),
-      customElements.whenDefined('dg-validation-icon'),
-    ]);
-
-    console.log('webcomponents registered');
+    for (const [name, element, options] of ELEMENTS) {
+      if (!customElements.get(name))
+        customElements.define(name, element, options);
+    }
   }
 }

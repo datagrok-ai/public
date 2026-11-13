@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, settled, test, uiSettled, waitUntil} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
 import {scaleActivity} from '../utils/misc';
@@ -41,10 +41,10 @@ category('Widgets: Settings', () => {
       throw new Error('Model is null');
     model = tempModel;
 
-    await delay(500);
+    await uiSettled('Peptides analysis');
   });
 
-  after(async () => await delay(3000));
+  after(async () => await uiSettled('Peptides analysis'));
 
   test('UI', async () => {
     const settingsElements = getSettingsDialog(model);
@@ -88,14 +88,14 @@ category('Widgets: Distribution panel', () => {
       throw new Error('Model is null');
     model = tempModel;
 
-    await delay(500);
+    await uiSettled('Peptides analysis');
   });
 
-  after(async () => await delay(3000));
+  after(async () => await uiSettled('Peptides analysis'));
 
   test('UI', async () => {
     model.df.selection.set(0, true);
-    await delay(1000);
+    await uiSettled('Selection');
     const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
     getDistributionWidget(model.df, {
       columns: model.settings!.columns!,
@@ -129,16 +129,16 @@ category('Widgets: Mutation cliffs', () => {
       throw new Error('Model is null');
     model = tempModel;
 
-    await delay(500);
+    await uiSettled('Peptides analysis');
   });
 
-  after(async () => await delay(3000));
+  after(async () => await uiSettled('Peptides analysis'));
 
   test('UI', async () => {
     const sarViewer = model.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition;
     sarViewer.keyPressed = true; //required to emulate cell selection
     sarViewer._viewerGrid!.dataFrame.currentCell = sarViewer._viewerGrid?.dataFrame.cell(0, '1')!;
-    await delay(1000);
+    await settled(sarViewer);
     mutationCliffsWidget(model.df, {
       mutationCliffs: sarViewer.mutationCliffs!,
       mutationCliffsSelection: sarViewer.mutationCliffsSelection,
@@ -176,10 +176,10 @@ category('Widgets: Actions', () => {
       throw new Error('Model is null');
     model = tempModel;
 
-    await delay(500);
+    await uiSettled('Peptides analysis');
   });
 
-  after(async () => await delay(3000));
+  after(async () => await uiSettled('Peptides analysis'));
 
   test('New view', async () => {
     // Set compound bitset: filter out 2 rows and select 1 among them
@@ -199,7 +199,8 @@ category('Widgets: Actions', () => {
     expect(currentTable.getTag(DG.TAGS.ID), newViewId, 'Current table is expected to have the same UUID as new view');
     expect(currentTable.rowCount, 2, 'Current table is expected to have 2 rows');
 
-    await delay(500);
+    await waitUntil(() => currentTable.temp[PeptidesModel.modelName] != null,
+      'Logo Summary Table of the new view did not create its Peptides model');
     const currentTableModel = currentTable.temp[PeptidesModel.modelName] as PeptidesModel;
     const lstViewer = currentTableModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
     expect(lstViewer !== null, true, 'New view is expected to have Logo Summary Table viewer attached');

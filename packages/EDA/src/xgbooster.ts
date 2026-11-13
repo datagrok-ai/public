@@ -182,7 +182,6 @@ export class XGBooster {
     this.validateFitInputs(features, target, iterations, eta, maxDepth, lambda, alpha);
 
     // Ensure the main-thread module (used by the synchronous predict) is up.
-    // Idempotent; needed where package init does not run (package-test bundle).
     await initXgboost();
 
     this.featureNames = features.names();

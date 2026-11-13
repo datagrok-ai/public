@@ -1,11 +1,12 @@
-/* Bulk edit against a real domain table (WO 3-8): the ⋯ menu's items, the dialog's include
-   checkboxes, "N selected" writing `id in (…)` and "all M matching" writing the list's filter —
-   all of it through the server's `POST …/{table}/update` (WO 3-1). Fixture: `apitests.item`, rows
+/* Bulk edit against a real domain table: the ⋯ menu's items, the dialog's field picker,
+   "N selected" writing `id in (…)` and "all M matching" writing the list's filter —
+   all of it through the server's `POST …/{table}/update`. Fixture: `apitests.item`, rows
    prefixed per run and deleted afterwards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
-import {Control} from '@datagrok-libraries/u2';
+import {after, before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
+import {Control, Tooltip} from '@datagrok-libraries/u2';
+import type {Input} from '@datagrok-libraries/u2';
 import type {DomainSource} from '@datagrok-libraries/ems';
 import {domains, DomainApp, DomainTable} from '@datagrok-libraries/ems/src/dg';
 
@@ -22,51 +23,73 @@ category('U2: domain bulk', () => {
   let ids: string[];
 
   async function ready(src: DomainSource): Promise<void> {
-    for (let i = 0; i < 200 && (src.state.value === 'idle' || src.state.value === 'loading'); i++)
-      await delay(50);
+    await waitUntil(() => src.state.value !== 'idle' && src.state.value !== 'loading',
+      () => `source is ${src.state.value}: ${String(src.error.value)}`);
     if (src.state.value !== 'ready')
       throw new Error(`source is ${src.state.value}: ${String(src.error.value)}`);
   }
 
   async function reloaded(): Promise<void> {
-    await delay(100);
     await ready(app.listSource);
   }
 
-  const includeBox = (name: string) =>
-    document.querySelector<HTMLInputElement>(`[data-u2-include="${name}"]`);
-  const fieldRoot = (name: string) => includeBox(name)!.parentElement!.querySelector('.u2-input-root');
+  /** A control in the dialog by name: the field picker (`fields`), "Apply to" (`target`), a column's editor. */
+  const control = (name: string): Input<unknown> | undefined => {
+    const el = document.querySelector<HTMLElement>(`.u2-dialog [data-u2-name="${name}"]`);
+    return el === null ? undefined : Control.forElement(el) as Input<unknown>;
+  };
+  const shown = (name: string) =>
+    document.querySelector(`.u2-dialog [data-u2-name="${name}"]`)?.closest('[hidden]') === null;
   const buttonNamed = (text: string) => [...document.querySelectorAll<HTMLButtonElement>('.u2-dialog button')]
     .find((b) => b.textContent === text)!;
+  /** The primary button, "Update N …". */
+  const ok = () => [...document.querySelectorAll<HTMLButtonElement>('.u2-dialog [data-u2-part="footer"] button')]
+    .pop()!;
+  /** A refusal, said inside the dialog. */
+  const refusal = () => document.querySelector('.u2-dialog [data-u2-part="error-row"]')?.textContent ?? '';
   const quantities = async () => (await items().query({filter: query, sort: 'sku'}))
     .map((r) => r.quantity).join();
+
+  /** What holds the button: its tooltip. */
+  async function okReason(): Promise<string> {
+    ok().dispatchEvent(new Event('pointerenter'));
+    await waitUntil(() => Tooltip.root.style.display === 'block' && Tooltip.root.textContent !== '',
+      'the button\'s tooltip shows');
+    const text = Tooltip.root.textContent ?? '';
+    ok().dispatchEvent(new Event('pointerleave'));
+    return text;
+  }
 
   /** The dialog up and rendered. The promise is handed back WRAPPED: awaiting an async function
    * that returns it would chain on it and only come back once the dialog is answered. */
   async function open(): Promise<{running: Promise<number | null>}> {
     const running = domains.bulkEdit(app.listSource);
-    for (let i = 0; i < 100 && includeBox('quantity') === null; i++)
-      await delay(50);
-    expect(includeBox('quantity') !== null, true, 'the bulk dialog is up');
+    await waitUntil(() => control('fields') !== undefined, 'the bulk dialog is up', 5000);
+    expect(control('fields') !== undefined, true, 'the bulk dialog is up');
     return {running};
   }
 
-  const fieldOf = (name: string) =>
-    Control.forElement(fieldRoot(name)) as unknown as
-      {value: {value: unknown}, enabled: boolean, root: HTMLElement};
-
-  /** A real click, as a user's is — the box must not be inside the disabled input it enables. */
-  function write(name: string, value: unknown): void {
-    includeBox(name)!.click();
-    fieldOf(name).value.value = value;
+  /** Picks the fields to change, then fills each of them. */
+  async function write(values: Record<string, unknown>): Promise<void> {
+    control('fields')!.value = Object.keys(values);
+    await waitUntil(() => Object.keys(values).every(shown), 'the chosen fields show');
+    for (const [name, value] of Object.entries(values))
+      control(name)!.value = value;
+    await waitUntil(() => !ok().disabled, 'the button is on');
   }
 
   async function selectRows(keep: (id: string) => boolean): Promise<void> {
     const df = app.listSource.df.value as unknown as DG.DataFrame;
     const idColumn = df.columns.byName('id')!;
-    for (let i = 0; i < df.rowCount; i++)
-      df.selection.set(i, keep(idColumn.get(i)));
-    await delay(100);
+    let kept = 0;
+    for (let i = 0; i < df.rowCount; i++) {
+      const on = keep(idColumn.get(i));
+      df.selection.set(i, on);
+      kept += on ? 1 : 0;
+    }
+    const selected = () => app.listSource.selection.value;
+    await waitUntil(() => selected().length === kept && selected().every((r) => keep(r.id)),
+      'the selection to reach the source');
   }
 
   before(async () => {
@@ -90,38 +113,34 @@ category('U2: domain bulk', () => {
     await items().deleteWhere(query);
   });
 
-  test('the ⋯ menu offers Import…, Bulk edit… and Trash', async () => {
-    expect(app.menuActions().map((a) => a.name).join(), 'Import…,Bulk edit…,Trash');
+  test('the ⋯ menu offers Import…, Bulk edit… and Show deleted', async () => {
+    expect(app.menuActions().map((a) => a.text).join(), 'Import…,Bulk edit…,Show deleted');
   });
 
-  test('a real click on the include box enables its editor; OK is gated inline, not by balloon', async () => {
+  test('the field picker decides what is written; the button says why it is off, never a balloon', async () => {
     await selectRows(() => false);
     const {running} = await open();
-    expect(fieldOf('quantity').enabled, false, 'an unchecked column has no editor');
-    expect(includeBox('quantity')!.parentElement!.classList.contains('u2-domain-bulk-row'), true,
-      'the box sits OUTSIDE the input it enables — inside a disabled one it would be dead');
-    expect(buttonNamed('OK').disabled, true, 'nothing checked yet');
-    expect((document.querySelector('.u2-domain-bulk-reason')?.textContent ?? '')
-      .includes('Check the fields to write'), true, 'and the dialog says so, in the dialog');
-    expect(fieldOf('quantity').root.querySelector('.u2-input-error')?.textContent ?? '', '',
-      'nothing here is required: a checked field left empty CLEARS the column');
-    includeBox('quantity')!.click();
-    await delay(100);
-    expect(fieldOf('quantity').enabled, true, 'the click reached it');
-    expect(buttonNamed('OK').disabled, false);
-    const options = [...document.querySelectorAll<HTMLOptionElement>('[data-u2-name="target"] option')]
-      .map((o) => o.textContent);
-    expect(options.join('|'), 'all 3 matching', 'no empty option, and no target the server would refuse');
+    expect(shown('quantity'), false, 'a field not chosen is not in the form');
+    expect(ok().disabled, true, 'nothing chosen yet');
+    expect(await okReason(), 'Choose the fields to change');
+    expect((control('target')?.root.textContent ?? '').includes('All 3'), true,
+      'no target the server would refuse: nothing is selected, so the filter is the one target');
+    control('fields')!.value = ['quantity'];
+    await waitUntil(() => shown('quantity'), 'the chosen field shows');
+    expect(shown('quantity'), true, 'a chosen field shows its editor');
+    expect(control('quantity')!.root.querySelector('.u2-input-error')?.textContent ?? '', '',
+      'nothing here is required: a chosen field left empty CLEARS the column');
+    expect(ok().disabled, false);
     buttonNamed('CANCEL').click();
     expect(await running, null);
   });
 
-  test('the checked column is written into the selection only', async () => {
+  test('the chosen column is written into the selection only', async () => {
     await selectRows((id) => id !== ids[1]);
     expect(app.listSource.selection.value.length, 2, 'two of the three rows are selected');
     const {running} = await open();
-    write('quantity', 9);
-    buttonNamed('OK').click();
+    await write({quantity: 9});
+    ok().click();
     expect(await running, 2);
     await reloaded();
     expect(await quantities(), '9,2,9', 'the unselected row kept its quantity');
@@ -130,8 +149,8 @@ category('U2: domain bulk', () => {
   test('"all matching" writes everything the list\'s filter matches', async () => {
     await selectRows(() => false);
     const {running} = await open();
-    write('quantity', 4);
-    buttonNamed('OK').click();
+    await write({quantity: 4});
+    ok().click();
     expect(await running, 3);
     await reloaded();
     expect(await quantities(), '4,4,4');
@@ -149,13 +168,14 @@ category('U2: domain bulk', () => {
     expect(trashed.last, null, 'and an empty match dates to null');
   });
 
-  test('an immutable column is refused by the server, and nothing is written', async () => {
+  test('an immutable column is refused by the server in the dialog, and nothing is written', async () => {
     const {running} = await open();
-    write('origin', 'rewritten');
-    write('quantity', 7);
-    buttonNamed('OK').click();
-    expect(await running, null, 'the refusal reaches the caller');
-    await reloaded();
+    await write({origin: 'rewritten', quantity: 7});
+    ok().click();
+    await waitUntil(() => refusal() !== '', 'the refusal is the dialog\'s error line');
+    expect(shown('origin'), true, 'the dialog is still up, the fields still chosen');
     expect(await quantities(), '4,4,4', 'the whole call rolled back');
+    buttonNamed('CANCEL').click();
+    expect(await running, null);
   });
 });

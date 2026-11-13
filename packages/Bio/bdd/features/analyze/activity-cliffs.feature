@@ -18,14 +18,14 @@ Feature: Sequence Activity Cliffs
     And the Bio package is initialized
     Then "Sequence" column should have semantic type "Macromolecule"
 
-  Scenario: The editor opens with the sequence column, the first numeric column as the activity, and a cutoff
+  Scenario: The editor opens with the sequence column, the column named like an activity, and a cutoff
     When user picks "Bio > Analyze > Activity Cliffs..." from the top menu
     Then "Sequence Activity Cliffs" dialog should be visible
     And editor of Column input in "Sequence Activity Cliffs" dialog should have text "Sequence"
     And Method input in "Sequence Activity Cliffs" dialog should have value "UMAP"
     And Similarity input in "Sequence Activity Cliffs" dialog should have value "Hamming"
     And "Similarity cutoff" input in "Sequence Activity Cliffs" dialog should have value "80"
-    And editor of Activities input in "Sequence Activity Cliffs" dialog should have text "Length"
+    And editor of Activities input in "Sequence Activity Cliffs" dialog should have text "Activity"
 
   Scenario: Running on the Activity column docks a cliff scatter plot
     When user selects "Activity" in Activities input in "Sequence Activity Cliffs" dialog

@@ -11,8 +11,8 @@ export type BadgeVariant = 'default' | 'accent' | 'success' | 'warning' | 'error
 function owner(): Scope {
   const scope = Scope.ambient;
   if (!scope) {
-    throw new Error('u2: signal binding needs an owner — ' +
-      'wrap the code in Control.build(...) or component.runInScope(...)');
+    throw new Error('u2: signal binding needs an owner — build under `owner.build(…)` or ' +
+      '`component((self) => …)`; after an `await`, inside `owner.task(async (t) => … t.build(…))`');
   }
   return scope;
 }

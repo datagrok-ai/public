@@ -1,7 +1,7 @@
 /**
  * Fingerprint options: the optional parameters of `getFingerprints` / `chemGetFingerprints` and the RDKit details they
- * become (RDKit's MinimalLib names, `Code/MinimalLib/common.h`: `radius`, `nBits`, `useChirality`). Defaults are
- * today's fingerprints: Morgan radius 2 (ECFP4), 2048 bits, no chirality, no features. No `datagrok-api` here: the
+ * become (RDKit's MinimalLib names, `Code/MinimalLib/common.h`: `radius`, `nBits`, `useChirality`). The defaults:
+ * Morgan radius 2 (ECFP4), 2048 bits, no chirality, no features. No `datagrok-api` here: the
  * RDKit and Crux workers import it.
  */
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -36,7 +36,7 @@ const NUMBERS = {
 } as const;
 
 /**
- * The options that differ from the defaults and that `type` reads (null when none: today's fingerprint). Values may
+ * The options that differ from the defaults and that `type` reads (null when none: the default fingerprint). Values may
  * come as text (a function call's parameters: '3', 'true'); a radius or size that is not a whole number in range
  * throws.
  */
@@ -126,7 +126,7 @@ const FP_METHOD: {[type in Fingerprint]: string} = {
 export function assertFingerprintOptions(module: RDModule, type: Fingerprint, options?: FingerprintOptions | null):
   void {
   const opts = fingerprintOptions(type, options);
-  if (!opts) // the defaults: today's call
+  if (!opts) // the defaults, which every module computes
     return;
   const details = fingerprintDetails(type, opts)!;
   const mol = module.get_mol('CCO');

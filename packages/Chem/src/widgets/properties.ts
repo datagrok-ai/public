@@ -8,11 +8,11 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {addCopyIcon} from '../utils/ui-utils';
 import {IChemProperty, OCLService, CHEM_PROP_MAP as PROP_MAP} from '../open-chem/ocl-service';
-import {ChemicalEngine, engineInEffect, isCruxRequested} from '../engine/chem-engine';
+import {ChemicalEngine, byEngineAsync, engineInEffect} from '../engine/chem-engine';
 import {ChemWasm, cruxModuleSync} from '../engine/crux-module';
-import {cruxOrRdKit, cruxOrRdKitAsync} from '../engine/fallback';
+import {cruxOrRdKit} from '../engine/fallback';
 import {getCruxService} from '../crux/crux-searches';
-import {withinSmilesLimit} from '../utils/chem-common';
+import {withinCruxReader} from '../crux/crux-service';
 
 const DGTypeMap = {
   'float': DG.TYPE.FLOAT,
@@ -27,8 +27,8 @@ const DGTypeMap = {
  * widgets/drug-likeness.ts, widgets/toxicity.ts).
  */
 export const CRUX_PROPERTY_METHODS: {[name: string]: string} = {
-  'MW': 'Average molecular weight from the IUPAC standard atomic weights (RDKit MolWt). OpenChemLib\'s MW ' +
-    '(RDKit mode) is the monoisotopic mass. Reference: IUPAC standard atomic weights, as RDKit tabulates them',
+  'MW': 'Average molecular weight from the IUPAC standard atomic weights (RDKit MolWt; RDKit mode: OpenChemLib\'s ' +
+    'average weight, within 0.01 of it). Reference: IUPAC standard atomic weights, as RDKit tabulates them',
   'HBA': 'Lipinski\'s acceptors: N and O atoms (RDKit NumLipinskiHBA). Reference: Lipinski, Lombardo, Dominy & ' +
     'Feeney, Adv. Drug Deliv. Rev. 1997, 23, 3',
   'HBD': 'Donor atoms: N, O and S bearing an H (RDKit NumHDonors). Reference: RDKit\'s donor SMARTS (Lipinski.cpp)',
@@ -54,7 +54,7 @@ export const CRUX_PROPERTY_METHODS: {[name: string]: string} = {
  * for a molecule Crux cannot read (the caller's OpenChemLib path then gives them).
  */
 function cruxProperties(molecule: string, names: string[]): {[name: string]: any} | null {
-  const m = withinSmilesLimit(molecule);
+  const m = withinCruxReader(molecule);
   if (engineInEffect() !== ChemicalEngine.Crux || m === null)
     return null;
   return cruxOrRdKit('properties', () => {
@@ -177,8 +177,8 @@ export async function getPropertiesAsColumns(smilesCol: DG.Column<string>, props
       oclService.terminate();
     }
   };
-  const props = isCruxRequested() ? await cruxOrRdKitAsync('properties', async () => {
-    return (await getCruxService()).chemProperties(smilesCol.toList().map(withinSmilesLimit), propsMap);
-  }, ocl) : await ocl();
+  const props = await byEngineAsync('properties', async () => {
+    return (await getCruxService()).chemProperties(smilesCol.toList().map(withinCruxReader), propsMap);
+  }, ocl);
   return propsMap.map((p) => DG.Column.fromList(DGTypeMap[PROP_MAP[p].type], p, props[p]));
 }

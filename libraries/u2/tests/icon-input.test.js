@@ -1,9 +1,10 @@
 /* IconInput: the control, the anchored popup (search + VirtualGrid), pick/cancel semantics and
    the brand face. The shim lays nothing out, so the popup's grid is given a viewport. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope, signal} from '../src/index.js';
 import {IconInput} from '../src/components/inputs/icon-input.js';
 import {ICON_NAMES, BRAND_ICON_NAMES} from '../src/components/display/icon-names.js';
@@ -41,14 +42,13 @@ function open(input) {
   fire(control(input), 'click');
   const box = popup();
   const grid = box.querySelector('.u2-grid');
-  grid.clientWidth = 280;
-  grid.clientHeight = 224;
+  layout(grid, {clientWidth: 280, clientHeight: 224});
   fire(grid, 'scroll');
   return box;
 }
 
 function shown(box) {
-  return box.querySelectorAll('.u2-grid-cell').map((c) => c.title);
+  return [...box.querySelectorAll('.u2-grid-cell')].map((c) => c.title);
 }
 
 function type(box, text) {
@@ -64,7 +64,7 @@ ui('the control shows the current glyph and name, or a dash when empty', () => {
   assert.equal(control(input).getAttribute('aria-expanded'), 'false');
   assert.notEqual(input.root.querySelector('.u2-icon-input-preview .fa-star'), null);
   assert.equal(input.root.querySelector('.u2-icon-input-name').textContent, 'star');
-  input.value.value = '';
+  input.value = '';
   assert.equal(input.root.querySelector('.u2-icon-input-preview').children.length, 0);
   assert.equal(input.root.querySelector('.u2-icon-input-name').textContent, '—');
   input.dispose();
@@ -82,7 +82,7 @@ ui('click opens the popup over every icon; typing filters by name with spaces as
   assert.equal(names.every((n) => n.includes('arrow-to')), true);
   type(box, 'zzzz');
   assert.equal(shown(box).length, 0);
-  assert.equal(input.value.value, '', 'filtering is not a pick');
+  assert.equal(input.value, '', 'filtering is not a pick');
   input.dispose();
   assert.equal(popup(), null, 'disposing the input takes the popup with it');
 });
@@ -92,8 +92,8 @@ ui('a click on a cell commits the name and closes; Esc and an outside click clos
   const input = make({value: 'star', onChanged: (v) => changes.push(v)});
   let box = open(input);
   type(box, 'flask');
-  fire(box.querySelectorAll('.u2-grid-cell').find((c) => c.title === 'flask').firstChild, 'click');
-  assert.equal(input.value.value, 'flask');
+  fire([...box.querySelectorAll('.u2-grid-cell')].find((c) => c.title === 'flask').firstChild, 'click');
+  assert.equal(input.value, 'flask');
   assert.deepEqual(changes, ['flask']);
   assert.equal(popup(), null);
   assert.equal(control(input).getAttribute('aria-expanded'), 'false');
@@ -104,7 +104,7 @@ ui('a click on a cell commits the name and closes; Esc and an outside click clos
   box = open(input);
   fire(document, 'keydown', {key: 'Escape'});
   assert.equal(popup(), null, 'Escape closes');
-  assert.equal(input.value.value, 'flask', 'neither dismissal wrote');
+  assert.equal(input.value, 'flask', 'neither dismissal wrote');
   assert.deepEqual(changes, ['flask']);
   input.dispose();
 });
@@ -120,7 +120,7 @@ ui('arrows typed in the search box drive the grid, and Enter picks the lead', ()
   assert.equal(grid.getAttribute('aria-activedescendant') !== null, true);
   const lead = shown(box)[1];
   fire(field, 'keydown', {key: 'Enter'});
-  assert.equal(input.value.value, lead);
+  assert.equal(input.value, lead);
   assert.equal(popup(), null);
   input.dispose();
 });
@@ -132,10 +132,10 @@ ui('Enter and Space on the control toggle the popup; Backspace clears a nullable
   fire(control(input), 'keydown', {key: ' '});
   assert.equal(popup(), null);
   fire(control(input), 'keydown', {key: 'Backspace'});
-  assert.equal(input.value.value, '');
+  assert.equal(input.value, '');
   const required = make({value: 'star', nullable: false});
   fire(control(required), 'keydown', {key: 'Delete'});
-  assert.equal(required.value.value, 'star');
+  assert.equal(required.value, 'star');
   input.dispose();
   required.dispose();
 });
@@ -143,10 +143,10 @@ ui('Enter and Space on the control toggle the popup; Backspace clears a nullable
 ui('a disabled input does not open; a bound signal is adopted; a custom name list is honoured', () => {
   const bound = signal('cog');
   const input = make({bind: bound, names: ['cog', 'star', 'github']});
-  input.enabled = false;
+  input.disabled = 'Not editable in this test';
   fire(control(input), 'click');
   assert.equal(popup(), null);
-  input.enabled = true;
+  input.disabled = null;
   const box = open(input);
   assert.deepEqual(shown(box), ['cog', 'star', 'github']);
   assert.notEqual(box.querySelectorAll('.u2-grid-cell')[2].querySelector('.fab.fa-github'), null,

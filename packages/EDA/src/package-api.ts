@@ -12,10 +12,6 @@ export namespace funcs {
     return await grok.functions.call('EDA:Info', {});
   }
 
-  export async function init(): Promise<void> {
-    return await grok.functions.call('EDA:Init', {});
-  }
-
   /**
    * Density-based spatial clustering of applications with noise (DBSCAN)
    * @param {number} epsilon - The maximum distance between two samples for them to be considered as in the same neighborhood.

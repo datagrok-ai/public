@@ -83,7 +83,7 @@ export class SpecNodeHandler extends DG.ObjectHandler<SpecNodeRef> {
     if (editor === undefined)
       sections.push(...SpecNodeHandler._tables(propsFor(x), events, {...x.node.bind}, sharedAppearance(x)));
     else {
-      edited = Scope.runWith(scope!, () => propEditors(x, editor, events, scope!));
+      edited = (scope!).build(() => propEditors(x, editor, events, scope!));
       sections.push(...edited.sections);
     }
     const redraw = (at: SpecNodeRef): void => {
@@ -134,9 +134,9 @@ export class SpecNodeHandler extends DG.ObjectHandler<SpecNodeRef> {
    * same actions its context menus offer, run through the same path, for whoever never opens a
    * menu on a tree row. */
   private static _verbs(x: SpecNodeRef): HTMLElement[] {
-    const own = new Set((x.instance.registry.get(x.node.tag)?.designerActions ?? []).map((a) => a.name));
-    const verbs = (x.actions?.() ?? []).filter((a) => own.has(a.name));
-    return verbs.length === 0 ? [] : [divH(verbs.map((a) => button(a.name, a.run)), 'u2-designer-verbs')];
+    const own = new Set((x.instance.registry.get(x.node.tag)?.designerActions ?? []).map((a) => a.text));
+    const verbs = (x.actions?.() ?? []).filter((a) => own.has(a.text));
+    return verbs.length === 0 ? [] : [divH(verbs.map((a) => button(a.text, a.run)), 'u2-designer-verbs')];
   }
 
   /** A data source's pulse: the one LIVE section of the panel, because a source runs on its own

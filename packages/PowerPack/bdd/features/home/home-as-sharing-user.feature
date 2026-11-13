@@ -31,7 +31,7 @@ Feature: The Home page of a user who is neither a developer nor an administrator
 
   Scenario: A project shared with the sharing user, with notifications on
     Given the sharing user has no notifications, now and when the feature ends
-    And user opens demog dataset
+    And user opens demog-1000 dataset
     And no project named "bdd-home-shared-{time}" is on the server
     And user saves the current view as project "bdd-home-shared-{time}"
     And the browse panel is open

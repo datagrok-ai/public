@@ -272,8 +272,8 @@ export class CruxSketcher extends grok.chem.SketcherBase {
     // synced the current object (js-api's Sketcher.syncCurrentObject) that value is a molblock: Crux opened empty.
     if (notation === 'smiles' && DG.chem.isMolBlock(value))
       notation = value.includes('V3000') ? 'molblockV3000' : 'molblock';
-    // and the other way round: a SMILES given as a molblock (SequenceTranslator's Markush enumerator set its cores'
-    // SMILES with setMolFile, 2026-10-23: Crux opened empty) is read as the SMILES it is
+    // and the other way round: a SMILES given as a molblock (SequenceTranslator's Markush enumerator sets its cores'
+    // SMILES with setMolFile) is read as the SMILES it is
     else if ((notation === 'molblock' || notation === 'molblockV3000') && value && !DG.chem.isMolBlock(value))
       notation = 'smiles';
     this.explicitMol = {notation, value};

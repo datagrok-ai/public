@@ -16,8 +16,8 @@ Feature: A project opened by its direct link
   Background:
     Given user is logged in
 
-  Scenario: A project with the demog table is saved from the toolbar
-    Given user opens demog dataset
+  Scenario: A project with the demog-1000 table is saved from the toolbar
+    Given user opens demog-1000 dataset
     And no project named "bdd-direct-link-{time}" is on the server
     And the browse panel is open
     When user clicks on Save button in toolbar
@@ -36,11 +36,11 @@ Feature: A project opened by its direct link
     Then the project "bdd-direct-link-{time}" should not be open
     When user loads the direct link of project "bdd-direct-link-{time}"
     Then the project "bdd-direct-link-{time}" should be open
-    And the "demog" view should be current
-    And the table should have 5850 rows
+    And the "demog-1000" view should be current
+    And the table should have 1000 rows
     And the table should have a column "AGE"
     And the table should have a column "RACE"
-    And grid should show 5850 rows
+    And grid should show 1000 rows
     And no loading indicator should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown
@@ -55,9 +55,9 @@ Feature: A project opened by its direct link
     And user expands "My stuff > My dashboards" tree node inside browse tree
     And user double-clicks on "My stuff > My dashboards > bdd-direct-link-{time}" tree node inside browse tree
     Then the project "bdd-direct-link-{time}" should be open
-    And the "demog" view should be current
-    And the table should have 5850 rows
+    And the "demog-1000" view should be current
+    And the table should have 1000 rows
     And the table should have a column "AGE"
-    And grid should show 5850 rows
+    And grid should show 1000 rows
     And no errors should have been logged
     And no error or warning balloon should have been shown

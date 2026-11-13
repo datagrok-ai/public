@@ -20,47 +20,25 @@
     filter: none;
 }
 
-/* History panel */
-
-.hp-no-elements-label {
-    margin: 12px;
+/* the platform turns the focus outline of buttons off; Compute2 views show the browser's ring */
+.compute2-scope button.ui-btn:focus-visible {
+  outline: revert;
 }
 
-.grok-icon.hp-disabled {
-    pointer-events: none;
-    opacity: 0.6;
+/* d4-disabled turns off pointer events; a disabled big button keeps them to show why on hover */
+.compute2-scope button[is='dg-big-button'].ui-btn.d4-disabled[aria-disabled='true'] {
+  pointer-events: auto;
+  cursor: default;
 }
 
-.hp-funccall-card-hover-icon {
-    display: none;
+/* a condensed platform form sizes .grok-wait to the full row, wrapping the options column (validation icon)
+   below a select and leaving a multiple choice list, its empty sibling, no width; size it as a plain editor */
+.compute2-scope .ui-form.ui-form-condensed .ui-input-root > .grok-wait {
+  width: 0;
+  flex-grow: 10000;
 }
 
-.hp-funccall-card:hover .hp-funccall-card-hover-icon {
-    display: flex;
-    margin: 0px 0px 0px 5px;
-}
-
-.hp-funccall-card {
-    margin: 2px 1px;
-    padding: 5px;
-    justify-content: space-between;
-}
-
-.hp-funccall-card .hp-card-content {
-    justify-content: space-around;
-    margin-left: 5px;
-}
-
-.hp-funccall-card .hp-card-content * {
-    margin-bottom: 3px;
-}
-
-.hp-funccall-card .description {
-    margin-bottom: 2px;
-    color: var(--grey-3);
-}
-
-.hp-funccall-card .date {
-    color: var(--grey-3);
-    margin-left: 5px;
+.compute2-scope .ui-form.ui-form-condensed .ui-input-root.ui-input-multi-choice > .grok-wait {
+  flex-grow: 0;
+  min-width: 0;
 }

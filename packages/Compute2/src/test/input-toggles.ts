@@ -1,18 +1,12 @@
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import * as Vue from 'vue';
-import {BehaviorSubject} from 'rxjs';
-import {category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test} from '@datagrok-libraries/test/src/test';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {InputForm} from '@datagrok-libraries/webcomponents-vue';
-import {applyInputsVisibility, isInputEnabled} from '@datagrok-libraries/webcomponents-vue/src/InputForm/utils';
 import {
   ALL_INPUTS_TOGGLES, DEFAULT_INPUT_TOGGLES, getInputToggles, InputToggle,
 } from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {RestrictionType} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {getToggledInputs} from '../components/RFV/input-toggles';
-import {awaitWebComponents} from './utils';
 
 const prop = (name: string, category?: string) => DG.Property.js(name, DG.TYPE.FLOAT, {category});
 const consistency = (restriction: RestrictionType, inconsistent = false): ConsistencyInfo =>
@@ -112,97 +106,5 @@ category('RFV: input toggles', () => {
 
   test('An empty list turns toggles off', async () => {
     expectDeepEqual(toggled(PROPS, []), {hidden: [], counts: {}});
-  });
-});
-
-category('RFV: input enabled', () => {
-  test('mutateOnly locks restricted and info dataframe inputs only', async () => {
-    const [df, plain, x] = DG.Script.create(['//name: t', '//language: javascript',
-      '//input: dataframe df {mutateOnly: true}', '//input: dataframe plain', '//input: double x {mutateOnly: true}',
-    ].join('\n')).inputs;
-    const enabled = (prop: DG.Property, isReadonly = false) => Object.fromEntries(
-      (['disabled', 'restricted', 'info', 'none', undefined] as const).map((restriction) =>
-        [restriction ?? 'unlinked', isInputEnabled(prop, restriction && consistency(restriction), isReadonly)]));
-    expectDeepEqual(enabled(df), {disabled: false, restricted: false, info: false, none: true, unlinked: true});
-    expectDeepEqual(enabled(plain), {disabled: false, restricted: true, info: true, none: true, unlinked: true});
-    expectDeepEqual(enabled(x), {disabled: false, restricted: true, info: true, none: true, unlinked: true});
-    expectDeepEqual(enabled(plain, true),
-      {disabled: false, restricted: false, info: false, none: false, unlinked: false});
-  });
-});
-
-class FakeInput {
-  writes: boolean[] = [];
-  root = undefined as unknown as HTMLElement;
-  private shown = true;
-  get visible() {
-    return this.shown;
-  }
-  set visible(value: boolean) {
-    this.shown = value;
-    this.writes.push(value);
-  }
-}
-
-category('RFV: input visibility', () => {
-  test('Visibility is written only when it changes', async () => {
-    const inputs: Record<string, FakeInput> = {a: new FakeInput(), b: new FakeInput(), c: new FakeInput()};
-    const apply = (hidden: string[], meta: Record<string, any> = {}) =>
-      applyInputsVisibility([...Object.keys(inputs), 'missing'], (name) => inputs[name], meta, new Set(hidden));
-    const writes = () => Object.fromEntries(Object.entries(inputs).map(([name, input]) => [name, input.writes]));
-
-    apply(['a']);
-    apply(['a']);
-    expectDeepEqual(writes(), {a: [false], b: [], c: []});
-    apply([]);
-    expectDeepEqual(writes(), {a: [false, true], b: [], c: []});
-    apply([], {c: {hidden: true}});
-    apply(['c'], {c: {hidden: true}});
-    expectDeepEqual(writes(), {a: [false, true], b: [], c: [false]});
-    applyInputsVisibility(Object.keys(inputs), (name) => inputs[name], {});
-    expectDeepEqual(writes(), {a: [false, true], b: [], c: [false, true]});
-  });
-
-  test('Input form hides toggled inputs, driver meta wins', async () => {
-    await awaitWebComponents();
-    const root = ui.div();
-    document.body.append(root);
-    let form: DG.InputForm | undefined;
-    const app = Vue.createApp(InputForm, {
-      funcCall: DG.Func.byName('Compute2:SimpleInputs2').prepare(),
-      callMeta: {c: new BehaviorSubject({hidden: true})},
-      hiddenInputs: new Set(['a']),
-      onFormReplaced: (f: DG.InputForm | undefined) => form = f,
-    });
-    app.mount(root);
-    try {
-      await awaitCheck(() => !!form?.getInput('c') && !form.getInput('c').visible, 'form not rendered', 10000);
-      expect(form!.getInput('a').visible, false);
-      expect(form!.getInput('b').visible, true);
-    } finally {
-      app.unmount();
-      root.remove();
-    }
-  });
-
-  test('Validation icon shows a link for workflow-set values', async () => {
-    await awaitWebComponents();
-    const icon = document.createElement('dg-validation-icon') as any;
-    document.body.append(icon);
-    const iconName = () => icon.querySelector('i')?.className.match(/fa-([a-z-]+)/)?.[1];
-    try {
-      for (const [status, expected] of [
-        [consistency('restricted'), 'link'],
-        [consistency('disabled'), 'link'],
-        [consistency('restricted', true), 'handshake-slash'],
-        [consistency('info'), undefined],
-      ] as const) {
-        icon.validationStatus = {consistency: status};
-        await awaitCheck(() => iconName() === expected,
-          `${status.restriction}: expected ${expected}, got ${iconName()}`, 3000);
-      }
-    } finally {
-      icon.remove();
-    }
   });
 });

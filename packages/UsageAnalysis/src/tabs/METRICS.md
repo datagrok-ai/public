@@ -11,8 +11,10 @@ connections, database size and the `pg_stat_statements` rankings come from one c
 tables, cache-miss tables, session offenders, errors and sessions come from cached `Metrics*` SQL
 queries against `System:Datagrok`; storage usage comes from a server-maintained snapshot exposed via
 the JS API (`grok.dapi.info.getStorageStats()`); disk free space comes from the `DiskStats` server
-function (free space on the server's data volume). Every loader is wrapped in `safeCall` so a single
-failed source degrades to an "unavailable" card rather than breaking the view.
+function (free space on the server's data volume); data growth (cards row 3 and the Data growth panel) comes
+from `grok.dapi.admin.getGrowthMetrics()` (`/api/admin/metrics/growth`, samples the server collects on a
+schedule). Every loader is wrapped in `safeCall` so a single failed source degrades to an "unavailable" card
+rather than breaking the view.
 
 Implemented in [`metrics.ts`](./metrics.ts) as `class MetricsView extends UaView`.
 
@@ -33,7 +35,7 @@ Implemented in [`metrics.ts`](./metrics.ts) as `class MetricsView extends UaView
 
 `MetricsView` (`metrics.ts`):
 
-- `initViewers()` — builds the layout: header (`as of` label + Refresh / Share buttons), two
+- `initViewers()` — builds the layout: header (`as of` label + Refresh button), two
   rows of cards (Database, Table health, Storage, Connections, Queue, Disk free / Errors, Latency,
   Sessions), the Queries panel, the Largest-tables + Table-health panels, the HTTP-routes panel.
   Subscribes `uaToolbox.filterStream → refreshWindowCards()` and calls `refresh()` once.
@@ -61,8 +63,11 @@ Implemented in [`metrics.ts`](./metrics.ts) as `class MetricsView extends UaView
 - `openFullView()` — re-runs a source with `FULL_VIEW_LIMIT` (100000) — a `Metrics*` query, or
   the endpoint via `fetchMetrics` for HTTP routes and the `pg_stat_statements` rankings — and opens
   the result as a standalone `TableView` ("Add to workspace").
-- `sendToDatagrok()` / `collectSnapshotAttachments()` — build CSV/JSON attachments for every
-  source and open the e-mail composer ("Share...").
+- `collectSnapshotAttachments()` — CSV attachments of every source, for the tab's CSV report (`exportFiles`).
+- `openRouteFailures()` — a click on a route's `err_pct` opens its failed requests in the window
+  (`MetricsRouteFailures`: time, status, ms, user, session and the nearest error or warning of that session within
+  5 s) as a table view, with the current request's log docked below (`MetricsRequestLog`: the session's events
+  within 5 s of it).
 - `confirmResetPgStats()` — confirmation dialog that calls `MetricsResetPgStatStatements`.
 
 ### Color banding and thresholds
@@ -136,6 +141,39 @@ Returned shape, consumed by `buildStorageTooltip`:
 }
 ```
 
+### Data growth (`getGrowthMetrics`)
+
+The third row of cards and the **Data growth** panel show how the platform's data grows, from
+`grok.dapi.admin.getGrowthMetrics({days})` (`ViewTelemetry`; `GrowthMetrics` in
+[`dapi.ts`](../../../../../js-api/src/dapi.ts)). The server samples the database (table sizes and rows
+hourly, categories such as events by source daily), the storage (by location and nature every 6 hours),
+the servers' disks, and what the garbage collector deleted and has pending, into `metric_samples`; the
+call answers one row per key with its value now, its change over 1, 7 and 30 days, a daily trend of
+`days` and the metric alerts that cover it. `loadGrowth()` fetches every area once per refresh (and when
+**Days** changes); the area toggle and **Only growing** filter the response without a round trip. The
+data is point-in-time: the toolbox date filter does not apply.
+
+| Card | Shows |
+|---|---|
+| DB growth 7d | Δ7d of the database (`(total)` row, `bytes.d7`), its % of the size a week ago banded by `THRESH.growthPct` (10 / 25 %); sub: the size now; tooltip: the 5 tables that grew most |
+| Storage growth 7d | the same of the shared storage (`shared` row); sub: backend type and size; tooltip: the 5 natures that grew most |
+| GC deleted | the sum of `gc.deletedLast` of the `gc` rows; sub: the last run, or "GC disabled" in orange; tooltip: deleted in 7 days by key |
+| GC pending | the sum of `gc.pending`; sub: the key with the most; tooltip: pending by key |
+| Growth alerts | how many (alert, key) pairs hold; red when one of their alerts is open or acknowledged, orange when they hold without an open alert (`info` severity, muted), green when none hold. The response carries no severity, so the color reads the alert state |
+
+Before the first collection (`collectedAt` null) every card says "collecting…" and the panel says so; a
+card whose 7-day delta has no sample that old shows "—" with "collecting…".
+
+Panel: one row per response row of the selected area, sorted by Δ7d bytes then size, columns `name`
+(`table`, `table · dim=value`, `location · nature[/sub]`), `size`, `count` (`~` when estimated), `d7_bytes`,
+`d7_pct` (colored by `THRESH.growthPct`), `trend` (a sparkline over the hidden `t0..t{days-1}` columns),
+then `written_7d` (Δ7d count + GC deleted in 7 days: the real write rate), `gc_7d`, `gc_pending` for the
+database and GC areas, or `free_bytes`, `used_pct` for storage (disk rows), and `alert`: a red dot when a
+metric alert holds, its tooltip naming the alerts; a click opens the first one's problem (`/alerts/<problemId>`) —
+the id is only in the response for `ManageAlerts` holders, so for others the dot is only a tooltip. **+** opens the full frame (every
+column, `t*` included) as a table view. The CSV report adds `growth.csv`. Without `ViewTelemetry` the call
+rejects with 403 and the cards and panel show "unavailable".
+
 ### Disk stats (`DiskStats`)
 
 The **Disk free** card calls `grok.functions.call('DiskStats')`, a server-side cached function
@@ -163,10 +201,10 @@ that is only 70% full but has < 2 GiB free still goes red.
 | Surface                                                                  | Description                                                                                                                       |
 |--------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
 | `grok.dapi.admin.getMetrics({date, limit})`                              | `AdminDataSource` in [`dapi.ts`](../../../../../js-api/src/dapi.ts); `Promise<ServerMetrics>` — `window`, `http` (now / previous / routes), `queue`, `database` (size, cache hit, stats reset, connections, statements). Admin only. |
+| `grok.dapi.admin.getGrowthMetrics({area, days})`                         | `AdminDataSource` in [`dapi.ts`](../../../../../js-api/src/dapi.ts); `Promise<GrowthMetrics>` — `rows` (area, key, `bytes`/`count` series with `d1`/`d7`/`d30` and `trend`, `gc`, `alerts`), `gc`, `storage`, `schedule`. `ViewTelemetry`. |
 | `grok.dapi.info.getStorageStats()`                                       | `InfoDataSource` in [`dapi.ts`](../../../../../js-api/src/dapi.ts); `Promise<{[key: string]: any}>`, the hourly storage snapshot. |
 | `grok.functions.call('DiskStats')`                                       | Returns a JSON string parsed to `DiskStat`.                                                                                       |
 | `queries.metrics*`                                                       | Typed wrappers for the `Metrics*` SQL queries.                                                                                    |
-| `grok.dapi.admin.getReportEmail()` / `grok.dapi.admin.sendEmail(...)`    | Used by "Share..." to address and send the snapshot e-mail.                                                                       |
 
 ### Metrics* SQL queries (`queries/metrics.sql`)
 
@@ -184,15 +222,12 @@ that is only 70% full but has < 2 GiB free still goes red.
 Read queries run on `System:Datagrok` (read-only); `MetricsResetPgStatStatements` runs on
 `System:DatagrokAdmin` because the reset is privileged.
 
-### Share snapshot (email)
+### CSV report
 
-The header **Share...** button (`sendToDatagrok()`) opens the platform e-mail composer
-(`ui.composeEmail`) with one attachment per data source. Recipient is pre-filled from
-`grok.dapi.admin.getReportEmail()`; `onSend` calls `grok.dapi.admin.sendEmail(...)`.
-`collectSnapshotAttachments()` calls the endpoint once with `EMAIL_LIMIT` (100 rows) and builds
-the files via `safeCall` (a failed source is skipped): a CSV per remaining metrics query,
-`db_summary.csv` / `connections.csv` / `queue.csv` / `http_routes.csv` / `latency.csv` from the
-endpoint response, the three `pg_stat_statements` CSVs when `statements.available`, plus
+`collectSnapshotAttachments()` (the tab's `exportFiles`, used by the Usage Analysis CSV report) calls the
+endpoint once with `EMAIL_LIMIT` (100 rows) and builds the files via `safeCall` (a failed source is skipped): a
+CSV per remaining metrics query, `db_summary.csv` / `connections.csv` / `queue.csv` / `http_routes.csv` /
+`latency.csv` from the endpoint response, the three `pg_stat_statements` CSVs when `statements.available`, plus
 `storage.json` and `disk.json`.
 
 ## Usage
@@ -202,8 +237,8 @@ endpoint response, the three `pg_stat_statements` CSVs when `statements.availabl
   Connections / Queue / storage / disk / pg_stat_statements cards are point-in-time and ignore the
   filter). The Queue card shows queued + running function calls and turns orange while anything is
   waiting. The
-  **Refresh** button re-runs everything; **Share...** opens an e-mail composer with one
-  CSV/JSON attachment per source. The Queries panel toggles between slowest / most-called /
+  **Refresh** button re-runs everything. Click a route's error rate in **HTTP routes** to see its failed
+  requests, each with its nearest error, and the selected request's log. The Queries panel toggles between slowest / most-called /
   worst-cache-hit; its "⋯" menu offers "Add to workspace" and "Reset stats". Each panel's
   **+** icon opens the full (100000-row) result as a standalone table view. Hover any card for a
   diagnostic tooltip with thresholds and remediation hints.

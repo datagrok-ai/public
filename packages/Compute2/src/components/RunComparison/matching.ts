@@ -65,11 +65,11 @@ export function buildAliasGroups(mappings: NameMapping[]): Map<string, number> {
       groups.set(a, nextId);
       groups.set(b, nextId);
       nextId++;
-    } else if (ga == null) {
+    } else if (ga == null)
       groups.set(a, gb!);
-    } else if (gb == null) {
+    else if (gb == null)
       groups.set(b, ga);
-    } else if (ga !== gb) {
+    else if (ga !== gb) {
       for (const [name, id] of groups) {
         if (id === gb)
           groups.set(name, ga);
@@ -227,9 +227,9 @@ function clusterByName<P>(
   const clusters: Cluster<P>[] = [];
   for (const item of items) {
     const best = bestCluster(clusters, item, false, aliases, convert);
-    if (best) {
+    if (best)
       addToCluster(best.cluster, item, best.confidence);
-    } else {
+    else {
       clusters.push({
         canonicalName: item.name,
         canonicalSecondary: item.secondaryName,

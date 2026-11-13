@@ -164,3 +164,42 @@ FROM users_sessions s
 CROSS JOIN dates d
 WHERE s.started BETWEEN d.min_prev_date AND d.max_date;
 --end
+
+
+--name: MetricsRouteFailures
+--input: string method
+--input: string route
+--input: string date {pattern: datetime}
+--connection: System:Datagrok
+SELECT r.time, r.status, r.ms, u.login AS user, r.session_id,
+  err.source AS log_level, err.message AS error, err.stack_trace
+FROM http_requests r
+JOIN http_routes t ON t.id = r.route_id
+LEFT JOIN users_sessions s ON s.id = r.session_id
+LEFT JOIN users u ON u.id = s.user_id
+LEFT JOIN LATERAL (
+  SELECT et.source, coalesce(e.error_message, e.description, e.friendly_name) AS message, e.error_stack_trace AS stack_trace
+  FROM events e JOIN event_types et ON et.id = e.event_type_id
+  WHERE e.session_id = r.session_id AND et.source IN ('error', 'warning')
+    AND e.event_time BETWEEN r.time - interval '5 seconds' AND r.time + interval '5 seconds'
+  ORDER BY et.source = 'error' DESC, abs(extract(epoch FROM e.event_time - r.time))
+  LIMIT 1
+) err ON true
+WHERE t.method = @method AND t.route = @route AND r.status >= 400 AND @date(r.time)
+ORDER BY r.time DESC
+LIMIT 1000;
+--end
+
+
+--name: MetricsRequestLog
+--input: string session
+--input: string time
+--connection: System:Datagrok
+SELECT e.event_time AS time, et.source AS level, coalesce(e.error_message, e.description, e.friendly_name) AS message,
+  e.error_stack_trace AS stack_trace
+FROM events e
+JOIN event_types et ON et.id = e.event_type_id
+WHERE e.session_id = @session::uuid
+  AND e.event_time BETWEEN @time::timestamp - interval '5 seconds' AND @time::timestamp + interval '5 seconds'
+ORDER BY e.event_time;
+--end

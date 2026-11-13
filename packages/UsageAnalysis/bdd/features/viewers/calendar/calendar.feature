@@ -15,6 +15,12 @@ Feature: Calendar counting, chrome and tooltips
   The three bugs `calendar.md` still lists as open — GROK-20634 (the Sunday header selects
   nothing), GROK-20635 (Show Filtered Only inert) and GROK-20636 (the Date selector unwired) —
   are fixed in the code and are asserted here as working behaviour, not tagged.
+  From the manual part of `calendar.md`: step 2 is the Calendar icon on the toolbox's Viewers pane;
+  step 4 is Odd and Even Month Color (a hue in the day cells, chosen away from the light blue
+  circles, the red weekend numbers and the default warm grey of the even months), Back Color (the
+  header the year caption sits on), and the viewer's own Filter and Row Source, claimed by the
+  counts they change. Step 3, the bold day number under the pointer, is not claimed: the calendar
+  reports no reading for the hovered day.
 
   Background:
     Given user is logged in
@@ -80,6 +86,67 @@ Feature: Calendar counting, chrome and tooltips
     When user sets "redWeekends" property of calendar viewer to "true"
     Then the "days" area of calendar viewer should contain the color "#FF0000"
     And calendar viewer should have repainted
+    And no errors should have been logged
+
+  Scenario: Odd and Even Month Color fill the day cells of alternate months
+    Then the "days" area of calendar viewer should not contain the color "#00AA00"
+    And the "days" area of calendar viewer should not contain the color "#AA00AA"
+    When user sets "oddMonthColor" property of calendar viewer to "#00AA00"
+    Then the "days" area of calendar viewer should contain the color "#00AA00"
+    And the "days" area of calendar viewer should not contain the color "#AA00AA"
+    When user sets "evenMonthColor" property of calendar viewer to "#AA00AA"
+    Then the "days" area of calendar viewer should contain the color "#AA00AA"
+    And the "days" area of calendar viewer should contain the color "#00AA00"
+    When user sets properties of calendar viewer:
+      | oddMonthColor  | #FFFFFF |
+      | evenMonthColor | #F7F5F3 |
+    Then the "days" area of calendar viewer should not contain the color "#00AA00"
+    And the "days" area of calendar viewer should not contain the color "#AA00AA"
+    And no errors should have been logged
+
+  Scenario: Back Color fills the header behind the year caption
+    Then the "header" area of calendar viewer should not contain the color "#FFCC00"
+    When user sets "backColor" property of calendar viewer to "#FFCC00"
+    Then the "header" area of calendar viewer should contain the color "#FFCC00"
+    And the "rows of weekday Sunday" reading of calendar viewer should be 153
+    When user sets "backColor" property of calendar viewer to "#FFFFFF"
+    Then the "header" area of calendar viewer should not contain the color "#FFCC00"
+    And no errors should have been logged
+
+  Scenario: Row Source Selected counts the selected rows and nothing else
+    When user selects the first 20 rows
+    Then 20 rows should be selected
+    When user sets "rowSource" property of calendar viewer to "Selected"
+    Then the "rows shown" reading of calendar viewer should be 20
+    And the "rows of weekday Sunday" reading of calendar viewer should be 2
+    And calendar viewer should have repainted
+    When user sets "rowSource" property of calendar viewer to "Filtered"
+    And user clears the row selection
+    Then the "rows shown" reading of calendar viewer should be 1000
+    And the "rows of weekday Sunday" reading of calendar viewer should be 153
+    And no errors should have been logged
+
+  Scenario: The viewer's own filter counts only the rows it keeps and leaves the table alone
+    When user sets "filter" property of calendar viewer to "${AGE} > 40"
+    Then the "rows shown" reading of calendar viewer should be 635
+    And 1000 rows should pass the filter
+    And the "rows of weekday Sunday" reading of calendar viewer should be 102
+    And calendar viewer should have repainted
+    When user sets "filter" property of calendar viewer to ""
+    Then the "rows shown" reading of calendar viewer should be 1000
+    And the "rows of weekday Sunday" reading of calendar viewer should be 153
+    And no errors should have been logged
+
+  Scenario: The Calendar icon on the Viewers pane of the toolbox adds the viewer
+    When user clicks on close icon of calendar viewer
+    Then calendar viewer should be absent
+    When user opens toolbox
+    And user clicks on calendar icon in toolbox
+    Then calendar viewer should be visible
+    And the open tableview should have 1 calendar viewer
+    And the "date column" reading of calendar viewer should be "STARTED"
+    And the "rows shown" reading of calendar viewer should be 1000
+    And calendar viewer should be painted
     And no errors should have been logged
 
   Scenario: The title bar closes the calendar

@@ -57,8 +57,8 @@ test.describe("Dataset tabs reordered by drag and drop keep their order through 
     await run.scenario("A dataset opened later goes to the end and leaves the new order alone", async () => {
       await session.step(44, "When user drags \"smiles\" view tab to \"browse-import\" view tab", () => dragTo(page, el("\"smiles\" view tab"), el("\"browse-import\" view tab")));
       await session.step(45, "Then the view tabs should be in the order \"browse-import, smiles, cars-small, curves\"", () => viewTabsInOrder(page, "browse-import, smiles, cars-small, curves"));
-      await session.step(46, "When user opens demog dataset", () => openDataset(page, ds("demog")));
-      await session.step(47, "Then the view tabs should be in the order \"browse-import, smiles, cars-small, curves, demog\"", () => viewTabsInOrder(page, "browse-import, smiles, cars-small, curves, demog"));
+      await session.step(46, "When user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
+      await session.step(47, "Then the view tabs should be in the order \"browse-import, smiles, cars-small, curves, demog-1000\"", () => viewTabsInOrder(page, "browse-import, smiles, cars-small, curves, demog-1000"));
       await session.step(48, "When user closes the current view", () => closeCurrentView(page));
       await session.step(49, "Then the open table views should be exactly \"browse-import, cars-small, smiles, curves\"", () => openTableViewsExactly(page, "browse-import, cars-small, smiles, curves"));
       await session.step(50, "And the view tabs should be in the order \"browse-import, smiles, cars-small, curves\"", () => viewTabsInOrder(page, "browse-import, smiles, cars-small, curves"));

@@ -179,4 +179,92 @@ category('Dapi: projects: data sync', () => {
 
   test('A calculated-column chain over a query result survives a data-sync round trip and a source rename',
     () => columnChainSurvivesDataSync(products), {timeout: 120000});
+
+  test('A data-synced file that lost a column a calculated column reads opens with it empty and a warning (GROK-19725)', async () => {
+    const path = `System:AppData/ApiTests/sync-lost-column-${DG.Utils.randomString(8)}.csv`;
+    const saved: Saved[] = [];
+    try {
+      await grok.dapi.files.writeAsText(path, grok.data.demo.demog(20).toCsv());
+      const df = await openSource({run: () => runCore('OpenServerFile', {fullPath: path}), column: 'height', rows: 20});
+      await runCore('AddNewColumn', {table: df, expression: '${height} + 1', name: 'HeightPlus'});
+      saved.push(await saveProject(df, true));
+      const lost = grok.data.demo.demog(20);
+      lost.columns.remove('height');
+      await grok.dapi.files.writeAsText(path, lost.toCsv());
+      const reopened = await reopen(saved[0], 20);
+      expect(reopened.col('height'), null);
+      expect(reopened.col('HeightPlus')?.stats.missingValueCount, 20);
+      await waitUntil(() => Array.from(document.querySelectorAll('.d4-balloon'))
+        .some((b) => (b.textContent ?? '').includes('"HeightPlus": missing columns: height')),
+      'no warning names HeightPlus and its missing column height', 5000);
+    }
+    finally {
+      await remove(saved);
+      await grok.dapi.files.delete(path).catch(() => {});
+    }
+  }, {timeout: 60000});
+}, {owner: 'aparamonov@datagrok.ai'});
+
+category('Dapi: projects: viewers', () => {
+  test('A grid viewer bound to a second table keeps its table and sort through a project (public#2718)', async () => {
+    grok.shell.closeAll();
+    const a = grok.data.demo.demog(100);
+    a.name = `apitests-two-a-${DG.Utils.randomString(6)}`;
+    const b = grok.data.demo.demog(50);
+    b.name = `apitests-two-b-${DG.Utils.randomString(6)}`;
+    const project = DG.Project.create();
+    project.name = `apitests-two-tables-${DG.Utils.randomString(8)}`;
+    const tableInfos: _DG.TableInfo[] = [];
+    let viewInfo: _DG.ViewInfo | null = null;
+    try {
+      grok.shell.addTableView(b);
+      const tv = grok.shell.addTableView(a);
+      const second = DG.Viewer.grid(a);
+      tv.addViewer(second);
+      second.setOptions({table: b.name});
+      await waitUntil(() => second.dataFrame?.name === b.name, 'the second grid did not move to the second table');
+      second.sort(['age'], [false]);
+      await waitUntil(() => second.sortByColumns.length === 1, 'the second grid did not sort');
+
+      for (const df of [a, b]) {
+        const info = df.getTableInfo();
+        await grok.dapi.tables.uploadDataFrame(df);
+        await grok.dapi.tables.save(info);
+        project.addChild(info);
+        tableInfos.push(info);
+      }
+      viewInfo = DG.ViewInfo.fromJson(tv.saveLayout().toJson());
+      await grok.dapi.views.save(viewInfo);
+      project.addChild(viewInfo);
+      await grok.dapi.projects.save(project);
+
+      grok.shell.closeAll();
+      await (await grok.dapi.projects.find(project.id)).open();
+      await waitUntil(() => grok.shell.tables.length === 2 &&
+        Array.from(grok.shell.tableViews).some((v) => v.dataFrame.name === a.name), 'the project did not open both tables', 30000);
+      const view = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.name === a.name)!;
+      let reopened: _DG.Grid | undefined;
+      await waitUntil(() => {
+        reopened = Array.from(view.viewers)
+          .find((v) => v.type === DG.VIEWER.GRID && v.dataFrame?.name === b.name) as _DG.Grid | undefined;
+        return reopened != null;
+      }, () => 'the second grid did not come back bound to the second table; the view has ' +
+        Array.from(view.viewers).map((v) => `${v.type} on ${v.dataFrame?.name}`).join(', '), 30000);
+      expect(reopened!.sortByColumns.map((c) => c.name.toLowerCase()).join(), 'age');
+      expect(reopened!.sortTypes.join(), 'false');
+    }
+    finally {
+      grok.shell.closeAll();
+      const owned: [_DG.HttpDataSource<any>, string | undefined][] = [
+        [grok.dapi.projects, project.id], [grok.dapi.views, viewInfo?.id],
+        ...tableInfos.map((i) => [grok.dapi.tables, i.id] as [_DG.HttpDataSource<any>, string])];
+      for (const [source, id] of owned) {
+        if (!id)
+          continue;
+        const entity = await source.find(id).catch(() => null);
+        if (entity)
+          await source.delete(entity);
+      }
+    }
+  }, {timeout: 120000});
 }, {owner: 'aparamonov@datagrok.ai'});

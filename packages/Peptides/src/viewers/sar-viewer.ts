@@ -422,11 +422,8 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
 
   get cliffStats(): type.MutationCliffStats | null {
     if (!this._mutationCliffStats && this.mutationCliffs && this.activityColumnName &&
-      this.sequenceColumnName && this.dataFrame.col(this.activityColumnName)) {
-      const activityCol = this.dataFrame.col(this.activityColumnName)!;
-      const activityData = activityCol.getRawData();
-      this._mutationCliffStats = calculateCliffsStatistics(this.mutationCliffs, activityData);
-    }
+      this.sequenceColumnName && this.dataFrame.col(this.activityColumnName))
+      this._mutationCliffStats = calculateCliffsStatistics(this.mutationCliffs, this.getScaledActivityColumn().getRawData());
     return this._mutationCliffStats;
   }
   set cliffStats(stats: type.MutationCliffStats | null) {
@@ -880,7 +877,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     const generation = ++this._cliffsGeneration;
     this._cliffsPending = true;
     try {
-      const scaledActivityCol: DG.Column<number> = this.dataFrame.getCol(this.activityColumnName);
+      const scaledActivityCol = this.getScaledActivityColumn();
       //TODO: set categories ordering the same to share compare indexes instead of strings
       const monomerCols: type.RawColumn[] = this.positionColumns.map(extractColInfo);
       const filter = (this.dataSource === 'Filtered' && this.dataFrame.filter.anyFalse) ?
@@ -1412,7 +1409,8 @@ export class MonomerPosition extends SARViewer {
       setDefaultProperties(invariantMapMode);
 
       switchHost = ui.divH([mutationCliffsMode.root, invariantMapMode.root], {id: 'pep-viewer-title'});
-      $(switchHost).css('width', 'auto').css('align-self', 'center');
+      $(switchHost).css('width', 'auto').css('align-self', 'center').css('max-width', '100%').css('flex-wrap', 'wrap')
+        .css('height', 'auto').css('justify-content', 'center');
     }
     const viewerRoot = this.viewerGrid.root;
     viewerRoot.style.width = 'auto';

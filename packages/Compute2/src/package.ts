@@ -3,23 +3,24 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {filter, take} from 'rxjs/operators';
+import {BehaviorSubject, of} from 'rxjs';
+import {concatMap, filter, finalize, map, take} from 'rxjs/operators';
 
 import {ViewerTestApp as ViewerAppInstance} from './apps/ViewerTestApp';
 import {FormTestApp as FormAppInstance} from './apps/FormTestApp';
-import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RFVApp} from './apps/RFVApp';
 import {provideDgViewService} from '@datagrok-libraries/webcomponents-vue';
-import {CustomFunctionView as CustomFunctionViewInst, historyUtils} from '@datagrok-libraries/compute-utils';
-import type {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import {historyUtils} from '@datagrok-libraries/compute-utils/history-utils/src/history-utils';
+import type {PipelineConfiguration, ViewersHook} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
 import './tailwind.css';
 import {CustomFunctionView} from '@datagrok-libraries/compute-utils/function-views/src/custom-function-view';
-import {HistoryApp} from './apps/HistoryApp';
+import {attachRunStorage} from './components/RunStorage/custom-function-view-runs';
+import {browseRuns} from './components/RunStorage/run-browser-dialog';
 import {setVueAppOptions} from './utils';
 import {openRunComparison} from './components/RunComparison/comparison-views';
-import {Subject} from 'rxjs';
 import {normalizePipelineInstanceConfig} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import type {
@@ -27,13 +28,20 @@ import type {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
-import {runWorkflow, saveWorkflowRun} from
+import {CUSTOM_VIEW_OPTION, loadViewersHook} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {callExcelReport} from './call-export';
+import {callExports, exportCall} from './run-exports';
+import type {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
+import type {
+  CustomExportArgs,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import type {ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {loadSavedTree, readRun, runWorkflow, saveWorkflowRun} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 import type {RunState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/headless';
 import type {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
 import {runOptimizerFinalized} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 import type {OptimizerParams} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
-import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {ModelCatalogView,
   startModelCatalog,
   makeModelTreeBrowser,
@@ -42,10 +50,8 @@ import {ModelCatalogView,
   setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import dayjs from 'dayjs';
 
-// for compute-api pakage
-export const CFV = CustomFunctionViewInst;
-
 declare global {
+  // eslint-disable-next-line no-var
   var initialURLHandled: boolean;
 }
 
@@ -79,6 +85,7 @@ class Compute2ModelCatalogView extends ModelCatalogView {
   constructor(viewName: string, roleOnlyFilter = false) {
     super(viewName, roleOnlyFilter);
     this.ribbonMenu.group('Tools')
+      .item('Browse Runs...', () => grok.functions.call('Compute2:BrowseRuns'))
       .item('Compare Runs...', () => grok.functions.call('Compute2:CompareRuns'))
       .endGroup();
   }
@@ -98,7 +105,6 @@ const modelCatalogOptions = {
 const providerOf = (nqName: string) => DG.Func.byName(nqName)?.options.provider ?? nqName;
 
 export class PackageFunctions {
-
   @grok.decorators.init()
   static async init() {
     if (initRunned)
@@ -150,7 +156,7 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    meta: { role: ' ', app: ' '}
+    meta: {role: ' ', app: ' '},
   })
   static modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.ViewBase) {
     makeModelTreeBrowser(treeNode as any, modelCatalogOptions.roleOnlyFilter);
@@ -163,27 +169,18 @@ export class PackageFunctions {
     setViewHierarchyData(call, view);
 
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-    const updateFCBus = new Subject<DG.FuncCall>();
-
-    const app = Vue.createApp(HistoryApp, {name: view.funcNqName, showHistory: view.showHistory, updateFCBus: Vue.markRaw(updateFCBus)});
-    setVueAppOptions(app);
-
-    const sub = updateFCBus.subscribe((fc) => {
-      view.linkFunccall(fc);
-      view.onAfterLoadRun(fc);
-    });
-
-    app.mount(view.historyRoot);
+    const detach = attachRunStorage(view, call.func);
+    if (call.aux.initialRunId) {
+      await view.loadRun(call.aux.initialRunId)
+        .catch((e) => grok.shell.error(`Couldn't open the run: ${e?.message ?? e}`));
+    }
 
     grok.events.onViewRemoved.pipe(
       filter((closedView) => {
         return closedView === (view as any);
       }),
       take(1),
-    ).subscribe(() => {
-      sub.unsubscribe();
-      app.unmount();
-    });
+    ).subscribe(() => detach());
 
     return view;
   }
@@ -194,12 +191,14 @@ export class PackageFunctions {
     const view = DG.toJs(DG.toDart(new DG.ViewBase())) as DG.View;
     setViewHierarchyData(call, view);
 
+    const viewersHook = await loadViewersHook(call.func);
+
     const app = Vue.createApp(RFVApp,
-      {funcCall: Vue.markRaw(call), initialRunId: call.aux.initialRunId});
+      {funcCall: Vue.markRaw(call), initialRunId: call.aux.initialRunId, viewersHook});
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
-    const viewService = provideDgViewService(app, view);
+    provideDgViewService(app, view);
 
     app.mount(view.root);
 
@@ -210,10 +209,7 @@ export class PackageFunctions {
       take(1),
     ).subscribe(() => {
       app.unmount();
-      viewService.dispose();
     });
-
-    grok.shell.windows.showHelp = false;
 
     return view;
   }
@@ -237,11 +233,12 @@ export class PackageFunctions {
 
     const {resolve, initialRunId} = call.aux;
 
-    const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, initialRunId});
+    const app = Vue.createApp(TreeWizardAppInstance,
+      {providerFunc, modelName, version, instanceConfig, resolve, initialRunId});
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
-    const viewService = provideDgViewService(app, view);
+    provideDgViewService(app, view);
 
     app.mount(view.root);
 
@@ -252,12 +249,9 @@ export class PackageFunctions {
       take(1),
     ).subscribe(() => {
       app.unmount();
-      viewService.dispose();
       if (resolve)
         resolve();
     });
-
-    grok.shell.windows.showHelp = false;
 
     return view;
   }
@@ -269,9 +263,14 @@ export class PackageFunctions {
     outputs: [{type: 'object', name: 'result'}],
   })
   static async StartWorkflow(
-    @grok.decorators.param({options: {description: 'Qualified name of the workflow function to launch'}}) nqName: string,
+    @grok.decorators.param({
+      options: {description: 'Qualified name of the workflow function to launch'},
+    }) nqName: string,
     @grok.decorators.param({options: {description: 'Workflow version to run'}}) version: string,
-    @grok.decorators.param({'type': 'object', options: {description: 'Optional initial pipeline configuration'}}) instanceConfig?: PipelineInstanceConfig) {
+    @grok.decorators.param({
+      'type': 'object',
+      'options': {description: 'Optional initial pipeline configuration'},
+    }) instanceConfig?: PipelineInstanceConfig) {
     const func = DG.Func.byName(nqName);
     // @ts-ignore-next-line
     const {promise, resolve} = Promise.withResolvers();
@@ -318,15 +317,87 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
+    name: 'ReportFuncCallExcel',
+    description: 'The default Excel report of a run, as its export menu builds it: [DG.FileInfo, ExcelJS.Workbook].',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async ReportFuncCallExcel(
+    @grok.decorators.param({type: 'funccall', options: {description: 'The run to report'}}) funcCall: DG.FuncCall,
+    @grok.decorators.param({type: 'object', options: {description: 'Validation results by input', optional: true}})
+      validationState?: Record<string, ValidationResult>,
+    @grok.decorators.param({type: 'object', options: {description: 'Consistency by input', optional: true}})
+      consistencyState?: Record<string, ConsistencyInfo>,
+    @grok.decorators.param({type: 'object', options: {
+      description: 'The viewers hook of a workflow step, in place of the function\'s own', optional: true}})
+      viewersHook?: ViewersHook,
+    @grok.decorators.param({type: 'object', options: {
+      description: 'Meta values by output, for the hook', optional: true}})
+      metaState?: Record<string, {value: any}>,
+    @grok.decorators.param({type: 'bool', options: {
+      description: 'Names the file Not completed when true', optional: true}})
+      isOutputOutdated?: boolean) {
+    return callExcelReport(funcCall, {
+      viewersHook: viewersHook ?? await loadViewersHook(funcCall.func), metaState,
+      validation: validationState, consistency: consistencyState,
+      completed: isOutputOutdated == null ? undefined : !isOutputOutdated,
+    });
+  }
+
+  @grok.decorators.func({
+    name: 'CallExports',
+    description: 'The exports of a function\'s runs as its Export menu lists them, [{id, name}]; the first is default.',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static CallExports(@grok.decorators.param({type: 'func'}) func: DG.Func) {
+    return callExports(func);
+  }
+
+  @grok.decorators.func({
+    name: 'ExportCall',
+    description: 'Exports a run as its Export menu does, with the id CallExports gives; returns the file.',
+    outputs: [{type: 'file', name: 'result'}],
+  })
+  static async ExportCall(
+    @grok.decorators.param({type: 'funccall', options: {description: 'The run to export'}}) funcCall: DG.FuncCall,
+    @grok.decorators.param({options: {description: 'The export id'}}) exportId: string,
+    @grok.decorators.param({type: 'object', options: {
+      description: 'The args a custom export gets (CustomExportArgs)', optional: true}}) args?: CustomExportArgs,
+  ): Promise<DG.FileInfo> {
+    const {validationState, consistencyState, isOutputOutdated, runError, viewersHook, metaState} = args ?? {};
+    return exportCall(funcCall, exportId, {
+      validation: validationState, consistency: consistencyState, isOutputOutdated, runError, metaState,
+      viewersHook: viewersHook ?? await loadViewersHook(funcCall.func),
+      completed: isOutputOutdated == null ? undefined : !isOutputOutdated,
+    });
+  }
+
+
+  @grok.decorators.func({
+    name: 'LoadWorkflowRun',
+    description: 'Load a saved workflow run without UI and return the state of every step, as RunWorkflow does.',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async LoadWorkflowRun(
+    @grok.decorators.param({options: {description: 'Meta FuncCall id of the saved workflow run'}}) id: string) {
+    return loadSavedTree(id).pipe(
+      concatMap(({tree}) => of(tree).pipe(map(readRun), finalize(() => tree.close()))),
+    ).toPromise();
+  }
+
+
+  @grok.decorators.func({
     name: 'OpenWorkflowRun',
+    // eslint-disable-next-line max-len
     description: 'Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.',
   })
   static async OpenWorkflowRun(
     @grok.decorators.param({options: {description: 'Meta FuncCall id of the saved workflow run'}}) id: string) {
     const metaCall = await historyUtils.shallowLoadRun(id);
-    const call = metaCall.func.prepare({});
+    // a run saved from a custom view opens in it again, unless that view is gone
+    const customView = metaCall.options[CUSTOM_VIEW_OPTION];
+    const call = ((customView && DG.Func.byName(customView)) || metaCall.func).prepare({});
     call.aux.initialRunId = id;
-    if (`${metaCall.func.options['editor'] ?? ''}`.startsWith('Compute2:')) {
+    if (`${call.func.options['editor'] ?? ''}`.startsWith('Compute2:')) {
       call.edit();
       return;
     }
@@ -343,7 +414,10 @@ export class PackageFunctions {
     outputs: [{type: 'object', name: 'result'}],
   })
   static async RunOptimizer(
-    @grok.decorators.param({'type': 'object', options: {description: 'Optimizer parameters: target function, variables, and objective'}}) params: OptimizerParams,
+    @grok.decorators.param({
+      'type': 'object',
+      'options': {description: 'Optimizer parameters: target function, variables, and objective'},
+    }) params: OptimizerParams,
   ) {
     const fin = await runOptimizerFinalized(params);
     return fin.calls;
@@ -356,6 +430,14 @@ export class PackageFunctions {
   })
   static async CompareRuns() {
     openRunComparison();
+  }
+
+  @grok.decorators.func({
+    name: 'Browse Runs',
+    description: 'Browse saved runs of any model in My runs and in spaces, and open or compare them',
+  })
+  static async BrowseRuns() {
+    await browseRuns();
   }
 
 
@@ -383,16 +465,20 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func()
-  static async HistoryTestApp() {
-    const view = new DG.ViewBase();
-    const app = Vue.createApp(HistoryAppInstance);
-    view.root.classList.remove('ui-panel');
-    setVueAppOptions(app);
-    app.mount(view.root);
-    view.name = 'HistoryTestApp';
-    grok.shell.addView(view);
+  @grok.decorators.func({outputs: [{type: 'object', name: 'hook'}]})
+  static async FailingViewersHookMaker() {
+    throw new Error('broken hook');
   }
+
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'hook'}]})
+  static async SlowViewersHookMaker() {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    grok.events.fireCustomEvent('compute2-test-viewers-hook-made', null);
+    return (ioName: string, type: string) =>
+      grok.events.fireCustomEvent('compute2-test-viewers-hook-applied', {ioName, type});
+  }
+
 
   @grok.decorators.func({
     name: 'Mock Pipeline 1',
@@ -422,6 +508,14 @@ export class PackageFunctions {
         id: 'link1',
         from: 'in1:step1/res',
         to: 'out1:step2/a',
+      }, {
+        id: 'rootTitle',
+        type: 'nodemeta',
+        from: 'in:step1/a',
+        to: 'title:title',
+        handler({controller}) {
+          controller.setDescriptionItem('title', 'Pipeline 1 title');
+        },
       }],
     };
     return c;
@@ -562,6 +656,218 @@ export class PackageFunctions {
               ]}));
           } else
             controller.setValidation('toInitTemp');
+        },
+      }],
+    };
+    return c;
+  }
+
+
+  @grok.decorators.func({
+    name: 'Mock Keyboard Pipeline',
+    description: 'Workflow with fixed steps, a reorderable list and an invalid step, used for testing keyboard use.',
+    editor: 'Compute2:TreeWizardEditor',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async MockKeyboardPipeline(
+    @grok.decorators.param({'type': 'object'}) params: any) {
+    const c: PipelineConfiguration = {
+      id: 'keyboardRoot',
+      nqName: 'Compute2:MockKeyboardPipeline',
+      friendlyName: 'Keyboard',
+      version: '1.0',
+      type: 'static',
+      steps: [{
+        id: 'fixedAdd',
+        nqName: 'Compute2:TestAdd2',
+        friendlyName: 'fixed add',
+        initialValues: {a: -1, b: 1},
+      }, {
+        id: 'fixedMul',
+        nqName: 'Compute2:TestMul2',
+        friendlyName: 'fixed mul',
+        initialValues: {a: 2, b: 3},
+      }, {
+        id: 'list',
+        type: 'dynamic',
+        friendlyName: 'list',
+        stepTypes: [{
+          id: 'item',
+          nqName: 'Compute2:TestAdd2',
+          friendlyName: 'item',
+        }, {
+          id: 'pinned',
+          nqName: 'Compute2:TestMul2',
+          friendlyName: 'pinned',
+          disableUIDragging: true,
+          disableUIRemoving: true,
+        }],
+        initialSteps: [
+          {id: 'item', initialValues: {a: 1, b: 0}},
+          {id: 'item', initialValues: {a: 2, b: 0}},
+          {id: 'item', initialValues: {a: 3, b: 0}},
+          {id: 'pinned', initialValues: {a: 1, b: 1}},
+        ],
+        links: [{
+          id: 'itemTitle',
+          type: 'nodemeta',
+          base: 'base:expand(item)',
+          from: 'a:same(@base, item)/a',
+          to: 'title:same(@base, item)/title',
+          handler({controller}) {
+            controller.setDescriptionItem('title', `item ${controller.getFirst('a')}`);
+          },
+        }],
+      }, {
+        id: 'slow',
+        nqName: 'Compute2:LongScript',
+        friendlyName: 'slow',
+        initialValues: {a: 1, b: 1},
+      }, {
+        id: 'group',
+        type: 'static',
+        friendlyName: 'group',
+        steps: [{id: 'grouped', nqName: 'Compute2:TestAdd2', friendlyName: 'grouped step'}],
+      }],
+      links: [{
+        id: 'firstItemB',
+        from: 'in:fixedMul/a',
+        to: 'out:list/first(item)/b',
+        defaultRestrictions: {out: 'restricted'},
+      }, {
+        id: 'fixedAddPositive',
+        type: 'validator',
+        from: 'a:fixedAdd/a',
+        to: 'out:fixedAdd/a',
+        handler({controller}) {
+          controller.setValidation('out',
+            controller.getFirst('a') < 0 ? {errors: ['a must not be negative']} : undefined);
+        },
+      }],
+    };
+    return c;
+  }
+
+
+  @grok.decorators.func({
+    name: 'Mock Tree Wizard Pipeline',
+    description: 'Workflow with step actions, a nested workflow, an action step, step history, a custom export ' +
+      'and a return, used for testing the Tree Wizard.',
+    editor: 'Compute2:TreeWizardEditor',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async MockTreeWizardPipeline(
+    @grok.decorators.param({'type': 'object'}) params: any) {
+    const c: PipelineConfiguration = {
+      id: 'treeWizardRoot',
+      nqName: 'Compute2:MockTreeWizardPipeline',
+      friendlyName: 'Tree wizard',
+      version: '1.0',
+      type: 'static',
+      steps: [{
+        id: 'first',
+        nqName: 'Compute2:TestAdd2',
+        friendlyName: 'first',
+        initialValues: {a: 3, b: 1},
+        enableHistory: true,
+        actions: [{
+          id: 'double',
+          friendlyName: 'Double a',
+          position: 'buttons',
+          from: 'in:a',
+          to: 'out:a',
+          handler({controller}) {
+            controller.setAll('out', controller.getFirst('in') * 2);
+          },
+        }, {
+          id: 'reset',
+          friendlyName: 'Reset a',
+          position: 'buttons',
+          confirmationMessage: 'Reset a to 1?',
+          from: [],
+          to: 'out:a',
+          handler({controller}) {
+            controller.setAll('out', 1);
+          },
+        }],
+      }, {
+        type: 'ref',
+        provider: 'Compute2:MockTreeWizardGroup',
+        version: '1.0',
+      }, {
+        id: 'review',
+        type: 'action',
+        friendlyName: 'review',
+      }, {
+        id: 'last',
+        nqName: 'Compute2:TestAdd2',
+        friendlyName: 'last',
+        initialValues: {a: 1, b: 1},
+      }],
+      links: [{
+        id: 'rootTitle',
+        type: 'nodemeta',
+        from: 'in:first/a',
+        to: 'title:title',
+        handler({controller}) {
+          controller.setDescriptionItem('title', 'Wizard title');
+        },
+      }, {
+        id: 'firstTitle',
+        type: 'nodemeta',
+        from: 'a:first/a',
+        to: 'title:first/title',
+        handler({controller}) {
+          controller.setDescriptionItem('title', `first ${controller.getFirst('a')}`);
+        },
+      }],
+      onReturn: {
+        id: 'returnA',
+        type: 'return',
+        from: 'a:first/a',
+        to: [],
+        handler({controller}) {
+          controller.returnResult({a: controller.getFirst('a')});
+        },
+      },
+      customExports: [{
+        id: 'recorder',
+        friendlyName: 'Record export',
+        handler: async (state, utils) => DG.FileInfo.fromString('recorder.txt',
+          `Exported ${state.configId} with ${Object.keys(utils).sort().join(', ')}`),
+      }],
+    };
+    return c;
+  }
+
+
+  @grok.decorators.func({
+    name: 'Mock Tree Wizard Group',
+    description: 'Nested workflow of the Mock Tree Wizard Pipeline.',
+    editor: 'Compute2:TreeWizardEditor',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async MockTreeWizardGroup(
+    @grok.decorators.param({'type': 'object'}) params: any) {
+    const c: PipelineConfiguration = {
+      id: 'treeWizardGroup',
+      nqName: 'Compute2:MockTreeWizardGroup',
+      friendlyName: 'group',
+      version: '1.0',
+      type: 'static',
+      steps: [{
+        id: 'inner',
+        nqName: 'Compute2:TestMul2',
+        friendlyName: 'inner',
+        initialValues: {a: 2, b: 3},
+      }],
+      links: [{
+        id: 'groupTitle',
+        type: 'nodemeta',
+        from: 'in:inner/a',
+        to: 'title:title',
+        handler({controller}) {
+          controller.setDescriptionItem('title', 'group title');
         },
       }],
     };
@@ -802,7 +1108,7 @@ export class PackageFunctions {
     name: 'Custom View (Compute 2 Test)',
     editor: 'Compute2:CustomFunctionViewEditor',
     // meta: { role: 'model' },
-    outputs: [{type: 'object', name: 'result'}]
+    outputs: [{type: 'object', name: 'result'}],
   })
   static async TestCustomView() {
     const view = new MyView();
@@ -810,125 +1116,73 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({
-    meta: {
-      features: '{"fitting": true, "sens-analysis": true}',
-      runOnOpen: 'true',
-      runOnInput: 'true',
-    },
-    outputs: [
-      {
-        name: 'integer',
-        type: 'int',
-      },
-      {
-        name: 'float1',
-        type: 'double',
-      },
-      {
-        name: 'float2',
-        type: 'double',
-      },
-      {
-        name: 'table1',
-        type: 'dataframe',
-        options: { viewer: 'Line chart(block:60) | Grid(block:40)' },
-      },
-      {
-        name: 'table2',
-        type: 'dataframe',
-        options: { viewer: 'Line chart(block:60) | Grid(block:40)' },
-      },
-    ],
-    description: 'Test for optimization: multiple scalars output',
-    editor: 'Compute2:RichFunctionViewEditor',
-  })
-  static fitTestFunc(
-    @grok.decorators.param({ options: { caption: 'param1', min: '-3', max: '3', initialValue: '1' } }) x1: number,
-    @grok.decorators.param({ options: { caption: 'param2', min: '-3', max: '3', initialValue: '-1' } }) x2: number,
-    @grok.decorators.param({ options: { caption: 'table' } }) y: DG.DataFrame,
-    bool: boolean) {
-    return {
-      integer: x1 ** 3 * (x1 - 1) * x2 ** 3 * (x2 - 1),
-      float1: (x2 - 1) ** 2 + (x1 - 1) ** 2,
-      float2: (x2 - 1) ** 4 + (x1 - 1) ** 4,
-      table1: DG.DataFrame.fromColumns([
-        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
-        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [x1 + x2 + 1, 4, 9, 16, 25]),
-      ]),
-      table2: DG.DataFrame.fromColumns([
-        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
-        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [x1 + x2 + 1, 8, 27, 64, 125]),
-      ]),
-    };
-  }
-
-
-  @grok.decorators.func({ description: 'Test for optimization: multiple scalars output' })
-  static async testFittingOutputs() {
-    const func = await grok.functions.find('Compute2:fitTestFunc');
-
-    if (func === null) {
-      grok.shell.error('The function "Compute:fitTestFunc" not found!');
-      return;
-    }
-
-    const targetDf1 = DG.DataFrame.fromColumns([
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [1, 4.3, 9.1, 16, 25]),
-    ]);
-    targetDf1.name = 'test-df1';
-
-    const targetDf2 = DG.DataFrame.fromColumns([
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [1, 8.5, 27.6, 64.9, 125]),
-    ]);
-    targetDf2.name = 'test-df2';
-
-    await FittingView.fromEmpty(func as any, {
-      targets: {
-        integer: { default: 123, enabled: true },
-        float1: { default: 456.789, enabled: true },
-        table1: {
-          default: targetDf1,
-          enabled: true,
-          argumentCol: 'arg',
-        },
-        table2: {
-          default: targetDf2,
-          enabled: true,
-          argumentCol: 'arg',
-        },
-      },
-    });
-  }
-
   // Fixtures for the custom-export report-handler test (see test/custom-export.ts).
   @grok.decorators.func({
-    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]'},
+    // eslint-disable-next-line max-len
+    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"},{"name":"none","function":"Compute2:TestCustomExportNoFile"},{"name":"hook","function":"Compute2:TestCustomExportHookArgs"}]'},
   })
   static async TestCustomExportModel(a: number): Promise<number> {
     return a;
   }
 
-  @grok.decorators.func()
-  static async TestCustomExportRecorder(funcCall: DG.FuncCall, startDownload: boolean): Promise<string> {
-    return `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}|${startDownload}`;
+  @grok.decorators.func({
+    // eslint-disable-next-line max-len
+    meta: {customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"},{"name":"none","function":"Compute2:TestCustomExportNoFile","preferred":true},{"name":"hook","function":"Compute2:TestCustomExportHookArgs","preferred":true}]'},
+  })
+  static async TestPreferredExportModel(a: number): Promise<number> {
+    return a;
   }
 
-  // Fixture for the URL-inputs parsing tests (see test/url-inputs.ts).
   @grok.decorators.func()
-  static async TestUrlInputsFixture(
-    @grok.decorators.param({type: 'int'}) a: number,
-    b: number,
-    flag: boolean,
-    s: string,
-    @grok.decorators.param({type: 'datetime'}) when: dayjs.Dayjs,
-    df: DG.DataFrame,
-    @grok.decorators.param({options: {optional: true}}) opt: number,
-    @grok.decorators.param({type: 'int', options: {nullable: true}}) nul: number,
-  ): Promise<number> {
+  static async TestCustomExportRecorder(funcCall: DG.FuncCall): Promise<DG.FileInfo> {
+    return DG.FileInfo.fromString('recorded.txt', `${funcCall?.func?.nqName}|${funcCall?.inputs?.['a']}`);
+  }
+
+  @grok.decorators.func({meta: {
+    features: '{"export": false}', customExports: '[{"name":"rec","function":"Compute2:TestCustomExportRecorder"}]'}})
+  static async TestNoDefaultExportModel(a: number): Promise<number> {
     return a;
+  }
+
+  @grok.decorators.func()
+  static async TestCustomExportNoFile(funcCall: DG.FuncCall): Promise<string> {
+    return funcCall.func.nqName;
+  }
+
+  @grok.decorators.func({meta: {customExports: '[{"name":"blob","function":"Compute2:TestCustomExportBlob"}]'}})
+  static async TestBlobExportModel(a: number): Promise<number> {
+    return a;
+  }
+
+  // A legacy export: it gets startDownload and returns a Blob
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  static async TestCustomExportBlob(funcCall: DG.FuncCall, startDownload: boolean): Promise<Blob> {
+    return new Blob([`${funcCall.func.nqName}|${startDownload}`]);
+  }
+
+  @grok.decorators.func()
+  static async TestCustomExportHookArgs(
+    funcCall: DG.FuncCall,
+    @grok.decorators.param({type: 'object', options: {optional: true}}) viewersHook?: ViewersHook,
+    @grok.decorators.param({type: 'object', options: {optional: true}})
+    metaState?: Record<string, BehaviorSubject<any>>,
+  ): Promise<DG.FileInfo> {
+    return DG.FileInfo.fromString('hook.txt', `${typeof viewersHook}|${metaState?.['a']?.value}`);
+  }
+
+  // Fixture for the RFV tab tests (see test/rfv-view.ts): empty outputs get no tab, so `last` has one only
+  // while `rows` > 0
+  @grok.decorators.func({outputs: [
+    {type: 'dataframe', name: 'first'},
+    {type: 'dataframe', name: 'middle'},
+    {type: 'dataframe', name: 'last'},
+  ]})
+  static async TestRfvTabs(
+    @grok.decorators.param({type: 'int'}) rows: number,
+  ): Promise<any> {
+    return {
+      first: DG.DataFrame.fromCsv('x\n1'), middle: DG.DataFrame.fromCsv('y\n1'), last: DG.DataFrame.create(rows),
+    };
   }
 
   // Fixtures for the project-export data-prep tests (see test/project-export-data.ts);
@@ -958,7 +1212,6 @@ export class PackageFunctions {
   ): Promise<DG.DataFrame> {
     return DG.DataFrame.create(x);
   }
-
 }
 
 

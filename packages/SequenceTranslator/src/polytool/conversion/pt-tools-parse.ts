@@ -1,5 +1,5 @@
 import {getInnerIdx, getOuterIdx, Linkage} from './pt-misc';
-import {cleanupHelmSymbol} from '@datagrok-libraries/bio/src/helm/utils';
+import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {getMonomerPairs, RuleLink, RuleReaction, Rules} from './pt-rules';
 
 type LinkedPosition = {
@@ -47,45 +47,28 @@ export function parseSeparator(sequence: string): [Linkage[], string[][]] {
   return [linkages, mainFragments];
 }
 
+/** Chains and linkages of a HELM string, read with the bio library's HELM splitter (hwe parser, Bio on Crux D4):
+ * any chain order and polymer type (the chain index is the chain's order in the string), any position and R-group
+ * number, `$$$` and `$$$$` forms. Hydrogen bonds (`pair`) are not linkages.
+ * @param {string} sequence HELM
+ * @return {[Linkage[], string[][]]} linkages (continuous 1-based monomer numbers) and monomers per chain */
 export function parseHelm(sequence: string): [Linkage[], string[][]] {
-  const ea = /(\w+\{.*\})\$(.*)\$(.*)\$(.*)\$/g.exec(sequence)!;
-  // const fragmentation = helm.split('$');
-  const fragmentation = [ea[1], ea[2], ea[3], ea[4]];
-
-  const rawFragments = fragmentation[0].split('|');
-  const rawLinkages = fragmentation[1].split('|');
-
-  const monomers = new Array<Array<string>>(rawFragments.length);
-  const linkages: Linkage[] = [];
-
-  //HELM parsing
-  for (let i = 0; i < rawFragments.length; i++) {
-    const idxStart = rawFragments[i].indexOf('{');
-    const idxEnd = rawFragments[i].indexOf('}');
-
-    monomers[i] = rawFragments[i].slice(idxStart + 1, idxEnd).split('.').map((s) => cleanupHelmSymbol(s));
+  const ss = splitterAsHelm(sequence);
+  const gi = ss.graphInfo!;
+  const starts = gi.disjointSeqStarts;
+  const monomers = new Array<Array<string>>(starts.length);
+  for (let c = 0; c < starts.length; ++c) {
+    const end = c + 1 < starts.length ? starts[c + 1] : ss.length;
+    monomers[c] = ss.getOriginalRegion(starts[c], end);
   }
-
-  for (let i = 0; i < rawLinkages.length; i++) {
-    if (rawLinkages[i] !== '' && rawLinkages[i] !== 'V2.0') {
-      const rawData = rawLinkages[i].split(',');
-      const fChainIdx = parseInt(rawData[0].replace('PEPTIDE', '')) - 1;
-      const sChainIdx = parseInt(rawData[1].replace('PEPTIDE', '')) - 1;
-      const rawDataConnections = rawData[2].split('-');
-      const rawDataConnection1 = rawDataConnections[0].split(':');
-      const rawDataConnection2 = rawDataConnections[1].split(':');
-
-      linkages.push({
-        fChain: fChainIdx,
-        sChain: sChainIdx,
-        fMonomer: getOuterIdx(parseInt(rawDataConnection1[0]), fChainIdx, monomers),
-        sMonomer: getOuterIdx(parseInt(rawDataConnection2[0]), sChainIdx, monomers),
-        fR: parseInt(rawDataConnection1[1].replace('R', '')),
-        sR: parseInt(rawDataConnection2[1].replace('R', '')),
-      });
-    }
-  }
-
+  const linkages: Linkage[] = gi.connections.map((conn) => ({
+    fChain: conn.seqIndex1,
+    sChain: conn.seqIndex2,
+    fMonomer: getOuterIdx(conn.monomerIndex1 + 1, conn.seqIndex1, monomers),
+    sMonomer: getOuterIdx(conn.monomerIndex2 + 1, conn.seqIndex2, monomers),
+    fR: conn.rGroup1,
+    sR: conn.rGroup2,
+  }));
   return [linkages, monomers];
 }
 

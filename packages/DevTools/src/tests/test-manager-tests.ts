@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {category, before, test, after, expect, delay} from '@datagrok-libraries/test/src/test';
+import {category, before, test, after, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import {NODE_TYPE, TestManager} from '../package-testing';
 
 
@@ -32,7 +32,7 @@ category('Test manager', () => {
     testManager.selectedNode = testManager.tree.items.filter((it) => it.text === 'exist')[0];
     expect(testManager.selectedNode != null, true);
     await testManager.runTestsForSelectedNode();
-    await delay(100);
+    await waitUntil(() => testManager.testsResultsDf?.rowCount > 0, 'the run left no result');
     expect(testManager.testsResultsDf.get('package', 0), 'DevTools');
     expect(testManager.testsResultsDf.get('category', 0), 'FSE');
     expect(testManager.testsResultsDf.get('name', 0), 'exist');

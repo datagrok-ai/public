@@ -17,7 +17,7 @@ test('the dg filter entry routes editor hints on its own', () => {
   const scope = new Scope();
   try {
     const prop = {name: 'notes', type: TYPE.STRING, inputType: 'TextArea'};
-    const input = Scope.runWith(scope, () => FilterBuilder.defaultEditors(prop, {}));
+    const input = scope.build(() => FilterBuilder.defaultEditors(prop, {}));
     assert.ok(input instanceof TextArea);
   } finally {
     scope.dispose();

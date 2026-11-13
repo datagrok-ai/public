@@ -84,7 +84,7 @@ class ControlHandler extends DG.ObjectHandler<Control> {
         'u2 component, so nothing describes its properties.', 'u2-async-empty')], 'u2-inspector');
     }
     const scope = panel = new Scope(undefined, {label: 'inspector'});
-    const grid = Scope.runWith(scope, () => controlProperties(x));
+    const grid = scope.build(() => controlProperties(x));
     const root = divV([h3(caption), grid], 'u2-inspector');
     // the context panel kills what it shows before it renders the next object
     DG.Widget.registerCleanup(root, () => scope.dispose());

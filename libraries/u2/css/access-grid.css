@@ -1,5 +1,5 @@
-/* Access grid skin (src/components/forms/access-grid.ts): a compact table of principals ×
-   capabilities, inherited rows muted, the add picker as the last line. Tokens only;
+/* Access grid skin (src/components/forms/access-grid.ts): a table of principals × capabilities on form-height
+   rows, each principal after its picture, inherited rows muted, the add picker as the last line. Tokens only;
    css/tokens.css and css/inputs.css must be loaded alongside. */
 .u2-input-editor.u2-access-grid {
   width: 100%;
@@ -10,23 +10,43 @@
 }
 
 .u2-access-grid th {
-  padding: var(--dg-space-xs) var(--dg-space-s);
+  height: var(--dg-control-height);
+  padding: 0 var(--dg-space-m);
   font-size: var(--dg-font-size-small);
   font-weight: var(--dg-font-weight-regular);
   color: var(--dg-text-color-light);
   text-align: left;
+  white-space: nowrap;
   border-bottom: var(--dg-border-width) solid var(--dg-border);
 }
 
 .u2-access-grid td {
-  padding: var(--dg-space-xs) var(--dg-space-s);
+  height: var(--dg-control-height);
+  padding: var(--dg-space-xs) var(--dg-space-m);
   border-bottom: var(--dg-border-width) solid var(--dg-border-subtle);
 }
 
 .u2-access-grid th.u2-access-grid-cap,
 .u2-access-grid td.u2-access-grid-cap {
-  width: 48px;
+  width: 56px;
   text-align: center;
+}
+
+.u2-access-grid th.u2-access-grid-action,
+.u2-access-grid td.u2-access-grid-action {
+  width: var(--dg-inline-control-height);
+  padding: 0;
+  text-align: center;
+}
+
+.u2-access-grid-icon {
+  display: inline-flex;
+  margin-right: var(--dg-space-m);
+  vertical-align: middle;
+}
+
+.u2-access-grid-principal {
+  vertical-align: middle;
 }
 
 .u2-access-grid-inherited .u2-access-grid-principal {
@@ -40,7 +60,9 @@
 }
 
 .u2-access-grid-remove {
-  padding: 0 var(--dg-space-xs);
+  width: var(--dg-inline-control-height);
+  height: var(--dg-inline-control-height);
+  padding: 0;
   font: inherit;
   font-size: var(--dg-font-size-small);
   color: var(--dg-text-color-light);
@@ -56,6 +78,7 @@
 }
 
 .u2-access-grid tfoot td {
+  padding-top: var(--dg-space-s);
   border-bottom: none;
 }
 

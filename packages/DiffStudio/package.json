@@ -16,7 +16,7 @@
     "@codemirror/state": "^6.3.1",
     "@datagrok-libraries/compute-utils": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
-    "@datagrok-libraries/utils": "workspace:^",
+    "@datagrok-libraries/u2": "workspace:^",
     "cash-dom": "catalog:",
     "codemirror": "^6.0.1",
     "datagrok-api": "workspace:^",
@@ -24,6 +24,9 @@
     "diff-grok": "1.4.0",
     "@codemirror/language": "^6.10.0",
     "@codemirror/legacy-modes": "^6.4.0"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   },
   "devDependencies": {
     "@datagrok-libraries/bdd": "workspace:^",

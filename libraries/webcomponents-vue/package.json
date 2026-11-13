@@ -14,13 +14,8 @@
     "@vueuse/rxjs": "^13.3.0",
     "cash-dom": "catalog:",
     "datagrok-api": "workspace:^",
-    "dayjs": "catalog:",
     "rxjs": "catalog:",
-    "vue": "catalog:",
-    "wu": "catalog:"
-  },
-  "devDependencies": {
-    "@types/wu": "catalog:"
+    "vue": "catalog:"
   },
   "scripts": {
     "build": "grok tsc -p tsconfig.json",

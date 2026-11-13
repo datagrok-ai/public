@@ -6,7 +6,7 @@ import {PipelineConfigurationProcessed} from '../config/config-processing-utils'
 import {PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
 import {isPipelineStepConfig} from '../config/config-utils';
 import {FuncCallAdapter, MockResults} from './FuncCallAdapters';
-import {saveFuncCall, saveInstanceState} from './funccall-utils';
+import {completedOption, saveFuncCall, saveInstanceState} from './funccall-utils';
 import {FuncCallNode, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions} from './StateTreeNodes';
 import {indexFromEnd, pruneByKeys} from '../utils';
 import {LinksState} from './LinksState';
@@ -346,10 +346,13 @@ export class StateTree {
     return this.withTreeLock(() => {
       if (!this.mockMode && mockRun)
         throw new Error(`Mock run passed to runSequence while mock mode is off`);
-      const startNode = includeNonNested ? this.nodeTree.root : this.nodeTree.find((item) => item.uuid === startUuid)?.[0];
+      const startNode = includeNonNested ?
+        this.nodeTree.root :
+        this.nodeTree.find((item) => item.uuid === startUuid)?.[0];
       if (startNode == null)
         return of(undefined);
-      const nodesSeq = this.nodeTree.traverse(startNode, (acc, node) => [...acc, node.getItem()], [] as StateTreeNode[]);
+      const nodesSeq = this.nodeTree.traverse(
+        startNode, (acc, node) => [...acc, node.getItem()], [] as StateTreeNode[]);
       const startIdx = nodesSeq.findIndex((node) => node.uuid === startUuid);
       if (startIdx < 0)
         return of(undefined);
@@ -482,7 +485,9 @@ export class StateTree {
   // locking, tree mutation and deps tracking
   //
 
-  private mutateTree<R>(fn: () => Observable<readonly [TreeUpdateData?, R?]>, waitForLinks = true, disableLinks = true) {
+  private mutateTree<R>(
+    fn: () => Observable<readonly [TreeUpdateData?, R?]>, waitForLinks = true, disableLinks = true,
+  ) {
     return defer(() => {
       if (this.logger)
         this.logger.logTreeUpdates('treeUpdateStarted');
@@ -595,10 +600,12 @@ export class StateTree {
   private treeLock() {
     if (this.globalROLocked$.value)
       throw new LockError(`Changes double lock`);
+    this.linksState.skipDebounce = true;
     this.globalROLocked$.next(true);
   }
 
   private treeUnlock() {
+    this.linksState.skipDebounce = false;
     if (this.globalROLocked$.value)
       this.globalROLocked$.next(false);
   }
@@ -625,7 +632,11 @@ export class StateTree {
       const state = StateTree.toSerializedStateRec(root, {disableNodesUUID: true});
       const item = root.getItem();
       const version = !isFuncCallNode(item) ? item.config.version : undefined;
-      return saveInstanceState(nqName, state, metaData, version);
+      const completed = this.nodeTree.traverse(root, (acc, node) => {
+        const step = node.getItem();
+        return acc && (!isFuncCallNode(step) || step.instancesWrapper.isOutputOutdated$.value === false);
+      }, true);
+      return saveInstanceState(nqName, state, metaData, version, {callOptions: completedOption(completed)});
     });
   }
 }

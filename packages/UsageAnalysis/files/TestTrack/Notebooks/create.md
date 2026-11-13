@@ -124,7 +124,7 @@ importing an existing `.ipynb` file by drag-and-drop, and deleting the notebook 
 - GROK-13999: `localStorage` DOMException when rendering HTML from a `data:` URL context.
 - This is the smoke scenario for the notebooks flow: it creates the `demog` notebook that
   `edit-ui.md` and `browser.md` depend on.
-- See: `public/help/compute/jupyter-notebook.md#Create a notebook`
+- See: `help/compute/jupyter-notebook.md#Create a notebook`
 
 ---
 {

@@ -20,7 +20,9 @@ open items with their analysis.
   - `VERSION.chem-wasm` (the crux-core revision, the feature set, the tools, the sizes) and `NOTICE.chem-wasm` (the
     licences), both emitted to `dist/` beside the wasm (`vendor/` itself is not published, `.npmignore`).
   What Chem calls beyond RDKit.js's API is typed in `src/crux/crux-api.ts`.
-- `src/tests/crux-substructure-search-tests.ts` — package test category `crux substructure search`.
+- `src/tests/crux-substructure-search-tests.ts`, `crux-search-types-tests.ts` — package test categories `crux
+  substructure search` and `crux substructure search: search types`; the engine tests switch engines through
+  `src/tests/engine-utils.ts`.
 - This folder — the notes, the verification scripts and [`PARITY.md`](PARITY.md), the RDKit-parity ledger (not bundled,
   not published).
 
@@ -54,8 +56,9 @@ The vendored build is named in `vendor/chem-wasm/VERSION.chem-wasm`. The Chem wo
   ```
 
   then write `vendor/chem-wasm/VERSION.chem-wasm` from `BUILD-INFO.json` (the revision, features, tools and sizes), build Chem
-  and run the `chemical engine` and `crux substructure search` categories. To check a build before vendoring it, point
-  the scripts below at its output folder with `CRUX_WASM`.
+  and run the `chemical engine`, `crux analyses`, `crux substructure search` and `synthon search` categories (a category
+  runs its `:` sub-categories too) in both engines. To check a build before vendoring it, point the scripts below at its
+  output folder with `CRUX_WASM`.
 
 ## Verification
 
@@ -77,6 +80,11 @@ code the package runs. Datasets: `<reddata>/data/demo/chem/chembl/chembl-100k.cs
   Python RDKit 2026.3.6 (`compare100k.py`): identical counts, each difference classified by its cause, one-thread
   times; `results.md` / `results.json` in `OUT`. The file's head lists its engines, functions and settings. The
   2026-10-23 run: Crux = RDKit.js 2026.03.6 nearly everywhere; RDKit mode differs mostly by RDKit's own changes.
+- `node compare100k.mjs 100000 only=searchtypes,searchtypesfiles` — the search types beside Contains (Exact, Stereo
+  agnostic, Included in, Not included in, Similar) hit set by hit set, on the dataset and on Chem's test datasets:
+  RDKit mode's search as its pool runs it on rows it caches, Crux's `crux/jobs/search-types.ts`, RDKit.js 2026.03.6.
+- `node search-types-pool.mjs [rows] [workers]` — those searches' first and later times over a pool of worker threads,
+  both engines, laid out as their web workers split a column.
 - `node mem.mjs <csv> [molecules] [segment size]` — memory per indexed molecule, build speed, molecules crux cannot
   parse. The bytes per molecule include the build's high-water mark (wasm memory never shrinks), so measure on a
   big file: on the 1M set it reads 378 bytes.
@@ -87,10 +95,10 @@ code the package runs. Datasets: `<reddata>/data/demo/chem/chembl/chembl-100k.cs
   API under `/api`); `STAND_WEB` must serve the client on the API's origin — package web workers cannot start
   cross-origin, so not the pub serve port. `CHROME=<path>` runs an installed Chrome when Playwright's own browser is
   not installed. It switches the **Chemical Engine** per engine (the search follows it) and puts back the one it found.
-- Package tests: `grok test --host localhost --category "crux substructure search"`. Since 2026-10-22 Contains / Not
-  contains follows the **Chemical Engine** (there is no **Substructure Search Engine** setting any more): the existing
-  suites (`substructure search`, `substructure filters`, `scaffold tree`) run on RDKit in RDKit mode and on Crux in
-  Crux mode (`engine-setting.sh set Crux` for the run — and `restore` after).
+- Package tests: `grok test --host localhost --category "crux substructure search"`. Every search type follows the
+  **Chemical Engine** (there is no **Substructure Search Engine** setting any more): the existing suites
+  (`substructure search`, `substructure filters`, `scaffold tree`) run on RDKit in RDKit mode and on Crux in Crux mode
+  (`engine-setting.sh set Crux` for the run — and `restore` after).
 - `bash engine-setting.sh show | set <RDKit|Crux> | restore` — Chem's **Chemical Engine** on a stand through the
   server's API (the `grok` CLI), for whole runs in Crux mode: package tests, the BDD suite, the tests of the packages
   that call Chem. `restore` puts back what `set` replaced.

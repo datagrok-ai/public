@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, test, uiSettled, waitUntil} from '@datagrok-libraries/test/src/test';
 
 import {_package} from '../package-test';
 import {startAnalysis} from '../widgets/peptides';
@@ -35,7 +35,7 @@ category('Core', () => {
 
     const MPViewer = model!.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
     MPViewer!.mutationCliffsSelection = {'11': ['D']};
-    await delay(3000);
+    await uiSettled('Peptides analysis');
   });
 
   test('Start analysis: сomplex', async () => {
@@ -56,7 +56,7 @@ category('Core', () => {
 
     const MPViewer = model!.findViewer(VIEWER_TYPE.SEQUENCE_VARIABILITY_MAP) as MonomerPosition | null;
     MPViewer!.mutationCliffsSelection = {'13': ['-']};
-    await delay(3000);
+    await uiSettled('Peptides analysis');
   });
 
   test('Save and load project', async () => {
@@ -89,7 +89,7 @@ category('Core', () => {
     const sp = await grok.dapi.projects.save(project);
 
     v.close();
-    await awaitCheck(() => typeof grok.shell.tableView('Peptides analysis') === 'undefined',
+    await waitUntil(() => typeof grok.shell.tableView('Peptides analysis') === 'undefined',
       'Table never closed', 3000);
 
     await sp.open();

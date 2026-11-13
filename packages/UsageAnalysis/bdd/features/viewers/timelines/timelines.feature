@@ -1,11 +1,12 @@
-@viewers @realizes:charts.viewer.timelines
-Feature: Timelines legend, legend visibility, legend clicks and Reset View
+@journey @viewers @realizes:charts.viewer.timelines
+Feature: Timelines legend, legend visibility, legend clicks, the table filter and Reset View
   The Timelines viewer draws one lane per subject (Split By) with an interval per event, colored by
-  Color, and reports what it drew: `lanes`, `intervals` (after the legend and the zoom) and a `view`
-  area over its plot. Its legend is the standard DOM legend, so its items are counted and clicked by
-  name. ae.csv (143 adverse events, 71 subjects; AESOC has 15 values) is opened from Browse and the
-  viewer is added from the ribbon's Add viewer gallery. Color offers the string columns only.
-  Translated from the TestTrack case Charts/timelines.
+  Color, and reports what it drew: `lanes`, `intervals` (after the legend, the table filter and the
+  zoom) and a `view` area over its plot. Its legend is the standard DOM legend, so its items are
+  counted and clicked by name. ae.csv (143 adverse events, 71 subjects; AESOC has 15 values, AESEV
+  SEVERE 7 events of 4 subjects) is opened from Browse and the viewer is added from the ribbon's Add
+  viewer gallery, once: one journey, every scenario puts back what it changed. Color offers the
+  string columns only. Translated from the TestTrack case Charts/timelines.
 
   Background:
     Given user is logged in
@@ -49,7 +50,7 @@ Feature: Timelines legend, legend visibility, legend clicks and Reset View
     And the legend of timelines viewer should list 15 items
     And no errors should have been logged
 
-  Scenario: Legend clicks narrow the viewer without blanking it (GROK-19033, GROK-19535, GROK-18608)
+  Scenario: Legend clicks narrow the viewer without blanking it, and so does a filter card (GROK-19033, GROK-19535, GROK-18608)
     When user selects "AESOC" in "Color" property in context panel
     Then the legend of timelines viewer should list 15 items
     And the "intervals" reading of timelines viewer should be 143
@@ -82,6 +83,17 @@ Feature: Timelines legend, legend visibility, legend clicks and Reset View
     And user selects "USUBJID" in "Split By" property in context panel
     Then "Split By" property of timelines viewer should be "USUBJID"
     And timelines viewer should have repainted
+    And no errors should have been logged
+    When user clicks on "CARDIAC DISORDERS" item in the legend of timelines viewer
+    Then the "intervals" reading of timelines viewer should be 143
+    When user clicks on filter icon in toolbar
+    And user clicks on the "category SEVERE of AESEV" area of filter panel
+    Then 7 rows should pass the filter
+    And the "intervals" reading of timelines viewer should be 7
+    And the "lanes" reading of timelines viewer should be 4
+    When user hovers over filter panel
+    And user clicks on reset icon of filter panel
+    Then the "intervals" reading of timelines viewer should be 143
     And no errors should have been logged
 
   Scenario: Reset View brings back every interval after a zoom

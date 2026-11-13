@@ -466,6 +466,7 @@ Runtime paths are relative to [`dockerfiles/claude-runtime/`](../dockerfiles/cla
 | [`src/server.ts`](../dockerfiles/claude-runtime/src/server.ts) | Hono server: `/ws` dispatch, `/health`, task claim/release, pool start, shutdown |
 | [`src/session.ts`](../dockerfiles/claude-runtime/src/session.ts) | Per-session queue, file sync, gates, idle watchdog, browser round-trips, event forwarding, abort |
 | [`src/agent/pool.ts`](../dockerfiles/claude-runtime/src/agent/pool.ts) | Agent processes: spawn with `init`, warm spares, LRU and idle eviction, parking and reload, process-tree kills |
+| [`src/credentials.ts`](../dockerfiles/claude-runtime/src/credentials.ts) | The user's provider credentials, bought from Datlas with the connection's container token |
 | [`src/agent/turn.ts`](../dockerfiles/claude-runtime/src/agent/turn.ts) | One turn over the JSON-lines protocol: commands out, events in, gate continuation, cancel |
 | [`src/types.ts`](../dockerfiles/claude-runtime/src/types.ts) | WebSocket protocol, turn request, `AgentCommand` / `AgentProcessEvent`, tool inputs |
 | [`src/prompts.ts`](../dockerfiles/claude-runtime/src/prompts.ts) | System prompts, inlined skills, skills index (`buildSystemPrompt`) |
@@ -571,7 +572,6 @@ See the [process model](#process-model).
 | `HERMES_READY_TIMEOUT_MS` | 30000 | an agent that has not answered `ready` by then is disposed; its turn errors |
 | `HERMES_COMPRESSION_THRESHOLD_TOKENS` | 160000 | history compression trigger (estimated prompt tokens) |
 | `HERMES_LOG_STDERR` | unset | any value forwards every agent stderr line to the runtime log |
-| `TEST_UPSTREAM` | unset | test stubs and loggers only: replaces the scheme, host and port of every model URL (the path stays); http(s) to `127.0.0.1`, `localhost`, `[::1]` or `host.docker.internal`, or https to the provider's own host; with any other value every agent refuses to start |
 | `DATAGROK_API_URL` | injected by Datlas | the URL user identity is verified against; without it, the first client-supplied URL is trusted (dev only) |
 
 `entrypoint.sh` passes each of these variables through `env -i`, so
@@ -587,35 +587,31 @@ limit in `container.json`.
 
 ### Credentials
 
-The provider settings are the `claude-runtime` container's credentials (its Credentials dialog), which the
-platform passes to the container as environment variables.
+Keys and setup: [README](../README.md#model-credentials). The runtime has no other source of provider credentials.
 
-| Credential | Meaning |
-|---|---|
-| `provider` | `Anthropic` (default), `OpenAI`, `OpenRouter`, `Azure`, `Bedrock`, `Databricks` or `Custom` |
-| `apiKey` | The provider's key; required |
-| `model` | The one model every turn runs on, as the provider names it; required |
-| `baseUrl` | Azure: the resource; Databricks: the workspace; Custom: the endpoint; OpenAI: a data-residency host |
-| `region` | Bedrock: the AWS region the key was created in |
-| `apiFormat` | Custom: `anthropic-messages`, `openai-responses` or `openai-chat-completions` |
-| `service` | Databricks: a model service of the workspace (`<catalog>.<schema>.<name>`) to call `model` through |
-
-The server takes these (and `TEST_UPSTREAM`) out of its environment at startup and sends them to each agent in
-its `init` line (`PROVIDER_CREDENTIALS` in `src/constants.ts`). Each provider (`agent/grokky_agent/providers/`)
-checks its credentials and declares the formats it serves and where; with two, a model whose name contains
-`claude` is called in Anthropic's Messages format and any other in OpenAI's Responses format. An agent whose
-provider refuses the credentials does not start, so every turn ends in "The assistant could not start: …",
-naming the credential, never its value. A rejected key ends the turn with the provider's message and a hint
-naming the credential to check.
+- Every connection the platform proxies carries `X-Datagrok-Container-Token`, a 15-minute token scoped to
+  `GET /docker/credentials` ([AUTH_RESOURCES](https://github.com/datagrok-ai/core/blob/master/docs/AUTH_RESOURCES.md#from-a-docker-container)).
+  The server trades it for the user's credentials, resolved by their groups, when the WebSocket opens (`src/credentials.ts`).
+- No token, no credentials or a failed lookup fails the connection's turns and closes it; the next prompt
+  reconnects with a new token.
+- Only the `PROVIDER_CREDENTIALS` keys (`src/constants.ts`) are kept, and an agent gets them in its `init` line.
+  `TEST_UPSTREAM` (test stubs only) replaces the scheme, host and port of every model URL: http(s) to `127.0.0.1`,
+  `localhost`, `[::1]` or `host.docker.internal`, or https to the provider's own host; any other value is refused.
+- An agent serves only turns of the credentials it started with. Other credentials on a live session park it and
+  reload its history in a new agent.
+- Warm spares use the credentials an agent last started with (none before the first user) and go only to
+  sessions with the same credentials.
+- Agent output is redacted of the agent's own key. A provider that refuses the credentials fails the turn with
+  "The assistant could not start: …", naming the credential, never its value.
+- Each provider (`agent/grokky_agent/providers/`) declares the formats it serves; with two, a model whose name
+  contains `claude` uses Anthropic's Messages format and any other OpenAI's Responses format.
 
 Prices come from Hermes' list for the provider (`agent/usage_pricing.py`: Anthropic's and OpenAI's published
 prices, OpenRouter's live ones). Bedrock, Azure, Databricks and custom endpoints have none, nor does a model the
 list lacks (it stops at Claude Sonnet 5 and Opus 5): such a turn reports `costUsd: null` and only its call limit
 bounds it. Hermes finds the context window itself; images go to the model as they are.
 
-At startup the server runs `python -m grokky_agent --check` once: one short call to the model on the path a turn
-takes. The log reads `provider check: <provider> <model> answered`, or `failed: <error>`, and `/health` reports
-it as `provider`; turns do not wait for it.
+Provider notes:
 
 - Anthropic: a Claude subscription token is refused, for any key bound for `api.anthropic.com`: Anthropic allows
   those only in its own applications
@@ -639,8 +635,8 @@ it as `provider`; turns do not wait for it.
 ```bash
 cd packages/Grokky/dockerfiles/claude-runtime
 docker build -t grokky-claude-runtime:<version> .
-docker run --rm -p 5355:5355 -e apiKey -e model=claude-sonnet-5-5 grokky-claude-runtime:<version>
-curl -s localhost:5355/health          # {"status":"ok","provider":{"error":null}} once checked
+docker run --rm -p 5355:5355 grokky-claude-runtime:<version>
+curl -s localhost:5355/health          # {"status":"ok"}
 ```
 
 Hermes is pinned by `HERMES_COMMIT` in the Dockerfile's `hermes` stage and built with Hermes' own
@@ -656,9 +652,9 @@ the new image.
 - The server holds the provider credentials and every connected user's Datagrok key in its memory and
   sockets. It starts as root and drops to uid 1001 (gid 2001, no supplementary groups) before anything
   else runs (`src/privileges.ts`); a process whose uid changed after exec is not dumpable, so the agents'
-  tools cannot read the server's `/proc/<pid>/{environ,mem,fd}`. It takes the provider credentials out of
-  its environment at startup (`PROVIDER_ENV`, `src/constants.ts`): a child it runs (git, for the workspace
-  sync) is dumpable again after its exec, and would otherwise inherit them.
+  tools cannot read the server's `/proc/<pid>/{environ,mem,fd}`. Provider credentials never enter
+  its environment (the entrypoint passes none): a child it runs (git, for the workspace sync) is dumpable again
+  after its exec, and would inherit them.
 - An agent gets the provider credentials only in its `init` line, never in its environment or a file,
   and keeps the key in memory. Before it imports the rest of the driver or reads stdin, it makes itself
   non-dumpable (`prctl(PR_SET_DUMPABLE, 0)` in `__main__.py`), so other agents cannot read its memory,

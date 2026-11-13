@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import {fromEvent} from 'rxjs';
 
-import {category, expect, test, delay, testEvent, before} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, testEvent, before} from '@datagrok-libraries/test/src/test';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
@@ -223,7 +223,7 @@ category('renderers', () => {
     const df = DG.DataFrame.fromColumns([seqDiffCol]);
     const tv = grok.shell.addTableView(df);
 
-    await delay(100);
+    await awaitGrid(tv.grid);
     const renderer = seqDiffCol.getTag(DG.TAGS.CELL_RENDERER);
     if (renderer !== 'MacromoleculeDifference') { // this is value of MacromoleculeDifferenceCR.cellType
       throw new Error(`Units 'separator', separator '/' and semType 'MacromoleculeDifference' ` +

@@ -20,7 +20,9 @@ Feature: Expression and text filter cards
   count rises from 0.5 to 1 (the slider takes tenths: 0 keeps none, 0.5 some, 1 more); the date
   operation is claimed by its count and its rule, there being no row check for dates; the
   free-text rule is a different predicate from the form's rather than an equivalent one, since
-  Enter commits it as a further rule and an equal one could not move the count.
+  Enter commits it as a further rule and an equal one could not move the count. A free-text rule
+  that does not parse is refused on Enter (`text_filter.dart`): it is typed before the valid one, so
+  the rules the card lists afterwards say that it added none.
 
   Background:
     Given user is logged in
@@ -73,7 +75,9 @@ Feature: Expression and text filter cards
     When user hovers over "Expression" filter card
     And user clicks on "Switch to free-text mode" icon in "Expression" filter card
     Then Column input in "Expression" filter card should be hidden
-    When user types "${HEIGHT} < 150" into the search of the "Expression" filter card
+    When user types "${HEIGHT} <" into the search of the "Expression" filter card
+    And user presses Enter
+    And user types "${HEIGHT} < 150" into the search of the "Expression" filter card
     And user presses Enter
     Then the "categories of Expression" reading of filter panel should be "${HEIGHT} < 160, ${HEIGHT} < 150"
     And 16 rows should pass the filter

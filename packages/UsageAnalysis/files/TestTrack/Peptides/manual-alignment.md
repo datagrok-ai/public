@@ -90,7 +90,7 @@ Expected:
 
 - **Prerequisite.** The Manual Alignment panel's Apply handler depends on an active SAR model (`PeptidesModel`) on the table — without one, the panel section either doesn't render or Apply crashes. Setup launches SAR first so that prerequisite is satisfied.
 - **No related bugs.** No curated bug currently anchors this panel. The closest sibling bug class is GROK-14357 (a Logo Summary Table settings change silently not taking effect) — a similar "action accepted, no visible effect" failure mode, but on a different viewer. This scenario's Apply/Reset assertions structurally defend against that same class of silent-failure bug on the Manual Alignment surface.
-- **See:** `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Interactive Features`.
+- **See:** `help/datagrok/solutions/domains/bio/peptides-sar.md#Interactive Features`.
 
 ## Original trailing metadata
 

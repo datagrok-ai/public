@@ -82,7 +82,7 @@ Feature: The Grid Customization tutorial
     Then the tutorial step "Remove selection by pressing \"Esc\"" should be done
     And no rows should be selected
     When user presses Control+A
-    Then the tutorial step "Select all rows with \"Ctrl+A\"" should be done
+    Then the tutorial step "Select all rows" should be done
     And all rows should be selected
     When user presses Escape
     And user presses Control+Home

@@ -9,7 +9,9 @@ import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-drive
 
 type ViewersData = Record<string, DG.Viewer | undefined>;
 
-function runViewersHook(viewersHook: ViewersHook | undefined, io: string, viewers: ViewersData, meta: Record<string, any>) {
+function runViewersHook(
+  viewersHook: ViewersHook | undefined, io: string, viewers: ViewersData, meta: Record<string, any>,
+) {
   if (viewersHook) {
     for (const [type, viewer] of Object.entries(viewers)) {
       if (viewer)

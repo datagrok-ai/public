@@ -1,1 +1,3 @@
-{"tiers": ["viewers"]}
+{"tiers": ["viewers"],
+ "audits": {"allow": {
+   "errors": [{"message": "the descriptors are not available", "reason": "the template features make the descriptors unlistable on purpose (bindings/landing.ts), and the Hit Triage and PepTriage editors log that they could not list them"}]}}}

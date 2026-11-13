@@ -1,4 +1,13 @@
 {
+  "version": "0.1.0",
+  "rules": {
+    "count": 33,
+    "source": "src/core/rules.ts",
+    "docs": [
+      "README.md",
+      "AGENTS.md"
+    ]
+  },
   "schema": "dg-ui/1",
   "recipes": "docs/recipes/",
   "binding": "Every declared prop accepts a \"bind\" entry and follows it live, except props marked structural, which read a bind once. A bind on an undeclared prop is an error.",
@@ -128,7 +137,7 @@
       "tag": "u2-text-input",
       "category": "Inputs",
       "description": "Single-line text editor with validation.",
-      "usage": "With `search: true` this is the filter box; in a platform view the main filter belongs in the view ribbon (`appView({ribbon})`), not inside the content area. Every input: act on the user's edits with `onInput` (`onChanged` also hears writes from code); load another record with `reset(value)`, keep in step with a model with `follow(read)`; a status line or tab marker reads `error` (shown, touch-gated), Save reads `validity`.",
+      "usage": "With `search: true` this is the filter box; in a platform view the main filter belongs in the view ribbon (the `ribbon` a `ViewHost.create` builder answers), not inside the content area. Every input: act on the user's edits with `onInput` (`onChanged` also hears writes from code); load another record with `reset(value)`, keep in step with a model with `follow(read)`; a status line or tab marker reads `error` (shown, touch-gated), Save reads `validity`.",
       "props": [
         {
           "name": "label",
@@ -164,10 +173,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -224,7 +233,7 @@
       "kind": "text-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -273,10 +282,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -326,7 +335,7 @@
       "kind": "text-area",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -375,10 +384,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -424,7 +433,7 @@
       "kind": "bool-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -470,10 +479,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -529,6 +538,11 @@
           "description": "Hover spinner inside the field."
         },
         {
+          "name": "placeholder",
+          "type": "string",
+          "bindable": true
+        },
+        {
           "name": "visible",
           "type": "bool",
           "description": "false hides the node; true by default."
@@ -550,7 +564,7 @@
       "kind": "number-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -600,10 +614,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -659,13 +673,84 @@
       "kind": "choice-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
         },
         "invalid": {
           "required": true
+        },
+        "empty": {
+          "items": []
+        }
+      }
+    },
+    {
+      "tag": "u2-choice-chip",
+      "category": "Inputs",
+      "description": "A small choice inline, reading \"label value ▾\": a press opens a menu of the choices, the current one checked.",
+      "usage": "For a choice among others in a row or a heading (an R group's cap, a sort): two clicks to change it. In code an item takes a `description` (its grey detail in the menu and the chip's tooltip), `invalid` turns the chip red with its reason and `actions` add entries under the choices. A field of a form is `u2-choice-input`.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "structural": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "The automation id."
+        },
+        {
+          "name": "value",
+          "type": "string"
+        },
+        {
+          "name": "items",
+          "type": "string_list",
+          "structural": true
+        },
+        {
+          "name": "disabled",
+          "type": "string",
+          "structural": true,
+          "description": "Why the chip is off — greyed out, its menu closed; empty while on."
+        },
+        {
+          "name": "invalid",
+          "type": "string",
+          "structural": true,
+          "description": "Why the current choice cannot stand — the chip turns red; empty while it is fine."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
+        }
+      ],
+      "defaults": {
+        "items": [
+          "Item 1",
+          "Item 2",
+          "Item 3"
+        ]
+      },
+      "example": {
+        "tag": "u2-choice-chip",
+        "props": {
+          "label": "Sort",
+          "items": [
+            "Name",
+            "Created"
+          ],
+          "value": "Name"
+        }
+      },
+      "kind": "choice-chip",
+      "states": {
+        "disabled": {
+          "disabled": "Fill in the fields above first"
         },
         "empty": {
           "items": []
@@ -711,10 +796,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -776,7 +861,7 @@
       "kind": "multi-choice-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -792,8 +877,8 @@
     {
       "tag": "u2-button",
       "category": "Actions",
-      "description": "Push button; `on: {\"click\": \"cmd:<name>\"}` runs a context command.",
-      "usage": "In code, `button(text, onClick, {disabled: reason})` disables it and shows the reason (a string, or a signal of one) as its tooltip — say what is missing rather than leaving the user to guess; a dialog's OK takes the same through `okDisabled(reason)`.",
+      "description": "Push button; `on: {\"click\": \"cmd:<name>\"}` runs a context command. Inside a u2-form it goes to the form's button row.",
+      "usage": "Off with the reason: `disabled` takes why (bind it to a context value that is null while the button can run) and shows it as the tooltip — say what is missing rather than leaving the user to guess. In code, `button(text, onClick, {disabled: reason})`; a dialog's OK takes the same through `okDisabled(reason)`.",
       "props": [
         {
           "name": "text",
@@ -809,6 +894,11 @@
           "type": "string",
           "inputType": "Icon",
           "description": "Font Awesome icon name shown before the text."
+        },
+        {
+          "name": "disabled",
+          "type": "string",
+          "description": "Why the button is off: its tooltip, said on keyboard focus too; a press does nothing. Empty or null: on."
         },
         {
           "name": "visible",
@@ -832,7 +922,12 @@
           "click": "cmd:save"
         }
       },
-      "kind": "button"
+      "kind": "button",
+      "states": {
+        "disabled": {
+          "disabled": "Fill in the fields above first"
+        }
+      }
     },
     {
       "tag": "u2-panel",
@@ -843,6 +938,19 @@
           "name": "cls",
           "type": "string",
           "description": "Extra layout class."
+        },
+        {
+          "name": "gap",
+          "type": "string",
+          "choices": [
+            "xs",
+            "s",
+            "m",
+            "l",
+            "xl",
+            "xxl"
+          ],
+          "description": "Space between the children on the token scale: 2, 4, 8, 12, 16 or 24px."
         },
         {
           "name": "visible",
@@ -875,6 +983,19 @@
           "description": "Extra layout class."
         },
         {
+          "name": "gap",
+          "type": "string",
+          "choices": [
+            "xs",
+            "s",
+            "m",
+            "l",
+            "xl",
+            "xxl"
+          ],
+          "description": "Space between the children on the token scale: 2, 4, 8, 12, 16 or 24px."
+        },
+        {
           "name": "visible",
           "type": "bool",
           "description": "false hides the node; true by default."
@@ -905,6 +1026,19 @@
           "description": "Extra layout class."
         },
         {
+          "name": "gap",
+          "type": "string",
+          "choices": [
+            "xs",
+            "s",
+            "m",
+            "l",
+            "xl",
+            "xxl"
+          ],
+          "description": "Space between the children on the token scale: 2, 4, 8, 12, 16 or 24px."
+        },
+        {
           "name": "visible",
           "type": "bool",
           "description": "false hides the node; true by default."
@@ -918,6 +1052,50 @@
             "tag": "u2-text-input",
             "props": {
               "label": "Name"
+            }
+          }
+        ]
+      },
+      "kind": "div-h"
+    },
+    {
+      "tag": "u2-form-buttons",
+      "category": "Containers",
+      "description": "A row of buttons; as a child of a u2-form it is the form's button row, under the rows.",
+      "usage": "A form's Save and Cancel: `{\"tag\": \"u2-form-buttons\", \"children\": [{\"tag\": \"u2-button\", \"props\": {\"text\": \"Save\", \"primary\": true}, \"bind\": {\"disabled\": \"$.saveProblem\"}}]}` — the button off with the reason it is off.",
+      "props": [
+        {
+          "name": "align",
+          "type": "string",
+          "choices": [
+            "end",
+            "editors",
+            "start"
+          ],
+          "structural": true,
+          "description": "In a form: the buttons at the end (default), starting where the editors do, or at the start."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
+        }
+      ],
+      "acceptsChildren": true,
+      "example": {
+        "tag": "u2-form-buttons",
+        "children": [
+          {
+            "tag": "u2-button",
+            "props": {
+              "text": "Cancel"
+            }
+          },
+          {
+            "tag": "u2-button",
+            "props": {
+              "text": "Save",
+              "primary": true
             }
           }
         ]
@@ -1221,6 +1399,41 @@
       "kind": "section"
     },
     {
+      "tag": "u2-page",
+      "category": "Containers",
+      "description": "A view's content: a body that alone scrolls, every spec child in it one under the other.",
+      "usage": "For the content of a view or a dialog-sized editor. In code, `new Page({header, sections, footer, maxWidth})` adds a header that stays put, titled sections with their actions, and an action row pinned under the body (buttons on the right, a status line beside them); the forms on a page share one label column. Spacing is the `--u2-page-*` properties, set on an element of your own.",
+      "props": [
+        {
+          "name": "maxWidth",
+          "type": "double",
+          "structural": true,
+          "description": "The body's widest, in px; its forms go as wide."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
+        }
+      ],
+      "acceptsChildren": true,
+      "example": {
+        "tag": "u2-page",
+        "props": {
+          "maxWidth": 640
+        },
+        "children": [
+          {
+            "tag": "u2-text-input",
+            "props": {
+              "label": "Name"
+            }
+          }
+        ]
+      },
+      "kind": "page"
+    },
+    {
       "tag": "u2-tabs",
       "category": "Containers",
       "description": "Tab strip with one tab per spec child; the child node carries the tab label.",
@@ -1325,7 +1538,7 @@
     {
       "tag": "u2-form",
       "category": "Containers",
-      "description": "Vertical input layout: spec children that are inputs join the form and share its label column, validity and Enter navigation; anything else renders as a plain row in place.",
+      "description": "Vertical input layout: spec children that are inputs join the form and share its label column, validity and Enter navigation; a u2-form-buttons child is its button row; anything else renders as a plain row in place.",
       "usage": "Labels share a left column and values stay left-aligned — never center form content. For forms over Property metadata use `propertyForm`/`objectForm` (u2/dg) instead of hand-building. Forms that must line up — the tabs of one editor — share a `LabelColumn` (`labelColumn` option); `labelWidth` fixes the column. The labels align before the first paint; `layoutNow()` for a test that reads the layout in the same task. `addColumns(inputs, {minWidth})` puts short fields two to a row, each editor filling its column, one to a row where two would go under `minWidth`. `quiet: true` drops the underlines at rest — for an inspector, not a form people fill in. Beside a Save, `statusLine(problem, otherwise)` says what Save will do or why it cannot yet.",
       "props": [
         {
@@ -1557,10 +1770,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -1609,7 +1822,7 @@
       "kind": "slider-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -1736,10 +1949,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -1798,7 +2011,7 @@
       "kind": "radio-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -1850,10 +2063,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -1893,7 +2106,7 @@
       "kind": "color-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -1940,10 +2153,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -1977,7 +2190,7 @@
       "kind": "icon-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -2026,10 +2239,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -2071,7 +2284,7 @@
       "kind": "list-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -2120,10 +2333,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -2159,13 +2372,253 @@
       "kind": "map-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
         },
         "invalid": {
           "required": true
+        }
+      }
+    },
+    {
+      "tag": "u2-records-input",
+      "category": "Inputs",
+      "description": "An editable list of records: a row each, an inline input per field under a header, a remove button per row and an add link; orderable rows move by a handle or Alt+↑/↓. The value is the records; a failing cell names its row in the verdict (\"Row 2: Name: Value can't be empty\").",
+      "usage": "For a short list of typed rows edited in place — a template's fields, its stages. In code each column gives the input its cells get (`{name, header, input: (value) => new ChoiceInput({inline: true, …}), width}`); a spec gives text fields by name. Validate the list as a whole with `addValidator` (duplicate names).",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "object",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "structural": true,
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "disabled",
+          "type": "string",
+          "bindable": true,
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
+        },
+        {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
+          "name": "fields",
+          "type": "string_list",
+          "structural": true,
+          "description": "The columns: text fields, in order."
+        },
+        {
+          "name": "addText",
+          "type": "string",
+          "structural": true,
+          "description": "The add link's text; Add by default."
+        },
+        {
+          "name": "orderable",
+          "type": "bool",
+          "structural": true,
+          "description": "Rows move by a handle or Alt+↑/↓."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
+        }
+      ],
+      "defaults": {
+        "fields": [
+          "name"
+        ]
+      },
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-records-input",
+        "props": {
+          "label": "Stages",
+          "fields": [
+            "name"
+          ],
+          "addText": "Add stage",
+          "orderable": true,
+          "value": [
+            {
+              "name": "Design"
+            },
+            {
+              "name": "Synthesis"
+            },
+            {
+              "name": "Assay"
+            }
+          ]
+        }
+      },
+      "kind": "records-input",
+      "states": {
+        "disabled": {
+          "disabled": "Fill in the fields above first"
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
+        }
+      }
+    },
+    {
+      "tag": "u2-checklist-input",
+      "category": "Inputs",
+      "description": "Checkboxes the user can also put in order: the value is the checked items in the order shown, `order` every item's.",
+      "usage": "For picking a subset where the order matters too — the functions to run and their order, the columns to show. Without `orderable` it is a plain check list (`u2-multi-choice-input` adds a summary checkbox).",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Stable key for forms and dumps; defaults to the label."
+        },
+        {
+          "name": "value",
+          "type": "string_list",
+          "bindable": true,
+          "twoWay": true
+        },
+        {
+          "name": "inline",
+          "type": "bool",
+          "structural": true,
+          "description": "Compact one-row variant without a label."
+        },
+        {
+          "name": "postfix",
+          "type": "string",
+          "bindable": true,
+          "description": "Units or a short suffix shown after the editor."
+        },
+        {
+          "name": "tooltipText",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "disabled",
+          "type": "string",
+          "bindable": true,
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
+        },
+        {
+          "name": "readOnly",
+          "type": "bool",
+          "bindable": true,
+          "description": "Shows the value, selectable, but blocks edits."
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "bindable": true,
+          "description": "An empty value is invalid once the input was edited, left or its form validated."
+        },
+        {
+          "name": "items",
+          "type": "string_list",
+          "bindable": true
+        },
+        {
+          "name": "orderable",
+          "type": "bool",
+          "structural": true,
+          "description": "Rows move by a handle or Alt+↑/↓."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
+        }
+      ],
+      "defaults": {
+        "items": [
+          "Item 1",
+          "Item 2",
+          "Item 3"
+        ]
+      },
+      "events": [
+        "change"
+      ],
+      "example": {
+        "tag": "u2-checklist-input",
+        "props": {
+          "label": "Run",
+          "items": [
+            "Descriptors",
+            "Toxicity",
+            "Solubility"
+          ],
+          "value": [
+            "Toxicity",
+            "Descriptors"
+          ],
+          "orderable": true
+        }
+      },
+      "kind": "checklist-input",
+      "states": {
+        "disabled": {
+          "disabled": "Fill in the fields above first"
+        },
+        "readOnly": {
+          "readOnly": true
+        },
+        "invalid": {
+          "required": true
+        },
+        "empty": {
+          "items": []
         }
       }
     },
@@ -2209,10 +2662,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -2268,7 +2721,7 @@
       "kind": "chips-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -2321,10 +2774,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -2406,7 +2859,7 @@
       "kind": "access-grid",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -2456,10 +2909,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -2498,7 +2951,7 @@
       "kind": "qnum-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -2548,10 +3001,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -2596,7 +3049,7 @@
       "kind": "font-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -2642,10 +3095,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -2683,7 +3136,7 @@
       "kind": "image-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -2826,6 +3279,83 @@
       "kind": "stat-card"
     },
     {
+      "tag": "u2-app-header",
+      "category": "Display",
+      "description": "An app home's hero: a big icon beside the bullets of what the app does, and a Learn more link.",
+      "usage": "At the top of an app's home view, above what the user starts from. A titled header puts the app name and a one-line subtitle beside a smaller icon; an item may be an element or a link (`AppHeader` in code).",
+      "props": [
+        {
+          "name": "icon",
+          "type": "string",
+          "inputType": "Icon",
+          "structural": true,
+          "description": "An image URL or a Font Awesome name."
+        },
+        {
+          "name": "iconSize",
+          "type": "int",
+          "structural": true,
+          "description": "In pixels: 150, or 90 beside a title."
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "subtitle",
+          "type": "string",
+          "bindable": true
+        },
+        {
+          "name": "items",
+          "type": "string_list",
+          "structural": true,
+          "description": "The bullets, in order."
+        },
+        {
+          "name": "learnMore",
+          "type": "string",
+          "structural": true,
+          "description": "The URL Learn more opens in a new tab."
+        },
+        {
+          "name": "bottomLine",
+          "type": "bool",
+          "structural": true,
+          "description": "A rule under the header."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
+        }
+      ],
+      "defaults": {
+        "icon": "rocket",
+        "items": [
+          "What the app does"
+        ]
+      },
+      "example": {
+        "tag": "u2-app-header",
+        "props": {
+          "icon": "flask",
+          "items": [
+            "Sketch molecules in the spreadsheet",
+            "Calculate molecular properties"
+          ],
+          "learnMore": "https://datagrok.ai/help"
+        }
+      },
+      "kind": "app-header",
+      "states": {
+        "empty": {
+          "items": []
+        }
+      }
+    },
+    {
       "tag": "u2-data-table",
       "category": "Display",
       "description": "Virtualized table: pooled rows under a sticky header, one column per named property, only the visible window in the DOM.",
@@ -2887,6 +3417,91 @@
       }
     },
     {
+      "tag": "u2-catalog-table",
+      "category": "Display",
+      "description": "A table of records people come back to: double-click a header to sort, group the rows into foldable sections with counts, choose the columns; the choices are kept.",
+      "usage": "For a catalog of records with a name and a few attributes (campaigns, profiles, templates) where the whole list fits the page. In code, `CatalogTable` takes columns with `value`/`render`, groupings, row `actions`, an `AsyncValue` of items and a `persist` adapter; `chrome()` gives the columns, group and refresh icons for the heading. Thousands of rows belong in `u2-data-table`. Recipe: docs/recipes/catalog-table.md.",
+      "props": [
+        {
+          "name": "columns",
+          "type": "string_list",
+          "structural": true,
+          "description": "The record properties to show, in order; `name:Header` gives one its own header. The first is the record's name: always shown, first."
+        },
+        {
+          "name": "items",
+          "type": "object",
+          "bindable": true,
+          "description": "The records — bind a source's rows (`$.campaigns.rows`)."
+        },
+        {
+          "name": "key",
+          "type": "string",
+          "structural": true,
+          "description": "The property that identifies a record; the first column by default."
+        },
+        {
+          "name": "groupings",
+          "type": "string_list",
+          "structural": true,
+          "description": "The columns the group menu offers."
+        },
+        {
+          "name": "persistKey",
+          "type": "string",
+          "structural": true,
+          "description": "Keeps the sort, grouping, columns and folds in the browser under this key."
+        },
+        {
+          "name": "visible",
+          "type": "bool",
+          "description": "false hides the node; true by default."
+        }
+      ],
+      "defaults": {
+        "columns": [
+          "name:Name",
+          "status:Status"
+        ]
+      },
+      "example": {
+        "tag": "u2-catalog-table",
+        "props": {
+          "columns": [
+            "name:Name",
+            "status:Status",
+            "molecules:Molecules"
+          ],
+          "groupings": [
+            "status"
+          ],
+          "items": [
+            {
+              "name": "Kinase hits",
+              "status": "In progress",
+              "molecules": 120
+            },
+            {
+              "name": "GPCR series",
+              "status": "Submitted",
+              "molecules": 48
+            },
+            {
+              "name": "Fragments",
+              "status": "In progress",
+              "molecules": 9
+            }
+          ]
+        }
+      },
+      "kind": "catalog-table",
+      "states": {
+        "empty": {
+          "items": []
+        }
+      }
+    },
+    {
       "tag": "u2-filter-builder",
       "category": "Inputs",
       "description": "Schema-driven query builder: condition rows (property, operator, value) joined by one and/or toggle, \"+\" adds and \"−\" removes; the value is a filter tree, `query` its string.",
@@ -2926,10 +3541,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -3049,7 +3664,7 @@
       "kind": "filter-builder",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -3099,10 +3714,10 @@
           "bindable": true
         },
         {
-          "name": "enabled",
-          "type": "bool",
+          "name": "disabled",
+          "type": "string",
           "bindable": true,
-          "description": "false grays the input out and blocks edits."
+          "description": "Why the input is off — greyed out, edits blocked, the reason as its tooltip; empty while on."
         },
         {
           "name": "readOnly",
@@ -3193,7 +3808,7 @@
       "kind": "filter-query-input",
       "states": {
         "disabled": {
-          "enabled": false
+          "disabled": "Fill in the fields above first"
         },
         "readOnly": {
           "readOnly": true
@@ -3484,7 +4099,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "placeholder",
@@ -3532,7 +4147,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "placeholder",
@@ -3580,12 +4195,13 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "min",
         "max",
         "step",
+        "placeholder",
         "visible"
       ],
       "gestures": [
@@ -3656,7 +4272,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "placeholder",
@@ -3702,7 +4318,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "min",
@@ -3791,7 +4407,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "visible"
@@ -3839,7 +4455,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "items",
@@ -3855,6 +4471,11 @@
       "gestures": [
         "open",
         "pick"
+      ],
+      "notFor": [
+        "a small choice inline among others, its label inside it: `ChoiceChip`",
+        "a column choice: that is `columnInput(label, df)` (u2/dg), never a list built from `df.columns`",
+        "a table choice: that is `tableInput(label)` (u2/dg)"
       ]
     },
     {
@@ -3894,7 +4515,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "items",
@@ -3949,7 +4570,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "items",
@@ -3966,6 +4587,9 @@
       },
       "gestures": [
         "toggle"
+      ],
+      "notFor": [
+        "a pick where the order matters too: `ChecklistInput`"
       ]
     },
     {
@@ -4002,7 +4626,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "items",
@@ -4098,7 +4722,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "placeholder",
@@ -4153,7 +4777,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "visible"
@@ -4170,6 +4794,126 @@
         "remove",
         "type"
       ]
+    },
+    {
+      "kind": "records-input",
+      "noun": "records input",
+      "aliases": [
+        "records editor",
+        "editable list"
+      ],
+      "family": "input",
+      "tag": "u2-records-input",
+      "focusRole": "grid",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]",
+        "add": "[data-u2-part=\"add\"]",
+        "handle": "[data-u2-part=\"handle\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "items"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "disabled",
+        "readOnly",
+        "required",
+        "visible"
+      ],
+      "items": {
+        "role": "row",
+        "noun": "item",
+        "gestures": [
+          "remove",
+          "drag"
+        ]
+      },
+      "gestures": [
+        "add",
+        "remove",
+        "type",
+        "drag"
+      ],
+      "whenToUse": "rows the user edits in place: a template's fields or stages"
+    },
+    {
+      "kind": "checklist-input",
+      "noun": "checklist",
+      "aliases": [
+        "checklist input",
+        "orderable checklist"
+      ],
+      "family": "input",
+      "tag": "u2-checklist-input",
+      "focusRole": "list",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]",
+        "handle": "[data-u2-part=\"handle\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "items",
+        "selection"
+      ],
+      "props": [
+        "label",
+        "name",
+        "value",
+        "postfix",
+        "tooltipText",
+        "disabled",
+        "readOnly",
+        "required",
+        "items",
+        "visible"
+      ],
+      "items": {
+        "role": "listitem",
+        "noun": "item",
+        "gestures": [
+          "toggle",
+          "drag"
+        ],
+        "multi": true
+      },
+      "gestures": [
+        "toggle",
+        "drag"
+      ],
+      "whenToUse": "a pick where the order matters too: the functions to run, in order"
     },
     {
       "kind": "color-input",
@@ -4206,7 +4950,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "visible"
@@ -4252,7 +4996,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "visible"
@@ -4300,7 +5044,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "visible"
@@ -4351,7 +5095,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "alt",
@@ -4519,6 +5263,45 @@
       ]
     },
     {
+      "kind": "pick-input",
+      "noun": "pick input",
+      "family": "input",
+      "focusRole": "combobox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "open",
+        "placeholder"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "pick"
+        ]
+      },
+      "gestures": [
+        "type",
+        "open",
+        "pick"
+      ]
+    },
+    {
       "kind": "suggest-input",
       "noun": "suggest input",
       "family": "input",
@@ -4639,7 +5422,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "principals",
@@ -4728,7 +5511,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "mode",
@@ -4780,7 +5563,7 @@
         "value",
         "postfix",
         "tooltipText",
-        "enabled",
+        "disabled",
         "readOnly",
         "required",
         "placeholder",
@@ -4872,7 +5655,8 @@
       "gestures": [
         "open",
         "pick"
-      ]
+      ],
+      "whenToUse": "a column choice in the platform's column combo: `columnInput(label, df, {grid: true})`, never a list built from `df.columns`"
     },
     {
       "kind": "column-picker",
@@ -4912,7 +5696,8 @@
       "gestures": [
         "open",
         "pick"
-      ]
+      ],
+      "whenToUse": "a column choice with a search over the columns: `columnInput(label, df, {rich: true})`, never a list built from `df.columns`"
     },
     {
       "kind": "columns-input",
@@ -5215,6 +6000,10 @@
       "gestures": [
         "type",
         "pick"
+      ],
+      "whenToUse": "a value shown as an element (a structure drawing, a chart): its row grows to fit it, where an options-rail child would spill",
+      "notFor": [
+        "read-only details in a pane of their own: `tableFromMap(map)`"
       ]
     },
     {
@@ -5290,6 +6079,7 @@
         "text",
         "primary",
         "icon",
+        "disabled",
         "visible"
       ],
       "gestures": [
@@ -5339,6 +6129,55 @@
         "press",
         "open",
         "pick"
+      ],
+      "notFor": [
+        "a choice that keeps a current value: `ChoiceChip`"
+      ]
+    },
+    {
+      "kind": "choice-chip",
+      "noun": "choice chip",
+      "family": "action",
+      "tag": "u2-choice-chip",
+      "role": "button",
+      "nameFrom": [
+        "label",
+        "aria",
+        "text"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "value": "[data-u2-part=\"value\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "open",
+        "items",
+        "selection"
+      ],
+      "props": [
+        "name",
+        "value",
+        "visible"
+      ],
+      "items": {
+        "role": "menuitemcheckbox",
+        "noun": "menu item",
+        "gestures": [
+          "pick"
+        ]
+      },
+      "gestures": [
+        "open",
+        "pick"
+      ],
+      "whenToUse": "a small choice inline among others, its label inside it (\"R1 OH ▾\", \"Sort Name ▾\"): a menu of the choices, each with what it stands for, the current one checked",
+      "notFor": [
+        "a field of a form, in its label column: `ChoiceInput`"
       ]
     },
     {
@@ -5555,6 +6394,9 @@
       "gestures": [
         "drag",
         "resize"
+      ],
+      "notFor": [
+        "a list beside the details of its current item: `MasterDetail`"
       ]
     },
     {
@@ -5590,6 +6432,34 @@
       ]
     },
     {
+      "kind": "page",
+      "noun": "page",
+      "family": "container",
+      "tag": "u2-page",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "header": ":scope > [data-u2-part=\"header\"]",
+        "body": ":scope > [data-u2-part=\"body\"]",
+        "footer": ":scope > [data-u2-part=\"footer\"]",
+        "section title": ":scope > [data-u2-part=\"body\"] > [data-u2-part=\"section\"] > [data-u2-part=\"section-header\"] > [data-u2-part=\"section-title\"]"
+      },
+      "state": [],
+      "props": [
+        "visible"
+      ],
+      "gestures": [],
+      "styling": {
+        "--u2-page-max-width": "the body's widest (a CSS length); its forms go as wide",
+        "--u2-page-padding-x": "the space left and right of the header, the body and the action row; 24px",
+        "--u2-page-padding-y": "the space above the header and the body; 12px",
+        "--u2-page-gap": "the space between the sections; 24px",
+        "--u2-page-section-indent": "how far a section's content sits in from its heading; 0"
+      },
+      "whenToUse": "the content of a view or a dialog-sized editor: a header, a body that alone scrolls, a pinned action row, sections with their actions"
+    },
+    {
       "kind": "form",
       "noun": "form",
       "family": "container",
@@ -5608,7 +6478,11 @@
         "captionAlign",
         "visible"
       ],
-      "gestures": []
+      "gestures": [],
+      "styling": {
+        "--u2-form-max-width": "the widest a form gets (a CSS length); 700px, or as wide as the page in a Page",
+        "--u2-form-section-gap": "the space between two sections of the form; 0"
+      }
     },
     {
       "kind": "object-form",
@@ -5663,6 +6537,7 @@
       "state": [],
       "props": [
         "cls",
+        "gap",
         "visible"
       ],
       "gestures": []
@@ -5679,6 +6554,7 @@
       "state": [],
       "props": [
         "cls",
+        "gap",
         "visible"
       ],
       "gestures": []
@@ -5695,6 +6571,7 @@
       "state": [],
       "props": [
         "cls",
+        "gap",
         "visible"
       ],
       "gestures": []
@@ -5803,6 +6680,18 @@
       "gestures": [
         "select",
         "scroll"
+      ],
+      "styling": {
+        "--u2-row-base-bg": "a row at rest",
+        "--u2-row-hover-bg": "the tint over the row under the pointer",
+        "--u2-row-hover-stripe": "the stripe at the start of the row under the pointer",
+        "--u2-row-selected-bg": "a selected row",
+        "--u2-section-header-bg": "a group's header row"
+      },
+      "whenToUse": "read-only details of an item in a pane of their own: `tableFromMap(map)`, muted keys and wrapping values",
+      "notFor": [
+        "a value drawn as an element among a form's inputs: `DynamicInput`",
+        "records to sort, group and act on: `CatalogTable`"
       ]
     },
     {
@@ -5836,6 +6725,109 @@
       "gestures": [
         "select",
         "scroll"
+      ]
+    },
+    {
+      "kind": "catalog-table",
+      "noun": "catalog table",
+      "aliases": [
+        "records table"
+      ],
+      "family": "collection",
+      "tag": "u2-catalog-table",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "item-label": "[data-u2-part=\"item-label\"]",
+        "section": "[data-u2-part=\"section\"]",
+        "footer": ":scope > [data-u2-part=\"footer\"]"
+      },
+      "state": [
+        "items",
+        "busy",
+        "extra"
+      ],
+      "props": [
+        "items",
+        "visible"
+      ],
+      "items": {
+        "role": "row",
+        "noun": "table row",
+        "gestures": [
+          "expand",
+          "collapse"
+        ]
+      },
+      "gestures": [
+        "scroll"
+      ],
+      "styling": {
+        "--u2-row-base-bg": "a row at rest",
+        "--u2-row-hover-bg": "the tint over the row under the pointer",
+        "--u2-row-hover-stripe": "the stripe at the start of the row under the pointer",
+        "--u2-row-selected-bg": "a selected row",
+        "--u2-section-header-bg": "a group's header row"
+      },
+      "whenToUse": "a list of records to sort, group, choose the columns of and act on"
+    },
+    {
+      "kind": "master-detail",
+      "noun": "master detail",
+      "aliases": [
+        "list with details"
+      ],
+      "family": "collection",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "list": "[data-u2-part=\"list\"]",
+        "detail": "[data-u2-part=\"detail\"]",
+        "reason": "[data-u2-part=\"reason\"]"
+      },
+      "state": [
+        "current",
+        "items",
+        "selection"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "select",
+          "toggle"
+        ]
+      },
+      "gestures": [
+        "select",
+        "toggle"
+      ],
+      "styling": {
+        "--u2-master-detail-height": "its height (a CSS length); it fills its host by default",
+        "--u2-row-selected-bg": "the current row"
+      },
+      "whenToUse": "a short list (up to a few hundred items: it renders every row) beside the detail of its current item, each item with a check and a hint, its detail kept while it is not shown",
+      "notFor": [
+        "many records to sort and group: `CatalogTable`, its details in the context panel; a longer list beside a detail: `VirtualList` and a detail of your own in a `Splitter`"
+      ]
+    },
+    {
+      "kind": "column-header",
+      "noun": "column header",
+      "family": "collection",
+      "role": "columnheader",
+      "nameFrom": [
+        "text",
+        "aria"
+      ],
+      "parts": {},
+      "state": [],
+      "props": [],
+      "gestures": [
+        "press"
       ]
     },
     {
@@ -6099,6 +7091,37 @@
       ]
     },
     {
+      "kind": "ribbon-group",
+      "noun": "ribbon group",
+      "aliases": [
+        "package ribbon"
+      ],
+      "family": "navigation",
+      "role": "toolbar",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {
+        "more button": "[data-u2-part=\"more\"]"
+      },
+      "state": [
+        "items",
+        "extra"
+      ],
+      "props": [],
+      "items": {
+        "role": "button",
+        "noun": "ribbon button",
+        "gestures": [
+          "press"
+        ]
+      },
+      "gestures": [
+        "press"
+      ],
+      "whenToUse": "a package's group on a platform view's ribbon: `ViewHost.of(view).ribbon({actions, buttons})`"
+    },
+    {
       "kind": "dialog",
       "noun": "dialog",
       "family": "overlay",
@@ -6266,6 +7289,21 @@
       "gestures": []
     },
     {
+      "kind": "empty-state",
+      "noun": "empty state",
+      "family": "display",
+      "role": "status",
+      "nameFrom": [
+        "text"
+      ],
+      "parts": {},
+      "state": [
+        "text"
+      ],
+      "props": [],
+      "gestures": []
+    },
+    {
       "kind": "tag",
       "noun": "tag",
       "family": "display",
@@ -6359,6 +7397,42 @@
         "visible"
       ],
       "gestures": []
+    },
+    {
+      "kind": "app-header",
+      "noun": "app header",
+      "aliases": [
+        "app hero"
+      ],
+      "family": "display",
+      "tag": "u2-app-header",
+      "nameFrom": [
+        "label",
+        "aria"
+      ],
+      "parts": {
+        "icon": "[data-u2-part=\"icon\"]",
+        "title": "[data-u2-part=\"title\"]",
+        "subtitle": "[data-u2-part=\"subtitle\"]",
+        "learn more": "[data-u2-part=\"learn-more\"]"
+      },
+      "state": [
+        "label",
+        "items",
+        "extra"
+      ],
+      "props": [
+        "title",
+        "subtitle",
+        "visible"
+      ],
+      "items": {
+        "role": "listitem",
+        "noun": "header item",
+        "gestures": []
+      },
+      "gestures": [],
+      "whenToUse": "the top of an app's home: its icon, what it does and Learn more"
     },
     {
       "kind": "progress-bar",

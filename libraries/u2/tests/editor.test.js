@@ -2,7 +2,7 @@
    is where they are proven — what applies, what is refused, what the re-render touches, and that
    undo puts the document back exactly where it was. Platform-free, so it runs headless as is. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
@@ -127,7 +127,7 @@ function register(reg) {
     createWithChildren: (_props, children, nodes) => {
       const strip = new TabStrip();
       for (let i = 0; i < children.length; i++)
-        strip.addTab({id: `tab-${i}`, label: nodes[i].props?.title ?? `Tab ${i + 1}`,
+        strip.addTab({id: `tab-${i}`, title: nodes[i].props?.title ?? `Tab ${i + 1}`,
           content: element(children[i])});
       return strip;
     },
@@ -484,7 +484,7 @@ edit('rename: a node whose references were rewritten is rendered again, and so i
   const consumer = find(source, 'consumer');
   await flush();
   const built = instance.nodes().get(consumer);
-  assert.equal(built.value.peek(), 'A', 'bound through the named node\'s default step');
+  assert.equal(built.peek(), 'A', 'bound through the named node\'s default step');
   assert.equal(errors(instance), 0);
 
   editor.apply({op: 'rename', node: find(source, 'old'), name: 'renamed'});
@@ -493,15 +493,15 @@ edit('rename: a node whose references were rewritten is rendered again, and so i
   assert.notEqual(rewritten, built, 'the node whose bind path the rename rewrote came back');
   assert.equal(errors(instance), 0, 'and the moved path still resolves');
   const renamed = instance.nodes().get(find(source, 'renamed'));
-  renamed.value.value = 'B';
-  assert.equal(rewritten.value.peek(), 'B', 'wired to the renamed node, not to a corpse');
+  renamed.value = 'B';
+  assert.equal(rewritten.peek(), 'B', 'wired to the renamed node, not to a corpse');
 
   editor.undo();
   await flush();
   const undone = instance.nodes().get(consumer);
   assert.notEqual(undone, rewritten, 'and the reverse rewrite renders it again too');
   assert.equal(errors(instance), 0);
-  assert.equal(undone.value.peek(), 'A', 'seeded from the re-rendered source once more');
+  assert.equal(undone.peek(), 'A', 'seeded from the re-rendered source once more');
   instance.dispose();
 });
 
@@ -517,7 +517,7 @@ edit('a patch on a named visual node renders the nodes bound to it again, wired 
   const pick = find(source, 'pick');
   const follower = find(source, 'follower');
   const built = instance.nodes().get(follower);
-  assert.equal(built.value.peek(), 'A');
+  assert.equal(built.peek(), 'A');
 
   created.length = 0;
   editor.apply({op: 'set-prop', node: pick, name: 'label', value: 'Picked'});
@@ -525,15 +525,15 @@ edit('a patch on a named visual node renders the nodes bound to it again, wired 
   const rewired = instance.nodes().get(follower);
   assert.notEqual(rewired, built, 'the dependent came back with the node it binds to');
   assert.equal(errors(instance), 0);
-  instance.nodes().get(pick).value.value = 'B';
-  assert.equal(rewired.value.peek(), 'B', 'wired to the new input, not to the corpse');
+  instance.nodes().get(pick).value = 'B';
+  assert.equal(rewired.peek(), 'B', 'wired to the new input, not to the corpse');
 
   editor.undo();
   const undone = instance.nodes().get(follower);
   assert.notEqual(undone, rewired, 'undo renders both again');
   assert.equal(instance.dump().root.children[0].props.label, 'Pick');
-  instance.nodes().get(pick).value.value = 'C';
-  assert.equal(undone.value.peek(), 'C');
+  instance.nodes().get(pick).value = 'C';
+  assert.equal(undone.peek(), 'C');
   instance.dispose();
 });
 

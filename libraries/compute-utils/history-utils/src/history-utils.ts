@@ -4,53 +4,72 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
-import {deepCopy, getStartedOrNull, isIncomplete} from '../../shared-utils/utils';
+import {
+  CUSTOM_VIEW_OPTION, deepCopy, getRunAuthorId, getRunCreated, getRunName, isIncomplete, CREATED_BY_OPTION,
+  CREATED_AT_OPTION, NESTED_ENTITY_OPTION,
+} from '../../shared-utils/utils';
 import dayjs from 'dayjs';
 
-type DateOptions = 'Any time' | 'Today' | 'Yesterday' | 'This week' | 'Last week' | 'This month' | 'Last month' | 'This year' | 'Last year';
-
-type FilterOptions = {
-  text?: string,
-  date?: DateOptions,
-  author?: DG.User,
-  includeDeleted?: boolean,
+/** Name, description and tags of a saved run. */
+export type RunMetadata = {
+  name: string,
+  description?: string,
+  tags?: string[],
 };
 
-const getSearchStringByPattern = (datePattern: DateOptions) => {
-  switch (datePattern) {
-  case 'Today':
-    return `started > -1d`;
-  case 'Yesterday':
-    return `started > -2d and started < -1d`;
-  case 'Any time':
-    return ``;
-  case 'Last year':
-    return `started > -2y and started < -1y`;
-  case 'This year':
-    return `started > -1y`;
-  case 'Last month':
-    return `started > -2m and started < -1m`;
-  case 'This month':
-    return `started > -1m`;
-  case 'Last week':
-    return `started > -2w and started < -1w`;
-  case 'This week':
-    return `started > -1w`;
-  }
+/** Where a run is saved: a space, or My runs when spaceId is not set. Runs in `replace` lose their space link. */
+export type SaveTarget = {
+  spaceId?: string,
+  replace?: DG.FuncCall[],
 };
+
+export type NameConflict = {
+  runs: DG.FuncCall[],
+  other?: DG.Entity,
+};
+
+/** Fired on the platform's event bus after a run is saved on its own, with the spaces whose content changed. */
+export const RUN_SAVED_EVENT = 'compute-run-saved';
+
+export const NOT_DELETED = `((options.isDeleted != "true") or (options.isDeleted = null))`;
+
+const normalizeName = (name: string) => name.trim().toLowerCase();
 
 export namespace historyUtils {
   const groupsCache = new DG.LruCache();
 
-  export async function loadChildRuns(
-    funcCallId: string,
-  ): Promise<{parentRun: DG.FuncCall, childRuns: DG.FuncCall[]}> {
-    const parentRun = await loadRun(funcCallId);
+  export function setRunMetadata(call: DG.FuncCall, metadata: RunMetadata) {
+    call.friendlyName = metadata.name.trim();
+    // the legacy title is read first, by Compute (v1) too, so it carries the same name
+    call.options['title'] = call.friendlyName;
+    // what isn't given stays as it is
+    const current = getRunMetadata(call);
+    call.options['description'] = metadata.description ?? current.description;
+    call.options['tags'] = metadata.tags ?? current.tags;
+  }
 
-    const childRuns = await grok.dapi.functions.calls.allPackageVersions()
-      .include('func, func.package').filter(`options.parentCallId="${funcCallId}"`).list();
+  export function getRunMetadata(call: DG.FuncCall): Required<RunMetadata> {
+    const tags = call.options?.['tags'];
+    return {
+      name: getRunName(call),
+      description: call.options?.['description'] ?? '',
+      tags: Array.isArray(tags) ? tags : [],
+    };
+  }
 
-    return {parentRun, childRuns};
+  // a metadata save makes the saving user the platform author, so a run saved before the author option
+  // existed records its original author and time first
+  async function keepRunAuthor(call: DG.FuncCall) {
+    if (call.options[CREATED_BY_OPTION])
+      return;
+    const source = getRunAuthorId(call) ? call : await shallowLoadRun(call.id);
+    call.options[CREATED_BY_OPTION] = getRunAuthorId(source);
+    call.options[CREATED_AT_OPTION] = getRunCreated(source)?.toISOString();
+  }
+
+  /** Edit details is allowed for the run's author, or for a user with Edit on the space the run is shown in. */
+  export function canEditRunDetails(authorId: string | undefined, canEditSpace: boolean): boolean {
+    return (!!authorId && authorId === DG.User.current().id) || canEditSpace;
   }
 
   /**
@@ -119,6 +138,7 @@ export namespace historyUtils {
    * @param callToSave FuncCall to save
    */
   export async function updateRunMeta(call: DG.FuncCall) {
+    await keepRunAuthor(call);
     const fc = await grok.dapi.functions.calls.allPackageVersions().save(call);
     grok.log.audit('@user edited metadata of @model model run', {
       'user': DG.User.current(),
@@ -131,10 +151,15 @@ export namespace historyUtils {
    * FuncCall is only stores references to actual dataframes. Thus, we should upload them separately
    * @param callToSave FuncCall to save
    * @param options audience: the group granted View on the uploaded dataframes (default: All users);
-   * newId: assign the call a fresh id before saving, leaving an already saved run with the old id untouched
+   * newId: assign the call a fresh id before saving, leaving an already saved run with the old id untouched;
+   * metadata: the run's name, description and tags;
+   * target: a space to link the run into (My runs otherwise), and the runs it replaces there
    * @returns Saved FuncCall
    */
-  export async function saveRun(callToSave: DG.FuncCall, options?: {audience?: DG.Group, newId?: boolean}) {
+  export async function saveRun(
+    callToSave: DG.FuncCall,
+    options?: {audience?: DG.Group, newId?: boolean, metadata?: RunMetadata, target?: SaveTarget, nested?: boolean},
+  ) {
     let allGroup = groupsCache.get('All users');
 
     if (!allGroup) {
@@ -144,7 +169,18 @@ export namespace historyUtils {
     const audience = options?.audience ?? allGroup;
 
     if (options?.newId) callToSave.newId();
+    if (options?.metadata) setRunMetadata(callToSave, options.metadata);
+    callToSave.options[CREATED_BY_OPTION] = DG.User.current().id;
+    callToSave.options[CREATED_AT_OPTION] = dayjs().toISOString();
+    // a run saved on its own is not nested, even when it was loaded from a nested one
+    if (options?.nested)
+      callToSave.options[NESTED_ENTITY_OPTION] = 'true';
+    else
+      delete callToSave.options[NESTED_ENTITY_OPTION];
     const callCopy = deepCopy(callToSave);
+    // a run opened from a space may have been deleted from its author's My runs; its copy is a new, live run
+    delete callCopy.options['isDeleted'];
+    if (options?.metadata) callCopy.friendlyName = callToSave.friendlyName;
     if (isIncomplete(callCopy)) callCopy.options['createdOn'] = dayjs().utc(true).unix();
 
     const fileInputs = wu(callCopy.inputParams.values() as DG.FuncCallParam[])
@@ -203,115 +239,100 @@ export namespace historyUtils {
       'user': DG.User.current(),
       'model': fc.func,
     });
+    if (options?.target?.spaceId) {
+      try {
+        await linkRun(fc.id, options.target.spaceId, options.target.replace);
+      } catch (e: any) {
+        // the run is saved, so the save still succeeds
+        grok.shell.error(`Saved the run, but couldn't add it to the space: ${e?.message ?? e}`);
+      }
+    }
+    // old views save without options and keep to their own history
+    if (options && !options.nested)
+      grok.events.fireCustomEvent(RUN_SAVED_EVENT, {spaceIds: options.target?.spaceId ? [options.target.spaceId] : []});
     return fc;
   }
 
+  /** Links an existing run into a space, then removes the links of the runs it replaces there. */
+  export async function linkRun(runId: string, spaceId: string, replace: DG.FuncCall[] = []) {
+    const space = grok.dapi.spaces.id(spaceId);
+    await space.addEntity(runId, true);
+    for (const replaced of replace) {
+      if (replaced.id !== runId)
+        await space.removeEntity(replaced.id);
+    }
+  }
+
+  /** Removes a run's link from a space. The run itself doesn't change. */
+  export async function unlinkRun(runId: string, spaceId: string) {
+    await grok.dapi.spaces.id(spaceId).removeEntity(runId);
+  }
+
+  /** All of the current user's runs of the models that the user hasn't deleted, wherever they are linked.
+   * A model's runs include the runs saved from its custom view. */
+  export async function listMyRuns(models: DG.Func | DG.Func[]): Promise<DG.FuncCall[]> {
+    const funcs = Array.isArray(models) ? models : [models];
+    if (funcs.length === 0)
+      return [];
+    const me = DG.User.current().id;
+    const mine = `(options.${CREATED_BY_OPTION} = "${me}") or ` +
+      `((session.user.id="${me}") and (options.${CREATED_BY_OPTION} = null))`;
+    const names = [...new Set(funcs.map((func) => func.name))];
+    const views = funcs.map((func) => `(options.${CUSTOM_VIEW_OPTION} = "${func.nqName}")`);
+    const ofModels = `(func.name in (${names.map((name) => `"${name}"`).join(',')})) or ${views.join(' or ')}`;
+    // every clause in its own parentheses, and the or-null clauses first: the server drops the first branch of a
+    // nested or when an or-null clause comes before it unwrapped, and matches nothing when an options equality
+    // comes before an or-null clause
+    const runs = await grok.dapi.functions.calls.allPackageVersions()
+      .filter(`(${mine}) and (${NOT_DELETED}) and (options.${NESTED_ENTITY_OPTION} = null) and (${ofModels})`)
+      .include('session.user,options,func.package')
+      .list();
+    return runs.filter((run) => funcs.some((func) => isRunOf(func, run) &&
+      (run.options?.[CUSTOM_VIEW_OPTION] === func.nqName || func.package?.name === run.func?.package?.name)));
+  }
+
+  /** Items owned by a space, and the runs linked into it. */
+  export async function listSpace(spaceId: string): Promise<{items: DG.Entity[], runs: DG.FuncCall[]}> {
+    const [items, runs] = await Promise.all([
+      grok.dapi.spaces.id(spaceId).children.list(),
+      listSpaceRuns(spaceId),
+    ]);
+    return {items, runs};
+  }
+
+  /** Runs linked into a space. */
+  export async function listSpaceRuns(spaceId: string): Promise<DG.FuncCall[]> {
+    // ofTypes changes the client it is called on, so each request gets its own
+    return await grok.dapi.spaces.id(spaceId).children.ofTypes('FuncCall', true).list() as DG.FuncCall[];
+  }
+
+  /** Runs and the first other item in a space that already have this name, ignoring case. */
+  export async function findNameConflict(name: string, spaceId: string): Promise<NameConflict> {
+    return nameConflictIn(await listSpace(spaceId), name);
+  }
+
+  /** Whether a run is a run of the model, or was saved from the model's custom view; matched across packages and
+   * versions by function name. */
+  export const isRunOf = (func: DG.Func, run: DG.FuncCall) =>
+    func.name === run.func?.name || func.nqName === run.options?.[CUSTOM_VIEW_OPTION];
+
+  export const sameRunName = (a: string, b: string) => normalizeName(a) === normalizeName(b);
+
+  /** A space item other than a run that users see and name; every space has a storage connection they don't. */
+  export const isNamedSpaceItem = (item: DG.Entity) =>
+    item.entityType !== 'FuncCall' && item.entityType !== 'DataConnection';
+
+  /** The runs and the first other item of a space listing that have this name, ignoring case. */
+  export function nameConflictIn(listing: {items: DG.Entity[], runs: DG.FuncCall[]}, name: string): NameConflict {
+    const key = normalizeName(name);
+    const other = listing.items.find((item) =>
+      isNamedSpaceItem(item) && normalizeName(item.friendlyName || item.name || '') === key);
+    return {runs: listing.runs.filter((run) => normalizeName(getRunName(run)) === key), other};
+  }
+
   export async function deleteRun(callToDelete: DG.FuncCall) {
+    await keepRunAuthor(callToDelete);
     callToDelete.options['isDeleted'] = true;
     await grok.dapi.functions.calls.allPackageVersions().save(callToDelete);
-  }
-
-  /**
-   * Loads all the function call of this function.
-   * Designed to pull hstorical runs in fast manner and the call {@link loadRun} with specified run ID.
-   * WARNING: FuncCall inputs/outputs fields are not included
-   * @param funcId ID of Func which calls we are looking for. Get it using {@link func.id} field
-   * @return Promise on array of FuncCalls corresponding to the passed Func ID
-   * @stability Deprecated. Script ID changes with every package release, so searching by ID is useless in practice.
- */
-  export async function pullRuns(
-    funcId: string,
-    filterOptions: FilterOptions = {},
-    listOptions: {pageSize?: number, pageNumber?: number, filter?: string, order?: string} = {},
-  ): Promise<DG.FuncCall[]> {
-    let filteringString = `func.id="${funcId}"`;
-    filteringString += filterOptions.author ? ` and session.user.id="${filterOptions.author.id}"`:'';
-    filteringString += filterOptions.date ? getSearchStringByPattern(filterOptions.date): '';
-    const filter = grok.dapi.functions.calls
-      .allPackageVersions()
-      .filter(filteringString)
-      .include('session.user, options');
-    const list = filter.list(listOptions);
-    return list;
-  }
-
-  /**
-   * Loads all the function call of this function.
-   * Designed to pull hstorical runs in fast manner and the call {@link loadRun} with specified run ID.
-   * WARNING: FuncCall inputs/outputs fields are not included by default. Use {@link includedFields} to specify fields to load.
-   * @param funcName Name of Func which calls we are looking for. Get it using {@link func.name} field
-   * @param filterOptions Struct containing filtering options. These options will be passed as valid filtering string to a request.
-   * @param listOptions Struct containing listing options.
-   * @param includedFields List of fields to include into response. See {@link DG.FuncCall} struct to see possible values. E.g., 'inputs' or 'outputs'
-   * @return Promise on array of FuncCalls corresponding to the passed Func ID
-   * @stability Stable
- */
-  export async function pullRunsByName(
-    funcName: string,
-    filterOptions: FilterOptions[] = [],
-    listOptions: {pageSize?: number, pageNumber?: number, filter?: string, order?: string} = {},
-    includedFields: string[] = [],
-    skipDfLoad: boolean = false,
-  ): Promise<DG.FuncCall[]> {
-    let filteringString = ``;
-    for (const filterOption of filterOptions) {
-      const filterOptionCriteria = [] as string[];
-      if (filterOption.author) filterOptionCriteria.push(`session.user.id="${filterOption.author.id}"`);
-      if (filterOption.date) filterOptionCriteria.push(getSearchStringByPattern(filterOption.date));
-      if (filterOption.text) {
-        filterOptionCriteria.push(
-          `((options.title like "${filterOption.text}") or (options.annotation like "${filterOption.text}"))`,
-        );
-      }
-
-      if (!filterOption.includeDeleted) {
-        filterOptionCriteria.push(
-          `((options.isDeleted != "true") or (options.isDeleted = null))`,
-        );
-      }
-
-      const filterOptionString = filterOptionCriteria.join(' and ');
-      if (filterOptionString !== '') {
-        if (filteringString === '')
-          filteringString += `(${filterOptionString})`;
-        else
-          filteringString += ` or (${filterOptionString})`;
-      }
-    }
-    if (filteringString !== '')
-      filteringString = ` and (${filteringString})`;
-
-    const result =
-      await grok.dapi.functions.calls
-        .allPackageVersions()
-        .filter(`func.name="${funcName}"${filteringString}`)
-        .include(`${[...includedFields, 'func.package'].join(',')}`)
-        .list(listOptions);
-
-    if ((includedFields.includes('inputs') || includedFields.includes('func.params')) && !skipDfLoad) {
-      for (const pulledRun of result) {
-        const dfInputs = wu(pulledRun.inputParams.values() as DG.FuncCallParam[])
-          .filter((input) =>
-            input.property.propertyType === DG.TYPE.DATA_FRAME &&
-            !!pulledRun.inputs[input.name],
-          );
-        for (const input of dfInputs)
-          pulledRun.inputs[input.name] = await grok.dapi.tables.getTable(pulledRun.inputs[input.name]);
-      }
-    }
-
-    if ((includedFields.includes('outputs') || includedFields.includes('func.params')) && !skipDfLoad) {
-      for (const pulledRun of result) {
-        const dfOutputs = wu(pulledRun.outputParams.values() as DG.FuncCallParam[])
-          .filter((output) =>
-            output.property.propertyType === DG.TYPE.DATA_FRAME &&
-            !!pulledRun.outputs[output.name],
-          );
-        for (const output of dfOutputs)
-          pulledRun.outputs[output.name] = await grok.dapi.tables.getTable(pulledRun.outputs[output.name]);
-      }
-    }
-
-    return result;
   }
 }

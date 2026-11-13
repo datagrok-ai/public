@@ -14,7 +14,8 @@ Feature: Radar table switch, Values, Title, Normalization, Color legend and the 
     Given user is logged in
     And the package autostarts have completed
 
-  Scenario: The Radar switches its table and back (GROK-18576, GROK-18935)
+  @realizes:public#3415
+  Scenario: The Radar switches its table and back, and the Table property names it (GROK-18576, GROK-18935, public#3415)
     earthquakes is opened from Browse, as a user opens a file: a table the test harness opens through
     the API after the Context Panel has shown the Radar is not offered in its Table list.
     Given user opens demog-1000 dataset
@@ -42,6 +43,7 @@ Feature: Radar table switch, Values, Title, Normalization, Color legend and the 
     When user clicks on grid
     And user clicks on settings icon of radar viewer
     Then "Table" property in context panel should be visible
+    And "Table" property in context panel should have value "demog-1000"
     When user selects "earthquakes" in "Table" property in context panel
     Then radar viewer should be bound to table "earthquakes"
     And "Values" property of radar viewer should be "Latitude, Longitude, Depth, Magnitude, NbStations, Gap, Distance, RMS, EventID"

@@ -2,7 +2,7 @@
    generic — the top menu, dialogs, columns, viewers — is the library's (`grok-bdd list-steps`). */
 import type {Page} from '@playwright/test';
 import {Given, Then} from '@datagrok-libraries/bdd';
-import {expect, silent} from '@datagrok-libraries/bdd/runtime';
+import {expect, silent, viewers} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
@@ -40,3 +40,32 @@ export const selectedByMonomer = Then('only the rows with {string} at position {
     }, [monomer, position, column] as const), {message: `the selection against the rows with ${monomer} at position ${position} of ${column}`})
       .toBe('exactly');
   }, {description: 'every selected row has the monomer there and no other row does; a monomer no row has there fails'});
+
+/** What the column's Renderer Settings > Font Size does (`representations.ts`), off camera in a filmed guide: the
+ * monomers of a sequence column drawn larger for a demo. */
+export const sequenceFontSize = Given('the monomers of the {string} column are drawn at {int} px',
+  async (page: Page, column: string, size: number) => {
+    silent(page);
+    await page.evaluate(([name, px]) => {
+      const col = grok.shell.t?.col(name);
+      if (!col)
+        throw new Error(`the current table has no "${name}" column`);
+      col.temp['.mm.cellRenderer.fontSize'] = px;
+      col.temp['.mm.cellRenderer.settingsChanged'] = '1';
+      col.dataFrame.fireValuesChanged();
+    }, [column, size] as const);
+    await viewers.settleAll(page);
+  }, {tier: 'api', description: 'the renderer font size of a sequence column, as its Renderer Settings set it'});
+
+/** A clip that has shown the To Atomic Level dialog once converts the next table off camera. */
+export const atomicLevelOffCamera = Given('the {string} column is converted to atomic level drawn straight with its monomers highlighted',
+  async (page: Page, column: string) => {
+    silent(page);
+    await page.evaluate(async (name) => {
+      const t = grok.shell.t;
+      await grok.functions.call('Bio:toAtomicLevel', {table: t, seqCol: t.col(name), nonlinear: false, highlight: true});
+    }, column);
+    await expect.poll(() => page.evaluate((name) => grok.shell.t.col(`molfile(${name})`) != null, column),
+      {message: `the molfile(${column}) column`}).toBe(true);
+    await viewers.settleAll(page);
+  }, {tier: 'api', description: 'Bio:toAtomicLevel on the current table\'s column with Non-linear off and Highlight monomers on, as the dialog\'s OK runs it'});

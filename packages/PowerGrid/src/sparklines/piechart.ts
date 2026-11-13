@@ -15,7 +15,7 @@ import {
   SparklineType,
   SummaryColumnColoringType,
   SummarySettingsBase,
-  NormalizationType, getScaledNumber, scaleSettings, getSparklinesContextPanel
+  NormalizationType, getScaledNumber, scaleSettings, getSparklinesContextPanel,
 } from './shared';
 import {VlaaiVisEditor} from '../vlaaivis/editor';
 import {VlaaiVisModel} from '../vlaaivis/model';
@@ -99,7 +99,7 @@ function renderSubsector(
   g: CanvasRenderingContext2D, box: DG.Rect, sectorColor: string,
   sectorAngle: number, currentAngle: number, subsector: Subsector,
   minRadius: number, cols: DG.Column[], row: number,
-  sectorWeight: number
+  sectorWeight: number,
 ): number {
   const normalizedSubsectorWeight = subsector.weight / sectorWeight;
   const subsectorAngle = sectorAngle * normalizedSubsectorWeight;
@@ -150,10 +150,10 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent, settings: PieChartSettings)
 
   let r: number = (gridCell.bounds.width - 4) / 2;
   if (settings.style == PieChartStyle.Radius && !settings.sectors) {
-    activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
-    if (cols[activeColumn] !== null) {
+    if (cols.length > 0) {
+      activeColumn = Math.floor((angle * cols.length) / (2 * Math.PI));
       const scaledNumber = getScaledNumber(cols, row, cols[activeColumn],
-        scaleSettings(settings, cols[activeColumn])
+        scaleSettings(settings, cols[activeColumn]),
       );
       r = scaledNumber * (gridCell.bounds.width - 4) / 2;
       r = Math.max(r, minRadius);
@@ -226,22 +226,22 @@ function columnGroups(settings: PieChartSettings, cols: DG.Column[]): ColumnGrou
 }
 
 export class PieChartCellRenderer extends DG.GridCellRenderer {
-  get name() { return 'pie ts'; }
+  get name() {return 'pie ts';}
 
-  get cellType() { return SparklineType.PieChart; }
+  get cellType() {return SparklineType.PieChart;}
 
   // getPreferredCellSize(col: DG.GridColumn) {
   //   return new Size(80,80);
   // }
 
-  get defaultWidth(): number | null { return 80; }
+  get defaultWidth(): number | null {return 80;}
 
-  get defaultHeight(): number | null { return 80; }
+  get defaultHeight(): number | null {return 80;}
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     const settings = getSettings(gridCell.gridColumn);
     const hitData = onHit(gridCell, e, settings);
-    if (!hitData.isHit) {
+    if (!hitData.isHit || hitData.cols.length === 0) {
       ui.tooltip.hide();
       return;
     }
@@ -252,7 +252,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   render(
     g: CanvasRenderingContext2D,
     x: number, y: number, w: number, h: number,
-    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
   ) {
     const df = gridCell.grid.dataFrame;
 
@@ -269,7 +269,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
           continue;
 
         const scaledNumber = getScaledNumber(cols, row, cols[i],
-          scaleSettings(settings, cols[i])
+          scaleSettings(settings, cols[i]),
         );
         let r = scaledNumber * box.width / 2;
         r = Math.max(r, minRadius);
@@ -393,7 +393,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
     return ui.divV([inputs, elementsDiv], 'power-grid-pie-settings');
   }
 
-  hasContextValue(gridCell: DG.GridCell): boolean { return true; }
+  hasContextValue(gridCell: DG.GridCell): boolean {return true;}
   async getContextValue(gridCell: DG.GridCell): Promise<any> {
     const settings = getSettings(gridCell.gridColumn);
     const groups = columnGroups(settings, getColumns(gridCell, settings));
@@ -402,7 +402,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 }
 
 export class VlaaiVisCellRenderer extends PieChartCellRenderer {
-  get name() { return 'vlaaivis ts'; }
+  get name() {return 'vlaaivis ts';}
 
-  get cellType() { return SparklineType.VlaaiVis; }
+  get cellType() {return SparklineType.VlaaiVis;}
 }

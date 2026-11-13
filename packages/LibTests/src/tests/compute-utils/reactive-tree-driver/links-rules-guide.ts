@@ -401,7 +401,8 @@ category('ComputeUtils: Driver rules guide cases', async () => {
       to: ['k:model/compound', '_(template):model/inputs(LibTests:PkModel, compound|$nonscalar|$linked)'],
       sources: {presets: 'query("Pkg:Compounds", `select compound, clearance, volume from compounds ' +
         'where compound = @key`, key: key)'},
-      effects: ['assign(row(presets, "compound", key), restriction: "restricted", when: bool(row(presets, "compound", key)))'],
+      effects: ['assign(row(presets, "compound", key), restriction: "restricted", ' +
+        'when: bool(row(presets, "compound", key)))'],
     }]));
     expectDeepEqual(pconf.links[0].params.sources.presets.query.args, {key: {var: 'key'}});
   });
@@ -414,7 +415,8 @@ category('ComputeUtils: Driver rules guide cases', async () => {
       to: 'p:model/profile',
       when: 'not(missing(profile))',
       effects: [
-        'error(p, map(columnsMissing(profile, [["subject", "string"], ["time", "numerical"]]), cat("Missing column ", $it)))',
+        'error(p, map(columnsMissing(profile, [["subject", "string"], ["time", "numerical"]]), ' +
+          'cat("Missing column ", $it)))',
         'warning(p, map(filter(column(profile, "time"), lt($it, 0)), cat("Negative sampling time ", $it)))',
         'warning(p, "At least three samples are needed for a fit", when: lt(len(profile), 3))',
       ],
@@ -442,7 +444,8 @@ category('ComputeUtils: Driver rules guide cases', async () => {
       to: ['k:model/compound', '_(template):model/inputs(LibTests:PkModel, compound|$nonscalar|$linked)'],
       sources: {presets: 'table("compound,clearance,volume\\nCMP-0001,5.2,40\\nCMP-0002,1.3,12")'},
       effects: [
-        'warning(k, "Not in the compound table", when: and(not(missing(key)), not(in(key, column(presets, "compound")))))',
+        'warning(k, "Not in the compound table", ' +
+          'when: and(not(missing(key)), not(in(key, column(presets, "compound")))))',
         'assign(row(presets, "compound", key), restriction: "restricted", when: in(key, column(presets, "compound")))',
       ],
     }]));
@@ -543,7 +546,8 @@ category('ComputeUtils: Driver rules guide cases', async () => {
         set(nodeAt(tree, 0), {profile: profile()});
         set(nodeAt(tree, 3), {profile: profile('subject,time,parent\nS2,1,3\nS2,24,0.2')});
       });
-      cold('--a').subscribe(() => values.push([1, 2, 4].map((i) => nodeAt(tree, i).getStateStore().getState('duration'))));
+      cold('--a').subscribe(() =>
+        values.push([1, 2, 4].map((i) => nodeAt(tree, i).getStateStore().getState('duration'))));
     });
     expectDeepEqual(values, [[8, 8, 24]]);
   });

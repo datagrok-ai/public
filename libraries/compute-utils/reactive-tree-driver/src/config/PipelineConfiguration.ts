@@ -36,7 +36,8 @@ export type PipelineSelfRef = {
 
 // handlers
 
-export type LoadedPipeline = (PipelineConfigurationStaticInitial | PipelineConfigurationDynamicInitial) & LoadedPipelineToplevelNode;
+export type LoadedPipeline = (PipelineConfigurationStaticInitial | PipelineConfigurationDynamicInitial) &
+  LoadedPipelineToplevelNode;
 
 export type IRuntimeController = IRuntimeLinkController | IRuntimeValidatorController;
 export type HandlerBase<P, R> = ((params: P) => Promise<R> | Observable<R> | R) | NqName;
@@ -104,16 +105,30 @@ export interface ExportCbInput {
   description?: Record<string, string | string[]>,
 }
 
+/** What a `meta.customExports` function gets besides `funcCall` (and the legacy `startDownload`). */
+export type CustomExportArgs = {
+  validationState?: Record<string, ValidationResult>,
+  consistencyState?: Record<string, ConsistencyInfo>,
+  isOutputOutdated?: boolean,
+  runError?: string,
+  viewersHook?: ViewersHook,
+  metaState?: Record<string, {value: any}>,
+};
+
 export type ExportUtils = {
-  reportStateExcel: (pipelineState: PipelineState, cb?: <T>(input: ExportCbInput) => Promise<T>) => Promise<readonly [Blob, Zippable, string, ExportSummaryItem[]]>;
+  reportStateExcel: (pipelineState: PipelineState, cb?: (input: ExportCbInput) => Promise<void>) =>
+    Promise<readonly [DG.FileInfo, Zippable, ExportSummaryItem[]]>;
   getExportSummary: (pipelineState: PipelineState) => ExportSummaryItem[];
-  reportSummaryExcel: (pipelineState: PipelineState) => Promise<readonly [Blob, ExcelJS.Workbook]>;
-  reportFuncCallExcel: (fc: DG.FuncCall, uuid: string) => Promise<readonly [Blob, ExcelJS.Workbook]>;
+  reportSummaryExcel: (pipelineState: PipelineState) => Promise<readonly [DG.FileInfo, ExcelJS.Workbook]>;
+  // the step's report, with the step's own states
+  reportStepExcel: (fc: DG.FuncCall, uuid: string) => Promise<readonly [DG.FileInfo, ExcelJS.Workbook]>;
   getFuncCallCustomExports: (fc: DG.FuncCall) => string[];
-  runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) => Promise<any>;
+  runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) => Promise<DG.FileInfo>;
 
 }
-export type PipelineExport = (pipelineState: PipelineState, utils: ExportUtils) => Promise<any>;
+// startDownload, always false, matches meta.customExports functions
+export type PipelineExport =
+  (pipelineState: PipelineState, utils: ExportUtils, startDownload: boolean) => Promise<DG.FileInfo>;
 export type ViewersHook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void;
 
 // link-like
@@ -187,7 +202,9 @@ export type PipelinePipelineValidatorConfiguration<P> = PipelineLinkConfiguratio
   debounce?: number;
 };
 
-export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineInitConfiguration<P> | PipelineReturnConfiguration<P> | PipelineSelectorConfiguration<P> | PipelinePipelineValidatorConfiguration<P>;
+export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> |
+  PipelineMetaConfiguration<P> | PipelineInitConfiguration<P> | PipelineReturnConfiguration<P> |
+  PipelineSelectorConfiguration<P> | PipelinePipelineValidatorConfiguration<P>;
 
 // rule links (expanded into meta/validator/data links at config processing)
 
@@ -251,7 +268,7 @@ export type RuleEffect = RuleMetaEffect | RuleValidatorEffect | RuleDataEffect;
  *  rule; a returned promise or observable gives its first value. */
 export type RuleSource =
   {validators: {input: string, names?: string[], call?: string}} |
-  /** The annotation `choices` of the io behind `input`, evaluated by the platform (1.28+) through the step's
+  /** The annotation `choices` of the io behind `input`, evaluated by the platform through the step's
    *  FuncCall: `{items, values, inList, row}`, `row` being the `propagateChoice` lookup row of the current value. */
   {choices: {input: string, call?: string}} |
   {js: {args: string[], fn: (...values: any[]) => any}} |
@@ -299,7 +316,8 @@ export type PipelineCheckConfiguration<P> = {
   debounce?: number;
 };
 
-export type PipelineLinkConfigurationInput<P> = PipelineLinkConfiguration<P> | PipelineRuleConfiguration<P> | PipelineCheckConfiguration<P>;
+export type PipelineLinkConfigurationInput<P> = PipelineLinkConfiguration<P> | PipelineRuleConfiguration<P> |
+  PipelineCheckConfiguration<P>;
 
 /** Action fields shared between config-time (ActionInfo<P>) and the UI-facing ViewAction.
  *  Excludes the visibility fields (showWhen/hideWhen) and the UI-only uuid. */
@@ -341,8 +359,7 @@ export type FuncCallActionConfiguration<P> = PipelineLinkConfigurationBase<P> & 
   handler: FunccallActionHandler;
 } & ActionInfo<P>;
 
-const actionPositions = ['buttons', 'menu', 'globalmenu', 'none'] as const;
-export type ActionPositions = typeof actionPositions[number];
+export type ActionPositions = 'buttons' | 'menu' | 'globalmenu' | 'none';
 
 type LinkOf<S> = [S] extends [never] ? LinkSpecString : LinkIOParsed[];
 type LinksOf<S> = [S] extends [never] ?
@@ -373,6 +390,8 @@ export interface CustomExport {
   id: string,
   friendlyName?: string,
   handler: PipelineExport,
+  // listed before the default export and the other exports, so that it is the default
+  preferred?: boolean,
 }
 
 export type PipelineConfigurationBase<S> = {
@@ -382,7 +401,8 @@ export type PipelineConfigurationBase<S> = {
   friendlyName?: string;
   description?: string;
   links?: LinksOf<S>;
-  actions?: (DataActionConfiguraion<LinkOf<S>> | PipelineMutationConfiguration<LinkOf<S>> | FuncCallActionConfiguration<LinkOf<S>>)[];
+  actions?: (DataActionConfiguraion<LinkOf<S>> | PipelineMutationConfiguration<LinkOf<S>> |
+      FuncCallActionConfiguration<LinkOf<S>>)[];
   onInit?: PipelineInitConfiguration<LinkOf<S>>;
   onReturn?: PipelineReturnConfiguration<LinkOf<S>>;
   states?: StatesOf<S>;
@@ -425,7 +445,8 @@ export type AbstractPipelineStaticConfiguration<S> = {
 
 // dynamic pipeline (unified type for parallel and sequential)
 
-export type PipelineDynamicItem<S> = ((PipelineStepConfiguration<S> | AbstractPipelineConfiguration<S> | AbstractPipelineActionConfiguration | RefOf<S>) & NestedItemContext);
+export type PipelineDynamicItem<S> = ((PipelineStepConfiguration<S> | AbstractPipelineConfiguration<S> |
+  AbstractPipelineActionConfiguration | RefOf<S>) & NestedItemContext);
 
 export type AbstractPipelineDynamicConfiguration<S> = {
   initialSteps?: Array<ItemId | StepDynamicInitialConfig>;
@@ -449,6 +470,7 @@ export type PipelineRefInitial = {
 export type PipelineConfigurationStaticInitial = AbstractPipelineStaticConfiguration<never>;
 export type PipelineConfigurationDynamicInitial = AbstractPipelineDynamicConfiguration<never>;
 
-export type PipelineConfigurationInitial = PipelineConfigurationStaticInitial | PipelineConfigurationDynamicInitial | PipelineRefInitial;
+export type PipelineConfigurationInitial = PipelineConfigurationStaticInitial | PipelineConfigurationDynamicInitial |
+  PipelineRefInitial;
 
 export type PipelineConfiguration = PipelineConfigurationInitial;

@@ -6,7 +6,6 @@ import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {TestScheduler} from 'rxjs/testing';
-import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {skip, take} from 'rxjs/operators';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
@@ -60,7 +59,7 @@ category('ComputeUtils: Driver links reactivity: validators', async () => {
         link.setActive();
         inNode.getItem().getStateStore().setState('a', 1);
       });
-      expectObservable(link.isRunning$, '^ 1000ms !').toBe('a 250ms (bc)', {a: false, b: true, c: false});
+      expectObservable(link.isRunning$, '^ 1000ms !').toBe('a b 249ms c', {a: false, b: true, c: false});
       expectObservable((inNode.getItem().getStateStore() as FuncCallInstancesBridge).validations$).toBe('a 250ms b', {
         a: {},
         b: {

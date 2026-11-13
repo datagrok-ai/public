@@ -44,7 +44,7 @@ export class BindChip extends Input<string, BindChipOptions> {
     chip.addEventListener('click', onClick);
     this.own(() => chip.removeEventListener('click', onClick));
     // the row's tooltip carries the full path — the chip may ellipsize it
-    this.effect(() => this.root.title = path.textContent = this.value.value ?? '');
+    this.effect(() => this.root.title = path.textContent = this.value ?? '');
     return chip;
   }
 }

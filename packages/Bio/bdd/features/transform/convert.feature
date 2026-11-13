@@ -2,7 +2,9 @@
 Feature: Transforming a fasta column
   The Bio | Transform and Bio | Calculate commands that derive columns from a sequence column:
   a sub-region, another notation, one column per monomer position (To Atomic Level on fasta is in
-  atomic-level).
+  atomic-level). The column's Bioinformatics > Get Region pane in the context panel holds the Extract
+  Region editor and adds the region with its own button (help `datagrok/solutions/domains/bio/bio.md`,
+  "Get region").
   Every command is run on the nine sequences of the fixture (its four blank rows convert to
   PEPTIDE1{}$$$$ and to ---- today, and the claims below are about sequences); each adds what it
   promises and nothing else.
@@ -39,6 +41,18 @@ Feature: Transforming a fasta column
     And every value of "region 3-6" column should match "^[A-Z]{4}$"
     And the value of "region 3-6" column in row 1 should be "YKET"
     And no error or warning balloon should have been shown
+
+  Scenario: The column's Get Region pane cuts the same region out from the context panel
+    Given the context panel is open
+    When user clicks on the "header fasta" area of grid
+    Then the context panel should show "fasta"
+    When user expands Bioinformatics accordion header in context panel
+    And user expands "Get Region" accordion header in context panel
+    And user selects "3" in Start input in "Get Region" pane in context panel
+    And user selects "6" in End input in "Get Region" pane in context panel
+    And user clicks on last "Get Region" button in "Get Region" pane in context panel
+    Then the table should have a column "fasta: (3-6)"
+    And the value of "fasta: (3-6)" column in row 1 should be "YKET"
 
   Scenario: Convert Sequence Notation proposes separator and writes the column in it
     When user picks "Bio > Transform > Convert Sequence Notation..." from the top menu

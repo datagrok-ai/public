@@ -42,7 +42,11 @@ export class LearningWidget extends DG.Widget {
     const daw = DG.Func.find({name: 'demoAppWidget', package: 'Tutorials'})[0];
     const tw = DG.Func.find({name: 'tutorialWidget', package: 'Tutorials'})[0];
     if (daw)
-      tabs.addPane('DEMO', () => ui.waitBox(async () => (await daw.apply()).root));
+      tabs.addPane('DEMO', () => {
+        const box = ui.waitBox(async () => (await daw.apply()).root);
+        box.classList.add('tutorial-widget-demo');
+        return box;
+      });
     if (tw)
       tabs.addPane('TUTORIALS', () => ui.waitBox(async () => (await tw.apply()).root));
 
@@ -50,10 +54,6 @@ export class LearningWidget extends DG.Widget {
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Learn');
-    this.subs.push(tabs.onTabChanged.subscribe((tabPane: DG.TabPane) => {
-      setTimeout(() => tabPane.name === 'DEMO' ? tabPane.content.firstElementChild?.classList.add('tutorial-widget-demo') :
-        tabPane.content.firstElementChild?.classList.remove('tutorial-widget-demo'), 100);
-    }));
   }
 }
 

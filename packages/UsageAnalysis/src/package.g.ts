@@ -71,12 +71,14 @@ export async function stressRawDashboard() : Promise<any> {
 }
 
 //name: Metrics
+//input: string path { optional: true; meta.url: true }
 //output: view result
 //meta.role: adminApp,app
+//meta.browsePath: Observability
 //meta.url: /metrics
 //meta.icon: images/icons/metrics.svg
-export function metricsApp() : any {
-  return PackageFunctions.metricsApp();
+export function metricsApp(path?: string) : any {
+  return PackageFunctions.metricsApp(path);
 }
 
 //name: Test Track
@@ -91,6 +93,7 @@ export function testTrackApp() : void {
 //input: string path { optional: true; meta.url: true }
 //output: view result
 //meta.role: adminApp,app
+//meta.browsePath: Observability
 //meta.url: /reports
 //meta.icon: images/icons/reports.svg
 export async function reportsApp(path?: string) : Promise<any> {
@@ -103,6 +106,7 @@ export async function reportsApp(path?: string) : Promise<any> {
 //input: int limit { optional: true }
 //output: view result
 //meta.role: adminApp,app
+//meta.browsePath: Observability
 //meta.url: /service-logs
 //meta.icon: images/icons/service-logs.svg
 export function serviceLogsApp(path?: string, params?: any, limit?: number) : any {
@@ -112,6 +116,7 @@ export function serviceLogsApp(path?: string, params?: any, limit?: number) : an
 //name: Cloud Logs
 //output: view result
 //meta.role: adminApp,app
+//meta.browsePath: Observability
 //meta.url: /cloud-logs
 //meta.icon: images/icons/service-logs.svg
 export function cloudLogsApp() : any {

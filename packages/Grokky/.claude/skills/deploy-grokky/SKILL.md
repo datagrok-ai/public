@@ -17,21 +17,15 @@ This skill performs a full deployment of the Grokky package:
 ## Arguments
 
 `$ARGUMENTS` may include:
-- `key: <ANTHROPIC_API_KEY>`
 - `host: <publish host>`
+
+The model credentials are not part of the deployment: set them in Plugins | Grokky | Credentials... on the host.
 
 ### Resolve arguments
 
 1. If `host` is missing:
    Ask: "Which host should I publish to? (e.g., `localhost`, `dev`, `public`)"
    Wait for user input before continuing.
-
-2. If `key` is missing:
-   Run:
-   ```bash
-   echo $ANTHROPIC_API_KEY
-   ```
-   If empty, ask the user to provide the key and wait.
 
 ## Resolve paths
 
@@ -156,7 +150,7 @@ If neither needs building, skip to Step 6.
 
 ```bash
 cd "$GROKKY_ROOT/dockerfiles/claude-runtime"
-docker build --build-arg ANTHROPIC_API_KEY=$KEY -t grokky-claude-runtime:admin .
+docker build -t grokky-claude-runtime:admin .
 docker rm -f grokky-claude-runtime 2>/dev/null || true
 ```
 

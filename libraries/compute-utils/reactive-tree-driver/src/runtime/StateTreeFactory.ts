@@ -1,6 +1,7 @@
 import {Observable, defer, of, merge, from} from 'rxjs';
 import {catchError, map, mapTo, toArray} from 'rxjs/operators';
 import {historyUtils} from '../../../history-utils';
+import {getRunName} from '../../../shared-utils/utils';
 import {NodePath} from '../data/BaseTree';
 import {getPipelineRef, PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState} from '../config/PipelineInstance';
@@ -198,7 +199,7 @@ export function loadOrCreateCalls(stateTree: StateTree, mockMode: boolean) {
           // a deleted source run must not fail the load, it only has no title then
           acc = [...acc, defer(() => from(historyUtils.shallowLoadRun(sourceRunId))).pipe(
             map((run) => {
-              item.sourceRunTitle = run.options['title'] ?? null;
+              item.sourceRunTitle = getRunName(run) || null;
             }),
             catchError(() => {
               item.sourceRunTitle = null;
@@ -212,7 +213,8 @@ export function loadOrCreateCalls(stateTree: StateTree, mockMode: boolean) {
           const obs$ = defer(() => {
             const adapter = new FuncCallMockAdapter(item.config.io!, item.isReadonly);
             const initialValues = item.instancesWrapper.initialValues;
-            const outputs = item.config.io!.filter((io) => io.direction === 'output' && initialValues[io.id] !== undefined);
+            const outputs = item.config.io!.filter(
+              (io) => io.direction === 'output' && initialValues[io.id] !== undefined);
             for (const io of outputs)
               adapter.setState(io.id, initialValues[io.id]);
             item.initAdapter({adapter, restrictions: {}, isOutputOutdated: !outputs.length, runError: undefined}, true);

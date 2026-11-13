@@ -1,10 +1,11 @@
 /* Wizard: gating, navigation, lazy steps and dialog mode on the node DOM shim. Same contract as
    smoke.test.js — every test leaves the live-scope count where it found it. */
 
-import {test} from 'node:test';
+import {mock} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
-import {signal, Scope} from '../src/index.js';
+import {signal, Scope, notify} from '../src/index.js';
 import {Wizard} from '../src/components/containers/wizard.js';
 import {Dialog} from '../src/components/containers/dialog.js';
 import {Overlay} from '../src/core/overlay.js';
@@ -28,11 +29,11 @@ function wizard(name, body) {
 }
 
 function markers(w) {
-  return w.root.querySelectorAll('.u2-wizard-step');
+  return [...w.root.querySelectorAll('.u2-wizard-step')];
 }
 
 function footer(w, text) {
-  return w.root.querySelectorAll('.u2-wizard-buttons button').find((b) => b.textContent === text);
+  return [...w.root.querySelectorAll('.u2-wizard-buttons button')].find((b) => b.textContent === text);
 }
 
 function content(title, text) {
@@ -103,7 +104,7 @@ wizard('blocks on canProceed and shows the reason', () => {
 
 wizard('re-evaluates a callback gate on every attempt', () => {
   let allowed = false;
-  const w = new Wizard({steps: steps(() => allowed ? true : 'Not yet')});
+  const w = new Wizard({steps: steps(() => allowed ? null : 'Not yet')});
   document.body.append(w.root);
   w.next();
 
@@ -190,7 +191,7 @@ wizard('keyboard: Enter advances, arrows move between markers', () => {
 wizard('dialog mode: finishes, cancels on close, and disposes clean', () => {
   const outcome = [];
   const scope = new Scope();
-  const w = Scope.runWith(scope, () => new Wizard({
+  const w = scope.build(() => new Wizard({
     steps: steps(undefined),
     onFinish: () => outcome.push('finish'),
     onCancel: () => outcome.push('cancel'),
@@ -222,7 +223,7 @@ wizard('dialog mode: finishes, cancels on close, and disposes clean', () => {
 wizard('a `done` step is terminal: no BACK, no CANCEL, and NEXT reads CLOSE', () => {
   const scope = new Scope();
   const outcome = [];
-  const w = Scope.runWith(scope, () => new Wizard({
+  const w = scope.build(() => new Wizard({
     steps: [
       {id: 'one', title: 'One', content: content('One', 'free')},
       {id: 'report', title: 'Report', content: content('Report', 'written'), done: true},
@@ -299,7 +300,7 @@ wizard('an action follows its visible signal on its own step, without re-activat
 wizard('an async finish answering false keeps the dialog open; true closes it', async () => {
   const scope = new Scope();
   let answer = false;
-  const w = Scope.runWith(scope, () => new Wizard({
+  const w = scope.build(() => new Wizard({
     steps: [{id: 'one', title: 'One', content: content('One', 'free')}],
     onFinish: () => Promise.resolve(answer),
   }));
@@ -321,23 +322,28 @@ wizard('an async finish answering false keeps the dialog open; true closes it', 
 wizard('while a finish runs, the rail, CANCEL, the close button and Esc are blocked', async () => {
   const scope = new Scope();
   let release;
+  let signal;
   const outcome = [];
-  const w = Scope.runWith(scope, () => new Wizard({
+  const w = scope.build(() => new Wizard({
     steps: steps(undefined),
-    onFinish: () => new Promise((r) => release = () => r(true)),
+    onFinish: (ctx) => {
+      signal = ctx.signal;
+      return new Promise((r) => release = () => r(true));
+    },
     onCancel: () => outcome.push('cancel'),
   }));
   const dialog = w.openInDialog('Create');
   w.next();
   w.next();
   footer(w, 'FINISH').click();
-  assert.equal(footer(w, 'CANCEL').disabled, true);
+  assert.equal(footer(w, 'CANCEL').disabled, false, 'CANCEL is how the run is stopped');
   assert.equal(w.root.classList.contains('u2-wizard-busy'), true);
   fire(markers(w)[0], 'click');
   assert.equal(w.currentStep.value, 'three', 'the rail does not move');
   w.back();
   assert.equal(w.currentStep.value, 'three');
   footer(w, 'CANCEL').click();
+  assert.equal(signal.aborted, true, 'CANCEL aborts the run');
   dialog.root.querySelector('.u2-dialog-close').click();
   fire(dialog.root, 'keydown', {key: 'Escape'});
   assert.equal(dialog.isOpen.value, true, 'nothing closes a wizard mid-finish');
@@ -349,11 +355,70 @@ wizard('while a finish runs, the rail, CANCEL, the close button and Esc are bloc
   scope.dispose();
 });
 
+wizard('a commit that never settles is abandoned 2 s after Esc: the dialog closes as a cancel and says so', async () => {
+  const scope = new Scope();
+  const outcome = [];
+  let aborted = false;
+  const w = scope.build(() => new Wizard({
+    steps: [
+      {id: 'upload', title: 'Upload', content: content('Upload', 'stuck'), commit: (ctx) => {
+        ctx.signal.addEventListener('abort', () => aborted = true);
+        return new Promise(() => {});
+      }},
+      {id: 'done', title: 'Done', content: content('Done', 'never')},
+    ],
+    onCancel: () => outcome.push('cancel'),
+  }));
+  const dialog = w.openInDialog('Import');
+  mock.timers.enable({apis: ['setTimeout']});
+  try {
+    footer(w, 'NEXT').click();
+    assert.equal(w.busy.value, true);
+    fire(dialog.root, 'keydown', {key: 'Escape'});
+    assert.equal(aborted, true, 'Esc aborts the run');
+    assert.equal(dialog.isOpen.value, true, 'and the dialog waits for it to settle');
+    mock.timers.tick(1999);
+    assert.equal(dialog.isOpen.value, true);
+    mock.timers.tick(1);
+    assert.equal(dialog.isOpen.value, false, 'a run still in flight 2 s later is abandoned');
+    assert.equal(w.busy.value, false);
+    assert.deepEqual(outcome, ['cancel']);
+    assert.match(document.querySelector('.u2-notify-warning')?.textContent ?? '', /Upload: the step did not stop/);
+  } finally {
+    mock.timers.reset();
+    notify.closeAll();
+    scope.dispose();
+  }
+});
+
+wizard('a run that settles after its abort is not abandoned: the wizard stays, CANCEL then closes it', async () => {
+  const scope = new Scope();
+  const w = scope.build(() => new Wizard({
+    steps: [
+      {id: 'upload', title: 'Upload', content: content('Upload', 'stoppable'), commit: (ctx) =>
+        new Promise((resolve, reject) => ctx.signal.addEventListener('abort',
+          () => reject(Object.assign(new Error('aborted'), {name: 'AbortError'}))))},
+      {id: 'done', title: 'Done', content: content('Done', 'never')},
+    ],
+  }));
+  const dialog = w.openInDialog('Import');
+  footer(w, 'NEXT').click();
+  footer(w, 'CANCEL').click();
+  await flush();
+  assert.equal(w.busy.value, false, 'the run stopped');
+  assert.equal(dialog.isOpen.value, true, 'an abort that lands keeps the step');
+  assert.equal(w.error.value, null, 'and says nothing');
+  footer(w, 'CANCEL').click();
+  assert.equal(dialog.isOpen.value, false);
+  assert.equal(document.querySelector('.u2-notify-warning'), null, 'nothing was abandoned');
+  scope.dispose();
+});
+
 wizard('a step\'s commit runs on NEXT (reading nextText): false keeps the step; a done step closes as a finish', async () => {
   const scope = new Scope();
   const outcome = [];
   let answer = false;
-  const w = Scope.runWith(scope, () => new Wizard({
+  const w = scope.build(() => new Wizard({
     steps: [
       {id: 'review', title: 'Review', content: content('Review', 'last'), nextText: 'CREATE',
         commit: () => Promise.resolve(answer)},
@@ -411,7 +476,7 @@ wizard('WO-A5.1 #1: goTo forward passes the gate of every step on the way; back 
 wizard('WO-A5.1 #13: a plain Enter does not close a done step, and NEXT pressed into it lets go of the focus', () => {
   const scope = new Scope();
   const outcome = [];
-  const w = Scope.runWith(scope, () => new Wizard({
+  const w = scope.build(() => new Wizard({
     steps: [
       {id: 'one', title: 'One', content: content('One', 'free')},
       {id: 'report', title: 'Report', content: content('Report', 'written'), done: true},
@@ -434,7 +499,7 @@ wizard('WO-A5.1 #13: a plain Enter does not close a done step, and NEXT pressed 
 
 wizard('A5 re-verify: nothing goes back to a step whose commit went through; a focus dropped on the body comes back', async () => {
   const scope = new Scope();
-  const w = Scope.runWith(scope, () => new Wizard({
+  const w = scope.build(() => new Wizard({
     steps: [
       {id: 'design', title: 'Design', content: content('Design', 'free')},
       {id: 'review', title: 'Review', content: content('Review', 'last'), nextText: 'CREATE',
@@ -524,24 +589,24 @@ wizard('NEXT follows a nextText signal: the wording moves with the state, and th
 wizard('Esc reaches the modal dialog on top once focus fell out of it onto the body; a dialog underneath waits its turn', () => {
   const scope = new Scope();
   const outcome = [];
-  const w = Scope.runWith(scope, () => new Wizard({steps: steps(undefined), onCancel: () => outcome.push('cancel')}));
+  const w = scope.build(() => new Wizard({steps: steps(undefined), onCancel: () => outcome.push('cancel')}));
   const dialog = w.openInDialog('Set up');
-  const inner = Scope.runWith(scope, () => Dialog.create('Pick').show({modal: true}));
+  const inner = scope.build(() => Dialog.create('Pick').show({modal: true}));
   document.body.focus();
   fire(document.body, 'keydown', {key: 'Escape'});
   assert.deepEqual([inner.isOpen.value, dialog.isOpen.value], [false, true], 'the one on top closes');
   fire(document.body, 'keydown', {key: 'Escape'});
   assert.equal(dialog.isOpen.value, false);
   assert.deepEqual(outcome, ['cancel']);
-  const plain = Scope.runWith(scope, () => Dialog.create('Aside').show());
+  const plain = scope.build(() => Dialog.create('Aside').show());
   fire(document.body, 'keydown', {key: 'Escape'});
   assert.equal(plain.isOpen.value, true, 'a modeless dialog takes no stray Escape');
   plain.close();
-  const again = Scope.runWith(scope, () => Dialog.create('Pick').show({modal: true}));
+  const again = scope.build(() => Dialog.create('Pick').show({modal: true}));
   const anchor = document.createElement('button');
   again.add(anchor);
   const popup = document.createElement('div');
-  Overlay.show(anchor, popup, scope);
+  Overlay.show(anchor, popup, {owner: scope});
   fire(document.body, 'keydown', {key: 'Escape'});
   assert.equal(again.isOpen.value, true, 'a popup above the dialog owns the Escape');
   assert.equal(popup.isConnected, false, 'and closes on it');

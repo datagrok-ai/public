@@ -67,7 +67,8 @@ export function evalValidatorExpression(expr: string, vars: Record<string, unkno
 }
 
 /** `Validators.tryParseRegexLiteral` (vld:135-142) + `regex()` (vld:125-131): `/pattern/flags`,
- * flags i/m honored, non-strings fail with the same message a non-match gets. */
+ * flags i/m honored, non-strings fail with the same message a non-match gets; a pattern that does
+ * not compile fails every value with why, where the platform throws. */
 export function regexValidator(s: string): ((v: unknown) => string | null) | null {
   if (s.length < 2 || !s.startsWith('/'))
     return null;
@@ -76,8 +77,15 @@ export function regexValidator(s: string): ((v: unknown) => string | null) | nul
     return null;
   const pattern = s.slice(1, end);
   const flags = s.slice(end + 1);
-  const re = new RegExp(pattern, flags.replace(/[^im]/g, ''));
   const label = `/${pattern}/${flags}`;
+  let re: RegExp;
+  try {
+    re = new RegExp(pattern, flags.replace(/[^im]/g, ''));
+  } catch (e) {
+    // the function's own pattern is broken: the field says so instead of the form failing to build
+    const problem = `Invalid validator ${label}: ${(e as Error).message.split(': ').pop()}`;
+    return () => problem;
+  }
   return (v) => typeof v === 'string' && re.test(v) ? null : `Value doesn't match ${label}`;
 }
 
