@@ -14,7 +14,7 @@ import {BandChart} from './band-chart';
 import {finite} from './engine';
 import {SavedPlan, myPlans, parsePlan, plansFolder} from './plan-file';
 import {axisAt, block, guide, infoNote, noteLine, notes, notesBox, pct, plainError, pValue, sized, swatch,
-  volumeAxis} from './ui';
+  volumeAxis, whenSettled} from './ui';
 
 /** A treated group's effect against the plan's on a shared percent axis from `lo` to 100: the range a study run as
  *  planned shows, shaded in the group's colour; the assumed effect a dark tick; the observed one a dot with its 95%
@@ -175,7 +175,7 @@ export function planInput(form: FuncCallForm, call: DG.FuncCall, state: {stale: 
   });
   // the newest file picked: a slower read of an older one is dropped
   let latest = 0;
-  void form.settled.then(() => {
+  whenSettled(form, () => {
     form.getInput('volume')?.root.after(planField.root);
     form.effect(() => {
       const file = planField.value;

@@ -109,6 +109,15 @@ export function copyRow(text: () => string, what: string): HTMLElement {
   return row;
 }
 
+/** `fn` once the form is built, unless its view closed first: an effect registered on a disposed form throws a u2
+ *  usage error (a test, or a user, can close a view before it settles). */
+export function whenSettled(form: FuncCallForm, fn: () => void): void {
+  void form.settled.then(() => {
+    if (!form.scope.isDisposed)
+      fn();
+  });
+}
+
 /** The view has no Run: each change of the form recomputes it once the changes stop for a moment (`DEBOUNCE` ms)
  *  and nothing is missing or invalid. `changed` goes in the form's onInputChanged, and with `TABLE_EDITS` in the study
  *  table's data events (values typed one by one: a longer pause); `cancel` drops a pending recompute (a view that
@@ -475,7 +484,7 @@ export function stagePanes(form: FuncCallForm, content: HTMLElement, o: {busy: R
 export function keepNamedColumns(form: FuncCallForm, optional: {[input: string]: (column: string) => boolean}): void {
   form.effect(() => {
     void form.getInput('study')?.value;
-    void form.settled.then(() => {
+    whenSettled(form, () => {
       for (const [name, named] of Object.entries(optional)) {
         const input = form.getInput(name);
         const column = input?.peek();

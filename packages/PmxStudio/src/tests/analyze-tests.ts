@@ -288,8 +288,8 @@ category('Analyze', () => {
       const r = {q025: 8, median: 15, q975: 25 as number | null};
       const f = await bandFactors('MC38');
       const w = widenedEnd(r, f);
-      // rounded outward to whole days: 8.08 to 25.16 becomes 8 to 26 (MC38's 1.21 in log days before rounding)
-      expect(JSON.stringify(w), JSON.stringify({q025: 8, median: 15, q975: 26}));
+      // MC38's 1.21 in log days around the median, 15·(8/15)^1.21 = 7.01 to 15·(25/15)^1.21 = 27.8, rounded outward
+      expect(JSON.stringify(w), JSON.stringify({q025: 7, median: 15, q975: 28}));
       const wide = widenedEnd({q025: 8.4, median: 15, q975: 25.4}, f);
       expect(Number.isInteger(wide.q025) && Number.isInteger(wide.q975!) && wide.q025 <= 8 && wide.q975! >= 25, true);
       expect(widenedEnd({...r, q975: null}, f).q975, null);

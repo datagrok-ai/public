@@ -22,7 +22,7 @@ import {CorrectionInput} from './arms-input';
 import {askedOf, autoRun, axisAt, callInputs, cardGrid, dayText, keepSame, onTableEdits, only, TABLE_EDITS, guide,
   exampleLine, infoNote, noteLine, notesBox, num, pct, pValue, settleForm, signed, isBodyWeight, keepNamedColumns,
   sized, markStage,
-  statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
+  statCard, swatch, volumeAxis, wrapCells, stagePanes, whenSettled} from './ui';
 import {logOf, planAtlas, restoreFields} from './study-file';
 import {PLAN_TAG} from './plan-file';
 import {openStage} from './stages';
@@ -362,7 +362,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     restoreFields(form, df);
     await form.settled;
   });
-  void form.settled.then(() => {
+  whenSettled(form, () => {
     if (opening?.study)
       void openStudy(async () => opening.study!);
   });
@@ -376,7 +376,7 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     tooltipText: 'Plasma concentrations over time, one row per animal and sample: NCA gives each group its AUClast ' +
       'and Cmax, shown beside its effect. Nothing is saved, and the analysis does not change.'})) : null;
   if (exposureField) {
-    void form.settled.then(() => form.getInput('density')?.root.after(exposureField.root));
+    whenSettled(form, () => form.getInput('density')?.root.after(exposureField.root));
     let reading = 0;
     form.effect(() => {
       const t = exposureField.table;

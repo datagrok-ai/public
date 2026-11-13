@@ -38,7 +38,7 @@ import {tolerabilityTab} from './tolerability';
 import {askedOf, autoRun, block, callInputs, cardGrid, dayText, exampleLine, infoNote, onTableEdits, TABLE_EDITS,
   isBodyWeight,
   keepNamedColumns, noteLine, notes, notesBox, num, pct, plainError, settleForm, sized, markStage, signed, stageOf,
-  statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
+  statCard, swatch, volumeAxis, wrapCells, stagePanes, whenSettled} from './ui';
 
 /** Monitor's tabs and their panels, in order and width (twelfths): today's work and how the groups grow; the
  *  measurements and the groups formed; how the animals bear it; whether each group is worth continuing. */
@@ -211,7 +211,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     tagStudy({study: df, animal: 'animal', group: 'group', day: 'day', volume: 'volume', bodyWeight: 'body_weight'});
     grok.shell.v = [...grok.shell.tableViews].find((v) => v.dataFrame.id === df.id) ?? grok.shell.v;
   });
-  void form.settled.then(() => {
+  whenSettled(form, () => {
     const study = form.getInput('study') as unknown as {actions?: {id: string, icon: string, tooltip: string,
       run: () => void}[]} | null;
     if (study?.actions) {

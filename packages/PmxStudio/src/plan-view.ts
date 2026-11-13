@@ -17,7 +17,7 @@ import {PlanFrames, PlanInputs, WEEKDAY_NAMES, armColors, declarationOf, planFra
 import {Arm, ArmsInput, CorrectionInput, armsFrame} from './arms-input';
 import {ENDPOINT_RISK, MIN_GROUP, StudyDeclaration, diameterOf, finite, safeEndpoint} from './engine';
 import {askedOf, autoRun, callInputs, cardGrid, copyRow, fixedValue, hintLink, infoNote, notes, notesBox, num, pct,
-  settleForm, sized, markStage, statCard, swatch, volumeAxis, wrapCells, stagePanes} from './ui';
+  settleForm, sized, markStage, statCard, swatch, volumeAxis, wrapCells, stagePanes, whenSettled} from './ui';
 import {ethicsText} from './ethics-text';
 import {openStage, showStage} from './stages';
 import {editLayout, panelGrid, Slot} from './panels';
@@ -945,8 +945,8 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
   // again with them, by the same run as every other plan: a newer plan, a change made meanwhile or a failure are
   // then handled as for any plan, and the section waits only while that run is on (it once had a computation of its
   // own beside the plan's, whose answer could be dropped or never come, and its loader stayed)
-  void form.settled.then(() => form.effect(() => call.setParamValue('compareSchedules', scheduleOpen.value)));
-  void form.settled.then(() => form.effect(() =>
+  whenSettled(form, () => form.effect(() => call.setParamValue('compareSchedules', scheduleOpen.value)));
+  whenSettled(form, () => form.effect(() =>
     effectAs.value = form.getInput('effectAs')?.value === 'T/C' ? 'TC' : 'TGI'));
   let remade: PlanFrames | null = null;
   form.effect(() => {
@@ -978,7 +978,7 @@ function planContent(self: ViewHost, initial: PlanStart | undefined, exports: Ex
 
   // the view opens at once; the default declaration (or the saved plan's) is planned behind the loader, once the
   // form has written its defaults into the call
-  void form.settled.then(() => {
+  whenSettled(form, () => {
     call.setParamValue('detectableEffect', false);
     // a new plan opens on the tumor model picked last, with no arm: not the table in view, which the platform gives
     // a table parameter by default (Monitor's study would read as 267 arms)
