@@ -36,8 +36,9 @@ export interface SpaceSaveRow extends DG.Widget {
 const same = (a: DG.Project | null, b: DG.Project | null): boolean =>
   a === null || b === null ? a === b : a.id === b.id;
 
-/** `home` is the space a saved project lives in; none for a new project, which always moves. */
-export function spaceSaveRow(home: DG.Project | null, name: string): SpaceSaveRow {
+/** `home` is the space a saved project lives in, none for a new project, which always moves; `projectId` is the saved
+ * project, which a space that links it does not count as another of its name. */
+export function spaceSaveRow(home: DG.Project | null, name: string, projectId: string | null = null): SpaceSaveRow {
   const widget = new DG.Widget(div()) as SpaceSaveRow;
   widget.onChanged = () => {};
   const row = widget.scope.build(() => component((self) => {
@@ -71,7 +72,7 @@ export function spaceSaveRow(home: DG.Project | null, name: string): SpaceSaveRo
       // a link leaves the project where it is, so the platform checks no name for it
       if (target === null || !changed.value || text === '' || mode.signal.value === 'link')
         return;
-      spaceHasName(target, text).then((taken) => {
+      spaceHasName(target, text, projectId).then((taken) => {
         if (taken && input.peek() === target && projectName.peek().trim() === text) {
           problem.value = `${where(target)} already has a project named "${text}". ` +
             'Rename the project or pick another space.';
@@ -115,7 +116,8 @@ export function spaceSaveRow(home: DG.Project | null, name: string): SpaceSaveRo
 }
 
 /** The row for a project owned by `homeId`: a space, or the user's own projects (none for a new project). */
-export async function spaceSaveRowFor(homeId?: string | null, name?: string): Promise<SpaceSaveRow> {
+export async function spaceSaveRowFor(homeId?: string | null, name?: string, projectId?: string | null):
+  Promise<SpaceSaveRow> {
   const home = homeId ? await grok.dapi.spaces.find(homeId).catch(() => null) : null;
-  return spaceSaveRow(home, name ?? '');
+  return spaceSaveRow(home, name ?? '', projectId ?? null);
 }

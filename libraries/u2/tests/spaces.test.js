@@ -10,7 +10,7 @@ import {Project} from './platform-doubles.mjs';
 register('./dg-stub.mjs', import.meta.url);
 const grok = await import('datagrok-api/grok');
 const DG = await import('datagrok-api/dg');
-const {SpaceTree, recentSpaces, rememberSpace, entityName, READ_ONLY} =
+const {SpaceTree, recentSpaces, rememberSpace, entityName, spaceHasName, READ_ONLY} =
   await import('../src/dg/spaces/spaces.js');
 const {SpaceInput} = await import('../src/dg/inputs/space-input.js');
 const {saveToSpace, openFromSpace, SpaceBrowser} = await import('../src/dg/spaces/space-dialogs.js');
@@ -27,8 +27,8 @@ const ARCHIVE = space('arch', 'Archive');
 
 /** A recording `grok.dapi.spaces` over `children` (subspaces by parent id, `null` for the roots) and `items`
  * (what each space holds); `taken` lists the names each space holds already. */
-function fakeSpaces({children, items = {}, readOnly = [], taken = {}}) {
-  const calls = {created: [], typesAsked: []};
+function fakeSpaces({children, items = {}, readOnly = [], taken = {}, linked = {}}) {
+  const calls = {created: [], typesAsked: [], linkedAsked: 0};
   grok.dapi.spaces = {
     list: async () => children[null] ?? [],
     createRootSpace: async (name) => {
@@ -36,9 +36,11 @@ function fakeSpaces({children, items = {}, readOnly = [], taken = {}}) {
       return space(`new-${name}`, name);
     },
     id: (id) => ({
-      children: {ofTypes: (types) => ({list: async () => {
-        if (types === 'Project')
-          return children[id] ?? [];
+      children: {ofTypes: (types, includeLinked) => ({list: async () => {
+        if (types === 'Project') {
+          calls.linkedAsked += includeLinked ? 1 : 0;
+          return [...children[id] ?? [], ...includeLinked ? linked[id] ?? [] : []];
+        }
         calls.typesAsked.push(types);
         return items[id] ?? [];
       }})},
@@ -464,8 +466,8 @@ ui('openFromSpace(): OPEN is off until an item is picked, then runs its default 
 });
 
 /** A Space row mounted on the page, as the Save project dialog mounts it. */
-function savingRow(home, name) {
-  const row = spaceSaveRow(home, name);
+function savingRow(home, name, projectId = null) {
+  const row = spaceSaveRow(home, name, projectId);
   document.body.append(row.root);
   return row;
 }
@@ -531,3 +533,21 @@ ui('spaceSaveRow: a space holding a project of that name is a problem until the 
       row.detach();
     }
   });
+
+ui('spaceHasName: the saved project, which the space links, does not count; another of its name does', async () => {
+  const saved = new Project('Kinase panel', {id: 'p1', name: 'KinasePanel', friendlyName: 'Kinase panel'});
+  const calls = fakeSpaces({...TREE, taken: {gpcr: ['KinasePanel']}, linked: {gpcr: [saved]}});
+  assert.equal(await spaceHasName(GPCR, 'Kinase panel', 'p1'), false, 'its own link');
+  assert.equal(await spaceHasName(GPCR, 'Kinase panel', 'p2'), true, 'another project');
+  assert.equal(await spaceHasName(GPCR, 'Kinase panel'), true, 'a new project');
+  const row = savingRow(KIN, 'Kinase panel', 'p2');
+  try {
+    row.target = GPCR;
+    const asked = calls.linkedAsked;
+    await until(() => row.problem !== null, 'the clash');
+    assert.ok(calls.linkedAsked > asked, 'the row passed its project on');
+  }
+  finally {
+    row.detach();
+  }
+});

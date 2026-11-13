@@ -118,11 +118,16 @@ export function entityName(friendlyName: string): string {
   return out;
 }
 
-/** Whether `space` already holds a project called `friendlyName`, compared as the platform's move compares it (by
- * {@link entityName}). */
-export async function spaceHasName(space: DG.Project, friendlyName: string): Promise<boolean> {
+/** Whether `space` holds a project called `friendlyName`, compared as the platform's move does (by {@link entityName});
+ * the project `except` (the one being saved, which the space may link) does not count. */
+export async function spaceHasName(space: DG.Project, friendlyName: string, except?: string | null): Promise<boolean> {
   const name = entityName(friendlyName);
-  return name !== '' && grok.dapi.spaces.id(space.id).subspaceExists(name);
+  if (name === '' || !await grok.dapi.spaces.id(space.id).subspaceExists(name))
+    return false;
+  if (!except)
+    return true;
+  const held = await grok.dapi.spaces.id(space.id).children.ofTypes('Project', true).list();
+  return held.some((p) => p.name === name && p.id !== except);
 }
 
 /** The ids of the spaces the user saved to last, the latest first. */

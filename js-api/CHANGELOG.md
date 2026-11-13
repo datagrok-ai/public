@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1507](https://github.com/datagrok-ai/core/issues/1507): Added `projectId` to `ui.spaceSaveRow()`: a space that links that project is no name clash for its move
 * [core#239](https://github.com/datagrok-ai/core/issues/239): Views: Added `ViewBase.saveToProject` (whether a view is saved with the project) and `ViewBase.saveToProjectByDefault` (the default a view type overrides)
 * [core#239](https://github.com/datagrok-ai/core/issues/239): Settings: Removed `saveProjectWithViewLayout`; a project now always saves the arrangement of its views
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Added `ui.spaceSaveRow(homeId, name)`: the Space row of the Save project dialog from the package that provides the new `DG.FUNC_TYPES.SPACE_SAVE_ROW` function (PowerPack), or null

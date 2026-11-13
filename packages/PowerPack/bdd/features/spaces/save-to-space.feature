@@ -45,14 +45,25 @@ Feature: The Space row of the Save project dialog puts a project into a space
     Then the project named "BDDSpaceProj{time}" should be in the space "BDDSaveSpace{time}" on the server
     And the project named "BDDSpaceProj{time}" should be linked from the space "BDDSaveLink{time}" on the server
 
+  Scenario: Moved into the space that links it, the project makes the link its home
+    When user opens the Save project dialog from the ribbon
+    And user clicks on space input in "Save project" dialog
+    And user clicks on "BDDSaveLink{time}" tree node
+    Then "Save project" dialog should contain text "Moves from \"BDDSaveSpace{time}\" to \"BDDSaveLink{time}\"."
+    And "Save project" dialog should not contain text "already has a project named"
+    And OK button in "Save project" dialog should be enabled
+    When user clicks on OK in the Save project dialog and the project uploads
+    Then the project named "BDDSpaceProj{time}" should be in the space "BDDSaveLink{time}" on the server
+    And the project named "BDDSpaceProj{time}" should not be in the space "BDDSaveSpace{time}" on the server
+
   Scenario: Re-saved with Move, the project goes to the other space
     When user opens the Save project dialog from the ribbon
     And user clicks on space input in "Save project" dialog
     And user clicks on "BDDSaveMove{time}" tree node
-    Then "Save project" dialog should contain text "Moves from \"BDDSaveSpace{time}\" to \"BDDSaveMove{time}\"."
+    Then "Save project" dialog should contain text "Moves from \"BDDSaveLink{time}\" to \"BDDSaveMove{time}\"."
     When user clicks on OK in the Save project dialog and the project uploads
     Then the project named "BDDSpaceProj{time}" should be in the space "BDDSaveMove{time}" on the server
-    And the project named "BDDSpaceProj{time}" should not be in the space "BDDSaveSpace{time}" on the server
+    And the project named "BDDSpaceProj{time}" should not be in the space "BDDSaveLink{time}" on the server
 
   Scenario: A space that holds a project of the name holds OK off
     When user opens the Save project dialog from the ribbon

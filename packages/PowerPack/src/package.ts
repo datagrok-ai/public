@@ -259,8 +259,9 @@ export class PackageFunctions {
   })
   static async spaceSaveRow(
     @grok.decorators.param({options: {optional: true}}) homeId?: string,
-    @grok.decorators.param({options: {optional: true}}) name?: string): Promise<DG.Widget> {
-    return spaceSaveRowFor(homeId, name);
+    @grok.decorators.param({options: {optional: true}}) name?: string,
+    @grok.decorators.param({options: {optional: true}}) projectId?: string): Promise<DG.Widget> {
+    return spaceSaveRowFor(homeId, name, projectId);
   }
 
   @grok.decorators.func({})
