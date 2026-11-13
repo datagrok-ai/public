@@ -83,6 +83,21 @@ async function cellCenter(page: Page, idx: number): Promise<{x: number; y: numbe
   }, idx);
 }
 
+// isRenderPending covers the trellis's own timers, the cells' settle poll and every inner viewer
+async function trellisSettled(page: Page): Promise<void> {
+  const settled = await page.evaluate(async () => {
+    const tp = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Trellis plot') as any;
+    let held = 0;
+    const t0 = Date.now();
+    while (held < 2 && Date.now() - t0 < 10000) {
+      held = tp.isRenderPending ? 0 : held + 1;
+      await new Promise((r) => setTimeout(r, 16));
+    }
+    return held >= 2;
+  });
+  expect(settled, 'trellis plot still rendering after 10 s').toBe(true);
+}
+
 async function setInnerType(page: Page, viewerType: string): Promise<void> {
   await page.evaluate((vt) => {
     const tp = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Trellis plot') as any;
@@ -321,7 +336,8 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       const tp = Array.from(grok.shell.tv.viewers).find((x: any) => x.type === 'Trellis plot') as any;
       tp.props.globalScale = true;
     });
-    await v.waitForViewerRendered(page, 'Trellis plot', 900);
+    // the scale is applied once every cell has painted (_syncCells), and that resetView wipes a zoom made earlier
+    await trellisSettled(page);
     const probes = [0, 2];
 
     const errBefore = consoleErrors.length;
