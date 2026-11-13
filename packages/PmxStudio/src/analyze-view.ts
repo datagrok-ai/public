@@ -132,15 +132,17 @@ function effectBar(effect: number, lower: number, upper: number, lo: number, col
 }
 
 /** The effect axis over the bars: a label over a tick at the left end (larger than the twin), at the twin (0), and at
- *  half its size and no tumor at all, in words; each tick over its guide in the bars. */
+ *  half its size and no tumor at all, in words; each tick over its guide in the bars. The labels take two heights in
+ *  turn, so neighbours never overlap in a narrow column. */
 function effectAxis(lo: number): HTMLElement {
   const axis = div([], 'pmx-effect-axis');
-  Object.assign(axis.style, {position: 'relative', height: '22px', fontSize: '11px', fontWeight: '400',
+  Object.assign(axis.style, {position: 'relative', height: '34px', fontSize: '11px', fontWeight: '400',
     color: 'var(--dg-text-color-muted, #68727f)'});
-  for (const [x, text, shift] of [[lo, 'Larger', '0'], [0, 'Same as twin', '-50%'], [50, 'Half size', '-50%'],
-    [100, 'No tumor', '-100%']] as [number, string, string][]) {
+  for (const [i, [x, text, shift]] of ([[lo, 'Larger', '0'], [0, 'Same as twin', '-50%'], [50, 'Half size', '-50%'],
+    [100, 'No tumor', '-100%']] as [number, string, string][]).entries()) {
     const label = span(text);
-    Object.assign(label.style, {position: 'absolute', top: '0', left: axisAt(x, lo), transform: `translateX(${shift})`,
+    Object.assign(label.style, {position: 'absolute', top: i % 2 ? '13px' : '0', left: axisAt(x, lo),
+      transform: `translateX(${shift})`,
       whiteSpace: 'nowrap', lineHeight: '14px'});
     const tick = div([]);
     Object.assign(tick.style, {position: 'absolute', bottom: '0', left: axisAt(x, lo), width: '1px', height: '5px',
