@@ -58,12 +58,12 @@ async function trellisMenuLabels(page: Page): Promise<string[]> {
     await w.__poll(() => items().length, (n: number) => n > 0, 800, 40);
     await w.__settledFor(() => items().join('|'), 250, 800, 25);
     const out = items();
-    document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
-    document.body.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
-    await w.__poll(() => document.querySelectorAll('.d4-menu-popup').length, (n: number) => n === 0, 400, 40);
-    return out;
+    await w.__closeContextMenu(2000);
+    return {out, popups: document.querySelectorAll('.d4-menu-popup').length};
   });
-  return labels;
+  // a menu left open eats the next mousedown, such as the range-slider drag of Scenario 2
+  expect(labels.popups, 'context menu still open after closing it').toBe(0);
+  return labels.out;
 }
 
 async function rangeSliderCount(page: Page): Promise<number> {
@@ -119,6 +119,7 @@ async function dragInnerRangeSlider(page: Page, axis: 'x' | 'y', rootIndex = 0):
     return {x: b.x + b.width / 2, y: b.y + b.height / 2};
   }, rootIndex);
   if (!cell) return false;
+  await page.evaluate(() => (window as any).__closeContextMenu(2000));
   // the reveal is cell.onMouseEnter, so the pointer has to come from outside the cell
   await page.mouse.move(2, 2);
   await page.mouse.move(cell.x, cell.y);
