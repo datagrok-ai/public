@@ -1,9 +1,10 @@
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {FORMULAS, type SheetFrame, type TableRead, type VolumeFormula, cellsOfFrame, csvOf, dateOrder, deduceFormula,
-  readStudy, roleOf, studySheets, studySummary,
+import {FORMULAS, type SheetFrame, type TableRead, type VolumeFormula, animalProblem, cellsOfFrame, csvOf,
+  dateOrder, deduceFormula,
+  readStudy, roleOf, sheetProblem, studySheets, studySummary,
   volumeSourceOf, waiting} from '../study-reader';
-import {cellsOf} from '../wide-table';
+import {cellsOf, separatorOf} from '../wide-table';
 
 const read = (csv: string, answers = {}) => readStudy(cellsOf(csv), answers);
 const lines = (r: TableRead, blinded = false) => studySummary(r, blinded).join(' | ');
@@ -172,7 +173,7 @@ category('Study reader', () => {
       'heading');
     expect(r.rows.length, 2);
     expect(read('Animal,Group,Day,Volume\nm1,V,0,100\nm1,V,0,110\n').error, 'Not read: rows 2 and 3 are one animal ' +
-      'on one day; keep one row per animal and day.');
+      'on one day (m1, day 0); keep one row per animal and day.');
     expect(read('Animal,Group,Day,Volume\nm1,V,x,100\n').error!.startsWith('Not read: column C ("Day") holds ' +
       'neither days'), true);
     expect(read('Foo,Bar\n1,2\n').error!.startsWith('Not read: the columns are not named as a study\'s.'), true);
@@ -329,7 +330,10 @@ category('Study reader', () => {
 /** A sheet as PowerPack hands it over: every cell a string, a blank as null. */
 const frame = (name: string, head: string[], rows: (string | null)[][]): SheetFrame => ({name, rowCount: rows.length,
   columns: {length: head.length, byIndex: (i) => ({name: head[i], getString: (r) => rows[r][i] as string})}});
-const dated = (d: string) => `${d} 00:00:00 GMT+0100 (Central European Standard Time)`;
+const typed = (name: string, cols: [string, string, (string | null)[]][]): SheetFrame => ({name,
+  rowCount: cols[0][2].length, columns: {length: cols.length, byIndex: (i) => ({name: cols[i][0], type: cols[i][1],
+    getString: (r) => cols[i][2][r] as string, get: (r) => cols[i][2][r] == null ? null : Number(cols[i][2][r])})}});
+const dated = (d: string) => `${d} 01:00:00 GMT+0100 (Central European Standard Time)`;
 
 category('Excel sheets', () => {
   test('a sheet as cells: the names, then the rows, blanks as empty text', async () => {
@@ -351,6 +355,52 @@ category('Excel sheets', () => {
   test('a sheet through CSV text reads the same, quoted cells included', async () => {
     const cells = [['Animal', 'Group', 'Day', 'Volume'], ['m1', 'A, high', '0', '100'], ['m1', 'A, high', '7', '150']];
     expect(JSON.stringify(cellsOf(csvOf(cells))), JSON.stringify(cells));
+  });
+
+  test('quoting: separators, tabs, quotes and line breaks in a cell keep the comma and the cell', async () => {
+    const cells = [['Animal', 'Group', 'Day', 'Volume'], ['m1', 'a;b', '0', '1'], ['m2', 'c\td', '0', '2'],
+      ['m3', 'say "x"', '0', '3'], ['m4', 'two\nlines', '0', '4']];
+    const text = csvOf(cells);
+    expect(separatorOf(text), ',');
+    expect(JSON.stringify(cellsOf(text)), JSON.stringify(cells));
+  });
+
+  test('dates are UTC midnight: the day holds west of Greenwich, in headings too', async () => {
+    const west = 'Sun Nov 01 2026 19:00:00 GMT-0500 (Eastern Standard Time)';
+    expect(cellsOfFrame(frame('S', ['Animal', west], [['m1', '5']]))[0][1], '2026-11-02');
+    expect(cellsOfFrame(frame('S', ['Animal', 'Date'], [['m1', west]]))[1][1], '2026-11-02');
+    expect(cellsOfFrame(frame('S', ['Animal', 'Date'], [['m1', dated('Mon Nov 02 2026')]]))[1][1], '2026-11-02');
+  });
+
+  test('sheets that do not start with their column names are refused with the sheet named', async () => {
+    const msg = (n: string) => 'Sheet «' + n + '»: the first row must hold the column names (Animal, Day, …). ' +
+      'Delete the rows above them, start the table in row 1, or save the sheet as CSV.';
+    expect(sheetProblem(frame('T', ['Title'], [['x']])), msg('T'));
+    expect(sheetProblem(frame('T', [], [])), msg('T'));
+    expect(sheetProblem(frame('T', ['Animal', 'col2'], [['x', 'y']])), msg('T'));
+    expect(sheetProblem(frame('T', ['Animal', 'Day', 'Day (1)'], [['x', 'y', 'z']])), msg('T'));
+    expect(sheetProblem(frame('T', ['Animal', 'Day'], [['x', 'y']])), null);
+  });
+
+  test('animal ids read as decimals are refused; int ids and int groups are accepted', async () => {
+    const dbl = typed('D', [['Animal', 'double', ['1.1', '1.1']], ['Day', 'int', ['0', '7']]]);
+    expect(animalProblem(dbl)!.startsWith('The animal IDs in «D» were read as decimal numbers'), true);
+    const int = typed('I', [['Animal', 'int', ['7', '8']], ['Group', 'int', ['1', '2']], ['Day', 'int', ['0', '0']],
+      ['Volume', 'double', ['100.25', '90']]]);
+    expect(animalProblem(int), null);
+    expect(cellsOfFrame(int)[1][3], '100.25');
+  });
+
+  test('007 and 7 both read as 7 on day 0: refused naming the animal and the day', async () => {
+    const int = typed('I', [['Animal', 'int', ['7', '7']], ['Group', 'int', ['1', '1']], ['Day', 'int', ['0', '0']],
+      ['Volume', 'double', ['100', '90']]]);
+    expect(readStudy(cellsOfFrame(int)).error, 'Not read: rows 2 and 3 are one animal on one day (7, day 0); keep ' +
+      'one row per animal and day.');
+  });
+
+  test('a wide sheet keeps ids like 007 and 1.10 as headings', async () => {
+    const f = frame('W', ['Day', '007', '1.10'], [['0', '100', '110'], ['7', '200', '210']]);
+    expect(cellsOfFrame(f)[0].join(), 'Day,007,1.10');
   });
 
   test('which sheets read as a study: none, one, several', async () => {

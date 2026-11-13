@@ -481,8 +481,8 @@ function readLong(cells: string[][], answers: Answers, decimalComma: boolean): T
   for (const x of raws) {
     const key = `${animal(x)}\u0000${dayOfRaw(x)}`;
     if (seen.has(key)) {
-      return refused('long', `Not read: rows ${seen.get(key)! + 1} and ${x.r + 1} are one animal on one day; keep ` +
-        'one row per animal and day.');
+      return refused('long', `Not read: rows ${seen.get(key)! + 1} and ${x.r + 1} are one animal on one day ` +
+        `(${x.animal}, day ${dayOfRaw(x)}); keep one row per animal and day.`);
     }
     seen.set(key, x.r);
   }
@@ -592,26 +592,49 @@ export const volumeSourceOf = (x: any): VolumeSource | undefined =>
 
 /** What a sheet's frame needs to be read as cells: DG.DataFrame fits it. */
 export interface SheetFrame {name: string, rowCount: number,
-  columns: {length: number, byIndex(i: number): {name: string, getString(i: number): string}}}
+  columns: {length: number, byIndex(i: number): {name: string, type?: string, getString(i: number): string,
+    get?(i: number): any}}}
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 // an Excel date as the sheet reader hands it over (Date.toString: Mon Nov 13 2026 00:00:00 GMT+0100 (...)), as written
-const JS_DATE = /^[A-Z][a-z]{2} ([A-Z][a-z]{2}) (\d{2}) (\d{4}) \d{2}:\d{2}:\d{2} GMT[+-]\d{4}(?: \(.*\))?$/;
+const JS_DATE = /^[A-Z][a-z]{2} [A-Z][a-z]{2} \d{2} \d{4} \d{2}:\d{2}:\d{2} GMT[+-]\d{4}(?: \(.*\))?$/;
+// Excel dates are UTC midnight: printing them in local time would move the day west of UTC
+const dayText = (s: string): string => JS_DATE.test(s) ? new Date(s).toISOString().slice(0, 10) : s;
 
-/** A sheet's cells as text: the column names, then a row per line; a date cell as yyyy-mm-dd, a blank as ''. */
+/** A sheet's cells as text: the column names, then a row per line; a date cell as yyyy-mm-dd, a blank as ''.
+ *  A number column is written as the number itself, not as the column's format rounds it. */
 export function cellsOfFrame(df: SheetFrame): string[][] {
   const cols = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i));
-  const rows = Array.from({length: df.rowCount}, (_, r) => cols.map((c) => {
-    const s = (c.getString(r) ?? '').trim();
-    const m = JS_DATE.exec(s);
-    return m && MONTHS.includes(m[1]) ? `${m[3]}-${String(MONTHS.indexOf(m[1]) + 1).padStart(2, '0')}-${m[2]}` : s;
-  }));
-  return [cols.map((c) => c.name), ...rows];
+  const rows = Array.from({length: df.rowCount}, (_, r) => cols.map((c) => dayText(
+    (c.type === 'double' && c.get ? (c.get(r) == null ? '' : String(c.get(r))) : c.getString(r) ?? '').trim())));
+  return [cols.map((c) => dayText(c.name.trim())), ...rows];
 }
 
-/** Cells as CSV text, as a file's would be. */
+/** Why a sheet cannot be read, or null: PowerPack sizes the columns by the sheet's first row, so a sheet that does
+ *  not start with its column names loses cells. */
+export function sheetProblem(df: SheetFrame): string | null {
+  const names = Array.from({length: df.columns.length}, (_, i) => df.columns.byIndex(i).name);
+  if (names.length < 2 || names.some((n) => /^col\d+$/.test(n) || / \(\d+\)$/.test(n))) {
+    return `Sheet «${df.name}»: the first row must hold the column names (Animal, Day, …). Delete the rows above ` +
+      'them, start the table in row 1, or save the sheet as CSV.';
+  }
+  return null;
+}
+
+/** The sheet's animal column read as decimal numbers, which cannot tell 1.1 from 1.10: a refusal, or null. */
+export function animalProblem(df: SheetFrame): string | null {
+  for (let i = 0; i < df.columns.length; i++) {
+    const c = df.columns.byIndex(i);
+    if (c.type === 'double' && roleOf(c.name.trim())?.role === 'animal') {
+      return `The animal IDs in «${df.name}» were read as decimal numbers, so «1.1» and «1.10» can't be told apart. ` +
+        'Format the animal column as text in Excel, or save the sheet as CSV.';
+    }
+  }
+  return null;
+}
+
+/** Cells as CSV text, as a file's would be; a cell with a separator, quote or line break is quoted. */
 export const csvOf = (cells: string[][]): string =>
-  cells.map((r) => r.map((c) => /[",\n\r]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c).join(',')).join('\n');
+  cells.map((r) => r.map((c) => /[",;\t\n\r]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c).join(',')).join('\n');
 
 /** The sheets (with data rows) that read as a study. */
 export function studySheets(sheets: {name: string, cells: string[][]}[]): string[] {

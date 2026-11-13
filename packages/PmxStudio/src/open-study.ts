@@ -7,7 +7,8 @@ import * as ui from 'datagrok-api/ui';
 
 import {PLAN_EXT, SavedPlan, parsePlan} from './plan-file';
 import {STUDY_EXT, SavedStudy, VOLUME_TAG, WEIGHT_TAG, oneDecimal, parseStudy} from './study-file';
-import {Answers, TableRead, cellsOfFrame, csvOf, readStudy, studySheets} from './study-reader';
+import {Answers, TableRead, animalProblem, cellsOfFrame, csvOf, readStudy, sheetProblem,
+  studySheets} from './study-reader';
 import {plainError} from './ui';
 import {cellsOf, separatorOf} from './wide-table';
 
@@ -137,10 +138,19 @@ export async function fileText(f: File): Promise<string> {
     throw new Error('Reading Excel files needs the PowerPack package. Save the sheet as CSV, or ask your ' +
       'administrator to install PowerPack.');
   }
-  const frames: DG.DataFrame[] = await fn.apply({bytes: new Uint8Array(await f.arrayBuffer())});
-  const sheets = frames.filter((df) => df.rowCount > 0).map((df) => ({name: df.name, cells: cellsOfFrame(df)}));
+  let frames: DG.DataFrame[];
+  try {
+    const r = await fn.apply({bytes: new Uint8Array(await f.arrayBuffer())});
+    frames = Array.isArray(r) ? r : [r];
+  } catch (e) {
+    console.error(e);
+    throw new Error('The Excel file could not be read: open it in Excel and save it again as .xlsx or .csv.');
+  }
+  const refused = frames.flatMap((df) => sheetProblem(df) ?? []);
+  const usable = frames.filter((df) => df.rowCount > 0 && !sheetProblem(df));
+  const sheets = usable.map((df) => ({name: df.name, cells: cellsOfFrame(df)}));
   if (sheets.length === 0)
-    throw new Error('The workbook has no rows: open the file with the measurements.');
+    throw new Error(refused[0] ?? 'The workbook has no rows: open the file with the measurements.');
   let pick = sheets[0];
   if (sheets.length > 1) {
     const names = studySheets(sheets);
@@ -150,10 +160,16 @@ export async function fileText(f: File): Promise<string> {
     }
     const name = names.length === 1 ? names[0] : await new Promise<string>((resolve, reject) => {
       const input = ui.input.choice('Sheet', {value: names[0], items: names});
-      ui.dialog('Which sheet holds the measurements?').add(input).onOK(() => resolve(input.value!))
-        .onCancel(() => reject(new Error('No sheet was chosen.'))).show();
+      const none = () => reject(new Error('No sheet was chosen.'));
+      const d = ui.dialog(`Which sheet of ${f.name} holds the measurements?`);
+      // closing with X or Escape is a close, not a cancel; after OK the promise is settled and this does nothing
+      d.add(input).onOK(() => resolve(input.value!)).onCancel(none).show();
+      d.onClose.subscribe(() => setTimeout(none, 0));
     });
     pick = sheets.find((s) => s.name === name)!;
   }
+  const bad = animalProblem(usable.find((df) => df.name === pick.name)!);
+  if (bad)
+    throw new Error(bad);
   return csvOf(pick.cells);
 }
