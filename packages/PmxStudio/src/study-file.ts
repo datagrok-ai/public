@@ -179,7 +179,9 @@ export function studyOf(df: DG.DataFrame, humane: number | null, weightLimit: nu
   const extra = Object.fromEntries(df.columns.toList()
     .filter((c) => !kept.has(c.name) && !c.name.startsWith('~') && plain.includes(c.type))
     .map((c) => [c.name, Array.from({length: df.rowCount}, (_, i) => c.isNone(i) ? null : c.get(i))]));
-  return {format: FORMAT, version: 1, name: df.name, plan: planText ? parsePlan(planText) : null,
+  const plan = planText ? parsePlan(planText) : null;
+  // a study followed from a saved plan goes by the plan's name, as the Overview lists it; else by its table's
+  return {format: FORMAT, version: 1, name: plan?.name || df.name, plan,
     looks: df.getTag(LOOKS_TAG) ?? '', humane, weightLimit, log: logOf(df), ...meta ? {meta} : {},
     ...line ? {line} : {}, ...volume ? {provenance: {volume}} : {},
     ...Object.keys(extra).length ? {extra} : {},
