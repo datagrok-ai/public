@@ -96,9 +96,15 @@ export function createMICrossDomainView(studyId: string): StudyTableViewParams {
       const countColName = `N ${arm} (n=${total})`;
       const pctColName = `% ${arm} (n=${total})`;
       const countCol = pivotedCount.col(srcCountCol)!;
-      const countAt = (i: number) => countCol.isNone(i) ? 0 : countCol.get(i)!;
-      result.columns.addNewInt(countColName).init(countAt);
-      const pctCol = result.columns.addNewFloat(pctColName).init((i) => total > 0 ? (countAt(i) / total) * 100 : 0);
+      result.columns.addNewInt(countColName).init((i) => {
+        const v = countCol.isNone(i) ? null : countCol.get(i);
+        return v == null || v === '' ? 0 : Number(v);
+      });
+      const pctCol = result.columns.addNewFloat(pctColName).init((i) => {
+        const v = countCol.isNone(i) ? null : countCol.get(i);
+        const n = v == null || v === '' ? 0 : Number(v);
+        return total > 0 ? (n / total) * 100 : 0;
+      });
     }
 
     result.name = 'findings summary';
