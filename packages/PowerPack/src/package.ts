@@ -31,6 +31,7 @@ import {runEnrichmentFromConfig} from './enrichment';
 import {FilterBuilderFilter} from './filter/filter-builder-filter';
 import {ChatInputWidget} from './widgets/chat-input';
 import {domains} from '@datagrok-libraries/ems/src/dg';
+import {spaceSaveRowFor} from '@datagrok-libraries/u2/dg';
 // every sheet the domain stack paints with, in one import
 import '@datagrok-libraries/ems/src/dg/styles.js';
 export * from './package.g';
@@ -248,6 +249,18 @@ export class PackageFunctions {
     @grok.decorators.param({options: {optional: true}}) sendOnEnter?: boolean,
     @grok.decorators.param({options: {optional: true}}) draftKey?: string): DG.Widget {
     return new ChatInputWidget(value, placeholder, sendOnEnter, draftKey);
+  }
+
+  @grok.decorators.func({
+    name: 'spaceSaveRow',
+    description: 'The Space row of the Save project dialog (u2); the platform reaches it through ui.spaceSaveRow()',
+    meta: {role: 'spaceSaveRow'},
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static async spaceSaveRow(
+    @grok.decorators.param({options: {optional: true}}) homeId?: string,
+    @grok.decorators.param({options: {optional: true}}) name?: string): Promise<DG.Widget> {
+    return spaceSaveRowFor(homeId, name);
   }
 
   @grok.decorators.func({})

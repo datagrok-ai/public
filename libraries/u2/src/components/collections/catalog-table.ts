@@ -181,7 +181,8 @@ interface View<T> {
 const NONE: readonly string[] = [];
 const NUMBER = /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i;
 const DATE = /^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}([T ]\d{1,2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/;
-const COLLATOR = new Intl.Collator(undefined, {numeric: true});
+/** The one text order of u2's lists: "Item 2" before "Item 10". */
+export const COLLATOR = new Intl.Collator(undefined, {numeric: true});
 
 export class CatalogTable<T> extends Control {
   /** The choices: shown columns, sort, grouping, folded groups. Code (and an assistant) writes them

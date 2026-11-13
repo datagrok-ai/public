@@ -104,6 +104,15 @@ export function chatMessageInput(value?: string, placeholder?: string, sendOnEnt
   return PackageFunctions.chatMessageInput(value, placeholder, sendOnEnter, draftKey);
 }
 
+//description: The Space row of the Save project dialog (u2); the platform reaches it through ui.spaceSaveRow()
+//input: string homeId { optional: true }
+//input: string name { optional: true }
+//output: widget result
+//meta.role: spaceSaveRow
+export async function spaceSaveRow(homeId?: string, name?: string) : Promise<any> {
+  return await PackageFunctions.spaceSaveRow(homeId, name);
+}
+
 //input: column col 
 //output: bool result
 export function isFormulaColumn(col: DG.Column) : boolean {

@@ -1,0 +1,236 @@
+/* SpaceInput (src/dg/inputs/space-input.ts), saveToSpace() and SpaceBrowser / openFromSpace()
+   (src/dg/spaces/space-dialogs.ts). */
+.u2-space-box {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--dg-control-height);
+  padding: 0 var(--dg-space-xs);
+  border-bottom: var(--dg-input-border);
+  color: var(--dg-text-color);
+  cursor: pointer;
+  outline: none;
+}
+
+.u2-space-box:focus-visible,
+.u2-space-open {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-space-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-space-empty .u2-space-text {
+  color: var(--dg-text-color-light);
+}
+
+.u2-space-icon,
+.u2-space-node-icon,
+.u2-space-caret,
+.u2-space-clear,
+.u2-space-add {
+  flex: none;
+  width: 16px;
+  text-align: center;
+  color: var(--dg-text-color-light);
+}
+
+.u2-space-box:hover .u2-space-caret,
+.u2-space-open .u2-space-caret,
+.u2-space-clear:hover,
+.u2-space-add:hover {
+  color: var(--dg-text-color);
+}
+
+.u2-space-clear,
+.u2-space-add {
+  cursor: pointer;
+}
+
+.u2-space-add {
+  margin-left: auto;
+  visibility: hidden;
+}
+
+.u2-list-row:hover .u2-space-add,
+.u2-list-row[aria-selected="true"] .u2-space-add {
+  visibility: visible;
+}
+
+.u2-space-popup {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 320px;
+  overflow: hidden;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius-l);
+  box-shadow: var(--dg-shadow-2);
+}
+
+.u2-space-popup [hidden],
+.u2-space-browser [hidden] {
+  display: none !important;
+}
+
+.u2-space-search {
+  padding: var(--dg-space-s) var(--dg-space-m) var(--dg-space-xs);
+}
+
+.u2-space-head {
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--dg-space-s) var(--dg-space-m) 2px;
+  font-size: var(--dg-font-size-small);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--dg-text-color-light);
+}
+
+.u2-space-recent {
+  align-items: center;
+  gap: var(--dg-space-s);
+  padding: 3px var(--dg-space-m);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.u2-space-recent:hover {
+  background: var(--dg-hover-subtle);
+}
+
+.u2-space-dim {
+  overflow: hidden;
+  margin-left: auto;
+  font-size: var(--dg-font-size-small);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--dg-text-color-light);
+}
+
+.u2-space-tree {
+  flex: none;
+  height: 200px;
+}
+
+.u2-space-node {
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--dg-space-s);
+  min-width: 0;
+}
+
+.u2-space-status {
+  padding: var(--dg-space-m);
+  color: var(--dg-text-color-light);
+}
+
+.u2-space-failed {
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  color: var(--dg-error);
+}
+
+.u2-space-failed:empty,
+.u2-space-clash:empty {
+  display: none;
+}
+
+.u2-space-clash {
+  color: var(--dg-error);
+}
+
+.u2-space-browser {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  border: 1px solid var(--dg-border-subtle);
+}
+
+.u2-space-browser-left {
+  display: flex;
+  flex: none;
+  width: 220px;
+  border-right: 1px solid var(--dg-border-subtle);
+}
+
+.u2-space-browser-tree {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.u2-space-browser-middle {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.u2-space-browser-middle .u2-space-search {
+  padding: var(--dg-space-s) var(--dg-space-m);
+  border-bottom: 1px solid var(--dg-border-subtle);
+}
+
+.u2-space-items {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.u2-space-item {
+  align-items: center;
+  gap: var(--dg-space-s);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 0 var(--dg-space-m);
+}
+
+.u2-space-item-icon {
+  flex: none;
+  width: 20px;
+}
+
+.u2-space-item-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.u2-space-item-text .u2-space-dim {
+  margin-left: 0;
+}
+
+.u2-space-item-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-space-empty-state {
+  padding: 24px var(--dg-space-m);
+  text-align: center;
+  color: var(--dg-text-color-light);
+}
+
+.u2-space-preview {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: 240px;
+  padding: var(--dg-space-m);
+  overflow: auto;
+  border-left: 1px solid var(--dg-border-subtle);
+}

@@ -5973,6 +5973,41 @@
       ]
     },
     {
+      "kind": "space-input",
+      "noun": "space input",
+      "aliases": [
+        "space picker"
+      ],
+      "family": "input",
+      "focusRole": "combobox",
+      "nameFrom": [
+        "label",
+        "aria",
+        "placeholder"
+      ],
+      "parts": {
+        "label": "[data-u2-part=\"label\"]",
+        "editor": "[data-u2-part=\"editor\"]",
+        "options": "[data-u2-part=\"options\"]",
+        "error": "[data-u2-part=\"error\"]"
+      },
+      "state": [
+        "label",
+        "value",
+        "text",
+        "valid",
+        "error",
+        "readOnly",
+        "required",
+        "open"
+      ],
+      "props": [],
+      "gestures": [
+        "open",
+        "pick"
+      ]
+    },
+    {
       "kind": "dynamic-input",
       "noun": "dynamic input",
       "family": "input",
@@ -6978,6 +7013,34 @@
         ]
       },
       "gestures": [
+        "select"
+      ]
+    },
+    {
+      "kind": "space-browser",
+      "noun": "space browser",
+      "aliases": [
+        "open from space"
+      ],
+      "family": "collection",
+      "nameFrom": [
+        "aria"
+      ],
+      "parts": {},
+      "state": [
+        "items",
+        "selection"
+      ],
+      "props": [],
+      "items": {
+        "role": "option",
+        "noun": "item",
+        "gestures": [
+          "select"
+        ]
+      },
+      "gestures": [
+        "type",
         "select"
       ]
     },
