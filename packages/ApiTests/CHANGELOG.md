@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Fixed `Dapi: connector ddl` 'ddl lifecycle' and 'uploadAs creates and loads a DataFrame': the scratch table had a mixed-case name, which the test's own plain SQL checks, unquoted, could not find
 * Tests: Made the suite independent of the packages a stand has: `Dapi: sticky meta: canonical keys` (was `: molecules`) uses the package's own semantic type, detector and canonicalizer instead of Chem's, `Dapi: models` 'Engines' has the package's own engine (`ApiTests engine`, never applicable, so the Train Model view does not offer it) and names the engines it checked, and `Dapi: files: formats` no longer opens kml and kmz, which the GIS importer opens
 * Packages: `Packages: project isolation` 'Dashboard: a debug publish does not link the debug version' follows core#1244 (was 'entity propagation across package versions', which expected the debug version's entities to be linked)
 * Tests: Removed `Property: General`, a copy of the first five `Functions: General` tests; `Dapi: connector ddl` says which database the query path reached when it does not see a table the mutation path wrote
