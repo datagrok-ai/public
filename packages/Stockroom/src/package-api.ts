@@ -11,8 +11,12 @@ export namespace funcs {
   /**
    * Chemical stockroom on the GHS classification — the zero-code app over databases/stockroom/schema.json
    */
-  export async function stockroomApp(): Promise<DG.View> {
-    return await grok.functions.call('Stockroom:StockroomApp', {});
+  export async function stockroomApp(path?: string ): Promise<DG.View> {
+    return await grok.functions.call('Stockroom:StockroomApp', { path });
+  }
+
+  export async function stockroomTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('Stockroom:StockroomTreeBrowser', { treeNode });
   }
 
   /**

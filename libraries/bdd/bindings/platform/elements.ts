@@ -1,8 +1,3 @@
-/* The Datagrok shell by name. Loaded for every profile, so these names are reserved: an app
-   registering "toolbox" for a bar of its own is refused — it registers "toolbar"-like names on its
-   context instead, and "toolbox" keeps meaning the platform's. Selector sources: toolbox.dart
-   (.d4-toolbox[caption]), console.dart, the shell's `name=` annotations (Browse, Toolbox), the selectors.ts
-   files under playwright-public. */
 import {element, kind} from '../../src/registry.js';
 
 // simple_mode.dart also uses d4-toolbox on an empty sliding host. Only Toolbox.root has caption.
@@ -21,6 +16,10 @@ element('browse panel', {selector: '.grok-view-browse, .layout-browse', aliases:
 element('browse tree', {selector: '.grok-view-browse [role="tree"], .layout-browse [role="tree"]',
   description: 'the tree inside the browse panel — the scope for a node phrase ("Files tree node inside browse tree")'});
 element('context panel', {selector: '.grok-prop-panel', aliases: ['property panel']});
+// the panel docks alone or in a column with the help panel
+element('context panel splitter', {selector: '.splitbar-vertical:is(:has(+ .panel-base > .panel-content .grok-prop-panel), ' +
+  ':has(+ .splitter-container-column > .panel-base > .panel-content .grok-prop-panel))',
+  description: 'the dock splitter at the context panel\'s left edge: dragged right, it narrows the panel'});
 element('favorite star', {selector: '.d4-star', aliases: ['favorites star'],
   description: 'the star beside an entity\'s name in the context panel that adds it to favorites and takes it out; it carries no aria state, only `fas` (a favorite) or `fal`, so claim the favorites on the server'});
 element('browse panel close icon', {selector: '.grok-browse-header .panel-titlebar-button-close',
@@ -45,8 +44,8 @@ element('gallery toolbar', {selector: '.grok-gallery-search-bar',
   description: 'the bar above a gallery: New, Refresh, the search, the view modes and the counter — the scope for its icons, which the Browse toolbar repeats'});
 element('gallery counter', {selector: '.grok-items-view-counts',
   description: 'how many items the gallery lists: "N", "shown / total" under a filter, "N of M" while only the first N are rendered'});
-element('chat input', {selector: '.grok-comments-post-input', aliases: ['chat post input'],
-  description: 'the message box of an entity\'s Chats pane: a bare textarea no input kind reaches'});
+element('chat input', {selector: '.grok-comments-post-input-host', aliases: ['chat post input'],
+  description: 'the message box of an entity\'s Chats pane: PowerPack\'s u2 message input (its contenteditable editor) where PowerPack is installed, a bare textarea otherwise'});
 element('chat header', {selector: '.grok-chat-header',
   description: 'the title line of the open chat thread: "Chats > <thread>"'});
 element('membership search', {selector: '.d4-user-selector-input', aliases: ['membership search input'],

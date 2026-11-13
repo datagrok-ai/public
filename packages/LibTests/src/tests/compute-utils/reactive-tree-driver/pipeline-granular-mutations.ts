@@ -3,10 +3,8 @@ import {category, test, before} from '@datagrok-libraries/test/src/test';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
-import {LinksState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {delay, filter, take} from 'rxjs/operators';
 import {createTestScheduler} from '../../../test-utils';
 
 // --- Configs ---
@@ -261,10 +259,10 @@ category('ComputeUtils: Driver pipeline granular: getSteps', async () => {
 
   test('Returns children with configId and position', async () => {
     const pconf = await getProcessedConfig(dynamicConfig);
-    testScheduler.run(({cold}) => {
+    testScheduler.run(() => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
-      const action = getAction(tree, 'add-regression');
+      getAction(tree, 'add-regression');
       // Access controller's getSteps by running a probe action
       const analysesNode = getAnalysesNode(tree);
       const children = analysesNode.getChildren();
@@ -563,7 +561,7 @@ category('ComputeUtils: Driver pipeline granular: link interaction', async () =>
 
   test('Data link to all() picks up added step', async () => {
     const pconf = await getProcessedConfig(dynamicWithLinkConfig);
-    testScheduler.run(({cold, expectObservable}) => {
+    testScheduler.run(({cold}) => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
       const step1Node = tree.nodeTree.getNode([{idx: 0}]);
@@ -597,8 +595,6 @@ category('ComputeUtils: Driver pipeline granular: link interaction', async () =>
     testScheduler.run(({cold}) => {
       const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
       tree.init().subscribe();
-      const initialLinks = [...tree.linksState.links.values()];
-      const initialCount = initialLinks.length;
       // Remove the only regression step
       cold('-a').subscribe(() => {
         const action = getAction(tree, 'remove-first-regression');

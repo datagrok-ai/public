@@ -20,7 +20,7 @@ Feature: Chemical properties, toxicity risks and InChI from the Calculate menu
   Scenario: Chemical Properties with no calculator ticked asks for one
     When user picks "Chem > Calculate > Chemical Properties..." from the top menu
     Then "Chemical Properties" dialog should be visible
-    And "Chemical Properties (OCL)" calculator in "Chemical Properties" dialog should not be checked
+    And "Chemical Properties" calculator in "Chemical Properties" dialog should not be checked
     When user clicks on OK button in "Chemical Properties" dialog
     Then a warning balloon containing "Please select at least one calculation" should have been shown
     And no new column should have been added
@@ -30,11 +30,11 @@ Feature: Chemical properties, toxicity risks and InChI from the Calculate menu
     When user picks "Chem > Calculate > Chemical Properties..." from the top menu
     Then "Chemical Properties" dialog should be visible
     And Molecules input in "Chemical Properties" dialog should contain text "canonical_smiles"
-    And "Chemical Properties (OCL)" calculator in "Chemical Properties" dialog should not be checked
+    And "Chemical Properties" calculator in "Chemical Properties" dialog should not be checked
     And MW input in "Chemical Properties" dialog should be checked
     And HBA input in "Chemical Properties" dialog should not be checked
     And "Molecule charge" input in "Chemical Properties" dialog should not be checked
-    When user checks "Chemical Properties (OCL)" calculator in "Chemical Properties" dialog
+    When user checks "Chemical Properties" calculator in "Chemical Properties" dialog
     And user clicks on OK button in "Chemical Properties" dialog
     Then "Chemical Properties" dialog should be hidden
     And 1 new column should have been added
@@ -45,7 +45,7 @@ Feature: Chemical properties, toxicity risks and InChI from the Calculate menu
 
   Scenario: Chemical Properties with every property adds nine columns
     When user picks "Chem > Calculate > Chemical Properties..." from the top menu
-    And user checks "Chemical Properties (OCL)" calculator in "Chemical Properties" dialog
+    And user checks "Chemical Properties" calculator in "Chemical Properties" dialog
     And user checks HBA input in "Chemical Properties" dialog
     And user checks HBD input in "Chemical Properties" dialog
     And user checks "Log P" input in "Chemical Properties" dialog

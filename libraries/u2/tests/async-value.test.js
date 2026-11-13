@@ -2,7 +2,7 @@
    re-runs cancelling the in-flight call, stale-response drop, error/refresh recovery, debounce
    coalescing and disposal, all over hand-resolved promises (the AsyncSource suite's technique). */
 
-import {test} from 'node:test';
+import {test, testOwner} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {Scope, signal} from '../src/index.js';
@@ -34,16 +34,14 @@ function tracker() {
 
 smoke('auto: runs at construction, projects ready into value', async () => {
   const {calls, fetch} = tracker();
-  const av = new AsyncValue(fetch, {debounceMs: 0});
+  const av = new AsyncValue(fetch);
   assert.equal(av.state.value.kind, 'loading');
-  assert.equal(av.value.value, undefined);
-  assert.equal(calls.length, 0, 'the fetch waits for the debounce');
-  await flush();
-  assert.equal(calls.length, 1);
+  assert.equal(av.value, undefined);
+  assert.equal(calls.length, 1, 'no deps, nothing to coalesce: the one run starts at once, whatever the debounce');
   calls[0].resolve(42);
   await flush();
   assert.deepEqual(av.state.value, {kind: 'ready', value: 42});
-  assert.equal(av.value.value, 42);
+  assert.equal(av.value, 42);
   av.dispose();
 });
 
@@ -108,7 +106,7 @@ smoke('error: reported with the message, refresh recovers', async () => {
   calls[0].reject(new Error('boom'));
   await flush();
   assert.deepEqual(av.state.value, {kind: 'error', message: 'boom'});
-  assert.equal(av.value.value, undefined);
+  assert.equal(av.value, undefined);
 
   av.refresh();
   assert.equal(av.state.value.kind, 'loading');
@@ -131,7 +129,7 @@ smoke('dispose: mid-flight aborts and drops the response, mid-debounce never fet
   assert.equal(av.state.value.kind, 'loading', 'a disposed value never settles');
 
   const second = tracker();
-  const av2 = new AsyncValue(second.fetch, {debounceMs: 0});
+  const av2 = testOwner().build(() => new AsyncValue(second.fetch, {deps: () => {}, debounceMs: 0}));
   av2.dispose();
   await flush();
   assert.equal(second.calls.length, 0, 'disposal during the debounce cancels the timer');
@@ -161,7 +159,7 @@ smoke('ambient adoption: an AsyncValue built under a scope dies with it', async 
   const {calls, fetch} = tracker();
   const owner = new Scope();
   let av;
-  Scope.runWith(owner, () => {
+  owner.build(() => {
     av = new AsyncValue(fetch, {auto: false, debounceMs: 0});
   });
   owner.dispose();

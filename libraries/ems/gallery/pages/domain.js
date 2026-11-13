@@ -110,8 +110,8 @@ function taskList(src) {
  * marked deleted stays, struck through, with Restore alone. */
 function actionsOf(src, row) {
   if (row['~state'] === 'deleted')
-    return [{name: 'Restore', icon: 'undo', run: () => src.edit.peek()?.unmarkDeleted(row.id)}];
-  const actions = [{name: 'Delete', icon: 'trash-alt', requires: 'delete', run: () => src.edit.peek()?.markDeleted(row.id)}];
+    return [{text: 'Restore', icon: 'undo', run: () => src.edit.peek()?.unmarkDeleted(row.id)}];
+  const actions = [{text: 'Delete', icon: 'trash-alt', requires: 'delete', run: () => src.edit.peek()?.markDeleted(row.id)}];
   const access = viewOf(src, row);
   return actions.filter((a) => a.requires === undefined || access.can(a.requires));
 }
@@ -131,7 +131,7 @@ function taskForm(src, host) {
     shown?.dispose();
     sub?.unsubscribe();
     shown = new Scope();
-    host.root.replaceChildren(Scope.runWith(shown, () => {
+    host.root.replaceChildren(shown.build(() => {
       if (row === null)
         return span('Select a task to edit, or add one.', 'u2-domain-form-hint');
       const form = propertyForm(src.schema.properties, row, {access: viewOf(src, row), exclude: SYSTEM});

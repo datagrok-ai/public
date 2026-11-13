@@ -1,15 +1,14 @@
-/* ManifestEditor over the Northwind draft: the tree's rows, checkboxes and badges; the three
-   panels for the three selection kinds; a checkbox in the tree and an "include" link in the
-   panel driving the model; a diagnostic landing on its row and its panel; view mode as text;
-   plan() resolved to logical names; the three tags registered. */
-
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
+import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {Scope} from '@datagrok-libraries/u2';
-import {ManifestEditor} from '../src/dg/authoring/manifest-editor.js';
-import {authoring} from '../src/dg/authoring/index.js';
+
+register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
+const {ManifestEditor} = await import('../src/dg/authoring/manifest-editor.js');
+const {authoring} = await import('../src/dg/authoring/index.js');
 
 const DRAFT = JSON.parse(readFileSync(new URL('./fixtures/authoring/northwind-draft.json', import.meta.url), 'utf8'));
 const draft = () => JSON.parse(JSON.stringify(DRAFT));
@@ -28,21 +27,21 @@ function ui(name, body) {
 }
 
 async function editor(options = {}, env = draft()) {
-  const e = new ManifestEditor(env, {context: {mode: 'create', storage: 'external'},
-    groups: ['Sales', 'Developers'], friendlyName: 'Northwind sales', ...options});
+  const e = testOwner().build(() => new ManifestEditor(env, {context: {mode: 'create', storage: 'external'},
+    groups: ['Sales', 'Developers'], friendlyName: 'Northwind sales', ...options}));
   document.body.append(e.root);
-  e.tree.tree.root.querySelector('.u2-list').clientHeight = 800;
+  layout(e.tree.tree.root.querySelector('.u2-list'), {clientHeight: 800});
   await flush();
   return e;
 }
 
-const rows = (e) => e.tree.root.querySelectorAll('.u2-tree-row');
+const rows = (e) => [...e.tree.root.querySelectorAll('.u2-tree-row')];
 const names = (e) => rows(e).map((r) => r.querySelector('.u2-manifest-node-name').textContent);
 const rowOf = (e, name) => rows(e).find((r) => r.querySelector('.u2-manifest-node-name').textContent === name);
-const badges = (row) => row.querySelectorAll('.u2-badge').map((b) => b.textContent);
+const badges = (row) => [...row.querySelectorAll('.u2-badge')].map((b) => b.textContent);
 const panel = (e) => e.panel.root;
 const title = (e) => panel(e).querySelector('.u2-manifest-panel-title').textContent;
-const inputNames = (e) => panel(e).querySelectorAll('.u2-input-root').map((i) => i.dataset.u2Name);
+const inputNames = (e) => [...panel(e).querySelectorAll('.u2-input-root')].map((i) => i.dataset.u2Name);
 
 async function select(e, name) {
   fire(rowOf(e, name), 'click');
@@ -100,23 +99,23 @@ ui('the schema panel: name, friendly name, writable, the access grid with the cr
   assert.equal(panel(e).querySelector('[data-u2-name="name"] .u2-input-postfix').textContent,
     'registered as ext_northwind_sales_2');
   const grid = panel(e).querySelector('.u2-access-grid');
-  assert.deepEqual(grid.querySelectorAll('tbody tr').map((r) => r.querySelector('.u2-access-grid-principal').textContent),
+  assert.deepEqual([...grid.querySelectorAll('tbody tr')].map((r) => r.querySelector('.u2-access-grid-principal').textContent),
     ['You (creator)']);
-  assert.deepEqual(grid.querySelectorAll('tbody .u2-access-grid-check').map((b) => b.disabled), [true, true, true]);
+  assert.deepEqual([...grid.querySelectorAll('tbody .u2-access-grid-check')].map((b) => b.disabled), [true, true, true]);
   const picker = grid.querySelector('.u2-access-grid-add');
   picker.value = 'Sales';
   fire(picker, 'change');
   assert.deepEqual(e.access.grants.value, [{scope: {kind: 'schema'}, group: {id: 'Sales', label: 'Sales'},
     view: true, edit: false, delete: false}]);
-  assert.deepEqual(grid.querySelectorAll('tbody tr')[1].querySelectorAll('.u2-access-grid-check').map((b) => b.disabled),
+  assert.deepEqual([...grid.querySelectorAll('tbody tr')[1].querySelectorAll('.u2-access-grid-check')].map((b) => b.disabled),
     [false, true, true], 'Edit and Delete need a writable binding');
 
   const writable = panel(e).querySelector('[data-u2-name="writable"] .u2-input-checkbox');
   writable.click();
   await flush();
   assert.equal(e.model.writable.value, true);
-  assert.deepEqual(panel(e).querySelector('.u2-access-grid').querySelectorAll('tbody tr')[1]
-    .querySelectorAll('.u2-access-grid-check').map((b) => b.disabled), [false, false, false]);
+  assert.deepEqual([...panel(e).querySelector('.u2-access-grid').querySelectorAll('tbody tr')[1]
+    .querySelectorAll('.u2-access-grid-check')].map((b) => b.disabled), [false, false, false]);
   e.dispose();
 });
 
@@ -124,7 +123,7 @@ ui('a schema row inherited by a table is labelled, with no group list offered up
   const e = await editor({groups: undefined});
   e.access.addGroup({kind: 'schema'}, {id: 'g-sales', label: 'Sales'});
   await select(e, 'order_details');
-  assert.deepEqual(panel(e).querySelectorAll('.u2-access-grid-principal').map((p) => p.textContent),
+  assert.deepEqual([...panel(e).querySelectorAll('.u2-access-grid-principal')].map((p) => p.textContent),
     ['You (creator)', 'Sales']);
   e.dispose();
 });
@@ -134,8 +133,8 @@ ui('the locked boxes show what the plan grants: nothing beyond View on a read-on
   e.access.addGroup({kind: 'schema'}, {id: 'g-sales', label: 'Sales'});
   e.access.setGrant({kind: 'schema'}, 'g-sales', 'edit', true);
   await select(e, 'orders');
-  const checked = () => panel(e).querySelectorAll('.u2-access-grid tbody tr')
-    .map((r) => r.querySelectorAll('.u2-access-grid-check').map((b) => b.checked));
+  const checked = () => [...panel(e).querySelectorAll('.u2-access-grid tbody tr')]
+    .map((r) => [...r.querySelectorAll('.u2-access-grid-check')].map((b) => b.checked));
   assert.deepEqual(checked(), [[true, false, false], [true, false, false]],
     'the creator and the inherited Sales row, as plan() grants');
   assert.deepEqual(e.plan().grants.map((g) => [g.table, g.edit]), [['orders', false], ['order_details', false]]);
@@ -166,10 +165,10 @@ ui('the Writable toggle keeps the part it sits in, focus included; a replaced gr
   assert.equal(cells()[0] !== view, true, 'Edit and Delete locked: the access part was replaced');
   assert.equal(writable().checked, false, 'a change made elsewhere replaces the form too');
   assert.equal(document.activeElement === cells()[0], true, 'Sales › View, in the rebuilt grid');
-  cells()[1].focus();
   e.model.setWritable(true);
   await flush();
-  assert.equal(document.activeElement === cells()[1], true, 'Sales › Edit, unlocked again');
+  assert.equal(document.activeElement === cells()[0], true, 'Sales › View again once Edit unlocks: a locked box takes ' +
+    'no focus');
   e.dispose();
 });
 
@@ -180,7 +179,7 @@ ui('Tab out of a field that commits on change: the form shows what was typed, so
   friendly.focus();
   fire(friendly, 'keydown', {key: 'Tab'});
   // what the browser reports inside `change` on a Tab: nothing focused yet
-  document.activeElement = document.body;
+  friendly.blur();
   friendly.value = 'Sales orders';
   fire(friendly, 'change');
   assert.equal(e.model.table('orders').friendlyName, 'Sales orders', 'committed');
@@ -209,7 +208,7 @@ ui('the table panel: names, the key as text, the pickers, relationships with the
     'orderid, productidthe primary key; the row id encodes it');
   assert.equal(panel(e).querySelector('[data-u2-name="key"] .u2-manifest-panel-hint').textContent,
     'the primary key; the row id encodes it', 'the hint on the key line');
-  const relations = panel(e).querySelectorAll('.u2-manifest-relation');
+  const relations = [...panel(e).querySelectorAll('.u2-manifest-relation')];
   assert.deepEqual(relations.map((r) => r.querySelector('.u2-badge').textContent), ['ref', 'plain value']);
   assert.equal(relations[0].querySelector('.u2-link'), null, 'nothing to fix on a ref');
   assert.equal(relations[1].querySelector('.u2-link'), null, 'products is not in the draft — nothing to include');
@@ -242,7 +241,7 @@ ui('the column panel: logical name, the type beside the warehouse type, required
     'one per table');
   assert.equal(panel(e).querySelectorAll('.u2-manifest-panel-note').length, 1, 'only the visibility note stands alone');
   assert.equal(panel(e).querySelector('.u2-manifest-relation'), null, 'no foreign key, no Reference section');
-  const chips = panel(e).querySelectorAll('.u2-chips-chip');
+  const chips = [...panel(e).querySelectorAll('.u2-chips-chip')];
   assert.deepEqual(chips.map((c) => c.textContent), ['Sales', 'Developers']);
   assert.equal(chips[0].disabled, true, 'everyone may see the row until "only these groups" is chosen');
   // the shim does not uncheck a radio's siblings on click
@@ -280,7 +279,7 @@ ui('a principal picker feeds the access grid and the visibility chips; the value
   await flush();
   assert.deepEqual(e.access.grants.value, [{scope: {kind: 'schema'}, group: {id: 'g-sales', label: 'Sales'},
     view: true, edit: false, delete: false}]);
-  assert.deepEqual(panel(e).querySelectorAll('.u2-access-grid-principal').map((p) => p.textContent),
+  assert.deepEqual([...panel(e).querySelectorAll('.u2-access-grid-principal')].map((p) => p.textContent),
     ['You (creator)', 'Sales'], 'a picked principal is shown by its label');
   await select(e, 'shipname');
   const visiblePicker = () => panel(e).querySelector('[data-u2-name="visibleTo"] .u2-input-box .test-pick');
@@ -290,10 +289,10 @@ ui('a principal picker feeds the access grid and the visibility chips; the value
   radios[1].click();
   await flush();
   assert.equal(visiblePicker().style.display, '', 'only these groups: the picker is offered');
-  assert.deepEqual(panel(e).querySelectorAll('.u2-chips-chip').map((c) => c.textContent), [], 'nothing offered up front');
+  assert.deepEqual([...panel(e).querySelectorAll('.u2-chips-chip')].map((c) => c.textContent), [], 'nothing offered up front');
   visiblePicker().click();
   await flush();
-  assert.deepEqual(panel(e).querySelectorAll('.u2-chips-chip').map((c) => [c.textContent, c.getAttribute('aria-pressed')]),
+  assert.deepEqual([...panel(e).querySelectorAll('.u2-chips-chip')].map((c) => [c.textContent, c.getAttribute('aria-pressed')]),
     [['Sales', 'true']]);
   assert.deepEqual(e.access.visibilityOf('orders', 'shipname'), [{id: 'g-sales', label: 'Sales'}]);
   e.dispose();
@@ -326,12 +325,12 @@ ui('a diagnostic addressed by manifest path marks its row and shows in its panel
   assert.equal(rowOf(e, 'shipvia').querySelector('.u2-manifest-node').classList.contains('u2-manifest-node-problem'), true);
   assert.match(rowOf(e, 'shipvia').title, /single-column key/);
   assert.equal(rowOf(e, 'northwind').querySelector('.u2-manifest-node').classList.contains('u2-manifest-node-problem'), true);
-  assert.deepEqual(panel(e).querySelectorAll('.u2-manifest-panel-diagnostic .u2-badge').map((b) => b.textContent),
+  assert.deepEqual([...panel(e).querySelectorAll('.u2-manifest-panel-diagnostic .u2-badge')].map((b) => b.textContent),
     ['external-unreachable'], 'the schema panel lists the schema-wide finding');
   await e.select({kind: 'column', table: 'orders', column: 'shipvia'});
   await flush();
   assert.deepEqual(e.selected.value, {kind: 'column', table: 'orders', column: 'shipvia'});
-  assert.deepEqual(panel(e).querySelectorAll('.u2-manifest-panel-diagnostic').map((d) => d.textContent),
+  assert.deepEqual([...panel(e).querySelectorAll('.u2-manifest-panel-diagnostic')].map((d) => d.textContent),
     ['external-ref-keyshippers.shipperid is not a single-column key']);
   e.dispose();
 });
@@ -339,7 +338,7 @@ ui('a diagnostic addressed by manifest path marks its row and shows in its panel
 ui('view mode: every field is text, the checkboxes are locked, the access grid cannot be edited', async () => {
   const e = await editor({context: {mode: 'view', storage: 'external'}});
   assert.equal(e.offer.editable, false);
-  assert.deepEqual(panel(e).querySelectorAll('[data-u2="readonly-field"]').map((f) => f.dataset.u2Name),
+  assert.deepEqual([...panel(e).querySelectorAll('[data-u2="readonly-field"]')].map((f) => f.dataset.u2Name),
     ['friendlyName', 'name', 'writable']);
   assert.equal(panel(e).querySelector('[data-u2-name="name"] .u2-form-readonly-value .u2-manifest-panel-hint').textContent,
     'registered as ext_northwind');
@@ -394,8 +393,6 @@ ui('the namespace and the tags', async () => {
 });
 
 ui('the editor tag is registered next to the other domain controls; the panes alone are not', async () => {
-  const {register} = await import('node:module');
-  register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
   const {registerDomainComponents} = await import('../src/dg/registrations.js');
   const {Registry} = await import('@datagrok-libraries/u2');
   const reg = new Registry();
@@ -404,7 +401,7 @@ ui('the editor tag is registered next to the other domain controls; the panes al
   assert.equal(meta.category, 'Inputs');
   assert.equal(reg.get('u2-manifest-tree'), undefined, 'a tree and a panel over separate models cannot share state');
   assert.equal(reg.get('u2-manifest-panel'), undefined);
-  const built = meta.create({draft: draft(), groups: ['Sales']});
+  const built = testOwner().build(() => meta.create({draft: draft(), groups: ['Sales']}));
   assert.equal(built.root.dataset.u2, 'manifest-editor');
   built.dispose();
   const {domains} = await import('../src/dg/facade.js');
@@ -433,7 +430,7 @@ ui('a column with two foreign keys lists both; when the foreign keys could not b
   const e = await editor({}, env);
   assert.deepEqual(badges(rowOf(e, 'shipvia')), ['→ shippers', '→ carriers']);
   await select(e, 'shipvia');
-  assert.deepEqual(panel(e).querySelectorAll('.u2-manifest-relation').map((r) => r.textContent),
+  assert.deepEqual([...panel(e).querySelectorAll('.u2-manifest-relation')].map((r) => r.textContent),
     ['foreign key to shippersplain valueshippers is not in the draft', 'foreign key to carriersplain valuetwo foreign keys']);
   e.dispose();
 

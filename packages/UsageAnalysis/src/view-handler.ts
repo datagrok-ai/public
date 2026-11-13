@@ -3,13 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {UaView} from './tabs/ua';
-import {UaToolbox} from './ua-toolbox';
+import {UaToolbox, UaViewState} from './ua-toolbox';
 import {EventsView} from './tabs/events';
 import {PackagesView} from './tabs/packages';
 import {FunctionsView} from './tabs/functions';
 import {OverviewView} from './tabs/overview';
 import {LogView} from './tabs/log';
 import {SystemActivityView} from './tabs/system-activity';
+import {AiUsageView} from './tabs/ai-usage';
 import {ErrorsView} from './tabs/errors';
 import {ProjectsView} from "./tabs/projects";
 import {ClicksView} from './tabs/clicks';
@@ -19,25 +20,77 @@ import {StressView} from './tabs/stress-tests';
 
 export class ViewHandler {
   public static UA_NAME = 'Usage Analysis';
+  private static noPackagesTabs = ['Projects', 'Metrics', 'Stress', 'Vulnerabilities', 'System Activity', 'AI Usage'];
   private urlParams: Map<string, string> = new Map<string, string>();
   public view: DG.MultiView;
+  private toolbox?: UaToolbox;
+  private pendingState?: UaViewState;
+  /** The buttons that switch a tab between its sub-views, by tab name and route. */
+  private routButtons: {[tab: string]: {[rout: string]: HTMLButtonElement}} = {};
 
-  constructor() {
+  /** [appTab]: the tab an app of its own opens (`metrics`); under that app's URL the tab needs no path segment. */
+  constructor(private appTab?: string) {
     this.view = new DG.MultiView({viewFactories: {}});
     this.view.name = ViewHandler.UA_NAME;
     this.view.box = true;
+    this.view.saveStateMap = () => this.saveState();
+    this.view.loadStateMap = (state: object) => this.restore(state as UaViewState);
+  }
+
+  /** While a restore is under way, saving keeps the state it restores. */
+  saveState(): UaViewState | null {
+    if (this.pendingState)
+      return this.pendingState;
+    if (!this.toolbox)
+      return null;
+    const v = this.getCurrentView();
+    return {tab: v.name, rout: v.rout ?? null, filters: this.toolbox.getState()};
+  }
+
+  private restore(state: UaViewState): void {
+    this.loadState(state).catch((e) => grok.shell.error(`Cannot restore Usage Analysis: ${e instanceof Error ? e.message : e}`));
+  }
+
+  private async loadState(state: UaViewState): Promise<void> {
+    this.pendingState = state;
+    if (!this.toolbox)
+      return;
+    try {
+      if (state.filters)
+        this.toolbox.setState(state.filters);
+      if (state.tab && this.view.tabs.getPane(state.tab))
+        this.changeTab(state.tab);
+      if (state.filters)
+        this.toolbox.applyFilter();
+      const v = this.getCurrentView();
+      await v.viewersReady;
+      if (state.rout && this.getCurrentView() === v && v.rout !== state.rout)
+        this.routButtons[v.name]?.[state.rout]?.click();
+    } finally {
+      if (this.pendingState === state)
+        this.pendingState = undefined;
+    }
   }
 
   async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
+    try {
+      await this.build(date, groups, packages, tags, categories, projects, path);
+    } catch (e) {
+      this.pendingState = undefined;
+      throw e;
+    }
+  }
+
+  private async build(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
     const toolboxPromise = UaToolbox.construct(this);
     const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView,
-      SystemActivityView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
+      SystemActivityView, AiUsageView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
     const views: UaView[] = [];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i]();
       views.push(currentView);
       this.view.addView(currentView.name, () => {
-        currentView.tryToInitViewers(path);
+        currentView.viewersReady = currentView.tryToInitViewers(path);
         return currentView;
       }, false);
     }
@@ -50,6 +103,8 @@ export class ViewHandler {
       if (urlView)
         urlTab = urlView.name;
     }
+    else if (this.appTab)
+      urlTab = views.find((v) => ViewHandler.urlName(v) === this.appTab)?.name ?? urlTab;
 
     const indicatorTimer = setTimeout(() => ui.setUpdateIndicator(this.view.root, true, 'Loading...'), 200);
     const toolbox = await toolboxPromise;
@@ -62,7 +117,7 @@ export class ViewHandler {
     toolbox.toggleCategoriesInput(urlTab == 'Packages');
     toolbox.toggleTagsInput(urlTab == 'Functions');
     toolbox.toggleProjectsInput(urlTab == 'Projects');
-    toolbox.togglePackagesInput(!['Projects', 'Metrics', 'Stress', 'Vulnerabilities', 'System Activity'].includes(urlTab));
+    toolbox.togglePackagesInput(!ViewHandler.noPackagesTabs.includes(urlTab));
     toolbox.toggleGroupsInput(!['Metrics', 'Stress', 'Vulnerabilities'].includes(urlTab));
 
     const paramsHaveDate = date != undefined;
@@ -106,6 +161,7 @@ export class ViewHandler {
       piButton.disabled = true;
     });
     puButton.disabled = true;
+    this.routButtons['Packages'] = {'/Usage': puButton, '/InstallationTime': piButton};
     const pButtons = ui.divH([puButton, piButton], 'ua-packages-buttons');
     pButtons.style.display = 'none';
     toolbox.filters.root.before(pButtons);
@@ -129,16 +185,17 @@ export class ViewHandler {
       feButton.disabled = true;
     });
     fuButton.disabled = true;
+    this.routButtons['Functions'] = {'/Usage': fuButton, '/ExecutionTime': feButton};
     const fButtons = ui.divH([fuButton, feButton], 'ua-packages-buttons');
     fButtons.style.display = 'none';
     toolbox.filters.root.before(fButtons);
 
-    this.view.tabs.onTabChanged.subscribe((_) => {
+    this.view.tabs.onTabChanged.subscribe(() => {
       const view = this.view.currentView;
       toolbox.toggleCategoriesInput(view.name === 'Packages');
       toolbox.toggleTagsInput(view.name === 'Functions');
       toolbox.toggleProjectsInput(view.name == 'Projects');
-      toolbox.togglePackagesInput(!['Projects', 'Metrics', 'Stress', 'Vulnerabilities', 'System Activity'].includes(view.name));
+      toolbox.togglePackagesInput(!ViewHandler.noPackagesTabs.includes(view.name));
       toolbox.toggleGroupsInput(!['Metrics', 'Stress', 'Vulnerabilities'].includes(view.name));
       // ViewHandler.UA.path = ViewHandler.UA.path.replace(/(UsageAnalysis\/)([a-zA-Z/]+)/, '$1' + view.name);
       this.updatePath();
@@ -173,6 +230,9 @@ export class ViewHandler {
         fButtons.style.display = 'none';
     });
     this.changeTab(urlTab);
+    this.toolbox = toolbox;
+    if (this.pendingState)
+      this.restore(this.pendingState);
   }
 
   static urlName(view: DG.ViewBase): string {
@@ -192,7 +252,8 @@ export class ViewHandler {
   }
 
   setUrlParam(key: string, value: string, saveDuringChangingView: boolean = false) {
-    const urlParams = new URLSearchParams(window.location.search);
+    const isCurrent = grok.shell.v?.root === this.view.root;
+    const urlParams = new URLSearchParams(isCurrent ? window.location.search : this.view.path.split('?')[1] ?? '');
     urlParams.set(key, value);
 
     const params: string[] = [];
@@ -203,13 +264,18 @@ export class ViewHandler {
     if (saveDuringChangingView)
       this.urlParams.set(key, value);
 
-    this.view.path = `/${ViewHandler.urlName(this.getCurrentView())}?${params.join('&')}`.toLowerCase();
+    this.view.path = `${this.tabPath(this.getCurrentView())}?${params.join('&')}`.toLowerCase();
   }
 
    updatePath(): void {
     const v = this.getCurrentView();
     const s = this.view.path.split('?');
     const params = s.length === 2 ? s[1] : null;
-     this.view.path = `/${ViewHandler.urlName(v)}${v.rout ?? ''}${params ? '?' + params : ''}`.toLowerCase();
+     this.view.path = `${this.tabPath(v)}${v.rout ?? ''}${params ? '?' + params : ''}`.toLowerCase();
+  }
+
+  private tabPath(v: DG.ViewBase): string {
+    const name = ViewHandler.urlName(v);
+    return name === this.appTab ? '' : `/${name}`;
   }
 }

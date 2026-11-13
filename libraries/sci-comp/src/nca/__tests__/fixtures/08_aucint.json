@@ -1,0 +1,1270 @@
+{
+  "dataset": "08_aucint",
+  "pknca_version": "0.12.1",
+  "pknca_parameter": "aucint.last",
+  "note": "PKNCA pk.calc.aucint(auc.type = 'AUClast') per profile of 01/02/03: a bound strictly between two samples is interpolated (linear on a linear interval, log on a log interval of the chosen method); past tlast the concentration is 0 (no extrapolation), so an end beyond tlast integrates to tlast only. 02 indometh is the augmented profile (core c0 at t = 0), as in regen-fixtures.R.",
+  "intervals": [
+    {
+      "start": 0,
+      "end": 12
+    },
+    {
+      "start": 0,
+      "end": 24
+    },
+    {
+      "start": 2,
+      "end": 10
+    }
+  ],
+  "rows": [
+    {
+      "dataset": "01_theoph",
+      "subject": "1",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 91.65057073476
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "1",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 146.010198892649
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "1",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 63.58423910224
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "2",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 67.234557835754
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "2",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 88.457260922376
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "2",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 46.657492892779
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "3",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 70.030131215155
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "3",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 95.698098426102
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "3",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 48.310345297105
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "4",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 72.927219109073
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "4",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 101.860774755364
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "4",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 51.69047816625
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "5",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 84.39951007559
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "5",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 117.621805230798
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "5",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 59.10719860076
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "6",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 51.654565940865
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "6",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 71.697014994373
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "6",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 36.614820589052
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "7",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 61.966578267663
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "7",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 87.713645319548
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "7",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 46.239864377112
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "8",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 62.47734145703
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "8",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 86.655906054913
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "8",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 44.295471849184
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "9",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 59.947793900793
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "9",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 83.447367129742
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "9",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 39.658569160231
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "10",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 90.682277283915
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "10",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 135.576070097047
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "10",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 67.607852396033
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "11",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 58.375986262263
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "11",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 77.824409265863
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "11",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 39.072713243513
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "12",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 84.796872091378
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "12",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 115.043217631832
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "12",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 62.147699942704
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "1",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 2.009898436407
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "1",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 2.009898436407
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "1",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 0.5552307830567
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "2",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 3.202887781306
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "2",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 3.202887781306
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "2",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 1.194348089929
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "3",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 3.474397073091
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "3",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 3.474397073091
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "3",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 0.8310455146566
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "4",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 2.748383231336
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "4",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 2.748383231336
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "4",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 0.7243988030002
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "5",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 2.398373647833
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "5",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 2.398373647833
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "5",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 0.635807185407
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "6",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 3.290826615705
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "6",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 3.290826615705
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "6",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 0.9779177883661
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "1",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 10.322390894406
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "1",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 10.322390894406
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "1",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 5.047262073884
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "2",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 21.673375201029
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "2",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 21.673375201029
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "2",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 14.401476079607
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "3",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 16.882526582103
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "3",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 16.882526582103
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "3",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 9.819247184165
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "4",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 5.202315986435
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "4",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 5.202315986435
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "4",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 2.626108184446
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "5",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 18.816551313786
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "5",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 18.816551313786
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "5",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 12.792417138588
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "6",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 17.356121320784
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "6",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 17.356121320784
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "6",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 11.688004559233
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "7",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 14.373080552248
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "7",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 14.373080552248
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "7",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 8.881228144342
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "8",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 9.360917954191
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "8",
+      "auc_method": "linear-up-log-down",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 9.360917954191
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "8",
+      "auc_method": "linear-up-log-down",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 5.789673815794
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "1",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 91.735521986971
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "1",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 147.694586571429
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "1",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 63.636399044517
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "2",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 67.4803
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "2",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 91.249080487805
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "2",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 46.787080801688
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "3",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 70.179714285714
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "3",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 99.104814267887
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "3",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 48.392103809524
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "4",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 73.051152012628
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "4",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 105.998113338595
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "4",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 51.764011881693
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "5",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 84.6149
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "5",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 120.731013360324
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "5",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 59.20273346856
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "6",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 51.758869444444
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "6",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 73.77555
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "6",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 36.689986363636
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "7",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 62.098747540984
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "7",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 90.4956673788
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "7",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 46.336704393443
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "8",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 62.714859240924
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "8",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 88.408901747088
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "8",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 44.406127170602
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "9",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 60.121229812938
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "9",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 85.829850233827
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "9",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 39.766281296024
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "10",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 90.817416176471
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "10",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 138.3681
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "10",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 67.677910522559
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "11",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 58.539633009709
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "11",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 80.024310367893
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "11",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 39.16677430181
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "12",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 85.021362582781
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "12",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 119.798838842975
+    },
+    {
+      "dataset": "01_theoph",
+      "subject": "12",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 62.288001655629
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "1",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 2.040452127662
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "1",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 2.040452127662
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "1",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 0.56
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "2",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 3.24851993865
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "2",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 3.24851993865
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "2",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 1.21
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "3",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 3.554421140937
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "3",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 3.554421140937
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "3",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 0.845
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "4",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 2.785278776975
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "4",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 2.785278776975
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "4",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 0.745
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "5",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 2.458858173075
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "5",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 2.458858173075
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "5",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 0.645
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "6",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 3.335703125
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "6",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 3.335703125
+    },
+    {
+      "dataset": "02_indometh",
+      "subject": "6",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 0.99
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "1",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 10.6907
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "1",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 10.6907
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "1",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 5.3475
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "2",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 22.1391
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "2",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 22.1391
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "2",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 14.77315
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "3",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 17.471525
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "3",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 17.471525
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "3",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 10.3476
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "4",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 5.4490875
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "4",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 5.4490875
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "4",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 2.8421
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "5",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 19.087725
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "5",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 19.087725
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "5",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 13.02885
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "6",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 17.7708875
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "6",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 17.7708875
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "6",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 12.0392
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "7",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 14.75235
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "7",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 14.75235
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "7",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 9.15845
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "8",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 12,
+      "aucint_last": 9.621025
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "8",
+      "auc_method": "linear",
+      "start": 0,
+      "end": 24,
+      "aucint_last": 9.621025
+    },
+    {
+      "dataset": "03_rat_simple",
+      "subject": "8",
+      "auc_method": "linear",
+      "start": 2,
+      "end": 10,
+      "aucint_last": 6.0093
+    }
+  ]
+}

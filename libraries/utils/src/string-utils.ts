@@ -1,9 +1,11 @@
 const api: any = (typeof window !== 'undefined' ? window : global.window) as any;
 
-export function tryParseJson(s: string): any {
+export function tryParseJson(s: string, options?: {warning?: string, reviver?: (key: string, value: any) => any}): any {
   try {
-    return JSON.parse(s);
-  } catch (_) {
+    return JSON.parse(s, options?.reviver);
+  } catch (e) {
+    if (options?.warning)
+      console.warn(`${options.warning}: malformed JSON: ${s}`, e);
     return null;
   }
 }
@@ -22,6 +24,11 @@ export class StringUtils {
     options?: { auto?: boolean, idx?: number, render?: Function, choices?: string[] }): string {
     return api.grok_Utils_GetUniqueName(
       initialName, existingNames, options?.auto, options?.idx, options?.render, options?.choices);
+  }
+
+  /** [s] as a regular expression that matches the text itself. */
+  static escapeRegExp(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\\/-]/g, '\\$&');
   }
 
   static isEmpty(s: string | null): boolean {

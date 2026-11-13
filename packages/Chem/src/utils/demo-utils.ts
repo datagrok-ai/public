@@ -1,6 +1,5 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
 import {_package} from '../package';
 
 export const demoScaffold = `
@@ -65,17 +64,4 @@ export async function openMoleculeDataset(name: string): Promise<DG.TableView> {
   const table = DG.DataFrame.fromCsv(await _package.files.readAsText(name));
   grok.shell.windows.showContextPanel = true;
   return grok.shell.addTableView(table);
-}
-
-export function addCustomHelp(linkAddress: string, sectionName: string) {
-  const str = `to find out more about ${sectionName} in Datagrok.`;
-  const el = ui.div([
-    ui.divText('Click'),
-    ui.link(`here`, linkAddress),
-  ], {style: {display: 'flex', flexWrap: 'wrap', gap: '3px'}});
-  str.split(' ').forEach((word) => el.append(ui.divText(word)));
-  //@ts-ignore
-  grok.shell.windows.help.visible = true;
-  //@ts-ignore
-  grok.shell.windows.help.showHelp(el);
 }

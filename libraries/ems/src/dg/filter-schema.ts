@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import {propertyFields} from 'datagrok-api/u2core';
 import {Filters} from '@datagrok-libraries/u2';
 import type {FilterProperty, FilterSchema, FilterValueItem} from '@datagrok-libraries/u2';
-import {filterRenderer, filterRef} from '@datagrok-libraries/u2/src/dg/index.js';
+import {filterRenderer, filterRef} from '@datagrok-libraries/u2/dg';
 
 const VALUES_LIMIT = 50;
 const REF_ADDRESS = /^\w+\.\w+$/;

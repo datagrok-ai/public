@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, uniqueName, wait} from '../helpers';
+import {category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
+import {demog, uniqueName} from '../helpers';
 
 category('AI: App: MultiView', () => {
   // MultiView is a ViewBase, not a View, so withAttachedView() does not accept it.
@@ -17,9 +17,9 @@ category('AI: App: MultiView', () => {
     }
   }
 
-  const activate = async (mv: DG.MultiView, name: string, ms: number = 300): Promise<void> => {
+  const activate = async (mv: DG.MultiView, name: string, ready: () => boolean): Promise<void> => {
     mv.tabs.currentPane = mv.tabs.getPane(name);
-    await wait(ms);
+    await waitUntil(ready, `the ${name} tab did not activate`);
   };
 
   // Handing a ribbon item to another view moves it out of its `d4-ribbon-item` wrapper; reading
@@ -35,11 +35,11 @@ category('AI: App: MultiView', () => {
     }, async (mv) => {
       const shown = (): boolean => mv.root.parentElement!.querySelector('.d4-ribbon')!.contains(button);
 
-      await activate(mv, 'plain');
+      await activate(mv, 'plain', shown);
       expect(shown(), true);
 
-      await activate(mv, 'other');
-      await activate(mv, 'plain');
+      await activate(mv, 'other', () => !shown());
+      await activate(mv, 'plain', shown);
       expect(shown(), true);
     });
   });
@@ -54,10 +54,10 @@ category('AI: App: MultiView', () => {
       'table': () => DG.TableView.create(df, false),
       'plain': () => DG.View.fromRoot(ui.divText('no table here')),
     }, async (mv) => {
-      await activate(mv, 'table');
+      await activate(mv, 'table', () => grok.shell.t?.name === df.name);
       expect(grok.shell.t?.name, df.name);
 
-      await activate(mv, 'plain');
+      await activate(mv, 'plain', () => grok.shell.t == null);
       expect(grok.shell.t == null, true);
     });
   });
@@ -68,9 +68,10 @@ category('AI: App: MultiView', () => {
     await withMultiView({
       'table': () => DG.TableView.create(demog(), false),
     }, async (mv) => {
-      await activate(mv, 'table', 600);
-      const pane = mv.currentView.root.parentElement!;
-      expect(mv.currentView.root.clientHeight > pane.clientHeight / 2, true);
+      const fills = (): boolean =>
+        mv.currentView.root.clientHeight > (mv.currentView.root.parentElement?.clientHeight ?? Infinity) / 2;
+      await activate(mv, 'table', fills);
+      expect(fills(), true);
     });
   });
 });

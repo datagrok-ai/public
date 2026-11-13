@@ -145,7 +145,17 @@ test('Notebooks / Create (UI Smoke): open demog in Notebook -> view as HTML', as
     // auto-retrying toBeVisible below waits for the switch — no fixed sleep needed. We do NOT
     // assert the rendered HTML content loaded: GROK-13999 (localStorage DOMException / 404 in the
     // data: URL render context) is unfixed, so the content area may stay empty.
-    await expect(page.locator('[name="button-EDIT"]').first()).toBeVisible();
+    // button-EDIT mounts only after the notebook is converted in the notebooks-jupyter-notebook
+    // container, so a red here carries the container's status.
+    const editShown = await page.locator('[name="button-EDIT"]').first()
+      .waitFor({state: 'visible', timeout: 90_000}).then(() => true, () => false);
+    if (!editShown) {
+      const status = await page.evaluate(async () => {
+        const c = await (window as any).grok.dapi.docker.dockerContainers.filter('Notebooks-jupyter-notebook').first();
+        return c ? c.status : 'no container';
+      }).catch((e) => `status unavailable: ${e}`);
+      throw new Error(`button-EDIT did not appear 90 s after the HTML click; notebooks container status: ${status}`);
+    }
     const viewType = await page.evaluate(() => (window as any).grok.shell.v?.type);
     expect(viewType).toBe('Notebook');
 

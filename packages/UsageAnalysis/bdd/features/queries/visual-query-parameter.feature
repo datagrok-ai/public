@@ -5,7 +5,9 @@ Feature: A visual query with a parameter, from the builder to the shared query
   in the toolbox, where a new value and REFRESH run it again. An aggregation brings up the Pivot and
   Having rows, and Order by offers only the grouped columns. Edit... reopens the builder with what was
   saved; a post-process and a layout saved there come back when a click on the query in the tree
-  previews it. Translated from the TestTrack Queries cases new-visual-query and visual-query-advanced
+  previews it. On a run of the saved query, a viewer is added to its result and its rows are
+  deleted: REFRESH keeps both viewers and brings the rows back (visual-query-advanced steps 16-18).
+  Translated from the TestTrack Queries cases new-visual-query and visual-query-advanced
   (playwright-public/queries visual-query-and-params, visual-query-advanced), on the platform's own
   database (System:Datagrok, its entity_types table) instead of NorthwindTest, so it needs no outside
   database: the entity types User and UserGroup are on every stand, and neither comes from a package.
@@ -20,8 +22,11 @@ Feature: A visual query with a parameter, from the builder to the shared query
   and the key pickers carry no names, so the keys and the joined result are not claimed.
 
   Not translated, and why: the join's keys and result (above); the Debug tab's log,
-  which reports nothing a step could read; Refresh with Enrich and the project save of the result,
-  which query-result-project claims for a query result.
+  which reports nothing a step could read; the project save of the result (steps 19-21), which
+  query-result-project claims for a query result; a column deleted from the result (step 17): REFRESH
+  brings back rows only, so a column removed through its header's Remove stays removed. The Enrich switch of
+  step 18 is not shown here: the Source pane offers it on a project's table, not on a query
+  result.
 
   Background:
     Given user is logged in
@@ -145,6 +150,31 @@ Feature: A visual query with a parameter, from the builder to the shared query
     And the open tableview should have 1 bar chart viewer
     And an info balloon containing "VQ1" should have been shown
     And no errors should have been logged
+
+  Scenario: REFRESH keeps the viewers and brings back deleted rows
+    When user closes all views
+    Given the browse panel is open
+    And Databases---Postgres---Datagrok tree node inside browse tree is expanded
+    When user picks "Run" from the context menu of Databases---Postgres---Datagrok---BDD-VQ-{time} tree node inside browse tree
+    Then "BDD-VQ-{time}" dialog should be visible
+    When user clicks on OK button in "BDD-VQ-{time}" dialog
+    Then the current view should be a TableView view
+    And the table should have 1 row
+    And the table should have the columns "name, values(id)"
+    And the open tableview should have 1 bar chart viewer
+    Given the toolbox pane is shown
+    When user clicks on scatter plot icon in toolbox
+    Then the open tableview should have 1 scatter plot viewer
+    When user clicks on the "row header 1" area of grid holding Shift
+    And user presses Shift+Delete
+    Then the table should have 0 rows
+    When user clicks on REFRESH button in toolbox and the query it runs completes
+    Then the table should have 1 row
+    And the table should have the columns "name, values(id)"
+    And the open tableview should have 1 bar chart viewer
+    And the open tableview should have 1 scatter plot viewer
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
 
   Scenario: With a table joined, the + of a row offers the columns table by table
     When user closes all views

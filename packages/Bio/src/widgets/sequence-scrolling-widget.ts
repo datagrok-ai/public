@@ -17,6 +17,8 @@ import * as rxjs from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
 import wu from 'wu';
+import {getWebLogoChunkFrequencies} from '../utils/web-logo-chunk';
+import {getBioRendererDefaults} from '../utils/renderer-defaults';
 
 // ============================================================================
 // OPTIMIZED VIEWPORT-AWARE CACHING WITH FORCE UPDATE SUPPORT
@@ -89,27 +91,14 @@ class MSAViewportManager {
       if (visibleCount <= 1)
         return webLogoData;
 
-      // pre-alocate residue counts map
-      for (let i = start; i < end; i++)
-        webLogoData.set(i, new Map());
-
       const filter = dataFrame.filter;
 
       const oneOverCount = 1 / visibleCount; // Pre-calculate for performance
 
-      for (let i = -1; (i = filter.findNext(i, true)) !== -1;) {
-        // OPTIMIZED: Use seqHandler.getSplitted which has internal caching
-        const seqChunk = seqHandler.getSplitted(i).getOriginalRegion(start, end);
-        if (seqChunk.length === 0) continue;
-        for (let pos = 0; pos < seqChunk.length; pos++) {
-          const residue = seqChunk[pos];
-          // in weblogo, do not skip gaps, they are important
-          const residueMap = webLogoData.get(start + pos)!;
-          // add oneOverCount here to avoid division later
-          residueMap.set(residue, (residueMap.get(residue) || 0) + oneOverCount);
-        }
-      }
-      return webLogoData;
+      // per position, each residue's share of the filtered rows (gaps included: they are important in weblogo);
+      // seqHandler.getSplitted has internal caching
+      return getWebLogoChunkFrequencies((i) => filter.findNext(i, true),
+        (i) => seqHandler.getSplitted(i).getOriginalRegion(start, end), start, end, oneOverCount);
     });
   }
 
@@ -376,7 +365,8 @@ export function handleSequenceHeaderRendering() {
         const ifNan = (a: number, els: number) => (Number.isNaN(a) || a == null ? els : a);
         const getStart = () => ifNan(Math.max(Number.parseInt(seqCol.getTag(bioTAGS.positionShift) ?? '0'), 0), 0) + 1;
         const getCurrent = () => ifNan(Number.parseInt(seqCol.getTag(bioTAGS.selectedPosition) ?? '-2'), -2);
-        const getFontSize = () => MonomerPlacer.getFontSettings(seqCol).fontWidth;
+        // the position width the placer gives an MSA column: the column's font size, else the package default
+        const getFontSize = () => MonomerPlacer.getFontSettings(seqCol, getBioRendererDefaults().fontSize).fontWidth;
 
         // Get maximum sequence length. since this scroller is only applicable to Single character monomeric sequences,
         // we do not need to check every single sequence and split it, instead, max length will coorelate with length of the longest string
@@ -432,10 +422,8 @@ export function handleSequenceHeaderRendering() {
             conservationTrackRef.resetViewportTracking();
             conservationTrackRef.forceUpdate();
           }
-          setTimeout(() => {
-            if (!grid.isDetached)
-              grid.invalidate();
-          }, 50);
+          if (!grid.isDetached)
+            grid.invalidate();
         });
 
         sub(filterChangeSub);
@@ -568,7 +556,7 @@ export function handleSequenceHeaderRendering() {
       // headers painted before the scrollers existed stay plain until the next repaint
       if (seqCols.length > 0)
         grid.invalidate();
-    }, 1000);
+    });
   };
 
   const _ = grok.events.onViewerAdded.subscribe((e) => {

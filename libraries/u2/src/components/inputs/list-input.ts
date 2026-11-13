@@ -17,7 +17,7 @@ export interface ListInputOptions extends InputOptions<string[]> {
 export class ListInput extends Input<string[], ListInputOptions> {
   private declare _field: HTMLInputElement;
   private declare _area: HTMLTextAreaElement;
-  private declare _toggle: HTMLElement;
+  private declare _toggle: HTMLButtonElement;
   private declare _glyph: HTMLElement;
   private declare _expanded: boolean;
 
@@ -48,7 +48,7 @@ export class ListInput extends Input<string[], ListInputOptions> {
 
   /** The values, one item each; they live in one text box, so none has an element of its own. */
   getItems(opts?: {all?: boolean}): IItemsState {
-    return Input.itemsState(this.value.peek().map((item, index) => ({key: item, label: item, index,
+    return Input.itemsState(this.peek().map((item, index) => ({key: item, label: item, index,
       rendered: false})), opts?.all);
   }
 
@@ -81,7 +81,7 @@ export class ListInput extends Input<string[], ListInputOptions> {
     // set by a typed write, dropped by the effect run it causes (handlers run batched)
     let echo = false;
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       if (echo) {
         echo = false;
         return;
@@ -93,7 +93,7 @@ export class ListInput extends Input<string[], ListInputOptions> {
     const onInput = (source: HTMLInputElement | HTMLTextAreaElement) => {
       const text = source.value;
       echo = true;
-      this.value.value = ListInput.parse(text);
+      this.value = ListInput.parse(text);
       (source === field ? area : field).value = text;
     };
     this.scope.listen(field, 'input', () => onInput(field));

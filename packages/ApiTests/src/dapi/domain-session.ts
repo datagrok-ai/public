@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 
 // The unit of work: DG.DomainSession saves several DomainFrameEditors as ONE
 // /transaction; a row that does not exist yet carries a draft id ('~new:…') the
@@ -218,11 +218,10 @@ category('Dapi: domain session', () => {
       let saves = 0;
       session.onSaved.subscribe(() => saves++);
       const gate = DG.confirmDiscardChanges(session, {action: 'leave'});
-      await DG.delay(300);
-      const save = Array.from(document.querySelectorAll('.d4-dialog button'))
+      const saveButton = () => Array.from(document.querySelectorAll('.d4-dialog button'))
         .find((b) => b.textContent?.trim() === 'SAVE') as HTMLElement | undefined;
-      expect(save != null, true, 'the unsaved-changes dialog did not open');
-      save!.click();
+      await waitUntil(() => saveButton() != null, 'the unsaved-changes dialog did not open');
+      saveButton()!.click();
       expect(await gate, true, 'the gate did not let the caller proceed after the save');
       expect(saves, 1, 'the session did not save exactly once');
       expect(session.isDirty, false, 'the gate left the session dirty');

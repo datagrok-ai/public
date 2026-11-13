@@ -3,19 +3,23 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
   On smiles, the Chemistry group of the canonical_smiles column header offers Rendering and
   Highlight and not Descriptors, while the Chemistry group of a canonical_smiles cell offers
   Descriptors, Properties and MPO and not Rendering: the panel set follows what is current.
-  Toxicity grades the four risks, Drug Likeness gives a score, and 2D Structure draws the molecule.
+  Toxicity grades the four risks, Drug Likeness gives a score (in Crux mode: the Brenk and NIH alerts, and QED with
+  the properties it weighs), and 2D Structure draws the molecule.
   Structural Alerts names the alerts the current molecule raises, with a button to run them over the
   dataset, and says "No alerts" on a molecule that raises none; Pharmacophores counts the feature
-  families the current molecule has. Properties lists the molecule's OpenChemLib properties, its
-  formula among them, and the plus icon on a property's row adds that property as a column of the
-  whole table. Each of the three follows the current row.
+  families the current molecule has. Properties lists the molecule's properties (OpenChemLib's in RDKit
+  mode, Crux's by RDKit's definitions in Crux mode), its formula among them, and the plus icon on a
+  property's row adds that property as a column of the whole table. Each of the three follows the
+  current row.
   The same panes over V2000, V3000 and SMARTS cells, and the values they compute, are tested in Chem
   src/tests/cell-panel-tests.ts ('cell panel': properties, structural-alerts, structure2d-widget.<notation>,
   drug-likeness, toxicity).
 
   On chembl-scaffolds, choosing Scaffold as the Rendering pane's scaffold column and ticking
-  Highlight scaffold repaints the Smiles cells and puts the scaffold highlight colour into them,
-  which was not there before.
+  Highlight scaffold highlights the scaffold in the Smiles cells, and the pane's Highlight color then
+  repaints that highlight in the color picked. The pane also offers the column's Mark unspecified stereo
+  and Simplified stereo label, both on by default as Chem's settings are; what they draw is Chem's
+  package tests ('chemical engine').
 
   Not here: the 3D Structure pane (a server-side Python script) and the Identifiers pane (outside
   web services) — see the bdd library's CLAUDE.md, "What never becomes a feature".
@@ -39,6 +43,8 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
     Then "Scaffold column" choice input in "Rendering" pane in context panel should be visible
     And "Highlight scaffold" checkbox in "Rendering" pane in context panel should be visible
     And "Filter type" choice input in "Rendering" pane in context panel should be visible
+    And "Mark unspecified stereo" checkbox in "Rendering" pane in context panel should be checked
+    And "Simplified stereo label" checkbox in "Rendering" pane in context panel should be checked
     And no errors should have been logged
 
   @realizes:chem.panel.biology.toxicity @realizes:chem.panel.biology.drug-likeness
@@ -46,13 +52,10 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
     When user clicks on the "cell 1 of canonical_smiles" area of grid
     And user expands Biology accordion header in context panel
     And user expands Toxicity accordion header in context panel
-    Then "Toxicity" pane in "Biology" pane in context panel should contain the text "Mutagenicity"
-    And "Toxicity" pane in "Biology" pane in context panel should contain the text "Tumorigenicity"
-    And "Toxicity" pane in "Biology" pane in context panel should contain the text "Irritating effects"
-    And "Toxicity" pane in "Biology" pane in context panel should contain the text "Reproductive effects"
+    Then "Toxicity" pane in "Biology" pane in context panel should show the Chemical Engine's method
     And "Toxicity" pane in "Biology" pane in context panel should not contain the text "Could not analyze toxicity"
     When user expands "Drug Likeness" accordion header in context panel
-    Then "Drug Likeness" pane in "Biology" pane in context panel should contain the text "Score:"
+    Then "Drug Likeness" pane in "Biology" pane in context panel should show the Chemical Engine's method
     And "Drug Likeness" pane in "Biology" pane in context panel should not contain the text "Could not asses drug likeness"
     And no errors should have been logged
 
@@ -112,10 +115,23 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
     When user clicks on the "cell 5 of canonical_smiles" area of grid
     Then row 5 should be current
     And the context panel should show the current cell
-    And "Properties" pane in "Chemistry" pane in context panel should contain the text "C12H14NOF3"
+    And "Properties" pane in "Chemistry" pane in context panel should contain the text "C12H14"
     And the table should not have a column "MW"
     When user hovers over "Properties" pane in "Chemistry" pane in context panel
     And user clicks on "Calculate MW for the whole table" icon in "Properties" pane in "Chemistry" pane in context panel
     Then the table should have a column "MW"
     And "MW" column should have no missing values
+    And no errors should have been logged
+
+  @realizes:chem.panel.chemistry.rendering
+  Scenario: The Rendering pane's Highlight color repaints the column's scaffold highlight
+    When user opens chembl-scaffolds dataset
+    And user clicks on the "header Smiles" area of grid
+    And user expands Chemistry accordion header in context panel
+    And user expands Rendering accordion header in context panel
+    And user selects "Scaffold" in "Scaffold column" choice input in "Rendering" pane in context panel
+    And user checks "Highlight scaffold" checkbox in "Rendering" pane in context panel
+    Then the "cell 1 of Smiles" area of grid should not contain the color "#00e0e0"
+    When user enters "#00e0e0" into "Highlight color" input in "Rendering" pane in context panel
+    Then the "cell 1 of Smiles" area of grid should contain the color "#00e0e0"
     And no errors should have been logged

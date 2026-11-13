@@ -462,7 +462,7 @@ category('Flow: creation script import', () => {
 
       const script = emitScript(e.flow, SETTINGS);
       const iSet = script.indexOf('"Mol1KLocal"');
-      const iRef = script.indexOf('tableByName("mol1K local")');
+      const iRef = script.indexOf('grok.shell.table("mol1K local")');
       expect(iSet >= 0 && iRef >= 0, true, 'both the SetVar and the name reference are emitted');
       expect(iSet < iRef, true, 'Mol1KLocal is registered before it is read by name');
     } finally {

@@ -1,8 +1,10 @@
-import {Input, InputOptions} from '../../core/input-base.js';
+import {Input, InputOptions, LiveOption} from '../../core/input-base.js';
 import {signal, Signal} from '../../core/signals.js';
 import {icon} from '../display/icon.js';
 
 export interface NumberInputOptions extends InputOptions<number | null> {
+  /** Shown while the field is empty: what an empty value means ("Auto"). */
+  placeholder?: LiveOption<string>;
   /** `int` accepts an optional minus and digits; `float` (default) also decimals and exponents. */
   mode?: 'int' | 'float';
   min?: number;
@@ -40,9 +42,11 @@ const FLOAT = /^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
  * rail (20×20, blue, left of the units) and the slider, absolutely positioned under the field at
  * its full width. u2's own hover spinner has no Dart counterpart and is opt-in (`spinner: true`).
  *
+ * The slider hangs 9px under the field as the platform's does (`d4.css:81-89`: `bottom: -9px`), but
+ * the input's box keeps that room below the field and its rail, so it never covers the next row as
+ * the platform's does, and the unit stays on the field's line.
+ *
  * Ported quirks — the platform's behavior, deliberately not improved here:
- * - the revealed slider overlaps whatever is below it by 9px (`d4.css:81-89`: `bottom: -9px;
- *   z-index: 2`), so in a form it sits over the next row;
  * - at rest nothing hints that a slider or a clicker exists — they are `visibility: hidden` until
  *   the pointer enters the input (`d4.css:130-134`);
  * - the platform's clicker steps past min/max everywhere (`number_input.dart:66-68` adds `step`
@@ -58,6 +62,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   constructor(options: NumberInputOptions = {}) {
     super(options, null);
     this.root.dataset.u2 = 'number-input';
+    this.liveOption('placeholder', options.placeholder, (x) => this._input.placeholder = x);
   }
 
   get min(): number | undefined {
@@ -110,10 +115,11 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     // handler, when its batch ends — so the text being typed is never reformatted
     let echo = false;
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       if (echo)
         echo = false;
-      else
+      // a float32 column echoes the typed value rounded: the typed text already says it
+      else if (!NumberInput._sameFloat32(this._parse(input.value), value))
         input.value = this._format(value);
       this._syncSlider();
     });
@@ -123,9 +129,9 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
         this._int && FLOAT.test(input.value.trim()) ? 'Must be a whole number' : 'Not a number';
       if (parsed === undefined || this.options.commitOn === 'change')
         return;
-      const before = this.value.peek();
-      this.value.value = parsed;
-      echo = !Object.is(this.value.peek(), before);
+      const before = this.peek();
+      this.value = parsed;
+      echo = !Object.is(this.peek(), before);
     });
     this.scope.listen(input, 'blur', () => this._commit());
     this.scope.listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
@@ -147,8 +153,8 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     editor.append(box);
     // the pair goes on the shared rail, as `showPlusMinus` does (`number_input.dart:70-71`)
     if (this.options.clicker) {
-      this.addOptions(this._createClicker('minus', -1, 'Decrease'));
-      this.addOptions(this._createClicker('plus', 1, 'Increase'));
+      this.addRail(this._createClicker('minus', -1, 'Decrease'), {edits: true});
+      this.addRail(this._createClicker('plus', 1, 'Increase'), {edits: true});
     }
     const slider = this._createSlider();
     if (slider !== null)
@@ -215,7 +221,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   private _syncSlider(): void {
     if (this._slider === null)
       return;
-    const value = this.value.peek();
+    const value = this.peek();
     this._slider.value = value == null ? '' : String(value);
   }
 
@@ -232,7 +238,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   }
 
   private _step(multiplier: number): void {
-    const current = this.value.peek();
+    const current = this.peek();
     if (current == null || this.readOnly)
       return;
     const next = current + multiplier * (this.options.step ?? 1);
@@ -242,8 +248,12 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
 
   protected resetEditor(): void {
     this._bad.value = null;
-    this._input.value = this._format(this.value.peek());
+    this._input.value = this._format(this.peek());
     this._syncSlider();
+  }
+
+  get unreadable(): boolean {
+    return this._bad.value !== null;
   }
 
   private _commit(): void {
@@ -254,8 +264,8 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
 
   private _set(value: number | null): void {
     this._bad.value = null;
-    this.value.value = value;
-    this._input.value = this._format(this.value.peek());
+    this.value = value;
+    this._input.value = this._format(this.peek());
     this._syncSlider();
   }
 
@@ -294,11 +304,28 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
       return format(value);
     if (this._int)
       return String(value);
+    value = NumberInput._shortest(value);
     const decimals = this._decimals(value);
     if (decimals > 0)
       return value.toFixed(decimals);
     const rounded = Number(value.toFixed(6));
     return String(rounded === 0 && value !== 0 ? value : rounded);
+  }
+
+  /** A float32 read back as a double (3.200000047683716) as the shortest decimal for it (3.2). */
+  private static _shortest(value: number): number {
+    if (Math.fround(value) !== value)
+      return value;
+    for (let digits = 1; digits <= 9; digits++) {
+      const short = Number(value.toPrecision(digits));
+      if (Math.fround(short) === value)
+        return short;
+    }
+    return value;
+  }
+
+  private static _sameFloat32(a: number | null | undefined, b: number | null): boolean {
+    return a != null && b != null && Math.fround(a) === Math.fround(b);
   }
 
   /** Dart's dynamic precision: as many decimals as the most precise of value/min/max/step carries

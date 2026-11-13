@@ -2,10 +2,11 @@
    click / activate commits, dismissal without a write, the `u2-function-input` platform meta, and
    the FunctionName semtype rule in the Editors registry. `DG`/`grok` come from tests/dg-stub.mjs. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from './dom-shim.js';
+import {layout} from './layout.mjs';
 import {Scope} from '../src/core/scope.js';
 import {signal} from '../src/core/signals.js';
 import {Registry} from '../src/spec/registry.js';
@@ -57,13 +58,13 @@ function open(input) {
   fire(control(input), 'click');
   const box = popup();
   const list = box.querySelector('.u2-list');
-  list.clientHeight = 220;
+  layout(list, {clientHeight: 220});
   fire(list, 'scroll');
   return box;
 }
 
 function rows(box) {
-  return box.querySelectorAll('.u2-list-row[data-u2-func]');
+  return [...box.querySelectorAll('.u2-list-row[data-u2-func]')];
 }
 
 ui('the control shows the friendly name of a resolvable value, the raw string otherwise', () => {
@@ -74,9 +75,9 @@ ui('the control shows the friendly name of a resolvable value, the raw string ot
   const label = input.root.querySelector('.u2-function-input-name');
   assert.equal(label.textContent, 'Molecular Weight');
   assert.equal(label.title, 'MolWeight', 'the tooltip keeps the qualified name');
-  input.value.value = 'Gone:Missing';
+  input.value = 'Gone:Missing';
   assert.equal(input.root.querySelector('.u2-function-input-name').textContent, 'Gone:Missing');
-  input.value.value = '';
+  input.value = '';
   const name = input.root.querySelector('.u2-function-input-name');
   assert.equal(name.textContent, 'Pick a function…');
   assert.equal(name.classList.contains('u2-function-input-empty'), true);
@@ -92,7 +93,7 @@ ui('a row click commits the qualified name and closes; the popup hosts the compa
   assert.equal(box.querySelector('[data-u2="fb-panes"]').hidden, true, 'no filter panes in the popup');
   const sketch = rows(box).find((r) => r.getAttribute('data-u2-func') === 'Chem:Sketch');
   fire(sketch, 'click');
-  assert.equal(input.value.value, 'Chem:Sketch');
+  assert.equal(input.value, 'Chem:Sketch');
   assert.deepEqual(changes, ['Chem:Sketch']);
   assert.equal(popup(), null);
   assert.equal(control(input).getAttribute('aria-expanded'), 'false');
@@ -104,17 +105,17 @@ ui('double-click activates too; Esc and an outside click close without a write',
   let box = open(input);
   const first = rows(box)[0];
   fire(first, 'dblclick');
-  assert.equal(input.value.value, first.getAttribute('data-u2-func'));
+  assert.equal(input.value, first.getAttribute('data-u2-func'));
   assert.equal(popup(), null);
 
-  const committed = input.value.value;
+  const committed = input.value;
   box = open(input);
   fire(document, 'keydown', {key: 'Escape'});
   assert.equal(popup(), null, 'Escape closes');
   box = open(input);
   fire(document.body, 'pointerdown');
   assert.equal(popup(), null, 'outside pointerdown closes');
-  assert.equal(input.value.value, committed, 'neither dismissal wrote');
+  assert.equal(input.value, committed, 'neither dismissal wrote');
   input.dispose();
   assert.equal(popup(), null, 'disposing the input takes the popup with it');
 });
@@ -122,11 +123,11 @@ ui('double-click activates too; Esc and an outside click close without a write',
 ui('Backspace clears a nullable value; a required one keeps it; a disabled input does not open', () => {
   const input = make({value: 'Sin'});
   fire(control(input), 'keydown', {key: 'Backspace'});
-  assert.equal(input.value.value, '');
+  assert.equal(input.value, '');
   const required = make({value: 'Sin', nullable: false});
   fire(control(required), 'keydown', {key: 'Delete'});
-  assert.equal(required.value.value, 'Sin');
-  required.enabled = false;
+  assert.equal(required.value, 'Sin');
+  required.disabled = 'Not editable in this test';
   fire(control(required), 'click');
   assert.equal(popup(), null);
   input.dispose();
@@ -193,7 +194,7 @@ ui('state: the prompt is the placeholder and the text stays empty until a pick; 
   open(input);
   assert.equal(input.getState().open, true);
   fire(document.body, 'pointerdown');
-  input.value.value = 'MolWeight';
+  input.value = 'MolWeight';
   assert.equal(input.getState().text, 'Molecular Weight');
   assert.equal(input.getState().open, false);
   input.dispose();

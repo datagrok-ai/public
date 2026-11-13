@@ -201,14 +201,21 @@ class BioPackageDetectors extends DG.Package {
       }
 
       //not HELM
+      // BILN separates chains with '.' and marks connections like '(1,3)': the dot is likely a BILN chain separator when
+      // some value has marks and at least half of the sampled values are one chain or have a mark in every chain (a
+      // value with a free chain no longer decides against the whole column)
+      const connectionMarkRe = /\(\d{1,2},\d{1,2}\)/;
       let hasDots = false;
-      let dotIsLikelyBilnSplitter = categoriesSample.every((s) => {
+      let hasMarks = false;
+      let bilnLikeCount = 0;
+      for (const s of categoriesSample) {
         const parts = s.split('.');
-        // each part should be connected
         hasDots = hasDots || parts.length > 1;
-        return parts.length == 1 || parts.every((p) => /\(\d{1,2},\d{1,2}\)/g.test(p));
-      });
-      dotIsLikelyBilnSplitter = dotIsLikelyBilnSplitter && hasDots;
+        hasMarks = hasMarks || connectionMarkRe.test(s);
+        if (parts.length == 1 || parts.every((p) => connectionMarkRe.test(p)))
+          bilnLikeCount++;
+      }
+      const dotIsLikelyBilnSplitter = hasDots && hasMarks && bilnLikeCount * 2 >= categoriesSample.length;
       // if the dot (dissalowed character for macromolecules) is likely a biln separator,
       // we can just replace it with '-' and remove all connection parts to help detector detect it as separator
       if (dotIsLikelyBilnSplitter) {

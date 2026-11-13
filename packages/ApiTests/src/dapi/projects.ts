@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 
 // What the ribbon's Save dialog keeps of a table, and how the project brings it back: with Data sync
 // the table carries its creation script and is rebuilt by it on open (marked `.data-sync = success`),
@@ -41,22 +41,11 @@ function runCore(name: string, params: {[name: string]: any}): Promise<_DG.FuncC
   return recorded(DG.Func.find({package: 'core', name})[0], params);
 }
 
-async function poll<T>(read: () => T | Promise<T>, done: (value: T) => boolean, what: string, ms: number = 30000): Promise<T> {
-  const start = Date.now();
-  let value = await read();
-  while (!done(value)) {
-    if (Date.now() - start > ms)
-      throw new Error(`${what}: still ${value} after ${ms} ms`);
-    await delay(100);
-    value = await read();
-  }
-  return value;
-}
-
 async function openSource(source: Source): Promise<_DG.DataFrame> {
   grok.shell.closeAll();
   await source.run();
-  return await poll(() => grok.shell.tables[0], (t) => t?.rowCount === source.rows, 'the table the source opened');
+  await waitUntil(() => grok.shell.tables[0]?.rowCount === source.rows, 'the table the source opened', 30000);
+  return grok.shell.tables[0];
 }
 
 async function saveProject(df: _DG.DataFrame, dataSync: boolean): Promise<Saved> {
@@ -81,7 +70,8 @@ async function saveProject(df: _DG.DataFrame, dataSync: boolean): Promise<Saved>
 async function reopen(saved: Saved, rows: number): Promise<_DG.DataFrame> {
   grok.shell.closeAll();
   await (await grok.dapi.projects.find(saved.project.id)).open();
-  return await poll(() => grok.shell.tables[0], (t) => t?.rowCount === rows, 'the table the project opened');
+  await waitUntil(() => grok.shell.tables[0]?.rowCount === rows, 'the table the project opened', 30000);
+  return grok.shell.tables[0];
 }
 
 async function remove(saved: Saved[]): Promise<void> {
@@ -117,7 +107,7 @@ async function columnChainSurvivesDataSync(source: Source): Promise<void> {
     await runCore('RenameColumn', {table: df, oldColName: source.column, newColName: 'Base'});
     expect(df.col('Plus100')!.getTag('formula'), '${Base} + 100');
     df.set('Base', 0, 500);
-    await poll(() => df.get('Plus200', 0), (v) => v === 700, 'Plus200 of the edited row');
+    await waitUntil(() => df.get('Plus200', 0) === 700, 'Plus200 of the edited row is not recalculated', 30000);
 
     saved.push(await saveProject(df, true));
     let reopened = await reopen(saved[0], source.rows);
@@ -132,7 +122,8 @@ async function columnChainSurvivesDataSync(source: Source): Promise<void> {
     expect(reopened.col('Plus100')!.getTag('formula'), '${Base2} + 100');
     expect(reopened.col('Plus200')!.getTag('formula'), '${Plus100} + 100');
     reopened.set('Base2', 1, 400);
-    await poll(() => reopened.get('Plus200', 1), (v) => v === 600, 'Plus200 of the row edited after the reopen');
+    await waitUntil(() => reopened.get('Plus200', 1) === 600,
+      'Plus200 of the row edited after the reopen is not recalculated', 30000);
     expectColumnPlus(reopened, 'Plus100', 'Base2', 100);
     expectColumnPlus(reopened, 'Plus200', 'Plus100', 100);
   }
@@ -188,4 +179,92 @@ category('Dapi: projects: data sync', () => {
 
   test('A calculated-column chain over a query result survives a data-sync round trip and a source rename',
     () => columnChainSurvivesDataSync(products), {timeout: 120000});
+
+  test('A data-synced file that lost a column a calculated column reads opens with it empty and a warning (GROK-19725)', async () => {
+    const path = `System:AppData/ApiTests/sync-lost-column-${DG.Utils.randomString(8)}.csv`;
+    const saved: Saved[] = [];
+    try {
+      await grok.dapi.files.writeAsText(path, grok.data.demo.demog(20).toCsv());
+      const df = await openSource({run: () => runCore('OpenServerFile', {fullPath: path}), column: 'height', rows: 20});
+      await runCore('AddNewColumn', {table: df, expression: '${height} + 1', name: 'HeightPlus'});
+      saved.push(await saveProject(df, true));
+      const lost = grok.data.demo.demog(20);
+      lost.columns.remove('height');
+      await grok.dapi.files.writeAsText(path, lost.toCsv());
+      const reopened = await reopen(saved[0], 20);
+      expect(reopened.col('height'), null);
+      expect(reopened.col('HeightPlus')?.stats.missingValueCount, 20);
+      await waitUntil(() => Array.from(document.querySelectorAll('.d4-balloon'))
+        .some((b) => (b.textContent ?? '').includes('"HeightPlus": missing columns: height')),
+      'no warning names HeightPlus and its missing column height', 5000);
+    }
+    finally {
+      await remove(saved);
+      await grok.dapi.files.delete(path).catch(() => {});
+    }
+  }, {timeout: 60000});
+}, {owner: 'aparamonov@datagrok.ai'});
+
+category('Dapi: projects: viewers', () => {
+  test('A grid viewer bound to a second table keeps its table and sort through a project (public#2718)', async () => {
+    grok.shell.closeAll();
+    const a = grok.data.demo.demog(100);
+    a.name = `apitests-two-a-${DG.Utils.randomString(6)}`;
+    const b = grok.data.demo.demog(50);
+    b.name = `apitests-two-b-${DG.Utils.randomString(6)}`;
+    const project = DG.Project.create();
+    project.name = `apitests-two-tables-${DG.Utils.randomString(8)}`;
+    const tableInfos: _DG.TableInfo[] = [];
+    let viewInfo: _DG.ViewInfo | null = null;
+    try {
+      grok.shell.addTableView(b);
+      const tv = grok.shell.addTableView(a);
+      const second = DG.Viewer.grid(a);
+      tv.addViewer(second);
+      second.setOptions({table: b.name});
+      await waitUntil(() => second.dataFrame?.name === b.name, 'the second grid did not move to the second table');
+      second.sort(['age'], [false]);
+      await waitUntil(() => second.sortByColumns.length === 1, 'the second grid did not sort');
+
+      for (const df of [a, b]) {
+        const info = df.getTableInfo();
+        await grok.dapi.tables.uploadDataFrame(df);
+        await grok.dapi.tables.save(info);
+        project.addChild(info);
+        tableInfos.push(info);
+      }
+      viewInfo = DG.ViewInfo.fromJson(tv.saveLayout().toJson());
+      await grok.dapi.views.save(viewInfo);
+      project.addChild(viewInfo);
+      await grok.dapi.projects.save(project);
+
+      grok.shell.closeAll();
+      await (await grok.dapi.projects.find(project.id)).open();
+      await waitUntil(() => grok.shell.tables.length === 2 &&
+        Array.from(grok.shell.tableViews).some((v) => v.dataFrame.name === a.name), 'the project did not open both tables', 30000);
+      const view = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.name === a.name)!;
+      let reopened: _DG.Grid | undefined;
+      await waitUntil(() => {
+        reopened = Array.from(view.viewers)
+          .find((v) => v.type === DG.VIEWER.GRID && v.dataFrame?.name === b.name) as _DG.Grid | undefined;
+        return reopened != null;
+      }, () => 'the second grid did not come back bound to the second table; the view has ' +
+        Array.from(view.viewers).map((v) => `${v.type} on ${v.dataFrame?.name}`).join(', '), 30000);
+      expect(reopened!.sortByColumns.map((c) => c.name.toLowerCase()).join(), 'age');
+      expect(reopened!.sortTypes.join(), 'false');
+    }
+    finally {
+      grok.shell.closeAll();
+      const owned: [_DG.HttpDataSource<any>, string | undefined][] = [
+        [grok.dapi.projects, project.id], [grok.dapi.views, viewInfo?.id],
+        ...tableInfos.map((i) => [grok.dapi.tables, i.id] as [_DG.HttpDataSource<any>, string])];
+      for (const [source, id] of owned) {
+        if (!id)
+          continue;
+        const entity = await source.find(id).catch(() => null);
+        if (entity)
+          await source.delete(entity);
+      }
+    }
+  }, {timeout: 120000});
 }, {owner: 'aparamonov@datagrok.ai'});

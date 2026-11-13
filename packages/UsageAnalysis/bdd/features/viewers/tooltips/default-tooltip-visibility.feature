@@ -5,7 +5,10 @@ Feature: Hiding the table's default tooltip from a viewer's context menu
   hover, and so do the histogram's bin and the bar chart's bar, whose own tooltips show before Hide
   (by design, confirmed in the team thread on 2026-10-07; the TestTrack case was updated). The
   Tooltip group then offers Show Custom in place of Hide, and Show Custom brings every one of them
-  back.
+  back. With the scatter plot used as the group tooltip, hovering a histogram bin leaves the grid's
+  colour coding and format of AGE as they were (public#2356, public#1599); a tooltip designed with
+  Design custom tooltip... gives way to a column list confirmed in Edit Tooltip, and Tooltip > Hide
+  then hides it (public#758, public#746).
   Translated from the TestTrack cases Tooltips/default-tooltip-visibility and
   Tooltips/uniform-default-tooltip on demog-1000, with a scatter plot, a box plot, a histogram and a
   bar chart.
@@ -69,6 +72,28 @@ Feature: Hiding the table's default tooltip from a viewer's context menu
     When user moves the pointer away from grid
     Then no errors should have been logged
 
+  @realizes:public#2356 @realizes:public#1599
+  Scenario: With a group tooltip set, hovering a histogram bin leaves the grid's colouring and format as they were (public#2356)
+    When user colors "AGE" column linearly from "#0000FF" to "#FF0000"
+    And user picks "Format > Custom..." from the context menu of the "header AGE" area of grid
+    Then Format AGE dialog should be visible
+    When user enters "0.00" into Custom input in Format AGE dialog
+    And user clicks on OK button in Format AGE dialog
+    Then Format AGE dialog should be hidden
+    And the "text of cell 1 of AGE" reading of grid should be "26.00"
+    And the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should differ
+    When user picks "Tooltip > Use as Group Tooltip" from the context menu of the "view" area of scatter plot viewer
+    And user hovers over the "bin 8" area of histogram viewer
+    Then scatter plot viewer in tooltip should be visible
+    When user moves the pointer away from grid
+    Then "AGE" column should be color-coded linearly
+    And "AGE" column should have tag "format" equal to "0.00"
+    And the "text of cell 1 of AGE" reading of grid should be "26.00"
+    And the "color of cell 1 of AGE" and "color of cell 3 of AGE" readings of grid should differ
+    When user picks "Tooltip > Remove Group Tooltip" from the context menu of the "view" area of scatter plot viewer
+    And user removes the coloring of "AGE" column
+    Then no errors should have been logged
+
   Scenario: Tooltip > Hide on the scatter plot hides the row tooltip on the grid and both plots
     When user opens the context menu of scatter plot viewer
     Then the open menu should list "Tooltip > Hide"
@@ -123,3 +148,28 @@ Feature: Hiding the table's default tooltip from a viewer's context menu
     And tooltip should contain text "count"
     When user moves the pointer away from grid
     Then no errors should have been logged
+
+  @realizes:public#758 @realizes:public#746
+  Scenario: After Design custom tooltip, a column list picked in Edit Tooltip is the tooltip, and Hide hides it (public#758)
+    When user picks "Tooltip > Edit..." from the context menu of scatter plot viewer
+    And user clicks on "Design custom tooltip..." label in "Edit Tooltip" dialog
+    And user clicks on "CLOSE AND APPLY" button
+    Then the "demog-1000" view should be current
+    When user hovers over the "marker of row 11" area of scatter plot viewer
+    Then tooltip should be visible
+    When user moves the pointer away from grid
+    And user picks "Tooltip > Edit..." from the context menu of scatter plot viewer
+    Then "Edit Tooltip" dialog should be visible
+    When user unchecks checkbox in "Edit Tooltip" dialog
+    And user toggles the "AGE" column in the column list of "Edit Tooltip" dialog
+    And user toggles the "SEX" column in the column list of "Edit Tooltip" dialog
+    And user clicks on OK button in "Edit Tooltip" dialog
+    Then the "Edit Tooltip" dialog should close
+    When user hovers over the "marker of row 11" area of scatter plot viewer
+    Then tooltip should be visible
+    And the tooltip should show columns in the order "HEIGHT, WEIGHT, AGE, SEX"
+    When user moves the pointer away from grid
+    And user picks "Tooltip > Hide" from the context menu of scatter plot viewer
+    And user hovers over the "marker of row 11" area of scatter plot viewer
+    Then tooltip should be hidden
+    And no errors should have been logged

@@ -37,7 +37,6 @@ category('Flow: files tree', () => {
     } finally {
       // the path write arms the live-by-default autorun — detach resets the scheduler
       view.detach();
-      await sleep(120);
       probe.flow?.destroy?.();
       view.root.remove();
     }

@@ -1,5 +1,4 @@
-import {after, before, category, delay, expect,
-  expectArray, test, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {after, before, category, expect, expectArray, test, settled, waitUntil} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -19,7 +18,7 @@ category('Viewers: Form', () => {
     tv = grok.shell.addTableView(demog);
     const formIcon = document.getElementsByClassName('svg-form')[0] as HTMLElement;
     formIcon.click();
-    await awaitCheck(() => document.querySelector('.d4-form') !== null, 'cannot find form', 3000);
+    await waitUntil(() => document.querySelector('.d4-form') !== null, 'cannot find form');
     isViewerPresent(Array.from(tv.viewers), 'Form');
     const form = document.querySelector('[name=viewer-Form]') as HTMLElement;
     const left = form.getElementsByClassName('grok-icon fal fa-chevron-left')[0] as HTMLElement;
@@ -51,13 +50,12 @@ category('Viewers: Form', () => {
     const protpertiesBtn = document.getElementsByClassName('panel-titlebar disable-selection panel-titlebar-tabhost')[0]
       .getElementsByClassName('grok-icon grok-font-icon-settings')[0] as HTMLElement;
     protpertiesBtn.click();
-    await awaitCheck(() => document.querySelector('.property-grid-item-editor-checkbox') !== null,
-      'cannot find context panel', 3000);
+    await waitUntil(() => document.querySelector('.property-grid-item-editor-checkbox') !== null,
+      'cannot find context panel');
     const checkboxes = Array.from(document.querySelectorAll('.property-grid-item-editor-checkbox'));
-    for (const cb of checkboxes) {
+    for (const cb of checkboxes)
       (cb as HTMLElement).click();
-      await delay(10);
-    }
+    await settled(Array.from(tv.viewers).find((v) => v.type === DG.VIEWER.FORM)!);
   });
 
   test('form.api', async () => {
@@ -66,7 +64,7 @@ category('Viewers: Form', () => {
       title: 'SuperTitle',
       description: 'SuperDescription',
     });
-    await awaitCheck(() => document.querySelector('.d4-form') !== null, 'cannot find form', 3000);
+    await waitUntil(() => document.querySelector('.d4-form') !== null, 'cannot find form');
     if (form.props.title != 'SuperTitle')
       throw new Error('title has not been set');
     if (form.props.description != 'SuperDescription')
@@ -82,11 +80,11 @@ category('Viewers: Form', () => {
   test('form.serialization', async () => {
     tv = grok.shell.addTableView(demog);
     tv.form();
-    await awaitCheck(() => document.querySelector('.d4-form') !== null, 'cannot find form', 3000);
+    await waitUntil(() => document.querySelector('.d4-form') !== null, 'cannot find form');
     const layout = tv.saveLayout();
     tv.resetLayout();
     tv.loadLayout(layout);
-    await awaitCheck(() => document.querySelector('.d4-form') !== null, 'cannot find form', 3000);
+    await waitUntil(() => document.querySelector('.d4-form') !== null, 'cannot find form');
     isViewerPresent(Array.from(tv.viewers), 'Form');
   });
 

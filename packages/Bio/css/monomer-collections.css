@@ -25,7 +25,7 @@
 }
 
 /* the body takes the room, so Edit and Delete sit at the card's bottom edge */
-.monomer-collection-card > .u2-card-body {
+.monomer-collection-card > .monomer-collection-card-body {
   flex: 1 1 auto;
 }
 
@@ -107,10 +107,6 @@
 .monomer-collection-add-card .u2-card-title {
   font-size: var(--dg-font-size, 13px);
   font-weight: normal;
-}
-
-.monomer-collection-add-card > .u2-card-body {
-  display: none;
 }
 
 .monomer-collection-dialog {

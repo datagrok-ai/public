@@ -4,6 +4,7 @@ import {ALIGN_BY_SCAFFOLD_TAG, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, SCAFFOLD_
   SCAFFOLD_COL_SYNC, HIGHLIGHT_BY_SCAFFOLD_COL, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC, REGENERATE_COORDS,
   REGENERATE_COORDS_SYNC, getSyncTag, setSyncTag} from '../constants';
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
+import {renderingInputs} from '../rendering/rendering-settings';
 
 enum StructureFilterType {
   Sketch = 'Sketch',
@@ -86,6 +87,7 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
     ...(backupSubstructCol ? [highlightRGroupsCheckbox] : []),
     regenerateCoordsCheckbox,
     moleculeFilteringChoice,
+    ...renderingInputs(col),
   ]);
   const sketcher = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.EXTERNAL);
   sketcher.syncCurrentObject = false;

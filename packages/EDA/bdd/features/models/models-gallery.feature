@@ -115,17 +115,20 @@ Feature: The Predictive models gallery
     Then "Is applicable to..." tag should be hidden
     And no errors should have been logged
 
-  Scenario: Edit... changes the description the Details pane shows
+  @realizes:core#751
+  Scenario: Edit... changes the description the Details pane shows, which names the table the model was trained on
     When user picks "Edit..." from the context menu of "BDD-Kestrel-{run}" label in gallery
     Then "Predictive model" dialog should be visible
     And Name input in "Predictive model" dialog should have value "BDD-Kestrel-{run}"
-    When user enters "Classifies the readings, {run}" into Description input in "Predictive model" dialog
+    When user enters "Classifies the rows, {run}" into Description input in "Predictive model" dialog
     And user clicks on OK button in "Predictive model" dialog
     Then the "Predictive model" dialog should close
     When user clicks on "BDD-Kestrel-{run}" label in gallery
     Then the context panel should show "BDD-Kestrel-{run}"
-    And "Details" pane in context panel should contain text "Classifies the readings, {run}"
+    And "Details" pane in context panel should contain text "Classifies the rows, {run}"
     And "Details" pane in context panel should contain text "f1, f2"
+    # the pane's "Applicable to" row also names the open table readings: the claim reads the Trained on row
+    And value of "Trained on" details field in context panel should contain text "readings"
     And no errors should have been logged
 
   Scenario: Run Evaluation draws the model's charts and metrics on its training table

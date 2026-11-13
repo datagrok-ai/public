@@ -2,6 +2,7 @@ node_modules/
 dist/
 .idea
 e2e/.artifacts/
+.test-build/
 
 src/**/*.js
 src/**/*.js.map

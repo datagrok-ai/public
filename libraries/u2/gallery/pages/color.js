@@ -62,7 +62,7 @@ export async function render(main) {
 
   section('Swatch only', () => {
     const input = new ColorInput({label: 'Marker', value: '#ff7f0e', swatchOnly: true});
-    return [input, readout('marker', computed(() => input.value.value))];
+    return [input, readout('marker', computed(() => input.value))];
   });
 
   section('Validation', () => {

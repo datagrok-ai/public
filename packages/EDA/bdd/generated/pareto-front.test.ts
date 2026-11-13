@@ -33,11 +33,11 @@ test.describe("Pareto front viewer", () => {
     await session.step(21, "And \"Minimize\" property of pareto front viewer should be \"highway.mpg, price\"", () => propertyShouldBe(page, "Minimize", el("pareto front viewer"), "highway.mpg, price"));
     await session.step(22, "And no errors should have been logged", () => noErrors(page));
   });
-  test("On demog the unique subject id is the label", {tag: ["@eda", "@realizes:eda.viewer.pareto-front"]}, async ({browser}) => {
+  test("On demog-1000 the unique subject id is the label", {tag: ["@eda", "@realizes:eda.viewer.pareto-front"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(11, "Given user is logged in", () => loggedIn(page));
     await session.step(12, "And user opens cars dataset", () => openDataset(page, ds("cars")));
-    await session.step(25, "Given user opens demog dataset", () => openDataset(page, ds("demog")));
+    await session.step(25, "Given user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(26, "When user picks \"ML > Pareto Front...\" from the top menu", () => pickFromTopMenu(page, "ML > Pareto Front..."));
     await session.step(27, "Then pareto front viewer should be visible", () => shouldBe(page, el("pareto front viewer"), "visible"));
     await session.step(28, "And scatter plot viewer in pareto front viewer should be painted", () => painted(page, el("scatter plot viewer in pareto front viewer")));

@@ -16,3 +16,13 @@
   /* the widest outer margin platform chart viewers draw (histogram, bar chart) */
   padding: 10px;
 }
+
+.rfv2-input-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  cursor: pointer;
+  color: var(--grey-4);
+  font-size: 12px;
+}

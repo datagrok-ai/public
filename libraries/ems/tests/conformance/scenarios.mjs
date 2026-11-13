@@ -1,12 +1,5 @@
-/* What every domain backend must answer the same way (holistic review 4, A4). One module, two
-   harnesses: `tests/backend-conformance.test.js` runs it headless over `MemoryTable`, and U2Demo's
-   `U2: domain conformance` runs it on the stand over the platform's `DomainTable`. A backend that
-   drifts from the other is a red test here, not a surprise in the browser.
-
-   The fixture both harnesses build: table `folder` — `code` (string, required, the business key),
-   `name` (string, the name column), `parent_id` (ref → `folder`), `hierarchy: true`, soft delete
-   on. Plain ESM importing NOTHING, so a package with no u2 link can run it too. */
-
+// plain ESM importing nothing, so a package with no u2 link can run it too. The fixture both harnesses build: `folder`
+// with `code` (required, business key), `name` (name column), `parent_id` (ref → folder), hierarchy, soft delete
 /** @type {import('./scenarios.d.ts').ConformanceScenario[]} */
 export const scenarios = [
   {
@@ -101,9 +94,12 @@ export const scenarios = [
       const capped = await table.updateWhere(filter, {name: 'Capped'}, {limit: 0});
       t.equal(capped.updated, 1, 'a limit of 0 is clamped to one row, never an infinite drain');
       t.equal(capped.hasMore, true, 'and the rest is reported, not silently dropped');
-      const rest = await table.updateWhere(filter, {name: 'Capped'});
+      t.deepEqual(await table.updateWhere(filter, {name: 'Capped'}, {limit: 0}), {updated: 1, hasMore: false},
+        'a rerun moves on to the row left');
+      const rest = await table.updateWhere(filter, {name: 'Uncapped'});
       t.equal(rest.updated, 2, 'the default cap takes everything the filter matches');
       t.equal(rest.hasMore, false);
+      t.deepEqual(await table.updateWhere(filter, {name: 'Uncapped'}), {updated: 0, hasMore: false});
     },
   },
   {

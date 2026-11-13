@@ -13,17 +13,19 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
   }
   private renderer: DBExplorerRenderer;
   isApplicable(x: any): boolean {
-    return x && x.name === DB_EXPLORER_OBJ_HANDLER_TYPE && this.connectionNqName !== null && x.connectionNqName === this.connectionNqName && x.schemaName === this.schemaName;
+    return x && x.name === DB_EXPLORER_OBJ_HANDLER_TYPE && this.connectionNqName !== null && x.connectionNqName === this.connectionNqName && x.schemaName === this.schemaName &&
+      (x.catalogName ?? null) === (this.catalogName ?? null);
   }
 
   constructor(
     public options: EntryPointOptions,
     protected schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
     public connectionNqName: string,
-    public schemaName: string
+    public schemaName: string,
+    public catalogName?: string
   ) {
     super();
-    this.renderer = new DBExplorerRenderer(schemaInfoPromise, schemaName, options);
+    this.renderer = new DBExplorerRenderer(schemaInfoPromise, schemaName, options, catalogName);
   }
 
   addCustomRenderer(
@@ -134,22 +136,27 @@ export class SemValueObjectHandler extends DBExplorerObjectHandler {
     options: EntryPointOptions,
     schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
     schemaName: string,
-    connectionNqName: string
+    connectionNqName: string,
+    catalogName?: string
   ) {
-    super(options, schemaInfoPromise, connectionNqName, schemaName);
+    super(options, schemaInfoPromise, connectionNqName, schemaName, catalogName);
     if (options && options.regexpExample && options.regexpExample.nonVariablePart && options.regexpExample.regexpMarkup)
       this._rgExample = options.regexpExample;
   }
 
+  private valueObject(x: any): DBValueObject {
+    return new DBValueObject(this.connectionNqName!, this.schemaName, this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x, this.catalogName);
+  }
+
   renderCard(x: any, context?: any): HTMLElement {
-    return super.renderCard(new DBValueObject(this.connectionNqName!, this.schemaName, this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+    return super.renderCard(this.valueObject(x), context);
   }
 
   renderTooltip(x: any, context?: any): HTMLElement {
-    return super.renderTooltip(new DBValueObject(this.connectionNqName!, this.schemaName, this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+    return super.renderTooltip(this.valueObject(x), context);
   }
 
   renderProperties(x: any, context?: any): HTMLElement {
-    return super.renderProperties(new DBValueObject(this.connectionNqName!, this.schemaName, this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
+    return super.renderProperties(this.valueObject(x), context);
   }
 }

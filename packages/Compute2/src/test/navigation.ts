@@ -1,6 +1,8 @@
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 import {PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import {findNextStep, findPrevStep, findNextSubStep, resolveChosenUuid, resolveSingleStep} from '../utils';
+import {
+  findNextStep, findPrevStep, findNextSubStep, resolveChosenUuid, resolveSingleStep,
+} from '../components/TreeWizard/tree-utils';
 import {mockDynamicPipeline, mockFuncCall, mockStaticPipeline} from './state-fixtures';
 
 function collectSequence(startUuid: string, tree: PipelineState, direction: 'forward' | 'backward'): string[] {

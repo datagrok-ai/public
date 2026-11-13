@@ -15,7 +15,7 @@ const DATA_STORAGE_KEY = 'tutorials';
  * closes its table) and the Tutorials panel with it: the panel is not a view, so the shell reset
  * leaves it — and a tutorial left running keeps listening to the platform's events and would take
  * the next feature's gestures as its steps. */
-const TUTORIAL_CLOSE = '.tutorials-root-header button:has(.fa-times-circle)';
+const TUTORIAL_CLOSE = '.tutorials-bar button:has(.fa-times-circle), .tutorials-root-header button:has(.fa-times-circle)';
 
 async function closeTutorials(page: Page): Promise<void> {
   await page.evaluate((selector) => {
@@ -63,7 +63,7 @@ export const startTutorial = When('user starts the {string} tutorial', async (pa
     await page.evaluate(() => grok.functions.call('Tutorials:trackOverview'));
   }
   await card.click({timeout: pollMs(30000)});
-  await expect(page.locator('.tutorials-root-header h1'), 'the running tutorial\'s title').toHaveText(name, {timeout: pollMs(60000)});
+  await expect(page.locator('.tutorials-bar-title'), 'the running tutorial\'s title').toHaveText(name, {timeout: pollMs(60000)});
   await expect(page.locator('.tutorials-bar-step'), 'the first step in the tutorial bar')
     .toHaveText(/\S/, {timeout: pollMs(60000)});
   await page.locator('.tutorials-bar .fa-list').click();
@@ -96,12 +96,12 @@ export const tutorialNotCompleted = Given('the {string} tutorial is not complete
 
 export const tutorialProgress = Then('the tutorial progress should be {int} of {int}', async (page: Page, value: number, max: number) => {
   const read = () => page.evaluate(() => {
-    const bar = document.querySelector('.tutorials-root-progress [role="progressbar"]');
-    const caption = document.querySelector('.tutorials-root-progress > div')?.textContent ?? '';
-    return bar ? `${bar.getAttribute('aria-valuenow')} of ${bar.getAttribute('aria-valuemax')} | ${caption}` : 'no progress bar';
+    const ring = document.querySelector('.tutorials-bar [role="progressbar"]');
+    const count = document.querySelector('.tutorials-bar-count')?.textContent ?? '';
+    return ring ? `${ring.getAttribute('aria-valuenow')} of ${ring.getAttribute('aria-valuemax')} | ${count}` : 'no progress ring';
   });
-  await expect.poll(read, {message: 'the tutorial progress (bar | caption)'}).toBe(`${value} of ${max} | Step: ${value} of ${max}`);
-}, {description: 'the progress bar\'s value and maximum and the "Step: N of M" caption agree on N of M'});
+  await expect.poll(read, {message: 'the tutorial progress (ring | count)'}).toBe(`${value} of ${max} | ${value}/${max}`);
+}, {description: 'the bar\'s progress ring and its "N/M" count agree on N of M'});
 
 export const tutorialCompleted = Then('the {string} tutorial should be completed', async (page: Page, name: string) => {
   await expect(page.locator('.tutorials-bar-section'), 'the congratulations in the tutorial bar')
@@ -148,7 +148,21 @@ export const stepDone = Then('the tutorial step {string} should be done', async 
     const states = await entries.evaluateAll((els) => els.map((e) => `${e.getAttribute('aria-checked')}${e.getAttribute('aria-invalid') === 'true' ? ' invalid' : ''}`));
     return states.length === 0 ? 'not listed' : states.includes('true') ? 'done' : states.join(', ');
   }, {message: `the tutorial step "${instruction}"`}).toBe('done');
-}, {description: 'the entry with exactly this instruction is listed and checked (aria-checked) — not shown as could-not-complete'});
+  // A step listens only while it is listed (Tutorial.action lists it and subscribes in one task), and after a
+  // step is done the tutorial runs its own code before it lists the next one: a gesture made in that gap — a
+  // hover, a current-row change — is lost. So the claim also waits until the next step is listed.
+  await expect.poll(() => entries.first().evaluate((entry) => {
+    const done = Array.from(document.querySelectorAll('.grok-tutorial-entry[role="checkbox"]'))
+      .filter((e) => e.getAttribute('aria-label') === entry.getAttribute('aria-label') && e.getAttribute('aria-checked') === 'true')
+      .map((e) => Number((e as HTMLElement).dataset.step));
+    const next = Math.max(...done) + 1;
+    const max = Number(document.querySelector('.tutorials-bar [role="progressbar"]')?.getAttribute('aria-valuemax'));
+    if (next >= max || document.querySelector('.tutorials-bar-section')?.textContent === 'Congratulations!' ||
+        document.querySelector(`.grok-tutorial-entry[role="checkbox"][data-step="${next}"]`))
+      return 'listed';
+    return `step ${next + 1} of ${max} not listed yet`;
+  }), {message: `the step after "${instruction}"`, timeout: pollMs(60000)}).toBe('listed');
+}, {description: 'the entry with exactly this instruction is listed and checked (aria-checked) — not shown as could-not-complete — and the tutorial has listed the step after it, so a gesture for that step is heard'});
 
 export const stepCurrent = Then('the tutorial step {string} should be current', async (page: Page, instruction: string) => {
   const entries = await stepEntry(page, instruction);

@@ -59,7 +59,7 @@ the plot, as listed in the `<configuration>` column:
 9. Point at a spot inside the region that has no marker or bin under it. The tooltip shows "Band A".
 10. Right-click that spot. The context menu lists **Edit...**, **Show Annotation Regions** and **Title Font**.
 11. Pick **Edit...**. The **Formula Lines** dialog opens with "Band A" selected, and **Title** shows `Band A`.
-12. Set **Title** to `Band B`, **Description** to `Edited band`, **Region Color** to `#ff8800` and **Outline Color** to `#003366`. Set the outline **Width** to `3`, drag the **Opacity** slider to about 60, and set the title **Color** in the **Description** section to `#ff0000`.
+12. Set **Title** to `Band B`, **Description** to `Edited band`, **Region Color** to `#ff880099` (60% alpha) and **Outline Color** to `#003366`. Set the outline **Width** to `3`, and set the title **Color** in the **Description** section to `#ff0000`.
 13. Each change except **Description** shows in the dialog preview right away. The description is not drawn in the preview; it appears in the region's tooltip (step 15).
 14. Click **OK**. The viewer shows one region titled "Band B", filled orange with a thick dark-blue outline.
 15. Point at the same spot again. The tooltip shows "Band B" and "Edited band".
@@ -86,7 +86,7 @@ the plot, as listed in the `<configuration>` column:
 9. Click **OK**.
 10. Point at a spot inside the region that has no bar, bin or box under it. The tooltip says "(no title)" and the number of rows the region holds.
 11. Right-click that spot and pick **Edit...**. The **Formula Lines** dialog opens with the region selected.
-12. Set **Title** to `Band B`, **Description** to `Edited band`, **Region Color** to `#ff8800` and **Outline Color** to `#003366`. Set the outline **Width** to `3`, drag the **Opacity** slider to about 60, and set the title **Color** in the **Description** section to `#ff0000`.
+12. Set **Title** to `Band B`, **Description** to `Edited band`, **Region Color** to `#ff880099` (60% alpha) and **Outline Color** to `#003366`. Set the outline **Width** to `3`, and set the title **Color** in the **Description** section to `#ff0000`.
 13. Each change except **Description** shows in the dialog preview right away. The description is not drawn in the preview; it appears in the region's tooltip (step 15).
 14. Click **OK**. The viewer shows one region titled "Band B", filled orange with a thick dark-blue outline.
 15. Point at the same spot again. The tooltip shows "Band B" and "Edited band".

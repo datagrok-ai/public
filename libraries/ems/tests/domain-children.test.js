@@ -1,12 +1,5 @@
-/* `domains.children` (2-8) over the memory backend: a tab per table referring to the parent (two
-   FKs to one parent → two labelled tabs), the shown tab's source in the parent's session and
-   queried by the FK with New pre-filled, the pane following the current row, create-related-inline
-   (a draft parent and a child draft as one transaction, the child's FK the parent's real id, the
-   tab re-queried by it), the `u2-domain-children` tag — and `DomainPick.resolve` naming a draft
-   from its live source without a query. `DG` comes from tests/dg-stub.mjs. */
-
 import {emsBackends} from '../src/core/domain-backend.js';
-import {test} from 'node:test';
+import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
@@ -82,10 +75,10 @@ async function settle() {
 scoped('a tab per child table, two FKs told apart; the shown tab\'s source shares the session, queried by the FK', async () => {
   emsBackends.domain = crm();
   const companies = await domains.table('crm.company');
-  const parent = companies.source({pageSize: 10});
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
   await flush();
   parent.currentRow.value = parent.rows.byKey('c1');
-  const children = domains.children(parent, {mode: 'list'});
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
   assert.equal(children.root.dataset.u2, 'domain-children');
   assert.deepEqual(children.entries.value, [], 'the child tables come with the handles');
   await settle();
@@ -136,9 +129,9 @@ scoped('create-related-inline: a draft parent and its child draft save as one tr
   const memory = crm();
   emsBackends.domain = memory;
   const companies = await domains.table('crm.company');
-  const parent = companies.draft();
+  const parent = testOwner().build(() => companies.draft());
   await flush();
-  const children = domains.children(parent, {mode: 'list'});
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
   await settle();
   const contacts = children.child(CONTACTS);
   assert.equal(contacts.isEmpty, true, 'a draft parent: nothing to query');
@@ -171,10 +164,10 @@ scoped('create-related-inline: a draft parent and its child draft save as one tr
 scoped('grid mode hosts a domains.grid per pane; `tables` narrows the tabs', async () => {
   emsBackends.domain = crm();
   const companies = await domains.table('crm.company');
-  const parent = companies.source();
+  const parent = testOwner().build(() => companies.source());
   await flush();
   parent.currentRow.value = parent.rows.byKey('c1');
-  const children = domains.children(parent, {tables: ['deal']});
+  const children = testOwner().build(() => domains.children(parent, {tables: ['deal']}));
   await settle();
   assert.deepEqual(children.entries.value.map((e) => e.label), ['Deals (Seller)', 'Deals (Buyer)']);
   const pane = children.root.querySelector('[data-u2-part="pane"]');
@@ -191,14 +184,14 @@ scoped('grid mode hosts a domains.grid per pane; `tables` narrows the tabs', asy
 scoped('spec: u2-domain-children over a bound source', async () => {
   emsBackends.domain = crm();
   const companies = await domains.table('crm.company');
-  const src = companies.source();
+  const src = testOwner().build(() => companies.source());
   const reg = new Registry();
   registerAll(reg);
   registerDomainComponents(reg);
   assert.deepEqual(reg.get('u2-domain-children').props.slice(0, 3).map((p) => p.name), ['source', 'tables', 'mode']);
-  const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-domain-children', name: 'kids',
-    bind: {source: '$.companies'}, props: {mode: 'list', tables: ['contact']}}},
-  new SpecContext({data: {companies: signal(src)}}), reg);
+  const instance = testOwner().build(() => renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-domain-children',
+    name: 'kids', bind: {source: '$.companies'}, props: {mode: 'list', tables: ['contact']}}},
+  new SpecContext({data: {companies: signal(src)}}), reg));
   await settle();
   const kids = instance.node('kids');
   assert.equal(kids instanceof DomainChildren, true);
@@ -211,7 +204,7 @@ scoped('spec: u2-domain-children over a bound source', async () => {
 scoped('DomainPick.resolve: a draft id is the draft\'s name from its live source, no query issued', async () => {
   emsBackends.domain = backend();
   const table = await domains.table('grit.project');
-  const src = table.source();
+  const src = testOwner().build(() => table.source());
   await flush();
   const t = emsBackends.domain.tableSync('grit.project');
   const queries = [];
@@ -237,10 +230,10 @@ scoped('a tab label is the plural as a caption: underscores out, first letter up
     order_line: {columns: {company_id: {type: 'ref', ref: 'company', required: true}}},
   }}, {rows: {company: [{id: 'c1', name: 'Acme'}], order_line: []}});
   const companies = await domains.table('crm.company');
-  const parent = companies.source({pageSize: 10});
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
   await flush();
   parent.currentRow.value = parent.rows.byKey('c1');
-  const children = domains.children(parent, {mode: 'list'});
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
   await settle();
   assert.deepEqual(children.entries.value.map((e) => e.label), ['Order lines']);
   children.dispose();
@@ -250,10 +243,10 @@ scoped('a tab label is the plural as a caption: underscores out, first letter up
 scoped('an empty child collection says so, and the caller names the tab order', async () => {
   emsBackends.domain = crm();
   const companies = await domains.table('crm.company');
-  const parent = companies.source({pageSize: 10});
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
   await flush();
   parent.currentRow.value = parent.rows.byKey('c1');
-  const children = domains.children(parent, {tables: ['deal', 'contact'], mode: 'list'});
+  const children = testOwner().build(() => domains.children(parent, {tables: ['deal', 'contact'], mode: 'list'}));
   await settle();
   assert.deepEqual(children.entries.value.map((e) => e.label), ['Deals (Seller)', 'Deals (Buyer)', 'Contacts'],
     'the tabs are in the order the caller named the tables');
@@ -276,24 +269,24 @@ scoped('a row opens on the first tab that has rows; the first one when none has'
   emsBackends.domain.tableSync('crm.company').rows.push({id: 'c3', name: 'Initech'}, {id: 'c4', name: 'Umbrella'});
   emsBackends.domain.tableSync('crm.deal').rows.push({id: 'd2', seller_id: 'c3', title: 'Small'});
   const companies = await domains.table('crm.company');
-  const parent = companies.source({pageSize: 10});
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
   await flush();
   parent.currentRow.value = parent.rows.byKey('c3');
-  const children = domains.children(parent, {mode: 'list'});
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
   await settle();
   await flush();
   assert.equal(children.tabs.activeTab.value, 'crm.deal.seller_id', 'Contacts has none for this one');
   assert.deepEqual(children.child('crm.deal.seller_id').rows.items.value.map((r) => r.title), ['Small']);
   children.dispose();
 
-  const bare = domains.children(parent, {mode: 'list'});
+  const bare = testOwner().build(() => domains.children(parent, {mode: 'list'}));
   parent.currentRow.value = parent.rows.byKey('c4');
   await settle();
   await flush();
   assert.equal(bare.tabs.activeTab.value, CONTACTS, 'nothing anywhere: the first tab stands');
   bare.dispose();
 
-  const filled = domains.children(parent, {mode: 'list'});
+  const filled = testOwner().build(() => domains.children(parent, {mode: 'list'}));
   parent.currentRow.value = parent.rows.byKey('c1');
   await settle();
   await flush();
@@ -305,10 +298,10 @@ scoped('a row opens on the first tab that has rows; the first one when none has'
 scoped('a New from the children toolbar is an unsaved change of its own: the gate and Save see it', async () => {
   emsBackends.domain = crm();
   const companies = await domains.table('crm.company');
-  const parent = companies.source({pageSize: 10});
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
   await flush();
   parent.currentRow.value = parent.rows.byKey('c1');
-  const children = domains.children(parent, {mode: 'list'});
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
   await settle();
   const contacts = children.child(CONTACTS);
   assert.equal(parent.session.isDirty.value, false);

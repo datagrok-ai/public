@@ -1,6 +1,6 @@
 ---
 name: datagrok-df-and-columns
-description: Find, describe, add, remove, rename, clone, or set metadata on columns of a Datagrok DataFrame via the datagrok_exec tool. Use whenever the user asks to locate "the X column", summarize a column, add a typed/empty/values-filled/virtual column, set semantic type / units / format / friendly name, apply linear or categorical or conditional color coding, drop or rename columns, or copy a DataFrame. Covers everything in DataFrame.columns and Column.meta — but not row filtering/selection (datagrok-filtering, datagrok-selection) and not formula-only columns (datagrok-calc-column).
+description: Find, describe, add, remove, rename, clone, or set metadata on columns of a Datagrok DataFrame via the datagrok_exec tool. Use whenever the user asks to locate "the X column", list the table's numeric / categorical / date columns, summarize a column, add a typed/empty/values-filled/virtual column, set semantic type / units / format / friendly name, apply linear or categorical or conditional color coding, drop or rename columns, copy a DataFrame, compute a statistic of a column (mean, median, count), or group rows into a new summary table of counts and per-group aggregates (groupBy). Covers everything in DataFrame.columns and Column.meta — but not row filtering/selection (datagrok-filtering, datagrok-selection) and not formula-only columns (datagrok-calc-column).
 ---
 
 # datagrok-df-and-columns
@@ -21,7 +21,7 @@ and `datagrok-selection`.
 | Get column by name (may be absent)           | `t.col(name)` — returns `null`                                  |
 | First column with a given semType            | `t.columns.bySemType(DG.SEMTYPE.MOLECULE)`                      |
 | Every column with a given semType            | `t.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE)`                   |
-| All numeric / categorical / dateTime columns | `t.columns.numerical` / `.categorical` / `.dateTime`            |
+| All numeric / categorical / dateTime columns | iterables, not arrays: `Array.from(t.columns.numerical, (c) => c.name)` / `.categorical` / `.dateTime` |
 | All names                                    | `t.columns.names()`                                             |
 | Add typed empty column                       | `t.columns.addNewFloat(name)` (and `addNewInt/String/Bool/...`) |
 | Add column from values                       | `t.columns.add(DG.Column.fromList(type, name, values))`         |
@@ -33,7 +33,8 @@ and `datagrok-selection`.
 | Clone filtered rows                          | `t.clone(t.filter)`                                             |
 | Clone column subset                          | `t.clone(null, ['a', 'b'])`                                     |
 | Check if value is missing                    | `col.isNone(i)`                                                 | 
-| Stats (cached on column)                     | `col.stats.{min,max,avg,stdev,med,q1,q2,q3,sum,valueCount,missingValueCount,uniqueCount}` |
+| Stats (cached on column)                     | `col.stats.{min,max,avg,stdev,med,q1,q2,q3,sum,valueCount,missingValueCount,uniqueCount}` — they skip missing values; `col.getRawData()` does not (a missing number is a placeholder value there), so never compute a statistic from it without `col.isNone(i)` |
+| Per-group counts and aggregates (new table)  | `t.groupBy(['RACE']).count('count').avg('AGE').med('WEIGHT').aggregate()` (also `.sum/.min/.max/.stdev/.uniqueCount`; `.where(...)` before `aggregate` limits the rows); open it with `grok.shell.addTableView(df)` |
 | Set semType                                  | `col.semType = DG.SEMTYPE.MOLECULE`                             |
 | Set friendly name / units / format / desc    | `col.meta.friendlyName / .units / .format / .description = ...` |
 | Linear color coding (numeric)                | `col.meta.colors.setLinear()` (default scheme) or `setLinear(range, opts?)` |
@@ -49,7 +50,7 @@ and `datagrok-selection`.
 | "column named X" (may be absent)            | `t.col('X')` — returns `null` if missing                |
 | "the molecule column"                       | `t.columns.bySemType(DG.SEMTYPE.MOLECULE)`              |
 | "every molecule column"                     | `t.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE)`           |
-| "all numeric columns"                       | iterate `t.columns.numerical`                           |
+| "all numeric columns"                       | `for (const c of t.columns.numerical)` (no `.map`: not an array) |
 | "an IC50 column"                            | `t.columns.bySemType(DG.SEMTYPE.IC50)`                  |
 | "columns tagged `quality=Molecule`"         | `t.columns.byTags({quality: 'Molecule'})`               |
 | "any of these columns: X, Y, Z (first hit)" | `t.columns.firstWhere(c => names.includes(c.name))`     |

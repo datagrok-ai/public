@@ -155,7 +155,7 @@ export function funcPicker(options: FuncPickerOptions): Dialog {
   dialog.root.classList.add('u2-func-picker');
   const entries = funcEntries(DG.Func.find({}) as unknown as FuncLike[]);
   const renderer = handlerRenderer<FuncLike>();
-  const search = dialog.runInScope(() =>
+  const search = dialog.build(() =>
     new TextInput({search: true, inline: true, placeholder: 'Search functions'}));
   const empty = span('', 'u2-picker-empty');
   const host = div([], 'u2-func-picker-params');
@@ -190,7 +190,7 @@ export function funcPicker(options: FuncPickerOptions): Dialog {
       host.append(span(`${picked.label} takes no arguments.`, 'u2-func-picker-hint'));
       return;
     }
-    const form = Scope.runWith(pane, () =>
+    const form = pane.build(() =>
       propertyForm(paramProps(inputs, args, binds), args, {condensed: true}));
     for (const prop of inputs) {
       const name = prop.name;
@@ -199,7 +199,7 @@ export function funcPicker(options: FuncPickerOptions): Dialog {
         continue;
       input.root.setAttribute('data-u2-prop', name);
       // owned by the dialog, not by the pane the pick rebuilds — the bind picker outlives it
-      bindPickerButton(input, name, () => dialog.runInScope(() => bindPicker(options.instance, (path) => {
+      bindPickerButton(input, name, () => dialog.build(() => bindPicker(options.instance, (path) => {
         binds[name] = path;
         showParams();
       })));
@@ -207,7 +207,7 @@ export function funcPicker(options: FuncPickerOptions): Dialog {
     host.append(form.root);
   };
 
-  const list = dialog.runInScope(() => new VirtualList<FuncEntry>({
+  const list = dialog.build(() => new VirtualList<FuncEntry>({
     itemHeight: 28,
     keyOf: (entry) => entry.name,
     render: (entry, _index, row) => {
@@ -216,7 +216,7 @@ export function funcPicker(options: FuncPickerOptions): Dialog {
     },
   }));
   dialog.effect(() => {
-    const query = search.value.value;
+    const query = search.value;
     shown = filterFuncs(entries, query);
     list.setItems(shown);
     // a blank white box reads as a dialog that is still loading — two acceptance passes read it

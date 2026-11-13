@@ -1,5 +1,5 @@
-#name: Filter by Catalogs
-#description: Finds undesireable molecules based on various criteria
+#name: FilterByCatalogsPython
+#description: Finds undesireable molecules based on various criteria (Filter by Catalogs' RDKit side: Chem:FilterByCatalogs calls this script, or Crux in Crux mode)
 #help-url: https://datagrok.ai/help/domains/chem/functions/filter-catalogs
 #language: python
 #sample: chem/smiles.csv

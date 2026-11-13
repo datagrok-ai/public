@@ -1250,8 +1250,7 @@ test('Trellis plot — on click, keyboard navigation, filter formula, undo/redo'
     });
     expect(filterAfterClick.count).toBe(filterExpected);
     expect(filterAfterClick.count).toBeLessThan(fullRowCount);
-    expect(filterAfterClick.filters).toContain('SEX: F');
-    expect(filterAfterClick.filters).toContain('RACE: Caucasian');
+    expect(filterAfterClick.filters).toContain('SEX: F, RACE: Caucasian');
 
     const filterAfterType = await page.evaluate(async () => {
       const w = window as any;
@@ -1278,8 +1277,7 @@ test('Trellis plot — on click, keyboard navigation, filter formula, undo/redo'
       return {count: df.filter.trueCount, filters};
     });
     expect(filterAfterOther.count).toBe(mBlackFilter);
-    expect(filterAfterOther.filters).toContain('SEX: M');
-    expect(filterAfterOther.filters).toContain('RACE: Black');
+    expect(filterAfterOther.filters).toContain('SEX: M, RACE: Black');
 
     const filterAfterAxis = await page.evaluate(async () => {
       const w = window as any;

@@ -3,7 +3,11 @@ Feature: MPO Score over a profile's own properties
   Chem | Calculate | MPO Score... on a table that carries Caco2, Lipophilicity and Solubility columns
   offers the package's ADME Test profile, whose properties are exactly those three, marked as fitting
   the table. Picked, it maps the three columns (OK becomes enabled) and aggregates by the average; OK
-  appends the "MPO ADME Test" score column, between 0 and 1 on every row.
+  appends the "MPO ADME Test" score column, between 0 and 1 on every row. Coverage Score, off by default,
+  adds the int column "MPO ADME Test coverage" with the number of the profile's properties that have a
+  value in the row (3 on every row here), and a second run replaces the score column instead of adding a
+  copy (public#4403). The count over empty, qualified and unscored cells is Chem src/tests/mpo-tests.ts
+  'MPO: coverage'.
 
   The profile is picked rather than claimed as the default: the dialog opens on the first fitting
   profile by name, which depends on the profiles of the stand (with the shipped ones seeded it is
@@ -30,6 +34,7 @@ Feature: MPO Score over a profile's own properties
     Then "MPO Score" dialog should be visible
     When user selects "✓ ADME Test" in Profile input in "MPO Score" dialog
     Then Aggregation input in "MPO Score" dialog should have value "Average"
+    And "Coverage Score" input in "MPO Score" dialog should have value "false"
     And OK button in "MPO Score" dialog should be enabled
     And no errors should have been logged
 
@@ -40,4 +45,18 @@ Feature: MPO Score over a profile's own properties
     And "MPO ADME Test" column should have no missing values
     And every value of "MPO ADME Test" column should lie between 0 and 1
     And the table should have 4 rows
+    And no errors should have been logged
+
+  @realizes:public#4403
+  Scenario: Coverage Score adds the count of the profile's measured properties, and a second run replaces the score column
+    When user picks "Chem > Calculate > MPO Score..." from the top menu
+    And user selects "✓ ADME Test" in Profile input in "MPO Score" dialog
+    And user checks "Coverage Score" input in "MPO Score" dialog
+    And user clicks on OK button in "MPO Score" dialog
+    Then the "MPO Score" dialog should close
+    And no error or warning balloon should have been shown
+    And a new column "MPO ADME Test coverage" should have been added
+    And 1 new column should have been added
+    And "MPO ADME Test coverage" column should have type "int"
+    And every value of "MPO ADME Test coverage" column should match "^3$"
     And no errors should have been logged

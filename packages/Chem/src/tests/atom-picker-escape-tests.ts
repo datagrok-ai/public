@@ -1,4 +1,4 @@
-import {before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
@@ -89,8 +89,7 @@ category('atom picker: escape', () => {
         {grid: view.grid} as unknown as DG.GridCell,
         new KeyboardEvent('keydown', {key: 'Escape'}),
       );
-      await delay(150); // Allow RxJS event delivery.
-      expect(received !== null, true);
+      await waitUntil(() => received !== null, 'no atom selection event');
       expect(received!.clearAll, true);
       expect(received!.persistent, true);
       expect(Array.isArray(received!.atoms) && received!.atoms.length === 0, true);

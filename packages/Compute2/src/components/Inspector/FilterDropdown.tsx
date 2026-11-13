@@ -68,7 +68,7 @@ export const FilterDropdown = Vue.defineComponent({
             border: '1px solid var(--border-color)', borderRadius: '2px',
             minWidth: '80px', userSelect: 'none', whiteSpace: 'nowrap',
           }}
-          onClick={() => { open.value = !open.value; search.value = ''; }}
+          onClick={() => {open.value = !open.value; search.value = '';}}
         >
           {triggerLabel.value}
           <span style={{marginLeft: '4px', fontSize: '10px'}}>&#9662;</span>

@@ -1,13 +1,3 @@
-/* The `viewers` tier, part two: steps that were written for one viewer and turned out to say
-   nothing about it. A phrase belongs here as soon as a second viewer wants it — the tile viewer's
-   description placement is every viewer's Description Position, the pie chart's category selector
-   is the scatter plot's X selector under another name, the trellis plot's cells are the matrix
-   plot's. Each one reads a hit area or a reading the viewer reports, so a viewer joins simply by
-   reporting the same key; where a name is a convention rather than a rectangle, the convention is
-   written next to the step.
-   What stays in a package binding is a gesture that only that viewer's DOM has (the tile viewer's
-   sketch designer, the pc plot's axis-label drag) or an arithmetic only it can check (the pivot's
-   aggregation against a groupBy). */
 import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Then, When} from '../../../src/registry.js';
@@ -432,6 +422,84 @@ export const scrollGridTo = When('user scrolls the grid to the {string} column',
   await v.settleAll(page);
 }, {tier: 'api', description: 'grid.scrollToCell on the first row of the column, then the viewers settle'});
 
+/** The pointer on one monomer of a sequence cell, where the cell's renderer drew it: a renderer back that places
+ * monomers answers `getMonomerPoint(gridCell, position)` (Bio's sequence renderers, kept in the grid column's
+ * `temp.rendererBack` or a notation provider's on the table column, and Helm's). Its tooltip shows, and a molecule
+ * column made with Highlight monomers lights the monomer's atoms. */
+export const hoverMonomer = When('user hovers over monomer {int} of the {string} area of {widget}',
+  async (page: Page, monomer: number, area: string, target: ElementRef) => {
+    const cellOf = /^cell (\d+) of (.+)$/.exec(area);
+    if (!cellOf)
+      throw new Error(`"${area}" is no grid cell: a monomer is hovered in "cell <row> of <column>"`);
+    const cell = await v.hitArea(page, target, area, true);
+    // a renderer made by the paint before has its library and helper on the way: it answers once they are in
+    let found: unknown = null;
+    await expect.poll(async () => {
+      found = await v.onViewer(page, target, (el, [row, column, pos]) => {
+        const grid = (window as any).__bdd.viewerOf(el);
+        const gridCell = grid.cell(column, grid.tableRowToGrid(row - 1));
+        const back = gridCell.gridColumn.temp.rendererBack ?? gridCell.cell.column.temp.rendererBack;
+        if (!back?.getMonomerPoint)
+          return 'its renderer places no monomers';
+        try {
+          return back.getMonomerPoint(gridCell, pos - 1);
+        }
+        catch (e) {
+          return `its renderer is not ready: ${(e as Error).message}`;
+        }
+      }, [Number(cellOf[1]), cellOf[2], monomer]);
+      return typeof found === 'object' && found !== null;
+    }, {message: `monomer ${monomer} of ${area} of ${target.phrase}`}).toBe(true).catch(() => undefined);
+    const point = found as {x: number, y: number} | string | null;
+    if (point === null || typeof point === 'string')
+      throw new Error(`${area} of ${target.phrase} draws no monomer ${monomer}${point ? `: ${point}` : ''}`);
+    await page.mouse.move(cell.x + point.x - 3, cell.y + point.y - 3);
+    await page.mouse.move(cell.x + point.x, cell.y + point.y);
+    await expect(page.locator('.d4-tooltip').filter({visible: true}), `the tooltip of monomer ${monomer}`).toHaveCount(1);
+  }, {tier: 'ui', description: 'monomer counted from 1 as the sequence counts it; done when its tooltip shows'});
+
+/** A viewer just added or switched to a new row can still render (a deferred pass, a structure loading): a
+ * gesture on its own controls then lands on what the pass replaces, and a filmed step pictures it unfinished. */
+export const viewersSettled = When('the viewers have settled', async (page: Page) => {
+  guide.silent(page);
+  await v.settleAll(page);
+}, {tier: 'api', description: 'no viewer of an open table view has a render or a load pending (`isRenderPending`), off camera in a filmed guide'});
+
+// What a filmed guide or demo needs the grid to look like (wide sequences, tall rows, fewer columns) is set
+// up off camera: a person would not watch the columns being sized.
+export const gridColumnWidth = When('the {string} column of the grid is {int} px wide', async (page: Page, column: string, width: number) => {
+  guide.silent(page);
+  await page.evaluate(([c, w]) => {
+    const col = (window as any).grok.shell.tv?.grid?.columns.byName(c);
+    if (!col)
+      throw new Error(`the grid of the current view has no "${c}" column`);
+    col.width = w;
+  }, [column, width] as [string, number]);
+  await v.settleAll(page);
+}, {tier: 'api', description: 'set-up a filmed guide leaves out: the width of the column in the current view\'s grid'});
+export const gridRowHeight = When('the rows of the grid are {int} px tall', async (page: Page, height: number) => {
+  guide.silent(page);
+  await page.evaluate((h) => { (window as any).grok.shell.tv.grid.props.rowHeight = h; }, height);
+  await v.settleAll(page);
+}, {tier: 'api', description: 'set-up a filmed guide leaves out: the row height of the current view\'s grid'});
+export const gridHeaderHeight = When('the column headers of the grid are {int} px tall', async (page: Page, height: number) => {
+  guide.silent(page);
+  await page.evaluate((h) => { (window as any).grok.shell.tv.grid.props.colHeaderHeight = h; }, height);
+  await v.settleAll(page);
+}, {tier: 'api', description: 'set-up a filmed guide leaves out: the column header height of the current view\'s grid (room for a header a package draws, Bio\'s WebLogo)'});
+export const gridShowsColumns = When('the grid shows only the columns {string}', async (page: Page, columns: string) => {
+  guide.silent(page);
+  await page.evaluate((names) => {
+    const grid = (window as any).grok.shell.tv.grid;
+    const missing = names.filter((n) => !grid.dataFrame.col(n));
+    if (missing.length)
+      throw new Error(`the table has no column ${missing.join(', ')}`);
+    grid.columns.setVisible(names);
+    grid.columns.setOrder(names);
+  }, columns.split(',').map((c) => c.trim()));
+  await v.settleAll(page);
+}, {tier: 'api', description: 'set-up a filmed guide leaves out: the grid shows these columns, in this order, and hides the others (the table keeps them)'});
+
 /** The grid draws nothing to the right of its last column when the columns are narrower than the
  * view: a right-click there, in a row, once failed. The point is the middle of that
  * space, at the height of the row's cells. */
@@ -446,6 +514,30 @@ export const rightClickRowSpace = When('user right-clicks on empty space of row 
     throw new Error(`row ${row} of ${target.phrase} has no empty space past its last column`);
   await openContextMenuAt(page, (right + canvas.x + canvas.width) / 2, cells[0].y + cells[0].height / 2);
 }, {tier: 'ui', description: 'the space past the last column of a grid narrower than its view, in that row; leaves the menu open'});
+
+/** A header dragged on a grid wider than its view brings up drop zones beside the grid
+ * (`grid_column_reordering.dart`): ⇤ puts the column first and scrolls to it, ⇥ last. They exist only
+ * while the drag is on, so the header is pressed and moved before the zone is looked for. */
+export const dragColumnToEdge = When('user drags the {string} area of {widget} to the {word} position',
+  async (page: Page, area: string, target: ElementRef, edge: string) => {
+    const icon = {first: 'fa-arrow-to-left', last: 'fa-arrow-to-right'}[edge.toLowerCase()];
+    if (!icon)
+      throw new Error(`a column is dragged to the first or the last position, not the "${edge}" one`);
+    const a = v.centerOf(await v.hitArea(page, target, area, true));
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    try {
+      await page.mouse.move(a.x - 12, a.y, {steps: 2});
+      const zone = page.locator(`.d4-grid-scroll-drop-zone:has(.${icon})`).first();
+      await zone.waitFor({timeout: pollMs(3000)});
+      const box = (await zone.boundingBox())!;
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, {steps: 8});
+    }
+    finally {
+      await page.mouse.up();
+    }
+    await settle(page, target);
+  }, {tier: 'ui', description: 'a column header onto the ⇤ or ⇥ drop zone a grid wider than its view shows beside itself during the drag'});
 
 export const gridPins = Then('the grid should pin the columns {string}', async (page: Page, list: string) => {
   const want = list.split(/\s*,\s*/).filter(Boolean);
@@ -704,45 +796,77 @@ export const dragAreaOntoElement = When('user drags the {string} area of {widget
    None, and a grid whose rows are the table's columns — `__name` holds the column name and `x` the
    check box. The grid reports `cell <r> of <col>` and `text of cell <r> of <col>` like any grid, so a
    row is found by its name and its box is clicked where the grid says it is. */
-interface ColumnListRow {row: number; name: string; checked: boolean; x: number; y: number}
+/* `cut`: the list's bottom edge cuts the row, and the grid reports only the part it shows, whose middle
+   is off the middle of the box a click must land near. */
+interface ColumnListRow {row: number; name: string; checked: boolean; x: number; y: number; height: number; cut: boolean}
 
-async function columnListRows(page: Page, target: ElementRef): Promise<ColumnListRow[]> {
-  await v.installViewerRuntime(page);
+async function columnListGrid(page: Page, target: ElementRef): Promise<Locator> {
   const host = (await locate(page, target)).filter({visible: true}).first();
   const grid = host.locator('[name="viewer-Grid"]').filter({visible: true}).first();
   await grid.waitFor({timeout: pollMs(5000)});
-  return grid.evaluate((el) => {
+  return grid;
+}
+
+async function columnListRows(page: Page, target: ElementRef): Promise<ColumnListRow[]> {
+  await v.installViewerRuntime(page);
+  return (await columnListGrid(page, target)).evaluate((el) => {
     const w = (window as any).__bdd.viewerOf(el);
     const s = w.getWidgetStatus();
     const canvas = (s.parts?.canvas ?? el.querySelector('canvas')) as Element;
     const c = canvas.getBoundingClientRect();
-    const rows: ColumnListRow[] = [];
+    const found: {row: number; box: {x: number; y: number; width: number; height: number}}[] = [];
     for (const key of Object.keys(s.hitAreas)) {
       const m = /^cell (\d+) of __name$/.exec(key);
       const box = m ? s.hitAreas[`cell ${m[1]} of x`] : undefined;
-      if (!m || !box)
-        continue;
-      rows.push({row: Number(m[1]), name: String(s.values[`text of cell ${m[1]} of __name`] ?? ''),
-        checked: s.values[`text of cell ${m[1]} of x`] === 'true', x: c.x + box.x + box.width / 2, y: c.y + box.y + box.height / 2});
+      if (m && box)
+        found.push({row: Number(m[1]), box});
     }
-    return rows.sort((a, b) => a.row - b.row);
+    const full = Math.max(0, ...found.map((f) => f.box.height));
+    return found.map(({row, box}): ColumnListRow => ({row, name: String(s.values[`text of cell ${row} of __name`] ?? ''),
+      checked: s.values[`text of cell ${row} of x`] === 'true', x: c.x + box.x + box.width / 2, y: c.y + box.y + box.height / 2,
+      height: box.height, cut: box.height < full - 0.5})).sort((a, b) => a.row - b.row);
   });
 }
 
 const rowNamed = (rows: ColumnListRow[], name: string): ColumnListRow | undefined => rows.find((r) => r.name === name);
 const namesOf = (rows: ColumnListRow[]): string => rows.map((r) => r.name).join(', ');
 
+/** The row, wheeled into full view first when the list has scrolled it out of sight or cuts it, as a person
+ *  scrolls the list to it: the list's order says which way and how far. */
+async function revealInColumnList(page: Page, target: ElementRef, column: string): Promise<ColumnListRow> {
+  let rows: ColumnListRow[] = [];
+  await expect.poll(async () => (rows = await columnListRows(page, target)).length,
+    {timeout: pollMs(5000), message: `the column list of ${target.phrase} shows no rows`}).toBeGreaterThan(0);
+  const order = await g.columnGridNames(await columnListGrid(page, target));
+  const at = order.indexOf(column);
+  if (at < 0)
+    throw new Error(`no "${column}" row in the column list of ${target.phrase}; it holds: ${order.join(', ')}`);
+  for (let turn = 0; turn < 5; turn++) {
+    const row = rowNamed(rows, column);
+    if (row && !row.cut)
+      return row;
+    const whole = rows.filter((r) => !r.cut);
+    const shown = whole.map((r) => order.indexOf(r.name));
+    const by = at > Math.max(...shown) ? at - Math.max(...shown) : at - Math.min(...shown);
+    // the grid scrolls a row per row height the wheel turned past one
+    const height = Math.max(...rows.map((r) => r.height));
+    const before = rows.map((r) => r.row).join();
+    await page.mouse.move(whole[0].x, whole[0].y);
+    await page.mouse.wheel(0, (by + Math.sign(by) / 2) * height);
+    await expect.poll(async () => (rows = await columnListRows(page, target)).map((r) => r.row).join(),
+      {timeout: pollMs(2000), message: `the column list of ${target.phrase} did not scroll towards "${column}"`}).not.toBe(before);
+  }
+  throw new Error(`the column list of ${target.phrase} did not bring "${column}" into full view; it shows: ${namesOf(rows)}`);
+}
+
 export const toggleInColumnList = When('user toggles the {string} column in the column list of {element}',
   async (page: Page, column: string, target: ElementRef) => {
-    let rows: ColumnListRow[] = [];
-    await expect.poll(async () => rowNamed(rows = await columnListRows(page, target), column) !== undefined,
-      {timeout: pollMs(5000), message: `no "${column}" row in the column list of ${target.phrase}; it shows: ${namesOf(rows)}`}).toBe(true);
-    let row = rowNamed(rows, column)!;
+    let row = await revealInColumnList(page, target, column);
     // a list in a dialog that just opened is still finding its place: the box is clicked where
     // two reads in a row agree it is
     await expect.poll(async () => {
       const again = rowNamed(await columnListRows(page, target), column);
-      const still = again !== undefined && again.x === row.x && again.y === row.y;
+      const still = again !== undefined && !again.cut && again.x === row.x && again.y === row.y;
       row = again ?? row;
       return still;
     }, {timeout: pollMs(3000), message: `the "${column}" row of the column list of ${target.phrase} keeps moving`}).toBe(true);
@@ -759,8 +883,13 @@ export const toggleInColumnList = When('user toggles the {string} column in the 
 
 async function expectChecked(page: Page, column: string, target: ElementRef, checked: boolean): Promise<void> {
   let rows: ColumnListRow[] = [];
-  await expect.poll(async () => rowNamed(rows = await columnListRows(page, target), column)?.checked,
-    {timeout: pollMs(5000), message: `"${column}" in the column list of ${target.phrase} (it shows: ${namesOf(rows)})`}).toBe(checked);
+  try {
+    await expect.poll(async () => rowNamed(rows = await columnListRows(page, target), column)?.checked, {timeout: pollMs(5000)}).toBe(checked);
+  }
+  catch {
+    const row = rowNamed(rows, column);
+    throw new Error(`"${column}" in the column list of ${target.phrase} is ${row ? (row.checked ? 'checked' : 'not checked') : 'not shown'}; it shows: ${namesOf(rows)}`);
+  }
 }
 
 export const checkedInColumnList = Then('the {string} column should be checked in the column list of {element}',
@@ -771,10 +900,7 @@ export const uncheckedInColumnList = Then('the {string} column should not be che
 
 /** Every column the list holds, in its order. */
 async function columnListNames(page: Page, target: ElementRef): Promise<string[]> {
-  const host = (await locate(page, target)).filter({visible: true}).first();
-  const grid = host.locator('[name="viewer-Grid"]').filter({visible: true}).first();
-  await grid.waitFor({timeout: pollMs(5000)});
-  return g.columnGridNames(grid);
+  return g.columnGridNames(await columnListGrid(page, target));
 }
 
 export const columnListExactly = Then('the column list of {element} should be exactly {string}',
@@ -875,6 +1001,7 @@ async function dockViewer(page: Page, target: ElementRef, side: string, over: El
     throw new Error(`${over ? over.phrase : 'the table view'} has no box to dock against`);
   const aim = centreOf(view);
   const what = over ? `the "${side}" item of the dock compass over ${over.phrase}` : `the "${side}" edge item of the view`;
+  await guide.located(page, title);
   await page.mouse.move(t.x + Math.min(30, t.width / 4), t.y + t.height / 2);
   await page.mouse.down();
   await page.mouse.move(t.x + Math.min(30, t.width / 4) + 20, t.y + t.height / 2 + 20, {steps: 4});
@@ -1253,32 +1380,49 @@ export const clickOtherCell = When('user clicks on a {string} cell of {widget} o
 
 // --- the dock around a viewer ----------------------------------------------------------------------
 
-/* The border between a docked viewer and what is docked above it is the dock manager's horizontal
-   splitbar: a sibling of the container the viewer sits in, or of one of that container's ancestors.
-   The step drags it and claims the viewer grew. */
-export const dragTopBorder = When('user drags the top border of {widget} by {int} pixels up', async (page: Page, target: ElementRef, px: number) => {
+/* The border between a docked viewer and what is docked beside it is the dock manager's splitbar: a sibling of the
+   container the viewer sits in, or of one of that container's ancestors. The step drags it and claims the viewer's
+   size changed. */
+async function dragDockBorder(page: Page, target: ElementRef, side: 'top' | 'right', px: number): Promise<void> {
+  const top = side === 'top';
   const loc = await v.viewerLocator(page, target);
   const before = (await loc.boundingBox())!;
-  const bar = await loc.evaluate((root) => {
-    const top = root.getBoundingClientRect().top;
+  const bar = await loc.evaluate((root, top) => {
+    const rect = root.getBoundingClientRect();
     for (let e: Element | null = root; e != null; e = e.parentElement) {
-      const prev = e.previousElementSibling as HTMLElement | null;
-      if (prev != null && prev.classList.contains('splitbar-horizontal')) {
-        const r = prev.getBoundingClientRect();
-        if (Math.abs(r.bottom - top) < 40)
-          return {x: r.left + r.width / 2, y: r.top + r.height / 2};
+      const sibling = (top ? e.previousElementSibling : e.nextElementSibling) as HTMLElement | null;
+      if (sibling != null && sibling.classList.contains(top ? 'splitbar-horizontal' : 'splitbar-vertical')) {
+        const r = sibling.getBoundingClientRect();
+        if (Math.abs(top ? r.bottom - rect.top : r.left - rect.right) < 40)
+          return {x: r.left, y: r.top, width: r.width, height: r.height};
       }
     }
     return null;
-  });
+  }, top);
   if (bar == null)
-    throw new Error(`${target.phrase} has no dock border above it: it is not docked below another panel`);
-  await page.mouse.move(bar.x, bar.y);
+    throw new Error(`${target.phrase} has no dock border on its ${side}: nothing is docked there`);
+  guide.locatedArea(page, bar);
+  const at = centreOf(bar);
+  const [dx, dy] = top ? [0, -px] : [-px, 0];
+  await page.mouse.move(at.x, at.y);
   await page.mouse.down();
-  await page.mouse.move(bar.x, bar.y - px / 2);
-  await page.mouse.move(bar.x, bar.y - px);
+  await page.mouse.move(at.x + dx / 2, at.y + dy / 2);
+  await page.mouse.move(at.x + dx, at.y + dy);
   await page.mouse.up();
-  await expect.poll(async () => Math.round((await loc.boundingBox())?.height ?? 0),
-    {message: `the height of ${target.phrase} after the drag (was ${Math.round(before.height)})`}).toBeGreaterThan(Math.round(before.height) + px / 2);
+  const size = async () => {
+    const box = await loc.boundingBox();
+    return Math.round((top ? box?.height : box?.width) ?? 0);
+  };
+  const was = Math.round(top ? before.height : before.width);
+  const message = `the ${top ? 'height' : 'width'} of ${target.phrase} after the drag (was ${was})`;
+  await (top ? expect.poll(size, {message}).toBeGreaterThan(was + px / 2 - 1) : expect.poll(size, {message}).toBeLessThan(was - px / 2 + 1));
   await settle(page, target);
-}, {tier: 'ui', description: 'the dock splitbar right above the viewer dragged up; the viewer is claimed taller by at least half the distance'});
+}
+
+export const dragTopBorder = When('user drags the top border of {widget} by {int} pixels up', (page: Page, target: ElementRef, px: number) =>
+  dragDockBorder(page, target, 'top', px),
+  {tier: 'ui', description: 'the dock splitbar right above the viewer dragged up; the viewer is claimed taller by at least half the distance'});
+
+export const dragRightBorder = When('user drags the right border of {widget} by {int} pixels left', (page: Page, target: ElementRef, px: number) =>
+  dragDockBorder(page, target, 'right', px),
+  {tier: 'ui', description: 'the dock splitbar right of the viewer dragged left; the viewer is claimed narrower by at least half the distance'});

@@ -135,7 +135,7 @@ export class FontInput extends Input<string, FontInputOptions> {
     // set by an edit's write, dropped by the effect run it causes (handlers run batched)
     let echo = false;
     this.effect(() => {
-      const value = this.value.value;
+      const value = this.value;
       if (echo)
         echo = false;
       else
@@ -143,10 +143,10 @@ export class FontInput extends Input<string, FontInputOptions> {
     });
     const commit = () => {
       const value = FontInput.compose(this._font);
-      if (value === this.value.peek())
+      if (value === this.peek())
         return;
       echo = true;
-      this.value.value = value;
+      this.value = value;
     };
     this.scope.listen(size, 'input', () => {
       const typed = size.value.trim();
@@ -277,14 +277,14 @@ export class FontInput extends Input<string, FontInputOptions> {
   }
 
   protected displayText(): string {
-    return this.value.peek();
+    return this.peek();
   }
 
   private _toggleSizes(): void {
     if (this._closeOverlay)
       this._closeSizes();
     else
-      this._closeOverlay = Overlay.show(this._size, this._popup, this.scope);
+      this._closeOverlay = Overlay.show(this._size, this._popup, {owner: this.scope});
   }
 
   private _closeSizes(): void {

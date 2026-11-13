@@ -1,8 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect} from '@datagrok-libraries/test/src/test';
+import {before, category, test, expect} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
+import {skipWithoutChemblDatabase} from './utils';
 
 const INCHI_KEY_CSV =
 `key,order
@@ -29,6 +30,8 @@ async function compare(input: string, expectArr: Array<any>, callMethod: string,
 }
 
 category('Converting queries', () => {
+  before(() => skipWithoutChemblDatabase('Converting queries'));
+
   test('converter Id to Smiles', async () => {
     const smiles = await grok.functions.call(`${_package.name}:chemblIdToSmiles`, {'id': 'CHEMBL6302'});
     expect(smiles, 'COc1cc2nc(N3CCN(/C(S)=N/c4ccc(NC(=S)N5CC5)cc4)CC3)nc(N)c2cc1OC');

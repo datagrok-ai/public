@@ -845,11 +845,11 @@ export class TestManager extends DG.ViewBase {
 
   private searchTreeItems(stringToSearch: string) {
     const dom = this.tree.root.getElementsByClassName('d4-tree-view-node');
-    const regExpToSearch = new RegExp(stringToSearch.toLowerCase());
+    const searchString = stringToSearch.toLowerCase();
     const listToShow: HTMLElement[] = [];
 
     function isFitsSearchString(stringToCheck: string): boolean {
-      return regExpToSearch.test(stringToCheck.toLocaleLowerCase());
+      return stringToCheck.toLocaleLowerCase().includes(searchString);
     }
 
     for (let i = 0; i < dom.length; i++) {

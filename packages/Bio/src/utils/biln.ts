@@ -12,6 +12,7 @@ import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-rende
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {monomerToShort, splitterAsBiln} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {_package} from '../package';
+import {getBioRendererDefaults} from './renderer-defaults';
 /* eslint-enable max-len */
 
 export class BilnNotationProvider extends NotationProviderBase implements INotationProvider {
@@ -47,8 +48,7 @@ export class BilnNotationProvider extends NotationProviderBase implements INotat
 
   public createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>):
   CellRendererBackBase<string> {
-    const maxLengthOfMonomer = _package.properties.maxMonomerLength || 4;
-    // (_package.bioProperties ? _package.bioProperties.maxMonomerLength : 4) ?? 50;
+    const maxLengthOfMonomer = getBioRendererDefaults().maxMonomerLength;
     const back = new BilnCellRendererBack(gridCol, tableCol,
       maxLengthOfMonomer, this.seqHelper);
 
@@ -64,13 +64,17 @@ export class BilnCellRendererBack extends MonomerPlacer {
   ) {
     super(gridCol, tableCol, _package.logger, maxLengthOfMonomer, () => {
       const sh = seqHelper.getSeqHandler(tableCol);
-      const {font, fontWidth} = MonomerPlacer.getFontSettings(tableCol);
+      const defaults = getBioRendererDefaults();
+      const {font, fontWidth, fontSize} = MonomerPlacer.getFontSettings(tableCol, defaults.fontSize);
       return {
         seqHandler: sh,
         font: font,
         fontCharWidth: fontWidth,
+        fontSize: fontSize,
         separatorWidth: 0,
         monomerToShort: monomerToShort,
+        maxMonomerLength: defaults.maxMonomerLength,
+        showConnections: defaults.showConnections,
       };
     });
   }

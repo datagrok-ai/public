@@ -535,17 +535,3 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
     }
   }
 }
-
-async function base64ToImg(base64: string): Promise<HTMLImageElement> {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    try {
-      const img = new Image();
-      img.onload = () => {
-        resolve(img);
-      };
-      img.src = base64;
-    } catch (err) {
-      reject(err);
-    }
-  });
-}

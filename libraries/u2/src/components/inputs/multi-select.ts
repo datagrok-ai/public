@@ -79,10 +79,10 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
    * the value is rewritten only when something actually vanished. */
   setItems(items: ChoiceItem[]): void {
     this._items.value = items;
-    const current = new Set(this.value.peek());
+    const current = new Set(this.peek());
     const pruned = items.filter((i) => current.has(itemValue(i))).map(itemValue);
     if (pruned.length !== current.size)
-      this.value.value = pruned;
+      this.value = pruned;
   }
 
   /** Every item (not the filtered popup) with its pick, and whether the popup is open. */
@@ -91,7 +91,7 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
   }
 
   getItems(opts?: {all?: boolean}): IItemsState {
-    const selected = new Set(this.value.peek());
+    const selected = new Set(this.peek());
     const rendered = new Set(this._rows.peek().map(itemValue));
     return Input.itemsState(this._items.peek().map((item, index) => ({key: itemValue(item), label: itemLabel(item),
       index, selected: selected.has(itemValue(item)), rendered: rendered.has(itemValue(item))})), opts?.all);
@@ -107,7 +107,7 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
   /** The picked items' captions. */
   protected displayText(): string {
     const labels = new Map(this._items.peek().map((i): [string, string] => [itemValue(i), itemLabel(i)]));
-    return this.value.peek().map((v) => labels.get(v) ?? v).join(', ');
+    return this.peek().map((v) => labels.get(v) ?? v).join(', ');
   }
 
   protected createEditor(): HTMLElement {
@@ -182,7 +182,7 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
     filter.placeholder = this.options.allowCustom ? 'Filter or add…' : 'Filter…';
     filter.setAttribute('aria-label', 'Filter options');
     filter.setAttribute('aria-controls', `${this._id}-listbox`);
-    bindValue(this.scope, filter, this._filter);
+    bindValue(filter, this._filter, {owner: this.scope});
     this.scope.listen(filter, 'input', () => this._activeIndex.value = -1);
     box.append(filter);
     return box;
@@ -257,7 +257,7 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
     this._activeIndex.value = -1;
     this._machine.value = 'open';
     this._open.value = true;
-    this._closeOverlay = Overlay.show(this._field, this._popup, this.scope);
+    this._closeOverlay = Overlay.show(this._field, this._popup, {owner: this.scope});
     this._focusEl.focus();
   }
 
@@ -286,7 +286,7 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
     const visible = this._visible.peek();
     if (index < 0 || index >= visible.length)
       return;
-    const selected = new Set(this.value.peek());
+    const selected = new Set(this.peek());
     const value = itemValue(visible[index]);
     if (!selected.delete(value))
       selected.add(value);
@@ -295,7 +295,7 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
 
   private _toggleAll(): void {
     const visible = this._visible.peek();
-    const selected = new Set(this.value.peek());
+    const selected = new Set(this.peek());
     const on = visible.length > 0 && visible.every((i) => selected.has(itemValue(i)));
     for (const item of visible) {
       if (on)
@@ -319,7 +319,7 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
       itemValue(i).toLowerCase() === lower || itemLabel(i).toLowerCase() === lower);
     if (!existing)
       this._items.value = [...items, text];
-    const selected = new Set(this.value.peek());
+    const selected = new Set(this.peek());
     selected.add(existing ? itemValue(existing) : text);
     this._commit(selected);
     this._filter.value = '';
@@ -327,7 +327,7 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
   }
 
   private _commit(selected: Set<string>): void {
-    this.value.value = this._items.peek().filter((i) => selected.has(itemValue(i))).map(itemValue);
+    this.value = this._items.peek().filter((i) => selected.has(itemValue(i))).map(itemValue);
   }
 
   // the tag's own ✕ handler already removed the value — the click must not also open the popup
@@ -337,7 +337,7 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
   }
 
   private _remove(value: string): void {
-    const selected = new Set(this.value.peek());
+    const selected = new Set(this.peek());
     selected.delete(value);
     this._commit(selected);
   }
@@ -402,7 +402,7 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
   }
 
   private _renderTags(): void {
-    const selected = this.value.value;
+    const selected = this.value;
     const labels = new Map(this._items.value.map((i): [string, string] => [itemValue(i), itemLabel(i)]));
     const box = this._tagsBox;
     box.textContent = '';
@@ -434,7 +434,7 @@ export class MultiSelect extends Input<string[], MultiSelectOptions> {
   }
 
   private _applySelection(): void {
-    const selected = new Set(this.value.value);
+    const selected = new Set(this.value);
     const rows = this._rows.value;
     const els = this._rowsBox.children;
     for (let i = 0; i < rows.length; i++) {

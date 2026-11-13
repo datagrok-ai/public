@@ -1,0 +1,9 @@
+{
+  "name": "grouped-hover",
+  "entry": "campaigns-table.ts",
+  "title": "A grouped table whose hovered row stands apart from the group headers",
+  "source": "B-6: the hovered row had the section header's colour, --dg-hover-subtle = --dg-bg-secondary = --dg-grey-1",
+  "bad": {
+    "bad-hover-css": ["hover-distinct"]
+  }
+}

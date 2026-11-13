@@ -3,11 +3,18 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import '../../css/chem.css';
+import {EMPTY_MOLECULE_MESSAGE, SMARTS_MOLECULE_MESSAGE} from '../constants';
+import {_isSmarts, isFragment} from './mol-creation_rdkit';
 
-
-export function updateDivInnerHTML(div: HTMLElement, content: string | Node): void {
-  div.innerHTML = '';
-  div.append(content);
+/** A molecule panel's content: a message for an empty molecule and, unless `queriesToo`, for SMARTS and molecular
+ * fragments; else `widget()`. */
+export function moleculePanel<W>(molecule: string | null | undefined, widget: () => W, queriesToo = false):
+  W | DG.Widget {
+  if (DG.chem.Sketcher.isEmptyMolfile(molecule!))
+    return new DG.Widget(ui.divText(EMPTY_MOLECULE_MESSAGE));
+  if (!queriesToo && (_isSmarts(molecule!) || isFragment(molecule!)))
+    return new DG.Widget(ui.divText(SMARTS_MOLECULE_MESSAGE));
+  return widget();
 }
 
 export function addCopyIcon(element: Object | HTMLElement, paneName: string) {

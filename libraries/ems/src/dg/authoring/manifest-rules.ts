@@ -1,8 +1,5 @@
-/* The manifest vocabulary the editor checks while the user types — a MIRROR of the Dart
-   `DomainManifestRules` (core/shared/grok_shared/lib/src/domain_manifest_rules.dart) and
-   `DomainSystemColumn.reserved` (domain_types.dart), kept to the constants a rename needs. The
-   server stays the authority: the dry run re-checks everything with the same values. */
-
+/** A mirror of the Dart `DomainManifestRules` (grok_shared `domain_manifest_rules.dart`) and
+ * `DomainSystemColumn.reserved`, kept to the constants a rename needs; the dry run stays the authority. */
 export class ManifestRules {
   /** `DomainManifestRules.identifier`: schema, table and column name shape. */
   static readonly IDENTIFIER = /^[a-z][a-z0-9_]*$/;

@@ -9,6 +9,7 @@ export * from './src/interfaces/d4';
 export * from './src/const';
 export * from './src/events';
 export * from './src/dapi';
+export * from './src/domains';
 export * from './src/dataframe';
 export {BitArray} from './src/u2core/bit-array.js';
 export type {BitPredicate} from './src/u2core/bit-array.js';
@@ -26,6 +27,7 @@ export * from './src/sticky_meta';
 export * from './src/data';
 export * from './src/helpers';
 export * from './src/logger';
+export {AIChat, AIEngine} from './src/ai';
 
 export * from './src/chem';
 export * from './src/ml';

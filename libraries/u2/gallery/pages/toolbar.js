@@ -11,6 +11,7 @@ function injectOnce(id, href) {
   document.head.append(l);
 }
 
+injectOnce('u2-icons-css', '../../css/icons.css');
 injectOnce('u2-toolbar-css', '../../css/toolbar.css');
 injectOnce('u2-menu-css', '../../css/menu.css');
 injectOnce('u2-tooltip-css', '../../css/tooltip.css');
@@ -36,7 +37,8 @@ export async function render(main) {
     '<code>Signal&lt;boolean&gt;</code> through an owned effect, a dropdown button opens a fresh ' +
     '<code>Menu</code> on every click (so checked states are current), and an inline input rides ' +
     'along in an element slot. One tab stop — Tab enters the toolbar, ←/→ move between items, ' +
-    'Enter or Space activates. Narrow the row below to watch whole items collapse into the » menu.';
+    'Enter or Space activates. Narrow the row below to watch whole items collapse into the … ' +
+    '(More actions) menu.';
   main.append(intro);
 
   const wrap = signal(true);
@@ -83,10 +85,10 @@ export async function render(main) {
   const wrapText = el('code');
   const gridText = el('code');
   const filterText = el('code');
-  bindText(page, action, last);
-  bindText(page, wrapText, computed(() => String(wrap.value)));
-  bindText(page, gridText, computed(() => String(grid.value)));
-  bindText(page, filterText, computed(() => filter.value.value || '(empty)'));
+  bindText(action, last, {owner: page});
+  bindText(wrapText, computed(() => String(wrap.value)), {owner: page});
+  bindText(gridText, computed(() => String(grid.value)), {owner: page});
+  bindText(filterText, computed(() => filter.value || '(empty)'), {owner: page});
   const readout = el('p', 'u2-gallery-status');
   readout.append('last action = ', action, '  ·  word wrap = ', wrapText, '  ·  grid = ', gridText,
     '  ·  filter = ', filterText);
@@ -95,7 +97,7 @@ export async function render(main) {
   main.append(el('h2', null, 'Overflow collapse'));
   const hint = el('p', 'u2-gallery-status',
     'Items are dropped whole, from the right, and a separator left dangling at the edge goes with ' +
-    'them. The » menu mirrors what was dropped — buttons become items, toggles become check items ' +
+    'them. The … menu mirrors what was dropped — buttons become items, toggles become check items ' +
     'bound to the same signals, the dropdown becomes a submenu; it is rebuilt on every open.');
   const slider = el('input');
   slider.type = 'range';

@@ -66,8 +66,8 @@ export async function render(main) {
     return [
       plain, solvent, status,
       readout('color', color),
-      readout('solvent', computed(() => solvent.value.value ?? '(null)')),
-      readout('status', computed(() => status.value.value ?? '(null)')),
+      readout('solvent', computed(() => solvent.value ?? '(null)')),
+      readout('status', computed(() => status.value ?? '(null)')),
     ];
   });
 
@@ -82,7 +82,7 @@ export async function render(main) {
     row.style.gap = 'var(--dg-space-m)';
     return [
       pick, row,
-      readout('value', computed(() => pick.value.value ?? '(null)')),
+      readout('value', computed(() => pick.value ?? '(null)')),
       el('p', 'u2-gallery-status', 'Green belongs to both lists, so it survives a swap; Red or Navy ' +
         'does not, and the value falls back to null.'),
     ];
@@ -129,7 +129,7 @@ export async function render(main) {
     toolbar.style.padding = 'var(--dg-space-s)';
     toolbar.style.border = 'var(--dg-border-width) solid var(--dg-border)';
     toolbar.style.borderRadius = 'var(--dg-radius)';
-    return [toolbar, readout('scope', computed(() => scope.value.value ?? '(null)'))];
+    return [toolbar, readout('scope', computed(() => scope.value ?? '(null)'))];
   });
 
   main.append(el('h2', null, 'Disposal'));

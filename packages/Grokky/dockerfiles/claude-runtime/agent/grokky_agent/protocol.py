@@ -46,7 +46,6 @@ class TurnCommand(TypedDict):
     images: NotRequired[list[Image]]
     systemPrompt: str
     effort: NotRequired[str]
-    model: NotRequired[str]
     cwd: str
     userDir: NotRequired[str]
     outputSchema: NotRequired[JsonObject]
@@ -76,11 +75,12 @@ Command = TurnCommand | ContinueCommand | CancelCommand | BrowserResultCommand
 
 
 class Metrics(TypedDict):
+    model: str
     inputTokens: int
     outputTokens: int
     cacheReadTokens: int
     cacheCreationTokens: int
-    costUsd: float
+    costUsd: float | None
     numTurns: int
     durationMs: int
     durationApiMs: int
@@ -130,6 +130,11 @@ class BrowserCallEvent(TypedDict):
     timeoutMs: int
 
 
+class UsageEvent(TypedDict):
+    type: Literal['usage']
+    metrics: Metrics
+
+
 class StoppedEvent(TypedDict):
     type: Literal['stopped']
     text: str
@@ -155,6 +160,7 @@ class SessionLostEvent(TypedDict):
     type: Literal['session_lost']
 
 
-Event = (ReadyEvent | FatalEvent | SessionEvent | TextEvent | ActivityEvent | ToolStartEvent | ToolEndEvent |
-         BrowserCallEvent | StoppedEvent | LimitEvent | ErrorEvent | CancelledEvent | SessionLostEvent)
+Event = (ReadyEvent | FatalEvent | SessionEvent | TextEvent | ActivityEvent | ToolStartEvent |
+         ToolEndEvent | BrowserCallEvent | UsageEvent | StoppedEvent | LimitEvent | ErrorEvent |
+         CancelledEvent | SessionLostEvent)
 Emit = Callable[[Event], None]

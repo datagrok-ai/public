@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, waitUntilAsync} from '@datagrok-libraries/test/src/test';
 
 category('Dapi', () => {
   // One test per data source: the old combined test summed 14 sequential
@@ -48,16 +48,42 @@ category('Dapi', () => {
     expect(w.window.end, dateEnd.toISOString(), 'window.end');
   }, {owner: 'aparamonov@datagrok.ai'});
 
+  test('admin.getGrowthMetrics', async () => {
+    const isSeries = (s: _DG.GrowthMetricsSeries | null, days: number) => s === null ||
+      (typeof s.now === 'number' && typeof s.estimated === 'boolean' && s.trend.length === days);
+    const all = await grok.dapi.admin.getGrowthMetrics({days: 7});
+    expect(Array.isArray(all.rows), true, 'rows');
+    expect(typeof all.schedule.everyMinutes, 'number', 'schedule.everyMinutes');
+    expect(typeof all.gc, 'object', 'gc');
+    for (const r of all.rows) {
+      expect(['database', 'storage', 'gc'].includes(r.area) && typeof r.key === 'string', true,
+        `area and key of ${r.key}`);
+      expect(isSeries(r.bytes, 7) && isSeries(r.count, 7), true, `series of ${r.key}`);
+      expect(Array.isArray(r.alerts), true, `alerts of ${r.key}`);
+      expect(r.key === '(run)', false, 'run marker');
+    }
+    if (all.collectedAt !== null)
+      expect(all.rows.some((r) => r.area === 'database' && r.key === '(total)'), true, 'database (total)');
+
+    const storage = await grok.dapi.admin.getGrowthMetrics({area: 'storage', days: 3});
+    expect(storage.rows.every((r) => r.area === 'storage'), true, 'storage area');
+    expect(storage.rows.every((r) => r.bytes === null || r.bytes.trend.length === 3), true, 'days honoured');
+
+    let status: number | undefined;
+    try {
+      await grok.dapi.admin.getGrowthMetrics({days: 0});
+    } catch (e: any) {
+      status = e.status;
+    }
+    expect(status, 400, 'days 0');
+  }, {owner: 'aparamonov@datagrok.ai'});
+
   test('logging', async () => {
     const logger = new DG.Logger((m) => (m.params as {[key: string]: any})['jsApiTest2'] = 'jsApiTest3');
     const jsApiTestType = 'jsApiTestType';
     logger.log('jsApiTest0', {jsApiTest1: 'jsApiTest2'}, jsApiTestType);
-    for (let i = 0; i < 100; i++) {
-        await DG.delay(100);
-        if ((await grok.dapi.logTypes.list({filter: jsApiTestType}))[0]?.name == jsApiTestType)
-            return;
-    }
-    throw new Error('Log type not found');
+    await waitUntilAsync(async () => (await grok.dapi.logTypes.list({filter: jsApiTestType}))[0]?.name == jsApiTestType,
+      'Log type not found');
     //TODO: find log
     // console.log(await grok.dapi.log.list({filter: 'jsApiTest1 = "jsApiTest2"'}));
   }, {owner: 'aparamonov@datagrok.ai', skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});

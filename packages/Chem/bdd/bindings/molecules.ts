@@ -247,27 +247,6 @@ export const filterPassesLacking = Then('the filter should pass exactly the mole
   expectFilterMatches(page, column, async () => query, query, true, true),
 {description: 'every row passes the filter if and only if its molecule does not contain the query (RDKit substructure match), and some molecule does; polled'});
 
-export const readingIsRowMolecule = Then('the {string} reading of filter panel should be the molecule of row {int} of {string} column', async (page: Page, reading: string, row: number, column: string) => {
-  await expect.poll(() => page.evaluate(async ([name, i, c]) => {
-    // a cloned view leaves the first view's panel in the DOM, hidden
-    const host = Array.from(document.querySelectorAll('[name="viewer-Filters"]')).find((e) => (e as HTMLElement).offsetParent !== null);
-    const values = host == null ? {} : (window as any).__bdd.viewerOf(host).getWidgetStatus()?.values ?? {};
-    const rdkit = await grok.functions.call('Chem:getRdKitModule');
-    const smiles = (v: string) => {
-      if (!v)
-        return '';
-      const mol = rdkit.get_mol(v);
-      try {
-        return mol.get_smiles();
-      }
-      finally {
-        mol.delete();
-      }
-    };
-    return smiles(String(values[name] ?? '')) === smiles(String(grok.shell.t.col(c).get(i - 1)));
-  }, [reading, row, column] as [string, number, string]), {message: `the "${reading}" reading as the molecule of row ${row} of "${column}"`}).toBe(true);
-}, {description: 'the reading and the cell read by RDKit as the same molecule'});
-
 export const cardsFromFilteredRows = Then('every card of {widget} should show a row that passes the filter', async (page: Page, target: ElementRef) => {
   let seen = '';
   await expect.poll(async () => {

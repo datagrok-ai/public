@@ -1,8 +1,3 @@
-/* What a u2 control says about itself (`DG.U2.state`, the u2 ↔ bdd contract §1.1), read for the generic
-   steps — only when the located element is the control's root: a part, a wrapper and a Dart widget keep
-   their DOM readings, and a key the control does not report falls back to the DOM too (absence is not a
-   value). When the status and the DOM both answer and disagree, the claim follows the status and the
-   disagreement is printed once per phrase and page, a finding for the u2 side. */
 import type {Locator, Page} from '@playwright/test';
 import type {ElementRef} from './args.js';
 import {describeCandidates, locate, refOf} from './locate.js';
@@ -39,6 +34,7 @@ export interface U2State {
   name?: string;
   label?: string;
   enabled: boolean;
+  disabledReason?: string;
   visible: boolean;
   focused: boolean;
   readOnly?: boolean;
@@ -61,9 +57,11 @@ export interface U2State {
 }
 
 /** What the DOM says on the element or its focus target (`<rootId>-editor`, else the first editable
- * element inside): the ARIA states, and the text the editor shows (`null` where none is readable). */
+ * element inside): the ARIA states, and the text the editor shows (`null` where none is readable).
+ * `reason` is the element's `aria-description`, else its `title`. */
 export interface DomReadings {
   disabled: boolean;
+  reason: string;
   invalid: boolean;
   readOnly: boolean;
   busy: boolean;
@@ -131,6 +129,7 @@ export const readControls = (els: Element[], o: {errorPart: string | null; find:
       state,
       dom: {
         disabled: aria['aria-disabled'] === 'true' || input.disabled === true,
+        reason: (el.getAttribute('aria-description') || el.getAttribute('title') || '').replace(/\s+/g, ' ').trim(),
         invalid: aria['aria-invalid'] === 'true',
         readOnly: aria['aria-readonly'] === 'true' || input.readOnly === true,
         busy: el.closest('[aria-busy="true"]') !== null,

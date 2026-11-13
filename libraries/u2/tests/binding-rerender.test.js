@@ -3,7 +3,7 @@
    its siblings and its render root stay. A structural prop reads its bind once. Rebuilding is left
    to the designer's patches, which promote to the render root and drag their dependents along. */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {flush, resetDom} from './dom-shim.js';
 import {Signal, batch} from '../src/core/signals.js';
@@ -185,7 +185,7 @@ spec('a node followed by others is never re-created by its own binds, so its dep
   ctx.data.s.value = 'Two';
   await flush();
   assert.equal(counts.length, 2, 'nothing re-created');
-  instance.node('a').value.value = 'typed';
+  instance.node('a').value = 'typed';
   assert.equal(instance.node('b').root.querySelector('input').value, 'typed', 'b still follows a');
   instance.dispose();
 });
@@ -204,7 +204,7 @@ spec('forward ref: a setter bind to a later node applies at the flush, built onc
   assert.equal(instance.root.querySelectorAll('.u2-spec-error').length, 0, 'built, never broken');
   assert.equal(labelOf(instance, 'early'), 'target');
   assert.equal(counts.length, 2, 'no resolving render');
-  instance.node('later').value.value = 'typed';
+  instance.node('later').value = 'typed';
   assert.equal(labelOf(instance, 'early'), 'typed', 'and follows from then on');
   instance.dispose();
 });
@@ -224,7 +224,7 @@ spec('forward ref under an adopting render root: resolved at the flush, no promo
   assert.equal(instance.root.querySelectorAll('.u2-spec-error').length, 0, 'built, never broken');
   assert.equal(counts.length, 2);
   assert.equal(labelOf(instance, 'early'), 'target', 'the value resolved');
-  instance.node('later').value.value = 'typed';
+  instance.node('later').value = 'typed';
   await flush();
   await flush();
   assert.equal(counts.length, 2, 'a later source change re-creates nothing');
@@ -417,7 +417,7 @@ spec('a patch promoted to an adopting root drags outside HTML live binds with it
   const editor = new SpecEditor(instance);
   const second = instance.spec.root.children[1].children[1];
   editor.apply({op: 'set-bind', node: second, name: 'label', path: '$.first.value'});
-  instance.node('first').value.value = 'typed';
+  instance.node('first').value = 'typed';
   await flush();
   assert.equal(title(), 'typed', 'the heading follows the re-created input, not the corpse');
   instance.dispose();
@@ -433,7 +433,7 @@ spec('a patch promoted to an adopting root drags outside setter binds with it', 
   const editor = new SpecEditor(instance);
   const second = instance.spec.root.children[1].children[1];
   editor.apply({op: 'set-bind', node: second, name: 'label', path: '$.first.value'});
-  instance.node('first').value.value = 'typed';
+  instance.node('first').value = 'typed';
   await flush();
   assert.equal(instance.node('go').root.textContent, 'typed',
     'the button follows the re-created input');
@@ -450,18 +450,18 @@ spec('unbind after the promoted rebuild: the literal is back at once, and typing
   const editor = new SpecEditor(instance);
   const [titleNode, form] = instance.spec.root.children;
   editor.apply({op: 'set-bind', node: form.children[1], name: 'label', path: '$.first.value'});
-  instance.node('first').value.value = 'typed';
+  instance.node('first').value = 'typed';
   await flush();
   editor.apply({op: 'set-bind', node: titleNode, name: 'text', path: undefined});
   await flush();
   assert.equal(title(), 'Static', 'no stale bound value survives the unbind');
-  instance.node('first').value.value = 'more';
+  instance.node('first').value = 'more';
   await flush();
   assert.equal(title(), 'Static');
 
   editor.apply({op: 'set-bind', node: titleNode, name: 'text', path: '$.first.value'});
   assert.equal(title(), 'more', 'a rebind resolves the current value immediately');
-  instance.node('first').value.value = 'live';
+  instance.node('first').value = 'live';
   await flush();
   assert.equal(title(), 'live');
   instance.dispose();
@@ -493,10 +493,10 @@ spec('the dependent expansion of a designer patch chases a chain across render r
     editor.apply({op: 'set-prop', node: sib, name: 'label', value: 'X'});
     assert.equal(counts.length, 8, 'c and sib with their root, then b, then a — each exactly once');
 
-    instance.node('c').value.value = 'c1';
+    instance.node('c').value = 'c1';
     await flush();
     assert.equal(labelOf(instance, 'b'), 'c1', 'b follows the re-created c');
-    instance.node('b').value.value = 'b1';
+    instance.node('b').value = 'b1';
     await flush();
     assert.equal(labelOf(instance, 'a'), 'b1', 'a follows the re-created b');
     assert.equal(counts.length, 8, 'and following re-created nothing');

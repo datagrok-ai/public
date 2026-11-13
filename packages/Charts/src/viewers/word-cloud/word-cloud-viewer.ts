@@ -9,7 +9,7 @@ import 'echarts-wordcloud';
 import $ from 'cash-dom';
 import {Observable, Subject} from 'rxjs';
 
-import {ERROR_CLASS, LayoutSettler, MessageHandler, unsubscribeAll} from '../../utils/utils';
+import {ERROR_CLASS, LayoutSettler, MessageHandler, subscribeToColumnRemoval, unsubscribeAll} from '../../utils/utils';
 import {laidOutWordCount, wordCloudStatus} from './word-cloud-status';
 
 
@@ -38,7 +38,6 @@ export class WordCloudViewer extends DG.JsViewer {
   drawOutOfBound: boolean;
   fontFamily: string;
   bold: boolean;
-  strColumns: DG.Column[];
   initialized: boolean;
   chart: any; //echarts.EChartsType
   private _counts = new Map<string, number>();
@@ -88,7 +87,6 @@ export class WordCloudViewer extends DG.JsViewer {
 
     this.bold = this.bool('bold', true);
 
-    this.strColumns = [];
     this.initialized = false;
   }
 
@@ -108,16 +106,19 @@ export class WordCloudViewer extends DG.JsViewer {
 
     this.init();
 
-    const columns = this.dataFrame.columns.toList();
-    this.strColumns = columns.filter((col) => col.type === DG.TYPE.STRING);
-
     if (this._testColumns())
-      this.wordColumnName = this.strColumns.filter((col) => col.categories.length <= MAX_UNIQUE_CATEGORIES_NUMBER && col.categories.length > 1)[0]?.name ?? '';
+      this.wordColumnName = this.wordColumnNames()[0] ?? '';
 
     this.render();
   }
 
+  wordColumnNames(): string[] {
+    return this.dataFrame.columns.toList().filter((col) => col.type === DG.TYPE.STRING &&
+      col.categories.length <= MAX_UNIQUE_CATEGORIES_NUMBER && col.categories.length > 1).map((col) => col.name);
+  }
+
   addSubs() {
+    this.subs.push(subscribeToColumnRemoval(this, {wordColumnName: () => this.wordColumnNames()[0]}));
     // the flag has to go up when the change arrives, not 50 ms later when the render runs
     for (const stream of [this.dataFrame.filter.onChanged, ui.onSizeChanged(this.root)]) {
       this.subs.push(stream.subscribe((_: any) => this._renderPending = 1));
@@ -167,12 +168,14 @@ export class WordCloudViewer extends DG.JsViewer {
   }
 
   render() {
+    clearTimeout(this._renderTimer);
     this._renderPending = 1;
     if (!this._testColumns()) {
       this.showError('Not enough data to produce the result.');
       return;
     }
-    if (!this.wordColumnName || this.dataFrame.getCol(this.wordColumnName).categories.length > MAX_UNIQUE_CATEGORIES_NUMBER) {
+    const wordColumn = this.dataFrame.col(this.wordColumnName);
+    if (!wordColumn || wordColumn.categories.length > MAX_UNIQUE_CATEGORIES_NUMBER) {
       this.showError('The Word cloud viewer requires categorical column with 500 or fewer unique categories');
       return;
     }
@@ -248,7 +251,7 @@ export class WordCloudViewer extends DG.JsViewer {
         sizeRange: [this.minTextSize, this.maxTextSize],
         gridSize: this.gridSize,
         rotationRange: [this.minRotationDegree, this.maxRotationDegree],
-        rotationStep: this.rotationStep,
+        rotationStep: Math.max(1, this.rotationStep),
         drawOutOfBound: this.drawOutOfBound,
         textStyle: {
           fontFamily: this.fontFamily,

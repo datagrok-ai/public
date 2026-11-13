@@ -1,7 +1,7 @@
 # Docusaurus (Main Documentation Site)
 
 Docusaurus 3.10 (React/Node.js) static site that serves the datagrok.ai documentation:
-- `/help/*` — Platform documentation (Markdown from `public/help/`)
+- `/help/*` — Platform documentation (Markdown from `help/`)
 - `/api/js/*` — JavaScript API reference (TypeDoc-generated)
 - `/api/py/*` — Python API reference (custom AST-based generator)
 - `/blog/*` — Blog (Markdown from `docusaurus/blog/`, see `blog/_README.md` for the authoring guide)
@@ -21,7 +21,7 @@ Nginx routes decide which directory serves each URL path. The two deploys never 
 Any new top-level route served by Docusaurus (e.g. `/blog`) needs a matching nginx `location` in the
 landing repo, otherwise the landing SPA catches it and serves the homepage.
 
-For the full architecture, nginx routing rules, search (Typesense), CI/CD pipelines, and deployment details, see `../landing/CLAUDE.md`.
+For the full architecture, nginx routing rules, search (Typesense), CI/CD pipelines, and deployment details, see `core/docs/LANDING_HOST.md`.
 
 ## Key Files
 
@@ -59,4 +59,4 @@ Build runs three pre-build scripts automatically: `generatePluginsPages.js`, `ge
 
 ## Deployment
 
-Push to `master` in the `public` repo with changes in `help/`, `docusaurus/`, `js-api/`, or `python-api/`. GitHub Actions workflow (`.github/workflows/docusaurus.yaml`) handles build, deploy (rsync), and Typesense search re-indexing.
+Push to `master` in the `public` repo with changes in `docusaurus/`, `js-api/`, or `python-api/`, or to `master` in the `help` repo. GitHub Actions workflow (`.github/workflows/docusaurus.yaml`) handles build, deploy (rsync), and Typesense search re-indexing.

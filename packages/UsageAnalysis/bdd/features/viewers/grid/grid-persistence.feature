@@ -36,13 +36,11 @@ Feature: Grid appearance and geometry across a layout and a project
   Not translated, and why: what the min and max stats rows show (`grid-ui.md` "Column Stats -
   Visual Verification") — the grid reports which stats rows it draws as `stats rows` (added in the
   review of 2026-09-22), not their values or areas, so the stats-row scenario claims the two rows,
-  the columns staying as they were and nothing logged. A project holding a table of extracted rows (`grid.md` "Extracted Rows in a
-  Saved Project", GROK-19717): the library's project step saves the current view and its table,
-  and a project with every open table is deferred by operator decision D2. The column hidden is RACE, not WEIGHT as in
+  the columns staying as they were and nothing logged. A project holding a table of extracted rows
+  (`grid.md` "Extracted Rows in a Saved Project", GROK-19717) is in `grid-extracted-rows-project.feature`.
+  The column hidden is RACE, not WEIGHT as in
   the TestTrack spec: WEIGHT carries the linked colouring, and a hidden column has no cells whose
-  colour a round-trip could be checked by. RACE is unticked in the Order or Hide Columns dialog,
-  whose list is a grid of its own: it reports its rows as `cell <r> of __name` (the column) and
-  `cell <r> of x` (the tick), in the table's column order.
+  colour a round-trip could be checked by. RACE is unticked in the Order or Hide Columns dialog's list, found by the name it shows.
   The Linked source column is picked in the colour-coding dialog; the Conditional ranges are
   written through the API, as in `grid-appearance.feature`, because the ranges editor has no named
   inputs. Row 298 is scrolled into view with `user makes row 298 current` before it is right-clicked.
@@ -91,10 +89,9 @@ Feature: Grid appearance and geometry across a layout and a project
     When user drags the "header HEIGHT" area of grid to the "header DEMOG" area
     Then the "column order" reading of grid should differ from before
     When user picks "Order or Hide Columns..." from the context menu of the "cell 2 of AGE" area of grid
-    Then the "text of cell 4 of __name" reading of Grid viewer in Order or Hide Columns dialog should be "RACE"
-    And the "text of cell 4 of x" reading of Grid viewer in Order or Hide Columns dialog should be "true"
-    When user clicks on the "cell 4 of x" area of Grid viewer in Order or Hide Columns dialog
-    Then the "text of cell 4 of x" reading of Grid viewer in Order or Hide Columns dialog should be "false"
+    Then the "RACE" column should be checked in the column list of Order or Hide Columns dialog
+    When user toggles the "RACE" column in the column list of Order or Hide Columns dialog
+    Then the "RACE" column should not be checked in the column list of Order or Hide Columns dialog
     When user clicks on CLOSE button in Order or Hide Columns dialog
     Then grid should not have a "header RACE" area
     And the "column order" reading of grid should not contain "RACE"
@@ -164,9 +161,9 @@ Feature: Grid appearance and geometry across a layout and a project
     And no errors should have been logged
 
   Scenario: A project round-trip restores everything
-    When user saves the current view as project "zz-grid-persistence"
+    When user saves the current view as project "zz-grid-persistence-{time}"
     And user closes all views
-    And user opens the "zz-grid-persistence" project
+    And user opens the "zz-grid-persistence-{time}" project
     Then grid should show 1000 rows
     And the "column order" reading of grid should be as remembered
     And the "column width of AGE" reading of grid should be as remembered

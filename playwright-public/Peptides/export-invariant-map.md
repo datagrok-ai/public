@@ -78,7 +78,7 @@ Atlas anchor: `peptides.viewers.sar-base` is the abstract base for both `peptide
 - **Setup composition.** Step 2 of Setup launches SAR via the top-menu entry path (`peptides.workflow.sar-dialog` → `peptides.workflow.analyze-ui` → `peptides.workflow.start-analysis`). The context-panel `Launch SAR` button entry path is owned by `sar.md`; this scenario picks the top-menu path to mirror the sister `export-mutation-cliffs.md` and avoid duplicating `sar.md`'s entry-flow coverage.
 - **Cross-scenario shape coverage.** Scenario 1 exercises the Export action from `Sequence Variability Map` (the `MonomerPosition` subclass — the more commonly used entry point); Scenario 2 exercises it from `Most Potent Residues` (the `MostPotentResidues` subclass). Together they cover the SARViewer-base Export contract from both subclass entry points without requiring a separate dedicated scenario per subclass.
 - **Deferrals.** None. Scenario steps map to existing Playwright-driveable surfaces (top-menu invocation, viewer context-menu navigation, exported TableView grid-shape assertion).
-- **See:** `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Table View` (atlas help_docs rich-object form maps the `Table View` heading to `peptides.workflow.start-analysis`); `public/help/datagrok/solutions/domains/bio/peptides-sar.md#Sequence Variability Map` (maps to `peptides.viewers.monomer-position`).
+- **See:** `help/datagrok/solutions/domains/bio/peptides-sar.md#Table View` (atlas help_docs rich-object form maps the `Table View` heading to `peptides.workflow.start-analysis`); `help/datagrok/solutions/domains/bio/peptides-sar.md#Sequence Variability Map` (maps to `peptides.viewers.monomer-position`).
 
 ## Original trailing metadata
 

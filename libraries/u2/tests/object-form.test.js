@@ -2,7 +2,7 @@
    fakes of the `IProperty` shape the generator consumes — a real DG.Property satisfies it
    structurally (checked at compile time, see src/dg/README.md). */
 
-import {test} from 'node:test';
+import {test} from './owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
@@ -72,12 +72,12 @@ form('generates one input per property type, with a readonly fallback', () => {
   assert.equal(f.root.dataset.u2, 'object-form');
 
   const payload = inputOf(f, 'payload');
-  assert.equal(payload.enabled, false, 'an uneditable type falls back to a disabled text input');
+  assert.equal(payload.disabled === null, false, 'an uneditable type falls back to a disabled text input');
   assert.equal(payload.root.querySelector('input').disabled, true);
-  assert.equal(payload.value.value, String({x: 1}));
+  assert.equal(payload.value, String({x: 1}));
 
   const series = editorOf(f, 'series', 'select');
-  assert.deepEqual(series.children.map((o) => o.value), ['', 'a', 'b', 'c']);
+  assert.deepEqual([...series.children].map((o) => o.value), ['', 'a', 'b', 'c']);
   f.dispose();
 });
 
@@ -86,9 +86,9 @@ form('choices win over the declared type, and a property with no setter is reado
   const computed = {name: 'total', propertyType: 'int', get: (x) => x.count * 2};
   const f = mount(propertyForm([numeric, computed], {grade: '2', count: 3}));
   assert.deepEqual(kinds(f), ['choice-input', 'text-input']);
-  assert.equal(inputOf(f, 'grade').value.value, '2');
-  assert.equal(inputOf(f, 'total').enabled, false);
-  assert.equal(inputOf(f, 'total').value.value, '6');
+  assert.equal(inputOf(f, 'grade').value, '2');
+  assert.equal(inputOf(f, 'total').disabled === null, false);
+  assert.equal(inputOf(f, 'total').value, '6');
   f.dispose();
 });
 
@@ -148,15 +148,61 @@ form('refresh() re-reads the target without writing back or reporting', () => {
   source.name = 'Paracetamol';
   source.count = 7;
   source.active = false;
-  assert.equal(inputOf(f, 'name').value.value, 'Aspirin', 'the form does not poll');
+  assert.equal(inputOf(f, 'name').value, 'Aspirin', 'the form does not poll');
 
   f.refresh();
-  assert.equal(inputOf(f, 'name').value.value, 'Paracetamol');
+  assert.equal(inputOf(f, 'name').value, 'Paracetamol');
   assert.equal(editorOf(f, 'name').value, 'Paracetamol');
-  assert.equal(inputOf(f, 'count').value.value, 7);
-  assert.equal(inputOf(f, 'active').value.value, false);
+  assert.equal(inputOf(f, 'count').value, 7);
+  assert.equal(inputOf(f, 'active').value, false);
   assert.deepEqual(changes, [], 'refresh is echo-suppressed');
   assert.equal(source.name, 'Paracetamol');
+  f.dispose();
+});
+
+form('an invalid edit never reaches the target; refresh keeps it while the target holds still, reset drops it', () => {
+  const source = {name: 'Aspirin', code: 'A1'};
+  const taken = new Set(['B2']);
+  const changes = [];
+  const f = mount(propertyForm([prop('name', 'string', {nullable: false}), prop('code', 'string')], source,
+    {onChanged: (name, value) => changes.push([name, value])}));
+  f.input('code').addValidator((v) => taken.has(v) ? 'Code is taken' : null);
+  assert.equal(f.unwritten.value, 0);
+  const name = editorOf(f, 'name');
+  name.value = '';
+  fire(name, 'input');
+  assert.equal(source.name, 'Aspirin', 'an empty required name is not written');
+  assert.equal(f.validity.value, 'Value can\'t be empty', 'the form says why — what Save goes by');
+  const code = editorOf(f, 'code');
+  code.value = 'B2';
+  fire(code, 'input');
+  assert.equal(source.code, 'A1');
+  assert.deepEqual(changes, [], 'nothing was reported');
+  assert.equal(f.unwritten.value, 2, 'what a caller counts as unsaved');
+  assert.deepEqual(f.unwrittenValues.value, {name: '', code: 'B2'}, 'and what the fields hold');
+
+  f.refresh();
+  assert.equal(f.input('name').value, '', 'a refresh keeps the refused edit while the target holds still');
+  source.code = 'C3';
+  f.refresh();
+  assert.equal(f.input('code').value, 'C3', 'a target that moved wins');
+
+  code.value = 'B2';
+  fire(code, 'input');
+  taken.delete('B2');
+  f.input('code').revalidate();
+  assert.equal(source.code, 'B2', 'a value that turns valid under it is written');
+  assert.equal(f.unwritten.value, 1, 'only the name is still held');
+  assert.deepEqual(f.unwrittenValues.value, {name: ''});
+
+  f.reset();
+  assert.equal(f.input('name').value, 'Aspirin', 'reset drops the refused edit');
+  assert.equal(f.unwritten.value, 0);
+  assert.equal(f.input('name').touched.value, false, 'and starts fresh');
+  name.value = 'Ibuprofen';
+  fire(name, 'input');
+  assert.equal(source.name, 'Ibuprofen');
+  assert.deepEqual(changes, [['code', 'B2'], ['name', 'Ibuprofen']]);
   f.dispose();
 });
 
@@ -169,7 +215,7 @@ form('nullable: false becomes a required validator and drops the empty choice', 
   assert.equal(inputOf(f, 'name').validity.value, 'Value can\'t be empty');
   assert.equal(f.validity.value, 'Value can\'t be empty');
   assert.equal(f.validate(), false);
-  assert.deepEqual(editorOf(f, 'series', 'select').children.map((o) => o.value), ['a', 'b']);
+  assert.deepEqual([...editorOf(f, 'series', 'select').children].map((o) => o.value), ['a', 'b']);
 
   const name = editorOf(f, 'name');
   name.value = 'Aspirin';
@@ -185,27 +231,30 @@ form('nullable: false becomes a required validator and drops the empty choice', 
   f.dispose();
 });
 
-form('min and max flag the generated number input instead of clamping it', () => {
+form('min and max flag the generated number input instead of clamping it; only a valid value is written', () => {
   const source = sample();
+  const before = source.count;
   const f = mount(propertyForm(PROPS, source));
   const count = editorOf(f, 'count');
   count.value = '42';
   fire(count, 'input');
   fire(count, 'blur');
-  assert.equal(source.count, 42, 'the out-of-range value reaches the target');
+  assert.equal(f.input('count').value, 42, 'the field holds what was typed');
+  assert.equal(source.count, before, 'the target keeps its last valid value');
   assert.equal(f.input('count').validity.value, 'Value must be at most 10');
   assert.equal(f.validity.value, 'Value must be at most 10', 'and the form is invalid');
 
   count.value = '-1';
   fire(count, 'input');
   fire(count, 'blur');
-  assert.equal(source.count, -1);
+  assert.equal(source.count, before);
   assert.equal(f.input('count').validity.value, 'Value must be at least 0');
 
   count.value = '5';
   fire(count, 'input');
   fire(count, 'blur');
   assert.equal(f.validity.value, null);
+  assert.equal(source.count, 5, 'a value that turns valid is written');
 
   const weight = editorOf(f, 'weight');
   weight.value = '-3.5';
@@ -242,7 +291,7 @@ form('an override replaces the input, other keys merge into the generated one', 
   }));
   assert.equal(f.root.classList.contains('u2-form-tall'), true, 'condensed maps to the tall layout');
   assert.equal(inputOf(f, 'Structure'), custom, 'the caller-supplied input is laid out as is');
-  assert.equal(custom.value.value, 'Aspirin', 'and seeded from the property');
+  assert.equal(custom.value, 'Aspirin', 'and seeded from the property');
   assert.equal(custom.root.parentNode, f.root.querySelector('.u2-form-rows'));
 
   const editor = custom.root.querySelector('input');
@@ -299,7 +348,7 @@ form('disposing the form disposes every input it generated', () => {
 });
 
 function clickers(input) {
-  return input.root.querySelectorAll('.u2-number-click');
+  return [...input.root.querySelectorAll('.u2-number-click')];
 }
 
 function sliderOf(input) {
@@ -353,7 +402,7 @@ form('inputForProperty is that same mapping, for editors that learn the property
   const count = mount(inputForProperty(prop('count', 'int', {min: 1, max: 10})));
   assert.equal(count.root.dataset.u2, 'number-input');
   assert.equal(clickers(count).length, 2);
-  count.value.value = 11;
+  count.value = 11;
   assert.equal(count.validity.value, 'Value must be at most 10');
   count.dispose();
 
@@ -366,12 +415,12 @@ form('assumeWritable: a property with no setter still gets the editor its type a
   const param = {name: 'count', propertyType: 'int', min: 1, max: 10};
   const readonly = mount(inputForProperty(param));
   assert.equal(readonly.root.dataset.u2, 'text-input', 'nothing can be written back — a form shows it');
-  assert.equal(readonly.enabled, false);
+  assert.equal(readonly.disabled === null, false);
   readonly.dispose();
 
   const editor = mount(inputForProperty(param, {assumeWritable: true}));
   assert.equal(editor.root.dataset.u2, 'number-input', 'a value editor owns the value itself');
-  assert.equal(editor.enabled, true);
+  assert.equal(editor.disabled === null, true);
   assert.equal(clickers(editor).length, 2, 'and gets the metadata with it');
   editor.dispose();
 });
@@ -384,22 +433,22 @@ form('bigint and qnum get their own editors, not a number input', () => {
   assert.equal(editorOf(f, 'ic50').value.startsWith('<5.2'), true);
 
   const id = inputOf(f, 'id');
-  id.value.value = 42n;
+  id.value = 42n;
   assert.equal(source.id, 42n, 'a bigint reaches the property as a bigint');
 
   const ic50 = inputOf(f, 'ic50');
-  ic50.value.value = QNum.greater(7);
+  ic50.value = QNum.greater(7);
   assert.equal(QNum.getValue(source.ic50), 7, 'a qnum reaches it as the packed double');
   f.dispose();
 });
 
 form('a bigint property that hands over its digits as text is read all the same', () => {
   const f = mount(propertyForm([prop('id', 'bigint')], {id: '900719925474099101'}));
-  assert.equal(inputOf(f, 'id').value.value, 900719925474099101n);
+  assert.equal(inputOf(f, 'id').value, 900719925474099101n);
   f.dispose();
 
   const empty = mount(propertyForm([prop('id', 'bigint')], {}));
-  assert.equal(inputOf(empty, 'id').value.value, null);
+  assert.equal(inputOf(empty, 'id').value, null);
   empty.dispose();
 });
 
@@ -496,7 +545,7 @@ form('a file property goes to the editor the platform layer registered', () => {
 
   const unwired = mount(inputForProperty(prop('report', 'file')));
   assert.equal(unwired.root.dataset.u2, 'text-input', 'off the platform, a read-only field');
-  assert.equal(unwired.enabled, false);
+  assert.equal(unwired.disabled === null, false);
   unwired.dispose();
 });
 
@@ -509,22 +558,22 @@ form('lists and maps round-trip through the property without reporting a change'
   assert.deepEqual(f.getValues(), {labels: ['a', 'b'], meta: {x: '1'}, report: {path: 'demo.csv'}});
   assert.deepEqual(changes, [], 'generation is not a change, arrays and records included');
 
-  inputOf(f, 'labels').value.value = ['c'];
-  inputOf(f, 'meta').value.value = {y: '2'};
+  inputOf(f, 'labels').value = ['c'];
+  inputOf(f, 'meta').value = {y: '2'};
   assert.deepEqual(source.labels, ['c']);
   assert.deepEqual(source.meta, {y: '2'});
   assert.deepEqual(changes, [['labels', ['c']], ['meta', {y: '2'}]]);
 
   source.labels = ['d'];
   f.refresh();
-  assert.deepEqual(inputOf(f, 'labels').value.value, ['d']);
+  assert.deepEqual(inputOf(f, 'labels').value, ['d']);
   assert.deepEqual(changes.length, 2, 'refresh is echo-suppressed');
   f.dispose();
 });
 
 form('a list property that hands over its items as text is read all the same', () => {
   const f = mount(propertyForm([prop('labels', 'list')], {labels: 'a,"b,c"'}));
-  assert.deepEqual(inputOf(f, 'labels').value.value, ['a', 'b,c']);
+  assert.deepEqual(inputOf(f, 'labels').value, ['a', 'b,c']);
   f.dispose();
 
   const empty = mount(propertyForm([prop('labels', 'list'), prop('meta', 'map')], {}));

@@ -1,9 +1,13 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, test, uiSettled} from '@datagrok-libraries/test/src/test';
 import {Plate} from '../plate/plate';
+import {PlateReader} from '../plate/plate-reader';
+import {BmgPherastar96PlateReader} from '../plate/readers/bmg-pherastar-96';
+import {NumericMatcher} from '../plates/matchers';
 
 // @ts-ignore
 import * as jStat from 'jstat';
@@ -20,6 +24,18 @@ function getPlate(): Plate {
   const readout = Plate.fromCsvTable(readoutCsv, 'readout');
 
   return Plate.fromPlates([concentration, layout, readout]);
+}
+
+/** Shows the plate's detailed view in a dialog until it has drawn, then closes it. */
+async function showPlate(plate: Plate): Promise<void> {
+  const dialog = ui.dialog({title: 'Inspect plate'})
+    .add(PlateWidget.detailedView(plate).root)
+    .show({width: 500, height: 500});
+  try {
+    await uiSettled('the plate widget');
+  } finally {
+    dialog.close();
+  }
 }
 
 category('plates', () => {
@@ -48,10 +64,7 @@ category('plates', () => {
 
   test('fromExcel', async () => {
     const plate = await Plate.fromExcelPath('System:DemoFiles/hts/xlsx_plates/plate1.xlsx');
-    ui.dialog({title: 'Inspect plate'})
-      .add(PlateWidget.detailedView(plate).root)
-      .show({width: 500, height: 500});
-    await DG.delay(10000);
+    await showPlate(plate);
   });
 
   test('normalization', async () => {
@@ -74,11 +87,7 @@ category('plates', () => {
   });
 
   test('render', async () => {
-    const plate = getPlate();
-    ui.dialog({title: 'Inspect plate'})
-      .add(PlateWidget.detailedView(plate).root)
-      .show({width: 500, height: 500});
-    await DG.delay(10000);
+    await showPlate(getPlate());
   });
 
   test('numToExcel', async () => {
@@ -95,6 +104,26 @@ category('plates', () => {
 
     expect(excelToNum('AA'), 26);
     expect(excelToNum('BA'), 52);
+  });
+
+  test('BMG PHERAstar reader', async () => {
+    const text = await grok.dapi.files.readAsText('System:DemoFiles/hts/formats/BMG_Pherastar_96.txt');
+    expect(PlateReader.getReader(text) instanceof BmgPherastar96PlateReader, true);
+    const plate = PlateReader.read(text)!;
+    expect(plate.rows, 8);
+    expect(plate.cols, 12);
+    expect(plate.get('Channel A', 'A01'), 861);
+    expect(plate.get('Channel B', 'H12'), 25163);
+  });
+
+  test('NumericMatcher: search criteria', async () => {
+    expect(NumericMatcher.matches('>=0', 0), true);
+    expect(NumericMatcher.matches('>=0', -1), false);
+    expect(NumericMatcher.parse('10-20')?.op, NumericMatcher.RANGE);
+    expect(NumericMatcher.matches('10-20', 15), true);
+    expect(NumericMatcher.matches('10-20', 21), false);
+    expect(NumericMatcher.matches('in (1, 2)', 2), true);
+    expect(NumericMatcher.parse('abc'), null);
   });
 });
 

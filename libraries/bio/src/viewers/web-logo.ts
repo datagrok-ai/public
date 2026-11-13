@@ -120,8 +120,6 @@ export interface IWebLogoViewer extends WebLogoProps, IViewer {
   setOptions(options: Partial<WebLogoProps>): void;
 }
 
-export const positionRe: RegExp = /(\d+)([A-Z]?)/;
-
 declare module 'datagrok-api/dg' {
   export interface DataFramePlotHelper {
     fromType(viewerType: 'WebLogo', options: Partial<WebLogoProps>): Promise<DG.Viewer<WebLogoProps> & IWebLogoViewer>;

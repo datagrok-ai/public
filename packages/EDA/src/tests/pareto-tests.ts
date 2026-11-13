@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../package-test';
 
-import {awaitCheck, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {waitUntil, category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {getParetoMask} from '../pareto-optimization/pareto-computations';
 import {OPT_TYPE, NumericArray, COL_NAME} from '../pareto-optimization/defs';
@@ -255,7 +255,7 @@ category('Pareto optimization', () => {
     const colNames = df.columns.names();
     const tv = grok.shell.addTableView(df);
     const viewer = tv.addViewer('Pareto front');
-    await awaitCheck(() => df.col(COL_NAME.OPT) !== null, 'Pareto optimality column is not added', CHECK_TIMEOUT);
+    await waitUntil(() => df.col(COL_NAME.OPT) !== null, 'Pareto optimality column is not added', CHECK_TIMEOUT);
 
     let removalsCount = 0;
     let isDetached = false;
@@ -272,7 +272,7 @@ category('Pareto optimization', () => {
 
     try {
       tv.close();
-      await awaitCheck(() => isDetached, 'Pareto front viewer is not detached', CHECK_TIMEOUT);
+      await waitUntil(() => isDetached, 'Pareto front viewer is not detached', CHECK_TIMEOUT);
       viewer.setOptions({maximizeColumnNames: ['height']});
     } finally {
       subs.forEach((sub) => sub.unsubscribe());

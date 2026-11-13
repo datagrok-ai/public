@@ -1,4 +1,3 @@
-/* Dataset aliases → platform locations. `{dataset}` also accepts a literal `System:…` path. */
 import {dataset} from '../../src/registry.js';
 
 dataset('spgi', {path: 'System:AppData/Chem/tests/spgi-100.csv', aliases: ['spgi-100'],

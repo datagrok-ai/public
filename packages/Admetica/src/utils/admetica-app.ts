@@ -5,8 +5,8 @@ import * as ui from 'datagrok-api/ui';
 import {BaseViewApp} from '@datagrok-libraries/tutorials/src/demo-base-view';
 
 // eslint-disable-next-line max-len
-import { addColorCoding, addSparklines, createDynamicForm, getQueryParams, performChemicalPropertyPredictions, properties, setProperties, updateColumnProperties } from './admetica-utils';
-import { Model, Subgroup } from './constants';
+import {addColorCoding, addSparklines, createDynamicForm, getQueryParams, performChemicalPropertyPredictions, properties, setProperties, updateColumnProperties} from './admetica-utils';
+import {Model, Subgroup} from './constants';
 import '../css/admetica.css';
 
 export class AdmeticaViewApp extends BaseViewApp {
@@ -91,7 +91,6 @@ export class AdmeticaViewApp extends BaseViewApp {
           false,
           false,
           true,
-          true,
         );
       } catch (e: any) {
         const errorWidget = new DG.Widget(ui.divText(e?.message ?? String(e), 'admetica-rdkit-error'));
@@ -132,7 +131,6 @@ export class AdmeticaViewApp extends BaseViewApp {
       undefined,
       false,
       false,
-      true,
     );
   }
 }

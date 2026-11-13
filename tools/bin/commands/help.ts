@@ -28,6 +28,8 @@ Commands:
     testall     Run packages tests
     migrate     Migrate legacy tags to meta.role
     server (s)  Manage a Datagrok server (list/get/delete entities, run functions)
+    src         Work across the repos of an umbrella checkout (git submodules)
+    connect-folder  Connect a local folder to Datagrok as a connection (runs a Docker container)
 
 To get help on a particular command, use:
     grok <command> --help
@@ -168,6 +170,37 @@ Options:
 
 For CI, set GROK_PRIVATE_KEY to the private key JWK (raw or base64) instead of a
 config file. Read more: https://datagrok.ai/help/govern/access-control/keypair-authentication
+`;
+
+const HELP_CONNECT_FOLDER = `
+Usage: grok connect-folder <folder> [--host <alias>] [--read-only] [--foreground] [--image <ref>] [--force]
+       grok connect-folder list [--host <alias>] [--output table|json|csv]
+       grok connect-folder start|stop|logs <connection> [-f]
+       grok connect-folder rm <connection> [--host <alias>]
+
+Connect a local folder to Datagrok as a connection. The folder agent runs in
+Docker, survives closing the terminal, and dials out to the server: no inbound
+port is opened. Connecting the same folder again resumes the same connection.
+
+grok connect-folder ~/data                Read-write, on the default server
+grok connect-folder D:\\data --read-only   Others with access can only read
+grok connect-folder list                  Your connected folders and their containers
+grok connect-folder stop "laptop data"    Stop serving; stays stopped after a reboot
+grok connect-folder rm 7ff0714e           Remove the container and delete the connection
+
+<connection> is the connection name, a connection id prefix (8+ characters), or
+the folder.
+
+Options:
+--host        Server alias from ~/.grok/config.yaml (default: the default server)
+--read-only   Mount the folder read-only; writes are refused
+--foreground  Run attached, removed on Ctrl+C (CI, debugging)
+--image       Agent image (default: the one the server names)
+--force       Allow a drive root or the home folder
+-f            With logs: follow
+
+Requires Docker and a keypair (grok login <server>), which never leaves this
+machine: the container holds a key of its own that can only serve this folder.
 `;
 
 const HELP_CONFIG = `
@@ -485,6 +518,42 @@ Examples:
 The instance name must match a server alias in ~/.grok/config.yaml.
 `;
 
+const HELP_SRC = `
+Usage: grok src <command> [options]
+
+Git recipes across the repos of the datagrok umbrella (git submodules). Runs from anywhere
+in the tree; paths are relative to the umbrella root. Every git command that changes
+something is printed; a repo that fails is listed and the exit code is 1. Children that are
+not cloned get no folder: the umbrella's sparse checkout leaves them out.
+
+Commands:
+    clone [profile | path...]   Clone the umbrella and the given children (profiles: .gitprofiles;
+                                none: profile "default", else every child)
+    add <profile | path>...     Clone more children, each on its branch
+    sparse <path> <glob>...     Clone a child with only the matching files
+    switch                      Put every child on its branch from .gitmodules
+    status                      Branch, unpushed commits and changes of every repo
+    pull                        git pull --ff-only in every repo
+    at <ref>                    Check out an umbrella ref with its pinned children
+    bump [path...]              Pin children to their branch tip on origin and move clean checkouts
+                                there; commit in each umbrella (never pushes)
+    wt add <name> <path>...     Worktrees of the umbrella and the given children on branch <name>
+    doctor [--fix]              Detached HEADs, unpushed commits, stale URLs, empty folders of children
+                                not cloned; --fix resets those URLs and the sparse patterns
+
+Options:
+    --explain     Print the git commands without running them
+    --url <url>   clone: the umbrella (default https://github.com/datagrok-ai/datagrok.git;
+                  over SSH: git@github.com:datagrok-ai/datagrok.git)
+    --dir <dir>   clone: target directory; wt add: worktree root (default <umbrella>-worktrees/<name>)
+
+Examples:
+    grok src clone platform
+    grok src sparse help '*.md'
+    grok src bump core public
+    grok src wt add fix-login core public
+`;
+
 
 export const help = {
   add: HELP_ADD,
@@ -508,5 +577,7 @@ export const help = {
   server: HELP_SERVER,
   s: HELP_SERVER,
   setup: HELP_SETUP,
+  src: HELP_SRC,
+  'connect-folder': HELP_CONNECT_FOLDER,
   help: HELP,
 };

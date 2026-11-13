@@ -5,7 +5,9 @@ Feature: Pivot table — the inner grid that shows the aggregation
   back from the cell itself rather than from the look. Colour coding paints the value column, Grid >
   Hide takes a column away and the Order or Hide Columns dialog puts it back (GROK-16299), the viewer
   picker of the Aggregate row adds one in-cell viewer column per pivot category (GROK-15004) and none
-  at all when two columns are pivoted, and a resizer widens a column. One journey on demog-1000 with
+  at all when two columns are pivoted, and a resizer widens a column. The colouring and a hidden
+  column stay through a filter on the source at Row Source Filtered, and through a selection change
+  at Row Source Selected (public#2606). One journey on demog-1000 with
   the automatic cross tab, where None avg(AGE) runs from 36.92 for Indigestion to 52.30 for RA, so a
   linear scheme paints those two cells the ends of its scale.
   Not translated: dragging a key column header inside the inner grid to re-sort the rows (the manual
@@ -85,4 +87,42 @@ Feature: Pivot table — the inner grid that shows the aggregation
     And the "text of grid cell 5 of None avg(AGE)" reading of pivot table viewer should be "52.30"
     When user drags the "grid column resizer None avg(AGE)" area of pivot table viewer by 60 pixels to the left
     Then the "column width of None avg(AGE)" reading of pivot table viewer should be lower than before
+    And no errors should have been logged
+
+  @realizes:public#2606
+  Scenario: At Row Source Filtered the inner grid keeps its colouring and its hidden column through a filter (public#2606)
+    When user sets "Row Source" property of pivot table viewer to "Filtered"
+    Then the "rows shown" reading of pivot table viewer should be 1000
+    When user picks "Grid > Color Coding > Linear" from the context menu of the "grid header None avg(AGE)" area of pivot table viewer
+    Then the "color coding of None avg(AGE)" reading of pivot table viewer should be "Linear"
+    When user picks "Grid > Hide" from the context menu of the "grid header High avg(AGE)" area of pivot table viewer
+    Then the "column visible of High avg(AGE)" reading of pivot table viewer should be "false"
+    When user adds a categorical filter on "SEX" keeping "M"
+    Then the "rows shown" reading of pivot table viewer should be 447
+    And the "color coding of None avg(AGE)" reading of pivot table viewer should be "Linear"
+    And the "color of grid cell 2 of None avg(AGE)" reading of pivot table viewer should not be "#ffffff"
+    And the "column visible of High avg(AGE)" reading of pivot table viewer should be "false"
+    When user adds a categorical filter on "SEX" keeping "F, M"
+    And user picks "Grid > Color Coding > Off" from the context menu of the "grid header None avg(AGE)" area of pivot table viewer
+    And user picks "Grid > Order or Hide Columns..." from the context menu of the "grid header Low avg(AGE)" area of pivot table viewer
+    And user clicks the plain checkbox in the "Order or Hide Columns" dialog
+    And user clicks on CLOSE button in "Order or Hide Columns" dialog
+    Then the "column visible of High avg(AGE)" reading of pivot table viewer should be "true"
+    And the "color coding of None avg(AGE)" reading of pivot table viewer should be "Off"
+    And no errors should have been logged
+
+  @realizes:public#2606
+  Scenario: At Row Source Selected the inner grid keeps its colouring and its hidden column through a selection (public#2606)
+    Given user selects rows where "SEX" is "F"
+    When user sets "Row Source" property of pivot table viewer to "Selected"
+    Then the "rows shown" reading of pivot table viewer should be 553
+    When user picks "Grid > Color Coding > Linear" from the context menu of the "grid header None avg(AGE)" area of pivot table viewer
+    Then the "color coding of None avg(AGE)" reading of pivot table viewer should be "Linear"
+    When user picks "Grid > Hide" from the context menu of the "grid header High avg(AGE)" area of pivot table viewer
+    Then the "column visible of High avg(AGE)" reading of pivot table viewer should be "false"
+    When user selects rows where "SEX" is "M"
+    Then the "rows shown" reading of pivot table viewer should be 447
+    And the "color coding of None avg(AGE)" reading of pivot table viewer should be "Linear"
+    And the "color of grid cell 2 of None avg(AGE)" reading of pivot table viewer should not be "#ffffff"
+    And the "column visible of High avg(AGE)" reading of pivot table viewer should be "false"
     And no errors should have been logged

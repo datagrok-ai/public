@@ -1,109 +1,71 @@
-// The Crux worker: Chem's one Crux file (vendor/chem-wasm), instantiated from the Module the main thread compiled
-// (engine/crux-module.ts). Substructure search over column segments; in Crux mode ("Chemical engine") descriptors, the
-// scaffold tree, an activity cliff's MCS, and RDKit's own worker code run on Crux (fingerprints, structural alerts).
+/**
+ * The Crux worker: Chem's one Crux file (vendor/chem-wasm), instantiated from the Module the main thread compiled
+ * (engine/crux-module.ts). It keeps the substructure search's column segments (`build`, `search`, `drop`) and runs the
+ * jobs of the job tables by name (`JOBS`: crux/jobs/*.ts, crux-analysis-jobs.ts), each given the worker's
+ * `WorkerJobContext` (crux-api.ts). A new job is an entry in a table; CruxService sends it (`jobInChunks` for a column,
+ * `idleWorkerJob` for one long call, or a method of its own).
+ */
 import initChemWasm, * as chemWasm from '../../vendor/chem-wasm/chem_wasm.js';
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import type {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
-import type {CruxCollection, CruxWorkerApi, DescriptorValues, PackedDescriptorValues} from './crux-api';
-import {INT_NONE} from './crux-api';
+import type {CruxCollection, CruxWorkerApi, WorkerJob, WorkerJobContext} from './crux-api';
 import {RdKitServiceWorker} from '../rdkit-service/rdkit-service-worker';
 import {MAX_MOL_CACHE_SIZE} from '../rdkit-service/rdkit-service-worker-base';
-import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
-import {getUncommonAtomsAndBondsOfMatches} from '../utils/chem-common';
+import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
+import {isWasmTrap} from './crux-api';
+import {trapNoted, watchTraps} from './trap-watch';
+import {ANALYSIS_JOBS} from './crux-analysis-jobs';
+import {BATCH_JOBS} from './jobs/batch';
+import {BIOPOLYMER_JOBS} from './jobs/biopolymer';
+import {CALCULATION_JOBS} from './jobs/calculations';
+import {MOLECULE_JOBS} from './jobs/molecule-jobs';
+import {SEARCH_TYPE_JOBS, dropSearchTypeKeys} from './jobs/search-types';
+import {SCRIPT_JOBS} from './jobs/python-free';
+import {SYNTHON_JOBS} from './jobs/synthon-search';
+import {INCHI_JOBS} from './jobs/inchi';
+import {REACTION_JOBS} from './jobs/reactions';
 
-const crux = chemWasm as unknown as CruxWorkerApi;
+/** The module, every call watched for a trap its caller swallows (trap-watch.ts): later jobs fail as a trap. */
+const glue = watchTraps(chemWasm);
+const crux = glue as unknown as CruxWorkerApi;
+const module = glue as unknown as RDModule;
 const ctx: Worker = self as any;
 const collections = new Map<string, CruxCollection>();
-/** The RDKit worker's code over the Crux module, which answers RDKit.js's calls: the same fingerprints (Morgan r2/2048
- * after remove_hs, pattern, ...) as the RDKit pool's (the alerts: {@link structuralAlerts}, the same matching). Made on
+/** The RDKit worker's code over the Crux module, which answers RDKit.js's calls (conversions, the analyses). Made on
  * first use, without its molecule cache (its budget spent from the start): each job parses its molecules and frees
- * them. */
+ * them; and without its pauses every 50 molecules ({@link NO_PAUSES}). */
 let rdkitShaped: RdKitServiceWorker | null = null;
+/**
+ * The RDKit worker's code pauses (a `setTimeout`) every `_terminationCheckDelay` molecules to read the RDKit pool's
+ * terminate flag, which nothing sets here (CruxService replaces a worker instead), and from the sixth pause on the
+ * browser holds each one 4 ms (nested timers): a conversion of 1,000 molecules slept ~80 ms. One pause per call.
+ */
+const NO_PAUSES = Number.MAX_SAFE_INTEGER;
+/** The pause interval of {@link rdkitShaped} (tests compare it with the RDKit pool's 50: `pauses::test`). */
+let pauseEvery = NO_PAUSES;
 function rdkitShapedWorker(): RdKitServiceWorker {
   if (!rdkitShaped) {
-    rdkitShaped = new RdKitServiceWorker(chemWasm as unknown as RDModule, '');
+    rdkitShaped = new RdKitServiceWorker(module, '');
     rdkitShaped._cacheCounter = MAX_MOL_CACHE_SIZE;
+    rdkitShaped._terminationCheckDelay = pauseEvery;
   }
   return rdkitShaped;
 }
 
-/** The rows of `molecules` with a molecule Crux cannot read: the RDKit pool does them (engine/worker-jobs.ts). */
-function unread(molecules: string[], done: (i: number) => boolean): number[] {
-  const rows: number[] = [];
-  for (let i = 0; i < molecules.length; i++) {
-    if (!molecules[i] || done(i))
-      continue;
-    const mol = getMolSafe(molecules[i], {}, chemWasm as unknown as RDModule).mol;
-    if (mol)
-      mol.delete();
-    else
-      rows.push(i);
+/** Every table's jobs by name; a name in two tables is an error. */
+function jobTable(...tables: {[op: string]: WorkerJob}[]): {[op: string]: WorkerJob} {
+  const jobs: {[op: string]: WorkerJob} = {};
+  for (const table of tables) {
+    for (const [op, job] of Object.entries(table)) {
+      if (Object.hasOwn(jobs, op))
+        throw new Error(`Chem | two Crux worker jobs are named ${op}`);
+      jobs[op] = job;
+    }
   }
-  return rows;
+  return jobs;
 }
 
-/**
- * Which molecules match each rule's SMARTS, as the RDKit worker's `getStructuralAlerts` matches them (a rule's flag is
- * set by its first matching SMARTS), each molecule parsed once; and the rows with a molecule Crux cannot read.
- */
-function structuralAlerts(alerts: {[rule: string]: string[]}, molecules: string[]):
-  {alerts: {[rule: string]: boolean[]}, unread: number[]} {
-  const module = chemWasm as unknown as RDModule;
-  const queries = Object.entries(alerts).map(([rule, smarts]) => [rule, smarts.map((s) => {
-    try {
-      return module.get_qmol(s);
-    } catch {
-      return null;
-    }
-  })] as const);
-  const found: {[rule: string]: boolean[]} = {};
-  for (const [rule] of queries)
-    found[rule] = new Array<boolean>(molecules.length).fill(false);
-  const unread: number[] = [];
-  try {
-    for (let i = 0; i < molecules.length; i++) {
-      const mol = getMolSafe(molecules[i], {}, module).mol;
-      if (!mol) {
-        if (molecules[i])
-          unread.push(i);
-        continue;
-      }
-      try {
-        for (const [rule, smarts] of queries) {
-          for (const query of smarts) {
-            try {
-              if (query && mol.get_substruct_match(query) !== '{}') {
-                found[rule][i] = true;
-                break;
-              }
-            } catch {}
-          }
-        }
-      } finally {
-        mol.delete();
-      }
-    }
-  } finally {
-    for (const [, smarts] of queries)
-      smarts.forEach((query) => query?.delete());
-  }
-  return {alerts: found, unread};
-}
-
-/** The container-shaped descriptor values as typed arrays (the main thread gets their buffers, not copies). */
-function packDescriptors(values: {[name: string]: DescriptorValues}, transfer: Transferable[]):
-  {[name: string]: PackedDescriptorValues} {
-  const packed: {[name: string]: PackedDescriptorValues} = {};
-  for (const [name, {type, value}] of Object.entries(values)) {
-    const array = type === 'int' ? new Int32Array(value.length) : new Float64Array(value.length);
-    const none = type === 'int' ? INT_NONE : NaN;
-    for (let i = 0; i < value.length; i++)
-      array[i] = value[i] ?? none;
-    packed[name] = {type, value: array};
-    transfer.push(array.buffer);
-  }
-  return packed;
-}
+const JOBS = jobTable(CALCULATION_JOBS, BATCH_JOBS, MOLECULE_JOBS, ANALYSIS_JOBS, SEARCH_TYPE_JOBS, SCRIPT_JOBS,
+  SYNTHON_JOBS, BIOPOLYMER_JOBS, INCHI_JOBS, REACTION_JOBS);
 
 /**
  * Builds the collection of one index segment from its SMILES and MOL blocks (a MOL block read as Chem's getMolSafe
@@ -128,10 +90,10 @@ function build(key: string, molecules: string[]): Uint32Array {
  * The segment's molecules that match the query Chem's RDKit search builds (getQueryMolSafe), read by Crux: they are
  * the molecules RDKit's get_substruct_match matches (stereo ignored, as there). The main thread checked that Crux
  * reads the query (CruxService.readsQuery). A query of no atoms (a MOL block of none; a query that does not read, with
- * no failover) matches no molecule, as in RDKit (Crux's search matched every one before crux-core d71ad16e7).
+ * no failover) matches no molecule, as in RDKit.
  */
 function search(key: string, molString: string, molBlockFailover: string): Uint32Array {
-  const query = getQueryMolSafe(molString, molBlockFailover, chemWasm as unknown as RDModule);
+  const query = getQueryMolSafe(molString, molBlockFailover, module);
   if (!query)
     throw new Error(`Crux reads no query from ${molString}`);
   try {
@@ -141,30 +103,12 @@ function search(key: string, molString: string, molBlockFailover: string): Uint3
   }
 }
 
-/**
- * Each molecule's atoms and bonds outside the RDKit Rascal MCES of the two (`get_mces`; `details`: its options), each
- * molecule read as Chem's getMolSafe reads it; null when the pair is below the similarity threshold. Throws for a
- * molecule Crux cannot read.
- */
-function pairUncommonAtomsAndBonds(molecule1: string, molecule2: string, details: string): ISubstruct[] | null {
-  const read = [molecule1, molecule2].map((m) => getMolSafe(m, {}, chemWasm as unknown as RDModule));
-  try {
-    const unreadable = read.findIndex((m) => !m.mol || m.isQMol);
-    if (unreadable >= 0)
-      throw new Error(`Crux reads no molecule from ${[molecule1, molecule2][unreadable]}`);
-    const [mces] = JSON.parse(crux.get_mces(read[0].mol!, read[1].mol!, details));
-    return !mces ? null : read.map(({mol}, k) => getUncommonAtomsAndBondsOfMatches(mol!,
-      mces.atomMatches.map((match: number[]) => match[k]), mces.bondMatches.map((match: number[]) => match[k])));
-  } finally {
-    read.forEach((m) => m.mol?.delete());
-  }
-}
-
 function drop(keys: string[]): void {
   for (const key of keys) {
     collections.get(key)?.free();
     collections.delete(key);
   }
+  dropSearchTypeKeys(keys);
 }
 
 ctx.addEventListener('message', async (e: MessageEvent) => {
@@ -182,26 +126,16 @@ ctx.addEventListener('message', async (e: MessageEvent) => {
       result = search(args[0], args[1], args[2]);
     else if (op === 'drop')
       drop(args[0]);
-    else if (op === 'calcDescriptors')
-      result = packDescriptors(JSON.parse(crux.calcDescriptors(args[0], args[1])), transfer);
-    else if (op === 'calcDescriptors::timed') { // diagnosis: the Crux call and the parse (and packing) timed apart
-      const started = performance.now();
-      const text = crux.calcDescriptors(args[0], args[1]);
-      const computed = performance.now();
-      result = {values: packDescriptors(JSON.parse(text), transfer), wasmMs: computed - started,
-        parseMs: performance.now() - computed};
-    } else if (op === 'scaffoldTree')
-      result = crux.scaffoldTree(args[0], args[1], args[2]);
-    else if (op === 'getFingerprints') {
-      const fps = await rdkitShapedWorker().getFingerprints(args[0], args[1], args[2]);
-      result = {...fps, unread: unread(args[1], (i) => fps.fps[i] !== null)};
-    } else if (op === 'getStructuralAlerts')
-      result = structuralAlerts(args[0], args[1]);
-    else if (op === 'pairUncommonAtomsAndBonds')
-      result = pairUncommonAtomsAndBonds(args[0], args[1], args[2]);
-    else if (op === 'fail::test') // tests: a job that fails with this message
+    else if (Object.hasOwn(JOBS, op)) {
+      const context: WorkerJobContext = {crux: glue, module, rdkitWorker: rdkitShapedWorker, transfer};
+      result = await JOBS[op](context, ...args);
+    } else if (op === 'fail::test') // tests: a job that fails with this message
       throw new Error(args[0]);
-    else if (op === 'busy::test') { // tests: a job that keeps the worker busy, as a long Crux call does
+    else if (op === 'pauses::test') { // tests: the RDKit-shaped worker's pause interval (null: none, as by default)
+      pauseEvery = args[0] ?? NO_PAUSES;
+      if (rdkitShaped)
+        rdkitShaped._terminationCheckDelay = pauseEvery;
+    } else if (op === 'busy::test') { // tests: a job that keeps the worker busy, as a long Crux call does
       const end = performance.now() + args[0];
       let spins = 0;
       while (performance.now() < end)
@@ -209,10 +143,14 @@ ctx.addEventListener('message', async (e: MessageEvent) => {
       result = spins;
     } else
       throw new Error(`Unknown operation: ${op}`);
+    const swallowed = trapNoted(); // a trap a molecule's `catch` let pass: the instance answers nothing more
+    if (swallowed !== null)
+      throw new WebAssembly.RuntimeError(`a Crux call trapped, ${op} fails (${swallowed})`);
     port.postMessage({op: op, retval: result}, transfer);
   } catch (err: any) {
     // a trap reported as one: the service restarts the workers for it (and not for a refusal)
-    port.postMessage({error: err instanceof WebAssembly.RuntimeError ? `RuntimeError: ${err.message}` :
+    const trapped = isWasmTrap(err) || trapNoted() !== null;
+    port.postMessage({error: trapped ? `RuntimeError: ${err?.message ?? err}` :
       err instanceof Error ? err.message : String(err)});
   }
 });

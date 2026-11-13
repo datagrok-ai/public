@@ -1,6 +1,5 @@
-#name: Curate
-#description: Standardizes the dataset
-#top-menu: Chem | Transform | Curate...
+#name: CuratePython
+#description: Standardizes the dataset (Curate's RDKit side: Chem:Curate calls this script, or Crux in Crux mode)
 #language: python
 #sample: chem/chem_standards.csv
 #meta.domain: chem

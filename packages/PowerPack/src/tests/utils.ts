@@ -38,6 +38,9 @@ i`,
   'Abs(': `Possible syntax error`,
   'Abs(${age1})': `Column age1 is missing`,
   'BinBySpecificLimits(${Age}, [18, 30, 45, 60, 75])': '',
+  'RowCount("nope")': 'Table nope is missing',
+  'Avg(Column("nope"))': 'Column nope is missing',
+  'RowCount("demog")': '',
 };
 
 

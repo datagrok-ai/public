@@ -10,9 +10,7 @@ import {Rules} from './pt-rules';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {doPolyToolConvert} from './pt-conversion';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
-import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getOverriddenLibrary} from './pt-synthetic';
 import {helmToMol} from './pt-atomic';
 import {execMonomerHoverLinks} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
@@ -145,14 +143,13 @@ export class RuleCards {
       resHelmCol.meta.units = NOTATION.HELM;
       resHelmCol.setTag(DG.TAGS.CELL_RENDERER, 'helm');
 
-      const rdKitModule: RDModule = await getRdKitModule();
       const seqHelper: ISeqHelper = await getSeqHelper();
 
       const lib = await getOverriddenLibrary(this.rules);
       const resHelmColTemp = resHelmCol.temp;
       resHelmCol.temp = resHelmColTemp;
       const resMolCol = await helmToMol(resHelmCol, helms,
-        isLinear, true, false, false, lib, rdKitModule, seqHelper);
+        isLinear, true, false, false, lib, null, seqHelper);
 
       const mol = resMolCol.get(0);
       const monomerMolSvg = mol && grok.chem.checkSmiles(mol) ?

@@ -39,7 +39,7 @@ import {__obs, DragDropArgs} from './src/events';
 import {HtmlUtils, _isDartium, _options, Utils} from './src/utils';
 import * as rxjs from 'rxjs';
 import {CanvasRenderer, Grid, GridCell, GridCellRenderer, Rect, SemanticValue, Size} from './src/grid';
-import {Entity, FileInfo, Group, Property, User} from './src/entities';
+import {DataConnection, Entity, FileInfo, Group, Property, User} from './src/entities';
 import { Column, DataFrame } from './src/dataframe';
 import dayjs from "dayjs";
 import { Wizard, WizardPage } from './src/ui/wizard';
@@ -80,7 +80,8 @@ export function appendAll(root: HTMLElement, elements: (HTMLElement | Viewer)[])
  *  might contain. See also [remove]. */
 export function empty(e: HTMLElement): HTMLElement {
   while (e.firstChild) {
-    api.grok_Widget_Kill(e.firstChild);
+    if (e.firstChild instanceof Element)
+      api.grok_Widget_Kill(e.firstChild);
     e.removeChild(e.firstChild);
   }
   return e;
@@ -514,6 +515,36 @@ export function tableFromMap(map: { [key: string]: any }, showCopyValue: boolean
   return api.grok_UI_TableFromMap(map, showCopyValue);
 }
 
+/** Options for {@link pickFileFromFiles}. */
+export interface IPickFileOptions {
+  /** Several files at once: every file and folder selected on OK (Ctrl+click, Shift+click), as a list. */
+  multiple?: boolean;
+  /** Browses this file share alone, as the platform's file input bound to a connection does; its root is a pick too,
+   * as a folder. A file is then picked on OK only, not by a double-click. */
+  connection?: DataConnection;
+  /** What the dialog asks for: a `file` (the default), a `folder`, or `all` (either). It names it in the title, and
+   * inside a {@link connection} `folder` lists folders only; the pick itself is not checked against it. */
+  mode?: 'file' | 'folder' | 'all';
+}
+
+/** Opens the platform's 'Select a file' dialog over the file shares tree, or over the files of one share.
+ * Resolves with the file double-clicked, or the file or folder selected on OK
+ * (its {@link FileInfo.fullPath} names it on the share) — with `multiple`, with all of
+ * them — or null when the dialog is closed without a pick.
+ * @example
+ * const file = await ui.pickFileFromFiles();
+ * if (file !== null)
+ *   grok.shell.info(file.fullPath);
+ * const files = await ui.pickFileFromFiles({multiple: true});
+ * @see {@link https://public.datagrok.ai/js/samples/ui/dialogs/pick-file} */
+export function pickFileFromFiles(options: IPickFileOptions & {multiple: true}): Promise<FileInfo[] | null>;
+export function pickFileFromFiles(options?: IPickFileOptions & {multiple?: false}): Promise<FileInfo | null>;
+export function pickFileFromFiles(options?: IPickFileOptions): Promise<FileInfo | FileInfo[] | null>;
+export async function pickFileFromFiles(options: IPickFileOptions = {}): Promise<FileInfo | FileInfo[] | null> {
+  return toJs(await api.grok_UI_PickFileFromFiles(options.multiple === true, toDart(options.connection),
+    options.mode ?? 'file')) ?? null;
+}
+
 /** Opens the platform's 'Select a file' dialog over the file shares tree.
  * Resolves with the first dataframe of the picked file, or null when the dialog
  * is closed without a pick. */
@@ -522,7 +553,8 @@ export async function pickTableFromFiles(): Promise<DataFrame | null> {
 }
 
 /** Opens the platform's 'Select a database query' dialog; running a query that
- * produces a dataframe resolves with it, closing without one resolves with null. */
+ * produces a dataframe resolves with it once all its rows have arrived, closing
+ * without one resolves with null. */
 export async function pickTableFromQuery(): Promise<DataFrame | null> {
   return toJs(await api.grok_UI_PickTableFromQuery()) ?? null;
 }
@@ -883,6 +915,7 @@ export namespace input {
     additionalColumnProperties: (input, x) => setAdditionalColumnProperties(input, x),
     showSelectedColsOnTop: (input, x) => api.grok_ColumnsInput_SetShowSelectedColsOnTop(input.dart, x),
     showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
+    useAlphaChannel: (input, x) => api.grok_ColorInput_SetUseAlphaChannel(input.dart, x),
     allowNew: (input, x) => api.grok_TagsInput_Set_Allow_New(input.dart, x),
     multiValue: (input, x) => api.grok_TagsInput_Set_MultiValue(input.dart, x),
     acceptExtensions: (input, x) => api.grok_FilesInput_Set_AcceptExtensions(input.dart, x),
@@ -990,6 +1023,8 @@ export namespace input {
 
   export interface IColorInputInitOptions<T> extends IInputInitOptions<T> {
     showOnlyColorBox?: boolean;
+    /** Adds an alpha (opacity) channel to the picker; the value becomes "#rrggbbaa" for non-opaque colors. */
+    useAlphaChannel?: boolean;
   }
 
   export interface IFilesInputInitOptions<T> extends IInputInitOptions<T> {
@@ -1242,14 +1277,14 @@ export function inputsRow(name: string, inputs: InputBase[]): HTMLElement {
 
 /** Creates a color picker bound to {@link colorDiv}: clicking the element opens the picker,
  * and its background updates live to preview the selected color. */
-export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement, onOk: Callback | null, onCancel: Callback | null = null): HTMLElement {
-  return api.grok_ColorPicker(color, onChanged, colorDiv, onOk, onCancel);
+export function colorPicker(color: number, onChanged: (color: number) => void, colorDiv: HTMLElement, onOk: Callback | null, onCancel: Callback | null = null, useAlphaChannel: boolean = false): HTMLElement {
+  return api.grok_ColorPicker(color, onChanged, colorDiv, onOk, onCancel, useAlphaChannel);
 }
 
 /** Opens a standalone color picker modal immediately, without a trigger element.
  * Use when there is no persistent UI element to bind to (e.g. editing a canvas-rendered grid cell). */
-export function showColorPicker(color: number, onChanged: (color: number) => void, onOk: Callback | null = null, onCancel: Callback | null = null): void {
-  api.grok_ColorPicker_Show(color, onChanged, onOk, onCancel);
+export function showColorPicker(color: number, onChanged: (color: number) => void, onOk: Callback | null = null, onCancel: Callback | null = null, useAlphaChannel: boolean = false): void {
+  api.grok_ColorPicker_Show(color, onChanged, onOk, onCancel, useAlphaChannel);
 }
 
 /** Legend editor for categorical color patterns ({category: color}). */

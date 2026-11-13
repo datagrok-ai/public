@@ -45,6 +45,9 @@ const IGNORED_CONSOLE_PATTERNS: RegExp[] = [
   // External images embedded in demo descriptions / Markup (e.g. Wikipedia) are CORS-blocked
   // by the browser. This is demo-content noise, not a platform defect.
   /Access to image at .* has been blocked by CORS policy/i,
+  // Chrome 158+ reports legacy `window.onunload` assignments (openchemlib-full.js, GWT) as a
+  // permissions-policy violation; the handler simply never runs.
+  /Permissions policy violation: unload is not allowed/i,
 ];
 
 /**

@@ -457,8 +457,11 @@ test('Chem: Molecule cell Copy-as / Export / Sort-by-similarity actions', async 
       const grid = grok.shell.tv.grid;
       const df = grok.shell.tv.dataFrame;
       const order = grid.getRowOrder();
-      const fpCol = df.col('~' + col + '.Morgan');
+      // the engine in effect names the cache: `~col.Morgan` (RDKit) or `~col.Morgan.Crux` (Crux, the default)
+      const fpName = ['~' + col + '.Morgan', '~' + col + '.Morgan.Crux'].find((n) => df.col(n) != null) ?? null;
+      const fpCol = fpName == null ? null : df.col(fpName);
       return {
+        fpName,
         firstTableIdx: order[0],
         firstMol: df.get(col, order[0]),
         pinnedValues: grid.props.pinnedRowValues,
@@ -473,12 +476,9 @@ test('Chem: Molecule cell Copy-as / Export / Sort-by-similarity actions', async 
     expect(after.firstMol, 'row 0 of the sorted grid must show the query molecule').toBe(query);
     expect(after.pinnedValues, 'the query molecule must be pinned as the sort anchor').toContain(query);
     expect(after.pinnedCols, 'the pinned column must be the molecule column').toContain(MOL_COL);
-    expect(after.columns,
-      `Sort by similarity fingerprints the molecule column, and saveColumn (chem-searches.ts#L176-187) ` +
-      `caches the Morgan fingerprints on the table as the working column "~${MOL_COL}.Morgan"`)
-      .toContain(`~${MOL_COL}.Morgan`);
-    expect(after.fpExport,
-      `the "~${MOL_COL}.Morgan" cache column must be readable back to check its export flags`)
+    expect(after.fpName,
+      `Sort by similarity fingerprints the molecule column, and saveColumn (chem-searches.ts#L199-215) ` +
+      `caches the Morgan fingerprints on the table as "~${MOL_COL}.Morgan" (RDKit) or "~${MOL_COL}.Morgan.Crux" (Crux)`)
       .not.toBeNull();
     expect(after.fpExport!.csv,
       `saveColumn sets includeInCsvExport = false on the fingerprint cache column ` +

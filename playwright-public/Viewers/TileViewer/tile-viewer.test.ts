@@ -117,6 +117,19 @@ test('Tile Viewer tests', async ({page}) => {
     await host.first().waitFor({state: 'visible', timeout: 10000});
   };
 
+  // the Context Panel follows the selection 100 ms later (debounced) and drops the property grid,
+  // so let it switch before the next property-grid click or the row detaches under the click
+  const selectRows = (indices: number[]): Promise<void> => page.evaluate(async (idx: number[]) => {
+    const w = window as any;
+    const row = document.querySelector('.property-grid tr[name^="prop-"]');
+    const df = grok.shell.tv.dataFrame;
+    await w.__settled('grok.events.onCurrentObjectChanged', () => {
+      df.selection.setAll(false);
+      for (const i of idx) df.selection.set(i, true);
+    }, 1000);
+    if (row) await w.__poll(() => row.isConnected, (c: boolean) => !c, 500, 10);
+  }, indices);
+
   let firstTileRow = -1;
   let secondTileRow = -1;
   await softStep('Default form rendering: clicking the first tile makes its row current', async () => {
@@ -219,7 +232,7 @@ test('Tile Viewer tests', async ({page}) => {
     expect(r.selectedTiles).toBe(r.selCount);
     expect(r.fifthSelected).toBe(true);
     expect(r.thirdStillSelected).toBe(true);
-    await page.evaluate(() => grok.shell.tv.dataFrame.selection.setAll(false));
+    await selectRows([]);
   });
 
   const setTileProp = (prop: string, value: any, capMs = 900): Promise<void> =>
@@ -280,11 +293,7 @@ test('Tile Viewer tests', async ({page}) => {
 
   await softStep('Row source: Selected → tiles show only the selected rows', async () => {
 
-    await page.evaluate(() => {
-      const df = grok.shell.tv.dataFrame;
-      df.selection.setAll(false);
-      for (const i of [0, 1, 2, 3, 4]) df.selection.set(i, true);
-    });
+    await selectRows([0, 1, 2, 3, 4]);
     await propRow('row-source');
     await v.selectPropertyGridChoice(page, 'row-source', 'Selected');
     const r = await page.evaluate(() => {
@@ -372,7 +381,6 @@ test('Tile Viewer tests', async ({page}) => {
       const fg = grok.shell.tv.getFiltersGroup();
       await w.__settled('df.onRowsFiltered', () => {
         for (const f of [...fg.filters]) fg.remove(f);
-        df.selection.setAll(false);
       }, 1500);
 
       const afterTiles = Array.from(root.querySelectorAll('.d4-tile-viewer-form'));
@@ -383,6 +391,7 @@ test('Tile Viewer tests', async ({page}) => {
     expect(r.afterHasFemale).toBe(true);
 
     expect(r.filterCount).toBe(r.total);
+    await selectRows([]);
   });
 
   const fontRow = () => page.locator('.property-grid tr[name="prop-tiles-font"]');
@@ -391,7 +400,7 @@ test('Tile Viewer tests', async ({page}) => {
     const h = root.querySelector('.d4-tile-viewer-lane-header') as HTMLElement | null;
     const tileInput = root.querySelector('.d4-tile-viewer-form input[name="input-AGE"]') as HTMLElement | null;
     return {
-      size: h?.style.fontSize ?? '', line: h?.style.lineHeight ?? '', font: h?.style.font ?? '',
+      size: h?.style.fontSize ?? '', line: h ? getComputedStyle(h).lineHeight : '', font: h?.style.font ?? '',
       tile: tileInput ? getComputedStyle(tileInput).fontSize : '',
       tileFamily: tileInput ? getComputedStyle(tileInput).fontFamily : '',
     };
@@ -649,8 +658,9 @@ test('Tile Viewer tests', async ({page}) => {
       if (demogView)
         await w.__settled('grok.events.onCurrentViewChanged', () => { grok.shell.v = demogView; }, 300);
       // the property grid lists the tables it saw when it was built: point the panel elsewhere so
-      // propRow's gear click rebuilds it (clearing it instead leaves the first click building nothing)
-      grok.shell.o = grok.shell.tv.dataFrame;
+      // propRow's gear click rebuilds it (clearing it instead leaves the first click building nothing);
+      // forced, because a plain set is ignored for 2 s after a property-grid edit
+      grok.shell.setCurrentObject(grok.shell.tv.dataFrame, false, true);
     }, spgiPath);
     const tableRow = await propRow('table');
     await v.pollValue(() => tableRow.locator('select option').allTextContents(), (o) => o.includes('spgi-100'), 3000, 100);

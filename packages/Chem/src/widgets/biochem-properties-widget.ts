@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import './../../css/biochem-functions-dialog-widget.css';
+import {isCruxRequested} from '../engine/chem-engine';
 
 interface FunctionState {
   selected: boolean;
@@ -15,7 +16,7 @@ interface FunctionState {
   moleculesInputName: string;
 }
 
-interface MethodInfo {
+export interface MethodInfo {
   name: string;
   package: string;
   authors: string;
@@ -23,6 +24,26 @@ interface MethodInfo {
   description: string;
   github?: string;
   citation?: string;
+}
+
+/** A calculator's shown name by the one it had, so that a history saved before a rename restores it (2026-10-22). */
+const FORMER_NAMES: {[former: string]: string} = {'Chemical Properties (OCL)': 'Chemical Properties'};
+
+/**
+ * A calculator's method, for the dialog's footer: its meta's `method_info.*`; in Crux mode (the Chemical Engine
+ * setting) a calculator whose meta names a Crux method (`method_info.crux_author`, `method_info.crux_github`: Chem's
+ * Chemical Properties) shows that one instead of its RDKit-mode method.
+ */
+export function calculatorMethodInfo(func: DG.Func): MethodInfo {
+  const opts = func.options || {};
+  const crux = isCruxRequested() && !!opts['method_info.crux_author'];
+  return {
+    name: func.friendlyName || func.name, package: opts['method_info.package'] || 'N/A',
+    authors: (crux ? opts['method_info.crux_author'] : opts['method_info.author']) || 'N/A',
+    year: crux ? '' : opts['method_info.year'] || '',
+    description: func.description || '',
+    github: crux ? opts['method_info.crux_github'] : opts['method_info.github'], citation: opts['method_info.citation'],
+  };
 }
 
 
@@ -125,7 +146,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
       }
       if (stateToRestore.functions) {
         for (const [funcName, savedState] of Object.entries(stateToRestore.functions)) {
-          const state = functionState.get(funcName);
+          const state = functionState.get(funcName) ?? functionState.get(FORMER_NAMES[funcName] ?? '');
           if (state && savedState) {
             const typedSavedState = savedState as any;
             state.selectionCheckbox.value = typedSavedState.selected;
@@ -147,14 +168,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
   };
 
 
-  const getMethodInfoFromMeta = (func: DG.Func): MethodInfo => {
-    const opts = func.options || {};
-    return {
-      name: func.friendlyName || func.name, package: opts['method_info.package'] || 'N/A',
-      authors: opts['method_info.author'] || 'N/A', year: opts['method_info.year'] || '',
-      description: func.description || '', github: opts['method_info.github'], citation: opts['method_info.citation'],
-    };
-  };
+  const getMethodInfoFromMeta = calculatorMethodInfo;
 
   const buildFunctionEditors = async () => {
     for (const func of calculatorFuncs) {

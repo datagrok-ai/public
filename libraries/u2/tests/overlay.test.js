@@ -33,7 +33,7 @@ smoke('reopening never piles disposers up on the owner', async () => {
   const content = document.createElement('div');
 
   for (let i = 0; i < 10; i++) {
-    const close = Overlay.show(anchor, content, scope);
+    const close = Overlay.show(anchor, content, {owner: scope});
     assert.equal(content.isConnected, true);
     close();
     close();
@@ -42,7 +42,7 @@ smoke('reopening never piles disposers up on the owner', async () => {
   // the private list IS the leak: one dead closure per open/close round is what accumulates
   assert.equal(scope._disposers?.size ?? 0, 0, 'a closed overlay leaves no cleanup behind');
 
-  Overlay.show(anchor, content, scope);
+  Overlay.show(anchor, content, {owner: scope});
   assert.equal(scope._disposers?.size ?? 0, 1, 'the open one is still owned');
   scope.dispose();
   assert.equal(content.isConnected, false, 'and disposing the owner closes it');
@@ -54,7 +54,7 @@ smoke('a cleanup that disowns itself does not skip its neighbours', async () => 
   const ran = [];
 
   scope.own(() => ran.push('before'));
-  Overlay.show(anchor, document.createElement('div'), scope);
+  Overlay.show(anchor, document.createElement('div'), {owner: scope});
   scope.own(() => ran.push('after'));
   scope.dispose();
   assert.deepEqual(ran, ['before', 'after']);
@@ -69,8 +69,8 @@ smoke('Escape closes the top popup only, stops there, and returns focus that was
   const b = document.createElement('div');
   const field = document.createElement('input');
   b.append(field);
-  Overlay.show(anchorA, a, scope);
-  Overlay.show(anchorB, b, scope);
+  Overlay.show(anchorA, a, {owner: scope});
+  Overlay.show(anchorB, b, {owner: scope});
   field.focus();
   let below = 0;
   anchorB.addEventListener('keydown', () => below++);
@@ -89,12 +89,12 @@ smoke('an outside press closes the popups above the entry it lands in; a press o
   const a = document.createElement('div');
   const inner = document.createElement('button');
   a.append(inner);
-  Overlay.show(anchorA, a, scope);
+  Overlay.show(anchorA, a, {owner: scope});
   const b = document.createElement('div');
-  Overlay.show(inner, b, scope);
+  Overlay.show(inner, b, {owner: scope});
   fire(anchorA, 'pointerdown');
   assert.deepEqual([a.isConnected, b.isConnected], [true, false], 'a press on A\'s anchor closes only what is above A');
-  Overlay.show(inner, b, scope);
+  Overlay.show(inner, b, {owner: scope});
   fire(inner, 'pointerdown');
   assert.deepEqual([a.isConnected, b.isConnected], [true, true], 'the anchor of B keeps B');
   fire(document.body, 'pointerdown');
@@ -108,7 +108,7 @@ smoke('a removed anchor closes its popup through the one body observer', async (
   const content = document.createElement('div');
   let closed = 0;
   content.addEventListener(OVERLAY_CLOSE_EVENT, () => closed++);
-  Overlay.show(anchor, content, scope);
+  Overlay.show(anchor, content, {owner: scope});
   anchor.remove();
   await flush();
   assert.deepEqual([content.isConnected, closed], [false, 1]);
@@ -123,7 +123,7 @@ smoke('the owner announces the popup: aria-controls, aria-expanded, aria-haspopu
   document.body.append(anchor);
   const content = document.createElement('div');
   content.setAttribute('role', 'listbox');
-  const close = Overlay.show(anchor, content, scope);
+  const close = Overlay.show(anchor, content, {owner: scope});
   assert.match(content.id, /^u2-\d+-popup$/);
   assert.equal(content.dataset.u2Part, 'popup');
   assert.deepEqual(['aria-controls', 'aria-expanded', 'aria-haspopup'].map((a) => editor.getAttribute(a)),
@@ -134,7 +134,7 @@ smoke('the owner announces the popup: aria-controls, aria-expanded, aria-haspopu
   const preset = document.createElement('div');
   preset.id = 'own-popup';
   editor.setAttribute('aria-controls', 'own-popup');
-  Overlay.show(anchor, preset, scope)();
+  Overlay.show(anchor, preset, {owner: scope})();
   assert.equal(editor.getAttribute('aria-controls'), 'own-popup', 'a link the owner made stays');
   scope.dispose();
 });
@@ -148,7 +148,7 @@ smoke('positioning follows events, not a frame loop', async () => {
     return raf(fn);
   };
   try {
-    Overlay.show(anchored(), document.createElement('div'), scope);
+    Overlay.show(anchored(), document.createElement('div'), {owner: scope});
     await flush();
     await flush();
   } finally {
@@ -163,8 +163,8 @@ smoke('matchWidth: a dropdown is at least as wide as its anchor; false leaves a 
   const anchor = anchored();
   const list = document.createElement('div');
   const calendar = document.createElement('div');
-  Overlay.show(anchor, list, scope);
-  Overlay.show(anchor, calendar, scope, {matchWidth: false});
+  Overlay.show(anchor, list, {owner: scope});
+  Overlay.show(anchor, calendar, {owner: scope, matchWidth: false});
   for (let i = 0; i < 5; i++)
     await flush();
   await new Promise((r) => setTimeout(r, 20));

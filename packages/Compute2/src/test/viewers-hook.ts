@@ -1,11 +1,17 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {category, test, before, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, before, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import {useViewersHook} from '../composables/use-viewers-hook';
 import {BehaviorSubject} from 'rxjs';
 import * as Vue from 'vue';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {
+  getProcessedConfig,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
+import type {
+  PipelineConfiguration,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 
 category('Composables: Viewers hook', async () => {
   const mockStates = Vue.ref<Record<string, BehaviorSubject<Record<string, any>>> | undefined>();
@@ -25,7 +31,7 @@ category('Composables: Viewers hook', async () => {
     let lastType: string | undefined;
     let lastViewer: DG.Viewer | undefined;
     let runCount = 0;
-    const hook = (ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => {
+    const hook = (ioName: string, type: string, viewer?: DG.Viewer) => {
       lastIoName = ioName;
       lastType = type;
       lastViewer = viewer;
@@ -34,14 +40,14 @@ category('Composables: Viewers hook', async () => {
     const {setViewerRef} = useViewersHook(Vue.ref(hook), mockStates, mockCall as any);
     const grid = mockData.plot.grid();
     setViewerRef(grid, 'simulation', 'Grid');
-    await awaitCheck(() => runCount > 0);
+    await waitUntil(() => runCount > 0, 'timed out waiting for runCount > 0');
     expect(lastIoName, 'simulation');
     expect(lastType, 'Grid');
     expect(lastViewer, grid);
 
     const line = mockData.plot.line();
     setViewerRef(line, 'simulation', 'Line chart');
-    await awaitCheck(() => runCount > 1);
+    await waitUntil(() => runCount > 1, 'timed out waiting for runCount > 1');
     expect(lastIoName, 'simulation');
     expect(lastType, 'Line chart');
     expect(lastViewer, line);
@@ -65,13 +71,29 @@ category('Composables: Viewers hook', async () => {
     const {setViewerRef} = useViewersHook(Vue.ref(hook), mockStates, mockCall as any);
     const grid = mockData.plot.grid();
     setViewerRef(grid, 'simulation', 'Grid');
-    await awaitCheck(() => runCount > 0);
+    await waitUntil(() => runCount > 0, 'timed out waiting for runCount > 0');
 
     mockStates.value!.simulation.next({x: 1});
-    await awaitCheck(() => runCount > 1);
+    await waitUntil(() => runCount > 1, 'timed out waiting for runCount > 1');
     expect(lastIoName, 'simulation');
     expect(lastType, 'Grid');
     expect(lastViewer, grid);
     expectDeepEqual(lastMeta, {x: 1});
+  });
+});
+
+category('Viewers hook: broken', () => {
+  const BROKEN = 'Compute2:BrokenViewersHookModel';
+
+  test('A workflow step whose viewers hook can\'t be made gets none', async () => {
+    const config = await getProcessedConfig({id: 'w', type: 'static', steps: [{id: 's', nqName: BROKEN}]} as
+      PipelineConfiguration);
+    expect((config as any).steps[0].viewersHook === undefined, true);
+  });
+
+  test('The default Excel of a run whose viewers hook can\'t be made is built without it', async () => {
+    const call = await DG.Func.byName(BROKEN).prepare({n: 2}).call();
+    const [file] = await DG.Func.byName('Compute2:ReportFuncCallExcel').apply({funcCall: call});
+    expect(file.data.length > 0, true);
   });
 });

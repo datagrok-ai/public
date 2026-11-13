@@ -209,6 +209,12 @@ function dockerBuild(imageName: string, dockerfilePath: string, context: string,
     });
     return true;
   } catch (e: any) {
+    // A local build targets the host platform, which fails on Apple Silicon for a base
+    // published only for linux/amd64 (datagrok/demo_db_*).
+    if (!usePlatform && process.arch !== 'x64') {
+      color.warn(`Building ${imageName} for the host platform failed. Retrying for linux/amd64...`);
+      return dockerBuild(imageName, dockerfilePath, context, true);
+    }
     color.error(`Failed to build ${imageName}: ${e.message || e}`);
     return false;
   }

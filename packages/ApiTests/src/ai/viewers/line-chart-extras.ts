@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {demog, expectChoices, expectCleared, expectFiresWithin, expectRoundTrip, look, until, withTableView} from '../helpers';
+import {demog, expectChoices, expectCleared, expectFiresWithin, expectRoundTrip, look, reloadLayoutWithLook,
+  until, withTableView} from '../helpers';
 
 // LineChart prop JSON-shape round-trips not covered by line-chart-js-api.ts.
 category('AI: Viewers: LineChart extras', () => {
@@ -37,10 +38,33 @@ category('AI: Viewers: LineChart extras', () => {
     expectCleared(cleared['y2AxisTitle']);
   });
 
-  test('markerOpacity 0..100 boundary round-trip', async () => {
+  test('opacity and transparencies are saved as the color alpha', async () => {
     const c = v();
-    for (const n of [0, 50, 100])
-      expectRoundTrip(c, {markerOpacity: n});
+    c.setOptions({regressionLineTransparency: 0.2, movingAverageLineTransparency: 0.6});
+    expect(DG.Color.a(c.props.regressionLineColor), 204);
+    expect(DG.Color.a(c.props.movingAverageLineColor), 102);
+
+    await withTableView(demog(), (tv) => {
+      tv.lineChart({x: 'age', yColumnNames: ['height']});
+      const lc = reloadLayoutWithLook(tv, DG.VIEWER.LINE_CHART,
+        {regressionLineTransparency: 0.5, regressionLineColor: 0xFFFF0000, lineTransparency: 0.75, markerOpacity: 50});
+      expect((lc.props.regressionLineColor >>> 0).toString(16), '80ff0000');
+      expect(DG.Color.a(lc.props.lineColor), 64);
+      expect(DG.Color.a(lc.props.markerColor), 127);
+      const whiskered = reloadLayoutWithLook(tv, DG.VIEWER.LINE_CHART,
+        {whiskersType: 'Med | Q1, Q3', markerOpacity: null});
+      expect(DG.Color.a(whiskered.props.markerColor), 89);
+    });
+  });
+
+  test('setMarkerOpacity sets the alpha of markerColor', async () => {
+    const c = v();
+    expect(c.getProperties().some((p) => p.name === 'markerOpacity' || p.name === 'lineTransparency'), false);
+    c.setMarkerOpacity(50);
+    expect(DG.Color.a(c.props.markerColor), 127);
+    c.setMarkerOpacity(0);
+    expect(DG.Color.a(c.props.markerColor), 1);
+    expect(DG.Color.a(c.props.lineColor), 255);
   });
 
   test('packCategories/yGlobalScale/axesFollowFilter/showCurrentRowLine/showMouseOverCategory bools', async () => {
@@ -60,20 +84,17 @@ category('AI: Viewers: LineChart extras', () => {
     expect(cleared['overviewAggrType'], 'avg');
   });
 
-  // whiskersType flip resets markerOpacity to its optimal value. The snap reads the render-time
-  // markerOpacity, refreshed only on redraw, so wait for the chart to settle between toggles.
-  test('whiskersType change auto-adjusts markerOpacity', async () => {
+  // whiskersType flip resets the alpha of markerColor to its optimal value.
+  test('whiskersType change auto-adjusts the marker color alpha', async () => {
     await withTableView(demog(), async (tv) => {
       const c = v();
       tv.addViewer(c);
       await until(() => c.root.querySelector('canvas') != null);
-      expect(look(c)['markerOpacity'], 100); // no whiskers -> full opacity
+      expect(DG.Color.a(c.props.markerColor), 255); // no whiskers -> full opacity
       await expectFiresWithin(c.onAfterDrawScene, () => c.setOptions({whiskersType: 'Med | Q1, Q3'}), 2000);
-      await until(() => look(c)['markerOpacity'] !== 100);
-      expect(look(c)['markerOpacity'] !== 100, true);
+      expect(DG.Color.a(c.props.markerColor), 89);
       await expectFiresWithin(c.onAfterDrawScene, () => c.setOptions({whiskersType: 'None'}), 2000);
-      await until(() => look(c)['markerOpacity'] === 100);
-      expect(look(c)['markerOpacity'], 100);
+      expect(DG.Color.a(c.props.markerColor), 255);
     });
   });
 
@@ -83,14 +104,14 @@ category('AI: Viewers: LineChart extras', () => {
       const c = v();
       tv.addViewer(c);
       await until(() => c.root.querySelector('canvas') != null);
-      c.setOptions({autoLayout: false, markerSize: 99});
-      await until(() => look(c)['markerSize'] === 99);
-      expect(look(c)['markerSize'], 99);
+      c.setOptions({autoLayout: false, markerSize: 25});
+      await until(() => look(c)['markerSize'] === 25);
+      expect(look(c)['markerSize'], 25);
       c.setOptions({autoLayout: true});
-      await until(() => look(c)['markerSize'] !== 99);
+      await until(() => look(c)['markerSize'] !== 25);
       const after = look(c);
       expect(after['autoLayout'], true);
-      expect(after['markerSize'] !== 99 && after['markerSize'] >= 1 && after['markerSize'] <= 5, true);
+      expect(after['markerSize'] !== 25 && after['markerSize'] >= 1 && after['markerSize'] <= 5, true);
     });
   });
 }, {owner: 'agolovko@datagrok.ai'});

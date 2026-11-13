@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {thrown} from './domain-lifecycle';
 
 // The typed client and DG.DomainFrameEditor over a WRITABLE external binding: the `extwlive`
@@ -132,12 +132,8 @@ category('Dapi: domain external write', () => {
 
   /** Waits for the editor's `expected` conflict dialog and clicks its [button]. */
   async function answerConflict(button: string): Promise<void> {
-    let dialog: HTMLElement | undefined;
-    for (let i = 0; i < 100 && dialog == null; i++) {
-      await DG.delay(50);
-      dialog = conflictDialog();
-    }
-    expect(dialog != null, true, 'the conflict dialog did not open');
+    await waitUntil(() => conflictDialog() != null, 'the conflict dialog did not open', 5000);
+    const dialog = conflictDialog();
     const target = dialogButton(dialog, button);
     expect(target != null, true, `the conflict dialog has no ${button} button`);
     target!.click();

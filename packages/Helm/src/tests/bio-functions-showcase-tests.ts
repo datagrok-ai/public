@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {after, awaitCheck, before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
@@ -54,8 +54,8 @@ category('Bio functions: HELM showcase', () => {
   }
 
   async function awaitReading(widget: DG.Widget, name: string, value: any): Promise<void> {
-    await awaitCheck(() => widget.getWidgetStatus().values?.[name] === value,
-      `"${name}" is ${widget.getWidgetStatus().values?.[name]}, expected ${value}`, 20000);
+    await waitUntil(() => widget.getWidgetStatus().values?.[name] === value,
+      () => `"${name}" is ${widget.getWidgetStatus().values?.[name]}, expected ${value}`, 20000);
   }
 
   test('Composition', async () => {
@@ -64,7 +64,7 @@ category('Bio functions: HELM showcase', () => {
     const wl = findViewer(tv, 'WebLogo');
     expect(wl.props['sequenceColumnName'], 'HELM');
     await awaitReading(wl, 'rows shown', ROWS);
-    await awaitCheck(() => wl.getWidgetStatus().hitAreas?.['position 1'] != null,
+    await waitUntil(() => wl.getWidgetStatus().hitAreas?.['position 1'] != null,
       'WebLogo has no "position 1" area', 10000);
     expectHelmColumn(df);
   });
@@ -129,7 +129,7 @@ category('Bio functions: HELM showcase', () => {
     const {df, tv, helm} = await openShowcase();
     await grok.functions.call('Bio:SubsequenceSearchTopMenu', {macromolecules: helm});
     const fg = tv.getFiltersGroup({createDefaultFilters: false});
-    await awaitCheck(() => fg.filters.length === 1, `${fg.filters.length} filters, expected 1`, 10000);
+    await waitUntil(() => fg.filters.length === 1, () => `${fg.filters.length} filters, expected 1`, 10000);
     expect(fg.getStates('HELM', 'Bio:bioSubstructureFilter').length, 1);
     expectHelmColumn(df);
   });

@@ -145,7 +145,8 @@ category('ComputeUtils: Driver template expansion config-time', async () => {
       parseLinkIO('_(template):step/inputs(LibTests:TestAnnotatedInputs, a|$nonscalar|$linked)', 'output'), 'l');
     expectDeepEqual(ios.map((io) => io.name), ['b', 'c', 'v', 'code', 'mode']);
     expectDeepEqual(ios.map((io) => [io.unlinked, io.flags?.includes('optional')]), ios.map(() => [true, true]));
-    const plain = expandDeferredIOs(parseLinkIO('_(template):step/inputs(LibTests:TestMul2, $nonscalar)', 'output'), 'l');
+    const plain = expandDeferredIOs(
+      parseLinkIO('_(template):step/inputs(LibTests:TestMul2, $nonscalar)', 'output'), 'l');
     expectDeepEqual(plain.map((io) => [io.name, io.unlinked]), [['a', undefined], ['b', undefined]]);
     const dates = expandDeferredIOs(
       parseLinkIO('_(template):step/inputs(LibTests:TestLookupAnnotations, $nonscalar)', 'output'), 'l');
@@ -239,7 +240,10 @@ category('ComputeUtils: Driver template expansion runtime', async () => {
       }],
     });
     const results: any[] = [];
-    for (const to of ['_(template):step2/inputs(LibTests:TestMul2, $linked)', '_(template):step2/inputs(LibTests:TestMul2)']) {
+    for (const to of [
+      '_(template):step2/inputs(LibTests:TestMul2, $linked)',
+      '_(template):step2/inputs(LibTests:TestMul2)',
+    ]) {
       const pconf = await getProcessedConfig(config(to));
       const logger = new DriverLogger();
       testScheduler.run((helpers) => {

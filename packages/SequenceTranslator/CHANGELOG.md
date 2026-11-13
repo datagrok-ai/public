@@ -2,6 +2,28 @@
 
 ## v.next
 
+* PolyTool: Enumerate: Fixed a "This column is read-only" warning on every double-click of a placeholder's Monomers cell, the gesture that opens Select Monomers
+* Pattern: Fixed 2'-O-Methyl nucleotides written in the Axolabs translation as 2'-Fluoro ones (`Af` instead of `a`): the sample pattern data gave both the same code; a substitution can now write the base in lowercase (`\L$1`)
+* OligoNucleotide renderer: Added `getMonomerPoint` and `getLinkagePoint` (the renderer keeps itself in the grid column's temp, `oligoNucleotideRenderer`): where a duplex cell draws a nucleotide's or a conjugate's chip, or the arc of a 3' linkage, so a UI test or a filmed demo rests the pointer there for its tooltip
+
+## 1.11.7 (2026-11-05)
+
+* Dependencies: Pinned `uuid` to ^11.1.1 through `overrides`, so the `uuid` 8.3.2 that exceljs 4.4.0 brings is no longer resolved (GHSA-w5hq-g745-h8pq)
+* Edit HELM (oligonucleotide cells): The HELM editor is destroyed when its dialog closes, however it closes (it kept its document listeners, and after Escape the monomer that follows the mouse stayed on the page)
+* Dependencies: `@datagrok-libraries/hwe` 1.1.1 (`parseHelm` about 15-20% faster with the same results; a `trailing-monomer-separator` warning)
+* PolyTool: Enumerate: Fixed Highlight monomers applying unseen: the box was hidden for macromolecules, where its value (restored from the dialog's history) was used, and ignored for templates, where it showed; it now shows whenever To atomic level is on and applies to both
+* PolyTool: Convert, Convert Notation and Enumerate: Removed the Chirality engine option, which no longer did anything (stereo is always absolute). `polyToolConvert2` no longer declares `chiralityEngine`: a caller that passes it is not refused
+* PolyTool: Convert and Enumerate: Added tooltips to the column, Highlight monomers, Keep original, To atomic level, Get HELM, Trivial name and Append to table inputs; Linearize's tooltip says what it does now
+* PolyTool: Convert and Enumerate convert on Chem's macromolecule assembler through Bio, and the cyclized column's hover maps come from the assembler per row (they came from the linear builder even for molecules the non-linear converter built, so they could highlight the wrong atoms); Highlight monomers now takes effect; Convert, Enumerate and the rule previews no longer load RDKit for the conversion
+* PolyTool: `parseHelm` on Bio's hwe splitter: fixed HELM ending in `$$$` failing, a connection resolving its chain by the number of its polymer id (PEPTIDE1 and CHEM1 were the same chain), polymer types other than PEPTIDE, and a `}` inside brackets cutting the chain
+
+## ## 1.11.6 (2026-10-30)
+
+* Markush Enumerator: Fixed every molecule failing for a core whose R-labels carry a bond, such as a stereo alkene `[*:1]/C([*:2])=C(\[*:3])[*:4]`, and hydrogen R-groups (the template's `[H][*:1]` or a drawn `[H]`) joining with the wrong double-bond geometry
+* Markush Enumerator: Fixed R-groups that start with their label (`[*:1][C@@H](C)N`) coming out as the other enantiomer, and a stereo R-group on a stereo double bond losing or flipping one of the two geometries
+* [core#1146](https://github.com/datagrok-ai/core/issues/1146): Enumerate: the placeholders validator no longer schedules a second warnings update 100 ms later; Chem enumeration settings fix their popup overflow once attached; the oligo demo fills its inputs as soon as they exist instead of after 500 ms each
+* Markush Enumerator: Edit and Duplicate on a core or an R-group open it in the sketcher (with Crux as the sketcher they opened it empty)
+* Markush Enumerator: Fixed Chem | Transform | Markush Enumeration... failing with a TypeError when the table has no current column yet, as right after it opens
 * [core#886](https://github.com/datagrok-ai/core/issues/886): Oligo Translator: Fixed Get SDF failing for HELM input and Copy SMILES copying an invalid value when the sequence has no structure
 * Tests: Added package tests for the Translator (bulk translation, the app's Axolabs sample, a plain RNA HELM, unreadable codes, GROK-20958), Combine Sequences and the oligo converters
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): PolyTool: Convert is disabled until the current table has a macromolecule column and Combine Sequences until an open table has one; fixed Enumerate HELM failing when the current view is not a table view

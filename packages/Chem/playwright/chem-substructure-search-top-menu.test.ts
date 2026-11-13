@@ -319,7 +319,7 @@ test('Chem: Substructure Search via top menu — match / no-match / re-invoke re
       return {
         molColsNow: grok.shell.t.columns.toList()
           .filter((c: any) => c.semType === 'Molecule').map((c: any) => c.name as string),
-        engine: ((await chem.getProperties()) ?? {}).SubstructureSearchEngine as string | undefined,
+        engine: ((await chem.getProperties()) ?? {}).ChemicalEngine as string | undefined,
       };
     });
     console.log(`[probe] S2S1 before re-invoke: engine=${engine} molCols=${molColsNow.length} ` +

@@ -89,19 +89,18 @@ export async function stockroomLocations(): Promise<DG.ViewBase> {
   const session = new SharedSession();
   const source = SharedSession.runWith(session, () =>
     containers.source({session, live: true, pageSize: 100}));
-  const tree = domains.tree(locations);
-  const table = domains.dataTable(source);
-  tree.effect(() => {
-    const node = tree.selected.value;
-    source.query.value = node === null ? '' : `location_id under "${node.id}"`;
-  });
-  return appView({
-    name: 'Locations',
-    content: new Splitter([tree, table], {direction: 'horizontal', sizes: [0.35, 0.65]}),
-    own: [source],
-    status: source.summary,
-    path: '/apps/Stockroom/Locations',
-  });
+  const host = ViewHost.create({name: 'Locations', content: () => {   // built under the view's host
+    const tree = domains.tree(locations);
+    const table = domains.dataTable(source);
+    tree.effect(() => {
+      const node = tree.selected.value;
+      source.query.value = node === null ? '' : `location_id under "${node.id}"`;
+    });
+    return {root: new Splitter([tree, table], {direction: 'horizontal', sizes: [0.35, 0.65]}),
+      status: source.summary, path: '/apps/Stockroom/Locations'};
+  }});
+  host.own(() => source.dispose());                          // after the content: the source outlives its readers
+  return host.view;
 }
 ```
 

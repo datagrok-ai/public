@@ -7,9 +7,9 @@
 
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, expectFloat} from '@datagrok-libraries/test/src/test';
-import {LOSS, runOptimizer, OptimizerInputsConfig, OptimizerOutputsConfig} from './imports';
+import {LOSS, runOptimizer, runOptimizerFinalized, OptimizerInputsConfig, OptimizerOutputsConfig} from './imports';
 import {ALL_EXECUTORS} from './executors';
-import {makeExpDecayFunc, makeLinearMixtureFunc, makeMultiOutputFunc, makeThrowingFunc}
+import {makeExpDecayFunc, makeLinearMixtureFunc, makeMixedTargetsFunc, makeMultiOutputFunc, makeThrowingFunc}
   from './script-fixtures';
 import {rangeBound} from './utils';
 
@@ -169,6 +169,51 @@ for (const executor of ALL_EXECUTORS) {
       const best = result.extremums.reduce((a, b) => a.cost < b.cost ? a : b);
       // Cost can be 0 only if a + b == 5 exactly; relax to "low".
       expect(best.cost < 1, true, `expected low cost, got ${best.cost}`);
+    });
+
+    test('e2e_mixed_targets', async () => {
+      const func = makeMixedTargetsFunc();
+      const ref = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.INT, 'k', [1, 2, 3])]);
+
+      const targetCall = func.prepare({x1: 1.5, x2: -0.5, ref, shift: true});
+      await targetCall.call();
+      const count = targetCall.getParamValue('count') as number;
+      const line = targetCall.getParamValue('line') as DG.DataFrame;
+      const square = targetCall.getParamValue('square') as DG.DataFrame;
+
+      const inputBounds: OptimizerInputsConfig = {
+        x1: rangeBound(-3, 3, 'x1'),
+        x2: rangeBound(-3, 3, 'x2'),
+        ref: {type: 'const', value: ref},
+        shift: {type: 'const', value: true},
+      };
+      const outputTargets: OptimizerOutputsConfig = [
+        {propName: 'count', type: DG.TYPE.INT, target: count},
+        {propName: 'dist', type: DG.TYPE.FLOAT, target: targetCall.getParamValue('dist')},
+        {propName: 'line', type: DG.TYPE.DATA_FRAME, target: line, argName: 't', cols: [line.col('y')!]},
+        {propName: 'square', type: DG.TYPE.DATA_FRAME, target: square, argName: 't', cols: [square.col('y')!]},
+      ];
+
+      const fin = await runOptimizerFinalized({
+        lossType: LOSS.RMSE,
+        func,
+        inputBounds,
+        outputTargets,
+        samplesCount: 8,
+        reproSettings: {reproducible: true, seed: 42},
+        executor,
+      });
+
+      const best = fin.allExtremums[0];
+      expectFloat(best.point[0], 1.5, 0.01, 'recovered x1*');
+      expectFloat(best.point[1], -0.5, 0.01, 'recovered x2*');
+
+      const call = fin.calls[0];
+      expect(call.getParamValue('count'), count, 'best call int output');
+      expect(call.getParamValue('shift'), true, 'best call bool input');
+      expect((call.getParamValue('ref') as DG.DataFrame).rowCount, 3, 'best call dataframe input');
+      expectFloat((call.getParamValue('square') as DG.DataFrame).col('y')!.get(4), square.col('y')!.get(4), 0.1,
+        'best call dataframe output');
     });
   });
 }

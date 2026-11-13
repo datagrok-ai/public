@@ -3,6 +3,7 @@ import {chem} from 'datagrok-api/grok';
 import * as OCL from 'openchemlib/full';
 import {PackageFunctions} from '../package';
 import {querySmarts} from '../utils/mol-creation_rdkit';
+import {byEngineModule} from '../engine/chem-engine';
 import * as DG from 'datagrok-api/dg';
 
 let sketcherId = 0;
@@ -96,11 +97,12 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
     this._sketcher?.setMolFile(s);
   }
 
-  /** The query a substructure search makes of the molfile (read unsanitized), as SMARTS: RDKit's sanitized reading of a
-   * molecule would turn an aromatic bond outside an aromatic ring single (crux-sketch spike query-roundtrip). */
+  /** The query a substructure search makes of the molfile (read unsanitized: a sanitized reading would turn an aromatic
+   * bond outside an aromatic ring single), as SMARTS, by the engine's module (Crux's in Crux mode). */
   async getSmarts(): Promise<string> {
     const molFile = this.molFile;
-    return querySmarts(molFile, PackageFunctions.getRdKitModule()) ??
+    return byEngineModule('OCL sketcher SMARTS', PackageFunctions.getRdKitModule(),
+      (module) => querySmarts(molFile, module)) ??
       PackageFunctions.convertMolNotation(molFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts);
   }
 
@@ -113,11 +115,6 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
 
   get isInitialized() {
     return this._sketcher !== null;
-  }
-
-  detach(): void {
-    console.log('OCL sketcher detached');
-    super.detach();
   }
 
   private async convertAndSetSmarts(s: string) {

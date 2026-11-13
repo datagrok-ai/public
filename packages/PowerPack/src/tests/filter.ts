@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import type {FilterBuilderFilter} from '../filter/filter-builder-filter';
 
 category('Filters: builder', () => {
@@ -12,7 +12,7 @@ category('Filters: builder', () => {
   let expected: number;
 
   const filtered = (count: number, timeout: number = 10000) =>
-    awaitCheck(() => df.filter.trueCount === count, `expected ${count} rows, got ${df.filter.trueCount}`, timeout);
+    waitUntil(() => df.filter.trueCount === count, `expected ${count} rows, got ${df.filter.trueCount}`, timeout);
 
   // the runner closes every view after a test, so each test opens its own
   function open(): void {
@@ -52,7 +52,7 @@ category('Filters: builder', () => {
     open();
     fg = tv.getFiltersGroup({createDefaultFilters: false});
     fg.updateOrAdd({type, tree});
-    await awaitCheck(() => fg.filters.length === 1, 'the filter was not added', 5000);
+    await waitUntil(() => fg.filters.length === 1, 'the filter was not added', 5000);
     expect((fg.filters[0] as FilterBuilderFilter).saveState().query, '');
     expect(df.filter.trueCount, df.rowCount);
   });
@@ -74,7 +74,7 @@ category('Filters: builder', () => {
   test('an incomplete row leaves the complete ones filtering', async () => {
     const f = await addFilter();
     f.builder!.addCondition();
-    await awaitCheck(() => f.filterSummary === query && f.isFiltering, 'the complete rows still filter', 5000);
+    await waitUntil(() => f.filterSummary === query && f.isFiltering, 'the complete rows still filter', 5000);
     await filtered(expected);
     expect(f.saveState().query.startsWith(`${query} and `), true);
   });
@@ -85,7 +85,8 @@ category('Filters: builder', () => {
     expect(status.hidden, true);
     expect(f.saveState().showStatus, false);
     f.applyState({query, showStatus: true});
-    await awaitCheck(() => !status.hidden && status.textContent === query, 'the status line did not show the query', 5000);
+    await waitUntil(() => !status.hidden && status.textContent === query,
+      'the status line did not show the query', 5000);
     expect(f.saveState().showStatus, true);
   });
 
@@ -153,20 +154,20 @@ category('Filters: builder', () => {
         over30++;
     }
     df.col('sex')!.semType = DG.SEMTYPE.MOLECULE;
-    await awaitCheck(() => sexOps().includes('Contains'), 'the sex row did not gain the molecule operator', 5000);
+    await waitUntil(() => sexOps().includes('Contains'), 'the sex row did not gain the molecule operator', 5000);
     // the row keeps `=` as its (now inapplicable) pick and stops filtering; the age row goes on
     expect(sexOps().includes('like'), false);
     await filtered(over30);
     expect(f.saveState().query, query);
     df.col('sex')!.semType = '';
-    await awaitCheck(() => sexOps().includes('like'), 'the sex row did not get its string operators back', 5000);
+    await waitUntil(() => sexOps().includes('like'), 'the sex row did not get its string operators back', 5000);
     await filtered(expected);
   });
 
   test('detach clears the filter', async () => {
     const f = await addFilter();
     fg.remove(f);
-    await awaitCheck(() => f.isDetached && !f.isFiltering && f.bitset === null, 'not detached', 5000);
+    await waitUntil(() => f.isDetached && !f.isFiltering && f.bitset === null, 'not detached', 5000);
     await filtered(df.rowCount);
   });
 });

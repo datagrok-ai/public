@@ -38,7 +38,7 @@ const config = {
                 docsPath: './api',
                 entryPoints: ['../js-api/dg.ts', '../js-api/ui.ts', '../js-api/grok.ts'],
                 tsconfig: '../js-api/tsconfig.json',
-                readme: '../help/develop/packages/js-api.md',
+                readme: '../../help/develop/packages/js-api.md',
                 mergeReadme: true,
                 entryFileName: "index",
                 out: './js-api',
@@ -78,17 +78,17 @@ const config = {
                         {
                             "pattern": "\\(\\.\\.\\/\\.\\./(?!help)(.*)\\.(png|gif|jpg|jpeg)",
                             "flags": "gi",
-                            "replace": "(../../help/$1.$2"
+                            "replace": "(../../../help/$1.$2"
                         },
                         {
                             "pattern": "\\(\\.\\.(?!/\\.\\.)/(?!help)(.*)\\.(png|gif|jpg|jpeg)",
                             "flags": "gi",
-                            "replace": "(../../help/develop/$1.$2"
+                            "replace": "(../../../help/develop/$1.$2"
                         },
                         {
                             "pattern": "\\(\\./(?!help)(.*)\\.(png|gif|jpg|jpeg)",
                             "flags": "gi",
-                            "replace": "(../../help/develop/packages/$1.$2"
+                            "replace": "(../../../help/develop/packages/$1.$2"
                         }
                     ]
                 }
@@ -113,8 +113,8 @@ const config = {
             ({
                 docs: {
                     sidebarPath: require.resolve('./sidebars.js'),
-                    editUrl: 'https://github.com/datagrok-ai/help/tree/master',
-                    path: '../help',
+                    editUrl: ({docPath}) => `https://github.com/datagrok-ai/help/tree/master/${docPath}`,
+                    path: '../../help',
                     routeBasePath: 'help',
                     exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md'],
                     beforeDefaultRemarkPlugins: [imagePlaceholder],

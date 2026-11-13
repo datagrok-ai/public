@@ -15,7 +15,7 @@ export async function openDemoPage(page, leafId) {
   await page.waitForSelector('.u2demo-nav .u2-tree-row', {timeout: 30000});
 }
 
-/** The current view's URL path — what `appView({path})` wrote. */
+/** The current view's URL path — what `ViewHost.create({path})` wrote. */
 export const demoPath = (page) => page.evaluate(() => grok.shell.v.path);
 
 const ROW = '.u2-designer-toolbox .u2-tree-row';

@@ -7,7 +7,7 @@
 // key exactly the way `grok test` does, evaluates the function in page context, and polls until it
 // returns. A full arm is ~45 min, well past any default timeout, hence the explicit long waits.
 //
-//   node run-benchmark.mjs --label sonnet-baseline --reps 3 --model claude-sonnet-5-5
+//   node run-benchmark.mjs --label sonnet-baseline --reps 3   # runs on the runtime's configured model
 //   node run-benchmark.mjs --label smoke --reps 1 --only trivial,visualization
 //   node run-benchmark.mjs --compare sonnet-baseline,haiku-probe
 //
@@ -173,12 +173,11 @@ async function saveReports(page, names) {
 
     const label = arg('label') ?? 'run';
     const reps = Number(arg('reps', '3'));
-    const model = arg('model');
     const only = arg('only');
-    console.log(`run "${label}" · reps ${reps} · model ${model ?? 'default'}${only ? ` · only ${only}` : ''}`);
+    console.log(`run "${label}" · reps ${reps}${only ? ` · only ${only}` : ''}`);
     const t0 = Date.now();
     const msg = await callLongRunning(page, 'Grokky:runBenchmark',
-      {label, reps, ...(model ? {model} : {}), ...(only ? {only} : {})});
+      {label, reps, ...(only ? {only} : {})});
     console.log(`\n${msg}`);
     console.log(`wall clock: ${Math.round((Date.now() - t0) / 60000)} min`);
     const saved = await saveReports(page, [`benchmark-${label}.json`, `benchmark-${label}.md`]);

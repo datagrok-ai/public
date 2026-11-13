@@ -1,0 +1,180 @@
+// this file was generated automatically from xamgle.xplorer classes declarations
+import { toDart } from "../wrappers";
+let api = (typeof window !== 'undefined' ? window : global.window) as any;
+
+export class PopupMenuTypes {
+  static VIEW_CONTEXT_MENU = 'view-context-menu';
+
+}
+export interface SettingsInterface {
+  /** Automatically save workspace locally */
+  autoSaveWorkspace: boolean;
+
+  /** Automatically detect column semantic types */
+  autoDetectSemanticTypes: boolean;
+
+  /** Show '?' link on docked viewers */
+  dockShowHelpLink: boolean;
+
+  /** Show '⚙' settings icon on docked viewers */
+  dockShowSettingsLink: boolean;
+
+  /** Show hamburger link on docked viewers */
+  dockShowMenuLink: boolean;
+
+  /** Show full screen link on docked viewers */
+  dockShowFullScreenLink: boolean;
+
+  /** Show minimize link on docked viewers; a minimized viewer lives on the ribbon until restored */
+  allowViewerMinimization: boolean;
+
+  /** Show notification when a file is imported */
+  notifyOnFileImport: boolean;
+
+  /** Default state of the "Send notifications" checkbox in the sharing dialog */
+  sendNotificationOnShareCheckbox: boolean;
+
+  /** Controls whether tables pane automatically shows when more
+   * than one table is open */
+  autoShowTablesPane: boolean;
+
+  /** Controls whether columns pane automatically shows when a table is open */
+  autoShowColumnsPane: boolean;
+
+  /** Show viewer settings in the property dialog when user clicks on a viewer. */
+  showViewerSettingsOnClick: boolean;
+
+  /** Show viewer settings in the property dialog when a viewer is added. */
+  showViewerSettingsOnAddition: boolean;
+
+  /** Show user icon on top. */
+  showUserIcon: boolean;
+
+  /** Always show filters icons, not only on hover */
+  showFiltersIconsConstantly: boolean;
+
+  /** Determines when to show range sliders */
+  showRangeSlidersOnViewers: string;
+
+  /** (Experimental) Use WebGPU for rendering and hit testing. */
+  scatterPlotWebGPUAcceleration: boolean;
+
+  /** Auto-apply existing layout after selected rows are extracted */
+  applyLayoutWhenExtractingRows: boolean;
+
+  /** Persist history of actions along with tables and columns */
+  dataHistory: boolean;
+
+  isServer: boolean;
+
+  /** Settings keys locked by a group/All-Users scope: localStorage must not override them. */
+  lockedKeys: any;
+
+  showRecentlyOpenedViewsInHistory: boolean;
+
+  warnOnUnsavedChanges: boolean;
+
+  /** Log user clicks */
+  logActivity: boolean;
+
+  /** Top-menu groups hidden from the view ribbon by label (e.g. ML), and their items as Group | Item. */
+  hiddenMenus: Array<string>;
+
+  /** Named ribbon panels, and single icons as Panel | Icon, hidden from the view ribbon. */
+  hiddenRibbonPanels: Array<string>;
+
+  /** Current object dropdown in the view ribbon; 'Auto' hides it while the context panel is docked. */
+  contextRibbon: string;
+
+  showCurrentRowInProperties: boolean;
+
+  showFilteredRowsInProperties: boolean;
+
+  showSelectedRowsInProperties: boolean;
+
+  showSelectedColumnsInProperties: boolean;
+
+  showCurrentColumnInProperties: boolean;
+
+  showMenu: boolean;
+
+  showTables: boolean;
+
+  showColumns: boolean;
+
+  showProperties: boolean;
+
+  showToolbox: boolean;
+
+  showBrowse: boolean;
+
+  showProjects: boolean;
+
+  showFavorites: boolean;
+
+  showStatusBar: boolean;
+
+  showVariables: boolean;
+
+  showConsole: boolean;
+
+  showHelp: boolean;
+
+  showAI: boolean;
+
+  /** Ordering rules as JSON — see [OrderRule]. A real property so it serializes and picks up the
+   * settings view's personal / group / All-Users scoping; the Browse page renders it with a
+   * dedicated list editor instead of the generic string input. Read it via [OrderRule.parseAll] —
+   * a public getter here would be auto-promoted to a `@Prop` and leak into the JS API. */
+  orderRules: string;
+
+  enableBetaViewers: boolean;
+
+  allowWidgetsAsColumns: boolean;
+
+  allowEventScripts: boolean;
+
+  enableMcpServers: boolean;
+
+  enableIndexedDBTablesCache: boolean;
+
+  viewersToTrellis: boolean;
+
+  enableDomainDatabases: boolean;
+
+  domainsDartUi: boolean;
+
+  dateFormat: string;
+
+  integerNumberFormat: string;
+
+  floatingPointNumberFormat: string;
+
+  hiddenPanels: Array<string>;
+
+  panelOrder: string;
+
+  /** Will load default settings from server on platform start */
+  loadDefaultsOnStart: boolean;
+
+  /** If not empty, will be used to load package.js instead of the Datagrok backend */
+  webpackDevUrl: string;
+
+  clientFuncCacheEnabled: boolean;
+
+  clientFilesCacheEnabled: boolean;
+
+  dataFrameBatchSize: number;
+
+  /** Whenever an error occurs, automatically create report with extended logs and send it to the server. Use UsageAnalysis to browse them.
+   * This includes console logs, server logs, data connectivity logs, Docker logs, etc. */
+  autoReportErrors: boolean;
+
+  _isShell: boolean;
+
+
+
+
+
+
+}

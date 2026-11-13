@@ -15,8 +15,8 @@ Feature: PC plot axes, vertical scale and chrome
   "colour by HEIGHT" and "per-column log scale" steps (every scenario already ends on that floor,
   so each is folded into a step with a geometric claim, here or in the sibling features); the
   Lines > Line Width menu slider, a canvas-drawn control with no handle, which writes the same
-  property this feature sets; and the manual checklist (hover colours, undock/dock, Undo, the
-  General menu, the grid-to-plot column drag). Selection, colour, the range filter, the density
+  property this feature sets; and the manual checklist (hover colours, undock/dock, the General
+  menu, the grid-to-plot column drag) — Undo is in `pc-plot-hover-and-layout.feature`. Selection, colour, the range filter, the density
   overlay, transformations, persistence and Row Source have features of their own.
 
   Background:
@@ -147,8 +147,11 @@ Feature: PC plot axes, vertical scale and chrome
     Then pc plot viewer should have a "range slider \"AGE\"" area
     And no errors should have been logged
 
-  Scenario: To Script > To JavaScript prints the call that rebuilds the plot
+  Scenario: To Script > To JavaScript prints the call that rebuilds the plot, General > Save as PNG downloads its picture
     Given the package autostarts have completed
     When user picks "To Script > To JavaScript" from the context menu of pc plot viewer
     Then balloon should contain text "addViewer"
     And no errors should have been logged
+    Given user watches downloads
+    When user picks "General > Save as PNG" from the context menu of pc plot viewer
+    Then a file matching "\.png$" should have been downloaded

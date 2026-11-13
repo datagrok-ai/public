@@ -1,5 +1,10 @@
 # math changelog
 
+## v.next
+
+* getGPUDevice: `getGPURenderer` names the GPU the browser runs on (WebGL's unmasked renderer) and `isIntegratedGPU` tells whether that name is a GPU built into the CPU (Intel but Arc A/B cards, AMD Radeon "Graphics" without RX, Pro or Instinct)
+* getGPUAdapterDescription: Describes the high-performance adapter getGPUDevice computes on; it requested a default adapter of its own, and when it ran first getGPUDevice computed on that one
+
 ## 1.2.10
 
 * WebGPU: Every compute shader runs 8 x 8 = 64-invocation workgroups (`WORKGROUP_DIM`) instead of 10 x 10 = 100, a whole number of subgroups on any GPU: on Intel's Windows driver the last, partly filled subgroup of a 100-invocation workgroup (invocations 96-99) did not run once the same pipeline was created again in a page, so any kernel could lose those threads' work (MMP, generations, UMAP, KNN, sparse matrix, MCL)

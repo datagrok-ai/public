@@ -51,12 +51,12 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
 - Glue: `wasm/xgbooster.ts` (DG-free: typed-array views + dims). Training runs in a long-lived worker (`wasm/workers/xgboostWorker.ts`, transferable buffers, job queue, auto-recreated on crash); prediction is synchronous on the main thread over a cached model handle (`dispose()` frees it)
 - The wasm build has C++ exceptions disabled: validate ALL hyperparameters/labels in TypeScript before any wasm call; a bad call aborts the whole instance
 - Packed model container v2 (objective in the header); pre-upgrade v1 models (no Version field in the header) are rejected with a clear error — they must be retrained
-- Requires initialization via `initXgboost()` in package init
+- The wasm module is loaded lazily: `fit` and the async `applyXGBooster` await `initXgboost()` (idempotent) before the synchronous predict. Do not move it back to package init: every EDA function, MVA demo included, would wait for it
 
 #### SVM (`svm.ts`)
 - **SVM** via a C++/Emscripten wasm module wrapping **LIBSVM v3.37** (`wasm/SVMAPI.*`, glue `wasm/svm.ts`, worker `wasm/workers/svmWorker.ts`, C wrapper `wasm/libsvm/svm-api.cpp`)
 - Two tasks by target type: string/bool → classification (`C_SVC`, one-vs-one for 3+ classes; libsvm returns the class label directly, so no 0.5 threshold), numeric → regression (`EPSILON_SVR`). Kernels: linear/poly/RBF/sigmoid (default RBF)
-- Training runs in a long-lived worker; prediction is synchronous on the main thread over a cached handle (`dispose()` frees it). Requires `initSvm()` in package init
+- Training runs in a long-lived worker; prediction is synchronous on the main thread over a cached handle (`dispose()` frees it). The wasm module is loaded lazily, as for XGBoost: `fit` and the async `applySVM` await `initSvm()`
 - **Do not revert (libsvm-specific):**
   - **Serialization goes through Emscripten MEMFS** (`svm_save_model`/`svm_load_model` are file-based; libsvm has no in-memory (de)serialization). `-sFORCE_FILESYSTEM=1` is mandatory.
   - **`svm_train` does NOT copy the support vectors** (`model->SV` point into the input `svm_node` buffers). The C wrapper does a save+load round-trip through MEMFS right after training to get a self-contained model (`free_sv=1`) before freeing the input buffers.
@@ -112,7 +112,7 @@ The package combines TypeScript, WASM modules, and web workers for performance-c
 ### WASM Integration
 
 - **sci-comp-ml** (PCA, PLS, softmax, linear regression): a Rust + WASM crate built with `wasm-pack`, copied into `wasm/` (`sci_comp_ml.js` + `sci_comp_ml_bg.wasm`). Initialised lazily on first use via `src/wasm-loader.ts`; the binary is emitted to `dist/` (via the `.wasm` file-loader rule + `experiments.asyncWebAssembly` in `webpack.config.js`) and located relative to the running bundle (`document.currentScript`), **not** `_package.webRoot` — so it resolves in the separate `package-test.js` bundle too. Wrapped by `wasm/eda-api.ts`; PCA/PLS fits run in `src/workers/eda-ml-worker.ts`.
-- **XGBoost**: a C++/Emscripten module (`wasm/XGBoostAPI.js` + `.wasm`, classic MODULARIZE with a UMD tail) imported by webpack in both the main bundle and the worker bundle; the binary is emitted to `dist/` (listed in the webpack `package` entry) and located relative to the running bundle, like `sci_comp_ml_bg.wasm`. Initialised via `initXgboost()` in `PackageFunctions.init()`. Rebuilt by `wasm/xgboost/build.ps1` from an external XGBoost clone (tag v3.3.0 + minimal-build patch; see the self-contained `wasm/xgboost/README.md`); the build fails unless `wasm/xgboost/smoke/api-test.mjs` passes.
+- **XGBoost**: a C++/Emscripten module (`wasm/XGBoostAPI.js` + `.wasm`, classic MODULARIZE with a UMD tail) imported by webpack in both the main bundle and the worker bundle; the binary is emitted to `dist/` (listed in the webpack `package` entry) and located relative to the running bundle, like `sci_comp_ml_bg.wasm`. Initialised lazily via `initXgboost()` (in `fit` and `applyXGBooster`). Rebuilt by `wasm/xgboost/build.ps1` from an external XGBoost clone (tag v3.3.0 + minimal-build patch; see the self-contained `wasm/xgboost/README.md`); the build fails unless `wasm/xgboost/smoke/api-test.mjs` passes.
 
 Do not modify generated `.js`/`.wasm` files directly. The Rust source lives in the separate `sci-comp-rust` repo; refresh the artefact by rebuilding there and re-copying into `wasm/`.
 

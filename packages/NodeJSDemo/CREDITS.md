@@ -33,7 +33,7 @@ once by the platform host and shared across all packages.
 
 ### `dockerfiles/todo-app` — Node.js TODO demo service
 
-The image is built `FROM node:20-slim` (multi-stage) and runs a small Express
+The image is built `FROM node:22.23.4-slim` (multi-stage) and runs a small Express
 service that demonstrates a Node-side use of the Datagrok API.
 
 | Component                  | Source                                       | License      |

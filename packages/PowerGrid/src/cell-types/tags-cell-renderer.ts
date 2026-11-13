@@ -43,6 +43,13 @@ function shorten(tag: string): string {
   return tag;
 }
 
+/** Drops empty tokens, as an empty cell splits into [''] and would paint a
+ * zero-width chip that reads as data where there is none. */
+function splitTags(value: any, col: DG.Column | null): string[] {
+  return String(value ?? '').split(col?.getTag(DG.Tags.MultiValueSeparator) ?? ',')
+    .map((s) => s.trim()).filter((s) => s.length > 0);
+}
+
 /**
  * Renders a comma-separated string value as checkboxes with options retrieved
  * from the column's `.choices` tag.
@@ -56,15 +63,26 @@ export class TagsCellRenderer extends DG.GridCellRenderer {
 
   private getValues(gridCell: DG.GridCell): string[] {
     const settings = this.getSettings(gridCell.gridColumn);
-    const customSeparator = gridCell.tableColumn?.getTag(DG.Tags.MultiValueSeparator);
     return settings ?
       settings.columnNames.filter((colName) =>
         gridCell.tableRow?.table.col(colName) != null && gridCell.tableRow?.get(colName)) :
-      // Empty tokens are dropped: an empty cell splits into [''] and used to
-      // paint a zero-width chip that reads as data where there is none (and a
-      // trailing separator would add one more).
-      String(gridCell.value ?? '').split(customSeparator ?? ',')
-        .map((s) => s.trim()).filter((s) => s.length > 0);
+      splitTags(gridCell.value, gridCell.tableColumn);
+  }
+
+  /** The width that shows every tag of the widest cell in full. */
+  getDefaultSize(gridColumn: DG.GridColumn): {width?: number | null, height?: number | null} {
+    const col = gridColumn.column;
+    if (!col)
+      return {};
+    const g = gridColumn.grid.canvas.getContext('2d')!;
+    g.font = gridColumn.contentCellStyle.font ?? gridColumn.grid.props.defaultCellFont;
+    let width = 0;
+    for (const category of col.categories) {
+      const tags = splitTags(category, col);
+      if (tags.length > 0)
+        width = Math.max(width, tags.reduce((w, tag) => w + measure(g, tag) + 4, 0) + 4 * (tags.length - 1));
+    }
+    return width > 0 ? {width: Math.min(Math.ceil(width) + 4, 400)} : {};
   }
 
   /**
