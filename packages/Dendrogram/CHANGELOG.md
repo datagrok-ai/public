@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1113](https://github.com/datagrok-ai/core/issues/1113): Files: Fixed the Newick file preview showing nothing when the PhyloTreeViewer package is not installed
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Heatmap demo: adjusts the tree height at once instead of 100 ms later
 * [core#1112](https://github.com/datagrok-ai/core/issues/1112): Hierarchical Clustering: Fixed the dendrogram still appearing, or an error being raised, after the user removed it with Remove Dendrogram while clustering was running
 * [core#1111](https://github.com/datagrok-ai/core/issues/1111): Hierarchical Clustering: Fixed "Not a table id: null" when clustering a table that has no name

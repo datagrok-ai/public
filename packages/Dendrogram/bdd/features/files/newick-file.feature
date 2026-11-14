@@ -6,8 +6,9 @@ Feature: A newick file opened from Browse and through its file handler
   for .nwk makes a table view of that table instead — the file's text on its .newick tag — with a
   Dendrogram viewer drawing the same leaves; Browse opens the preview, so the handler is called
   directly.
-  The Phylocanvas GL viewer is the PhyloTreeViewer package's: on a stand without it the preview has
-  no viewer to show, so the two Browse scenarios come after the handler's and are gated on it.
+  The Phylocanvas GL viewer is the PhyloTreeViewer package's, which Dendrogram does not depend on: on a
+  stand without it the preview draws the tree with Dendrogram's own viewer. The two Browse scenarios
+  that claim the Phylocanvas GL viewer come last and are gated on the package.
 
   The table a newick file parses into, a row per node, is tested in Dendrogram
   src/tests/tree-helper-tests.ts ('treeHelper' newickToDf).
@@ -26,9 +27,15 @@ Feature: A newick file opened from Browse and through its file handler
     And the "leaves" reading of Dendrogram viewer should be "leaf1, leaf2, leaf3"
     And no errors should have been logged
 
-  Scenario: A double-click on the file shows its tree
+  Scenario: A click on the file previews its tree whether or not PhyloTreeViewer is installed
     # the handler's table view docked its Toolbox over Browse
     Given the browse panel is open
+    When user clicks on "Files > App Data > Dendrogram > data" tree node inside browse tree
+    And user clicks on nwk1.nwk link in gallery
+    Then the newick preview should hold a tree with leaves "leaf1, leaf2, leaf3"
+    And no errors should have been logged
+
+  Scenario: A double-click on the file shows its tree
     When user clicks on "Files > App Data > Dendrogram > data" tree node inside browse tree
     Given the "PhyloTreeViewer" package is installed
     When user double-clicks on nwk1.nwk link in gallery
