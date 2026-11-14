@@ -24,6 +24,20 @@ export namespace funcs {
     return await grok.functions.call('Compute2:ModelCatalogTreeBrowser', { treeNode, browseView });
   }
 
+  /**
+   * Shows how the outputs of a function change with its inputs, around the values of a run
+   */
+  export async function sensitivityAnalysisOfRun(call: any ): Promise<void> {
+    return await grok.functions.call('Compute2:SensitivityAnalysisOfRun', { call });
+  }
+
+  /**
+   * Fits the inputs of a function to target outputs, from the values of a run; returns the accepted fit
+   */
+  export async function fittingOfRun(call: any ): Promise<any> {
+    return await grok.functions.call('Compute2:FittingOfRun', { call });
+  }
+
   export async function customFunctionViewEditor(call: any ): Promise<DG.View> {
     return await grok.functions.call('Compute2:CustomFunctionViewEditor', { call });
   }
