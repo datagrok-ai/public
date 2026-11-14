@@ -4,7 +4,7 @@
 
 * A benchmark run does not enter a category that has no benchmark test, so its `before()` and `after()` no longer run for nothing (in ApiTests' benchmark pass every category's hooks ran, for 13 tests)
 * The garbage collection `grok test` forces in the browser runs after a test that was executed, at most once in 5 seconds, instead of after every test, executed or not: one collection of the platform's heap takes 0.1-0.3 s, which for a suite of small tests was more than the tests themselves (ApiTests: 1717 tests, ~10 of 19 minutes)
-* Test results are sent to the server behind the tests, one at a time, and are awaited at the end of the run; a result the server did not take no longer fails the run
+* Test results are sent to the server behind the tests, one at a time within a run, and are awaited at the end of the run; a result the server did not take no longer fails the run. Concurrent runs in one process (the stress tests) each have their own queue: with one shared queue every run waited for the results of all the others
 * When a category's `before()` fails, each of its tests reports the reason (`before() failed: <reason>`) instead of the bare `before() failed`
 * Added `skipCategoryWithoutSpawner`, which skips a category, with the reason, when `grok.dapi.docker.getStatus()` reports Grok Spawner switched off or unreachable (a test's own skip reason is kept), and fails it when the status cannot be read or the platform has no `getStatus`
 * [core#1050](https://github.com/datagrok-ai/core/issues/1050): Added `waitUntil`, `waitUntilAsync` and `settled(viewer)`; `testViewer` and its helpers and the demo auto-tests wait for viewers to settle instead of fixed delays
