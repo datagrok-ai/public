@@ -180,7 +180,7 @@ export class Permission {
   /** Request tickets for user reports. */
   static REQUEST_TICKETS = 'RequestTickets';
 
-  /** @deprecated Use {@link REQUEST_TICKETS}. */
+  /** @deprecated Use REQUEST_TICKETS. */
   static CREATE_JIRA_TICKETS = 'RequestTickets';
 
   /** View and manage cluster workloads, nodes, resources, scaling and placement. */

@@ -199522,7 +199522,7 @@
     call$0() {
       var t1 = new self.DG.ComponentBuildInfo();
       t1.branch = "oserhiienko/tickets-via-alerts";
-      t1.commit = "9779a02e58adab9772fd7d783c9c96915ec31c19";
+      t1.commit = "a7bfba8dc699884d28291dca062b688dccfd6418";
       t1.date = "2026-11-13T20:10:17.519Z";
       t1.version = "1.27.12";
       return t1;
