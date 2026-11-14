@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Fitting: `acceptedFitting$` answers null when the function has no scalar outputs and the view closes at once; it used to never answer
 * Sensitivity analysis: Fixed the help link of the view, which opened a missing page
 * Export: The Excel report renders all charts at once and captures each as soon as it is drawn instead of after a fixed 1 s delay, several times faster; fixed charts being squashed vertically
 * Custom function view: The view no longer opens a run from the page link; the editor hosting it does, as for RFV (breaking for views opened without Compute2's editor)

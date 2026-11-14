@@ -170,8 +170,6 @@ export class PackageFunctions {
   }
 
 
-  // The platform's function view offers a function analysis as a ribbon icon on functions whose meta.features turn
-  // its meta.feature on, as RFV offers these two; the ranges and targets start from the values of the given run.
   @grok.decorators.func({
     friendlyName: 'Sensitivity analysis',
     description: 'Shows how the outputs of a function change with its inputs, around the values of a run',
@@ -199,8 +197,7 @@ export class PackageFunctions {
       diffGrok, inputsLookup: diffGrok?.ivp?.inputsLookup ?? undefined, disableLookupDefault: true,
     });
     const fitted = await view.acceptedFitting$.pipe(take(1)).toPromise();
-    if (fitted)
-      grok.shell.v = from;
+    grok.shell.v = from;
     return fitted ?? null;
   }
 
