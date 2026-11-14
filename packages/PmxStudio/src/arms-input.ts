@@ -108,12 +108,13 @@ class ArmCard extends Control {
         area.style.height = 'auto';
         area.style.height = `${area.scrollHeight}px`;
       };
-      const watch = new ResizeObserver(() => {
+      // refit on the next frame: resizing inside the observer's own callback is a "ResizeObserver loop" error
+      const watch = new ResizeObserver(() => requestAnimationFrame(() => {
         if (area.clientWidth !== width) {
           width = area.clientWidth;
           fit();
         }
-      });
+      }));
       watch.observe(area);
       this.scope.own(() => watch.disconnect());
       // a name is one line: a pasted line break becomes a space
@@ -122,7 +123,7 @@ class ArmCard extends Control {
           name.value = area.value.replace(/[\r\n]+/g, ' ');
       });
       area.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && !e.isComposing) {
           e.preventDefault();
           area.blur();
         }
