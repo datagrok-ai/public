@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import * as ui from 'datagrok-api/ui';
 
 import {after, before, category, expect, settled, test, uiSettled, waitUntil} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
@@ -240,5 +241,34 @@ category('Widgets: Actions', () => {
       'Expected to have no custom cluster column in the table');
     expect(lstViewer.viewerGrid.table.getCol(C.LST_COLUMN_NAMES.CLUSTER).categories.indexOf(clustName) === -1, true,
       'Expected to have no custom cluster in the Logo Summary Table');
+  });
+
+  test('Accordion without Actions pane for a value from another table', async () => {
+    const smiles = await grok.dapi.files.readCsv('System:DemoFiles/chem/smiles.csv');
+    const errors: any[] = [];
+    const onError = (e: ErrorEvent): void => {errors.push(e.error ?? e.message);};
+    window.addEventListener('error', onError);
+    try {
+      const smilesValue = DG.SemanticValue.fromTableCell(smiles.cell(0, 'canonical_smiles'));
+      grok.shell.o = smilesValue;
+      const acc = DG.Accordion.create();
+      acc.context = smilesValue;
+      acc.addPane('Details', () => ui.divText('details'));
+      const constructed = new Promise<void>((resolve) => {
+        const sub = grok.events.onAccordionConstructed.subscribe((a) => {
+          if (a.dart !== acc.dart)
+            return;
+          sub.unsubscribe();
+          resolve();
+        });
+      });
+      acc.end();
+      await constructed;
+      // Subscriber errors are rethrown from a zero timeout, queued before this one
+      await new Promise((resolve) => setTimeout(resolve));
+      expect(errors.length, 0, `Unexpected errors: ${errors.join(', ')}`);
+    } finally {
+      window.removeEventListener('error', onError);
+    }
   });
 }, {clear: false});
