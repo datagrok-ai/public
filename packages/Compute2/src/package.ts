@@ -50,6 +50,9 @@ import {ModelCatalogView,
   setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import dayjs from 'dayjs';
 import {Compute2ModelHandler} from './model-handler';
+import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
+import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
+import {buildDiffGrokFromFunc} from '@datagrok-libraries/compute-utils/function-views/src/fitting/diff-studio/diff-grok-meta';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -104,6 +107,9 @@ const modelCatalogOptions = {
 };
 
 const providerOf = (nqName: string) => DG.Func.byName(nqName)?.options.provider ?? nqName;
+
+const runValues = (params: DG.FuncCall['inputParams']) =>
+  Object.fromEntries(Array.from(params.values(), (p) => [p.name, {default: p.value}]));
 
 export class PackageFunctions {
   @grok.decorators.init()
@@ -163,6 +169,37 @@ export class PackageFunctions {
     makeModelTreeBrowser(treeNode as any, modelCatalogOptions.roleOnlyFilter);
   }
 
+
+  @grok.decorators.func({
+    friendlyName: 'Sensitivity analysis',
+    description: 'Shows how the outputs of a function change with its inputs, around the values of a run',
+    meta: {role: 'functionAnalysis', feature: 'sens-analysis', icon: 'files/icons/icon-chart-sensitivity.svg'},
+  })
+  static async SensitivityAnalysisOfRun(call: DG.FuncCall): Promise<void> {
+    const diffGrok = await buildDiffGrokFromFunc(call.func);
+    await SensitivityAnalysisView.fromEmpty(call.func, {
+      ranges: runValues(call.inputParams), diffGrok, inputsLookup: diffGrok?.ivp?.inputsLookup ?? undefined,
+      disableLookupDefault: true,
+    });
+  }
+
+  @grok.decorators.func({
+    friendlyName: 'Fitting',
+    description: 'Fits the inputs of a function to target outputs, from the values of a run; returns the accepted fit',
+    meta: {role: 'functionAnalysis', feature: 'fitting', icon: 'files/icons/icon-chart-dots.svg'},
+    outputs: [{type: 'funccall', name: 'fitted'}],
+  })
+  static async FittingOfRun(call: DG.FuncCall): Promise<DG.FuncCall | null> {
+    const from = grok.shell.v;
+    const diffGrok = await buildDiffGrokFromFunc(call.func);
+    const view = await FittingView.fromEmpty(call.func, {
+      ranges: runValues(call.inputParams), targets: runValues(call.outputParams), acceptMode: true,
+      diffGrok, inputsLookup: diffGrok?.ivp?.inputsLookup ?? undefined, disableLookupDefault: true,
+    });
+    const fitted = await view.acceptedFitting$.pipe(take(1)).toPromise();
+    grok.shell.v = from;
+    return fitted ?? null;
+  }
 
   @grok.decorators.editor({name: 'Custom Function View Editor'})
   static async CustomFunctionViewEditor(call: DG.FuncCall) : Promise<DG.ViewBase> {
