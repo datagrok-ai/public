@@ -138,10 +138,6 @@ export class TestTrack extends DG.ViewBase {
   init() {
     if (this.isInitializing)
       return;
-    grok.dapi.permissions.checkGlobal(DG.Permission.REQUEST_TICKETS)
-      .then((canRequest) => this.canRequestTickets = canRequest)
-      .catch(() => {});
-
     if (this.inited) {
       grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.3);
       return;
@@ -149,7 +145,9 @@ export class TestTrack extends DG.ViewBase {
 
     let progressBar = DG.TaskBarProgressIndicator.create('Opening Test');
     this.isInitializing = true;
-    this.initTreeView().then(() => {
+    const canRequest = grok.dapi.permissions.checkGlobal(DG.Permission.REQUEST_TICKETS).catch(() => false);
+    Promise.all([this.initTreeView(), canRequest]).then(([_, canRequestTickets]) => {
+      this.canRequestTickets = canRequestTickets;
       this.inited = true;
       this.isInitializing = false;
 

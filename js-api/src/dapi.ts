@@ -2597,10 +2597,9 @@ export class UserReportsDataSource extends HttpDataSource<UserReport> {
 
   /** Asks for a GitHub issue about the report: logs a `ticket-requested` record, which the instance's log settings
    * send to the ticket relay. Needs `RequestTickets`. */
-  requestTicket(report: UserReport | string, options?: {summary?: string, description?: string, priority?: string,
-      source?: string}): Promise<void> {
+  requestTicket(report: UserReport | string, options?: {summary?: string, priority?: string, source?: string}): Promise<void> {
     return api.grok_Reports_RequestTicket(typeof report === 'string' ? report : report.id, options?.summary,
-      options?.description, options?.priority, options?.source);
+      options?.priority, options?.source);
   }
 
   /** Files a report from [summary] and asks for a GitHub issue about it, as {@link requestTicket} does.
