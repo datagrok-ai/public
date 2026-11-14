@@ -1,0 +1,6066 @@
+{
+ "version": "engine_priors_v3",
+ "model": "gompertz_reduced",
+ "equation": "log V(t) = q + (log V(0) - q) e^{-beta t}, q = log_v_ref + alpha / beta;  measured log V = log V + k (c0 + c1/sqrt(V)) t_df + session shift (per study and day)",
+ "provenance": {
+  "atlas_sha256": "8c2cfb5bce72eb66f85c78a6e3a1ce63165380fa3f10f6d125a9d1451e6797e3",
+  "engine": "Crux nlmixr2 fit (saem: population; focei: per paper) + stats.map_prior",
+  "priors_exponential": "Crux stats.map_prior (crux-core spike/map-robust-n 68fb182c1 (main 81239856e)+nonclinical+pkpd+tgi-gpu, crux fn batch)",
+  "states": "strict controls verified; compatible controls screened",
+  "validation": "analysis/validate_denovo.py (leave-one-paper-out, de novo)",
+  "within_sds": "analysis/twin.py --fit: marginal likelihood of the base-pool controls, Nelder-Mead on the log sds, sd_study_log_beta profiled",
+  "v2": "analysis/lab_distribution.py (labs' joint log alpha / log beta by deconvolution) and analysis/calibrate_v2.py --labs (indirect inference against the atlas's controls, Crux stats.tumor_study_simulate)",
+  "map_robust": "log_alpha's robust component: sd max(sigma, 3 x map_sd) at the MAP mean (Crux stats.map_prior robust_n); sigma, the within-paper sd of one animal, is narrower than the MAP (export_engine_priors.robust_map)",
+  "v3": {
+   "rule": "MC38, CT26, B16F10 verbatim from v2; c0, c1 frozen on them; new lines tiered, the rest pooled",
+   "lines": {
+    "4T1": {
+     "line_class": "syngeneic",
+     "tier": "Full",
+     "pooled_fields": [
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew",
+      "start_sd"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10",
+       "LLC"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 42,
+     "experiments": 87,
+     "animals": 501
+    },
+    "LLC": {
+     "line_class": "syngeneic",
+     "tier": "Full",
+     "pooled_fields": [
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10",
+       "4T1"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 22,
+     "experiments": 43,
+     "animals": 207
+    },
+    "Panc02": {
+     "line_class": "syngeneic",
+     "tier": "Own spreads",
+     "pooled_fields": [
+      "noise.k",
+      "noise.df",
+      "noise.sd_session",
+      "take.nonprogressing_map",
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10",
+       "4T1",
+       "LLC"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 16,
+     "experiments": 36,
+     "animals": 208
+    },
+    "Hepa1-6": {
+     "line_class": "syngeneic",
+     "tier": "Own spreads",
+     "pooled_fields": [
+      "noise.k",
+      "noise.df",
+      "noise.sd_session",
+      "take.nonprogressing_map",
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10",
+       "4T1",
+       "LLC"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 14,
+     "experiments": 47,
+     "animals": 203
+    },
+    "MDA-MB-231": {
+     "line_class": "cdx",
+     "tier": "Thin",
+     "pooled_fields": [
+      "sd_within.log_alpha",
+      "sd_within.log_beta",
+      "study_prior.sd_log_alpha",
+      "study_prior.sd_log_beta",
+      "study_prior.rho",
+      "study_prior.size_factor",
+      "noise.k",
+      "noise.df",
+      "noise.sd_session",
+      "take.nonprogressing_map",
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 13,
+     "experiments": 17,
+     "animals": 76
+    },
+    "A549": {
+     "line_class": "cdx",
+     "tier": "Thin",
+     "pooled_fields": [
+      "sd_within.log_alpha",
+      "sd_within.log_beta",
+      "study_prior.sd_log_alpha",
+      "study_prior.sd_log_beta",
+      "study_prior.rho",
+      "study_prior.size_factor",
+      "noise.k",
+      "noise.df",
+      "noise.sd_session",
+      "take.nonprogressing_map",
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 13,
+     "experiments": 21,
+     "animals": 108
+    },
+    "SKOV3": {
+     "line_class": "cdx",
+     "tier": "Thin",
+     "pooled_fields": [
+      "sd_within.log_alpha",
+      "sd_within.log_beta",
+      "study_prior.sd_log_alpha",
+      "study_prior.sd_log_beta",
+      "study_prior.rho",
+      "study_prior.size_factor",
+      "noise.k",
+      "noise.df",
+      "noise.sd_session",
+      "take.nonprogressing_map",
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 8,
+     "experiments": 21,
+     "animals": 159
+    },
+    "PDX-NSCLC": {
+     "line_class": "pdx",
+     "tier": "Thin",
+     "pooled_fields": [
+      "sd_within.log_alpha",
+      "sd_within.log_beta",
+      "study_prior.sd_log_alpha",
+      "study_prior.sd_log_beta",
+      "study_prior.rho",
+      "study_prior.size_factor",
+      "noise.k",
+      "noise.df",
+      "noise.sd_session",
+      "take.nonprogressing_map",
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 15,
+     "experiments": 15,
+     "animals": 67
+    },
+    "PDX-PDAC": {
+     "line_class": "pdx",
+     "tier": "Own spreads",
+     "pooled_fields": [
+      "noise.k",
+      "noise.df",
+      "noise.sd_session",
+      "take.nonprogressing_map",
+      "noise.c0_c1_curve",
+      "twin.sd_log_alpha",
+      "twin.sd_log_beta",
+      "twin.sd_process",
+      "twin.first_factor",
+      "twin.start_df",
+      "twin.slow_share",
+      "twin.slow_shift",
+      "twin.skew"
+     ],
+     "pool_source": {
+      "fields": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ],
+      "twin": [
+       "MC38",
+       "CT26",
+       "B16F10"
+      ]
+     },
+     "papers": 26,
+     "experiments": 26,
+     "animals": 155
+    }
+   },
+   "twin_refit": "MC38, CT26, B16F10: twin refitted on the final data (twin.py --fit-twin, Crux stats.tumor_twin_fit; analysis/out_x1/analysis/out_curated/twin_original); the new lines' pooled twin is its median; v2 keeps the 2026-10-24 fit"
+  }
+ },
+ "lines": {
+  "MC38": {
+   "papers": 41,
+   "animals": 874,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.8,
+      "a": -1.5725044026932264,
+      "b": 0.37472103758366493
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -1.5725044026932264,
+      "b": 1.124167571067975
+     }
+    ],
+    "map_mean": -1.5725044029035768,
+    "map_sd": 0.3747225236893256,
+    "map_q025": -2.3112810688034386,
+    "map_q975": -0.8339849837993725,
+    "tau": 0.3633087433379666,
+    "ess": 0.046466810713903635
+   },
+   "log_beta": -3.723192821810004,
+   "log_v_ref": 4.189540576291732,
+   "sd_within": {
+    "log_alpha": 0.1163420527075293,
+    "log_beta": 0.07904476184742994,
+    "log_v0": 0.7555662460630486
+   },
+   "sd_residual_log_v": 0.2663550592835286,
+   "take": {
+    "nonprogressing_map": 0.0025134966791353986,
+    "nonprogressing": 1,
+    "animals": 1002,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "host:gene_modified",
+     "shift_log_lambda": 0.1282215896074687,
+     "se": 0.0704312256771791,
+     "ci95": [
+      -0.0098236127198023,
+      0.2662667919347398
+     ],
+     "papers": 17,
+     "sd_ratio_vs_strict": 1.175865813981178
+    },
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": 0.0493010753473628,
+     "se": 0.07375237558920447,
+     "ci95": [
+      -0.0952535808074779,
+      0.1938557315022036
+     ],
+     "papers": 14,
+     "sd_ratio_vs_strict": 0.9082672091856104
+    },
+    {
+     "facet": "ctrl:control_plus_agent",
+     "shift_log_lambda": 0.1081104714576565,
+     "se": 0.09690766957131625,
+     "ci95": [
+      -0.0818285609021233,
+      0.2980495038174364
+     ],
+     "papers": 18,
+     "sd_ratio_vs_strict": 0.9193495361804496
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": 0.2633203511544815,
+     "se": 0.09052859637927814,
+     "ci95": [
+      0.0858843022510963,
+      0.4407564000578666
+     ],
+     "papers": 15,
+     "sd_ratio_vs_strict": 0.6428173697586514
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": -0.0030135800219984,
+     "se": 0.08573708686618312,
+     "ci95": [
+      -0.1710582702797174,
+      0.1650311102357204
+     ],
+     "papers": 7,
+     "sd_ratio_vs_strict": 0.9131812543052
+    },
+    {
+     "facet": "cell:antigen",
+     "shift_log_lambda": -0.1156403018596044,
+     "se": 0.12080738399405372,
+     "ci95": [
+      -0.3524227744879498,
+      0.1211421707687408
+     ],
+     "papers": 7,
+     "sd_ratio_vs_strict": 1.1018459104802345
+    },
+    {
+     "facet": "host:depleted",
+     "shift_log_lambda": -0.1782835646257065,
+     "se": 0.1572286049712934,
+     "ci95": [
+      -0.4864516303694416,
+      0.1298845011180285
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 0.8453562038938994
+    },
+    {
+     "facet": "site:contralateral",
+     "shift_log_lambda": -0.0650947010197754,
+     "se": 0.13492613731797204,
+     "ci95": [
+      -0.3295499301630006,
+      0.1993605281234498
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 1.3673288332399005
+    },
+    {
+     "facet": "host:not_stated",
+     "shift_log_lambda": -0.0022909275070167,
+     "se": 0.18043498707084482,
+     "ci95": [
+      -0.3559435021658726,
+      0.3513616471518391
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.7502216870552639
+    },
+    {
+     "facet": "ctrl:active_cotreatment",
+     "shift_log_lambda": -0.2682636977247118,
+     "se": 0.21570474336007622,
+     "ci95": [
+      -0.6910449947104613,
+      0.1545175992610375
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 1.1377412859590337
+    },
+    {
+     "facet": "cell:not_stated",
+     "shift_log_lambda": 0.1081339072825242,
+     "se": 0.22985563403700715,
+     "ci95": [
+      -0.3423831354300098,
+      0.5586509499950583
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.6646980541730475
+    }
+   ],
+   "studies": [
+    {
+     "studyid": "MC38-01",
+     "mean": -1.390403340253218,
+     "se": 0.0239377050416877,
+     "n": 110.0
+    },
+    {
+     "studyid": "MC38-02",
+     "mean": -2.1241837768347773,
+     "se": 0.0480712159922753,
+     "n": 67.0
+    },
+    {
+     "studyid": "MC38-03",
+     "mean": -1.8663236786219957,
+     "se": 0.0286201710849648,
+     "n": 63.0
+    },
+    {
+     "studyid": "MC38-04",
+     "mean": -1.8169136849768115,
+     "se": 0.0389337424349771,
+     "n": 55.0
+    },
+    {
+     "studyid": "MC38-05",
+     "mean": -1.6515120537352668,
+     "se": 0.0280686588105283,
+     "n": 53.0
+    },
+    {
+     "studyid": "MC38-06",
+     "mean": -1.854617775600036,
+     "se": 0.0256988442150433,
+     "n": 45.0
+    },
+    {
+     "studyid": "MC38-07",
+     "mean": -1.888104265741364,
+     "se": 0.0261640479440263,
+     "n": 43.0
+    },
+    {
+     "studyid": "MC38-08",
+     "mean": -1.3939247757151296,
+     "se": 0.0282576394959312,
+     "n": 41.0
+    },
+    {
+     "studyid": "MC38-09",
+     "mean": -1.5385786998491366,
+     "se": 0.0289613720643961,
+     "n": 33.0
+    },
+    {
+     "studyid": "MC38-10",
+     "mean": -1.1558395964274255,
+     "se": 0.0262383863870102,
+     "n": 32.0
+    },
+    {
+     "studyid": "MC38-11",
+     "mean": -1.225775113126243,
+     "se": 0.0485838034099982,
+     "n": 30.0
+    },
+    {
+     "studyid": "MC38-12",
+     "mean": -1.8721223920769687,
+     "se": 0.0452397515827433,
+     "n": 24.0
+    },
+    {
+     "studyid": "MC38-13",
+     "mean": -1.566214439259645,
+     "se": 0.0490794490039307,
+     "n": 23.0
+    },
+    {
+     "studyid": "MC38-14",
+     "mean": -1.4454068079608176,
+     "se": 0.0522282770748809,
+     "n": 20.0
+    },
+    {
+     "studyid": "MC38-15",
+     "mean": -1.8357436708708563,
+     "se": 0.0330973500096291,
+     "n": 18.0
+    },
+    {
+     "studyid": "MC38-16",
+     "mean": -1.514071362807789,
+     "se": 0.0756897535566842,
+     "n": 18.0
+    },
+    {
+     "studyid": "MC38-17",
+     "mean": -0.9852438124248304,
+     "se": 0.057410523405275,
+     "n": 15.0
+    },
+    {
+     "studyid": "MC38-18",
+     "mean": -1.7714921355319748,
+     "se": 0.0605319532954952,
+     "n": 14.0
+    },
+    {
+     "studyid": "MC38-19",
+     "mean": -1.802511810196231,
+     "se": 0.0447082997500628,
+     "n": 13.0
+    },
+    {
+     "studyid": "MC38-20",
+     "mean": -1.5720861034925708,
+     "se": 0.0677172543002875,
+     "n": 13.0
+    },
+    {
+     "studyid": "MC38-21",
+     "mean": -2.452955736007296,
+     "se": 0.1876304074823861,
+     "n": 12.0
+    },
+    {
+     "studyid": "MC38-22",
+     "mean": -1.4935373831002223,
+     "se": 0.0376282620527244,
+     "n": 12.0
+    },
+    {
+     "studyid": "MC38-23",
+     "mean": -1.5957432502010698,
+     "se": 0.0338001132954062,
+     "n": 11.0
+    },
+    {
+     "studyid": "MC38-24",
+     "mean": -2.268012129127932,
+     "se": 0.0418904675468951,
+     "n": 10.0
+    },
+    {
+     "studyid": "MC38-25",
+     "mean": -1.6667472954357794,
+     "se": 0.0610804704912462,
+     "n": 10.0
+    },
+    {
+     "studyid": "MC38-26",
+     "mean": -1.448193749374866,
+     "se": 0.0600264379367524,
+     "n": 10.0
+    },
+    {
+     "studyid": "MC38-27",
+     "mean": -1.8275648680288143,
+     "se": 0.0851672650231415,
+     "n": 7.0
+    },
+    {
+     "studyid": "MC38-28",
+     "mean": -1.269454782090408,
+     "se": 0.0219226017732333,
+     "n": 7.0
+    },
+    {
+     "studyid": "MC38-29",
+     "mean": -2.0731754149697883,
+     "se": 0.0772107965768141,
+     "n": 6.0
+    },
+    {
+     "studyid": "MC38-30",
+     "mean": -1.6604346782218664,
+     "se": 0.0451320721797768,
+     "n": 6.0
+    },
+    {
+     "studyid": "MC38-31",
+     "mean": -1.6467459678470089,
+     "se": 0.0821917230127653,
+     "n": 6.0
+    },
+    {
+     "studyid": "MC38-32",
+     "mean": -1.559721695749971,
+     "se": 0.0471865308287452,
+     "n": 6.0
+    },
+    {
+     "studyid": "MC38-33",
+     "mean": -1.299960529585564,
+     "se": 0.0828320375715914,
+     "n": 6.0
+    },
+    {
+     "studyid": "MC38-34",
+     "mean": -1.433405126465947,
+     "se": 0.076119432754856,
+     "n": 5.0
+    },
+    {
+     "studyid": "MC38-35",
+     "mean": -1.4287375349727247,
+     "se": 0.0351255831081492,
+     "n": 5.0
+    },
+    {
+     "studyid": "MC38-36",
+     "mean": -1.327478506095657,
+     "se": 0.0759434769392398,
+     "n": 5.0
+    },
+    {
+     "studyid": "MC38-37",
+     "mean": -0.4235428234951806,
+     "se": 0.1027980641796206,
+     "n": 5.0
+    },
+    {
+     "studyid": "MC38-38",
+     "mean": -1.7936610642113724,
+     "se": 0.0843420819334899,
+     "n": 4.0
+    },
+    {
+     "studyid": "MC38-39",
+     "mean": -1.5062326654187628,
+     "se": 0.0869321205488029,
+     "n": 4.0
+    },
+    {
+     "studyid": "MC38-40",
+     "mean": -0.7679888700118377,
+     "se": 0.0525937275184007,
+     "n": 4.0
+    },
+    {
+     "studyid": "MC38-41",
+     "mean": -1.355268884141154,
+     "se": 0.0916367349152549,
+     "n": 3.0
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.007912940387543269
+   },
+   "start_sd": 0.22276935752080823,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.562478433070823,
+    "sd_log_alpha": 0.4425870640176089,
+    "mean_log_beta": -4.153337579344125,
+    "sd_log_beta": 1.7560699043051073,
+    "rho": 0.8331308092385968,
+    "size_factor": 0.9745555796184513,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.3483049010066353,
+      "sd_log_beta": 1.2640164702294856,
+      "rho": 0.8202480170091829
+     },
+     "experiment": {
+      "sd_log_alpha": 0.2914259183499845,
+      "sd_log_beta": 1.2842014230181935,
+      "rho": 0.8567788402491489
+     },
+     "loglik": -2066.821503072977,
+     "loglik_independent": -2119.0792713463306,
+     "papers": 44,
+     "experiments": 161
+    }
+   },
+   "noise": {
+    "c0": 0.05141253131885614,
+    "c1": 0.9035247487834451,
+    "k": 0.674974254128134,
+    "df": 3.1000051283003076,
+    "sd_session": 0.07541585234043888
+   },
+   "calibration": {
+    "distance": 4.326892393186217,
+    "evaluations": 104,
+    "converged": true,
+    "experiments": 161,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.16165977849581986,
+      "se": 0.007695482567309035,
+      "calibrated": 0.16423183002385575,
+      "v1_caliper_only": 0.17076670726313758
+     },
+     "tail95": {
+      "atlas": 2.6644318836875556,
+      "se": 0.11940756220967964,
+      "calibrated": 2.4979833998554457,
+      "v1_caliper_only": 2.155069480908845
+     },
+     "tail99": {
+      "atlas": 4.124357440237325,
+      "se": 0.25998265493052986,
+      "calibrated": 4.24417339830429,
+      "v1_caliper_only": 3.1039263654202385
+     },
+     "session_sd": {
+      "atlas": 0.08511341659216398,
+      "se": 0.005561352688953214,
+      "calibrated": 0.08307873628977311,
+      "v1_caliper_only": 0.03059177698004061
+     },
+     "slope_sd_med": {
+      "atlas": 0.02447330940213302,
+      "se": 0.0011393862895660485,
+      "calibrated": 0.02425951101189499,
+      "v1_caliper_only": 0.026324767302117264
+     },
+     "slope_sd_q75": {
+      "atlas": 0.03384905097892499,
+      "se": 0.0021051534146287786,
+      "calibrated": 0.03332414274959317,
+      "v1_caliper_only": 0.03605282901415797
+     },
+     "mean_slope_sd": {
+      "atlas": 0.06357668416415087,
+      "se": 0.005394335428917504,
+      "calibrated": 0.06836556640380274,
+      "v1_caliper_only": 0.09390652366204022
+     },
+     "end_sd_med": {
+      "atlas": 0.2904911348650392,
+      "se": 0.017651687345803385,
+      "calibrated": 0.3084952466075017,
+      "v1_caliper_only": 0.31978412849300464
+     }
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.09970748763407895,
+    "sd_log_beta": 0.03767417829317498,
+    "sd_process": 0.10386187824583534,
+    "first_factor": 0.8516053005502948,
+    "start_df": 3,
+    "slow_share": 0.04420535818370219,
+    "slow_shift": 0.562356909231009,
+    "skew": 0.8358198019887304,
+    "validation": {
+     "loo_coverage_90": 0.8748236953455572,
+     "measurements": 5672,
+     "below": 0.06770098730606489,
+     "above": 0.057475317348378
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.09460588057991585,
+       "hi": 0.9330518865269904
+      },
+      "99": {
+       "lo": 0.015973140142322297,
+       "hi": 0.9941063733004122
+      }
+     },
+     "papers": 44,
+     "points": 5672,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.04942817622756793,
+       "miss_hi": 0.04958377828126592,
+       "cover": 0.9009880454911662
+      },
+      "99": {
+       "miss_lo": 0.005043243265556623,
+       "miss_hi": 0.005192349022721652,
+       "cover": 0.9897644077117217
+      }
+     },
+     "source": "conformal_fit.py 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03040813349974302,
+       "miss_hi": 0.06900404427122867
+      },
+      "99": {
+       "miss_lo": 0.0019529460218989274,
+       "miss_hi": 0.010541531478383206
+      }
+     },
+     "papers": 242,
+     "points": 24219,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   }
+  },
+  "CT26": {
+   "papers": 36,
+   "animals": 499,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.8,
+      "a": -1.3340756287659978,
+      "b": 0.2796008694290485
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -1.3340756287659978,
+      "b": 0.8388062954390574
+     }
+    ],
+    "map_mean": -1.3340756295333993,
+    "map_sd": 0.2796020984796874,
+    "map_q025": -1.886692147152756,
+    "map_q975": -0.7825592850890667,
+    "tau": 0.26913779812949784,
+    "ess": 0.08346068839848975
+   },
+   "log_beta": -3.0696480546112497,
+   "log_v_ref": 4.1740645112478685,
+   "sd_within": {
+    "log_alpha": 0.04295748805827316,
+    "log_beta": 0.422503468967552,
+    "log_v0": 0.644462199713352
+   },
+   "sd_residual_log_v": 0.2592033466901028,
+   "take": {
+    "nonprogressing_map": 0.004720283970929669,
+    "nonprogressing": 12,
+    "animals": 605,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": -0.2249767445491071,
+     "se": 0.08247093554589506,
+     "ci95": [
+      -0.3866197782190614,
+      -0.0633337108791528
+     ],
+     "papers": 6,
+     "sd_ratio_vs_strict": 1.819877761556068
+    },
+    {
+     "facet": "ctrl:control_plus_agent",
+     "shift_log_lambda": 0.3104593426547668,
+     "se": 0.14789199143192266,
+     "ci95": [
+      0.0205910394481984,
+      0.6003276458613352
+     ],
+     "papers": 7,
+     "sd_ratio_vs_strict": 0.817504309592222
+    },
+    {
+     "facet": "cell:antigen",
+     "shift_log_lambda": -0.2715462552270374,
+     "se": 0.1250945050987831,
+     "ci95": [
+      -0.5167314852206522,
+      -0.0263610252334225
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 0.517298829552282
+    },
+    {
+     "facet": "ctrl:active_cotreatment",
+     "shift_log_lambda": -0.5114858026385081,
+     "se": 0.18984771659536867,
+     "ci95": [
+      -0.8835873271654306,
+      -0.1393842781115855
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.3995434659688498
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": 0.2357283398522977,
+     "se": 0.13147673129997992,
+     "ci95": [
+      -0.0219660534956628,
+      0.4934227332002584
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 0.6371572746544929
+    },
+    {
+     "facet": "site:contralateral",
+     "shift_log_lambda": 0.1253753588830567,
+     "se": 0.13119500674777287,
+     "ci95": [
+      -0.1317668543425781,
+      0.3825175721086916
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 0.7550512093977946
+    },
+    {
+     "facet": "host:not_stated",
+     "shift_log_lambda": 0.0367373167363139,
+     "se": 0.15867018622441087,
+     "ci95": [
+      -0.2742562482635314,
+      0.3477308817361593
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.660190171796089
+    },
+    {
+     "facet": "host:depleted",
+     "shift_log_lambda": -0.6729511510016595,
+     "se": 0.18993635414876278,
+     "ci95": [
+      -1.0452264051332345,
+      -0.3006758968700844
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 1.635655582589303
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": 0.048173576067245,
+     "se": 0.1781878645196739,
+     "ci95": [
+      -0.3010746383913159,
+      0.3974217905258058
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 0.4890179833242543
+    },
+    {
+     "facet": "cell:other",
+     "shift_log_lambda": 0.2452042026405401,
+     "se": 0.20882718157407457,
+     "ci95": [
+      -0.1640970732446461,
+      0.6545054785257263
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 1.0763541828047174
+    }
+   ],
+   "studies": [
+    {
+     "studyid": "CT26-01",
+     "mean": -1.431130248869067,
+     "se": 0.0350534067985086,
+     "n": 51.0
+    },
+    {
+     "studyid": "CT26-02",
+     "mean": -1.5798640385687803,
+     "se": 0.0559022457120206,
+     "n": 46.0
+    },
+    {
+     "studyid": "CT26-03",
+     "mean": -1.3076175327655566,
+     "se": 0.0369165953024798,
+     "n": 39.0
+    },
+    {
+     "studyid": "CT26-04",
+     "mean": -1.3287621885420506,
+     "se": 0.0437312737837741,
+     "n": 29.0
+    },
+    {
+     "studyid": "CT26-05",
+     "mean": -1.2454429916935332,
+     "se": 0.050974175403642,
+     "n": 24.0
+    },
+    {
+     "studyid": "CT26-06",
+     "mean": -1.4595051152151628,
+     "se": 0.0466480286998685,
+     "n": 23.0
+    },
+    {
+     "studyid": "CT26-07",
+     "mean": -1.3068141347824955,
+     "se": 0.0538193843034403,
+     "n": 23.0
+    },
+    {
+     "studyid": "CT26-08",
+     "mean": -1.1143689184444816,
+     "se": 0.0577429212011739,
+     "n": 20.0
+    },
+    {
+     "studyid": "CT26-09",
+     "mean": -1.5331303060315409,
+     "se": 0.0410073572830735,
+     "n": 18.0
+    },
+    {
+     "studyid": "CT26-10",
+     "mean": -1.2403995520915827,
+     "se": 0.0966856096541246,
+     "n": 18.0
+    },
+    {
+     "studyid": "CT26-11",
+     "mean": -1.0170787217213495,
+     "se": 0.0751370685505505,
+     "n": 15.0
+    },
+    {
+     "studyid": "CT26-12",
+     "mean": -1.8171446559852955,
+     "se": 0.1672929625245225,
+     "n": 14.0
+    },
+    {
+     "studyid": "CT26-13",
+     "mean": -1.436672968479779,
+     "se": 0.0707854701721071,
+     "n": 12.0
+    },
+    {
+     "studyid": "CT26-14",
+     "mean": -0.9727580384171504,
+     "se": 0.047256695819113,
+     "n": 12.0
+    },
+    {
+     "studyid": "CT26-15",
+     "mean": -0.93927734785252,
+     "se": 0.1361649431995863,
+     "n": 12.0
+    },
+    {
+     "studyid": "CT26-16",
+     "mean": -1.772453147450087,
+     "se": 0.0425337619282328,
+     "n": 10.0
+    },
+    {
+     "studyid": "CT26-17",
+     "mean": -1.4208078407976534,
+     "se": 0.0827334678120037,
+     "n": 10.0
+    },
+    {
+     "studyid": "CT26-18",
+     "mean": -1.250257717556562,
+     "se": 0.0456921372073232,
+     "n": 10.0
+    },
+    {
+     "studyid": "CT26-19",
+     "mean": -0.7129477732029332,
+     "se": 0.0488542707720289,
+     "n": 10.0
+    },
+    {
+     "studyid": "CT26-20",
+     "mean": -1.1437931994752493,
+     "se": 0.033143505327296,
+     "n": 9.0
+    },
+    {
+     "studyid": "CT26-21",
+     "mean": -1.8412319774987345,
+     "se": 0.0390685050577386,
+     "n": 8.0
+    },
+    {
+     "studyid": "CT26-22",
+     "mean": -1.5480682321954349,
+     "se": 0.0825223331532065,
+     "n": 8.0
+    },
+    {
+     "studyid": "CT26-23",
+     "mean": -1.8081066420227327,
+     "se": 0.1236374615122419,
+     "n": 7.0
+    },
+    {
+     "studyid": "CT26-24",
+     "mean": -2.1311695989180555,
+     "se": 0.1661300809729969,
+     "n": 6.0
+    },
+    {
+     "studyid": "CT26-25",
+     "mean": -1.44390304640518,
+     "se": 0.1198786715968291,
+     "n": 6.0
+    },
+    {
+     "studyid": "CT26-26",
+     "mean": -1.3695129184847514,
+     "se": 0.0469947742322377,
+     "n": 6.0
+    },
+    {
+     "studyid": "CT26-27",
+     "mean": -1.3584517048414575,
+     "se": 0.1418097116043494,
+     "n": 6.0
+    },
+    {
+     "studyid": "CT26-28",
+     "mean": -1.2182780690880537,
+     "se": 0.0888473095670671,
+     "n": 6.0
+    },
+    {
+     "studyid": "CT26-29",
+     "mean": -1.1190227692478312,
+     "se": 0.0431781370576702,
+     "n": 6.0
+    },
+    {
+     "studyid": "CT26-30",
+     "mean": -1.1020246198821024,
+     "se": 0.1170338743741731,
+     "n": 6.0
+    },
+    {
+     "studyid": "CT26-31",
+     "mean": -1.0479593322764365,
+     "se": 0.0507823018742882,
+     "n": 6.0
+    },
+    {
+     "studyid": "CT26-32",
+     "mean": -1.3277700691301355,
+     "se": 0.2278120661852769,
+     "n": 5.0
+    },
+    {
+     "studyid": "CT26-33",
+     "mean": -1.3023574243368292,
+     "se": 0.0908260771492574,
+     "n": 5.0
+    },
+    {
+     "studyid": "CT26-34",
+     "mean": -1.2404241811191945,
+     "se": 0.0347109850908932,
+     "n": 5.0
+    },
+    {
+     "studyid": "CT26-35",
+     "mean": -1.0857162642958436,
+     "se": 0.1199623657201896,
+     "n": 5.0
+    },
+    {
+     "studyid": "CT26-36",
+     "mean": -1.3126363702168498,
+     "se": 0.0043676948860002,
+     "n": 3.0
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.014212701581554644
+   },
+   "start_sd": 0.17724927726350367,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.292763036318093,
+    "sd_log_alpha": 0.4093954086207592,
+    "mean_log_beta": -3.3108133506523183,
+    "sd_log_beta": 1.2347115902117543,
+    "rho": 0.9076390111087909,
+    "size_factor": 0.9590532517807708,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.212821196294116,
+      "sd_log_beta": 0.5710665975053756,
+      "rho": 0.9064905527862184
+     },
+     "experiment": {
+      "sd_log_alpha": 0.37003919389117607,
+      "sd_log_beta": 1.1538425671648214,
+      "rho": 0.9102362297470427
+     },
+     "loglik": -1090.6139687895775,
+     "loglik_independent": -1145.3550278544426,
+     "papers": 36,
+     "experiments": 94
+    }
+   },
+   "noise": {
+    "c0": 0.04057280522874039,
+    "c1": 0.7130272077907273,
+    "k": 0.532663890391079,
+    "df": 2.4898765245416405,
+    "sd_session": 0.05480056451053184
+   },
+   "calibration": {
+    "distance": 6.583993386387014,
+    "evaluations": 129,
+    "converged": true,
+    "experiments": 93,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.1343869855534024,
+      "se": 0.0069340450026055935,
+      "calibrated": 0.1377857916960154,
+      "v1_caliper_only": 0.1670683675745797
+     },
+     "tail95": {
+      "atlas": 2.9416466337209592,
+      "se": 0.1425616187879902,
+      "calibrated": 2.63703760497626,
+      "v1_caliper_only": 2.125507444575445
+     },
+     "tail99": {
+      "atlas": 5.1137156430152455,
+      "se": 0.7631929038336146,
+      "calibrated": 4.7243038602496865,
+      "v1_caliper_only": 3.039018064763748
+     },
+     "session_sd": {
+      "atlas": 0.06963795944751001,
+      "se": 0.008798516716254071,
+      "calibrated": 0.06304131721775538,
+      "v1_caliper_only": 0.012846432388220539
+     },
+     "slope_sd_med": {
+      "atlas": 0.02848701857394572,
+      "se": 0.0019046487606321476,
+      "calibrated": 0.027479315041489552,
+      "v1_caliper_only": 0.0444378433296749
+     },
+     "slope_sd_q75": {
+      "atlas": 0.04469370699929651,
+      "se": 0.004291470562836752,
+      "calibrated": 0.04366307814474757,
+      "v1_caliper_only": 0.06243164027892602
+     },
+     "mean_slope_sd": {
+      "atlas": 0.06578493589621076,
+      "se": 0.006442864031266769,
+      "calibrated": 0.06629903620893461,
+      "v1_caliper_only": 0.09533260423634962
+     },
+     "end_sd_med": {
+      "atlas": 0.2619578821220898,
+      "se": 0.020089389396377083,
+      "calibrated": 0.2776725198642886,
+      "v1_caliper_only": 0.4473395270337448
+     }
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.12411915397837442,
+    "sd_log_beta": 0.0741879429684239,
+    "sd_process": 0.08066918338574752,
+    "first_factor": 0.9735061568051231,
+    "start_df": 3,
+    "slow_share": 0.019094681783598393,
+    "slow_shift": 1.6270765749931921,
+    "skew": 0.7822020356159708,
+    "validation": {
+     "loo_coverage_90": 0.8601085915043117,
+     "measurements": 3131,
+     "below": 0.07633343979559246,
+     "above": 0.06355796870009582
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.07561751020995836,
+       "hi": 0.9475323907779787
+      },
+      "99": {
+       "lo": 0.015973140142322297,
+       "hi": 0.9941063733004122
+      }
+     },
+     "papers": 36,
+     "points": 3131,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.04862731800910604,
+       "miss_hi": 0.04909687646831963,
+       "cover": 0.9022758055225744
+      },
+      "99": {
+       "miss_lo": 0.005043243265556623,
+       "miss_hi": 0.005192349022721652,
+       "cover": 0.9897644077117217
+      }
+     },
+     "source": "conformal_fit.py 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03040813349974302,
+       "miss_hi": 0.06900404427122867
+      },
+      "99": {
+       "miss_lo": 0.0019529460218989274,
+       "miss_hi": 0.010541531478383206
+      }
+     },
+     "papers": 242,
+     "points": 24219,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   }
+  },
+  "B16F10": {
+   "papers": 30,
+   "animals": 472,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.8,
+      "a": -0.9634478431972529,
+      "b": 0.29289837597139345
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -0.9634478431972529,
+      "b": 0.8786992213098785
+     }
+    ],
+    "map_mean": -0.9634478435197513,
+    "map_sd": 0.2928997404366262,
+    "map_q025": -1.5421730572750407,
+    "map_q975": -0.3852517567476114,
+    "tau": 0.28051840149443474,
+    "ess": 0.07605452499531111
+   },
+   "log_beta": -3.07369747646385,
+   "log_v_ref": 3.939508034737927,
+   "sd_within": {
+    "log_alpha": 0.07977771974410375,
+    "log_beta": 0.05191620626823949,
+    "log_v0": 1.0668464149856296
+   },
+   "sd_residual_log_v": 0.3110223370136499,
+   "take": {
+    "nonprogressing_map": 0.006927071262723939,
+    "nonprogressing": 3,
+    "animals": 615,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "ctrl:control_plus_agent",
+     "shift_log_lambda": -0.0399393019007317,
+     "se": 0.054615955626602375,
+     "ci95": [
+      -0.1469865749288724,
+      0.0671079711274089
+     ],
+     "papers": 14,
+     "sd_ratio_vs_strict": 1.4100901424591286
+    },
+    {
+     "facet": "cell:antigen",
+     "shift_log_lambda": -0.2021707645140124,
+     "se": 0.06298484195971643,
+     "ci95": [
+      -0.3256210547550566,
+      -0.0787204742729682
+     ],
+     "papers": 7,
+     "sd_ratio_vs_strict": 1.2309375259540765
+    },
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": -0.3002774335707132,
+     "se": 0.05690946640066403,
+     "ci95": [
+      -0.4118199877160147,
+      -0.1887348794254117
+     ],
+     "papers": 8,
+     "sd_ratio_vs_strict": 1.4969320211388908
+    },
+    {
+     "facet": "host:gene_modified",
+     "shift_log_lambda": -0.1564117809591712,
+     "se": 0.07008775378525632,
+     "ci95": [
+      -0.2937837783782736,
+      -0.0190397835400688
+     ],
+     "papers": 7,
+     "sd_ratio_vs_strict": 1.362579907628669
+    },
+    {
+     "facet": "site:contralateral",
+     "shift_log_lambda": 0.0691177766206852,
+     "se": 0.07873058603101446,
+     "ci95": [
+      -0.0851941720001031,
+      0.2234297252414736
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 1.15376673850946
+    },
+    {
+     "facet": "cell:reporter",
+     "shift_log_lambda": -0.1052333921909593,
+     "se": 0.08632792960482362,
+     "ci95": [
+      -0.2744361342164136,
+      0.063969349834495
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 1.675015388571906
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": 0.022526434426527,
+     "se": 0.10436435487561425,
+     "ci95": [
+      -0.1820277011296769,
+      0.227080569982731
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.7456154724938573
+    },
+    {
+     "facet": "site:intradermal",
+     "shift_log_lambda": -0.3241162120488623,
+     "se": 0.10375947490980673,
+     "ci95": [
+      -0.5274847828720834,
+      -0.1207476412256411
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 1.506049818375589
+    },
+    {
+     "facet": "host:depleted",
+     "shift_log_lambda": 0.1206146889932564,
+     "se": 0.12517539787207932,
+     "ci95": [
+      -0.124729090836019,
+      0.3659584688225319
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.7706043911020758
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": -0.2946030383490767,
+     "se": 0.1191312581664782,
+     "ci95": [
+      -0.5281003043553739,
+      -0.0611057723427794
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 1.4581354243756834
+    }
+   ],
+   "studies": [
+    {
+     "studyid": "B16F10-01",
+     "mean": -0.9537931489546888,
+     "se": 0.0267760501919335,
+     "n": 56.0
+    },
+    {
+     "studyid": "B16F10-02",
+     "mean": -0.9936023210539846,
+     "se": 0.0231696144314141,
+     "n": 53.0
+    },
+    {
+     "studyid": "B16F10-03",
+     "mean": -0.8547855801732893,
+     "se": 0.0442375027739867,
+     "n": 41.0
+    },
+    {
+     "studyid": "B16F10-04",
+     "mean": -0.953674011901512,
+     "se": 0.0469373926605116,
+     "n": 35.0
+    },
+    {
+     "studyid": "B16F10-05",
+     "mean": -0.9159258299029794,
+     "se": 0.019452875500212,
+     "n": 34.0
+    },
+    {
+     "studyid": "B16F10-06",
+     "mean": -0.6382289495574307,
+     "se": 0.0373714121922097,
+     "n": 33.0
+    },
+    {
+     "studyid": "B16F10-07",
+     "mean": -1.311172358374428,
+     "se": 0.0698108801643835,
+     "n": 30.0
+    },
+    {
+     "studyid": "B16F10-08",
+     "mean": -1.538883976643212,
+     "se": 0.0623249168342913,
+     "n": 26.0
+    },
+    {
+     "studyid": "B16F10-09",
+     "mean": -0.5319397975311635,
+     "se": 0.0322489310346584,
+     "n": 22.0
+    },
+    {
+     "studyid": "B16F10-10",
+     "mean": -1.5234901679715656,
+     "se": 0.0449255524590504,
+     "n": 18.0
+    },
+    {
+     "studyid": "B16F10-11",
+     "mean": -0.9164003742592643,
+     "se": 0.0584819437149052,
+     "n": 14.0
+    },
+    {
+     "studyid": "B16F10-12",
+     "mean": -1.64320341777866,
+     "se": 0.0574462899013362,
+     "n": 10.0
+    },
+    {
+     "studyid": "B16F10-13",
+     "mean": -0.8419416360361491,
+     "se": 0.0352245010251933,
+     "n": 10.0
+    },
+    {
+     "studyid": "B16F10-14",
+     "mean": -0.9886780215324652,
+     "se": 0.0487077777262326,
+     "n": 8.0
+    },
+    {
+     "studyid": "B16F10-15",
+     "mean": -1.2651014042963376,
+     "se": 0.1368109434101949,
+     "n": 6.0
+    },
+    {
+     "studyid": "B16F10-16",
+     "mean": -0.9533491925704264,
+     "se": 0.0589534561960326,
+     "n": 6.0
+    },
+    {
+     "studyid": "B16F10-17",
+     "mean": -0.9427879042768992,
+     "se": 0.2206601727882159,
+     "n": 6.0
+    },
+    {
+     "studyid": "B16F10-18",
+     "mean": -0.811417565818441,
+     "se": 0.039504041963462,
+     "n": 6.0
+    },
+    {
+     "studyid": "B16F10-19",
+     "mean": -0.3988980467679313,
+     "se": 0.023202103474599,
+     "n": 6.0
+    },
+    {
+     "studyid": "B16F10-20",
+     "mean": -1.0192252631165577,
+     "se": 0.0146155688872297,
+     "n": 5.0
+    },
+    {
+     "studyid": "B16F10-21",
+     "mean": -1.0147619360115356,
+     "se": 0.1047696960137907,
+     "n": 5.0
+    },
+    {
+     "studyid": "B16F10-22",
+     "mean": -0.9976586204475784,
+     "se": 0.0946055422689897,
+     "n": 5.0
+    },
+    {
+     "studyid": "B16F10-23",
+     "mean": -0.9566745194778414,
+     "se": 0.0983970709687373,
+     "n": 5.0
+    },
+    {
+     "studyid": "B16F10-24",
+     "mean": -0.8637554276096551,
+     "se": 0.0343127318290418,
+     "n": 5.0
+    },
+    {
+     "studyid": "B16F10-25",
+     "mean": -0.8436902233289119,
+     "se": 0.0466156139996675,
+     "n": 5.0
+    },
+    {
+     "studyid": "B16F10-26",
+     "mean": -0.7297198688160178,
+     "se": 0.1300950357033959,
+     "n": 5.0
+    },
+    {
+     "studyid": "B16F10-27",
+     "mean": -0.6622336682138338,
+     "se": 0.0459778829587834,
+     "n": 5.0
+    },
+    {
+     "studyid": "B16F10-28",
+     "mean": -1.0906436213549269,
+     "se": 0.0642767281459695,
+     "n": 4.0
+    },
+    {
+     "studyid": "B16F10-29",
+     "mean": -1.013924732241385,
+     "se": 0.0667304418963997,
+     "n": 4.0
+    },
+    {
+     "studyid": "B16F10-30",
+     "mean": -0.8094307169492756,
+     "se": 0.0485005429015086,
+     "n": 4.0
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.012951483509778252
+   },
+   "start_sd": 0.26880877277841525,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -0.9606128476344753,
+    "sd_log_alpha": 0.36878831961113434,
+    "mean_log_beta": -3.5507176887662704,
+    "sd_log_beta": 1.2493610023298243,
+    "rho": 0.936758530022775,
+    "size_factor": 0.937172305634734,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.3217240433671743,
+      "sd_log_beta": 1.0320472551834783,
+      "rho": 0.964755130772072
+     },
+     "experiment": {
+      "sd_log_alpha": 0.22659466451029797,
+      "sd_log_beta": 0.8438491003768717,
+      "rho": 0.8947635864866874
+     },
+     "loglik": -1694.5710186213255,
+     "loglik_independent": -1740.421152278781,
+     "papers": 35,
+     "experiments": 103
+    }
+   },
+   "noise": {
+    "c0": 0.06420970070183919,
+    "c1": 1.1284224333613342,
+    "k": 0.8429830962849173,
+    "df": 3.0794886353158253,
+    "sd_session": 0.09742707739579927
+   },
+   "calibration": {
+    "distance": 4.593108735317015,
+    "evaluations": 105,
+    "converged": true,
+    "experiments": 103,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.201192373066963,
+      "se": 0.011320840722604631,
+      "calibrated": 0.2099885333419242,
+      "v1_caliper_only": 0.1721947563627234
+     },
+     "tail95": {
+      "atlas": 2.5091439887658518,
+      "se": 0.13137968296279925,
+      "calibrated": 2.470232297955904,
+      "v1_caliper_only": 2.2502036406150903
+     },
+     "tail99": {
+      "atlas": 4.174906599556891,
+      "se": 0.294880536946272,
+      "calibrated": 3.9291006416193084,
+      "v1_caliper_only": 3.3801084007753204
+     },
+     "session_sd": {
+      "atlas": 0.10587587657655434,
+      "se": 0.009950782015029616,
+      "calibrated": 0.10205681129735603,
+      "v1_caliper_only": 0.02642812834281782
+     },
+     "slope_sd_med": {
+      "atlas": 0.041685589445466305,
+      "se": 0.0033483626207318185,
+      "calibrated": 0.040771886070877804,
+      "v1_caliper_only": 0.044540544042407315
+     },
+     "slope_sd_q75": {
+      "atlas": 0.06113551576620297,
+      "se": 0.005702901979245026,
+      "calibrated": 0.05517926890000736,
+      "v1_caliper_only": 0.06057245925701649
+     },
+     "mean_slope_sd": {
+      "atlas": 0.08230654027670127,
+      "se": 0.005979303985693014,
+      "calibrated": 0.08260198439885089,
+      "v1_caliper_only": 0.14267404341718476
+     },
+     "end_sd_med": {
+      "atlas": 0.28156978959618295,
+      "se": 0.02787172031492617,
+      "calibrated": 0.3199053020566155,
+      "v1_caliper_only": 0.34837660546883953
+     }
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.11043111231725818,
+    "sd_log_beta": 0.03090780780328433,
+    "sd_process": 0.0945311496064988,
+    "first_factor": 0.7136564715040733,
+    "start_df": 3,
+    "slow_share": 0.001982754000947754,
+    "slow_shift": 21.208620521590287,
+    "skew": 0.8749624155406049,
+    "validation": {
+     "loo_coverage_90": 0.872836719337848,
+     "measurements": 2658,
+     "below": 0.07562076749435666,
+     "above": 0.05154251316779534
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.07589808170198453,
+       "hi": 0.9189187165705817
+      },
+      "99": {
+       "lo": 0.015973140142322297,
+       "hi": 0.9941063733004122
+      }
+     },
+     "papers": 35,
+     "points": 2658,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.049231626009881554,
+       "miss_hi": 0.04842045718108572,
+       "cover": 0.9023479168090328
+      },
+      "99": {
+       "miss_lo": 0.005043243265556623,
+       "miss_hi": 0.005192349022721652,
+       "cover": 0.9897644077117217
+      }
+     },
+     "source": "conformal_fit.py 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03040813349974302,
+       "miss_hi": 0.06900404427122867
+      },
+      "99": {
+       "miss_lo": 0.0019529460218989274,
+       "miss_hi": 0.010541531478383206
+      }
+     },
+     "papers": 242,
+     "points": 24219,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   }
+  },
+  "4T1": {
+   "papers": 42,
+   "animals": 501,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.8,
+      "a": -1.3329677566943725,
+      "b": 0.4566125004656711
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -1.3329677566943725,
+      "b": 1.3698427665475768
+     }
+    ],
+    "map_mean": -1.3329677568256784,
+    "map_sd": 0.45661425551585794,
+    "map_q025": -2.232645988620214,
+    "map_q975": -0.43347241105454487,
+    "tau": 0.4434275931711595,
+    "ess": 0.03129416940655347
+   },
+   "log_beta": -2.6768065393433296,
+   "log_v_ref": 4.253179574733862,
+   "sd_within": {
+    "log_alpha": 0.060612362635371696,
+    "log_beta": 0.059059325117603007,
+    "log_v0": 0.84756161634839
+   },
+   "sd_residual_log_v": 0.1877985488004131,
+   "take": {
+    "nonprogressing_map": 0.004462625538215746,
+    "nonprogressing": 1,
+    "animals": 536,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:antigen",
+     "shift_log_lambda": -0.229723354797041,
+     "se": 0.22264618182154394,
+     "ci95": [
+      -0.6661098711672672,
+      0.2066631615731851
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 2.157427928383375
+    },
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": -0.2617087081873679,
+     "se": 0.1041134833628153,
+     "ci95": [
+      -0.4657711355784859,
+      -0.0576462807962499
+     ],
+     "papers": 11,
+     "sd_ratio_vs_strict": 1.9724789430357192
+    },
+    {
+     "facet": "cell:not_stated",
+     "shift_log_lambda": 0.0555318401339953,
+     "se": 0.11516186632919148,
+     "ci95": [
+      -0.1701854178712199,
+      0.2812490981392107
+     ],
+     "papers": 7,
+     "sd_ratio_vs_strict": 1.4598273596726656
+    },
+    {
+     "facet": "cell:reporter",
+     "shift_log_lambda": -0.1706525726242307,
+     "se": 0.12751651794426092,
+     "ci95": [
+      -0.4205849477949821,
+      0.0792798025465206
+     ],
+     "papers": 11,
+     "sd_ratio_vs_strict": 1.4765657383200657
+    },
+    {
+     "facet": "ctrl:active_cotreatment",
+     "shift_log_lambda": -0.0525120327591845,
+     "se": 0.25181186148463147,
+     "ci95": [
+      -0.5460632812690622,
+      0.4410392157506931
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.3608443302448116
+    },
+    {
+     "facet": "ctrl:control_plus_agent",
+     "shift_log_lambda": 0.1246557364495192,
+     "se": 0.24888782340141208,
+     "ci95": [
+      -0.3631643974172484,
+      0.6124758703162869
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.7683814756692858
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": -0.0330839874797912,
+     "se": 0.12233100109951145,
+     "ci95": [
+      -0.2728527496348337,
+      0.2066847746752512
+     ],
+     "papers": 10,
+     "sd_ratio_vs_strict": 0.9817287584843092
+    },
+    {
+     "facet": "host:not_stated",
+     "shift_log_lambda": -0.0701591386299296,
+     "se": 0.1153690936699722,
+     "ci95": [
+      -0.2962825622230752,
+      0.1559642849632158
+     ],
+     "papers": 7,
+     "sd_ratio_vs_strict": 1.3318159629838158
+    },
+    {
+     "facet": "host:strain_not_stated",
+     "shift_log_lambda": 0.0740326036398276,
+     "se": 0.14072001303104864,
+     "ci95": [
+      -0.2017786219010277,
+      0.349843829180683
+     ],
+     "papers": 9,
+     "sd_ratio_vs_strict": 1.4663164081009608
+    },
+    {
+     "facet": "other",
+     "shift_log_lambda": 0.5066957971868429,
+     "se": 0.15927698680041597,
+     "ci95": [
+      0.1945129030580276,
+      0.8188786913156582
+     ],
+     "papers": 6,
+     "sd_ratio_vs_strict": 1.6769587438790916
+    },
+    {
+     "facet": "site:contralateral",
+     "shift_log_lambda": 0.1862094641857797,
+     "se": 0.18120823531691638,
+     "ci95": [
+      -0.1689586770353763,
+      0.5413776054069359
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 1.1452132482425932
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": 0.0134585080962826,
+     "se": 0.10255331687292883,
+     "ci95": [
+      -0.1875459929746579,
+      0.2144630091672231
+     ],
+     "papers": 22,
+     "sd_ratio_vs_strict": 1.377503204795692
+    },
+    {
+     "facet": "site:orthotopic",
+     "shift_log_lambda": 0.0277604757094338,
+     "se": 0.0855774795714113,
+     "ci95": [
+      -0.1399713842505323,
+      0.1954923356694
+     ],
+     "papers": 36,
+     "sd_ratio_vs_strict": 1.7802206450313482
+    }
+   ],
+   "studies": [
+    {
+     "studyid": "4T1-01",
+     "mean": -1.515911026524842,
+     "se": 0.050681401611131,
+     "n": 49.0
+    },
+    {
+     "studyid": "4T1-02",
+     "mean": -1.054877670653373,
+     "se": 0.0910388732782561,
+     "n": 36.0
+    },
+    {
+     "studyid": "4T1-03",
+     "mean": -1.0433001220563598,
+     "se": 0.0243719600483595,
+     "n": 32.0
+    },
+    {
+     "studyid": "4T1-04",
+     "mean": -1.2820465485944887,
+     "se": 0.0350845360924792,
+     "n": 28.0
+    },
+    {
+     "studyid": "4T1-05",
+     "mean": -1.7882478623064084,
+     "se": 0.0498480996682146,
+     "n": 27.0
+    },
+    {
+     "studyid": "4T1-06",
+     "mean": -1.483065680202331,
+     "se": 0.0517335399842511,
+     "n": 22.0
+    },
+    {
+     "studyid": "4T1-07",
+     "mean": -1.360541298073902,
+     "se": 0.0198847550375711,
+     "n": 18.0
+    },
+    {
+     "studyid": "4T1-08",
+     "mean": -1.4741819093728958,
+     "se": 0.0385753018096538,
+     "n": 16.0
+    },
+    {
+     "studyid": "4T1-09",
+     "mean": -1.740739159631484,
+     "se": 0.0439106868852423,
+     "n": 15.0
+    },
+    {
+     "studyid": "4T1-10",
+     "mean": -1.085455691303398,
+     "se": 0.0411209421459719,
+     "n": 15.0
+    },
+    {
+     "studyid": "4T1-11",
+     "mean": -0.7619360356328936,
+     "se": 0.0226370490414964,
+     "n": 15.0
+    },
+    {
+     "studyid": "4T1-12",
+     "mean": -1.549072145451696,
+     "se": 0.0578240417180278,
+     "n": 12.0
+    },
+    {
+     "studyid": "4T1-13",
+     "mean": -1.1993604747573456,
+     "se": 0.0447277444122848,
+     "n": 12.0
+    },
+    {
+     "studyid": "4T1-14",
+     "mean": -1.1749196960901696,
+     "se": 0.0877139240560204,
+     "n": 12.0
+    },
+    {
+     "studyid": "4T1-15",
+     "mean": -0.9619466995376312,
+     "se": 0.091138564394015,
+     "n": 12.0
+    },
+    {
+     "studyid": "4T1-16",
+     "mean": -0.9949463527988714,
+     "se": 0.1342126292141301,
+     "n": 11.0
+    },
+    {
+     "studyid": "4T1-17",
+     "mean": -1.6984401108514977,
+     "se": 0.1262481053905094,
+     "n": 10.0
+    },
+    {
+     "studyid": "4T1-18",
+     "mean": -1.431168211551774,
+     "se": 0.0948909749131197,
+     "n": 10.0
+    },
+    {
+     "studyid": "4T1-19",
+     "mean": -1.237830685532148,
+     "se": 0.0690122851547948,
+     "n": 10.0
+    },
+    {
+     "studyid": "4T1-20",
+     "mean": -1.2363115483690594,
+     "se": 0.0370578233737245,
+     "n": 10.0
+    },
+    {
+     "studyid": "4T1-21",
+     "mean": -1.2021884806199927,
+     "se": 0.0543542652564905,
+     "n": 10.0
+    },
+    {
+     "studyid": "4T1-22",
+     "mean": -1.052701088832546,
+     "se": 0.0819513509516172,
+     "n": 10.0
+    },
+    {
+     "studyid": "4T1-23",
+     "mean": -2.128944498251201,
+     "se": 0.0891860686193432,
+     "n": 9.0
+    },
+    {
+     "studyid": "4T1-24",
+     "mean": -2.104566955782442,
+     "se": 0.0703184595623035,
+     "n": 6.0
+    },
+    {
+     "studyid": "4T1-25",
+     "mean": -1.6932467389451868,
+     "se": 0.0454213716811125,
+     "n": 6.0
+    },
+    {
+     "studyid": "4T1-26",
+     "mean": -1.650790652910706,
+     "se": 0.0896804591419968,
+     "n": 6.0
+    },
+    {
+     "studyid": "4T1-27",
+     "mean": -1.5274861245001077,
+     "se": 0.0959855255051246,
+     "n": 6.0
+    },
+    {
+     "studyid": "4T1-28",
+     "mean": -1.382416748317321,
+     "se": 0.0601027518797051,
+     "n": 6.0
+    },
+    {
+     "studyid": "4T1-29",
+     "mean": -1.260896624459945,
+     "se": 0.0359914239928325,
+     "n": 6.0
+    },
+    {
+     "studyid": "4T1-30",
+     "mean": -1.155702932705589,
+     "se": 0.060351383579411,
+     "n": 6.0
+    },
+    {
+     "studyid": "4T1-31",
+     "mean": -1.9156284788936049,
+     "se": 0.0589180590004136,
+     "n": 5.0
+    },
+    {
+     "studyid": "4T1-32",
+     "mean": -1.850943256994116,
+     "se": 0.0539002599917367,
+     "n": 5.0
+    },
+    {
+     "studyid": "4T1-33",
+     "mean": -1.8189140005105853,
+     "se": 0.0469289286943629,
+     "n": 5.0
+    },
+    {
+     "studyid": "4T1-34",
+     "mean": -1.651673241109989,
+     "se": 0.1358037952776222,
+     "n": 5.0
+    },
+    {
+     "studyid": "4T1-35",
+     "mean": -1.4676138536006589,
+     "se": 0.0454930606512367,
+     "n": 5.0
+    },
+    {
+     "studyid": "4T1-36",
+     "mean": -1.4383452890151516,
+     "se": 0.0240204121104096,
+     "n": 5.0
+    },
+    {
+     "studyid": "4T1-37",
+     "mean": -1.4226659742915764,
+     "se": 0.0899126662090737,
+     "n": 5.0
+    },
+    {
+     "studyid": "4T1-38",
+     "mean": -1.0784937007876467,
+     "se": 0.0876286061227193,
+     "n": 5.0
+    },
+    {
+     "studyid": "4T1-39",
+     "mean": -0.295009500369205,
+     "se": 0.0385717689314324,
+     "n": 5.0
+    },
+    {
+     "studyid": "4T1-40",
+     "mean": 0.2189315866811561,
+     "se": 0.0230275731514759,
+     "n": 5.0
+    },
+    {
+     "studyid": "4T1-41",
+     "mean": -1.1357143455673735,
+     "se": 0.0393747835981959,
+     "n": 4.0
+    },
+    {
+     "studyid": "4T1-42",
+     "mean": -0.9497967690832122,
+     "se": 0.104919652793022,
+     "n": 4.0
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.005329157533211829
+   },
+   "start_sd": 0.22276935752080823,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.3159162388325192,
+    "sd_log_alpha": 0.6821144223924629,
+    "mean_log_beta": -2.9369738473030917,
+    "sd_log_beta": 1.5437819753667417,
+    "rho": 0.925722158681114,
+    "size_factor": 1.3358165462672293,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.3704634890205741,
+      "sd_log_beta": 0.6949502979224716,
+      "rho": 0.8655522424550048
+     },
+     "experiment": {
+      "sd_log_alpha": 0.3514323661410131,
+      "sd_log_beta": 0.9233904257403266,
+      "rho": 0.9967638739453897
+     },
+     "loglik": 350.4385756254196,
+     "loglik_independent": 282.3880099058151,
+     "papers": 45,
+     "experiments": 87
+    }
+   },
+   "noise": {
+    "c0": 0.030250065578607533,
+    "c1": 0.5316151957795142,
+    "k": 0.3971408317675893,
+    "df": 2.221541015117886,
+    "sd_session": 0.03897529676618422
+   },
+   "calibration": {
+    "distance": 14.383424650065194,
+    "evaluations": 145,
+    "converged": true,
+    "experiments": 87,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.09379176780117772,
+      "se": 0.005835116670930943,
+      "calibrated": 0.10565115843379187,
+      "v1_caliper_only": 0.16960379800057632
+     },
+     "tail95": {
+      "atlas": 3.027733346537601,
+      "se": 0.18995666982985726,
+      "calibrated": 2.7974924531866754,
+      "v1_caliper_only": 2.114757712445822
+     },
+     "tail99": {
+      "atlas": 5.554042708942927,
+      "se": 0.5056457984959906,
+      "calibrated": 5.29993447802956,
+      "v1_caliper_only": 2.959351528082407
+     },
+     "session_sd": {
+      "atlas": 0.056697067444871865,
+      "se": 0.004765450053057325,
+      "calibrated": 0.05224540827698342,
+      "v1_caliper_only": 0.03255028131461131
+     },
+     "slope_sd_med": {
+      "atlas": 0.02004624791760262,
+      "se": 0.0021121871508316113,
+      "calibrated": 0.01623501191005426,
+      "v1_caliper_only": 0.023359470556866976
+     },
+     "slope_sd_q75": {
+      "atlas": 0.025678614856040956,
+      "se": 0.00155478389522864,
+      "calibrated": 0.023332239189860143,
+      "v1_caliper_only": 0.031580393164627074
+     },
+     "mean_slope_sd": {
+      "atlas": 0.0862374229421576,
+      "se": 0.022301925169292604,
+      "calibrated": 0.09488561951053322,
+      "v1_caliper_only": 0.13041242247335494
+     },
+     "end_sd_med": {
+      "atlas": 0.1779930546236188,
+      "se": 0.010626352508867589,
+      "calibrated": 0.19292554667343542,
+      "v1_caliper_only": 0.2365713718833268
+     }
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.11043111231725818,
+    "sd_log_beta": 0.03767417829317498,
+    "sd_process": 0.0945311496064988,
+    "first_factor": 0.8516053005502948,
+    "start_df": 3.0,
+    "slow_share": 0.019094681783598393,
+    "slow_shift": 1.6270765749931921,
+    "skew": 0.8358198019887304,
+    "validation": {
+     "loo_coverage_90": 0.9312257348863006,
+     "measurements": 3606,
+     "below": 0.03050471436494731,
+     "above": 0.03826955074875208
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.13163694736393208,
+       "hi": 0.9331053171548097
+      },
+      "99": {
+       "lo": 0.015973140142322297,
+       "hi": 0.9941063733004122
+      }
+     },
+     "papers": 45,
+     "points": 3606,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.05222241798206173,
+       "miss_hi": 0.048583578406792,
+       "cover": 0.8991940036111463
+      },
+      "99": {
+       "miss_lo": 0.005043243265556623,
+       "miss_hi": 0.005192349022721652,
+       "cover": 0.9897644077117217
+      }
+     },
+     "source": "conformal_fit.py 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03040813349974302,
+       "miss_hi": 0.06900404427122867
+      },
+      "99": {
+       "miss_lo": 0.0019529460218989274,
+       "miss_hi": 0.010541531478383206
+      }
+     },
+     "papers": 242,
+     "points": 24219,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "syngeneic",
+   "host_class": "immunocompetent",
+   "tumour_type": "breast",
+   "tier": "Full",
+   "pooled_fields": [
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew",
+    "start_sd"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 200.0
+   }
+  },
+  "LLC": {
+   "papers": 22,
+   "animals": 207,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.8,
+      "a": -1.193343090594368,
+      "b": 0.4167227689117207
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -1.193343090594368,
+      "b": 1.2501755550826377
+     }
+    ],
+    "map_mean": -1.1933430905053009,
+    "map_sd": 0.4167251850275456,
+    "map_q025": -2.018293892511493,
+    "map_q975": -0.36821354954263136,
+    "tau": 0.3929957828226461,
+    "ess": 0.03757201381297236
+   },
+   "log_beta": -3.171638294510088,
+   "log_v_ref": 3.607331307307588,
+   "sd_within": {
+    "log_alpha": 0.08195394015523252,
+    "log_beta": 0.04800257052247232,
+    "log_v0": 0.8335653791560469
+   },
+   "sd_residual_log_v": 0.2682684209624657,
+   "take": {
+    "nonprogressing_map": 0.00808278862307398,
+    "nonprogressing": 1,
+    "animals": 265,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:antigen",
+     "shift_log_lambda": -0.1766886266458684,
+     "se": 0.18681955301890915,
+     "ci95": [
+      -0.5428549505629304,
+      0.1894776972711935
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.5337075039066698
+    },
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": 0.0461094610634735,
+     "se": 0.09411448019216105,
+     "ci95": [
+      -0.1383549201131621,
+      0.2305738422401092
+     ],
+     "papers": 11,
+     "sd_ratio_vs_strict": 0.5228458171564985
+    },
+    {
+     "facet": "cell:not_stated",
+     "shift_log_lambda": -0.3249433367907051,
+     "se": 0.20132183666115117,
+     "ci95": [
+      -0.7195341366465614,
+      0.0696474630651511
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 0.5388751736660283
+    },
+    {
+     "facet": "ctrl:control_plus_agent",
+     "shift_log_lambda": 0.0082863302956127,
+     "se": 0.1696849974344503,
+     "ci95": [
+      -0.3242962646759099,
+      0.3408689252671353
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 0.5003601286798641
+    },
+    {
+     "facet": "host:gene_modified",
+     "shift_log_lambda": -0.1098865690000373,
+     "se": 0.15161525643934975,
+     "ci95": [
+      -0.4070524716211628,
+      0.1872793336210882
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 1.200633270025783
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": 0.4871852336592376,
+     "se": 0.20690502017737866,
+     "ci95": [
+      0.0816513941115754,
+      0.8927190732068997
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.470216799965078
+    },
+    {
+     "facet": "host:not_stated",
+     "shift_log_lambda": 0.1052831009590867,
+     "se": 0.1913465800528462,
+     "ci95": [
+      -0.2697561959444918,
+      0.4803223978626652
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 0.5973188850240582
+    },
+    {
+     "facet": "host:strain_not_stated",
+     "shift_log_lambda": 0.1970730286684865,
+     "se": 0.1272036259894736,
+     "ci95": [
+      -0.0522460782708817,
+      0.4463921356078548
+     ],
+     "papers": 9,
+     "sd_ratio_vs_strict": 0.5289167270634919
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": -0.0533388329065282,
+     "se": 0.12224224623484353,
+     "ci95": [
+      -0.2929336355268216,
+      0.186255969713765
+     ],
+     "papers": 12,
+     "sd_ratio_vs_strict": 0.6142431592616304
+    }
+   ],
+   "studies": [
+    {
+     "studyid": "LLC-01",
+     "mean": -1.4351361448664173,
+     "se": 0.0509989167340829,
+     "n": 25.0
+    },
+    {
+     "studyid": "LLC-02",
+     "mean": -1.056914120743291,
+     "se": 0.0350157099406708,
+     "n": 24.0
+    },
+    {
+     "studyid": "LLC-03",
+     "mean": -1.1945787297096382,
+     "se": 0.0491427666292842,
+     "n": 21.0
+    },
+    {
+     "studyid": "LLC-04",
+     "mean": -0.7473482507046519,
+     "se": 0.0292944793800892,
+     "n": 15.0
+    },
+    {
+     "studyid": "LLC-05",
+     "mean": -1.26587852846519,
+     "se": 0.0564848718723998,
+     "n": 12.0
+    },
+    {
+     "studyid": "LLC-06",
+     "mean": -1.4327424566557092,
+     "se": 0.0598704316920675,
+     "n": 10.0
+    },
+    {
+     "studyid": "LLC-07",
+     "mean": -1.1319502627367366,
+     "se": 0.0700040975419834,
+     "n": 10.0
+    },
+    {
+     "studyid": "LLC-08",
+     "mean": -0.9284129612873684,
+     "se": 0.0839244239885821,
+     "n": 10.0
+    },
+    {
+     "studyid": "LLC-09",
+     "mean": -1.4160910889247174,
+     "se": 0.0569650639543016,
+     "n": 9.0
+    },
+    {
+     "studyid": "LLC-10",
+     "mean": -0.8454164663192136,
+     "se": 0.0221520751345908,
+     "n": 8.0
+    },
+    {
+     "studyid": "LLC-11",
+     "mean": -1.80271370583287,
+     "se": 0.0384267549980529,
+     "n": 6.0
+    },
+    {
+     "studyid": "LLC-12",
+     "mean": -1.60983396602893,
+     "se": 0.0455976007278314,
+     "n": 6.0
+    },
+    {
+     "studyid": "LLC-13",
+     "mean": -1.5078801100761643,
+     "se": 0.1321632111536077,
+     "n": 6.0
+    },
+    {
+     "studyid": "LLC-14",
+     "mean": -1.2586503443915764,
+     "se": 0.03176996495612,
+     "n": 6.0
+    },
+    {
+     "studyid": "LLC-15",
+     "mean": -0.863165932268115,
+     "se": 0.0328841262395292,
+     "n": 6.0
+    },
+    {
+     "studyid": "LLC-16",
+     "mean": -0.3361011975245533,
+     "se": 0.0973643912490497,
+     "n": 6.0
+    },
+    {
+     "studyid": "LLC-17",
+     "mean": -1.6900951151502288,
+     "se": 0.1013157015194453,
+     "n": 5.0
+    },
+    {
+     "studyid": "LLC-18",
+     "mean": -1.1634844062772407,
+     "se": 0.0339965327801735,
+     "n": 5.0
+    },
+    {
+     "studyid": "LLC-19",
+     "mean": -1.0894042425696058,
+     "se": 0.1037964059521406,
+     "n": 5.0
+    },
+    {
+     "studyid": "LLC-20",
+     "mean": -0.746498179165258,
+     "se": 0.0907981598015848,
+     "n": 5.0
+    },
+    {
+     "studyid": "LLC-21",
+     "mean": -0.8367998209765806,
+     "se": 0.0646625221311776,
+     "n": 4.0
+    },
+    {
+     "studyid": "LLC-22",
+     "mean": -1.8815449089364624,
+     "se": 0.0380830604032286,
+     "n": 3.0
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.006398202694593971
+   },
+   "start_sd": 0.28716829305661795,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.2583543140331033,
+    "sd_log_alpha": 0.47073114621214235,
+    "mean_log_beta": -3.6582153216777336,
+    "sd_log_beta": 1.1647699963802907,
+    "rho": 0.9155363463749627,
+    "size_factor": 0.9769445115339194,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.3695971754187027,
+      "sd_log_beta": 0.9342847142520226,
+      "rho": 0.8600542313782487
+     },
+     "experiment": {
+      "sd_log_alpha": 0.30914060481278727,
+      "sd_log_beta": 0.7406695778149072,
+      "rho": 0.9999994912433129
+     },
+     "loglik": -546.6577910780907,
+     "loglik_independent": -566.2287071347237,
+     "papers": 29,
+     "experiments": 43
+    }
+   },
+   "noise": {
+    "c0": 0.05216975945153568,
+    "c1": 0.91683228958722,
+    "k": 0.6849155949053534,
+    "df": 3.186108489194485,
+    "sd_session": 0.08522621121299276
+   },
+   "calibration": {
+    "distance": 5.418491140994632,
+    "evaluations": 103,
+    "converged": true,
+    "experiments": 43,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.17520109569466083,
+      "se": 0.0141907902684706,
+      "calibrated": 0.1850298765168042,
+      "v1_caliper_only": 0.18595721588538813
+     },
+     "tail95": {
+      "atlas": 2.556463055750001,
+      "se": 0.16116201034737673,
+      "calibrated": 2.5590157340653246,
+      "v1_caliper_only": 2.382625392777058
+     },
+     "tail99": {
+      "atlas": 4.160813289553141,
+      "se": 0.42731297593808715,
+      "calibrated": 4.347443555639718,
+      "v1_caliper_only": 3.6160872585763912
+     },
+     "session_sd": {
+      "atlas": 0.08916481501387538,
+      "se": 0.015193431071682594,
+      "calibrated": 0.08541999135240912,
+      "v1_caliper_only": 0.016605045478460728
+     },
+     "slope_sd_med": {
+      "atlas": 0.03201048308202325,
+      "se": 0.0017070847252948277,
+      "calibrated": 0.030900105641282066,
+      "v1_caliper_only": 0.027292370423817255
+     },
+     "slope_sd_q75": {
+      "atlas": 0.03979106384286775,
+      "se": 0.0031672235541831085,
+      "calibrated": 0.040285330957094946,
+      "v1_caliper_only": 0.040558066631665404
+     },
+     "mean_slope_sd": {
+      "atlas": 0.07462544145244963,
+      "se": 0.006739214452750596,
+      "calibrated": 0.08225046186013875,
+      "v1_caliper_only": 0.14326461613665847
+     },
+     "end_sd_med": {
+      "atlas": 0.24749769310791891,
+      "se": 0.025151446018913066,
+      "calibrated": 0.2907656253223616,
+      "v1_caliper_only": 0.28250173399563083
+     }
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.11043111231725818,
+    "sd_log_beta": 0.03767417829317498,
+    "sd_process": 0.0945311496064988,
+    "first_factor": 0.8516053005502948,
+    "start_df": 3.0,
+    "slow_share": 0.019094681783598393,
+    "slow_shift": 1.6270765749931921,
+    "skew": 0.8358198019887304,
+    "validation": {
+     "loo_coverage_90": 0.9231327048585932,
+     "measurements": 1379,
+     "below": 0.03915881073241479,
+     "above": 0.03770848440899202
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.10308291698324498,
+       "hi": 0.9165311335909618
+      },
+      "99": {
+       "lo": 0.015973140142322297,
+       "hi": 0.9941063733004122
+      }
+     },
+     "papers": 29,
+     "points": 1379,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.04832986065286056,
+       "miss_hi": 0.047051652574923226,
+       "cover": 0.9046184867722161
+      },
+      "99": {
+       "miss_lo": 0.005043243265556623,
+       "miss_hi": 0.005192349022721652,
+       "cover": 0.9897644077117217
+      }
+     },
+     "source": "conformal_fit.py 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03040813349974302,
+       "miss_hi": 0.06900404427122867
+      },
+      "99": {
+       "miss_lo": 0.0019529460218989274,
+       "miss_hi": 0.010541531478383206
+      }
+     },
+     "papers": 242,
+     "points": 24219,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "syngeneic",
+   "host_class": "immunocompetent",
+   "tumour_type": "lung",
+   "tier": "Full",
+   "pooled_fields": [
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 200.0
+   }
+  },
+  "Panc02": {
+   "papers": 16,
+   "animals": 208,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.1990562273161841,
+      "a": -1.9543128438911173,
+      "b": 0.7382499832152825
+     },
+     {
+      "kind": "map",
+      "w": 0.6009437726838159,
+      "a": -1.9533896792561385,
+      "b": 0.4890122920698845
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -1.9536193813429268,
+      "b": 1.684406124103043
+     }
+    ],
+    "map_mean": -1.9536193815416198,
+    "map_sd": 0.5614687080343485,
+    "map_q025": -3.068596039412759,
+    "map_q975": -0.8390860157972747,
+    "tau": 0.5183403840310647,
+    "ess": 0.021907520534287444
+   },
+   "log_beta": -4.086477616333638,
+   "log_v_ref": 4.522354654779393,
+   "sd_within": {
+    "log_alpha": 0.04869773480640042,
+    "log_beta": 0.24968100153272518,
+    "log_v0": 0.8461951313447672
+   },
+   "sd_residual_log_v": 0.2243230642815616,
+   "take": {
+    "nonprogressing_map": 0.004720283970929669,
+    "nonprogressing": 2,
+    "animals": 247,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": 0.0026589847254665,
+     "se": 0.12951538755952072,
+     "ci95": [
+      -0.2511911748911941,
+      0.256509144342127
+     ],
+     "papers": 6,
+     "sd_ratio_vs_strict": 1.9155551715457653
+    },
+    {
+     "facet": "cell:reporter",
+     "shift_log_lambda": -0.0401200345001342,
+     "se": 0.2292620892532125,
+     "ci95": [
+      -0.4894737294364307,
+      0.4092336604361624
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.3562766212308224
+    },
+    {
+     "facet": "ctrl:control_plus_agent",
+     "shift_log_lambda": 0.5529390474689108,
+     "se": 0.2311523508043614,
+     "ci95": [
+      0.0998804398923624,
+      1.005997655045459
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.8614768726166827
+    },
+    {
+     "facet": "host:concomitant_other_tumour",
+     "shift_log_lambda": 0.1458179285712597,
+     "se": 0.3996824919160155,
+     "ci95": [
+      -0.6375597555841307,
+      0.9291956127266502
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.4101374757388832
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": 0.7520351742261031,
+     "se": 0.23140963436251274,
+     "ci95": [
+      0.2984722908755782,
+      1.205598057576628
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.6044560434127956
+    },
+    {
+     "facet": "host:not_stated",
+     "shift_log_lambda": 0.127438827384877,
+     "se": 0.19282898571518237,
+     "ci95": [
+      -0.2505059846168804,
+      0.5053836393866344
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.8287052024215226
+    },
+    {
+     "facet": "host:strain_not_stated",
+     "shift_log_lambda": -0.1437239133645914,
+     "se": 0.1657816954460883,
+     "ci95": [
+      -0.4686560364389245,
+      0.1812082097097417
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 0.8805891818603243
+    },
+    {
+     "facet": "other",
+     "shift_log_lambda": -0.0479118948020709,
+     "se": 0.1491222834246859,
+     "ci95": [
+      -0.3401915703144553,
+      0.2443677807103134
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.4761936158404207
+    },
+    {
+     "facet": "site:contralateral",
+     "shift_log_lambda": -0.0433232306868794,
+     "se": 0.4494016624610646,
+     "ci95": [
+      -0.924150489110566,
+      0.8375040277368072
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.4388213279583575
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": -0.1879115202861896,
+     "se": 0.17610309950952302,
+     "ci95": [
+      -0.5330735953248548,
+      0.1572505547524755
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 0.3099150452352781
+    },
+    {
+     "facet": "site:orthotopic",
+     "shift_log_lambda": -0.1638025749719988,
+     "se": 0.18465711371656743,
+     "ci95": [
+      -0.5257305178564711,
+      0.1981253679124733
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.9624645865343776
+    }
+   ],
+   "studies": [
+    {
+     "studyid": "Panc02-01",
+     "mean": -1.8254272695357223,
+     "se": 0.0561603455584397,
+     "n": 44.0
+    },
+    {
+     "studyid": "Panc02-02",
+     "mean": -1.9628067523826431,
+     "se": 0.0515087681149434,
+     "n": 43.0
+    },
+    {
+     "studyid": "Panc02-03",
+     "mean": -1.8171827002221796,
+     "se": 0.0971769573871357,
+     "n": 22.0
+    },
+    {
+     "studyid": "Panc02-04",
+     "mean": -2.5108941887850644,
+     "se": 0.0356652560610669,
+     "n": 18.0
+    },
+    {
+     "studyid": "Panc02-05",
+     "mean": -2.023244793197051,
+     "se": 0.0815406165679683,
+     "n": 16.0
+    },
+    {
+     "studyid": "Panc02-06",
+     "mean": -2.462933838611217,
+     "se": 0.043561100565167,
+     "n": 12.0
+    },
+    {
+     "studyid": "Panc02-07",
+     "mean": -2.114770383696231,
+     "se": 0.1456445813016476,
+     "n": 6.0
+    },
+    {
+     "studyid": "Panc02-08",
+     "mean": -2.0198140999912946,
+     "se": 0.0501864378567989,
+     "n": 6.0
+    },
+    {
+     "studyid": "Panc02-09",
+     "mean": -1.9179913293424944,
+     "se": 0.05034630741661,
+     "n": 6.0
+    },
+    {
+     "studyid": "Panc02-10",
+     "mean": -1.6390759265956862,
+     "se": 0.066825674965977,
+     "n": 6.0
+    },
+    {
+     "studyid": "Panc02-11",
+     "mean": -1.530807470821328,
+     "se": 0.0331793257973627,
+     "n": 6.0
+    },
+    {
+     "studyid": "Panc02-12",
+     "mean": -2.802552400060967,
+     "se": 0.0540696879827474,
+     "n": 5.0
+    },
+    {
+     "studyid": "Panc02-13",
+     "mean": -2.706631544908632,
+     "se": 0.0831376099356696,
+     "n": 5.0
+    },
+    {
+     "studyid": "Panc02-14",
+     "mean": -1.3081732887308344,
+     "se": 0.0710268636565667,
+     "n": 5.0
+    },
+    {
+     "studyid": "Panc02-15",
+     "mean": -0.9603321160316164,
+     "se": 0.0187076785704713,
+     "n": 5.0
+    },
+    {
+     "studyid": "Panc02-16",
+     "mean": -1.6744937076844355,
+     "se": 0.0554619961127408,
+     "n": 3.0
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.0035245719167812588
+   },
+   "start_sd": 0.20828248354969778,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.8828374239528256,
+    "sd_log_alpha": 0.5417087891654523,
+    "mean_log_beta": -4.118691513221714,
+    "sd_log_beta": 1.4142442518870157,
+    "rho": 0.851151055056444,
+    "size_factor": 0.9920522278046686,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.4287486818722356,
+      "sd_log_beta": 0.7690411824230966,
+      "rho": 0.8894873072782171
+     },
+     "experiment": {
+      "sd_log_alpha": 0.3381474624408413,
+      "sd_log_beta": 1.200349119222892,
+      "rho": 0.9097857751790506
+     },
+     "loglik": -399.4740343093872,
+     "loglik_independent": -417.60061526298523,
+     "papers": 19,
+     "experiments": 36
+    }
+   },
+   "noise": {
+    "c0": 0.05141253131885614,
+    "c1": 0.9035247487834451,
+    "k": 0.674974254128134,
+    "df": 3.0794886353158253,
+    "sd_session": 0.07541585234043888
+   },
+   "calibration": {
+    "distance": 11.347555080520898,
+    "evaluations": 60,
+    "converged": true,
+    "experiments": 36,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.11009988909201059,
+      "se": 0.0128275092031827,
+      "calibrated": 0.16566326522610397,
+      "v1_caliper_only": 0.15753986222538924
+     },
+     "tail95": {
+      "atlas": 3.231643507338282,
+      "se": 0.3319731579622156,
+      "calibrated": 2.3344181178189514,
+      "v1_caliper_only": 2.209218848628679
+     },
+     "tail99": {
+      "atlas": 4.883143706566084,
+      "se": 0.8068065821492415,
+      "calibrated": 3.8932379822651466,
+      "v1_caliper_only": 3.04418250920831
+     },
+     "session_sd": {
+      "atlas": 0.07248794546364147,
+      "se": 0.009765157991832266,
+      "calibrated": 0.07809012640261331,
+      "v1_caliper_only": 0.016340449436309645
+     },
+     "slope_sd_med": {
+      "atlas": 0.017379476916040724,
+      "se": 0.006050259312177518,
+      "calibrated": 0.01703711166030998,
+      "v1_caliper_only": 0.020555758313652646
+     },
+     "slope_sd_q75": {
+      "atlas": 0.037967883344819854,
+      "se": 0.004831509183904518,
+      "calibrated": 0.02665121630077504,
+      "v1_caliper_only": 0.031880329454652044
+     },
+     "mean_slope_sd": {
+      "atlas": 0.06111737248950642,
+      "se": 0.010511147464614219,
+      "calibrated": 0.05924885719516739,
+      "v1_caliper_only": 0.11563200761010624
+     },
+     "end_sd_med": {
+      "atlas": 0.1952102058516215,
+      "se": 0.021636980993829866,
+      "calibrated": 0.24743810802686156,
+      "v1_caliper_only": 0.3045605538421707
+     }
+    },
+    "identification": {
+     "status": "poorly_identified",
+     "rule": "starts within one Monte Carlo sd of the winner's 6-stream mean distance",
+     "starts": 11,
+     "sd_log_alpha": [
+      0.033058937067072844,
+      0.07437859276267615
+     ],
+     "sd_log_beta": [
+      0.05318231770863382,
+      0.24968100153272518
+     ],
+     "sd_study_log_beta": [
+      0.862502857213542,
+      1.2563171180601276
+     ],
+     "solutions": [
+      {
+       "sd_within": {
+        "log_alpha": 0.0734080066855613,
+        "log_beta": 0.05729243148947571
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.6055704360847789,
+        "sd_log_beta": 1.5809684566222484
+       },
+       "distance_mean6": 13.642162761571813,
+       "best": false
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.07437859276267615,
+        "log_beta": 0.06674114108033763
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.64234492519382,
+        "sd_log_beta": 1.6769759626453016
+       },
+       "distance_mean6": 13.67818674520577,
+       "best": false
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.04957108790046118,
+        "log_beta": 0.07799692817850476
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.47096852901265374,
+        "sd_log_beta": 1.2295619866200749
+       },
+       "distance_mean6": 13.229966182537419,
+       "best": false
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.03588368406497323,
+        "log_beta": 0.10993195876202422
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.6257479272795491,
+        "sd_log_beta": 1.633646023444944
+       },
+       "distance_mean6": 12.83259308724783,
+       "best": false
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.033058937067072844,
+        "log_beta": 0.21256079007135936
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.6753177170375139,
+        "sd_log_beta": 1.763058341713677
+       },
+       "distance_mean6": 12.667872227194437,
+       "best": false
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.06892796430782146,
+        "log_beta": 0.05318231770863382
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.6349275603872175,
+        "sd_log_beta": 1.657611378293537
+       },
+       "distance_mean6": 13.136446157173495,
+       "best": false
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.05568520644091747,
+        "log_beta": 0.0990208143986517
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.6135257325837224,
+        "sd_log_beta": 1.6017374243235487
+       },
+       "distance_mean6": 12.656583851676793,
+       "best": false
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.04869773480640042,
+        "log_beta": 0.24968100153272518
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.5417087891654523,
+        "sd_log_beta": 1.4142442518870157
+       },
+       "distance_mean6": 11.72258268135066,
+       "best": true
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.05936984789356943,
+        "log_beta": 0.09294761392087379
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.6264858223435478,
+        "sd_log_beta": 1.6355724530573628
+       },
+       "distance_mean6": 13.20475929902929,
+       "best": false
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.06546706770856033,
+        "log_beta": 0.11259177113157325
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.5918955918308647,
+        "sd_log_beta": 1.5452674115804235
+       },
+       "distance_mean6": 12.747715318095144,
+       "best": false
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.03310912137826693,
+        "log_beta": 0.19529094114174342
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.6860102782473481,
+        "sd_log_beta": 1.7909735122470085
+       },
+       "distance_mean6": 12.592571804160562,
+       "best": false
+      }
+     ],
+     "why": "pre-specified before the grid run (2026-11-10)"
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.11043111231725818,
+    "sd_log_beta": 0.03767417829317498,
+    "sd_process": 0.0945311496064988,
+    "first_factor": 0.8516053005502948,
+    "start_df": 3.0,
+    "slow_share": 0.019094681783598393,
+    "slow_shift": 1.6270765749931921,
+    "skew": 0.8358198019887304,
+    "validation": {
+     "loo_coverage_90": 0.9130434782608695,
+     "measurements": 1817,
+     "below": 0.0341221794166208,
+     "above": 0.05283434232250963
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.10129339832877633,
+       "hi": 0.9039503002948296
+      },
+      "99": {
+       "lo": 0.015973140142322297,
+       "hi": 0.9941063733004122
+      }
+     },
+     "papers": 19,
+     "points": 1817,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.04870155987098918,
+       "miss_hi": 0.04753004433253099,
+       "cover": 0.9037683957964798
+      },
+      "99": {
+       "miss_lo": 0.005043243265556623,
+       "miss_hi": 0.005192349022721652,
+       "cover": 0.9897644077117217
+      }
+     },
+     "source": "conformal_fit.py 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03040813349974302,
+       "miss_hi": 0.06900404427122867
+      },
+      "99": {
+       "miss_lo": 0.0019529460218989274,
+       "miss_hi": 0.010541531478383206
+      }
+     },
+     "papers": 242,
+     "points": 24219,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "syngeneic",
+   "host_class": "immunocompetent",
+   "tumour_type": "pancreas",
+   "tier": "Own spreads",
+   "pooled_fields": [
+    "noise.k",
+    "noise.df",
+    "noise.sd_session",
+    "take.nonprogressing_map",
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 200.0
+   }
+  },
+  "Hepa1-6": {
+   "papers": 14,
+   "animals": 203,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.18976533675751964,
+      "a": -1.4875429528827564,
+      "b": 0.5424811537514962
+     },
+     {
+      "kind": "map",
+      "w": 0.6102346632424804,
+      "a": -1.486005194281705,
+      "b": 0.33958207574228033
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -1.4863699608801804,
+      "b": 1.1916171613435012
+     }
+    ],
+    "map_mean": -1.4863699611766747,
+    "map_sd": 0.3972057204478343,
+    "map_q025": -2.2776867406253936,
+    "map_q975": -0.6958691404144924,
+    "tau": 0.3598245003747422,
+    "ess": 0.11060557225865357
+   },
+   "log_beta": -2.92988342843585,
+   "log_v_ref": 4.389723216378819,
+   "sd_within": {
+    "log_alpha": 0.05911970679870182,
+    "log_beta": 0.07995175261737021,
+    "log_v0": 0.7638530706701859
+   },
+   "sd_residual_log_v": 0.1476635622539773,
+   "take": {
+    "nonprogressing_map": 0.004720283970929669,
+    "nonprogressing": 1,
+    "animals": 283,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": 0.3659864056740231,
+     "se": 0.11701672799027733,
+     "ci95": [
+      0.1366336188130796,
+      0.5953391925349667
+     ],
+     "papers": 7,
+     "sd_ratio_vs_strict": 1.2121589398703485
+    },
+    {
+     "facet": "cell:not_stated",
+     "shift_log_lambda": 0.2963294421540554,
+     "se": 0.1463128330319016,
+     "ci95": [
+      0.0095562894115283,
+      0.5831025948965826
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.6801693001580371
+    },
+    {
+     "facet": "ctrl:active_cotreatment",
+     "shift_log_lambda": -0.0322866376228397,
+     "se": 0.2790983539906412,
+     "ci95": [
+      -0.5793194114444965,
+      0.5147461361988169
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.7011304943538683
+    },
+    {
+     "facet": "ctrl:control_plus_agent",
+     "shift_log_lambda": -0.0852078187947661,
+     "se": 0.19427902113795736,
+     "ci95": [
+      -0.4659947002251625,
+      0.2955790626356303
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.5246094160362355
+    },
+    {
+     "facet": "host:depleted",
+     "shift_log_lambda": 0.5748575411646318,
+     "se": 0.22883398105250113,
+     "ci95": [
+      0.1263429383017296,
+      1.023372144027534
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.4511996162452995
+    },
+    {
+     "facet": "host:gene_modified",
+     "shift_log_lambda": 0.1467225208208568,
+     "se": 0.18250858616764418,
+     "ci95": [
+      -0.2109943080677258,
+      0.5044393497094394
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.4689582515378591
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": 0.5712716160360759,
+     "se": 0.1720120480763405,
+     "ci95": [
+      0.2341280018064486,
+      0.9084152302657033
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.7754525998433253
+    },
+    {
+     "facet": "host:not_stated",
+     "shift_log_lambda": 0.4574417957578823,
+     "se": 0.18015474719828714,
+     "ci95": [
+      0.1043384912492395,
+      0.8105451002665252
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 0.6930436407441557
+    },
+    {
+     "facet": "host:strain_not_stated",
+     "shift_log_lambda": 0.017022945133858,
+     "se": 0.1340092064434372,
+     "ci95": [
+      -0.2456350994952789,
+      0.2796809897629949
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 0.5330434882652184
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": -0.6304526205486888,
+     "se": 0.19052290899981553,
+     "ci95": [
+      -1.0038775221883272,
+      -0.2570277189090503
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.7070754980146028
+    }
+   ],
+   "studies": [
+    {
+     "studyid": "Hepa1-6-01",
+     "mean": -1.7656230019892971,
+     "se": 0.0333488416495353,
+     "n": 50.0
+    },
+    {
+     "studyid": "Hepa1-6-02",
+     "mean": -1.1185320465620952,
+     "se": 0.0338243612679311,
+     "n": 39.0
+    },
+    {
+     "studyid": "Hepa1-6-03",
+     "mean": -1.7291554922713177,
+     "se": 0.056708260161445,
+     "n": 25.0
+    },
+    {
+     "studyid": "Hepa1-6-04",
+     "mean": -1.9991045157631917,
+     "se": 0.0781310706447912,
+     "n": 18.0
+    },
+    {
+     "studyid": "Hepa1-6-05",
+     "mean": -1.343166265791971,
+     "se": 0.0534155464224802,
+     "n": 12.0
+    },
+    {
+     "studyid": "Hepa1-6-06",
+     "mean": -1.457321952562746,
+     "se": 0.1558607253423362,
+     "n": 10.0
+    },
+    {
+     "studyid": "Hepa1-6-07",
+     "mean": -1.4198517230118777,
+     "se": 0.0722225988727092,
+     "n": 8.0
+    },
+    {
+     "studyid": "Hepa1-6-08",
+     "mean": -1.095707885609058,
+     "se": 0.04678199654121,
+     "n": 8.0
+    },
+    {
+     "studyid": "Hepa1-6-09",
+     "mean": -1.802382732316374,
+     "se": 0.1002232144300692,
+     "n": 6.0
+    },
+    {
+     "studyid": "Hepa1-6-10",
+     "mean": -1.7223269398884402,
+     "se": 0.1219346856035836,
+     "n": 6.0
+    },
+    {
+     "studyid": "Hepa1-6-11",
+     "mean": -1.1217447320021892,
+     "se": 0.1078244532326322,
+     "n": 6.0
+    },
+    {
+     "studyid": "Hepa1-6-12",
+     "mean": -1.0474333457780154,
+     "se": 0.0505401571843987,
+     "n": 6.0
+    },
+    {
+     "studyid": "Hepa1-6-13",
+     "mean": -1.2028736605851962,
+     "se": 0.1196828782235046,
+     "n": 5.0
+    },
+    {
+     "studyid": "Hepa1-6-14",
+     "mean": -2.0075384965056644,
+     "se": 0.0896477143797125,
+     "n": 4.0
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.15740482865622396,
+    "robust_n": 0.017448681026116613
+   },
+   "start_sd": 0.10591861969529785,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.4080006806320546,
+    "sd_log_alpha": 0.3945668953775678,
+    "mean_log_beta": -2.9944508400789758,
+    "sd_log_beta": 0.9799636890431174,
+    "rho": 0.8525941953664751,
+    "size_factor": 0.7834893205139176,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.4228432480687018,
+      "sd_log_beta": 0.9698394200934011,
+      "rho": 0.8300826261002331
+     },
+     "experiment": {
+      "sd_log_alpha": 0.27353006962604404,
+      "sd_log_beta": 0.7898310618707818,
+      "rho": 0.9101523290636995
+     },
+     "loglik": 57.882401049137115,
+     "loglik_independent": 35.49215918779373,
+     "papers": 15,
+     "experiments": 47
+    }
+   },
+   "noise": {
+    "c0": 0.05141253131885614,
+    "c1": 0.9035247487834451,
+    "k": 0.674974254128134,
+    "df": 3.0794886353158253,
+    "sd_session": 0.07541585234043888
+   },
+   "calibration": {
+    "distance": 2.0724391860234026,
+    "evaluations": 48,
+    "converged": true,
+    "experiments": 47,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.06522966002502469,
+      "se": 0.01986690535728353,
+      "calibrated": 0.15357599872133976,
+      "v1_caliper_only": 0.15756899621127182
+     },
+     "tail95": {
+      "atlas": 5.359695106077168,
+      "se": 0.8048683751342928,
+      "calibrated": 2.3486528240696067,
+      "v1_caliper_only": 2.097790622699003
+     },
+     "tail99": {
+      "atlas": 9.62045479304203,
+      "se": 1.809404302847723,
+      "calibrated": 3.6958222292312284,
+      "v1_caliper_only": 2.98080407641383
+     },
+     "session_sd": {
+      "atlas": 0.09882043227269895,
+      "se": 0.018274031648352354,
+      "calibrated": 0.08694479018924489,
+      "v1_caliper_only": 0.03700137613430586
+     },
+     "slope_sd_med": {
+      "atlas": 0.017732027515247606,
+      "se": 0.0017783839911143778,
+      "calibrated": 0.019875038499914448,
+      "v1_caliper_only": 0.026868242545927443
+     },
+     "slope_sd_q75": {
+      "atlas": 0.02437953921611976,
+      "se": 0.007268937166395793,
+      "calibrated": 0.027057730452752275,
+      "v1_caliper_only": 0.03754278729810527
+     },
+     "mean_slope_sd": {
+      "atlas": 0.06324802854480092,
+      "se": 0.005100806872068902,
+      "calibrated": 0.06277037608997338,
+      "v1_caliper_only": 0.09051621504272075
+     },
+     "end_sd_med": {
+      "atlas": 0.2021454616183989,
+      "se": 0.019330187568828,
+      "calibrated": 0.18881161341099148,
+      "v1_caliper_only": 0.2738725476376704
+     }
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.11043111231725818,
+    "sd_log_beta": 0.03767417829317498,
+    "sd_process": 0.0945311496064988,
+    "first_factor": 0.8516053005502948,
+    "start_df": 3.0,
+    "slow_share": 0.019094681783598393,
+    "slow_shift": 1.6270765749931921,
+    "skew": 0.8358198019887304,
+    "validation": {
+     "loo_coverage_90": 0.963943661971831,
+     "measurements": 1775,
+     "below": 0.02535211267605634,
+     "above": 0.010704225352112675
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.11555417571206845,
+       "hi": 0.9029339034208241
+      },
+      "99": {
+       "lo": 0.015973140142322297,
+       "hi": 0.9941063733004122
+      }
+     },
+     "papers": 15,
+     "points": 1775,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.048031814382759816,
+       "miss_hi": 0.0488649018302921,
+       "cover": 0.903103283786948
+      },
+      "99": {
+       "miss_lo": 0.005043243265556623,
+       "miss_hi": 0.005192349022721652,
+       "cover": 0.9897644077117217
+      }
+     },
+     "source": "conformal_fit.py 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03040813349974302,
+       "miss_hi": 0.06900404427122867
+      },
+      "99": {
+       "miss_lo": 0.0019529460218989274,
+       "miss_hi": 0.010541531478383206
+      }
+     },
+     "papers": 242,
+     "points": 24219,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "syngeneic",
+   "host_class": "immunocompetent",
+   "tumour_type": "liver",
+   "tier": "Own spreads",
+   "pooled_fields": [
+    "noise.k",
+    "noise.df",
+    "noise.sd_session",
+    "take.nonprogressing_map",
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 200.0
+   }
+  },
+  "MDA-MB-231": {
+   "papers": 13,
+   "animals": 76,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.605177077545483,
+      "a": -1.9343088204966616,
+      "b": 0.6026526794468559
+     },
+     {
+      "kind": "map",
+      "w": 0.19482292245451704,
+      "a": -1.9334555403935956,
+      "b": 0.9522552052936878
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -1.934101022342472,
+      "b": 2.1119259110838007
+     }
+    ],
+    "map_mean": -1.9341010221645485,
+    "map_sd": 0.703975303694602,
+    "map_q025": -3.335157327681532,
+    "map_q975": -0.5325974291781851,
+    "tau": 0.6389067168639403,
+    "ess": 0.014161824312874084
+   },
+   "log_beta": -3.2608510811790143,
+   "log_v_ref": 4.058779425460092,
+   "sd_within": {
+    "log_alpha": 0.07977771974410375,
+    "log_beta": 0.07904476184742994,
+    "log_v0": 1.5811345751369472
+   },
+   "sd_residual_log_v": 0.3391937970696341,
+   "take": {
+    "nonprogressing_map": 0.004720283970929669,
+    "nonprogressing": 0,
+    "animals": 93,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": 0.3477936270547294,
+     "se": 0.18693016177566102,
+     "ci95": [
+      -0.0185894900255661,
+      0.7141767441350251
+     ],
+     "papers": 7,
+     "sd_ratio_vs_strict": 0.9208811395732982
+    },
+    {
+     "facet": "host:not_stated",
+     "shift_log_lambda": -0.2736280465056497,
+     "se": 0.31391159294879634,
+     "ci95": [
+      -0.8888947686852906,
+      0.3416386756739912
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 1.1198619333543398
+    },
+    {
+     "facet": "other",
+     "shift_log_lambda": 0.6289099757992315,
+     "se": 0.33294523782111446,
+     "ci95": [
+      -0.0236626903301528,
+      1.2814826419286158
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 1.5209005028556235
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": 0.0812030367022258,
+     "se": 0.23830008347388446,
+     "ci95": [
+      -0.3858651269065877,
+      0.5482712003110394
+     ],
+     "papers": 6,
+     "sd_ratio_vs_strict": 1.258692403351356
+    },
+    {
+     "facet": "site:orthotopic",
+     "shift_log_lambda": 0.0661147557322161,
+     "se": 0.22212540667839356,
+     "ci95": [
+      -0.3692510413574353,
+      0.5014805528218675
+     ],
+     "papers": 9,
+     "sd_ratio_vs_strict": 1.178811318008627
+    }
+   ],
+   "studies": [
+    {
+     "studyid": "MDA-MB-231-01",
+     "mean": -1.4674946546947434,
+     "se": 0.0854963960840848,
+     "n": 10.0
+    },
+    {
+     "studyid": "MDA-MB-231-02",
+     "mean": -1.274944962015094,
+     "se": 0.1057466893110619,
+     "n": 8.0
+    },
+    {
+     "studyid": "MDA-MB-231-03",
+     "mean": -2.1667098300464893,
+     "se": 0.073336310383341,
+     "n": 6.0
+    },
+    {
+     "studyid": "MDA-MB-231-04",
+     "mean": -2.150293165840248,
+     "se": 0.0858087154637934,
+     "n": 6.0
+    },
+    {
+     "studyid": "MDA-MB-231-05",
+     "mean": -2.137325336659311,
+     "se": 0.0507322219506722,
+     "n": 6.0
+    },
+    {
+     "studyid": "MDA-MB-231-06",
+     "mean": -2.1230952405429004,
+     "se": 0.087470621519534,
+     "n": 6.0
+    },
+    {
+     "studyid": "MDA-MB-231-07",
+     "mean": -3.4281579611537465,
+     "se": 0.080317427339327,
+     "n": 5.0
+    },
+    {
+     "studyid": "MDA-MB-231-08",
+     "mean": -2.3227959335568285,
+     "se": 0.0524198498242147,
+     "n": 5.0
+    },
+    {
+     "studyid": "MDA-MB-231-09",
+     "mean": -1.6255105944276582,
+     "se": 0.0295477893740692,
+     "n": 5.0
+    },
+    {
+     "studyid": "MDA-MB-231-10",
+     "mean": -1.413791767937378,
+     "se": 0.0391197656908787,
+     "n": 5.0
+    },
+    {
+     "studyid": "MDA-MB-231-11",
+     "mean": -1.3807118641475418,
+     "se": 0.1457309496543387,
+     "n": 5.0
+    },
+    {
+     "studyid": "MDA-MB-231-12",
+     "mean": -1.269710659043631,
+     "se": 0.0512508787850127,
+     "n": 5.0
+    },
+    {
+     "studyid": "MDA-MB-231-13",
+     "mean": -2.3693362317560105,
+     "se": 0.0944214810446396,
+     "n": 4.0
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.002242036315863064
+   },
+   "start_sd": 0.24029756925578677,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.8595781762681716,
+    "sd_log_alpha": 0.4093954086207592,
+    "mean_log_beta": -4.2423479961242965,
+    "sd_log_beta": 1.2493610023298243,
+    "rho": 0.9076390111087909,
+    "size_factor": 0.9590532517807708,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.3217240433671743,
+      "sd_log_beta": 1.0320472551834783,
+      "rho": 0.9064905527862184
+     },
+     "experiment": {
+      "sd_log_alpha": 0.2914259183499845,
+      "sd_log_beta": 1.1538425671648214,
+      "rho": 0.8947635864866874
+     },
+     "loglik": -111.26077401638031,
+     "loglik_independent": null,
+     "papers": 14,
+     "experiments": 17
+    }
+   },
+   "noise": {
+    "c0": 0.05141253131885614,
+    "c1": 0.9035247487834451,
+    "k": 0.674974254128134,
+    "df": 3.0794886353158253,
+    "sd_session": 0.07541585234043888
+   },
+   "calibration": {
+    "distance": null,
+    "evaluations": 0,
+    "converged": false,
+    "experiments": 17,
+    "statistics": {}
+   },
+   "twin": {
+    "sd_log_alpha": 0.11043111231725818,
+    "sd_log_beta": 0.03767417829317498,
+    "sd_process": 0.0945311496064988,
+    "first_factor": 0.8516053005502948,
+    "start_df": 3.0,
+    "slow_share": 0.019094681783598393,
+    "slow_shift": 1.6270765749931921,
+    "skew": 0.8358198019887304,
+    "validation": {
+     "loo_coverage_90": 0.9129793510324484,
+     "measurements": 678,
+     "below": 0.05457227138643068,
+     "above": 0.032448377581120944
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.13374488697355963,
+       "hi": 0.8984032992226865
+      },
+      "99": {
+       "lo": 0.015973140142322297,
+       "hi": 0.9941063733004122
+      }
+     },
+     "papers": 14,
+     "points": 678,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.049437585796326476,
+       "miss_hi": 0.04662099608713113,
+       "cover": 0.9039414181165424
+      },
+      "99": {
+       "miss_lo": 0.005043243265556623,
+       "miss_hi": 0.005192349022721652,
+       "cover": 0.9897644077117217
+      }
+     },
+     "source": "conformal_fit.py 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03040813349974302,
+       "miss_hi": 0.06900404427122867
+      },
+      "99": {
+       "miss_lo": 0.0019529460218989274,
+       "miss_hi": 0.010541531478383206
+      }
+     },
+     "papers": 242,
+     "points": 24219,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "cdx",
+   "host_class": "immunodeficient",
+   "tumour_type": "breast",
+   "tier": "Thin",
+   "pooled_fields": [
+    "sd_within.log_alpha",
+    "sd_within.log_beta",
+    "study_prior.sd_log_alpha",
+    "study_prior.sd_log_beta",
+    "study_prior.rho",
+    "study_prior.size_factor",
+    "noise.k",
+    "noise.df",
+    "noise.sd_session",
+    "take.nonprogressing_map",
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 500.0
+   }
+  },
+  "A549": {
+   "papers": 13,
+   "animals": 108,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.1930871024479906,
+      "a": -1.9098942651035893,
+      "b": 0.7560405017087419
+     },
+     {
+      "kind": "map",
+      "w": 0.6069128975520094,
+      "a": -1.9026250455913476,
+      "b": 0.4673309263084527
+     },
+     {
+      "kind": "robust",
+      "w": 0.19999999999999996,
+      "a": -1.9043795362571942,
+      "b": 1.6531650543961065
+     }
+    ],
+    "map_mean": -1.9043795377072654,
+    "map_sd": 0.5510550181320347,
+    "map_q025": -3.0048046376221107,
+    "map_q975": -0.8079262011539505,
+    "tau": 0.49707263468785706,
+    "ess": 0.023330492289503794
+   },
+   "log_beta": -3.220719243270161,
+   "log_v_ref": 4.099203907503611,
+   "sd_within": {
+    "log_alpha": 0.07977771974410375,
+    "log_beta": 0.07904476184742994,
+    "log_v0": 1.4644277584814487
+   },
+   "sd_residual_log_v": 0.2147556071375789,
+   "take": {
+    "nonprogressing_map": 0.004720283970929669,
+    "nonprogressing": 0,
+    "animals": 128,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": 0.045521315103852,
+     "se": 0.16643214616603533,
+     "ci95": [
+      -0.2806856913815772,
+      0.3717283215892812
+     ],
+     "papers": 8,
+     "sd_ratio_vs_strict": 0.3981850457857373
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": -0.1627856174060716,
+     "se": 0.2181310503196124,
+     "ci95": [
+      -0.590322476032512,
+      0.2647512412203687
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.5658226603463189
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": -0.1237100634927985,
+     "se": 0.16664538005905,
+     "ci95": [
+      -0.4503350084085366,
+      0.2029148814229394
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 0.2303877021397443
+    }
+   ],
+   "studies": [
+    {
+     "studyid": "A549-01",
+     "mean": -1.984692642305119,
+     "se": 0.0521571309491194,
+     "n": 25.0
+    },
+    {
+     "studyid": "A549-02",
+     "mean": -2.573307883473909,
+     "se": 0.1439901127660763,
+     "n": 10.0
+    },
+    {
+     "studyid": "A549-03",
+     "mean": -1.8395411949906832,
+     "se": 0.012941657153568,
+     "n": 10.0
+    },
+    {
+     "studyid": "A549-04",
+     "mean": -1.6304306001334603,
+     "se": 0.0544124425230637,
+     "n": 9.0
+    },
+    {
+     "studyid": "A549-05",
+     "mean": -2.2635587809212563,
+     "se": 0.0647659339362737,
+     "n": 8.0
+    },
+    {
+     "studyid": "A549-06",
+     "mean": -1.9130798897393329,
+     "se": 0.0512741370584257,
+     "n": 8.0
+    },
+    {
+     "studyid": "A549-07",
+     "mean": -1.5990646153046266,
+     "se": 0.0554312666506719,
+     "n": 7.0
+    },
+    {
+     "studyid": "A549-08",
+     "mean": -1.4443193958016534,
+     "se": 0.0225496121573818,
+     "n": 7.0
+    },
+    {
+     "studyid": "A549-09",
+     "mean": -1.6257422457747386,
+     "se": 0.093222463225226,
+     "n": 6.0
+    },
+    {
+     "studyid": "A549-10",
+     "mean": -1.522589678635013,
+     "se": 0.1135184483720751,
+     "n": 6.0
+    },
+    {
+     "studyid": "A549-11",
+     "mean": -1.3828828244978013,
+     "se": 0.0333047490922198,
+     "n": 6.0
+    },
+    {
+     "studyid": "A549-12",
+     "mean": -3.085014320293222,
+     "se": 0.1337224541235868,
+     "n": 3.0
+    },
+    {
+     "studyid": "A549-13",
+     "mean": -1.9999206365743276,
+     "se": 0.0952176319714394,
+     "n": 3.0
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.003659043456043117
+   },
+   "start_sd": 0.03529192696168547,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -1.8147608112626967,
+    "sd_log_alpha": 0.4093954086207592,
+    "mean_log_beta": -3.55549409176702,
+    "sd_log_beta": 1.2493610023298243,
+    "rho": 0.9076390111087909,
+    "size_factor": 0.9590532517807708,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.3217240433671743,
+      "sd_log_beta": 1.0320472551834783,
+      "rho": 0.9064905527862184
+     },
+     "experiment": {
+      "sd_log_alpha": 0.2914259183499845,
+      "sd_log_beta": 1.1538425671648214,
+      "rho": 0.8947635864866874
+     },
+     "loglik": -155.66350108385086,
+     "loglik_independent": null,
+     "papers": 16,
+     "experiments": 21
+    }
+   },
+   "noise": {
+    "c0": 0.05141253131885614,
+    "c1": 0.9035247487834451,
+    "k": 0.674974254128134,
+    "df": 3.0794886353158253,
+    "sd_session": 0.07541585234043888
+   },
+   "calibration": {
+    "distance": null,
+    "evaluations": 0,
+    "converged": false,
+    "experiments": 21,
+    "statistics": {}
+   },
+   "twin": {
+    "sd_log_alpha": 0.11043111231725818,
+    "sd_log_beta": 0.03767417829317498,
+    "sd_process": 0.0945311496064988,
+    "first_factor": 0.8516053005502948,
+    "start_df": 3.0,
+    "slow_share": 0.019094681783598393,
+    "slow_shift": 1.6270765749931921,
+    "skew": 0.8358198019887304,
+    "validation": {
+     "loo_coverage_90": 0.8790931989924433,
+     "measurements": 794,
+     "below": 0.05667506297229219,
+     "above": 0.06423173803526448
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.06680449492710801,
+       "hi": 0.9173991273462548
+      },
+      "99": {
+       "lo": 0.015973140142322297,
+       "hi": 0.9941063733004122
+      }
+     },
+     "papers": 16,
+     "points": 794,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.058712797619047616,
+       "miss_hi": 0.04909928902116402,
+       "cover": 0.8921879133597884
+      },
+      "99": {
+       "miss_lo": 0.005043243265556623,
+       "miss_hi": 0.005192349022721652,
+       "cover": 0.9897644077117217
+      }
+     },
+     "source": "conformal_fit.py 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03040813349974302,
+       "miss_hi": 0.06900404427122867
+      },
+      "99": {
+       "miss_lo": 0.0019529460218989274,
+       "miss_hi": 0.010541531478383206
+      }
+     },
+     "papers": 242,
+     "points": 24219,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "cdx",
+   "host_class": "immunodeficient",
+   "tumour_type": "lung",
+   "tier": "Thin",
+   "pooled_fields": [
+    "sd_within.log_alpha",
+    "sd_within.log_beta",
+    "study_prior.sd_log_alpha",
+    "study_prior.sd_log_beta",
+    "study_prior.rho",
+    "study_prior.size_factor",
+    "noise.k",
+    "noise.df",
+    "noise.sd_session",
+    "take.nonprogressing_map",
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 500.0
+   }
+  },
+  "SKOV3": {
+   "papers": 8,
+   "animals": 159,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.18038593185128027,
+      "a": -2.1905323803916374,
+      "b": 1.0479841081940588
+     },
+     {
+      "kind": "map",
+      "w": 0.6196140681487198,
+      "a": -2.1894008388247133,
+      "b": 0.5720871009480263
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -2.189655981549686,
+      "b": 2.1237419241214575
+     }
+    ],
+    "map_mean": -2.1896559817445937,
+    "map_sd": 0.7079139747071526,
+    "map_q025": -3.6105084170366166,
+    "map_q975": -0.769531730720359,
+    "tau": 0.6020663972324257,
+    "ess": 0.015013470725396104
+   },
+   "log_beta": -4.79580095361874,
+   "log_v_ref": 4.434693246610918,
+   "sd_within": {
+    "log_alpha": 0.07977771974410375,
+    "log_beta": 0.07904476184742994,
+    "log_v0": 1.0259827130789083
+   },
+   "sd_residual_log_v": 0.3474724409398589,
+   "take": {
+    "nonprogressing_map": 0.004720283970929669,
+    "nonprogressing": 4,
+    "animals": 168,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": 0.0224640588789342,
+     "se": 0.23972081636939882,
+     "ci95": [
+      -0.4473887412050875,
+      0.4923168589629559
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 1.309894243314032
+    },
+    {
+     "facet": "ctrl:active_cotreatment",
+     "shift_log_lambda": 0.2882118056591355,
+     "se": 0.2965525200865694,
+     "ci95": [
+      -0.2930311337105404,
+      0.8694547450288115
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.5388477715545168
+    },
+    {
+     "facet": "ctrl:control_plus_agent",
+     "shift_log_lambda": -0.1226998199541767,
+     "se": 0.18088443178459515,
+     "ci95": [
+      -0.4772333062519833,
+      0.2318336663436297
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.9107588308803476
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": 0.3342364856707561,
+     "se": 0.20458732931766307,
+     "ci95": [
+      -0.0667546797918635,
+      0.7352276511333757
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.7765938942892567
+    }
+   ],
+   "studies": [
+    {
+     "studyid": "SKOV3-01",
+     "mean": -2.4481209035612324,
+     "se": 0.0310029956353835,
+     "n": 57.0
+    },
+    {
+     "studyid": "SKOV3-02",
+     "mean": -2.614742510748402,
+     "se": 0.0426280674354024,
+     "n": 53.0
+    },
+    {
+     "studyid": "SKOV3-03",
+     "mean": -2.827583432260284,
+     "se": 0.1266210517787458,
+     "n": 15.0
+    },
+    {
+     "studyid": "SKOV3-04",
+     "mean": -2.7616379396504254,
+     "se": 0.0436860899849961,
+     "n": 10.0
+    },
+    {
+     "studyid": "SKOV3-05",
+     "mean": -1.4994295536532425,
+     "se": 0.0520475449165032,
+     "n": 9.0
+    },
+    {
+     "studyid": "SKOV3-06",
+     "mean": -2.1142563699730066,
+     "se": 0.0563497153098524,
+     "n": 5.0
+    },
+    {
+     "studyid": "SKOV3-07",
+     "mean": -1.829111637322793,
+     "se": 0.0954012748124067,
+     "n": 5.0
+    },
+    {
+     "studyid": "SKOV3-08",
+     "mean": -1.4307569953499113,
+     "se": 0.0699357897598958,
+     "n": 5.0
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.00221715736750638
+   },
+   "start_sd": 0.3101779916291173,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -2.316821144244222,
+    "sd_log_alpha": 0.4093954086207592,
+    "mean_log_beta": -4.986540133471674,
+    "sd_log_beta": 1.2493610023298243,
+    "rho": 0.9076390111087909,
+    "size_factor": 0.9590532517807708,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.3217240433671743,
+      "sd_log_beta": 1.0320472551834783,
+      "rho": 0.9064905527862184
+     },
+     "experiment": {
+      "sd_log_alpha": 0.2914259183499845,
+      "sd_log_beta": 1.1538425671648214,
+      "rho": 0.8947635864866874
+     },
+     "loglik": -436.1391203403473,
+     "loglik_independent": null,
+     "papers": 8,
+     "experiments": 21
+    }
+   },
+   "noise": {
+    "c0": 0.05141253131885614,
+    "c1": 0.9035247487834451,
+    "k": 0.674974254128134,
+    "df": 3.0794886353158253,
+    "sd_session": 0.07541585234043888
+   },
+   "calibration": {
+    "distance": null,
+    "evaluations": 0,
+    "converged": false,
+    "experiments": 21,
+    "statistics": {}
+   },
+   "twin": {
+    "sd_log_alpha": 0.11043111231725818,
+    "sd_log_beta": 0.03767417829317498,
+    "sd_process": 0.0945311496064988,
+    "first_factor": 0.8516053005502948,
+    "start_df": 3.0,
+    "slow_share": 0.019094681783598393,
+    "slow_shift": 1.6270765749931921,
+    "skew": 0.8358198019887304,
+    "validation": {
+     "loo_coverage_90": 0.8447098976109215,
+     "measurements": 1172,
+     "below": 0.0810580204778157,
+     "above": 0.07423208191126279
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.10293718074122142,
+       "hi": 0.9276650359468221
+      },
+      "99": {
+       "lo": 0.015973140142322297,
+       "hi": 0.9941063733004122
+      }
+     },
+     "papers": 8,
+     "points": 1172,
+     "pooled": true,
+     "validated": {
+      "90": {
+       "miss_lo": 0.049775020988680425,
+       "miss_hi": 0.05002527201528056,
+       "cover": 0.900199706996039
+      },
+      "99": {
+       "miss_lo": 0.005043243265556623,
+       "miss_hi": 0.005192349022721652,
+       "cover": 0.9897644077117217
+      }
+     },
+     "source": "conformal_fit.py 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03040813349974302,
+       "miss_hi": 0.06900404427122867
+      },
+      "99": {
+       "miss_lo": 0.0019529460218989274,
+       "miss_hi": 0.010541531478383206
+      }
+     },
+     "papers": 242,
+     "points": 24219,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "cdx",
+   "host_class": "immunodeficient",
+   "tumour_type": "ovarian",
+   "tier": "Thin",
+   "pooled_fields": [
+    "sd_within.log_alpha",
+    "sd_within.log_beta",
+    "study_prior.sd_log_alpha",
+    "study_prior.sd_log_beta",
+    "study_prior.rho",
+    "study_prior.size_factor",
+    "noise.k",
+    "noise.df",
+    "noise.sd_session",
+    "take.nonprogressing_map",
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 500.0
+   }
+  },
+  "PDX-NSCLC": {
+   "papers": 15,
+   "animals": 67,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.6024226407995368,
+      "a": -2.502994754283968,
+      "b": 0.4513224903505168
+     },
+     {
+      "kind": "map",
+      "w": 0.19757735920046332,
+      "a": -2.5028712383218403,
+      "b": 0.7003207610678588
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -2.5029642493369475,
+      "b": 1.5718326368626014
+     }
+    ],
+    "map_mean": -2.5029642492785196,
+    "map_sd": 0.5239442122875346,
+    "map_q025": -3.544901868202253,
+    "map_q975": -1.4609673782298336,
+    "tau": 0.4796797773724341,
+    "ess": 0.02539927515055794
+   },
+   "log_beta": -4.627308856895651,
+   "log_v_ref": 4.762697231216376,
+   "sd_within": {
+    "log_alpha": 0.07977771974410375,
+    "log_beta": 0.07904476184742994,
+    "log_v0": 0.776816488835215
+   },
+   "sd_residual_log_v": 0.2060046258143159,
+   "take": {
+    "nonprogressing_map": 0.004720283970929669,
+    "nonprogressing": 0,
+    "animals": 68,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "host:not_stated",
+     "shift_log_lambda": -0.4610848434471101,
+     "se": 0.38611797103813855,
+     "ci95": [
+      -1.2178760666818618,
+      0.2957063797876414
+     ],
+     "papers": 6,
+     "sd_ratio_vs_strict": 1.1850745834114775
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": 0.4898241611941508,
+     "se": 0.3535499000034906,
+     "ci95": [
+      -0.2031336428126908,
+      1.1827819652009923
+     ],
+     "papers": 9,
+     "sd_ratio_vs_strict": 1.1389377683370578
+    }
+   ],
+   "studies": [
+    {
+     "studyid": "PDX-NSCLC-01",
+     "mean": -2.619959727137933,
+     "se": 0.0659232365314714,
+     "n": 6.0
+    },
+    {
+     "studyid": "PDX-NSCLC-02",
+     "mean": -2.5195734659527838,
+     "se": 0.0354255417794939,
+     "n": 6.0
+    },
+    {
+     "studyid": "PDX-NSCLC-03",
+     "mean": -2.391401711335271,
+     "se": 0.0478006105436382,
+     "n": 6.0
+    },
+    {
+     "studyid": "PDX-NSCLC-04",
+     "mean": -1.8431805415151268,
+     "se": 0.0346891991485473,
+     "n": 6.0
+    },
+    {
+     "studyid": "PDX-NSCLC-05",
+     "mean": -3.3909350579743767,
+     "se": 0.0579116387815787,
+     "n": 5.0
+    },
+    {
+     "studyid": "PDX-NSCLC-06",
+     "mean": -2.649420705185446,
+     "se": 0.0790284362943027,
+     "n": 5.0
+    },
+    {
+     "studyid": "PDX-NSCLC-07",
+     "mean": -2.5234126492809503,
+     "se": 0.0350977890978173,
+     "n": 5.0
+    },
+    {
+     "studyid": "PDX-NSCLC-08",
+     "mean": -1.9501226328727488,
+     "se": 0.1292953028368206,
+     "n": 5.0
+    },
+    {
+     "studyid": "PDX-NSCLC-09",
+     "mean": -2.1852001048409964,
+     "se": 0.0272430916991726,
+     "n": 4.0
+    },
+    {
+     "studyid": "PDX-NSCLC-10",
+     "mean": -1.989153731474266,
+     "se": 0.1785558041646925,
+     "n": 4.0
+    },
+    {
+     "studyid": "PDX-NSCLC-11",
+     "mean": -3.342733071582141,
+     "se": 0.1410868593687534,
+     "n": 3.0
+    },
+    {
+     "studyid": "PDX-NSCLC-12",
+     "mean": -2.942053921999957,
+     "se": 0.0689460164910832,
+     "n": 3.0
+    },
+    {
+     "studyid": "PDX-NSCLC-13",
+     "mean": -2.6134459450918985,
+     "se": 0.134176250632571,
+     "n": 3.0
+    },
+    {
+     "studyid": "PDX-NSCLC-14",
+     "mean": -2.54558867874046,
+     "se": 0.033023927144652,
+     "n": 3.0
+    },
+    {
+     "studyid": "PDX-NSCLC-15",
+     "mean": -2.032560358977724,
+     "se": 0.0423806504010536,
+     "n": 3.0
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.004047505018685509
+   },
+   "start_sd": 0.2067210818732248,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -2.5003131886620586,
+    "sd_log_alpha": 0.4093954086207592,
+    "mean_log_beta": -5.379169364842934,
+    "sd_log_beta": 1.2493610023298243,
+    "rho": 0.9076390111087909,
+    "size_factor": 0.9590532517807708,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.3217240433671743,
+      "sd_log_beta": 1.0320472551834783,
+      "rho": 0.9064905527862184
+     },
+     "experiment": {
+      "sd_log_alpha": 0.2914259183499845,
+      "sd_log_beta": 1.1538425671648214,
+      "rho": 0.8947635864866874
+     },
+     "loglik": -42.66871392726898,
+     "loglik_independent": null,
+     "papers": 15,
+     "experiments": 15
+    }
+   },
+   "noise": {
+    "c0": 0.05141253131885614,
+    "c1": 0.9035247487834451,
+    "k": 0.674974254128134,
+    "df": 3.0794886353158253,
+    "sd_session": 0.07541585234043888
+   },
+   "calibration": {
+    "distance": null,
+    "evaluations": 0,
+    "converged": false,
+    "experiments": 15,
+    "statistics": {}
+   },
+   "twin": {
+    "sd_log_alpha": 0.11043111231725818,
+    "sd_log_beta": 0.03767417829317498,
+    "sd_process": 0.0945311496064988,
+    "first_factor": 0.8516053005502948,
+    "start_df": 3.0,
+    "slow_share": 0.019094681783598393,
+    "slow_shift": 1.6270765749931921,
+    "skew": 0.8358198019887304,
+    "validation": {
+     "loo_coverage_90": 0.8702791461412152,
+     "measurements": 609,
+     "below": 0.07389162561576355,
+     "above": 0.05582922824302135
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.11561157116869582,
+       "hi": 0.9324028094409424
+      },
+      "99": {
+       "lo": 0.015973140142322297,
+       "hi": 0.9941063733004122
+      }
+     },
+     "papers": 15,
+     "points": 609,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.046796866894906114,
+       "miss_hi": 0.04970238095238095,
+       "cover": 0.9035007521527129
+      },
+      "99": {
+       "miss_lo": 0.005043243265556623,
+       "miss_hi": 0.005192349022721652,
+       "cover": 0.9897644077117217
+      }
+     },
+     "source": "conformal_fit.py 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03040813349974302,
+       "miss_hi": 0.06900404427122867
+      },
+      "99": {
+       "miss_lo": 0.0019529460218989274,
+       "miss_hi": 0.010541531478383206
+      }
+     },
+     "papers": 242,
+     "points": 24219,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "pdx",
+   "host_class": "immunodeficient",
+   "tumour_type": "NSCLC",
+   "tier": "Thin",
+   "pooled_fields": [
+    "sd_within.log_alpha",
+    "sd_within.log_beta",
+    "study_prior.sd_log_alpha",
+    "study_prior.sd_log_beta",
+    "study_prior.rho",
+    "study_prior.size_factor",
+    "noise.k",
+    "noise.df",
+    "noise.sd_session",
+    "take.nonprogressing_map",
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 500.0
+   }
+  },
+  "PDX-PDAC": {
+   "papers": 26,
+   "animals": 155,
+   "log_alpha": {
+    "mixture": [
+     {
+      "kind": "map",
+      "w": 0.8,
+      "a": -2.2991437268521344,
+      "b": 0.4332851280144131
+     },
+     {
+      "kind": "robust",
+      "w": 0.2,
+      "a": -2.2991437268521344,
+      "b": 1.2998620673338286
+     }
+    ],
+    "map_mean": -2.29914372543041,
+    "map_sd": 0.43328735577793465,
+    "map_q025": -3.155142079574078,
+    "map_q975": -1.441687118920872,
+    "tau": 0.4119376141949414,
+    "ess": 0.034754528275901156
+   },
+   "log_beta": -4.516480755000879,
+   "log_v_ref": 4.35021257454609,
+   "sd_within": {
+    "log_alpha": 0.11010225961952343,
+    "log_beta": 0.14706664473271922,
+    "log_v0": 0.6863869050544957
+   },
+   "sd_residual_log_v": 0.2109000717540906,
+   "take": {
+    "nonprogressing_map": 0.004720283970929669,
+    "nonprogressing": 0,
+    "animals": 155,
+    "definition": "last positive volume <= first positive volume, or never positive"
+   },
+   "facet_shifts_log_rate": [
+    {
+     "facet": "cell:genetic_mod",
+     "shift_log_lambda": 0.4644556089482822,
+     "se": 0.3529509355652217,
+     "ci95": [
+      -0.2273282247595524,
+      1.156239442656117
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.5798055502149093
+    },
+    {
+     "facet": "cell:not_stated",
+     "shift_log_lambda": 0.1000306985081809,
+     "se": 0.33622873614046617,
+     "ci95": [
+      -0.5589776243271327,
+      0.7590390213434945
+     ],
+     "papers": 3,
+     "sd_ratio_vs_strict": 0.6598006144697809
+    },
+    {
+     "facet": "cell:other",
+     "shift_log_lambda": -0.0893529953966092,
+     "se": 0.16876947134792414,
+     "ci95": [
+      -0.4201411592385406,
+      0.2414351684453221
+     ],
+     "papers": 10,
+     "sd_ratio_vs_strict": 1.1098940399453363
+    },
+    {
+     "facet": "ctrl:active_cotreatment",
+     "shift_log_lambda": -0.6595029074167778,
+     "se": 0.22389196051843066,
+     "ci95": [
+      -1.0983311500329018,
+      -0.2206746648006537
+     ],
+     "papers": 5,
+     "sd_ratio_vs_strict": 1.5452320697808528
+    },
+    {
+     "facet": "host:immunodeficient",
+     "shift_log_lambda": -0.1201795441094663,
+     "se": 0.23529362141438148,
+     "ci95": [
+      -0.5813550420816541,
+      0.3409959538627213
+     ],
+     "papers": 4,
+     "sd_ratio_vs_strict": 1.55081170731189
+    },
+    {
+     "facet": "host:not_stated",
+     "shift_log_lambda": -0.2550099205281076,
+     "se": 0.2579918208574654,
+     "ci95": [
+      -0.7606738894087399,
+      0.2506540483525246
+     ],
+     "papers": 7,
+     "sd_ratio_vs_strict": 0.6307393846089874
+    },
+    {
+     "facet": "host:strain_not_stated",
+     "shift_log_lambda": -0.4895589278463483,
+     "se": 0.3686126840088846,
+     "ci95": [
+      -1.212039788503762,
+      0.2329219328110656
+     ],
+     "papers": 2,
+     "sd_ratio_vs_strict": 0.7378634805175738
+    },
+    {
+     "facet": "site:not_stated",
+     "shift_log_lambda": 0.0549329258787388,
+     "se": 0.19588040395796585,
+     "ci95": [
+      -0.3289926658788742,
+      0.4388585176363519
+     ],
+     "papers": 11,
+     "sd_ratio_vs_strict": 0.9525537319385632
+    }
+   ],
+   "studies": [
+    {
+     "studyid": "PDX-PDAC-01",
+     "mean": -2.432597158865355,
+     "se": 0.0621823257834576,
+     "n": 8.0
+    },
+    {
+     "studyid": "PDX-PDAC-02",
+     "mean": -2.378409757925258,
+     "se": 0.0500829653535073,
+     "n": 8.0
+    },
+    {
+     "studyid": "PDX-PDAC-03",
+     "mean": -2.363033716953346,
+     "se": 0.0446209189049319,
+     "n": 8.0
+    },
+    {
+     "studyid": "PDX-PDAC-04",
+     "mean": -2.306681340079088,
+     "se": 0.124690780804142,
+     "n": 8.0
+    },
+    {
+     "studyid": "PDX-PDAC-05",
+     "mean": -2.246359991305364,
+     "se": 0.0357392302290104,
+     "n": 8.0
+    },
+    {
+     "studyid": "PDX-PDAC-06",
+     "mean": -2.2393454829984982,
+     "se": 0.0730381321115063,
+     "n": 8.0
+    },
+    {
+     "studyid": "PDX-PDAC-07",
+     "mean": -2.073947196185127,
+     "se": 0.0526581964098999,
+     "n": 8.0
+    },
+    {
+     "studyid": "PDX-PDAC-08",
+     "mean": -2.033780184302161,
+     "se": 0.1003497190691893,
+     "n": 8.0
+    },
+    {
+     "studyid": "PDX-PDAC-09",
+     "mean": -1.9799575610408824,
+     "se": 0.0553390541891207,
+     "n": 8.0
+    },
+    {
+     "studyid": "PDX-PDAC-10",
+     "mean": -1.9126172476021612,
+     "se": 0.0735287309968285,
+     "n": 8.0
+    },
+    {
+     "studyid": "PDX-PDAC-11",
+     "mean": -2.988116704933972,
+     "se": 0.0509521231650657,
+     "n": 6.0
+    },
+    {
+     "studyid": "PDX-PDAC-12",
+     "mean": -2.0971100517295307,
+     "se": 0.2065425983898196,
+     "n": 6.0
+    },
+    {
+     "studyid": "PDX-PDAC-13",
+     "mean": -1.0798164290015162,
+     "se": 0.0482840091992064,
+     "n": 6.0
+    },
+    {
+     "studyid": "PDX-PDAC-14",
+     "mean": -2.8240686645684807,
+     "se": 0.0497417921034944,
+     "n": 5.0
+    },
+    {
+     "studyid": "PDX-PDAC-15",
+     "mean": -2.809328547520672,
+     "se": 0.1131389739862523,
+     "n": 5.0
+    },
+    {
+     "studyid": "PDX-PDAC-16",
+     "mean": -2.777667793587397,
+     "se": 0.1184484626566456,
+     "n": 5.0
+    },
+    {
+     "studyid": "PDX-PDAC-17",
+     "mean": -2.508488352537975,
+     "se": 0.1465549461141821,
+     "n": 5.0
+    },
+    {
+     "studyid": "PDX-PDAC-18",
+     "mean": -2.1671817430889644,
+     "se": 0.0630492124404609,
+     "n": 5.0
+    },
+    {
+     "studyid": "PDX-PDAC-19",
+     "mean": -1.625438962770593,
+     "se": 0.5277485622389676,
+     "n": 5.0
+    },
+    {
+     "studyid": "PDX-PDAC-20",
+     "mean": -2.7823810874806254,
+     "se": 0.0760271253988154,
+     "n": 4.0
+    },
+    {
+     "studyid": "PDX-PDAC-21",
+     "mean": -2.60997997723426,
+     "se": 0.0347229833647044,
+     "n": 4.0
+    },
+    {
+     "studyid": "PDX-PDAC-22",
+     "mean": -2.4505237081933045,
+     "se": 0.0788199724162611,
+     "n": 4.0
+    },
+    {
+     "studyid": "PDX-PDAC-23",
+     "mean": -2.428144392020225,
+     "se": 0.0850683518545271,
+     "n": 4.0
+    },
+    {
+     "studyid": "PDX-PDAC-24",
+     "mean": -2.2625592440708227,
+     "se": 0.0546069908699066,
+     "n": 4.0
+    },
+    {
+     "studyid": "PDX-PDAC-25",
+     "mean": -1.7596163961572515,
+     "se": 0.096560972608666,
+     "n": 4.0
+    },
+    {
+     "studyid": "PDX-PDAC-26",
+     "mean": -2.2486678040061325,
+     "se": 0.0473699209565441,
+     "n": 3.0
+    }
+   ],
+   "map_settings": {
+    "family": "normal",
+    "tau_prior": "halfnormal",
+    "tau_a": 1.0,
+    "robust_weight": 0.2,
+    "ess": "elir",
+    "sigma": 0.1,
+    "robust_n": 0.005918415608754535
+   },
+   "start_sd": 0.188362868189859,
+   "sd_process": 0.0,
+   "study_prior": {
+    "mean_log_alpha": -2.114747536647254,
+    "sd_log_alpha": 0.548833115105553,
+    "mean_log_beta": -4.574567750500783,
+    "sd_log_beta": 1.4177671741605642,
+    "rho": 0.8554988644097646,
+    "size_factor": 0.9000935661776119,
+    "deconvolution": {
+     "paper": {
+      "sd_log_alpha": 0.6086901097499916,
+      "sd_log_beta": 1.5657504442741095,
+      "rho": 0.8649265907302873
+     },
+     "experiment": {
+      "sd_log_alpha": 0.03595626765466125,
+      "sd_log_beta": 0.17166783738017355,
+      "rho": -0.43247567426885136
+     },
+     "loglik": -205.00265568494797,
+     "loglik_independent": -215.94872397184372,
+     "papers": 26,
+     "experiments": 26
+    }
+   },
+   "noise": {
+    "c0": 0.05141253131885614,
+    "c1": 0.9035247487834451,
+    "k": 0.674974254128134,
+    "df": 3.0794886353158253,
+    "sd_session": 0.07541585234043888
+   },
+   "calibration": {
+    "distance": 1.2194426996792738,
+    "evaluations": 51,
+    "converged": true,
+    "experiments": 26,
+    "statistics": {
+     "noise_sd": {
+      "atlas": 0.11686237556280062,
+      "se": 0.006756229792271756,
+      "calibrated": 0.1610592116943754,
+      "v1_caliper_only": 0.16591559587053986
+     },
+     "tail95": {
+      "atlas": 2.5872261822143874,
+      "se": 0.11096340643614613,
+      "calibrated": 2.389413083547267,
+      "v1_caliper_only": 2.0779253433662612
+     },
+     "tail99": {
+      "atlas": 3.8015956056397613,
+      "se": 0.40461879472714113,
+      "calibrated": 3.9279488226079704,
+      "v1_caliper_only": 2.975695011367696
+     },
+     "session_sd": {
+      "atlas": 0.026507963509672994,
+      "se": 0.010039111349688375,
+      "calibrated": 0.07999201018537787,
+      "v1_caliper_only": 0.0
+     },
+     "slope_sd_med": {
+      "atlas": 0.015991970115325566,
+      "se": 0.0020735067595704514,
+      "calibrated": 0.014119270155655853,
+      "v1_caliper_only": 0.014192858324200523
+     },
+     "slope_sd_q75": {
+      "atlas": 0.023523737703121814,
+      "se": 0.0044083119376301,
+      "calibrated": 0.022022581134364602,
+      "v1_caliper_only": 0.019557538379227767
+     },
+     "mean_slope_sd": {
+      "atlas": 0.05591608819697953,
+      "se": 0.019083210922095077,
+      "calibrated": 0.04609684413091309,
+      "v1_caliper_only": 0.044378854302192544
+     },
+     "end_sd_med": {
+      "atlas": 0.2823278729532532,
+      "se": 0.02234900907307038,
+      "calibrated": 0.2857196070654563,
+      "v1_caliper_only": 0.297184798810738
+     }
+    },
+    "identification": {
+     "status": "poorly_identified",
+     "rule": "starts within one Monte Carlo sd of the winner's 6-stream mean distance",
+     "starts": 6,
+     "sd_log_alpha": [
+      0.04588754439924768,
+      0.12323288561468691
+     ],
+     "sd_log_beta": [
+      0.02201862439324501,
+      0.5552183452134293
+     ],
+     "sd_study_log_beta": [
+      0.66637495072919,
+      1.176916471883879
+     ],
+     "solutions": [
+      {
+       "sd_within": {
+        "log_alpha": 0.12063616875490474,
+        "log_beta": 0.06926448394944425
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.5412548893984219,
+        "sd_log_beta": 1.3981908050417224
+       },
+       "distance_mean6": 2.489874309013129,
+       "best": false
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.04588754439924768,
+        "log_beta": 0.5552183452134293
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.4652903376368807,
+        "sd_log_beta": 1.201956203077843
+       },
+       "distance_mean6": 2.6401398160521583,
+       "best": false
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.11739411829356795,
+        "log_beta": 0.02201862439324501
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.6618733202564158,
+        "sd_log_beta": 1.7097770544179658
+       },
+       "distance_mean6": 2.93102919232159,
+       "best": false
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.10553510393551983,
+        "log_beta": 0.3176445871555099
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.40632291328348735,
+        "sd_log_beta": 1.0496292455892104
+       },
+       "distance_mean6": 2.597216055604047,
+       "best": false
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.12323288561468691,
+        "log_beta": 0.0568080367996148
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.7176262088241694,
+        "sd_log_beta": 1.8538000973074074
+       },
+       "distance_mean6": 2.787901105253597,
+       "best": false
+      },
+      {
+       "sd_within": {
+        "log_alpha": 0.11010225961952343,
+        "log_beta": 0.14706664473271922
+       },
+       "study_prior": {
+        "sd_log_alpha": 0.548833115105553,
+        "sd_log_beta": 1.4177671741605642
+       },
+       "distance_mean6": 2.029099898678569,
+       "best": true
+      }
+     ],
+     "why": "not in the pre-specification; flagged by the grid result (fit stream 1.22, 6-stream mean 2.03, sd_within.log_beta 0.063 -> 0.147), user decision 2026-11-10"
+    }
+   },
+   "twin": {
+    "sd_log_alpha": 0.11043111231725818,
+    "sd_log_beta": 0.03767417829317498,
+    "sd_process": 0.0945311496064988,
+    "first_factor": 0.8516053005502948,
+    "start_df": 3.0,
+    "slow_share": 0.019094681783598393,
+    "slow_shift": 1.6270765749931921,
+    "skew": 0.8358198019887304,
+    "validation": {
+     "loo_coverage_90": 0.8799093655589124,
+     "measurements": 1324,
+     "below": 0.06042296072507553,
+     "above": 0.05966767371601209
+    },
+    "conformal": {
+     "levels": {
+      "90": {
+       "lo": 0.11675827068205687,
+       "hi": 0.933022437023964
+      },
+      "99": {
+       "lo": 0.015973140142322297,
+       "hi": 0.9941063733004122
+      }
+     },
+     "papers": 26,
+     "points": 1324,
+     "pooled": false,
+     "validated": {
+      "90": {
+       "miss_lo": 0.04953957183270563,
+       "miss_hi": 0.04957240567004921,
+       "cover": 0.9008880224972452
+      },
+      "99": {
+       "miss_lo": 0.005043243265556623,
+       "miss_hi": 0.005192349022721652,
+       "cover": 0.9897644077117217
+      }
+     },
+     "source": "conformal_fit.py 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef)"
+    },
+    "next_ranges": {
+     "levels": {
+      "90": {
+       "lo": 0.05,
+       "hi": 0.95
+      },
+      "99": {
+       "lo": 0.005,
+       "hi": 0.995
+      }
+     },
+     "observed": {
+      "90": {
+       "miss_lo": 0.03040813349974302,
+       "miss_hi": 0.06900404427122867
+      },
+      "99": {
+       "miss_lo": 0.0019529460218989274,
+       "miss_hi": 0.010541531478383206
+      }
+     },
+     "papers": 242,
+     "points": 24219,
+     "pooled": true,
+     "source": "conformal_fit.py ranges 2026-11-11 on monitor_points_orig_v1.csv, monitor_points_x1_v1.csv (monitor_validate, Crux bceeacdef, nominal levels): descriptive, post hoc to PUBLICATION_PLAN W2 rule 8; the predictive before measuring; per study (equal weight) mean of the share of measured next values outside the previous session's range, all lines pooled; in-sample"
+    }
+   },
+   "line_class": "pdx",
+   "host_class": "immunodeficient",
+   "tumour_type": "PDAC",
+   "tier": "Own spreads",
+   "pooled_fields": [
+    "noise.k",
+    "noise.df",
+    "noise.sd_session",
+    "take.nonprogressing_map",
+    "noise.c0_c1_curve",
+    "twin.sd_log_alpha",
+    "twin.sd_log_beta",
+    "twin.sd_process",
+    "twin.first_factor",
+    "twin.start_df",
+    "twin.slow_share",
+    "twin.slow_shift",
+    "twin.skew"
+   ],
+   "start_window": {
+    "lo": 80.0,
+    "hi": 500.0
+   }
+  }
+ },
+ "measurement_error": {
+  "model": "sd(log V) = c0 + c1 / sqrt(V mm3)",
+  "c0": 0.0761696183290218,
+  "c1": 1.3386062405454713,
+  "triples": 9129,
+  "overall_sd": 0.16125219094315338,
+  "bands": [
+   {
+    "band": "(0.0, 50.0]",
+    "median_volume": 32.0,
+    "sd": 0.32918654266698516,
+    "triples": 449
+   },
+   {
+    "band": "(50.0, 100.0]",
+    "median_volume": 77.13499999999999,
+    "sd": 0.22081591415179033,
+    "triples": 900
+   },
+   {
+    "band": "(100.0, 300.0]",
+    "median_volume": 182.4735,
+    "sd": 0.17004795362954248,
+    "triples": 3512
+   },
+   {
+    "band": "(300.0, 1000.0]",
+    "median_volume": 502.77,
+    "sd": 0.141606026488659,
+    "triples": 3680
+   },
+   {
+    "band": "(1000.0, inf]",
+    "median_volume": 1242.66709,
+    "sd": 0.10877646263844619,
+    "triples": 588
+   }
+  ],
+  "method": "Crux stats.tumor_measurement_error (crux-core spike/map-robust-n 68fb182c1 (main 81239856e)+nonclinical+pkpd+tgi-gpu): robust second-difference estimator on consecutive triples (<= 8 days) of base-pool controls"
+ },
+ "models": {
+  "MC38": {
+   "class": "syngeneic",
+   "tumour_type": "colon",
+   "host_class": "immunocompetent",
+   "tier": "Full",
+   "papers": 41,
+   "animals": 874,
+   "organ": "colon"
+  },
+  "CT26": {
+   "class": "syngeneic",
+   "tumour_type": "colon",
+   "host_class": "immunocompetent",
+   "tier": "Full",
+   "papers": 36,
+   "animals": 499,
+   "organ": "colon"
+  },
+  "B16F10": {
+   "class": "syngeneic",
+   "tumour_type": "melanoma",
+   "host_class": "immunocompetent",
+   "tier": "Full",
+   "papers": 30,
+   "animals": 472,
+   "organ": "skin"
+  },
+  "4T1": {
+   "class": "syngeneic",
+   "tumour_type": "breast",
+   "host_class": "immunocompetent",
+   "tier": "Full",
+   "papers": 42,
+   "animals": 501,
+   "organ": "breast"
+  },
+  "LLC": {
+   "class": "syngeneic",
+   "tumour_type": "lung",
+   "host_class": "immunocompetent",
+   "tier": "Full",
+   "papers": 22,
+   "animals": 207,
+   "organ": "lung"
+  },
+  "Panc02": {
+   "class": "syngeneic",
+   "tumour_type": "pancreas",
+   "host_class": "immunocompetent",
+   "tier": "Own spreads",
+   "papers": 16,
+   "animals": 208,
+   "organ": "pancreas"
+  },
+  "Hepa1-6": {
+   "class": "syngeneic",
+   "tumour_type": "liver",
+   "host_class": "immunocompetent",
+   "tier": "Own spreads",
+   "papers": 14,
+   "animals": 203,
+   "organ": "liver"
+  },
+  "MDA-MB-231": {
+   "class": "cdx",
+   "tumour_type": "breast",
+   "host_class": "immunodeficient",
+   "tier": "Thin",
+   "papers": 13,
+   "animals": 76,
+   "organ": "breast"
+  },
+  "A549": {
+   "class": "cdx",
+   "tumour_type": "lung",
+   "host_class": "immunodeficient",
+   "tier": "Thin",
+   "papers": 13,
+   "animals": 108,
+   "organ": "lung"
+  },
+  "SKOV3": {
+   "class": "cdx",
+   "tumour_type": "ovarian",
+   "host_class": "immunodeficient",
+   "tier": "Thin",
+   "papers": 8,
+   "animals": 159,
+   "organ": "ovarian"
+  },
+  "PDX-NSCLC": {
+   "class": "pdx",
+   "tumour_type": "NSCLC",
+   "host_class": "immunodeficient",
+   "tier": "Thin",
+   "papers": 15,
+   "animals": 67,
+   "organ": "lung"
+  },
+  "PDX-PDAC": {
+   "class": "pdx",
+   "tumour_type": "PDAC",
+   "host_class": "immunodeficient",
+   "tier": "Own spreads",
+   "papers": 26,
+   "animals": 155,
+   "organ": "pancreas"
+  }
+ }
+}

@@ -1,0 +1,476 @@
+import * as DG from 'datagrok-api/dg';
+import {category, expect, test} from '@datagrok-libraries/test/src/test';
+
+import {OBSERVED, PREDICTED, REANCHOR, endRange, endVerdict} from '../analyze';
+import {HUMANE, LAB_WEEKDAYS, designStudy} from '../engine';
+import {monitorEnd, planChecks, widenedEnd} from '../plan-checks';
+import {bandFactors} from '../priors';
+import {exampleStudy} from './example-study';
+import {PLAN_TAG, parsePlan, powerAt} from '../plan-file';
+import {noEffectNote} from '../plan-vs-observed';
+import {competingOf, projectedRows} from '../survival';
+import {synergyOf, synergyWords} from '../synergy';
+import {arriveItems} from '../arrive';
+import {tumorModels} from '../priors';
+import {concentrationMapping, exposureByArm, ncaInstalled, runNca} from '../exposure';
+
+const OUTPUTS = ['analysis', 'comparisons', 'animals', 'volumes', 'twins', 'effects', 'checks', 'versusPlan',
+  'predicted', 'tolerability', 'weights'];
+
+/** pmxAnalyzeStudy as the Analyze view calls it: the outputs by name. */
+async function analyze(study: DG.DataFrame, params: {[k: string]: any} = {}): Promise<{[k: string]: DG.DataFrame}> {
+  const fc = DG.Func.find({package: 'PmxStudio', name: 'pmxAnalyzeStudy'})[0].prepare({study,
+    animal: study.col('animal'), group: study.col('group'), day: study.col('day'), volume: study.col('volume'),
+    line: 'MC38', endpoint: 1500, correction: 'holm', ...params});
+  await fc.call();
+  return Object.fromEntries(OUTPUTS.map((o) => [o, fc.outputs[o] as DG.DataFrame]));
+}
+
+category('Analyze', () => {
+  test('without the twin, the same tests and effects, its tables empty', async () => {
+    const study = await exampleStudy();
+    const [all, lean] = [await analyze(study), await analyze(study, {withTwin: false})];
+    expect(lean.analysis.get('twinned', 0), false);
+    expect(all.analysis.get('twinned', 0), true);
+    for (const name of ['twins', 'effects', 'checks']) {
+      expect(lean[name].rowCount, 0, name);
+      expect(all[name].rowCount > 0, true, name);
+    }
+    for (const name of ['animals', 'volumes', 'versusPlan', 'predicted'])
+      expect(lean[name].toCsv(), all[name].toCsv(), name);
+    for (const c of ['tgi', 'tc', 'p_value', 'slope_difference', 'activity'])
+      expect(lean.comparisons.col(c)!.toList().join(), all.comparisons.col(c)!.toList().join(), c);
+  }, {timeout: 120000});
+
+  test('tolerability: the example\'s body weight read per group, and nothing without the column', async () => {
+    const study = await exampleStudy();
+    const o = await analyze(study, {bodyWeight: study.col('body_weight')});
+    const t = o.tolerability;
+    // three groups, each as weighed and without the tumor's mass
+    expect(t.rowCount, 6);
+    const row = (group: string, basis: string) => {
+      const i = Array.from({length: t.rowCount}, (_, k) => k)
+        .find((k) => t.get('group', k) === group && t.get('basis', k) === basis)!;
+      return (c: string) => t.get(c, i);
+    };
+    const [vehicle, strong] = ['Vehicle', 'Cpd-A 30 mg/kg'].map((g) => row(g, 'Measured'));
+    // the stronger arm loses more weight than the vehicle, whose animals never lose 20%
+    expect(strong('mean_nadir') < vehicle('mean_nadir'), true,
+      `mean nadir ${strong('mean_nadir')} vs ${vehicle('mean_nadir')}`);
+    expect(vehicle('grade_3'), 0);
+    expect(vehicle('n'), o.analysis.get('n_control', 0));
+    // the vehicle's tumors weigh the most: without them its weight change is lower on its last day
+    const w = o.weights;
+    const last = (basis: string) => {
+      const ks = Array.from({length: w.rowCount}, (_, k) => k)
+        .filter((k) => w.get('group', k) === 'Vehicle' && w.get('basis', k) === basis);
+      return w.get('mean', ks.reduce((a, b) => w.get('day', b) > w.get('day', a) ? b : a));
+    };
+    expect(last('Tumor-corrected') < last('Measured'), true, `${last('Tumor-corrected')} vs ${last('Measured')}`);
+    // the NCI limits: a mean nadir over 20% as weighed, or over 10% of the animals dead or removed for their weight
+    for (const g of ['Vehicle', 'Cpd-A 10 mg/kg', 'Cpd-A 30 mg/kg'].map((x) => row(x, 'Measured'))) {
+      expect(g('toxic'), g('mean_nadir') < -20 || (g('removed_death') + g('removed_weight')) / g('n') > 0.1,
+        `nadir ${g('mean_nadir')}, removed ${g('removed_weight')} of ${g('n')}`);
+    }
+    expect(vehicle('toxic'), false);
+    // a removal reason given: one vehicle animal found dead counts as a death
+    const reason = DG.Column.fromStrings('removal', study.col('animal')!.toList().map((a, i) =>
+      a === study.get('animal', 0) && i === 0 ? 'Found dead' : ''));
+    study.columns.add(reason);
+    const dead = (await analyze(study, {bodyWeight: study.col('body_weight'), removalReason: reason})).tolerability;
+    const v = Array.from({length: dead.rowCount}, (_, k) => k).find((k) => dead.get('group', k) === 'Vehicle')!;
+    expect(dead.get('removed_death', v), 1);
+    study.columns.remove('removal');
+    // no body weight column: empty tables, the rest of the analysis unchanged
+    const bare = await analyze(study);
+    expect(bare.tolerability.rowCount + bare.weights.rowCount, 0);
+    expect(bare.comparisons.get('p_value', 1), o.comparisons.get('p_value', 1));
+  }, {timeout: 300000});
+
+  test('tolerability: the tumor\'s density, the line\'s, the one given or the study\'s weighed tumors\'', async () => {
+    const study = await exampleStudy();
+    const densities = async (params: {[k: string]: any}) => {
+      const t = (await analyze(study, {bodyWeight: study.col('body_weight'), ...params})).tolerability;
+      return Array.from({length: t.rowCount}, (_, i) => ({group: t.get('group', i), density: t.get('density', i),
+        pairs: t.get('density_pairs', i)}));
+    };
+    // no tumor weights: MC38's typical density (the atlas), no pairs
+    for (const g of await densities({}))
+      expect(Math.abs(g.density - 0.749) < 1e-6 && g.pairs === 0, true, JSON.stringify(g));
+    for (const g of await densities({density: 1.2}))
+      expect(Math.abs(g.density - 1.2) < 1e-6, true, JSON.stringify(g));
+    // the example's excised tumors, drawn at MC38's density: every vehicle tumor calibrates it, near the line's
+    const weighed = await densities({tumorWeight: study.col('tumor_weight')});
+    const vehicle = weighed.find((g) => g.group === 'Vehicle')!;
+    expect(vehicle.pairs, study.col('group')!.toList().filter((g, i) => g === 'Vehicle' &&
+      !study.col('tumor_weight')!.isNone(i)).length);
+    for (const g of weighed)
+      expect(g.density > 0.749 / 1.3 && g.density < 0.749 * 1.3, true, JSON.stringify(g));
+  }, {timeout: 300000});
+
+  test('a study Plan predicts: its end, its effects and its strong arm found', async () => {
+    const study = await exampleStudy();
+    const o = await analyze(study);
+    expect(o.analysis.get('control', 0), 'Vehicle');
+    expect(o.comparisons.rowCount, 2);
+    // one lab of the atlas, with the animals Plan asks for: the evaluation day in the range a study run as planned
+    // reaches the endpoint in, the 70% arm detected, every animal analyzed
+    const plan = parsePlan(study.getTag(PLAN_TAG)!);
+    const {end} = plan.predicted.checks;
+    const day = o.analysis.get('evaluation_day', 0);
+    expect(day >= end.q025 && (end.q975 === null || day <= end.q975), true, `day ${day} in ${end.q025}–${end.q975}`);
+    expect(o.comparisons.get('activity', 1), 'Slows growth', `p ${o.comparisons.get('p_value', 1)}`);
+    expect(o.animals.rowCount, plan.predicted.nControl! +
+      plan.predicted.arms.reduce((t, a) => t + a.n!, 0));
+  }, {timeout: 300000});
+
+  test('the twin: the strong arm smaller than its twins, bands ordered, controls in their bands', async () => {
+    const o = await analyze(await exampleStudy());
+    const c = o.comparisons;
+    // TGI 40% and 70% arms: the paired effect follows the declared one, more clear responders in the strong arm
+    const [weak, strong] = [c.get('paired_effect', 0), c.get('paired_effect', 1)];
+    expect(strong > weak && strong > 40, true, `paired effects ${weak} / ${strong}`);
+    // compared as shares, since the arms have the animals each needs, not the same
+    const share = (i: number) => c.get('responders', i) / c.get('twin_animals', i);
+    expect(share(1) > share(0) && share(1) >= 0.5, true, `responders ${c.get('responders', 0)} of ` +
+      `${c.get('twin_animals', 0)} / ${c.get('responders', 1)} of ${c.get('twin_animals', 1)}`);
+    for (let i = 0; i < o.twins.rowCount; i++) {
+      const [lo, mid, hi] = ['twin_q05', 'twin_median', 'twin_q95'].map((k) => o.twins.get(k, i));
+      expect(lo < mid && mid < hi, true, `row ${i}: ${lo} ${mid} ${hi}`);
+    }
+    expect(o.effects.rowCount, c.get('twin_animals', 0) + c.get('twin_animals', 1));
+    // the example's controls come from the line's own model: most of their measurements in their bands
+    const coverage = o.analysis.get('control_coverage', 0);
+    expect(coverage > 0.7, true, `control coverage ${coverage}`);
+  }, {timeout: 300000});
+
+  test('the corrections order the p-values: none ≤ Holm ≤ Bonferroni; the interval is Bonferroni\'s', async () => {
+    const study = await exampleStudy();
+    const of = async (correction: string) => (await analyze(study, {correction})).comparisons;
+    const [none, holm, bonferroni] = [await of('none'), await of('holm'), await of('bonferroni')];
+    const p = (t: DG.DataFrame, i: number) => t.get('p_value', i) as number;
+    for (let i = 0; i < none.rowCount; i++) {
+      expect(p(none, i) <= p(holm, i) + 1e-12, true, `arm ${i}: ${p(none, i)} vs ${p(holm, i)}`);
+      expect(p(holm, i) <= p(bonferroni, i) + 1e-12, true, `arm ${i}: ${p(holm, i)} vs ${p(bonferroni, i)}`);
+      // 0 outside the interval at 1 - alpha / k says what Bonferroni's p-value says
+      const out = holm.get('slope_difference_lower', i) > 0 || holm.get('slope_difference_upper', i) < 0;
+      expect(out, p(bonferroni, i) < 0.05, `arm ${i}: interval and Bonferroni p ${p(bonferroni, i)}`);
+      // and beside the test, what one variance for every group gives
+      const common = holm.get('p_common_variance', i);
+      expect(common >= 0 && common <= 1, true, `arm ${i}: p with a common variance ${common}`);
+    }
+  }, {timeout: 300000});
+
+  test('plan vs observed: the example against its own plan, and without one against the atlas', async () => {
+    const study = await exampleStudy();
+    // the plan the example carries reads back as a plan; anything else is refused
+    const plan = parsePlan(study.getTag(PLAN_TAG)!);
+    expect(plan.predicted.arms.length, 2);
+    // the plan carries what a study run as planned shows: each arm's range holds its assumed TGI
+    expect(plan.predicted.checks.arms.map((a) => a.name).join(), plan.predicted.arms.map((a) => a.name).join());
+    for (const [k, a] of plan.predicted.checks.arms.entries()) {
+      const assumed = plan.predicted.arms[k].effect;
+      expect(a.tgi.q025 < assumed && assumed < (a.tgi.q975 ?? Infinity), true, `${a.name}: ${JSON.stringify(a.tgi)}`);
+    }
+    for (const junk of ['{}', 'not json', JSON.stringify({...plan, version: 2})]) {
+      let refused = false;
+      try {
+        parsePlan(junk);
+      } catch {
+        refused = true;
+      }
+      expect(refused, true, `accepted ${junk.slice(0, 20)}`);
+    }
+    const o = await analyze(study);
+    const a = (c: string) => o.analysis.get(c, 0);
+    expect(a('plan'), plan.name);
+    // one lab of the atlas, not picked by its outcome, so each verdict is what its figure and its range say
+    const inside = (x: number, lo: number, hi: number | null) => x >= lo && (hi === null || x <= hi);
+    expect(a('control_verdict') === 'As predicted', inside(a('control_slope'), a('control_slope_q025'),
+      a('control_slope_q975') || null), `slope ${a('control_slope')} in ${a('control_slope_q025')}–` +
+      `${a('control_slope_q975')}: ${a('control_verdict')}`);
+    const g = o.versusPlan;
+    expect(g.rowCount, 2);
+    expect(g.col('assumed')!.toList().join(), '40,70');
+    const c = o.comparisons;
+    for (let i = 0; i < g.rowCount; i++) {
+      const x = (k: string) => g.get(k, i);
+      expect(x('lower') < x('observed') && x('observed') < x('upper'), true,
+        `row ${i}: ${x('lower')} ${x('observed')} ${x('upper')}`);
+      // the result is the test on the slopes, in both tabs
+      const [lo, hi] = [c.get('slope_difference_lower', i), c.get('slope_difference_upper', i)];
+      expect(x('activity'), hi < 0 ? 'Slows growth' : lo > 0 ? 'Grows faster' : 'No clear effect', `${lo}–${hi}`);
+      expect(c.get('activity', i), x('activity'));
+      // against the plan: inside its range, as planned only when the test tells the group from the control
+      const held = inside(x('observed'), x('expected_q025'), x('expected_q975') || null);
+      expect(x('verdict') === 'As planned' || x('verdict') === 'Inconclusive', held, `${x('verdict')}`);
+      if (held)
+        expect(x('verdict'), x('activity') === 'Slows growth' ? 'As planned' : 'Inconclusive');
+      // each arm has the animals Plan asked for, and the power the plan gave it with them
+      const arm = plan.predicted.arms[i];
+      expect(x('n'), arm.n, `${arm.name}: ${x('n')} analysed, ${arm.n} planned`);
+      // (to the column's single precision)
+      expect(Math.abs(x('power') - powerAt(arm.power!, x('n'))!) < 1e-6 && x('power') >= 0.79, true,
+        `${arm.name}: power ${x('power')}`);
+    }
+    expect(new Set(o.predicted.col('series')!.toList()).size, 2);
+
+    // no plan: nothing assumed, the controls and the end against the atlas
+    study.setTag(PLAN_TAG, '');
+    const n = await analyze(study);
+    // (a string column gives an empty string for a missing value)
+    expect(!n.analysis.get('plan', 0), true);
+    expect(n.versusPlan.col('assumed')!.toList().every((x) => x === null), true);
+    expect(n.versusPlan.col('verdict')!.toList().every((x) => !x), true);
+    // with no plan, still each group against the control
+    expect(n.versusPlan.col('activity')!.toList().join(), o.versusPlan.col('activity')!.toList().join());
+    expect([...new Set(n.predicted.col('series')!.toList())].sort().join(), [OBSERVED, PREDICTED].sort().join());
+    expect(n.analysis.get('control_verdict', 0) !== null, true);
+  }, {timeout: 300000});
+
+  test('plan vs observed: a study randomized larger than planned, its controls predicted from its own start',
+    async () => {
+      const study = await exampleStudy();
+      const plan = parsePlan(study.getTag(PLAN_TAG)!);
+      const bandStart = (o: {[k: string]: DG.DataFrame}) => {
+        const p = o.predicted;
+        const i = Array.from({length: p.rowCount}, (_, k) => k)
+          .find((k) => p.get('series', k) === PREDICTED && p.get('day', k) === 0)!;
+        return p.get('median', i);
+      };
+      const notes = (o: {[k: string]: DG.DataFrame}) => String(o.analysis.get('plan_notes', 0));
+      // as planned (the example's start near the plan's): the plan's own band, nothing said
+      const asPlanned = await analyze(study);
+      const planned = plan.predicted.checks.controls[0].median;
+      expect(Math.abs(bandStart(asPlanned) - planned) < 1e-3, true, `${bandStart(asPlanned)} vs ${planned}`);
+      expect(notes(asPlanned).includes('Randomized at'), false, notes(asPlanned));
+      // every tumor 1.5 times larger: the band starts at the study's own start, the endpoint comes earlier
+      const larger = study.clone();
+      larger.setTag(PLAN_TAG, study.getTag(PLAN_TAG)!);
+      larger.col('volume')!.init((i) => study.col('volume')!.get(i) * 1.5);
+      const start = bandStart(asPlanned) * 1.5;
+      const o = await analyze(larger);
+      expect(Math.abs(Math.log(bandStart(o) / start)) < Math.log(REANCHOR), true, `band ${bandStart(o)} vs ${start}`);
+      expect(o.analysis.get('end_median', 0) < plan.predicted.checks.end.median, true,
+        `end ${o.analysis.get('end_median', 0)} vs the plan's ${plan.predicted.checks.end.median}`);
+      expect(notes(o).includes('Randomized at'), true, notes(o));
+    }, {timeout: 300000});
+
+  test('the end range: Analyze and Monitor never call a day Plan printed earlier or later than predicted', async () => {
+    const hull: string[] = [];
+    for (const line of ['MC38', 'CT26', 'B16F10']) {
+      const f = await bandFactors(line);
+      const s = await designStudy({line, vRand: 100, endpoint: 1500, power: 0.8, alpha: 0.05, correction: 'holm',
+        n: null, arms: [{name: 'x', therapy: 'small_molecule', metric: 'TGI', effect: 60}], preLoss: 0, postLoss: 0,
+        lossRule: 'confident', confidence: 0.9, weekdays: LAB_WEEKDAYS, startWeekday: 0, humane: HUMANE,
+        schedules: false, lastDay: null});
+      const checks = await planChecks({line, vRand: 100, endpoint: 1500, humane: HUMANE, weekdays: LAB_WEEKDAYS,
+        startWeekday: 0, endpointDay: s.endpointDay, nControl: 10, arms: []});
+      const r = endRange(checks.end, f, s, false);
+      const [q10, q90] = [Math.round(s.durationQ10), Math.round(s.durationQ90 ?? s.durationQ10)];
+      let needed = 0;
+      for (let day = q10; day <= q90; day++) {
+        expect(endVerdict(day, day, r), 'As predicted',
+          `${line} day ${day} in ${q10}-${q90} against ${JSON.stringify(r)}`);
+        if (day < widenedEnd(checks.end, f).q025 || day > (widenedEnd(checks.end, f).q975 ?? Infinity))
+          needed++;
+      }
+      hull.push(`${line}: ${needed} of ${q90 - q10 + 1} days needed the hull`);
+      // Monitor shows a range with Plan's printed one inside it
+      const m = monitorEnd({median: checks.end.median, q10: checks.end.q025, q90: checks.end.q975}, f, s);
+      expect(m.q10 <= q10 && (m.q90 === null || m.q90 >= q90), true, `${line} Monitor ${JSON.stringify(m)}`);
+    }
+    console.log(hull.join('; '));
+  }, {timeout: 300000});
+
+  test('the end range: widened by the line factor, open stays open, no factor unchanged, reanchored without hull',
+    async () => {
+      const r = {q025: 8, median: 15, q975: 25 as number | null};
+      const f = await bandFactors('MC38');
+      const w = widenedEnd(r, f);
+      // MC38's 1.21 in log days around the median, 15·(8/15)^1.21 = 7.01 to 15·(25/15)^1.21 = 27.8, rounded outward
+      expect(JSON.stringify(w), JSON.stringify({q025: 7, median: 15, q975: 28}));
+      const wide = widenedEnd({q025: 8.4, median: 15, q975: 25.4}, f);
+      expect(Number.isInteger(wide.q025) && Number.isInteger(wide.q975!) && wide.q025 <= 8 && wide.q975! >= 25, true);
+      expect(widenedEnd({...r, q975: null}, f).q975, null);
+      expect(await bandFactors('4T1'), null);
+      expect(widenedEnd(r, await bandFactors('4T1')), r);
+      // a printed range wider than the widened one is kept; a reanchored study is widened only
+      const p = {durationQ10: 5, durationQ90: 40 as number | null};
+      expect(endRange(r, f, p, false).q025, 5);
+      expect(endRange(r, f, p, true).q025 === w.q025 && endRange(r, f, p, true).q975 === w.q975, true);
+      expect(endRange(r, null, p, false), r);
+      // Monitor: the same factor and the same hull; no factor, no change
+      const m = {median: 15, q10: 8, q90: 25 as number | null};
+      expect(monitorEnd(m, f, null).q10 === w.q025 && monitorEnd(m, f, null).q90 === w.q975, true);
+      expect(monitorEnd(m, f, null).q10 < m.q10 + 1e-9 && w.q975! > m.q90!, true, 'widened, not unchanged');
+      expect(monitorEnd(m, f, p).q90, 40);
+      // an open printed top stays open; a printed range that is not a number is not used; no plan, no hull
+      expect(endRange(r, f, {durationQ10: 5, durationQ90: null}, false).q975, null);
+      expect(monitorEnd(m, f, {durationQ10: 5, durationQ90: null}).q90, null);
+      expect(JSON.stringify(endRange(r, f, {durationQ10: NaN, durationQ90: 40}, false)), JSON.stringify(w));
+      expect(JSON.stringify(endRange(r, f, null, false)), JSON.stringify(w));
+      // a median or q10 that is not a number: Monitor's range as it was
+      expect(JSON.stringify(monitorEnd({median: NaN, q10: 8, q90: 25}, f, p)), JSON.stringify({q10: 8, q90: 25}));
+      expect(monitorEnd({median: 15, q10: null as any, q90: 25}, f, p).q10, null);
+      // every printed (rounded) day gets the verdict the printed range gives, with no plan and reanchored
+      for (const re of [false, true]) {
+        const e = endRange(r, f, null, re);
+        for (let day = Math.round(e.q025); day <= Math.round(e.q975!); day++)
+          expect(endVerdict(day, day, e), 'As predicted', `day ${day} reanchored ${re}`);
+      }
+      expect(JSON.stringify(monitorEnd(m, null, p)), JSON.stringify({q10: 8, q90: 25}));
+    });
+
+  test('no clear effect: what the study could have detected, said with it', async () => {
+    // with a plan, the power it gave the arm with these animals, and the animals it needed
+    const row = (r: {[k: string]: unknown}) => (k: string) => r[k] ?? null;
+    const planned = noEffectNote(row({group: 'A', activity: 'No clear effect', p_value: 0.31, n: 8, power: 0.55,
+      n_needed: 26}), row({plan: 'P', power_target: 0.8}))!;
+    expect(planned.includes('With 8 animals, a study like this one detects the planned effect in 55 of 100 labs; ' +
+      'the plan needed 26 for 80 of 100.'), true, planned);
+    expect(noEffectNote(row({group: 'A', activity: 'Slows growth', p_value: 0.01, n: 8}), row({})), null);
+    // a plan saved before it kept the arms' power
+    expect(noEffectNote(row({group: 'A', activity: 'No clear effect', p_value: 0.4, n: 8}), row({plan: 'P'}))!
+      .includes('cannot tell this group from the control'), true);
+    // no plan: a sham group, half of the example's controls, against the other half: every other animal by its last
+    // volume, so the halves are alike whatever example the atlas gives (every other by id is a chance split, and
+    // one in twenty of those is significant)
+    const study = await exampleStudy();
+    study.setTag(PLAN_TAG, '');
+    const sham = study.clone(DG.BitSet.create(study.rowCount, (i) => study.get('group', i) === 'Vehicle'));
+    sham.setTag(PLAN_TAG, '');
+    const last = new Map<string, {day: number, volume: number}>();
+    for (let i = 0; i < sham.rowCount; i++) {
+      const [a, day] = [sham.get('animal', i) as string, sham.get('day', i) as number];
+      if (!(last.get(a)?.day! >= day))
+        last.set(a, {day, volume: sham.get('volume', i)});
+    }
+    const ids = [...last.keys()].sort((a, b) => last.get(a)!.volume - last.get(b)!.volume);
+    for (let i = 0; i < sham.rowCount; i++) {
+      if (ids.indexOf(sham.get('animal', i)) % 2)
+        sham.set('group', i, 'Sham');
+    }
+    const s = await analyze(sham, {control: 'Vehicle'});
+    const x = (k: string) => s.versusPlan.get(k, 0);
+    expect(x('activity'), 'No clear effect', `p ${x('p_value')}`);
+    expect(x('mde') > 0 && x('mde') <= 100, true, `mde ${x('mde')}`);
+    expect(noEffectNote(x, (k) => s.analysis.get(k, 0))!.includes(`a TGI of ${Math.round(x('mde'))}% or more`), true);
+  }, {timeout: 300000});
+  test('projected KM: each animal carried on at its last rate, to the endpoint or the horizon', async () => {
+    const r = (animal: string, day: number, volume: number) => ({animal, group: 'G', day, volume});
+    const rows = [r('A', 0, 100), r('A', 2, 200), r('A', 4, 400), r('B', 0, 100), r('B', 2, 80), r('B', 4, 60),
+      r('C', 0, 900), r('C', 2, 2000), r('D', 0, 100)];
+    const near = (x: number, y: number) => Math.abs(x - y) < 1e-6;
+    const out = projectedRows(rows, 1600, 20);
+    const a = out.find((x) => x.animal === 'A')!;
+    expect(near(a.day, 8) && a.volume === 1600, true, 'A doubles every 2 days: 1600 on day 8');
+    const b = out.find((x) => x.animal === 'B')!;
+    expect(b.day === 20 && near(b.volume, 60), true, 'B shrinks: followed to the horizon as it is');
+    expect(out.some((x) => x.animal === 'C' || x.animal === 'D'), false, 'past the endpoint, or one measurement');
+    const short = projectedRows(rows, 1600, 6).find((x) => x.animal === 'A')!;
+    expect(short.day === 6 && near(short.volume, 800), true, 'A by an earlier horizon: under the endpoint');
+  });
+  test('an example study for every tumor model, lines without a density of their own included', async () => {
+    const arm = {name: 'Cpd 30 mg/kg', therapy: 'small_molecule' as const, metric: 'TGI' as const, effect: 70};
+    const failed: string[] = [];
+    await Promise.all(Object.keys(await tumorModels()).map((line) => exampleStudy({line, arms: [arm]})
+      .then((df) => df.rowCount > 0 || failed.push(`${line}: no rows`),
+        (e) => failed.push(`${line}: ${e?.message ?? e}`))));
+    expect(failed.join('; '), '');
+  }, {timeout: 180000});
+  test('synergy, competing risks and ARRIVE on a made-up study', async () => {
+    // four groups growing at known rates (ln V per day): A and B take 0.05 each off the control's 0.2, A+B 0.15
+    const rates: {[g: string]: number} = {'Control': 0.2, 'A': 0.15, 'B': 0.15, 'A+B': 0.05};
+    const rows: {[k: string]: any}[] = [];
+    let k = 0;
+    for (const [g, rate] of Object.entries(rates)) {
+      for (let a = 0; a < 6; a++, k++) {
+        const v0 = 100 * (1 + 0.1 * Math.sin(k));
+        for (let d = 0; d <= 20; d += 2) {
+          const v = v0 * Math.exp(rate * d + 0.02 * Math.sin(3 * k + d));
+          // a treated animal removed (ulceration) on day 10, its last measurement
+          const removed = g === 'A' && a < 2;
+          if (removed && d > 10)
+            break;
+          rows.push({animal: `${g}-${a}`, group: g, day: d, volume: v, why: removed && d === 10 ? 'ulceration' : ''});
+        }
+      }
+    }
+    const df = DG.DataFrame.fromObjects(rows)!;
+    const s = {study: df, animal: 'animal', group: 'group', day: 'day', volume: 'volume', bodyWeight: null};
+    const x = await synergyOf(s, {control: 'Control', a: 'A', b: 'B', ab: 'A+B'});
+    expect(Math.abs(x.dif - 0.05) < 0.01, true, `dif ${x.dif}`);
+    expect(x.p < 0.05 && synergyWords(x, 'A+B').startsWith('Synergy'), true, `p ${x.p}`);
+    const c = await competingOf(s, 'why', 'Control', 1500);
+    const a = c!.find((y) => y.group === 'A')!;
+    expect(a.competing, 2);
+    expect(a.shr < 1, true, `A against the control: SHR ${a.shr}`);
+    expect(await competingOf(s, null, 'Control', 1500), null);
+    const items = arriveItems({control: 'Control', arms: ['A', 'B', 'A+B'], plan: null, exclusions: null,
+      meta: null, randomized: false, endpoint: 1500, evaluationDay: 20, protocol: 'Slopes compared', analyzed: []});
+    expect(items.length, 10);
+    expect(items.filter((i) => !i.done).map((i) => i.n).join(','), '2,4,5,8,9,10');
+  });
+
+  test('exposure from NCA: matched by name, else by drug, dose and route; never guessed', async () => {
+    // NCA's frames as it returns them, one row per profile (results) and per group (summary)
+    const frames = (named: boolean) => {
+      const groups = ['Cpd-A 10 mg/kg', 'Cpd-A 30 mg/kg', 'Combo'];
+      const results = DG.DataFrame.fromObjects([
+        {compound: 'Cpd-A', ROUTE: 'PO', DOSE: 10, VERDICT: 'Pass', REASONS: ''},
+        {compound: 'Cpd-A', ROUTE: 'PO', DOSE: 30, VERDICT: 'Pass', REASONS: ''},
+        {compound: 'Cpd-B', ROUTE: '', DOSE: null, VERDICT: 'Blocked',
+          REASONS: 'sparse design with fewer than 3 animals, a composite needs 3 or more'},
+      ].map((r, i) => named ? {...r, group: groups[i]} : r))!;
+      results.setTag('nca.units', JSON.stringify({dose: 'mg/kg'}));
+      const summary = DG.DataFrame.fromObjects([0, 1].map((i) => ({compound: 'Cpd-A',
+        ...named ? {group: groups[i]} : {}, ROUTE: 'PO', DOSE: [10, 30][i], N: [6, 1][i],
+        MEAN_AUC_LAST: [1200, 4100][i], CV_PCT_AUC_LAST: [18, null][i], MEAN_CMAX: [300, 900][i],
+        CV_PCT_CMAX: [22, null][i]})))!;
+      summary.col('MEAN_AUC_LAST')!.setTag('units', 'h*ng/mL');
+      summary.setTag('nca.keyColumns', JSON.stringify(named ? ['compound', 'group'] : ['compound']));
+      return {results, summary};
+    };
+    // by the group's own name
+    const named = frames(true);
+    const byName = exposureByArm(['Cpd-A 10 mg/kg', 'Combo', 'Missing'], named.results, named.summary, 'group');
+    expect(byName.get('Cpd-A 10 mg/kg')!.exposure!.auc, 1200);
+    expect(byName.get('Cpd-A 10 mg/kg')!.exposure!.aucUnit, 'h*ng/mL');
+    expect(byName.get('Combo')!.why!, 'NCA could not compute exposure for Combo: too few animals sampled ' +
+      '(a pooled profile needs at least 3)');
+    expect(byName.get('Missing')!.why!.endsWith('no concentrations found for it'), true);
+    // by drug, dose and route read in the arm's name; a combination, another unit or another route is no match
+    const bare = frames(false);
+    const byDrug = exposureByArm(['Cpd-A 30 mg/kg PO QD', 'Cpd-A 30 mg/kg i.p.', 'Cpd-A + Cpd-B', 'Cpd-A 10 mg'],
+      bare.results, bare.summary, null);
+    const x = byDrug.get('Cpd-A 30 mg/kg PO QD')!.exposure!;
+    expect(x.auc === 4100 && x.aucCv === null && x.profiles === 1 && x.schedule === 'QD', true, JSON.stringify(x));
+    expect(byDrug.get('Cpd-A 30 mg/kg i.p.')!.why!.endsWith('no concentrations found for it'), true);
+    expect(byDrug.get('Cpd-A + Cpd-B')!.why!.includes('exact name only'), true);
+    expect(byDrug.get('Cpd-A 10 mg')!.why!.includes('same unit'), true);
+    // a dose NCA blocked has no dose of its own: by drug, the drug's reason is given, not "nothing found"
+    const blockedByDrug = exposureByArm(['Cpd-B 5 mg/kg'], bare.results, bare.summary, null).get('Cpd-B 5 mg/kg')!;
+    expect(blockedByDrug.why!.endsWith('too few animals sampled (a pooled profile needs at least 3)'), true,
+      blockedByDrug.why!);
+    // males and females given apart: not pooled here, said so
+    const sexes = bare.summary.clone();
+    sexes.columns.addNewString('SEX').init((i) => i === 0 ? 'M' : 'F');
+    sexes.set('DOSE', 1, 10);
+    expect(exposureByArm(['Cpd-A 10 mg/kg'], bare.results, sexes, null).get('Cpd-A 10 mg/kg')!.why!
+      .endsWith('males and females apart'), true);
+    // without the NCA package nothing is read; with it, two animals sampled once each give no exposure
+    const sparse = DG.DataFrame.fromObjects(['m1', 'm2'].map((a, i) => ({subject: a, group: 'Cpd-A 10 mg/kg',
+      time_h: [1, 4][i], conc_ng_ml: [120, 40][i], dose_mg_kg: 10, route: 'PO'})))!;
+    const m = await concentrationMapping(sparse);
+    if (!ncaInstalled()) {
+      expect(m, null);
+      return;
+    }
+    expect(m !== null, true, 'NCA reads the sparse table as concentrations');
+    const run = await runNca(sparse, m);
+    const said = exposureByArm(['Cpd-A 10 mg/kg'], run.results, run.summary, run.groupCol).get('Cpd-A 10 mg/kg')!;
+    expect(said.why ?? '', 'NCA could not compute exposure for Cpd-A 10 mg/kg: too few animals sampled ' +
+      '(a pooled profile needs at least 3)');
+  });
+});

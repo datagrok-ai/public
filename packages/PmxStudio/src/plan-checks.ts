@@ -1,0 +1,92 @@
+/* The plan's predictive checks: what a study run as planned should observe (Crux stats.tumor_plan_checks,
+   [decision:tumor-plan-checks]), from the line's model and each arm's kill rate with the animals each group really
+   has: the day its median control reaches the endpoint, its controls' growth, each treated arm's TGI and T/C there,
+   and its median control day by day, as 95% ranges over the studies. Computed when a plan is saved (and for the
+   example study, or an analysis with no plan), not on every replan. This file only translates. */
+import {crux, CruxResult, named, rows} from './crux';
+import {lineModel, weekdaysParam} from './engine';
+import {ARCHETYPES, Therapy} from './archetypes';
+import {BandFactors, linePrior, widened} from './priors';
+
+/** 2.5 / 50 / 97.5% quantiles over the studies (q975 null: more than 2.5% never got there). */
+export interface Range {q025: number, median: number, q975: number | null}
+
+/** The end's range widened as Plan prints it (files/band_calibration_v1.json, log half-widths around the median, at
+ *  least half a day) and rounded outward to whole days, as Plan shows it; a range that never closes stays open, a line
+ *  with no factor keeps its range. */
+export function widenedEnd(r: Range, f: BandFactors | null): Range {
+  const s = f?.end80 ?? null;
+  return s === null ? r : {q025: Math.floor(widened(r.median, r.q025, s, 0.5)), median: r.median,
+    q975: r.q975 === null ? null : Math.ceil(widened(r.median, r.q975, s, 0.5))};
+}
+
+/** The range with the plan's printed one (day Q10 to Q90, rounded) inside it: a day Plan showed is never called off. */
+export function withPrinted(r: Range, q10: number, q90: number | null): Range {
+  // an open printed top stays open; a printed range that is not a number (a hand-edited file) is not used
+  if (!Number.isFinite(q10) || (q90 !== null && !Number.isFinite(q90)))
+    return r;
+  return {...r, q025: Math.min(r.q025, Math.round(q10)),
+    q975: q90 === null || r.q975 === null ? null : Math.max(r.q975, Math.round(q90))};
+}
+
+/** Monitor's end range (8 in 10 studies, q10 to q90) as Plan prints it: widened by the line's factor, and with the
+ *  plan's printed range inside it when a plan is attached (no factor: as it was). */
+export function monitorEnd(r: {median: number, q10: number, q90: number | null}, f: BandFactors | null,
+  plan?: {durationQ10: number, durationQ90: number | null} | null): {q10: number, q90: number | null} {
+  if (!Number.isFinite(r.median) || !Number.isFinite(r.q10))
+    return {q10: r.q10, q90: r.q90};
+  const w = widenedEnd({q025: r.q10, median: r.median, q975: r.q90}, f);
+  const h = plan && f?.end80 != null ? withPrinted(w, plan.durationQ10, plan.durationQ90) : w;
+  return {q10: h.q025, q90: h.q975};
+}
+
+export interface PlanChecks {
+  /** the evaluation day: the first measurement day the median control is at or above the endpoint */
+  end: Range;
+  /** share of the studies whose controls had not reached the endpoint by the last day simulated */
+  notReached: number;
+  /** the controls' mean slope of log volume per day to the evaluation day */
+  controlSlope: Range;
+  /** a study's median control volume (mm³) on each measurement day */
+  controls: {day: number, q025: number, median: number, q975: number}[];
+  /** each treated arm's TGI and T/C (%) on the evaluation day */
+  arms: {name: string, tgi: Range, tc: Range}[];
+}
+
+export interface ChecksInput {
+  line: string; vRand: number; endpoint: number; humane: number;
+  /** the lab's measurement weekdays (0 Monday … 6 Sunday) and the weekday of randomization */
+  weekdays: number[]; startWeekday: number;
+  /** the design's endpoint day: a study is simulated to twice it */
+  endpointDay: number;
+  nControl: number;
+  /** none: only the controls' and the end's checks */
+  arms: {name: string, therapy: Therapy, killRate: number, n: number}[];
+}
+
+const range = (r: {[k: string]: any}, k: string): Range => ({q025: r[`${k}_q025`], median: r[`${k}_median`],
+  q975: r[`${k}_q975`] ?? null});
+
+export async function planChecks(x: ChecksInput): Promise<PlanChecks> {
+  const [{prior, params}, lp] = [await lineModel(x.line), await linePrior(x.line)];
+  const shared = {...params, v_rand: x.vRand, endpoint: x.endpoint, humane: x.humane,
+    weekdays: weekdaysParam(x.weekdays), start_weekday: x.startWeekday, sd_session: lp.noise?.sd_session ?? 0,
+    n_control: Math.max(2, x.nControl), last_day: Math.min(365, Math.max(2 * x.endpointDay, x.endpointDay + 14))};
+  // with no treated arm, one with no effect: the controls and the end are the same in every call (one seed)
+  const calls = x.arms.length ? x.arms : [{name: '', therapy: 'small_molecule' as Therapy, killRate: 0, n: 2}];
+  // every arm's at once: each is a call of its own, on a worker set of its own
+  const results: CruxResult[] = await Promise.all(calls.map((arm) => {
+    const a = ARCHETYPES[arm.therapy];
+    return crux('stats.tumor_plan_checks', prior, {...shared, kill_rate: arm.killRate,
+      n_treated: Math.max(2, arm.n), onset: a.onsetDays, kappa_sd: a.kappaSd, responders: a.responders});
+  }));
+  const first = rows(results[0].main as any)[0];
+  return {
+    end: range(first, 'end'), notReached: first.not_reached, controlSlope: range(first, 'control_slope'),
+    controls: named(results[0], 'controls').map((d) => ({day: d.day, q025: d.q025, median: d.median, q975: d.q975})),
+    arms: x.arms.map((arm, k) => {
+      const r = rows(results[k].main as any)[0];
+      return {name: arm.name, tgi: range(r, 'tgi'), tc: range(r, 'tc')};
+    }),
+  };
+}

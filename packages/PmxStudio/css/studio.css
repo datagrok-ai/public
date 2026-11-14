@@ -1,0 +1,241 @@
+/* What Plan, Monitor and Analyze share: the study's header and the grid of a stage's panels. Datagrok's tokens, so
+   it follows the theme. */
+
+/* the header, in the view's ribbon: the stages, then the study */
+/* one line, as the ribbon is: the study gives way (cut with an ellipsis) before the stages or the view's actions */
+.pmx-head {
+  display: flex; flex-wrap: nowrap; align-items: center; gap: 24px; min-width: 0; overflow: hidden; color: var(--dg-text-color, #4D5261);
+  font-family: var(--dg-font-family, Roboto, sans-serif); font-size: 13px;
+}
+/* the platform dims a ribbon item's child while pressed with a filter, which would make the header the stages'
+   containing block: they would jump away under the pointer and the click land on the ribbon */
+.d4-ribbon-item > .pmx-head:active { filter: none !important; background: none !important; }
+/* the stages centred in the view's header, apart from the menus and the view's own buttons */
+.pmx-head-steps { display: flex; align-items: center; gap: 6px; flex: none; position: absolute; left: 50%; transform: translateX(-50%); z-index: 1; }
+.pmx-head-step {
+  display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 2px 2px; font: inherit;
+  color: var(--dg-accent, #2083D5); cursor: pointer;
+}
+.pmx-head-step.on { color: var(--dg-text-color, #4D5261); font-weight: 500; cursor: default; }
+.pmx-head-step:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: 2px; border-radius: 3px; }
+.pmx-head-node {
+  width: 9px; height: 9px; border-radius: 50%; box-sizing: border-box;
+  border: 2px solid var(--dg-accent, #2083D5); background: var(--dg-bg, #fff);
+}
+.pmx-head-step.past .pmx-head-node, .pmx-head-step.on .pmx-head-node { background: var(--dg-accent, #2083D5); }
+.pmx-head-wire { width: 24px; height: 2px; background: var(--dg-border, #DBDCDF); }
+.pmx-head-wire.lit { background: var(--dg-accent, #2083D5); }
+.pmx-head-dot { color: var(--dg-grey-5, #717581); }
+.pmx-head-study { display: flex; align-items: center; gap: 12px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.pmx-head-name {
+  overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; min-width: 40px; font-size: 15px; font-weight: 500;
+  color: var(--dg-text-color, #4D5261); background: none; border: none; padding: 0; font-family: inherit;
+}
+.pmx-head-name:not(:disabled) { cursor: pointer; text-decoration: underline dotted var(--dg-grey-4, #9aa5b1); text-underline-offset: 3px; }
+a.pmx-hint-link { color: inherit; text-decoration: underline dotted var(--dg-grey-4, #9aa5b1); text-underline-offset: 3px; }
+.pmx-stat-settable .u2-stat-label { text-decoration: underline dotted var(--dg-grey-4, #9aa5b1); text-underline-offset: 3px; }
+.pmx-head-name:not(:disabled):hover { color: var(--dg-accent, #2083D5); }
+.pmx-head-name:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: 2px; border-radius: 3px; }
+.pmx-head-id:empty { display: none; }
+.pmx-head-id { flex: none; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--dg-grey-5, #717581); }
+.pmx-head-groups { display: flex; gap: 6px; flex: 0 1 auto; min-width: 0; overflow: hidden; }
+.pmx-head-group {
+  display: inline-flex; align-items: center; gap: 6px; padding: 1px 8px; border-radius: 10px;
+  border: 1px solid var(--dg-border, #DBDCDF); font-size: 12px;
+}
+.pmx-head-swatch { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.pmx-head-status { flex: none; font-size: 12px; color: var(--dg-grey-5, #717581); }
+
+/* the study's row, over the panes (the stages stay in the ribbon) */
+.pmx-stage { height: 100%; }
+.pmx-stage > :last-child { flex: 1 1 auto; min-height: 0; }
+.pmx-stage > .pmx-head-block { flex: none; }
+.pmx-head-block > .pmx-head-study {
+  flex: none; padding: 8px var(--dg-space-l, 16px); border-bottom: 1px solid var(--dg-border, #DBDCDF);
+  background: linear-gradient(90deg, var(--dg-grey-1, #f4f6f8), var(--dg-bg, #fff) 70%);
+  font-family: var(--dg-font-family, Roboto, sans-serif); font-size: 13px; color: var(--dg-text-color, #4D5261);
+}
+.pmx-head-study .pmx-head-name { font-size: 17px; }
+
+/* a KPI's change: a pill at the card's top right */
+/* compact, as the demo's: the figure, its label, its change */
+.pmx-stat { position: relative; padding: 8px 12px !important; gap: 2px !important; }
+.pmx-stat .u2-stat-value { font-size: 24px !important; line-height: 1.2 !important; }
+.pmx-stat .u2-stat-label { font-size: 12px; }
+.pmx-stat .u2-stat-delta {
+  position: absolute; top: 8px; right: 10px; padding: 1px 7px; border-radius: 9px; font-size: 11px; font-weight: 500;
+  background: color-mix(in srgb, var(--dg-accent, #2083D5) 12%, transparent);
+}
+
+/* the layout editor: the panels as tiles on the twelve columns */
+.pmx-layout { display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
+.pmx-layout-help, .pmx-layout-status, .pmx-layout-tray-label { font-size: 12px; color: var(--dg-grey-5, #717581); }
+.pmx-layout-board {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: minmax(56px, auto); gap: 8px;
+  padding: 12px; border-radius: 8px; background: var(--dg-grey-1, #f4f6f8);
+}
+.pmx-layout-tile {
+  position: relative; user-select: none; touch-action: none; display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 6px 8px; cursor: grab;
+  background: var(--dg-bg, #fff); border: 1px solid var(--dg-border, #DBDCDF); border-radius: 6px;
+}
+.pmx-layout-tile:hover { border-color: var(--dg-accent, #2083D5); }
+.pmx-layout-tile:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: 2px; }
+.pmx-layout-tile.is-dragged {
+  border: 2px dashed var(--dg-accent, #2083D5); background: color-mix(in srgb, var(--dg-accent, #2083D5) 8%, transparent);
+}
+.pmx-layout-tile.is-dragged > * { visibility: hidden; }
+.pmx-layout-board.is-moving, .pmx-layout-board.is-moving .pmx-layout-tile { cursor: grabbing; }
+.pmx-layout-ghost {
+  position: fixed; left: 0; top: 0; z-index: 10000; pointer-events: none; opacity: .92; cursor: grabbing;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18); border-color: var(--dg-accent, #2083D5);
+}
+.pmx-layout-title { font-weight: 500; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 16px; }
+.pmx-layout-span { font-size: 11px; color: var(--dg-grey-5, #717581); font-variant-numeric: tabular-nums; }
+.pmx-layout-tile.is-sizing { border-color: var(--dg-accent, #2083D5); }
+.pmx-layout-tile.is-sizing .pmx-layout-span { color: var(--dg-accent, #2083D5); font-weight: 500; }
+/* the twelve columns, drawn while a panel is being sized */
+.pmx-layout-board.is-sizing {
+  background-image: repeating-linear-gradient(90deg, color-mix(in srgb, var(--dg-accent, #2083D5) 7%, transparent) 0
+    calc((100% + 8px) / 12 - 8px), transparent 0 calc((100% + 8px) / 12));
+  background-origin: content-box; background-clip: content-box; cursor: ew-resize;
+}
+.pmx-layout-grip {
+  position: absolute; right: 2px; bottom: 2px; width: 14px; height: 14px; cursor: ew-resize; touch-action: none;
+  background: linear-gradient(135deg, transparent 50%, var(--dg-grey-4, #B3B6BD) 50%, var(--dg-grey-4, #B3B6BD) 58%,
+    transparent 58%, transparent 70%, var(--dg-grey-4, #B3B6BD) 70%, var(--dg-grey-4, #B3B6BD) 78%, transparent 78%);
+}
+.pmx-layout-tile:hover .pmx-layout-grip, .pmx-layout-tile.is-sizing .pmx-layout-grip {
+  background: linear-gradient(135deg, transparent 50%, var(--dg-accent, #2083D5) 50%, var(--dg-accent, #2083D5) 58%,
+    transparent 58%, transparent 70%, var(--dg-accent, #2083D5) 70%, var(--dg-accent, #2083D5) 78%, transparent 78%);
+}
+.pmx-layout-hide, .pmx-layout-chip {
+  font: 11px var(--dg-font-family, Roboto, sans-serif); border: 1px solid var(--dg-border, #DBDCDF); border-radius: 3px;
+  background: var(--dg-bg, #fff); color: var(--dg-text-color, #4D5261); padding: 0 5px; cursor: pointer;
+}
+.pmx-layout-hide { position: absolute; top: 4px; right: 4px; border: 0; padding: 0 4px; color: var(--dg-grey-5, #717581); }
+.pmx-layout-tray { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.pmx-layout-chip { border-style: dashed; padding: 2px 8px; color: var(--dg-accent, #2083D5); }
+
+/* the panels: twelve columns; half and then whole rows as the results pane narrows */
+.pmx-grid-host { container-type: inline-size; }
+.pmx-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; grid-auto-flow: row dense; }
+.pmx-panel { min-width: 0; }
+.pmx-panel[data-span="3"] { grid-column: span 3; }
+.pmx-panel[data-span="4"] { grid-column: span 4; }
+.pmx-panel[data-span="6"] { grid-column: span 6; }
+.pmx-panel[data-span="8"] { grid-column: span 8; }
+.pmx-panel[data-span="12"] { grid-column: span 12; }
+@container (max-width: 980px) {
+  .pmx-panel[data-span="3"], .pmx-panel[data-span="4"] { grid-column: span 6; }
+  .pmx-panel[data-span="8"] { grid-column: span 12; }
+}
+@container (max-width: 640px) {
+  .pmx-panel[data-span] { grid-column: span 12; }
+}
+
+/* a stage's tabs: one row under the study and its figures, each tab a grid of its own */
+.pmx-tabbed { display: flex; flex-direction: column; gap: 16px; }
+.pmx-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--dg-border, #DBDCDF); }
+.pmx-tab {
+  font: 500 13px var(--dg-font-family, Roboto, sans-serif); color: var(--dg-grey-5, #717581); background: none;
+  border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 6px 12px; cursor: pointer;
+}
+.pmx-tab:hover { color: var(--dg-text-color, #4D5261); }
+.pmx-tab.is-open { color: var(--dg-accent, #2083D5); border-bottom-color: var(--dg-accent, #2083D5); }
+.pmx-tab:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: -2px; }
+
+/* under a growth chart: the animals of each group on each day */
+.pmx-n-scroll { overflow-x: auto; margin-top: 8px; }
+.pmx-n-table { border-collapse: collapse; font-size: 11px; color: var(--dg-grey-5, #717581); }
+.pmx-n-table th, .pmx-n-table td { padding: 1px 6px; text-align: center; white-space: nowrap; }
+.pmx-n-table th:first-child, .pmx-n-table td:first-child { text-align: left; }
+.pmx-n-table th { font-weight: 500; border-bottom: 1px solid var(--dg-border, #DBDCDF); }
+
+/* the results recomputing: a thin bar sliding along the top edge of the results pane */
+.pmx-busy-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; overflow: hidden; z-index: 3;
+  pointer-events: none; }
+.pmx-busy-bar::before { content: ''; position: absolute; top: 0; bottom: 0; width: 30%;
+  background: var(--dg-primary-color, #2083d5); animation: pmx-busy-slide 1s ease-in-out infinite; }
+.pmx-busy-bar[hidden] { display: none; }
+@keyframes pmx-busy-slide { from { left: -30%; } to { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .pmx-busy-bar::before { animation: none; left: 0; width: 100%; opacity: .5; } }
+
+/* the line on the study's data over Monitor's and Analyze's results (study-table.ts) */
+.pmx-study-line { align-items: center; flex-wrap: wrap; gap: var(--dg-space-s, 8px); }
+
+/* the tumor model picker (line-input.ts): a field, and in place under it the models by class */
+.pmx-line-input { display: flex; flex-direction: column; gap: 6px; height: auto; padding: 0; min-width: 0; }
+.pmx-line-field {
+  display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 4px 2px; background: none; border: none;
+  border-bottom: 1px solid var(--dg-border, #DBDCDF); font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.pmx-line-field:hover, .pmx-line-field[aria-expanded="true"] { border-bottom-color: var(--dg-accent, #2083D5); }
+.pmx-line-field:focus-visible { outline: 2px solid var(--dg-accent, #2083D5); outline-offset: 2px; }
+.pmx-line-name { font-weight: 500; }
+.pmx-line-kind { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--dg-grey-5, #717581); }
+.pmx-line-chevron { color: var(--dg-grey-5, #717581); }
+.pmx-line-panel { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--dg-border, #DBDCDF); border-radius: 4px; }
+.pmx-line-panel[hidden] { display: none; }
+.pmx-line-search { width: 100%; box-sizing: border-box; padding: 4px 6px; border: 1px solid var(--dg-border, #DBDCDF); border-radius: 3px; font: inherit; }
+.pmx-line-list { display: flex; flex-direction: column; max-height: 280px; overflow-y: auto; }
+.pmx-line-group { margin: 6px 0 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--dg-grey-5, #717581); }
+.pmx-line-item { padding: 4px 6px; border-radius: 3px; cursor: pointer; }
+.pmx-line-item:hover, .pmx-line-item.is-active { background: var(--dg-grey-1, #f2f3f5); }
+.pmx-line-item[aria-selected="true"] .pmx-line-item-name { color: var(--dg-accent, #2083D5); }
+.pmx-line-item-name { font-weight: 500; margin-right: 8px; }
+.pmx-line-item-type { font-size: 12px; color: var(--dg-text-color, #4D5261); }
+.pmx-line-item-evidence { display: block; font-size: 11px; color: var(--dg-grey-5, #717581); }
+.pmx-line-empty { padding: 6px; font-size: 12px; color: var(--dg-grey-5, #717581); }
+
+/* the KPI cards' change (statCard): one colour, as more is not always better; pinned figures, a dashed edge */
+.pmx-stat .u2-stat-delta-up, .pmx-stat .u2-stat-delta-down {color: var(--dg-accent, #2083d5);}
+.pmx-pinned .pmx-stat {outline: 1px dashed var(--dg-accent, #2083d5); outline-offset: -1px;}
+
+/* Kaplan-Meier: the one slider, under the plot and as wide, between what it is followed to and its words */
+.pmx-km-row {
+  position: absolute; bottom: 0; display: flex; align-items: center; gap: 8px; font-size: 11px;
+  color: var(--dg-grey-5, #717581);
+}
+.pmx-km-slider { flex: 1; min-width: 0; margin: 0; accent-color: var(--dg-accent, #2083D5); cursor: ew-resize; }
+.pmx-km-measured { white-space: nowrap; min-width: 150px; }
+.pmx-km-measured.is-projected { color: #b7791f; }
+
+/* an animal selected anywhere (the study table's selection), outlined in the twin list */
+.pmx-forest-row.is-selected { box-shadow: inset 3px 0 0 var(--dg-accent, #2083D5); font-weight: 500; }
+
+/* a figure that asks for attention (Monitor's animals needing it) */
+.pmx-stat.pmx-stat-attn { border-color: color-mix(in srgb, #d99a12 60%, var(--dg-border, #DBDCDF)); box-shadow: inset 3px 0 0 #d99a12; }
+
+/* the study's details, open under its row */
+.pmx-head-sheet {
+  padding: 12px var(--dg-space-l, 16px); border-bottom: 1px solid var(--dg-border, #DBDCDF);
+  background: var(--dg-grey-1, #f4f6f8); max-height: 60vh; overflow: auto;
+}
+.pmx-details { gap: 8px; }
+.pmx-details-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); column-gap: 24px; max-width: none; }
+.pmx-head-sheet-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+/* Plan's study protocol: each item its own row, with air between them */
+.pmx-protocol table { border-collapse: collapse; width: 100%; }
+.pmx-protocol td { padding: 7px 12px 7px 0; vertical-align: top; line-height: 1.45; border-bottom: 1px solid var(--dg-grey-1, #f2f3f5); }
+.pmx-protocol td:first-child { white-space: nowrap; font-weight: 500; }
+
+/* Against the plan: the summary, then each block with room above it and a rule between them */
+.pmx-block-body:has(> .pmx-plan-summary) > .pmx-block { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--dg-grey-1, #eef0f3); }
+.pmx-block-body:has(> .pmx-plan-summary) > .pmx-plan-summary { display: block; margin-bottom: 4px; }
+.pmx-block-body:has(> .pmx-plan-summary) .pmx-block-body > * + * { margin-top: 8px; }
+.pmx-plan-table > * + * { border-top: 1px solid var(--dg-grey-1, #eef0f3); }
+.pmx-plan-table > * { padding-top: 7px !important; padding-bottom: 7px !important; }
+
+/* the results pane fits its width: its panels shrink with it, and a table or the calendar wider than its panel
+   scrolls sideways by itself, not the pane */
+.pmx-results .pmx-grid-host, .pmx-results .pmx-block, .pmx-results .pmx-block-body { min-width: 0; }
+.pmx-results div:has(> table), .pmx-results div:has(> .pmx-calendar) { overflow-x: auto; max-width: 100%; }
+.pmx-results .pmx-calendar { min-width: 520px; }
+
+/* a treatment arm's card in the Plan form: the platform's card surface */
+.pmx-arm {
+  box-sizing: border-box; font-family: var(--dg-font-family); font-size: var(--dg-font-size);
+  color: var(--dg-text-color); background: var(--dg-bg); border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius-l);
+}

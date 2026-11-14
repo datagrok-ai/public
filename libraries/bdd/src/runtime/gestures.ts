@@ -883,24 +883,27 @@ export async function dragSlider(page: Page, target: ElementRef, value: number):
   const box = await range.boundingBox();
   if (box === null)
     throw new Error(`the slider of ${target.phrase} has no rectangle on the page`);
-  const at = (v: number): number => box.x + box.width * ((v - track.min) / (track.max - track.min));
+  // the thumb's centre runs a track shorter than the input by the thumb's width (a native one is 16 px)
+  const thumb = Math.min(16, box.width / 10);
+  const at = (v: number): number => box.x + thumb / 2 + (box.width - thumb) * ((v - track.min) / (track.max - track.min));
   const y = box.y + box.height / 2;
   const from = at(track.value);
   const to = at(value);
   await page.mouse.move(from, y);
   await page.mouse.down();
-  for (let i = 1; i <= 8; i++)
-    await page.mouse.move(from + (to - from) * i / 8, y);
+  // one stroke: a guide pictures it along the way, evenly
+  await page.mouse.move(to, y, {steps: 8});
   // the thumb travels a track shorter than the input by its own width, so the aim can land a step off: a hand
-  // watches the value and nudges the thumb before letting go
+  // watches the value and moves the thumb by what is missing (a pixel at least) before letting go
   const want = track.step > 0 ? track.min + Math.round((value - track.min) / track.step) * track.step : value;
   const close = Math.max(track.step, (track.max - track.min) / box.width) / 2;
   let x = to;
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 8; i++) {
     const now = Number(await range.inputValue());
     if (Math.abs(now - want) <= close)
       break;
-    x += now < want ? 1 : -1;
+    const dx = (want - now) / (track.max - track.min) * box.width;
+    x += Math.abs(dx) < 1 ? Math.sign(dx) : dx;
     await page.mouse.move(x, y);
   }
   await page.mouse.up();

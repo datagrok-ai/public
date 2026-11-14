@@ -931,6 +931,58 @@
         "u2/no-unowned-root": 0
       }
     },
+    "packages/PmxStudio": {
+      "files": 54,
+      "u2Files": 21,
+      "valueValue": 0,
+      "valuePeek": 0,
+      "runInScope": 0,
+      "runWith": 0,
+      "runWithUndefined": 0,
+      "newScope": 0,
+      "viewZoo": 0,
+      "freeSubscribe": 0,
+      "enabledOpt": 0,
+      "okEnabled": 0,
+      "deepDgIndex": 0,
+      "deepImports": 0,
+      "controlBuild": 0,
+      "newAppHeader": 0,
+      "rawSubscribe": 7,
+      "tsInternalSelectors": 2,
+      "subclassU2": 8,
+      "subclassEms": 0,
+      "classBuildsUi": 0,
+      "cssFiles": 2,
+      "cssLines": 472,
+      "cssInternalLines": 5,
+      "cssImportant": 11,
+      "commentLines": 1694,
+      "fileHeaders": 41,
+      "privateDocs": 0,
+      "classes": {
+        "subclassU2": [
+          "packages/PmxStudio/src/arms-input.ts: ArmCard (line 44)",
+          "packages/PmxStudio/src/arms-input.ts: ArmsInput (line 79)",
+          "packages/PmxStudio/src/arms-input.ts: CorrectionInput (line 167)",
+          "packages/PmxStudio/src/band-chart.ts: BandChart (line 55)",
+          "packages/PmxStudio/src/km-chart.ts: KmChart (line 18)",
+          "packages/PmxStudio/src/line-input.ts: LineInput (line 41)",
+          "packages/PmxStudio/src/spider-chart.ts: SpiderChart (line 52)",
+          "packages/PmxStudio/src/spider-chart.ts: WaterfallChart (line 103)"
+        ],
+        "subclassEms": [],
+        "classBuildsUi": []
+      },
+      "lint": {
+        "u2/comments": 18,
+        "u2/no-snapshot-in-live-slot": 0,
+        "u2/reason-text": 0,
+        "u2/no-raw-column-list": 1,
+        "u2/build-in-owner": 0,
+        "u2/no-unowned-root": 1
+      }
+    },
     "packages/PowerPack": {
       "files": 49,
       "u2Files": 4,
@@ -1341,6 +1393,36 @@
       "grown": [
         "packages/Bio fileHeaders: 13 → 17",
         "packages/Peptides fileHeaders: 1 → 2"
+      ]
+    },
+    {
+      "date": "2026-11-10",
+      "reason": "PmxStudio becomes a u2 consumer (PR #4416): its code is recorded as it is after owning its subscriptions and styling its own classes. What stays: 8 class components (chart and input controls written before function components were the documented form); StatCard's value, label and change restyled for a compact card (4 CSS lines: u2 has no option for it); a ButtonGroup label, a form category and the loader's spinner looked up by class (u2 has no option for a count in a label, a folded category or a spinner size); 7 subscriptions that follow a table the view swaps, each unsubscribed by hand; one table built inside its caller's effect and one results table read as rows (no-unowned-root and no-raw-column-list see neither)",
+      "grown": [
+        "packages/PmxStudio rawSubscribe: 0 → 7",
+        "packages/PmxStudio tsInternalSelectors: 0 → 2",
+        "packages/PmxStudio subclassU2: 0 → 8",
+        "packages/PmxStudio cssLines: 0 → 470",
+        "packages/PmxStudio cssInternalLines: 0 → 4",
+        "packages/PmxStudio cssImportant: 0 → 11",
+        "packages/PmxStudio fileHeaders: 0 → 41"
+      ]
+    },
+    {
+      "date": "2026-11-10",
+      "reason": "PmxStudio becomes a u2 consumer (PR #4416): its code is recorded as it is after owning its subscriptions and styling its own classes. What stays: 8 class components (chart and input controls written before function components were the documented form); StatCard's value, label and change restyled for a compact card (4 CSS lines: u2 has no option for it); a ButtonGroup label, a form category and the loader's spinner looked up by class (u2 has no option for a count in a label, a folded category or a spinner size); 7 subscriptions that follow a table the view swaps, each unsubscribed by hand; one table built inside its caller's effect and one results table read as rows (no-unowned-root and no-raw-column-list see neither)",
+      "grown": [
+        "packages/PmxStudio u2/comments: 0 → 18",
+        "packages/PmxStudio u2/no-raw-column-list: 0 → 1",
+        "packages/PmxStudio u2/no-unowned-root: 0 → 1"
+      ]
+    },
+    {
+      "date": "2026-11-11",
+      "reason": "PmxStudio: one look for 'you can change this' across the app (a discreet dotted underline on hint links and on settable StatCard labels), until u2 offers a quiet link variant and a StatCard label class",
+      "grown": [
+        "packages/PmxStudio cssLines: 470 → 472",
+        "packages/PmxStudio cssInternalLines: 4 → 5"
       ]
     }
   ]

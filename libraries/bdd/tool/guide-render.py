@@ -326,6 +326,9 @@ class Renderer:
         pad = 6
         x0, y0 = max(0, box['x'] - pad), max(0, box['y'] - pad)
         x1, y1 = min(self.w, box['x'] + box['width'] + pad), min(self.h, box['y'] + box['height'] + pad)
+        # a box off the frame (an element scrolled out of view, before a step scrolls to it) lights nothing
+        if x1 <= x0 or y1 <= y0:
+            return img
         layer = Image.new('RGBA', (self.w, self.h), (0, 0, 0, 105))
         d = ImageDraw.Draw(layer)
         d.rounded_rectangle((x0, y0, x1, y1), radius=6, fill=(0, 0, 0, 0))
@@ -335,7 +338,7 @@ class Renderer:
         d.rounded_rectangle((x0, y0, x1, y1), radius=6, outline=color + (255,), width=3)
         return out.convert('RGB')
 
-    def caption_layer(self, step, index, total):
+    def caption_layer(self, step, index, total, alone=True):
         if self.bar_h == 0:
             return None
         layer = Image.new('RGBA', (self.w, self.bar_h), BAR)
@@ -345,7 +348,8 @@ class Renderer:
         d.text((pad, self.bar_h / 2), counter, font=self.small, fill=(170, 178, 190, 255), anchor='lm')
         x = pad + d.textlength(counter, font=self.small) + pad
         text = step['caption']
-        if step['kind'] == 'check':
+        # a check's tick, unless its caption goes on over other steps (it would come and go under the same words)
+        if step['kind'] == 'check' and alone:
             s = self.font.size
             mid = self.bar_h / 2
             d.line([(x, mid), (x + s * 0.32, mid + s * 0.32), (x + s * 0.85, mid - s * 0.4)], fill=CHECK + (255,), width=3)
@@ -683,32 +687,45 @@ class Renderer:
             yield image
 
     def drag_frames(self, lit, target, path, button, caption):
-        """The pointer along a drag, the button held: each picture taken on the way is cut in as the
-        pointer reaches it, so what the drag draws grows under the pointer. Returns the last one."""
+        """The pointer along a drag, the button held, in one eased glide (a hand does not stop at every
+        picture): each picture taken on the way is cut in as the pointer passes it, so what the drag
+        draws grows under the pointer. Returns the last one."""
         keys = [p for p in path if p.get('shot')]
         if not path[-1].get('shot'):
             keys.append(path[-1])
+        points = [self.cur] + [(p['x'], p['y']) for p in keys]
+        reached = [0.0]
+        for a, b in zip(points, points[1:]):
+            reached.append(reached[-1] + math.hypot(b[0] - a[0], b[1] - a[1]))
+        total = reached[-1]
+        shots = [None]
         for p in keys:
-            dest = (p['x'], p['y'])
-            drawn = None
-            if p.get('shot'):
-                drawn = self._image(p['shot'])
-                drawn = self.spotlight(drawn, target) if target else drawn
-            start = self.cur
-            n = self.frames_for(math.hypot(dest[0] - start[0], dest[1] - start[1]), int((0.2 if self.demo else 0.3) * self.fps))
-            for i in range(n):
-                t = ease((i + 1) / n)
-                pos = (start[0] + (dest[0] - start[0]) * t, start[1] + (dest[1] - start[1]) * t)
-                yield self.frame(drawn if drawn is not None and i == n - 1 else lit, pos, held=button, caption=caption)
-            if drawn is not None:
-                lit = drawn
+            drawn = self._image(p['shot']) if p.get('shot') else None
+            shots.append(self.spotlight(drawn, target) if drawn is not None and target else drawn)
+        n = self.frames_for(total, int((0.4 if self.demo else 0.6) * self.fps))
+        for i in range(n):
+            d = ease((i + 1) / n) * total
+            k = 0
+            while k < len(keys) - 1 and reached[k + 1] <= d:
+                k += 1
+            for j in range(1, len(points)):
+                if reached[j] <= d + 1e-6 and shots[j] is not None:
+                    lit = shots[j]
+            if i == n - 1 and shots[-1] is not None:
+                lit = shots[-1]
+            seg = reached[k + 1] - reached[k]
+            f = 0.0 if seg <= 0 else min(1.0, (d - reached[k]) / seg)
+            a, b = points[k], points[k + 1]
+            yield self.frame(lit, (a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f), held=button, caption=caption)
         yield from self.hold_frames(0.3 if self.demo else 0.5, lit, self.cur, caption=caption)
         return lit
 
-    def step_frames(self, step, index, total):
+    def step_frames(self, step, index, total, beat=None):
+        """`beat`: the caption's number, how many captions there are, and whether this step has its caption to
+        itself; by default the step's own."""
         fps = self.fps
         after = self._image(step['after'])
-        caption = self.caption_layer(step, index, total)
+        caption = self.caption_layer(step, *(beat or (index, total, True)))
         legs = step.get('legs', [])
         still_path = os.path.join(self.folder, f'step-{index:02d}.png')
         # a line of text: a demo shows it over the page while the steps after it go on, a guide as its caption
@@ -833,9 +850,27 @@ class Renderer:
         else:
             yield from self.title_frames(first)
         total = len(self.steps)
+        # steps in a row with the same caption are one beat of the story: counted once, the caption held throughout
+        beats, last = [], None
+        for step in self.steps:
+            beats.append((beats[-1] if beats else 0) + (step['caption'] != last))
+            last = step['caption']
+        shown, frame = 0, None
         for i, step in enumerate(self.steps, 1):
             self.marks.append((self.frame_no, f"{i}. {step['caption']}"))
-            yield from self.step_frames(step, i, total)
+            b = beats[i - 1]
+            # a demo numbers and times its own lines of text
+            beat = None if self.demo else (b, beats[-1], beats.count(b) == 1)
+            for frame in self.step_frames(step, i, total, beat):
+                shown += 1
+                yield frame
+            # a beat stays until its caption can be read: a second to look, then three words a second
+            if not self.demo and (i == total or beats[i] != b):
+                need = int((1.0 + len((step['caption'] or '').split()) / 3) * self.fps) if step['caption'] else 0
+                for _ in range(need - shown):
+                    self.frame_no += 1
+                    yield frame
+                shown = 0
         self.marks.append((self.frame_no, 'end'))
         last = self.steps[-1]
         # a note still being read keeps the last picture up until it is
@@ -1094,6 +1129,15 @@ def reel(ffmpeg, out, folders):
 
 
 def selftest(folder):
+    # it writes a guide's files: only into an empty folder, or over an earlier self-test
+    manifest_path = os.path.join(folder, 'steps.json')
+    if os.path.isdir(folder) and os.listdir(folder):
+        ours = False
+        if os.path.exists(manifest_path):
+            with open(manifest_path, encoding='utf8') as f:
+                ours = json.load(f).get('feature') == 'Self test'
+        if not ours:
+            sys.exit(f'{folder} is not empty: the self-test writes a guide of its own, give it an empty folder')
     os.makedirs(folder, exist_ok=True)
     w, h = 640, 400
     names = ['01-before', '01-after', '02-before', '02-after', '03-before', '03-drag1', '03-drag2', '03-after',
