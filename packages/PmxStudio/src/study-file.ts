@@ -287,16 +287,47 @@ export function tableOf(s: SavedStudy): DG.DataFrame {
 export const studiesFolder = () => `${grok.shell.user.project.name}:Home/PMX Studio/studies/`;
 const fileName = (name: string) => fileNameOf(name, 'Study', STUDY_EXT);
 
-/** Saves the study to the user's studies folder (replacing the same study's file); returns its path. A different
- *  study saved under the same name (another ID) is not replaced: the user is asked to rename this one. */
-export async function saveStudy(s: SavedStudy): Promise<string> {
-  const path = studiesFolder() + fileName(s.name);
-  // a file there that does not read (cut short, edited by hand) is no one's study: saving replaces it
-  const other = await grok.dapi.files.exists(path) ?
-    await grok.dapi.files.readAsText(path).then((t) => JSON.parse(t)?.meta?.id ?? null).catch(() => null) : null;
-  if (other && s.meta?.id && other !== s.meta.id)
-    throw new Error(`Another study (${other}) is saved as "${s.name}": rename this one to save it`);
-  await grok.dapi.files.writeAsText(path, JSON.stringify(await stamped(s), null, 2));
+/** The name a study is saved under: the one its file already has among `names` and their numbered forms (a study
+ *  saved before under its table's name stays there), else the first free of `names`, else the last name with " (2)",
+ *  " (3)"...; never another study's. `owner` gives the ID saved under a name: undefined when no file is there, null
+ *  when the file has none (cut short, edited by hand: no one's study, so it may be replaced). */
+export async function freeName(names: string[], id: string | null,
+  owner: (name: string) => Promise<string | null | undefined>): Promise<string> {
+  const tried = [...new Set(names.map((n) => n.trim()).filter((n) => n))];
+  const given = Math.max(tried.length, 1);
+  const last = tried[tried.length - 1] ?? 'Study';
+  if (!tried.length)
+    tried.push(last);
+  for (let k = 2; k < 1000; k++)
+    tried.push(`${last} (${k})`);
+  const owners: (string | null | undefined)[] = [];
+  for (const name of tried) {
+    const o = await owner(name);
+    if (id && o === id)
+      return name;
+    owners.push(o);
+    // ponytail: numbered names are taken in order, so the first missing one ends them; a gap left by a deleted file
+    // hides a later copy of this study (it would be saved twice)
+    if (o === undefined && owners.length >= given)
+      break;
+  }
+  const free = owners.findIndex((o) => o == null);
+  if (free < 0)
+    throw new Error(`Too many studies are saved as "${last}"`);
+  return tried[free];
+}
+
+/** Saves the study to the user's studies folder and returns its path: under its own name (a followed plan's), else
+ *  its table's, else numbered (see freeName). The same study's file is replaced; another study's never is. */
+export async function saveStudy(s: SavedStudy, tableName = ''): Promise<string> {
+  const owner = async (name: string) => {
+    const at = studiesFolder() + fileName(name);
+    return await grok.dapi.files.exists(at) ?
+      grok.dapi.files.readAsText(at).then((t) => JSON.parse(t)?.meta?.id ?? null).catch(() => null) : undefined;
+  };
+  const name = await freeName([s.name, tableName], s.meta?.id ?? null, owner);
+  const path = studiesFolder() + fileName(name);
+  await grok.dapi.files.writeAsText(path, JSON.stringify(await stamped({...s, name}), null, 2));
   // (its index row, now older than the file, is read again)
   return path;
 }

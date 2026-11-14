@@ -5,7 +5,7 @@ import {DEFAULT_RULES, findOutliers, StudyColumns} from '../outlier-rules';
 import {AnimalSelection, animalMarks, appendPasted, caliperVolume, emptyStudy, exclusionsOf, mark, mirrorSelection,
   pastedNumber, withoutExcluded} from '../study-table';
 import {EXCLUDED, FLAGGED, LINE_TAG, MARK_REASON, REVEALED, STUDY_TAG, WEIGHT_TAG, addLog, groupsShown, lineOf, logOf,
-  parseStudy, roleColumns, studyOf, tableOf} from '../study-file';
+  freeName, parseStudy, roleColumns, studyOf, tableOf} from '../study-file';
 import {PLAN_TAG, parsePlan} from '../plan-file';
 import {exampleStudy} from './example-study';
 import {filePreview, studySummary} from '../file-preview';
@@ -350,6 +350,58 @@ category('Study table', () => {
     const both = JSON.stringify(studyOf(study, null));
     expect([lineOf(tableOf(parseStudy(both))), entryOf(both, 1)!.line].join('|'), `${planLine}|${planLine}`);
   });
+  test('a followed study goes by its plan\'s name; a plan with no name leaves the table\'s', async () => {
+    const study = await exampleStudy();
+    const plan = JSON.parse(study.getTag(PLAN_TAG)!);
+    study.setTag(PLAN_TAG, JSON.stringify({...plan, name: 'MC38 full study'}));
+    expect(studyOf(study, null).name, 'MC38 full study');
+    study.setTag(PLAN_TAG, JSON.stringify({...plan, name: ''}));
+    expect(studyOf(study, null).name, study.name);
+  });
+
+  /** A studies folder in memory: name -> the ID saved there (null: a file with none). */
+  const folder = (files: {[name: string]: string | null}) => ({
+    owner: async (name: string) => name in files ? files[name] : undefined,
+    save: async (names: string[], id: string) => {
+      const name = await freeName(names, id, async (n) => n in files ? files[n] : undefined);
+      files[name] = id;
+      return name;
+    },
+  });
+
+  test('a study name taken by another study is never replaced: the table\'s name, then numbered', async () => {
+    const {owner} = folder({'P': 'A', 'T': 'A', 'T (2)': 'C', 'X': null});
+    expect(await freeName(['P', 'T'], 'B', owner), 'T (3)', 'plan and table names taken: numbered past the copies');
+    expect(await freeName(['P', 'U'], 'B', owner), 'U', 'the plan\'s taken: the table\'s');
+    expect(await freeName(['X'], 'B', owner), 'X', 'a file with no ID is no one\'s: replaced');
+    expect(await freeName(['P'], 'A', owner), 'P', 'its own file: replaced');
+    expect(await freeName(['', ' '], 'B', owner), 'Study', 'no name at all');
+  });
+
+  test('two studies followed from one plan are saved apart, each again in its own file', async () => {
+    const f = folder({});
+    expect(await f.save(['MC38 plan', 'mc38'], 'A'), 'MC38 plan');
+    expect(await f.save(['MC38 plan', 'mc38'], 'B'), 'mc38');
+    expect(await f.save(['MC38 plan', 'mc38'], 'C'), 'mc38 (2)');
+    expect([await f.save(['MC38 plan', 'mc38'], 'B'), await f.save(['MC38 plan', 'mc38'], 'C')].join('|'),
+      'mc38|mc38 (2)', 'saved again: the same file, not a new copy');
+  });
+
+  test('a study saved under its table\'s name opens as before and is saved again in that file', async () => {
+    const study = await exampleStudy();
+    const plan = JSON.parse(study.getTag(PLAN_TAG)!);
+    study.setTag(PLAN_TAG, JSON.stringify({...plan, name: 'MC38 full study'}));
+    setMetaOn(study, {...emptyMeta(), id: 'PMX-2026-001'});
+    // as an earlier PMX Studio saved it: by its table's name
+    const old = parseStudy(JSON.stringify({...studyOf(study, null), name: 'mc38-day6'}));
+    const back = tableOf(old);
+    expect(back.name, 'mc38-day6');
+    expect(back.rowCount, study.rowCount);
+    const {owner} = folder({'mc38-day6': 'PMX-2026-001'});
+    expect(await freeName([studyOf(back, null).name, back.name], 'PMX-2026-001', owner), 'mc38-day6',
+      'not a second file under the plan\'s name');
+  });
+
   test('a blinded study names no arm or compound outside itself until revealed', async () => {
     const study = await exampleStudy();
     const plan = parsePlan(study.getTag(PLAN_TAG)!);

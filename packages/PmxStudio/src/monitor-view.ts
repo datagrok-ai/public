@@ -724,7 +724,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     // through setMeta: the header shows the ID the study has just been given
     setMeta(withId(metaOf(df) ?? emptyMeta()));
     void Promise.resolve().then(() => saveStudy(studyOf(df, call.getParamValue('humane') ?? null,
-      call.getParamValue('weightLimit') ?? null))).then((p) => grok.shell.info(`Study saved: ${shownPath(p)}`),
+      call.getParamValue('weightLimit') ?? null), df.name)).then((p) => grok.shell.info(`Study saved: ${shownPath(p)}`),
       failed('The study could not be saved'));
   });
   saveButton.title = 'Save the plan, the measurements and the log to your files';
