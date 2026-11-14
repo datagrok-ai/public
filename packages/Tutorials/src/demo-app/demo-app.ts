@@ -36,6 +36,7 @@ export class DemoView extends DG.ViewBase {
   currentView: DG.ViewBase | null = null;
   private focusSub: { unsubscribe(): void } | null = null;
   private _focusGuardCleanup: (() => void) | null = null;
+  private _selectionQueue: Promise<void> = Promise.resolve();
   DEMO_APP_PATH: string = 'apps/Tutorials/Demo';
 
   private _addedProjectIds = new Set<string>();
@@ -189,7 +190,18 @@ export class DemoView extends DG.ViewBase {
     return DG.Func.find({meta: {'demoPath': demoPath}})[0];
   }
 
-  public async startDemoFunc(func: DemoEntryFunc, viewPath: string): Promise<void> {
+  /** Runs demo and category selections one at a time, so each one owns exactly the views it opens. */
+  private _enqueueSelection(action: () => void | Promise<void>): Promise<void> {
+    const next = this._selectionQueue.then(action);
+    this._selectionQueue = next.catch(() => {});
+    return next;
+  }
+
+  public startDemoFunc(func: DemoEntryFunc, viewPath: string): Promise<void> {
+    return this._enqueueSelection(() => this._runDemoFunc(func, viewPath));
+  }
+
+  private async _runDemoFunc(func: DemoEntryFunc, viewPath: string): Promise<void> {
     const splitViewPath = viewPath.split('|');
     const path = splitViewPath.map((s) => s.trim()).join('/');
     const dockNodes = Array.from(grok.shell.dockManager.rootNode.children)
@@ -248,7 +260,6 @@ export class DemoView extends DG.ViewBase {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
       const prevAutoShowToolbox = grok.shell.windows.autoShowToolbox;
       grok.shell.windows.autoShowToolbox = false;
-      const viewBeforeApply = grok.shell.v;
       try {
         await func.apply();
         this._closePrevDemoViews();
@@ -263,7 +274,7 @@ export class DemoView extends DG.ViewBase {
       }
       this.tree.rootNode.root.focus();
       this._guardTreeFocus();
-      if (grok.shell.v !== viewBeforeApply) {
+      if (grok.shell.v && !viewsBefore.has(grok.shell.v as DG.View)) {
         grok.shell.v.name = splitViewPath[splitViewPath.length - 1].trim();
         grok.shell.v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
         this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
@@ -640,7 +651,7 @@ export class DemoView extends DG.ViewBase {
           this.tree.rootNode.root.focus();
           this._guardTreeFocus();
         });
-        this.nodeView(value.text, value.value.path);
+        await this._enqueueSelection(() => this.nodeView(value.text, value.value.path));
       }
       this.close();
 
