@@ -97,11 +97,15 @@ export function menuItem(page: Page, label: string): Locator {
   return menuItems(page, label).first();
 }
 
-/** What the open menus show, by item: its label, or the caption of an element item (a property
- * editor the menu embeds — the PC plot's column picker under "Columns" — carries it as `data-source`). */
+/** What the open menus show, by item in the order on screen (a menu may order its items by CSS): its
+ * label, or the caption of an element item (a property editor the menu embeds — the PC plot's column
+ * picker under "Columns" — carries it as `data-source`). */
 async function visibleMenuLabels(page: Page, within?: Locator): Promise<string> {
   const items = (within ? within.locator(CHILDREN) : page.locator(POPUP)).locator(ITEM).filter({visible: true});
-  const labels = await items.evaluateAll((els, own) => els.map((e) => e.querySelector(own)?.textContent ?? e.getAttribute('data-source') ?? ''), OWN_LABEL);
+  const labels = await items.evaluateAll((els, own) => els
+    .map((e) => ({box: e.getBoundingClientRect(), label: e.querySelector(own)?.textContent ?? e.getAttribute('data-source') ?? ''}))
+    .sort((a, b) => a.box.top - b.box.top || a.box.left - b.box.left)
+    .map((e) => e.label), OWN_LABEL);
   return labels.map((t) => t.trim()).filter(Boolean).join(' | ');
 }
 

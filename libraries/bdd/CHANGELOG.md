@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [#3481](https://github.com/datagrok-ai/public/issues/3481): Viewers: Added steps for the filter panel's presets — presets kept for a feature, a preset row's author and its share/delete icons, clicking an icon, scrolling the Save or Apply list to its end, typing into a menu's search box, and one menu item listed above another; `forgetSavedState` also deletes the server presets it names
 * [core#239](https://github.com/datagrok-ai/core/issues/239): Platform: Added steps for view arrangements — dock a view by dragging its tab onto a side of another view, float it, resize a split to a share, check where a view is docked, its share of a split and where it floats (as window shares); Save project dialog rows of views without a table (included, excluded, "+"); opening a project without waiting for a table; a single click on a My stuff bucket item (a Browse preview)
 * Platform: Fixed opening the Save project dialog from the ribbon when side-by-side views each show SAVE, and reading the dock-wheel drop target after a drop
 * Vocabulary: Added `the {string} package settings are put back at feature end` (every group's settings of a package, written back through `Package.setSettings`) and the `context panel splitter` element

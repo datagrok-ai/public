@@ -56,11 +56,11 @@ export class DomainTable extends Entity {
 }
 
 
-/** A saved filter preset of a domain table — a small shareable entity carrying the
- * filter panel's state maps (entity-filters §7). Managed through
- * `grok.dapi.domains.table(...).filters`; wrapped here so preset entities work with
- * the standard entity machinery (sharing, favorites, {@link Dapi.getEntities}). */
-export class DomainSavedFilter extends Entity {
+/** A saved filter preset — a small shareable entity carrying the filter panel's state maps;
+ * a domain table's presets are managed through `grok.dapi.domains.table(...).filters`. Wrapped
+ * here so preset entities work with the standard entity machinery (sharing, favorites,
+ * {@link Dapi.getEntities}). */
+export class SavedFilter extends Entity {
   constructor(dart: any) {
     super(dart);
   }

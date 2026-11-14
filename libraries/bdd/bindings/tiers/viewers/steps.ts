@@ -2,7 +2,7 @@ import {Page} from '@playwright/test';
 import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Given, Then, When} from '../../../src/registry.js';
 import type {ElementRef} from '../../../src/runtime/args.js';
-import {keysOf, withKeys} from '../../../src/runtime/gestures.js';
+import {keysOf, typeVerified, withKeys} from '../../../src/runtime/gestures.js';
 import {atFeatureEnd, stacksLogged, takeErrors} from '../../../src/runtime/harness.js';
 import {escapeRegExp} from '../../../src/runtime/locate.js';
 import {RUN_SUFFIX, deleteLayoutsAtEnd} from '../../../src/runtime/server.js';
@@ -134,6 +134,23 @@ export const menuLists = Then('the open menu should list {string}', async (page:
   const item = parts.pop();
   await expect.poll(() => v.menuLabels(page, parts.join(' > ')), {message: `the items under "${parts.join(' > ') || 'the menu'}"`}).toContain(item);
 }, {tier: 'ui', description: `the last segment of ${PATH} is among the items, the ones before it are the groups opened to reach them — the menu must already be open`});
+
+export const menuListsAbove = Then('the open menu should list {string} above {string}', async (page: Page, path: string, other: string) => {
+  const parts = path.split(/\s*[>|]\s*/).filter((s) => s.length > 0);
+  const item = parts.pop()!;
+  await expect.poll(async () => {
+    const labels = await v.menuLabels(page, parts.join(' > '));
+    const [a, b] = [labels.indexOf(item), labels.indexOf(other)];
+    return a < 0 || b < 0 ? `shows ${labels.join(' | ')}` : a < b ? 'above' : 'below';
+  }, {message: `"${item}" against "${other}" under "${parts.join(' > ') || 'the menu'}"`}).toBe('above');
+}, {tier: 'ui', description: `the last segment of ${PATH} shows higher on screen than the other item of the same group — the menu must already be open`});
+
+export const typeIntoMenuSearch = When('user types {string} into the search box of {string} in the open menu', async (page: Page, text: string, path: string) => {
+  await v.menuLabels(page, path);
+  const box = page.locator('.d4-menu-popup input.d4-search-input').filter({visible: true}).last();
+  await box.click();
+  await typeVerified(box, text, 'the search box of the open menu');
+}, {tier: 'ui', description: `the box a group (${PATH}, opened first) shows above more than 20 items; the menu narrows its items as you type`});
 
 export const menuListsEnabled = Then('the open menu should list {string} as enabled', async (page: Page, path: string) => {
   await expect.poll(() => v.menuItemState(page, path), {message: `the item "${path}" of the open menu`}).toBe('enabled');
