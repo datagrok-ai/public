@@ -25,7 +25,7 @@ test.describe("The Space row of the Save project dialog puts a project into a sp
   const session = feature(test, "features/spaces/save-to-space.feature", import.meta.url);
   test("The Space row of the Save project dialog puts a project into a space", {tag: ["@journey", "@realizes:file.menu.save.tables-as-project", "@realizes:views.space"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 6, page);
+    const run = journey(test, 7, page);
     await session.step(7, "Given user is logged in", () => loggedIn(page));
     await session.step(8, "And simple mode is off", () => simpleModeOff(page));
     await session.step(9, "And the browse panel is closed", () => browsePanelClosed(page));
@@ -66,45 +66,56 @@ test.describe("The Space row of the Save project dialog puts a project into a sp
       await session.step(45, "Then the project named \"BDDSpaceProj{time}\" should be in the space \"BDDSaveSpace{time}\" on the server", () => projectInSpace(page, session.text("BDDSpaceProj{time}"), session.text("BDDSaveSpace{time}")));
       await session.step(46, "And the project named \"BDDSpaceProj{time}\" should be linked from the space \"BDDSaveLink{time}\" on the server", () => projectLinkedFromSpace(page, session.text("BDDSpaceProj{time}"), session.text("BDDSaveLink{time}")));
     });
-    await run.scenario("Re-saved with Move, the project goes to the other space", async () => {
+    await run.scenario("Moved into the space that links it, the project makes the link its home", async () => {
       await session.step(49, "When user opens the Save project dialog from the ribbon", () => openSaveDialog(page));
       await session.step(50, "And user clicks on space input in \"Save project\" dialog", () => clickOn(page, el("space input in \"Save project\" dialog")));
-      await session.step(51, "And user clicks on \"BDDSaveMove{time}\" tree node", () => clickOn(page, el(session.text("\"BDDSaveMove{time}\" tree node"))));
-      await session.step(52, "Then \"Save project\" dialog should contain text \"Moves from \\\"BDDSaveSpace{time}\\\" to \\\"BDDSaveMove{time}\\\".\"", () => shouldContainText(page, el("\"Save project\" dialog"), session.text("Moves from \"BDDSaveSpace{time}\" to \"BDDSaveMove{time}\".")));
-      await session.step(53, "When user clicks on OK in the Save project dialog and the project uploads", () => saveFromDialog(page));
-      await session.step(54, "Then the project named \"BDDSpaceProj{time}\" should be in the space \"BDDSaveMove{time}\" on the server", () => projectInSpace(page, session.text("BDDSpaceProj{time}"), session.text("BDDSaveMove{time}")));
-      await session.step(55, "And the project named \"BDDSpaceProj{time}\" should not be in the space \"BDDSaveSpace{time}\" on the server", () => projectNotInSpace(page, session.text("BDDSpaceProj{time}"), session.text("BDDSaveSpace{time}")));
+      await session.step(51, "And user clicks on \"BDDSaveLink{time}\" tree node", () => clickOn(page, el(session.text("\"BDDSaveLink{time}\" tree node"))));
+      await session.step(52, "Then \"Save project\" dialog should contain text \"Moves from \\\"BDDSaveSpace{time}\\\" to \\\"BDDSaveLink{time}\\\".\"", () => shouldContainText(page, el("\"Save project\" dialog"), session.text("Moves from \"BDDSaveSpace{time}\" to \"BDDSaveLink{time}\".")));
+      await session.step(53, "And \"Save project\" dialog should not contain text \"already has a project named\"", () => shouldNotContainText(page, el("\"Save project\" dialog"), "already has a project named"));
+      await session.step(54, "And OK button in \"Save project\" dialog should be enabled", () => shouldBe(page, el("OK button in \"Save project\" dialog"), "enabled"));
+      await session.step(55, "When user clicks on OK in the Save project dialog and the project uploads", () => saveFromDialog(page));
+      await session.step(56, "Then the project named \"BDDSpaceProj{time}\" should be in the space \"BDDSaveLink{time}\" on the server", () => projectInSpace(page, session.text("BDDSpaceProj{time}"), session.text("BDDSaveLink{time}")));
+      await session.step(57, "And the project named \"BDDSpaceProj{time}\" should not be in the space \"BDDSaveSpace{time}\" on the server", () => projectNotInSpace(page, session.text("BDDSpaceProj{time}"), session.text("BDDSaveSpace{time}")));
     });
-    await run.scenario("A space that holds a project of the name holds OK off", async () => {
-      await session.step(58, "When user opens the Save project dialog from the ribbon", () => openSaveDialog(page));
-      await session.step(59, "And user selects \"Save a copy\" in radio input in \"Save project\" dialog", () => selectIn(page, "Save a copy", el("radio input in \"Save project\" dialog")));
-      await session.step(60, "And user enters \"BDDSpaceProj{time}\" into Name text input in \"Save project\" dialog", () => enterInto(page, session.text("BDDSpaceProj{time}"), el("Name text input in \"Save project\" dialog")));
+    await run.scenario("Re-saved with Move, the project goes to the other space", async () => {
+      await session.step(60, "When user opens the Save project dialog from the ribbon", () => openSaveDialog(page));
       await session.step(61, "And user clicks on space input in \"Save project\" dialog", () => clickOn(page, el("space input in \"Save project\" dialog")));
       await session.step(62, "And user clicks on \"BDDSaveMove{time}\" tree node", () => clickOn(page, el(session.text("\"BDDSaveMove{time}\" tree node"))));
-      await session.step(63, "Then \"Save project\" dialog should contain text \"\\\"BDDSaveMove{time}\\\" already has a project named \\\"BDDSpaceProj{time}\\\"\"", () => shouldContainText(page, el("\"Save project\" dialog"), session.text("\"BDDSaveMove{time}\" already has a project named \"BDDSpaceProj{time}\"")));
-      await session.step(64, "And OK button in \"Save project\" dialog should be disabled", () => shouldBe(page, el("OK button in \"Save project\" dialog"), "disabled"));
-      await session.step(65, "When user enters \"BDDSpaceProjCopy{time}\" into Name text input in \"Save project\" dialog", () => enterInto(page, session.text("BDDSpaceProjCopy{time}"), el("Name text input in \"Save project\" dialog")));
-      await session.step(66, "Then \"Save project\" dialog should not contain text \"already has a project named\"", () => shouldNotContainText(page, el("\"Save project\" dialog"), "already has a project named"));
-      await session.step(67, "And OK button in \"Save project\" dialog should be enabled", () => shouldBe(page, el("OK button in \"Save project\" dialog"), "enabled"));
-      await session.step(68, "When user clicks on CANCEL button in \"Save project\" dialog", () => clickOn(page, el("CANCEL button in \"Save project\" dialog")));
-      await session.step(69, "Then the \"Save project\" dialog should close", () => dialogCloses(page, "Save project"));
+      await session.step(63, "Then \"Save project\" dialog should contain text \"Moves from \\\"BDDSaveLink{time}\\\" to \\\"BDDSaveMove{time}\\\".\"", () => shouldContainText(page, el("\"Save project\" dialog"), session.text("Moves from \"BDDSaveLink{time}\" to \"BDDSaveMove{time}\".")));
+      await session.step(64, "When user clicks on OK in the Save project dialog and the project uploads", () => saveFromDialog(page));
+      await session.step(65, "Then the project named \"BDDSpaceProj{time}\" should be in the space \"BDDSaveMove{time}\" on the server", () => projectInSpace(page, session.text("BDDSpaceProj{time}"), session.text("BDDSaveMove{time}")));
+      await session.step(66, "And the project named \"BDDSpaceProj{time}\" should not be in the space \"BDDSaveLink{time}\" on the server", () => projectNotInSpace(page, session.text("BDDSpaceProj{time}"), session.text("BDDSaveLink{time}")));
+    });
+    await run.scenario("A space that holds a project of the name holds OK off", async () => {
+      await session.step(69, "When user opens the Save project dialog from the ribbon", () => openSaveDialog(page));
+      await session.step(70, "And user selects \"Save a copy\" in radio input in \"Save project\" dialog", () => selectIn(page, "Save a copy", el("radio input in \"Save project\" dialog")));
+      await session.step(71, "And user enters \"BDDSpaceProj{time}\" into Name text input in \"Save project\" dialog", () => enterInto(page, session.text("BDDSpaceProj{time}"), el("Name text input in \"Save project\" dialog")));
+      await session.step(72, "And user clicks on space input in \"Save project\" dialog", () => clickOn(page, el("space input in \"Save project\" dialog")));
+      await session.step(73, "And user clicks on \"BDDSaveMove{time}\" tree node", () => clickOn(page, el(session.text("\"BDDSaveMove{time}\" tree node"))));
+      await session.step(74, "Then \"Save project\" dialog should contain text \"\\\"BDDSaveMove{time}\\\" already has a project named \\\"BDDSpaceProj{time}\\\"\"", () => shouldContainText(page, el("\"Save project\" dialog"), session.text("\"BDDSaveMove{time}\" already has a project named \"BDDSpaceProj{time}\"")));
+      await session.step(75, "And OK button in \"Save project\" dialog should be disabled", () => shouldBe(page, el("OK button in \"Save project\" dialog"), "disabled"));
+      await session.step(76, "When user enters \"BDDSpaceProjCopy{time}\" into Name text input in \"Save project\" dialog", () => enterInto(page, session.text("BDDSpaceProjCopy{time}"), el("Name text input in \"Save project\" dialog")));
+      await session.step(77, "Then \"Save project\" dialog should not contain text \"already has a project named\"", () => shouldNotContainText(page, el("\"Save project\" dialog"), "already has a project named"));
+      await session.step(78, "And OK button in \"Save project\" dialog should be enabled", () => shouldBe(page, el("OK button in \"Save project\" dialog"), "enabled"));
+      await session.step(79, "When user clicks on CANCEL button in \"Save project\" dialog", () => clickOn(page, el("CANCEL button in \"Save project\" dialog")));
+      await session.step(80, "Then the \"Save project\" dialog should close", () => dialogCloses(page, "Save project"));
     });
     await run.scenario("Spaces made from the \"+\" buttons nest, and the project is saved into the inner one", async () => {
-      await session.step(72, "When user opens the Save project dialog from the ribbon", () => openSaveDialog(page));
-      await session.step(73, "And user selects \"Save a copy\" in radio input in \"Save project\" dialog", () => selectIn(page, "Save a copy", el("radio input in \"Save project\" dialog")));
-      await session.step(74, "And user enters \"BDDNestedProj{time}\" into Name text input in \"Save project\" dialog", () => enterInto(page, session.text("BDDNestedProj{time}"), el("Name text input in \"Save project\" dialog")));
-      await session.step(75, "And user clicks on space input in \"Save project\" dialog", () => clickOn(page, el("space input in \"Save project\" dialog")));
-      await session.step(76, "And user clicks on \"New top-level space\" button", () => clickOn(page, el("\"New top-level space\" button")));
-      await session.step(77, "And user types \"BDDSaveTop{time}\" into \"Rename New space\" text input", () => typeInto(page, session.text("BDDSaveTop{time}"), el("\"Rename New space\" text input")));
-      await session.step(78, "And user presses Enter", () => pressKey(page, "Enter"));
-      await session.step(79, "Then space input in \"Save project\" dialog should contain text \"BDDSaveTop{time}\"", () => shouldContainText(page, el("space input in \"Save project\" dialog"), session.text("BDDSaveTop{time}")));
-      await session.step(80, "When user clicks on \"New space inside BDDSaveTop{time}\" button", () => clickOn(page, el(session.text("\"New space inside BDDSaveTop{time}\" button"))));
-      await session.step(81, "And user types \"BDDSaveInner{time}\" into \"Rename New space\" text input", () => typeInto(page, session.text("BDDSaveInner{time}"), el("\"Rename New space\" text input")));
-      await session.step(82, "And user presses Enter", () => pressKey(page, "Enter"));
-      await session.step(83, "Then space input in \"Save project\" dialog should contain text \"BDDSaveTop{time} / BDDSaveInner{time}\"", () => shouldContainText(page, el("space input in \"Save project\" dialog"), session.text("BDDSaveTop{time} / BDDSaveInner{time}")));
-      await session.step(84, "When user clicks on space input in \"Save project\" dialog", () => clickOn(page, el("space input in \"Save project\" dialog")));
-      await session.step(85, "And user clicks on OK in the Save project dialog and the project uploads", () => saveFromDialog(page));
-      await session.step(86, "Then the project named \"BDDNestedProj{time}\" should be in the space \"BDDSaveInner{time}\" on the server", () => projectInSpace(page, session.text("BDDNestedProj{time}"), session.text("BDDSaveInner{time}")));
+      await session.step(83, "When user opens the Save project dialog from the ribbon", () => openSaveDialog(page));
+      await session.step(84, "And user selects \"Save a copy\" in radio input in \"Save project\" dialog", () => selectIn(page, "Save a copy", el("radio input in \"Save project\" dialog")));
+      await session.step(85, "And user enters \"BDDNestedProj{time}\" into Name text input in \"Save project\" dialog", () => enterInto(page, session.text("BDDNestedProj{time}"), el("Name text input in \"Save project\" dialog")));
+      await session.step(86, "And user clicks on space input in \"Save project\" dialog", () => clickOn(page, el("space input in \"Save project\" dialog")));
+      await session.step(87, "And user clicks on \"New top-level space\" button", () => clickOn(page, el("\"New top-level space\" button")));
+      await session.step(88, "And user types \"BDDSaveTop{time}\" into \"Rename New space\" text input", () => typeInto(page, session.text("BDDSaveTop{time}"), el("\"Rename New space\" text input")));
+      await session.step(89, "And user presses Enter", () => pressKey(page, "Enter"));
+      await session.step(90, "Then space input in \"Save project\" dialog should contain text \"BDDSaveTop{time}\"", () => shouldContainText(page, el("space input in \"Save project\" dialog"), session.text("BDDSaveTop{time}")));
+      await session.step(91, "When user clicks on \"New space inside BDDSaveTop{time}\" button", () => clickOn(page, el(session.text("\"New space inside BDDSaveTop{time}\" button"))));
+      await session.step(92, "And user types \"BDDSaveInner{time}\" into \"Rename New space\" text input", () => typeInto(page, session.text("BDDSaveInner{time}"), el("\"Rename New space\" text input")));
+      await session.step(93, "And user presses Enter", () => pressKey(page, "Enter"));
+      await session.step(94, "Then space input in \"Save project\" dialog should contain text \"BDDSaveTop{time} / BDDSaveInner{time}\"", () => shouldContainText(page, el("space input in \"Save project\" dialog"), session.text("BDDSaveTop{time} / BDDSaveInner{time}")));
+      await session.step(95, "When user clicks on space input in \"Save project\" dialog", () => clickOn(page, el("space input in \"Save project\" dialog")));
+      await session.step(96, "And user clicks on OK in the Save project dialog and the project uploads", () => saveFromDialog(page));
+      await session.step(97, "Then the project named \"BDDNestedProj{time}\" should be in the space \"BDDSaveInner{time}\" on the server", () => projectInSpace(page, session.text("BDDNestedProj{time}"), session.text("BDDSaveInner{time}")));
     });
     run.finish();
   });

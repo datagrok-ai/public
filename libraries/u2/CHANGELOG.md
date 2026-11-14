@@ -3,6 +3,7 @@
 ## v.next
 
 * TabStrip: Added `TabOptions.disabled`: a reason, or a signal of one, keeps a tab from opening and says why as its tooltip; a tab turned off while open hands over to the first tab that is on
+* [core#1507](https://github.com/datagrok-ai/core/issues/1507): Spaces: Fixed the Space row refusing to move a project into a space that links it: `spaceHasName()` takes the project that does not count
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Tree: Added `VirtualTree.rename(id)`, the inline rename F2 opens, for a node added a moment ago too; the rename box is named `Rename <label>` for screen readers
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Added `spaceSaveRow()` (u2/dg): the Space row of the Save project dialog - where the project goes, Move or Link for a saved one, and a name the space already holds refused
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Added `SpaceInput` (u2/dg): the space to save into, with a search, the spaces saved to last, read-only spaces greyed with the reason, a "+" on the heading for a top-level space and on each row for a space inside it, created as soon as it is named inline, and × to clear; `saveToSpace()`, which refuses a name the space holds as the platform's move does; and `SpaceBrowser` / `openFromSpace()`, which list what "All spaces" or a space and its subspaces hold and open the pick with its default action
