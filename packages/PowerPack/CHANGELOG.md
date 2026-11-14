@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1352](https://github.com/datagrok-ai/core/issues/1352): Add New Column: Fixed a bigint column being rejected by functions that take a number, as `${b} * 2` and `Abs(${b})`
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Fixed the Space row refusing to move a project into a space that links it
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Added `spaceSaveRow` (`meta.role: spaceSaveRow`), which provides u2's Space row to the Save project dialog through `ui.spaceSaveRow()`
 * [core#637](https://github.com/datagrok-ai/core/issues/637): Formula Lines: Removed the Opacity sliders - lines and bands take one RGBA color, regions an RGBA fill, outline and title color; an opacity saved earlier is folded into the color
