@@ -3,6 +3,7 @@ import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Given, Then, When} from '../../../src/registry.js';
 import {el} from '../../../src/runtime/args.js';
 import {atFeatureEnd} from '../../../src/runtime/harness.js';
+import {serverRequests} from '../../../src/runtime/server.js';
 import {exactText} from '../../../src/runtime/locate.js';
 import * as g from '../../../src/runtime/gestures.js';
 import * as v from '../../../src/runtime/viewers.js';
@@ -73,19 +74,21 @@ export const clearCardSearch = When('user clears the search of the {string} filt
    feature would find it: the user's own presets of that exact name are deleted by their ids. States
    kept in the browser before presets were entities ("filter-states") are dropped too, or the panel
    would move them to the server. */
-const forgetPresets = (page: Page, names: string[]): Promise<void> => page.evaluate(async (all) => {
-  const grok = (window as any).grok;
-  const local = JSON.parse(localStorage.getItem('filter-states') ?? '{}');
-  for (const n of all)
-    delete local[n];
-  localStorage.setItem('filter-states', JSON.stringify(local));
-  const headers = {Authorization: localStorage.getItem('auth') ?? String(grok.dapi.token ?? '')};
-  for (const n of all) {
-    const found: {[key: string]: any}[] = await (await fetch(`${grok.dapi.root}/entities?text=${encodeURIComponent(n)}`, {headers})).json();
-    for (const f of found.filter((e) => e['#type'] === 'SavedFilter' && e.friendlyName === n && e.author?.id === grok.shell.user.id))
-      await fetch(`${grok.dapi.root}/domains/filters/${f.id}`, {method: 'DELETE', headers});
+const forgetPresets = async (page: Page, names: string[]): Promise<void> => {
+  const me = await page.evaluate((all) => {
+    const local = JSON.parse(localStorage.getItem('filter-states') ?? '{}');
+    for (const n of all)
+      delete local[n];
+    localStorage.setItem('filter-states', JSON.stringify(local));
+    return (window as any).grok.shell.user.id as string;
+  }, names);
+  const api = await serverRequests(page);
+  for (const n of names) {
+    const found = await api.get<{[key: string]: any}[]>(`/entities?text=${encodeURIComponent(n)}`);
+    for (const f of found.filter((e) => e['#type'] === 'SavedFilter' && e.friendlyName === n && e.author?.id === me))
+      await api.remove(`/domains/filters/${f.id}`);
   }
-}, names);
+};
 
 export const forgetSavedState = Given('no saved filter state {string} is kept, now or when the feature ends', async (page: Page, name: string) => {
   await forgetPresets(page, [name]);
@@ -99,16 +102,10 @@ export const keepPresets = Given('{int} saved filter presets {string} on the tex
     const names = Array.from({length: count}, (_, i) => pattern.replace('#', String(i + 1)));
     await forgetPresets(page, names);
     atFeatureEnd(page, () => forgetPresets(page, names));
-    await page.evaluate(async ([all, c]) => {
-      const grok = (window as any).grok;
-      const headers = {Authorization: localStorage.getItem('auth') ?? String(grok.dapi.token ?? ''), 'content-type': 'application/json'};
-      for (const name of all) {
-        const body = {name, states: {[c]: {type: 'categorical', column: c, columnType: 'string'}}, columns: [`${c}:string`]};
-        const answer = await fetch(`${grok.dapi.root}/domains/filters`, {method: 'POST', headers, body: JSON.stringify(body)});
-        if (!answer.ok)
-          throw new Error(`saving the preset "${name}": ${answer.status} ${await answer.text()}`);
-      }
-    }, [names, column] as [string[], string]);
+    const api = await serverRequests(page);
+    for (const name of names)
+      await api.post('/domains/filters', {name, states: {[column]: {type: 'categorical', column, columnType: 'string'}},
+        columns: [`${column}:string`]});
   }, {tier: 'api', description: 'saved one after another, so the last is the latest; they are deleted by name now and when the feature ends'});
 
 /* A preset's row under Save or Apply (opened first by the steps that act on it): its name, "who, when" beside it, and while hovered its share and
@@ -118,7 +115,8 @@ const presetRow = (page: Page, name: string): Locator => page.locator('.d4-menu-
 const ICONS: {[name: string]: string} = {share: 'fa-share-alt', delete: 'fa-trash-alt'};
 
 export const presetBy = Then('the filter preset {string} in the open menu should be by {string}', async (page: Page, name: string, who: string) => {
-  await expect.poll(async () => (await presetRow(page, name).locator(':scope > .d4-menu-item-shortcut').textContent().catch(() => null))?.split(',')[0],
+  await v.menuLabels(page, 'Save or Apply');
+  await expect.poll(async () => (await presetRow(page, name).locator(':scope > .d4-menu-item-shortcut').textContent().catch(() => null))?.split(',')[0].trim(),
     {message: `who saved the "${name}" preset, beside its name`}).toBe(who);
 }, {description: 'the author beside its name ("me" for your own), before when it was last saved'});
 
@@ -126,6 +124,8 @@ export const presetOffers = Then('the filter preset {string} in the open menu sh
   await v.menuLabels(page, 'Save or Apply');
   const row = presetRow(page, name);
   await row.hover();
+  // the icons show only on the hovered row: without the hover, "nothing" would hold by itself
+  await expect(row, `the "${name}" preset row is not hovered`).toHaveClass(/d4-menu-item-hover/);
   const wanted = list === 'nothing' ? [] : list.split(/\s*(?:,|and)\s*/);
   await expect.poll(() => row.locator('.d4-filter-preset-actions .grok-icon').filter({visible: true})
     .evaluateAll((icons, all) => Object.keys(all).filter((k) => icons.some((i) => i.classList.contains(all[k]))), ICONS),
