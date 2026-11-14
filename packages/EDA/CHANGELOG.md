@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1407](https://github.com/datagrok-ai/core/issues/1407): Control comparisons, ANOVA, t-test: Fixed the method radio missing its property type
 * [public#4473](https://github.com/datagrok-ai/public/issues/4473): MCL: Fixed Markov clustering on number columns only never finishing (the dialog passed the clustering no column); added the package test 'DBSCAN'
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Pareto Front: Fixed a 1 s check that ran for the rest of the session when the table was not applicable
 * Tests: `models/share-model` claims the second account's side: it finds the shared model under Shared with me and applies it (back in the serial lane, since it signs in as the second account)
