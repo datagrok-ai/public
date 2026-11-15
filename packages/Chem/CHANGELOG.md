@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Rendering: A molecule whose unspecified stereo MolDraw2D cannot mark (the wavy bond lands on a bond too short to draw one, "too few segments": the phosphates of SequenceTranslator's oligonucleotide structures, a molecule of mol1K in the Chemical Space demo) is drawn without the marks, as before Mark unspecified stereo, instead of crossed out with "Molecule failed to render" logged, in both engines (Crux ports the throw); the SVG export no longer throws for it
 * Settings: Grouped under Chemical engine, Rendering and Enumeration; added the Rendering settings Highlight color (the substructure filter's and other highlights without a color of their own), Mark unspecified stereo (wavy and crossed bonds for unspecified stereo, on by default) and Simplified stereo label, each overridden per molecule column in Chemistry | Rendering
 * Flatten Molecules: Keeps the E/Z of double bonds by default; the new Flatten E/Z option flattens them too. Isotopes are kept either way (`[2H]` used to become `[H]`)
 * [#3924](https://github.com/datagrok-ai/public/issues/3924): Added `Molecular Property`, a single-property calculator that lets viewers order molecule categories by MW, LogP, PSA and other chemical properties

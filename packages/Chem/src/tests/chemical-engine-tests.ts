@@ -61,7 +61,8 @@ interface RendererInternals {
   canvasReused: OffscreenCanvas;
   rendersCache: unknown;
   renderUncached(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, molString: string): void;
-  _molToSvg(molString: string, w: number, h: number): string | null;
+  _molToSvg(molString: string, w: number, h: number, scaffolds?: {molecule: string}[],
+    alignByFirstSubstructure?: boolean, engine?: ChemicalEngine, renderOpts?: {[key: string]: any}): string | null;
 }
 
 function newRenderer(): RendererInternals {
@@ -473,6 +474,23 @@ category('chemical engine', () => {
     }), {noFallback: ['rendering', 'drawing']});
     for (const [engine, {inBlue, inDefault}] of Object.entries(highlighted))
       expect(inBlue > 100 && inDefault === 0, true, `${engine}: ${inBlue} blue pixels, ${inDefault} in the default color`);
+  });
+
+  test('a molecule whose unspecified stereo cannot be marked is drawn without the marks, in both engines', async () => {
+    // mol1K.csv's row index 381 (the Chemical Space demo): the wavy bond its unspecified phosphorus gets lands on a
+    // P-O bond too short for one, and MolDraw2D throws "too few segments" (RDKit's, and Crux's port): the canvas was
+    // crossed out and the SVG export threw, as for SequenceTranslator's oligonucleotide structures
+    const molecule: string = (await readDataframe('mol1K.csv')).get('molecule', 381);
+    const draw = (unspecifiedStereoIsUnknown: boolean) => inked(newRenderer()._fetchRender(200, 100, molecule, [],
+      false, false, false, {}, undefined, {unspecifiedStereoIsUnknown}));
+    const ink = await inBothEngines(async () => ({on: draw(true), off: draw(false)}),
+      {noFallback: ['rendering', 'drawing']});
+    for (const [engine, {on, off}] of Object.entries(ink))
+      expect(on, off, `${engine}: ${on} px with the stereo marked, ${off} px without (an error cross: a few hundred)`);
+    const svg = await inBothEngines(async () => newRenderer()._molToSvg(molecule, 200, 100, [], false, undefined,
+      {unspecifiedStereoIsUnknown: true}) ?? '', {noFallback: ['drawing']});
+    for (const [engine, s] of Object.entries(svg))
+      expect(s.includes('</svg>'), true, `${engine}: an SVG`);
   });
 
   test('canvasMol, drawMolecule and the SVG export draw with Crux', async () => {
