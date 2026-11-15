@@ -470,6 +470,16 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   with no place (drawn unmarked, at the element's centre). `guide.ts` logs trusted pointer events
   in the page (capture listeners on every document) and drains them into the stop of the step they
   belong to; `page.mouse` is wrapped only to picture a drag and a wheel turn.
+- A guide's stop (`guide.hop`) is pictured as the pointer sets off for it, before the gesture; the next
+  stop's picture is what the pointer's arrival led to, and the renderer cuts to it on arrival. Played as
+  taken, every menu item lit and opened one stop late and the clicked one never lit (the reel of
+  2026-11-09). A menu's leaf is a stop twice (`hopLeaf`: once the pointer is on it); a run of moves is
+  logged as its last point, so a corner the pointer has to go round is kept with `guide.waypoint`; a
+  native select's list is drawn by the page and pressed on film only (`pressShown`), headless Chromium
+  painting no open popup into its pictures. A locator's click on a row as wide as its panel (`CAPTIONED`:
+  an accordion pane's header, a tree node, a menu item) is aimed at its caption while filming — at its
+  middle it landed 250 px right of "Explore" — and a dialog's close starts with an unfilmed move onto its
+  title (`moveUnfilmed`), so Bio's magnifier lens is not left frozen on film.
 - Package tools that decorate a view on `onViewAdded` (DevTools' Signature Editor icon) attach in
   the package's autostart; a view opened before it runs used to miss them (fixed in DevTools
   2026-09-24 by decorating the open views too).

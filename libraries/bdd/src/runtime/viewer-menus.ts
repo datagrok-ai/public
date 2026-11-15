@@ -113,15 +113,20 @@ async function visibleMenuLabels(page: Page, within?: Locator): Promise<string> 
  * already resting on the item (a hover before the menu was reopened) would move nowhere. When
  * several items share the label, each is tried until [wanted] shows up among its children — so
  * "HEIGHT > Chart type" is the series' group, not the chart-wide "Chart Type" beside it. Returns
- * the group item, the scope of the next segment. */
+ * the group item, the scope of the next segment. A guide films two stops on the group: as the
+ * pointer sets off for it, and lit with its submenu open — the picture its arrival cuts to. */
 async function openGroup(page: Page, label: string, wanted: string | undefined, within?: Locator): Promise<Locator> {
   const candidates = menuItems(page, label, within);
   await candidates.filter({visible: true}).first().waitFor({state: 'visible', timeout: 5000});
   const count = await candidates.count();
-  // a group already open, or one the menu renders inline, needs no hover
+  // a group already open, or one the menu renders inline, needs no hover; a guide's pointer goes onto it all the
+  // same, so the video walks every group of the path
   for (let i = 0; wanted !== undefined && i < count; i++) {
     if (await menuShows(page, wanted, candidates.nth(i))) {
-      await guide.hop(page, candidates.nth(i));
+      await guide.hop(page, candidates.nth(i), 'menu');
+      const box = guide.filming(page) ? await candidates.nth(i).boundingBox() : null;
+      if (box)
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       return candidates.nth(i);
     }
   }
@@ -132,7 +137,7 @@ async function openGroup(page: Page, label: string, wanted: string | undefined, 
     const box = await item.boundingBox();
     if (!box)
       continue;
-    await guide.hop(page, item);
+    await guide.hop(page, item, 'menu');
     const cy = box.y + box.height / 2;
     await page.mouse.move(Math.max(0, box.x - 8), cy);
     await page.mouse.move(box.x + box.width * 0.75, cy);
@@ -143,11 +148,14 @@ async function openGroup(page: Page, label: string, wanted: string | undefined, 
       return item;
     const opened = await expect.poll(() => menuShows(page, wanted, item), {timeout: pollMs(2000)}).toBe(true).then(() => true, () => false);
     if (opened) {
+      await guide.hop(page, item, 'menu');
       // step into the flyout along the group's own row: the menu hides a submenu when the pointer
-      // leaves the group item at a steep angle, which would take the item away mid-click
+      // leaves the group item at a steep angle, which would take the item away mid-click (a guide
+      // keeps the corner, so the video goes the same way)
       const target = await menuLabelsMatching(page, wanted, item).filter({visible: true}).first().boundingBox();
       if (target != null) {
         await page.mouse.move(target.x + 4, cy);
+        await guide.waypoint(page);
         await page.mouse.move(target.x + 4, target.y + target.height / 2);
       }
       return item;
@@ -188,7 +196,8 @@ export async function pickMenuPath(page: Page, path: string): Promise<void> {
     });
     const item = label.locator(MENU_ITEM);
     const leaf = await item.count() > 0 ? item : label;
-    await guide.hop(page, leaf);
+    // a guide shows the leaf lit under the pointer before the press
+    await guide.hopLeaf(page, leaf);
     await leaf.click();
   }
   await page.evaluate(() => delete (window as any).__bddMenuReached).catch(() => undefined);

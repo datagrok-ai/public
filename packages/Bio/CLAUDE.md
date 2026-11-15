@@ -443,7 +443,7 @@ Test entry point: `src/package-test.ts` — imports all test files, exports `tes
 | `seq-handler-get-helm-tests.ts` | HELM conversion from other notations |
 | `renderers-test.ts` | Cell renderer behavior |
 | `renderers-monomer-placer-tests.ts` | MonomerPlacer rendering engine |
-| `renderers-connections-tests.ts` | Category `renderers: connections`: connections drawn as lines (flat positions, lanes, rings, combs, fit by height, one line per chain), canonical symbols when drawn, the column tag over the package default, multiline chain breaks, stacked hit bounds, the bond tooltip, a font size reaching every grid, package defaults (`renderer-defaults.ts`) |
+| `renderers-connections-tests.ts` | Category `renderers: connections`: connections drawn as lines (flat positions, lanes, rings, combs, fit by height, one line per chain, chains bonded side by side as one line), canonical symbols when drawn, the column tag over the package default, multiline chain breaks, stacked hit bounds, the bond tooltip, a font size reaching every grid, package defaults (`renderer-defaults.ts`) |
 | `converters-test.ts` | Notation conversion |
 | `bio-tests.ts` | General bio functionality |
 | `helm-tests.ts` | HELM-specific operations |

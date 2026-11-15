@@ -187,6 +187,11 @@ export const waitSeconds = When('user waits {int} second(s)', (page: Page, secon
   {tier: 'ui', description: 'a plain pause, only where the platform gives nothing to wait on (a Properties pane of the previous object landing after a click on a new one); everything else waits for its outcome'});
 export const videoSays = When('the video says {string}', (page: Page, text: string) => guide.say(page, text),
   {tier: 'api', description: 'a line of text a filmed guide shows as its caption and a demo over the page, for as long as it takes to read; nothing in a test run'});
+export const videoSaysAt = When('the video says {string} at the {word}', (page: Page, text: string, where: string) => {
+  if (where !== 'top' && where !== 'bottom')
+    throw new Error(`a note goes at the top or at the bottom of the page, not at the "${where}"`);
+  guide.say(page, text, where);
+}, {tier: 'api', description: 'the same line pinned to the top or the bottom of a demo\'s page, where the renderer would place it clear of what the steps around it point at'});
 export const shouldContainText = Then('{element} should contain (the )text {string}', (page: Page, target: ElementRef, text: string) => expectText(page, target, text));
 export const shouldNotContainText = Then('{element} should not contain (the )text {string}', (page: Page, target: ElementRef, text: string) => expectText(page, target, text, {negate: true}));
 export const shouldHaveText = Then('{element} should have (the )text {string}', (page: Page, target: ElementRef, text: string) => expectText(page, target, text, {exact: true}));

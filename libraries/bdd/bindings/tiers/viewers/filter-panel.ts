@@ -206,7 +206,7 @@ const searchType = (page: Page, caption: string): Locator => card(page, caption)
 export const pickSearchType = When('user picks search type {string} in the {string} filter card', async (page: Page, type: string, caption: string) => {
   const select = searchType(page, caption);
   await select.waitFor({state: 'visible', timeout: 10000});
-  await select.selectOption({label: type});
+  await g.selectNative(page, select, type);
   await v.settleAll(page);
 }, {tier: 'ui', description: 'the choice under the card\'s sketch area ("Contains", "Not contains", "Exact", ...)'});
 

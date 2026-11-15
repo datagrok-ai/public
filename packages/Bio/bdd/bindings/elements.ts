@@ -1,7 +1,7 @@
 /* The datasets Bio's features open: the package's own test and sample files on the stand
    (`System:AppData/Bio/...`, published with the package). Platform names (toolbox, grid, ...)
    are reserved; a Bio view's own names go on a context here when a feature needs one. */
-import {dataset, element} from '@datagrok-libraries/bdd';
+import {dataset, element, kind} from '@datagrok-libraries/bdd';
 
 dataset('filter_FASTA', {path: 'System:AppData/Bio/tests/filter_FASTA.csv', aliases: ['filter-fasta'],
   description: 'one column "fasta" (peptides, fasta notation, 9 sequences + 4 empty cells, 14 rows)'});
@@ -15,6 +15,8 @@ dataset('FASTA_sample', {path: 'System:AppData/Bio/samples/FASTA.csv', aliases: 
   description: '64 UniProt peptides: Entry, Length, UniProtKB, Sequence (fasta), Activity, Cluster'});
 dataset('HELM_sample', {path: 'System:AppData/Bio/samples/HELM.csv', aliases: ['helm-sample'],
   description: '540 peptides: HELM (helm notation, multichar monomers), Activity'});
+dataset('FASTA_PT', {path: 'System:AppData/Bio/samples/FASTA_PT.csv', aliases: ['fasta-pt'],
+  description: '100 peptides of one family, 31 to 38 residues, unaligned: id, sequence (fasta); MTMFC near the start and EAM.K near the end at shifting offsets'});
 dataset('MSA_sample', {path: 'System:AppData/Bio/samples/MSA.csv', aliases: ['msa-sample'],
   description: '540 aligned peptides: MSA (separator "/", multichar monomers), Activity'});
 dataset('cyclized', {path: 'System:AppData/SequenceTranslator/samples/cyclized.csv',
@@ -34,3 +36,12 @@ dataset('SEPARATOR_PT', {path: 'System:AppData/Bio/samples/SEPARATOR_PT.csv', al
 
 element('monomer libraries link', {selector: '.d4-link-action[data-source="Bio:Bioinformatics | Manage Monomer Libraries"]',
   description: 'the "Manage monomer libraries" link of a Macromolecule column\'s Bioinformatics > Manage Monomer Libraries pane: the dialog, or the Manage Monomer Libraries view when one is open'});
+
+/* Chem's Chemical Properties dialog, opened on the molecules a Bio command made (the library demo, features/demos/19b):
+   its calculators listed on the left, a checkbox and a name each — Chem's own bdd names them the same way. */
+kind('calculator', {
+  selector: '.biochem-calc-nav-item',
+  match: ['text'],
+  editorSelector: 'input[type="checkbox"]',
+  description: 'a calculator row of Chem\'s Chemical Properties dialog, by its name ("Chemical Properties")',
+});
