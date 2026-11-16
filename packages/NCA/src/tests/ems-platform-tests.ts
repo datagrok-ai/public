@@ -200,25 +200,22 @@ category('NCA EMS: platform', () => {
       return lines.join(' | ');
     }, {timeout: TIMEOUT});
 
-  test('PR-18: BigInt through d42 — zeros survive; a nulled zero turns the other zeros missing (known gap)',
-    async () => {
-      const cells = (d: DG.DataFrame): string => [0, 1, 2, 3, 4].map((i) =>
+  test('PR-18: BigInt through d42 — zeros survive, also next to a nulled cell', async () => {
+    const cells = (d: DG.DataFrame): string => [0, 1, 2, 3, 4].map((i) =>
       d.col('Big')!.isNone(i) ? 'null' : d.col('Big')!.getString(i)).join(' ');
-      const make = (): DG.DataFrame => DG.DataFrame.fromColumns([DG.Column.fromBigInt64Array('Big',
-        BigInt64Array.from([BigInt(0), BigInt('9007199254740993'), BigInt(1), BigInt(-2), BigInt(0)]))]);
-      const plain = make();
-      expect(cells(DG.DataFrame.fromByteArray(plain.toByteArray())), cells(plain), 'BigInt zeros must survive d42');
-      // The shape the first AC-0.2 run failed on: a column holding 0 at row 0, then nulled there.
-      const gappy = make();
+    const make = (): DG.DataFrame => DG.DataFrame.fromColumns([DG.Column.fromBigInt64Array('Big',
+      BigInt64Array.from([BigInt(0), BigInt('9007199254740993'), BigInt(1), BigInt(-2), BigInt(0)]))]);
+    const plain = make();
+    expect(cells(DG.DataFrame.fromByteArray(plain.toByteArray())), cells(plain), 'BigInt zeros must survive d42');
+    // The shape the first AC-0.2 run failed on: a column holding 0 at row 0, then nulled there.
+    // Until the platform fix (measured fixed 2026-11-16) the zero at row 4 read back as missing;
+    // the snapshot writer still decodes its own bytes before upload (verify-on-write, BD-3).
+    const gappy = make();
     gappy.col('Big')!.set(0, null);
     const back = cells(DG.DataFrame.fromByteArray(gappy.toByteArray()));
-    // Known platform defect: the zero at row 4 reads back as missing. The snapshot writer refuses
-    // such a frame (verify-on-write), so no data is lost silently. When this assertion starts
-    // failing, the platform has fixed it.
-    expect(back !== cells(gappy), true,
-      'the d42 BigInt null/zero defect is fixed — close TODO EXT-DEP-D42-BIGINT-NULL');
+    expect(back, cells(gappy), 'a BigInt zero must survive d42 when another cell of the column is null');
     return `before: ${cells(gappy)} | after d42: ${back}`;
-    }, {timeout: TIMEOUT});
+  }, {timeout: TIMEOUT});
 
   test('AC-0.3: one query returns an analysis with its study, its pipeline run and access', async () => {
     const {sid, aid} = await seed('ac03');
