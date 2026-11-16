@@ -526,7 +526,7 @@ export class SensitivityAnalysisView {
       this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
       this.comparisonView.setRibbonPanels([[this.helpIcon, this.runIcon]]);
 
-      this.comparisonView.helpUrl = '/help/function-analysis.md#sensitivity-analysis';
+      this.comparisonView.helpUrl = '/help/compute/function-analysis#sensitivity-analysis';
       this.tableDockNode = this.comparisonView.dockManager.findNode(this.comparisonView.grid.root);
       const helpMD = ui.markdown(STARTING_HELP);
       helpMD.style.padding = '10px';

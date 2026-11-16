@@ -4,7 +4,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {BehaviorSubject, Subject} from 'rxjs';
+import {BehaviorSubject, ReplaySubject, Subject} from 'rxjs';
 import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
 import {take, filter, debounceTime} from 'rxjs/operators';
@@ -720,7 +720,8 @@ export class FittingView {
 
   private currentFuncCalls: DG.FuncCall[] = [];
   private isFittingAccepted = false;
-  public acceptedFitting$ = new Subject<DG.FuncCall | null>();
+  // replays, so a caller that subscribes after fromEmpty still hears a fit refused in the constructor
+  public acceptedFitting$ = new ReplaySubject<DG.FuncCall | null>(1);
 
   static async fromEmpty(
     func: DG.Func,
@@ -788,6 +789,7 @@ export class FittingView {
     if (!this.isOptimizationApplicable(func)) {
       grok.shell.warning('Fitting is not applicable: the function has no scalar outputs.');
       baseView.close();
+      this.acceptedFitting$.next(null);
       return;
     }
 

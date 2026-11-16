@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Analyses: Added `SensitivityAnalysisOfRun` and `FittingOfRun` (role `functionAnalysis`), which the platform's function view offers on functions whose `meta.features` turn on `sens-analysis` or `fitting`, as RFV does; fitting returns the accepted fit
 * Custom function view: The editor opens a run from the page link, as RFV does; a run that fails to load shows the error and the view keeps a new call
 * Model Hub: The context panel shows a Launch button, the model's details (type, package, location, status, required groups, versions) and a My runs pane with my last runs and Show all, which opens Browse runs for the model; the Dev pane has only the model's name to copy
 * Model Hub: Fixed a model's context menu having two Add To Favorites items
