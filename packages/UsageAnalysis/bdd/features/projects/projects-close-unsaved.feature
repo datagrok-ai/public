@@ -13,7 +13,9 @@ Feature: Closing a view that holds unsaved work
   saved project opened and closed untouched, for a view of a project whose other views stay open, for
   a table opened and closed straight away, or when "Warn on unsaved changes" is off — the dependency
   question of projects-close-dependents is asked regardless. When a view has unsaved work and other
-  tables depend on its table, the unsaved question comes first.
+  tables depend on its table, one dialog says both: SAVE or DON'T SAVE closes anyway. A tag counts when
+  a layout stores it (units, a tooltip, the column panel's tags) or it colors a column; the semantic
+  type, the author and service tags (starting with a dot) do not.
 
   Projects are saved through the API, named with the run's time and removed when a scenario starts
   and when the feature ends.
@@ -148,6 +150,20 @@ Feature: Closing a view that holds unsaved work
     When user clicks on DON'T SAVE button in "Unsaved changes" dialog
     Then no table should be left in the workspace
 
+  Scenario: Units count as unsaved work; the semantic type and a service tag do not
+    Given user opens cars dataset
+    When code sets the "quality" tag of column "model" of table "cars" to "Text"
+    And code sets the ".bdd-service" tag of column "model" of table "cars" to "1"
+    And user closes "cars" view tab
+    Then no table should be left in the workspace
+    And "Unsaved changes" dialog should be absent
+    Given user opens cars dataset
+    When code sets the "units" tag of column "price" of table "cars" to "USD"
+    And user closes "cars" view tab
+    Then "Unsaved changes" dialog should be visible
+    When user clicks on DON'T SAVE button in "Unsaved changes" dialog
+    Then no table should be left in the workspace
+
   Scenario: SAVE for a table never saved opens the Save project dialog
     Given user opens cars dataset
     And user adds a histogram viewer
@@ -199,19 +215,40 @@ Feature: Closing a view that holds unsaved work
     Then the "Unsaved changes" dialog should close
     And no DataQueryView view should be open
 
-  Scenario: Unsaved work is asked about before what depends on the table
+  Scenario: Unsaved work and what depends on the table are asked about in one dialog
     Given user opens cars dataset
     And user adds a histogram viewer
     And user opens cars dataset keeping the first 10 rows as "cars10"
     And user adds a calculated column "n" with formula 'RowCount("cars")'
     When user closes "cars" view tab
     Then "Unsaved changes" dialog should be visible
+    And "Unsaved changes" dialog should contain text "cars10"
     And "Close table" dialog should be absent
-    When user clicks on DON'T SAVE button in "Unsaved changes" dialog
-    Then "Close table" dialog should be visible
-    When user clicks on CLOSE ANYWAY button in "Close table" dialog
-    Then "cars" view tab should be absent
+    When user clicks on CANCEL button in "Unsaved changes" dialog
+    Then the "Unsaved changes" dialog should close
+    And "cars" view tab should be visible
+    When user closes "cars" view tab
+    And user clicks on DON'T SAVE button in "Unsaved changes" dialog
+    Then the "Unsaved changes" dialog should close
+    And "Close table" dialog should be absent
+    And "cars" view tab should be absent
     And table "cars10" should have missing values in "n" column
+
+  Scenario: Close others with several unsaved views asks once and offers no SAVE
+    Given user opens cars dataset
+    And user adds a histogram viewer
+    And user opens cars dataset keeping the first 10 rows as "cars10"
+    And user adds a histogram viewer
+    And user opens demog dataset
+    When user picks "Close others" from the context menu of the current view tab
+    Then "Unsaved changes" dialog should be visible
+    And "Unsaved changes" dialog should contain text "cars10"
+    And SAVE button in "Unsaved changes" dialog should be absent
+    When user clicks on DON'T SAVE button in "Unsaved changes" dialog
+    Then the "Unsaved changes" dialog should close
+    And "cars" view tab should be absent
+    And "cars10" view tab should be absent
+    And "demog" view tab should be visible
 
   Scenario: With "Warn on unsaved changes" off only the dependency question is asked
     Given the "Warn on unsaved changes" setting is off until the feature ends

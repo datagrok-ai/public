@@ -28,6 +28,10 @@ export const warnOff = Given('the "Warn on unsaved changes" setting is off until
     atFeatureEnd(page, () => page.evaluate(() => { grok.shell.settings.warnOnUnsavedChanges = true; }));
 }, {tier: 'api', description: 'the dependency question is asked regardless; a feature about it turns this one off'});
 
+export const setColumnTag = When('code sets the {string} tag of column {string} of table {string} to {string}', (page: Page, tag: string, column: string, table: string, value: string) =>
+  page.evaluate(([k, c, t, v]) => { grok.shell.table(t).col(c).setTag(k, v); }, [tag, column, table, value]),
+{tier: 'api', description: 'a column tag set the way a package or the column\'s context panel sets it; which tags count as the user\'s work is by the key'});
+
 export const closeFromViewSelector = When('user closes the {string} view from the view selector', async (page: Page, view: string) => {
   await page.locator('[name="view selector"]').filter({visible: true}).first().click();
   const close = page.locator(`.d4-list-item[name="${view}"] [aria-label="Close view"]`).filter({visible: true}).first();
