@@ -11,8 +11,8 @@ an EMS schema owned by Forge, and the UI on top.
 - **"Method" for users, "engine" in code.** Captions, messages and docs for users say method; code, the `engines/`
   folder, the `engine_*` columns and the `mlname` contract keep engine.
 - **The platform's entry points open Forge.** On a server with Forge, the core's `ML | Models` menu, **Browse >
-  Platform > Predictive models** and `grok.ml.applyModel` call Forge's functions by name and hide the earlier tool's
-  panes (see "Core entry points"). Forge registers no menu of its own; its prediction columns carry the platform's
+  Platform > Predictive models** and `grok.ml.applyModel` call Forge's functions by name; without Forge the platform
+  shows no predictive modeling tool (see "Core entry points"). Forge registers no menu of its own; its prediction columns carry the platform's
   `predictive.model` tag. Its storage stays its own (app, schema).
 - **Training data never leaves the browser without consent.** Only the `copy` storage mode, chosen in the Save
   dialog, uploads it; `none` keeps a fingerprint of the data and `reference` a link to its source.
@@ -2217,19 +2217,20 @@ subscription would leak; the pane is built again whenever the context panel show
 ## Core entry points
 
 The core detects Forge by its presence: when `Forge:applyModel` is registered in the user's browser, the platform's
-predictive modeling entry points call Forge's functions by name, and each falls back to the earlier tool when its
-function is missing:
+predictive modeling entry points call Forge's functions by name, and each is absent or does nothing when its function is
+missing (a restored `models` view shows a one-line note; `grok.ml.applyModel` reports the model as not found):
 
 | Function | Inputs | The core calls it from |
 |---|---|---|
 | `forgeTrain` | none (the current table) | `ML \| Models \| Train Model...` |
 | `forgeApply` | none (the current table) | `ML \| Models \| Apply Model...` |
-| `forgeApp` | none; output `view` | **Browse > Platform > Predictive models**, the URL `/models`, a restored view of the old catalog |
+| `forgeApp` | none; output `view` | **Browse > Platform > Predictive models**, the URL `/models`, a restored `models` view (without Forge: a one-line note) |
 | `applyModel` | `model`, `table`, `columnNamesMap`, `showProgress`, passed by name | `grok.ml.applyModel(name, table, map, showProgress)` for any name that is not a model of the earlier tool |
 
-With Forge installed the core also hides the earlier tool's table pane **Models**, its **Predicted By** row in a
-column's **Details**, its **MLFlow** node and its other panes; models of the earlier tool are shown without commands.
-Renaming one of these functions or its inputs silently brings the earlier tool back, or breaks `grok.ml.applyModel`;
+The core hides the earlier tool's table pane **Models**, its **Predicted By** row in a column's **Details**, its
+**MLFlow** node and its other panes whether or not Forge is installed; models of the earlier tool are shown without
+commands. `ML | Models` and the Browse node exist only with Forge (the commands register after the package functions
+load). Renaming one of these functions or its inputs silently removes the entry point, or breaks `grok.ml.applyModel`;
 `ui-tests.ts` ("the core's entry points exist without a menu of their own") pins them. Publishing or removing Forge
 takes effect in a session after a page reload.
 
@@ -2339,7 +2340,7 @@ a data change).
 
 The model's menu has no **Add to** (the built-in tool added a model to an open project): a model reaches a Space by
 the platform's drag (see Sharing). Forge's Browse node is **Apps > Forge**; with Forge installed, the core opens Forge's
-catalog from **Browse > Platform > Predictive models** too and hides its **MLFlow** node (see "Core entry points").
+catalog from **Browse > Platform > Predictive models** too; the core no longer has the **MLFlow** node (see "Core entry points").
 There is no catalog menu item (the built-in tool had none either). The Domains view of `model` can be filtered by
 **Tags** (the built-in catalog's tags filter); its **Author** filter has no counterpart.
 

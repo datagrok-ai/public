@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1518](https://github.com/datagrok-ai/core/issues/1518): Required the Forge plugin for predictive modeling with EDA's methods in the platform's UI; the earlier tool no longer works with this version (needs Datagrok <minimum platform version: TBD> or later)
 * GROK-20932: Added SVM's Max iterations (default 1000000), so a non-converging fit stops and still returns a model
 * GROK-20932: Added meta.mlprobabilities on every classifier's train function and the Class probabilities input of SVM (Platt scaling, set by Forge's Predict probability)
 * GROK-20932: Rewrote the XGBoost hyperparameter tooltips after the XGBoost parameter docs
