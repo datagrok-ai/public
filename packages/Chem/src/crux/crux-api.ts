@@ -33,6 +33,11 @@ export function isWasmTrap(e: unknown): e is Error {
     (e instanceof RangeError || e.name === 'InternalError') && /call stack|too much recursion/i.test(e.message));
 }
 
+/** How a worker's search of a collection lost to a renewal of its engine starts (crux.worker.ts): no trap's words, so
+ * the service keeps its workers (crux-service.ts `isTrap`) and drops the indexes on that worker; no engine's name (a
+ * user may see it). */
+export const INDEX_LOST = 'The search index was lost:';
+
 /** Rethrows a wasm trap ({@link isWasmTrap}), which a job must not turn into "no result": the call fails, so the
  * service replaces the worker (its instance may be broken) and RDKit does the work. Other errors are the job's to
  * handle. */

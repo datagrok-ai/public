@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import {WorkerMessageBusClient} from '../worker-message-bus-client';
 import {Fingerprint, hasNewLines, withinSmilesLimit} from '../utils/chem-common';
 import {compileCrux, loadCrux, noteCruxError} from '../engine/crux-module';
-import {DescriptorTiming, INT_NONE, PackedDescriptorValues, ToxicityAlert, isNoneValue} from './crux-api';
+import {DescriptorTiming, INDEX_LOST, INT_NONE, PackedDescriptorValues, ToxicityAlert, isNoneValue} from './crux-api';
 import {BIOPOLYMER_LIBRARIES, BIOPOLYMER_LIBRARY_MISSING, CLUSTER_MCS_TIMEOUT_S, CruxAssembledBatch,
   assembleOptionsJson} from './crux-api';
 import {batchRowCount, pickRows, rowMonomerCount, sliceBatch} from './biopolymer-batch';
@@ -247,6 +247,10 @@ class CruxWorkerClient extends WorkerMessageBusClient {
   pausesForTests = (every: number | null): Promise<unknown> => this.call('pauses::test', [every]);
 
   busyForTests = (ms: number): Promise<unknown> => this.call('busy::test', [ms]);
+
+  trapForTests = (calls: number, instances: number): Promise<unknown> => this.call('trap::test', [calls, instances]);
+
+  buildTrapForTests = (row: number): Promise<unknown> => this.call('buildTrap::test', [row]);
 }
 
 /** Contiguous rows of a column indexed by one crux collection that lives in one worker. */
@@ -405,6 +409,12 @@ export class CruxService {
       .then((hits) => {
         if (hits && !isCancelled())
           onSegment(segment, hits);
+      }, (e) => {
+        // the worker's engine was made fresh after a trap since it built the segment (crux.worker.ts): its indexes are
+        // lost; this search fails (RDKit answers it), the next one indexes the column again
+        if (String((e as Error)?.message ?? e).startsWith(INDEX_LOST))
+          this.forgetIndexesOn(segment.worker);
+        throw e;
       }), isCancelled);
   }
 
@@ -821,6 +831,12 @@ export class CruxService {
     this.workers[w].terminate(WORKER_REPLACED);
     this.workers[w] = new CruxWorkerClient();
     this.workers[w].moduleInit(this.module!).catch(() => {}); // a failed init is logged by the worker client
+    this.forgetIndexesOn(w);
+  }
+
+  /** Drops the column indexes with a segment on worker `w` (a search running on one fails and falls back to RDKit; the
+   * next search indexes the column again); the other indexes stay. */
+  private forgetIndexesOn(w: number): void {
     for (const index of [...this.indexes.values()]) {
       if (index.segments.some((segment) => segment.worker === w)) {
         index.lost = true;
@@ -1078,6 +1094,18 @@ export class CruxService {
    * pauses, the default; crux.worker.ts `pauses::test`). */
   async pausesForTests(every: number | null): Promise<void> {
     await Promise.all(this.workers.map((worker) => worker.pausesForTests(every)));
+  }
+
+  /** Tests: crux-core's real test trap in every worker's module (crux-recover.ts): the `calls`-th engine call from now
+   * panics, there and on the next `instances - 1` fresh instances (2: that call is refused, the worker goes on). */
+  async trapWorkersForTests(calls: number, instances = 1): Promise<void> {
+    await Promise.all(this.workers.map((worker) => worker.trapForTests(calls, instances)));
+  }
+
+  /** Tests: in every worker, the read of segment row `row` traps at every attempt in the next collection builds (a
+   * molecule that always traps; -1: none). */
+  async buildTrapForTests(row: number): Promise<void> {
+    await Promise.all(this.workers.map((worker) => worker.buildTrapForTests(row)));
   }
 
   /** Tests: a job that fails in its worker with `message` (by default as a trapped instance would: a restart). */

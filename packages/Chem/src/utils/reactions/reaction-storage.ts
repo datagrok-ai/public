@@ -104,18 +104,19 @@ export async function deleteUserReaction(reactionId: string): Promise<boolean> {
 export function validateReactionSmarts(
   rdkit: RDModule, smarts: string,
 ): {valid: boolean; error?: string; numReactants?: number; numProducts?: number} {
-  // basic format check first
-  const parts = smarts.split('>>');
-  if (parts.length !== 2)
-    return {valid: false, error: 'Reaction SMARTS must contain exactly one ">>".'};
+  // basic format check first: reactants>agents>products, the agents empty in reactants>>products (a `>` after `-` is
+  // a dative bond, as the renderer splits); a route (A>>B>>C) is not one reaction
+  const sides = smarts.split(/(?<!-)>/);
+  if (sides.length !== 3)
+    return {valid: false, error: 'Reaction SMARTS must be reactants>>products or reactants>agents>products.'};
 
   let rxn: RDReaction | null = null;
   try {
     rxn = rdkit.get_rxn(smarts);
     if (!rxn)
       return {valid: false, error: 'RDKit could not parse the reaction SMARTS.'};
-    const reactantCount = parts[0].split('.').length;
-    const productCount = parts[1].split('.').length;
+    const reactantCount = sides[0].split('.').length;
+    const productCount = sides[2].split('.').length;
     return {valid: true, numReactants: reactantCount, numProducts: productCount};
   } catch (e: any) {
     return {valid: false, error: e?.message ?? 'Invalid reaction SMARTS.'};
