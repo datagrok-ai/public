@@ -179,7 +179,8 @@ export function stripIsotopesFromSmiles(smiles: string): string {
   return smiles.replace(/\[(\d+)([A-Za-z])/g, '[$2');
 }
 
-export function buildExclusionQmols(module: RDModule, smartsList: string[]): {qmols: RDMol[]; dispose: () => void} {
+export function buildExclusionQmols(module: RDModule, smartsList: string[]):
+  {qmols: RDMol[]; smarts: string[]; dispose: () => void} {
   const qmols: RDMol[] = [];
   const sources: string[] = [];
   for (const s of smartsList) {
@@ -195,6 +196,8 @@ export function buildExclusionQmols(module: RDModule, smartsList: string[]): {qm
   let disposed = false;
   return {
     qmols,
+    // each query's SMARTS, as written (a copy: `dispose` empties `sources`)
+    smarts: sources.slice(),
     dispose: () => {
       if (disposed) return;
       disposed = true;

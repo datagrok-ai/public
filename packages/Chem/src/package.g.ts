@@ -105,6 +105,62 @@ export async function rdKitReactionRenderer() : Promise<any> {
   return await PackageFunctions.rdKitReactionRenderer();
 }
 
+//description: Whether the Reaction panel shows: Crux draws reactions (Crux mode)
+//input: string reaction 
+//output: bool result
+export function reactionPanelShown(reaction: string) : boolean {
+  return PackageFunctions.reactionPanelShown(reaction);
+}
+
+//name: Reaction
+//description: The reaction drawn large, with a full-screen view, and a route's steps
+//input: string reaction { semType: ChemicalReaction }
+//output: widget result
+//meta.role: widgets,panel
+//meta.domain: chem
+//condition: Chem:reactionPanelShown(reaction)
+export function reactionPanel(reaction: string) : any {
+  return PackageFunctions.reactionPanel(reaction);
+}
+
+//description: Whether the Checks section shows for a molecule: Crux mode, and a flag to show
+//input: string molecule 
+//output: bool result
+export function moleculeChecksShown(molecule: string) : boolean {
+  return PackageFunctions.moleculeChecksShown(molecule);
+}
+
+//name: moleculeChecks
+//description: What this molecule breaks downstream, in Crux mode: what Chem cannot read, what changes meaning
+//input: semantic_value molecule { semType: Molecule }
+//output: widget result
+//meta.role: widgets,panel
+//meta.domain: chem
+//friendlyName: Checks
+//condition: Chem:moleculeChecksShown(molecule)
+export function moleculeChecksPanel(molecule: DG.SemanticValue) : any {
+  return PackageFunctions.moleculeChecksPanel(molecule);
+}
+
+//description: Whether the Checks section shows for a reaction: Crux mode, and a flag to show
+//input: string reaction 
+//output: bool result
+export function reactionChecksShown(reaction: string) : boolean {
+  return PackageFunctions.reactionChecksShown(reaction);
+}
+
+//name: reactionChecks
+//description: What this reaction or template breaks downstream, in Crux mode: what Chem cannot read, what a run gets wrong
+//input: semantic_value reaction { semType: ChemicalReaction }
+//output: widget result
+//meta.role: widgets,panel
+//meta.domain: chem
+//friendlyName: Checks
+//condition: Chem:reactionChecksShown(reaction)
+export function reactionChecksPanel(reaction: DG.SemanticValue) : any {
+  return PackageFunctions.reactionChecksPanel(reaction);
+}
+
 //name: chemMixtureRenderer
 //output: grid_cell_renderer result
 //meta.cellType: ChemicalMixture
@@ -947,6 +1003,14 @@ export async function editMoleculeCell(cell: any) : Promise<void> {
   await PackageFunctions.editMoleculeCell(cell);
 }
 
+//description: ChemicalReaction
+//input: grid_cell cell 
+//meta.role: cellEditor
+//meta.columnTags: quality=ChemicalReaction
+export async function editReactionCell(cell: any) : Promise<void> {
+  await PackageFunctions.editReactionCell(cell);
+}
+
 //name: OpenChemLib
 //output: widget sketcher
 //meta.role: moleculeSketcher
@@ -1096,6 +1160,11 @@ export function isSmiles(s: string) : boolean {
 //output: bool result
 export function isSmarts(s: string) : boolean {
   return PackageFunctions.isSmarts(s);
+}
+
+//input: column col 
+export function detectCdxmlReactions(col: DG.Column) : void {
+  PackageFunctions.detectCdxmlReactions(col);
 }
 
 //input: column col 
@@ -1637,6 +1706,15 @@ export async function mpoProfilesApp(path?: string) : Promise<any> {
 //meta.role: app
 export async function reactionEnumeratorApp() : Promise<any> {
   return await PackageFunctions.reactionEnumeratorApp();
+}
+
+//name: Reaction Sketcher
+//description: Draws, edits and exports reactions and multi-step routes
+//output: view result
+//meta.browsePath: Chem | Reactions
+//meta.role: app
+export async function reactionsApp() : Promise<any> {
+  return await PackageFunctions.reactionsApp();
 }
 
 //input: dynamic treeNode 

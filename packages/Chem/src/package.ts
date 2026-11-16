@@ -54,7 +54,7 @@ import {Fingerprint, hasNewLines} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {getMolSafe, _isSmarts, getQueryMolSafe, readsAsQuery, isSmilesSyntax,
   withoutCxExtension} from './utils/mol-creation_rdkit';
-import {canonicalWith, _rdKitModule, sameMolecule, validationMessageByRdKit} from './utils/chem-common-rdkit';
+import {canonicalWith, _rdKitModule, validationMessageByRdKit} from './utils/chem-common-rdkit';
 import {_convertMolNotation, convertNotationForColumn, molToMolblock, asSmiles} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {getSdfString, saveAsSdfDialog} from './utils/sdf-utils';
@@ -77,6 +77,12 @@ import {_importSmi} from './file-importers/smi-importer';
 import {Chem} from './scripts-api';
 import {renderMolecule} from './rendering/render-molecule';
 import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
+import {cruxDrawsReactions, warmCruxReactionDrawing} from './rendering/crux-reaction-drawing';
+import {detectCdxmlColumn} from './rendering/cdxml-reaction-cells';
+import {reactionPanel} from './widgets/reaction-panel';
+import {installReactionExportMenu} from './widgets/reaction-export';
+import {checksPanel, checksShown} from './widgets/checks-panel';
+import {moleculeEditorReadFailure, unchangedByEdit, watchMoleculeEditor} from './utils/footguns/editors';
 import {embed3d, structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {
@@ -217,9 +223,15 @@ async function initChemInt(): Promise<void> {
     for (const view of grok.shell.tableViews)
       view.grid?.invalidate();
   });
+  // a reaction cell's menu: Edit reaction... and Export reaction... (the Export panel), in both modes
+  installReactionExportMenu();
   // in Crux mode ("Chemical engine" setting) the Crux file starts loading beside RDKit, not awaited: RDKit draws until
-  // it is ready; RDKit mode never fetches it
-  cruxReady();
+  // it is ready; RDKit mode never fetches it. Once it is ready (Crux then draws reactions too), a first reaction is
+  // drawn off screen, so that no cell pays for the first drawing's setup
+  cruxReady().then((ready) => {
+    if (ready && cruxDrawsReactions())
+      warmCruxReactionDrawing();
+  });
   await chemCommonRdKit.initRdKitModuleLocal();
   _properties = _package.settings;
   renderer = new GridCellRendererProxy(getMoleculeRenderer(), 'Molecule');
@@ -401,6 +413,56 @@ export class PackageFunctions {
   })
   static async rdKitReactionRenderer(): Promise<RDKitReactionRenderer> {
     return new RDKitReactionRenderer(PackageFunctions.getRdKitModule());
+  }
+
+  @grok.decorators.func({description: 'Whether the Reaction panel shows: Crux draws reactions (Crux mode)'})
+  static reactionPanelShown(reaction: string): boolean {
+    return !!reaction && cruxDrawsReactions();
+  }
+
+  @grok.decorators.panel({
+    name: 'Reaction',
+    description: 'The reaction drawn large, with a full-screen view, and a route\'s steps',
+    condition: 'Chem:reactionPanelShown(reaction)',
+    meta: {role: 'widgets', domain: 'chem'},
+  })
+  static reactionPanel(
+    @grok.decorators.param({options: {semType: 'ChemicalReaction'}}) reaction: string): DG.Widget {
+    return reactionPanel(reaction);
+  }
+
+  @grok.decorators.func({description: 'Whether the Checks section shows for a molecule: Crux mode, and a flag to show'})
+  static moleculeChecksShown(molecule: string): boolean {
+    return checksShown(molecule, DG.SEMTYPE.MOLECULE);
+  }
+
+  @grok.decorators.panel({
+    name: 'moleculeChecks',
+    friendlyName: 'Checks',
+    description: 'What this molecule breaks downstream, in Crux mode: what Chem cannot read, what changes meaning',
+    condition: 'Chem:moleculeChecksShown(molecule)',
+    meta: {role: 'widgets', domain: 'chem'},
+  })
+  static moleculeChecksPanel(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: DG.SemanticValue): DG.Widget {
+    return checksPanel(molecule);
+  }
+
+  @grok.decorators.func({description: 'Whether the Checks section shows for a reaction: Crux mode, and a flag to show'})
+  static reactionChecksShown(reaction: string): boolean {
+    return checksShown(reaction, DG.SEMTYPE.CHEMICAL_REACTION);
+  }
+
+  @grok.decorators.panel({
+    name: 'reactionChecks',
+    friendlyName: 'Checks',
+    description: 'What this reaction or template breaks downstream, in Crux mode: what Chem cannot read, what a run gets wrong',
+    condition: 'Chem:reactionChecksShown(reaction)',
+    meta: {role: 'widgets', domain: 'chem'},
+  })
+  static reactionChecksPanel(
+    @grok.decorators.param({options: {semType: 'ChemicalReaction'}}) reaction: DG.SemanticValue): DG.Widget {
+    return checksPanel(reaction);
   }
 
   @grok.decorators.func({
@@ -2098,12 +2160,17 @@ export class PackageFunctions {
     const dlg = ui.dialog()
       .add(sketcher)
       .onOK(() => {
+        const newValue = unit === DG.chem.Notation.Smiles ? sketcher.getSmiles() : sketcher.getMolFile();
+        // Crux's getter threw (the engine stopped, or the drawing can't be written in the column's notation) and the
+        // host gave '': nothing is written, the cell keeps its value (Crux mode; the footer's block says why)
+        if (moleculeEditorReadFailure(sketcher, unit) !== null)
+          return;
         if (unit === DG.chem.Notation.Smiles) {
           //set new cell value only in case smiles has been edited (to avoid undesired molecule orientation change);
-          // "Chemical engine": compared by the main thread's module (Crux's in Crux mode); a cell that does not read
-          // counts as edited
-          const newValue = sketcher.getSmiles();
-          if (!sameMolecule(cell.cell.value, newValue)) {
+          // "Chemical engine": compared by the main thread's module (Crux's in Crux mode, with the CX extension, so an
+          // edit of only enhanced stereo, an attachment point or an S-group is written: MOL-07); a cell that does not
+          // read counts as edited
+          if (!unchangedByEdit(cell.cell.value, newValue)) {
             try {
               cell.setValue(newValue, true);
             } catch {
@@ -2112,19 +2179,37 @@ export class PackageFunctions {
           }
         } else {
           try {
-            cell.setValue(sketcher.getMolFile(), true);
+            cell.setValue(newValue, true);
           } catch {
-            cell.cell.value = sketcher.getMolFile();
+            cell.cell.value = newValue;
           }
         }
         Sketcher.addToCollection(Sketcher.RECENT_KEY, sketcher.getMolFile());
       })
       .show({resizable: true});
+    // what OK would write, flagged in the footer's middle slot before OK (Crux mode; a block disables OK)
+    watchMoleculeEditor(dlg, sketcher, cell.cell.column, cell.cell.value);
     ui.onSizeChanged(dlg.root).subscribe((_) => {
       if (!sketcher.sketcher?.isInitialized)
         return;
       sketcher._autoResized ? sketcher._autoResized = false : sketcher.resize();
     });
+  }
+
+  @grok.decorators.func({
+    description: 'ChemicalReaction',
+    // a double-click on any reaction cell (SMILES, SMARTS, RXN, routes, CDXML pages) opens it, in both modes, so that
+    // a reaction is edited the same way whatever the engine; the cell's menu, "Edit reaction...", opens it too
+    // (reaction-export.ts)
+    meta: {role: 'cellEditor', columnTags: 'quality=ChemicalReaction'},
+  })
+  static async editReactionCell(
+    @grok.decorators.param({type: 'grid_cell'}) cell: DG.GridCell): Promise<void> {
+    // the Crux sketcher's reaction document, in both modes (the reaction editor is Crux's whatever the Chemical
+    // Engine), with the foot-gun footer slot (RXN-15/16/17, TPL-12, the template checks; in both modes too), which OK
+    // honours too; the cell menu's "Edit reaction..." opens the same
+    const {openReactionCellEditor} = await import('./utils/reactions/reaction-cell-editor');
+    await openReactionCellEditor(cell);
   }
 
   @grok.decorators.func({
@@ -2439,6 +2524,13 @@ export class PackageFunctions {
     // neither a molecule nor a query)
     return _isSmarts(s) || (!isSmilesSyntax(withoutCxExtension(s)) && _rdKitModule != null &&
       (byEngineModule('isSmarts', _rdKitModule, (module) => readsAsQuery(s, module)) ?? false));
+  }
+
+  /** detectors.js detectReactions: a column of CDXML pages becomes a reaction column of units `cdxml` (Crux mode;
+   * nothing in RDKit mode, which stays as it was). */
+  @grok.decorators.func()
+  static detectCdxmlReactions(col: DG.Column): void {
+    detectCdxmlColumn(col);
   }
 
   @grok.decorators.func()
@@ -3565,6 +3657,18 @@ export class PackageFunctions {
   static async reactionEnumeratorApp(): Promise<DG.ViewBase> {
     const {buildEnumeratorView} = await import('./utils/reaction-enumeration/enumerator-app');
     return buildEnumeratorView();
+  }
+
+  // "Reaction Sketcher", not "Reactions": it sits in Chem's Reactions folder of Apps, where it read Reactions |
+  // Reactions; its function stays reactionsApp
+  @grok.decorators.app({
+    'name': 'Reaction Sketcher',
+    'description': 'Draws, edits and exports reactions and multi-step routes',
+    'meta': {browsePath: 'Chem | Reactions'},
+  })
+  static async reactionsApp(): Promise<DG.ViewBase> {
+    const {reactionsAppView} = await import('./utils/reactions/reactions-app');
+    return reactionsAppView();
   }
 
   @grok.decorators.func()

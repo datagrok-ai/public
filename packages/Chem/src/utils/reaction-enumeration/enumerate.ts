@@ -7,6 +7,8 @@ import {EnumeratorConfig} from './config';
 import {applyProductFilters, buildExclusionQmols, computeMolStats, hasSubstructMatch, MolStats,
   stripIsotopesFromSmiles} from './filters';
 import {onReactionEngine} from '../reactions/reaction-engine';
+import {checksModule} from '../footguns/checks';
+import {reactionSides, routeStepCount} from '../footguns/rules';
 
 export interface TemplateInput {
   smarts: string;
@@ -180,6 +182,20 @@ function getSlotFragments(rs: string): string[] {
 }
 
 function parseTemplate(module: RDModule, t: TemplateInput, idx: number, warnings: string[]): ParsedTemplate | null {
+  // Crux mode: a template skipped for its form says which (TPL-06, TPL-11); RDKit mode's words as they were
+  if (checksModule()) {
+    const name = `Template ${idx + 1} (${t.reactionName || 'unnamed'})`;
+    const steps = routeStepCount(t.smarts);
+    if (steps > 1) {
+      warnings.push(`${name} is a route of ${steps} steps: enumeration takes one reaction a template; skipping.`);
+      return null;
+    }
+    if (reactionSides(t.smarts)?.agents.length) {
+      warnings.push(`${name} has agents over the arrow (reactants>agents>products): enumeration takes ` +
+        'reactants>>products; skipping.');
+      return null;
+    }
+  }
   const arrowIdx = t.smarts.indexOf('>>');
   if (arrowIdx < 0) {
     warnings.push(`Template ${idx + 1} (${t.reactionName || 'unnamed'}) has no '>>' separator; skipping.`);
@@ -698,6 +714,8 @@ async function enumerateOn(module: RDModule, opts: EnumerateOptions): Promise<{r
   }
 
   const exclusion = buildExclusionQmols(module, exclusionSmarts);
+  // TRF-07 (Crux mode): which exclusion queries matched a product, of how many products they were tried on
+  const exclusionTally = checksModule() && !preview ? {tried: 0, matched: new Set<number>()} : null;
 
   const bbPosition = positions(buildingBlocks, 'BB');
   const uniqueBBs = Array.from(bbPosition.keys());
@@ -901,7 +919,16 @@ async function enumerateOn(module: RDModule, opts: EnumerateOptions): Promise<{r
                     warnings.push(`computeMolStats failed: ${e instanceof Error ? e.message : String(e)}`);
                     continue;
                   }
-                  if (!applyProductFilters(stats, config.products_specs, exclusion.qmols, evalMol).pass) continue;
+                  const filtered = applyProductFilters(stats, config.products_specs, exclusion.qmols, evalMol);
+                  if (exclusionTally && (filtered.pass || filtered.reason === 'exclusion_smarts')) {
+                    exclusionTally.tried++;
+                    if (!filtered.pass) {
+                      const q = exclusion.qmols.findIndex((qmol) => hasSubstructMatch(evalMol, qmol));
+                      if (q >= 0)
+                        exclusionTally.matched.add(q);
+                    }
+                  }
+                  if (!filtered.pass) continue;
                 } finally {
                   try {evalMol.delete();} catch {/* ignore */}
                 }
@@ -984,6 +1011,16 @@ async function enumerateOn(module: RDModule, opts: EnumerateOptions): Promise<{r
   } catch (e) {
     console.error('Enumeration failed:', e instanceof Error ? e.message : String(e));
   } finally {
+    // an exclusion SMARTS that matched none of the products it was tried on excluded nothing: often one written as no
+    // molecule Chem holds is (as the demo file's [NX3](=O)=O was: a nitro as five-valent N, Chem's is [N+](=O)[O-])
+    if (exclusionTally?.tried) {
+      exclusion.smarts.forEach((s, q) => {
+        if (!exclusionTally.matched.has(q)) {
+          warnings.push(`Exclusion SMARTS ${s} matched nothing: none of the ${exclusionTally.tried} products it was ` +
+            'tried on, so it excluded none');
+        }
+      });
+    }
     for (const t of parsedTemplates) disposeTemplate(t);
     exclusion.dispose();
     molCache.dispose();

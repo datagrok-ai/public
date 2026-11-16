@@ -24,8 +24,8 @@ const MAIN_THREAD_MOLBLOCKS = 100;
 /** Counts the worker keys given out: unique in the session, whichever assembler gives them (the pool is shared). */
 let lastWorkerKey = 0;
 
-/** `call()` on the main thread's module; a trap there is noted (Crux is off for the session: its instance may be
- * broken) and thrown. */
+/** `call()` on the main thread's module; what it throws is noted (only a trap the module could not recover from turns
+ * Crux off for the session: crux/crux-recover.ts) and thrown. */
 function onMainThread<T>(call: () => T): T {
   try {
     return call();
@@ -166,8 +166,8 @@ export class CruxMacromoleculeAssembler implements IMacromoleculeAssembler {
   }
 
   // The main thread's module for a synchronous twin: loaded by an earlier ready() (or another async call), and not
-  // after a trap there (Crux is off for the session, crux-module.ts noteCruxError: the instance may be broken, and the
-  // async twins refuse it too)
+  // after a trap there that the module could not recover from (Crux is then off for the session, crux-module.ts
+  // noteCruxError, and the async twins refuse it too)
   private syncApi(): CruxBiopolymerApi {
     if (!this.api) {
       throw new Error('Chem | the macromolecule assembler\'s synchronous calls need ready(key, json) first: ' +

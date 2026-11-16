@@ -192,6 +192,14 @@ export const cellAsRemembered = Then('the value of {string} column in row {int} 
     {message: `${column} in row ${row}`}).toBe(before);
 }, {description: 'the cell\'s text is the very string remembered'});
 
+export const cellDiffers = Then('the value of {string} column in row {int} should differ from what was remembered', async (page: Page, column: string, row: number) => {
+  const before = cells.get(page);
+  if (before === undefined)
+    throw new Error('no cell remembered: "user remembers the value of … column in row …" first');
+  await expect.poll(() => page.evaluate(([c, r]) => String(grok.shell.t.col(c).get(r - 1) ?? ''), [column, row] as [string, number]),
+    {message: `${column} in row ${row}`}).not.toBe(before);
+}, {description: 'the cell\'s text is no longer the string remembered (an edit written into it)'});
+
 // ---------------------------------------------------------------- the sketcher chosen
 
 export const sketcherChosen = Then('the session\'s sketcher and the account\'s choice should be {string}', async (page: Page, name: string) => {

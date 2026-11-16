@@ -14,6 +14,8 @@ import {inBothEngines, inEngine} from './engine-utils';
 import {cruxFallbackCount} from '../engine/fallback';
 import {cruxLoadFailed, resetCruxLoaderForTests} from '../engine/crux-module';
 import {lastReactionEngine, setCruxUnreadableReactantsForTests} from '../utils/reactions/reaction-engine';
+import {validateReactionSmarts} from '../utils/reactions/reaction-storage';
+import {openReactionEditor} from '../utils/reactions/reaction-editor';
 
 category('Reactions', () => {
   let rdkit: RDModule;
@@ -151,6 +153,28 @@ category('Reactions', () => {
     } finally {
       if (cruxLoadFailed())
         resetCruxLoaderForTests(null);
+    }
+  });
+
+  test('reaction editor: a reaction with agents opens and is accepted', async () => {
+    // reactants>agents>products, as the grid draws it; the editor refused it ("must contain exactly one >>")
+    const esterification = 'CC(=O)O.OCC>OS(=O)(=O)O>CC(=O)OCC.O';
+    const check = validateReactionSmarts(rdkit, esterification);
+    expect(check.valid, true, check.error);
+    expect(check.numReactants, 2);
+    expect(check.numProducts, 2);
+    expect(validateReactionSmarts(rdkit, 'CCO>>CC=O>>CC(=O)O').valid, false, 'a route is not one named reaction');
+
+    await openReactionEditor(rdkit, {preset: {id: 'test-agents', name: 'Fischer esterification',
+      reactionSmarts: esterification, mode: 'two-component', category: 'Test'}});
+    const dialog = DG.Dialog.getOpenDialogs().find((d) => d.title === 'Edit Reaction')!;
+    try {
+      expect(!!dialog, true, 'the editor opened');
+      expect(dialog.root.textContent!.includes('Valid  |  Reactants: 2  |  Products: 2'), true,
+        dialog.root.textContent!);
+      expect(dialog.getButton('OK').classList.contains('d4-disabled'), false, 'SAVE is enabled');
+    } finally {
+      dialog?.close();
     }
   });
 

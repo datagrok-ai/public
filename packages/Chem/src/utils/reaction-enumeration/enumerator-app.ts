@@ -13,6 +13,8 @@ import {
 } from './data-panel';
 import {RunControls} from './run-controls';
 import {EnumeratorConfigForm} from './enumerator-config-form';
+import {ENUMERATE_WORDS_CLASS, FooterSlot} from '../footguns/footer-slot';
+import {checksModule} from '../footguns/checks';
 
 // Dart int inputs fire onChanged per keystroke — debounce the expensive round-tab rebuild.
 const ROUNDS_INPUT_DEBOUNCE_MS = 300;
@@ -196,9 +198,11 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     a.classList.add('chem-enum-ribbon-arrow');
     return a;
   };
+  // the filters' foot-gun words beside Enumerate (Crux mode: TRF-05..07)
+  const footgunWords = checksModule() ? new FooterSlot(null, ENUMERATE_WORDS_CLASS) : null;
   view.setRibbonPanels([
     [configForm.appInfoIcon],
-    [runControls.runBtn, runControls.cancelBtn, runControls.progressLabel],
+    [runControls.runBtn, runControls.cancelBtn, runControls.progressLabel, ...(footgunWords ? [footgunWords.root] : [])],
     [configForm.chipCombineC.root, mkRibbonArrow(), configForm.chipReactionsC.root, mkRibbonArrow(),
       configForm.chipBbsC.root, mkRibbonArrow(), configForm.chipExtrasC.root, mkRibbonArrow(), configForm.cfgEstEl],
     [configForm.loadYamlBtn, configForm.saveYamlBtn],
@@ -206,6 +210,24 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
   view.append(root);
 
   ctx.hasAnyPerRoundOverride = () => dataCtls.some((p) => p.hasAnyOverride());
+  // the foot-gun words follow edits of the input tables' cells too (a blocking SMARTS typed over: TRF-05), not only a
+  // change of table (Crux mode)
+  let watchedTables: any[] = [];
+  let tableWatches: {unsubscribe: () => void}[] = [];
+  const watchFootgunTables = (): void => {
+    if (!footgunWords)
+      return;
+    const dfs = [configForm.templatesInput.value, configForm.bbsInput.value, configForm.exclusionInput.value]
+      .filter((df): df is DG.DataFrame => !!df);
+    const same = dfs.length === watchedTables.length && dfs.every((df, i) => df.dart === watchedTables[i]);
+    if (same)
+      return;
+    tableWatches.forEach((w) => w.unsubscribe());
+    watchedTables = dfs.map((df) => df.dart);
+    tableWatches = dfs.map((df) => df.onDataChanged.pipe(debounceTime(ROUNDS_INPUT_DEBOUNCE_MS))
+      .subscribe(() => ctx.refreshValidation()));
+  };
+  view.subs.push({unsubscribe: () => tableWatches.forEach((w) => w.unsubscribe())} as any);
   ctx.refreshValidation = (): void => {
     // validate() syncs the quick inputs into config first, so the refreshes below read current values.
     const err = configForm.validate();
@@ -213,6 +235,8 @@ export async function buildEnumeratorView(): Promise<DG.ViewBase> {
     configForm.refreshStrategyCards();
     validationDiv.textContent = err ?? '';
     runControls.setValidation(err);
+    footgunWords?.show(configForm.footgunFlags());
+    watchFootgunTables();
   };
   ctx.refreshCfgRibbon = (): void => {
     configForm.refreshRibbonChips({
