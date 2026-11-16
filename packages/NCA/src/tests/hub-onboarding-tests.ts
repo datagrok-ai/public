@@ -19,7 +19,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {AppHeader} from '@datagrok-libraries/u2';
 import {ViewHost} from '@datagrok-libraries/u2/dg';
-import {category, test, expect} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
 
 import {ensureDemoTables, loadSampleByName} from '../views/nca-launch';
 import {
@@ -133,9 +133,23 @@ category('Hub onboarding: demo tables (★)', () => {
       // `semTypeDetector`-tagged functions). Measured 2026-11-16: Chem's detectors
       // (detectMolecules, ...) register through `meta.role`, not that tag, and
       // the harness reaches them, so the column is asserted directly.
+      //
+      // Two environment facts shape the check (CI failure 2026-11-16):
+      //  - Chem is not an NCA dependency, so a stand may not have it. Without it
+      //    no detector can type the column and this half is not answerable.
+      //  - For a column NAMED like SMILES, Chem's `detectMolecules`
+      //    (Chem/detectors.js) returns null and fires `Chem:detectSmiles`
+      //    WITHOUT awaiting it, so `await detectSemanticTypes` resolves before
+      //    the column is typed. Warm locally it lands in time; on a cold CI
+      //    stand (RDKit initialising) it does not. Poll for the type instead.
       await grok.data.detectSemanticTypes(df);
-      expect(df.col(smiles)!.semType, DG.SEMTYPE.MOLECULE,
-        'detectSemanticTypes (the ensureDemoTables call) types the demo SMILES column as Molecule');
+      if (DG.Func.find({package: 'Chem', name: 'detectSmiles'}).length === 0) {
+        console.warn('F0: Chem is not installed on this server; the Molecule typing half is not checked');
+        return;
+      }
+      await awaitCheck(() => df.col(smiles)!.semType === DG.SEMTYPE.MOLECULE,
+        'detectSemanticTypes (the ensureDemoTables call) types the demo SMILES column as Molecule',
+        15000);
     } finally {
       closeDemoTables();
     }
