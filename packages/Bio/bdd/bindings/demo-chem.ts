@@ -1,6 +1,6 @@
-/* Steps of the "every sequence is a molecule" demo clips (features/demos/05-07): the set-up a filmed demo leaves out
-   (the context panel widened, sequences made molecules or cut to a region by Bio's own commands, the grid sorted), a
-   click on one marker of a scatter plot of the molecules' properties and a nested context panel pane closed. */
+// Steps of the "every sequence is a molecule" demo clips (features/demos/05-07): the set-up a filmed demo leaves out
+// (the context panel widened, sequences made molecules or cut to a region by Bio's own commands, the grid sorted), a
+// click on one marker of a scatter plot of the molecules' properties and a nested context panel pane closed.
 import type {Page} from '@playwright/test';
 import {Given, When} from '@datagrok-libraries/bdd';
 import type {ElementRef} from '@datagrok-libraries/bdd/runtime';

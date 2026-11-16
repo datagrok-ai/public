@@ -1,4 +1,4 @@
-/* Steps of the space demo clips (features/demos/16b): a selection drawn around a group of a scatter plot's markers. */
+// Steps of the space demo clips (features/demos/16b): a selection drawn around a group of a scatter plot's markers.
 import type {Page} from '@playwright/test';
 import {When} from '@datagrok-libraries/bdd';
 import type {ElementRef} from '@datagrok-libraries/bdd/runtime';

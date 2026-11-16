@@ -42,6 +42,9 @@ export const EDITOR_FULL_HEIGHT = 716;
  * read), and the room kept free above and below it in the window (CSS px). */
 const DIALOG_CHROME = 132;
 const WINDOW_MARGIN = 24;
+// A length of the dialog's style in whole pixels: Datagrok reads a dialog's left and top back as integers
+// (Modal.clipToScreen threw FormatException at a left of 622.4px, measured on a screen scaled 125%).
+const px = (n: number): string => `${Math.round(n)}px`;
 /** The least height the box is given in a window too short for {@link EDITOR_FULL_HEIGHT}: its bars then scroll;
  * and the least width the dialog is made in a narrow window (CSS px). */
 const EDITOR_MIN_HEIGHT = 320;
@@ -261,10 +264,10 @@ export class ReactionCellEditor {
     const [roomWidth, roomHeight] = [width - 2 * WINDOW_MARGIN, height - 2 * WINDOW_MARGIN];
     let r = root.getBoundingClientRect();
     if (r.width > roomWidth)
-      root.style.width = `${Math.max(EDITOR_MIN_WIDTH, roomWidth)}px`;
+      root.style.width = px(Math.max(EDITOR_MIN_WIDTH, roomWidth));
     if (root.style.height) { // a height of the person's: the box, flexed, follows it
       if (r.height > roomHeight)
-        root.style.height = `${Math.max(EDITOR_MIN_HEIGHT, roomHeight)}px`;
+        root.style.height = px(Math.max(EDITOR_MIN_HEIGHT, roomHeight));
     } else { // the box as tall as the window lets it be, up to its full height: smaller, and taller again
       const now = box.getBoundingClientRect().height;
       const wanted = Math.max(EDITOR_MIN_HEIGHT, Math.min(EDITOR_FULL_HEIGHT, roomHeight - (r.height - now)));
@@ -279,7 +282,7 @@ export class ReactionCellEditor {
       // (as measured); one placed in a parent, in its parent's
       const fixed = getComputedStyle(root).position === 'fixed';
       const parent = fixed || !root.offsetParent ? {left: 0, top: 0} : root.offsetParent.getBoundingClientRect();
-      Object.assign(root.style, {left: `${left - parent.left}px`, top: `${top - parent.top}px`});
+      Object.assign(root.style, {left: px(left - parent.left), top: px(top - parent.top)});
     }
   }
 
@@ -324,9 +327,9 @@ export class ReactionCellEditor {
     const root = this.dialog.root;
     const fixed = getComputedStyle(root).position === 'fixed';
     const parent = fixed || !root.offsetParent ? {left: 0, top: 0} : root.offsetParent.getBoundingClientRect();
-    Object.assign(root.style, {left: `${WINDOW_MARGIN - parent.left}px`, top: `${WINDOW_MARGIN - parent.top}px`,
-      width: `${Math.max(EDITOR_MIN_WIDTH, window.innerWidth - 2 * WINDOW_MARGIN)}px`,
-      height: `${Math.max(EDITOR_MIN_HEIGHT, window.innerHeight - 2 * WINDOW_MARGIN)}px`});
+    Object.assign(root.style, {left: px(WINDOW_MARGIN - parent.left), top: px(WINDOW_MARGIN - parent.top),
+      width: px(Math.max(EDITOR_MIN_WIDTH, window.innerWidth - 2 * WINDOW_MARGIN)),
+      height: px(Math.max(EDITOR_MIN_HEIGHT, window.innerHeight - 2 * WINDOW_MARGIN))});
     if (this.box)
       this.box.style.height = `${EDITOR_MIN_HEIGHT}px`; // its least: the flex gives it the rest
   }

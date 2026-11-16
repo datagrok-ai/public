@@ -1,6 +1,6 @@
-/* Steps of the notation demo clips (features/demos/01-03c), all set-up a filmed demo leaves out: the Browse panel
-   narrowed so the sequences get the room, and the Renderer Settings of a sequence column (Multiline Rendering, Max
-   Monomer Length) as the column's settings set them. */
+// Steps of the notation demo clips (features/demos/01-03c), all set-up a filmed demo leaves out: the Browse panel
+// narrowed so the sequences get the room, and the Renderer Settings of a sequence column (Multiline Rendering, Max
+// Monomer Length) as the column's settings set them.
 import type {Page} from '@playwright/test';
 import {Given} from '@datagrok-libraries/bdd';
 import {atFeatureEnd, expect, silent, viewers} from '@datagrok-libraries/bdd/runtime';

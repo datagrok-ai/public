@@ -1,6 +1,6 @@
-/* Steps of the search and analysis demo clips (features/demos/15-18b): the view arranged off camera. A Bio command
-   docks what it adds where it chooses (a search viewer under the grid, the cliffs table along the whole bottom of
-   the view); a clip moves it beside the grid, or close to what the pointer works on next, before the next picture. */
+// Steps of the search and analysis demo clips (features/demos/15-18b): the view arranged off camera. A Bio command
+// docks what it adds where it chooses (a search viewer under the grid, the cliffs table along the whole bottom of
+// the view); a clip moves it beside the grid, or close to what the pointer works on next, before the next picture.
 import type {Page} from '@playwright/test';
 import {When} from '@datagrok-libraries/bdd';
 import type {ElementRef} from '@datagrok-libraries/bdd/runtime';

@@ -267,6 +267,38 @@ category('Reactions: editor', () => {
       }
     }));
 
+  // a double-click on a reaction cell threw FormatException: 622.4 in Datagrok's Modal.clipToScreen: on a scaled screen
+  // (125%) the window and the dialog measure fractional pixels, the dialog moved back into the window was placed at
+  // left 622.4px, and Datagrok reads a dialog's left and top back as integers. Its place and size are whole pixels
+  test('the dialog moved back into the window, and full screen, are placed at whole pixels: Datagrok reads integers',
+    () => inCrux(async () => {
+      const {view, grid} = gridOf([ESTER]);
+      try {
+        const editor = await open(grid, 0);
+        try {
+          const root = editor.dialog.root;
+          const whole = (when: string) => {
+            for (const side of ['left', 'top', 'width', 'height'] as const) {
+              const v = root.style[side];
+              expect(v === '' || /^-?\d+px$/.test(v), true, `${when}: its ${side} ${v}, not whole pixels`);
+            }
+          };
+          // hanging out at the right and the bottom of a window measured fractional, as a scaled screen measures it
+          Object.assign(root.style, {left: `${window.innerWidth - 100}px`, top: `${window.innerHeight - 100}px`});
+          editor.fitToWindow(window.innerWidth - 0.4, window.innerHeight - 0.6);
+          whole('moved back in');
+          editor.toggleFullScreen();
+          whole('full screen');
+          editor.toggleFullScreen();
+          whole('back from full screen');
+        } finally {
+          editor.dialog.close();
+        }
+      } finally {
+        view.close();
+      }
+    }));
+
   // there was no full screen for the dialog (not in its title bar, its menus or the cell's), and double-click the only
   // way in: the header's switch, beside its help and x, and a double-click on its title fill the window and give the
   // dialog back; the cell's menu has "Edit reaction...", which opens the editor

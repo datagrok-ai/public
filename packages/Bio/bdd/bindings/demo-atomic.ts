@@ -1,5 +1,5 @@
-/* Steps of the structure demo clips (features/demos/05-08): the molecule a context panel pane draws, its
-   full-screen dialog and the magnifying lens over it, and the 3D view turned with the pointer. */
+// Steps of the structure demo clips (features/demos/05-08): the molecule a context panel pane draws, its
+// full-screen dialog and the magnifying lens over it, and the 3D view turned with the pointer.
 import type {Locator, Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
 import type {ElementRef} from '@datagrok-libraries/bdd/runtime';

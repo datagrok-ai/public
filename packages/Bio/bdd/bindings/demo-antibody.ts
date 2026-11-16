@@ -1,6 +1,6 @@
-/* Steps of the antibody demo clips (features/demos/09-11b): off camera, the window of positions a sequence
-   column's header shows, a width the header does not reset, balloons and a stale tooltip out of the way; on
-   camera, the header dragged along its ruler and its region band under the pointer. */
+// Steps of the antibody demo clips (features/demos/09-11b): off camera, the window of positions a sequence
+// column's header shows, a width the header does not reset, balloons and a stale tooltip out of the way; on
+// camera, the header dragged along its ruler and its region band under the pointer.
 import type {Page} from '@playwright/test';
 import {When} from '@datagrok-libraries/bdd';
 import type {ElementRef} from '@datagrok-libraries/bdd/runtime';
