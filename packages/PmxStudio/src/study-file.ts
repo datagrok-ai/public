@@ -168,7 +168,12 @@ export function roleColumns(df: DG.DataFrame): {animal: DG.Column, group: DG.Col
  *  its table's. */
 export function studyNameOf(df: DG.DataFrame): string {
   const planText = df.getTag(PLAN_TAG);
-  return (planText ? parsePlan(planText)?.name : '') || df.name;
+  try {
+    return (planText ? parsePlan(planText)?.name : '') || df.name;
+  } catch {
+    // a damaged plan: the header still names the study (saving says what is wrong)
+    return df.name;
+  }
 }
 
 export function studyOf(df: DG.DataFrame, humane: number | null, weightLimit: number | null = null): SavedStudy {
