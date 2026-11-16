@@ -27,7 +27,7 @@ const DISTANCES = new URL('../node_modules/datagrok-api/dist/src/utils/string-di
 const STUB = `
 import {DartWidget, JsViewer, Viewer, platform} from '${DOUBLES}';
 import {levenshteinDistance, jaroWinklerDistance} from '${DISTANCES}';
-export {BitSet, Column, DartWidget, DataFrame, DataQuery, Entity, EventType, FileInfo, FilterGroup, Func,
+export {BitSet, Column, DartWidget, DataConnection, DataFrame, DataQuery, Entity, EventType, FileInfo, FilterGroup, Func,
   Grid, JsViewer, ObjectPropertyBag, Package, Project, Property, PropertyGrid, Row, Script, TableQuery, User, View, Viewer,
   ViewerMetaHelper, Widget, WidgetDescriptor, platform,
   FuncCall, FuncCallParam, FuncParam} from '${DOUBLES}';
