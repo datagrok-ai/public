@@ -85,12 +85,21 @@ category('Reactions: centre', () => {
     });
   });
 
-  test('the Reaction panel names the colours under its picture and its steps, and full screen too', async () => {
+  // a route's legend sat at the end, under its steps (and a second under the route), while a single reaction's sat
+  // right under its picture: one legend now, right under the route's picture, its steps sharing it, in the panel and
+  // in full screen
+  test('the Reaction panel names the colours once, right under its picture, a route\'s steps sharing it; full ' +
+    'screen too', async () => {
     await inEngine(ChemicalEngine.Crux, async () => {
       const example = defaultExample().text;
+      const underPicture = (root: HTMLElement) => {
+        const legend = root.querySelector(`.${LEGEND_CLASS}`);
+        return !!legend && legend.previousElementSibling === root.querySelector('canvas');
+      };
       const panel = reactionPanel(example);
       try {
-        expect(legends(panel.root).join(' | '), `${GREEN_RED} | ${GREEN_RED}`, 'under the route and under its steps');
+        expect(legends(panel.root).join(' | '), GREEN_RED, 'one legend: the route\'s, its steps sharing it');
+        expect(underPicture(panel.root), true, 'right under the route\'s picture');
       } finally {
         panel.detach();
       }
@@ -99,7 +108,8 @@ category('Reactions: centre', () => {
       scheme.free();
       const dialog = openReactionFullScreen(example, steps);
       try {
-        expect(legends(dialog.root).join(' | '), `${GREEN_RED} | ${GREEN_RED}`, 'full screen');
+        expect(legends(dialog.root).join(' | '), GREEN_RED, 'full screen: one legend');
+        expect(underPicture(dialog.root), true, 'full screen: right under the route\'s picture');
       } finally {
         dialog.close();
       }

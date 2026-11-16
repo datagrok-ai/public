@@ -8,7 +8,7 @@
  * file), in either engine mode, with Chem's molecule draw options (as reaction cells are).
  */
 import {ChemWasm, cruxLoadFailed, noteCruxError} from '../../engine/crux-module';
-import {chemDrawOptions, tooLargeToDraw} from '../../rendering/crux-reaction-drawing';
+import {CHEM_CENTRE, chemDrawOptions, tooLargeToDraw} from '../../rendering/crux-reaction-drawing';
 
 /** The browser's localStorage key that holds the document, and the version of what is stored under it: 2, one
  * reaction (`{version, title, text, mapNumbers}`); a page of version 1 is read as none (the default example). */
@@ -447,10 +447,10 @@ export class ReactionPicture {
     }
   }
 
-  // Crux's drawing options for this picture, besides its box.
+  // Crux's drawing options for this picture, besides its box: Chem's look, its reaction centre's widths too.
   private options(): object {
     return {bondLength: BOND_LENGTH, mapNumbers: this.reaction.mapNumbers ? 'show' : 'hide',
-      drawOptions: chemDrawOptions()};
+      drawOptions: chemDrawOptions(), ...CHEM_CENTRE};
   }
 
   /** The frame of the picture on a page `width` px wide: Crux's box is the page's width and the scheme's natural

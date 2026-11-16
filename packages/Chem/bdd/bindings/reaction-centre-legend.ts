@@ -21,7 +21,7 @@ const COLOUR_OF: {[words: string]: string} = {'bond made': 'rgb(0, 158, 76)', 'b
   'bond order changed': 'rgb(30, 107, 234)'};
 
 /** A legend as the page shows it: shown or hidden, its first words, each colour's words and swatch, and whether it is
- * right under a picture (a canvas just before it, above it). */
+ * right under the first picture (the route's: the first canvas, just before it, above it, centred on it). */
 interface Legend {shown: boolean, title: string, items: string[], underPicture: boolean}
 
 /** The legends in `root`, in order (run in the page). */
@@ -33,9 +33,10 @@ const readLegends = (root: Element): Legend[] =>
       const [swatch, words] = Array.from(item.children) as HTMLElement[];
       return `${words?.textContent ?? ''} ${swatch ? getComputedStyle(swatch).backgroundColor : ''}`;
     });
+    const [p, r] = [before?.getBoundingClientRect(), legend.getBoundingClientRect()];
     return {shown: legend.style.display !== 'none', title: legend.children[0]?.textContent ?? '', items,
-      underPicture: before?.tagName === 'CANVAS' &&
-        before.getBoundingClientRect().bottom <= legend.getBoundingClientRect().top + 1};
+      underPicture: before?.tagName === 'CANVAS' && before === root.querySelector('canvas') && !!p &&
+        p.bottom <= r.top + 1 && Math.abs((p.left + p.right) / 2 - (r.left + r.right) / 2) <= 2};
   });
 
 /** The legends the current view shows (the Reactions app). */
@@ -44,28 +45,29 @@ async function appLegends(page: Page): Promise<Legend[]> {
   return root.evaluate(readLegends);
 }
 
-/** Polls `read` until a legend under the route's picture and one under its steps both name `words` (comma
- * separated), each in its colour, and no other legend is shown. */
-async function expectRouteLegends(read: () => Promise<Legend[]>, where: string, words: string): Promise<void> {
+/** Polls `read` until one legend, right under the route's picture and centred on it, names `words` (comma
+ * separated), each in its colour, and no other legend is shown (a route's steps share the route's: a second one sat at
+ * the end, under the steps). */
+async function expectRouteLegend(read: () => Promise<Legend[]>, where: string, words: string): Promise<void> {
   const items = words.split(',').map((w) => w.trim()).map((w) => `${w} ${COLOUR_OF[w] ?? '(no such colour)'}`);
   const one: Legend = {shown: true, title: 'Reaction centre:', items, underPicture: true};
   await expect.poll(async () => JSON.stringify((await read()).filter((l) => l.shown)),
-    {message: `${where}: a legend under the route and one under its steps`, timeout: pollMs(20000)})
-    .toBe(JSON.stringify([one, one]));
+    {message: `${where}: one legend, right under the route's picture`, timeout: pollMs(20000)})
+    .toBe(JSON.stringify([one]));
 }
 
-export const appRouteLegends = Then('the Reactions app should name the centre\'s colours under its route and under ' +
-  'its steps: {string}', async (page: Page, words: string) => {
-  await expectRouteLegends(() => appLegends(page), 'the Reactions app', words);
-}, {tier: 'ui', description: 'the app\'s preview: one line under the route\'s picture and one under its steps\' ' +
-  'pictures, "Reaction centre:" and each colour the pictures have, its swatch in that colour, and no other'});
+export const appRouteLegend = Then('the Reactions app should name the centre\'s colours once, right under its ' +
+  'route: {string}', async (page: Page, words: string) => {
+  await expectRouteLegend(() => appLegends(page), 'the Reactions app', words);
+}, {tier: 'ui', description: 'the app\'s preview: one line right under the route\'s picture, centred on it, ' +
+  '"Reaction centre:" and each colour the route and its steps have, its swatch in that colour, and no other'});
 
-export const fullScreenRouteLegends = Then('the full-screen Reaction dialog should name the centre\'s colours under ' +
-  'its route and under its steps: {string}', async (page: Page, words: string) => {
+export const fullScreenRouteLegend = Then('the full-screen Reaction dialog should name the centre\'s colours once, ' +
+  'right under its route: {string}', async (page: Page, words: string) => {
   const dialog = (await locate(page, el('"Reaction" dialog'))).first();
   await expect(dialog, 'the full-screen view').toBeVisible({timeout: pollMs(15000)});
-  await expectRouteLegends(() => dialog.evaluate(readLegends), 'the full-screen view', words);
-}, {tier: 'ui', description: 'the full-screen view\'s legends, as the app\'s: under the route and under its steps'});
+  await expectRouteLegend(() => dialog.evaluate(readLegends), 'the full-screen view', words);
+}, {tier: 'ui', description: 'the full-screen view\'s legend, as the app\'s: once, right under the route\'s picture'});
 
 export const appFullScreen = When('user clicks the Full screen icon of the Reactions app\'s preview', async (page: Page) => {
   // the preview's own icon (the Reaction panel's, widgets/reaction-panel.ts), found in the app's view and marked

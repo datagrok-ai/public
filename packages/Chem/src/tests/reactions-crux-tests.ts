@@ -10,13 +10,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {after, awaitCheck, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {RDKitReactionRenderer, parseMultiStepReaction} from '../rendering/rdkit-reaction-renderer';
-import {chemDrawOptions, cruxDrawsSteps, cruxReactionCounts, cruxReactionNotes, cruxReactionSteps,
-  cruxReadsReaction, drawReactionByCrux, productAtomsMissing} from '../rendering/crux-reaction-drawing';
-import {FULL_SCREEN_CLASS, FULL_SCREEN_FILL, FULL_SCREEN_LEGEND_GAP, FULL_SCREEN_LINE_SHARE, FULL_SCREEN_MAX_BOND,
-  MAPPER_FAILED_WORDS, MAPPING_CLASS, MAP_LOAD_TIMEOUT_MS, MAP_TIMEOUT_MS, NOT_READ_WORDS, noSideWords,
-  openReactionFullScreen, reactionPanel, setMapperLoaderForTests, setReactionMapperForTests}
-  from '../widgets/reaction-panel';
-import {LEGEND_CLASS} from '../widgets/reaction-centre-legend';
+import {CHEM_CENTRE, CruxPictureOptions, chemDrawOptions, cruxDrawsSteps, cruxReactionCounts, cruxReactionNotes,
+  cruxReactionSteps, cruxReadsReaction, drawReactionByCrux, productAtomsMissing}
+  from '../rendering/crux-reaction-drawing';
+import {EXPORT_ICON_CLASS, FULL_SCREEN_CENTRE, FULL_SCREEN_CLASS, FULL_SCREEN_FILL, FULL_SCREEN_LEGEND_GAP,
+  FULL_SCREEN_LINE_SHARE, FULL_SCREEN_MAX_BOND, MAPPER_FAILED_WORDS, MAPPING_CLASS, MAP_LOAD_TIMEOUT_MS, MAP_TIMEOUT_MS,
+  NOT_READ_WORDS, noSideWords, openReactionFullScreen, reactionPanel, setMapperLoaderForTests,
+  setReactionMapperForTests} from '../widgets/reaction-panel';
+import {LEGEND_CLASS, PICTURE_LEGEND_GAP} from '../widgets/reaction-centre-legend';
+import {EXPORT_TITLE, PREVIEW_CLASS, exportInputsOf} from '../widgets/reaction-export';
 import {defaultExample, examples} from '../utils/reactions/reaction-document';
 import {agentsBackOverTheArrow, mapReaction, mappedInTheValue, mapperExported}
   from '../utils/reactions/reaction-mapping';
@@ -182,21 +184,49 @@ category('Reactions: Crux', () => {
     });
   });
 
+  /** The line widths Crux strokes `reaction` with in a cell's box, one per stroke. */
+  const strokeWidths = (reaction: string, options: CruxPictureOptions): number[] => {
+    const canvas = ui.canvas(CELL_W, CELL_H);
+    const g = canvas.getContext('2d')!;
+    const widths: number[] = [];
+    const stroke = g.stroke;
+    g.stroke = function(this: CanvasRenderingContext2D, ...args: any[]) {
+      widths.push(this.lineWidth);
+      return (stroke as any).apply(this, args);
+    };
+    drawReactionByCrux(g, reaction, 0, 0, CELL_W, CELL_H, options);
+    return widths;
+  };
+
   test('Crux strokes a reaction at Chem\'s molecule line width (choice 1A)', async () => {
     // (without Chem's draw options Crux strokes bonds, arrow and plus signs at 2 px)
     await inCrux(async () => {
-      const canvas = ui.canvas(CELL_W, CELL_H);
-      const g = canvas.getContext('2d')!;
-      const widths: number[] = [];
-      const stroke = g.stroke;
-      g.stroke = function(this: CanvasRenderingContext2D, ...args: any[]) {
-        widths.push(this.lineWidth);
-        return (stroke as any).apply(this, args);
-      };
-      drawReactionByCrux(g, 'ClCC(=O)O.OCC>>ClCC(=O)OCC', 0, 0, CELL_W, CELL_H, {drawOptions: chemDrawOptions()});
+      const widths = strokeWidths('ClCC(=O)O.OCC>>ClCC(=O)OCC', {drawOptions: chemDrawOptions()});
       const width = RDKIT_COMMON_RENDER_OPTS.bondLineWidth;
       expect(widths.length > 10, true, `strokes: ${widths.length}`);
       expect(widths.every((w) => Math.abs(w - width) < 0.05), true, `stroke widths ${[...new Set(widths)].join(', ')}`);
+    });
+  });
+
+  // the reaction centre was drawn at Crux's 2x and 1x of Chem's 0.7 px line, hairlines in Datagrok (the owner: "still
+  // too thin"): Chem asks for 4x and 2x (CHEM_CENTRE: a bond of one line, each line of a double one), full screen for
+  // 3x and 1.5x of its thicker line. Red on an engine before chem-wasm's centreWidth and centreLinesWidth
+  test('Chem strokes a reaction centre at 4x its line, each line of a double centre bond at 2x; full screen at 3x ' +
+    'and 1.5x', async () => {
+    await inCrux(async () => {
+      const dielsAlder = examples()[1].text; // mapped: bonds made (single) and bonds whose order changed (double)
+      const has = (widths: number[], w: number) => widths.some((x) => Math.abs(x - w) < 0.05);
+      const line = RDKIT_COMMON_RENDER_OPTS.bondLineWidth;
+      const cell = strokeWidths(dielsAlder, {drawOptions: chemDrawOptions()});
+      expect(`${has(cell, line)} ${has(cell, CHEM_CENTRE.centreWidth * line)} ` +
+        `${has(cell, CHEM_CENTRE.centreLinesWidth * line)}`, 'true true true',
+      `a cell: plain, centre and centre double-bond lines; stroke widths ${[...new Set(cell)].join(', ')}`);
+      const fullLine = 2.8; // full screen's line at a 100 px bond (FULL_SCREEN_LINE_SHARE)
+      const full = strokeWidths(dielsAlder, {drawOptions: {...chemDrawOptions(), bondLineWidth: fullLine},
+        centre: FULL_SCREEN_CENTRE});
+      expect(`${has(full, FULL_SCREEN_CENTRE.centreWidth * fullLine)} ` +
+        `${has(full, FULL_SCREEN_CENTRE.centreLinesWidth * fullLine)}`, 'true true',
+      `full screen: stroke widths ${[...new Set(full)].join(', ')}`);
     });
   });
 
@@ -490,6 +520,64 @@ category('Reactions: Crux', () => {
     }
   };
   const PLAIN = 'CC(=O)Cl.OCC>>CCOC(C)=O';
+
+  // a route the panel maps step by step was passed on unmapped: its picture stayed uncoloured, its legend sat at the
+  // panel's end under the steps, full screen's legend at the end of its list of steps, and the Export panel's Map
+  // numbers and Reaction centre colours did nothing. Now the route's picture is drawn again from its mapped steps, its
+  // one legend right under it, centred on it, and full screen and Export are given the mapped route
+  test('a route mapped step by step: its picture drawn mapped, one legend right under it; full screen and Export get ' +
+    'it mapped', async () => {
+    let mappedSteps: string[] = [];
+    let asked = 0;
+    await withMapper(async () => ({mapped: mappedSteps[asked++], confidence: 0.9}), async () => {
+      mappedSteps = cruxReactionSteps(defaultExample().text) ?? [];
+      expect(mappedSteps.length > 1, true, 'the default route\'s steps, mapped');
+      const route = mappedSteps.map((s) => s.replace(/:\d+\]/g, ']')).join('--**--');
+      const isMapped = (text?: string) => /:\d+\]/.test(text ?? '');
+      expect(isMapped(route), false, 'the route asked for, unmapped');
+      // the legend right under the first picture, centred on it, and no other; the picture drawn mapped
+      const underPicture = (root: HTMLElement, where: string) => {
+        const legends = (Array.from(root.querySelectorAll(`.${LEGEND_CLASS}`)) as HTMLElement[])
+          .filter((l) => l.style.display !== 'none');
+        expect(legends.length, 1, `${where}: one legend shown`);
+        const picture = legends[0].previousElementSibling as HTMLCanvasElement | null;
+        expect(picture !== null && picture === root.querySelector('canvas'), true,
+          `${where}: right after the route's picture, the first`);
+        expect(isMapped(picture!.dataset.reaction), true, `${where}: the route's picture drawn mapped`);
+        const [p, l] = [picture!, legends[0]].map((e) => e.getBoundingClientRect());
+        expect(l.top >= p.bottom - 1 && l.top - p.bottom <= PICTURE_LEGEND_GAP + 1 &&
+          Math.abs((l.left + l.right) / 2 - (p.left + p.right) / 2) <= 2, true,
+        `${where}: right under the picture, centred on it: ${JSON.stringify(l)} under ${JSON.stringify(p)}`);
+      };
+      await shownPanel(route, async (panel) => {
+        const {state, text} = await mappingAnswer(panel);
+        expect(`${state} ${asked}`, `done ${mappedSteps.length}`, text);
+        await awaitCheck(() => isMapped(panel.root.querySelector('canvas')?.dataset.reaction), 'drawn mapped', 3000);
+        underPicture(panel.root, 'the panel');
+        (panel.root.querySelector('.fa-expand-alt') as HTMLElement).click();
+        const full = DG.Dialog.getOpenDialogs().find((d) => d.title === 'Reaction')!;
+        try {
+          await awaitCheck(() => ((full.root.querySelector(`.${LEGEND_CLASS}`) as HTMLElement | null)?.offsetHeight ??
+            0) > 0, 'full screen\'s legend', 5000);
+          underPicture(full.root, 'full screen');
+        } finally {
+          full.close();
+        }
+        (panel.root.querySelector(`.${EXPORT_ICON_CLASS}`) as HTMLElement).click();
+        const exported = DG.Dialog.getOpenDialogs().find((d) => d.title === EXPORT_TITLE)!;
+        try {
+          const inputs = exportInputsOf(exported.root)!;
+          expect(`${inputs.colours.enabled} ${inputs.mapNumbers.enabled}`, 'true true',
+            'Export: the mapped route\'s Reaction centre colours and Map numbers apply');
+          inputs.colours.value = true;
+          const preview = exported.root.querySelector(`.${PREVIEW_CLASS}`) as HTMLElement;
+          await awaitCheck(() => preview.dataset.legend === 'true', 'Export: the colours on, the legend drawn', 5000);
+        } finally {
+          exported.close();
+        }
+      });
+    });
+  });
 
   // C1CCNCC1>>CC(=O)N1CCCCC1, an N-acetylation with no acetyl source drawn, was mapped with a ring
   // carbon on the acetyl CH3, 63% sure, over the 50% warning: nothing said. Products holding heavy atoms that no
@@ -818,7 +906,8 @@ category('Reactions: Crux', () => {
 
   // where every card is drawn from the route mapped so far, drawing all the cards again after each
   // mapped step drew a 5-step route's cards 5 times (~85 ms); they are drawn again once. An engine before it draws
-  // only the step mapped, by itself: one card a step, as before
+  // only the step mapped, by itself: one card a step, as before. The route's own picture is drawn again once with them,
+  // from its mapped steps
   test('a mapping pass draws each step card once: the cards once at its end where Crux draws a step alone, else ' +
     'each mapped step\'s own', async () => {
     const route = 'CCO>>CC=O>>CC(=O)O>>CC(=O)OC';
@@ -851,9 +940,15 @@ category('Reactions: Crux', () => {
           expect(state, 'done', text);
           await awaitCheck(() => canvases().slice(1).every((c) => ink(c) > 100), 'the mapped cards drawn', 3000);
           await DG.delay(500); // nothing more to come: a late redraw would be counted
-          const cards = canvases().slice(1);
-          expect(new Set(drawn).size, 3, `cards drawn in the pass: ${drawn.length} draws of ${new Set(drawn).size}`);
-          expect(drawn.every((c) => cards.includes(c)), true, 'only the cards shown drawn');
+          const [picture, ...cards] = canvases();
+          // the route's picture is drawn from its steps joined (`--**--`), a card from its step
+          const routeDraws = drawn.filter((c) => (c.dataset.reaction ?? '').includes('--**--'));
+          const cardDraws = drawn.filter((c) => !routeDraws.includes(c));
+          expect(new Set(cardDraws).size, 3,
+            `cards drawn in the pass: ${cardDraws.length} draws of ${new Set(cardDraws).size}`);
+          expect(cardDraws.every((c) => cards.includes(c)), true, 'only the cards shown drawn');
+          expect(`${routeDraws.length} ${routeDraws.includes(picture)}`, `${cruxDrawsSteps() ? 1 : 3} true`,
+            'the route\'s picture drawn again from its mapped steps: once, or once a step mapped');
         });
       } finally {
         scheme.draw_to_canvas = draw;

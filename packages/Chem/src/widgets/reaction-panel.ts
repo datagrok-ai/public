@@ -10,14 +10,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
 import {parseMultiStepReaction} from '../rendering/rdkit-reaction-renderer';
-import {StepTexts, chemDrawOptions, cruxDrawsReactions, cruxDrawsSteps, cruxFittedPicture, cruxReactionNotes,
-  cruxReactionSteps, cruxReadProblem, cruxReadsReaction, drawReactionByCrux, productAtomsMissing, stepTextsOfStep,
-  tooLargeToDraw} from '../rendering/crux-reaction-drawing';
+import {CentreWidths, StepTexts, chemDrawOptions, cruxDrawsReactions, cruxDrawsSteps, cruxFittedPicture,
+  cruxReactionNotes, cruxReactionSteps, cruxReadProblem, cruxReadsReaction, drawReactionByCrux, productAtomsMissing,
+  stepTextsOfStep, tooLargeToDraw} from '../rendering/crux-reaction-drawing';
 import {cruxMessage} from '../utils/reactions/reaction-document';
 import {MappedReaction, mapReaction, mappedInTheValue, mapperExported, mapperReady}
   from '../utils/reactions/reaction-mapping';
 import {Flag, checkMapping, checkReaction, checkTemplateMapping, checksModule} from '../utils/footguns/checks';
-import {centreLegend, setCentreLegend} from './reaction-centre-legend';
+import {PICTURE_LEGEND_GAP, centreLegend, pictureWithLegend, setCentreLegend} from './reaction-centre-legend';
 import {openReactionExport} from './reaction-export';
 import {CDXML_DRAWING, CDXML_UNREAD, DrawnPicture, cdxmlReactionSmiles, cellPicture, isCdxmlText, moleculesOnNoStep,
   noStepWords} from '../rendering/cdxml-reaction-cells';
@@ -105,8 +105,12 @@ const FULL_SCREEN_STEP_HEIGHT = 220;
 export const FULL_SCREEN_FILL = 0.8;
 export const FULL_SCREEN_MAX_BOND = 160;
 export const FULL_SCREEN_LINE_SHARE = 0.028;
-/** The room between the full-screen picture and its legend, right under it (CSS px). */
-export const FULL_SCREEN_LEGEND_GAP = 8;
+/** The full-screen picture's reaction centre widths (multiples of its line): its line already a share of its bond,
+ * thicker than the cells' 0.7 px, Chem's 4x and 2x would be bands (11 px at a 100 px bond); 3x and 1.5x keep the
+ * centre in about the panel's proportion to the bond (crux-core decision centre-width-option). */
+export const FULL_SCREEN_CENTRE: CentreWidths = {centreWidth: 3, centreLinesWidth: 1.5};
+/** The room between the full-screen picture and its legend, right under it (CSS px): the panel's. */
+export const FULL_SCREEN_LEGEND_GAP = PICTURE_LEGEND_GAP;
 /** A route's full-screen view: the share of the height its picture takes, the rest its steps' list (which scrolls by
  * itself: the dialog never does). */
 const FULL_SCREEN_ROUTE_SHARE = 0.55;
@@ -116,19 +120,17 @@ export const FULL_SCREEN_CLASS = 'chem-reaction-full-screen';
 /** The full-screen view's picture and its legend, one group centred in the room a flex column gives `stage`: the
  * canvas the size of the drawing, fitted to the room the legend leaves ({@link cruxFittedPicture}), the legend right
  * under it, centred on it; drawn again whenever the room changes (`data-bond-length`, `data-line-width`: what is
- * drawn, which the tests read). */
+ * drawn, which the tests read). The legend names what the picture and a route's `steps` colour. */
 function fittedPicture(reaction: string, mapNumbers?: 'show' | 'hide', subs?: Subscription[],
-  stepTexts?: StepTexts | null): HTMLElement {
+  stepTexts?: StepTexts | null, steps: string[] = []): HTMLElement {
   const canvas = ui.canvas();
   Object.assign(canvas.style, {display: 'block', flex: 'none'});
   canvas.dataset.reaction = reaction;
   canvas.dataset.stepTexts = `${(stepTexts ?? []).reduce((n, e) => n + (e ? e.above.length + e.below.length : 0), 0)}`;
-  const legend = centreLegend([reaction]);
-  // right under the picture, the flex gap alone between them (the legend's own margin is the panel's)
-  Object.assign(legend.style, {flex: 'none', margin: '0'});
-  const stage = ui.div([canvas, legend]);
-  Object.assign(stage.style, {flex: '1 1 0', minHeight: '0', display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center', overflow: 'hidden', gap: `${FULL_SCREEN_LEGEND_GAP}px`});
+  const legend = centreLegend([reaction, ...steps]);
+  // the panel's group (the legend right under the picture, centred on it), filling the room the column gives it
+  const stage = pictureWithLegend(canvas, legend);
+  Object.assign(stage.style, {flex: '1 1 0', minHeight: '0', justifyContent: 'center', overflow: 'hidden'});
   let drawnRoom = '';
   const draw = () => {
     const below = legend.style.display === 'none' ? 0 : legend.offsetHeight + FULL_SCREEN_LEGEND_GAP;
@@ -138,7 +140,8 @@ function fittedPicture(reaction: string, mapNumbers?: 'show' | 'hide', subs?: Su
     drawnRoom = `${room}x${roomHeight}`;
     const own = chemDrawOptions();
     const started = performance.now();
-    const fit = cruxFittedPicture(reaction, room, roomHeight, {drawOptions: own, mapNumbers, stepTexts},
+    const fit = cruxFittedPicture(reaction, room, roomHeight,
+      {drawOptions: own, mapNumbers, stepTexts, centre: FULL_SCREEN_CENTRE},
       FULL_SCREEN_MAX_BOND, FULL_SCREEN_FILL);
     canvas.dataset.fitMs = `${Math.round(performance.now() - started)}`;
     // a route too long for its room at a readable bond: drawn taller, its room scrolling (from its top)
@@ -158,7 +161,8 @@ function fittedPicture(reaction: string, mapNumbers?: 'show' | 'hide', subs?: Su
     canvas.width = Math.round(w * r);
     canvas.height = Math.round(h * r);
     drawReactionByCrux(canvas.getContext('2d')!, reaction, 0, 0, w, h,
-      {drawOptions, mapNumbers, stepTexts, bondLength: fit?.bondLength, columnWidth: fit?.columnWidth});
+      {drawOptions, mapNumbers, stepTexts, bondLength: fit?.bondLength, columnWidth: fit?.columnWidth,
+        centre: FULL_SCREEN_CENTRE});
   };
   const sub = ui.onSizeChanged(stage).subscribe(draw);
   sizeSubs.set(canvas, sub);
@@ -175,7 +179,7 @@ function fittedPicture(reaction: string, mapNumbers?: 'show' | 'hide', subs?: Su
 export function openReactionFullScreen(reaction: string, steps: string[] = [],
   mapNumbers?: 'show' | 'hide', stepTexts?: StepTexts | null): DG.Dialog {
   const subs: Subscription[] = [];
-  const picture = fittedPicture(reaction, mapNumbers, subs, stepTexts);
+  const picture = fittedPicture(reaction, mapNumbers, subs, stepTexts, steps);
   const host = ui.div([picture], FULL_SCREEN_CLASS);
   Object.assign(host.style, {display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: '0',
     width: '100%', overflow: 'hidden'});
@@ -186,7 +190,7 @@ export function openReactionFullScreen(reaction: string, steps: string[] = [],
     steps.forEach((step, i) => list.append(ui.label(`Step ${i + 1}`),
       reactionCanvas(routeOf(steps), () => FULL_SCREEN_STEP_HEIGHT, FULL_SCREEN_BOND_LENGTH, mapNumbers, subs,
         stepTexts, {index: i, text: step})));
-    list.append(centreLegend(steps));
+    // the steps' colours are named by the route's legend, right under its picture
     host.append(list);
   }
   const dialog = ui.dialog({title: 'Reaction', helpUrl: reactionsHelpUrl('the-reaction-panel'), showFooter: false})
@@ -419,11 +423,11 @@ export function reactionPanel(reaction: string, options: {mapNumbers?: 'show' | 
     ...(cdxmlPage ? {cdxml: async () => cdxmlPage, moleculesLeftOut: moleculesOnNoStep(cdxmlPage)} : {})}),
   'Export...');
   exportIcon.classList.add(EXPORT_ICON_CLASS);
-  // the reaction centre's colours named under the pictures that show them
+  // the reaction centre's colours named right under the large picture, centred on it, as in full screen; a route's
+  // steps, coloured as the route is, share it
   const pictureLegend = centreLegend([reaction]);
-  const stepsLegend = centreLegend(steps.length > 1 ? steps : []);
-  const root = ui.divV([ui.divH([exportIcon, fullScreen], {style: {justifyContent: 'flex-end', gap: '8px'}}), picture,
-    pictureLegend]);
+  const root = ui.divV([ui.divH([exportIcon, fullScreen], {style: {justifyContent: 'flex-end', gap: '8px'}}),
+    pictureWithLegend(picture, pictureLegend)]);
   const stepCanvases: HTMLCanvasElement[] = [];
   if (steps.length > 1) {
     root.append(ui.h3('Steps'));
@@ -432,7 +436,6 @@ export function reactionPanel(reaction: string, options: {mapNumbers?: 'show' | 
         {index: i, text: step}));
       root.append(ui.label(`Step ${i + 1}`), stepCanvases[i]);
     });
-    root.append(stepsLegend);
   }
   // a template's notes, which no picture draws (in the context panel, not in the cells)
   const notes = cruxReactionNotes(reaction);
@@ -444,8 +447,10 @@ export function reactionPanel(reaction: string, options: {mapNumbers?: 'show' | 
   // atom mapping: automatic (5 s a reaction, no button; errors caught; never for a template), on a Crux worker, after
   // MAP_DELAY_MS and one panel at a time; the picture is drawn unmapped at once and swapped for the mapped one when it
   // comes. A single reaction: the picture shows it mapped. A route: RXNMapper maps one reaction at a time, so each step
-  // is mapped on its own, one after another, and drawn mapped under Steps; the route's picture stays unmapped (mapping
-  // a route whole said "not a valid reaction string").
+  // is mapped on its own, one after another (mapping a route whole said "not a valid reaction string"), drawn mapped
+  // under Steps, and the route's picture is drawn again from its steps as mapped: what full screen and Export are given
+  // (the route stayed unmapped there: Export's Map numbers and centre colours did nothing, and the legend sat under the
+  // steps, not under the route's picture).
   if (mapperExported() || mapper) {
     const status = ui.divV([], MAPPING_CLASS);
     // its lines as wide as the panel, wrapped, never widening it (as the flag lines): "Not mapped: a template keeps…"
@@ -519,13 +524,25 @@ export function reactionPanel(reaction: string, options: {mapNumbers?: 'show' | 
               stepCanvases[j] = next;
             }
           };
+          // the route's picture drawn again from its steps as mapped so far, coloured as the cards are; it is what the
+          // panel shows now (full screen, Export), its legend right under it
+          const drawRoute = () => {
+            shown = routeOf(shownSteps);
+            const next = reactionCanvas(shown, pictureHeight, PICTURE_BOND_LENGTH, mapNumbers, subs, stepTexts);
+            letGo(picture);
+            picture.replaceWith(next);
+            picture = next;
+            setCentreLegend(pictureLegend, [shown]);
+          };
           let cardsTimer: ReturnType<typeof setTimeout> | null = null;
           const drawCardsNow = () => {
             if (cardsTimer !== null)
               clearTimeout(cardsTimer);
             cardsTimer = null;
-            if (!gone)
-              drawCards(0, stepCanvases.length);
+            if (gone)
+              return;
+            drawCards(0, stepCanvases.length);
+            drawRoute();
           };
           for (let i = 0; i < steps.length; i++) {
             const side = emptySide(steps[i]);
@@ -541,14 +558,14 @@ export function reactionPanel(reaction: string, options: {mapNumbers?: 'show' | 
                   lines.push(`Step ${i + 1}: mapping took longer than ${MAP_TIMEOUT_MS / 1000} s`);
                 } else {
                   shownSteps[i] = answer.mapped;
-                  if (!cruxDrawsSteps())
+                  if (!cruxDrawsSteps()) {
                     drawCards(i, i + 1);
-                  else {
+                    drawRoute();
+                  } else {
                     if (cardsTimer !== null)
                       clearTimeout(cardsTimer);
                     cardsTimer = setTimeout(drawCardsNow, CARDS_REDRAW_MS);
                   }
-                  setCentreLegend(stepsLegend, shownSteps);
                   lines.push(`Step ${i + 1}: ${mappedWords(answer.confidence)}`,
                     ...flagLines(checkMapping(answer.confidence, productAtomsMissing(steps[i])), i + 1));
                 }

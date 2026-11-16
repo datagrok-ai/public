@@ -126,6 +126,9 @@ export interface CruxPictureOptions {
   /** The scheme broken into rows as a page's column of this width is (px; chem-wasm's `column`, the Export panel's
    * Width): a long route wraps instead of shrinking into one row; left out, the box's own layout. */
   columnWidth?: number;
+  /** The reaction centre's widths; left out, {@link CHEM_CENTRE} (full screen's lines are thicker, its centre less so
+   * against them). */
+  centre?: CentreWidths;
 }
 
 /** A text over or under a step's arrow as a drawing holds it (crux-sketch's `ReactionStepText`): its place,
@@ -186,12 +189,27 @@ export function chemDrawOptions(col?: DG.Column | null): {[key: string]: any} {
   return createRenderingOpts(renderingOptions(col));
 }
 
-/** The drawing options that change the picture, besides its size: the caller's, Chem's agent names, and no template
- * footnotes: Chem draws a template's notes in no picture, the Reaction panel lists them as text (they belong in the
- * context panel when the reaction is clicked, not in the cells; {@link cruxReactionNotes}). */
+/** The reaction centre's widths Chem draws with, as multiples of its bond line (chem-wasm's `centreWidth`, a bond of one
+ * line, and `centreLinesWidth`, each line of a double, triple or aromatic one). Crux's own, 2x and 1x, were chosen in
+ * its screen look, whose line is 2 px; at Chem's 0.7 px they were hairlines (1.4 px, 0.7 px: the owner, "still too
+ * thin"). 4x and 2x: 2.8 px and 1.4 px, and a double bond's two lines stay apart even in a cell (crux-core decision
+ * centre-width-option: they touch from 5x and 2.5x). An engine before the keys ignores them. */
+export const CHEM_CENTRE: CentreWidths = {centreWidth: 4, centreLinesWidth: 2};
+
+/** A reaction centre's widths (multiples of the bond line): {@link CHEM_CENTRE}. */
+export interface CentreWidths {
+  centreWidth: number;
+  centreLinesWidth: number;
+}
+
+/** The drawing options that change the picture, besides its size: the caller's, Chem's agent names, its reaction
+ * centre's widths, and no template footnotes: Chem draws a template's notes in no picture, the Reaction panel lists
+ * them as text (they belong in the context panel when the reaction is clicked, not in the cells;
+ * {@link cruxReactionNotes}). */
 function pictureOptions(options: CruxPictureOptions): object {
   return {bondLength: options.bondLength, agentNames: CHEM_AGENT_NAMES, drawOptions: options.drawOptions,
     footnotes: false, mapNumbers: options.mapNumbers, stepTexts: options.stepTexts ?? undefined, step: options.step,
+    ...(options.centre ?? CHEM_CENTRE),
     ...(options.columnWidth === undefined ? {} : {column: true, width: options.columnWidth})};
 }
 

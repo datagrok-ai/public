@@ -39,8 +39,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ChemWasm, cruxLoadFailed, cruxModuleSync, noteCruxError} from '../engine/crux-module';
-import {StepTexts, chemDrawOptions, cruxCentreCounts, cruxDrawsStepTexts, cruxDrawsSteps, cruxForReactions,
-  stepTextsOfStep, tooLargeToDraw} from '../rendering/crux-reaction-drawing';
+import {CHEM_CENTRE, StepTexts, chemDrawOptions, cruxCentreCounts, cruxDrawsStepTexts, cruxDrawsSteps,
+  cruxForReactions, stepTextsOfStep, tooLargeToDraw} from '../rendering/crux-reaction-drawing';
 import {CRUX_OFF, TOO_LARGE, inkRows, withResolution} from '../utils/reactions/reaction-document';
 import {CENTRE_COLOURS, LEGEND_TITLE, LEGEND_WORDS} from './reaction-centre-legend';
 import {DrawnPicture, DrawnPictureOptions, cdxmlReactionSmiles, cellPicture, isCdxmlText, moleculesOnNoStep,
@@ -77,6 +77,8 @@ export const EXPORT_WIDTHS: {label: string, cm: number | null}[] = [
 /** The map numbers' box, and what the note says of a mapped reaction's CDXML page, which the box governs too (one
  * rule for every format; the page keeps the mapping as ChemDraw's ReactionStepAtomMap). */
 export const MAP_NUMBERS = 'Map numbers';
+/** What the Map numbers and Reaction centre colours boxes say, off, of a reaction without map numbers. */
+export const NOT_MAPPED_TOOLTIP = 'The reaction has no atom map numbers: no centre to colour, no numbers to show';
 export const CDXML_WITH_MAPPING = 'CDXML with the atom mapping (ChemDraw\'s ReactionStepAtomMap)';
 export const CDXML_WITHOUT_MAPPING = 'CDXML without the atom mapping';
 
@@ -387,8 +389,9 @@ export class ReactionExport {
     // a page, not a cell: no levels of detail (a cell's: the agents left out under 9 px bonds; crux-core's `levels`
     // option, which an engine before it ignores: there a single column drew the default route without its agents)
     const o: {[key: string]: any} = {look: preset.look, centre: choice.centre, clearBackground: false, levels: false};
+    // the host's look: Chem's molecule options and its reaction centre's widths, as its cells (ACS 1996: Crux's own)
     if (preset.look === 'host')
-      o.drawOptions = chemDrawOptions();
+      Object.assign(o, {drawOptions: chemDrawOptions(), ...CHEM_CENTRE});
     if (choice.mapNumbers)
       o.mapNumbers = choice.mapNumbers;
     // the box on: map numbers at any size, as asked (chem-wasm's `mapNumbersMinBond`; a file before it
@@ -1022,6 +1025,15 @@ export function exportPanel(reaction: string, options: ExportOptions = {}):
     refresh();
   }});
   mapNumbers.setTooltip('The atoms\' map numbers, as the reaction is mapped; in CDXML, the atom mapping');
+  // a reaction without map numbers has no centre to colour and no numbers to show: both boxes off, and why (they were
+  // on and did nothing for a route the Reaction panel had mapped step by step and passed on unmapped)
+  const mapped = hasMapNumbers(reaction);
+  if (!mapped) {
+    for (const input of [colours, mapNumbers]) {
+      input.enabled = false;
+      input.setTooltip(NOT_MAPPED_TOOLTIP);
+    }
+  }
   const preset = ui.input.choice('Style', {items: EXPORT_PRESETS.map((p) => p.label), value: choice.preset,
     onValueChanged: (v) => {
       choice.preset = v ?? ACS_1996;
@@ -1045,8 +1057,9 @@ export function exportPanel(reaction: string, options: ExportOptions = {}):
   // as drawn: the width, the arrangements and the centre's colours (which the canvas does not draw) do not apply
   const asDrawn = drawn ? ui.input.bool(AS_DRAWN, {value: false, onValueChanged: (v) => {
     choice.asDrawn = !!v;
-    for (const input of [width, fitSteps, colours])
+    for (const input of [width, fitSteps])
       input.enabled = !choice.asDrawn;
+    colours.enabled = !choice.asDrawn && mapped;
     refresh();
   }}) : null;
   asDrawn?.setTooltip(AS_DRAWN_TOOLTIP);

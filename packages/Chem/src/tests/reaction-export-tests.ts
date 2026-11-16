@@ -400,7 +400,8 @@ async function asDrawnExported(): Promise<void> {
     // off again: the arrangements back
     inputs.asDrawn!.value = false;
     await awaitCheck(() => preview.dataset.drawn === 'false', 'arranged again', 3000);
-    expect([inputs.width, inputs.fitSteps, inputs.colours].every((i) => i.enabled), true, 'the arrangements back');
+    expect([inputs.width, inputs.fitSteps].every((i) => i.enabled), true, 'the arrangements back');
+    expect(inputs.colours.enabled, false, 'the centre\'s colours still off: the route has no map numbers');
   } finally {
     delete (clipboard as unknown as {write?: unknown}).write;
     dialog.close();
@@ -609,6 +610,21 @@ category('Reactions: export', () => {
         expect(preview.dataset.width, '235', 'the preview is a single column: 8.3 cm in points');
       } finally {
         dialog.close();
+      }
+    });
+  });
+
+  // Map numbers and Reaction centre colours looked as if they did nothing: a reaction without map numbers has neither
+  // to show. Such a reaction's boxes are off (their tooltip says why, NOT_MAPPED_TOOLTIP); a mapped one's apply
+  test('a reaction without map numbers: Map numbers and Reaction centre colours off; a mapped one\'s on', async () => {
+    await inEngine(ChemicalEngine.Crux, async () => {
+      for (const [reaction, mapped] of [[TWO_STEPS, false], [MAPPED, true]] as const) {
+        const {dialog, inputs} = exportPanel(reaction);
+        try {
+          expect(`${inputs.colours.enabled} ${inputs.mapNumbers.enabled}`, `${mapped} ${mapped}`, reaction);
+        } finally {
+          dialog.close();
+        }
       }
     });
   });

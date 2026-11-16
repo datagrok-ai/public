@@ -2,8 +2,9 @@
  * The reaction centre's legend (the reaction-centre colours, green made, red broken, blue order changed, mean nothing
  * to a reader without one): one short line under a reaction picture that colours its centre, a swatch and a few words
  * for each colour the picture has, as Crux counts the bonds it colours (`ChemReactionScheme.get_centre_counts`).
- * Nothing at all under a picture that colours none (an unmapped reaction). The Reaction panel puts it under its large
- * picture, under its steps and in its full-screen view; the Reaction Sketcher shows the panel. Grid cells have none.
+ * Nothing at all under a picture that colours none (an unmapped reaction). The Reaction panel and its full-screen view
+ * put it right under their large picture, centred on it ({@link pictureWithLegend}); a route's steps, coloured as the
+ * route is, share it. The Reaction Sketcher shows the panel. Grid cells have none.
  */
 import * as ui from 'datagrok-api/ui';
 import {cruxCentreCounts} from '../rendering/crux-reaction-drawing';
@@ -51,8 +52,8 @@ export function setCentreLegend(legend: HTMLElement, reactions: string[]): void 
   legend.style.display = shown.some((s) => s) ? 'flex' : 'none';
   if (!shown.some((s) => s))
     return;
-  Object.assign(legend.style, {flexWrap: 'wrap', alignItems: 'center', columnGap: `${ITEM_GAP_PX}px`,
-    rowGap: `${GAP_PX}px`, fontSize: FONT_SIZE, color: 'var(--grey-5)', margin: `${GAP_PX}px 0`});
+  Object.assign(legend.style, {flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center',
+    columnGap: `${ITEM_GAP_PX}px`, rowGap: `${GAP_PX}px`, fontSize: FONT_SIZE, color: 'var(--grey-5)'});
   legend.append(ui.span([LEGEND_TITLE]));
   shown.forEach((s, i) => {
     if (!s)
@@ -61,4 +62,19 @@ export function setCentreLegend(legend: HTMLElement, reactions: string[]): void 
       background: CENTRE_COLOURS[i], borderRadius: '2px', flex: 'none'}});
     legend.append(ui.divH([swatch, ui.span([LEGEND_WORDS[i]])], {style: {alignItems: 'center', gap: `${GAP_PX}px`}}));
   });
+}
+
+/** The room between a picture and its legend right under it (CSS px). */
+export const PICTURE_LEGEND_GAP = 8;
+
+/** A reaction picture and its legend as one group, the legend right under the picture, centred on it: the Reaction
+ * panel's large picture and its full-screen view's (a route's legend sat at the panel's end, under its steps and
+ * left-aligned, and at the end of the full-screen view's list of steps, while a single reaction's sat under its
+ * picture). `picture` may be replaced in place (swapped for its mapped one). */
+export function pictureWithLegend(picture: HTMLElement, legend: HTMLElement): HTMLElement {
+  legend.style.flex = 'none';
+  const group = ui.div([picture, legend]);
+  Object.assign(group.style, {display: 'flex', flexDirection: 'column', alignItems: 'center',
+    gap: `${PICTURE_LEGEND_GAP}px`});
+  return group;
 }
