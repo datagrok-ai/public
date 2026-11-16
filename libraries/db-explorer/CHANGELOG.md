@@ -9,6 +9,7 @@
 * Fixed the editor's preview cards failing on SQL Server (`limit 1`), and a quote in an identifier's value breaking its query
 * Fixed the editor reading the schema two or three times when a configuration is set, and showing the tables of the catalog or connection just left until the new ones arrived
 * core#1146: Search widgets set up their table view once it is in the document instead of 200 ms later; the Helm renderer no longer waits 200 ms before wiring its clicks
+* Fixed the Helm renderer's drawing vanishing from a card as soon as it appeared (since core#1146): the platform moves a JS input's element into the input's own root a timer tick after the input is made, and the renderer took the element before that move. It now takes it a tick later
 * A connection whose schema cannot be loaded (a database the stand cannot reach) is reported as a warning with its error, no longer also as a console error on the first molecule made current
 
 ## 1.7.2 (2026-01-21)
