@@ -65,6 +65,7 @@ import './tests/workflow-stages-ui-tests';
 import './tests/workflow-stages-live-tests';
 import './tests/pipeline-functions-tests';
 import './tests/pipeline-save-tests';
+import './tests/ip-route-tests';
 import './tests/ems-goldens-tests';
 import './tests/ems-platform-tests';
 import './tests/ems-nca-rows-tests';
