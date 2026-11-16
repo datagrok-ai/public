@@ -126,7 +126,7 @@ async function datagrokInputs(): Promise<void> {
  * sketcher too (as measured in a browser). Importing this bundle's copy defines the element when no copy has; else the
  * app is opened through the platform, as a person opens it. The view is on the shell.
  */
-async function appView(): Promise<DG.View> {
+async function openSketcherApp(): Promise<DG.View> {
   const ours = (await loadCruxSketch()).CruxSketchElement;
   const view = (customElements.get('crux-sketch') === ours ? await PackageFunctions.reactionsApp() :
     await grok.functions.call('Chem:reactionsApp')) as DG.View;
@@ -140,7 +140,7 @@ async function appView(): Promise<DG.View> {
  * not know and adds the molecule with none). */
 async function nextStepAdded(): Promise<void> {
   forgetDocument();
-  const view = await appView();
+  const view = await openSketcherApp();
   const text = () => (view.root.querySelector('.chem-reactions-app-text') as HTMLTextAreaElement).value;
   const slot = () => view.root.querySelector('.chem-reactions-add-slot[data-role="next"]') as HTMLElement;
   const sketch = () => view.root.querySelector('.chem-reactions-app-sketcher crux-sketch') as any;
@@ -234,7 +234,7 @@ const EDGE_ROOM = 4;
  * addMolecule adds in view; red on crux-sketch fdb645b). */
 async function nextStepInView(): Promise<void> {
   forgetDocument();
-  const view = await appView();
+  const view = await openSketcherApp();
   const sketch = () => view.root.querySelector('.chem-reactions-app-sketcher crux-sketch') as any;
   const text = () => (view.root.querySelector('.chem-reactions-app-text') as HTMLTextAreaElement).value;
   try {

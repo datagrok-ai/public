@@ -109,8 +109,8 @@ export class ReactionSketchArea extends DG.Widget {
   refused = false;
   readonly onRendered = new Subject<void>();
   private loadingNow = true;
-  /** Over the box until the sketcher has read the reaction (or could not start): a click on the tools before then is
-   * the cover's, so none is lost to a sketcher not ready yet. */
+  // Over the box until the sketcher has read the reaction (or could not start): a click on the tools before then is
+  // the cover's, so none is lost to a sketcher not ready yet.
   private readonly cover = ui.divText(SKETCH_LOADING, SKETCH_LOADING_CLASS);
 
   /** `root` is the box, positioned (its host's): the cover fills it. */
@@ -194,14 +194,14 @@ export class ReactionCellEditor {
   /** Why Crux Sketch did not read the cell (its `lastError`: a convergent route "opens in a later version", RXN-06), or
    * null: the dialog says it above the canvas, and OK then writes nothing, whatever is drawn. */
   refused: string | null = null;
-  /** The sketcher's value once the cell opened arranged by an Arrange edit (reaction-arrange.ts): a person's edits
-   * undone come back to it, and OK then writes nothing. Null otherwise. */
+  // The sketcher's value once the cell opened arranged by an Arrange edit (reaction-arrange.ts): a person's edits
+  // undone come back to it, and OK then writes nothing. Null otherwise.
   private arrangedValue: string | null = null;
-  /** The line above the canvas saying why the cell was not read (shown only then). */
+  // The line above the canvas saying why the cell was not read (shown only then).
   private readonly notice = ui.divText('', REACTION_EDITOR_REFUSED_CLASS);
-  /** The sketcher's box, which gives way when the window is too small for the dialog. */
+  // The sketcher's box, which gives way when the window is too small for the dialog.
   private readonly box: HTMLElement;
-  /** The dialog's place and size before it went full screen (its style's), or null while it is not. */
+  // The dialog's place and size before it went full screen (its style's), or null while it is not.
   private beforeFullScreen: {left: string, top: string, width: string, height: string, box: string} | null = null;
 
   constructor(readonly cell: DG.GridCell) {
@@ -319,7 +319,7 @@ export class ReactionCellEditor {
     return this.fullScreen ? EDITOR_FULL_SCREEN_OFF : EDITOR_FULL_SCREEN;
   }
 
-  /** Full screen: the dialog the window's size less its margins, its box (flexed) taking the room. */
+  // Full screen: the dialog the window's size less its margins, its box (flexed) taking the room.
   private fillWindow(): void {
     const root = this.dialog.root;
     const fixed = getComputedStyle(root).position === 'fixed';
@@ -331,7 +331,7 @@ export class ReactionCellEditor {
       this.box.style.height = `${EDITOR_MIN_HEIGHT}px`; // its least: the flex gives it the rest
   }
 
-  /** The header's full-screen switch, before its help and close icons, and the title's double-click. */
+  // The header's full-screen switch, before its help and close icons, and the title's double-click.
   private addFullScreenSwitch(): void {
     const header = this.dialog.root.querySelector('.d4-dialog-header') as HTMLElement | null;
     if (!header)
@@ -426,9 +426,9 @@ export class ReactionCellEditor {
     }
   }
 
-  /** The cell refused ({@link refused}): said once, in the box in place of the sketcher, which is let go (not above
-   * the drawing and again in the footer, over an empty sketcher that invited a drawing, "Draw reactants, a Reaction
-   * arrow, then products"). OK is off; Cancel closes. */
+  // The cell refused ({@link refused}): said once, in the box in place of the sketcher, which is let go (not above
+  // the drawing and again in the footer, over an empty sketcher that invited a drawing, "Draw reactants, a Reaction
+  // arrow, then products"). OK is off; Cancel closes.
   private sayRefused(area: ReactionSketchArea, sketch: SketcherHandle): void {
     this.sketch = area.sketch = null;
     area.refused = true;
@@ -444,7 +444,7 @@ export class ReactionCellEditor {
       ok.disabled = true;
   }
 
-  /** OK: the reaction into the cell, once a person changed it into another text. */
+  // OK: the reaction into the cell, once a person changed it into another text.
   private write(): void {
     if (!this.edited || this.slot?.blocked || this.refused !== null)
       return;

@@ -1,8 +1,8 @@
-/* The reaction centre's legend (src/widgets/reaction-centre-legend.ts): the legends under the pictures of the Reaction
-   Sketcher, its full-screen view and the Reaction pane, read from the page (the line's words, each swatch's colour, the
-   picture it is under); the app opened on a reaction of the scenario's; a table of the reaction the app draws; the
-   centre's colours in a PNG the Export panel saved (reaction-export.ts). Which bonds each picture colours is Chem's
-   package tests ('Reactions: centre'). */
+// The reaction centre's legend (src/widgets/reaction-centre-legend.ts): the legends under the pictures of the Reaction
+// Sketcher, its full-screen view and the Reaction pane, read from the page (the line's words, each swatch's colour, the
+// picture it is under); the app opened on a reaction of the scenario's; a table of the reaction the app draws; the
+// centre's colours in a PNG the Export panel saved (reaction-export.ts). Which bonds each picture colours is Chem's
+// package tests ('Reactions: centre').
 import {readFileSync} from 'node:fs';
 import {Page} from '@playwright/test';
 import {Then, When} from '@datagrok-libraries/bdd';

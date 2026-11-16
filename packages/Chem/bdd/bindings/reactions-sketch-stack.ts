@@ -1,10 +1,10 @@
-/* Steps on Crux Sketch's text tool and Arrange, for reaction-cell-editor-lossy.feature and
-   reactions-app-arrange.feature. The test ids are crux-sketch's, inside its open shadow root, which Playwright's CSS
-   locators pierce:
-   - the text tool `toolbar.reaction.text`: a click just above an arrow's middle (about a third of a bond over its line)
-     opens `canvas.text-editor` over that arrow, focused; typing writes the text; Escape ends it, as one edit;
-   - Clean Up and Layout's opener `toolbar.clean.open`, its menu `menu.clean-up`, the item `menu.clean-up.arrange`.
-   Both features need a Crux Sketch with that text tool and Arrange, as the vendored one is. */
+// Steps on Crux Sketch's text tool and Arrange, for reaction-cell-editor-lossy.feature and
+// reactions-app-arrange.feature. The test ids are crux-sketch's, inside its open shadow root, which Playwright's CSS
+// locators pierce:
+// - the text tool `toolbar.reaction.text`: a click just above an arrow's middle (about a third of a bond over its line)
+// opens `canvas.text-editor` over that arrow, focused; typing writes the text; Escape ends it, as one edit;
+// - Clean Up and Layout's opener `toolbar.clean.open`, its menu `menu.clean-up`, the item `menu.clean-up.arrange`.
+// Both features need a Crux Sketch with that text tool and Arrange, as the vendored one is.
 import {Page} from '@playwright/test';
 import {Then, When} from '@datagrok-libraries/bdd';
 import {expect, pollMs} from '@datagrok-libraries/bdd/runtime';

@@ -1,7 +1,7 @@
-/* Reactions in Crux mode, for the demo clips of features/demos/reactions-crux.feature: the showcase table opened from
-   the project's fixtures (nothing written to the server), the Reaction pane's atom mapping waited for, the engine in
-   effect read after a switch in Chem's settings (the Reaction pane is widgets/reaction-panel.ts; its template notes
-   are an element of elements.ts). What Crux draws is Chem's package tests ('Reactions: Crux'). */
+// Reactions in Crux mode, for the demo clips of features/demos/reactions-crux.feature: the showcase table opened from
+// the project's fixtures (nothing written to the server), the Reaction pane's atom mapping waited for, the engine in
+// effect read after a switch in Chem's settings (the Reaction pane is widgets/reaction-panel.ts; its template notes
+// are an element of elements.ts). What Crux draws is Chem's package tests ('Reactions: Crux').
 import {readFileSync} from 'node:fs';
 import {basename, resolve} from 'node:path';
 import {Page} from '@playwright/test';

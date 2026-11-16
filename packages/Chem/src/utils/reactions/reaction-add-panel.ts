@@ -223,8 +223,8 @@ export class AddPanel {
       input.select(); // kept to be put right, and what is typed next replaces it (not "HATUDMF")
   }
 
-  /** `text` added as `role`; whether it was (else the reason is said under the slots: `asName` in place of the
-   * drawing's when given). */
+  // `text` added as `role`; whether it was (else the reason is said under the slots: `asName` in place of the
+  // drawing's when given).
   private add(text: string, role: AddRole, asName: string | null = null): boolean {
     let why: string | null;
     try {
@@ -240,8 +240,8 @@ export class AddPanel {
     return why === null;
   }
 
-  /** Chem's molecule sketcher in a dialog, for Next step on the route's last product; its OK adds what is drawn as
-   * `role`. */
+  // Chem's molecule sketcher in a dialog, for Next step on the route's last product; its OK adds what is drawn as
+  // `role`.
   private draw(role: AddRole): void {
     const sketcher = new DG.chem.Sketcher();
     // the drawing stays the dialog's: not the shell's current object, whose label showed a pasted MOL block as text
@@ -265,7 +265,7 @@ export class AddPanel {
     });
   }
 
-  /** The route's last product, or null when there is none or it cannot be said. */
+  // The route's last product, or null when there is none or it cannot be said.
   private lastProduct(): string | null {
     try {
       return this.target.lastProduct?.() ?? null;

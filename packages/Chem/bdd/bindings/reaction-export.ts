@@ -1,7 +1,7 @@
-/* The Export panel (src/widgets/reaction-export.ts): its dialog, what it offers, the
-   choices a person makes in it, its preview at print size, and the PNG its Save writes, read from the downloaded file.
-   What it draws for each choice (the sizes, the rows, the legend, the colours) is Chem's package tests
-   ('Reactions: export'). */
+// The Export panel (src/widgets/reaction-export.ts): its dialog, what it offers, the
+// choices a person makes in it, its preview at print size, and the PNG its Save writes, read from the downloaded file.
+// What it draws for each choice (the sizes, the rows, the legend, the colours) is Chem's package tests
+// ('Reactions: export').
 import {readFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';

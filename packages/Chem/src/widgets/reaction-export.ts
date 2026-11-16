@@ -307,10 +307,10 @@ export class ReactionExport {
   /** The texts over and under each step's arrow, drawn with the reaction (Crux's `stepTexts`); null, none. */
   readonly stepTexts: StepTexts | null;
   private scheme: Scheme | null = null;
-  /** Each step read as a reaction of its own ({@link FIT_STEPS}), once first asked for. */
+  // Each step read as a reaction of its own ({@link FIT_STEPS}), once first asked for.
   private steps: Scheme[] | null = null;
-  /** Whether the steps are drawn from the route's own scheme ({@link stepSchemes}); `steps` then holds the route's
-   * scheme once a step, nothing of their own to free. */
+  // Whether the steps are drawn from the route's own scheme ({@link stepSchemes}); `steps` then holds the route's
+  // scheme once a step, nothing of their own to free.
   private ownSteps = false;
   error: string | null = null;
   private readonly layouts = new Map<string, ExportLayout>();
@@ -344,9 +344,9 @@ export class ReactionExport {
     return this.scheme;
   }
 
-  /** The steps' schemes, read once: the route's own for each step where Crux draws a step alone from the route's
-   * layout (chem-wasm's `step`, so that an intermediate is drawn the same way in both its steps), else each
-   * step read as a reaction of its own (the scheme's `get_steps`). */
+  // The steps' schemes, read once: the route's own for each step where Crux draws a step alone from the route's
+  // layout (chem-wasm's `step`, so that an intermediate is drawn the same way in both its steps), else each
+  // step read as a reaction of its own (the scheme's `get_steps`).
   private stepSchemes(scheme: Scheme): Scheme[] {
     if (this.steps === null && cruxDrawsSteps()) {
       this.ownSteps = true;
@@ -455,14 +455,14 @@ export class ReactionExport {
     return this.ownSteps;
   }
 
-  /** Step `k`'s options ({@link FIT_STEPS}): from the route's scheme, step k fitted to its own box as a one-step
-   * scheme is (`oneScale: false`; the route's texts are the options' already); else, a reaction of its own, its texts
-   * alone. */
+  // Step `k`'s options ({@link FIT_STEPS}): from the route's scheme, step k fitted to its own box as a one-step
+  // scheme is (`oneScale: false`; the route's texts are the options' already); else, a reaction of its own, its texts
+  // alone.
   private stepOptions(k: number): {stepTexts?: StepTexts, step?: number, oneScale?: boolean} {
     return this.ownSteps ? {step: k, oneScale: false} : {stepTexts: stepTextsOfStep(this.stepTexts, k)};
   }
 
-  /** What `l` draws, box by box: the scheme in its box, or each step on its row at the steps' bond length. */
+  // What `l` draws, box by box: the scheme in its box, or each step on its row at the steps' bond length.
   private boxes(scheme: Scheme, l: ExportLayout):
     {scheme: Scheme, options: object, x: number, y: number, width: number, height: number}[] {
     return l.rows.length ?

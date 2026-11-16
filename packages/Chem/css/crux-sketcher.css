@@ -25,10 +25,8 @@
   color: var(--red-3);
 }
 
-/* Datagrok's look for Crux Sketch's own dialogs (Settings, Shortcuts), fields, buttons and tooltips: crux-sketch's
-   host-look tokens (SKETCH-9's spike host-look, from P12d; unset, crux-sketch's own look; EVAL3 H11). Datagrok's own
-   colour variables where it has them, so that its theme follows; the values SKETCH-9 read from the stand's dialogs and
-   tooltips as their fallbacks. */
+/* Datagrok's look for Crux Sketch's dialogs, fields, buttons and tooltips (crux-sketch's host-look tokens): Datagrok's
+   colour variables where it has them, so its theme follows, with the stand's own values as fallbacks. */
 crux-sketch {
   --crux-sketch-font: Roboto, "Roboto Local", sans-serif;
   --crux-sketch-text: var(--text-color, #4d5261);

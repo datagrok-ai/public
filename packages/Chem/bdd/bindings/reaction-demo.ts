@@ -1,13 +1,13 @@
-/* The reaction showcase clips (features/demos/reaction-sketcher.feature and reaction-tables.feature: a demo of
-   Chem's reaction features, filmed with the BDD demo recorder). What no other binding has: the
-   Reaction Sketcher opened on a reaction of the clip's own, and the gestures on Crux's canvas that act on what Crux
-   draws rather than on an atom or a toolbar control: an arrow drawn after a molecule, an arrow's "+" handle and its
-   menu, a condition written over an arrow and dragged, a molecule pasted where the pointer is, a drag from atom to
-   atom. They read Crux's canvas inside its open shadow root (its arrows `g[data-arrow]`, its texts
-   `g[data-object][data-kind="text"]`, its overlays and menus by test id: crux-sketch docs/conventions/test-ids.md),
-   in whichever sketcher the page shows: the reaction editor's dialog over the app's. The checks read the app's Text,
-   a route step by step, each molecule canonical by RDKit. What the canvas does with each gesture is crux-sketch's own
-   BDD (features/rxn); what the app and the cells keep is Chem's package tests ('Reactions: app', 'Reactions: CDXML'). */
+// The reaction showcase clips (features/demos/reaction-sketcher.feature and reaction-tables.feature: a demo of
+// Chem's reaction features, filmed with the BDD demo recorder). What no other binding has: the
+// Reaction Sketcher opened on a reaction of the clip's own, and the gestures on Crux's canvas that act on what Crux
+// draws rather than on an atom or a toolbar control: an arrow drawn after a molecule, an arrow's "+" handle and its
+// menu, a condition written over an arrow and dragged, a molecule pasted where the pointer is, a drag from atom to
+// atom. They read Crux's canvas inside its open shadow root (its arrows `g[data-arrow]`, its texts
+// `g[data-object][data-kind="text"]`, its overlays and menus by test id: crux-sketch docs/conventions/test-ids.md),
+// in whichever sketcher the page shows: the reaction editor's dialog over the app's. The checks read the app's Text,
+// a route step by step, each molecule canonical by RDKit. What the canvas does with each gesture is crux-sketch's own
+// BDD (features/rxn); what the app and the cells keep is Chem's package tests ('Reactions: app', 'Reactions: CDXML').
 import {Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
 import {type ElementRef, atFeatureEnd, expect, gestures, locate, pollMs} from '@datagrok-libraries/bdd/runtime';

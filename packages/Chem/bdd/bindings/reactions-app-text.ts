@@ -1,10 +1,10 @@
-/* The Reaction Sketcher's Text beside its drawing (src/utils/reactions/reactions-app.ts; one molecule drawn used to
-   turn the Text into a MOL file and the preview into an error dump): the app opened on
-   an empty reaction, the reaction arrow tool, a drag on the canvas, the Text read, the preview's line for a lone
-   molecule and the words the view shows. What the Text holds for each drawing is Chem's package tests
-   ('Reactions: app'). And the app's help (its dialogs said "Help unavailable", and the preview's buttons had no
-   tooltips): the app on the default example, the preview's full-screen button hovered and
-   clicked, a dialog's help shown. */
+// The Reaction Sketcher's Text beside its drawing (src/utils/reactions/reactions-app.ts; one molecule drawn used to
+// turn the Text into a MOL file and the preview into an error dump): the app opened on
+// an empty reaction, the reaction arrow tool, a drag on the canvas, the Text read, the preview's line for a lone
+// molecule and the words the view shows. What the Text holds for each drawing is Chem's package tests
+// ('Reactions: app'). And the app's help (its dialogs said "Help unavailable", and the preview's buttons had no
+// tooltips): the app on the default example, the preview's full-screen button hovered and
+// clicked, a dialog's help shown.
 import {Page} from '@playwright/test';
 import {Given, Then, When, element} from '@datagrok-libraries/bdd';
 import {el, expect, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';

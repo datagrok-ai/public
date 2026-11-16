@@ -237,7 +237,7 @@ export interface EditingArea {
 class TextEditingArea implements EditingArea {
   private readonly input = ui.input.textArea('Reaction', {onValueChanged: (v) => this.changed(v ?? '')});
   private readonly listeners: ((text: string) => void)[] = [];
-  /** True while the text is set from outside, so that the input's change event is no person's. */
+  // True while the text is set from outside, so that the input's change event is no person's.
   private setting = false;
   readonly root: HTMLElement;
   /** A text box drops nothing: what is typed is the reaction. */
@@ -400,22 +400,22 @@ export function sketcherBoxHeight(windowHeight: number = window.innerHeight): nu
 class SketcherEditingArea implements EditingArea {
   readonly root: HTMLElement;
   private readonly host = ui.div([], 'chem-reactions-app-sketcher');
-  /** The host as the "crux sketcher widget" the cell editor's box is: its atoms' areas and readings, for the tests. */
+  // The host as the "crux sketcher widget" the cell editor's box is: its atoms' areas and readings, for the tests.
   private readonly area: ReactionSketchArea;
   private readonly text = new TextEditingArea();
   private readonly listeners: ((text: string) => void)[] = [];
   private sketch: SketcherHandle | null = null;
   private current = '';
   private disposed = false;
-  /** The drawing as a document opened arranged by an Arrange edit (its value) and the text it opened on: a person's
-   * edits undone back to it give that text again, as written (reaction-arrange.ts). Null otherwise. */
+  // The drawing as a document opened arranged by an Arrange edit (its value) and the text it opened on: a person's
+  // edits undone back to it give that text again, as written (reaction-arrange.ts). Null otherwise.
   private opened: {value: string, text: string} | null = null;
   /** What the text the drawing last wrote does not keep of it; emptied when a text is typed or set. */
   losses: readonly Flag[] = [];
-  /** A Text edit waiting to be drawn ({@link TEXT_TO_DRAWING_MS}). */
+  // A Text edit waiting to be drawn ({@link TEXT_TO_DRAWING_MS}).
   private textTimer: ReturnType<typeof setTimeout> | undefined;
-  /** The text is too large for Crux to draw in time (the cells' rule, `tooLargeToDraw`): the sketcher is left empty,
-   * says so, and a drawing made in it meanwhile is not taken as the text. */
+  // The text is too large for Crux to draw in time (the cells' rule, `tooLargeToDraw`): the sketcher is left empty,
+  // says so, and a drawing made in it meanwhile is not taken as the text.
   private tooLarge = false;
   /** Why the sketcher did not open the text (its `lastError`, in plain words): it is left empty and says so, the
    * text staying the document; a drawing made in it then takes the text's place. Null when it holds the text. */
@@ -423,18 +423,18 @@ class SketcherEditingArea implements EditingArea {
   private readonly notice = ui.divText('', 'chem-reactions-app-sketcher-too-large');
   /** The Add panel: reactant, reagent and product slots, each addition one edit of the drawing. */
   readonly addPanel: AddPanel;
-  /** The kept drawing (a CDXML page) the document opens on in place of its text, or null: the text is drawn. */
+  // The kept drawing (a CDXML page) the document opens on in place of its text, or null: the text is drawn.
   private page: string | null = null;
-  /** Counts the drawing's and the Text's changes: a drawing's CDXML written for a change that a later one overtook is
-   * not kept. */
+  // Counts the drawing's and the Text's changes: a drawing's CDXML written for a change that a later one overtook is
+  // not kept.
   private generation = 0;
   private readonly drawingListeners: ((drawing: string | null) => void)[] = [];
   private readonly shownListeners: (() => void)[] = [];
-  /** The kept drawing being read ({@link showPage}: its CDXML module loading), by its turn: the sketcher does not hold
-   * the document meanwhile. 0 when none is. */
+  // The kept drawing being read ({@link showPage}: its CDXML module loading), by its turn: the sketcher does not hold
+  // the document meanwhile. 0 when none is.
   private opening = 0;
   private openings = 0;
-  /** The read of the document's kept drawing {@link show} started, or null: the cover stays up while it lasts. */
+  // The read of the document's kept drawing {@link show} started, or null: the cover stays up while it lasts.
   private pageRead: Promise<void> | null = null;
   drawingUnread = false;
 
@@ -468,7 +468,7 @@ class SketcherEditingArea implements EditingArea {
     this.start();
   }
 
-  /** The Text typed and not drawn yet: into the sketcher now, as one edit its undo takes back. */
+  // The Text typed and not drawn yet: into the sketcher now, as one edit its undo takes back.
   private showTyped(): void {
     if (this.textTimer === undefined)
       return;
@@ -477,9 +477,9 @@ class SketcherEditingArea implements EditingArea {
     this.show(this.current, true);
   }
 
-  /** `text` into the sketcher, unless it is too large to draw in time: then the sketcher is emptied and says so. A
-   * text typed (`edit`) is one edit of the drawing, Ctrl+Z taking it back (crux-sketch's `history: 'edit'`, which a
-   * sketcher before it ignores, starting a new history as any value written does); a document loaded starts anew. */
+  // `text` into the sketcher, unless it is too large to draw in time: then the sketcher is emptied and says so. A
+  // text typed (`edit`) is one edit of the drawing, Ctrl+Z taking it back (crux-sketch's `history: 'edit'`, which a
+  // sketcher before it ignores, starting a new history as any value written does); a document loaded starts anew.
   private show(text: string, edit = false): void {
     this.tooLarge = tooLargeToDraw(text);
     this.refused = null;
@@ -499,9 +499,9 @@ class SketcherEditingArea implements EditingArea {
     this.checkOpened(this.sketch, text);
   }
 
-  /** The document's kept drawing `page` (CDXML) into `sketch`, its text `text` staying the Text: a catalytic cycle, the
-   * texts, the arrows' styles come back as drawn (not a cycle reopened as a straight route). A page that does not
-   * read, or that the area left meanwhile (another document, a text typed), is not drawn: the text is, as before. */
+  // The document's kept drawing `page` (CDXML) into `sketch`, its text `text` staying the Text: a catalytic cycle, the
+  // texts, the arrows' styles come back as drawn (not a cycle reopened as a straight route). A page that does not
+  // read, or that the area left meanwhile (another document, a text typed), is not drawn: the text is, as before.
   private async showPage(sketch: SketcherHandle, page: string, text: string): Promise<void> {
     const turn = this.opening = ++this.openings;
     try {
@@ -538,15 +538,15 @@ class SketcherEditingArea implements EditingArea {
     this.checkOpened(sketch, text);
   }
 
-  /** Whether `sketch` opened `text`: one it refused (its lastError, its drawing empty) is said over it ({@link
-   * refused}), as one too large is. */
+  // Whether `sketch` opened `text`: one it refused (its lastError, its drawing empty) is said over it ({@link
+  // refused}), as one too large is.
   private checkOpened(sketch: SketcherHandle, text: string): void {
     const error = this.tooLarge || text.trim() === '' ? null : sketch.lastError;
     this.refused = error !== null && (sketch.value ?? '').trim() === '' ? plainRefusal(error.message) : null;
     this.say();
   }
 
-  /** The line over the drawing area: the text too large to draw, or refused, or none. */
+  // The line over the drawing area: the text too large to draw, or refused, or none.
   private say(): void {
     this.notice.textContent = this.tooLarge ? TOO_LARGE + ' here: edit its text below.' :
       this.refused !== null ? sketcherRefusedWords(this.refused) : '';
@@ -594,8 +594,8 @@ class SketcherEditingArea implements EditingArea {
     }
   }
 
-  /** The cover kept up while `reading` (a kept drawing's read) lasts, at most {@link PAGE_READ_MS}: past it the read
-   * is let go (it draws nothing when it ends), the text is drawn, and the app hears the drawing went unread. */
+  // The cover kept up while `reading` (a kept drawing's read) lasts, at most {@link PAGE_READ_MS}: past it the read
+  // is let go (it draws nothing when it ends), the text is drawn, and the app hears the drawing went unread.
   private async coverWhile(reading: Promise<void>): Promise<void> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const late = await Promise.race([reading.then(() => false, () => false),
@@ -614,8 +614,8 @@ class SketcherEditingArea implements EditingArea {
       this.area.loading = false;
   }
 
-  /** The drawing changed (a person's edit, or an addition from the Add panel): its text into Text, unless it is the
-   * same reaction as Text (a move, Arrange, Clean Up keep the Text as the person wrote it). */
+  // The drawing changed (a person's edit, or an addition from the Add panel): its text into Text, unless it is the
+  // same reaction as Text (a move, Arrange, Clean Up keep the Text as the person wrote it).
   private drawingChanged(sketch: SketcherHandle): void {
     if (this.tooLarge)
       return;
@@ -637,9 +637,9 @@ class SketcherEditingArea implements EditingArea {
     this.keepDrawing(sketch, !!lost && (lost.objects.length > 0 || lost.labels > 0));
   }
 
-  /** The drawing kept beside the text while it holds what the text drops (`holds`: a cycle, texts, arrow styles, a
-   * label), as a CDXML page written once its module is in; else none: the listeners told either way, a page overtaken
-   * by a later change dropped. */
+  // The drawing kept beside the text while it holds what the text drops (`holds`: a cycle, texts, arrow styles, a
+  // label), as a CDXML page written once its module is in; else none: the listeners told either way, a page overtaken
+  // by a later change dropped.
   private keepDrawing(sketch: SketcherHandle, holds: boolean): void {
     const generation = ++this.generation;
     if (!holds) {
@@ -655,8 +655,8 @@ class SketcherEditingArea implements EditingArea {
     });
   }
 
-  /** The Add panel's addition: `text` into the drawing as `role` (crux-sketch's addMolecule: one edit, one undo
-   * step), then its text into Text; null when added, else why not (the sketcher's reason, in plain words). */
+  // The Add panel's addition: `text` into the drawing as `role` (crux-sketch's addMolecule: one edit, one undo
+  // step), then its text into Text; null when added, else why not (the sketcher's reason, in plain words).
   private add(text: string, role: AddRole): string | null {
     const sketch = this.sketch;
     if (!sketch || this.tooLarge)
@@ -768,30 +768,30 @@ class ReactionsApp {
   private readonly area: EditingArea = new SketcherEditingArea((a, b) => sameReactionText(this.crux, a, b),
     (text) => lastProduct(this.crux, text));
   private readonly drawing = ui.divV([], 'chem-reactions-app-drawing');
-  /** True while the inputs are set from the document, so that their change events edit nothing. */
+  // True while the inputs are set from the document, so that their change events edit nothing.
   private filling = false;
   private drawingTimer: ReturnType<typeof setTimeout> | undefined;
-  /** The Reaction pane shown on the right, detached (its pictures' subscriptions ended) when replaced or closed. */
+  // The Reaction pane shown on the right, detached (its pictures' subscriptions ended) when replaced or closed.
   private panel: DG.Widget | null = null;
-  /** The right pane's page shown (its title, then the Reaction pane or a line), or null before the first. */
+  // The right pane's page shown (its title, then the Reaction pane or a line), or null before the first.
   private page: HTMLElement | null = null;
-  /** The page drawn to replace it, hidden over it until its pictures are drawn (else the pane goes blank as each
-   * picture is made again), and its wait; null when none is. */
+  // The page drawn to replace it, hidden over it until its pictures are drawn (else the pane goes blank as each
+  // picture is made again), and its wait; null when none is.
   private next: {page: HTMLElement, panel: DG.Widget | null, timer: ReturnType<typeof setTimeout>} | null = null;
-  /** A button held down in the editing area (a drag in the drawing): the right pane is drawn again once it is let go,
-   * the drawing settled. */
+  // A button held down in the editing area (a drag in the drawing): the right pane is drawn again once it is let go,
+  // the drawing settled.
   private pressed = false;
   private drawWaits = false;
-  /** The example's title the app dropped (the Text emptied, or a reaction with none of its molecules), put back when
-   * its molecules come back (an undo); null once a person sets a title or a document is loaded. */
+  // The example's title the app dropped (the Text emptied, or a reaction with none of its molecules), put back when
+  // its molecules come back (an undo); null once a person sets a title or a document is loaded.
   private dropped: string | null = null;
-  /** The step texts the right pane was last drawn with (JSON): a drawing whose texts alone changed is drawn again. */
+  // The step texts the right pane was last drawn with (JSON): a drawing whose texts alone changed is drawn again.
   private drawnTexts = 'null';
 
   private readonly titleInput = ui.input.string('Title', {onValueChanged: (v) => this.edit({title: v ?? ''})});
   private readonly mapInput = ui.input.bool('Map numbers', {onValueChanged: (v) => this.edit({mapNumbers: !!v})});
   private readonly status = ui.divText('', 'chem-reactions-app-status');
-  /** Under the status: what the text the drawing wrote does not keep of it, one line a loss. */
+  // Under the status: what the text the drawing wrote does not keep of it, one line a loss.
   private readonly losses = ui.divText('', LOSSES_CLASS);
 
   constructor(private readonly view: DG.View, private readonly crux: ChemWasm, private doc: DocumentReaction) {
@@ -862,7 +862,7 @@ class ReactionsApp {
     this.fill();
   }
 
-  /** The inputs, the status and the drawing set from the document. */
+  // The inputs, the status and the drawing set from the document.
   private fill(): void {
     this.filling = true;
     try {
@@ -876,7 +876,7 @@ class ReactionsApp {
     this.draw();
   }
 
-  /** What Crux reads from the text, under the editing area. */
+  // What Crux reads from the text, under the editing area.
   private showStatus(): void {
     const steps = this.picture.steps().length;
     this.status.textContent = (this.picture.error ?? readsAs(steps)) +
@@ -889,8 +889,8 @@ class ReactionsApp {
     this.losses.style.display = lost.length ? '' : 'none';
   }
 
-  /** The right pane: the title, then the Reaction pane of the text (the reaction drawn large, full screen, the steps,
-   * the template's notes, Map atoms), the map numbers as the switch says. */
+  // The right pane: the title, then the Reaction pane of the text (the reaction drawn large, full screen, the steps,
+  // the template's notes, Map atoms), the map numbers as the switch says.
   private draw(): void {
     clearTimeout(this.drawingTimer);
     this.dropNext();
@@ -916,8 +916,8 @@ class ReactionsApp {
     this.swapIn(page, panel);
   }
 
-  /** The right pane drawn again a moment after the last change ({@link DRAWING_DELAY_MS}), or once a button held in
-   * the editing area is let go (a drag in the drawing). */
+  // The right pane drawn again a moment after the last change ({@link DRAWING_DELAY_MS}), or once a button held in
+  // the editing area is let go (a drag in the drawing).
   private drawSoon(): void {
     clearTimeout(this.drawingTimer);
     this.drawingTimer = setTimeout(() => {
@@ -928,9 +928,9 @@ class ReactionsApp {
     }, DRAWING_DELAY_MS);
   }
 
-  /** `page` in place of the page shown: at once when it has no pictures (or none is shown yet); else drawn hidden over
-   * the page shown, which stays until its pictures are drawn (at most {@link SWAP_MS}), so that the pane never goes
-   * blank between the two. */
+  // `page` in place of the page shown: at once when it has no pictures (or none is shown yet); else drawn hidden over
+  // the page shown, which stays until its pictures are drawn (at most {@link SWAP_MS}), so that the pane never goes
+  // blank between the two.
   private swapIn(page: HTMLElement, panel: DG.Widget | null): void {
     const show = () => {
       if (this.next?.page === page)
@@ -960,7 +960,7 @@ class ReactionsApp {
     this.next = {page, panel, timer: setTimeout(wait, 0)};
   }
 
-  /** The page being drawn to replace the one shown, let go (a newer one is drawn, or the app closed). */
+  // The page being drawn to replace the one shown, let go (a newer one is drawn, or the app closed).
   private dropNext(): void {
     const next = this.next;
     if (!next)
@@ -971,7 +971,7 @@ class ReactionsApp {
     next.page.remove();
   }
 
-  /** The document changed by a person: kept, read again, its drawing made again (a moment after the last keystroke). */
+  // The document changed by a person: kept, read again, its drawing made again (a moment after the last keystroke).
   private edit(change: Partial<DocumentReaction>): void {
     if (this.filling)
       return;
@@ -1012,8 +1012,8 @@ class ReactionsApp {
       this.drawing.querySelectorAll('.chem-reactions-app-title').forEach((t) => t.textContent = this.doc.title);
   }
 
-  /** The document's kept drawing opened in the drawing area (after its CDXML module came in): the status and the line
-   * of what the text does not keep of it said again. */
+  // The document's kept drawing opened in the drawing area (after its CDXML module came in): the status and the line
+  // of what the text does not keep of it said again.
   private drawingShown(): void {
     this.showStatus();
     // its texts over the arrows drawn on the right too (a reopened drawing's were not, until an edit)
@@ -1021,8 +1021,8 @@ class ReactionsApp {
       this.drawSoon();
   }
 
-  /** The drawing kept with the document (`drawing`, a CDXML page: DocumentReaction.drawing), or none: saved, nothing
-   * drawn again (the text is unchanged). */
+  // The drawing kept with the document (`drawing`, a CDXML page: DocumentReaction.drawing), or none: saved, nothing
+  // drawn again (the text is unchanged).
   private keep(drawing: string | undefined): void {
     if (this.filling || this.doc.drawing === drawing)
       return;
@@ -1032,18 +1032,16 @@ class ReactionsApp {
     this.save();
   }
 
-  /** The drawing's texts over and under its steps' arrows, while it holds the document's reaction; else null. */
+  // The drawing's texts over and under its steps' arrows, while it holds the document's reaction; else null.
   private stepTexts(): StepTexts | null {
     return this.picture.error ? null : this.area.drawingExport().stepTexts ?? null;
   }
 
-  /**
-   * The title the document takes with `text` in it, or null to keep its own. An example's title stays through every
-   * edit of its reaction (a step added by Next step, the drawing pasted back as CDXML, had wiped it to
-   * "Untitled"); it is dropped once the Text is emptied or holds a reaction with none of the example's reactants and
-   * products (it had stayed over Clear and a new drawing), and put back when they come back (Clear undone). A
-   * title of the person's own always stays; so does an example's when Crux cannot tell (a template's SMARTS).
-   */
+  // The title the document takes with `text` in it, or null to keep its own. An example's title stays through every
+  // edit of its reaction (a step added by Next step, the drawing pasted back as CDXML, had wiped it to
+  // "Untitled"); it is dropped once the Text is emptied or holds a reaction with none of the example's reactants and
+  // products (it had stayed over Clear and a new drawing), and put back when they come back (Clear undone). A
+  // title of the person's own always stays; so does an example's when Crux cannot tell (a template's SMARTS).
   private titleWith(text: string): string | null {
     const exampleTitled = (title: string) => [defaultExample(), ...examples()].find((e) => e.title === title);
     const example = this.doc.title ? exampleTitled(this.doc.title) : undefined;
@@ -1062,13 +1060,13 @@ class ReactionsApp {
     return null;
   }
 
-  /** An example in place of the document: kept as any change is. */
+  // An example in place of the document: kept as any change is.
   private load(example: DocumentReaction): void {
     this.replace({...example});
     this.save();
   }
 
-  /** `doc` in place of the document, the inputs and the drawing with it. */
+  // `doc` in place of the document, the inputs and the drawing with it.
   private replace(doc: DocumentReaction): void {
     this.doc = doc;
     this.dropped = null;
@@ -1089,13 +1087,13 @@ class ReactionsApp {
       .show();
   }
 
-  /** The default example again, and nothing kept in the browser: the app opens on it next time too. */
+  // The default example again, and nothing kept in the browser: the app opens on it next time too.
   private reset(): void {
     forgetDocument();
     this.replace(defaultExample());
   }
 
-  /** The reaction into a table ({@link addToTable}), unless there is none to add. */
+  // The reaction into a table ({@link addToTable}), unless there is none to add.
   private putInTable(): void {
     if (!this.doc.text.trim() || (this.picture.error && this.picture.error !== TOO_LARGE)) {
       grok.shell.warning(NOTHING_TO_ADD);
@@ -1107,7 +1105,7 @@ class ReactionsApp {
     });
   }
 
-  /** The Export panel on the reaction, its map numbers as the app shows them. */
+  // The Export panel on the reaction, its map numbers as the app shows them.
   private openExport(): void {
     // a ChemDraw page as the Text: exported as a CDXML cell is, its reaction pictured, its CDXML the page, and what its
     // steps leave out said

@@ -580,7 +580,7 @@ category('Foot-guns: Crux', () => {
       onChange.next(smiles);
       expectFlag('the label', [...slot!.shown], 'warn', ['label', '"*"', 'reaction SMILES']);
       expectFlag('the objects', [...slot!.shown], 'warn', ['not kept in reaction SMILES', 'texts', 'styles']);
-      expect(dialog.getButton('OK').disabled, false, `OK enabled: ${said([...slot!.shown])}`);
+      expect(dialog.getButton('OK').disabled, false, `OK left clickable, the footer saying: ${said([...slot!.shown])}`);
     } finally {
       dialog.close();
     }

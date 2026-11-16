@@ -36,7 +36,7 @@ export class FooterSlot {
   private readonly label = ui.div([], {style: {flex: '1 1 0', minWidth: '0', overflow: 'hidden',
     textOverflow: 'ellipsis', whiteSpace: 'nowrap'}});
   private flags: Flag[] = [];
-  /** The dialog's OK, found as the slot is made (a dialog may rename it later: New Reaction's SAVE). */
+  // The dialog's OK, found as the slot is made (a dialog may rename it later: New Reaction's SAVE).
   private readonly ok: HTMLButtonElement | null;
 
   constructor(dialog: DG.Dialog | null, className = FOOTER_SLOT_CLASS) {

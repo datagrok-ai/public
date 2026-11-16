@@ -384,8 +384,8 @@ export function noReactionArrow(text: string): boolean {
  * broken instance (which would be a double free). */
 export class ReactionPicture {
   readonly reaction: DocumentReaction;
-  /** The reaction Crux read, or null with {@link error} saying why (it read none, could not draw it, it is too large,
-   * or Crux is off). */
+  // The reaction Crux read, or null with {@link error} saying why (it read none, could not draw it, it is too large,
+  // or Crux is off).
   private scheme: Scheme | null = null;
   error: string | null = null;
   private readonly frames = new Map<number, Frame>();
@@ -410,7 +410,7 @@ export class ReactionPicture {
     }
   }
 
-  /** The scheme while Crux may be asked: null once Crux is off (what it held dropped, not freed). */
+  // The scheme while Crux may be asked: null once Crux is off (what it held dropped, not freed).
   private live(): Scheme | null {
     if (this.scheme !== null && cruxLoadFailed()) {
       this.scheme = null;
@@ -420,7 +420,7 @@ export class ReactionPicture {
     return this.scheme;
   }
 
-  /** A call on the scheme threw `e`: reported, and the scheme let go (freed only while Crux is still on). */
+  // A call on the scheme threw `e`: reported, and the scheme let go (freed only while Crux is still on).
   private lost(e: unknown): void {
     noteCruxError(e);
     const scheme = this.scheme;
@@ -447,7 +447,7 @@ export class ReactionPicture {
     }
   }
 
-  /** Crux's drawing options for this picture, besides its box. */
+  // Crux's drawing options for this picture, besides its box.
   private options(): object {
     return {bondLength: BOND_LENGTH, mapNumbers: this.reaction.mapNumbers ? 'show' : 'hide',
       drawOptions: chemDrawOptions()};

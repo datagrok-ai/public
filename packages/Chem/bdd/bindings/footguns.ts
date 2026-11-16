@@ -1,10 +1,10 @@
-/* Foot-gun flags (features/footguns: the scenarios of what each check expects): the middle slot of an editor
-   dialog's footer (src/utils/footguns/footer-slot.ts) and the context panel's Checks section
-   (src/widgets/checks-panel.ts), with what the user does to raise them: a value put into the Crux sketcher of the cell
-   editor, a reaction typed into New Reaction, a reaction picked in a Transform dialog, a table of molecules or
-   templates. The slot is `.chem-footgun-slot` (its level in `data-level`, its whole text in `aria-label`); the Checks
-   section's lines are `.chem-footgun-checks > [data-level]`. Each step fails on a build without them: a step that
-   finds no slot fails, and "shows no flag" asks for a slot that is there and empty in Crux mode. */
+// Foot-gun flags (features/footguns: the scenarios of what each check expects): the middle slot of an editor
+// dialog's footer (src/utils/footguns/footer-slot.ts) and the context panel's Checks section
+// (src/widgets/checks-panel.ts), with what the user does to raise them: a value put into the Crux sketcher of the cell
+// editor, a reaction typed into New Reaction, a reaction picked in a Transform dialog, a table of molecules or
+// templates. The slot is `.chem-footgun-slot` (its level in `data-level`, its whole text in `aria-label`); the Checks
+// section's lines are `.chem-footgun-checks > [data-level]`. Each step fails on a build without them: a step that
+// finds no slot fails, and "shows no flag" asks for a slot that is there and empty in Crux mode.
 import {Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
 import {atFeatureEnd, el, expect, pickTopMenu, pollMs} from '@datagrok-libraries/bdd/runtime';

@@ -1,9 +1,9 @@
-/* The reaction cell editor (src/utils/reactions/reaction-cell-editor.ts): its dialog, the arrows Crux draws in it, and
-   whether a reaction cell still holds a reaction after OK. Crux's box in the dialog is a widget named cruxSketch, so its
-   atoms and bonds are areas of the library's "crux sketcher widget"; "should differ from what was remembered" is beside
-   its byte-for-byte twin in crux.ts. What the editor writes for the corpus and Chem's templates is Chem's package tests
-   ('Reactions: editor'). The demo clips' steps follow: the gear's toolset items, the Reactions app's text box and
-   drawing, and a reaction's reactants and products read by RDKit (a cell's, the app's text). */
+// The reaction cell editor (src/utils/reactions/reaction-cell-editor.ts): its dialog, the arrows Crux draws in it, and
+// whether a reaction cell still holds a reaction after OK. Crux's box in the dialog is a widget named cruxSketch, so its
+// atoms and bonds are areas of the library's "crux sketcher widget"; "should differ from what was remembered" is beside
+// its byte-for-byte twin in crux.ts. What the editor writes for the corpus and Chem's templates is Chem's package tests
+// ('Reactions: editor'). The demo clips' steps follow: the gear's toolset items, the Reactions app's text box and
+// drawing, and a reaction's reactants and products read by RDKit (a cell's, the app's text).
 import {Page} from '@playwright/test';
 import {Given, Then, When, element} from '@datagrok-libraries/bdd';
 import {expect, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';

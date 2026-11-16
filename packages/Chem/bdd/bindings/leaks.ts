@@ -1,16 +1,16 @@
-/* Leaks and speed (features/leaks/leaks-perf.feature): what
-   repeated use and pathological input must never do in Crux mode. Read through the page and Chrome's DevTools protocol:
-   - engine objects: FinalizationRegistry.prototype's register/unregister watched from a "notes" step (wasm-bindgen
-     registers each object it makes and unregisters it in free()), by kind: a reaction scheme (it has get_steps), a
-     Crux sketcher molecule (it has toMolblock), else its class name; held weakly, counted after a forced GC (CDP);
-   - wasm memory: every WebAssembly memory an instance of the page exports, recorded as made by an init script the
-     Background's first step adds (Runtime.queryObjects did not answer on Datagrok's page), read after a forced GC, each
-     compared with itself;
-   - detached sketcher roots: the crux-sketch elements ever connected (recorded by the same init script, weakly) alive
-     after a forced GC and not in the document;
-   - main-thread tasks: a PerformanceObserver of long tasks (over 50 ms) from a mark;
-   - frames: the time from a scroll to the second animation frame after it.
-   What Chem's package tests check of the same (category "Leaks: Crux", src/tests/leak-tests.ts) is not repeated. */
+// Leaks and speed (features/leaks/leaks-perf.feature): what
+// repeated use and pathological input must never do in Crux mode. Read through the page and Chrome's DevTools protocol:
+// - engine objects: FinalizationRegistry.prototype's register/unregister watched from a "notes" step (wasm-bindgen
+// registers each object it makes and unregisters it in free()), by kind: a reaction scheme (it has get_steps), a
+// Crux sketcher molecule (it has toMolblock), else its class name; held weakly, counted after a forced GC (CDP);
+// - wasm memory: every WebAssembly memory an instance of the page exports, recorded as made by an init script the
+// Background's first step adds (Runtime.queryObjects did not answer on Datagrok's page), read after a forced GC, each
+// compared with itself;
+// - detached sketcher roots: the crux-sketch elements ever connected (recorded by the same init script, weakly) alive
+// after a forced GC and not in the document;
+// - main-thread tasks: a PerformanceObserver of long tasks (over 50 ms) from a mark;
+// - frames: the time from a scroll to the second animation frame after it.
+// What Chem's package tests check of the same (category "Leaks: Crux", src/tests/leak-tests.ts) is not repeated.
 import {CDPSession, Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
 import {el, expect, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';

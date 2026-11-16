@@ -180,18 +180,18 @@ export function focusDrawingSoon(host: HTMLElement, dialog: HTMLElement): void {
  * parts and its controls, readings, and `isRenderPending` and `onRendered` to settle on. */
 export class CruxSketcher extends grok.chem.SketcherBase {
   private sketch: SketcherHandle | null = null;
-  /** A value set while no live Crux could show it: before `init` resolved, or after `detach`. */
+  // A value set while no live Crux could show it: before `init` resolved, or after `detach`.
   private unshown: {notation: Notation, value: string} | null = null;
-  /** Crux is being created: from `init` until it is ready or failed to start. */
+  // Crux is being created: from `init` until it is ready or failed to start.
   private loading = false;
-  /** The host's change events since this sketcher was made (`onChanged`): the status's `changes` reading. */
+  // The host's change events since this sketcher was made (`onChanged`): the status's `changes` reading.
   private changes = 0;
-  /** The getters that threw, by notation, until each answers again (the engine-poison foot-gun): `read` answers
-   * '' then, which no host may write over a value; the cell editor blocks OK and writes nothing (utils/footguns). */
+  // The getters that threw, by notation, until each answers again (the engine-poison foot-gun): `read` answers
+  // '' then, which no host may write over a value; the cell editor blocks OK and writes nothing (utils/footguns).
   private failures = new Map<Notation, CruxReadFailure>();
-  /** The sketcher started on an engine that had failed (crux-sketch's lastError of format `engine` as it started: an
-   * engine that could make no fresh instance, the last resort of API-069, or a start the engine refused): it holds
-   * nothing, and its getters may answer '' without a throw, so OK writes nothing for as long as it is open. */
+  // The sketcher started on an engine that had failed (crux-sketch's lastError of format `engine` as it started: an
+  // engine that could make no fresh instance, the last resort of API-069, or a start the engine refused): it holds
+  // nothing, and its getters may answer '' without a throw, so OK writes nothing for as long as it is open.
   private engineStop: CruxReadFailure | null = null;
 
   constructor() {
@@ -345,19 +345,17 @@ export class CruxSketcher extends grok.chem.SketcherBase {
     super.detach();
   }
 
-  /**
-   * What the platform's tests read of Crux (`getWidgetStatus()`, the BDD library's areas and readings), in px of this
-   * sketcher's root (the widget's hit-area system):
-   * - a hit area for every atom and bond Crux draws, `atom 0`, `bond 0` (by index, as its molfile numbers them), centred
-   *   where a press lands on it (Crux's `positions`) and half a bond wide;
-   * - its parts (HOST-044; Crux's `layout`): `canvas`, the toolbars as `actions` (top), `tools` (left), `elements` (right)
-   *   and `templates` (bottom), and `label editor` while it is open; and `tool <name>` for each control a toolbar shows,
-   *   named as Crux's toolbar configuration names it (`tool bond.single`, `tool ring.benzene`, `tool undo`) (HOST-045);
-   * - the readings `ready`, `pending`, `smiles` and `smarts` (Crux's own, whatever the host was given), `atoms`, `bonds`, `mode`,
-   *   `selected atoms` and `selected bonds` (their indices in molfile order, `0, 2`, empty for none), `tool` (Crux's),
-   *   `query` (whether the drawing has a query feature), `empty` and `changes` (the host's change events since this
-   *   sketcher was made) (HOST-045).
-   */
+  // What the platform's tests read of Crux (`getWidgetStatus()`, the BDD library's areas and readings), in px of this
+  // sketcher's root (the widget's hit-area system):
+  // - a hit area for every atom and bond Crux draws, `atom 0`, `bond 0` (by index, as its molfile numbers them), centred
+  //   where a press lands on it (Crux's `positions`) and half a bond wide;
+  // - its parts (HOST-044; Crux's `layout`): `canvas`, the toolbars as `actions` (top), `tools` (left), `elements` (right)
+  //   and `templates` (bottom), and `label editor` while it is open; and `tool <name>` for each control a toolbar shows,
+  //   named as Crux's toolbar configuration names it (`tool bond.single`, `tool ring.benzene`, `tool undo`) (HOST-045);
+  // - the readings `ready`, `pending`, `smiles` and `smarts` (Crux's own, whatever the host was given), `atoms`, `bonds`, `mode`,
+  //   `selected atoms` and `selected bonds` (their indices in molfile order, `0, 2`, empty for none), `tool` (Crux's),
+  //   `query` (whether the drawing has a query feature), `empty` and `changes` (the host's change events since this
+  //   sketcher was made) (HOST-045).
   private status(): {hitAreas: {[name: string]: Rect}, values: {[name: string]: string | number | boolean}} {
     const sketch = this.sketch;
     const element = this.root.querySelector<HTMLElement>(':scope > crux-sketch');
@@ -476,8 +474,8 @@ export class CruxSketcher extends grok.chem.SketcherBase {
     this.show(notation, value);
   }
 
-  /** Replaces the drawing with one write, and so one change event. A value Crux cannot read changes nothing and
-   * says nothing, as with the other sketchers: the host has shown it malformed, and keeps showing it so. */
+  // Replaces the drawing with one write, and so one change event. A value Crux cannot read changes nothing and
+  // says nothing, as with the other sketchers: the host has shown it malformed, and keeps showing it so.
   private show(notation: Notation, value: string): void {
     if (isEmptyValue(value))
       this.sketch!.setValue('');
