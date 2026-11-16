@@ -82,7 +82,7 @@ export class SpotlightWidget extends DG.Widget {
     this.sqlPromise = queries.mostRecentEntities(userId);
     this.sharedSqlPromise = queries.recentlySharedWithMe(userId);
     const notificationsDataSource: DG.NotificationsDataSource = grok.dapi.users.notifications.forCurrentUser()
-      .by(SpotlightWidget.SPOTLIGHT_ITEMS_LENGTH) as DG.NotificationsDataSource;
+      .by(SpotlightWidget.SPOTLIGHT_ITEMS_LENGTH).order('createdAt', true) as DG.NotificationsDataSource;
     this.notificationsPromise = notificationsDataSource.list({pageSize: 20});
     this.buildTabbedUI();
   }
@@ -397,15 +397,7 @@ export class SpotlightWidget extends DG.Widget {
         } else if (item instanceof DG.UserNotification) {
           (listChild as HTMLElement).dataset.notificationId = item.id;
           if (!item.isRead && !this.markedReadIds.has(item.id)) {
-            listChild.classList.add('grok-notification-unread');
-            const dartIcon = listChild.querySelector('.grok-notification-mark-read');
-            if (dartIcon) {
-              dartIcon.addEventListener('click', () => {
-                this.markedReadIds.add(item.id);
-                listChild.classList.remove('grok-notification-unread');
-                this.refreshUnreadCountUI();
-              });
-            }
+            this.markReadOnClick(listChild as HTMLElement, item);
           }
           if (item.createdAt) {
             const timestamp = ui.time.shortTimestamp(item.createdAt);
@@ -665,6 +657,17 @@ export class SpotlightWidget extends DG.Widget {
     return root;
   }
 
+  /** cleanList re-parents the rendered notification, dropping the Dart renderer's own click handler. */
+  markReadOnClick(row: HTMLElement, item: DG.UserNotification): void {
+    row.classList.add('grok-notification-unread');
+    row.addEventListener('click', () => {
+      this.markedReadIds.add(item.id);
+      row.classList.remove('grok-notification-unread');
+      this.refreshUnreadCountUI();
+      grok.dapi.users.notifications.markAsRead(item.id);
+    }, {once: true, capture: true});
+  }
+
   refreshUnreadCountUI(): void {
     const unreadCount = this.recentNotifications.filter((n) => !n.isRead && !this.markedReadIds.has(n.id)).length;
     const badge = this.root.querySelector('.pp-notification-badge');
@@ -702,15 +705,7 @@ export class SpotlightWidget extends DG.Widget {
       const item = this.recentNotifications[i];
       (child as HTMLElement).dataset.notificationId = item.id;
       if (!item.isRead && !this.markedReadIds.has(item.id)) {
-        child.classList.add('grok-notification-unread');
-        const dartIcon = child.querySelector('.grok-notification-mark-read');
-        if (dartIcon) {
-          dartIcon.addEventListener('click', () => {
-            this.markedReadIds.add(item.id);
-            child.classList.remove('grok-notification-unread');
-            this.refreshUnreadCountUI();
-          });
-        }
+        this.markReadOnClick(child as HTMLElement, item);
       }
       if (item.createdAt) {
         const timestamp = ui.time.shortTimestamp(item.createdAt);
