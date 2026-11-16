@@ -22,7 +22,7 @@ import {planInput} from './plan-vs-observed';
 import {openStage, showStage} from './stages';
 import {LIMITS_TAG, LINE_TAG, LOOKS_TAG, REVEALED, WEIGHT_TAG, addLog, groupsShown, logOf, newStudyTable, parseStudy,
   stamped,
-  restoreFields, roleColumns, saveStudy, studyOf, tableOf} from './study-file';
+  restoreFields, roleColumns, saveStudy, studyNameOf, studyOf, tableOf} from './study-file';
 import {editLayout, panelTabs, Tab} from './panels';
 import {stagePage, studyHeader} from './study-header';
 import {animalMarks, emptyStudy, studyDataLine, studyMenu, studyOf as studyNamesOf, tagStudy, withoutExcluded}
@@ -850,7 +850,7 @@ function monitorContent(self: ViewHost, initial: DG.DataFrame | undefined, expor
     const colors = colorsOf(r);
     const day = cell('day').value;
     const df = studyTable();
-    return {name: df?.name ?? '', groups: revealed.value ?
+    return {name: df ? studyNameOf(df) : '', groups: revealed.value ?
       Object.entries(colors).map(([name, color]) => ({name, color})) : [],
     status: [r.status.get('line', 0), day === undefined ? '' : dayText(day),
       revealed.value ? '' : 'groups hidden'].filter((x) => x).join(' · '),

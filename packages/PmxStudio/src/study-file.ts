@@ -164,6 +164,13 @@ export function roleColumns(df: DG.DataFrame): {animal: DG.Column, group: DG.Col
   return {animal: col('animal'), group: col('group'), day: col('day'), volume: col('volume')};
 }
 
+/** A study's name: a study followed from a saved plan goes by the plan's name, as the Overview lists it; else by
+ *  its table's. */
+export function studyNameOf(df: DG.DataFrame): string {
+  const planText = df.getTag(PLAN_TAG);
+  return (planText ? parsePlan(planText)?.name : '') || df.name;
+}
+
 export function studyOf(df: DG.DataFrame, humane: number | null, weightLimit: number | null = null): SavedStudy {
   const planText = df.getTag(PLAN_TAG);
   const {animal: a, group: g, day: d, volume: v} = roleColumns(df);
@@ -180,8 +187,7 @@ export function studyOf(df: DG.DataFrame, humane: number | null, weightLimit: nu
     .filter((c) => !kept.has(c.name) && !c.name.startsWith('~') && plain.includes(c.type))
     .map((c) => [c.name, Array.from({length: df.rowCount}, (_, i) => c.isNone(i) ? null : c.get(i))]));
   const plan = planText ? parsePlan(planText) : null;
-  // a study followed from a saved plan goes by the plan's name, as the Overview lists it; else by its table's
-  return {format: FORMAT, version: 1, name: plan?.name || df.name, plan,
+  return {format: FORMAT, version: 1, name: studyNameOf(df), plan,
     looks: df.getTag(LOOKS_TAG) ?? '', humane, weightLimit, log: logOf(df), ...meta ? {meta} : {},
     ...line ? {line} : {}, ...volume ? {provenance: {volume}} : {},
     ...Object.keys(extra).length ? {extra} : {},
@@ -294,7 +300,6 @@ const fileName = (name: string) => fileNameOf(name, 'Study', STUDY_EXT);
 export async function freeName(names: string[], id: string | null,
   owner: (name: string) => Promise<string | null | undefined>): Promise<string> {
   const tried = [...new Set(names.map((n) => n.trim()).filter((n) => n))];
-  const given = Math.max(tried.length, 1);
   const last = tried[tried.length - 1] ?? 'Study';
   if (!tried.length)
     tried.push(last);
@@ -306,10 +311,6 @@ export async function freeName(names: string[], id: string | null,
     if (id && o === id)
       return name;
     owners.push(o);
-    // ponytail: numbered names are taken in order, so the first missing one ends them; a gap left by a deleted file
-    // hides a later copy of this study (it would be saved twice)
-    if (o === undefined && owners.length >= given)
-      break;
   }
   const free = owners.findIndex((o) => o == null);
   if (free < 0)
@@ -320,9 +321,12 @@ export async function freeName(names: string[], id: string | null,
 /** Saves the study to the user's studies folder and returns its path: under its own name (a followed plan's), else
  *  its table's, else numbered (see freeName). The same study's file is replaced; another study's never is. */
 export async function saveStudy(s: SavedStudy, tableName = ''): Promise<string> {
+  // the folder is listed once: every numbered name can be asked about (a copy past a deleted one is still found)
+  // and only the files there are read
+  const there = new Set((await grok.dapi.files.list(studiesFolder())).map((f) => f.name.toLowerCase()));
   const owner = async (name: string) => {
     const at = studiesFolder() + fileName(name);
-    return await grok.dapi.files.exists(at) ?
+    return there.has(fileName(name).toLowerCase()) ?
       grok.dapi.files.readAsText(at).then((t) => JSON.parse(t)?.meta?.id ?? null).catch(() => null) : undefined;
   };
   const name = await freeName([s.name, tableName], s.meta?.id ?? null, owner);

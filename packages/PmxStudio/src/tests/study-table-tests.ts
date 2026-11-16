@@ -378,6 +378,12 @@ category('Study table', () => {
     expect(await freeName(['', ' '], 'B', owner), 'Study', 'no name at all');
   });
 
+  test('a copy past a deleted numbered file is found: the study is not saved twice', async () => {
+    const {owner} = folder({'T': 'A', 'T (3)': 'B'});
+    expect(await freeName(['T'], 'B', owner), 'T (3)', 'its own file, past the gap');
+    expect(await freeName(['T'], 'C', owner), 'T (2)', 'a new study fills the gap');
+  });
+
   test('two studies followed from one plan are saved apart, each again in its own file', async () => {
     const f = folder({});
     expect(await f.save(['MC38 plan', 'mc38'], 'A'), 'MC38 plan');

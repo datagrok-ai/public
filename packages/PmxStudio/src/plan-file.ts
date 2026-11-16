@@ -186,7 +186,11 @@ export function parsePlan(text: string): SavedPlan {
 export const plansFolder = () => `${grok.shell.user.project.name}:Home/PMX Studio/plans/`;
 /** A path in the user's Home as the app shows it: "your Home/…", never the account's login (a shared screen, a
  *  recorded demo) */
-export const shownPath = (path: string) => path.replace(/^[^:/]+:Home\//, 'your Home/');
+export const shownPath = (path: string) => {
+  const own = `${grok.shell.user.project.name}:Home/`;
+  // another project's Home (shared with the user) keeps its name
+  return path.startsWith(own) ? 'your Home/' + path.slice(own.length) : path;
+};
 
 /** A name as a file name: without the characters a path cannot hold, `fallback` when nothing is left. */
 export const fileNameOf = (name: string, fallback: string, ext: string) =>
