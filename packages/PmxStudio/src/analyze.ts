@@ -155,6 +155,8 @@ export interface ArmAnalysis {
   pCommon: number | null;
   /** Kaplan-Meier median time to the endpoint volume (null: not reached) */
   medianTte: number | null;
+  /** how many days later than the control its median reaches the endpoint volume (T − C; null: either never does) */
+  delay: number | null;
   /** the twin: animals measured on the evaluation day, the median of their paired effects (percent) and how many
    *  are smaller than their twin beyond doubt (the 90 % interval of the effect above 0) */
   twinAnimals: number;
@@ -454,6 +456,7 @@ export async function analyzeStudy(d: AnalysisDeclaration): Promise<StudyAnalysi
       difference: c.estimate, lower: c.lower, upper: c.upper, p: c.p_value,
       pCommon: finite(sensitivity.find((r) => String(r.term).startsWith(`g${k + 1} `))?.p_value),
       medianTte: finite(delay.find((r) => r.group === g)?.median),
+      delay: finite(delay.find((r) => r.group === g)?.t_minus_c),
       twinAnimals: own.length, pairedEffect: own.length ? 100 * median(own.map((r) => r.effect)) : null,
       responders: own.filter((r) => r.effect_lo > 0).length};
   });
@@ -673,6 +676,9 @@ async function compareWithPlan(d: AnalysisDeclaration, treated: string[], arms: 
 
 /** The analysis (one row), the comparisons (one row per treated arm), the animals, the observed volumes, and the
  *  twin's bands, paired effects and control check. */
+/** Days for a tumor growing at `slope` (ln V per day) to double; null when it does not grow. */
+export const doublingOf = (slope: number | null | undefined) => slope && slope > 0 ? Math.LN2 / slope : null;
+
 export interface AnalysisFrames {analysis: DG.DataFrame, comparisons: DG.DataFrame, animals: DG.DataFrame,
   volumes: DG.DataFrame, twins: DG.DataFrame, effects: DG.DataFrame, checks: DG.DataFrame, versusPlan: DG.DataFrame,
   predicted: DG.DataFrame, tolerability: DG.DataFrame, weights: DG.DataFrame}
@@ -758,11 +764,13 @@ export async function analysisFrames(d: AnalysisDeclaration): Promise<AnalysisFr
     slope_difference_lower: a.lower, slope_difference_upper: a.upper, p_value: a.p, significant: a.p < d.alpha,
     p_common_variance: a.pCommon,
     activity: activityOf(a),
-    median_time_to_endpoint: a.medianTte, twin_animals: a.twinAnimals, paired_effect: a.pairedEffect,
+    median_time_to_endpoint: a.medianTte, growth_delay_days: a.delay, twin_animals: a.twinAnimals,
+    paired_effect: a.pairedEffect,
     responders: a.responders,
   })))!;
   const animals = DG.DataFrame.fromObjects(s.animals.map((a) => ({group: a.group, animal: a.animal,
-    slope_per_day: a.slope, time_to_endpoint: a.time_to_endpoint, endpoint_reached: a.event, mrecist: a.mrecist,
+    slope_per_day: a.slope, doubling_time: doublingOf(a.slope), time_to_endpoint: a.time_to_endpoint,
+    endpoint_reached: a.event, mrecist: a.mrecist,
     // mRECIST's best response (% change of the volume from baseline, its minimum from day 10) and best average:
     // a waterfall's axis
     best_response: a.best_response, best_avg_response: a.best_avg_response})))!;

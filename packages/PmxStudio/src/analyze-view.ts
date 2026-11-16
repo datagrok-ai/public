@@ -14,7 +14,7 @@ import type {ReadonlySignal, StatValue} from '@datagrok-libraries/u2';
 import {funcForm, TableInput, ViewHost, viewers} from '@datagrok-libraries/u2/dg';
 import type {ViewContent} from '@datagrok-libraries/u2/dg';
 
-import {AnalysisFrames, AnalysisInputs, PREDICTED, analysisDeclarationOf, analysisFrames, warmTwin}
+import {AnalysisFrames, AnalysisInputs, PREDICTED, analysisDeclarationOf, analysisFrames, doublingOf, warmTwin}
   from './analyze';
 import {median} from './engine';
 import {groupColors} from './frames';
@@ -578,16 +578,21 @@ function analyzeContent(self: ViewHost, opening: AnalyzeStart | undefined, expor
     // the statistics behind each result (the growth rates the test compares and their difference)
     const reached = (d: unknown) => d === null || d === undefined ? 'Not reached' : dayText(d);
     type Stat = {name: string, cells: string[]};
-    const stats: Stat[] = [{name: control, cells: [control, String(num(c.get('slope_control_per_day', 0))), '—', '—',
-      reached(v('control_median_tte'))]}];
+    const doubling = (s: number) => {
+      const d = doublingOf(s);
+      return d === null ? 'Does not grow' : d.toFixed(1);
+    };
+    const stats: Stat[] = [{name: control, cells: [control, String(num(c.get('slope_control_per_day', 0))),
+      doubling(c.get('slope_control_per_day', 0)), '—', '—', reached(v('control_median_tte')), '—']}];
     for (let i = 0; i < c.rowCount; i++) {
       const g = (k: string) => c.get(k, i);
-      stats.push({name: g('arm'), cells: [g('arm'), String(num(g('slope_per_day'))),
+      stats.push({name: g('arm'), cells: [g('arm'), String(num(g('slope_per_day'))), doubling(g('slope_per_day')),
         `${num(g('slope_difference'), 2)} (${num(g('slope_difference_lower'), 2)} to ` +
-        `${num(g('slope_difference_upper'), 2)})`, pValue(g('p_value')), reached(g('median_time_to_endpoint'))]});
+        `${num(g('slope_difference_upper'), 2)})`, pValue(g('p_value')), reached(g('median_time_to_endpoint')),
+        Number.isFinite(g('growth_delay_days')) ? (g('growth_delay_days') as number).toFixed(1) : '—']});
     }
-    const statHeaders = ['Group', 'Growth rate (ln V per day)', 'Difference from the control (95% CI)', 'p',
-      `Median day to ${v('endpoint')} mm³`];
+    const statHeaders = ['Group', 'Growth rate (ln V per day)', 'Doubling time (days)',
+      'Difference from the control (95% CI)', 'p', `Median day to ${v('endpoint')} mm³`, 'Days later than the control'];
     const st = new BasicTable<Stat>({items: stats, keyOf: (x) => x.name, columns: statHeaders.map((header, j) =>
       ({header, render: (x: Stat) => x.cells[j], align: j >= 1 ? 'center' : 'left'}))});
     st.root.style.width = '100%';

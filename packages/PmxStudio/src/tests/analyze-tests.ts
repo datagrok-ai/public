@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
-import {OBSERVED, PREDICTED, REANCHOR, endRange, endVerdict} from '../analyze';
+import {OBSERVED, PREDICTED, REANCHOR, doublingOf, endRange, endVerdict} from '../analyze';
 import {HUMANE, LAB_WEEKDAYS, designStudy} from '../engine';
 import {monitorEnd, planChecks, widenedEnd} from '../plan-checks';
 import {bandFactors} from '../priors';
@@ -122,6 +122,22 @@ category('Analyze', () => {
     expect(o.comparisons.get('activity', 1), 'Slows growth', `p ${o.comparisons.get('p_value', 1)}`);
     expect(o.animals.rowCount, plan.predicted.nControl! +
       plan.predicted.arms.reduce((t, a) => t + a.n!, 0));
+  }, {timeout: 300000});
+
+  test('doubling time from the growth rate; growth delay against the control', async () => {
+    expect(Math.abs(doublingOf(Math.LN2 / 4)! - 4) < 1e-12, true);
+    expect([doublingOf(0), doublingOf(-0.1), doublingOf(null)].join('|'), '||', 'no doubling unless it grows');
+    const o = await analyze(await exampleStudy());
+    for (let i = 0; i < o.animals.rowCount; i++) {
+      const [s, d] = [o.animals.get('slope_per_day', i), o.animals.get('doubling_time', i)];
+      if (s > 0)
+        expect(Math.abs(d * s - Math.LN2) < 1e-9, true, `animal ${i}: ${s} ${d}`);
+    }
+    // the stronger arm reaches the endpoint later, or never (no delay then)
+    const c = o.comparisons;
+    const [weak, strong] = [c.get('growth_delay_days', 0), c.get('growth_delay_days', 1)];
+    expect(c.col('growth_delay_days') !== null, true);
+    expect(!Number.isFinite(strong) || !Number.isFinite(weak) || strong >= weak, true, `delays ${weak} / ${strong}`);
   }, {timeout: 300000});
 
   test('the twin: the strong arm smaller than its twins, bands ordered, controls in their bands', async () => {
