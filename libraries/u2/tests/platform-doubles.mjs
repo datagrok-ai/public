@@ -74,6 +74,10 @@ export class Package extends Entity {}
 export class Project extends Entity {}
 getters(Project, 'isSpace', 'createdOn', 'updatedOn');
 
+/** A connection; a space's own file storage carries `isProject` in its parameters. */
+export class DataConnection extends Entity {}
+getters(DataConnection, 'parameters');
+
 /** The function hierarchy the source backends discriminate on. `registry` is what `find` answers
  * from; `run` is what a prepared call executes. */
 export class Func extends Entity {
