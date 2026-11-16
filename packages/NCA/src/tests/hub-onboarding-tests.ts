@@ -127,20 +127,15 @@ category('Hub onboarding: demo tables (★)', () => {
         'grok.shell.addTable performs NO implicit semantic-type detection — ' +
         'so ensureDemoTables must call detectSemanticTypes explicitly');
 
-      // THE HARNESS BOUNDARY, asserted so it cannot be mistaken for a result.
-      // The complementary half of F0 — "does an explicit detectSemanticTypes
-      // call actually yield Molecule for OUR column?" — is NOT answerable here:
-      // `grok test` loads only the package under test, so no package-contributed
-      // detector exists in this context (Chem's detectMolecule is unreachable:
-      // "Unable to get project asset"). Detection therefore runs over an EMPTY
-      // detector set and returns null for every column, including a canonical
-      // SMILES frame. That null is a property of the harness, not of the data,
-      // and it is why AC-F1a is discharged by live visual QA instead.
-      // This assertion is a tripwire: if the harness ever gains detectors it
-      // fails, and the fix is to upgrade the test to assert Molecule directly.
-      expect(DG.Func.find({tags: ['semTypeDetector']}).length, 0,
-        'no semantic-type detector is loaded in the package-test harness — if ' +
-        'this fails the harness gained detectors: assert semType === MOLECULE here');
+      // The complementary half of F0: the explicit call `ensureDemoTables` makes
+      // types OUR column. Until 2026-11 this was not answerable here (no detector
+      // reachable in the package-test harness; a tripwire counted
+      // `semTypeDetector`-tagged functions). Measured 2026-11-16: Chem's detectors
+      // (detectMolecules, ...) register through `meta.role`, not that tag, and
+      // the harness reaches them, so the column is asserted directly.
+      await grok.data.detectSemanticTypes(df);
+      expect(df.col(smiles)!.semType, DG.SEMTYPE.MOLECULE,
+        'detectSemanticTypes (the ensureDemoTables call) types the demo SMILES column as Molecule');
     } finally {
       closeDemoTables();
     }
