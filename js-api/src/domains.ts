@@ -1004,7 +1004,7 @@ export class DomainError extends Error {
    * 'forbidden' | 'not-found' | 'unsupported' | 'manifest-validation' | 'invalid-mode' | 'id-collision' |
    * 'destructive-confirmation-required' | 'not-user-managed' | 'not-package-managed' |
    * 'schema-management-unavailable' | 'apply-failed' | 'delete-failed' | 'unknown-group' | 'external-unreachable' |
-   * 'retry' (a concurrent write or a timeout rolled it back; safe to repeat) | '' (transport). */
+   * '' (transport). */
   get code(): string { return `${this.body['error'] ?? ''}`; }
   /** Index of the failing op in a transaction ops list; undefined otherwise. */
   get opIndex(): number | undefined { return this.body['opIndex']; }
