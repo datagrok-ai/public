@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1110](https://github.com/datagrok-ai/core/issues/1110): Demo app: Fixed a demo that opens no view, or two demos selected in quick succession, renaming an unrelated view or failing with "Cannot set properties of null"
 * [#4437](https://github.com/datagrok-ai/public/issues/4437): Tutorials: Show both Windows and Mac keyboard shortcuts in step instructions
 * [#4444](https://github.com/datagrok-ai/public/issues/4444): Tutorials: Dashboards: saving the project before renaming it gets the project name step stuck, and skipping the next step throws NullError
 * [#4438](https://github.com/datagrok-ai/public/issues/4438): Tutorials: Filters: Esc disables the filter panel instead of resetting, steps 6, 13 and 17 get stuck
