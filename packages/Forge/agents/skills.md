@@ -421,4 +421,4 @@ return t.columns.names().filter((name) => name.startsWith('Species (predicted'))
   `getShareInfo` / `addShareGrantee` / `setShareAccess`, or `getDialogInfo` / `setInput` / `clickButton`).
 - Confirm with the user before `deleteModel`.
 - In the UI, Forge is **ML | Models | Train Model...** and **Apply Model...**, the catalog **Browse > Platform >
-  Predictive models** (also **Browse > Apps > Forge**) and the table's **Models** pane.
+  Machine Learning** (also **Browse > Apps > Forge**) and the table's **Models** pane.

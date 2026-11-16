@@ -91,7 +91,7 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
   second and ignores the next plain set: the catalog sets with `setCurrentObject(x, true, true)`.
 - Tests type a tag chip into `input.d4-tags-selector-input` (`typeTag`); assigning the Tags `value` skips Enter.
 - The core calls `forgeTrain`, `forgeApply`, `forgeApp` and `applyModel` (inputs by name) by name: renaming one or its
-  inputs removes `ML | Models`, Browse > Platform > Predictive models (and `/models`) or breaks `grok.ml.applyModel`
+  inputs removes `ML | Models`, Browse > Platform > Machine Learning (and `/models`) or breaks `grok.ml.applyModel`
   (core#1518).
 - A panel function's widget is never detached: a pane holds no subscription. `grok s functions list --filter
   'name = "X"'` matches the friendly name. A JS `ui.bind` row gets only **Properties...**: use `ui.contextActions(row)`.

@@ -43,6 +43,13 @@ for the BDD resume:
   target (`train-demog` 3.14, `train-iris-gaps`): Predict probability is now shown for every text or yes/no target with
   two or more classes, so the group shows for such a target.
 
+Stale since 5a3: the node is Machine Learning (**Browse > Platform > Predictive models** was renamed); left unedited
+for the BDD resume:
+
+- `app-and-menus` (`:3`, `:23`, the scenario `Forge opens from Apps, from the Predictive models node and from
+  Forge:forgeModels` at `:39` and its step `user clicks on "Predictive models" tree node inside browse tree` at `:53`):
+  it clicks the old node, so the scenario fails at that step.
+
 ## Running
 
 From `packages/Forge` (Git Bash; in PowerShell set the variables with `$env:NAME = 'value'` first):

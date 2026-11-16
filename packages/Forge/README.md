@@ -945,7 +945,7 @@ knowledge does not cover them.
 
 ## Model catalog
 
-Open the catalog from **Browse > Apps > Forge** or **Browse > Platform > Predictive models**. The view has two sections:
+Open the catalog from **Browse > Apps > Forge** or **Browse > Platform > Machine Learning**. The view has two sections:
 
 * **Methods**: a grid of every method Forge found, with its package, method type (function or script), roles and the
   hyperparameters it accepts; hover a header, or a **Method type**, **Roles** or **Hyperparameters** cell, for what it
@@ -1043,7 +1043,7 @@ forge > model**, card mode), its name in a table's **Models** pane, or its name 
 panel. The platform asks to confirm and links the model to the Space; everyone with access to the Space can then see
 and apply it. Dropping it again links nothing twice. The platform has no **Add to** command for models yet.
 
-On a server with Forge, **ML | Models**, **Browse > Platform > Predictive models** and the table's **Models** pane are
+On a server with Forge, **ML | Models**, **Browse > Platform > Machine Learning** and the table's **Models** pane are
 Forge's. Without Forge the platform offers no predictive modeling tool. Models of the earlier predictive modeling tool are not listed in Forge's catalog; where the platform still
 lists one (**Recent**, **Favorites**, **Shared with me**, project links), it shows only a note and offers no commands.
 A column predicted by such a model says so in **Predicted by**. Forge needs Datagrok **<minimum platform version: TBD>** or later: on an older server the earlier

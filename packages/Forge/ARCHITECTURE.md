@@ -11,7 +11,7 @@ an EMS schema owned by Forge, and the UI on top.
 - **"Method" for users, "engine" in code.** Captions, messages and docs for users say method; code, the `engines/`
   folder, the `engine_*` columns and the `mlname` contract keep engine.
 - **The platform's entry points open Forge.** On a server with Forge, the core's `ML | Models` menu, **Browse >
-  Platform > Predictive models** and `grok.ml.applyModel` call Forge's functions by name; without Forge the platform
+  Platform > Machine Learning** and `grok.ml.applyModel` call Forge's functions by name; without Forge the platform
   shows no predictive modeling tool (see "Core entry points"). Forge registers no menu of its own; its prediction columns carry the platform's
   `predictive.model` tag. Its storage stays its own (app, schema).
 - **Training data never leaves the browser without consent.** Only the `copy` storage mode, chosen in the Save
@@ -2224,7 +2224,7 @@ missing (a restored `models` view shows a one-line note; `grok.ml.applyModel` re
 |---|---|---|
 | `forgeTrain` | none (the current table) | `ML \| Models \| Train Model...` |
 | `forgeApply` | none (the current table) | `ML \| Models \| Apply Model...` |
-| `forgeApp` | none; output `view` | **Browse > Platform > Predictive models**, the URL `/models`, a restored `models` view (without Forge: a one-line note) |
+| `forgeApp` | none; output `view` | **Browse > Platform > Machine Learning**, the URL `/models`, a restored `models` view (without Forge: a one-line note) |
 | `applyModel` | `model`, `table`, `columnNamesMap`, `showProgress`, passed by name | `grok.ml.applyModel(name, table, map, showProgress)` for any name that is not a model of the earlier tool |
 
 The core hides the earlier tool's table pane **Models**, its **Predicted By** row in a column's **Details**, its
@@ -2340,7 +2340,7 @@ a data change).
 
 The model's menu has no **Add to** (the built-in tool added a model to an open project): a model reaches a Space by
 the platform's drag (see Sharing). Forge's Browse node is **Apps > Forge**; with Forge installed, the core opens Forge's
-catalog from **Browse > Platform > Predictive models** too; the core no longer has the **MLFlow** node (see "Core entry points").
+catalog from **Browse > Platform > Machine Learning** too; the core no longer has the **MLFlow** node (see "Core entry points").
 There is no catalog menu item (the built-in tool had none either). The Domains view of `model` can be filtered by
 **Tags** (the built-in catalog's tags filter); its **Author** filter has no counterpart.
 
