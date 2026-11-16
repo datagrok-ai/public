@@ -310,8 +310,11 @@ export class PackageFunctions {
     const treeHelper = await PackageFunctions.getTreeHelper();
     const df = treeHelper.newickToDf(newickString, file.fileName.slice(0, -4));
 
-    const viewerRoot = ((await df.plot.fromType('PhylocanvasGL', {})) as DG.JsViewer).root;
-    viewerRoot.setAttribute('name', 'viewer-PhylocanvasGL');
+    // PhylocanvasGL comes from the optional PhyloTreeViewer package
+    const viewerType = DG.Func.find({name: 'PhylocanvasGL'}).length > 0 ? 'PhylocanvasGL' : 'Dendrogram';
+    const viewerRoot = ((await df.plot.fromType(viewerType,
+      viewerType == 'Dendrogram' ? {nodeColumnName: 'node'} : {})) as DG.JsViewer).root;
+    viewerRoot.setAttribute('name', `viewer-${viewerType}`);
     viewerRoot.style.setProperty('width', '100%', 'important');
     viewerRoot.style.setProperty('height', '100%', 'important');
 
