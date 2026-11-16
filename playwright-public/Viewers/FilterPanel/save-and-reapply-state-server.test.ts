@@ -9,9 +9,8 @@ import {dismissPanelMenu, readSaveOrApplyLeaves, removeProbeState, saveStateViaM
 
 declare const grok: any;
 
-// Step 8 of the scenario: the demog-typed state must not be offered on beer.csv, which has no
-// local copy. The state is saved here the same way Step 4 saves it (the localStorage of this
-// lane is not the local lane's), on a RACE / AGE configuration set up through the API.
+// Step 8 of the scenario: the demog-typed state must not be offered on beer.csv, whose columns
+// do not match it. The state is saved here the same way Step 4 saves it.
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
