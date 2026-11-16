@@ -7,6 +7,13 @@ import {DBExplorerRenderer} from './renderer';
 
 
 export const DB_EXPLORER_OBJ_HANDLER_TYPE = 'db-explorer-value';
+
+/** The associations of a value are read in the background, after its card: a database out of reach (a query that
+ * times out) leaves them out with a warning instead of an unhandled rejection; the card shows its own failure. */
+function associationsFailed(schemaName: string, tableName: string, e: any): void {
+  console.warn(`DB Explorer: no associations for ${schemaName}.${tableName}: ${e?.message ?? e}`);
+}
+
 export class DBExplorerObjectHandler extends DG.ObjectHandler {
   get type(): string {
     return DB_EXPLORER_OBJ_HANDLER_TYPE;
@@ -79,9 +86,8 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
     acc.addPane(paneName, () => this.renderInnerCard(x), true);
     this.renderer
       .getTable(schemaName, tableName, x.column, this.options.valueConverter(x.value ?? ''), this.options.joinOptions)
-      .then((df) => {
-        this.renderer.renderAssociations(acc, this.schemaInfoPromise, schemaName, tableName, df);
-      });
+      .then((df) => this.renderer.renderAssociations(acc, this.schemaInfoPromise, schemaName, tableName, df))
+      .catch((e) => associationsFailed(schemaName, tableName, e));
     return acc;
   }
 
@@ -92,7 +98,8 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
     const df = tableRow.table.clone(bs);
     const acc = ui.accordion(dbTableName);
     acc.addPane('Properties', () => ui.wait(async () => this.renderer.renderDataFrame(df, dfSchemaName, dbTableName, {keepEmptyValues: true, skipCustomSelected: true})), true);
-    this.renderer.renderAssociations(acc, this.schemaInfoPromise, dfSchemaName, dbTableName, df);
+    this.renderer.renderAssociations(acc, this.schemaInfoPromise, dfSchemaName, dbTableName, df)
+      .catch((e) => associationsFailed(dfSchemaName, dbTableName, e));
     return acc.root;
   }
 

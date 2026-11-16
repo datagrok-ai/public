@@ -13,7 +13,7 @@ import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
-import {gridColumnStaysWide, headerStartsAt} from '../../bindings/demo-antibody.js';
+import {gridColumnStaysWide} from '../../bindings/demo-antibody.js';
 import {bioInitialized} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, shouldBe, shouldHaveValue, videoSays} from '@datagrok-libraries/bdd/bindings/common/steps';
@@ -21,7 +21,7 @@ import {newColumnNamed, pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/
 import {rowsRangeAllSelected, selectNoRows, selectRowsByHeaders, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {balloonsClosed, contextPanelClosed, openDataset, packageInstalled, simpleModeOff, toolboxPaneHidden} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {clickArea, hoverArea, noBalloons, noErrors, readingReads} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {gridColumnWidth, gridShowsColumns} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {gridColumnWidth, gridShowsColumns, headerStartsAt} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("6 · Antibodies and proteins · Profile HMMs", () => {

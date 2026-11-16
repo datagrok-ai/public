@@ -43,7 +43,8 @@ Feature: Filter presets in the Save or Apply menu
     And the open menu should list "Save or Apply > bdd bulk 1"
     When user closes the context menu
     And user opens the viewer menu of filter panel
-    Then the open menu should not list "Save or Apply > bdd bulk 4"
+    Then the open menu should list "Save or Apply > bdd bulk 6"
+    And the open menu should not list "Save or Apply > bdd bulk 4"
     When user types "bulk 4" into the search box of "Save or Apply" in the open menu
     Then the open menu should list "Save or Apply > bdd bulk 4"
     When user closes the context menu
@@ -74,8 +75,8 @@ Feature: Filter presets in the Save or Apply menu
     Given user opens demog-1000 dataset
     And user opens an empty filter panel
     When user opens the viewer menu of filter panel
-    Then the open menu should not list "Save or Apply > bdd bulk 24"
-    And the filter preset "bdd shared preset" in the open menu should name its author
+    Then the filter preset "bdd shared preset" in the open menu should name its author
+    And the open menu should not list "Save or Apply > bdd bulk 24"
     And the filter preset "bdd shared preset" in the open menu should offer "nothing"
     When user picks "Save or Apply > bdd shared preset" from the open menu
     Then 15 rows should pass the filter

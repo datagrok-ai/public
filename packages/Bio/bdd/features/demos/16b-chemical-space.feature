@@ -23,6 +23,7 @@ Feature: 4 · A peptide series · Chemical space
     And user opens FASTA_PT_activity dataset
     And the Bio package is initialized
     And the toolbox pane is hidden
+    And the browse panel is closed
     And the context panel is closed
     And the grid shows only the columns "sequence"
     And the "sequence" column of the grid is 250 px wide

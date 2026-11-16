@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Fixed an unhandled rejection when a value's associations cannot be read, e.g. a database out of reach whose queries time out: they are left out with a warning, and the card shows its own failure
+* Fixed a caller that asked for the schema while it loaded: it waited for ever when the connection was not found, and after a load that failed it still queried the database (and waited for that query to time out too); it now gets no schema, as a later caller does
 * Added catalogs: a configuration can name the catalog of its schema (`catalogName`) for a database that has them (Databricks, Snowflake, SQL Server); its tables, joins and references are then read as `catalog.schema.table`, and the editor offers the catalog before the schema and reads the schemas and tables of that catalog alone. A configuration without a catalog reads the connection's own catalog, as before
 * Added binding the editor to one connection (`new DBExplorerEditor(onSave, false, connection)`): it then lists no other connection of the server, says which catalog and schema its tables are read from, and Import JSON brings a configuration made elsewhere, such as for the same tables in another catalog, into the schema it is open on
 * Fixed the editor's preview cards failing on SQL Server (`limit 1`), and a quote in an identifier's value breaking its query

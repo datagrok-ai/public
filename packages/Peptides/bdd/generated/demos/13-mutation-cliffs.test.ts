@@ -11,7 +11,6 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {headerStartsAt} from '../../bindings/demo-sar.js';
 import {peptidesInitialized, sarReady} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, doubleClickOn, enterInto, hoverOver, isExpanded, selectIn, shouldBe, shouldContainText, shouldHaveText, shouldNotContainText, videoSays} from '@datagrok-libraries/bdd/bindings/common/steps';
@@ -20,7 +19,7 @@ import {selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {listenCustom} from '@datagrok-libraries/bdd/bindings/platform/events';
 import {balloonsClosed, browsePanelClosed, browsePanelOpen, contextPanelOpen, simpleModeOff, toolboxPaneHidden, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {clickArea, hoverArea, noErrors, pickFromAreaContextMenu, readingReads} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {dockToViewEdge, dragTopBorder, gridColumnWidth, gridShowsColumns, viewersSettled} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {dockToViewEdge, dragTopBorder, gridColumnWidth, gridShowsColumns, headerStartsAt, viewersSettled} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("6 · Antibodies and proteins · Mutation cliffs", () => {

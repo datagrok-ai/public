@@ -185,7 +185,10 @@ export async function pickMenuPath(page: Page, path: string): Promise<void> {
   for (let i = 0; i < segments.length; i++) {
     const last = i === segments.length - 1;
     if (!last) {
-      group = await openGroup(page, segments[i], segments[i + 1], group).catch(async () => {
+      group = await openGroup(page, segments[i], segments[i + 1], group).catch(async (e) => {
+        // the group is there and opened without the next segment: that, not a missing group, is the failure
+        if (await menuShows(page, segments[i], group) && /did not show/.test(String(e?.message)))
+          throw new Error(`${e.message}${await reached()}`);
         throw new Error(`no "${segments[i]}" in the menu; it shows: ${await visibleMenuLabels(page, group)}${await reached()}`);
       });
       continue;

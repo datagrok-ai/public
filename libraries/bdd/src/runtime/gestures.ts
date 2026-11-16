@@ -92,19 +92,24 @@ export async function rightclick(page: Page, target: ElementRef): Promise<void> 
  * pointer in and stays up while it is over it; Playwright, which moves only once the element is clear, waits
  * out its timeout behind it. Leaving the resting place cancels a tooltip still to come; one already up is
  * left from a part of the element it does not cover (or the corner), and goes down once the pointer is off
- * its owner. */
+ * its owner. Such a tooltip lets the pointer through while the pointer is on its owner and takes it in only
+ * as the pointer leaves, so one over the element shows only after the move: the element is aimed at again
+ * then, and the pointer taken off it. A tooltip the element is in (a legend item of a viewer in a tooltip) is
+ * not over it. */
 async function approach(page: Page, loc: Locator): Promise<void> {
   if (!await loc.isVisible().catch(() => false))
     return;
   const covered = (): Promise<boolean> => loc.evaluate((el) => {
     const r = el.getBoundingClientRect();
-    return !!document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('.d4-tooltip');
+    const tip = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('.d4-tooltip');
+    return !!tip && !tip.contains(el);
   }).catch(() => false);
-  const aim = await loc.evaluate((el) => {
+  const aimAt = () => loc.evaluate((el) => {
     const r = el.getBoundingClientRect();
     const y = r.top + r.height / 2;
     const cx = r.left + r.width / 2;
-    if (!document.elementFromPoint(cx, y)?.closest('.d4-tooltip'))
+    const tip = document.elementFromPoint(cx, y)?.closest('.d4-tooltip');
+    if (!tip || tip.contains(el))
       return {x: cx, y, tooltip: false};
     for (const f of [0.05, 0.25, 0.75, 0.95]) {
       const x = r.left + r.width * f;
@@ -114,9 +119,17 @@ async function approach(page: Page, loc: Locator): Promise<void> {
     }
     return {x: 1, y: 1, tooltip: true};
   }).catch(() => null);
+  let aim = await aimAt();
   if (aim === null)
     return;
   await page.mouse.move(aim.x, aim.y);
+  if (!aim.tooltip) {
+    aim = await aimAt();
+    if (aim === null)
+      return;
+    if (aim.tooltip)
+      await page.mouse.move(aim.x, aim.y);
+  }
   // a tooltip that stays leaves the gesture to wait as it always did
   if (aim.tooltip)
     await expect.poll(covered, {message: 'a tooltip over the element', timeout: 5000}).toBe(false).catch(() => undefined);

@@ -83,6 +83,9 @@ Feature: A dashboard saves the arrangement of its views
     And the "BDD moved" view should be included in the Save project dialog
     When user clicks on OK in the Save project dialog and the project uploads
     Then the "Save project" dialog should close
+    # the sidebar tab toggles the Dashboards panel; left open, it adds a second Save button to every table view
+    When user clicks on Dashboards tab
+    Then "BDDLayout{time} > BDD moved" tree node inside browse tree should be hidden
     When user closes all views
     Then no table should be left in the workspace
     When user opens the "BDDLayout{time}" project and waits until it has opened

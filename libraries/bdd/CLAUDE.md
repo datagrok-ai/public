@@ -679,6 +679,12 @@ Each of these passed green while the thing it named was broken (audits of 2026-0
   the feature's own (the account's choice still comes back at feature end), so a package's suite runs with a new
   sketcher. A feature about one sketcher's own controls (Chem's Ketcher template toolbar) carries `@sketcher-controls`
   and skips, saying why, under an override that names another (`sketcherPin`, platform/steps.ts).
+- `BDD_EXCLUDE_PACKAGES=<names>` (comma-separated) adds the platform's `excludePackages` startup parameter to every
+  document of the shared context (`excludePackages`, src/runtime/harness.ts): those packages never load, a feature
+  gated on one (`the "<name>" package is installed`) skips, and their autostarts and handlers stay out of the others.
+  The handlers include semantic types other packages' features rely on (Chem's floating pane needs Chembl's `molregno`
+  type: without Chembl the context panel stays on the row's molecule), so a full round keeps every package; ChEMBL's
+  own features skip through `the stand has a reachable "…" connection` on a stand that cannot reach it.
 - Every run leaves its JSON report in the project's `test-results/report.json`, with the stand and
   the machine in `config.metadata` (a `--reporter` on the command line gets `json` added; one that
   names `json` itself, `--reporter=list,json`, sends the report to stdout and the old file is gone,

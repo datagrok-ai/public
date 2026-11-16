@@ -2,6 +2,11 @@
 
 ## v.next
 
+* Runner: Added `BDD_EXCLUDE_PACKAGES=<names>` — those packages stay out of every shell of the run (the platform's `excludePackages` startup parameter); features gated on one skip, the others run without its autostart and handlers
+* Runner: The shell reset between features closes the sidebar's Dashboards panel: left open, it listed the project with a SAVE button of its own beside every later table view's ribbon Save
+* Platform: `the context panel is closed`, `the browse panel is closed` and `the toolbox pane is hidden` show their window again at feature end when it was shown: a demo's closed context panel stayed closed for the next feature on the page, whose panel checks failed
+* Menus: A group that opened without showing the next item of a path says so, instead of reporting the group missing
+* Gestures: A click, double click, right click or drag aims at the element again after the pointer leaves where it rested: a tooltip with links over the element (a browse tree node's, shown while the pointer rested on the node) takes the pointer only as the pointer leaves its owner, and kept the pointer, and the gesture, behind it
 * [#3481](https://github.com/datagrok-ai/public/issues/3481): Viewers: Added steps for the filter panel's presets — presets kept for a feature, a preset row's author and its share/delete icons, clicking an icon, scrolling the Save or Apply list to its end, typing into a menu's search box, and one menu item listed above another; `forgetSavedState` also deletes the server presets it names
 * [core#239](https://github.com/datagrok-ai/core/issues/239): Platform: Added steps for view arrangements — dock a view by dragging its tab onto a side of another view, float it, resize a split to a share, check where a view is docked, its share of a split and where it floats (as window shares); Save project dialog rows of views without a table (included, excluded, "+"); opening a project without waiting for a table; a single click on a My stuff bucket item (a Browse preview)
 * Platform: Fixed opening the Save project dialog from the ribbon when side-by-side views each show SAVE, and reading the dock-wheel drop target after a drop

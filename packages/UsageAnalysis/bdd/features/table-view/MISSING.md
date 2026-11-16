@@ -34,20 +34,6 @@ cannot claim until a step, a reading or a name exists. The findings of the 30 Oc
   selected in the Tables pane (Alt+T), which no step does (`user selects the {string} table in the Tables pane`
   holding Control).
 
-- **Ctrl+L: closing the suggestion panels.** Ctrl+L docks "Layout suggestions" and "Viewer suggestions" into the
-  shell's dock (not the view's) on every press, so they outlive the table view and the feature. Their close button
-  is `div.panel-titlebar-button-close[name="Close"]` (`panel_dock_container.dart`), which no kind reaches. With a
-  `close icon` part on the dock panel kind, the Ctrl+L scenario goes back into `shortcuts.feature`:
-
-  ```gherkin
-    When user presses Control+L
-    Then "Layout suggestions" dock panel should be visible
-    And "Viewer suggestions" dock panel should be visible
-    When user clicks on the close icon of "Layout suggestions" dock panel
-    And user clicks on the close icon of "Viewer suggestions" dock panel
-    Then "Layout suggestions" dock panel should be absent
-  ```
-
 ## Needs a name in core
 
 - **Unpivot: the role inputs carry no label.** The per-column Copy/Merge selects are `input-<column>` with no

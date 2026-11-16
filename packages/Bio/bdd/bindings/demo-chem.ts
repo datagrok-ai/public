@@ -79,24 +79,6 @@ export const gridSortedBy = Given('the grid is sorted by the {string} column in 
   await viewers.settleAll(page);
 }, {tier: 'api', description: 'set-up a filmed demo leaves out: the current view\'s grid sorted on the column, ascending or descending'});
 
-/** A context panel pane by its title (the Dart accordion names its header `div-section--<Title>`, spaces dashed),
- * the innermost one shown when several are. */
-function panelPane(page: Page, title: string) {
-  return page.locator(`.d4-accordion-pane:has(> [name="div-section--${title.replace(/ /g, '-')}"])`).filter({visible: true}).last();
-}
-
-/** The counterpart of demo-atomic's `user expands the {string} pane inside the {string} section`: a nested pane is
- * closed by a click on its own header, unless it says it is closed already (Bio's Monomer pane opens its Details
- * expanded, which pushes the molecule's panes below the window). */
-export const collapseInnerPane = When('user collapses the {string} pane inside the {string} section',
-  async (page: Page, inner: string, outer: string) => {
-    const header = panelPane(page, outer).locator(`[name="div-section--${inner.replace(/ /g, '-')}"]`).filter({visible: true}).first();
-    await expect(header, `the ${inner} pane inside the ${outer} section`).toBeVisible();
-    if (await header.getAttribute('aria-expanded') !== 'false')
-      await header.click();
-    await expect(header, `the ${inner} pane inside the ${outer} section`).toHaveAttribute('aria-expanded', 'false');
-  }, {tier: 'ui', description: 'a click on the header of the inner pane unless it is collapsed; done when it says it is'});
-
 /** A scatter plot reports a hit area for the markers of its first twenty rows only (`marker of row <n>`, in table
  * order): a marker further down the table is found through the plot's own coordinates (`worldToScreen` of the row's x
  * and y values, relative to its canvas). The pointer rests there until the plot says that row is under it and its

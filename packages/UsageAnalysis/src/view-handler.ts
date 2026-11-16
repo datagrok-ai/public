@@ -92,6 +92,8 @@ export class ViewHandler {
         return currentView;
       }, false);
     }
+    // the tab headers work at once, the toolbox and the tab handler below come seconds later
+    const startTab = this.view.tabs.currentPane?.name;
 
     let urlTab = 'Overview';
 
@@ -186,7 +188,7 @@ export class ViewHandler {
     fButtons.style.display = 'none';
     toolbox.filters.root.before(fButtons);
 
-    this.view.tabs.onTabChanged.subscribe(() => {
+    const onTabChanged = () => {
       const view = this.view.currentView;
       toolbox.toggleCategoriesInput(view.name === 'Packages');
       toolbox.toggleTagsInput(view.name === 'Functions');
@@ -224,8 +226,14 @@ export class ViewHandler {
         fButtons.style.display = 'flex';
       else
         fButtons.style.display = 'none';
-    });
-    this.changeTab(urlTab);
+    };
+    this.view.tabs.onTabChanged.subscribe(onTabChanged);
+    // a tab picked while the toolbox was being built stays, and gets its toolbox; otherwise the address' tab
+    const currentTab = this.view.tabs.currentPane?.name;
+    if (startTab != null && currentTab != null && currentTab !== startTab)
+      onTabChanged();
+    else
+      this.changeTab(urlTab);
     this.toolbox = toolbox;
     if (this.pendingState)
       this.restore(this.pendingState);

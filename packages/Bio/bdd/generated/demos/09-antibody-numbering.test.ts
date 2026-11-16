@@ -14,7 +14,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {carriesAtLeast} from '../../bindings/annotations.js';
-import {dragRuler, gridColumnStaysWide, headerStartsAt, hoverRegionTrack} from '../../bindings/demo-antibody.js';
+import {dragRuler, gridColumnStaysWide, hoverRegionTrack} from '../../bindings/demo-antibody.js';
 import {bioInitialized} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, selectIn, shouldBe, shouldContainText, shouldHaveValue, shouldOffer, videoSays} from '@datagrok-libraries/bdd/bindings/common/steps';
@@ -22,7 +22,7 @@ import {columnTag} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {newColumnNamed, pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {balloonsClosed, contextPanelClosed, openDataset, packageInstalled, simpleModeOff, toolboxPaneHidden, tooltipHidden} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {hoverArea, noBalloons, noErrors, readingReads} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {gridColumnWidth, gridShowsColumns, hoverMonomer} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {gridColumnWidth, gridShowsColumns, headerStartsAt, hoverMonomer} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("6 · Antibodies and proteins · Numbering", () => {

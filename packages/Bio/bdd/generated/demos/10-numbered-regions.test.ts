@@ -14,14 +14,14 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {carriesAtLeast} from '../../bindings/annotations.js';
-import {gridColumnStaysWide, headerStartsAt} from '../../bindings/demo-antibody.js';
+import {gridColumnStaysWide} from '../../bindings/demo-antibody.js';
 import {bioInitialized, sequenceFontSize} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, selectIn, shouldContainText, videoSays} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {newColumnNamed, pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {balloonsClosed, contextPanelClosed, openDataset, packageInstalled, simpleModeOff, toolboxPaneHidden} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {hoverArea, noBalloons, noErrors, pickFromAreaContextMenu, readingReads} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {gridRowHeight, gridShowsColumns, hoverMonomer} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {gridRowHeight, gridShowsColumns, headerStartsAt, hoverMonomer} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("6 · Antibodies and proteins · CDR3", () => {

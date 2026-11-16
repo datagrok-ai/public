@@ -11,7 +11,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {headerStartsAt, viewerClosed} from '../../bindings/demo-sar.js';
+import {viewerClosed} from '../../bindings/demo-sar.js';
 import {peptidesInitialized, sarReady, sarSetting} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, doubleClickOn, enterInto, isExpanded, selectIn, shouldBe, videoSays} from '@datagrok-libraries/bdd/bindings/common/steps';
@@ -20,7 +20,7 @@ import {newColumnNamed, pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/
 import {listenCustom} from '@datagrok-libraries/bdd/bindings/platform/events';
 import {balloonsClosed, browsePanelClosed, browsePanelOpen, contextPanelClosed, simpleModeOff, toolboxPaneHidden, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noErrors, painted, pickFromAreaContextMenu, readingIs, readingReads} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {gridColumnWidth, gridShowsColumns} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {gridColumnWidth, gridShowsColumns, headerStartsAt} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("6 · Antibodies and proteins · CDR3 SAR", () => {

@@ -70,7 +70,13 @@ and `BDD_COMMAND_TIMEOUT` how long a top-menu command has to add its columns (18
 feature that fails on what an earlier one left behind. `BDD_MOLECULE_SKETCHER=<name>` runs the
 suite with one molecule sketcher: `Given the molecule sketcher is "…"` pins that one instead of the
 feature's own, and a feature about one sketcher's own controls, tagged `@sketcher-controls`, skips
-with its reason under an override that names another.
+with its reason under an override that names another. `BDD_EXCLUDE_PACKAGES=<names>` (comma-separated)
+keeps those packages out of every shell the run loads, through the platform's `excludePackages`
+startup parameter: a feature that needs one meets its `the "<name>" package is installed` gate and
+skips, and the others run without its autostart and handlers. Those handlers include the package's
+semantic types, which features of other packages may rely on without saying so (Chem's floating pane
+needs Chembl to type `molregno`), so a full round runs with every package and leaves the variable for
+narrowing a run down.
 
 `grok-bdd link` exists because Playwright refuses to be loaded twice in one process and the
 library's runtime resolves it from its own directory; the command moves the package's copy to

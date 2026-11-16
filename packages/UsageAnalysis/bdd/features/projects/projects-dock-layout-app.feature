@@ -19,6 +19,8 @@ Feature: A dashboard saves an app view with its state and starts it only when op
   Scenario: Usage Analysis is set to a sub-view and a filter, and docked beside a table
     Given user opens cars dataset
     And user opens the "Usage Analysis" app on its "Overview" view
+    # the app's toolbox (filters, sub-view buttons) comes seconds after its view: Execution time is one of them
+    Then Apply button should be visible
     When user clicks on Functions tab
     Then the "Functions" view should be current
     When user clicks on "Execution time" button
