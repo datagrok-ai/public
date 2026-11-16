@@ -602,6 +602,9 @@ export async function resetShell(page: Page): Promise<void> {
     if (w.grok.shell.windows.showProjects)
       w.grok.shell.windows.showProjects = false;
     w.grok.shell.closeAll();
+    // closeAll from JS keeps Home but never reopens it, so a scenario that closed it (Close others) left none
+    if (!Array.from(w.grok.shell.views as Iterable<any>).some((v: any) => v.type === 'datagrok'))
+      w.grok.shell.addView(w.DG.View.createByType('datagrok'));
     // a context pane's expanded state is kept per accordion in localStorage (accordion.dart): what one
     // feature expanded would build, server-backed or not, in every later feature on the page; a gallery's
     // view mode too (data_source_card_view.dart), so a feature that switched the Scripts view to cards left
