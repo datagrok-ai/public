@@ -247,7 +247,7 @@ Uploads a package
 Checks for errors before publishing — the package won't be published if there are any.
 
 Options:
-[--all] [--refresh] [--link] [--build] [--release] [--rebuild-docker] [--skip-docker-rebuild] [--skip-check] [-v | --verbose]
+[--all] [--refresh] [--link] [--build] [--release] [--rebuild-docker] [--skip-docker-rebuild] [--skip-docker-push] [--skip-check] [-v | --verbose]
 
 --all                  Publish all available packages (run in packages directory)
 --refresh              Publish all available already loaded packages (run in packages directory)
@@ -257,6 +257,7 @@ Options:
 --release              Publish package as release version
 --rebuild-docker       Force rebuild Docker images locally before pushing to registry
 --skip-docker-rebuild  Skip auto-rebuild when Dockerfile folder has changed
+--skip-docker-push     Build and push no Docker image: each container keeps the image the server has
 --skip-check           Skip check stage
 --verbose              Print detailed output
 

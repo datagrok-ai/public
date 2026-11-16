@@ -292,7 +292,7 @@ export class WorkspaceTab {
     this.bindRow(entity, row);
 
     if (group) {
-      const removeBtn = ui.icons.close(() => DG.Favorites.remove(entity, group), `Unpin from ${group.friendlyName}`);
+      const removeBtn = ui.icons.close(() => DG.Favorites.remove(entity, group), group.personal ? 'Unpin' : `Unpin from ${group.friendlyName}`);
       removeBtn.classList.add('pp-workspace-item-remove');
       removeBtn.addEventListener('click', (e: MouseEvent) => e.stopPropagation());
       row.appendChild(removeBtn);

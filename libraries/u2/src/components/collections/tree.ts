@@ -185,6 +185,11 @@ export class VirtualTree<T = unknown> extends Control {
     this._list.refresh(id);
   }
 
+  /** See {@link VirtualRows.focusRows}. */
+  focusRows(): void {
+    this._list.focusRows();
+  }
+
   clearSelection(): void {
     this._list.selectedIndex.value = -1;
   }

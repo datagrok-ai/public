@@ -15,6 +15,7 @@
 import {fnv1a} from './study-schema';
 import type {AnalysisRecipe} from './study-schema';
 import {DEFAULT_ACCEPTANCE_RSQUARED} from './defaults';
+import {INFUSION_DURATION_NOT_USED} from './route-normalize';
 
 /** Deterministic JSON: object keys sorted at every level; non-finite numbers written as tokens
  *  (`JSON.stringify` would turn NaN / ±Infinity into `null`, conflating them with a real null). */
@@ -97,11 +98,13 @@ export interface DecisionFingerprintInput {
   readonly warnings: ReadonlyArray<{readonly code: string; readonly severity: string}>;
 }
 
-/** Warning codes about the body-weight normalisation of CL / Vz / Vss only (nca-cl-bw-normalised-units
- *  AD-1 / AD-5b), left out of every decision fingerprint — dense and composite. */
-export const BASIS_NOTE_CODES: ReadonlySet<string> = new Set([
+/** Number-free note codes, left out of every decision fingerprint — dense and composite: the
+ *  body-weight normalisation notes of CL / Vz / Vss (nca-cl-bw-normalised-units AD-1 / AD-5b) and
+ *  `INFUSION_DURATION_NOT_USED` (nca-ip-route F3 — it says a duration was not used, which no hashed
+ *  value depends on). */
+export const NUMBER_FREE_NOTE_CODES: ReadonlySet<string> = new Set([
   'PER_KG_NOT_FORMED', 'BW_VARIES_WITHIN_PROFILE', 'SPARSE_PER_KG_WEIGHT_BASED', 'COMPOSITE_BW_PARTIAL',
-  'COMPOSITE_NOT_WEIGHT_BASED',
+  'COMPOSITE_NOT_WEIGHT_BASED', INFUSION_DURATION_NOT_USED,
 ]);
 
 /**
@@ -116,12 +119,12 @@ export const BASIS_NOTE_CODES: ReadonlySet<string> = new Set([
  *   The failure direction is a spurious "please re-look", never a silently kept stale decision.
  * - Every hashed value is closed-form and non-stochastic, so the Confirm dry run (AD-7) predicts
  *   exactly. A bootstrap-derived field must never be added here without re-verifying AC-S3.5.1.
- * - **Reporting-basis notes are not hashed** ({@link BASIS_NOTE_CODES}): they say how CL / Vz /
+ * - **Number-free notes are not hashed** ({@link NUMBER_FREE_NOTE_CODES}): e.g. how CL / Vz /
  *   Vss were normalised by body weight, which no hashed value depends on — so the per-kg notes
  *   arriving with nca-cl-bw-normalised-units never reset a decision already taken on a fit.
  */
 export function computeDecisionFingerprint(u: DecisionFingerprintInput): string {
-  const warnings = u.warnings.filter((w) => !BASIS_NOTE_CODES.has(w.code))
+  const warnings = u.warnings.filter((w) => !NUMBER_FREE_NOTE_CODES.has(w.code))
     .map((w) => `${w.code}:${w.severity}`).sort();
   return fnv1a(stableStringify({
     points: u.points.map(([t, c]) => `${t}|${c}`),
@@ -133,4 +136,20 @@ export function computeDecisionFingerprint(u: DecisionFingerprintInput): string 
     flags: [...u.flagCodes],
     warnings,
   }));
+}
+
+/**
+ * The fingerprint the SAME profile had while its i.p. route spelling read `other` (nca-ip-route F6,
+ * user decision SF-NCA-IP-1 / UD-1): `route: 'other'` and the `UNMAPPABLE_ROUTE` warning it then
+ * carried. A dense profile whose route is `IP` also accepts a stored decision with this fingerprint,
+ * so a relabel that changes no number neither costs a re-review nor lifts an Exclude λz. Exact, not
+ * fuzzy: every other hashed value (points, fit, verdict, warnings) must still match. `null` when the
+ * route is not `IP` — the alias adds nothing for any other route.
+ */
+export function legacyOtherRouteFingerprint(u: DecisionFingerprintInput): string | null {
+  if (u.route !== 'IP') return null;
+  const legacyWarn = {code: 'UNMAPPABLE_ROUTE', severity: 'warning'};
+  const warnings = u.warnings.some((w) => w.code === legacyWarn.code && w.severity === legacyWarn.severity) ?
+    u.warnings : [...u.warnings, legacyWarn];
+  return computeDecisionFingerprint({...u, route: 'other', warnings});
 }

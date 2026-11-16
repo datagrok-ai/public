@@ -1,11 +1,13 @@
 /**
  * Reactions over a column in the Crux workers (crux.worker.ts runs them): Deprotect's (analysis/deprotect.ts), each
- * molecule reacted as the main thread reacts it, a chunk per job, instead of molecule by molecule on the main thread.
+ * molecule reacted as the main thread reacts it, a chunk per job, instead of molecule by molecule on the main thread;
+ * and the Reaction panel's atom mapping, one reaction off the UI thread.
  */
 import type {MolList, RDModule, RDMol, RDReaction, RDReactionResult} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {hasNewLines} from '../../utils/chem-common';
 import {MAX_SMILES_LENGTH} from '../../utils/chem-constants';
-import {WorkerJob, throwIfTrap} from '../crux-api';
+import {WorkerJob, WorkerJobContext, throwIfTrap} from '../crux-api';
+import type {MappedReaction, RxnMapper} from '../../utils/reactions/reaction-mapping';
 
 /** The molecule's first product with `reaction` on `module` (its H atoms added, then removed) as a MOL block; the
  * molecule itself when it gives none; throws when the module reads no molecule from it. */
@@ -48,6 +50,20 @@ export function deprotectOne(module: RDModule, reaction: RDReaction, molSmiles: 
 
 /** The jobs by name (the Crux worker's `op`). */
 export const REACTION_JOBS: {[op: string]: WorkerJob} = {
+  /**
+   * The Reaction panel's atom mapping (utils/reactions/reaction-mapping.ts): `reaction` mapped by RXNMapper in the
+   * worker's Crux module, the weights handed over first (a no-op after a worker's first mapping); the mapped reaction
+   * SMILES and the mapper's confidence, or the mapper's error thrown.
+   */
+  'map reaction': ({crux}: WorkerJobContext, reaction: string, weights: Uint8Array): MappedReaction => {
+    const mapper = crux as unknown as RxnMapper;
+    mapper.initRxnMapper(weights);
+    const result = JSON.parse(mapper.chemMapReaction(reaction));
+    if (result.error)
+      throw new Error(result.error);
+    return {mapped: result.mapped_rxn, confidence: result.confidence};
+  },
+
   /**
    * Deprotect (analysis/deprotect.ts `addDeprotectedColumn`): each molecule's result on Crux, a SMILES over Chem's
    * length limit as it is; null for an empty cell and for a molecule Crux throws on (the main thread runs it, RDKit

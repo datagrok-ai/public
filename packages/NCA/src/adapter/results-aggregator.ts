@@ -238,6 +238,8 @@ export function blankMixedBasisFamily(
  * `groupBy` accepts a single column name (the original spike contract) or a
  * list of names — the multi-key form backs the per-row-route mixed-basis guard
  * (see {@link resolveAggregateGroupKeys}). Single-key behaviour is unchanged.
+ * A repeated key is collapsed to its first occurrence here, so the partition never depends on how
+ * the platform's `groupBy` treats a duplicate (it threw until late 2026, it collapses since).
  *
  * @throws if any group column is not a column of `results`.
  */
@@ -246,7 +248,7 @@ export function aggregateNcaResults(
   groupBy: string | ReadonlyArray<string>,
   options: AggregateOptions = {},
 ): DG.DataFrame {
-  const groupCols = typeof groupBy === 'string' ? [groupBy] : [...groupBy];
+  const groupCols = Array.from(new Set(typeof groupBy === 'string' ? [groupBy] : groupBy));
   for (const g of groupCols) {
     if (results.col(g) === null)
       throw new Error(`aggregateNcaResults: group column '${g}' not found in results.`);

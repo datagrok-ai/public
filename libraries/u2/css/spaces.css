@@ -90,6 +90,12 @@
   padding: var(--dg-space-s) var(--dg-space-m) var(--dg-space-xs);
 }
 
+/* the inline text box is 100px by default (inputs.css); a search spans its column */
+.u2-space-search.u2-input-inline > .u2-input-box,
+.u2-space-search.u2-input-inline > .u2-input-box > .u2-input-editor {
+  width: 100%;
+}
+
 .u2-space-head {
   align-items: center;
   justify-content: space-between;
@@ -217,6 +223,23 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.u2-space-item-title {
+  align-items: center;
+  gap: var(--dg-space-xs);
+  min-width: 0;
+}
+
+.u2-space-item-link {
+  flex: none;
+  color: var(--text-color-light);
+}
+
+.u2-space-preview-details {
+  padding: var(--dg-space-s);
+  border: 1px solid var(--dg-border-subtle);
+  border-radius: var(--dg-radius);
 }
 
 .u2-space-empty-state {

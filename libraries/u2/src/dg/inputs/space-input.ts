@@ -124,7 +124,7 @@ export class SpaceInput extends Input<DG.Project | null, SpaceInputOptions> {
 
   private _popup(): HTMLElement {
     const query = signal('');
-    const search = new TextInput({inline: true, placeholder: 'Search spaces', bind: query});
+    const search = new TextInput({inline: true, search: true, placeholder: 'Search spaces', bind: query});
     search.root.classList.add('u2-space-search');
     let pending: {id: string, parent: DG.Project | null} | null = null;
     let creating: Promise<void> | null = null;
@@ -204,11 +204,13 @@ export class SpaceInput extends Input<DG.Project | null, SpaceInputOptions> {
       return false;
     };
 
+    const matches = (e: SpaceEntry, text: string, spaces: SpaceTree): boolean =>
+      spaces.path(e.project).join(' / ').toLowerCase().includes(text);
     const toNode = (e: SpaceEntry, text: string, spaces: SpaceTree): TreeNode<Row> | null => {
       const kids = e.children.map((c) => toNode(c, text, spaces)).filter((n): n is TreeNode<Row> => n !== null);
       if (pending !== null && pending.parent?.id === e.project.id)
         kids.push(pendingNode());
-      const hit = text === '' || spaces.path(e.project).join(' / ').toLowerCase().includes(text);
+      const hit = text === '' || matches(e, text, spaces);
       if (!hit && kids.length === 0)
         return null;
       return {id: e.project.id, label: e.project.friendlyName, data: {entry: e}, disabled: e.readOnly,
@@ -265,6 +267,20 @@ export class SpaceInput extends Input<DG.Project | null, SpaceInputOptions> {
     on(tree.root, 'keydown', (e) => {
       if ((e as KeyboardEvent).key === 'Enter' && !(e.target as HTMLElement).closest('.u2-tree-rename'))
         pickNode(tree.selectedNode.peek());
+    });
+    // Down arrow lands on the first space the search finds, not on an ancestor shown around it
+    on(search.root, 'keydown', (e) => {
+      if ((e as KeyboardEvent).key !== 'ArrowDown')
+        return;
+      e.preventDefault();
+      const text = query.peek().trim().toLowerCase();
+      const spaces = this.tree.peek();
+      const first = text === '' || spaces === null ? undefined :
+        spaces.all().find((s) => s.readOnly === null && allowed(s) && matches(s, text, spaces));
+      const ids: string[] = [];
+      for (let c = first ?? null; c !== null; c = c.parent)
+        ids.unshift(c.project.id);
+      void (ids.length > 0 ? tree.expandPath(ids) : Promise.resolve()).then(() => tree.focusRows());
     });
 
     const status = div([span('Loading spaces…')], 'u2-space-status');

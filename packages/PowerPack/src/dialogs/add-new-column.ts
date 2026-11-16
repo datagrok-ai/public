@@ -68,9 +68,9 @@ type ColumnNamesAndSelections = {
 }
 
 const VALIDATION_TYPES_MAPPING: { [key: string]: string[] } = {
-  'num': ['number', 'int', 'double', 'float', 'qnum'],
-  'number': ['num', 'int', 'double', 'float', 'qnum'],
-  'double': ['int', 'float', 'number', 'num', 'qnum'],
+  'num': ['number', 'int', 'double', 'float', 'qnum', 'bigint'],
+  'number': ['num', 'int', 'double', 'float', 'qnum', 'bigint'],
+  'double': ['int', 'float', 'number', 'num', 'qnum', 'bigint'],
   'float': ['int', 'qnum'],
   'int': ['num', 'number', 'qnum'],
   'bool': ['boolean'],

@@ -19,7 +19,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {AppHeader} from '@datagrok-libraries/u2';
 import {ViewHost} from '@datagrok-libraries/u2/dg';
-import {category, test, expect} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
 
 import {ensureDemoTables, loadSampleByName} from '../views/nca-launch';
 import {
@@ -127,20 +127,29 @@ category('Hub onboarding: demo tables (★)', () => {
         'grok.shell.addTable performs NO implicit semantic-type detection — ' +
         'so ensureDemoTables must call detectSemanticTypes explicitly');
 
-      // THE HARNESS BOUNDARY, asserted so it cannot be mistaken for a result.
-      // The complementary half of F0 — "does an explicit detectSemanticTypes
-      // call actually yield Molecule for OUR column?" — is NOT answerable here:
-      // `grok test` loads only the package under test, so no package-contributed
-      // detector exists in this context (Chem's detectMolecule is unreachable:
-      // "Unable to get project asset"). Detection therefore runs over an EMPTY
-      // detector set and returns null for every column, including a canonical
-      // SMILES frame. That null is a property of the harness, not of the data,
-      // and it is why AC-F1a is discharged by live visual QA instead.
-      // This assertion is a tripwire: if the harness ever gains detectors it
-      // fails, and the fix is to upgrade the test to assert Molecule directly.
-      expect(DG.Func.find({tags: ['semTypeDetector']}).length, 0,
-        'no semantic-type detector is loaded in the package-test harness — if ' +
-        'this fails the harness gained detectors: assert semType === MOLECULE here');
+      // The complementary half of F0: the explicit call `ensureDemoTables` makes
+      // types OUR column. Until 2026-11 this was not answerable here (no detector
+      // reachable in the package-test harness; a tripwire counted
+      // `semTypeDetector`-tagged functions). Measured 2026-11-16: Chem's detectors
+      // (detectMolecules, ...) register through `meta.role`, not that tag, and
+      // the harness reaches them, so the column is asserted directly.
+      //
+      // Two environment facts shape the check (CI failure 2026-11-16):
+      //  - Chem is not an NCA dependency, so a stand may not have it. Without it
+      //    no detector can type the column and this half is not answerable.
+      //  - For a column NAMED like SMILES, Chem's `detectMolecules`
+      //    (Chem/detectors.js) returns null and fires `Chem:detectSmiles`
+      //    WITHOUT awaiting it, so `await detectSemanticTypes` resolves before
+      //    the column is typed. Warm locally it lands in time; on a cold CI
+      //    stand (RDKit initialising) it does not. Poll for the type instead.
+      await grok.data.detectSemanticTypes(df);
+      if (DG.Func.find({package: 'Chem', name: 'detectSmiles'}).length === 0) {
+        console.warn('F0: Chem is not installed on this server; the Molecule typing half is not checked');
+        return;
+      }
+      await awaitCheck(() => df.col(smiles)!.semType === DG.SEMTYPE.MOLECULE,
+        'detectSemanticTypes (the ensureDemoTables call) types the demo SMILES column as Molecule',
+        15000);
     } finally {
       closeDemoTables();
     }

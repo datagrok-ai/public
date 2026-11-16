@@ -88,6 +88,22 @@ export function isIntravascular(routeStr: string): boolean {
   return routeStr.toUpperCase().startsWith('IV');
 }
 
+/** What %F means on an i.p. row (nca-ip-route F4) — ONE wording, read by the Bioavailability grid
+ *  and the study grid cell tooltips. Absorption claim: Al Shoyaib et al. 2020, Pharm Res 37:12
+ *  (molecules below ~5 kDa are absorbed predominantly via the portal system). */
+export const IP_F_MEANING =
+  'After i.p. dosing, F is absolute bioavailability against the IV reference. Small molecules ' +
+  'absorbed from the peritoneum pass mainly into the portal vein, so F can include partial hepatic ' +
+  'first pass, as well as loss at the injection site and any failed injections. Its absorption site ' +
+  'and first-pass exposure differ from oral dosing, so it should not be read as an oral F.';
+
+/** The %F meaning line for a row with this route label: {@link IP_F_MEANING} on an i.p. row, null
+ *  on every other route. The ONE predicate both %F tooltips call, so the grids cannot disagree on
+ *  which rows carry it (AC-4.1). */
+export function fPctMeaningFor(routeLabel: string | null): string | null {
+  return routeLabel === 'IP' ? IP_F_MEANING : null;
+}
+
 function centralTendency(values: ReadonlyArray<number>, stat: DenominatorStat): number {
   if (values.length === 0) return NaN;
   if (stat === 'gmean') {

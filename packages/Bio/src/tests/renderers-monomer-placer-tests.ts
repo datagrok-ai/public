@@ -227,6 +227,21 @@ id3,QHIRE--LT
     });
   }
 
+  test('a long monomer\'s place is as wide as its label prints', async () => {
+    // the places were 0.6 em per character, the advance of most monospace fonts but not of the browser's monospace
+    // everywhere (Consolas on Windows is 0.55 em): there each label printed narrower than its place, a gap after it
+    // as long as a character per 20 letters, '3amPh6MeTzBCN-  sCy5' (reported 2026-11)
+    const g = document.createElement('canvas').getContext('2d')!;
+    for (const size of [12, 14, 17]) {
+      const {font, fontWidth} = MonomerPlacer.getFontSettings(undefined, size);
+      g.font = font;
+      const label = '3amPh6MeTzBCN-';
+      const printed = g.measureText(label).width;
+      expect(Math.abs(label.length * fontWidth - printed) < 0.005, true,
+        `${font}: places ${label.length * fontWidth} px for a label that prints ${printed} px`);
+    }
+  });
+
   test('multiline: the lines wrap at the cell, not at the grid\'s visible edge', async () => {
     // A column wider than the grid, scrolled: the lines wrapped at the visible part of the cell and moved as the grid
     // scrolled (3 November)

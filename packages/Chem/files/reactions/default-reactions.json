@@ -126,7 +126,7 @@
   {
     "id": "urea-formation",
     "name": "Urea Formation",
-    "reactionSmarts": "[NH2:1].[O]=[C]=[O].[NH2:2]>>[NH:1]C(=O)[NH:2]",
+    "reactionSmarts": "[NH2:1].[NH2:2]>>[NH:1]C(=O)[NH:2]",
     "mode": "two-component",
     "category": "Amide Bond Formation",
     "description": "Reaction of two amines with phosgene or an isocyanate to form a urea.",

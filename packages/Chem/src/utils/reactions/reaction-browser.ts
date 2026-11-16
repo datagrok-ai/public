@@ -292,7 +292,7 @@ export class ReactionBrowser {
     return card;
   }
 
-  /** The reaction editor (`preset`: the reaction to edit; else a new one); a save reloads the browser. */
+  // The reaction editor (`preset`: the reaction to edit; else a new one); a save reloads the browser.
   private openEditor(options: {preset?: NamedReaction, defaultMode?: ReactionMode}): void {
     openReactionEditor(this.rdkit, {
       ...options,

@@ -1,27 +1,30 @@
 @guide @demo
-Feature: Bioinformatics · siRNA
+Feature: 3 · Oligonucleotides · siRNA
   A demo clip, one of the Bio showcase (features/demos, filmed with `grok-bdd guide`: the @demo tag leaves the
   set-up and the checks off camera). Bio's siRNA demo (Bioinformatics | siRNA: demo-files/SIRNA.csv with its
   layout, opened off camera): HELM duplexes drawn by SequenceTranslator's oligo renderer, sense over antisense,
   each sugar modification a color band (2'-OMe, 2'-F), each linkage an arc (phosphorothioate and others), the
-  GalNAc conjugate a pill. The pointer on a nucleotide shows its sugar, base and 3' linkage with their structures,
-  on a linkage the linkage's structure, on the conjugate the conjugate's. The context panel then lists the
-  modifications of the duplex with their colors, and draws its sense strand atom by atom (Bio's Molecular
-  Structure, which the demo table also keeps as molfile columns), opened full screen under the magnifier. The
-  hover points come from the oligo renderer (`getMonomerPoint` / `getLinkagePoint`, SequenceTranslator).
+  GalNAc conjugate a pill — the first note says so before the pointer moves. The pointer on a nucleotide shows its
+  sugar, base and 3' linkage with their structures, on a linkage the linkage's structure, on the conjugate the
+  conjugate's. The context panel then lists the modifications of the duplex with their colors, and draws its sense
+  strand atom by atom (Bio's Molecular Structure, which the demo table also keeps as molfile columns), opened full
+  screen under the magnifier. The hover points come from the oligo renderer (`getMonomerPoint` /
+  `getLinkagePoint`, SequenceTranslator).
 
   Scenario: siRNA duplexes, every modification in view
-    Modified sugars, linkages and conjugates of siRNA duplexes, explained under the pointer and drawn atom by atom.
+    Modified sugars, linkages and conjugates of siRNA duplexes, explained and drawn atom by atom.
 
     Given user is logged in
     And simple mode is off
     And the Bio package is initialized
     And user calls "Bio:demoBioSiRNA" function
     And the notification balloons are closed
+    And the browse panel is closed
     And the toolbox pane is hidden
     And the context panel is closed
     And the "oligo_helm" column of the grid is 640 px wide
-    When user hovers over monomer 1 of the duplex in the "cell 1 of oligo_helm" area of grid
+    When the video says "Sense over antisense: bands are sugars, arcs are linkages" at the top
+    And user hovers over monomer 1 of the duplex in the "cell 1 of oligo_helm" area of grid
     And user hovers over monomer 2 of the duplex in the "cell 1 of oligo_helm" area of grid
     And user hovers over the linkage after monomer 2 of the duplex in the "cell 1 of oligo_helm" area of grid
     And user hovers over monomer 20 of the duplex in the "cell 1 of oligo_helm" area of grid

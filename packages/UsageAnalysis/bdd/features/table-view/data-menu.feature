@@ -14,7 +14,8 @@ Feature: The Data menu's dialogs make a new table, new columns or new values fro
   color-coded category column, a boolean column per category and a color coding of the source column.
 
   Each dialog works on small tables written here, so the counts and cells are exact; each group of
-  scenarios starts by closing every view, so what one dialog left open never reaches the next. The dialogs'
+  scenarios starts by closing every view, so what one dialog left open never reaches the next. Batch Edit's
+  panel is docked beside the view, not a view of its own: its scenario closes it with the panel's ×. The dialogs'
   options (join types, Values, In-place, Unpivot names, Split Column's Prefix / By chars / Consecutive as
   one, Batch Edit's other row sets, Categorize without color coding, Compare without value columns) are the
   functions' tests: ddt join_test.dart, unpivot_test.dart and data_utils_test.dart (splitColumn), ApiTests
@@ -207,6 +208,8 @@ Feature: The Data menu's dialogs make a new table, new columns or new values fro
     When user selects rows of table "people" where "name" is one of "Bob"
     Then value of "name" property should have text "Bob"
     And value of "city" property should have text "Rome"
+    When user clicks on the close icon of "Batch Edit" dock panel
+    Then "Batch Edit" dock panel should be absent
     And no errors should have been logged
 
   Scenario: Anonymize replaces the checked text and number columns in place and leaves the unchecked ones alone

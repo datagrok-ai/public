@@ -284,6 +284,7 @@ export function appRunOf(src: DG.DataFrame, m: PipelineMapping, pr: PipelineRule
     route: {
       codesCol: work.col(DERIVED_ROUTE_CODE_COL) !== null ? DERIVED_ROUTE_CODE_COL : null,
       scalar: recipe.columns.routeScalar,
+      rawCol: work.col(DERIVED_ROUTE_CODE_COL) !== null ? recipe.columns.routeCol : null,
     },
     lloq: {colName: recipe.columns.lloqCol, scalar: recipe.columns.lloqScalar},
     blqColName: recipe.columns.blqFlagCol,
@@ -457,7 +458,9 @@ export interface StudyPlan {
  * entry of `base` is kept; a planned analysis replaces its partition's untouched pipeline entry in
  * place (same id, the STORED label — a scientist's rename is kept), or is appended beside with a
  * unique label. A pipeline entry of the same partition base but another sampling design (dense ↔
- * sparse) is left in place and reported; the new entry records it in `origin.supersedes`.
+ * sparse) is left in place and reported; the new entry records it in `origin.supersedes`. So is a
+ * legacy-route predecessor (nca-ip-route F7): a sparse `<base> · other` saved before i.p. was a
+ * route, superseded by a planned sparse `<base> · IP`.
  */
 export function planStudyUpdate(base: NcaStudy | undefined, planned: ReadonlyArray<PlannedAnalysis>, ctx: {
   studyLabel: string; pipelineKey: {owner: string; studyKey: string}; now: string;
@@ -484,9 +487,22 @@ export function planStudyUpdate(base: NcaStudy | undefined, planned: ReadonlyArr
       if ((a.modes?.sparse?.on === true) === p.sparse) return false;
       return p.sparse ? o.partition === p.base : o.partition.startsWith(`${p.base} · `);
     });
+    // nca-ip-route F7: a legacy-ROUTE predecessor. Before i.p. was a route, an i.p. sparse partition
+    // was saved as `<base> · other`; the SAME design, so the flip finder above never matches it. A
+    // planned sparse `<base> · IP` takes such an entry as its predecessor when it is sparse, not yet
+    // superseded in this run, and no planned analysis of this run has its partition (else it is
+    // updated in place). Re-found on every run, like the flip, so a re-run keeps the link.
+    const legacyRoute = p.sparse && p.partition === `${p.base} · IP` ? analyses.find((a) => {
+      const o = pipelineOf(a);
+      return o !== null && a.modes?.sparse?.on === true && o.partition === `${p.base} · other` &&
+        !partitions.has(o.partition) && !superseded.some((s) => s.analysisId === a.id);
+    }) : undefined;
+    // `origin.supersedes` holds ONE id: the design-flip predecessor keeps precedence; with both, the
+    // legacy-route one is reported superseded without a link (no study-grid row note for it).
+    const predecessor = flipped ?? legacyRoute;
     const origin = pipelineOf(p.entry);
-    const entry: AnalysisEntry = flipped !== undefined && origin !== null ?
-      {...p.entry, origin: {...origin, supersedes: flipped.id}} : p.entry;
+    const entry: AnalysisEntry = predecessor !== undefined && origin !== null ?
+      {...p.entry, origin: {...origin, supersedes: predecessor.id}} : p.entry;
     let outcome: PlannedOutcome;
     if (untouched.length > 0) {
       const old = untouched[0];
@@ -505,6 +521,8 @@ export function planStudyUpdate(base: NcaStudy | undefined, planned: ReadonlyArr
     }
     outcomes.push(outcome);
     if (flipped !== undefined) superseded.push({analysisId: flipped.id, label: flipped.label, by: outcome.label});
+    if (legacyRoute !== undefined)
+      superseded.push({analysisId: legacyRoute.id, label: legacyRoute.label, by: outcome.label});
   }
   const study: NcaStudy = base !== undefined ?
     {...base, analyses, updatedAt: ctx.now} :

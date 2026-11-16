@@ -3,8 +3,9 @@ Feature: The table view's keyboard shortcuts toggle the shell's panels, and Alt+
   The shortcuts of `help/datagrok/navigation/shortcuts.md` (and the Console and Variables sections of
   `navigation.md`) that no other feature presses, each claimed by what the user sees open or change: Alt+X
   hides and shows the Toolbox, Alt+V docks and closes the Variables panel, the tilde opens the Console, Alt+S
-  opens Settings, and Ctrl+Shift+V opens a second view of the same table. Alt+C toggles the Columns pane
-  (Column Manager, `help/datagrok/navigation/panels/column-manager.md`): a grid with a row per column of the
+  opens Settings, Ctrl+Shift+V opens a second view of the same table, and Ctrl+L docks the layout and
+  viewer suggestions into the shell (no view of the table: each closes with its panel's ×). Alt+C toggles
+  the Columns pane (Column Manager, `help/datagrok/navigation/panels/column-manager.md`): a grid with a row per column of the
   current table (its type letter and its name) and a search box; a click on a row makes that column current,
   Ctrl+click toggles the column's selection in the grid and Esc clears it, dragging a row reorders the
   columns of the table view's grid, Hide and Show in its popup menu take the column out of the grid and
@@ -12,7 +13,7 @@ Feature: The table view's keyboard shortcuts toggle the shell's panels, and Alt+
 
   Left out on purpose, one line each: F4, F7, Alt+T, Ctrl+O, Ctrl+H and Ctrl+Z are pressed by their own
   features; Ctrl+Shift+R is `undo-redo.feature`'s; Ctrl+S saves the layout the way the Layouts pane's Save does
-  (`layouts/layout-names-tags.feature`); Ctrl+L docks two panels no step can close yet (MISSING.md); F1, F11
+  (`layouts/layout-names-tags.feature`); F1, F11
   and Alt+F need steps that do not exist (MISSING.md); the Column Manager's type filter and the pane following
   another table are `viewers/grid/grid-columns.feature`'s (GROK-19332); its other popup commands (Remove,
   Extract, Change Type..., Normalize...) are the column's own, claimed from the grid's header menu.
@@ -65,6 +66,16 @@ Feature: The table view's keyboard shortcuts toggle the shell's panels, and Alt+
     And the open table views should be exactly "bdd-colman, bdd-colman"
     When user closes the current view
     Then the open table views should be exactly "bdd-colman"
+    And no errors should have been logged
+
+  Scenario: Ctrl+L docks the layout and viewer suggestions into the shell, and each panel's × closes it
+    When user presses Control+L
+    Then "Layout suggestions" dock panel should be visible
+    And "Viewer suggestions" dock panel should be visible
+    When user clicks on the close icon of "Layout suggestions" dock panel
+    And user clicks on the close icon of "Viewer suggestions" dock panel
+    Then "Layout suggestions" dock panel should be absent
+    And "Viewer suggestions" dock panel should be absent
     And no errors should have been logged
 
   Scenario: Alt+C docks the Columns pane with a row per column, a click on a row makes that column current, and Alt+C closes it

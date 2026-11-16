@@ -19,7 +19,8 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
 
-import {detectMapping, isBoolLikeNumeric, detectEventDrivenColumns} from '../adapter/column-autodetect';
+import {detectMapping, isBoolLikeNumeric, detectEventDrivenColumns, initialSubjectColumn}
+  from '../adapter/column-autodetect';
 import {loadFixture} from './test-utils';
 
 function dfFromColumns(...cols: DG.Column[]): DG.DataFrame {
@@ -93,6 +94,46 @@ function intColWithNulls(name: string, values: ReadonlyArray<number | null>): DG
 function boolCol(name: string, values: ReadonlyArray<boolean>): DG.Column {
   return DG.Column.fromList(DG.COLUMN_TYPE.BOOL, name, Array.from(values));
 }
+
+// GAP-14b: a NONMEM `ID` starts the form's Subject, but only on an event-driven layout.
+category('Adapter: NONMEM ID as Subject', () => {
+  const nonmemFrame = (...extra: DG.Column[]): DG.DataFrame => dfFromColumns(
+    DG.Column.fromInt32Array('ID', Int32Array.from([1, 1, 2, 2])),
+    floatCol('TIME', [0, 1, 0, 1]),
+    floatCol('DV', [NaN, 5, NaN, 6]),
+    floatCol('AMT', [2.5, NaN, 2.5, NaN]),
+    DG.Column.fromInt32Array('EVID', Int32Array.from([1, 0, 1, 0])),
+    ...extra,
+  );
+
+  test('GAP-14b: NONMEM `ID` → initial Subject; detectMapping still leaves a bare ID out', async () => {
+    const df = nonmemFrame();
+    const detected = detectMapping(df);
+    const event = detectEventDrivenColumns(df);
+    expect(detected.subject === undefined, true, 'detectMapping keeps the GAP-14 exclusion');
+    expect(event.id?.name, 'ID', 'the event detection resolves the NONMEM ID item');
+    expect(initialSubjectColumn(detected, event)?.name, 'ID', 'NONMEM ID starts Subject');
+  });
+
+  test('GAP-14b guard: a non-NONMEM table with an `ID` column leaves Subject empty', async () => {
+    const df = dfFromColumns(
+      DG.Column.fromInt32Array('ID', Int32Array.from([1, 2, 3])),
+      floatCol('time', [0, 1, 2]),
+      floatCol('conc', [10, 5, 2]),
+    );
+    const detected = detectMapping(df);
+    const event = detectEventDrivenColumns(df);
+    expect(event.isEventDriven, false, 'not an event-driven layout');
+    expect(initialSubjectColumn(detected, event) === undefined, true,
+      'a bare ID outside NONMEM must not fill Subject');
+  });
+
+  test('GAP-14b: a subject synonym wins over the NONMEM `ID`', async () => {
+    const df = nonmemFrame(strCol('SubjectID', ['R1', 'R1', 'R2', 'R2']));
+    expect(initialSubjectColumn(detectMapping(df), detectEventDrivenColumns(df))?.name, 'SubjectID',
+      'SubjectID keeps priority (03_rat_multiroute_nonmem has both)');
+  });
+});
 
 category('Adapter: column autodetect', () => {
   // -------------------------------------------------------------------

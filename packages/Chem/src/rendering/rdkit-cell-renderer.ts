@@ -28,7 +28,8 @@ import {
 } from '../constants';
 import {hexToPercentRgb} from '../utils/chem-common';
 import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
-import {createRenderingOpts, drawErrorCross, drawRdKitMoleculeToOffscreenCanvas} from '../utils/chem-common-rdkit';
+import {createRenderingOpts, drawErrorCross, drawMarkingUnknownStereo, drawRdKitMoleculeToOffscreenCanvas}
+  from '../utils/chem-common-rdkit';
 import {renderingOptions} from './rendering-settings';
 import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
 import {ChemicalEngine, engineGeneration, renderingModule} from '../engine/chem-engine';
@@ -969,7 +970,7 @@ M  END
       details.addChiralHs = false;
     }
 
-    return mol.get_svg_with_highlights(JSON.stringify(details));
+    return drawMarkingUnknownStereo(details, (o) => mol.get_svg_with_highlights(JSON.stringify(o)));
   }
 
   toSvg(gridCell: DG.GridCell, w: number, h: number): string | null {

@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import {WorkerMessageBusClient} from '../worker-message-bus-client';
 import {Fingerprint, hasNewLines, withinSmilesLimit} from '../utils/chem-common';
 import {compileCrux, loadCrux, noteCruxError} from '../engine/crux-module';
-import {DescriptorTiming, INT_NONE, PackedDescriptorValues, ToxicityAlert, isNoneValue} from './crux-api';
+import {DescriptorTiming, INDEX_LOST, INT_NONE, PackedDescriptorValues, ToxicityAlert, isNoneValue} from './crux-api';
 import {BIOPOLYMER_LIBRARIES, BIOPOLYMER_LIBRARY_MISSING, CLUSTER_MCS_TIMEOUT_S, CruxAssembledBatch,
   assembleOptionsJson} from './crux-api';
 import {batchRowCount, pickRows, rowMonomerCount, sliceBatch} from './biopolymer-batch';
@@ -247,6 +247,10 @@ class CruxWorkerClient extends WorkerMessageBusClient {
   pausesForTests = (every: number | null): Promise<unknown> => this.call('pauses::test', [every]);
 
   busyForTests = (ms: number): Promise<unknown> => this.call('busy::test', [ms]);
+
+  trapForTests = (calls: number, instances: number): Promise<unknown> => this.call('trap::test', [calls, instances]);
+
+  buildTrapForTests = (row: number): Promise<unknown> => this.call('buildTrap::test', [row]);
 }
 
 /** Contiguous rows of a column indexed by one crux collection that lives in one worker. */
@@ -290,7 +294,7 @@ export class CruxService {
   private workers: CruxWorkerClient[] = [];
   /** Counts {@link restart}s: a search that failed on older workers does not restart the new ones. */
   generation = 0;
-  /** The main thread's Crux module: whether Crux reads a query ({@link readsQuery}). */
+  // The main thread's Crux module: whether Crux reads a query ({@link readsQuery}).
   private crux: RDModule | null = null;
   private indexes = new Map<number, CruxColumnIndex>();
   private lastId = 0;
@@ -405,6 +409,12 @@ export class CruxService {
       .then((hits) => {
         if (hits && !isCancelled())
           onSegment(segment, hits);
+      }, (e) => {
+        // the worker's engine was made fresh after a trap since it built the segment (crux.worker.ts): its indexes are
+        // lost; this search fails (RDKit answers it), the next one indexes the column again
+        if (String((e as Error)?.message ?? e).startsWith(INDEX_LOST))
+          this.forgetIndexesOn(segment.worker);
+        throw e;
       }), isCancelled);
   }
 
@@ -428,10 +438,8 @@ export class CruxService {
     await this.use(index, (segment) => this.ensureBuilt(segment), isCancelled);
   }
 
-  /**
-   * Runs `action` over the index segments, one at a time per worker, in row order, until the index is dropped; fails
-   * if a restart forgets it.
-   */
+  // Runs `action` over the index segments, one at a time per worker, in row order, until the index is dropped; fails
+  // if a restart forgets it.
   private async use(index: CruxColumnIndex, action: (segment: CruxSegment, worker: CruxWorkerClient) => Promise<void>,
     isCancelled: () => boolean): Promise<void> {
     const segments = index.segments;
@@ -589,13 +597,11 @@ export class CruxService {
     return Object.fromEntries(catalogs.map((c) => [c, parts.flatMap((part) => part[c] as (string[] | null)[])]));
   }
 
-  /**
-   * `job` over the molecules in chunks of at most `chunkSize` ({@link CHUNK_SIZE}), the results in chunk order, each
-   * chunk's first row in `starts`. Fewer than `chunkSize` molecules per worker are split evenly over the workers. A
-   * worker runs its calls one after another, so each worker is handed its next chunk when the last one is done, and a
-   * chunk's time limit runs from its own start; a failed chunk ends the call (the chunks not started are not run).
-   * `chunkMs`, where given, is a chunk's time beyond `baseMs` in place of `msPerMolecule` per molecule.
-   */
+  // `job` over the molecules in chunks of at most `chunkSize` ({@link CHUNK_SIZE}), the results in chunk order, each
+  // chunk's first row in `starts`. Fewer than `chunkSize` molecules per worker are split evenly over the workers. A
+  // worker runs its calls one after another, so each worker is handed its next chunk when the last one is done, and a
+  // chunk's time limit runs from its own start; a failed chunk ends the call (the chunks not started are not run).
+  // `chunkMs`, where given, is a chunk's time beyond `baseMs` in place of `msPerMolecule` per molecule.
   private async inChunks<M, R>(molecules: M[], msPerMolecule: number,
     job: (worker: CruxWorkerClient, chunk: M[]) => Promise<R>, chunkSize = CHUNK_SIZE, baseMs = JOB_BASE_MS,
     starts: number[] = [], chunkMs?: (chunk: M[]) => number): Promise<R[]> {
@@ -753,13 +759,11 @@ export class CruxService {
       'clusterRGroups', []);
   }
 
-  /**
-   * The analysis job `op` per cluster, as the RDKit pool's processClusterQueue runs it: each cluster goes to a worker
-   * with no call in flight, so its time limit runs from its own start (a busy worker's queue is not its time), and a
-   * worker takes the next cluster when its last is done; a cluster past `limitMs` is listed in `timedOut` and its
-   * worker replaced ({@link restartWorker}), and the other clusters go on. A cluster whose call fails (a trap, a lost
-   * worker) is null.
-   */
+  // The analysis job `op` per cluster, as the RDKit pool's processClusterQueue runs it: each cluster goes to a worker
+  // with no call in flight, so its time limit runs from its own start (a busy worker's queue is not its time), and a
+  // worker takes the next cluster when its last is done; a cluster past `limitMs` is listed in `timedOut` and its
+  // worker replaced ({@link restartWorker}), and the other clusters go on. A cluster whose call fails (a trap, a lost
+  // worker) is null.
   private async eachCluster<R>(clusters: unknown[], limitMs: number, op: string, args: unknown[]):
     Promise<{results: (R | null)[], timedOut: number[]}> {
     const results = new Array<R | null>(clusters.length).fill(null);
@@ -795,13 +799,13 @@ export class CruxService {
     return {results, timedOut};
   }
 
-  /** The worker with the fewest calls in flight (on a tie a later one: worker 0 takes the one-worker jobs). */
+  // The worker with the fewest calls in flight (on a tie a later one: worker 0 takes the one-worker jobs).
   private leastBusy(): CruxWorkerClient {
     return this.workers.reduceRight((best, worker) => worker.pendingCalls < best.pendingCalls ? worker : best);
   }
 
-  /** The index of a worker with no call in flight (a later one first, as {@link leastBusy}), waiting while all are
-   * busy. */
+  // The index of a worker with no call in flight (a later one first, as {@link leastBusy}), waiting while all are
+  // busy.
   private async idleWorker(): Promise<number> {
     for (;;) {
       for (let w = this.workers.length - 1; w >= 0; w--) {
@@ -812,15 +816,19 @@ export class CruxService {
     }
   }
 
-  /**
-   * Replaces worker `w`, stuck in a call past its limit, as the RDKit pool replaces one (RdKitService.restartWorker):
-   * the column indexes with a segment on it are dropped (a search running on one fails and falls back to RDKit; the
-   * next search indexes the column again); the other workers and the other indexes stay.
-   */
+  // Replaces worker `w`, stuck in a call past its limit, as the RDKit pool replaces one (RdKitService.restartWorker):
+  // the column indexes with a segment on it are dropped (a search running on one fails and falls back to RDKit; the
+  // next search indexes the column again); the other workers and the other indexes stay.
   private restartWorker(w: number): void {
     this.workers[w].terminate(WORKER_REPLACED);
     this.workers[w] = new CruxWorkerClient();
     this.workers[w].moduleInit(this.module!).catch(() => {}); // a failed init is logged by the worker client
+    this.forgetIndexesOn(w);
+  }
+
+  // Drops the column indexes with a segment on worker `w` (a search running on one fails and falls back to RDKit; the
+  // next search indexes the column again); the other indexes stay.
+  private forgetIndexesOn(w: number): void {
     for (const index of [...this.indexes.values()]) {
       if (index.segments.some((segment) => segment.worker === w)) {
         index.lost = true;
@@ -1014,12 +1022,10 @@ export class CruxService {
     return result;
   }
 
-  /**
-   * A job's result within `timeoutMs`. A wasm trap (the worker reports `RuntimeError: ...`; out of memory), a timeout
-   * or a worker gone restarts the workers: they may hold a broken instance or a call that never ends; the next jobs and
-   * searches get new ones. Another failure (a molecule Crux refuses, a "not supported by Crux" call, a worker
-   * restartWorker replaced: WORKER_REPLACED) keeps them and their search indexes.
-   */
+  // A job's result within `timeoutMs`. A wasm trap (the worker reports `RuntimeError: ...`; out of memory), a timeout
+  // or a worker gone restarts the workers: they may hold a broken instance or a call that never ends; the next jobs and
+  // searches get new ones. Another failure (a molecule Crux refuses, a "not supported by Crux" call, a worker
+  // restartWorker replaced: WORKER_REPLACED) keeps them and their search indexes.
   private async job<R>(work: Promise<R>, timeoutMs: number): Promise<R> {
     const generation = this.generation;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -1078,6 +1084,18 @@ export class CruxService {
    * pauses, the default; crux.worker.ts `pauses::test`). */
   async pausesForTests(every: number | null): Promise<void> {
     await Promise.all(this.workers.map((worker) => worker.pausesForTests(every)));
+  }
+
+  /** Tests: crux-core's real test trap in every worker's module (crux-recover.ts): the `calls`-th engine call from now
+   * panics, there and on the next `instances - 1` fresh instances (2: that call is refused, the worker goes on). */
+  async trapWorkersForTests(calls: number, instances = 1): Promise<void> {
+    await Promise.all(this.workers.map((worker) => worker.trapForTests(calls, instances)));
+  }
+
+  /** Tests: in every worker, the read of segment row `row` traps at every attempt in the next collection builds (a
+   * molecule that always traps; -1: none). */
+  async buildTrapForTests(row: number): Promise<void> {
+    await Promise.all(this.workers.map((worker) => worker.buildTrapForTests(row)));
   }
 
   /** Tests: a job that fails in its worker with `message` (by default as a trapped instance would: a restart). */

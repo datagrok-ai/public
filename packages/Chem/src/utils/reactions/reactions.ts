@@ -7,6 +7,7 @@ import {ReactionResult, TwoComponentReactionResult} from './types';
 import {EngineReaction} from './reaction-engine';
 import {SALT_AND_WATER_FRAGMENTS} from './consts';
 import {convertMolNotationByEngine} from '../../engine/worker-jobs';
+import {ChemicalEngine, engineInEffect} from '../../engine/chem-engine';
 
 // ---- Salt / Water removal ----
 
@@ -24,11 +25,16 @@ export async function removeWaterAndSalts(mols: string[]): Promise<string[]> {
 
 // ---- Variable resolution ----
 
-/** Substitute ${variable} placeholders in a SMARTS string with provided values. */
+/** Substitute ${variable} placeholders in a SMARTS string with provided values: every occurrence in Crux mode (TPL-08:
+ * a variable used twice kept its second `${…}`, and the template read as no reaction); the first only in RDKit mode, as
+ * it always was. */
 export function resolveReactionVariables(smarts: string, variables: Record<string, any>): string {
+  const everyOccurrence = engineInEffect() === ChemicalEngine.Crux;
   let resolved = smarts;
-  for (const [key, value] of Object.entries(variables))
-    resolved = resolved.replace(`\${${key}}`, String(value));
+  for (const [key, value] of Object.entries(variables)) {
+    resolved = everyOccurrence ? resolved.replaceAll(`\${${key}}`, String(value)) :
+      resolved.replace(`\${${key}}`, String(value));
+  }
   return resolved;
 }
 

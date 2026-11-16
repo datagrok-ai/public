@@ -82,8 +82,23 @@ Feature: Find and Replace replaces values in the columns the dialog names
       | where            | missing             |
       | Named            | Specify columns     |
       | Tagged           | Specify tag key     |
-      | Of Type          | Specify type        |
       | Selected Columns | No matching columns |
+
+  # Of Type is never incomplete: its Type input shows the first type, and the call takes it (core#1535, ee2e7ac4b2)
+  Scenario: Of Type starts on int: the text search is refused for the int column until another type is picked
+    When user presses Control+H
+    And user enters "apple" into "Find what" input in Find and Replace dialog
+    And user enters "X" into "Replace with" input in Find and Replace dialog
+    And user selects "Of Type" in "Where columns" input in Find and Replace dialog
+    Then "Type" input in Find and Replace dialog should have value "int"
+    And REPLACE button in Find and Replace dialog should be disabled
+    And OK button in Find and Replace dialog should be disabled
+    When user hovers over "Find what" input in Find and Replace dialog
+    Then tooltip should contain text "Invalid query for column \"num\" (int)"
+    When user selects "string" in "Type" input in Find and Replace dialog
+    Then REPLACE button in Find and Replace dialog should be enabled
+    And OK button in Find and Replace dialog should be enabled
+    And no errors should have been logged
 
   Scenario: Selected Columns replaces only in the columns selected in the grid
     When user clicks on the "header code" area of Grid viewer holding Control

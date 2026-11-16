@@ -545,7 +545,7 @@
       }
     },
     "packages/Chem": {
-      "files": 262,
+      "files": 313,
       "u2Files": 4,
       "valueValue": 0,
       "valuePeek": 0,
@@ -567,12 +567,12 @@
       "subclassEms": 0,
       "classBuildsUi": 0,
       "cssFiles": 4,
-      "cssLines": 2718,
+      "cssLines": 2745,
       "cssInternalLines": 0,
       "cssImportant": 112,
-      "commentLines": 7710,
-      "fileHeaders": 14,
-      "privateDocs": 202,
+      "commentLines": 11308,
+      "fileHeaders": 13,
+      "privateDocs": 189,
       "classes": {
         "subclassU2": [],
         "subclassEms": [],
@@ -1341,6 +1341,13 @@
       "grown": [
         "packages/Bio fileHeaders: 13 → 17",
         "packages/Peptides fileHeaders: 1 → 2"
+      ]
+    },
+    {
+      "date": "2026-11-16",
+      "reason": "Chem: Crux Sketch takes Datagrok's look in its own dialogs, fields, buttons and tooltips through its host-look custom properties (css/crux-sketcher.css), set from Datagrok's colour variables so the theme follows; Chem's other counts are lowered to what they are now",
+      "grown": [
+        "packages/Chem cssLines: 2718 → 2745"
       ]
     }
   ]

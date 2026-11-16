@@ -13,7 +13,8 @@ const DG = await import('datagrok-api/dg');
 const {SpaceTree, recentSpaces, rememberSpace, entityName, spaceHasName, READ_ONLY} =
   await import('../src/dg/spaces/spaces.js');
 const {SpaceInput} = await import('../src/dg/inputs/space-input.js');
-const {saveToSpace, openFromSpace, SpaceBrowser} = await import('../src/dg/spaces/space-dialogs.js');
+const {saveToSpace, openFromSpace, SpaceBrowser, spaceItems, isLinkedIn} =
+  await import('../src/dg/spaces/space-dialogs.js');
 const {spaceSaveRow} = await import('../src/dg/spaces/space-save-row.js');
 
 const space = (id, name) => new Project(name, {id, name, friendlyName: name, isSpace: true});
@@ -149,6 +150,26 @@ ui('SpaceInput: a read-only space is greyed with the reason and cannot be picked
   await flush();
   assert.equal(input.value, null);
   assert.ok(popup() !== null);
+  input.dispose();
+});
+
+ui('SpaceInput: Down arrow in the search lands on the first match, not its ancestor; Enter picks it', async () => {
+  fakeSpaces(TREE);
+  const input = await opened();
+  const search = popup().querySelector('.u2-space-search input');
+  await type(search, 'kinase');
+  await until(() => rowOf(popup(), 'Kinase') !== undefined, 'the matches');
+  fire(search, 'keydown', {key: 'ArrowDown'});
+  const tree = popup().querySelector('.u2-space-tree .u2-list');
+  await until(() => document.activeElement === tree, 'the tree focused');
+  const selected = () => treeRows(popup())
+    .filter((r) => (r.closest('[aria-selected]') ?? r).getAttribute('aria-selected') === 'true')
+    .map((r) => r.textContent.trim());
+  await until(() => selected().length > 0, 'a selected row');
+  assert.deepEqual(selected(), ['Kinase'], 'the first match, not its ancestor Chemistry');
+  fire(tree, 'keydown', {key: 'Enter'});
+  await flush();
+  assert.equal(input.value, KIN);
   input.dispose();
 });
 
@@ -451,6 +472,101 @@ ui('SpaceBrowser: types go to the server, the filter keeps what it accepts', asy
   browser.dispose();
 });
 
+test('spaceItems: what a space holds, without its subspaces and its own file storage', async () => {
+  const storage = new DG.DataConnection('Files', {id: 'c1', friendlyName: 'Chemistry Files', parameters: {isProject: true}});
+  const other = new DG.DataConnection('Assays', {id: 'c2', friendlyName: 'Assays', parameters: {}});
+  fakeSpaces({...TREE, items: {chem: [storage, other, item('p1', 'SAR review'), KIN]}});
+  try {
+    assert.deepEqual((await spaceItems(CHEM, [])).map((e) => e.id), ['c2', 'p1']);
+  }
+  finally {
+    delete grok.dapi.spaces;
+    delete grok.dapi.permissions;
+  }
+});
+
+test('isLinkedIn: an item lives in the space its namespace names; a file\'s path does not count', () => {
+  const at = (nqName) => new Project('x', {nqName});
+  const a = new Project('A', {nqName: 'A'});
+  const sub = new Project('Sub', {nqName: 'A:Sub'});
+  assert.equal(isLinkedIn(at('A:P1'), a), false);
+  assert.equal(isLinkedIn(at('B:P1'), a), true);
+  assert.equal(isLinkedIn(at('A:Files/notes: draft.csv'), a), false);
+  assert.equal(isLinkedIn(at('System:DemoFiles/cars.csv'), a), true);
+  assert.equal(isLinkedIn(at('A:Sub:P2'), sub), false);
+  assert.equal(isLinkedIn(at('A:Sub:P2'), a), true, 'an item of a subspace, linked into its parent');
+});
+
+ui('SpaceBrowser: each row draws its own type\'s icon, and a linked item says so', async () => {
+  const tagged = (type, cls) => ({type, isApplicable: (x) => x instanceof cls,
+    renderIcon: () => Object.assign(document.createElement('i'), {className: `icon-${type}`})});
+  const handlers = [tagged('file', DG.FileInfo), tagged('project', Project)];
+  DG.ObjectHandler.registered.push(...handlers);
+  try {
+    const own = new Project('Own', {id: 'o1', friendlyName: 'Own', nqName: 'Chemistry:Own'});
+    const linked = new Project('Linked', {id: 'l1', friendlyName: 'Linked', nqName: 'GPCR:Linked'});
+    const file = new DG.FileInfo('Chemistry:Files/a.csv', {id: 'f1', friendlyName: 'a.csv', nqName: 'Chemistry:Files/a.csv'});
+    fakeSpaces({...TREE, children: {null: [new Project('Chemistry', {id: 'chem', name: 'Chemistry',
+      friendlyName: 'Chemistry', isSpace: true, nqName: 'Chemistry'})]}, items: {chem: [file, own, linked]}});
+    const browser = await browsed();
+    await shows(browser.root, ['Own', 'Linked', 'a.csv']);
+    const row = (name) => [...browser.root.querySelectorAll('.u2-space-item')].find((r) => r.textContent.includes(name));
+    assert.ok(row('a.csv').querySelector('.u2-space-item-icon .icon-file'));
+    assert.ok(row('Own').querySelector('.u2-space-item-icon .icon-project'), 'not the first row\'s handler');
+    assert.equal(row('Own').querySelector('.u2-space-item-link'), null);
+    assert.equal(row('a.csv').querySelector('.u2-space-item-link'), null);
+    assert.ok(row('Linked').querySelector('.u2-space-item-link'));
+    browser.dispose();
+  }
+  finally {
+    for (const h of handlers)
+      DG.ObjectHandler.registered.splice(DG.ObjectHandler.registered.indexOf(h), 1);
+  }
+});
+
+ui('SpaceBrowser: an item whose card is the bare caption (an app) previews its tooltip; no match hides the list', async () => {
+  const label = (text) => Object.assign(document.createElement('label'), {textContent: text});
+  const handler = {type: 'app', isApplicable: (x) => x instanceof Project, getCaption: (x) => x.friendlyName,
+    renderCard: (x) => label(x.friendlyName),
+    renderTooltip: (x) => Object.assign(document.createElement('div'), {className: 'app-details', textContent: 'About'})};
+  DG.ObjectHandler.registered.push(handler);
+  try {
+    fakeSpaces({...TREE, items: ITEMS});
+    const browser = await browsed();
+    await shows(browser.root, ['SAR review', 'Kinase panel', 'ADMET run', 'Q4 hits', 'GPCR assay']);
+    fire([...browser.root.querySelectorAll('.u2-space-items .u2-list-row')].find((r) => r.textContent.includes('GPCR')),
+      'click');
+    await until(() => browser.root.querySelector('.u2-space-preview .app-details') !== null, 'the tooltip preview');
+    assert.ok(browser.root.querySelector('.u2-space-preview-details'));
+
+    await type(browser.root.querySelector('.u2-space-search input'), 'zzz');
+    await until(() => !browser.root.querySelector('.u2-space-empty-state').hidden, 'the empty state');
+    assert.equal(browser.root.querySelector('.u2-list.u2-space-items').hidden, true);
+    browser.dispose();
+  }
+  finally {
+    DG.ObjectHandler.registered.splice(DG.ObjectHandler.registered.indexOf(handler), 1);
+  }
+});
+
+ui('SpaceBrowser: Down arrow in the search box selects the first result, Enter opens it', async () => {
+  fakeSpaces({...TREE, items: ITEMS});
+  const opened = [];
+  const browser = await browsed({onActivate: (x) => opened.push(x.id)});
+  await shows(browser.root, ['SAR review', 'Kinase panel', 'ADMET run', 'Q4 hits', 'GPCR assay']);
+  const search = browser.root.querySelector('.u2-space-search input');
+  await type(search, 'q4');
+  await shows(browser.root, ['Q4 hits']);
+  fire(search, 'keydown', {key: 'ArrowDown'});
+  await flush();
+  const list = browser.root.querySelector('.u2-list.u2-space-items');
+  assert.equal(document.activeElement, list);
+  assert.deepEqual(browser.selected.peek().map((e) => e.id), ['p3']);
+  fire(list, 'keydown', {key: 'Enter'});
+  assert.deepEqual(opened, ['p3']);
+  browser.dispose();
+});
+
 ui('openFromSpace(): OPEN is off until an item is picked, then runs its default action and answers it', async () => {
   fakeSpaces({...TREE, items: ITEMS});
   const result = openFromSpace();
@@ -463,6 +579,34 @@ ui('openFromSpace(): OPEN is off until an item is picked, then runs its default 
   fire(dialogButton('OPEN'), 'click');
   assert.deepEqual((await result).map((e) => e.id), ['p4']);
   assert.deepEqual(DG.ObjectHandler.defaultActions.map((e) => e.id), ['p4']);
+});
+
+ui('openFromSpace(): OPEN on an app opens the view its preview runs, as Browse does; a project runs its default action', async () => {
+  const app = new DG.Func('demoApp', {id: 'app1', friendlyName: 'Demo', nqName: 'Tutorials:demoApp'});
+  const appView = {name: 'Demo app'};
+  const handler = {type: 'app', isApplicable: (x) => x === app, getCaption: (x) => x.friendlyName,
+    renderPreview: async (x) => x === app ? appView : null};
+  DG.ObjectHandler.registered.push(handler);
+  const added = [];
+  grok.shell.addView = (v) => added.push(v);
+  try {
+    fakeSpaces({...TREE, items: {...ITEMS, gpcr: [...ITEMS.gpcr, app]}});
+    const result = openFromSpace({multi: true});
+    await until(() => dialog() !== null && itemNames(dialog()).length === 6, 'the items');
+    const rows = [...dialog().querySelectorAll('.u2-space-items .u2-list-row')];
+    fire(rows.find((r) => r.textContent.includes('Demo')), 'click');
+    fire(rows.find((r) => r.textContent.includes('GPCR assay')), 'click', {ctrlKey: true});
+    await until(() => !off(dialogButton('OPEN')), 'OPEN on');
+    fire(dialogButton('OPEN'), 'click');
+    await result;
+    await until(() => added.length === 1, 'the app view');
+    assert.equal(added[0], appView);
+    assert.deepEqual(DG.ObjectHandler.defaultActions.map((e) => e.id), ['p4'], 'the app has no default action to run');
+  }
+  finally {
+    delete grok.shell.addView;
+    DG.ObjectHandler.registered.splice(DG.ObjectHandler.registered.indexOf(handler), 1);
+  }
 });
 
 /** A Space row mounted on the page, as the Save project dialog mounts it. */

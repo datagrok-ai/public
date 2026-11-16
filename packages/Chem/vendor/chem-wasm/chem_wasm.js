@@ -122,8 +122,10 @@ export class ChemMonomerLibrary {
 if (Symbol.dispose) ChemMonomerLibrary.prototype[Symbol.dispose] = ChemMonomerLibrary.prototype.free;
 
 /**
- * A reaction read once (module docs), with the canvas layout last drawn: a repaint of the same box and options at
+ * A reaction read once (module docs), with the canvas layouts last drawn: a repaint of the same box and options at
  * any offset (a grid scrolling) draws it again without laying it out (Chem's grid, 2026-11-11: 0.7 ms a repaint).
+ * One a drawing (its options and `step`), its latest box's, [`CANVAS_KEPT`] at most: a route's picture and its step
+ * cards (`step`), drawn from one scheme, each repaint without a layout, and a cell drawn at a new size keeps one.
  */
 export class ChemReactionScheme {
     __destroy_into_raw() {
@@ -135,6 +137,24 @@ export class ChemReactionScheme {
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_chemreactionscheme_free(ptr, 0);
+    }
+    /**
+     * `describe()`: the scheme described, as JSON (`scheme::describe` with Crux's agent table: each step's
+     * molecules, balance, reaction centre, groups gained and lost, class and sentence; a route's shape), for the
+     * Reaction pane and the Reactions app.
+     * @returns {string}
+     */
+    describe() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.chemreactionscheme_describe(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
     }
     /**
      * `draw_to_canvas(canvas, options)`: the reaction drawn on the canvas's 2D context in the box `width` x
@@ -149,6 +169,104 @@ export class ChemReactionScheme {
         if (ret[1]) {
             throw takeFromExternrefTable0(ret[0]);
         }
+    }
+    /**
+     * `get_centre_counts()`: the bonds the picture colours as the reaction centre (the `centre` option on), by colour:
+     * `[made, broken, changed]`, green, red and blue (a bond changed in order counts on each side, as it is drawn; a
+     * wedged bond, drawn black, counts too). All 0 for an unmapped reaction. A host draws the colours' legend under a
+     * picture only when it has some (decision 8 of 2026-11-14).
+     * @returns {Int32Array}
+     */
+    get_centre_counts() {
+        const ret = wasm.chemreactionscheme_get_centre_counts(this.__wbg_ptr);
+        var v1 = getArrayI32FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v1;
+    }
+    /**
+     * `get_notes()`: a template's footnotes, one string each, as the picture words them when it draws them (the
+     * `footnotes` option): for the Reaction pane, where a cell drawn without them shows them (the owner,
+     * 2026-11-13: "when reaction is clicked, this info should be in context panel"). Empty for molecules.
+     * @returns {string[]}
+     */
+    get_notes() {
+        const ret = wasm.chemreactionscheme_get_notes(this.__wbg_ptr);
+        var v1 = getArrayJsValueFromWasm0(ret[0], ret[1]);
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v1;
+    }
+    /**
+     * `get_numbered_through()`: the scheme with one map number per atom through its steps ([`scheme::number_through`]:
+     * an atom keeps the number of the step that makes it in every step that uses it; decision 9 of 2026-11-14), as a
+     * step list ([`scheme::write_step_list`]: each molecule as canonical SMILES with its numbers). For a host that
+     * mapped a route's steps one by one (a mapper maps one reaction at a time); a value's own numbers are never
+     * changed unless the user maps.
+     * @returns {string}
+     */
+    get_numbered_through() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.chemreactionscheme_get_numbered_through(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * `get_option_notes(options)`: what the options' lenient keys left out (a malformed `stepTexts` entry, text or
+     * run), one line each; empty when everything read. The drawing calls draw without it; a host logs these.
+     * @param {string} options_json
+     * @returns {string[]}
+     */
+    get_option_notes(options_json) {
+        const ptr0 = passStringToWasm0(options_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemreactionscheme_get_option_notes(this.__wbg_ptr, ptr0, len0);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        var v2 = getArrayJsValueFromWasm0(ret[0], ret[1]);
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v2;
+    }
+    /**
+     * `get_size(options)`: the scheme's natural size in px, `[width, height, percent]`, with these options: the size
+     * `get_svg` draws it at without `width` and `height` (which do nothing here), so a host sizes its box without
+     * reading the SVG's header. With `column`, the column's: its `width` and the height of its rows. `percent`: the
+     * bonds against `bondLength`, 100 unless the scheme was made smaller to fit (a column's piece wider than it).
+     * @param {string} options_json
+     * @returns {Int32Array}
+     */
+    get_size(options_json) {
+        const ptr0 = passStringToWasm0(options_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemreactionscheme_get_size(this.__wbg_ptr, ptr0, len0);
+        if (ret[3]) {
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        var v2 = getArrayI32FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v2;
+    }
+    /**
+     * `get_steps()`: the scheme's steps in order, one string each, cut as the scheme's reader cut them (Chem's
+     * Reaction pane lists a route's steps with it, so that they match the chain drawn above them), each the value's
+     * own text and reaction text only (a mapper or a parser never gets `A>>B name`): one reaction, the value as
+     * given, its name left out ([`scheme::route::without_name`]; an RXN block whole); a step list, its parts as
+     * written (between `--**--`, else its lines), a part's name left out, a part that is a chain cut into its steps;
+     * a chain, its pieces by the restated-intermediate rule, so `A.B>>C>>C.D>>E` gives `A.B>>C` and `C.D>>E`, its
+     * caption left out. A route JSON or an RD file has no step text a host could read as one reaction: each of its
+     * steps is written as [`scheme::write_step_list`] writes a step, without its name.
+     * @returns {string[]}
+     */
+    get_steps() {
+        const ret = wasm.chemreactionscheme_get_steps(this.__wbg_ptr);
+        var v1 = getArrayJsValueFromWasm0(ret[0], ret[1]);
+        wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
+        return v1;
     }
     /**
      * `get_svg(options)`: the reaction as an SVG string.
@@ -1979,9 +2097,12 @@ export class JSMol {
     }
     /**
      * PORT(minilib.cpp `normalize_depiction`): RDKit's `normalizeDepiction(mol, -1,
-     * canonicalize, scaleFactor)` with MinimalLib's canonical transform (its build without
-     * Eigen: `depictor::CanonicalTransformBuild::PowerSolver`); the scale factor, or -1
-     * (nothing done). Throws where MinimalLib's does (no principal axis).
+     * canonicalize, scaleFactor)`; the scale factor, or -1 (nothing done). The canonical turn is
+     * the pinned RDKit's C++ build's (Eigen's exact axes, `depictor::CanonicalTransformBuild::
+     * Eigen`), not MinimalLib's: RDKit-js is built without Eigen, and its power solver's
+     * approximate axes shear some molecules (bond lengths 0.94 to 1.81 for 1.5 in a Datagrok
+     * grid cell, the owner's report 2026-11-12; decision `chem-wasm`). A deliberate departure
+     * from RDKit-js; the exact turn only moves, turns and scales, and never throws.
      * @param {number | null} [canonicalize]
      * @param {number | null} [scale_factor]
      * @returns {number}
@@ -2908,6 +3029,24 @@ export function calcDescriptors(molecules, names) {
 }
 
 /**
+ * `chemAgentTable()`: Crux's agent table as its JSON, the built-in entries as written (`{"<SMILES>": {"name",
+ * "place"}}`), for a host that offers agents by name (Chem's Add panel, decision 6: "a reagent-table name").
+ * @returns {string}
+ */
+export function chemAgentTable() {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        const ret = wasm.chemAgentTable();
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
  * `chemAlerts(molecules, catalogs, atoms)`: the JSON of each catalog's hits per molecule (module docs); throws on a
  * catalog other than Brenk and NIH.
  * @param {(string | null)[]} molecules
@@ -3325,6 +3464,34 @@ export function chemWasmModules() {
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
     }
+}
+
+/**
+ * `cruxTestTrap(panics)`: traps the module. `true`: a panic with [`TEST_TRAP_MESSAGE`], noted as any panic is (the
+ * hook installed first: the armed call may be an instance's first); `false`: an abort without a panic, nothing
+ * noted, as the allocation error handler ends a module. Only a test calls it (the glue's `cruxTestArmTrap`).
+ * @param {boolean} panics
+ */
+export function cruxTestTrap(panics) {
+    wasm.cruxTestTrap(panics);
+}
+
+/**
+ * `cruxTrapNoteLen()`: the note's length in bytes, 0 while nothing is noted.
+ * @returns {number}
+ */
+export function cruxTrapNoteLen() {
+    const ret = wasm.cruxTrapNoteLen();
+    return ret >>> 0;
+}
+
+/**
+ * `cruxTrapNotePtr()`: the address of the note's bytes in the module's memory (meaningful in a wasm32 module).
+ * @returns {number}
+ */
+export function cruxTrapNotePtr() {
+    const ret = wasm.cruxTrapNotePtr();
+    return ret >>> 0;
 }
 
 /**
@@ -3890,7 +4057,8 @@ export function standardize_smiles(smiles) {
 }
 
 /**
- * Panics as `Error`s with their message in the console (not a bare `unreachable`); `std::sort`'s ties as
+ * Panics noted with their message and place (`wasm_panic`, decision `wasm-trap-notes`: Chem reads the note after
+ * the trap and logs it); `std::sort`'s ties as
  * RDKit-js's (Emscripten's libc++: `smi_compiler::cxx_sort::StdSort::Libcxx`, spike chem-rdkit-gaps-2), the
  * calls that mirror a Python RDKit service excepted ([`PythonDefaults`]).
  */
@@ -4039,17 +4207,6 @@ function __wbg_get_imports() {
             const ret = arg0.done;
             return ret;
         },
-        __wbg_error_757e9472f8410341: function(arg0, arg1) {
-            let deferred0_0;
-            let deferred0_1;
-            try {
-                deferred0_0 = arg0;
-                deferred0_1 = arg1;
-                console.error(getStringFromWasm0(arg0, arg1));
-            } finally {
-                wasm.__wbindgen_free(deferred0_0, deferred0_1, 1);
-            }
-        },
         __wbg_get_31af05bd4842a84f: function() { return handleError(function (arg0, arg1) {
             const ret = Reflect.get(arg0, arg1);
             return ret;
@@ -4132,10 +4289,6 @@ function __wbg_get_imports() {
             const ret = new Uint8Array(arg0);
             return ret;
         },
-        __wbg_new_227d7c05414eb861: function() {
-            const ret = new Error();
-            return ret;
-        },
         __wbg_new_28744009d011f847: function() {
             const ret = new Map();
             return ret;
@@ -4201,13 +4354,6 @@ function __wbg_get_imports() {
         __wbg_set_bea140a88be9b277: function(arg0, arg1, arg2) {
             arg0[arg1 >>> 0] = arg2;
         },
-        __wbg_stack_3b0d974bbf31e44f: function(arg0, arg1) {
-            const ret = arg1.stack;
-            const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            const len1 = WASM_VECTOR_LEN;
-            getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
-            getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
-        },
         __wbg_value_f3c585ee8f5ba40c: function(arg0) {
             const ret = arg0.value;
             return ret;
@@ -4248,45 +4394,19 @@ function __wbg_get_imports() {
     };
 }
 
-const ChemMonomerLibraryFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_chemmonomerlibrary_free(ptr, 1));
-const ChemReactionSchemeFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_chemreactionscheme_free(ptr, 1));
-const ChemSmartsSetFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_chemsmartsset_free(ptr, 1));
-const ChemSynthonSpaceFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_chemsynthonspace_free(ptr, 1));
-const CollectionFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_collection_free(ptr, 1));
-const CollectionBuilderFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_collectionbuilder_free(ptr, 1));
-const JSMolFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_jsmol_free(ptr, 1));
-const JSMolListListFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_jsmollistlist_free(ptr, 1));
-const MolListFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_mollist_free(ptr, 1));
-const RGroupDecompositionFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_rgroupdecomposition_free(ptr, 1));
-const ReactionFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_reaction_free(ptr, 1));
-const ReactionEnumeratorFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_reactionenumerator_free(ptr, 1));
-const SimilarityResultFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_similarityresult_free(ptr, 1));
+const ChemMonomerLibraryFinalization = __cruxRegistry(ptr => wasm.__wbg_chemmonomerlibrary_free(ptr, 1));
+const ChemReactionSchemeFinalization = __cruxRegistry(ptr => wasm.__wbg_chemreactionscheme_free(ptr, 1));
+const ChemSmartsSetFinalization = __cruxRegistry(ptr => wasm.__wbg_chemsmartsset_free(ptr, 1));
+const ChemSynthonSpaceFinalization = __cruxRegistry(ptr => wasm.__wbg_chemsynthonspace_free(ptr, 1));
+const CollectionFinalization = __cruxRegistry(ptr => wasm.__wbg_collection_free(ptr, 1));
+const CollectionBuilderFinalization = __cruxRegistry(ptr => wasm.__wbg_collectionbuilder_free(ptr, 1));
+const JSMolFinalization = __cruxRegistry(ptr => wasm.__wbg_jsmol_free(ptr, 1));
+const JSMolListListFinalization = __cruxRegistry(ptr => wasm.__wbg_jsmollistlist_free(ptr, 1));
+const MolListFinalization = __cruxRegistry(ptr => wasm.__wbg_mollist_free(ptr, 1));
+const RGroupDecompositionFinalization = __cruxRegistry(ptr => wasm.__wbg_rgroupdecomposition_free(ptr, 1));
+const ReactionFinalization = __cruxRegistry(ptr => wasm.__wbg_reaction_free(ptr, 1));
+const ReactionEnumeratorFinalization = __cruxRegistry(ptr => wasm.__wbg_reactionenumerator_free(ptr, 1));
+const SimilarityResultFinalization = __cruxRegistry(ptr => wasm.__wbg_similarityresult_free(ptr, 1));
 
 function addToExternrefTable0(obj) {
     const idx = wasm.__externref_table_alloc();
@@ -4298,6 +4418,8 @@ function _assertClass(instance, klass) {
     if (!(instance instanceof klass)) {
         throw new Error(`expected instance of ${klass.name}`);
     }
+    if (instance.__cruxInstance !== __cruxInstance) throw __cruxStale(klass.name);
+    if (instance.__wbg_ptr === 0) throw __cruxNull(klass.name);
 }
 
 function debugString(val) {
@@ -4663,3 +4785,258 @@ async function __wbg_init(module_or_path) {
 }
 
 export { initSync, __wbg_init as default };
+
+// crux-core tools/wasm_glue_fresh.mjs (decision wasm-trap-notes): a fresh instance after a trap (the tool's header says why and how).
+let __cruxInstance = 0;
+let __cruxTrapHook = null;
+/** The engine calls left until the test trap's (cruxTestArmTrap), 0 when disarmed; how it traps. */
+let __cruxArmed = 0;
+let __cruxArmedPanics = true;
+
+/** An engine call while the test trap is armed: the armed one traps in the module's cruxTestTrap instead of running. */
+function __cruxArmedCall() {
+    __cruxArmed -= 1;
+    if (__cruxArmed === 0) wasm.cruxTestTrap(__cruxArmedPanics);
+}
+
+/** `plain` (a static method, a function of the module) counted for the test trap. */
+function __cruxCounted(plain) {
+    return __cruxShaped(function (...args) {
+        if (__cruxArmed !== 0) __cruxArmedCall();
+        return plain.apply(this, args);
+    }, plain);
+}
+
+/** One FinalizationRegistry per instance, made on its first registration: an object is freed only into its own. */
+function __cruxRegistry(free) {
+    let made = -1;
+    let registry = null;
+    const current = () => {
+        if (made !== __cruxInstance) {
+            const instance = __cruxInstance;
+            made = instance;
+            registry = typeof FinalizationRegistry === 'undefined' ? null : new FinalizationRegistry((ptr) => {
+                if (instance !== __cruxInstance) return;
+                try {
+                    free(ptr);
+                } catch (e) {
+                    if (!__cruxTrapHook) throw e;
+                    __cruxTrapHook(e);
+                }
+            });
+        }
+        return registry;
+    };
+    return {
+        register(obj, ptr, token) {
+            obj.__cruxInstance = __cruxInstance;
+            current()?.register(obj, ptr, token);
+        },
+        unregister(token) {
+            registry?.unregister(token);
+        },
+    };
+}
+
+function __cruxStale(what) {
+    return new Error(`${what}: this object belongs to an engine instance that was replaced (freshInstance), and can no longer be used`);
+}
+
+/** A freed object's use, refused in JS (the tool's header: wasm-bindgen's throw from inside the module leaks its frames). */
+function __cruxNull(what) {
+    return new Error(`${what}: null pointer passed to rust (the object was freed, or a call took it)`);
+}
+
+/** `plain` with its length and name, the wrapper's own being 0 and "". */
+function __cruxShaped(wrapper, plain) {
+    Object.defineProperty(wrapper, 'length', { value: plain.length });
+    Object.defineProperty(wrapper, 'name', { value: plain.name });
+    return wrapper;
+}
+
+/** Every method and accessor of the classes refuses an object of an older instance, and a freed one; their free does
+ * nothing. */
+const __cruxClasses = new Map([[ChemMonomerLibrary, ChemMonomerLibraryFinalization], [ChemReactionScheme, ChemReactionSchemeFinalization], [ChemSmartsSet, ChemSmartsSetFinalization], [ChemSynthonSpace, ChemSynthonSpaceFinalization], [Collection, CollectionFinalization], [CollectionBuilder, CollectionBuilderFinalization], [JSMol, JSMolFinalization], [JSMolListList, JSMolListListFinalization], [MolList, MolListFinalization], [RGroupDecomposition, RGroupDecompositionFinalization], [Reaction, ReactionFinalization], [ReactionEnumerator, ReactionEnumeratorFinalization], [SimilarityResult, SimilarityResultFinalization]]);
+for (const cls of __cruxClasses.keys()) {
+    const proto = cls.prototype;
+    const dispose = typeof Symbol.dispose === 'symbol' ? Symbol.dispose : null;
+    const plainFree = proto.free;
+    for (const name of Object.getOwnPropertyNames(proto)) {
+        if (name === 'constructor') continue;
+        const d = Object.getOwnPropertyDescriptor(proto, name);
+        if (typeof d.value === 'function' && d.writable) {
+            const plain = d.value;
+            // a release (wasm-bindgen's free, RDKit.js's delete) of an older instance's object releases nothing
+            const guarded = name === 'free' || name === 'delete'
+                ? function () {
+                    if (this.__cruxInstance !== __cruxInstance) {
+                        this.__wbg_ptr = 0;
+                        return;
+                    }
+                    // a second release (or one of an object a call took) releases nothing, and never enters the module
+                    if (this.__wbg_ptr === 0) return;
+                    return plain.call(this);
+                }
+                : name.startsWith('__')
+                ? function (...args) {
+                    if (this.__cruxInstance !== __cruxInstance) throw __cruxStale(`${cls.name}.${name}`);
+                    return plain.apply(this, args);
+                }
+                : function (...args) {
+                    if (this.__cruxInstance !== __cruxInstance) throw __cruxStale(`${cls.name}.${name}`);
+                    if (this.__wbg_ptr === 0) throw __cruxNull(`${cls.name}.${name}`);
+                    if (__cruxArmed !== 0) __cruxArmedCall();
+                    return plain.apply(this, args);
+                };
+            Object.defineProperty(proto, name, { ...d, value: __cruxShaped(guarded, plain) });
+        } else if (d.get || d.set) {
+            const { get, set } = d;
+            Object.defineProperty(proto, name, {
+                ...d,
+                get: get && __cruxShaped(function () {
+                    if (this.__cruxInstance !== __cruxInstance) throw __cruxStale(`${cls.name}.${name}`);
+                    if (this.__wbg_ptr === 0) throw __cruxNull(`${cls.name}.${name}`);
+                    return get.call(this);
+                }, get),
+                set: set && __cruxShaped(function (value) {
+                    if (this.__cruxInstance !== __cruxInstance) throw __cruxStale(`${cls.name}.${name}`);
+                    if (this.__wbg_ptr === 0) throw __cruxNull(`${cls.name}.${name}`);
+                    set.call(this, value);
+                }, set),
+            });
+        }
+    }
+    if (dispose && plainFree && proto[dispose] === plainFree) proto[dispose] = proto.free;
+    // its static methods (a constructor such as SketchMol.parse) are engine calls for the test trap
+    for (const name of Object.getOwnPropertyNames(cls)) {
+        if (name.startsWith('__')) continue;
+        const d = Object.getOwnPropertyDescriptor(cls, name);
+        if (typeof d.value === 'function' && d.writable) Object.defineProperty(cls, name, { ...d, value: __cruxCounted(d.value) });
+    }
+}
+// the module's own functions too (the live bindings its importers see)
+calcDescriptors = __cruxCounted(calcDescriptors);
+chemAgentTable = __cruxCounted(chemAgentTable);
+chemAlerts = __cruxCounted(chemAlerts);
+chemCanonicalSmiles = __cruxCounted(chemCanonicalSmiles);
+chemConformers = __cruxCounted(chemConformers);
+chemCurate = __cruxCounted(chemCurate);
+chemEmbed3d = __cruxCounted(chemEmbed3d);
+chemEmbed3dRecommendedOptions = __cruxCounted(chemEmbed3dRecommendedOptions);
+chemFilterCatalog = __cruxCounted(chemFilterCatalog);
+chemFingerprints = __cruxCounted(chemFingerprints);
+chemGasteigerMap = __cruxCounted(chemGasteigerMap);
+chemInchiInputs = __cruxCounted(chemInchiInputs);
+chemMapReaction = __cruxCounted(chemMapReaction);
+chemMarkStereoAbsolute = __cruxCounted(chemMarkStereoAbsolute);
+chemMurckoScaffolds = __cruxCounted(chemMurckoScaffolds);
+chemMutate = __cruxCounted(chemMutate);
+chemProperties = __cruxCounted(chemProperties);
+chemQed = __cruxCounted(chemQed);
+chemToV2000 = __cruxCounted(chemToV2000);
+chemWasmModules = __cruxCounted(chemWasmModules);
+descriptorTree = __cruxCounted(descriptorTree);
+enumerate_tautomer_smiles = __cruxCounted(enumerate_tautomer_smiles);
+getRGroupDecomposition = __cruxCounted(getRGroupDecomposition);
+get_inchikey_for_inchi = __cruxCounted(get_inchikey_for_inchi);
+get_mces = __cruxCounted(get_mces);
+get_mcs_as_json = __cruxCounted(get_mcs_as_json);
+get_mcs_as_mol = __cruxCounted(get_mcs_as_mol);
+get_mcs_as_smarts = __cruxCounted(get_mcs_as_smarts);
+get_mol = __cruxCounted(get_mol);
+get_mol_copy = __cruxCounted(get_mol_copy);
+get_qmol = __cruxCounted(get_qmol);
+get_rgd = __cruxCounted(get_rgd);
+get_rgd_smarts = __cruxCounted(get_rgd_smarts);
+get_rgd_text = __cruxCounted(get_rgd_text);
+get_rxn = __cruxCounted(get_rxn);
+initRxnMapper = __cruxCounted(initRxnMapper);
+molzip = __cruxCounted(molzip);
+molzipFragments = __cruxCounted(molzipFragments);
+prefer_coordgen = __cruxCounted(prefer_coordgen);
+scaffoldTree = __cruxCounted(scaffoldTree);
+set_log_capture = __cruxCounted(set_log_capture);
+set_log_tee = __cruxCounted(set_log_tee);
+similarityMapSvg = __cruxCounted(similarityMapSvg);
+similarityMapWeights = __cruxCounted(similarityMapWeights);
+standardize_smiles = __cruxCounted(standardize_smiles);
+start = __cruxCounted(start);
+use_legacy_stereo_perception = __cruxCounted(use_legacy_stereo_perception);
+validate_smiles = __cruxCounted(validate_smiles);
+version = __cruxCounted(version);
+
+/**
+ * A new instance of this module from the compiled module the glue kept, synchronously (initSync); the objects of the
+ * old one become inert. Returns the new instance's exports.
+ */
+export function freshInstance() {
+    if (wasmModule === undefined) throw new Error('freshInstance: the module has not been instantiated yet');
+    const module = wasmModule;
+    __cruxInstance += 1;
+    __cruxArmed = 0;
+    wasm = undefined;
+    return initSync({ module });
+}
+
+/** 0 for the first instance, one more for each fresh one. */
+export function instanceNumber() {
+    return __cruxInstance;
+}
+
+/**
+ * The current instance's trap note (crates/wasm-panic), read from its memory without calling into it anything that
+ * allocates; with nothing noted, what the trap `thrown` says (the tool's header); null when there is neither.
+ */
+export function trapNote(thrown) {
+    if (wasm !== undefined && typeof wasm.cruxTrapNotePtr === 'function' && typeof wasm.cruxTrapNoteLen === 'function') {
+        const ptr = wasm.cruxTrapNotePtr() >>> 0;
+        const len = wasm.cruxTrapNoteLen() >>> 0;
+        if (len !== 0) return new TextDecoder('utf-8').decode(new Uint8Array(wasm.memory.buffer, ptr, len).slice());
+    }
+    return __cruxInferred(thrown);
+}
+
+/** A trap with no panic noted, named from its own message (the reason inferred, and so said). */
+function __cruxInferred(thrown) {
+    const message = String(thrown?.message ?? '');
+    if (thrown instanceof RangeError && /call stack/i.test(message)) return `stack overflow (${message})`;
+    if (!(thrown instanceof WebAssembly.RuntimeError)) return null;
+    if (/unreachable/i.test(message)) {
+        return 'ran out of memory (inferred: the module aborted without a panic, which in these panic=abort modules is the allocation error handler)';
+    }
+    if (/out of bounds/i.test(message)) return `${message} (no panic: a corrupted heap or shadow stack, or a stale pointer)`;
+    return `trapped without a panic: ${message}`;
+}
+
+/**
+ * Tests: the `calls`-th engine call from now traps in the module's `cruxTestTrap(panics)` instead of running (the
+ * tool's header); 0 disarms. A fresh instance starts disarmed.
+ */
+export function cruxTestArmTrap(calls, panics = true) {
+    if (wasm === undefined || typeof wasm.cruxTestTrap !== 'function') {
+        throw new Error('cruxTestArmTrap: this module has no test trap (cruxTestTrap: built without crates/wasm-panic)');
+    }
+    __cruxArmed = Math.max(0, Math.floor(Number(calls) || 0));
+    __cruxArmedPanics = panics !== false;
+}
+
+/**
+ * Moves `fresh`'s Rust value into `target`, an older object of the same class, which becomes the current instance's;
+ * `fresh` is left empty (as after its free, which it then needs no more).
+ */
+export function adoptInto(target, fresh) {
+    const registry = __cruxClasses.get(fresh?.constructor);
+    if (!registry || !(target instanceof fresh.constructor)) throw new Error('adoptInto: two objects of one class of this glue');
+    if (fresh.__cruxInstance !== __cruxInstance) throw __cruxStale(`adoptInto: ${fresh.constructor.name}`);
+    const ptr = fresh.__destroy_into_raw();
+    target.__wbg_ptr = ptr;
+    registry.register(target, ptr, target);
+}
+
+/** Where a throw in a free the browser's finalizer makes goes; null: it is thrown. */
+export function setTrapHook(hook) {
+    __cruxTrapHook = hook;
+}
+
+/** Each class's methods that change the object (the crate's `&mut self` and `self` methods), by JS name. */
+export const cruxChanging = Object.freeze({"ChemSmartsSet":["match"],"ChemMonomerLibrary":[],"ChemReactionScheme":[],"ChemCheMeleon":["fingerprints"],"ChemSynthonSpace":["installFingerprints","search"],"JSMol":["add_hs_in_place","canonical_tautomer","charge_parent","cleanup","clear_prop","convert_to_aromatic_form","convert_to_kekule_form","delete","disconnect_metals","disconnect_organometallics","fragment_parent","generate_aligned_coords","isotope_parent","largest_fragment","neutralize","normalize","normalize_depiction","normalize_in_place","reionize","remove_fragments","remove_hs_in_place","set_new_coords","set_prop","stereo_parent","straighten_depiction","super_parent","tautomer_parent","uncharge"],"MolList":["append","delete","insert","next","pop","reset"],"RGroupDecomposition":["add","add_text","delete","process"],"JSMolListList":["delete"],"Reaction":["delete","run_reactants"],"ReactionEnumerator":["delete","next","next_smiles","reset_state","set_state"],"SimilarityResult":[],"CollectionBuilder":["addMany","addSdf","finish","finishSdf","setLenient"],"Collection":[]});

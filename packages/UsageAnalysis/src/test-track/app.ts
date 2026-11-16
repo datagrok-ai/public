@@ -1069,7 +1069,7 @@ export class TestTrack extends DG.ViewBase {
     const params = {
       success: status === PASSED, result: reason, skipped: status === SKIPPED, type: 'manual',
       package: 'Test Track',
-      category: node.value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: this.uid, start: this.start, ms: 0, batchName: this.testingName,
+      category: node.value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: uid, start: this.start, ms: 0, batchName: this.testingName,
       severityLevel: errorSeverityLevels.includes(status) ? status : null
     };
 
@@ -1077,7 +1077,7 @@ export class TestTrack extends DG.ViewBase {
     grok.dapi.users.find(params['uid']).then((user) => {
       const map: StatusInfo = {
         'User': user,
-        'Date': Date.now().toString(),
+        'Date': this.dateTooltip(new Date()),
         'Version': params['version'],
         'Batch': this.testingName
       };

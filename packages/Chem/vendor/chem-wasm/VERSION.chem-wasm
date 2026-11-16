@@ -2,29 +2,30 @@ chem-wasm: Chem's Crux engine (crux-core crates/chem-wasm), one WebAssembly file
 
 crate: chem-wasm
 features: ['chem']
-crux_core_rev: a15e103b40586a894713ca21148d482270a54daf
+crux_core_rev: cc9af4c5f9feec177443df557a72d25246136b9f
 crux_core_dirty: False
-built_utc: 2026-11-12T09:32:07.293Z
+built_utc: 2026-11-16T17:56:14.243Z
 cargo.profile: wasm-ship
 cargo.target: wasm32-unknown-unknown
 cargo.rustc: rustc 1.95.0 (59807616e 2026-04-14)
-cargo.rustflags: -C target-feature=+simd128
+cargo.rustflags: -C target-feature=+simd128 --remap-path-prefix=<home>=~ --remap-path-prefix=<cargo home>=/cargo --remap-path-prefix=<crux-core checkout>=/crux-core
 wasm_bindgen.version: 0.2.129
 wasm_bindgen.flags: --target web --remove-name-section
-wasm_opt.version: wasm-opt version 133 (version_133)
-wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-bulk-memory-opt --enable-call-indirect-overlong --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
-files.chem_wasm_bg.wasm.raw: 6510694
-files.chem_wasm_bg.wasm.gzip9: 2530427
-files.chem_wasm_bg.wasm.brotli11: 1847724
-files.chem_wasm.js.raw: 170742
-files.chem_wasm.js.gzip9: 26024
-files.chem_wasm.js.brotli11: 21764
-cargo_artifact.raw: 8253059
-cargo_artifact.gzip9: 2951075
-cargo_artifact.brotli11: 2084036
+wasm_bindgen.glue_patch: tools/wasm_glue_fresh.mjs --crate crates/chem-wasm
+wasm_opt.version: wasm-opt version 117 (version_117)
+wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
+files.chem_wasm_bg.wasm.raw: 6851399
+files.chem_wasm_bg.wasm.gzip9: 2665039
+files.chem_wasm_bg.wasm.brotli11: 1950676
+files.chem_wasm.js.raw: 189898
+files.chem_wasm.js.gzip9: 31717
+files.chem_wasm.js.brotli11: 26427
+cargo_artifact.raw: 8695292
+cargo_artifact.gzip9: 3110847
+cargo_artifact.brotli11: 2200924
 
-vendored from: a clean build of crux-core main a15e103b4 (build-ship.sh chem)
-chem_wasm_bg.wasm: 6,510,694 B raw, sha256 242cdab450ea16ab
+vendored from: a clean build of crux-core main cc9af4c5f (build-ship.sh chem)
+chem_wasm_bg.wasm: 6,851,399 B raw, sha256 ea8bf62474e0e68b
 NOTICE: the build's (crux-core tools/wasm_notices.py)
-includes: crux-core main 8392cf0d6..a15e103b4 (49 lands): draw-unknown-stereo (MolDraw2D unspecifiedStereoIsUnknown: RDKit markUnspecifiedStereoAsUnknown drawn, no RDKit fallback; a too-short wavy bond an error, not a trap) and 48 other teams' lands (moldraw2d-place, scheme-draw, chem-wasm-rxnmap, chem-wasm-similarity, smiles-valence, query-parts, ...); the wasm is byte-identical to the spike build Chem was validated on (00d347981)
+includes: crux-core cc9af4c5f (batch k): the reaction centre's widths as drawing options, centreWidth and centreLinesWidth
 files: chem_wasm.js (glue, wasm-bindgen --target web), chem_wasm.d.ts, chem_wasm_bg.wasm, NOTICE.chem-wasm, VERSION.chem-wasm (both emitted to dist)

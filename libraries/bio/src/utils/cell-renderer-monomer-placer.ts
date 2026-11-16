@@ -28,8 +28,8 @@ import {fromEvent, Unsubscribable} from 'rxjs';
 import * as operators from 'rxjs/operators';
 import {
   CONNECTION_GREY, IConnectionsGeometry, IConnectionsLayout, IDrawnConnection, assignLanes, bondNumberFontSize, connectionsGeometry, darkerColor,
-  drawBondNumbers, drawConnections, getDrawnConnections, layoutConnections, measureConnectionsFont, sideHeight,
-  stackedLineGap,
+  drawBondNumbers, drawConnections, drawInlineJoins, getDrawnConnections, layoutConnections, measureConnectionsFont, sideHeight,
+  stackedLineGap, touchesPos,
 } from './cell-renderer-connections';
 
 type MonomerPlacerProps = {
@@ -103,12 +103,12 @@ interface IStackedRow {
   positionShift: number;
 }
 
-/** A stacked row's horizontal layout: per flat position its x from its chain's start, its chain and its label width;
- * per chain its cumulative x (printLeftOrCentered's maxWord) and its shift */
+/** A stacked row's horizontal layout: per flat position its x from its line's start, its line and its label width;
+ * per line its cumulative x (printLeftOrCentered's maxWord) and its shift */
 interface IStackedGeometry {
   sepW: number;
   localX: number[];
-  chainOf: number[];
+  lineOf: number[];
   labelW: number[];
   maxWords: number[][];
   offsets: number[];
@@ -123,6 +123,34 @@ interface IMultilineLayoutElement {
   width: number;
   om: string; // original monomer or separator text
   isSeparator: boolean;
+  /** A chain break between chains bonded side by side: the first position of the later chain */
+  joinTo?: number;
+}
+
+const monospaceAdvances = new Map<string, number>();
+
+/** The character advance of the monospace {@link font}, measured once per font: the cells place each monomer by its
+ * label's length in these, and print it in that font. The 0.6 em the placer used to assume is the advance of most
+ * monospace fonts but not of all (Consolas, the browser's monospace on Windows, is 0.55 em): there every label took
+ * less room than its place, which left a gap after each label as long as a character per 20 letters (one after
+ * 3amPh6MeTzBCN), and a wider font overlapped them. 0.6 em without a DOM. */
+export function monospaceAdvance(font: string, fontSize: number): number {
+  let res = monospaceAdvances.get(font);
+  if (res === undefined) {
+    res = fontSize * 0.6;
+    try {
+      const ctx = document.createElement('canvas').getContext('2d');
+      if (ctx) {
+        ctx.font = font;
+        const w = ctx.measureText('MMMMMMMMMM').width / 10;
+        if (w > 0) res = w;
+      }
+    } catch {
+      // no DOM: the estimate
+    }
+    monospaceAdvances.set(font, res);
+  }
+  return res;
 }
 
 /** {@link MonomerPlacer.hoverPartners} of a cell without a hovered connected monomer */
@@ -279,6 +307,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     maxLengthOfMonomer: number,
     canonical: boolean = false,
     extraLineH: number = 0,
+    joined: Set<number> | null = null,
   ): {
     lineLayouts: Array<{ lineIdx: number; elements: IMultilineLayoutElement[]; }>;
     lineHeight: number;
@@ -299,15 +328,16 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
     // --- 2. Find the widest monomer in the sequence to set a uniform column width ---
     let maxMonomerWidth = 0;
-    const monomers: {text: string, posIdx: number, isSeparator: boolean}[] = [];
+    const monomers: {text: string, posIdx: number, isSeparator: boolean, joinTo?: number}[] = [];
     if (subParts.length > 0) {
-      // a '|' slot between chains, as the single line draws it
+      // a '|' slot between chains, as the single line draws it; between chains bonded side by side ({@link joined},
+      // their later chains' first positions) a slot for the bond
       const chainStarts = subParts.graphInfo?.disjointSeqStarts;
       let nextChain = 1;
       for (let i = positionShift; i < subParts.length; i++) {
         for (; chainStarts && nextChain < chainStarts.length && chainStarts[nextChain] <= i; nextChain++) {
           if (chainStarts[nextChain] === i && i > positionShift)
-            monomers.push({text: '|', posIdx: i, isSeparator: true});
+            monomers.push({text: '|', posIdx: i, isSeparator: true, ...(joined?.has(i) ? {joinTo: i} : {})});
         }
         const om = canonical ? subParts.getCanonical(i) : subParts.getOriginal(i);
         const shortMon = this.props.monomerToShort(om, maxLengthOfMonomer);
@@ -342,6 +372,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
           width: uniformColumnWidth, // Use the uniform width for all slots
           om: monomer.text,
           isSeparator: monomer.isSeparator,
+          ...(monomer.joinTo !== undefined ? {joinTo: monomer.joinTo} : {}),
         });
         monomerIdx++;
       }
@@ -420,16 +451,16 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     }
   }
 
-  /** The monomers' font: the column's font size temp, else {@link defaultFontSize} (the package default) */
+  /** The monomers' font: the column's font size temp, else {@link defaultFontSize} (the package default). Its width is
+   * the font's own character advance ({@link monospaceAdvance}) */
   public static getFontSettings(tableCol?: DG.Column, defaultFontSize: number = 12) {
     const fontFamily = 'monospace';
     let fontSize = typeof defaultFontSize === 'number' && defaultFontSize > 0 ? defaultFontSize : 12;
     if (tableCol && tableCol.temp[MmcrTemps.fontSize] &&
         typeof tableCol.temp[MmcrTemps.fontSize] === 'number' && !isNaN(tableCol.temp[MmcrTemps.fontSize]))
       fontSize = Math.max(tableCol.temp[MmcrTemps.fontSize], 1);
-    // monospace ratio
-    const fontWidth = fontSize * 0.6;
-    return {font: `${fontSize}px ${fontFamily}`, fontWidth, fontSize};
+    const font = `${fontSize}px ${fontFamily}`;
+    return {font, fontWidth: monospaceAdvance(font, fontSize), fontSize};
   }
 
   override toLog(): string {
@@ -916,13 +947,18 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         // a bond a line break cuts gets the same small number at both ends
         const mlConns = this._showConnections ? getDrawnConnections(subParts) : [];
         let ml = mlConns.length > 0;
-        let layout = this.calculateMultiLineLayoutDynamic(g, cellW, h, subParts, positionShift, maxLengthOfMonomer, ml);
+        // chains bonded side by side: the later chains' first positions, whose chain break slot holds the bond
+        let joined: Set<number> | null = null;
+        for (const c of mlConns) if (c.inline) (joined ??= new Set<number>()).add(c.to);
+        let layout = this.calculateMultiLineLayoutDynamic(g, cellW, h, subParts, positionShift, maxLengthOfMonomer, ml, 0, joined);
         let extraH = 0;
         let mlFontSize = 0;
         let mlGeo: IConnectionsGeometry | null = null;
         let lineOf: Map<number, number> | null = null;
         let bracketsByLine: Map<number, IDrawnConnection[]> | null = null;
         const numbered: IDrawnConnection[] = [];
+        // bonds of chains side by side whose two monomers share a line: drawn in the chain break slot between them
+        const inlineDrawn: IDrawnConnection[] = [];
         if (ml) {
           lineOf = new Map<number, number>();
           for (const ll of layout.lineLayouts)
@@ -930,7 +966,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
           bracketsByLine = new Map<number, IDrawnConnection[]>();
           for (const c of mlConns) {
             const line = lineOf.get(c.from);
-            if (line !== undefined && line === lineOf.get(c.to)) {
+            if (c.inline) {
+              if (line !== undefined && line === lineOf.get(c.to)) inlineDrawn.push(c);
+              else numbered.push(c);
+            } else if (line !== undefined && line === lineOf.get(c.to)) {
               let cs = bracketsByLine.get(line);
               if (!cs) bracketsByLine.set(line, cs = []);
               cs.push(c);
@@ -953,9 +992,12 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
             // the room would cost lines of the sequence: printed as before, with the marks
             ml = false;
             extraH = 0;
+            inlineDrawn.length = 0;
             layout = this.calculateMultiLineLayoutDynamic(g, cellW, h, subParts, positionShift, maxLengthOfMonomer);
           }
         }
+        const inlineSlots = inlineDrawn.length > 0 ? new Set(inlineDrawn.map((c) => c.to)) : null;
+        const labelWs = inlineSlots ? new Map<number, number>() : null;
         const {pos: hoverPos, partners} = this.hoverPartners(tableRowIdx, subParts, isRenderedOnGrid ? gridCell : null);
         const centerX = ml ? new Map<number, number>() : null;
         const lineYs = ml ? new Map<number, number>() : null;
@@ -977,9 +1019,11 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
           for (const element of lineLayout.elements) {
             const elementX = x + element.x;
-            if (element.isSeparator) { // a chain break
-              printLeftOrCentered(g, element.om, elementX, lineY + extraH, element.width, layout.lineHeight - extraH,
-                {color: 'rgb(128,128,128)', isMultiLineContext: true, wordIdx: -1});
+            if (element.isSeparator) { // a chain break, unless the bond of chains side by side is drawn there
+              if (element.joinTo === undefined || !inlineSlots?.has(element.joinTo)) {
+                printLeftOrCentered(g, element.om, elementX, lineY + extraH, element.width, layout.lineHeight - extraH,
+                  {color: 'rgb(128,128,128)', isMultiLineContext: true, wordIdx: -1});
+              }
               continue;
             }
             const monomer = element;
@@ -1014,6 +1058,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
             if (hoverPos !== null && (partners.has(monomerIndex) || monomerIndex === hoverPos))
               this.drawPartnerBox(g, elementX, lineY + extraH, element.width + 2, layout.lineHeight - extraH);
             centerX?.set(monomerIndex, elementX + element.width / 2);
+            labelWs?.set(monomerIndex, (this._monomerLengthMap[monomer.om] ??= g.measureText(monomer.om)).width);
 
             printLeftOrCentered(g, monomer.om, elementX, lineY + extraH, element.width, layout.lineHeight - extraH, {
               color: color,
@@ -1035,6 +1080,13 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
             if (lineYs.has(line)) // a line the cell has room for
               drawConnections(g, cs, (p: number) => centerX.get(p) ?? x - 20, capTopOf(line) - 1.5, 0, mlGeo, colorOf, hoverPos);
           }
+          drawInlineJoins(g, inlineDrawn, (c) => {
+            const line = lineOf!.get(c.from)!;
+            if (!lineYs.has(line) || !centerX.has(c.from) || !centerX.has(c.to)) return null;
+            const top = capTopOf(line);
+            return {x1: centerX.get(c.from)! + labelWs!.get(c.from)! / 2 + 1, x2: centerX.get(c.to)! - labelWs!.get(c.to)! / 2 - 1,
+              top, foot: top + capH};
+          }, mlGeo.lineWidth, colorOf, hoverPos, hoverPos !== null);
           // the cut bonds numbered in the order of their first monomer
           const numbersAt = new Map<number, number[]>();
           numbered.sort((a, b) => a.from - b.from).forEach((c, i) => {
@@ -1084,6 +1136,8 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         let bandH = h;
         let aboveY0 = 0;
         let belowY0 = 0;
+        let capTopY = 0;
+        let capFootY = 0;
         if (conn) {
           const met = measureConnectionsFont(this.props.font, this.fontSizeOf());
           const aboveH = sideHeight(conn.above, conn.geo);
@@ -1096,7 +1150,11 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
           bandH = met.emH;
           aboveY0 = capTop - 1.5;
           belowY0 = drawY + met.capBotOff + 2;
+          capTopY = capTop;
+          capFootY = drawY + met.capBotOff;
         }
+        // chains bonded side by side print no chain break between them: their bond is drawn there
+        const inlineFrom = conn !== null && conn.inline.length > 0 ? new Set(conn.inline.map((c) => c.from)) : null;
 
         // Pre-compute text bottom y for annotation underlines (text is vertically centered)
         let textBottomY: number | undefined;
@@ -1124,7 +1182,8 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
           const last = posIdx === subParts.length - 1;
           // here, the first index of disjointSeqStarts is always 0, so we check from position 1, and also, next index
           // will show where the next disjoint sequence starts, so we check posIdx + 1
-          const drawnSeparator = (subParts?.graphInfo?.disjointSeqStarts?.indexOf(posIdx + 1) ?? 0) > 0 ? '|' : separator;
+          const drawnSeparator = inlineFrom?.has(posIdx) ? '' :
+            (subParts?.graphInfo?.disjointSeqStarts?.indexOf(posIdx + 1) ?? 0) > 0 ? '|' : separator;
 
           // Draw annotation background before the monomer text
           const wordIdx = posIdx - positionShift;
@@ -1173,17 +1232,32 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
           // monomers scrolled out or past the cell's edge lie beyond the clip, so their brackets run off the cell
           const x0 = x + this.padding + this._leftThreeDotsPadding;
           const s0 = maxLengthWordsSum[0] ?? 0;
-          const xOf = (pos: number, r?: number): number => {
+          const leftOf = (pos: number): number | null => {
             const wordIdx = pos - positionShift;
-            if (wordIdx < 0) return x - 20;
+            if (wordIdx < 0) return null;
             const left = x0 + (maxLengthWordsSum[wordIdx] ?? 0) - s0;
-            if (pos >= visibleSeqLength || left >= x + w) return x + w + 20;
+            return pos >= visibleSeqLength || left >= x + w ? null : left;
+          };
+          const labelWOf = (pos: number): number => {
             const short = this.props.monomerToShort(subParts.getCanonical(pos), maxLengthOfMonomer);
-            const labelW = (this._monomerLengthMap[short] ??= g.measureText(short)).width;
+            return (this._monomerLengthMap[short] ??= g.measureText(short)).width;
+          };
+          const xOf = (pos: number, r?: number): number => {
+            const left = leftOf(pos);
+            if (left === null) return pos < positionShift ? x - 20 : x + w + 20;
+            const labelW = labelWOf(pos);
             return r === 1 ? left + 1 : r === 2 ? left + labelW - 1 : left + labelW / 2;
           };
-          drawConnections(g, conn.conns, xOf, aboveY0, belowY0, conn.geo,
-            this.connectionColor(subParts, monomerTextColor, columnTemps.colorCode), hoverPos);
+          const colorOf = this.connectionColor(subParts, monomerTextColor, columnTemps.colorCode);
+          const fade = hoverPos !== null && (conn.conns.some((c) => touchesPos(c, hoverPos)) ||
+            conn.inline.some((c) => touchesPos(c, hoverPos)));
+          drawConnections(g, conn.conns, xOf, aboveY0, belowY0, conn.geo, colorOf, hoverPos, fade);
+          drawInlineJoins(g, conn.inline, (c) => {
+            const l1 = leftOf(c.from);
+            const l2 = leftOf(c.to);
+            return l1 === null || l2 === null ? null :
+              {x1: l1 + labelWOf(c.from) + 1, x2: l2 - 1, top: capTopY, foot: capFootY};
+          }, conn.geo.lineWidth, colorOf, hoverPos, fade);
         }
       }
     } catch (err: any) {
@@ -1194,9 +1268,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       g.restore();
     }
   }
-  /** One line per chain, for a multi-chain row whose connections allow it in a tall cell: a later chain moves under its
-   * first partner in an earlier chain, a one-monomer chain (a hub) under the middle of its partners; the chains' own
-   * bonds are bracketed above the first line and below the last, inter-chain bonds run straight between the lines.
+  /** One line per chain, for a multi-chain row whose connections allow it in a tall cell: a later line moves under its
+   * first partner in an earlier line, a one-monomer line (a hub) under the middle of its partners; the lines' own
+   * bonds are bracketed above the first line and below the last, bonds between lines run straight between them, and
+   * chains bonded side by side share a line, their bond drawn where the chain break would be.
    * Hit tests use the drawn monomers' bounds, as in multiline mode. */
   private renderStackedChains(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, row: IStackedRow,
@@ -1220,8 +1295,10 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
 
     const geo = this.stackedGeometry(g, row);
     const x0 = x + this.padding;
-    const xOf = (p: number, r?: number): number => x0 + geo.offsets[geo.chainOf[p]] + geo.localX[p] +
+    const leftOf = (p: number): number => x0 + geo.offsets[geo.lineOf[p]] + geo.localX[p];
+    const xOf = (p: number, r?: number): number => leftOf(p) +
       (r === 1 ? 1 : r === 2 ? geo.labelW[p] - 1 : geo.labelW[p] / 2);
+    const inlineFrom = layout.inline.length > 0 ? new Set(layout.inline.map((c) => c.from)) : null;
 
     const columnTemps = getPrintColumnTemps(gridCell);
     const {pos: hoverPos, partners} = this.hoverPartners(rowIdx, seqSS, gridCell);
@@ -1233,7 +1310,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       const lineX = x0 + geo.offsets[k];
       const drawY = capTops[k] - met.capTopOff;
       const boxY = capTops[k] - 3;
-      // the reference and the selected position count from this chain's start
+      // the reference and the selected position count from this line's start
       const chainReference = referenceSequence.length > 0 ? referenceSequence.slice(s, e) : referenceSequence;
       for (let p = s; p < e; p++) {
         const left = lineX + geo.localX[p];
@@ -1246,7 +1323,8 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         if (hoverPos !== null && (partners.has(p) || p === hoverPos))
           this.drawPartnerBox(g, left - 1, boxY, labelW + 2, boxH);
         printLeftOrCentered(g, cm, lineX, drawY - 1, w, met.emH, {
-          color: monomerColor(cm), pivot: 0, left: true, transparencyRate: 0.0, separator, last: p === e - 1,
+          color: monomerColor(cm), pivot: 0, left: true, transparencyRate: 0.0,
+          separator: inlineFrom?.has(p) ? '' : separator, last: p === e - 1,
           drawStyle: DrawStyle.classic, maxWord: geo.maxWords[k], wordIdx: p - s, gridCell,
           referenceSequence: chainReference, maxLengthOfMonomer, monomerTextSizeMap: this._monomerLengthMap,
           logger: this.logger,
@@ -1267,21 +1345,26 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     }
 
     const colorOf = this.connectionColor(seqSS, monomerColor, columnTemps.colorCode);
-    drawConnections(g, layout.conns.filter((c) => c.chainFrom === c.chainTo), xOf, capTops[0] - 1.5,
-      capTops[n - 1] + capH + 2, layout.geo, colorOf, hoverPos);
+    const sameLine = (c: IDrawnConnection): boolean => geo.lineOf[c.from] === geo.lineOf[c.to];
+    drawConnections(g, layout.conns.filter(sameLine), xOf, capTops[0] - 1.5,
+      capTops[n - 1] + capH + 2, layout.geo, colorOf, hoverPos, hoverPos !== null);
+    drawInlineJoins(g, layout.inline, (c) => {
+      const line = geo.lineOf[c.from];
+      return {x1: leftOf(c.from) + geo.labelW[c.from] + 1, x2: leftOf(c.to) - 1, top: capTops[line], foot: capTops[line] + capH};
+    }, layout.geo.lineWidth, colorOf, hoverPos, hoverPos !== null);
     g.save();
     try {
       g.lineCap = 'round';
       for (const c of layout.conns) {
-        if (c.chainFrom === c.chainTo) continue;
+        if (sameLine(c)) continue;
         const hovered = hoverPos === c.from || hoverPos === c.to;
         g.strokeStyle = colorOf(c);
         g.globalAlpha = hoverPos !== null && !hovered ? 0.3 : 1;
         g.lineWidth = hovered ? layout.geo.lineWidth * 2 : layout.geo.lineWidth;
         g.setLineDash(c.hbond ? DASHED : SOLID);
         g.beginPath();
-        g.moveTo(xOf(c.from), capTops[geo.chainOf[c.from]] + capH + 2);
-        g.lineTo(xOf(c.to), capTops[geo.chainOf[c.to]] - 1.5);
+        g.moveTo(xOf(c.from), capTops[geo.lineOf[c.from]] + capH + 2);
+        g.lineTo(xOf(c.to), capTops[geo.lineOf[c.to]] - 1.5);
         g.stroke();
       }
     } finally {
@@ -1290,8 +1373,8 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   }
 
   /** A stacked row's horizontal geometry, once per row layout (layouts are dropped on reset, with the font and the
-   * max monomer length they were laid out with): each chain laid out like a single line from its own start, a later
-   * chain shifted under its first partner, a one-monomer chain under the middle of its partners */
+   * max monomer length they were laid out with): each line laid out like a single line from its own start, a later
+   * line shifted under its first partner, a one-monomer line under the middle of its partners */
   private stackedGeometry(g: CanvasRenderingContext2D, row: IStackedRow): IStackedGeometry {
     let geo = this._stackedGeometries.get(row.layout);
     if (geo) return geo;
@@ -1303,7 +1386,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     const cw = this.props.fontCharWidth;
     const chainEnd = (k: number): number => k + 1 < n ? chains[k + 1] : len;
     const localX = new Array<number>(len);
-    const chainOf = new Array<number>(len);
+    const lineOf = new Array<number>(len);
     const labelW = new Array<number>(len);
     const maxWords: number[][] = [];
     for (let k = 0; k < n; k++) {
@@ -1313,7 +1396,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         const label = this.props.monomerToShort(seqSS.getCanonical(p), maxLengthOfMonomer);
         labelW[p] = (this._monomerLengthMap[label] ??= g.measureText(label)).width;
         localX[p] = acc;
-        chainOf[p] = k;
+        lineOf[p] = k;
         maxWord.push(acc);
         acc += sepW + label.length * cw;
       }
@@ -1322,17 +1405,17 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     }
     const offsets = new Array<number>(n).fill(0);
     for (let k = 1; k < n; k++) {
-      const toEarlier = layout.conns.filter((c) => c.chainTo === k && c.chainFrom < k);
+      const toEarlier = layout.conns.filter((c) => lineOf[c.to] === k && lineOf[c.from] < k);
       if (toEarlier.length === 0) continue;
       const used = chainEnd(k) - chains[k] === 1 ? toEarlier : toEarlier.slice(0, 1);
       let sum = 0;
       for (const c of used)
-        sum += offsets[c.chainFrom] + localX[c.from] + labelW[c.from] / 2 - localX[c.to] - labelW[c.to] / 2;
+        sum += offsets[lineOf[c.from]] + localX[c.from] + labelW[c.from] / 2 - localX[c.to] - labelW[c.to] / 2;
       offsets[k] = sum / used.length;
     }
     const minOffset = Math.min(...offsets);
     for (let k = 0; k < n; k++) offsets[k] -= minOffset;
-    geo = {sepW, localX, chainOf, labelW, maxWords, offsets};
+    geo = {sepW, localX, lineOf, labelW, maxWords, offsets};
     this._stackedGeometries.set(layout, geo);
     return geo;
   }
@@ -1377,7 +1460,9 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     const where = (p: number): string => {
       let chain = starts.length - 1;
       while (chain > 0 && starts[chain] > p) chain--;
-      return `${seqSS.getCanonical(p)}${p - starts[chain] + 1}` + (starts.length > 1 ? ` (chain ${chain + 1})` : '');
+      // a longer symbol in brackets, as HELM writes it: [sCy5]1, not sCy51
+      const cm = seqSS.getCanonical(p);
+      return `${cm.length > 1 ? `[${cm}]` : cm}${p - starts[chain] + 1}` + (starts.length > 1 ? ` (chain ${chain + 1})` : '');
     };
     const lines = conns.map((c) => {
       const own = c.from === pos;

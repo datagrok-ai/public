@@ -470,6 +470,16 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   with no place (drawn unmarked, at the element's centre). `guide.ts` logs trusted pointer events
   in the page (capture listeners on every document) and drains them into the stop of the step they
   belong to; `page.mouse` is wrapped only to picture a drag and a wheel turn.
+- A guide's stop (`guide.hop`) is pictured as the pointer sets off for it, before the gesture; the next
+  stop's picture is what the pointer's arrival led to, and the renderer cuts to it on arrival. Played as
+  taken, every menu item lit and opened one stop late and the clicked one never lit (the reel of
+  2026-11-09). A menu's leaf is a stop twice (`hopLeaf`: once the pointer is on it); a run of moves is
+  logged as its last point, so a corner the pointer has to go round is kept with `guide.waypoint`; a
+  native select's list is drawn by the page and pressed on film only (`pressShown`), headless Chromium
+  painting no open popup into its pictures. A locator's click on a row as wide as its panel (`CAPTIONED`:
+  an accordion pane's header, a tree node, a menu item) is aimed at its caption while filming — at its
+  middle it landed 250 px right of "Explore" — and a dialog's close starts with an unfilmed move onto its
+  title (`moveUnfilmed`), so Bio's magnifier lens is not left frozen on film.
 - Package tools that decorate a view on `onViewAdded` (DevTools' Signature Editor icon) attach in
   the package's autostart; a view opened before it runs used to miss them (fixed in DevTools
   2026-09-24 by decorating the open views too).
@@ -669,6 +679,12 @@ Each of these passed green while the thing it named was broken (audits of 2026-0
   the feature's own (the account's choice still comes back at feature end), so a package's suite runs with a new
   sketcher. A feature about one sketcher's own controls (Chem's Ketcher template toolbar) carries `@sketcher-controls`
   and skips, saying why, under an override that names another (`sketcherPin`, platform/steps.ts).
+- `BDD_EXCLUDE_PACKAGES=<names>` (comma-separated) adds the platform's `excludePackages` startup parameter to every
+  document of the shared context (`excludePackages`, src/runtime/harness.ts): those packages never load, a feature
+  gated on one (`the "<name>" package is installed`) skips, and their autostarts and handlers stay out of the others.
+  The handlers include semantic types other packages' features rely on (Chem's floating pane needs Chembl's `molregno`
+  type: without Chembl the context panel stays on the row's molecule), so a full round keeps every package; ChEMBL's
+  own features skip through `the stand has a reachable "…" connection` on a stand that cannot reach it.
 - Every run leaves its JSON report in the project's `test-results/report.json`, with the stand and
   the machine in `config.metadata` (a `--reporter` on the command line gets `json` added; one that
   names `json` itself, `--reporter=list,json`, sends the report to stdout and the old file is gone,

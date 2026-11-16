@@ -82,7 +82,7 @@ export class SpotlightWidget extends DG.Widget {
     this.sqlPromise = queries.mostRecentEntities(userId);
     this.sharedSqlPromise = queries.recentlySharedWithMe(userId);
     const notificationsDataSource: DG.NotificationsDataSource = grok.dapi.users.notifications.forCurrentUser()
-      .by(SpotlightWidget.SPOTLIGHT_ITEMS_LENGTH) as DG.NotificationsDataSource;
+      .by(SpotlightWidget.SPOTLIGHT_ITEMS_LENGTH).order('createdAt', true) as DG.NotificationsDataSource;
     this.notificationsPromise = notificationsDataSource.list({pageSize: 20});
     this.buildTabbedUI();
   }
@@ -396,16 +396,9 @@ export class SpotlightWidget extends DG.Widget {
             parentElem.insertBefore(iconToPaste, parentElem.firstChild);
         } else if (item instanceof DG.UserNotification) {
           (listChild as HTMLElement).dataset.notificationId = item.id;
+          this.openReportInContextPanel(listChild as HTMLElement);
           if (!item.isRead && !this.markedReadIds.has(item.id)) {
-            listChild.classList.add('grok-notification-unread');
-            const dartIcon = listChild.querySelector('.grok-notification-mark-read');
-            if (dartIcon) {
-              dartIcon.addEventListener('click', () => {
-                this.markedReadIds.add(item.id);
-                listChild.classList.remove('grok-notification-unread');
-                this.refreshUnreadCountUI();
-              });
-            }
+            this.markReadOnClick(listChild as HTMLElement, item);
           }
           if (item.createdAt) {
             const timestamp = ui.time.shortTimestamp(item.createdAt);
@@ -665,6 +658,33 @@ export class SpotlightWidget extends DG.Widget {
     return root;
   }
 
+  /** cleanList re-parents the rendered notification, dropping the Dart renderer's own click handler. */
+  markReadOnClick(row: HTMLElement, item: DG.UserNotification): void {
+    row.classList.add('grok-notification-unread');
+    row.addEventListener('click', () => {
+      this.markedReadIds.add(item.id);
+      row.classList.remove('grok-notification-unread');
+      this.refreshUnreadCountUI();
+      grok.dapi.users.notifications.markAsRead(item.id);
+    }, {once: true, capture: true});
+  }
+
+  /** An alert's "Details" link points at the Reports app, which is slow to open; show just the report instead. */
+  openReportInContextPanel(row: HTMLElement): void {
+    row.addEventListener('click', async (e) => {
+      const reportNumber = (e.target as HTMLElement).closest('a')?.href.match(/\/apps\/usage\/reports\/(\d+)/)?.[1];
+      if (!reportNumber)
+        return;
+      e.preventDefault();
+      e.stopPropagation();
+      const reports = await grok.dapi.reports.getReports(parseInt(reportNumber));
+      if (reports.rowCount === 0)
+        return;
+      grok.shell.windows.showContextPanel = true;
+      grok.shell.o = await grok.dapi.reports.find(reports.get('id', 0));
+    }, {capture: true});
+  }
+
   refreshUnreadCountUI(): void {
     const unreadCount = this.recentNotifications.filter((n) => !n.isRead && !this.markedReadIds.has(n.id)).length;
     const badge = this.root.querySelector('.pp-notification-badge');
@@ -701,16 +721,9 @@ export class SpotlightWidget extends DG.Widget {
       const child = this.notificationsListRoot.children[i];
       const item = this.recentNotifications[i];
       (child as HTMLElement).dataset.notificationId = item.id;
+      this.openReportInContextPanel(child as HTMLElement);
       if (!item.isRead && !this.markedReadIds.has(item.id)) {
-        child.classList.add('grok-notification-unread');
-        const dartIcon = child.querySelector('.grok-notification-mark-read');
-        if (dartIcon) {
-          dartIcon.addEventListener('click', () => {
-            this.markedReadIds.add(item.id);
-            child.classList.remove('grok-notification-unread');
-            this.refreshUnreadCountUI();
-          });
-        }
+        this.markReadOnClick(child as HTMLElement, item);
       }
       if (item.createdAt) {
         const timestamp = ui.time.shortTimestamp(item.createdAt);

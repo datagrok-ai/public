@@ -10,7 +10,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import type {PerProfileResult} from '../controller/nca-controller';
-import {ROUTE_STRING_TO_CODE} from './profile-inputs';
+import {ROUTE_CODE_TO_STRING} from './profile-inputs';
 import {aggregateNcaResults, DEFAULT_AGG_PARAMS} from './results-aggregator';
 import {computeBioavailability, isIntravascular} from './bioavailability';
 import {buildMeanSdProfile} from './mean-sd-profile';
@@ -88,14 +88,10 @@ export function countDoseClusters(col: DG.Column): number {
   return clusters;
 }
 
-/** Inverse of `ROUTE_STRING_TO_CODE` (first canonical label per code) for the
- *  summary's display route string. Built once. */
-const ROUTE_CODE_TO_LABEL: ReadonlyMap<number, string> = (() => {
-  const m = new Map<number, string>();
-  for (const [label, code] of Object.entries(ROUTE_STRING_TO_CODE))
-    if (!m.has(code)) m.set(code, label);
-  return m;
-})();
+/** The summary's display route string for a route code: the ONE canonical inverse
+ *  (`ROUTE_CODE_TO_STRING`), so the summary and the results `ROUTE` column cannot spell
+ *  a route differently. */
+const routeLabel = (code: number): string => ROUTE_CODE_TO_STRING[code] ?? '';
 
 /** Results-frame columns for the always-present route + dose-normalization
  *  sub-keys. Every case is route-homogeneous (→ CL basis-homogeneous) and
@@ -407,7 +403,7 @@ export function buildCurvesByCompound(
     routeLabels = new Array<string>(df.rowCount);
     for (let i = 0; i < df.rowCount; i++) {
       routeLabels[i] = routeCodeCol.isNone(i) ? '' :
-        (ROUTE_CODE_TO_LABEL.get(routeCodeCol.get(i) as number) ?? '');
+        routeLabel(routeCodeCol.get(i) as number);
     }
   }
   const routeKeyed = routeLabels !== null;
@@ -741,7 +737,7 @@ export function buildSummaryCache(
   for (const p of perProfile) routeCounts.set(p.route, (routeCounts.get(p.route) ?? 0) + 1);
   let modalRoute = -1; let modalN = -1;
   for (const [code, n] of routeCounts) if (n > modalN) {modalN = n; modalRoute = code;}
-  const route = ROUTE_CODE_TO_LABEL.get(modalRoute) ?? '';
+  const route = routeLabel(modalRoute);
 
   const dose = recipe.columns.doseSource === 'value' ?
     `${recipe.columns.doseScalar} ${recipe.units.dose}` : '(per-row)';
