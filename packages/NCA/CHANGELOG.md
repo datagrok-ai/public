@@ -31,5 +31,12 @@
 * The *Accumulation* tab is renamed *Day N / Day 1*; with a declared τ it uses AUC0–τ. Sex Comparison also appears on a single-dose study with two sexes.
 * Pipeline: `ncaSummarize` F% pairs within a study day for a repeat-dose design; an unclassified design keeps the old pairing and adds an `F_PCT_NOTE` column.
 * Studies computed before this version with a study-day column and a %F show "stale (refreshes on open)".
+* Intraperitoneal (i.p.) is a route: `IP`, `i.p.`, `intraperitoneal`, `INTRAPERITONEAL`, `I-PERITON`, `IP bolus`, `i.p. injection` and similar spellings map to *IP* (results read `IP`, CL/F and Vz/F; no Vss or C0), in the route column, the Route choice, the NONMEM confirm dialog and the pipeline's `defaultRoute`. A route column of i.p. values is no longer blocked. `intraportal` and `intrapleural` stay unrecognised. Requires sci-comp 0.13.0.
+* `intraperitoneal infusion` is analysed as a single i.p. dose with a warning that names what the infusion changes (Cmax, Tmax, MRT, and when λz, t½, AUC0–∞, CL/F and Vz/F are valid); before, it was blocked.
+* An input duration mapped on an extravascular row (PO, SC, IM, IP, other), or NONMEM `RATE > 0` on an explicit extravascular route, now gives an info note that the duration is not used. Numbers do not change.
+* The %F cell of an i.p. row says what %F means after i.p. dosing (Bioavailability grid and study grid). README and help: an i.p. section (spellings, failed injections, how to inspect individual profiles, %F).
+* Analyses that read an i.p. spelling as `other` read `IP` after they are reopened, with the same numbers; their review decisions and Exclude λz are kept, on dense profiles and on sparse composites. A pipeline re-run of such a sparse study saves `<label> · IP` beside the old `<label> · other` and marks the pair with the supersede notes.
+* NONMEM: an explicit ROUTE value that is not a route (such as `1`) is no longer computed silently as `other`: the route confirm dialog names the value. Two or more such values, or subjects whose RATE/CMT inference gives different routes, block the compute with a message naming them. The confirm dialog no longer preselects IV-bolus: it preselects `other` only when every subject infers it, otherwise OK stays disabled until a route is picked.
+* NONMEM: when the table has no subject column such as `SubjectID` or `AnimalID`, the `ID` column is now picked as Subject automatically. Outside NONMEM a column named `ID` is still not picked, since it is often a row or sample id.
 
 ## 0.0.1 (2026-05-12)

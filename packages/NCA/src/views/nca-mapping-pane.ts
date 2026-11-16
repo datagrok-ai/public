@@ -67,7 +67,7 @@ import type {ViewStage} from './workflow-strip';
 import {
   DEFAULT_RULES, DEFAULT_ACCEPTANCE_RSQUARED,
   ACCEPTANCE_RSQUARED_MIN, ACCEPTANCE_RSQUARED_MAX,
-  ROUTE_STRING_TO_CODE, detectMapping, isBoolLikeNumeric,
+  ROUTE_STRING_TO_CODE, detectMapping, initialSubjectColumn, isBoolLikeNumeric,
   appendGroupingColumns, aggregateNcaResults, buildMeanSdProfile,
   normalizeRouteColumn, DERIVED_ROUTE_CODE_COL,
   resolveAggregateGroupKeys, computeBioavailability, KEY_SEP, ROUTE_CODE_TO_STRING,
@@ -75,12 +75,12 @@ import {
   computeAccumulationRatios, computeExposureMargin, computeSexFold,
   computeDoseProportionality, shortDoseProportionalityNote,
   shortSparseNote, validateSparseDesign,
-  detectEventDrivenColumns, normalizeEventDrivenObservations,
+  detectEventDrivenColumns, normalizeEventDrivenObservations, formatSourceRows,
   SUBJECT_COL as NM_SUBJECT_COL, TAD_COL as NM_TAD_COL, CONC_COL as NM_CONC_COL,
   DOSE_COL as NM_DOSE_COL, DERIVED_INFUSION_DURATION_COL as NM_INFUSION_DUR_COL,
   poolCompositeByCell, CELL_BW_COL, mixedCompoundMessage, denseProfilesViable, reportableResults,
   excludedCompositeRows, writeReviewColumns,
-  sparseUnitKey,
+  sparseUnitKey, compositeAccepted,
   LZ_DEPENDENT_PARAMS, SPARSE_LZ_DEPENDENT_COLS, SPARSE_UNIT_PREFIX,
   ACCEPT_FLAGGED, isLzDependentParam, compositeGroupKey,
   computeRecipeFingerprint, deriveStage,
@@ -95,7 +95,7 @@ import type {
   RouteColumnResult, BioavailabilityResult, ProfileIndex, AccumulationResult,
   DoseProportionalityResult, SparseNcaResult, AucBasis, OccasionResolution, DerivedChoices, OccasionDesign,
   EventDrivenDetection, EventContract, ParameterWarning, SexCode, AcceptanceThresholds,
-  ObservationsCtx, SparseComputeMapping,
+  ObservationsCtx, SparseComputeMapping, NormalizeEventResult,
 } from '../adapter';
 
 import {
@@ -526,18 +526,42 @@ function buildNonmemContract(
  * — but PO vs SC is not recoverable, and a wrong IV/extravascular label mislabels
  * CL vs CL/F (~3-fold error at F≈30%). Block Compute until the scientist confirms.
  */
-function showRouteConfirmDialog(onConfirm: (code: RouteCode) => void): void {
-  const choice = ui.input.choice<string>('Route', {value: 'IV-bolus', items: [...ROUTE_CHOICES]});
-  const msg = ui.divText(
+function showRouteConfirmDialog(
+  norm: Pick<NormalizeEventResult, 'inferredRoutes' | 'unrecognisedRouteValues'>,
+  onConfirm: (code: RouteCode) => void,
+): void {
+  // nca-ip-route F8 / AC-8.5: NEVER preselect an intravascular route — CMT = 1 is inferred as
+  // IV-bolus, but it is the depot of ADVAN2/4 oral models, so an OK-without-reading would report
+  // CL where CL/F is correct. Only a shared extravascular (`other`) inference is preselected;
+  // otherwise the choice opens empty and OK stays disabled until a route is picked.
+  const inferred = norm.inferredRoutes.filter((r) => r.inferred && r.inferredCode !== null);
+  const preselect = inferred.length > 0 && inferred.every((r) => r.inferredCode === ROUTE_STRING_TO_CODE['other']) ?
+    'other' : null;
+  const choice = ui.input.choice<string | null>('Route',
+    {value: preselect, items: [...ROUTE_CHOICES], nullable: true});
+  const unrecognised = norm.unrecognisedRouteValues[0];
+  const msg = ui.divText(unrecognised !== undefined ?
+    `ROUTE value '${unrecognised.value}' (${formatSourceRows(unrecognised.rows)}) is not a recognised ` +
+    'route. Confirm the administration route; it sets whether CL or CL/F is reported.' :
     'No explicit ROUTE column was found — route was inferred from RATE / CMT and ' +
     'cannot distinguish PO from SC. Confirm the administration route; it sets ' +
     'whether CL or CL/F is reported.');
   msg.style.maxWidth = '420px';
   msg.style.whiteSpace = 'normal';
-  ui.dialog('Confirm route — NONMEM ingestion')
+  const dialog = ui.dialog('Confirm route — NONMEM ingestion')
     .add(msg).add(choice.root)
-    .onOK(() => onConfirm(ROUTE_STRING_TO_CODE[choice.value as string]))
-    .show();
+    .onOK(() => {
+      const v = choice.value;
+      if (v !== null && v !== undefined && v !== '') onConfirm(ROUTE_STRING_TO_CODE[v]);
+    });
+  const okBtn = dialog.getButton('OK');
+  const syncOk = (): void => {
+    const empty = choice.value === null || choice.value === undefined || choice.value === '';
+    if (okBtn != null) ui.setDisabled(okBtn, empty, 'Pick the administration route first.');
+  };
+  choice.onChanged.subscribe(syncOk);
+  syncOk();
+  dialog.show();
 }
 
 /** `view.temp` keys for the docked results grid handle. Re-Compute uses these
@@ -2549,7 +2573,7 @@ export function mountMappingPane(
       // AD-5 mandatory route-confirm gate (AC-C2): inferred route → block Compute.
       if (norm.routeConfirmRequired) {
         if (!silent) {
-          showRouteConfirmDialog((code) => {confirmedRoute = code; onAnyChange();});
+          showRouteConfirmDialog(norm, (code) => {confirmedRoute = code; onAnyChange();});
           return;
         }
         // a1 (silent replay): a saved analysis reached the route gate with no
@@ -2780,6 +2804,9 @@ export function mountMappingPane(
           codesCol: (nmActive ? srcDf.col(DERIVED_ROUTE_CODE_COL) !== null : routeCol !== null) ?
             DERIVED_ROUTE_CODE_COL : null,
           scalar: routeScalarInput.value as string,
+          // The SOURCE route column the codes came from (standard mode, this compute) — re-read for
+          // the i.p.-infusion composite warning (F2). NONMEM rebuilds the frame: no raw spelling.
+          rawCol: !nmActive && routeCol !== null ? (routeColInput.value?.name ?? null) : null,
         },
         lloq: {colName: lloqColInput.value?.name ?? null, scalar: lloqScalarInput.value ?? 0},
         blqColName: nmActive ? null : (blqFlagColInput.value?.name ?? null),
@@ -2814,7 +2841,7 @@ export function mountMappingPane(
       const sparse = computeSparseForRecipe(srcDf, sparseMappingNow(t, 20)).result;
       const composites = sparseCompositeUnits(sparse);
       const snap = tmp.reviewSnapshot(t, {viable, composites, memberHashByProfile: compositeMemberHash});
-      report(tmp.reconcileDecisions(snap.fingerprints));
+      report(tmp.reconcileDecisions(snap.accepted));
     };
     const runPipeline = (): void => {
     // Build the rules ONCE — both `runNcaPipeline` and the grid's
@@ -2984,7 +3011,7 @@ export function mountMappingPane(
         // Sparse-composite ledgers are reconciled after the sparse panel computes (below).
         const denseReview = controller.reviewSnapshot(thresholds,
           {viable: denseViable, memberHashByProfile: compositeMemberHash});
-        const denseResets = controller.reconcileDecisions(denseReview.fingerprints,
+        const denseResets = controller.reconcileDecisions(denseReview.accepted,
           (k: string) => !k.startsWith(SPARSE_KEY_PREFIX));
         // The ONE exclusion feed (AD-6 / U1): every aggregate consumer below reads this blanked
         // clone, never the raw results frame — an Exclude λz profile is treated exactly like a
@@ -3206,9 +3233,12 @@ export function mountMappingPane(
         } else closeToxicokinetics(view);
         // Sparse-composite review units (UC-04, SF-3): their decisions reconcile against the
         // composite's own fingerprint (members + fit summary + verdict), once the panel computed.
+        // nca-ip-route F6: the composite part of `accepted` comes from the ONE builder
+        // `reviewSnapshot` also calls (a legacy `ROUTE=other` key keeps its ledger under the IP
+        // composite), and the current composite keys feed the controller's effective ledger view.
         const compositeUnits = sparseCompositeUnits(sparseResult);
-        const sparseResets = controller.reconcileDecisions(
-          new Map(compositeUnits.map((c) => [sparseUnitKey(c.groupKey), c.fingerprint])),
+        controller.setCompositeKeys(compositeUnits.map((c) => sparseUnitKey(c.groupKey)));
+        const sparseResets = controller.reconcileDecisions(compositeAccepted(compositeUnits),
           (k: string) => k.startsWith(SPARSE_KEY_PREFIX));
         // The review state of this compute — read by the Review column, the stage strip, the
         // save-time stageCache and the Confirm dry run (never re-derived by a view).
@@ -3661,7 +3691,8 @@ export function mountMappingPane(
   refreshInfusionVisibility();
 
   const detected = detectMapping(df);
-  if (detected.subject !== undefined) subjectInput.value = detected.subject;
+  const initialSubject = initialSubjectColumn(detected, eventDetection);
+  if (initialSubject !== undefined) subjectInput.value = initialSubject;
   if (detected.time !== undefined) timeInput.value = detected.time;
   if (detected.concentration !== undefined) concInput.value = detected.concentration;
   // AC-A7: in Event-driven mode the transform owns AMT (`'amt'` ∈ DOSE_SYNONYMS),

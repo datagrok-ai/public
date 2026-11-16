@@ -249,6 +249,20 @@ The seed types the `SMILES` column as a molecule itself, so the demo installs wi
 package. Chem's detector types a SMILES column asynchronously, so a detect-then-check guard would
 refuse every study.
 
+## Intraperitoneal route QA tables (`ip-route/`)
+
+Small **synthetic** tables for the manual QA of the i.p. route (`System:AppData/NCA/ip-route/`).
+They are not reference fixtures: no test reads them and nothing is checked against PKNCA. The
+concentrations are a fixed IV or extravascular shape scaled per subject, with a small sine jitter.
+
+| File | Content |
+|---|---|
+| `ip_route_qa.csv` | IV-bolus ×2, i.p. ×3 (`i.p.`, `IP bolus`, `INTRAPERITONEAL`), PO ×2, all male |
+| `ip_infusion_qa.csv` | `intraperitoneal infusion` (0.5 h), `IP`, PO with a 2 h duration, PO without |
+| `nonmem_route1_qa.csv` | NONMEM, 3 subjects, `ROUTE = 1` (not a route name) |
+| `nonmem_route12_qa.csv` | NONMEM, `ROUTE = 1` and `2` |
+| `nonmem_cmt1_qa.csv` | NONMEM without ROUTE, `CMT = 1` |
+
 ## Occasion fixtures (`occasion/`)
 
 Test fixtures for study-day (occasion) stratification: occasion and animal resolution, design

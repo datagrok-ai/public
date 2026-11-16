@@ -189,7 +189,7 @@ category('Workflow stages: review-unit classifier (F-S1.3)', () => {
     const meas = profileMeasurability(theoph, 'Subject', 'Time', 'conc');
     const units = classifyReviewUnits({
       profiles: profileInputs(results, meas), viable: denseProfilesViable(theoph, 'Subject'),
-      composites: [], ledgers: new Map(), fingerprints: new Map(),
+      composites: [], ledgers: new Map(), accepted: new Map(),
     });
     expect(units.length, 12, 'one unit per subject');
     for (let i = 0; i < results.rowCount; i++) {
@@ -221,7 +221,7 @@ category('Workflow stages: review-unit classifier (F-S1.3)', () => {
       measurableTimepoints: g.composite.timepoints.filter((t) => t.mean > 0).length,
     }));
     const units = classifyReviewUnits({
-      profiles, viable: false, composites, ledgers: new Map(), fingerprints: new Map(),
+      profiles, viable: false, composites, ledgers: new Map(), accepted: new Map(),
     });
     const animals = units.filter((u) => u.kind === 'profile');
     expect(animals.length, 48, '48 animals');
@@ -275,7 +275,7 @@ category('Workflow stages: review-unit classifier (F-S1.3)', () => {
     const meas = profileMeasurability(pooled, SUBJECT_COL, TAD_COL, CONC_COL);
     const units = classifyReviewUnits({
       profiles: profileInputs(results, meas), viable: denseProfilesViable(pooled, SUBJECT_COL),
-      composites: [], ledgers: new Map(), fingerprints: new Map(),
+      composites: [], ledgers: new Map(), accepted: new Map(),
     });
     const control = units.filter((u) => u.key.startsWith('D0_'));
     expect(control.length > 0, true, 'control cells present');
@@ -294,7 +294,7 @@ category('Workflow stages: review-unit classifier (F-S1.3)', () => {
       action: 'accept', reasons: [{code: 'ACC_VISUAL_OK', text: 'x'}], user: 'u', at: 't', fingerprint: 'abc'}};
     const run = (fp: string) => classifyReviewUnits({
       profiles: [{key: 'S1', status: 'ok', acceptance: acc, measurableCount: 6, blqTimes: []}],
-      viable: true, composites: [], ledgers: new Map([['S1', ledger]]), fingerprints: new Map([['S1', fp]]),
+      viable: true, composites: [], ledgers: new Map([['S1', ledger]]), accepted: new Map([['S1', [fp]]]),
     })[0];
     expect(run('abc').decision !== null, true, 'match → decided');
     expect(pendingUnits([run('abc')]).length, 0);
