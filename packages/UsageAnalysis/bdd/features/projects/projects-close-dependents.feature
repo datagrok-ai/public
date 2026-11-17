@@ -4,10 +4,11 @@ Feature: Closing a table that other open tables depend on
   of dependency are named: a table derived from it (a pivot published to the workspace, a join; its
   creation script reads the table by name), a formula column of another table that reads it
   (RowCount("cars")), a link between it and another table, and a viewer of another table's view
-  bound to it. The "Close table" dialog lists what is affected; CANCEL leaves the tab, the table and
-  every dependent as they were, CLOSE ANYWAY closes the table and leaves the dependents to what follows:
-  the published pivot keeps its rows, the formula column empties, the link is gone, the viewer keeps
-  the rows it showed. The last open view of a saved project closes the project with all of its tables,
+  bound to it. The dialog, titled after what closes (Close cars?), lists under "Other open tables use
+  data from "cars"" each dependent with what closing does to it; CANCEL leaves the tab, the table and
+  every dependent as they were, CLOSE ANYWAY closes the table and leaves the dependents to what the
+  dialog said: the published pivot keeps its rows, the formula column empties, the link is gone, the
+  viewer keeps the rows it showed. The last open view of a saved project closes the project with all of its tables,
   so it asks about what another open project reads from them (a table opened while a project is open
   joins that project), though a view of a saved project otherwise leaves its table open.
 
@@ -36,15 +37,17 @@ Feature: Closing a table that other open tables depend on
     And user clicks on the "add to workspace" area of pivot table viewer
     Then the "cars aggregation" view should be current
     When user closes "cars" view tab
-    Then "Close table" dialog should be visible
-    And "Close table" dialog should contain text "cars aggregation"
-    When user clicks on CANCEL button in "Close table" dialog
-    Then the "Close table" dialog should close
+    Then "Close cars?" dialog should be visible
+    And "Close cars?" dialog should contain text 'Other open tables use data from "cars"'
+    And "Close cars?" dialog should contain text "cars aggregation"
+    And "Close cars?" dialog should contain text 'Made from "cars". It stays as it is'
+    When user clicks on CANCEL button in "Close cars?" dialog
+    Then the "Close cars?" dialog should close
     And "cars" view tab should be visible
     And table "cars" should be open
     When user closes "cars" view tab
-    And user clicks on CLOSE ANYWAY button in "Close table" dialog
-    Then the "Close table" dialog should close
+    And user clicks on CLOSE ANYWAY button in "Close cars?" dialog
+    Then the "Close cars?" dialog should close
     And "cars" view tab should be absent
     And the "cars aggregation" view should be current
     And table "cars aggregation" should be open
@@ -56,15 +59,16 @@ Feature: Closing a table that other open tables depend on
     And user adds a calculated column "n" with formula 'RowCount("cars")'
     Then table "cars10" should have no missing values in "n" column
     When user closes "cars" view tab
-    Then "Close table" dialog should be visible
-    And "Close table" dialog should contain text "cars10"
-    When user clicks on CANCEL button in "Close table" dialog
-    Then the "Close table" dialog should close
+    Then "Close cars?" dialog should be visible
+    And "Close cars?" dialog should contain text "cars10"
+    And "Close cars?" dialog should contain text 'Column "n" reads "cars" in its formula. It will show empty values.'
+    When user clicks on CANCEL button in "Close cars?" dialog
+    Then the "Close cars?" dialog should close
     And "cars" view tab should be visible
     And table "cars10" should have no missing values in "n" column
     When user closes "cars" view tab
-    And user clicks on CLOSE ANYWAY button in "Close table" dialog
-    Then the "Close table" dialog should close
+    And user clicks on CLOSE ANYWAY button in "Close cars?" dialog
+    Then the "Close cars?" dialog should close
     And "cars" view tab should be absent
     And table "cars10" should have missing values in "n" column
 
@@ -76,16 +80,17 @@ Feature: Closing a table that other open tables depend on
     When user makes row 3 of table "cars10" current
     Then 1 rows of table "cars" should pass the filter
     When user closes "cars" view tab
-    Then "Close table" dialog should be visible
-    And "Close table" dialog should contain text "cars10"
-    When user clicks on CANCEL button in "Close table" dialog
-    Then the "Close table" dialog should close
+    Then "Close cars?" dialog should be visible
+    And "Close cars?" dialog should contain text "cars10"
+    And "Close cars?" dialog should contain text 'Linked to "cars": selecting, filtering or moving the current row in one updates the other. The link will be removed.'
+    When user clicks on CANCEL button in "Close cars?" dialog
+    Then the "Close cars?" dialog should close
     And "cars" view tab should be visible
     When user makes row 5 of table "cars10" current
     Then 1 rows of table "cars" should pass the filter
     When user closes "cars" view tab
-    And user clicks on CLOSE ANYWAY button in "Close table" dialog
-    Then the "Close table" dialog should close
+    And user clicks on CLOSE ANYWAY button in "Close cars?" dialog
+    Then the "Close cars?" dialog should close
     And "cars" view tab should be absent
 
   Scenario: A table a viewer of another view is bound to asks before it closes
@@ -96,15 +101,16 @@ Feature: Closing a table that other open tables depend on
       | Table | cars |
     Then "Table" property of scatter plot viewer should be "cars"
     When user closes "cars" view tab
-    Then "Close table" dialog should be visible
-    And "Close table" dialog should contain text "cars10"
-    When user clicks on CANCEL button in "Close table" dialog
-    Then the "Close table" dialog should close
+    Then "Close cars?" dialog should be visible
+    And "Close cars?" dialog should contain text "cars10: Scatter plot"
+    And "Close cars?" dialog should contain text 'Shows data from "cars". It will keep the data it has and stop updating.'
+    When user clicks on CANCEL button in "Close cars?" dialog
+    Then the "Close cars?" dialog should close
     And "cars" view tab should be visible
     And "Table" property of scatter plot viewer should be "cars"
     When user closes "cars" view tab
-    And user clicks on CLOSE ANYWAY button in "Close table" dialog
-    Then the "Close table" dialog should close
+    And user clicks on CLOSE ANYWAY button in "Close cars?" dialog
+    Then the "Close cars?" dialog should close
     And "cars" view tab should be absent
     And "Table" property of scatter plot viewer should be "cars"
 
@@ -120,11 +126,12 @@ Feature: Closing a table that other open tables depend on
     And user adds a calculated column "n" with formula 'RowCount("cars")'
     And tables "cars10" and "cars" are linked on "model"
     When user closes "cars" view tab
-    Then "Close table" dialog should be visible
-    And "Close table" dialog should contain text "cars aggregation"
-    And "Close table" dialog should contain text "cars10"
-    When user clicks on CANCEL button in "Close table" dialog
-    Then the "Close table" dialog should close
+    Then "Close cars?" dialog should be visible
+    And "Close cars?" dialog should contain text 'Made from "cars"'
+    And "Close cars?" dialog should contain text 'Column "n" reads "cars"'
+    And "Close cars?" dialog should contain text 'Linked to "cars"'
+    When user clicks on CANCEL button in "Close cars?" dialog
+    Then the "Close cars?" dialog should close
     And "cars" view tab should be visible
 
   Scenario: Closing the last view of a saved project asks about what another project reads from it
@@ -142,10 +149,10 @@ Feature: Closing a table that other open tables depend on
     And user opens the "BDDCloseDepSource{time}" project and waits for its table
     Then table "cars10" should have no missing values in "n" column
     When user closes "cars" view tab
-    Then "Close table" dialog should be visible
-    And "Close table" dialog should contain text "cars10"
-    When user clicks on CANCEL button in "Close table" dialog
-    Then the "Close table" dialog should close
+    Then "Close cars?" dialog should be visible
+    And "Close cars?" dialog should contain text 'Column "n" reads "cars"'
+    When user clicks on CANCEL button in "Close cars?" dialog
+    Then the "Close cars?" dialog should close
     And "cars" view tab should be visible
     And the project "BDDCloseDepSource{time}" should be open
 
@@ -155,7 +162,7 @@ Feature: Closing a table that other open tables depend on
     And user opens cars dataset
     When user closes "cars" view tab
     Then "cars" view tab should be absent
-    And "Close table" dialog should be absent
+    And "Close cars?" dialog should be absent
     Given user opens cars dataset
     And the toolbox pane is shown
     When user clicks on "pivot table" icon in toolbox
@@ -163,10 +170,10 @@ Feature: Closing a table that other open tables depend on
     Then the "cars aggregation" view should be current
     When user closes "cars aggregation" view tab
     Then "cars aggregation" view tab should be absent
-    And "Close table" dialog should be absent
+    And "Close cars aggregation?" dialog should be absent
     When user closes "cars" view tab
     Then no table should be left in the workspace
-    And "Close table" dialog should be absent
+    And "Close cars?" dialog should be absent
 
   Scenario: Closing one of two views of a table does not ask
     Given simple mode is off
@@ -176,7 +183,7 @@ Feature: Closing a table that other open tables depend on
     And user adds a calculated column "n" with formula 'RowCount("cars")'
     When user closes "cars copy" view tab
     Then "cars copy" view tab should be absent
-    And "Close table" dialog should be absent
+    And "Close cars copy?" dialog should be absent
     And table "cars" should be open
     And table "cars10" should have no missing values in "n" column
 
@@ -187,7 +194,7 @@ Feature: Closing a table that other open tables depend on
     And user adds a calculated column "n" with formula 'RowCount("cars")'
     When user picks "Close All" from the context menu of the sidebar
     Then no table should be left in the workspace
-    And "Close table" dialog should be absent
+    And "Close 2 views?" dialog should be absent
 
   Scenario: Close others asks once for the tables it closes
     Given simple mode is off
@@ -198,14 +205,14 @@ Feature: Closing a table that other open tables depend on
     And user clicks on the "add to workspace" area of pivot table viewer
     Then the "cars aggregation" view should be current
     When user picks "Close others" from the context menu of the current view tab
-    Then "Close table" dialog should be visible
-    And "Close table" dialog should contain text "cars aggregation"
-    When user clicks on CANCEL button in "Close table" dialog
-    Then the "Close table" dialog should close
+    Then "Close 2 views?" dialog should be visible
+    And "Close 2 views?" dialog should contain text 'Made from "cars"'
+    When user clicks on CANCEL button in "Close 2 views?" dialog
+    Then the "Close 2 views?" dialog should close
     And "cars" view tab should be visible
     When user picks "Close others" from the context menu of the current view tab
-    And user clicks on CLOSE ANYWAY button in "Close table" dialog
-    Then the "Close table" dialog should close
+    And user clicks on CLOSE ANYWAY button in "Close 2 views?" dialog
+    Then the "Close 2 views?" dialog should close
     And "cars" view tab should be absent
     And the "cars aggregation" view should be current
 
@@ -220,7 +227,7 @@ Feature: Closing a table that other open tables depend on
     Given user opens cars dataset keeping the first 10 rows as "cars10"
     When user picks "Close others" from the context menu of the current view tab
     Then the open table views should be exactly "cars10"
-    And "Close table" dialog should be absent
+    And "Close 3 views?" dialog should be absent
 
   Scenario: The table's Close command asks like the tab's close button
     Given simple mode is off
@@ -229,19 +236,20 @@ Feature: Closing a table that other open tables depend on
     And user adds a calculated column "n" with formula 'RowCount("cars")'
     When user clicks on the tab of the "cars" view
     And user picks "Close" from the context menu of the table name in the status bar
-    Then "Close table" dialog should be visible
-    And "Close table" dialog should contain text "cars10"
-    When user clicks on CANCEL button in "Close table" dialog
-    Then the "Close table" dialog should close
+    Then "Close cars?" dialog should be visible
+    And "Close cars?" dialog should contain text 'Column "n" reads "cars"'
+    When user clicks on CANCEL button in "Close cars?" dialog
+    Then the "Close cars?" dialog should close
     And table "cars" should be open
 
   Scenario: The simple mode's close icon asks like the tab's close button
     Given user opens cars dataset
     And user opens cars dataset keeping the first 10 rows as "cars10"
     And user adds a calculated column "n" with formula 'RowCount("cars")'
+    And simple mode is on
     When user closes the "cars" view from the view selector
-    Then "Close table" dialog should be visible
-    And "Close table" dialog should contain text "cars10"
-    When user clicks on CANCEL button in "Close table" dialog
-    Then the "Close table" dialog should close
+    Then "Close cars?" dialog should be visible
+    And "Close cars?" dialog should contain text 'Column "n" reads "cars"'
+    When user clicks on CANCEL button in "Close cars?" dialog
+    Then the "Close cars?" dialog should close
     And table "cars" should be open

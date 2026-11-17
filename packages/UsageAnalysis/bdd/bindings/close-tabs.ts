@@ -28,7 +28,14 @@ export const warnOff = Given('the "Warn on unsaved changes" setting is off until
     atFeatureEnd(page, () => page.evaluate(() => { grok.shell.settings.warnOnUnsavedChanges = true; }));
 }, {tier: 'api', description: 'the dependency question is asked regardless; a feature about it turns this one off'});
 
-export const setColumnTag = When('code sets the {string} tag of column {string} of table {string} to {string}', (page: Page, tag: string, column: string, table: string, value: string) =>
+export const simpleModeOn = Given('simple mode is on', async (page: Page) => {
+  const was = await page.evaluate(() => { const s = grok.shell.windows.simpleMode; grok.shell.windows.simpleMode = true; return s; });
+  await expect(page.locator('[name="view selector"]').filter({visible: true}).first(), 'the view selector').toBeVisible({timeout: 15000});
+  if (!was)
+    atFeatureEnd(page, () => page.evaluate(() => { grok.shell.windows.simpleMode = false; }));
+}, {tier: 'api', description: 'the simple shell, views switched and closed from the ribbon\'s view selector; a filmed run otherwise shows the full shell'});
+
+export const setColumnTag =When('code sets the {string} tag of column {string} of table {string} to {string}', (page: Page, tag: string, column: string, table: string, value: string) =>
   page.evaluate(([k, c, t, v]) => { grok.shell.table(t).col(c).setTag(k, v); }, [tag, column, table, value]),
 {tier: 'api', description: 'a column tag set the way a package or the column\'s context panel sets it; which tags count as the user\'s work is by the key'});
 

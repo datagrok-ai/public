@@ -8,7 +8,7 @@ Feature: Projects regressions: a derived table saved after its source table is c
   disables Data sync for a table whose creation script reads a table that is not saved with it, and
   saving it as a snapshot reopens with its rows.
 
-  Closing the source asks first ("Close table", core#456): the scenarios answer CLOSE ANYWAY, since
+  Closing the source asks first (Close orders?, core#456): the scenarios answer CLOSE ANYWAY, since
   the subject here is the Save dialog that follows. The same rule holds for a join, which reads two
   tables, and along a chain: a table derived from a derived table keeps Data sync when only the first
   source is closed, because the middle table is saved as a snapshot and loads before it.
@@ -55,9 +55,10 @@ Feature: Projects regressions: a derived table saved after its source table is c
     When user clicks on CANCEL button in "Save project" dialog
     Then the "Save project" dialog should close
     When user closes "orders" view tab
-    Then "Close table" dialog should be visible
-    When user clicks on CLOSE ANYWAY button in "Close table" dialog
-    Then the "Close table" dialog should close
+    Then "Close orders?" dialog should be visible
+    And "Close orders?" dialog should contain text 'Made from "orders"'
+    When user clicks on CLOSE ANYWAY button in "Close orders?" dialog
+    Then the "Close orders?" dialog should close
     And the "orders aggregation" view should be current
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
@@ -86,10 +87,11 @@ Feature: Projects regressions: a derived table saved after its source table is c
     Then the "Join Tables" dialog should close
     And the "result" view should be current
     When user closes "cars10" view tab
-    Then "Close table" dialog should be visible
-    And "Close table" dialog should contain text "result"
-    When user clicks on CLOSE ANYWAY button in "Close table" dialog
-    Then the "Close table" dialog should close
+    Then "Close cars10?" dialog should be visible
+    And "Close cars10?" dialog should contain text "result"
+    And "Close cars10?" dialog should contain text 'Made from "cars10"'
+    When user clicks on CLOSE ANYWAY button in "Close cars10?" dialog
+    Then the "Close cars10?" dialog should close
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
     And Data sync switch in "result" project table in "Save project" dialog should be disabled
@@ -107,12 +109,14 @@ Feature: Projects regressions: a derived table saved after its source table is c
     And user clicks on the "add to workspace" area of pivot table viewer
     Then the "cars aggregation aggregation" view should be current
     When user closes "cars" view tab
-    Then "Close table" dialog should be visible
-    When user clicks on CLOSE ANYWAY button in "Close table" dialog
-    Then the "Close table" dialog should close
+    Then "Close cars?" dialog should be visible
+    When user clicks on CLOSE ANYWAY button in "Close cars?" dialog
+    Then the "Close cars?" dialog should close
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
     And Data sync switch in "cars aggregation" project table in "Save project" dialog should be disabled
     And Data sync switch in "cars aggregation aggregation" project table in "Save project" dialog should be enabled
+    When user hovers over the text "Data sync" in "cars aggregation" project table in "Save project" dialog
+    Then tooltip should contain text 'Data sync is off: this table is made from "cars", which this project does not save'
     When user clicks on CANCEL button in "Save project" dialog
     Then the "Save project" dialog should close
