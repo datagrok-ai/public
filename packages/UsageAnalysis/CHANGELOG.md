@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Added `trellis-plot-scatter-labels.feature` (core#1644: a scatter plot in a trellis cell labels at most 20 selected rows, Never hides them, the full-screen cell labels as a standalone plot), read through the trellis's new `cell labels shown <cell>` and `full screen labels shown` readings
 * Tests: Added `edit-tooltip-guidance.feature` (the Edit Tooltip dialog's Use tooltip choices, hover help, status line and warnings, Design custom tooltip in the viewer's own mode, Remove/Reset group tooltip); the tooltip features read the dialog's new option labels "Table (shared)" and "<Viewer> only"
 * Release dashboard: Fixed the Stress chart placing builds by name instead of by date, which hid the latest run among older ones
 * Tests: Retired the known failures of [core#626](https://github.com/datagrok-ai/core/issues/626), [core#467](https://github.com/datagrok-ai/core/issues/467) and GROK-20535, fixed in the core; the routing scenario claims the core's 'Project "<name>" was not found'; the dock-layout feature closes the Dashboards panel it opens (left open, its SAVE beside every later table view's ribbon Save made "Save button" ambiguous); the app dashboard feature waits for Usage Analysis' toolbox before it picks a tab
