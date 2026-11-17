@@ -1,18 +1,22 @@
-/* The Tutorials app is a panel docked to the left of the shell, not a view: the tracks with their
-   cards, and the running tutorial — its header, progress and the step entries, which the engine
-   names (`role="checkbox"`, `aria-label` = the instruction, `aria-checked`, `aria-current="step"`,
-   `aria-invalid` for a step that could not complete). Platform names (toolbox, grid, context panel)
-   are reserved; these apply everywhere, since the panel sits beside whatever view is current. */
+/* The Tutorials app is a view: the tracks with their cards, a card starts its tutorial. A running
+   tutorial shows its current step in a bar on top and all its steps, on demand, in a panel docked to
+   the left — its header, progress and the step entries, which the engine names (`role="checkbox"`,
+   `aria-label` = the instruction, `aria-checked`, `aria-current="step"`, `aria-invalid` for a step
+   that could not complete). Platform names (toolbox, grid, context panel) are reserved; the bar and
+   the panel apply everywhere, since they sit beside whatever view is current. */
 import {element, kind} from '@datagrok-libraries/bdd';
 
-element('Tutorials panel', {selector: '.tutorials-root', aliases: ['tutorials app panel'],
-  description: 'the dock panel the Tutorials app opens: the tracks, their cards and the running tutorial'});
+element('Tutorials view', {selector: '.tutorials-view', aliases: ['tutorials app view'],
+  description: 'the view the Tutorials app opens: the tracks with their progress and cards'});
+
+element('Tutorials panel', {selector: '.tutorials-root', aliases: ['tutorial steps panel'],
+  description: 'the panel with all steps of the running tutorial, docked to the left on demand'});
 
 kind('tutorial card', {
   aliases: ['tutorial cards'],
   selector: '.tutorials-card[role="button"]',
   match: ['aria'],
-  description: 'a tutorial of a track in the Tutorials panel, by the tutorial\'s name',
+  description: 'a tutorial of a track in the Tutorials view, by the tutorial\'s name',
 });
 
 element('tutorial title', {selector: '.tutorials-bar-title', aliases: ['running tutorial title'],
@@ -36,5 +40,5 @@ kind('tutorial track', {
   selector: '.tutorials-track[data-name]',
   match: ['label'],
   labelSelector: '.tutorials-track-title h1',
-  description: 'a track of the Tutorials panel (its title, progress and cards), by the track\'s name',
+  description: 'a track of the Tutorials view (its title, progress and cards), by the track\'s name',
 });

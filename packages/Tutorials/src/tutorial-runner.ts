@@ -10,30 +10,12 @@ export class TutorialRunner {
   root: HTMLDivElement = ui.panel([], 'tutorial');
   track: Track;
 
-  static dock(trackRoots: HTMLElement[]): void {
+  /** Runs the tutorial in the bar; its root goes into the steps pane the bar shows on demand. */
+  static async run(t: Tutorial, track: Track): Promise<void> {
     Tutorial.closeActive();
-    const root = ui.div([
-      ...trackRoots,
-      ui.panel([], {id: 'tutorial-child-node', style: {paddingTop: '10px'}}),
-    ], 'tutorials-root');
-
-    const existingTutorials = document.querySelector('.tutorials-root') as HTMLElement;
-    if (existingTutorials) {
-      const existingDock = grok.shell.dockManager.findNode(existingTutorials);
-      if (existingDock)
-        grok.shell.dockManager.close(existingDock);
-    }
-    grok.shell.dockManager.dock(root, DG.DOCK_TYPE.LEFT, null, Tutorial.APP_TITLE, 0.22);
-  }
-
-  async run(t: Tutorial): Promise<void> {
     if (t instanceof TutorialSubstitute)
-      t = await TutorialSubstitute.getTutorial(t, this.track);
-
-
-    $('.tutorial').hide();
-    $('#tutorial-child-node').html('');
-    $('#tutorial-child-node').append(t.root);
+      t = await TutorialSubstitute.getTutorial(t, track);
+    ui.panel([t.root], 'tutorials-root');
     t.clearRoot();
     await t.start();
   }
@@ -51,7 +33,7 @@ export class TutorialRunner {
     return completed;
   }
 
-  constructor(track: Track, onStartTutorial?: (t: Tutorial) => Promise<void>) {
+  constructor(track: Track) {
     let complete: number = 0;
     const total: number = track.tutorials.length;
 
@@ -93,12 +75,7 @@ export class TutorialRunner {
       progressDetails,
       ui.divV(track.tutorials.map((t) => {
         const el = new TutorialCard(t).root;
-        el.addEventListener('click', () => {
-          if (onStartTutorial == null)
-            this.run(t);
-          else
-            onStartTutorial(t);
-        });
+        el.addEventListener('click', () => TutorialRunner.run(t, track));
         return el;
       })),
       // ui.link('Clear storage', () => {
