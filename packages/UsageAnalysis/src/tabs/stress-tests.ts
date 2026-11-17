@@ -4,9 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 import {queries} from '../package-api';
-import {stressRegression, fetchStressSummary, openInWorkspaceIcon, ReleaseContext} from '../release/data';
-
-const LAST_BUILDS = 20;
+import {stressRegression, fetchStressSummary, openInWorkspaceIcon, ReleaseContext,
+  STRESS_LAST_BUILDS as LAST_BUILDS} from '../release/data';
 
 export class StressView extends UaView {
   private byBuildHost!: HTMLElement;
@@ -37,7 +36,7 @@ export class StressView extends UaView {
     const header = ui.divH([this.regressionHost, ui.div([], {style: {flex: '1'}}), refreshBtn], 'ua-metrics-header');
 
     const byBuildPanel = ui.div([
-      ui.divH([ui.divText(`Median duration by build (last ${LAST_BUILDS}, split by threads)`, 'ua-metrics-panel-title')],
+      ui.divH([ui.divText(`Speed by build, tests/s (last ${LAST_BUILDS}, split by threads)`, 'ua-metrics-panel-title')],
         'ua-metrics-panel-header'),
       this.byBuildHost,
     ], 'ua-metrics-panel');
@@ -85,14 +84,15 @@ export class StressView extends UaView {
       }
       const reg = stressRegression(df);
       this.regressionHost.textContent = reg.detail;
-      this.regressionHost.className = `ua-metrics-asof ${reg.regressed ? 'ua-metrics-red' : 'ua-metrics-green'}`;
+      this.regressionHost.className = `ua-metrics-asof ua-metrics-${reg.band}`;
       df.columns.addNewString('threads ').init((i) => `${df.get('threads', i)} threads`);
-      // Build names do not sort by time ('bleeding-edge-<sha>' next to '<date>-<version>'); rows come newest first.
+      // Build names do not sort by time ('bleeding-edge-<sha>' next to '<date>-<version>'); rows come newest first,
+      // release sweeps last, so those open the chart as the reference.
       const builds = df.getCol('build');
       builds.setCategoryOrder([...new Set(builds.toList())].reverse());
       const line = DG.Viewer.lineChart(df, {
         xColumnName: 'build',
-        yColumnNames: ['median_ms'],
+        yColumnNames: ['tests_per_s'],
         splitColumnNames: ['threads '],
       });
       StressView.mount(this.byBuildHost, line.root, '320px');

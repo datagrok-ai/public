@@ -126,6 +126,28 @@ exists to be measured, so a delta that is noise on a functional test is the sign
 (orange — a regression, not a ship-blocker) listing every offender with both deltas, and *benchmarks
 failed* (red — the case blew its own in-suite threshold, which is a hard failure).
 
+## Stress alert
+
+`stressRegression` (`data.ts`) drives the Stress card, its alerts and the line at the top of the
+Stress tab. It compares **speed**, not latency: p95 swings ±40% night to night, and a low median can
+mean threads parked on a lock rather than a fast server.
+
+- **Speed of a level** (`tests_per_s` in `StressTestsBuildSummary`) is each thread's own rate (its
+  tests over its wall time) averaged and multiplied by the thread count. It is per thread because the
+  threads of a level start staggered and one build can hold several sweeps, so a level has no single
+  wall-clock span. **Speed of a sweep** is the average over its thread levels.
+- **Full suite completed** means the sweep has every thread level of the window and a pass rate of at
+  least `STRESS_MIN_PASS` (95%) on each. Only such sweeps are compared, as the latest or as a
+  baseline: a sweep cut short has no slow top levels, and failing tests return early, so both read
+  as fast. A latest sweep that is not full raises its own orange alert instead of a comparison.
+- **Two baselines:** the fastest full trunk sweep among the last `STRESS_LAST_BUILDS` (30), and the
+  fastest full sweep of the latest release branch that has stress runs (`StressTestsBuilds` appends
+  its last five). A drop of `STRESS_WARN_PCT` (10%) is orange, `STRESS_FAIL_PCT` (25%) red; the alert
+  names the baseline build and the thread level that lost the most.
+- **Release sweeps do not exist yet.** The `Stress-Tests` job sweeps `master` only, so until a sweep
+  of a release image reports under a `release/x.y.z` build, the detail line says so and only the
+  trunk baseline is checked.
+
 ## Launch
 
 Deep link (dev only): `https://dev.datagrok.ai/apps/usage/release` (per-tab

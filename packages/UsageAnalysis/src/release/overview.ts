@@ -6,7 +6,8 @@ import {UaView} from '../tabs/ua';
 import {UaToolbox} from '../ua-toolbox';
 import {fetchVexIndex, criticalHighCount, toDashboardImages, vexReleaseDelta} from '../tabs/vulnerabilities';
 import {computeTestAlerts, fetchReleaseBenchmarks, computeBenchmarkAlerts, stressRegression, fetchStressSummary,
-  defaultNextVersion, ReleaseContext, ReleasePivot, BenchmarkPivot, STALE_DAYS, BENCH_SLOW_PCT} from './data';
+  defaultNextVersion, ReleaseContext, ReleasePivot, BenchmarkPivot, STALE_DAYS, BENCH_SLOW_PCT,
+  STRESS_LAST_BUILDS} from './data';
 import {fetchReleaseTickets, isActionable, hasMainLabel} from './tickets';
 
 type Band = 'green' | 'orange' | 'red' | 'info';
@@ -99,7 +100,7 @@ export class ReleaseOverviewView extends UaView {
       load(['Tests', 'Failing', 'Unstable'], this.ctx.tests(5, force), (p) => this.applyTests(p)),
       load(['Benchmarks'], fetchReleaseBenchmarks(this.ctx.env.value, 5, this.ctx.branch.value),
         (p) => this.applyBenchmarks(p)),
-      load(['Stress'], fetchStressSummary(20), (df) => this.applyStress(df)),
+      load(['Stress'], fetchStressSummary(STRESS_LAST_BUILDS), (df) => this.applyStress(df)),
       load(['Vulnerabilities'], fetchVexIndex(), (vex) => this.applyVex(vex)),
       load(['Tickets'], fetchReleaseTickets(defaultNextVersion()), (issues) => this.applyTickets(issues)),
     ];
@@ -152,8 +153,9 @@ export class ReleaseOverviewView extends UaView {
 
   private applyStress(df: DG.DataFrame): AlertNode[] {
     const reg = stressRegression(df);
-    this.setCard('Stress', reg.regressed ? 'Slower' : 'OK', reg.regressed ? 'red' : 'green');
-    return reg.regressed ? [{label: `Stress slower — ${reg.detail}`, band: 'red', tab: 'Stress', groups: {}}] : [];
+    this.setCard('Stress', reg.band === 'green' ? 'OK' : reg.band === 'info' ? 'n/a' : 'Slower', reg.band,
+      reg.detail.split(';')[0]);
+    return reg.alerts.map((a) => ({label: a.label, band: a.band, tab: 'Stress', groups: {}}));
   }
 
   private applyVex({services, bleedingEdge}: Awaited<ReturnType<typeof fetchVexIndex>>): AlertNode[] {
