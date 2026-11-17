@@ -2,6 +2,7 @@
 
 ## 1.5.0 (WIP)
 
+* A stress run (`stressTest`) no longer sends each test result to the server it loads; the results stay in the run's report. In the nightly sweep these were 157,000 of the server's 575,000 requests and 23% of its request time
 * A benchmark run does not enter a category that has no benchmark test, so its `before()` and `after()` no longer run for nothing (in ApiTests' benchmark pass every category's hooks ran, for 13 tests)
 * The garbage collection `grok test` forces in the browser runs after a test that was executed, at most once in 5 seconds, instead of after every test, executed or not: one collection of the platform's heap takes 0.1-0.3 s, which for a suite of small tests was more than the tests themselves (ApiTests: 1717 tests, ~10 of 19 minutes)
 * Test results are sent to the server behind the tests, one at a time within a run, and are awaited at the end of the run; a result the server did not take no longer fails the run. Concurrent runs in one process (the stress tests) each have their own queue: with one shared queue every run waited for the results of all the others

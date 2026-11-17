@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: `Dapi: connection` no longer deletes every `Local DG Test` connection after the category: under concurrent runs each run deleted the connections of all the others (in a stress sweep 113,000 of 123,000 deletes answered 404, 19% of the server's request time). Each test deletes its own connection
 * Tests: `ui: spaceSaveRow` does not fail on a stand without PowerPack, the package that provides the row
 * Tests: Fixed `Dapi: connector ddl` 'ddl lifecycle' and 'uploadAs creates and loads a DataFrame': the scratch table had a mixed-case name, which the test's own plain SQL checks, unquoted, could not find
 * Tests: Made the suite independent of the packages a stand has: `Dapi: sticky meta: canonical keys` (was `: molecules`) uses the package's own semantic type, detector and canonicalizer instead of Chem's, `Dapi: models` 'Engines' has the package's own engine (`ApiTests engine`, never applicable, so the Train Model view does not offer it) and names the engines it checked, and `Dapi: files: formats` no longer opens kml and kmz, which the GIS importer opens

@@ -118,16 +118,6 @@ FROM generate_series(1, 10) AS s(i);
       expect(catalogs.includes(catalog), true, `${catalog} is not among the ${catalogs.length} catalogs`);
   }, {skipReason: 'Development only: needs the CatalogsDemo connection to the SQL Server fixture that ' +
     'PowerPack/bdd/features/identifiers/catalogs-db.mjs makes; unskip while working on catalogs'});
-
-  after(async () => {
-    // Safety net for any leaked test connections (names are randomized per run).
-    const connections: _DG.DataConnection[] = await grok.dapi.connections.filter(`name like "Local DG Test%"`).list();
-    for (const conn of connections) {
-      try {
-        await grok.dapi.connections.delete(conn);
-      } catch (_) {}
-    }
-  });
 }, { owner: 'oserhiienko@datagrok.ai'});
 
 category('Dapi: connection cache', () => {
