@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Added `edit-tooltip-guidance.feature` (the Edit Tooltip dialog's Use tooltip choices, hover help, status line and warnings, Design custom tooltip in the viewer's own mode, Remove/Reset group tooltip); the tooltip features read the dialog's new option labels "Table (shared)" and "<Viewer> only"
 * Release dashboard: Fixed the Stress chart placing builds by name instead of by date, which hid the latest run among older ones
 * Tests: Retired the known failures of [core#626](https://github.com/datagrok-ai/core/issues/626), [core#467](https://github.com/datagrok-ai/core/issues/467) and GROK-20535, fixed in the core; the routing scenario claims the core's 'Project "<name>" was not found'; the dock-layout feature closes the Dashboards panel it opens (left open, its SAVE beside every later table view's ribbon Save made "Save button" ambiguous); the app dashboard feature waits for Usage Analysis' toolbox before it picks a tab
 * Release dashboard: Fixed the Overview, Tests and Benchmarks showing no data: the per-build pivot relied on `first()` of string columns, which the dataframe pivot drops
