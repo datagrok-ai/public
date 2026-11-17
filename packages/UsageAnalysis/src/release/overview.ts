@@ -153,8 +153,7 @@ export class ReleaseOverviewView extends UaView {
 
   private applyStress(df: DG.DataFrame): AlertNode[] {
     const reg = stressRegression(df);
-    this.setCard('Stress', reg.band === 'green' ? 'OK' : reg.band === 'info' ? 'n/a' : 'Slower', reg.band,
-      reg.detail.split(';')[0]);
+    this.setCard('Stress', reg.value, reg.band, reg.summary);
     return reg.alerts.map((a) => ({label: a.label, band: a.band, tab: 'Stress', groups: {}}));
   }
 

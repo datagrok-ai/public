@@ -247,6 +247,8 @@ export type StressBand = 'green' | 'orange' | 'red' | 'info';
 
 export interface StressRegression {
   band: StressBand;
+  value: string; // the card's headline: OK, or the worst change
+  summary: string; // the latest sweep's own numbers
   detail: string;
   alerts: {label: string, band: StressBand}[];
 }
@@ -764,14 +766,22 @@ export async function fetchStressSummary(lastBuilds: number): Promise<DG.DataFra
   return df;
 }
 
-interface StressBuild {
+type StressMetric = 'speed' | 'median';
+type StressValues = Record<StressMetric, number>;
+
+interface StressBuild extends StressValues {
   build: string;
   branch: string;
   started: number;
-  levels: Map<number, number>; // threads -> tests/s
-  speed: number; // tests/s averaged over the thread levels
+  levels: Map<number, StressValues>; // per thread level; the build's own values average them
   minPass: number;
 }
+
+// sign: which direction is worse (-1: lower is worse, 1: higher is worse).
+const STRESS_METRICS: {key: StressMetric, name: string, unit: string, sign: number, best: string}[] = [
+  {key: 'speed', name: 'speed', unit: 'tests/s', sign: -1, best: 'fastest'},
+  {key: 'median', name: 'median duration', unit: 'ms', sign: 1, best: 'lowest-median'},
+];
 
 function stressBuilds(df: DG.DataFrame): StressBuild[] {
   const byBuild = new Map<string, StressBuild>();
@@ -780,70 +790,84 @@ function stressBuilds(df: DG.DataFrame): StressBuild[] {
     let b = byBuild.get(name);
     if (!b) {
       b = {build: name, branch: df.get('branch', i) ?? '', started: df.get('started', i)?.valueOf() ?? 0,
-        levels: new Map(), speed: 0, minPass: 100};
+        levels: new Map(), speed: 0, median: 0, minPass: 100};
       byBuild.set(name, b);
     }
-    b.levels.set(df.get('threads', i), df.get('tests_per_s', i) ?? 0);
+    b.levels.set(df.get('threads', i), {speed: df.get('tests_per_s', i) ?? 0, median: df.get('median_ms', i) ?? 0});
     b.minPass = Math.min(b.minPass, df.get('pass_rate', i) ?? 0);
   }
   const builds = [...byBuild.values()].sort((x, y) => y.started - x.started);
-  for (const b of builds)
-    b.speed = [...b.levels.values()].reduce((s, v) => s + v, 0) / b.levels.size;
+  for (const b of builds) {
+    for (const m of STRESS_METRICS)
+      b[m.key] = [...b.levels.values()].reduce((s, v) => s + v[m.key], 0) / b.levels.size;
+  }
   return builds;
 }
 
 const signed = (pct: number): string => `${pct > 0 ? '+' : ''}${pct}%`;
 
-/** Speed of the latest trunk sweep (tests/s averaged over the thread levels, from fetchStressSummary)
- * against two baselines: the fastest trunk sweep in the window, and the fastest sweep of the latest
- * release branch. Only a sweep that completed the full suite counts, as the latest or as a baseline:
- * every thread level ran and passed. A sweep cut short has no slow top levels and one whose tests
- * fail returns early, so both read as fast. */
+/** The latest trunk sweep (from fetchStressSummary) against two baselines, the best trunk sweep in
+ * the window and the best sweep of the latest release branch, on two metrics: speed (tests/s) and
+ * median test duration, each averaged over the thread levels. The best sweep is picked per metric.
+ * Only a sweep that completed the full suite counts, as the latest or as a baseline: every thread
+ * level ran and passed. A sweep cut short has no slow top levels and one whose tests fail returns
+ * early, so both read as fast. */
 export function stressRegression(df: DG.DataFrame): StressRegression {
   const builds = stressBuilds(df);
   const trunk = builds.filter((b) => !b.branch.startsWith('release/'));
   if (trunk.length === 0)
-    return {band: 'info', detail: 'No stress runs reported.', alerts: []};
+    return {band: 'info', value: 'n/a', summary: 'no stress runs', detail: 'No stress runs reported.', alerts: []};
   const levelCount = Math.max(...trunk.map((b) => b.levels.size));
   const full = (b: StressBuild): boolean => b.levels.size === levelCount && b.minPass >= STRESS_MIN_PASS &&
-    [...b.levels.values()].every((v) => v > 0);
-  const fastest = (xs: StressBuild[]): StressBuild | undefined =>
-    xs.filter(full).sort((x, y) => y.speed - x.speed)[0];
+    [...b.levels.values()].every((v) => v.speed > 0);
 
   const latest = trunk[0];
   if (!full(latest)) {
     const detail = `Latest sweep ${latest.build} did not complete the full suite ` +
-      `(${latest.levels.size} of ${levelCount} thread levels, lowest pass rate ${latest.minPass}%): speed not compared`;
-    return {band: 'orange', detail, alerts: [{label: `Stress: ${detail}`, band: 'orange'}]};
+      `(${latest.levels.size} of ${levelCount} thread levels, lowest pass rate ${latest.minPass}%): not compared`;
+    return {band: 'orange', value: 'Incomplete', summary: `${latest.levels.size} of ${levelCount} thread levels`,
+      detail, alerts: [{label: `Stress: ${detail}`, band: 'orange'}]};
   }
 
-  const res: StressRegression = {band: 'green', detail: `${Math.round(latest.speed)} tests/s`, alerts: []};
-  const compare = (base: StressBuild, title: string): void => {
-    const drop = Math.round((1 - latest.speed / base.speed) * 100);
-    res.detail += `; ${signed(-drop)} vs ${title} (${base.build}, ${Math.round(base.speed)} tests/s)`;
-    if (drop < STRESS_WARN_PCT)
-      return;
-    const band = drop >= STRESS_FAIL_PCT ? 'red' : 'orange';
-    let worst = {threads: 0, drop: 0};
-    for (const [threads, speed] of latest.levels) {
-      const d = Math.round((1 - speed / base.levels.get(threads)!) * 100);
-      if (d > worst.drop)
-        worst = {threads, drop: d};
-    }
-    res.alerts.push({band, label: `Stress ${drop}% slower than ${title}: ${Math.round(latest.speed)} vs ` +
-      `${Math.round(base.speed)} tests/s (${base.build}), worst at ${worst.threads} threads (${signed(-worst.drop)})`});
-    if (band === 'red' || res.band === 'green')
-      res.band = band;
-  };
-
-  compare(fastest(trunk)!, 'the fastest full sweep');
   const release = builds.filter((b) => b.branch.startsWith('release/'));
-  const releaseBase = fastest(release);
-  if (releaseBase)
-    compare(releaseBase, releaseBase.branch);
-  else {
-    res.detail += release.length > 0 ? `; no full sweep on ${release[0].branch}` :
-      '; no stress sweep on a release branch yet';
+  const res: StressRegression = {band: 'green', value: 'OK', detail: '', alerts: [],
+    summary: STRESS_METRICS.map((m) => `${Math.round(latest[m.key])} ${m.unit}${m.key === 'median' ? ' median' : ''}`)
+      .join(', ')};
+  let worstPct = 0;
+  const details: string[] = [];
+  for (const m of STRESS_METRICS) {
+    const change = (now: number, was: number): number => Math.round((now / was - 1) * 100);
+    const parts: string[] = [];
+    const compare = (candidates: StressBuild[], title: string): void => {
+      const base = candidates.filter(full).sort((x, y) => m.sign * (x[m.key] - y[m.key]))[0];
+      if (!base)
+        return;
+      const pct = change(latest[m.key], base[m.key]);
+      parts.push(`${signed(pct)} vs ${title} (${base.build}, ${Math.round(base[m.key])} ${m.unit})`);
+      const worse = m.sign * pct;
+      if (worse < STRESS_WARN_PCT)
+        return;
+      const band = worse >= STRESS_FAIL_PCT ? 'red' : 'orange';
+      let worst = {threads: 0, pct: 0};
+      for (const [threads, v] of latest.levels) {
+        const p = change(v[m.key], base.levels.get(threads)![m.key]);
+        if (m.sign * p > m.sign * worst.pct)
+          worst = {threads, pct: p};
+      }
+      res.alerts.push({band, label: `Stress ${m.name} ${signed(pct)} vs ${title}: ${Math.round(latest[m.key])} vs ` +
+        `${Math.round(base[m.key])} ${m.unit} (${base.build}), worst at ${worst.threads} threads (${signed(worst.pct)})`});
+      if (band === 'red' || res.band === 'green')
+        res.band = band;
+      if (worse > worstPct) {
+        worstPct = worse;
+        res.value = `${signed(pct)} ${m.key}`;
+      }
+    };
+    compare(trunk, `the ${m.best} full sweep`);
+    compare(release, release[0]?.branch);
+    details.push(`${Math.round(latest[m.key])} ${m.unit}${m.key === 'median' ? ' median' : ''}: ${parts.join(', ')}`);
   }
+  res.detail = details.join('; ') + (release.some(full) ? '' : release.length > 0 ?
+    `; no full sweep on ${release[0].branch}` : '; no stress sweep on a release branch yet');
   return res;
 }
