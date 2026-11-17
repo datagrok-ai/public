@@ -223,12 +223,14 @@ category('MolstarViewer', () => {
   }, {timeout: 70000});
 
   test('auto-columns', async () => {
+    // Columns are picked at the first setData: awaitRendered can resolve on its own invalidate before that.
+    const loaded = (v: MolstarViewer) => waitUntil(() => !v.isRenderPending, 'the viewer did not finish loading', 15000);
     const pdbDf = await _package.files.readCsv('pdb_data.csv');
     const pdbView = grok.shell.addTableView(pdbDf);
     await awaitGrid(pdbView.grid);
     const pdbViewer = (await pdbDf.plot.fromType('Biostructure')) as unknown as MolstarViewer;
     pdbView.dockManager.dock(pdbViewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.4);
-    await Promise.all([awaitGrid(pdbView.grid), pdbViewer.awaitRendered(15000)]);
+    await Promise.all([awaitGrid(pdbView.grid), loaded(pdbViewer)]);
     expect(pdbViewer.biostructureIdColumnName, 'pdb');
     expect(pdbViewer.ligandColumnName, null, 'the structure column is not its own ligand');
 
@@ -238,7 +240,7 @@ category('MolstarViewer', () => {
     await awaitGrid(view.grid);
     const viewer = (await df.plot.fromType('Biostructure')) as unknown as MolstarViewer;
     view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.4);
-    await Promise.all([awaitGrid(view.grid), viewer.awaitRendered()]);
+    await Promise.all([awaitGrid(view.grid), loaded(viewer)]);
     expect(viewer.biostructureIdColumnName, null);
     expect(viewer.ligandColumnName, 'molecule');
 
@@ -249,6 +251,36 @@ category('MolstarViewer', () => {
       'the structure chosen for a viewer with a ligand column is not shown', 15000);
     await viewer.awaitRendered(15000);
   }, {timeout: 60000});
+
+  test('explicit-structure', async () => {
+    // The table's only Molecule3D column holds ligand poses, as in a docking result: it must not replace
+    // the structure the caller passes, which Dart applies only after the table is attached.
+    const [receptorPdb, ...posePdbs] = await Promise.all(
+      ['1bdq-wo-ligands.pdb', '1bdq-ligand-0.by-babel.pdb', '1bdq-ligand-1.by-babel.pdb']
+        .map((name) => _package.files.readAsText(`samples/${name}`)));
+    const poseCol = DG.Column.fromStrings('poses', posePdbs);
+    poseCol.semType = DG.SEMTYPE.MOLECULE3D;
+    poseCol.meta.units = 'pdb';
+    const df = DG.DataFrame.fromColumns([poseCol]);
+    const view = grok.shell.addTableView(df);
+    await awaitGrid(view.grid);
+    df.currentRowIdx = 0;
+
+    const receptor: BiostructureData = {binary: false, ext: 'pdb', data: receptorPdb};
+    const cases: [{[name: string]: string}, string | null][] = [
+      [{[msvPROPS.dataJson]: BiostructureDataJson.fromData(receptor), [msvPROPS.ligandColumnName]: poseCol.name}, poseCol.name],
+      [{[msvPROPS.pdb]: receptorPdb}, null],
+    ];
+    for (const [options, ligandColumnName] of cases) {
+      const viewer = (await df.plot.fromType('Biostructure', options)) as unknown as MolstarViewer;
+      view.dockManager.dock(viewer, DG.DOCK_TYPE.RIGHT, null, 'Biostructure', 0.4);
+      await waitUntil(() => !viewer.isRenderPending, 'the viewer did not finish loading', 30000);
+      expect(viewer.dataEff?.data === receptorPdb, true, `${Object.keys(options)}: a pose replaced the given structure`);
+      expect(viewer.biostructureIdColumnName, null);
+      expect(viewer.ligandColumnName, ligandColumnName);
+      viewer.close();
+    }
+  }, {timeout: 70000});
 
   test('open_file_shares', async () => {
     const waitForElement = async (selector: string, errorMsg: string, timeout = 2000) => {

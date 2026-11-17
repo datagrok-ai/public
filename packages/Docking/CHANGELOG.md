@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Added an AutoDock panel test that the receptor is shown together with the pose
 * Tests: The AutoDock tests are skipped, with the reason, when the server reports Grok Spawner switched off or unreachable instead of each waiting 5 minutes for a container that never starts
 * Docker: autodock — raised build-only base env floors (urllib3>=2.8, msgpack>=1.2.3, py-rattler>=0.28.1 for the zip crate CVE) and removed the base env's pip with its vendored urllib3/msgpack/setuptools (VEX)
 
