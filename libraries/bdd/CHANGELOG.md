@@ -2,6 +2,8 @@
 
 ## v.next
 
+* core#456: Gestures: `user closes "<name>" view tab` clicks the tab's close button; it pressed Escape, which left the tab open
+* Runner: The shell reset reopens the Home view when a scenario closed it (Close others closes Home too): the next feature waited for Home and timed out at login
 * Runner: Added `BDD_EXCLUDE_PACKAGES=<names>` — those packages stay out of every shell of the run (the platform's `excludePackages` startup parameter); features gated on one skip, the others run without its autostart and handlers
 * Runner: The shell reset between features closes the sidebar's Dashboards panel: left open, it listed the project with a SAVE button of its own beside every later table view's ribbon Save
 * Platform: `the context panel is closed`, `the browse panel is closed` and `the toolbox pane is hidden` show their window again at feature end when it was shown: a demo's closed context panel stayed closed for the next feature on the page, whose panel checks failed

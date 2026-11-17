@@ -715,6 +715,12 @@ export async function toggle(page: Page, target: ElementRef): Promise<void> {
  * pointer goes to the close icon. */
 export async function close(page: Page, target: ElementRef): Promise<void> {
   const loc = await locate(page, target);
+  // a dock tab's own close button has no name; it closes on mousedown, which a click sends
+  const tabClose = loc.locator(':scope > .tab-handle-close-button').first();
+  if (await tabClose.count() > 0) {
+    await tabClose.click();
+    return;
+  }
   const button = loc.locator(DIALOG_CLOSE).first();
   if (await button.count() > 0) {
     if (guide.filming(page)) {
