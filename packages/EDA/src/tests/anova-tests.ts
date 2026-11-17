@@ -247,8 +247,10 @@ category('ANOVA: dialog', () => {
       result = grok.shell.tables.find((t) => t.name === 'ANOVA result');
       expect(result !== undefined, true, 'the result table is not open');
       expect(df.filter.trueCount, visibleCount, 'the run changed the filter');
-      expectClose(result!.get('F', 0), expected.anovaTable.fStat, {rtol: 1e-9, atol: 1e-9}, 'F');
-      expectClose(result!.get('df₂', 0), expected.anovaTable.dfWn, {rtol: 1e-9, atol: 1e-9}, 'df₂');
+      // the result grid's float columns hold float32 values
+      const float32Tol = {rtol: 1e-6, atol: 1e-9};
+      expectClose(result!.get('F', 0), expected.anovaTable.fStat, float32Tol, 'F');
+      expectClose(result!.get('df₂', 0), expected.anovaTable.dfWn, float32Tol, 'df₂');
       expect(Math.abs(expected.anovaTable.fStat - whole.anovaTable.fStat) > 1e-6, true,
         'the filter does not change the test on this data');
     } finally {
