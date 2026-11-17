@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#1407](https://github.com/datagrok-ai/core/issues/1407): `addProperty` creates the property with its setter, instead of a null setter replaced right after
 * [#3481](https://github.com/datagrok-ai/public/issues/3481): Renamed `DG.DomainSavedFilter` to `DG.SavedFilter`: filter presets are now shareable entities for any table, not only domain tables
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Added `projectId` to `ui.spaceSaveRow()`: a space that links that project is no name clash for its move
 * [core#239](https://github.com/datagrok-ai/core/issues/239): Views: Added `ViewBase.saveToProject` (whether a view is saved with the project) and `ViewBase.saveToProjectByDefault` (the default a view type overrides)

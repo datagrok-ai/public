@@ -339,6 +339,7 @@ export function runOneWayAnova(): void {
   const methodSource = {method: currentMethod};
   const methodProp = DG.Property.fromOptions({
     name: 'method',
+    type: DG.TYPE.STRING,
     caption: 'Method',
     inputType: 'Radio',
     choices: ['Welch', 'Fisher'],

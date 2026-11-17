@@ -134,12 +134,12 @@ export async function getMonomersDataFrame(monomers: Monomer[]) {
           monomers[i].polymerType,
           monomers[i].naturalAnalog,
           monomers[i].author,
-          date,
+          null,
           monomers[i].id,
           JSON.stringify(monomers[i].meta ?? {}),
           monomers[i].lib?.source ?? '',
         ], false);
-        // something is wrong with setting dates, so setting it manually for now
+        // a datetime column takes epoch milliseconds through set, not through setValues
         try {
           if (date)
             df.col(MONOMER_DF_COLUMN_NAMES.CREATE_DATE)?.set(i, date, false);

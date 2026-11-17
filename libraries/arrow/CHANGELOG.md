@@ -1,5 +1,9 @@
 # arrow changelog
 
+## v.next
+
+* [core#1407](https://github.com/datagrok-ai/core/issues/1407): Fixed a single-precision float column being built as a double column: the column type follows the array Arrow gives
+
 ## 1.1.1 (2026-08-31)
 
 * GROK-20732: Fixed Parquet/Feather nulls reading back as `0` or `1970-01-01`
