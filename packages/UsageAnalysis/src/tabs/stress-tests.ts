@@ -9,6 +9,7 @@ import {stressRegression, fetchStressSummary, openInWorkspaceIcon, ReleaseContex
 
 export class StressView extends UaView {
   private byBuildHost!: HTMLElement;
+  private medianHost!: HTMLElement;
   private summaryHost!: HTMLElement;
   private boxHost!: HTMLElement;
   private boxHeader!: HTMLElement;
@@ -25,6 +26,7 @@ export class StressView extends UaView {
   async initViewers(): Promise<void> {
     this.root.className = 'grok-view ui-box ua-metrics';
     this.byBuildHost = ui.div([], 'ua-metrics-grid-host ua-metrics-chart-host');
+    this.medianHost = ui.div([], 'ua-metrics-grid-host ua-metrics-chart-host');
     this.summaryHost = ui.div([], 'ua-metrics-grid-host');
     this.boxHost = ui.div([], 'ua-metrics-grid-host ua-metrics-chart-host');
     this.boxHeader = ui.divText('Last build', 'ua-metrics-panel-title');
@@ -40,6 +42,11 @@ export class StressView extends UaView {
         'ua-metrics-panel-header'),
       this.byBuildHost,
     ], 'ua-metrics-panel');
+    const medianPanel = ui.div([
+      ui.divH([ui.divText(`Median duration by build, ms (last ${LAST_BUILDS}, split by threads)`, 'ua-metrics-panel-title')],
+        'ua-metrics-panel-header'),
+      this.medianHost,
+    ], 'ua-metrics-panel');
     const summaryPanel = ui.div([
       ui.divH([ui.divText('Metrics by build × threads', 'ua-metrics-panel-title'),
         openInWorkspaceIcon(() => this.summaryDf)], 'ua-metrics-panel-header'),
@@ -50,7 +57,7 @@ export class StressView extends UaView {
       this.boxHost,
     ], 'ua-metrics-panel');
 
-    this.root.append(ui.div([header, byBuildPanel, boxPanel, summaryPanel], 'ua-metrics-root'));
+    this.root.append(ui.div([header, byBuildPanel, medianPanel, boxPanel, summaryPanel], 'ua-metrics-root'));
     await this.refresh();
   }
 
@@ -73,6 +80,7 @@ export class StressView extends UaView {
     this.summaryDf = null;
     this.byBuildHost.innerHTML = '';
     this.byBuildHost.append(ui.loader());
+    this.medianHost.innerHTML = '';
     this.summaryHost.innerHTML = '';
     try {
       const df = await fetchStressSummary(LAST_BUILDS);
@@ -90,12 +98,13 @@ export class StressView extends UaView {
       // release sweeps last, so those open the chart as the reference.
       const builds = df.getCol('build');
       builds.setCategoryOrder([...new Set(builds.toList())].reverse());
-      const line = DG.Viewer.lineChart(df, {
+      const byBuild = (y: string): HTMLElement => DG.Viewer.lineChart(df, {
         xColumnName: 'build',
-        yColumnNames: ['tests_per_s'],
+        yColumnNames: [y],
         splitColumnNames: ['threads '],
-      });
-      StressView.mount(this.byBuildHost, line.root, '320px');
+      }).root;
+      StressView.mount(this.byBuildHost, byBuild('tests_per_s'), '320px');
+      StressView.mount(this.medianHost, byBuild('median_ms'), '320px');
 
       const grid = DG.Viewer.grid(df, {'showColumnGridlines': false, 'allowBlockSelection': false});
       const threadsSplitCol = grid.col('threads ');

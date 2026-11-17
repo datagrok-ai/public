@@ -2,7 +2,7 @@
 
 ## 2.7.2 (2026-11-17)
 
-* Release dashboard: The Stress alert compares speed (tests per second) of the latest sweep with the fastest sweep that completed the full suite and with the latest release branch, and reports an incomplete sweep; the Stress chart shows speed
+* Release dashboard: The Stress alert compares speed (tests per second) of the latest sweep with the fastest sweep that completed the full suite and with the latest release branch, and reports an incomplete sweep; the Stress tab charts speed next to the median duration
 * Tests: Added `trellis-plot-scatter-labels.feature` (core#1644: a scatter plot in a trellis cell labels at most 20 selected rows, Never hides them, the full-screen cell labels as a standalone plot), read through the trellis's new `cell labels shown <cell>` and `full screen labels shown` readings
 * Tests: Added `edit-tooltip-guidance.feature` (the Edit Tooltip dialog's Use tooltip choices, hover help, status line and warnings, Design custom tooltip in the viewer's own mode, Remove/Reset group tooltip); the tooltip features read the dialog's new option labels "Table (shared)" and "<Viewer> only"
 * Release dashboard: Fixed the Stress chart placing builds by name instead of by date, which hid the latest run among older ones
