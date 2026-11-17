@@ -567,10 +567,10 @@
       "subclassEms": 0,
       "classBuildsUi": 0,
       "cssFiles": 4,
-      "cssLines": 2745,
+      "cssLines": 2758,
       "cssInternalLines": 0,
       "cssImportant": 112,
-      "commentLines": 11308,
+      "commentLines": 11367,
       "fileHeaders": 13,
       "privateDocs": 189,
       "classes": {
@@ -1348,6 +1348,13 @@
       "reason": "Chem: Crux Sketch takes Datagrok's look in its own dialogs, fields, buttons and tooltips through its host-look custom properties (css/crux-sketcher.css), set from Datagrok's colour variables so the theme follows; Chem's other counts are lowered to what they are now",
       "grown": [
         "packages/Chem cssLines: 2718 → 2745"
+      ]
+    },
+    {
+      "date": "2026-11-17",
+      "reason": "Chem: Crux Sketch's dialogs take Datagrok's form look (right-aligned grey labels, focus ring, field underline) through more of its host-look custom properties (css/crux-sketcher.css), set from Datagrok's colour variables; no Datagrok selector is styled",
+      "grown": [
+        "packages/Chem cssLines: 2745 → 2758"
       ]
     }
   ]
