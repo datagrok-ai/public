@@ -3652,7 +3652,7 @@ export class PackageFunctions {
   @grok.decorators.app({
     'name': 'Reaction Enumerator',
     'description': 'Forward-reaction library enumeration over building blocks and SMARTS templates.',
-    'meta': {browsePath: 'Chem | Reactions'},
+    'meta': {browsePath: 'Chem | Reactions', icon: 'images/reaction-enumerator.png'},
   })
   static async reactionEnumeratorApp(): Promise<DG.ViewBase> {
     const {buildEnumeratorView} = await import('./utils/reaction-enumeration/enumerator-app');
@@ -3664,7 +3664,7 @@ export class PackageFunctions {
   @grok.decorators.app({
     'name': 'Reaction Sketcher',
     'description': 'Draws, edits and exports reactions and multi-step routes',
-    'meta': {browsePath: 'Chem | Reactions'},
+    'meta': {browsePath: 'Chem | Reactions', icon: 'images/reaction-sketcher.png'},
   })
   static async reactionsApp(): Promise<DG.ViewBase> {
     const {reactionsAppView} = await import('./utils/reactions/reactions-app');
@@ -3795,7 +3795,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Transformation Reactions', meta: {browsePath: 'Chem | Reactions', role: 'app'},
+    name: 'Transformation Reactions',
+    meta: {browsePath: 'Chem | Reactions', role: 'app', icon: 'images/transformation-reactions.png'},
     tags: ['app'],
     result: {name: 'result', type: 'view'},
   })
@@ -3804,7 +3805,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Two-Component Reactions', meta: {browsePath: 'Chem | Reactions', role: 'app'},
+    name: 'Two-Component Reactions',
+    meta: {browsePath: 'Chem | Reactions', role: 'app', icon: 'images/two-component-reactions.png'},
     tags: ['app'],
     result: {name: 'result', type: 'view'},
   })

@@ -1703,6 +1703,7 @@ export async function mpoProfilesApp(path?: string) : Promise<any> {
 //description: Forward-reaction library enumeration over building blocks and SMARTS templates.
 //output: view result
 //meta.browsePath: Chem | Reactions
+//meta.icon: images/reaction-enumerator.png
 //meta.role: app
 export async function reactionEnumeratorApp() : Promise<any> {
   return await PackageFunctions.reactionEnumeratorApp();
@@ -1712,6 +1713,7 @@ export async function reactionEnumeratorApp() : Promise<any> {
 //description: Draws, edits and exports reactions and multi-step routes
 //output: view result
 //meta.browsePath: Chem | Reactions
+//meta.icon: images/reaction-sketcher.png
 //meta.role: app
 export async function reactionsApp() : Promise<any> {
   return await PackageFunctions.reactionsApp();
@@ -1777,6 +1779,7 @@ export async function twoComponentReactionTopMenu() : Promise<void> {
 //output: view result
 //meta.browsePath: Chem | Reactions
 //meta.role: app
+//meta.icon: images/transformation-reactions.png
 export async function transformationReactionsApp(_path?: string) : Promise<any> {
   return await PackageFunctions.transformationReactionsApp(_path);
 }
@@ -1787,6 +1790,7 @@ export async function transformationReactionsApp(_path?: string) : Promise<any> 
 //output: view result
 //meta.browsePath: Chem | Reactions
 //meta.role: app
+//meta.icon: images/two-component-reactions.png
 export async function twoComponentReactionsApp(_path?: string) : Promise<any> {
   return await PackageFunctions.twoComponentReactionsApp(_path);
 }
