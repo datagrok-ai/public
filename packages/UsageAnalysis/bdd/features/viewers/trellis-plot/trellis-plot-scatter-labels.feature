@@ -1,7 +1,7 @@
 @journey @viewers @realizes:viewers.trellis-plot @realizes:viewers.scatter-plot
 Feature: Scatter plot labels in trellis cells
-  A scatter plot inside a trellis cell labels only the selected rows it draws, whatever its Show Labels For
-  says, and at most 20 of them, with Display Labels Auto or Always; Never shows none. The cell opened full
+  A trellis starts its scatter plots on Show Labels For = FilteredSelected, and a scatter plot inside a cell
+  labels only the selected rows it draws whatever Show Labels For says, at most 20 of them, with Display Labels Auto or Always; Never shows none. The cell opened full
   screen is a standalone scatter plot again: it labels by its Show Labels For, with no cap. A click on empty
   space in a cell, or in the cell opened full screen ("full screen view"), keeps the selection, which the same
   click on a standalone scatter plot clears. A cell's count is
@@ -22,6 +22,7 @@ Feature: Scatter plot labels in trellis cells
       | Viewer Type    | Scatter plot |
     And user sets "labelColumnNames" inner property of trellis plot viewer to "USUBJID"
     Then the "cells" reading of trellis plot viewer should be 8
+    And "showLabelsFor" inner property of trellis plot viewer should be "FilteredSelected"
     And the "cell labels shown F | Caucasian" reading of trellis plot viewer should be 0
     And the "cell labels shown F | Other" reading of trellis plot viewer should be 0
 
@@ -34,9 +35,11 @@ Feature: Scatter plot labels in trellis cells
     When user sets "showLabelsFor" inner property of trellis plot viewer to "Filtered"
     Then the "cell labels shown F | Other" reading of trellis plot viewer should be 3
     And the "cell labels shown M | Black" reading of trellis plot viewer should be 0
+    When user sets "showLabelsFor" inner property of trellis plot viewer to "All"
+    Then the "cell labels shown F | Other" reading of trellis plot viewer should be 3
     When user selects no rows
     Then the "cell labels shown F | Other" reading of trellis plot viewer should be 0
-    When user sets "showLabelsFor" inner property of trellis plot viewer to "All"
+    When user sets "showLabelsFor" inner property of trellis plot viewer to "FilteredSelected"
     Then the "cell labels shown F | Black" reading of trellis plot viewer should be 0
     And no errors should have been logged
 
@@ -74,7 +77,7 @@ Feature: Scatter plot labels in trellis cells
     Then "SEX: F, RACE: Caucasian" dialog should be absent
     And trellis plot viewer should not report a "full screen labels shown" reading
     When user selects no rows
-    And user sets "showLabelsFor" inner property of trellis plot viewer to "All"
+    And user sets "showLabelsFor" inner property of trellis plot viewer to "FilteredSelected"
     Then the "cell labels shown F | Caucasian" reading of trellis plot viewer should be 0
     And no errors should have been logged
 
