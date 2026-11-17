@@ -438,7 +438,7 @@ export function runControlComparisons(): void {
       return;
     }
 
-    const nGroups = groupCount(factor);
+    const nGroups = groupCount(factor.clone(df!.filter.anyFalse ? df!.filter : undefined));
     if (nGroups < 2) {
       runBtn.disabled = true;
       ui.tooltip.bind(runBtn, 'The category column needs at least two groups.');
