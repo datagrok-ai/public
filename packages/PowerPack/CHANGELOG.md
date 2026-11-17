@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Formula Lines: Fixed the Delete button of an annotation region listed below formula lines removing another region, or none
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Fixed Down arrow in the Space row's search not moving to the first matching space
 * Spotlight: Fixed notifications staying bold after being clicked, and the Notifications tab showing the oldest notifications instead of the newest
 * Spotlight: A notification's report "Details" link opens the report in the context panel instead of the Reports app
