@@ -1,5 +1,7 @@
 import { readdir } from 'fs/promises';
 import { writeFileSync } from 'fs';
+import { fork, ChildProcess } from 'child_process';
+import { availableParallelism } from 'os';
 import { basename, dirname, join } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 
@@ -47,7 +49,7 @@ const extraTestPackages = ['DBTests'];
 let mode: 'functional' | 'stress' = 'stress';
 
 async function main(): Promise<void> {
-    const { apiUrl, devKey, token, concurrentRuns, categories, loop, concurrencyRange } = parseArgs();
+    const { apiUrl, devKey, token, concurrentRuns, categories, loop, concurrencyRange, workers, worker } = parseArgs();
     const apiToken = token ?? await getToken(apiUrl, devKey);
     console.log('Received token.');
     // Loaded dynamically (not a static import) so Node/tsx resolve datagrok-api's
@@ -67,16 +69,22 @@ async function main(): Promise<void> {
 
     await loadTestFiles();
 
+    if (worker)
+        return await workerMain(new Set(categories));
+
     const results: _DG.DataFrame[] = [];
+    const pool = workers > 1 ? await WorkerPool.start(workers, results) : null;
 
     process.on('SIGINT', async () => {
         console.log('⚠️  Caught SIGINT (Ctrl+C)');
+        await pool?.stop();
         await saveResults(results);
         process.exit(0);
     });
 
     process.on('SIGTERM', async () => {
         console.log('⚠️  Caught SIGTERM');
+        await pool?.stop();
         await saveResults(results);
         process.exit(0);
     });
@@ -91,11 +99,12 @@ async function main(): Promise<void> {
 
     if (concurrencyRange) {
         for (const runs of concurrencyRange)
-            await runPool(results, runs, new Set(categories));
+            await (pool ? pool.runLevel(runs) : runPool(results, runs, new Set(categories)));
     }
     else
-        await runPool(results, concurrentRuns, new Set(categories), loop);
+        await (pool ? pool.runLevel(concurrentRuns, loop) : runPool(results, concurrentRuns, new Set(categories), loop));
 
+    await pool?.stop();
     await saveResults(results);
     console.log('Finished running tests');
     if (loadFailures.length > 0) {
@@ -147,6 +156,16 @@ function parseArgs() {
             array: true,
             describe: 'List of test categories to run. By default run all categories in dapi folder.',
             default: ['all'],
+        })
+        .option('workers', {
+            type: 'number',
+            describe: 'Processes the concurrent runs are spread over. Default: one per 16 runs of the widest ' +
+                'level, at most a quarter of the cores; 1 keeps every run in this process'
+        })
+        .option('worker', {
+            type: 'boolean',
+            hidden: true,
+            describe: 'Internal: this process runs the share of the runs its parent sends it'
         })
         .option('loop', {
             alias: 'l',
@@ -202,6 +221,12 @@ function parseArgs() {
 
     if (!res.concurrentRuns && !res.concurrencyRange)
         res.concurrentRuns = 1;
+    // One process runs every test of every run on one thread: past a few dozen runs the tests wait for
+    // that thread, not for the server, and the load test measures its own runner.
+    const widest = res.concurrencyRange ? Math.max(...res.concurrencyRange) : res.concurrentRuns;
+    res.worker = argv.worker === true;
+    res.workers = Math.max(1, Math.floor(argv.workers ??
+        Math.min(Math.ceil(widest / 16), Math.floor(availableParallelism() / 4))));
 
     return res;
 }
@@ -259,6 +284,12 @@ async function loadTestFiles(): Promise<void> {
 }
 
 async function run(concurrentRun: number, categories: Set<string>, concurrency: number): Promise<_DG.DataFrame | null> {
+    const data = await runRows(categories);
+    return data == null ? null : await rowsToFrame(data, concurrentRun, concurrency);
+}
+
+/** The result rows of one run of the suite; null when no test ran. */
+async function runRows(categories: Set<string>): Promise<any[] | null> {
     const { runTests, tests} = await import('@datagrok-libraries/test/src/test');
     const data = [];
     const runAll = categories.has('all');
@@ -292,6 +323,10 @@ async function run(concurrentRun: number, categories: Set<string>, concurrency: 
         row.task_start = taskStart;
         row.task_finish = taskFinish;
     }
+    return data;
+}
+
+async function rowsToFrame(data: any[], concurrentRun: number, concurrency: number): Promise<_DG.DataFrame> {
     const df = DG.DataFrame.fromObjects(data)!;
     await df.columns.addNewCalculated('concurrent_run', `${concurrentRun}`, DG.COLUMN_TYPE.INT, false, false);
     await df.columns.addNewCalculated('total_concurrent_runs', `${concurrency}`, DG.COLUMN_TYPE.INT, false, false);
@@ -321,6 +356,95 @@ async function runPool(results: _DG.DataFrame[], concurrency: number = 1, catego
         await new Promise(() => {});
     else
         await Promise.allSettled(running);
+}
+
+/** In a worker process: runs the share of each level its parent sends and hands the rows of every run back. */
+async function workerMain(categories: Set<string>): Promise<void> {
+    process.on('SIGINT', () => {});
+    process.on('SIGTERM', () => {});
+    process.on('disconnect', () => process.exit(0));
+    process.on('message', (m: any) => {
+        if (m.type === 'stop')
+            process.exit(0);
+        if (m.type !== 'level')
+            return;
+        let left = m.ids.length;
+        let restarts = 0;
+        const start = (id: number) => {
+            runRows(categories)
+                .then((rows) => { if (rows != null) process.send!({type: 'rows', run: id, total: m.total, rows}); })
+                .catch((err: any) => console.error(`❌ Task ${id} failed:`, err))
+                .finally(() => {
+                    if (m.infinite)
+                        start(m.total + 1 + m.worker + m.workers * restarts++);
+                    else if (--left === 0)
+                        process.send!({type: 'done'});
+                });
+        };
+        for (const id of m.ids)
+            start(id);
+    });
+    process.send!({type: 'ready'});
+    await new Promise(() => {});
+}
+
+/** The processes the runs of a level are spread over, started once and used for every level. */
+class WorkerPool {
+    private frames: Promise<void> = Promise.resolve();
+    private levelDone: (() => void)[] = [];
+
+    private constructor(private children: ChildProcess[], private results: _DG.DataFrame[]) {}
+
+    static async start(count: number, results: _DG.DataFrame[]): Promise<WorkerPool> {
+        console.log(`Starting ${count} worker processes...`);
+        const children = Array.from({length: count}, () => fork(fileURLToPath(import.meta.url),
+            [...process.argv.slice(2), '--worker'], {execArgv: process.execArgv, serialization: 'advanced'}));
+        const pool = new WorkerPool(children, results);
+        await Promise.all(children.map((child, i) => new Promise<void>((resolve, reject) => {
+            child.on('message', (m: any) => {
+                if (m.type === 'ready')
+                    resolve();
+                else if (m.type === 'rows')
+                    pool.frames = pool.frames.then(async () => { results.push(await rowsToFrame(m.rows, m.run, m.total)); })
+                        .catch((e: any) => console.error(`❌ The results of run ${m.run} were lost:`, e));
+                else if (m.type === 'done')
+                    pool.levelDone[i]?.();
+            });
+            child.on('exit', (code) => {
+                if (code !== 0 && code !== null)
+                    console.error(`❌ Worker ${i} exited with code ${code}`);
+                pool.levelDone[i]?.();
+                reject(new Error(`Worker ${i} exited before it was ready`));
+            });
+        })));
+        console.log('Workers are ready.');
+        return pool;
+    }
+
+    /** Runs [runs] concurrent runs, as evenly over the workers as they divide; an infinite level never ends. */
+    async runLevel(runs: number, infinite: boolean = false): Promise<void> {
+        const count = this.children.length;
+        const waits: Promise<void>[] = [];
+        let next = 1;
+        for (let i = 0; i < count; i++) {
+            const share = Math.floor(runs / count) + (i < runs % count ? 1 : 0);
+            if (share === 0)
+                continue;
+            const ids = Array.from({length: share}, () => next++);
+            waits.push(new Promise<void>((resolve) => this.levelDone[i] = resolve));
+            this.children[i].send({type: 'level', ids, total: runs, infinite, worker: i, workers: count});
+        }
+        await Promise.all(waits);
+        await this.frames;
+    }
+
+    /** Stops the workers; the rows they already sent are in the results when this returns. */
+    async stop(): Promise<void> {
+        for (const child of this.children)
+            if (child.connected)
+                child.send({type: 'stop'});
+        await this.frames;
+    }
 }
 
 async function saveResults(results: _DG.DataFrame[]): Promise<void> {
