@@ -2,6 +2,7 @@
 
 ## v.next
 
+* MSA: Fixed the dialog showing every engine parameter twice (Gap Open, Gap Extend, ... of Datagrok MSA): opening it built the engine's inputs twice at once, and the edits made in the first copy were dropped, the engine ran with the defaults. Test: `MSA`, dialogShowsEngineInputsOnce
 * [core#1407](https://github.com/datagrok-ai/core/issues/1407): Monomer manager: The creation date is set through the date column alone, so the row values hold no milliseconds for it
 * Monomer hover: The monomer under the pointer lights up in its molecule at twice the strength of the whole-molecule colouring (Highlight monomers), so it stands out (in `@datagrok-libraries/bio`)
 * Macromolecule renderer: Fixed the current row being drawn faded once a sequence is clicked (Compare with current): a single-line or chain-per-line row faded every monomer it shares with the reference, itself included; the current row is drawn whole, as a multiline row was (in `@datagrok-libraries/bio`)

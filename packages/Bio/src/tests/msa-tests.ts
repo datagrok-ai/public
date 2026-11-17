@@ -3,12 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, expectArray, test, waitUntil} from '@datagrok-libraries/test/src/test';
 import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {runKalign} from '../utils/multiple-sequence-alignment';
 import {multipleSequenceAlignmentUI} from '../utils/multiple-sequence-alignment-ui';
+import {MSA_ENGINE_ROLE} from '../utils/constants';
 
 category('MSA', async () => {
   let seqHelper: ISeqHelper;
@@ -104,6 +105,43 @@ MWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHPMWRSWYCKHP
     await _testMSAOnColumn(
       SeparatorLongFromCsv, SeparatorLongToCsv, NOTATION.SEPARATOR, NOTATION.FASTA, ALPHABET.PT,
     );
+  });
+
+  test('dialogShowsEngineInputsOnce', async () => {
+    const df = DG.DataFrame.fromCsv(helmFromCsv);
+    await grok.data.detectSemanticTypes(df);
+    const view = grok.shell.addTableView(df);
+    const buildEditor = DG.FuncCall.prototype.buildEditor;
+    let started = 0;
+    let finished = 0;
+    DG.FuncCall.prototype.buildEditor = async function(...args: Parameters<DG.FuncCall['buildEditor']>) {
+      started++;
+      try {
+        return await buildEditor.apply(this, args);
+      } finally {
+        finished++;
+      }
+    };
+    let dlg: HTMLElement | null = null;
+    try {
+      multipleSequenceAlignmentUI({}, seqHelper).catch(() => {});
+      await waitUntil(() => started > 0 && finished === started, () => `engine editors built ${finished}/${started}`);
+      dlg = document.querySelector<HTMLElement>('[name="dialog-MSA"]');
+      expect(dlg !== null, true, 'the MSA dialog is not shown');
+      const engineName = dlg!.querySelector<HTMLSelectElement>('select[name="input-Engine"]')!.value;
+      const engine = DG.Func.find({meta: {role: MSA_ENGINE_ROLE}}).find((f) => f.friendlyName === engineName)!;
+      const captions = Array.from(dlg!.querySelectorAll<HTMLElement>('.ui-input-root'))
+        .filter((r) => r.offsetParent !== null)
+        .map((r) => r.querySelector('.ui-input-label')?.textContent?.trim() ?? '');
+      expectArray(captions.filter((c, i) => captions.indexOf(c) !== i), []);
+      const engineInputCount = engine.inputs.filter((p) => p.propertyType !== DG.TYPE.COLUMN).length;
+      // Sequence, Clusters, Engine and Selected Rows Only, around the engine's own inputs.
+      expect(captions.length, 4 + engineInputCount);
+    } finally {
+      DG.FuncCall.prototype.buildEditor = buildEditor;
+      dlg?.querySelector<HTMLElement>('[name="button-CANCEL"]')?.click();
+      view.close();
+    }
   });
 
   async function _testMSAOnColumn(
