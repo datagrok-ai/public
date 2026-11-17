@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Release dashboard: Fixed the Stress chart placing builds by name instead of by date, which hid the latest run among older ones
 * Tests: Retired the known failures of [core#626](https://github.com/datagrok-ai/core/issues/626), [core#467](https://github.com/datagrok-ai/core/issues/467) and GROK-20535, fixed in the core; the routing scenario claims the core's 'Project "<name>" was not found'; the dock-layout feature closes the Dashboards panel it opens (left open, its SAVE beside every later table view's ribbon Save made "Save button" ambiguous); the app dashboard feature waits for Usage Analysis' toolbox before it picks a tab
 * Release dashboard: Fixed the Overview, Tests and Benchmarks showing no data: the per-build pivot relied on `first()` of string columns, which the dataframe pivot drops
 * Release dashboard: The Overview fills each card as soon as its own source answers instead of waiting for the slowest one, and logs a source that fails

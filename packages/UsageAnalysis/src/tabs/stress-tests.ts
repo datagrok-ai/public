@@ -87,6 +87,9 @@ export class StressView extends UaView {
       this.regressionHost.textContent = reg.detail;
       this.regressionHost.className = `ua-metrics-asof ${reg.regressed ? 'ua-metrics-red' : 'ua-metrics-green'}`;
       df.columns.addNewString('threads ').init((i) => `${df.get('threads', i)} threads`);
+      // Build names do not sort by time ('bleeding-edge-<sha>' next to '<date>-<version>'); rows come newest first.
+      const builds = df.getCol('build');
+      builds.setCategoryOrder([...new Set(builds.toList())].reverse());
       const line = DG.Viewer.lineChart(df, {
         xColumnName: 'build',
         yColumnNames: ['median_ms'],
