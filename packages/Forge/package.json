@@ -42,5 +42,10 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/Forge"
   },
-  "category": "Machine Learning"
+  "category": "Machine Learning",
+  "grok": {
+    "testDependencies": [
+      "@datagrok/eda"
+    ]
+  }
 }
