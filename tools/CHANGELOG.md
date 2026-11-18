@@ -1,6 +1,6 @@
 # Datagrok-tools changelog
 
-## v.next
+## 6.7.12 (2026-11-18)
 
 * `grok src clone`: Clones the whole umbrella by default; children you cannot read are skipped
 * Added `grok s o metrics [overview|routes|statements [reset]|instances [--isolates]|database|growth|sessions|queue|failures|request-log|disk|storage]`, `grok s o health [--instances]` and `grok s o metric-alerts get|put`: every view of the Health center from the command line, as tables or `--output json`
