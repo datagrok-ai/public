@@ -3,7 +3,6 @@
 ## v.next
 
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Added `projectId` to `ui.spaceSaveRow()`: a space that links that project is no name clash for its move
-* Reports: Added `grok.dapi.reports.fileTicket(summary, options)`: files a report and requests a GitHub issue for it
 * Reports: Deprecated `UserReport.jiraTicket`, which is now always undefined
 * Reports: Removed `IUserReport.jiraTicket`
 * Permissions: Renamed `DG.Permission.CREATE_JIRA_TICKETS` to `DG.Permission.REQUEST_TICKETS` (`RequestTickets`); `CREATE_JIRA_TICKETS` is a deprecated alias

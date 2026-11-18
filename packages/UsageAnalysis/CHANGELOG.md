@@ -5,8 +5,7 @@
 * Test dashboard: Removed the Jira ticket columns and verdicts (`GetTicketsVerdict`)
 * Test dashboard: Removed the Watch a jira ticket action
 * Release dashboard: Removed the Jira Tickets tab and its Overview card
-* Test Track: Changed Request Ticket to file a report and request a GitHub issue through `grok.dapi.reports.fileTicket`
-* Test Track: Changed the Ticket pane to show only with the `RequestTickets` permission
+* Test Track: Removed the Jira Tickets pane of fail reasons
 * Test Track: Changed report links in reasons to open the report
 * Test Track: Changed report links in reasons to be saved as the test's tickets
 * Test Track: Removed the Jira links of GROK keys in reasons

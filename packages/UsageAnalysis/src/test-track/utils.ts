@@ -24,11 +24,6 @@ const map = {
 
 
 export const errorSeverityLevels : any[] = [MINORFAIL, CRITICALFAIL, BLOCKFAIL];
-export const TicketPriorityLevel : { [id: string]: string; } = {
-  [MINORFAIL]: 'Low',
-  [CRITICALFAIL]: 'High',
-  [BLOCKFAIL]: 'Urgent'
-}
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);

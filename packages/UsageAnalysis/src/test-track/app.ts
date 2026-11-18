@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 
-import { colors, CRITICALFAIL, MINORFAIL, BLOCKFAIL, getIcon, getStatusIcon, PASSED, SKIPPED, Status, errorSeverityLevels, TicketPriorityLevel as ticketPriorityLevel } from './utils';
+import { colors, CRITICALFAIL, MINORFAIL, BLOCKFAIL, getIcon, getStatusIcon, PASSED, SKIPPED, Status, errorSeverityLevels } from './utils';
 import { _package } from '../package';
 import { Subscription } from 'rxjs';
 import { testSchema } from '../test-analysis/sticky-meta-initialization';
@@ -73,7 +73,6 @@ export class TestTrack extends DG.ViewBase {
   loadingFiles: { [key: string]: (Category | TestCase) } = {};
   nodes: { [key: string]: (DG.TreeViewNode<any>) } = {};
 
-  canRequestTickets = false;
   gitHubBaseUrl = 'https://github.com/datagrok-ai/public/issues/';
   list: Category[] = [];
   expanded: boolean = false;
@@ -145,9 +144,7 @@ export class TestTrack extends DG.ViewBase {
 
     let progressBar = DG.TaskBarProgressIndicator.create('Opening Test');
     this.isInitializing = true;
-    const canRequest = grok.dapi.permissions.checkGlobal(DG.Permission.REQUEST_TICKETS).catch(() => false);
-    Promise.all([this.initTreeView(), canRequest]).then(([_, canRequestTickets]) => {
-      this.canRequestTickets = canRequestTickets;
+    this.initTreeView().then(() => {
       this.inited = true;
       this.isInitializing = false;
 
@@ -863,47 +860,10 @@ export class TestTrack extends DG.ViewBase {
     dialog.root.classList.add('tt-dialog', 'tt-reason-dialog');
     const value = edit ? (node.value.fullReason) || '' : '';
 
-    const ticketSummary = ui.input.string('Summary');
-    const ticketDescription = ui.input.textArea('Description');
-    const createTicketBtn = ui.button('Request Ticket', async () => {
-      createTicketBtn.disabled = true;
-      try {
-        const testCase = node.value.path.replace(/:\s[^:]+$/, '');
-        const number = await grok.dapi.reports.fileTicket(ticketSummary.value, {
-          description: `Test Track: ${this.testingName}\nTest Case: ${testCase}\n${ticketDescription.value ?? ''}`,
-          priority: ticketPriorityLevel[errorTypeSelector.value],
-          source: 'test-track',
-        });
-        grok.shell.info(`Ticket requested from Report ${number}`);
-        ticketSummary.value = '';
-        ticketDescription.value = '';
-        if (textInput.value.length > 0)
-          textInput.value = `${textInput.value}\n`;
-        textInput.value = `${textInput.value}${window.location.origin}/apps/usage/reports/${number}`;
-      } catch (e: any) {
-        grok.shell.error(`Ticket not requested: ${e?.message ?? e}`);
-      } finally {
-        createTicketBtn.disabled = ticketSummary.value.length === 0 || errorTypeSelector.value == '';
-      }
-    });
-
-    createTicketBtn.disabled = true;
-    const errorTypeSelector = ui.input.choice('Severity', {
-      value: '', items: ['', ...errorSeverityLevels], nullable: false, onValueChanged: (e) => {
-        createTicketBtn.disabled = ticketSummary.value.length === 0 || errorTypeSelector.value == '';
-      }
-    });
+    const errorTypeSelector = ui.input.choice('Severity', {value: '', items: ['', ...errorSeverityLevels], nullable: false});
 
     const textInput = ui.input.textArea(errorSeverityLevels.includes(status) ? 'Tickets' : 'Reasons', { value: value, nullable: false });
     textInput.classList.add('ui-input-reason');
-    ticketSummary.onChanged.subscribe((value) => {
-      createTicketBtn.disabled = value.length === 0 || errorTypeSelector.value == '';
-    })
-
-    const createTicketButtonTooltip = ui.tooltip.bind(createTicketBtn, 'Ensure that you selected severity level and wrote ticket summary.')
-
-    createTicketBtn.classList.add('create-ticket-button');
-    const ticketTab = ui.divH([ui.divV([ticketSummary, ticketDescription]), createTicketBtn]);
 
     errorTypeSelector.addValidator((value) => {
       if (value == '')
@@ -926,12 +886,6 @@ export class TestTrack extends DG.ViewBase {
     dialog.onOK(() => {
       edit ? this.changeNodeReason(node, status, textInput.value) : this.changeNodeStatus(node, status, textInput.value);
     });
-    if (errorSeverityLevels.includes(status) && this.canRequestTickets) {
-      const accordion = ui.accordion();
-      accordion.addPane('Ticket', () => ticketTab);
-      dialog.add(accordion);
-    }
-
     dialog.show({ resizable: false });
     dialog.initDefaultHistory();
 

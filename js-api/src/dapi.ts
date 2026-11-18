@@ -2594,12 +2594,6 @@ export class UserReportsDataSource extends HttpDataSource<UserReport> {
   getReports(num?: number): Promise<DataFrame> {
     return api.grok_Reports_Get(num);
   }
-
-  /** Files a report from [summary] and requests a GitHub issue for it. Returns the report's number.
-   * Needs `RequestTickets`. */
-  fileTicket(summary: string, options?: {description?: string, priority?: string, source?: string}): Promise<number> {
-    return api.grok_Reports_FileTicket(summary, options?.description, options?.priority, options?.source);
-  }
 }
 
 export class UserReportsRulesDataSource extends HttpDataSource<UserReportsRule> {
