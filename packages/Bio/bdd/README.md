@@ -51,7 +51,7 @@ reset in the Background and at the feature's end, the uploaded library and the c
 collection are deleted before and by the scenarios. With two library storages on the stand
 (the monomerDomainDB package's and the files) Add asks which one takes the file; the feature
 answers "Files" — a stand with the files alone never shows that dialog. PepSeA (a Docker
-container), Molecules to HELM (a Python script), the functions called directly (scoring, numbering,
+container), Molecules to HELM (package tests: `moleculesToHelm`), the functions called directly (scoring, numbering,
 library standardization, the single-sequence converters, the service getters — no UI, so package
 tests; the library's `CLAUDE.md`, "What never becomes a feature"), Bio | Folding and the Manage
 Monomers view's CRUD are not exercised; what a project stores of Bio's results (Sequence Space,

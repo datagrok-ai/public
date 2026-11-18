@@ -4,7 +4,7 @@ import {WorkerMessageBusClient} from '../worker-message-bus-client';
 import {Fingerprint, hasNewLines, withinSmilesLimit} from '../utils/chem-common';
 import {compileCrux, loadCrux, noteCruxError} from '../engine/crux-module';
 import {DescriptorTiming, INDEX_LOST, INT_NONE, PackedDescriptorValues, ToxicityAlert, isNoneValue} from './crux-api';
-import {BIOPOLYMER_LIBRARIES, BIOPOLYMER_LIBRARY_MISSING, CLUSTER_MCS_TIMEOUT_S, CruxAssembledBatch,
+import {BIOPOLYMER_LIBRARIES, BIOPOLYMER_LIBRARY_MISSING, CLUSTER_MCS_TIMEOUT_S, CruxAssembledBatch, CruxHelmBatch,
   assembleOptionsJson} from './crux-api';
 import {batchRowCount, pickRows, rowMonomerCount, sliceBatch} from './biopolymer-batch';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
@@ -61,10 +61,15 @@ const ANALYSIS_MS = {mmpa: 50, rGroups: 100, link: 20, molzip: 20, clusterMCS: C
   // A macromolecule batch's (CruxService.assembleMacromolecules): a chunk's limit is JOB_BASE_MS plus `biopolymer` per
   // row and `biopolymerMonomer` per monomer, more per monomer in rows past BIOPOLYMER_SUPERLINEAR_FROM monomers
   // (biopolymerChunkMs); a long row's (alone on an idle worker, BIOPOLYMER_LONG_ROW) JOB_BASE_MS
-  // plus `biopolymerLongMonomer` per monomer; `markStereo` per MOL block (CruxService.markStereoAbsolute).
+  // plus `biopolymerLongMonomer` per monomer; `markStereo` per MOL block (CruxService.markStereoAbsolute); `toHelm` per
+  // molecule (CruxService.moleculesToHelm: the converter takes about 1 ms a 15-mer, more for a big library's first
+  // chunk, which builds the library's HELM index; 50 covers large peptides on a loaded machine).
   // TODO(bio-crux §7): set them from the vendored file's measured speed (S2's native profile: ~3 ms a golden row with
   // the depictor, whose time grows faster than the monomers past ~100; non-linear rows past a size use coordgen).
-  biopolymer: 5, biopolymerMonomer: 1, biopolymerLongMonomer: 50, markStereo: 5};
+  biopolymer: 5, biopolymerMonomer: 1, biopolymerLongMonomer: 50, markStereo: 5, toHelm: 50};
+/** Molecules per chunk of CruxService.moleculesToHelm: small enough that a long column reports its progress often and
+ * the workers share it evenly (a chunk is a few MB of MOL blocks at most). */
+const TO_HELM_CHUNK_SIZE = 250;
 /** A row of more monomers than this is assembled alone on an idle worker (CruxService.assembleMacromolecules): one
  * huge row does not take a chunk past its limit, which would restart the pool. */
 export const BIOPOLYMER_LONG_ROW = 400;
@@ -996,19 +1001,67 @@ export class CruxService {
 
   private biopolymerLibraryWarned = new Set<string>();
 
-  // The library once more where the worker answers that it no longer holds it.
-  private async assembleOn(worker: CruxWorkerClient, batch: AsmBatch, key: string, json: string, details: string):
+  private assembleOn(worker: CruxWorkerClient, batch: AsmBatch, key: string, json: string, details: string):
     Promise<CruxAssembledBatch> {
+    return this.withLibrary(worker, key, json,
+      () => worker.run<CruxAssembledBatch>('biopolymer::assemble', [batch, key, details]));
+  }
+
+  // `run` on a worker that holds library `key`: the library sent first where the worker's mirror lacks it, and once
+  // more where the worker answers that it no longer holds it.
+  private async withLibrary<R>(worker: CruxWorkerClient, key: string, json: string, run: () => Promise<R>):
+    Promise<R> {
     await this.loadLibrary(worker, key, json);
     try {
-      return await worker.run<CruxAssembledBatch>('biopolymer::assemble', [batch, key, details]);
+      return await run();
     } catch (e) {
       if (!String((e as Error)?.message ?? e).startsWith(BIOPOLYMER_LIBRARY_MISSING))
         throw e;
       worker.biopolymerLibraries.delete(key);
       await this.loadLibrary(worker, key, json);
-      return await worker.run<CruxAssembledBatch>('biopolymer::assemble', [batch, key, details]);
+      return await run();
     }
+  }
+
+  /**
+   * Molecules to HELM (`ChemMonomerLibrary.toHelm`, jobs/biopolymer.ts) with monomer library `json` (`key` names it
+   * in the workers, as {@link assembleMacromolecules}' key does: a worker compiles a library once for both directions,
+   * and builds its HELM index at its first chunk), the molecules in chunks across the workers ({@link inChunks}, at
+   * most {@link TO_HELM_CHUNK_SIZE}, `ANALYSIS_MS.toHelm` a molecule); `onProgress` is told the molecules done after
+   * each chunk. Per row, in order: the HELM (null where the row has an error), the error and the counts. A failed
+   * chunk (a trap, a timeout) fails the call, as {@link inChunks} does.
+   */
+  async moleculesToHelm(molecules: (string | null)[], key: string, json: string, options: string,
+    onProgress?: (done: number) => void): Promise<CruxHelmBatch> {
+    const n = molecules.length;
+    const result: CruxHelmBatch = {helms: new Array<string | null>(n).fill(null),
+      errors: new Array<string | null>(n).fill(null), matched: new Int32Array(n), inline: new Int32Array(n),
+      chem: new Int32Array(n)};
+    if (n === 0)
+      return result;
+    for (const worker of this.workers) // all at once; a chunk waits for its own worker's load, and fails with it
+      this.loadLibrary(worker, key, json).catch(() => {});
+    let done = 0;
+    const starts: number[] = [];
+    const parts = await this.inChunks(molecules, ANALYSIS_MS.toHelm, async (worker, chunk) => {
+      const part = await this.withLibrary(worker, key, json,
+        () => worker.run<CruxHelmBatch>('biopolymer::toHelm', [chunk, key, options]));
+      done += chunk.length;
+      onProgress?.(done);
+      return part;
+    }, TO_HELM_CHUNK_SIZE, JOB_BASE_MS, starts);
+    parts.forEach((part, k) => {
+      const start = starts[k];
+      for (let i = 0; i < part.helms.length; i++) {
+        const error = part.errors[i] ?? null;
+        result.errors[start + i] = error;
+        result.helms[start + i] = error ? null : part.helms[i] ?? '';
+      }
+      result.matched.set(part.matched, start);
+      result.inline.set(part.inline, start);
+      result.chem.set(part.chem, start);
+    });
+    return result;
   }
 
   /** Each MOL block with every specified stereocentre in one ABS group, V3000 (null where one does not read), the MOL
@@ -1058,10 +1111,12 @@ export class CruxService {
   /** Tests: the long rows {@link assembleMacromolecules} has sent alone. */
   biopolymerLongRowsForTests = 0;
 
-  /** Tests: each worker's monomer libraries (jobs/biopolymer.ts): the keys it holds, the libraries it has compiled. */
-  biopolymerLibrariesForTests(): Promise<{keys: string[], compiled: number}[]> {
-    return Promise.all(this.workers.map((worker) =>
-      this.job(worker.run<{keys: string[], compiled: number}>('biopolymer::libraries::test', []), JOB_BASE_MS)));
+  /** Tests: each worker's monomer libraries (jobs/biopolymer.ts): the keys it holds, the libraries it has compiled
+   * and the HELM indexes it has built. */
+  biopolymerLibrariesForTests(): Promise<{keys: string[], compiled: number, helmIndexed: number}[]> {
+    return Promise.all(this.workers.map((worker) => this.job(
+      worker.run<{keys: string[], compiled: number, helmIndexed: number}>('biopolymer::libraries::test', []),
+      JOB_BASE_MS)));
   }
 
   /** Tests: every worker drops library `key`, its client still counting it as sent. */

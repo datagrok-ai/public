@@ -998,10 +998,11 @@ export class PackageFunctions {
   /**
    * Bio's macromolecule assembler (chem-meta's IMacromoleculeAssembler): sequences parsed by Datagrok assembled from a
    * monomer library's templates into V3000 MOL blocks, with monomer maps per row, by Crux in both chemical engines
-   * (engine/biopolymer.ts). Usage:
+   * (engine/biopolymer.ts); and molecules back to HELM with the same library (Bio's Molecules to HELM). Usage:
    * const assembler = await grok.functions.call('Chem:getMacromoleculeAssembler');
    * await assembler.setLibrary(key, json);
    * const {molblocks, layouts, errors} = await assembler.assemble(batch, key, {layout: 'linear'});
+   * const {helms, errors: helmErrors} = await assembler.toHelm(molecules, key);
    */
   @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
   static async getMacromoleculeAssembler(): Promise<IMacromoleculeAssembler> {

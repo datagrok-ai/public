@@ -1,6 +1,6 @@
 import type {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import type {ChemWasm} from '../engine/crux-module';
-import type {AssembleOptions} from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
+import type {AssembleOptions, ToHelmOptions} from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
 import type {RdKitServiceWorker} from '../rdkit-service/rdkit-service-worker';
 
 /**
@@ -123,6 +123,18 @@ export type CruxAssembledBatch = ReturnType<CruxMonomerLibrary['assemble']>;
 
 /** One row's result (`ChemMonomerLibrary.assembleOne`), with `atomPosition` / `bondPosition` under the option `map`. */
 export type CruxAssembledRow = ReturnType<CruxMonomerLibrary['assembleOne']>;
+
+/** Molecules converted to HELM (`ChemMonomerLibrary.toHelm(molecules, options)`, crux-core decision `mol-to-helm`):
+ * per row the HELM (null where the row has an error, '' for an empty molecule), the error, and the counts of library
+ * monomers matched, inline-SMILES monomers in PEPTIDE chains and CHEM entities (0 for empty and error rows). The
+ * library's HELM index is built by its first `toHelm`, or by `prepareToHelm()` (its number of forms), and kept with
+ * the library. */
+export type CruxHelmBatch = ReturnType<CruxMonomerLibrary['toHelm']>;
+
+/** ToHelmOptions (chem-meta) as the binding reads them: none of their keys (`onProgress` is the host's), so `{}`. */
+export function toHelmOptionsJson(_options: ToHelmOptions): string {
+  return '{}';
+}
 
 /** The biopolymer exports of Chem's Crux file. */
 export type CruxBiopolymerApi = Pick<ChemWasm, 'ChemMonomerLibrary' | 'chemMarkStereoAbsolute' | 'chemToV2000'>;

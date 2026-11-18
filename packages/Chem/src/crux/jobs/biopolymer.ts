@@ -3,17 +3,28 @@
  * .assembleMacromolecules sends it): a monomer library is compiled once per worker (`biopolymer::library`, kept by
  * key, the last {@link BIOPOLYMER_LIBRARIES} used, the least recently used freed first, as jobs/batch.ts keeps its
  * SMARTS sets), then each chunk of a packed batch (chem-meta's AsmBatch) is assembled in one call
- * (`biopolymer::assemble`). A batch naming a library the worker does not hold fails with
- * {@link BIOPOLYMER_LIBRARY_MISSING}: the service sends the library and asks once more.
+ * (`biopolymer::assemble`), and each chunk of molecules converted to HELM in one (`biopolymer::toHelm`, with the same
+ * compiled library: a key is compiled once for both directions; its HELM index is built at the first chunk and kept
+ * with it). A batch naming a library the worker does not hold fails with {@link BIOPOLYMER_LIBRARY_MISSING}: the
+ * service sends the library and asks once more.
  */
 import type {AsmBatch} from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
-import {BIOPOLYMER_LIBRARIES, BIOPOLYMER_LIBRARY_MISSING, CruxAssembledBatch, CruxMonomerLibrary, WorkerJob,
-  cruxBiopolymer, throwIfTrap} from '../crux-api';
+import {BIOPOLYMER_LIBRARIES, BIOPOLYMER_LIBRARY_MISSING, CruxAssembledBatch, CruxHelmBatch, CruxMonomerLibrary,
+  WorkerJob, cruxBiopolymer, throwIfTrap} from '../crux-api';
 
-/** The libraries by key, the most recently used last, each with the number of its monomers Crux does not read. */
-const libraries = new Map<string, {library: CruxMonomerLibrary, errors: number}>();
-/** Tests: the libraries this worker has compiled. */
+/** A library held by key: the number of its monomers Crux does not read, and the number of forms of its HELM index
+ * once a `toHelm` chunk has built it. */
+interface HeldLibrary {
+  library: CruxMonomerLibrary;
+  errors: number;
+  helmForms?: number;
+}
+
+/** The libraries by key, the most recently used last. */
+const libraries = new Map<string, HeldLibrary>();
+/** Tests: the libraries this worker has compiled, and the HELM indexes it has built. */
 let compiledCount = 0;
+let helmIndexedCount = 0;
 
 /** The number of monomers `library` cannot read (its `errors()` JSON, a list; read once: it compiles every
  * template). */
@@ -29,7 +40,7 @@ function readErrorCount(library: CruxMonomerLibrary): number {
 }
 
 /** The library held under `key` (the most recently used now), or the error the service knows. */
-function libraryOf(key: string): {library: CruxMonomerLibrary, errors: number} {
+function libraryOf(key: string): HeldLibrary {
   const held = libraries.get(key);
   if (!held)
     throw new Error(`${BIOPOLYMER_LIBRARY_MISSING} ${key}`);
@@ -64,9 +75,9 @@ function loadLibrary(crux: unknown, key: string, json: string): {errors: number}
 
 /** `array` itself where it owns its buffer (transferable alone), else a copy that does (a view into the wasm memory
  * must not be transferred). */
-function ownBuffer(array: Uint8Array): Uint8Array {
+function ownBuffer<T extends Uint8Array | Int32Array>(array: T): T {
   return array.buffer instanceof ArrayBuffer && array.byteOffset === 0 &&
-    array.byteLength === array.buffer.byteLength ? array : array.slice();
+    array.byteLength === array.buffer.byteLength ? array : array.slice() as T;
 }
 
 /**
@@ -86,16 +97,43 @@ function assemble(transfer: Transferable[], batch: AsmBatch, key: string, option
   return {molblocks, layouts, errors};
 }
 
+/**
+ * `molecules` converted to HELM with library `key` (`options`: ToHelmOptions as JSON): per row the HELM (null where
+ * the row has an error), the error and the counts. The library's HELM index is built at its first chunk. The counts'
+ * buffers are transferred.
+ */
+function toHelm(transfer: Transferable[], molecules: (string | null)[], key: string, options: string): CruxHelmBatch {
+  const held = libraryOf(key);
+  if (held.helmForms === undefined) {
+    held.helmForms = held.library.prepareToHelm();
+    helmIndexedCount++;
+  }
+  const r = held.library.toHelm(molecules, options);
+  const n = molecules.length;
+  const errors = Array.from({length: n}, (_, i) => r.errors[i] ?? null);
+  const helms = Array.from({length: n}, (_, i) => errors[i] ? null : r.helms[i] ?? '');
+  const matched = ownBuffer(r.matched);
+  const inline = ownBuffer(r.inline);
+  const chem = ownBuffer(r.chem);
+  transfer.push(matched.buffer, inline.buffer, chem.buffer);
+  return {helms, errors, matched, inline, chem};
+}
+
 /** The jobs by name (the Crux worker's `op`). */
 export const BIOPOLYMER_JOBS: {[op: string]: WorkerJob} = {
   'biopolymer::library': ({crux}, key: string, json: string) => loadLibrary(crux, key, json),
   'biopolymer::assemble': ({transfer}, batch: AsmBatch, key: string, options: string) =>
     assemble(transfer, batch, key, options),
+  /** A chunk of a column's molecules to HELM (CruxService.moleculesToHelm). */
+  'biopolymer::toHelm': ({transfer}, molecules: (string | null)[], key: string, options: string) =>
+    toHelm(transfer, molecules, key, options),
   /** A column's MOL blocks with their stereocentres in one ABS group (engine/biopolymer.ts, a column's call). */
   'biopolymer::markStereoAbsolute': ({crux}, molblocks: (string | null)[]) =>
     cruxBiopolymer(crux).chemMarkStereoAbsolute(molblocks),
-  /** Tests: the keys this worker holds (the least recently used first) and how many libraries it has compiled. */
-  'biopolymer::libraries::test': () => ({keys: [...libraries.keys()], compiled: compiledCount}),
+  /** Tests: the keys this worker holds (the least recently used first), how many libraries it has compiled and how
+   * many HELM indexes it has built. */
+  'biopolymer::libraries::test': () =>
+    ({keys: [...libraries.keys()], compiled: compiledCount, helmIndexed: helmIndexedCount}),
   /** Tests: the worker forgets library `key` (its client still counts it as sent). */
   'biopolymer::forget::test': (_, key: string) => {
     libraries.get(key)?.library.free();
