@@ -14,6 +14,7 @@ import {
   treeGroupByName,
   treeItemByName,
   treeNodeByName,
+  treeNodeByPath,
   viewTabHandle,
 } from './selectors';
 import {
@@ -114,9 +115,9 @@ test.describe('Browse navigation (Browse-Nav-*)', () => {
   test('Browse-Nav-05 — Locate current object highlights the node in the tree', async ({ page }) => {
     const sink = watchErrors(page);
 
-    // Pre: open Tutorials app via UI (it's a top-level item under Apps).
+    // Pre: open Tutorials app via UI (a node under Apps).
     await expandTreeGroup(page, 'Apps');
-    const tutorials = treeItemByName(page, 'Tutorials');
+    const tutorials = treeNodeByPath(page, ['Apps', 'Tutorials']);
     await expect(tutorials, 'Tutorials node should be visible under Apps').toBeVisible({ timeout: 10_000 });
     await tutorials.click();
     await page.waitForTimeout(2000);
@@ -127,7 +128,7 @@ test.describe('Browse navigation (Browse-Nav-*)', () => {
 
     // Confirm Tutorials is NOT visible in the collapsed tree.
     await expect(
-      treeItemByName(page, 'Tutorials'),
+      treeNodeByPath(page, ['Apps', 'Tutorials']),
       'Tutorials must be hidden before Locate (tree is collapsed)',
     ).not.toBeVisible({ timeout: 3_000 });
 
@@ -136,7 +137,7 @@ test.describe('Browse navigation (Browse-Nav-*)', () => {
     await page.waitForTimeout(1500);
 
     await expect(
-      treeItemByName(page, 'Tutorials'),
+      treeNodeByPath(page, ['Apps', 'Tutorials']),
       'Tutorials should be revealed in the tree after Locate',
     ).toBeVisible({ timeout: 10_000 });
 
