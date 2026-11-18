@@ -960,12 +960,41 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       // this.viewer = new RcsbViewer(this.viewerDiv, props);
       this.viewer = await createRcsbViewer(this.viewerDiv, props);
       await this._disableMolstarAutoFocusRepresentation();
+
+      const saved: Partial<PluginLayoutStateProps> = {};
+      if (this.layoutShowControls !== defaults.layoutShowControls)
+        saved.showControls = this.layoutShowControls;
+      if (this.layoutControlsDisplay !== defaults.layoutControlsDisplay)
+        saved.controlsDisplay = this.layoutControlsDisplay as PluginLayoutControlsDisplay;
+      const regionState = {
+        left: this.layoutRegionStateLeft,
+        top: this.layoutRegionStateTop,
+        right: this.layoutRegionStateRight,
+        bottom: this.layoutRegionStateBottom,
+      };
+      if (regionState.left !== defaults.layoutRegionStateLeft || regionState.top !== defaults.layoutRegionStateTop ||
+        regionState.right !== defaults.layoutRegionStateRight || regionState.bottom !== defaults.layoutRegionStateBottom)
+        saved.regionState = regionState;
+      if (Object.keys(saved).length > 0)
+        //eslint-disable-next-line new-cap
+        await PluginCommands.Layout.Update(this.viewer.plugin, {state: saved});
     }
     if (!this.viewer) throw new Error(`The 'viewer' is not created.`);
 
     const plugin = this.viewer.plugin;
-    this.viewSubs.push(plugin.commands.subscribe(PluginCommands.Layout.Update, () => {
-
+    this.viewSubs.push(plugin.commands.subscribe(PluginCommands.Layout.Update, ({state}) => {
+      const values: {[propName: string]: string | boolean | undefined} = {
+        [PROPS.layoutShowControls]: plugin.layout.state.isExpanded ? undefined : state?.showControls,
+        [PROPS.layoutControlsDisplay]: state?.controlsDisplay,
+        [PROPS.layoutRegionStateLeft]: state?.regionState?.left,
+        [PROPS.layoutRegionStateTop]: state?.regionState?.top,
+        [PROPS.layoutRegionStateRight]: state?.regionState?.right,
+        [PROPS.layoutRegionStateBottom]: state?.regionState?.bottom,
+      };
+      const changed = Object.fromEntries(Object.entries(values)
+        .filter(([propName, value]) => value !== undefined && value !== (this.props.get(propName) as unknown)));
+      if (Object.keys(changed).length > 0)
+        this.setOptions(changed);
     }));
 
     const isPdbColumn = this.biostructureIdColumnName ?

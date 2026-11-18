@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [public#4622](https://github.com/datagrok-ai/public/issues/4622): Biostructure viewer: Fixed layout changes made in Mol* not updating the layout properties, and saved layout properties not restored
 * PDB_ID renderer: Fixed missing structure images: RCSB moved them to `cdn.rcsb.org/images/structures/pdb/`
 * Biostructure viewer: Fixed a structure passed in `dataJson` or `pdb` being replaced by the table's Molecule3D column (the AutoDock panel showed the pose without its receptor); the viewer now picks its columns only after its options are applied, and only when it is given no structure
 * [core#1407](https://github.com/datagrok-ai/core/issues/1407): Molstar viewer: Fixed the ligands debug record passing a function instead of the ligands' rows as its parameters

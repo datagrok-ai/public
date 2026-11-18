@@ -50,7 +50,8 @@ and while the engine is still working (Mol* `behaviors.state.isUpdating`, NGL `s
 Snapshot`, `Toggle Controls Panel`, `Toggle Expanded Viewport`, `Settings / Controls Info`,
 `Toggle Selection Mode`) only in `msp-btn-link-toggle-on|off`, and the package's own `Binding site`
 button follows the same classes; the bdd library reads `msp-btn-link-toggle-on` as `selected` when
-asked, so nothing watches the DOM.
+asked, so nothing watches the DOM. Layout changes made in Mol* (`Layout.Update`) are mirrored
+into the `layout*` properties except `layoutIsExpanded`; non-default ones are applied when Mol* is created.
 
 **Named elements.** The NGL file preview and the NGL double-click view put
 `data-u2-name="ngl-host"` on their `.d4-ngl-viewer` host. The preview view is named after the file;

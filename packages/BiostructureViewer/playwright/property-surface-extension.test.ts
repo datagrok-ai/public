@@ -435,7 +435,7 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
     });
 
     // SCENARIO 6 — Layout: toggle layoutShowControls via gear-opened property panel + Mol* overlay button.
-    //   layoutShowControls round-trips via setOptions; overlay-button -> property mirror is left soft.
+    //   layoutShowControls round-trips via setOptions, and the overlay button updates it.
     let scenario6Mounted = false;
     let scenario6GearClicked = false;
 
@@ -520,21 +520,30 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
     await softStep('Scenario 6 step 6-7 — Mol* overlay Toggle Controls Panel button flips layoutShowControls (needs .msp-plugin)', async () => {
       if (!scenario6Mounted) return;
 
+      await page.locator('.msp-plugin canvas, .msp-no-webgl').first().waitFor({timeout: 30_000}).catch(() => {});
+      const mspPluginMounted = await page.evaluate(() =>
+        !!document.querySelector('.msp-plugin canvas') && !document.querySelector('.msp-no-webgl'));
+
+      // The overlay button exists only once the Mol* WebGL viewport mounts. Absent that, declare a
+      // visible skip (gear-click DOM driving in step 1-3 already covers the property path) — not silent green.
+      if (!mspPluginMounted)
+        throw new Error('Test is skipped: Mol* .msp-plugin (WebGL) not mounted — overlay Toggle Controls Panel button unavailable.');
+
+      await page.waitForFunction(() => {
+        const v = Array.from(grok.shell.tv?.viewers ?? []).find((x: any) => x.type === 'Biostructure') as any;
+        return !!v && !v.isRenderPending;
+      }, null, {timeout: 30_000});
+
       const beforeOverlay = await page.evaluate(() => {
         const tv = grok.shell.tv;
         const v = tv?.viewers ? Array.from(tv.viewers).find((x: any) => x.type === 'Biostructure') as any : null;
         return {
-          mspPluginMounted: !!document.querySelector('.msp-plugin'),
           overlayBtnPresent: !!document.querySelector('button[title="Toggle Controls Panel"]'),
           layoutBefore: v?.props?.get?.('layoutShowControls') ?? null,
         };
       });
 
-      // The overlay button exists only once the Mol* WebGL viewport mounts. Absent that, declare a
-      // visible skip (gear-click DOM driving in step 1-3 already covers the property path) — not silent green.
-      if (!beforeOverlay.mspPluginMounted)
-        throw new Error('Test is skipped: Mol* .msp-plugin (WebGL) not mounted — overlay Toggle Controls Panel button unavailable.');
-
+      expect(typeof beforeOverlay.layoutBefore).toBe('boolean');
       expect(beforeOverlay.overlayBtnPresent, 'overlay Toggle Controls Panel button present when Mol* mounted').toBe(true);
       await page.locator('button[title="Toggle Controls Panel"]').first().click({timeout: 10_000});
 
@@ -543,7 +552,7 @@ test('BiostructureViewer / property surface extension (dataJson/pdb/pdbTag/behav
         const tv = grok.shell.tv;
         const v = tv?.viewers ? Array.from(tv.viewers).find((x: any) => x.type === 'Biostructure') as any : null;
         return v?.props?.get?.('layoutShowControls') ?? null;
-      }), {timeout: 10_000, intervals: [200, 500, 1000]}).not.toBe(beforeOverlay.layoutBefore);
+      }), {timeout: 10_000, intervals: [200, 500, 1000]}).toBe(!beforeOverlay.layoutBefore);
 
       // Restore the false default for downstream scenarios.
       await page.evaluate(async () => {
