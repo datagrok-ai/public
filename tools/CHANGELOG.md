@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## v.next
+
+* `grok s push --creds`: Fixed a pushed connection getting the login and password as ordinary parameters instead of its credentials
+
 ## 6.7.12 (2026-11-18)
 
 * `grok src clone`: Clones the whole umbrella by default; children you cannot read are skipped

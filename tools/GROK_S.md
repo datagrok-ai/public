@@ -1001,9 +1001,10 @@ rules, and `push` refuses the same connections even if a bundle was hand-edited 
 ### Credentials: `--creds`
 
 A pushed connection arrives without its secrets. Author a YAML file **for the target** and
-pass it to `push` or `migrate`; the values are merged into the connection's parameters before
-the save, and the server encrypts and masks them itself. Nothing is ever read back into the
-bundle.
+pass it to `push` or `migrate`. A key the source masked among the connection's parameters (a
+password-class parameter) goes back into the parameters; the rest, such as a database `login` and
+`password`, are saved as the connection's credentials for all users. The server encrypts and masks
+them itself, and nothing is ever read back into the bundle.
 
 ```yaml
 # creds.yaml — keys are connection nqNames as the bundle spells them
