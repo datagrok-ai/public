@@ -5,9 +5,10 @@ import {BehaviorSubject, Observable, Subject, combineLatest} from 'rxjs';
 import {debounceTime, distinctUntilChanged, map, skip} from 'rxjs/operators';
 
 import {queries} from '../package-api';
+import {GitHubIssuesClient} from '../github/issues-client';
+import {GitHubIssue} from '../github/issue';
 
 export const DEV_HOST = 'dev.datagrok.ai';
-export const JIRA_BROWSE = 'https://reddata.atlassian.net/browse/';
 export const JENKINS_TEST_JOB = 'https://ops.datagrok.ai/job/test-build/';
 const SLOW_FACTOR = 1.25;
 const MIN_SLOW_MS = 1000; // ignore sub-second tests — a +% on a few-ms test is noise, not a regression
@@ -30,7 +31,10 @@ export class ReleaseContext {
    * so the pair is debounced into one event; re-asserting the current values fires nothing. */
   readonly scopeChanged: Observable<string>;
   private lastTests: {key: string, pivot: Promise<ReleasePivot | null>} | null = null;
-  constructor(env: string = DEFAULT_ENV, branch: string = DEFAULT_BRANCH) {
+  lastTickets: {milestone: string, issues: Promise<GitHubIssue[]>} | null = null;
+  githubIssues: GitHubIssuesClient;
+  constructor(githubIssues: GitHubIssuesClient, env: string = DEFAULT_ENV, branch: string = DEFAULT_BRANCH) {
+    this.githubIssues = githubIssues;
     this.env = new BehaviorSubject(env);
     this.branch = new BehaviorSubject(branch);
     this.scopeChanged = combineLatest([this.env, this.branch]).pipe(debounceTime(0),
@@ -49,9 +53,22 @@ export class ReleaseContext {
     return this.lastTests!.pivot;
   }
 
+  tickets(milestone: string, force = false): Promise<GitHubIssue[]> {
+    if (!force && this.lastTickets?.milestone === milestone)
+      return this.lastTickets.issues;
+    const issues = this.githubIssues.milestoneIssues(milestone);
+    const entry = this.lastTickets = {milestone, issues};
+    issues.catch(() => {
+      if (this.lastTickets === entry)
+        this.lastTickets = null;
+    });
+    return issues;
+  }
+
   /** Ribbon Refresh: drops the kept pivot once, then lets every tab re-fetch. */
   reload(): void {
     this.lastTests = null;
+    this.lastTickets = null;
     this.refresh.next();
   }
 }

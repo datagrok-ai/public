@@ -1,5 +1,11 @@
 # Usage Analysis changelog
 
+## v.next
+
+* Release dashboard: Tickets read GitHub issues instead of Jira (needs the `githubToken` credential)
+* Test dashboards: Ticket verdicts read GitHub issues instead of Jira
+* Test dashboards: Fixed the Test Track tickets status column
+
 ## 2.7.2 (2026-11-17)
 
 * Release dashboard: The Stress alert compares speed (tests per second) and median test duration of the latest sweep with the best sweep that completed the full suite and with the latest release branch, and reports an incomplete sweep; the Stress tab charts speed next to the median duration

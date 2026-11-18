@@ -49,10 +49,10 @@ export function releaseDashboardApp(path?: string) : any {
 }
 
 //input: column<string> ticketColumn 
-//input: column<string> resultColumn 
+//output: column result
 //meta.vectorFunc: true
-export async function getTicketsVerdict(ticketColumn: DG.Column, resultColumn: DG.Column) : Promise<void> {
-  await PackageFunctions.getTicketsVerdict(ticketColumn, resultColumn);
+export async function getTicketsVerdict(ticketColumn: DG.Column<any>) : Promise<any> {
+  return await PackageFunctions.getTicketsVerdict(ticketColumn);
 }
 
 //output: dataframe result

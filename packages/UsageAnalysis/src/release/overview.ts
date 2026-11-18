@@ -8,7 +8,8 @@ import {fetchVexIndex, criticalHighCount, toDashboardImages, vexReleaseDelta} fr
 import {computeTestAlerts, fetchReleaseBenchmarks, computeBenchmarkAlerts, stressRegression, fetchStressSummary,
   defaultNextVersion, ReleaseContext, ReleasePivot, BenchmarkPivot, STALE_DAYS, BENCH_SLOW_PCT,
   STRESS_LAST_BUILDS} from './data';
-import {fetchReleaseTickets, isActionable, hasMainLabel} from './tickets';
+import {countTickets} from './tickets';
+import {GitHubIssue} from '../github/issue';
 
 type Band = 'green' | 'orange' | 'red' | 'info';
 const BAND_CLASS: Record<Band, string> = {
@@ -102,7 +103,7 @@ export class ReleaseOverviewView extends UaView {
         (p) => this.applyBenchmarks(p)),
       load(['Stress'], fetchStressSummary(STRESS_LAST_BUILDS), (df) => this.applyStress(df)),
       load(['Vulnerabilities'], fetchVexIndex(), (vex) => this.applyVex(vex)),
-      load(['Tickets'], fetchReleaseTickets(defaultNextVersion()), (issues) => this.applyTickets(issues)),
+      load(['Tickets'], this.ctx.tickets(defaultNextVersion(), force), (issues) => this.applyTickets(issues)),
     ];
     this.renderBanner([], true);
     await Promise.all(all);
@@ -173,11 +174,10 @@ export class ReleaseOverviewView extends UaView {
         `${x.dHigh >= 0 ? '+' : ''}${x.dHigh} high`)}}];
   }
 
-  private applyTickets(issues: any[] | null): AlertNode[] {
-    // Card counts only actionable tickets (not Done / Won't Fix), split by the MAIN label.
-    const open = (issues ?? []).filter(isActionable).length;
-    const mainOpen = (issues ?? []).filter((r: any) => isActionable(r) && hasMainLabel(r)).length;
-    this.setCard('Tickets', `${open}`, open === 0 ? 'green' : 'info', `${mainOpen} MAIN, ${open - mainOpen} other`);
+  private applyTickets(issues: GitHubIssue[]): AlertNode[] {
+    const c = countTickets(issues);
+    this.setCard('Tickets', `${c.open}`, c.open === 0 ? 'green' : 'info',
+      `${c.mainOpen} MAIN, ${c.open - c.mainOpen} other`);
     return [];
   }
 

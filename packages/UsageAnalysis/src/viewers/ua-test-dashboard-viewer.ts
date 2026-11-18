@@ -2,6 +2,9 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import { _package, _properties } from '../package';
+import {findIssueRefs, GitHubIssue, IssueRef, isOpen} from '../github/issue';
+import {GitHubIssuesClient} from '../github/issues-client';
+import {issuesGrid} from '../github/issues-grid';
 
 const MANUAL_TICKETS_FILE = 'manual-tickets.json';
 
@@ -28,6 +31,17 @@ class Priority {
       return currentCode > maxCode ? currentPriority : maxPriority;
     });
   }
+}
+
+function verdictPriority(issue: GitHubIssue, platformVersion: string | undefined): string {
+  if (!isOpen(issue))
+    return Priority.RESOLVED;
+  if (issue.priority === 'Blocker')
+    return Priority.BLOCKER;
+  const thisVersion = !!platformVersion && !!issue.milestone?.startsWith(platformVersion);
+  if (issue.type === 'Bug' && issue.priority !== 'Low' && thisVersion)
+    return Priority.ERROR;
+  return Priority.INFO;
 }
 
 class Verdict {
@@ -61,11 +75,13 @@ function getIconForVerdict(priority: string): HTMLElement {
 
 export class TestDashboardWidget extends DG.JsViewer {
   static isOpen: boolean = false;
-  constructor() {
-    super();
-  }
+  ticketRefs = new Map<string, IssueRef>();
+  githubIssues: GitHubIssuesClient;
 
-  tickets: Set<string> = new Set();
+  constructor(githubIssues: GitHubIssuesClient) {
+    super();
+    this.githubIssues = githubIssues;
+  }
 
   onFrameAttached(dataFrame: DG.DataFrame): void {
     this.root.childNodes.forEach((node, _idx, _parent) => node.remove());
@@ -117,7 +133,7 @@ export class TestDashboardWidget extends DG.JsViewer {
   verdictsOnCorrectness(df: DG.DataFrame): Verdict[] {
     let verdicts: Verdict[] = [];
     if (df.col('jira') != null)
-      this.jiraTickets(df.col('jira')!);
+      this.collectTickets(df.col('jira')!);
     if (df.col('ignore?') != null)
       verdicts.push(...this.ignoredTests(df));
     verdicts.push(...this.majorPackages(df));
@@ -131,22 +147,14 @@ export class TestDashboardWidget extends DG.JsViewer {
     verdicts.push(...this.performanceDowngrades(df));
     return verdicts;
   }
-  jiraTickets(jiraCol: DG.Column<string>): Verdict[] {
-    try {
-      for (let i = 0; i < jiraCol.length; i++)
-        if ((jiraCol.getString(i)?.length ?? 0) > 0)
-          jiraCol.getString(i).split(',').forEach((ticket, _) => {
-            let match = ticket.match(/GROK\-\d+/);
-            if (match != null && match[0] != undefined)
-              this.tickets.add(match[0]);
-          });
-      return [];
-    } catch (x) {
-      return [new Verdict(Priority.ERROR, 'Unhandled exception', ui.div([
-        ui.span(['Failed to check jira tickets']),
-        ui.span([x])
-      ]))];
-    }
+  collectTickets(ticketCol: DG.Column<string>): void {
+    for (let i = 0; i < ticketCol.length; i++)
+      this.watch(findIssueRefs(ticketCol.getString(i)));
+  }
+
+  watch(refs: IssueRef[]): void {
+    for (const ref of refs)
+      this.ticketRefs.set(ref.key, ref);
   }
   majorPackages(df: DG.DataFrame): Verdict[] {
     try {
@@ -297,114 +305,38 @@ export class TestDashboardWidget extends DG.JsViewer {
     }
   }
   
-  async loadManualTickets(): Promise<void> {
-    if (!await _package.files.exists(MANUAL_TICKETS_FILE))
-      return;
-    const stored: string[] = JSON.parse(await _package.files.readAsText(MANUAL_TICKETS_FILE));
-    for (let i = 0; i < stored.length; i++)
-      this.tickets.add(stored[i]);
+  async readManualTickets(): Promise<string[]> {
+    return await _package.files.exists(MANUAL_TICKETS_FILE) ?
+      JSON.parse(await _package.files.readAsText(MANUAL_TICKETS_FILE)) : [];
   }
 
-  async addManualTicket(name: string): Promise<void> {
-    const stored: string[] = await _package.files.exists(MANUAL_TICKETS_FILE)
-      ? JSON.parse(await _package.files.readAsText(MANUAL_TICKETS_FILE))
-      : [];
-    if (!stored.includes(name)) {
-      stored.push(name);
-      await _package.files.writeAsText(MANUAL_TICKETS_FILE, JSON.stringify(stored));
-    }
+  async addManualTickets(refs: IssueRef[]): Promise<void> {
+    const stored = await this.readManualTickets();
+    const added = refs.map((r) => r.key).filter((key) => !stored.includes(key));
+    if (added.length > 0)
+      await _package.files.writeAsText(MANUAL_TICKETS_FILE, JSON.stringify([...stored, ...added]));
   }
 
   async verdictsForTickets(): Promise<Verdict[]> {
     try {
-      await this.loadManualTickets();
-
-      let verdicts: Verdict[] = [];
-      const priorityRows: Map<string, number[]> = new Map([
-        [Priority.BLOCKER, []],
-        [Priority.ERROR, []],
-        [Priority.INFO, []],
-        [Priority.RESOLVED, []]
-      ]);
-
-      let tickets: string[] = [];
-      this.tickets.forEach((ticket, _v, _t) => {
-        let match = ticket.match(/GROK\-\d+/);
-        if (match != null && match[0] != undefined)
-          tickets.push(match[0]);
-      });
-    
-      let jiraCol: DG.Column<string> = DG.Column.fromStrings('jira', [...tickets]);
-      let severityCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
-        ticketColumn: jiraCol,
-        field: 'priority:name'
-      });
-      let statusCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
-        ticketColumn: jiraCol,
-        field: 'status:name'
-      });
-      let issueTypeCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
-        ticketColumn: jiraCol,
-        field: 'issuetype:name'
-      });
-      let summaryCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
-        ticketColumn: jiraCol,
-        field: 'summary'
-      });
-      let assigneeCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
-        ticketColumn: jiraCol,
-        field: 'assignee:displayName'
-      });
-      let fixVersionsCol: DG.Column<string> = await grok.functions.call('JiraConnect:getJiraField', {
-        ticketColumn: jiraCol,
-        field: 'fixVersions:0:name'
-      });
-      for (let i = 0; i < jiraCol.length; i++) {
-        let priority: string = Priority.INFO;
-        if (statusCol.getString(i) == 'Done' || statusCol.getString(i) == 'Won\'t fix')
-          priority = Priority.RESOLVED;
-        else if (severityCol.getString(i).startsWith('Blocker'))
-          priority = Priority.BLOCKER;
-        else if (issueTypeCol.getString(i) == 'Bug') {
-          if (severityCol.getString(i).startsWith('Low') || !(fixVersionsCol.getString(i).startsWith(_properties['Platform version'])))
-            priority = Priority.INFO;
-          else
-            priority = Priority.ERROR;
-        }
-        priorityRows.get(priority)?.push(i);
+      this.watch(findIssueRefs((await this.readManualTickets()).join(' ')));
+      const found = await this.githubIssues.findIssues([...this.ticketRefs.values()]);
+      const issues = new Map([...found.values()].map((i) => [i.key, i]));
+      const groups = new Map<string, GitHubIssue[]>();
+      for (const issue of issues.values()) {
+        const priority = verdictPriority(issue, _properties['Platform version']);
+        groups.set(priority, [...(groups.get(priority) ?? []), issue]);
       }
-
-      for (const [priority, rowIndices] of priorityRows) {
-        if (rowIndices.length > 0) {
-            const filteredColumns = [
-                jiraCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
-                summaryCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
-                fixVersionsCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
-                statusCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
-                severityCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
-                issueTypeCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx))),
-                assigneeCol.clone(DG.BitSet.create(jiraCol.length, (idx) => rowIndices.includes(idx)))
-            ];
-    
-            const grid = DG.Grid.create(DG.DataFrame.fromColumns(filteredColumns));
-            grid.sort(['jira'], [true]);
-            await grok.data.detectSemanticTypes(grid.dataFrame);
-            grid.props.rowHeight = 32;
-            verdicts.push(new Verdict(
-                priority,
-                `JIRA tickets [${priority}] - ${rowIndices.length} items`,
-                grid.root
-            ));
-            grid.root.style.width = '800px';
-            grid.root.style.height = '500px';
-            grid.autoSize(1000, 500);
-        }
-      }
-      return verdicts;
-    } catch (x) {
-      return [new Verdict(Priority.ERROR, 'Unhandled exception', ui.div([
-        ui.span(['Failed to gather jira tickets info']),
-        ui.span([x])
+      return [...groups].map(([priority, group]) => {
+        const grid = issuesGrid(group, `GitHub issues [${priority}]`);
+        grid.props.rowHeight = 32;
+        grid.autoSize(1000, 500);
+        return new Verdict(priority, `GitHub issues [${priority}] - ${group.length} items`, grid.root);
+      });
+    } catch (e) {
+      return [new Verdict(Priority.ERROR, 'GitHub issues', ui.div([
+        ui.span(['Failed to read GitHub issues: ']),
+        ui.span([e instanceof Error ? e.message : `${e}`]),
       ]))];
     }
   }
@@ -423,16 +355,16 @@ export class TestDashboardWidget extends DG.JsViewer {
       }
       lastAccordion!.appendChild(ui.div([verdicts[i].widget]));
     }
-    res.addPane('Actions', () => ui.actionLink('Watch a jira ticket', () => {
-      let dialog = ui.dialog('Watch ticket');
-      let ticketInput = ui.input.textArea('name');
+    res.addPane('Actions', () => ui.actionLink('Watch a GitHub issue', () => {
+      const dialog = ui.dialog('Watch issue');
+      const ticketInput = ui.input.textArea('issue', {tooltipText: 'core#456, public#12 or an issue URL'});
       dialog.add(ticketInput.root);
       dialog.onOK(async () => {
-        let match = ticketInput.value.match(/GROK\-\d+/);
-        if (match != null && match[0] != undefined)
-          await this.addManualTicket(match[0]);
+        const refs = findIssueRefs(ticketInput.value);
+        if (refs.length > 0)
+          await this.addManualTickets(refs);
         else
-          (new DG.Balloon()).warning('Cpuldn\'t recognize a ticket name in ' + ticketInput.value);
+          grok.shell.warning(`Couldn't recognize an issue in ${ticketInput.value}`);
       });
       dialog.show();
     }));
