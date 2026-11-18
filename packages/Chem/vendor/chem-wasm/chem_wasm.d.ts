@@ -30,6 +30,17 @@ export class ChemMonomerLibrary {
      */
     constructor(json: string);
     /**
+     * `prepareToHelm()`: builds molecule → HELM's index of this library now (else on the first `toHelm`), once;
+     * returns its number of indexed forms.
+     */
+    prepareToHelm(): number;
+    /**
+     * `toHelm(molecules, options?)`: molecule → HELM per row (MOL blocks, SMILES or CXSMILES; null or '' an empty
+     * row): `{helms, errors, matched, inline, chem}` (module docs). A molecule that cannot be converted is its row's
+     * error; throws only where the options are wrong.
+     */
+    toHelm(molecules: (string | null)[], options?: string | null): {helms: (string | null)[], errors: (string | null)[], matched: Int32Array, inline: Int32Array, chem: Int32Array};
+    /**
      * The number of monomers (keys) read.
      */
     readonly size: number;
@@ -1319,7 +1330,9 @@ export interface InitOutput {
     readonly chemmonomerlibrary_assembleOne: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly chemmonomerlibrary_errors: (a: number) => [number, number];
     readonly chemmonomerlibrary_new: (a: number, b: number) => [number, number, number];
+    readonly chemmonomerlibrary_prepareToHelm: (a: number) => number;
     readonly chemmonomerlibrary_size: (a: number) => number;
+    readonly chemmonomerlibrary_toHelm: (a: number, b: any, c: number, d: number) => [number, number, number];
     readonly chemreactionscheme_describe: (a: number) => [number, number];
     readonly chemreactionscheme_draw_to_canvas: (a: number, b: any, c: number, d: number) => [number, number];
     readonly chemreactionscheme_get_centre_counts: (a: number) => [number, number];

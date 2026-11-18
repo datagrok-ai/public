@@ -111,12 +111,38 @@ export class ChemMonomerLibrary {
         return this;
     }
     /**
+     * `prepareToHelm()`: builds molecule → HELM's index of this library now (else on the first `toHelm`), once;
+     * returns its number of indexed forms.
+     * @returns {number}
+     */
+    prepareToHelm() {
+        const ret = wasm.chemmonomerlibrary_prepareToHelm(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
      * The number of monomers (keys) read.
      * @returns {number}
      */
     get size() {
         const ret = wasm.chemmonomerlibrary_size(this.__wbg_ptr);
         return ret >>> 0;
+    }
+    /**
+     * `toHelm(molecules, options?)`: molecule → HELM per row (MOL blocks, SMILES or CXSMILES; null or '' an empty
+     * row): `{helms, errors, matched, inline, chem}` (module docs). A molecule that cannot be converted is its row's
+     * error; throws only where the options are wrong.
+     * @param {(string | null)[]} molecules
+     * @param {string | null} [options]
+     * @returns {{helms: (string | null)[], errors: (string | null)[], matched: Int32Array, inline: Int32Array, chem: Int32Array}}
+     */
+    toHelm(molecules, options) {
+        var ptr0 = isLikeNone(options) ? 0 : passStringToWasm0(options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemmonomerlibrary_toHelm(this.__wbg_ptr, molecules, ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
     }
 }
 if (Symbol.dispose) ChemMonomerLibrary.prototype[Symbol.dispose] = ChemMonomerLibrary.prototype.free;

@@ -2,9 +2,9 @@ chem-wasm: Chem's Crux engine (crux-core crates/chem-wasm), one WebAssembly file
 
 crate: chem-wasm
 features: ['chem']
-crux_core_rev: cc9af4c5f9feec177443df557a72d25246136b9f
+crux_core_rev: 03c1fcf02dbe28a5f600fe2674b77e5f905423b3
 crux_core_dirty: False
-built_utc: 2026-11-16T17:56:14.243Z
+built_utc: 2026-11-18T00:57:49.507Z
 cargo.profile: wasm-ship
 cargo.target: wasm32-unknown-unknown
 cargo.rustc: rustc 1.95.0 (59807616e 2026-04-14)
@@ -14,18 +14,18 @@ wasm_bindgen.flags: --target web --remove-name-section
 wasm_bindgen.glue_patch: tools/wasm_glue_fresh.mjs --crate crates/chem-wasm
 wasm_opt.version: wasm-opt version 117 (version_117)
 wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
-files.chem_wasm_bg.wasm.raw: 6851399
-files.chem_wasm_bg.wasm.gzip9: 2665039
-files.chem_wasm_bg.wasm.brotli11: 1950676
-files.chem_wasm.js.raw: 189898
-files.chem_wasm.js.gzip9: 31717
-files.chem_wasm.js.brotli11: 26427
-cargo_artifact.raw: 8695292
-cargo_artifact.gzip9: 3110847
-cargo_artifact.brotli11: 2200924
+files.chem_wasm_bg.wasm.raw: 7035625
+files.chem_wasm_bg.wasm.gzip9: 2731555
+files.chem_wasm_bg.wasm.brotli11: 1994379
+files.chem_wasm.js.raw: 191167
+files.chem_wasm.js.gzip9: 31951
+files.chem_wasm.js.brotli11: 26642
+cargo_artifact.raw: 8922623
+cargo_artifact.gzip9: 3191980
+cargo_artifact.brotli11: 2254143
 
-vendored from: a clean build of crux-core main cc9af4c5f (build-ship.sh chem)
-chem_wasm_bg.wasm: 6,851,399 B raw, sha256 ea8bf62474e0e68b
+vendored from: a clean build of crux-core main 03c1fcf02 (build-ship.sh chem)
+chem_wasm_bg.wasm: 7,035,625 B raw, sha256 7351594952ca0496
 NOTICE: the build's (crux-core tools/wasm_notices.py)
-includes: crux-core cc9af4c5f (batch k): the reaction centre's widths as drawing options, centreWidth and centreLinesWidth
+includes: crux-core 03c1fcf02 (batch q, land mol-to-helm-cutstereo): molecule → HELM: a centre at a cut keeps its tag (an inline piece's centre bearing two or more R groups writes each * as [*:n] beside _Rn); the rescue first rewrites such pieces
 files: chem_wasm.js (glue, wasm-bindgen --target web), chem_wasm.d.ts, chem_wasm_bg.wasm, NOTICE.chem-wasm, VERSION.chem-wasm (both emitted to dist)
