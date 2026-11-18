@@ -42,7 +42,7 @@ export class UserReport extends Entity {
     return dayjs(api.grok_UserReport_CreatedOn(this.dart));
   }
 
-  /** @deprecated Jira is retired; tickets are requested with {@link UserReportsDataSource.requestTicket}. Always undefined. */
+  /** @deprecated Jira is retired. Always undefined. */
   get jiraTicket(): string | undefined {
     return undefined;
   }

@@ -2595,15 +2595,8 @@ export class UserReportsDataSource extends HttpDataSource<UserReport> {
     return api.grok_Reports_Get(num);
   }
 
-  /** Asks for a GitHub issue about the report: logs a `ticket-requested` record, which the instance's log settings
-   * send to the ticket relay. Needs `RequestTickets`. */
-  requestTicket(report: UserReport | string, options?: {summary?: string, priority?: string, source?: string}): Promise<void> {
-    return api.grok_Reports_RequestTicket(typeof report === 'string' ? report : report.id, options?.summary,
-      options?.priority, options?.source);
-  }
-
-  /** Files a report from [summary] and asks for a GitHub issue about it, as {@link requestTicket} does.
-   * Returns the new report's number. Needs `RequestTickets`. */
+  /** Files a report from [summary] and requests a GitHub issue for it. Returns the report's number.
+   * Needs `RequestTickets`. */
   fileTicket(summary: string, options?: {description?: string, priority?: string, source?: string}): Promise<number> {
     return api.grok_Reports_FileTicket(summary, options?.description, options?.priority, options?.source);
   }
