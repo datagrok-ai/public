@@ -327,6 +327,54 @@ export namespace funcs {
     return await grok.functions.call('Chem:RdKitReactionRenderer', {});
   }
 
+  /**
+   * Whether the Reaction panel shows: Crux draws reactions (Crux mode)
+   */
+  export async function reactionPanelShown(reaction: string ): Promise<boolean> {
+    return await grok.functions.call('Chem:ReactionPanelShown', { reaction });
+  }
+
+  /**
+   * The reaction drawn large, with a full-screen view, and a route's steps
+   * @param {string} reaction
+   *   semType: ChemicalReaction
+   */
+  export async function reactionPanel(reaction: string ): Promise<any> {
+    return await grok.functions.call('Chem:ReactionPanel', { reaction });
+  }
+
+  /**
+   * Whether the Checks section shows for a molecule: Crux mode, and a flag to show
+   */
+  export async function moleculeChecksShown(molecule: string ): Promise<boolean> {
+    return await grok.functions.call('Chem:MoleculeChecksShown', { molecule });
+  }
+
+  /**
+   * What this molecule breaks downstream, in Crux mode: what Chem cannot read, what changes meaning
+   * @param {any} molecule
+   *   semType: Molecule
+   */
+  export async function moleculeChecksPanel(molecule: any ): Promise<any> {
+    return await grok.functions.call('Chem:MoleculeChecksPanel', { molecule });
+  }
+
+  /**
+   * Whether the Checks section shows for a reaction: Crux mode, and a flag to show
+   */
+  export async function reactionChecksShown(reaction: string ): Promise<boolean> {
+    return await grok.functions.call('Chem:ReactionChecksShown', { reaction });
+  }
+
+  /**
+   * What this reaction or template breaks downstream, in Crux mode: what Chem cannot read, what a run gets wrong
+   * @param {any} reaction
+   *   semType: ChemicalReaction
+   */
+  export async function reactionChecksPanel(reaction: any ): Promise<any> {
+    return await grok.functions.call('Chem:ReactionChecksPanel', { reaction });
+  }
+
   export async function rdKitMixtureRenderer(): Promise<any> {
     return await grok.functions.call('Chem:RdKitMixtureRenderer', {});
   }
@@ -1052,6 +1100,13 @@ export namespace funcs {
     return await grok.functions.call('Chem:EditMoleculeCell', { cell });
   }
 
+  /**
+   * ChemicalReaction
+   */
+  export async function editReactionCell(cell: any ): Promise<void> {
+    return await grok.functions.call('Chem:EditReactionCell', { cell });
+  }
+
   export async function openChemLibSketcher(): Promise<any> {
     return await grok.functions.call('Chem:OpenChemLibSketcher', {});
   }
@@ -1187,6 +1242,10 @@ export namespace funcs {
 
   export async function isSmarts(s: string ): Promise<boolean> {
     return await grok.functions.call('Chem:IsSmarts', { s });
+  }
+
+  export async function detectCdxmlReactions(col: DG.Column ): Promise<void> {
+    return await grok.functions.call('Chem:DetectCdxmlReactions', { col });
   }
 
   export async function detectSmiles(col: DG.Column , min: number ): Promise<void> {
@@ -1626,6 +1685,13 @@ export namespace funcs {
    */
   export async function reactionEnumeratorApp(): Promise<DG.View> {
     return await grok.functions.call('Chem:ReactionEnumeratorApp', {});
+  }
+
+  /**
+   * Draws, edits and exports reactions and multi-step routes
+   */
+  export async function reactionsApp(): Promise<DG.View> {
+    return await grok.functions.call('Chem:ReactionsApp', {});
   }
 
   export async function mpoProfilesAppTreeBrowser(treeNode: any , _browseView: DG.View ): Promise<void> {

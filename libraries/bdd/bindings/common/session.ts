@@ -46,7 +46,12 @@ export async function resetShellAfterLoad(page: Page, simpleMode = guide.shellSi
       grok.shell.windows.presentationMode = false;
     // a help GIF starts from the bare shell, whatever panels the account keeps open; a step opens the one it needs
     // a demo clip keeps the sidebar, so the shell is recognisable, and opens the panels it shows; the stand
-    // account's count of unread notifications is no part of any demo
+    // account's unread notifications (the sidebar's count, the Home view's badge), its Home widgets (the stand's
+    // error reports, its usage charts) and its recently used viewers (Add Viewer lists the ones a clip is about
+    // to add) are no part of any demo: Home is its search bar alone. An info balloon ("Numbering applied") sits
+    // on camera for seconds and is not filmed — kept on the page, so the balloon checks and claims read it as
+    // before, but transparent; a warning or an error is filmed. A grid's column tooltip (its stats and
+    // histogram) pops up wherever the pointer rests on a header after a sort, and is off
     if (help || demo) {
       grok.shell.windows.showSidebar = demo;
       grok.shell.windows.showBrowse = false;
@@ -56,8 +61,18 @@ export async function resetShellAfterLoad(page: Page, simpleMode = guide.shellSi
     if (demo && !document.getElementById('bdd-demo-style')) {
       const style = document.createElement('style');
       style.id = 'bdd-demo-style';
-      style.textContent = '.grok-notification-count {display: none !important}';
+      style.textContent = '.grok-notification-count, .pp-notification-badge, .power-pack-widgets-panel, ' +
+        'div:has(> [name="viewer-gallery-recent"]) {display: none !important} ' +
+        '.d4-balloon.info {opacity: 0 !important; pointer-events: none !important}';
       document.head.append(style);
+      grok.events.onViewAdded.subscribe((v: any) => {
+        if (v?.type === 'TableView' && v.grid)
+          v.grid.props.showColumnTooltip = false;
+      });
+      grok.events.onViewerAdded.subscribe((a: any) => {
+        if (a?.args?.viewer?.type === 'Grid')
+          a.args.viewer.props.showColumnTooltip = false;
+      });
     }
   }, [simpleMode, !!guide.guideDir(), guide.helpMode(), guide.demoMode()] as [boolean, boolean, boolean, boolean]);
   // closeAll re-adds the Home view asynchronously; a table opened before it lands ends up behind it, and the view a

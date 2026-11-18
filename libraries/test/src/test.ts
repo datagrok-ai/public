@@ -507,6 +507,9 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
     await initAutoTests(package_);
   const results:TestResultExtended[] = [];
   let lastGc = Date.now();
+  // A load test keeps its results in the run's own report: sending each one to the server under load is a
+  // quarter of the requests that server gets.
+  const reports = new ReportQueue(!options?.stressTest);
   console.log(`Running tests...`);
   console.log(options);
   options ??= {};
@@ -516,7 +519,7 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
 
   await invokeTests(tests, options);
   // the reports still on their way; a server that stopped answering does not hold the results back
-  await Promise.race([reports, delay(60000)]);
+  await Promise.race([reports.sent, delay(60000)]);
 
   for (let r of results) {
     r.result = r.result.toString().replace(/"/g, '\'');
@@ -575,7 +578,8 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
             options?.test,
             logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT,
             package_.name,
-            options.verbose
+            options.verbose,
+            reports
         );
 
         if (testRun && !testRun.skipped)
@@ -617,7 +621,8 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
             logs,
             DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout,
             package_.name,
-            options.verbose
+            options.verbose,
+            reports
         );
 
         if (testRun && !testRun.skipped)
@@ -731,7 +736,7 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
                       flaking: DG.Test.isReproducing
                   };
               }));
-              res.forEach((test) => reportTest('package', test));
+              res.forEach((test) => reports.add('package', test));
           } else
               res = await invokeTestsInCategory(value, options, skippingCategories);
           const data: TestResultExtended[] = res.filter((d) => d.result != 'skipped');
@@ -814,19 +819,27 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
 
           results.push({...params, 'flaking': DG.Test.isReproducing && !error});
           (<any>params).package = package_.name;
-          reportTest('package', params);
+          reports.add('package', params);
       }
     }
   }
 }
 
-// Results go to the server one at a time and behind the tests: a test does not wait until the result of the
-// previous one is stored, and a result the server did not take does not fail the run.
-let reports: Promise<void> = Promise.resolve();
+/** The results of one run on their way to the server, one at a time and behind the tests: a test does not wait
+ * until the result of the previous one is stored, and a result the server did not take does not fail the run.
+ * A queue per run: the runs of a load test share a process, and one queue for all of them made every run wait
+ * for the results of all the others. */
+class ReportQueue {
+  sent: Promise<void> = Promise.resolve();
 
-function reportTest(type: string, params: object): void {
-  reports = reports.then(() => grok.shell.reportTest(type, params))
-    .catch((e: any) => stdWarn(`A test result was not reported: ${e?.message ?? e}`));
+  constructor(private enabled: boolean = true) {}
+
+  add(type: string, params: object): void {
+    if (!this.enabled)
+      return;
+    this.sent = this.sent.then(() => grok.shell.reportTest(type, params))
+      .catch((e: any) => stdWarn(`A test result was not reported: ${e?.message ?? e}`));
+  }
 }
 
 async function getResult(x: any): Promise<string> {
@@ -834,7 +847,7 @@ async function getResult(x: any): Promise<string> {
 }
 
 async function execTest(t: Test, predicate: string | undefined, logs: any[],
-  testTimeout?: number, packageName?: string, verbose?: boolean
+  testTimeout?: number, packageName?: string, verbose?: boolean, reports: ReportQueue = new ReportQueue()
 ): Promise<TestResult | undefined> {
   logs.length = 0;
   let r: TestResult;
@@ -910,7 +923,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
 
     if (params.result instanceof DG.DataFrame)
       params.result = JSON.stringify(params.result?.toJson()) || '';
-    reportTest(type, params);
+    reports.add(type, params);
   }
   return r;
 }

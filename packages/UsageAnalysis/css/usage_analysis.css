@@ -365,6 +365,11 @@ button.ui-btn.ui-btn-raised.ua-metrics-btn-secondary {
   min-height: 0;
 }
 
+.ua-metrics-grid-host > .ua-issues-grid {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .ua-metrics-panel-grow > .ua-metrics-grid-host {
   height: auto;
   flex: 1 1 auto;

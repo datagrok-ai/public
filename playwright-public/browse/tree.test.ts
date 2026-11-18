@@ -116,7 +116,7 @@ test.describe('Browse tree (Browse-Tree-*)', () => {
     await expandTreeGroup(page, 'Apps');
     // Files and Databases are expanded above, so Tutorials sits below the fold — scroll it in
     // before clicking, or the click waits on an element that will never become visible.
-    const tutorials = treeItemByName(page, 'Tutorials');
+    const tutorials = treeNodeByPath(page, ['Apps', 'Tutorials']);
     await tutorials.waitFor({ state: 'attached', timeout: 20_000 });
     await tutorials.scrollIntoViewIfNeeded();
     await tutorials.click();

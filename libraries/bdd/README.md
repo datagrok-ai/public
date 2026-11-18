@@ -70,7 +70,13 @@ and `BDD_COMMAND_TIMEOUT` how long a top-menu command has to add its columns (18
 feature that fails on what an earlier one left behind. `BDD_MOLECULE_SKETCHER=<name>` runs the
 suite with one molecule sketcher: `Given the molecule sketcher is "…"` pins that one instead of the
 feature's own, and a feature about one sketcher's own controls, tagged `@sketcher-controls`, skips
-with its reason under an override that names another.
+with its reason under an override that names another. `BDD_EXCLUDE_PACKAGES=<names>` (comma-separated)
+keeps those packages out of every shell the run loads, through the platform's `excludePackages`
+startup parameter: a feature that needs one meets its `the "<name>" package is installed` gate and
+skips, and the others run without its autostart and handlers. Those handlers include the package's
+semantic types, which features of other packages may rely on without saying so (Chem's floating pane
+needs Chembl to type `molregno`), so a full round runs with every package and leaves the variable for
+narrowing a run down.
 
 `grok-bdd link` exists because Playwright refuses to be loaded twice in one process and the
 library's runtime resolves it from its own directory; the command moves the package's copy to
@@ -585,15 +591,18 @@ scenario into `guides/<feature slug>/<scenario slug>/`:
   starting where the previous action ended (the renderer refuses to make a video in which it
   skips); an icon-sized target
   (28 px or less each way: an icon, a checkbox) is zoomed into first, anything larger is clicked
-  where it is; a gesture on a hit area of a viewer or a widget (a grid cell, an atom of a sketcher)
+  where it is — a row as wide as its panel (an accordion pane's header, a tree node, a menu item) on its
+  caption; a gesture on a hit area of a viewer or a widget (a grid cell, an atom of a sketcher)
   lights that area, not the viewer round it; the page after the step is revealed, and a caption above the page (clear of a
   player's timeline) reads the step as an instruction ("Click on Open local file icon in browse
   toolbar"), or says what a `# caption: <text>` comment on the lines right above the step says — for a
   step whose text is for the test (an atom's index, a drag in pixels, a reading), so the video speaks as
   a person would ("Click the acid's carbon", "The centre flips from R to S"); a check with a caption is
   shown even where `HIDDEN_CHECKS` would leave it out; a caption too long for the strip is set smaller, then on two lines, and the lines of a
-  pasted text (`\n` in the step) read as values separated by commas. A choice is shown being made: a native `<select>` opens its list, the option is typed
-  so the list highlights it, Enter takes it; a column selector opens its picker, the name is typed
+  pasted text (`\n` in the step) read as values separated by commas. A choice is shown being made: a native `<select>`
+  is pressed and its list opens (drawn by the page, since headless Chromium paints no open popup into its
+  pictures) with the current option lit, the option lights as the pointer reaches it and is pressed — on film
+  only, a test takes `selectOption`; a column selector opens its picker (no tooltip over it), the name is typed
   into the search short of its last letter (a complete unique name is taken on the spot) and the
   row it leaves is clicked. A `Then` step shows what it checked with a check mark —
   when a person could see it (a dialog, a column, a row count, a value, a legend item's color);
@@ -637,10 +646,14 @@ have completed`, `… should have finished updating`), whether it is written as 
 `Then`, and a step that neither
 acted nor changed the page (its before and after pictures are the same file): a table opened
 through the API is shown under its caption. A path walked inside a step — the top menu's group,
-then each item; a context menu's groups — is a list of stops (`guide.hop`: the page as it was
-then, the element's box), and the pointer travels to each with the stop lit; a runtime path that
-does not report its stops jumps from the closed menu to the result, so a new menu walk calls
-`hop` where `pickTopMenu` and `pickMenuPath` do. Rendering is `tool/guide-render.py` (Pillow + ffmpeg: `py -m
+then each item; a context menu's groups — is a list of stops (`guide.hop`: the page as the pointer
+set off for the stop, the element's box), and the pointer travels to each with the stop lit; the
+next stop's picture is what the pointer's arrival led to (the group opened under it), and the video
+cuts to it as the pointer gets there. A menu's leaf is a stop again once the pointer is on it
+(`guide.hopLeaf`), so it is lit before the press, a way that goes round something keeps its corner
+(`guide.waypoint`: into a flyout along the group's row), and a stop tagged `menu` is held long enough
+to read. A runtime path that does not report its stops jumps from the closed menu to the result, so
+a new menu walk calls `hop` where `pickTopMenu` and `pickMenuPath` do. Rendering is `tool/guide-render.py` (Pillow + ffmpeg: `py -m
 pip install pillow imageio-ffmpeg`, or `FFMPEG=<path>`); `--fps`, `--hold`, `--travel`, `--zoom`
 tune the pace when run by hand on a `steps.json` directory.
 
@@ -656,14 +669,17 @@ video, under `features/demos/`: a 1920×1080 video of a 1600×900 window filmed 
 (`@viewport:<w>x<h>` picks another window: `1920x1080` for a wide layout, `1280x720` for a close-up),
 opened by a title card — the feature's name, the scenario's name and the scenario's own description
 (the text under `Scenario:`), wrapped, never cut — then the page with no caption strip, dimming or
-zoom, its presses still marked, at a slightly quicker pace that rests on each step as long as its
-change takes to take in. Every `Given` (wherever it stands, the set-up arranging the grid included:
+zoom, its presses still marked (a key a step presses, or holds through a press, on a key cap), at a slightly
+quicker pace that rests on each step as long as its change takes to take in (a dialog it opened as long as its
+inputs take to read). The shell shows no unread-notification count, no Home widgets, no recently used viewers in Add
+Viewer, no grid column tooltips and no info balloons (transparent: on the page for the checks, not on film). Every `Given` (wherever it stands, the set-up arranging the grid included:
 `the "<col>" column of the grid is <n> px wide`, `the rows of the grid are <n> px tall`, `the column
 headers of the grid are <n> px tall`, `the grid shows only the columns "<a, b>"`, `the context panel is
 closed`, `the notification balloons are closed`, `the tooltip is hidden`, `the viewers have settled`) and
 every uncaptioned check stay off camera; an action is cut straight to the page the steps after it settled
 on. `the video says "<text>"` puts a line over the page for as long as it takes to
-read (a guide shows it as a caption; a test does nothing). `review-sheet.png` and `timeline.json`
+read (a guide shows it as a caption; a test does nothing), at the bottom or the top — wherever it covers least of what
+the steps around it act on and change — or where `the video says "<text>" at the top|bottom` pins it. `review-sheet.png` and `timeline.json`
 beside the video are for its review. `py tool/guide-render.py --reel <out.mp4> <clip dir>…` cuts rendered
 clips together, in the order given, into one video (each clip also copied beside it as `NN -
 <scenario>.mp4`, and `<out>.md` saying where each starts). The `bdd-answer` skill, section 5, has the

@@ -1,18 +1,18 @@
 @guide @demo @viewport:1920x1080
-Feature: Bioinformatics · Peptide SAR
-  A demo clip, one of the Bio showcase (features/demos, filmed with `grok-bdd guide`: the @demo tag leaves
-  the set-up and the checks off camera). It starts from the CDR3 SAR of clip 12, made off camera the same
-  way (antibodies sample, IMGT numbering, CDR3 cut out of the aligned column, SAR on Y at -lg, MCL at 90).
-  The Logo Summary Table sums up each MCL cluster (its tooltip, a click selects its members everywhere);
-  then two more Peptides viewers come from the Add Viewer gallery: Sequence Position Statistics (the pKd of
-  every residue at a CDR3 position, as violins; position 2, IMGT 106, edited in its header) and Sequence
-  Mutation Cliffs (the mean pKd, by the residue there, of the antibodies that differ only at a position;
-  position 8, IMGT 111A, where W comes out lowest). Not shown: the Mutation Cliffs viewer's Series picker
-  (one line per cluster): filmed, the guide's pick left the in-viewer column selector empty (a plain run
-  picks the column).
+Feature: 6 · Antibodies and proteins · SAR viewers
+  A demo clip, one of the Bio showcase (features/demos, filmed with `grok-bdd guide`: the @demo tag leaves the
+  set-up and the checks off camera). It starts from the CDR3 SAR of clip 12, made off camera the same way
+  (antibodies sample, IMGT numbering, CDR3 cut out of the aligned column, SAR on Y at -lg, MCL at 90). The
+  Logo Summary Table sums up each MCL cluster (its tooltip; a click selects its members everywhere); then two
+  more Peptides viewers come from the Add Viewer gallery: Sequence Position Statistics (the pKd of every
+  residue at a CDR3 position, as violins; position 2, IMGT 106, edited in its header) and Sequence Mutation
+  Cliffs (the mean pKd, by the residue there, of the antibodies that differ only at a position; position 8,
+  IMGT 111A, where W comes out lowest). Not shown: the Mutation Cliffs viewer's Series picker (one line per
+  cluster): filmed, the guide's pick left the in-viewer column selector empty (a plain run picks the column).
+  Split again from clip 13, which it joined for a while.
 
   Scenario: Clusters, residues and cliffs in more viewers
-    Each MCL cluster summed up by its CDR3 logo and pKd; more viewers break pKd down by residue and by mutation cliff.
+    Each MCL cluster summed up; more viewers break pKd down by residue and position.
 
     Given user is logged in
     And simple mode is off
@@ -66,7 +66,9 @@ Feature: Bioinformatics · Peptide SAR
     Then "Add Viewer" dialog should be visible
     When user types "Mutation" into viewer gallery search in "Add Viewer" dialog
     And user clicks on first "Sequence Mutation Cliffs" button in "Add Viewer" dialog
-    Then Sequence Mutation Cliffs viewer should be added to the open tableview
+    Then "Add Viewer" dialog should be absent
+    And Sequence Mutation Cliffs viewer should be added to the open tableview
+    Given the viewers have settled
     When user selects "8" in Position input in Sequence Mutation Cliffs viewer
     Then the "position" reading of Sequence Mutation Cliffs viewer should be 8
     And the "cliff rows" reading of Sequence Mutation Cliffs viewer should be 9

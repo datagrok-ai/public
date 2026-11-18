@@ -106,6 +106,34 @@ category('plates', () => {
     expect(excelToNum('BA'), 52);
   });
 
+  test('fromTableByRow: a well in row I makes a 384-well plate', async () => {
+    const plate = Plate.fromTableByRow(DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('well', ['A01', 'I05']), DG.Column.fromList(DG.TYPE.FLOAT, 'signal', [1, 2])]));
+    expect(`${plate.rows}x${plate.cols}`, '16x24');
+    expect(plate.get('signal', 'I05'), 2);
+  });
+
+  test('fromTableByRow: an explicit size wins over the wells', async () => {
+    const wells = DG.DataFrame.fromColumns([DG.Column.fromStrings('well', ['A01', 'H12'])]);
+    const plate = Plate.fromTableByRow(wells, {rows: 16, cols: 24});
+    expect(`${plate.rows}x${plate.cols}`, '16x24');
+    let error = '';
+    try {
+      Plate.fromTableByRow(wells, {rows: 4, cols: 6});
+    } catch (e: any) {
+      error = e.message;
+    }
+    expect(error, 'Wells reach row 8 and column 12, outside a 4 x 6 plate');
+  });
+
+  test('plateWidget', async () => {
+    const wells = DG.DataFrame.fromColumns([DG.Column.fromStrings('well', ['A01', 'B02']),
+      DG.Column.fromList(DG.TYPE.FLOAT, 'signal', [1, 2])]);
+    const widget: DG.Widget = await grok.functions.call('Plates:plateWidget', {table: wells, rows: 16, cols: 24});
+    expect(widget.root instanceof HTMLElement, true);
+    expect(widget.root.querySelector('canvas') !== null, true);
+  });
+
   test('BMG PHERAstar reader', async () => {
     const text = await grok.dapi.files.readAsText('System:DemoFiles/hts/formats/BMG_Pherastar_96.txt');
     expect(PlateReader.getReader(text) instanceof BmgPherastar96PlateReader, true);

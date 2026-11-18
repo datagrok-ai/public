@@ -616,7 +616,8 @@ function computeSparse(sub: DG.DataFrame, m: PipelineMapping, pr: PipelineRules,
     lloq: {colName: m.lloq ?? null, scalar: 0},
     // A blank route cell takes `defaultRoute`; `readRoutes` blocks one when there is none, so the
     // 'other' placeholder is never read (as in `prepareAppRun`).
-    route: {codesCol: routes.codes !== null ? DERIVED_ROUTE_CODE_COL : null, scalar: m.defaultRoute ?? 'other'},
+    route: {codesCol: routes.codes !== null ? DERIVED_ROUTE_CODE_COL : null, scalar: m.defaultRoute ?? 'other',
+      rawCol: routes.codes !== null ? (m.route ?? null) : null},
     units: {time: u.time, concentration: u.concentration, dose: u.dose, bodyWeight: u.bodyWeight},
     ...(declaredTopology !== undefined ? {declaredTopology} : {}),
     acceptance: pr.acceptance,

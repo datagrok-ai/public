@@ -176,6 +176,32 @@ def is_small(box):
     return box is not None and box['width'] <= SMALL_TARGET_PX and box['height'] <= SMALL_TARGET_PX
 
 
+def along(points, lengths, d):
+    """The point `d` along the way through `points` (`lengths`: of each of its segments)."""
+    for a, b, length in zip(points, points[1:], lengths):
+        if d <= length:
+            f = d / length if length > 0 else 1.0
+            return a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f
+        d -= length
+    return points[-1]
+
+
+KEY_NAMES = {'ControlOrMeta': 'Ctrl', 'Control': 'Ctrl', 'Meta': 'Cmd', 'Escape': 'Esc', 'Delete': 'Del', ' ': 'Space'}
+
+
+def key_label(keys):
+    """Keys as a key cap names them: `ControlOrMeta+Z` is `Ctrl + Z`, `ArrowRight` is `Right`, and a key pressed
+    again and again is named once, with the count."""
+    runs = []
+    for key in keys:
+        if runs and runs[-1][0] == key:
+            runs[-1][1] += 1
+        else:
+            runs.append([key, 1])
+    named = (' + '.join(KEY_NAMES.get(p, p[5:] if p.startswith('Arrow') else p) for p in key.split('+')) for key, _ in runs)
+    return '   '.join(name + (f' ×{n}' if n > 1 else '') for name, (_, n) in zip(named, runs))
+
+
 class Renderer:
     def __init__(self, folder, fps, hold, travel, zoom, zoom_time=0.8, help=False, demo=False):
         self.folder = folder
@@ -187,9 +213,12 @@ class Renderer:
         self.zoom = 1.0 if help or demo else zoom
         self.zoom_time = zoom_time
         # a demo keeps a little quicker pace wherever a guide waits for its caption to be read: the rest
-        # before a press, the ripple, a stop on a menu's way, the step's picture before its result, a typing beat
+        # before a press, the ripple, a stop on a path's way, the step's picture before its result, a typing beat
         self.rest_s, self.pulse_s, self.leg_s, self.cut_s, self.beat_s = \
             (0.2, 0.42, 0.22, 0.12, 0.1) if demo else (0.4, PULSE_S, 0.4, 0.3, BEAT_S)
+        # but a menu's items (and a list's) are read as the pointer goes: a stop of a menu holds its opened group, the
+        # rest before its leaf is pressed is longer, and an opened list stays up longer still
+        self.menu_s, self.menu_rest_s, self.list_s = (0.38, 0.35, 0.45) if demo else (0.4, 0.4, 0.5)
         with open(os.path.join(folder, 'steps.json'), encoding='utf-8') as f:
             self.manifest = json.load(f)
         # the page records CSS pixels; the pictures have `scale` times as many. A guide framed to a part
@@ -258,8 +287,9 @@ class Renderer:
         self.drawn = None
         self.frame_no = 0
         self.presses = []
-        # the line a demo shows over the page, while it lasts; the last frame composed without it
+        # the line a demo shows over the page and its key cap, while they last; the last frame composed without them
         self.note = None
+        self.cap = None
         self.plain = None
         # where each part of the video starts (the title, every step, the end): timeline.json, review-sheet.png
         self.marks = []
@@ -350,7 +380,8 @@ class Renderer:
             mid = self.bar_h / 2
             d.line([(x, mid), (x + s * 0.32, mid + s * 0.32), (x + s * 0.85, mid - s * 0.4)], fill=CHECK + (255,), width=3)
             x += s * 1.2
-        labels = [key.replace('ControlOrMeta', 'Ctrl') for key in step.get('keys', [])[:4]]
+        # the keys the page's keyboard pressed, else the ones the step pressed some other way (Escape on a dialog)
+        labels = [key.replace('ControlOrMeta', 'Ctrl') for key in (step.get('keys') or step.get('pressed') or [])[:4]]
         keys_w = sum(d.textlength(label, font=self.small) + 22 for label in labels)
         font, lines = self.fit_caption(d, text, self.w - x - pad - keys_w)
         gap = font.size * 0.62 if len(lines) > 1 else 0
@@ -532,7 +563,8 @@ class Renderer:
 
     def demo_title_frames(self, base):
         """The card, faded in from dark (clips cut together meet in the dark), for as long as its words take to
-        read, then a dissolve into the page."""
+        read at a glance (about three seconds: the card is the clip's headline, the clip shows the rest), then a
+        dissolve into the page."""
         card = self.demo_card(base)
         dark = Image.new('RGB', self.video, NOTE_BOX)
         n = int(0.3 * self.fps)
@@ -540,7 +572,7 @@ class Renderer:
             self.frame_no += 1
             yield Image.blend(dark, card, ease((i + 1) / n))
         words = len((self.manifest['scenario'] + ' ' + (self.manifest.get('description') or '')).split())
-        for _ in range(int(min(5.5, max(2.4, 1.2 + 0.15 * words)) * self.fps)):
+        for _ in range(int(min(3.6, max(2.4, 1.0 + 0.1 * words)) * self.fps)):
             self.frame_no += 1
             yield card
         page = self.compose(base)
@@ -553,9 +585,11 @@ class Renderer:
         """Seconds to read a line of text."""
         return min(most, max(least, 1.2 + 0.3 * len(text.split())))
 
-    def start_note(self, text, ahead=()):
-        """A line over a demo's page from the next frame on, for as long as it takes to read: at the bottom,
-        or at the top while what the coming steps point at is down there."""
+    def start_note(self, text, ahead=(), before=None, at=None, view=None):
+        """A line over a demo's page from the next frame on, for as long as it takes to read: at the bottom or the
+        top — where the feature pins it (`at`), else where it covers least of what the steps around it are about
+        (`covers`): the step before it, which the note explains, and the steps it is read over. It belongs to the
+        view it was put up in (`end_stale_note`)."""
         vw, vh = self.video
         d = ImageDraw.Draw(Image.new('RGB', (1, 1)))
         size = round(vh * 0.027)
@@ -569,21 +603,51 @@ class Renderer:
         ld.rounded_rectangle((0, 0, bw - 1, bh - 1), radius=round(font.size * 0.45), fill=NOTE_BOX + (228,))
         for i, line in enumerate(lines):
             ld.text((bw / 2, py + (i + 0.5) * lead), line, font=font, fill=(255, 255, 255, 255), anchor='mm')
-        low = [p for s in ahead for p in self.points_of(s) if p[1] > self.h * 0.74]
-        top = len(low) > 0
-        at = ((vw - bw) // 2, round(vh * 0.075) if top else vh - bh - round(vh * 0.07))
-        self.note = {'rgb': layer.convert('RGB'), 'alpha': layer.getchannel('A'), 'at': at,
-                     'total': int(self.reading(text) * self.fps), 'shown': 0}
+        x = (vw - bw) // 2
+        ys = {'bottom': vh - bh - round(vh * 0.07), 'top': round(vh * 0.075)}
+        steps = [s for s in (before, *ahead) if s is not None]
+        place = at if at in ys else min(ys, key=lambda p: self.covers((x, ys[p], bw, bh), steps))
+        self.note = {'rgb': layer.convert('RGB'), 'alpha': layer.getchannel('A'), 'at': (x, ys[place]),
+                     'total': int(self.reading(text) * self.fps), 'shown': 0, 'view': view}
 
-    def points_of(self, step):
-        """Where a step points on the page: its stops' targets and the pointer's way."""
-        out = []
-        for leg in step.get('legs', []):
-            box = leg.get('target')
-            if box:
-                out.append((box['x'] + box['width'] / 2, box['y'] + box['height'] / 2))
-            out += [(p['x'], p['y']) for p in leg.get('pointer', [])]
-        return out
+    def covers(self, rect, steps):
+        """How much of what the steps are about a note at `rect` (video pixels) would cover: what they act on and
+        where the pointer goes (their stops' targets, the pointer's way, as boxes) above all, then what they change
+        on the page (a tooltip, a highlight) — counted only where it lies under the note. A step that brings a page
+        of its own (a new view) changes everything and says nothing about where."""
+        x0, y0 = rect[0] - self.pad[0], rect[1] - self.pad[1]
+        x1, y1 = x0 + rect[2], y0 + rect[3]
+        r = 28 * self.s
+        score = 0.0
+        for step in steps:
+            boxes = [leg['target'] for leg in step.get('legs', []) if leg.get('target')]
+            boxes += [{'x': p['x'] - r, 'y': p['y'] - r, 'width': 2 * r, 'height': 2 * r}
+                      for leg in step.get('legs', []) for p in leg.get('pointer', []) if p['type'] in ('move', 'down')]
+            for b in boxes:
+                w = min(x1, b['x'] + b['width']) - max(x0, b['x'])
+                h = min(y1, b['y'] + b['height']) - max(y0, b['y'])
+                if w > 0 and h > 0:
+                    score += 1000 * w * h / max(1.0, min(b['width'] * b['height'], rect[2] * rect[3]))
+            legs = step.get('legs', [])
+            first = self._image(legs[0]['shot'] if legs else step['before'])
+            mask = self.change_mask(first, self._image(step.get('settled') or step['after']))
+            if mask is not None:
+                k = mask.width / self.w
+                part = mask.crop((max(0, int(x0 * k)), max(0, int(y0 * k)), max(1, int(x1 * k)), max(1, int(y1 * k))))
+                score += 100 * part.histogram()[255] / max(1, part.width * part.height)
+        return score
+
+    def change_mask(self, a, b):
+        """Where two pictures of the page differ, on small grey copies; None when they differ almost everywhere."""
+        size = (max(1, self.w // 8), max(1, self.h // 8))
+        mask = ImageChops.difference(a.convert('L').resize(size, Image.BILINEAR), b.convert('L').resize(size, Image.BILINEAR))
+        mask = mask.point(lambda v: 255 if v > 24 else 0)
+        return None if mask.histogram()[255] > 0.4 * size[0] * size[1] else mask
+
+    def before(self, step):
+        """The shown step before this one: what a note put up now explains."""
+        i = self.steps.index(step)
+        return self.steps[i - 1] if i > 0 else None
 
     def ahead(self, step, n=2):
         """The step and the next shown ones a note will be read over."""
@@ -591,17 +655,20 @@ class Renderer:
         return self.steps[i:i + n + 1]
 
     def with_note(self, img):
-        """The frame with the note over it, faded in and out; the note counts the frame."""
-        note = self.note
-        if note is None:
-            return img
-        fade = max(1, int(0.25 * self.fps))
-        a = min(1.0, (note['shown'] + 1) / fade, (note['total'] - note['shown']) / fade)
-        note['shown'] += 1
-        if note['shown'] >= note['total']:
-            self.note = None
-        out = img.copy()
-        out.paste(note['rgb'], note['at'], note['alpha'] if a >= 1 else note['alpha'].point(lambda v: int(v * a)))
+        """The frame with the note and the key cap over it, each faded in and out; each counts the frame."""
+        out = img
+        for name, fade_s in (('note', 0.25), ('cap', 0.1)):
+            layer = getattr(self, name)
+            if layer is None:
+                continue
+            fade = max(1, int(fade_s * self.fps))
+            a = min(1.0, (layer['shown'] + 1) / fade, (layer['total'] - layer['shown']) / fade)
+            layer['shown'] += 1
+            if layer['shown'] >= layer['total']:
+                setattr(self, name, None)
+            if out is img:
+                out = img.copy()
+            out.paste(layer['rgb'], layer['at'], layer['alpha'] if a >= 1 else layer['alpha'].point(lambda v: int(v * a)))
         return out
 
     def change(self, a, b):
@@ -617,8 +684,10 @@ class Renderer:
 
     def demo_result(self, step, shown, after):
         """The page a demo's step led to — once the steps after it settled it (a column computed, a viewer
-        drawn, the new column sized), the page they left, cut to straight from the gesture — held as long
-        as its change takes to take in, and a tooltip a hover brought up long enough to read."""
+        drawn, the new column sized), the page they left, cut to straight from the gesture: the page as the
+        gesture left it (a file opened raw, a viewer docked before its set-up moved it) is never shown — held
+        as long as its change takes to take in, a tooltip a hover brought up long enough to read, a dialog it
+        opened long enough to read its inputs."""
         result = self._image(step['settled']) if step.get('settled') else after
         change = self.change(shown, result)
         hold = self.rest_for(change, 0.3, 1.5)
@@ -626,17 +695,28 @@ class Renderer:
         # a hover brought up a tooltip: the bigger it is, the longer it takes to read
         if 'down' not in events and 'move' in events and change > 0.002:
             hold = max(hold, min(2.6, 1.2 + 7 * change))
+        if step.get('dialog'):
+            hold = max(hold, min(2.5, max(1.2, 0.9 + 0.12 * step['dialog']['inputs'])))
         yield from self.hold_frames(hold, result, self.cur)
+
+    def end_stale_note(self, step):
+        """A note is about the view it was put up in: a step that brings another view (a file opened) fades it out as
+        it goes, so the note is gone when the new view comes."""
+        if self.note is not None and step.get('view') and self.note.get('view') and step['view'] != self.note['view']:
+            self.note['total'] = min(self.note['total'], self.note['shown'] + max(1, int(0.2 * self.fps)))
 
     def frames_for(self, distance, least):
         """Enough frames that the eased way never moves the pointer more than MAX_STEP_PX in one."""
         return max(1, least, math.ceil(1.5 * distance / (MAX_STEP_PX * self.s)))
 
-    def travel_frames(self, base, lit, dest, caption, fade=False):
+    def travel_frames(self, base, lit, dest, caption, fade=False, via=None):
         """The pointer eased from where the last frame left it to dest — a longer way takes longer —
-        with the stop lighting up over the second half when `fade`."""
+        through the corner `via` when there is one, with the stop lighting up over the second half
+        when `fade` (from `base`, the picture on screen as the pointer sets off)."""
         start = self.cur
-        distance = math.hypot(dest[0] - start[0], dest[1] - start[1])
+        points = [start] + ([via] if via else []) + [dest]
+        lengths = [math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(points, points[1:])]
+        distance = sum(lengths)
         if distance < 0.5:
             if fade:
                 yield from self.light_frames(base, lit, caption)
@@ -645,15 +725,67 @@ class Renderer:
         n = self.frames_for(distance, round(self.fps * self.travel * (0.5 + min(distance, reach) / reach)))
         for i in range(n):
             t = ease((i + 1) / n)
-            pos = (start[0] + (dest[0] - start[0]) * t, start[1] + (dest[1] - start[1]) * t)
+            pos = along(points, lengths, t * distance)
             mix = ease((t - 0.5) / 0.5) if fade and lit is not base else 1.0
             yield self.frame(lit if mix >= 1 else Image.blend(base, lit, mix) if mix > 0 else base, pos, caption=caption)
+
+    def elbow(self, came_from, to, dest):
+        """The corner of the way from an item of a menu into the flyout it opened beside it: along the item's own row
+        first, then to the item of the flyout — a straight line would cross the items under the group, each of which
+        opens a flyout of its own. None for a dropdown under a bar's group, or a way that starts elsewhere."""
+        if came_from is None or to is None or not inside(came_from, self.cur[0], self.cur[1], pad=4):
+            return None
+        y = self.cur[1]
+        if abs(dest[1] - y) < 2:
+            return None
+        inset = 10 * self.s
+        right = came_from['x'] + came_from['width']
+        if to['x'] >= right - 2:
+            return min(right + inset, dest[0]), y
+        if to['x'] + to['width'] <= came_from['x'] + 2:
+            return max(came_from['x'] - inset, dest[0]), y
+        return None
 
     def light_frames(self, base, lit, caption):
         """A stop lighting up where the pointer already is — one the step reached with the keyboard."""
         n = int(0.3 * self.fps)
         for i in range(n):
             yield self.frame(Image.blend(base, lit, ease((i + 1) / n)), self.cur, caption=caption)
+
+    def arrive_frames(self, lit, arrived, zoom, anchor, caption):
+        """What the pointer's arrival at a stop led to (the group opened under it, the item lit) cross-faded in where
+        it came to rest, in a tenth of a second: the next stop's picture comes as the pointer gets there, not as it
+        leaves — cause before effect."""
+        n = max(1, round(0.1 * self.fps))
+        for i in range(n):
+            yield self.frame(Image.blend(lit, arrived, ease((i + 1) / n)), self.cur, zoom=zoom, anchor=anchor, caption=caption)
+
+    def start_cap(self, label, seconds=0.6):
+        """A key cap over a demo's page, at its bottom right, from the next frame on for `seconds`: the key a step
+        pressed (Escape) or the one held through a press (Shift), which a demo has no caption strip to name."""
+        vw, vh = self.video
+        d = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+        font = load_font(round(vh * 0.024), bold=True)
+        px, py = round(font.size * 0.8), round(font.size * 0.5)
+        bw, bh = int(d.textlength(label, font=font) + 2 * px), int(font.size * 1.2 + 2 * py)
+        depth, radius = max(3, round(vh * 0.004)), round(font.size * 0.35)
+        layer = Image.new('RGBA', (bw, bh + depth), (0, 0, 0, 0))
+        ld = ImageDraw.Draw(layer)
+        # a key: its face over a darker edge
+        ld.rounded_rectangle((0, depth, bw - 1, bh + depth - 1), radius=radius, fill=(6, 8, 12, 235))
+        ld.rounded_rectangle((0, 0, bw - 1, bh - 1), radius=radius, fill=(40, 46, 58, 240), outline=(140, 148, 160, 255), width=2)
+        ld.text((bw / 2, bh / 2), label, font=font, fill=(255, 255, 255, 255), anchor='mm')
+        margin = round(vh * 0.05)
+        self.cap = {'rgb': layer.convert('RGB'), 'alpha': layer.getchannel('A'), 'at': (vw - bw - margin, vh - bh - depth - margin),
+                    'total': max(1, int(seconds * self.fps)), 'shown': 0}
+
+    def key_frames(self, step, base):
+        """The keys a demo's step pressed as its gesture, as a key cap shown a moment before the page they led to
+        (the cap stays a moment over it)."""
+        if not (self.demo and step.get('pressed')):
+            return
+        self.start_cap(key_label(step['pressed']))
+        yield from self.hold_frames(0.3, base, self.cur)
 
     def zoom_frames(self, lit, at, z0, z1, caption):
         n = int(self.zoom_time * self.fps)
@@ -667,6 +799,9 @@ class Renderer:
         button = press.get('button', 'left')
         n = int((self.pulse_s if (press.get('count') or 1) == 1 else self.pulse_s * 0.6) * self.fps)
         peak = max(0, n // 5)
+        # a press only the video shows (a native select's drawn list) is on the element it names, whatever is lit
+        if press.get('shown') and press.get('box'):
+            target = press['box']
         for i in range(n):
             t = (i + 1) / n
             image = self.frame(lit, at, press=(at, t, button), zoom=zoom, anchor=anchor, caption=caption)
@@ -711,17 +846,21 @@ class Renderer:
         caption = self.caption_layer(step, index, total)
         legs = step.get('legs', [])
         still_path = os.path.join(self.folder, f'step-{index:02d}.png')
+        if self.demo:
+            self.end_stale_note(step)
         # a line of text: a demo shows it over the page while the steps after it go on, a guide as its caption
         if step['kind'] == 'note':
             self.compose(after, self.cur, caption=caption).save(still_path)
             if self.demo:
-                self.start_note(step['caption'], self.ahead(step))
+                self.start_note(step['caption'], self.ahead(step), self.before(step), step.get('noteAt'),
+                                step.get('view'))
                 yield from self.hold_frames(0.8, self._image(step['settled']) if step.get('settled') else after, self.cur)
             else:
                 yield from self.hold_frames(self.reading(step['caption']), after, self.cur, caption=caption)
             return
         if self.demo and step.get('captioned'):
-            self.start_note(step['caption'], self.ahead(step))
+            self.start_note(step['caption'], self.ahead(step), self.before(step), step.get('noteAt'),
+                            step.get('view'))
         if step['kind'] == 'check' and self.demo:
             self.compose(after, self.cur).save(still_path)
             yield from self.hold_frames(1.0, after, self.cur)
@@ -736,25 +875,35 @@ class Renderer:
             self.compose(base, self.cur, caption=caption).save(still_path)
             yield from self.hold_frames(self.hold * 0.9, base, self.cur, caption=caption)
             return
-        # a step with nothing to point at (a table opened through the API) shows the page it led to
+        # a step with nothing to point at (a table opened through the API, a key pressed) shows the page it led to
         if not any(leg.get('target') or leg.get('pointer') for leg in legs):
             self.compose(after, self.cur, caption=caption).save(still_path)
             if self.demo:
+                yield from self.key_frames(step, self._image(step['before']))
                 yield from self.demo_result(step, self._image(step['before']), after)
             else:
                 yield from self.hold_frames(self.hold, after, self.cur, caption=caption)
             return
         # the stops of the step in order — one, or a menu's group, each item, the leaf: the pointer
         # goes where the page says it went on each, over the page as it was then, and every press
-        # ripples under its tip
+        # ripples under its tip. A stop's picture is the page as the pointer set off for it; what the
+        # pointer's arrival led to (a group opened, an item lit) is the next stop's picture, cut to as
+        # the pointer gets there
         still = None
         zoom, zoom_at = 1.0, None
         lit, target = None, None
+        # the picture on screen as a stop begins (the one its arrival cut to), and the stop before it
+        shown, came_from = None, None
         for n_leg, leg in enumerate(legs):
             shot = self._image(leg['shot'])
             target = leg.get('target')
             lit = self.spotlight(shot, target) if target else shot
-            events = leg.get('pointer', [])
+            kind = leg.get('kind')
+            events = list(leg.get('pointer', []))
+            # a stop of a menu the pointer made no move for (a group already open) is gone to all the same: the
+            # pointer travels to the item, which does not light up wherever the pointer happens to be
+            if kind and target and not any(e['type'] in ('move', 'down') for e in events):
+                events.insert(0, {'type': 'move', 'x': target['x'] + target['width'] / 2, 'y': target['y'] + target['height'] / 2})
             lit_up = False
             still = None
             i = 0
@@ -775,7 +924,9 @@ class Renderer:
                 if zoom > 1 and math.hypot(at[0] - zoom_at[0], at[1] - zoom_at[1]) > 2:
                     yield from self.zoom_frames(lit, zoom_at, zoom, 1.0, caption)
                     zoom = 1.0
-                yield from self.travel_frames(shot, lit, at, caption, fade=not lit_up)
+                via = self.elbow(came_from, target, at) if kind and not lit_up else None
+                yield from self.travel_frames(shown if shown is not None and not lit_up else shot, lit, at, caption,
+                                              fade=not lit_up, via=via)
                 lit_up = True
                 if e['type'] == 'move':
                     i += 1
@@ -786,12 +937,16 @@ class Renderer:
                     path.append(events[j])
                     j += 1
                 # an icon-sized target is zoomed into, slowly enough to read as a zoom (a drag is not:
-                # it leaves the zoomed picture); a press rests under the pointer before it lands
+                # it leaves the zoomed picture); a press rests under the pointer before it lands — a
+                # demo names the keys held through it (Shift) on a key cap
                 if is_small(target) and zoom == 1.0 and self.zoom > 1 and not path:
                     yield from self.zoom_frames(lit, at, 1.0, self.zoom, caption)
                     zoom, zoom_at = self.zoom, at
+                if self.demo and e.get('mods'):
+                    self.start_cap(key_label(['+'.join(e['mods'])]), self.rest_s + self.pulse_s + 0.2)
                 if (e.get('count') or 1) == 1:
-                    yield from self.hold_frames(self.rest_s, lit, at, zoom=zoom, anchor=zoom_at, caption=caption)
+                    yield from self.hold_frames(self.menu_rest_s if kind == 'menu' else self.rest_s, lit, at, zoom=zoom,
+                                                anchor=zoom_at, caption=caption)
                 yield from self.press_frames(lit, at, e, target, step, index, caption, zoom, zoom_at)
                 still = self.compose(lit, at, press=(at, 0.3, e.get('button', 'left')), caption=caption)
                 if path:
@@ -799,16 +954,24 @@ class Renderer:
                     still = self.compose(lit, self.cur, held=e.get('button', 'left'), caption=caption)
                 i = j
             if not lit_up and target:
-                yield from self.light_frames(shot, lit, caption)
+                yield from self.light_frames(shown if shown is not None else shot, lit, caption)
             if n_leg < len(legs) - 1:
-                yield from self.hold_frames(self.leg_s, lit, self.cur, zoom=zoom, anchor=zoom_at, caption=caption)
+                # the arrival: the next stop's picture, the stop just reached still lit, held — a menu's stop and a
+                # list's long enough to read what opened
+                nxt = self._image(legs[n_leg + 1]['shot'])
+                shown = self.spotlight(nxt, target) if target else nxt
+                yield from self.arrive_frames(lit, shown, zoom, zoom_at, caption)
+                hold = self.menu_s if kind == 'menu' else self.list_s if kind == 'list' else self.leg_s
+                yield from self.hold_frames(hold, shown, self.cur, zoom=zoom, anchor=zoom_at, caption=caption)
                 if zoom > 1:
-                    yield from self.zoom_frames(lit, zoom_at, zoom, 1.0, caption)
+                    yield from self.zoom_frames(shown, zoom_at, zoom, 1.0, caption)
                     zoom = 1.0
+            came_from = target
         # the picture of the step for steps.md: the last stop lit, and where the pointer acted on it
         (still if still is not None else self.compose(lit, self.cur, caption=caption)).save(still_path)
         yield from self.hold_frames(self.cut_s, lit, self.cur, zoom=zoom, anchor=zoom_at, caption=caption)
         if self.demo:
+            yield from self.key_frames(step, lit)
             yield from self.demo_result(step, lit, after)
             return
         # the page after the step: zooming out over the step's picture, then cut to the page after it,
@@ -1097,7 +1260,8 @@ def selftest(folder):
     os.makedirs(folder, exist_ok=True)
     w, h = 640, 400
     names = ['01-before', '01-after', '02-before', '02-after', '03-before', '03-drag1', '03-drag2', '03-after',
-             '04-before', '04-after', '05-before', '05-hop2', '05-after', '06-before', '06-after']
+             '04-before', '04-after', '05-before', '05-hop2', '05-after', '06-before', '06-after',
+             '08-before', '08-hop2', '08-hop3', '08-after', '09-before', '09-after', '10-before', '10-hop2', '10-hop3', '10-after']
     for name in names:
         img = Image.new('RGB', (w, h), (240, 243, 247) if name == '01-before' else (224, 236, 250))
         d = ImageDraw.Draw(img)
@@ -1108,6 +1272,28 @@ def selftest(folder):
         if name == '05-hop2':
             d.rectangle((300, 150, 460, 250), fill=(255, 255, 255), outline=(150, 150, 150))
             d.text((312, 190), 'Item', fill=(40, 40, 40))
+        # a menu: a dropdown of three groups, the middle one opened into a flyout beside it, then its item lit
+        if name.startswith('08-'):
+            d.rectangle((300, 76, 420, 148), fill=(255, 255, 255), outline=(150, 150, 150))
+            for k, label in enumerate(['Above', 'Group', 'Below']):
+                if name in ('08-hop2', '08-hop3') and k == 1:
+                    d.rectangle((301, 100, 419, 124), fill=(214, 228, 245))
+                d.text((310, 82 + 24 * k), label, fill=(40, 40, 40))
+            if name in ('08-hop2', '08-hop3'):
+                d.rectangle((422, 100, 566, 196), fill=(255, 255, 255), outline=(150, 150, 150))
+                if name == '08-hop3':
+                    d.rectangle((423, 148, 565, 172), fill=(214, 228, 245))
+                for k, label in enumerate(['One', 'Two', 'Item', 'Four']):
+                    d.text((432, 106 + 24 * k), label, fill=(40, 40, 40))
+        # a native select, its list drawn under it with the current option lit, then the option lit
+        if name.startswith('10-'):
+            d.rectangle((60, 200, 180, 222), fill=(255, 255, 255), outline=(150, 150, 150))
+            d.text((66, 205), 'first' if name != '10-after' else 'third', fill=(40, 40, 40))
+            if name in ('10-hop2', '10-hop3'):
+                d.rectangle((60, 224, 180, 296), fill=(255, 255, 255), outline=(150, 150, 150))
+                d.rectangle((61, 225 if name == '10-hop2' else 273, 179, 247 if name == '10-hop2' else 295), fill=(47, 111, 222))
+                for k, label in enumerate(['first', 'second', 'third']):
+                    d.text((70, 229 + 24 * k), label, fill=(40, 40, 40))
         d.text((300, 320), name, fill=(40, 40, 40))
         img.save(os.path.join(folder, name + '.png'))
 
@@ -1117,15 +1303,25 @@ def selftest(folder):
 
     def step(i, text, caption, kind, legs, keys=()):
         return {'index': i, 'line': i, 'keyword': 'Then' if kind == 'check' else 'When', 'text': text, 'caption': caption,
-                'kind': kind, 'before': f'0{i}-before.png', 'after': f'0{i}-after.png', 'legs': legs,
+                'kind': kind, 'before': f'{i:02d}-before.png', 'after': f'{i:02d}-after.png', 'legs': legs,
                 'keys': list(keys), 'typed': '', 'ms': 10}
     button = {'x': 40, 'y': 40, 'width': 80, 'height': 24}
     icon = {'x': 600, 'y': 8, 'width': 20, 'height': 20}
+    group = {'x': 300, 'y': 100, 'width': 120, 'height': 24}
+    item = {'x': 422, 'y': 148, 'width': 144, 'height': 24}
+    select = {'x': 60, 'y': 200, 'width': 120, 'height': 22}
+    option = {'x': 60, 'y': 272, 'width': 120, 'height': 24}
+
+    def shown(box):
+        x, y = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
+        return [{'type': 'move', 'x': x, 'y': y}, {'type': 'down', 'x': x, 'y': y, 'button': 'left', 'count': 1, 'box': box,
+                                                   'on': 'option', 'shown': True}, {'type': 'up', 'x': x, 'y': y, 'button': 'left'}]
     manifest = {'feature': 'Self test', 'scenario': 'Two synthetic steps', 'description': '', 'tags': [],
                 'viewport': {'width': w, 'height': h}, 'steps': [
-                    # the press is off the button's centre, where the mark and the tip must be
-                    step(1, 'user clicks on the blue button', 'Click on the blue button', 'action',
-                         [{'shot': '01-before.png', 'target': button, 'pointer': [{'type': 'move', 'x': 52, 'y': 47}] + press(52, 47)}]),
+                    # the press is off the button's centre, where the mark and the tip must be; it opens a dialog
+                    dict(step(1, 'user clicks on the blue button', 'Click on the blue button', 'action',
+                              [{'shot': '01-before.png', 'target': button, 'pointer': [{'type': 'move', 'x': 52, 'y': 47}] + press(52, 47)}]),
+                         dialog={'inputs': 3}),
                     step(2, 'the page should be blue', 'The page is blue', 'check', [], ['Enter']),
                     step(3, 'user drags across the page', 'Drag across the page', 'action',
                          [{'shot': '03-before.png', 'target': {'x': 180, 'y': 80, 'width': 300, 'height': 200}, 'pointer': [
@@ -1134,9 +1330,10 @@ def selftest(folder):
                              {'type': 'move', 'x': 260, 'y': 140, 'held': True, 'shot': '03-drag1.png'},
                              {'type': 'move', 'x': 320, 'y': 180, 'held': True, 'shot': '03-drag2.png'},
                              {'type': 'up', 'x': 320, 'y': 180, 'button': 'left'}]}]),
-                    # a right-click on an icon at the page's edge: zoomed into, green
+                    # a right-click on an icon at the page's edge, Shift held: zoomed into, green
                     step(4, 'user right-clicks on the grey icon', 'Right-click on the grey icon', 'action',
-                         [{'shot': '04-before.png', 'target': icon, 'pointer': press(611, 19, 'right')}]),
+                         [{'shot': '04-before.png', 'target': icon,
+                           'pointer': [dict(p, mods=['Shift']) if p['type'] == 'down' else p for p in press(611, 19, 'right')]}]),
                     # a menu: the group hovered, then the item clicked on the page the hover opened
                     step(5, 'user picks "Item" from the menu', 'Pick "Item" from the menu', 'action',
                          [{'shot': '05-before.png', 'target': button, 'pointer': [{'type': 'move', 'x': 80, 'y': 52}]},
@@ -1146,7 +1343,22 @@ def selftest(folder):
                          [{'shot': '06-before.png', 'target': button, 'pointer': press(100, 58) + press(100, 58, count=2)}]),
                     # a line of text over the page, with nothing settled after it
                     dict(step(7, 'the video says "Blue is the button"', 'Blue is the button', 'note', []),
-                         before='06-after.png', after='06-after.png', captioned=True)]}
+                         before='06-after.png', after='06-after.png', captioned=True),
+                    # a menu walk: the group (its flyout opens as the pointer arrives), into the flyout along the
+                    # group's row, the item lit before the press
+                    step(8, 'user picks "Group > Item" from the menu', 'Pick "Group > Item" from the menu', 'action',
+                         [{'shot': '08-before.png', 'target': group, 'kind': 'menu', 'pointer': [{'type': 'move', 'x': 360, 'y': 112}]},
+                          {'shot': '08-hop2.png', 'target': item, 'kind': 'menu', 'pointer': [{'type': 'move', 'x': 494, 'y': 160}]},
+                          {'shot': '08-hop3.png', 'target': item, 'kind': 'menu', 'pointer': press(494, 160)}]),
+                    # a key the step pressed, nothing to point at
+                    dict(step(9, 'user presses Escape', 'Press Escape', 'action', []), pressed=['Escape']),
+                    # a native select: pressed, its drawn list up with the current option lit, the option lit as the
+                    # pointer reaches it and pressed on film
+                    step(10, 'user selects "third" in the select', 'Select "third" in the select', 'action',
+                         [{'shot': '10-before.png', 'target': select, 'kind': 'list', 'pointer': [dict(p, on='select') for p in shown(select)]},
+                          {'shot': '10-hop2.png', 'target': option, 'kind': 'menu',
+                           'pointer': [{'type': 'move', 'x': 120, 'y': 284, 'kept': True}]},
+                          {'shot': '10-hop3.png', 'target': option, 'kind': 'menu', 'pointer': shown(option)}])]}
     with open(os.path.join(folder, 'steps.json'), 'w', encoding='utf-8') as f:
         json.dump(manifest, f)
 
@@ -1178,7 +1390,7 @@ def main(argv):
     colors = int(opt('--colors', 256))
     gif_width = opt('--gif-width')
     gif_width = int(gif_width) if gif_width else None if help else 880
-    end_hold = float(opt('--end-hold', 2.0 if help else 1.6 if demo else 0.8))
+    end_hold = float(opt('--end-hold', 2.0 if help or demo else 0.8))
     travel = float(opt('--travel', 0.5 if demo else 0.7))
     zoom = float(opt('--zoom', 1.8))
     zoom_time = float(opt('--zoom-time', 0.8))

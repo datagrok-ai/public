@@ -251,6 +251,9 @@ export function runOneWayAnova(): void {
   const factorColNames = [] as string[];
   const featureColNames = [] as string[];
 
+  /** The rows of `col` that pass the table filter (read at call time: the dialog is not modal). */
+  const filtered = (col: DG.Column): DG.Column => col.clone(df.filter.anyFalse ? df.filter : undefined);
+
   for (const col of columns) {
     if (FEATURE_TYPES.includes(col.type))
       featureColNames.push(col.name);
@@ -339,6 +342,7 @@ export function runOneWayAnova(): void {
   const methodSource = {method: currentMethod};
   const methodProp = DG.Property.fromOptions({
     name: 'method',
+    type: DG.TYPE.STRING,
     caption: 'Method',
     inputType: 'Radio',
     choices: ['Welch', 'Fisher'],
@@ -393,7 +397,7 @@ export function runOneWayAnova(): void {
     dlg.close();
 
     try {
-      const res = oneWayAnova(factor!, feature!, significance, {
+      const res = oneWayAnova(filtered(factor!), filtered(feature!), significance, {
         method: currentMethod,
         toValidate: false,
       });
@@ -432,10 +436,11 @@ export function runOneWayAnova(): void {
 
     let varEqual: boolean;
     try {
-      const uniqueCount = factor!.stats.uniqueCount;
+      const factorCol = filtered(factor!);
+      const uniqueCount = factorCol.stats.uniqueCount;
       if (uniqueCount < 2)
         throw new Error('At least two categories required.');
-      const factorized = new FactorizedData(factor!, feature!, uniqueCount);
+      const factorized = new FactorizedData(factorCol, filtered(feature!), uniqueCount);
       varEqual = factorized.areVarsEqual(significance);
     } catch (err) {
       runBtn.disabled = true;

@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import {WorkerMessageBusClient} from '../worker-message-bus-client';
 import {Fingerprint, hasNewLines, withinSmilesLimit} from '../utils/chem-common';
 import {compileCrux, loadCrux, noteCruxError} from '../engine/crux-module';
-import {DescriptorTiming, INT_NONE, PackedDescriptorValues, ToxicityAlert, isNoneValue} from './crux-api';
-import {BIOPOLYMER_LIBRARIES, BIOPOLYMER_LIBRARY_MISSING, CLUSTER_MCS_TIMEOUT_S, CruxAssembledBatch,
+import {DescriptorTiming, INDEX_LOST, INT_NONE, PackedDescriptorValues, ToxicityAlert, isNoneValue} from './crux-api';
+import {BIOPOLYMER_LIBRARIES, BIOPOLYMER_LIBRARY_MISSING, CLUSTER_MCS_TIMEOUT_S, CruxAssembledBatch, CruxHelmBatch,
   assembleOptionsJson} from './crux-api';
 import {batchRowCount, pickRows, rowMonomerCount, sliceBatch} from './biopolymer-batch';
 import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
@@ -61,10 +61,15 @@ const ANALYSIS_MS = {mmpa: 50, rGroups: 100, link: 20, molzip: 20, clusterMCS: C
   // A macromolecule batch's (CruxService.assembleMacromolecules): a chunk's limit is JOB_BASE_MS plus `biopolymer` per
   // row and `biopolymerMonomer` per monomer, more per monomer in rows past BIOPOLYMER_SUPERLINEAR_FROM monomers
   // (biopolymerChunkMs); a long row's (alone on an idle worker, BIOPOLYMER_LONG_ROW) JOB_BASE_MS
-  // plus `biopolymerLongMonomer` per monomer; `markStereo` per MOL block (CruxService.markStereoAbsolute).
+  // plus `biopolymerLongMonomer` per monomer; `markStereo` per MOL block (CruxService.markStereoAbsolute); `toHelm` per
+  // molecule (CruxService.moleculesToHelm: the converter takes about 1 ms a 15-mer, more for a big library's first
+  // chunk, which builds the library's HELM index; 50 covers large peptides on a loaded machine).
   // TODO(bio-crux §7): set them from the vendored file's measured speed (S2's native profile: ~3 ms a golden row with
   // the depictor, whose time grows faster than the monomers past ~100; non-linear rows past a size use coordgen).
-  biopolymer: 5, biopolymerMonomer: 1, biopolymerLongMonomer: 50, markStereo: 5};
+  biopolymer: 5, biopolymerMonomer: 1, biopolymerLongMonomer: 50, markStereo: 5, toHelm: 50};
+/** Molecules per chunk of CruxService.moleculesToHelm: small enough that a long column reports its progress often and
+ * the workers share it evenly (a chunk is a few MB of MOL blocks at most). */
+const TO_HELM_CHUNK_SIZE = 250;
 /** A row of more monomers than this is assembled alone on an idle worker (CruxService.assembleMacromolecules): one
  * huge row does not take a chunk past its limit, which would restart the pool. */
 export const BIOPOLYMER_LONG_ROW = 400;
@@ -247,6 +252,10 @@ class CruxWorkerClient extends WorkerMessageBusClient {
   pausesForTests = (every: number | null): Promise<unknown> => this.call('pauses::test', [every]);
 
   busyForTests = (ms: number): Promise<unknown> => this.call('busy::test', [ms]);
+
+  trapForTests = (calls: number, instances: number): Promise<unknown> => this.call('trap::test', [calls, instances]);
+
+  buildTrapForTests = (row: number): Promise<unknown> => this.call('buildTrap::test', [row]);
 }
 
 /** Contiguous rows of a column indexed by one crux collection that lives in one worker. */
@@ -290,7 +299,7 @@ export class CruxService {
   private workers: CruxWorkerClient[] = [];
   /** Counts {@link restart}s: a search that failed on older workers does not restart the new ones. */
   generation = 0;
-  /** The main thread's Crux module: whether Crux reads a query ({@link readsQuery}). */
+  // The main thread's Crux module: whether Crux reads a query ({@link readsQuery}).
   private crux: RDModule | null = null;
   private indexes = new Map<number, CruxColumnIndex>();
   private lastId = 0;
@@ -405,6 +414,12 @@ export class CruxService {
       .then((hits) => {
         if (hits && !isCancelled())
           onSegment(segment, hits);
+      }, (e) => {
+        // the worker's engine was made fresh after a trap since it built the segment (crux.worker.ts): its indexes are
+        // lost; this search fails (RDKit answers it), the next one indexes the column again
+        if (String((e as Error)?.message ?? e).startsWith(INDEX_LOST))
+          this.forgetIndexesOn(segment.worker);
+        throw e;
       }), isCancelled);
   }
 
@@ -428,10 +443,8 @@ export class CruxService {
     await this.use(index, (segment) => this.ensureBuilt(segment), isCancelled);
   }
 
-  /**
-   * Runs `action` over the index segments, one at a time per worker, in row order, until the index is dropped; fails
-   * if a restart forgets it.
-   */
+  // Runs `action` over the index segments, one at a time per worker, in row order, until the index is dropped; fails
+  // if a restart forgets it.
   private async use(index: CruxColumnIndex, action: (segment: CruxSegment, worker: CruxWorkerClient) => Promise<void>,
     isCancelled: () => boolean): Promise<void> {
     const segments = index.segments;
@@ -589,13 +602,11 @@ export class CruxService {
     return Object.fromEntries(catalogs.map((c) => [c, parts.flatMap((part) => part[c] as (string[] | null)[])]));
   }
 
-  /**
-   * `job` over the molecules in chunks of at most `chunkSize` ({@link CHUNK_SIZE}), the results in chunk order, each
-   * chunk's first row in `starts`. Fewer than `chunkSize` molecules per worker are split evenly over the workers. A
-   * worker runs its calls one after another, so each worker is handed its next chunk when the last one is done, and a
-   * chunk's time limit runs from its own start; a failed chunk ends the call (the chunks not started are not run).
-   * `chunkMs`, where given, is a chunk's time beyond `baseMs` in place of `msPerMolecule` per molecule.
-   */
+  // `job` over the molecules in chunks of at most `chunkSize` ({@link CHUNK_SIZE}), the results in chunk order, each
+  // chunk's first row in `starts`. Fewer than `chunkSize` molecules per worker are split evenly over the workers. A
+  // worker runs its calls one after another, so each worker is handed its next chunk when the last one is done, and a
+  // chunk's time limit runs from its own start; a failed chunk ends the call (the chunks not started are not run).
+  // `chunkMs`, where given, is a chunk's time beyond `baseMs` in place of `msPerMolecule` per molecule.
   private async inChunks<M, R>(molecules: M[], msPerMolecule: number,
     job: (worker: CruxWorkerClient, chunk: M[]) => Promise<R>, chunkSize = CHUNK_SIZE, baseMs = JOB_BASE_MS,
     starts: number[] = [], chunkMs?: (chunk: M[]) => number): Promise<R[]> {
@@ -753,13 +764,11 @@ export class CruxService {
       'clusterRGroups', []);
   }
 
-  /**
-   * The analysis job `op` per cluster, as the RDKit pool's processClusterQueue runs it: each cluster goes to a worker
-   * with no call in flight, so its time limit runs from its own start (a busy worker's queue is not its time), and a
-   * worker takes the next cluster when its last is done; a cluster past `limitMs` is listed in `timedOut` and its
-   * worker replaced ({@link restartWorker}), and the other clusters go on. A cluster whose call fails (a trap, a lost
-   * worker) is null.
-   */
+  // The analysis job `op` per cluster, as the RDKit pool's processClusterQueue runs it: each cluster goes to a worker
+  // with no call in flight, so its time limit runs from its own start (a busy worker's queue is not its time), and a
+  // worker takes the next cluster when its last is done; a cluster past `limitMs` is listed in `timedOut` and its
+  // worker replaced ({@link restartWorker}), and the other clusters go on. A cluster whose call fails (a trap, a lost
+  // worker) is null.
   private async eachCluster<R>(clusters: unknown[], limitMs: number, op: string, args: unknown[]):
     Promise<{results: (R | null)[], timedOut: number[]}> {
     const results = new Array<R | null>(clusters.length).fill(null);
@@ -795,13 +804,13 @@ export class CruxService {
     return {results, timedOut};
   }
 
-  /** The worker with the fewest calls in flight (on a tie a later one: worker 0 takes the one-worker jobs). */
+  // The worker with the fewest calls in flight (on a tie a later one: worker 0 takes the one-worker jobs).
   private leastBusy(): CruxWorkerClient {
     return this.workers.reduceRight((best, worker) => worker.pendingCalls < best.pendingCalls ? worker : best);
   }
 
-  /** The index of a worker with no call in flight (a later one first, as {@link leastBusy}), waiting while all are
-   * busy. */
+  // The index of a worker with no call in flight (a later one first, as {@link leastBusy}), waiting while all are
+  // busy.
   private async idleWorker(): Promise<number> {
     for (;;) {
       for (let w = this.workers.length - 1; w >= 0; w--) {
@@ -812,15 +821,19 @@ export class CruxService {
     }
   }
 
-  /**
-   * Replaces worker `w`, stuck in a call past its limit, as the RDKit pool replaces one (RdKitService.restartWorker):
-   * the column indexes with a segment on it are dropped (a search running on one fails and falls back to RDKit; the
-   * next search indexes the column again); the other workers and the other indexes stay.
-   */
+  // Replaces worker `w`, stuck in a call past its limit, as the RDKit pool replaces one (RdKitService.restartWorker):
+  // the column indexes with a segment on it are dropped (a search running on one fails and falls back to RDKit; the
+  // next search indexes the column again); the other workers and the other indexes stay.
   private restartWorker(w: number): void {
     this.workers[w].terminate(WORKER_REPLACED);
     this.workers[w] = new CruxWorkerClient();
     this.workers[w].moduleInit(this.module!).catch(() => {}); // a failed init is logged by the worker client
+    this.forgetIndexesOn(w);
+  }
+
+  // Drops the column indexes with a segment on worker `w` (a search running on one fails and falls back to RDKit; the
+  // next search indexes the column again); the other indexes stay.
+  private forgetIndexesOn(w: number): void {
     for (const index of [...this.indexes.values()]) {
       if (index.segments.some((segment) => segment.worker === w)) {
         index.lost = true;
@@ -988,19 +1001,67 @@ export class CruxService {
 
   private biopolymerLibraryWarned = new Set<string>();
 
-  // The library once more where the worker answers that it no longer holds it.
-  private async assembleOn(worker: CruxWorkerClient, batch: AsmBatch, key: string, json: string, details: string):
+  private assembleOn(worker: CruxWorkerClient, batch: AsmBatch, key: string, json: string, details: string):
     Promise<CruxAssembledBatch> {
+    return this.withLibrary(worker, key, json,
+      () => worker.run<CruxAssembledBatch>('biopolymer::assemble', [batch, key, details]));
+  }
+
+  // `run` on a worker that holds library `key`: the library sent first where the worker's mirror lacks it, and once
+  // more where the worker answers that it no longer holds it.
+  private async withLibrary<R>(worker: CruxWorkerClient, key: string, json: string, run: () => Promise<R>):
+    Promise<R> {
     await this.loadLibrary(worker, key, json);
     try {
-      return await worker.run<CruxAssembledBatch>('biopolymer::assemble', [batch, key, details]);
+      return await run();
     } catch (e) {
       if (!String((e as Error)?.message ?? e).startsWith(BIOPOLYMER_LIBRARY_MISSING))
         throw e;
       worker.biopolymerLibraries.delete(key);
       await this.loadLibrary(worker, key, json);
-      return await worker.run<CruxAssembledBatch>('biopolymer::assemble', [batch, key, details]);
+      return await run();
     }
+  }
+
+  /**
+   * Molecules to HELM (`ChemMonomerLibrary.toHelm`, jobs/biopolymer.ts) with monomer library `json` (`key` names it
+   * in the workers, as {@link assembleMacromolecules}' key does: a worker compiles a library once for both directions,
+   * and builds its HELM index at its first chunk), the molecules in chunks across the workers ({@link inChunks}, at
+   * most {@link TO_HELM_CHUNK_SIZE}, `ANALYSIS_MS.toHelm` a molecule); `onProgress` is told the molecules done after
+   * each chunk. Per row, in order: the HELM (null where the row has an error), the error and the counts. A failed
+   * chunk (a trap, a timeout) fails the call, as {@link inChunks} does.
+   */
+  async moleculesToHelm(molecules: (string | null)[], key: string, json: string, options: string,
+    onProgress?: (done: number) => void): Promise<CruxHelmBatch> {
+    const n = molecules.length;
+    const result: CruxHelmBatch = {helms: new Array<string | null>(n).fill(null),
+      errors: new Array<string | null>(n).fill(null), matched: new Int32Array(n), inline: new Int32Array(n),
+      chem: new Int32Array(n)};
+    if (n === 0)
+      return result;
+    for (const worker of this.workers) // all at once; a chunk waits for its own worker's load, and fails with it
+      this.loadLibrary(worker, key, json).catch(() => {});
+    let done = 0;
+    const starts: number[] = [];
+    const parts = await this.inChunks(molecules, ANALYSIS_MS.toHelm, async (worker, chunk) => {
+      const part = await this.withLibrary(worker, key, json,
+        () => worker.run<CruxHelmBatch>('biopolymer::toHelm', [chunk, key, options]));
+      done += chunk.length;
+      onProgress?.(done);
+      return part;
+    }, TO_HELM_CHUNK_SIZE, JOB_BASE_MS, starts);
+    parts.forEach((part, k) => {
+      const start = starts[k];
+      for (let i = 0; i < part.helms.length; i++) {
+        const error = part.errors[i] ?? null;
+        result.errors[start + i] = error;
+        result.helms[start + i] = error ? null : part.helms[i] ?? '';
+      }
+      result.matched.set(part.matched, start);
+      result.inline.set(part.inline, start);
+      result.chem.set(part.chem, start);
+    });
+    return result;
   }
 
   /** Each MOL block with every specified stereocentre in one ABS group, V3000 (null where one does not read), the MOL
@@ -1014,12 +1075,10 @@ export class CruxService {
     return result;
   }
 
-  /**
-   * A job's result within `timeoutMs`. A wasm trap (the worker reports `RuntimeError: ...`; out of memory), a timeout
-   * or a worker gone restarts the workers: they may hold a broken instance or a call that never ends; the next jobs and
-   * searches get new ones. Another failure (a molecule Crux refuses, a "not supported by Crux" call, a worker
-   * restartWorker replaced: WORKER_REPLACED) keeps them and their search indexes.
-   */
+  // A job's result within `timeoutMs`. A wasm trap (the worker reports `RuntimeError: ...`; out of memory), a timeout
+  // or a worker gone restarts the workers: they may hold a broken instance or a call that never ends; the next jobs and
+  // searches get new ones. Another failure (a molecule Crux refuses, a "not supported by Crux" call, a worker
+  // restartWorker replaced: WORKER_REPLACED) keeps them and their search indexes.
   private async job<R>(work: Promise<R>, timeoutMs: number): Promise<R> {
     const generation = this.generation;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -1052,10 +1111,12 @@ export class CruxService {
   /** Tests: the long rows {@link assembleMacromolecules} has sent alone. */
   biopolymerLongRowsForTests = 0;
 
-  /** Tests: each worker's monomer libraries (jobs/biopolymer.ts): the keys it holds, the libraries it has compiled. */
-  biopolymerLibrariesForTests(): Promise<{keys: string[], compiled: number}[]> {
-    return Promise.all(this.workers.map((worker) =>
-      this.job(worker.run<{keys: string[], compiled: number}>('biopolymer::libraries::test', []), JOB_BASE_MS)));
+  /** Tests: each worker's monomer libraries (jobs/biopolymer.ts): the keys it holds, the libraries it has compiled
+   * and the HELM indexes it has built. */
+  biopolymerLibrariesForTests(): Promise<{keys: string[], compiled: number, helmIndexed: number}[]> {
+    return Promise.all(this.workers.map((worker) => this.job(
+      worker.run<{keys: string[], compiled: number, helmIndexed: number}>('biopolymer::libraries::test', []),
+      JOB_BASE_MS)));
   }
 
   /** Tests: every worker drops library `key`, its client still counting it as sent. */
@@ -1078,6 +1139,18 @@ export class CruxService {
    * pauses, the default; crux.worker.ts `pauses::test`). */
   async pausesForTests(every: number | null): Promise<void> {
     await Promise.all(this.workers.map((worker) => worker.pausesForTests(every)));
+  }
+
+  /** Tests: crux-core's real test trap in every worker's module (crux-recover.ts): the `calls`-th engine call from now
+   * panics, there and on the next `instances - 1` fresh instances (2: that call is refused, the worker goes on). */
+  async trapWorkersForTests(calls: number, instances = 1): Promise<void> {
+    await Promise.all(this.workers.map((worker) => worker.trapForTests(calls, instances)));
+  }
+
+  /** Tests: in every worker, the read of segment row `row` traps at every attempt in the next collection builds (a
+   * molecule that always traps; -1: none). */
+  async buildTrapForTests(row: number): Promise<void> {
+    await Promise.all(this.workers.map((worker) => worker.buildTrapForTests(row)));
   }
 
   /** Tests: a job that fails in its worker with `message` (by default as a trapped instance would: a restart). */

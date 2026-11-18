@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectObject, test} from '@datagrok-libraries/test/src/test';
 import {buildValueQuery, ValueQuery} from '@datagrok-libraries/db-explorer/src/query';
 import {explicitCatalog, hasCatalogs, ownCatalog} from '@datagrok-libraries/db-explorer/src/utils';
+import {DBExplorer} from '@datagrok-libraries/db-explorer/src/db-explorer';
 
 const statement = (query: ValueQuery) =>
   query.sql.split('\n').map((line) => line.trim()).filter((line) => line && !line.startsWith('--')).join(' ');
@@ -74,4 +75,16 @@ category('DB Explorer', () => {
     expect(explicitCatalog(research, 'ARCHIVE'), 'ARCHIVE');
     expect(explicitCatalog(connection('Databricks'), 'main'), 'main');
   }, DEV_ONLY);
+
+  // A caller that asked for the schema while it loaded waited for ever when the connection was not found (the load
+  // returned before answering), and one that waited for a load that failed queried the database anyway.
+  test('Every caller waiting for the schema of a missing connection is answered, with no schema', async () => {
+    const explorer = new DBExplorer(`db-explorer-test-missing-${Date.now()}`, 'public');
+    const waiting = Promise.all([explorer.dbSchema, explorer.dbSchema]);
+    const answers = await Promise.race([waiting, new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('the callers waiting for the schema were not answered in 15 s')), 15000))]);
+    expect(answers[0], null);
+    expect(answers[1], null);
+    expect(await explorer.dbSchema, null);
+  });
 });

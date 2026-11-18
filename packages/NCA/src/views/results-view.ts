@@ -51,7 +51,7 @@ import {DEFAULT_RULES, DEFAULT_ACCEPTANCE_RSQUARED, numAt, isLzServiceColumn,
   REVIEW_ACTION_LABEL, isSparseLzDependentCol, REVIEW_COL, REVIEW_EXCLUDED,
   LZ_REVIEW_INFO_COL, REVIEW_TO_REVIEW, upsertStringColumn,
   ACCEPT_REASONS_COL, ACCEPTANCE_FLAG_CODES, criterionShortLabel, reasonsCellValue, ACCEPTANCE_COL, FLAG_COLS,
-  tagReasonPillsColumn, BW_UNIT} from '../adapter';
+  tagReasonPillsColumn, BW_UNIT, fPctMeaningFor} from '../adapter';
 import type {
   AcceptanceReading, AcceptanceFlagCode, FlagState, ReviewDecisionRecord, PipelineFlag, AnalysisOrigin, ReviewInfo,
 } from '../adapter';
@@ -2999,7 +2999,7 @@ const BIOAVAIL_FIXED:
     {header: string; desc: string; format?: string; width?: number}>> = {
       ROUTE: {
         header: 'Route', width: 70,
-        desc: 'Extravascular route (PO / SC / IM) of this bioavailability cell.',
+        desc: 'Extravascular route (PO / SC / IM / IP) of this bioavailability cell.',
       },
       DOSE: {
         header: 'Dose', width: 64,
@@ -3047,8 +3047,14 @@ const BIOAVAIL_FIXED:
 export function configureBioavailabilityGrid(grid: DG.Grid): void {
   // Friendly headers / formats / widths (the long `dn-AUC_0–∞ (…)` labels
   // truncate at the default width) + header tooltips — shared with the dose-
-  // proportionality grids via {@link applyFixedGridSpec}.
-  applyFixedGridSpec(grid, BIOAVAIL_FIXED);
+  // proportionality grids via {@link applyFixedGridSpec}. The %F cell of an i.p. row carries what
+  // %F means after i.p. dosing (nca-ip-route F4) — in this grid's ONE tooltip handler.
+  applyFixedGridSpec(grid, BIOAVAIL_FIXED, {cellTip: (name, row) => {
+    if (name !== 'F_PCT') return null;
+    const route = grid.dataFrame.col('ROUTE');
+    const meaning = route !== null && !route.isNone(row) ? fPctMeaningFor(route.getString(row)) : null;
+    return meaning !== null ? {title: '%F', summary: meaning} : null;
+  }});
 }
 
 // ── Dose proportionality (Smith power model) grids ─────────────────────────

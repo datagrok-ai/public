@@ -30,6 +30,9 @@ filterCatalog = FilterCatalog.FilterCatalog(params)
 length = len(smiles)
 filter = np.zeros(length, dtype=bool)
 for n in range(0, length):
+    # an empty cell arrives as NaN (a float), which MolFromSmiles refuses with an exception: no match for it
+    if not isinstance(smiles[n], str):
+        continue
     mol = Chem.MolFromSmiles(smiles[n])
     if mol is None:
         continue

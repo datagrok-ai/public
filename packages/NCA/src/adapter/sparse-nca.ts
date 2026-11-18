@@ -45,8 +45,8 @@ import {nca} from '@datagrok-libraries/sci-comp';
 import {DEFAULT_RULES, DEFAULT_ACCEPTANCE_RSQUARED} from './defaults';
 import {evaluateAcceptance, reasonsCellValue, tagReasonPillsColumn, ACCEPT_REASONS_COL} from './acceptance';
 import type {AcceptanceReading, AcceptanceThresholds} from './acceptance';
-import {routeStringToCode, ROUTE_STRING_TO_CODE} from './profile-inputs';
-import {ROUTE_CODE_TO_STRING} from './results-writer';
+import {routeStringToCode, ROUTE_STRING_TO_CODE, ROUTE_CODE_TO_STRING} from './profile-inputs';
+import {normalizeRouteString, IP_INFUSION_AS_SINGLE_DOSE, IP_INFUSION_MESSAGE} from './route-normalize';
 import {detectMixedCompoundGroups, mixedCompoundMessage, findColByPattern} from './column-autodetect';
 import {
   CONC_TO_MG_L, BW_TO_KG, TIME_TO_HOUR, DOSE_TO_MG, CANONICAL_UNIT_TAGS, isPerKgDose,
@@ -140,7 +140,9 @@ export type SparseNcaWarningCode =
   | 'COMPOSITE_NOT_WEIGHT_BASED'
   // sparse-iv-bolus-anchor F4: the dense run's own C0_FALLBACK, copied — the composite's C0 fell
   // back to c1 / cmin / set0 (one C0 for the row: `sparseAuc` and the dense run use the same chain).
-  | 'C0_FALLBACK';
+  | 'C0_FALLBACK'
+  // nca-ip-route F2: k of n member animals carry the route string 'intraperitoneal infusion'.
+  | 'IP_INFUSION_AS_SINGLE_DOSE';
 
 export interface SparseNcaWarning {
   readonly code: SparseNcaWarningCode;
@@ -774,6 +776,7 @@ export function shortSparseNote(code: string, terminalExcessPct = NaN): string {
   case 'SPARSE_CONC_MISSING_DROPPED': return 'missing conc dropped';
   case 'SPARSE_DOSE_SPELLING_MERGED': return 'dose spellings merged';
   case 'SPARSE_BLQ_FLAG_WITH_VALUE': return 'BLQ flag with a value → 0';
+  case 'IP_INFUSION_AS_SINGLE_DOSE': return 'i.p. infusion as single dose';
   // Retired (sparse-iv-bolus-anchor): no compute raises it since sci-comp 0.12.0. Kept only so the
   // stored warnings of an analysis saved before then read as words until it is recomputed (TODO
   // IMPL-GAP-SPARSE-IV-ANCHOR-NOTE-RETIRE: remove once no stored row carries it).
@@ -976,8 +979,11 @@ export interface SparseStrataSpec {
   readonly doseCol: string | null;
   readonly bodyWeightCol: string | null;
   readonly lloq: {readonly colName: string | null; readonly scalar: number};
-  /** Per-row route codes (`DERIVED_ROUTE_CODE_COL`, int32, null cell = the scalar) or none. */
-  readonly route: {readonly codesCol: string | null; readonly scalar: string};
+  /** Per-row route codes (`DERIVED_ROUTE_CODE_COL`, int32, null cell = the scalar) or none, the
+   *  scalar, and `rawCol` — the SOURCE route column the codes were derived from, re-read for the
+   *  i.p.-infusion composite warning (the codes have lost the spelling). REQUIRED so no producer can
+   *  skip it; `null` = no raw spelling available (a scalar route, or NONMEM) → no such warning. */
+  readonly route: {readonly codesCol: string | null; readonly scalar: string; readonly rawCol: string | null};
   readonly units: SparseUnits;
   readonly samplingTypeCol?: string | null;
   readonly declaredTopology?: nca.SamplingTopology;
@@ -1105,8 +1111,21 @@ export function computeSparseStrata(df: DG.DataFrame, spec: SparseStrataSpec): S
 
   const cells: SparseStratumCell[] = [];
   const blocked: SparseBlockedStratum[] = [];
+  // F2: rows whose RAW route spelling is 'intraperitoneal infusion' (one function, every caller).
+  const rawRoute = has(spec.route.rawCol) ? work.col(spec.route.rawCol)! : null;
+  const ipInfusionAt = (i: number): boolean => {
+    if (rawRoute === null || rawRoute.isNone(i)) return false;
+    const r = normalizeRouteString(String(rawRoute.get(i)), false);
+    return r.status === 'mapped' && r.ipInfusion;
+  };
+  const animalCol = has(spec.animalIdCol) ? work.col(spec.animalIdCol)! : null;
+  const animalOf = (i: number): string => animalCol === null || animalCol.isNone(i) ?
+    `~row${i}` : animalCol.getString(i);
+
   for (const [code, rows] of byRoute) {
     const route = ROUTE_CODE_TO_STRING[code];
+    // A code with no label must never reach `computeSparseNca`'s `route ?? 'PO'` default.
+    if (route === undefined) throw new Error(`Route code ${code} has no route label.`);
     if (route === 'IV-infusion') {
       const groups = rawDose !== null ? sparseDoseGroups(rawDose, rows) : [{key: '', rows}];
       for (const g of groups)
@@ -1134,6 +1153,13 @@ export function computeSparseStrata(df: DG.DataFrame, spec: SparseStrataSpec): S
     });
     for (const g of res.groups) {
       if (lloqNote !== null) g.warnings.push({code: 'SPARSE_LLOQ_VARIES', message: lloqNote, group: g.groupKey});
+      const animals = new Set(g.rows.map(animalOf));
+      const infused = new Set(g.rows.filter(ipInfusionAt).map(animalOf));
+      if (infused.size > 0) {
+        g.warnings.push({code: IP_INFUSION_AS_SINGLE_DOSE, group: g.groupKey, message:
+          `${infused.size} of ${animals.size} animals in this composite have route ` +
+          `'intraperitoneal infusion'; ${IP_INFUSION_MESSAGE}`});
+      }
       cells.push({route, doseKey: g.doseLevel.key, rows: g.rows, group: g});
     }
     for (const s of res.skipped) blocked.push({route, doseKey: s.doseKey, rows: s.rows, reason: s.reason});
@@ -1149,8 +1175,9 @@ export interface SparseComputeMapping {
   bwColName: string | null;
   /** REQUIRED: the declared units of time / conc / dose / BW (BUG-19 — no hours default). */
   units: SparseUnits;
-  /** Per-row route codes (`DERIVED_ROUTE_CODE_COL`) or null, plus the route scalar (S-1). */
-  route: {codesCol: string | null; scalar: string};
+  /** Per-row route codes (`DERIVED_ROUTE_CODE_COL`) or null, the route scalar (S-1), and the
+   *  SOURCE route column (`SparseStrataSpec.route.rawCol`; null when there is none). */
+  route: {codesCol: string | null; scalar: string; rawCol: string | null};
   /** LLOQ column or scalar (in `units.concentration`). */
   lloq: {colName: string | null; scalar: number};
   /** The MAPPED BLQ-flag role; null ⇒ the BLQ name heuristic (AD-8). */
@@ -1252,9 +1279,12 @@ const SPARSE_BOOTSTRAP_CODE = /^SPARSE_BOOTSTRAP_/;
  *  AUClast-only notes stay out as well: `SPARSE_TERMINAL_OVEREST` (the linear tail of AUClast) and
  *  `C0_FALLBACK` (the C0 anchor of AUClast); they are on the row whatever the review state. */
 const SPARSE_NUMBER_FREE_CODES: ReadonlySet<string> =
-  new Set(['SPARSE_LLOQ_VARIES', 'SPARSE_TERMINAL_OVEREST', 'C0_FALLBACK']);
-// (The per-kg notes — nca-cl-bw-normalised-units AD-5 — are left out by `computeDecisionFingerprint`
-// itself, `BASIS_NOTE_CODES`, for dense profiles and composites alike.)
+  new Set(['SPARSE_LLOQ_VARIES', 'SPARSE_TERMINAL_OVEREST', 'C0_FALLBACK',
+    // nca-ip-route F2 (R2 N-3): the route SPELLING changes no composite number.
+    IP_INFUSION_AS_SINGLE_DOSE]);
+// (The per-kg notes — nca-cl-bw-normalised-units AD-5 — and the other number-free notes are left
+// out by `computeDecisionFingerprint` itself, `NUMBER_FREE_NOTE_CODES`, for dense profiles and
+// composites alike.)
 
 /** UC-04 group composites as review units, each with its decision fingerprint (members + fit
  *  summary + verdict + the warning codes the numbers depend on). Empty when the sparse panel did

@@ -22,7 +22,7 @@ Commands:
     link        Link \`datagrok-api\` and libraries for local development
     login       Log in to a server with a keypair (replaces the developer key)
     publish     Upload a package
-    report      Manage user error reports (fetch, resolve, request a ticket)
+    report      Manage user error reports (fetch, resolve, create ticket)
     run         Build, publish, and open in browser
     test        Run package tests
     testall     Run packages tests
@@ -247,7 +247,7 @@ Uploads a package
 Checks for errors before publishing — the package won't be published if there are any.
 
 Options:
-[--all] [--refresh] [--link] [--build] [--release] [--rebuild-docker] [--skip-docker-rebuild] [--skip-check] [-v | --verbose]
+[--all] [--refresh] [--link] [--build] [--release] [--rebuild-docker] [--skip-docker-rebuild] [--skip-docker-push] [--skip-check] [-v | --verbose]
 
 --all                  Publish all available packages (run in packages directory)
 --refresh              Publish all available already loaded packages (run in packages directory)
@@ -257,6 +257,7 @@ Options:
 --release              Publish package as release version
 --rebuild-docker       Force rebuild Docker images locally before pushing to registry
 --skip-docker-rebuild  Skip auto-rebuild when Dockerfile folder has changed
+--skip-docker-push     Build and push no Docker image: each container keeps the image the server has
 --skip-check           Skip check stage
 --verbose              Print detailed output
 
@@ -492,7 +493,13 @@ Subcommands:
     fetch    Download a report zip from a managed instance (writes <stem>_meta.json next to it)
     read     Normalize a report (zip or json) into one JSON object on stdout
     resolve  Mark a report as resolved (needs the _meta.json written by fetch)
-    ticket   Request a GitHub issue for a report (--summary <text>); the monitoring stack files it
+    ticket   Request a GitHub issue for a report (POST /reports/{id}/ticket; the monitoring stack files it)
+    comment  Add a comment to a JIRA ticket (--body <text> | --body-file <path>)
+    label    Add labels to a JIRA ticket
+    attach   Attach a file to a JIRA ticket
+
+JIRA subcommands need JIRA_TOKEN (plus JIRA_USER for a user API token); ticket also needs
+--project or $JIRA_PROJECT.
 
 Read flags:
     --extract-screenshot <path>  Write the screenshot binary to <path>
@@ -516,12 +523,13 @@ Usage: grok src <command> [options]
 
 Git recipes across the repos of the datagrok umbrella (git submodules). Runs from anywhere
 in the tree; paths are relative to the umbrella root. Every git command that changes
-something is printed; a repo that fails is listed and the exit code is 1. Children that are
-not cloned get no folder: the umbrella's sparse checkout leaves them out.
+something is printed; a repo that fails is listed and the exit code is 1. A child you cannot read
+(not found, or no credentials) is skipped and listed, not failed, unless you typed its path.
+Children that are not cloned get no folder: the umbrella's sparse checkout leaves them out.
 
 Commands:
     clone [profile | path...]   Clone the umbrella and the given children (profiles: .gitprofiles;
-                                none: profile "default", else every child)
+                                none: profile "default", every child you can read)
     add <profile | path>...     Clone more children, each on its branch
     sparse <path> <glob>...     Clone a child with only the matching files
     switch                      Put every child on its branch from .gitmodules

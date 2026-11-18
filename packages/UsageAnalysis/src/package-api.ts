@@ -552,6 +552,10 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:ReleaseDashboardApp', { path });
   }
 
+  export async function getTicketsVerdict(ticketColumn: DG.Column ): Promise<DG.Column> {
+    return await grok.functions.call('UsageAnalysis:GetTicketsVerdict', { ticketColumn });
+  }
+
   export async function vexImages(): Promise<DG.DataFrame> {
     return await grok.functions.call('UsageAnalysis:VexImages', {});
   }

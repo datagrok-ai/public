@@ -136,7 +136,7 @@ function frame(arms: Arm[], o: FrameOpts = {}): DG.DataFrame {
 
 const spec = (units: Partial<SparseUnits> = {}, extra: Partial<SparseStrataSpec> = {}): SparseStrataSpec => ({
   concCol: 'Conc', nominalTimeCol: 'Time', animalIdCol: 'Animal', blqCol: 'BLQ', doseCol: 'Dose', bodyWeightCol: 'BW',
-  lloq: {colName: null, scalar: 0}, route: {codesCol: DERIVED_ROUTE_CODE_COL, scalar: 'PO'},
+  lloq: {colName: null, scalar: 0}, route: {codesCol: DERIVED_ROUTE_CODE_COL, scalar: 'PO', rawCol: 'Route'},
   units: {...H, ...units}, acceptance: ACC, bootstrapIterations: 50, ...extra,
 });
 
@@ -176,7 +176,7 @@ interface SparseGolden {
 const mouseMapping = (time: nca.TimeUnit, timeCol = 'NominalTime_hr'): SparseComputeMapping => ({
   subjectName: 'MouseID', timeName: timeCol, concName: 'Conc_ng_mL', doseColName: 'Dose_mg_kg',
   bwColName: 'BodyWeight_g', units: {time, concentration: 'ng/mL', dose: 'mg/kg', bodyWeight: 'g'},
-  route: {codesCol: null, scalar: 'PO'}, lloq: {colName: 'LLOQ_ng_mL', scalar: 0}, blqColName: 'BLQ',
+  route: {codesCol: null, scalar: 'PO', rawCol: null}, lloq: {colName: 'LLOQ_ng_mL', scalar: 0}, blqColName: 'BLQ',
   nominalTimeName: timeCol, animalIdName: 'MouseID', declaredTopology: null, acceptance: ACC,
   bootstrapIterations: 200,
 });
@@ -371,7 +371,7 @@ category('Adapter: sparse strata (BUG-19)', () => {
     expect(two[0].rows.length + two[1].rows.length, 48, 'rows index the input frame, every row in one cell');
     // A blank route cell takes the scalar.
     const blank = cellsOf(computeSparseStrata(frame([{dose: 1, prefix: 'A', route: null}]),
-      spec({}, {route: {codesCol: DERIVED_ROUTE_CODE_COL, scalar: 'IV-bolus'}})));
+      spec({}, {route: {codesCol: DERIVED_ROUTE_CODE_COL, scalar: 'IV-bolus', rawCol: 'Route'}})));
     expect(blank.map((c) => c.group.groupKey).join(','), 'DOSE=1', 'blank → the scalar route, one route');
     expect(blank[0].group.route, 'IV-bolus');
     const poSc = cellsOf(computeSparseStrata(frame([{dose: 1, prefix: 'P'}, {dose: 1, prefix: 'S',
@@ -633,7 +633,8 @@ category('Adapter: sparse strata (BUG-19)', () => {
     const app = computeSparseForRecipe(norm, {
       subjectName: SUBJECT_COL, timeName: TAD_COL, concName: CONC_COL, doseColName: comp.doseColName,
       bwColName: null, units: {time: 'h', concentration: 'ng/mL', dose: comp.doseUnit, bodyWeight: 'kg'},
-      route: {codesCol: DERIVED_ROUTE_CODE_COL, scalar: 'PO'}, lloq: {colName: null, scalar: 0}, blqColName: null,
+      route: {codesCol: DERIVED_ROUTE_CODE_COL, scalar: 'PO', rawCol: null}, lloq: {colName: null, scalar: 0},
+      blqColName: null,
       nominalTimeName: TAD_COL, animalIdName: SUBJECT_COL, declaredTopology: null, acceptance: ACC,
       bootstrapIterations: 50,
     });
@@ -652,7 +653,8 @@ category('Adapter: sparse strata (BUG-19)', () => {
     const appMin = computeSparseForRecipe(norm, {
       subjectName: SUBJECT_COL, timeName: 'TAD_min', concName: CONC_COL, doseColName: comp.doseColName,
       bwColName: null, units: {time: 'min', concentration: 'ng/mL', dose: comp.doseUnit, bodyWeight: 'kg'},
-      route: {codesCol: DERIVED_ROUTE_CODE_COL, scalar: 'PO'}, lloq: {colName: null, scalar: 0}, blqColName: null,
+      route: {codesCol: DERIVED_ROUTE_CODE_COL, scalar: 'PO', rawCol: null}, lloq: {colName: null, scalar: 0},
+      blqColName: null,
       nominalTimeName: 'TAD_min', animalIdName: SUBJECT_COL, declaredTopology: null, acceptance: ACC,
       bootstrapIterations: 50,
     });
@@ -678,7 +680,7 @@ category('Adapter: sparse strata (BUG-19)', () => {
     const ctrl = new NcaController(obs, singleSubjectContract(obs), singleSubjectScalars(), DEFAULT_RULES);
     const key = sparseUnitKey('DOSE=10');
     ctrl.decide(key, 'exclude', [{code: 'EXC_ERRATIC', text: 'x'}], buggy);
-    expect(ctrl.reconcileDecisions(new Map([[key, fixed]]), (k) => k.startsWith('sparse:')), 1, 'auto-reset');
+    expect(ctrl.reconcileDecisions(new Map([[key, [fixed]]]), (k) => k.startsWith('sparse:')), 1, 'auto-reset');
     expect(ctrl.decisionFor(key), null);
   }, {timeout: TIMEOUT});
 

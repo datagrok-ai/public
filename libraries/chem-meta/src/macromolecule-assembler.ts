@@ -142,6 +142,27 @@ export interface AssembleOneResult {
   map?: AsmAtomMap;
 }
 
+/** Options of {@link IMacromoleculeAssembler.toHelm}. */
+export interface ToHelmOptions {
+  /** Told the molecules done as a column converts (after each part the workers finish, once at the end on the main
+   * thread), for a progress indicator; `total` is the number of non-empty molecules. */
+  onProgress?: (done: number, total: number) => void;
+}
+
+/** What {@link IMacromoleculeAssembler.toHelm} gives, one entry per molecule. */
+export interface ToHelmResult {
+  /** HELM V2.0 as Bio writes it; '' for an empty molecule; null where {@link errors}[i] is set */
+  helms: (string | null)[];
+  /** Per-row message (a molecule that does not read, a fragment that matches no monomer and joins none, ...) */
+  errors: (string | null)[];
+  /** Per row: the library monomers matched (0 for empty and error rows) */
+  matched: Int32Array;
+  /** Per row: the inline-SMILES monomers in PEPTIDE chains */
+  inline: Int32Array;
+  /** Per row: the CHEM entities (library or inline SMILES) */
+  chem: Int32Array;
+}
+
 export interface IMacromoleculeAssembler {
   /** Registers a library (Pistoia JSON array text) under a key; idempotent; the key is the cache key in every
    * worker. */
@@ -158,6 +179,13 @@ export interface IMacromoleculeAssembler {
 
   /** V3000 to V2000 (Bio's 3D panel). */
   toV2000(molblock: string): Promise<string>;
+
+  /** Molecules to HELM with the library's monomers, the inverse of {@link assemble} (Bio's Molecules to HELM): MOL
+   * blocks (V2000 or V3000), SMILES or CXSMILES, one per row; null or '' is an empty row ('' and no error). A column
+   * runs on the Crux workers, a few molecules on the main thread's module; each compiles the library once per key, as
+   * {@link assemble} does, and builds its HELM index once. A molecule that does not convert gets its row's error; the
+   * call rejects only where the key is unknown, the library does not read or Crux fails. */
+  toHelm(molecules: (string | null)[], libraryKey: string, options?: ToHelmOptions): Promise<ToHelmResult>;
 
   // -- Synchronous twins, for the legacy synchronous APIs (Bio's IHelmToMolfileConverter, helmToAtomicLevelSingle):
   // all on the main-thread module, so they work only after ready() and throw a clear error otherwise. New code uses

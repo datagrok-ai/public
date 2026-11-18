@@ -16,8 +16,11 @@ category('Model Hub panel', () => {
       expect(JSON.stringify(headers()), JSON.stringify(['Details', 'My runs', 'Dev']));
       await awaitCheck(() => host.innerText.includes('Workflow') && host.innerText.includes(name),
         'Details or the saved run is not shown', 10000);
+      const devHeader = host.querySelectorAll('.d4-accordion-pane-header')[2] as HTMLElement;
+      if (devHeader.classList.contains('expanded'))
+        devHeader.click();
       expect(host.innerText.includes(workflow.nqName), false);
-      (host.querySelectorAll('.d4-accordion-pane-header')[2] as HTMLElement).click();
+      devHeader.click();
       await awaitCheck(() => host.innerText.includes(workflow.nqName), 'The name is not shown in Dev', 5000);
     } finally {
       host.remove();

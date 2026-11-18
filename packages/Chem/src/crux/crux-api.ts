@@ -1,6 +1,6 @@
 import type {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import type {ChemWasm} from '../engine/crux-module';
-import type {AssembleOptions} from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
+import type {AssembleOptions, ToHelmOptions} from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
 import type {RdKitServiceWorker} from '../rdkit-service/rdkit-service-worker';
 
 /**
@@ -32,6 +32,11 @@ export function isWasmTrap(e: unknown): e is Error {
   return e instanceof WebAssembly.RuntimeError || (e instanceof Error &&
     (e instanceof RangeError || e.name === 'InternalError') && /call stack|too much recursion/i.test(e.message));
 }
+
+/** How a worker's search of a collection lost to a renewal of its engine starts (crux.worker.ts): no trap's words, so
+ * the service keeps its workers (crux-service.ts `isTrap`) and drops the indexes on that worker; no engine's name (a
+ * user may see it). */
+export const INDEX_LOST = 'The search index was lost:';
 
 /** Rethrows a wasm trap ({@link isWasmTrap}), which a job must not turn into "no result": the call fails, so the
  * service replaces the worker (its instance may be broken) and RDKit does the work. Other errors are the job's to
@@ -118,6 +123,18 @@ export type CruxAssembledBatch = ReturnType<CruxMonomerLibrary['assemble']>;
 
 /** One row's result (`ChemMonomerLibrary.assembleOne`), with `atomPosition` / `bondPosition` under the option `map`. */
 export type CruxAssembledRow = ReturnType<CruxMonomerLibrary['assembleOne']>;
+
+/** Molecules converted to HELM (`ChemMonomerLibrary.toHelm(molecules, options)`, crux-core decision `mol-to-helm`):
+ * per row the HELM (null where the row has an error, '' for an empty molecule), the error, and the counts of library
+ * monomers matched, inline-SMILES monomers in PEPTIDE chains and CHEM entities (0 for empty and error rows). The
+ * library's HELM index is built by its first `toHelm`, or by `prepareToHelm()` (its number of forms), and kept with
+ * the library. */
+export type CruxHelmBatch = ReturnType<CruxMonomerLibrary['toHelm']>;
+
+/** ToHelmOptions (chem-meta) as the binding reads them: none of their keys (`onProgress` is the host's), so `{}`. */
+export function toHelmOptionsJson(_options: ToHelmOptions): string {
+  return '{}';
+}
 
 /** The biopolymer exports of Chem's Crux file. */
 export type CruxBiopolymerApi = Pick<ChemWasm, 'ChemMonomerLibrary' | 'chemMarkStereoAbsolute' | 'chemToV2000'>;

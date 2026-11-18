@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {TutorialRunner} from './tutorial-runner';
+import {tutorialsView} from './tutorials-view';
 import '../css/tutorial.css';
 
 export class TutorialWidget extends DG.Widget {
@@ -37,14 +38,14 @@ export class TutorialWidget extends DG.Widget {
         this.totalCompleted += complete;
         this.totalProgress = 100 / this.totalTutorials * this.totalCompleted;
 
-        const root = runners[i].root;
-
         const trackRoot = ui.divH([
           ui.divText(runners[i].track.name, 'widget-tutorial-track-name'),
           ui.divText(String(complete) + ' / ' + String(total), 'widget-tutorial-track-progress'),
         ], 'widget-tutorial-track-body');
 
-        trackRoot.addEventListener('click', () => TutorialRunner.dock([root]));
+        const track = runners[i].track;
+        trackRoot.addEventListener('click',
+          () => grok.shell.addView(tutorialsView(runners.map((r) => r.track), track)));
 
         tracksRoot.append(ui.divV([
           trackRoot,

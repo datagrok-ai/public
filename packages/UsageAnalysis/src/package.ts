@@ -20,14 +20,20 @@ import {ClickEventsWidget} from './widgets/click-events-widget';
 import {fetchVexDashboardImages, vexImagesToDataFrame} from './tabs/vulnerabilities';
 import {ReleaseHandler} from './release/release-handler';
 import {isDevHost} from './release/data';
+import {GitHubIssuesClient} from './github/issues-client';
+import {findIssueRefs, ticketVerdict} from './github/issue';
 
 export const _package = new DG.Package();
+export let _properties: any;
 export * from './package.g';
+
+const githubIssues = new GitHubIssuesClient(_package);
 
 
 export class PackageFunctions {
   @grok.decorators.init()
   static _initUA(): void {
+    _properties = _package.settings;
     DG.ObjectHandler.register(new TestGridCellHandler());
     initTestStickyMeta();
   }
@@ -118,9 +124,19 @@ export class PackageFunctions {
       grok.shell.warning('The Release dashboard is available on dev.datagrok.ai only.');
       return null;
     }
-    const handler = new ReleaseHandler(path);
+    const handler = new ReleaseHandler(githubIssues, path);
     handler.view.parentCall = grok.functions.getCurrentCall();
     return handler.view;
+  }
+
+  @grok.decorators.func({meta: {vectorFunc: 'true'}, outputs: [{name: 'result', type: 'column'}]})
+  static async getTicketsVerdict(
+    @grok.decorators.param({type: 'column<string>'}) ticketColumn: DG.Column<string>,
+  ): Promise<DG.Column<string>> {
+    const rowRefs = Array.from({length: ticketColumn.length}, (_, i) => findIssueRefs(ticketColumn.get(i)));
+    const issues = await githubIssues.findIssues(rowRefs.flat());
+    return DG.Column.string(`${ticketColumn.name} verdict`, ticketColumn.length)
+      .init((i) => ticketVerdict(rowRefs[i], issues));
   }
 
   /** Published VEX scan results (one row per scanned image) — feeds the
@@ -217,7 +233,7 @@ export class PackageFunctions {
     ],
   })
   static testDashboardsViewer(): TestDashboardWidget {
-    return new TestDashboardWidget();
+    return new TestDashboardWidget(githubIssues);
   }
 
   @grok.decorators.func({
@@ -252,4 +268,7 @@ export class PackageFunctions {
       }
     });
   }
+
+
+  // TODO: creating a ticket from the error log goes to GitHub issues with the observability work; Jira is gone.
 }

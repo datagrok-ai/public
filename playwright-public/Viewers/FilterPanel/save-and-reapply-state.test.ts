@@ -2,7 +2,7 @@
 realizes: [filters.cp.save-and-reapply-state]
 --- */
 import {expect, Page} from '@playwright/test';
-import {localTest as test} from '@datagrok-libraries/test/src/playwright/shared-page';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {openDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 import {cardCount, expectHeaderCounter, expectHeaderCounterQuietNow, trueCount} from '@datagrok-libraries/test/src/playwright/filter-panel';
@@ -13,8 +13,8 @@ import {dismissPanelMenu, readCounterTooltipSummary, readSaveOrApplyLeaves, remo
 
 declare const grok: any;
 
-// Steps 1-7 on the local lane. Step 8, whose subject is beer.csv (no local copy), lives in
-// save-and-reapply-state-server-spec.ts together with the save it checks against.
+// Steps 1-7 on the server lane: presets are server entities, which the local lane cannot save.
+// Step 8 (beer.csv) lives in save-and-reapply-state-server.test.ts.
 test.use(specTestOptions);
 
 const datasetPath = 'System:DemoFiles/demog.csv';
@@ -152,7 +152,17 @@ test('Filters — Save and re-apply named filter state', async ({page}) => {
       };
       page.on('console', onConsole);
 
-      await v.drivePanelMenuLeaf(page, 'Filters', 'Save or Apply', probeName);
+      // each open lists the presets loaded by the previous one and then reloads them, so an open
+      // right after Step 6's comes up empty until that reload lands
+      await expect(async () => {
+        try {
+          await v.drivePanelMenuLeaf(page, 'Filters', 'Save or Apply', probeName);
+        }
+        catch (e) {
+          await dismissPanelMenu(page);
+          throw e;
+        }
+      }).toPass({timeout: 15_000, intervals: [250, 500, 1000, 2000]});
 
       await expect.poll(async () => page.evaluate(() => grok.shell.tv.dataFrame.filter.trueCount), {
         timeout: 15_000,

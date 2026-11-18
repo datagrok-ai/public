@@ -1,5 +1,5 @@
-/* Steps of the Oligo Toolkit demo clip (features/demos/21): the app opened off camera, and the structure picture
-   of its Structure tool opened full size. */
+/* Steps of the Oligo Toolkit demo clip (features/demos/21): the app opened off camera, and the structure picture of
+   its Structure tool opened full size. */
 import type {Page} from '@playwright/test';
 import {Given, When} from '@datagrok-libraries/bdd';
 import {expect, pollMs} from '@datagrok-libraries/bdd/runtime';

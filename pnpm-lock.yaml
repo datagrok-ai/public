@@ -2439,8 +2439,8 @@ importers:
         specifier: workspace:^
         version: link:../../libraries/chem-meta
       '@datagrok-libraries/hwe':
-        specifier: ^1.1.1
-        version: 1.1.1(@datagrok-libraries/bio@libraries+bio)
+        specifier: ^1.1.3
+        version: 1.1.3(@datagrok-libraries/bio@libraries+bio)
       '@datagrok-libraries/test':
         specifier: workspace:^
         version: link:../../libraries/test
@@ -5144,6 +5144,15 @@ packages:
 
   '@datagrok-libraries/hwe@1.1.1':
     resolution: {integrity: sha512-76exYLjinRVgd2m/QfgCWJsYRQoKtdwGDkWmaw8vBF+rwmtzPLuiUbPocDtpr3jqsqNrQLGDicO3v5UiaGQpgg==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@datagrok-libraries/bio': '*'
+    peerDependenciesMeta:
+      '@datagrok-libraries/bio':
+        optional: true
+
+  '@datagrok-libraries/hwe@1.1.3':
+    resolution: {integrity: sha512-CdXAQbYl8WO+eQR/zux3VOGpI7iMWHa6O/8OKs5v0byg0kYjn99LrIPD8n/kVNXJZDTsaqhStEiNcSnjXPWXbA==}
     engines: {node: '>=18'}
     peerDependencies:
       '@datagrok-libraries/bio': '*'
@@ -19826,6 +19835,12 @@ snapshots:
       d3-array: 3.2.4
 
   '@datagrok-libraries/hwe@1.1.1(@datagrok-libraries/bio@libraries+bio)':
+    dependencies:
+      lru-cache: 10.4.3
+    optionalDependencies:
+      '@datagrok-libraries/bio': link:libraries/bio
+
+  '@datagrok-libraries/hwe@1.1.3(@datagrok-libraries/bio@libraries+bio)':
     dependencies:
       lru-cache: 10.4.3
     optionalDependencies:

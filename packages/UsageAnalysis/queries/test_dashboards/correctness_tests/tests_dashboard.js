@@ -8,6 +8,20 @@ function getFirstOfCol(col) {
   return '';
 }
 
+function prepareTicketsVerdict(pivot, ticketColumn, resultColumnName) {
+  const resultColumn = pivot.columns.getOrCreate(resultColumnName, DG.COLUMN_TYPE.STRING);
+  resultColumn.init((i) => ticketColumn.get(i) ? 'Loading...' : '');
+  grok.functions.call('UsageAnalysis:getTicketsVerdict', {ticketColumn})
+    .then((verdicts) => resultColumn.init((i) => verdicts.get(i)))
+    .catch((e) => {
+      grok.log.warning(`Tests dashboard: ticket verdicts are unavailable: ${e}`);
+      resultColumn.init((i) => ticketColumn.get(i) ? 'n/a' : '');
+    });
+  return resultColumn;
+}
+
+
+
 async function postprocess() {
 
   let builds = result.col('build_index').categories.map((x) => parseInt(x));
@@ -69,6 +83,51 @@ async function postprocess() {
   pivot.columns.byName('test').semType = 'autotest';
 
 
+  const rCol = pivot.getCol(`${builds[0]} concat unique(result)`);
+  const ticketsStatusCol = prepareTicketsVerdict(pivot, rCol, `${rCol} ticket verdict`);
+
+  const ignoreReasonCol = pivot.getCol('ignoreReason');
+  const stickyMetaStatusCol = prepareTicketsVerdict(pivot, ignoreReasonCol, 'ignore status');
+
+
+  // let ticketsStatusCol = await pivot.columns.addNewCalculated(`${builds[0]} tickets status`, `UsageAnalysis:getTicketsVerdict(\${${builds[0]} concat unique(result)})`, DG.TYPE.STRING);
+  //let stickyMetaStatusCol = await pivot.columns.addNewCalculated(`ignore status`, `UsageAnalysis:getTicketsVerdict(\${ignoreReason})`, DG.TYPE.STRING);
+  if (ticketsStatusCol)
+    ticketsStatusCol.meta.colors.setCategorical({
+      'Fixed': '#2ca02c',
+      'Not on GitHub': '#b0b0b0',
+      'Partially Fixed (Blocker)': '#7b2d24',
+      'Partially Fixed (Urgent)': '#7b2d24',
+      'Partially Fixed (High)': '#ff5a00',
+      'Partially Fixed (Medium)': '#ffa500',
+      'Partially Fixed (Low)': '#ffe51c',
+      'Partially Fixed (No priority)': '#ffe51c',
+      'Wasn\'t Fixed (Blocker)': '#7b2d24',
+      'Wasn\'t Fixed (Urgent)': '#7b2d24',
+      'Wasn\'t Fixed (High)': '#ff5a00',
+      'Wasn\'t Fixed (Medium)': '#ffa500',
+      'Wasn\'t Fixed (Low)': '#ffe51c',
+      'Wasn\'t Fixed (No priority)': '#ffe51c',
+    })
+  if (stickyMetaStatusCol)
+    stickyMetaStatusCol.meta.colors.setCategorical({
+      'Fixed': '#2ca02c',
+      'Not on GitHub': '#b0b0b0',
+      'Partially Fixed (Blocker)': '#7b2d24',
+      'Partially Fixed (Urgent)': '#7b2d24',
+      'Partially Fixed (High)': '#ff5a00',
+      'Partially Fixed (Medium)': '#ffa500',
+      'Partially Fixed (Low)': '#ffe51c',
+      'Partially Fixed (No priority)': '#ffe51c',
+      'Wasn\'t Fixed (Blocker)': '#7b2d24',
+      'Wasn\'t Fixed (Urgent)': '#7b2d24',
+      'Wasn\'t Fixed (High)': '#ff5a00',
+      'Wasn\'t Fixed (Medium)': '#ffa500',
+      'Wasn\'t Fixed (Low)': '#ffe51c',
+      'Wasn\'t Fixed (No priority)': '#ffe51c',
+    })
+    
+
   for (let i = 1; i <= builds.length; i++) {
     let buildName = builds[i - 1];
     let data = {build : (getFirstOfCol(pivot.columns.byName(buildName + ' concat unique(build)'))),
@@ -121,6 +180,8 @@ if (result.rowCount === 0)  {
     DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'ignore?', 0),
     DG.Column.fromStrings('ignoreReason', []),
     DG.Column.fromStrings('lastResolved', []),
+    DG.Column.fromStrings('ignore status', []),
+    DG.Column.fromStrings('1 tickets status', []),
   ]);
   out.columns.byName('test').semType = 'autotest';
   out.columns.byName('owner').semType = 'User';

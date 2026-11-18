@@ -12,22 +12,20 @@ declare const DG: any;
 const DATA_STORAGE_KEY = 'tutorials';
 
 /** Closes the running tutorial through its own Close button (which rejects the step it waits on and
- * closes its table) and the Tutorials panel with it: the panel is not a view, so the shell reset
- * leaves it — and a tutorial left running keeps listening to the platform's events and would take
- * the next feature's gestures as its steps. */
+ * closes its table, its bar and its steps panel) and the Tutorials views: a tutorial left running keeps
+ * listening to the platform's events and would take the next feature's gestures as its steps. */
 const TUTORIAL_CLOSE = '.tutorials-bar button:has(.fa-times-circle), .tutorials-root-header button:has(.fa-times-circle)';
 
 async function closeTutorials(page: Page): Promise<void> {
   await page.evaluate((selector) => {
-    const close = document.querySelector(selector) as HTMLElement | null;
-    close?.click();
-    const root = document.querySelector('.tutorials-root') as HTMLElement | null;
-    const node = root ? grok.shell.dockManager.findNode(root) : null;
-    if (node)
-      grok.shell.dockManager.close(node);
+    (document.querySelector(selector) as HTMLElement | null)?.click();
+    for (const v of Array.from(grok.shell.views) as any[]) {
+      if (v.root.classList.contains('tutorials-view'))
+        v.close();
+    }
   }, TUTORIAL_CLOSE);
-  await expect.poll(() => page.evaluate(() => document.querySelector('.tutorials-root') == null &&
-    document.querySelectorAll('.grok-tutorial-entry').length === 0), {message: 'the Tutorials panel closed'}).toBe(true);
+  await expect.poll(() => page.evaluate(() => document.querySelector('.tutorials-root, .tutorials-view, .tutorials-bar') == null &&
+    document.querySelectorAll('.grok-tutorial-entry').length === 0), {message: 'the Tutorials app closed'}).toBe(true);
 }
 
 const closesAtEnd = new WeakSet<Page>();
@@ -45,22 +43,25 @@ function closeAtFeatureEnd(page: Page): void {
 export const tutorialsOpen = Given('the Tutorials app is open', async (page: Page) => {
   await closeTutorials(page);
   closeAtFeatureEnd(page);
-  await page.evaluate(() => grok.functions.call('Tutorials:trackOverview'));
-  await expect(page.locator('.tutorials-root .tutorials-card').first(), 'the Tutorials panel with its cards').toBeVisible({timeout: pollMs(30000)});
-}, {tier: 'api', description: 'the app\'s function docks the panel (no running tutorial left from before); the panel closes at feature end'});
+  await openTutorialsView(page);
+}, {tier: 'api', description: 'the app\'s view is shown (no running tutorial left from before); it closes at feature end'});
+
+async function openTutorialsView(page: Page): Promise<void> {
+  await page.evaluate(async () => grok.shell.addView(await grok.functions.call('Tutorials:trackOverview')));
+  await expect(page.locator('.tutorials-view .tutorials-card').first(), 'the Tutorials view with its cards').toBeVisible({timeout: pollMs(30000)});
+}
 
 export const tutorialsClosed = Given('the Tutorials app is closed', async (page: Page) => {
   await closeTutorials(page);
   closeAtFeatureEnd(page);
-  await expect(page.locator('.tutorials-root'), 'the Tutorials panel').toHaveCount(0);
-}, {tier: 'api', description: 'no Tutorials panel on the page, so the feature opens it the way a user does; closed again at feature end'});
+}, {tier: 'api', description: 'no Tutorials view, bar or panel on the page, so the feature opens it the way a user does; closed again at feature end'});
 
 export const startTutorial = When('user starts the {string} tutorial', async (page: Page, name: string) => {
-  const card = page.locator(`.tutorials-root .tutorials-card[aria-label="${name.replace(/"/g, '\\"')}"]`);
+  const card = page.locator(`.tutorials-view .tutorials-card[aria-label="${name.replace(/"/g, '\\"')}"]`);
   if (!await card.isVisible()) {
     await closeTutorials(page);
     closeAtFeatureEnd(page);
-    await page.evaluate(() => grok.functions.call('Tutorials:trackOverview'));
+    await openTutorialsView(page);
   }
   await card.click({timeout: pollMs(30000)});
   await expect(page.locator('.tutorials-bar-title'), 'the running tutorial\'s title').toHaveText(name, {timeout: pollMs(60000)});
@@ -68,7 +69,7 @@ export const startTutorial = When('user starts the {string} tutorial', async (pa
     .toHaveText(/\S/, {timeout: pollMs(60000)});
   await page.locator('.tutorials-bar .fa-list').click();
   await expect(page.locator('.grok-tutorial-entry[aria-current="step"]').first(), 'the first step of the tutorial').toBeVisible({timeout: pollMs(60000)});
-}, {tier: 'ui', description: 'clicks the tutorial\'s card in the Tutorials panel (opening the panel first if needed), waits for its first step and opens its step list'});
+}, {tier: 'ui', description: 'clicks the tutorial\'s card in the Tutorials view (opening the view first if needed), waits for its first step and opens its step list'});
 
 /** Opens the step list from the bar; clicked in the page, so a dialog a step opened does not block it. */
 async function showStepList(page: Page): Promise<void> {

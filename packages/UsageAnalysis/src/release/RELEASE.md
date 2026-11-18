@@ -16,7 +16,7 @@ UsageAnalysis with this app only to dev.)
 
 ## Structure
 
-`ReleaseHandler` (`src/release/release-handler.ts`) owns a `DG.MultiView` with six tabs. All tabs are
+`ReleaseHandler` (`src/release/release-handler.ts`) owns a `DG.MultiView` with five tabs. All tabs are
 toolbox-independent, so — unlike the main `ViewHandler` — it builds **no shared `UaToolbox`**. Each tab
 extends `UaView`; the handler calls `markToolboxReady()` (added to `src/tabs/ua.ts`) to unblock
 `initViewers()` without a toolbox, then registers a lazy factory (`addView(name, factory, false)`).
@@ -29,13 +29,14 @@ extends `UaView`; the handler calls `markToolboxReady()` (added to `src/tabs/ua.
 | Manual         | `src/release/manual.ts`     | `UsageAnalysis:ReleaseManualTests` query — Test Track batches |
 | Stress         | `src/tabs/stress-tests.ts`  | **reused**; `fetchStressSummary` (`StressTestsBuilds` + cached `StressTestsBuildSummary`), `StressTestsRaw` |
 | Vulnerabilities| `src/tabs/vulnerabilities.ts`| **reused**; VEX `index.json` — core shown as bleeding-edge only (`toDashboardImages`) |
+| Tickets        | `src/release/tickets.ts`    | GitHub issues of `core` + `public` in the milestone         |
 
 Shared, pure helpers live in `src/release/data.ts` (host check, `ReleaseTests` fetch + client-side
 pivot, alert computation, `stressRegression`) so Overview and the tabs never duplicate logic.
 
 ## Loading and speed
 
-- **Overview never waits for its slowest source.** Each of the four sources sets its own cards and
+- **Overview never waits for its slowest source.** Each of the five sources sets its own cards and
   alert nodes when it answers; a failure turns only its cards to `n/a` and is logged
   (`grok.log.warning`), so a broken source is visible in the console instead of looking like "no data".
 - **One tests pivot for Overview and Tests.** `ReleaseContext.tests()` keeps the last pivot per
@@ -68,7 +69,7 @@ The selection is shared through `ReleaseContext` (a `BehaviorSubject<string>` in
 and subscribe to it to re-fetch on change (guarded by `initialized` so a lazy tab loads once, with the
 current env). The other tabs have no per-instance dimension in the DB, so the picker is a no-op there:
 Stress (`stress_tests` has no `instance` column — runs in a dedicated job), Manual (Test Track
-batches), Vulnerabilities (VEX docker images).
+batches), Vulnerabilities (VEX docker images), Tickets (GitHub milestone).
 
 ## Tests tab
 
@@ -125,6 +126,33 @@ exists to be measured, so a delta that is noise on a functional test is the sign
 (orange — a regression, not a ship-blocker) listing every offender with both deltas, and *benchmarks
 failed* (red — the case blew its own in-suite threshold, which is a hard failure).
 
+## Stress alert
+
+`stressRegression` (`data.ts`) drives the Stress card, its alerts and the line at the top of the
+Stress tab. It compares two metrics, **speed** (tests/s) and **median test duration**, each averaged
+over the sweep's thread levels. Both, because they can disagree: a low median can mean threads parked
+on a lock rather than a fast server, and a good speed can hide tests that each got slower. p95 is
+not compared: it swings ±40% night to night.
+
+- **Speed of a level** (`tests_per_s` in `StressTestsBuildSummary`) is each thread's own rate (its
+  tests over its wall time) averaged and multiplied by the thread count. It is per thread because the
+  threads of a level start staggered and one build can hold several sweeps, so a level has no single
+  wall-clock span. **Speed of a sweep** is the average over its thread levels.
+- **Full suite completed** means the sweep has every thread level of the window and a pass rate of at
+  least `STRESS_MIN_PASS` (95%) on each. Only such sweeps are compared, as the latest or as a
+  baseline: a sweep cut short has no slow top levels, and failing tests return early, so both read
+  as fast. A latest sweep that is not full raises its own orange alert instead of a comparison.
+- **Two baselines:** the best full trunk sweep among the last `STRESS_LAST_BUILDS` (30), and the
+  best full sweep of the latest release branch that has stress runs (`StressTestsBuilds` appends
+  its last five). The best sweep is picked per metric: the fastest for speed, the lowest median for
+  duration. Getting worse by `STRESS_WARN_PCT` (10%) is orange, by `STRESS_FAIL_PCT` (25%) red; the
+  alert names the metric, the baseline build and the thread level that lost the most.
+- **The card** shows the worst change as its value (`+34% median`) and the latest sweep's own
+  numbers below it.
+- **Release sweeps do not exist yet.** The `Stress-Tests` job sweeps `master` only, so until a sweep
+  of a release image reports under a `release/x.y.z` build, the detail line says so and only the
+  trunk baseline is checked.
+
 ## Launch
 
 Deep link (dev only): `https://dev.datagrok.ai/apps/usage/release` (per-tab
@@ -132,6 +160,8 @@ Deep link (dev only): `https://dev.datagrok.ai/apps/usage/release` (per-tab
 
 ## Known limitations / follow-ups
 
+- **Tickets need the `githubToken` package credential** (`usage_analysis_github_token` in
+  `ops/infra/docs/credentials.yaml`); without it the card shows `n/a`. The milestone is the server's version.
 - **Jenkins deep-link** is the `test-build` job page, not the specific build — the `builds` table
   stores no build URL. Proper fix: persist `build_url` in test ingestion
   (`core/server/datlas/lib/src/services/action_logger_service.dart`) and surface it here.

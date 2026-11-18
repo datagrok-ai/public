@@ -155,3 +155,17 @@ category('MPO: coverage', () => {
     expect([1, 2, 3].every((i) => result.scoreColumn.isNone(i)), true, 'rows with gaps are excluded');
   });
 });
+
+category('MPO: JSON profile check', () => {
+  const check = (content: string): Promise<boolean> => grok.functions.call('Chem:checkJsonMpoProfile', {content});
+
+  test('A profile is recognised', async () => {
+    expect(await check(JSON.stringify({type: 'MPO Desirability Profile', name: 'p', properties: {}})), true);
+  });
+
+  test('Other JSON, and JSON cut short, is turned down without an error', async () => {
+    expect(await check('{"type": "FeatureCollection", "features": []}'), false);
+    expect(await check('{"type": "MPO Desirability Profile", "properties": {'), false);
+    expect(await check('{"cut": [1, 2'), false);
+  });
+});

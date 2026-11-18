@@ -117,9 +117,31 @@ interface Located {
 
 const ALL = 'all';
 
-async function spaceItems(space: DG.Project, types: string[]): Promise<DG.Entity[]> {
+const LINKED = 'This entity is not included to this space, but linked.';
+
+/** The item's card; the platform's default card is its bare caption (an app's), so then its tooltip. */
+function previewOf(item: DG.Entity): HTMLElement {
+  const card = entityCard(item, {currentOnClick: false}).root;
+  const only = card.firstElementChild;
+  if (card.childElementCount === 1 && only?.tagName === 'LABEL' && only.childElementCount === 0) {
+    card.replaceChildren(handlerRenderer<DG.Entity>().tooltip(item));
+    card.classList.add('u2-space-preview-details');
+  }
+  return card;
+}
+
+/** What `space` holds, owned and linked, without its subspaces and its own file storage. */
+export async function spaceItems(space: DG.Project, types: string[]): Promise<DG.Entity[]> {
   const found = await grok.dapi.spaces.id(space.id).children.ofTypes(types.join(','), true).list();
-  return found.filter((e) => !(e instanceof DG.Project && e.isSpace));
+  return found.filter((e) => !(e instanceof DG.Project && e.isSpace) &&
+    !(e instanceof DG.DataConnection && e.parameters?.['isProject'] === true));
+}
+
+/** Whether `item` is linked into `space` rather than living there, as Browse tells it: by its namespace
+ * (a file's name carries its path, `Space:Files/a.csv`). */
+export function isLinkedIn(item: DG.Entity, space: DG.Project): boolean {
+  const name = item.nqName.split('/')[0];
+  return name.substring(0, name.lastIndexOf(':')) !== space.nqName;
 }
 
 /** The spaces and what they hold: pick a space, or "All spaces", and search what it and its subspaces hold. */
@@ -145,19 +167,30 @@ export class SpaceBrowser extends Control {
       render: (node) => divH([icon(node.data === null ? 'layer-group' : 'brackets-curly', {cls: 'u2-space-node-icon'}),
         span(node.label)], 'u2-space-node')}));
     tree.root.classList.add('u2-space-browser-tree');
-    const search = this.build(() => new TextInput({inline: true, bind: query,
+    const search = this.build(() => new TextInput({inline: true, search: true, bind: query,
       placeholder: computed(() => scopeId.value === ALL ? 'Search all spaces' :
         `Search ${this.spaces.value?.get(scopeId.value)?.project.friendlyName ?? 'this space'}`)}));
     search.root.classList.add('u2-space-search');
+    this.scope.listen(search.root, 'keydown', (e) => {
+      if ((e as KeyboardEvent).key !== 'ArrowDown')
+        return;
+      e.preventDefault();
+      list.focusRows();
+    });
 
-    const renderer = handlerRenderer<DG.Entity>();
     const list = this.build(() => new VirtualList<Located>({itemHeight: 40,
       keyOf: (x) => `${x.space.project.id}/${x.item.id}`,
       labelOf: (x) => x.item.friendlyName,
-      render: (x) => divH([div([renderer.icon(x.item)], 'u2-space-item-icon'),
-        div([span(x.item.friendlyName, 'u2-space-item-name'),
-          span(this.spaces.peek()?.path(x.space.project).join(' / ') ?? '', 'u2-space-dim')], 'u2-space-item-text'),
-        span(Format.value(x.item.updatedOn ?? x.item.createdOn), 'u2-space-dim')], 'u2-space-item'),
+      render: (x) => {
+        const title = divH([span(x.item.friendlyName, 'u2-space-item-name')], 'u2-space-item-title');
+        if (isLinkedIn(x.item, x.space.project))
+          title.append(icon('link', {cls: 'u2-space-item-link', tooltip: LINKED}));
+        // one renderer per row: a space holds items of several types, and a renderer serves one
+        return divH([div([handlerRenderer<DG.Entity>().icon(x.item)], 'u2-space-item-icon'),
+          div([title, span(this.spaces.peek()?.path(x.space.project).join(' / ') ?? '', 'u2-space-dim')],
+            'u2-space-item-text'),
+          span(Format.value(x.item.updatedOn ?? x.item.createdOn), 'u2-space-dim')], 'u2-space-item');
+      },
       onEnter: (x) => this._options.onActivate?.(x.item),
     }));
     list.root.classList.add('u2-space-items');
@@ -177,6 +210,7 @@ export class SpaceBrowser extends Control {
     this.effect(() => {
       const items = shown.value;
       empty.hidden = found.value === null || items.length > 0;
+      list.root.hidden = !empty.hidden;
       empty.textContent = failed.value ?? (query.value.trim() !== '' ? `Nothing matches "${query.value.trim()}".` :
         scopeId.value === ALL ? 'The spaces hold nothing to open here.' : 'This space holds nothing to open here.');
     });
@@ -187,7 +221,7 @@ export class SpaceBrowser extends Control {
     this.effect(() => {
       const lead = this.selected.value[0];
       preview.replaceChildren(...(lead === undefined ? [div([span('Pick an item to see it here')], 'u2-space-dim')] :
-        [entityCard(lead, {currentOnClick: false}).root]));
+        [previewOf(lead)]));
     });
 
     this.effect(() => {
@@ -261,13 +295,26 @@ export interface OpenFromSpaceOptions extends Omit<SpaceBrowserOptions, 'onActiv
 }
 
 /** Answers the items opened, or an empty list when the dialog was cancelled. */
+/** Opens `item` as a double-click in Browse does. A function (an app, a script, a query) has no default
+ * command: Browse opens its preview, which runs an app, so that view opens; anything else runs its default action. */
+export async function openItem(item: DG.Entity): Promise<void> {
+  const handler = item instanceof DG.Func ? DG.ObjectHandler.forEntity(item) : null;
+  if (handler === null) {
+    DG.ObjectHandler.runDefaultAction(item);
+    return;
+  }
+  const view = await handler.renderPreview(item);
+  if (view)
+    grok.shell.addView(view);
+}
+
 export function openFromSpace(options: OpenFromSpaceOptions = {}): Promise<DG.Entity[]> {
   return new Promise((resolve) => {
     let opened: DG.Entity[] = [];
     let browser!: SpaceBrowser;
     const open = options.open ?? ((items: DG.Entity[]) => {
       for (const item of items)
-        DG.ObjectHandler.runDefaultAction(item);
+        openItem(item).catch((e) => grok.shell.error(`Could not open ${item.friendlyName}: ${e?.message ?? e}`));
     });
     const dialog = new Dialog(options.title ?? 'Open from space');
     const pick = signal<string | null>('Pick an item first');

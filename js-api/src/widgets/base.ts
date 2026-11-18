@@ -390,13 +390,12 @@ export class Widget<TSettings = any> extends Control {
 
     let obj = this;
     // @ts-ignore
-    let p = Property.create(propertyName, propertyType, (_) => obj[fieldName], null, defaultValue);
-    p.set = function (_: any, x: any) {
+    let p: Property = Property.create(propertyName, propertyType, (_) => obj[fieldName], function (_: any, x: any) {
       // @ts-ignore
       obj[fieldName] = x;
       obj._notifyPropertyChange(p);
       obj.onPropertyChanged(p);
-    };
+    }, defaultValue);
 
     if (options !== null) {
       if (options.get)

@@ -19,6 +19,7 @@ import {IMolContext, getMolSafe} from './mol-creation_rdkit';
 import {initRdKitFrom} from '../rdkit-service/rdkit-service-worker-api';
 import {byEngineModule, withMol} from '../engine/chem-engine';
 import {noteCruxError} from '../engine/crux-module';
+import {isWasmTrap} from '../crux/crux-api';
 import {cruxReadsCxExtension} from '../crux/crux-service';
 import {renderingOptions} from '../rendering/rendering-settings';
 
@@ -139,6 +140,26 @@ export function createRenderingOpts(addSettings: {[key: string]: any}): {[key: s
 }
 
 /**
+ * `draw(opts)`, and where it throws with the unspecified stereo marked (`unspecifiedStereoIsUnknown`, the Mark
+ * unspecified stereo setting), `draw` again without the marks after `reset`. MolDraw2D's
+ * markUnspecifiedStereoAsUnknown, in RDKit and in Crux's port of it, throws for some molecules, e.g. "too few
+ * segments" where the wavy bond lands on a bond too short to draw one (an unspecified phosphorus on a short P-O bond:
+ * SequenceTranslator's oligonucleotide structures, mol1K.csv's row index 381). Such a molecule is drawn as it was
+ * before the setting instead of crossed out. A wasm trap is thrown on: Crux's instance may be broken.
+ */
+export function drawMarkingUnknownStereo<T>(opts: {[key: string]: any}, draw: (opts: {[key: string]: any}) => T,
+  reset?: () => void): T {
+  try {
+    return draw(opts);
+  } catch (e) {
+    if (!opts.unspecifiedStereoIsUnknown || isWasmTrap(e))
+      throw e;
+    reset?.();
+    return draw({...opts, unspecifiedStereoIsUnknown: false});
+  }
+}
+
+/**
  * Draws the molecule (an RDKit one, or Crux's in Crux mode). False when the drawing threw: with `failQuietly` (a Crux
  * molecule, which RDKit then draws) nothing is drawn or logged, else an error cross is drawn.
  */
@@ -180,7 +201,11 @@ export function drawRdKitMoleculeToOffscreenCanvas(
     Object.assign(opts, renderingOptions);
 
   try {
-    rdKitMol.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));
+    drawMarkingUnknownStereo(opts, (o) => rdKitMol.draw_to_canvas_with_highlights(
+      (offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(o)), () => {
+      g.setTransform(1, 0, 0, 1, 0, 0); // a drawing that threw partway leaves its transform and its lines
+      g.clearRect(0, 0, w, h);
+    });
   } catch (e) {
     if (failQuietly) { // a Crux drawing that stopped partway: the canvas as RDKit expects it, then RDKit draws
       noteCruxError(e);
@@ -201,7 +226,11 @@ export function drawRdKitReactionToOffscreenCanvas(
   const opts = createRenderingOpts({width: Math.floor(w), height: Math.floor(h), fixedScale: undefined});
   const g = offscreenCanvas.getContext('2d', {willReadFrequently: true});
   g?.clearRect(0, 0, w, h);
-  rdKitReaction.draw_to_canvas_with_highlights((offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(opts));
+  drawMarkingUnknownStereo(opts, (o) => rdKitReaction.draw_to_canvas_with_highlights(
+    (offscreenCanvas as unknown) as HTMLCanvasElement, JSON.stringify(o)), () => {
+    g?.setTransform(1, 0, 0, 1, 0, 0);
+    g?.clearRect(0, 0, w, h);
+  });
 }
 
 export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,

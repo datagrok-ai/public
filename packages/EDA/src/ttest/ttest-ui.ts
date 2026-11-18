@@ -271,6 +271,9 @@ export function runTwoSampleTTest(): void {
   const factorColNames = [] as string[];
   const featureColNames = [] as string[];
 
+  /** The rows of `col` that pass the table filter (read at call time: the dialog is not modal). */
+  const filtered = (col: DG.Column): DG.Column => col.clone(df.filter.anyFalse ? df.filter : undefined);
+
   for (const col of columns) {
     if (FEATURE_TYPES.includes(col.type))
       featureColNames.push(col.name);
@@ -295,7 +298,7 @@ export function runTwoSampleTTest(): void {
   }
 
   // A categorical column is valid for the two-sample t-test only if it has exactly two groups.
-  const validFactorColNames = factorColNames.filter((name) => groupCount(columns.byName(name)) === 2);
+  const validFactorColNames = factorColNames.filter((name) => groupCount(filtered(columns.byName(name))) === 2);
 
   if (validFactorColNames.length < 1) {
     grok.shell.warning(ui.markdown(`The t-test is not applicable to this table:
@@ -318,6 +321,7 @@ export function runTwoSampleTTest(): void {
   const methodSource = {method: currentMethod};
   const methodProp = DG.Property.fromOptions({
     name: 'method',
+    type: DG.TYPE.STRING,
     caption: 'Method',
     inputType: 'Radio',
     choices: ['Welch', 'Student'],
@@ -415,11 +419,13 @@ export function runTwoSampleTTest(): void {
   dlg.addButton('Run', () => {
     dlg.close();
     try {
-      const res = twoSampleTTest(factor!, feature!, binCount(factor!), {
+      const factorCol = filtered(factor!);
+      const featureCol = filtered(feature!);
+      const res = twoSampleTTest(factorCol, featureCol, binCount(factorCol), {
         method: currentMethod,
         alpha: significance,
       });
-      addVisualization(df, factor!, feature!, res, fullReportInput.value!);
+      addVisualization(df, factorCol, featureCol, res, fullReportInput.value!);
     } catch (error) {
       if (error instanceof Error) {
         grok.shell.warning(getWarning(error.message));
@@ -471,7 +477,7 @@ export function runTwoSampleTTest(): void {
 
     let present: {code: number, stats: GroupStats}[];
     try {
-      present = presentGroups(factor, feature);
+      present = presentGroups(filtered(factor), filtered(feature));
     } catch (err) {
       flagCategory((err as Error).message);
       return;

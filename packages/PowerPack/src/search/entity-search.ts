@@ -182,7 +182,7 @@ export async function pdbSearch(s: string): Promise<DG.Widget | null> {
   if (json['rcsb_repository_holdings_combined_entry_container_identifiers']?.['update_id']) {
     return DG.Widget.fromRoot(ui.divH([
       ui.link('PDB: ' + s, 'https://www.rcsb.org/structure/' + s),
-      ui.image(`https://cdn.rcsb.org/images/structures/${s.toLowerCase()}_assembly-1.jpeg`, 200, 150),
+      ui.image(`https://cdn.rcsb.org/images/structures/pdb/${s.toLowerCase()}_assembly-1.jpeg`, 200, 150),
     ]));
   }
 

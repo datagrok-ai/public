@@ -22,14 +22,19 @@ export class CombinedAppUI extends AppUIBase {
 
     const factories = this.getViewFactories(this.th);
     this.multiView = new DG.MultiView({viewFactories: factories});
+    // the tools' views are tabs of the toolkit's view, which is the one the shell removes
+    for (const toolUI of this.toolUIs)
+      toolUI.releaseSubscriptionsWith(this.multiView);
   }
 
   private multiView: DG.MultiView;
+  private toolUIs: IsolatedAppUIBase[] = [];
 
   private getViewFactories(th: ITranslationHelper): ViewFactories {
+    const toolUIs = this.toolUIs;
     function viewFactory(UiConstructor: new (th: ITranslationHelper) => IsolatedAppUIBase): () => DG.View {
-      const view = DG.View.create();
       const translateUI = new UiConstructor(th);
+      toolUIs.push(translateUI);
       translateUI.initView().catch(
         (e) => console.error(`Failed to initialize ${UiConstructor.name}: ${e}`)
       );

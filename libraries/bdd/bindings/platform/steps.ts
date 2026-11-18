@@ -161,7 +161,7 @@ type Box = {x: number; y: number; width: number; height: number};
 
 type ViewBox = Box & {floating: boolean};
 
-/** The box, or why there is none (the view is not open, not on screen) � a reason a poll keeps reading past. */
+/** The box, or why there is none (the view is not open, not on screen) — a reason a poll keeps reading past. */
 function readViewBox(page: Page, name: string): Promise<ViewBox | string> {
   return page.evaluate((n) => {
     const views = Array.from(grok.shell.views) as any[];
@@ -922,12 +922,29 @@ export const contextPanelOpen = Given('the context panel is open', async (page: 
   }), {message: 'the context panel', timeout: pollMs(30000)}).toBe('shown');
 }, {tier: 'api', description: 'idempotent: the shell setting, re-applied until the panel is shown — not a click on its toggle'});
 
+/** A shell window a step hid is shown again at feature end when it was shown before: the next feature on the page
+ * starts with the windows this one found (a demo's closed context panel hid every later feature's panels). The
+ * setter is re-applied until the window is up, as `the context panel is open` does. */
+async function hideWindowForFeature(page: Page, setting: 'showContextPanel' | 'showBrowse' | 'showToolbox'): Promise<void> {
+  const shown = await page.evaluate((w) => {
+    const was = (grok.shell.windows as any)[w] === true;
+    (grok.shell.windows as any)[w] = false;
+    return was;
+  }, setting);
+  if (shown) {
+    atFeatureEnd(page, () => expect.poll(() => page.evaluate((w) => {
+      (grok.shell.windows as any)[w] = true;
+      return w !== 'showContextPanel' || (document.querySelector('.grok-prop-panel') as HTMLElement | null)?.offsetParent != null;
+    }, setting), {message: `the ${setting} shell window shown again`, timeout: pollMs(10000)}).toBe(true));
+  }
+}
+
 export const browsePanelClosed = Given('the browse panel is closed', async (page: Page) => {
   silent(page);
-  await page.evaluate(() => { grok.shell.windows.showBrowse = false; });
+  await hideWindowForFeature(page, 'showBrowse');
   await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').filter({visible: true}),
     'the browse tree').toHaveCount(0, {timeout: pollMs(15000)});
-}, {tier: 'api', description: 'the shell setting, off camera in a filmed guide: the side panel gives its room to the view once a file is open'});
+}, {tier: 'api', description: 'the shell setting, off camera in a filmed guide: the side panel gives its room to the view once a file is open; shown again at feature end if it was'});
 
 /** An info balloon a set-up step raised ("Numbering applied") stays over the view's top right for seconds and
  * takes the clicks meant for what is docked under it. */
@@ -946,9 +963,9 @@ export const tooltipHidden = Given('the tooltip is hidden', async (page: Page) =
 
 export const contextPanelClosed = Given('the context panel is closed', async (page: Page) => {
   silent(page);
-  await page.evaluate(() => { grok.shell.windows.showContextPanel = false; });
+  await hideWindowForFeature(page, 'showContextPanel');
   await expect(page.locator('.grok-prop-panel').filter({visible: true}), 'the context panel').toHaveCount(0, {timeout: pollMs(15000)});
-}, {tier: 'api', description: 'the shell setting, off camera in a filmed guide: a demo that has no use for the panel gives its room to the view'});
+}, {tier: 'api', description: 'the shell setting, off camera in a filmed guide: a demo that has no use for the panel gives its room to the view; shown again at feature end if it was'});
 
 export const contextPanelShows = Then('the context panel should show {string}', async (page: Page, name: string) => {
   // case aside: a database column's friendly name is capitalized ("Categoryid"), the panel shows it as the database has it
@@ -2665,9 +2682,9 @@ export const scriptLogged = Given('the server has logged activity on the {string
 /** Browse and the toolbox share the side panel: once the toolbox has taken it, "the browse panel is
  * open" finds `showBrowse` already true and the tree stays hidden until the toolbox lets it go. */
 export const toolboxPaneHidden = Given('the toolbox pane is hidden', async (page: Page) => {
-  await page.evaluate(() => { grok.shell.windows.showToolbox = false; });
+  await hideWindowForFeature(page, 'showToolbox');
   await expect(page.locator('.d4-toolbox[caption]').filter({visible: true}), 'the toolbox pane').toHaveCount(0, {timeout: pollMs(15000)});
-}, {tier: 'api', description: 'the side panel goes back to what it showed before the toolbox (the browse tree when it is open)'});
+}, {tier: 'api', description: 'the side panel goes back to what it showed before the toolbox (the browse tree when it is open); the toolbox comes back at feature end if it was shown'});
 
 /* --- hints ------------------------------------------------------------------------------------------
    `ui.hints.addHintIndicator` marks its target with `ui-hint-target` and a `data-target` token and
@@ -2791,3 +2808,26 @@ export const shellSettingIs = Then('the {string} shell setting should be {word}'
   await expect.poll(() => page.evaluate((n) => String((grok.shell.settings as any)[n]), name),
     {message: `the "${name}" shell setting`}).toBe(value);
 }, {description: 'the value of an account setting (grok.shell.settings) as text: true, false, a number'});
+
+/** A pane nested in a context panel section (SequenceTranslator's Oligo Structures > Sense, Helm's editor Chemistry,
+ * Bio's Monomer > Details) opens and closes by a click on its own header, inside the outer pane, unless it says it is
+ * in that state already. `user expands "<name>" section` finds such a pane twice (the pane and its header) and passes
+ * without opening it. The outer pane is the last one shown of its title, the innermost when several are. */
+async function setInnerPane(page: Page, inner: string, outer: string, expanded: boolean): Promise<void> {
+  const section = page.locator(`.d4-accordion-pane:has(> [name="div-section--${outer.replace(/ /g, '-')}"])`).filter({visible: true}).last();
+  const header = section.locator(`[name="div-section--${inner.replace(/ /g, '-')}"]`).filter({visible: true}).first();
+  await expect(header, `the ${inner} pane inside the ${outer} section`).toBeVisible();
+  if (await header.getAttribute('aria-expanded') !== String(expanded))
+    await header.click();
+  await expect(header, `the ${inner} pane inside the ${outer} section`).toHaveAttribute('aria-expanded', String(expanded));
+}
+
+export const expandInnerPane = When('user expands the {string} pane inside the {string} section',
+  (page: Page, inner: string, outer: string) => setInnerPane(page, inner, outer, true),
+  {tier: 'ui', description: 'a click on the header of the inner pane unless it is expanded; done when it says it is'});
+
+/** Closes a nested pane that opened expanded (Bio's Monomer pane opens its Details, which pushes the molecule's
+ * panes below the window). */
+export const collapseInnerPane = When('user collapses the {string} pane inside the {string} section',
+  (page: Page, inner: string, outer: string) => setInnerPane(page, inner, outer, false),
+  {tier: 'ui', description: 'a click on the header of the inner pane unless it is collapsed; done when it says it is'});

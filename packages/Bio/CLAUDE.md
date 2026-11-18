@@ -50,7 +50,7 @@ Other packages depend on these implementations: **Helm**, **Peptides**, **Biostr
 | `Bio \| Transform \| Convert Sequence Notation...` | `convertDialog` | FASTA ↔ SEPARATOR ↔ HELM ↔ BILN conversion |
 | `Bio \| Transform \| To Atomic Level...` | `toAtomicLevel` | Converts sequences to V3000 molfiles |
 | `Bio \| Transform \| Split to Monomers...` | `splitToMonomersTopMenu` | Splits aligned sequences into per-position columns |
-| `Bio \| Transform \| Molecules to HELM...` | `moleculesToHelmTopMenu` | Converts peptide molecules to HELM via Python script |
+| `Bio \| Transform \| Molecules to HELM...` | `moleculesToHelmTopMenu` | Converts peptide molecules to HELM on Chem's Crux workers (`utils/molecules-to-helm.ts`, Chem's macromolecule assembler `toHelm`) |
 | `Bio \| Calculate \| Extract Region...` | `getRegionTopMenu` | Extracts sub-region from macromolecule column |
 | `Bio \| Calculate \| Identity...` | `sequenceIdentityScoring` | Fraction of matching monomers vs reference |
 | `Bio \| Calculate \| Similarity...` | `sequenceSimilarityScoring` | Sum of monomer fingerprint similarities vs reference |
@@ -443,7 +443,7 @@ Test entry point: `src/package-test.ts` — imports all test files, exports `tes
 | `seq-handler-get-helm-tests.ts` | HELM conversion from other notations |
 | `renderers-test.ts` | Cell renderer behavior |
 | `renderers-monomer-placer-tests.ts` | MonomerPlacer rendering engine |
-| `renderers-connections-tests.ts` | Category `renderers: connections`: connections drawn as lines (flat positions, lanes, rings, combs, fit by height, one line per chain), canonical symbols when drawn, the column tag over the package default, multiline chain breaks, stacked hit bounds, the bond tooltip, a font size reaching every grid, package defaults (`renderer-defaults.ts`) |
+| `renderers-connections-tests.ts` | Category `renderers: connections`: connections drawn as lines (flat positions, lanes, rings, combs, fit by height, one line per chain, chains bonded side by side as one line), canonical symbols when drawn, the column tag over the package default, multiline chain breaks, stacked hit bounds, the bond tooltip, a font size reaching every grid, package defaults (`renderer-defaults.ts`) |
 | `converters-test.ts` | Notation conversion |
 | `bio-tests.ts` | General bio functionality |
 | `helm-tests.ts` | HELM-specific operations |
@@ -557,4 +557,4 @@ Test entry point: `src/package-test.ts` — imports all test files, exports `tes
 | Demo scripts | `src/demo/` |
 | Test entry point | `src/package-test.ts` |
 | Auto-generated wrappers | `src/package.g.ts` / `src/package-api.ts` |
-| Python/R scripts | `scripts/` — `mol-to-helm.py`, `sequence_generator.py` (+ `sequence_generator.md`), `embed.py`, `read-tree-pkl.py`, `generate_fasta_csv_for_alphabets.R` |
+| Python/R scripts | `scripts/` — `sequence_generator.py` (+ `sequence_generator.md`), `embed.py`, `read-tree-pkl.py`, `generate_fasta_csv_for_alphabets.R` |

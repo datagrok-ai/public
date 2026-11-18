@@ -43,6 +43,7 @@ export abstract class Tutorial extends DG.Widget {
 
   static readonly APP_PATH = '/apps/Tutorials/Tutorials';
   static readonly APP_TITLE = 'Tutorials';
+  static readonly VIEW_CLASS = 'tutorials-view';
 
   get path(): string {
     const removeSpaces = (s: string) => s.replaceAll(' ', '');
@@ -98,7 +99,7 @@ export abstract class Tutorial extends DG.Widget {
     this.barStep,
     this.barActions,
   ], 'tutorials-bar-row'), 'tutorials-bar');
-  private appPane: {element: HTMLElement, ratio: number} | null = null;
+  private appPane: HTMLElement | null = null;
 
   static DATA_STORAGE_KEY: string = 'tutorials';
   static SKIP_DELAY_MS: number = 30000;
@@ -144,8 +145,7 @@ export abstract class Tutorial extends DG.Widget {
   updateProgress(track: any) {
     const tutorials = this.track?.tutorials!;
     const id = tutorials.indexOf(this);
-    const pane = $(this.appPane?.element ?? document);
-    const trackRoot = pane.find(`.tutorials-track[data-name ='${track?.name}']`);
+    const trackRoot = $(Tutorial.views().map((v) => v.root)).find(`.tutorials-track[data-name ='${track?.name}']`);
     const root = trackRoot.find(`.tutorials-card[data-name='${track.tutorials[id].name}']`);
     root.find('.tutorials-card-status').show();
     root.attr('data-status', 'done');
@@ -280,8 +280,7 @@ export abstract class Tutorial extends DG.Widget {
           this._exitBarMode();
           this._closeAll();
           this.clearRoot();
-          $('.tutorial').show();
-          $('#tutorial-child-node').html('');
+          Tutorial.showView();
         }),
       ], {style: {alignItems: 'center'}}));
     } else if (statusMap) {
@@ -305,7 +304,6 @@ export abstract class Tutorial extends DG.Widget {
         console.error('Corrupted status map.');
         nextId = id + 1;
       }
-      const tutorialNode = $(this.appPane?.element ?? document).find('#tutorial-child-node');
       const nextTutorial = tutorials[nextId];
       finish.append(ui.divH([
         ui.divText(`Next "${nextTutorial.name}"`),
@@ -313,8 +311,7 @@ export abstract class Tutorial extends DG.Widget {
           this.updateProgress(this.track);
           nextTutorial.appPane = this._leaveBar();
           this.clearRoot();
-          tutorialNode.html('');
-          tutorialNode.append(nextTutorial.root);
+          nextTutorial.appPane?.replaceChildren(nextTutorial.root);
           nextTutorial.clearRoot();
           nextTutorial.start();
         }),
@@ -323,8 +320,7 @@ export abstract class Tutorial extends DG.Widget {
           this._exitBarMode();
           this._closeAll();
           this.clearRoot();
-          $('.tutorial').show();
-          tutorialNode.html('');
+          Tutorial.showView();
         }),
       ], {style: {alignItems: 'center'}}));
     }
@@ -348,8 +344,19 @@ export abstract class Tutorial extends DG.Widget {
     this.closed = true;
     this.onClose.next();
     this._closeAll();
-    $('.tutorial').show();
-    $('#tutorial-child-node').html('');
+    Tutorial.showView();
+  }
+
+  /** Brings the Tutorials view forward, if it is open. */
+  static showView(): void {
+    const view = Tutorial.views()[0];
+    if (view)
+      grok.shell.v = view;
+  }
+
+  /** The open Tutorials views; a view not shown is out of the document. */
+  private static views(): DG.ViewBase[] {
+    return Array.from(grok.shell.views).filter((v) => v.root.classList.contains(Tutorial.VIEW_CLASS));
   }
 
   _addHeader(): void {
@@ -394,22 +401,23 @@ export abstract class Tutorial extends DG.Widget {
     grok.shell.info('Link copied to clipboard');
   }
 
+  /** A tutorial runs in the bar when its root is in a `.tutorials-root` pane (docked or not), which
+   * then shows all its steps on demand. */
   private _enterBarMode(): void {
     const dm = grok.shell.dockManager;
     if (this.appPane == null) {
-      const element = this.root.closest<HTMLElement>('.tutorials-root');
-      const node = element ? dm.findNode(element) : null;
-      if (element == null || node == null)
+      this.appPane = this.root.closest<HTMLElement>('.tutorials-root');
+      if (this.appPane == null)
         return;
-      this.appPane = {element, ratio: node.container.containerElement.offsetWidth / dm.element.clientWidth};
-      dm.close(node);
+      if (dm.findNode(this.appPane) != null)
+        dm.close(this.appPane);
     }
     this.mainHeader.remove();
     if (dm.findNode(this.bar) == null)
       dm.dock(this.bar, DG.DOCK_TYPE.TOP, null, Tutorial.APP_TITLE, Tutorial.BAR_HEIGHT / dm.element.clientHeight);
   }
 
-  private _leaveBar(): {element: HTMLElement, ratio: number} | null {
+  private _leaveBar(): HTMLElement | null {
     const pane = this.appPane;
     if (pane == null)
       return null;
@@ -420,14 +428,13 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   private _exitBarMode(): void {
-    const shown = this.allStepsShown;
-    const pane = this._leaveBar();
-    if (pane != null && !shown)
-      grok.shell.dockManager.dock(pane.element, DG.DOCK_TYPE.LEFT, null, Tutorial.APP_TITLE, pane.ratio);
+    if (this.allStepsShown)
+      grok.shell.dockManager.close(this.appPane!);
+    this._leaveBar();
   }
 
   private get allStepsShown(): boolean {
-    return this.appPane != null && grok.shell.dockManager.findNode(this.appPane.element) != null;
+    return this.appPane != null && grok.shell.dockManager.findNode(this.appPane) != null;
   }
 
   /** Shows or hides all steps while the tutorial runs in the bar. */
@@ -437,13 +444,13 @@ export abstract class Tutorial extends DG.Widget {
       return;
     const dm = grok.shell.dockManager;
     if (!show) {
-      dm.close(pane.element);
+      dm.close(pane);
       return;
     }
     // docked next to the bar's sibling, the pane goes under the bar
     const bar = dm.findNode(this.bar)!;
     const rest = Array.from(bar.parent.children).find((n) => !n.container.containerElement.contains(this.bar))!;
-    dm.dock(pane.element, DG.DOCK_TYPE.LEFT, rest, Tutorial.APP_TITLE, Tutorial.STEPS_WIDTH / dm.element.clientWidth);
+    dm.dock(pane, DG.DOCK_TYPE.LEFT, rest, Tutorial.APP_TITLE, Tutorial.STEPS_WIDTH / dm.element.clientWidth);
     this.root.querySelector('[aria-current="step"]')?.scrollIntoView({block: 'nearest'});
   }
 
@@ -713,9 +720,6 @@ export abstract class Tutorial extends DG.Widget {
       grok.shell.tableView(this.t.name)?.close();
       grok.shell.closeTable(this.t);
     }
-    // The app is a dock panel without a view, so the platform cannot restore its URL when the table view closes
-    if (document.querySelector('.tutorials-root'))
-      window.history.replaceState(null, '', Tutorial.APP_PATH);
   }
 
   _onClose: Subject<void> = new Subject();

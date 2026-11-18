@@ -8,7 +8,6 @@ import { _package } from '../package';
 import { Subscription } from 'rxjs';
 import { testSchema } from '../test-analysis/sticky-meta-initialization';
 
-const REPORT_URL = /https?:\/\/[^\s,]+\/apps\/usage\/reports\/(\d+)/;
 const NEW_TESTING = 'New Testing';
 const BATCHNAME_STORAGE_KEY = 'Datagrok/UsageAnalysis/TestTrack/BatchName';
 const TEST_TRACK_FOLDER = 'TestTrack';
@@ -73,6 +72,7 @@ export class TestTrack extends DG.ViewBase {
   loadingFiles: { [key: string]: (Category | TestCase) } = {};
   nodes: { [key: string]: (DG.TreeViewNode<any>) } = {};
 
+  jiraBaseUrl = 'https://reddata.atlassian.net/browse/';
   gitHubBaseUrl = 'https://github.com/datagrok-ai/public/issues/';
   list: Category[] = [];
   expanded: boolean = false;
@@ -137,6 +137,7 @@ export class TestTrack extends DG.ViewBase {
   init() {
     if (this.isInitializing)
       return;
+
     if (this.inited) {
       grok.shell.dockManager.dock(this.root, DG.DOCK_TYPE.LEFT, null, this.name, 0.3);
       return;
@@ -864,7 +865,6 @@ export class TestTrack extends DG.ViewBase {
 
     const textInput = ui.input.textArea(errorSeverityLevels.includes(status) ? 'Tickets' : 'Reasons', { value: value, nullable: false });
     textInput.classList.add('ui-input-reason');
-
     errorTypeSelector.addValidator((value) => {
       if (value == '')
         return 'Can\'t be null';
@@ -886,16 +886,17 @@ export class TestTrack extends DG.ViewBase {
     dialog.onOK(() => {
       edit ? this.changeNodeReason(node, status, textInput.value) : this.changeNodeStatus(node, status, textInput.value);
     });
+    // TODO: creating a ticket for a failure goes to GitHub issues with the observability work; Jira is gone.
+
     dialog.show({ resizable: false });
     dialog.initDefaultHistory();
 
     const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];
   }
 
-  reportTickets(reason: string, oldReason: string, params: any) {
-    const ticketRe = new RegExp(`GROK-\\d{1,6}|${REPORT_URL.source}`, 'g');
-    const newTickets: string[] = (reason ?? '').match(ticketRe) || [];
-    const oldTickets: string[] = oldReason.match(ticketRe) || [];
+  reportJiraTickets(reason: string, oldReason: string, params: any) {
+    const newTickets: string[] = (reason ?? '').match(/GROK-\d{1,6}/g) || [];
+    const oldTickets: string[] = oldReason.match(/GROK-\d{1,6}/g) || [];
     const combinedTickets = new Set([...newTickets, ...oldTickets]);
     const finalTickets = newTickets.some((ticket) => oldTickets.includes(ticket)) ||
       newTickets.every((ticket) => oldTickets.includes(ticket))
@@ -966,7 +967,7 @@ export class TestTrack extends DG.ViewBase {
     };
     if (reportData) {
       grok.shell.reportTest('manual', params);
-      this.reportTickets(reason ?? '', oldReason, params);
+      this.reportJiraTickets(reason ?? '', oldReason, params);
     }
     this.updateGroupStatusRecursiveUp(node.parent as DG.TreeViewGroup);
     let reasonTooltipValue = ui.div(this.getReason(reason ?? ''));
@@ -1005,7 +1006,7 @@ export class TestTrack extends DG.ViewBase {
     const params = {
       success: status === PASSED, result: reason, skipped: status === SKIPPED, type: 'manual',
       package: 'Test Track',
-      category: node.value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: this.uid, start: this.start, ms: 0, batchName: this.testingName,
+      category: node.value.path.replace(/:\s[^:]+$/, ''), name: node.text, version: this.version, uid: uid, start: this.start, ms: 0, batchName: this.testingName,
       severityLevel: errorSeverityLevels.includes(status) ? status : null
     };
 
@@ -1013,7 +1014,7 @@ export class TestTrack extends DG.ViewBase {
     grok.dapi.users.find(params['uid']).then((user) => {
       const map: StatusInfo = {
         'User': user,
-        'Date': Date.now().toString(),
+        'Date': this.dateTooltip(new Date()),
         'Version': params['version'],
         'Batch': this.testingName
       };
@@ -1024,7 +1025,7 @@ export class TestTrack extends DG.ViewBase {
     });
     if (reportData) {
       grok.shell.reportTest('manual', params);
-      this.reportTickets(reason ?? '', oldReason, params);
+      this.reportJiraTickets(reason ?? '', oldReason, params);
     }
     this.updateReportData(node);
   }
@@ -1182,11 +1183,11 @@ export class TestTrack extends DG.ViewBase {
   getReason(reason: string): HTMLElement {
     const result = ui.label('');
     for (let str of reason.split('\n')) {
+      const jira = str.match(/GROK-\d{1,6}\b/);
       const gh1 = str.match(/#(\d{3,5})\b/);
       const gh2 = str.match(/https:\/\/github\.com\/datagrok-ai\/public\/issues\/(\d{3,5})/);
       const slack = str.includes('datagrok.slack.com');
-      const report = str.match(REPORT_URL);
-      if (report) result.append(this.getReasonLink(str, report[0], `Report ${report[1]}`));
+      if (jira) result.append(this.getReasonLink(str, this.jiraBaseUrl + jira[0], jira[0]));
       else if (gh1) result.append(this.getReasonLink(str, this.gitHubBaseUrl + gh1[1], gh1[0]));
       else if (gh2) result.append(this.getReasonLink(str, str, `#${gh2[1]}`));
       else if (slack) result.append(this.getReasonLink(str, str, 'SLACK'));
@@ -1197,23 +1198,23 @@ export class TestTrack extends DG.ViewBase {
   }
 
   hasAnyLink(reason: string): boolean {
+    const jira = reason.match(/GROK-\d{1,6}\b/);
     const gh1 = reason.match(/#(\d{3,5})\b/);
     const gh2 = reason.match(/https:\/\/github\.com\/datagrok-ai\/public\/issues\/(\d{3,5})/);
     const slack = reason.includes('datagrok.slack.com');
-    const report = reason.match(REPORT_URL);
-    return (gh1 || gh2 || slack || report) ? true : false
+    return (jira || gh1 || gh2 || slack) ? true : false
   }
 
   openReasonLink(reason: string) {
     let hasLink = false;
     for (let str of reason.split('\n')) {
+      const jira = str.match(/GROK-\d{1,6}\b/);
       const gh1 = str.match(/#(\d{3,5})\b/);
       const gh2 = str.match(/https:\/\/github\.com\/datagrok-ai\/public\/issues\/(\d{3,5})/);
       const slack = str.includes('datagrok.slack.com');
-      const report = str.match(REPORT_URL);
       let linkToOpen: string = "";
-      if (report) {
-        linkToOpen = report[0];
+      if (jira) {
+        linkToOpen = this.jiraBaseUrl + jira[0];
       }
       else if (gh1) {
         linkToOpen = this.gitHubBaseUrl + gh1[1];

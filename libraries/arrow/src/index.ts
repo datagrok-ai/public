@@ -129,8 +129,9 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
       case arrow.Type.Float:
       case arrow.Type.Decimal:
         if (ArrayBuffer.isView(values)) {
-          if (type.bitWidth < 64)
-            columns.push(DG.Column.fromFloat32Array(name, withNulls(values as Float32Array, vector, DG.FLOAT_NULL)));
+          // Arrow's Float type has a precision, not a bit width
+          if (values instanceof Float32Array)
+            columns.push(DG.Column.fromFloat32Array(name, withNulls(values, vector, DG.FLOAT_NULL)));
           else
             columns.push(DG.Column.fromFloat64Array(name, withNulls(values as Float64Array, vector, DG.FLOAT_NULL)));
         } else

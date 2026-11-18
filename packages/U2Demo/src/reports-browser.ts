@@ -24,13 +24,19 @@ function created(date: dayjs.Dayjs): string {
 }
 
 function reportActions(r: DG.UserReport): Action[] {
-  return [{text: 'Copy description', icon: 'copy', run: () => {
+  const actions: Action[] = [{text: 'Copy description', icon: 'copy', run: () => {
     navigator.clipboard.writeText(r.description ?? '');
     grok.shell.info('Description copied');
-  }}, {text: 'Copy id', run: () => {
+  }}];
+  if (r.jiraTicket) {
+    actions.push({text: `Open ${r.jiraTicket}`, icon: 'external-link-alt',
+      run: () => void window.open(`https://reddata.atlassian.net/browse/${r.jiraTicket}`)});
+  }
+  actions.push({text: 'Copy id', run: () => {
     navigator.clipboard.writeText(r.id);
     grok.shell.info('Id copied');
-  }}];
+  }});
+  return actions;
 }
 
 function reportRow(r: DG.UserReport): HTMLElement {
@@ -47,6 +53,7 @@ function reportDetails(r: DG.UserReport): HTMLElement {
   return tableFromMap({
     'Description': r.description ?? '',
     'Created': created(r.createdOn),
+    'Jira ticket': r.jiraTicket ?? '',
     'Resolved': String(r.isResolved),
     'Reporter': r.reporter ? chip(r.reporter).root : '',
     'Assignee': r.assignee ? chip(r.assignee).root : '',

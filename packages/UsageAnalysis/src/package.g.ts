@@ -48,6 +48,13 @@ export function releaseDashboardApp(path?: string) : any {
   return PackageFunctions.releaseDashboardApp(path);
 }
 
+//input: column<string> ticketColumn 
+//output: column result
+//meta.vectorFunc: true
+export async function getTicketsVerdict(ticketColumn: DG.Column<any>) : Promise<any> {
+  return await PackageFunctions.getTicketsVerdict(ticketColumn);
+}
+
 //output: dataframe result
 export async function vexImages() : Promise<any> {
   return await PackageFunctions.vexImages();

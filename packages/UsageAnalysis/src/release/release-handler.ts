@@ -9,22 +9,25 @@ import {ReleaseOverviewView} from './overview';
 import {TestsView} from './tests';
 import {BenchmarksView} from './benchmarks';
 import {ManualTestsView} from './manual';
+import {ReleaseTicketsView} from './tickets';
+import {GitHubIssuesClient} from '../github/issues-client';
 import {ReleaseContext, ENV_CHOICES, DEFAULT_ENV, DEFAULT_BRANCH, ALL_BRANCHES, fetchTestBranches,
   defaultBranchForEnv} from './data';
 
-// Assembles the focused /release dashboard: a MultiView of Overview + Tests + Benchmarks + Manual +
-// Stress + Vulnerabilities. Stress and Vulnerabilities are reused verbatim from the main app; all
+// Assembles the focused /release dashboard: a MultiView of Overview + Tests + Stress +
+// Vulnerabilities + Tickets. Stress and Vulnerabilities are reused verbatim from the main app; all
 // tabs are toolbox-independent, so we skip the shared UaToolbox (markToolboxReady unblocks init).
 export class ReleaseHandler {
   public static NAME = 'Release';
   public view: DG.MultiView;
-  private ctx = new ReleaseContext();
+  private ctx: ReleaseContext;
   private envInput: DG.InputBase;
   private branchInput: DG.InputBase;
   private branches: string[] = [];
   private refreshIcon: HTMLElement;
 
-  constructor(path?: string) {
+  constructor(githubIssues: GitHubIssuesClient, path?: string) {
+    this.ctx = new ReleaseContext(githubIssues);
     this.view = new DG.MultiView({viewFactories: {}});
     this.view.name = ReleaseHandler.NAME;
     this.view.box = true;
@@ -54,7 +57,7 @@ export class ReleaseHandler {
     overview.switchTab = (name) => this.changeTab(name);
     const views: UaView[] = [overview, new TestsView(this.ctx), new BenchmarksView(this.ctx),
       new ManualTestsView(this.ctx), new StressView(undefined, this.ctx),
-      new VulnerabilitiesView(undefined, this.ctx)];
+      new VulnerabilitiesView(undefined, this.ctx), new ReleaseTicketsView(this.ctx)];
     for (const v of views) {
       v.markToolboxReady();
       this.view.addView(v.name, () => {

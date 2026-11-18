@@ -2,16 +2,19 @@
 
 ## v.next
 
-* Test dashboard: Removed the Jira ticket columns and verdicts (`GetTicketsVerdict`)
-* Test dashboard: Removed the Watch a jira ticket action
-* Release dashboard: Removed the Jira Tickets tab and its Overview card
-* Test Track: Removed the Jira Tickets pane of fail reasons
-* Test Track: Changed report links in reasons to open the report
-* Test Track: Changed report links in reasons to be saved as the test's tickets
-* Test Track: Removed the Jira links of GROK keys in reasons
-* Removed creating Jira tickets: the `CreateJiraTicket` function and the Jira swagger
-* Removed the Platform version package setting
-* Reports: Removed the Jira column
+* Release dashboard: Tickets read GitHub issues instead of Jira (needs the `githubToken` credential)
+* Test dashboards: Ticket verdicts read GitHub issues instead of Jira
+* Test dashboards: Fixed the Test Track tickets status column
+* Removed Jira ticket creation (the Jira connection, Create JIRA ticket, Test Track's Jira Tickets pane)
+
+## 2.7.2 (2026-11-17)
+
+* Release dashboard: The Stress alert compares speed (tests per second) and median test duration of the latest sweep with the best sweep that completed the full suite and with the latest release branch, and reports an incomplete sweep; the Stress tab charts speed next to the median duration
+* Release dashboard: Fixed the Stress tab and alert ordering builds by image build date, which several builds can share, instead of by when the sweep ran
+* Tests: Added `trellis-plot-scatter-labels.feature` (core#1644: a scatter plot in a trellis cell labels at most 20 selected rows, Never hides them, the full-screen cell labels as a standalone plot), read through the trellis's new `cell labels shown <cell>` and `full screen labels shown` readings
+* Tests: Added `edit-tooltip-guidance.feature` (the Edit Tooltip dialog's Use tooltip choices, hover help, status line and warnings, Design custom tooltip in the viewer's own mode, Remove/Reset group tooltip); the tooltip features read the dialog's new option labels "Table (shared)" and "<Viewer> only"
+* Release dashboard: Fixed the Stress chart placing builds by name instead of by date, which hid the latest run among older ones
+* Tests: Retired the known failures of [core#626](https://github.com/datagrok-ai/core/issues/626), [core#467](https://github.com/datagrok-ai/core/issues/467) and GROK-20535, fixed in the core; the routing scenario claims the core's 'Project "<name>" was not found'; the dock-layout feature closes the Dashboards panel it opens (left open, its SAVE beside every later table view's ribbon Save made "Save button" ambiguous); the app dashboard feature waits for Usage Analysis' toolbox before it picks a tab
 * Release dashboard: Fixed the Overview, Tests and Benchmarks showing no data: the per-build pivot relied on `first()` of string columns, which the dataframe pivot drops
 * Release dashboard: The Overview fills each card as soon as its own source answers instead of waiting for the slowest one, and logs a source that fails
 * Release dashboard: Stress summaries are cached per build, so the Stress card and tab no longer wait minutes for a 20-build aggregation

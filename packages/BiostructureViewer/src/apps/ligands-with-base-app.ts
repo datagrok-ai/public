@@ -86,6 +86,7 @@ export class LigandsWithBiostructureApp extends LigandsWithBaseApp {
   override async buildViewViewer(): Promise<void> {
     const viewer: DG.Viewer & IBiostructureViewer = (await this.df!.plot.fromType('Biostructure', {
       pdb: this.pdb,
+      ligandColumnName: 'molecule',
       showSelectedRowsLigands: false,
       showCurrentRowLigand: true,
       showMouseOverRowLigand: true,

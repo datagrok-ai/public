@@ -1,16 +1,24 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import { _package, _properties } from '../package';
+import {findIssueRefs, GitHubIssue, IssueRef, isOpen} from '../github/issue';
+import {GitHubIssuesClient} from '../github/issues-client';
+import {issuesGrid} from '../github/issues-grid';
+
+const MANUAL_TICKETS_FILE = 'manual-tickets.json';
 
 class Priority {
   static BLOCKER: string = 'BLOCKER';
   static INFO: string = 'INFO';
   static ERROR: string = 'ERROR';
+  static RESOLVED: string = 'RESOLVED';
 
   static codeMapping: { [key: string]: number } = {
     [Priority.BLOCKER]: 3,
     [Priority.ERROR]: 2,
     [Priority.INFO]: 1,
+    [Priority.RESOLVED]: 0,
   };
 
   static getMaxPriority(priorities: string[]): string {
@@ -23,6 +31,17 @@ class Priority {
       return currentCode > maxCode ? currentPriority : maxPriority;
     });
   }
+}
+
+function verdictPriority(issue: GitHubIssue, platformVersion: string | undefined): string {
+  if (!isOpen(issue))
+    return Priority.RESOLVED;
+  if (issue.priority === 'Blocker')
+    return Priority.BLOCKER;
+  const thisVersion = !!platformVersion && !!issue.milestone?.startsWith(platformVersion);
+  if (issue.type === 'Bug' && issue.priority !== 'Low' && thisVersion)
+    return Priority.ERROR;
+  return Priority.INFO;
 }
 
 class Verdict {
@@ -47,14 +66,21 @@ function getIconForVerdict(priority: string): HTMLElement {
   } else if (priority == Priority.INFO) {
     icon = ui.iconFA('info-circle', null, 'Good to know, doesn\'t require immediate action');
     icon.style.color = DG.Color.toRgb(DG.Color.blue);
+  } if (priority == Priority.RESOLVED) {
+    icon = ui.iconFA('info-circle', null, 'Already resolved');
+    icon.style.color = DG.Color.toRgb(DG.Color.green);
   }
   return icon!;
 }
 
 export class TestDashboardWidget extends DG.JsViewer {
   static isOpen: boolean = false;
-  constructor() {
+  ticketRefs = new Map<string, IssueRef>();
+  githubIssues: GitHubIssuesClient;
+
+  constructor(githubIssues: GitHubIssuesClient) {
     super();
+    this.githubIssues = githubIssues;
   }
 
   onFrameAttached(dataFrame: DG.DataFrame): void {
@@ -81,6 +107,7 @@ export class TestDashboardWidget extends DG.JsViewer {
       let verdicts: Verdict[] = [];
       verdicts.push(...this.verdictsOnCorrectness(dataFrame));
       verdicts.push(...this.verdictsOnPerformance());
+      verdicts.push(...(await this.verdictsForTickets()));
       verdicts.push(...this.getBuildInfos(dataFrame));
       let status = Priority.getMaxPriority(verdicts.map((v) => v.priority));
       if (status == Priority.BLOCKER)
@@ -105,6 +132,8 @@ export class TestDashboardWidget extends DG.JsViewer {
 
   verdictsOnCorrectness(df: DG.DataFrame): Verdict[] {
     let verdicts: Verdict[] = [];
+    if (df.col('jira') != null)
+      this.collectTickets(df.col('jira')!);
     if (df.col('ignore?') != null)
       verdicts.push(...this.ignoredTests(df));
     verdicts.push(...this.majorPackages(df));
@@ -117,6 +146,15 @@ export class TestDashboardWidget extends DG.JsViewer {
       return verdicts;
     verdicts.push(...this.performanceDowngrades(df));
     return verdicts;
+  }
+  collectTickets(ticketCol: DG.Column<string>): void {
+    for (let i = 0; i < ticketCol.length; i++)
+      this.watch(findIssueRefs(ticketCol.getString(i)));
+  }
+
+  watch(refs: IssueRef[]): void {
+    for (const ref of refs)
+      this.ticketRefs.set(ref.key, ref);
   }
   majorPackages(df: DG.DataFrame): Verdict[] {
     try {
@@ -267,6 +305,42 @@ export class TestDashboardWidget extends DG.JsViewer {
     }
   }
   
+  async readManualTickets(): Promise<string[]> {
+    return await _package.files.exists(MANUAL_TICKETS_FILE) ?
+      JSON.parse(await _package.files.readAsText(MANUAL_TICKETS_FILE)) : [];
+  }
+
+  async addManualTickets(refs: IssueRef[]): Promise<void> {
+    const stored = await this.readManualTickets();
+    const added = refs.map((r) => r.key).filter((key) => !stored.includes(key));
+    if (added.length > 0)
+      await _package.files.writeAsText(MANUAL_TICKETS_FILE, JSON.stringify([...stored, ...added]));
+  }
+
+  async verdictsForTickets(): Promise<Verdict[]> {
+    try {
+      this.watch(findIssueRefs((await this.readManualTickets()).join(' ')));
+      const found = await this.githubIssues.findIssues([...this.ticketRefs.values()]);
+      const issues = new Map([...found.values()].map((i) => [i.key, i]));
+      const groups = new Map<string, GitHubIssue[]>();
+      for (const issue of issues.values()) {
+        const priority = verdictPriority(issue, _properties['Platform version']);
+        groups.set(priority, [...(groups.get(priority) ?? []), issue]);
+      }
+      return [...groups].map(([priority, group]) => {
+        const grid = issuesGrid(group, `GitHub issues [${priority}]`);
+        grid.props.rowHeight = 32;
+        grid.autoSize(1000, 500);
+        return new Verdict(priority, `GitHub issues [${priority}] - ${group.length} items`, grid.root);
+      });
+    } catch (e) {
+      return [new Verdict(Priority.ERROR, 'GitHub issues', ui.div([
+        ui.span(['Failed to read GitHub issues: ']),
+        ui.span([e instanceof Error ? e.message : `${e}`]),
+      ]))];
+    }
+  }
+
   composeResultList(verdicts: Verdict[]): HTMLElement {
     let res: DG.Accordion = ui.accordion('');
     let lastAccordion: HTMLDivElement | null;
@@ -281,6 +355,19 @@ export class TestDashboardWidget extends DG.JsViewer {
       }
       lastAccordion!.appendChild(ui.div([verdicts[i].widget]));
     }
+    res.addPane('Actions', () => ui.actionLink('Watch a GitHub issue', () => {
+      const dialog = ui.dialog('Watch issue');
+      const ticketInput = ui.input.textArea('issue', {tooltipText: 'core#456, public#12 or an issue URL'});
+      dialog.add(ticketInput.root);
+      dialog.onOK(async () => {
+        const refs = findIssueRefs(ticketInput.value);
+        if (refs.length > 0)
+          await this.addManualTickets(refs);
+        else
+          grok.shell.warning(`Couldn't recognize an issue in ${ticketInput.value}`);
+      });
+      dialog.show();
+    }));
     return res.root;
   }
 
