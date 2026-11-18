@@ -20,7 +20,7 @@ import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
-import {warnOff} from '../../bindings/close-tabs.js';
+import {askToSaveOnClose} from '../../bindings/close-tabs.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, close, doubleClickOn, enterInto, hoverText, isExpanded, selectIn, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
@@ -36,7 +36,7 @@ test.describe("Projects regressions: a derived table saved after its source tabl
   test("Data sync is not offered for a pivot whose source table is closed", {tag: ["@realizes:views.projects", "@realizes:core#531"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(22, "Given user is logged in", () => loggedIn(page));
-    await session.step(23, "And the \"Warn on unsaved changes\" setting is off until the feature ends", () => warnOff(page));
+    await session.step(23, "And the \"Ask to save on close\" setting is off until the feature ends", () => askToSaveOnClose(page, "off"));
     await session.step(24, "And simple mode is off", () => simpleModeOff(page));
     await session.step(25, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(29, "Given no project named \"BDDRegClosedSrc{time}\" is on the server", () => noProjectOnServer(page, session.text("BDDRegClosedSrc{time}")));
@@ -70,7 +70,7 @@ test.describe("Projects regressions: a derived table saved after its source tabl
     await session.step(57, "When user closes \"orders\" view tab", () => close(page, el("\"orders\" view tab")));
     await session.step(58, "Then \"Close orders?\" dialog should be visible", () => shouldBe(page, el("\"Close orders?\" dialog"), "visible"));
     await session.step(59, "And \"Close orders?\" dialog should contain text 'Made from \"orders\"'", () => shouldContainText(page, el("\"Close orders?\" dialog"), "Made from \"orders\""));
-    await session.step(60, "When user clicks on CLOSE ANYWAY button in \"Close orders?\" dialog", () => clickOn(page, el("CLOSE ANYWAY button in \"Close orders?\" dialog")));
+    await session.step(60, "When user clicks on CLOSE button in \"Close orders?\" dialog", () => clickOn(page, el("CLOSE button in \"Close orders?\" dialog")));
     await session.step(61, "Then the \"Close orders?\" dialog should close", () => dialogCloses(page, "Close orders?"));
     await session.step(62, "And the \"orders aggregation\" view should be current", () => viewIsCurrent(page, "orders aggregation"));
     await session.step(63, "When user clicks on Save ribbon item", () => clickOn(page, el("Save ribbon item")));
@@ -92,7 +92,7 @@ test.describe("Projects regressions: a derived table saved after its source tabl
   test("Data sync is not offered for a join one of whose tables is closed", {tag: ["@realizes:views.projects"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(22, "Given user is logged in", () => loggedIn(page));
-    await session.step(23, "And the \"Warn on unsaved changes\" setting is off until the feature ends", () => warnOff(page));
+    await session.step(23, "And the \"Ask to save on close\" setting is off until the feature ends", () => askToSaveOnClose(page, "off"));
     await session.step(24, "And simple mode is off", () => simpleModeOff(page));
     await session.step(25, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(80, "Given user opens cars dataset", () => openDataset(page, ds("cars")));
@@ -108,7 +108,7 @@ test.describe("Projects regressions: a derived table saved after its source tabl
     await session.step(90, "Then \"Close cars10?\" dialog should be visible", () => shouldBe(page, el("\"Close cars10?\" dialog"), "visible"));
     await session.step(91, "And \"Close cars10?\" dialog should contain text \"result\"", () => shouldContainText(page, el("\"Close cars10?\" dialog"), "result"));
     await session.step(92, "And \"Close cars10?\" dialog should contain text 'Made from \"cars10\"'", () => shouldContainText(page, el("\"Close cars10?\" dialog"), "Made from \"cars10\""));
-    await session.step(93, "When user clicks on CLOSE ANYWAY button in \"Close cars10?\" dialog", () => clickOn(page, el("CLOSE ANYWAY button in \"Close cars10?\" dialog")));
+    await session.step(93, "When user clicks on CLOSE button in \"Close cars10?\" dialog", () => clickOn(page, el("CLOSE button in \"Close cars10?\" dialog")));
     await session.step(94, "Then the \"Close cars10?\" dialog should close", () => dialogCloses(page, "Close cars10?"));
     await session.step(95, "When user clicks on Save ribbon item", () => clickOn(page, el("Save ribbon item")));
     await session.step(96, "Then \"Save project\" dialog should be visible", () => shouldBe(page, el("\"Save project\" dialog"), "visible"));
@@ -119,7 +119,7 @@ test.describe("Projects regressions: a derived table saved after its source tabl
   test("Along a chain of derived tables only the table whose source is closed loses Data sync", {tag: ["@realizes:views.projects"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(22, "Given user is logged in", () => loggedIn(page));
-    await session.step(23, "And the \"Warn on unsaved changes\" setting is off until the feature ends", () => warnOff(page));
+    await session.step(23, "And the \"Ask to save on close\" setting is off until the feature ends", () => askToSaveOnClose(page, "off"));
     await session.step(24, "And simple mode is off", () => simpleModeOff(page));
     await session.step(25, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(102, "Given user clears the saved pivot table parameters", () => clearSavedParameters(page));
@@ -133,7 +133,7 @@ test.describe("Projects regressions: a derived table saved after its source tabl
     await session.step(110, "Then the \"cars aggregation aggregation\" view should be current", () => viewIsCurrent(page, "cars aggregation aggregation"));
     await session.step(111, "When user closes \"cars\" view tab", () => close(page, el("\"cars\" view tab")));
     await session.step(112, "Then \"Close cars?\" dialog should be visible", () => shouldBe(page, el("\"Close cars?\" dialog"), "visible"));
-    await session.step(113, "When user clicks on CLOSE ANYWAY button in \"Close cars?\" dialog", () => clickOn(page, el("CLOSE ANYWAY button in \"Close cars?\" dialog")));
+    await session.step(113, "When user clicks on CLOSE button in \"Close cars?\" dialog", () => clickOn(page, el("CLOSE button in \"Close cars?\" dialog")));
     await session.step(114, "Then the \"Close cars?\" dialog should close", () => dialogCloses(page, "Close cars?"));
     await session.step(115, "When user clicks on Save ribbon item", () => clickOn(page, el("Save ribbon item")));
     await session.step(116, "Then \"Save project\" dialog should be visible", () => shouldBe(page, el("\"Save project\" dialog"), "visible"));

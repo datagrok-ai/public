@@ -8,11 +8,11 @@ Feature: Projects regressions: a derived table saved after its source table is c
   disables Data sync for a table whose creation script reads a table that is not saved with it, and
   saving it as a snapshot reopens with its rows.
 
-  Closing the source asks first (Close orders?, core#456): the scenarios answer CLOSE ANYWAY, since
+  Closing the source asks first (Close orders?, core#456): the scenarios answer CLOSE, since
   the subject here is the Save dialog that follows. The same rule holds for a join, which reads two
   tables, and along a chain: a table derived from a derived table keeps Data sync when only the first
   source is closed, because the middle table is saved as a snapshot and loads before it.
-  "Warn on unsaved changes" is off for the feature, since the pivot added to the source view would ask first.
+  "Ask to save on close" is off for the feature (its default), since the pivot added to the source view would ask too.
 
   The pivot is configured through its own rows and chips, as in projects-uploading. The project is
   named with the run's time and removed with its table and view when the scenario starts and when the
@@ -20,7 +20,7 @@ Feature: Projects regressions: a derived table saved after its source table is c
 
   Background:
     Given user is logged in
-    And the "Warn on unsaved changes" setting is off until the feature ends
+    And the "Ask to save on close" setting is off until the feature ends
     And simple mode is off
     And the browse panel is open
 
@@ -57,7 +57,7 @@ Feature: Projects regressions: a derived table saved after its source table is c
     When user closes "orders" view tab
     Then "Close orders?" dialog should be visible
     And "Close orders?" dialog should contain text 'Made from "orders"'
-    When user clicks on CLOSE ANYWAY button in "Close orders?" dialog
+    When user clicks on CLOSE button in "Close orders?" dialog
     Then the "Close orders?" dialog should close
     And the "orders aggregation" view should be current
     When user clicks on Save ribbon item
@@ -90,7 +90,7 @@ Feature: Projects regressions: a derived table saved after its source table is c
     Then "Close cars10?" dialog should be visible
     And "Close cars10?" dialog should contain text "result"
     And "Close cars10?" dialog should contain text 'Made from "cars10"'
-    When user clicks on CLOSE ANYWAY button in "Close cars10?" dialog
+    When user clicks on CLOSE button in "Close cars10?" dialog
     Then the "Close cars10?" dialog should close
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
@@ -110,7 +110,7 @@ Feature: Projects regressions: a derived table saved after its source table is c
     Then the "cars aggregation aggregation" view should be current
     When user closes "cars" view tab
     Then "Close cars?" dialog should be visible
-    When user clicks on CLOSE ANYWAY button in "Close cars?" dialog
+    When user clicks on CLOSE button in "Close cars?" dialog
     Then the "Close cars?" dialog should close
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible

@@ -21,12 +21,32 @@ export const openSecondView = Given('user opens a second view of table {string} 
     {message: `two views of table "${table}"`}).toBe(2);
 }, {tier: 'api'});
 
-export const warnOff = Given('the "Warn on unsaved changes" setting is off until the feature ends', async (page: Page) => {
-  const was = await page.evaluate(() => { const w = grok.shell.settings.warnOnUnsavedChanges; grok.shell.settings.warnOnUnsavedChanges = false; return w; });
-  // a Background step runs before every scenario: only the first one finds the setting on and puts it back
-  if (was)
-    atFeatureEnd(page, () => page.evaluate(() => { grok.shell.settings.warnOnUnsavedChanges = true; }));
-}, {tier: 'api', description: 'the dependency question is asked regardless; a feature about it turns this one off'});
+const restoring = new WeakSet<Page>();
+
+export const askToSaveOnClose = Given('the "Ask to save on close" setting is {word} until the feature ends', async (page: Page, state: string) => {
+  if (state !== 'on' && state !== 'off')
+    throw new Error(`"${state}": the setting is on or off`);
+  const was = await page.evaluate((on) => {
+    const w = grok.shell.settings.askToSaveOnClose;
+    grok.shell.settings.askToSaveOnClose = on;
+    return w;
+  }, state === 'on');
+  // a Background step runs before every scenario: the first one that changes the setting puts it back
+  if (was !== (state === 'on') && !restoring.has(page)) {
+    restoring.add(page);
+    atFeatureEnd(page, async () => {
+      restoring.delete(page);
+      await page.evaluate((w) => { grok.shell.settings.askToSaveOnClose = w; }, was);
+    });
+  }
+}, {tier: 'api', description: 'whether a close also asks about unsaved changes (off by default); what depends on a closing table is asked regardless'});
+
+export const clickDialogLink = When('user clicks on the {string} link in {string} dialog', async (page: Page, text: string, title: string) => {
+  const dialog = page.locator('.d4-dialog').filter({has: page.locator('.d4-dialog-title', {hasText: title})}).filter({visible: true}).first();
+  const link = dialog.locator('a', {hasText: new RegExp(`^\\s*${escapeRegExp(text)}\\s*$`)}).first();
+  await expect(link, `the "${text}" link in the "${title}" dialog`).toBeVisible();
+  await link.click();
+}, {tier: 'ui', description: 'a link in a dialog\'s text, such as "save the project" in the close dialog, which saves first and then closes'});
 
 export const simpleModeOn = Given('simple mode is on', async (page: Page) => {
   const was = await page.evaluate(() => { const s = grok.shell.windows.simpleMode; grok.shell.windows.simpleMode = true; return s; });
