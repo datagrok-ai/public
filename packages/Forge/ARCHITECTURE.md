@@ -11,9 +11,10 @@ an EMS schema owned by Forge, and the UI on top.
 - **"Method" for users, "engine" in code.** Captions, messages and docs for users say method; code, the `engines/`
   folder, the `engine_*` columns and the `mlname` contract keep engine.
 - **The platform's entry points open Forge.** On a server with Forge, the core's `ML | Models` menu, **Browse >
-  Platform > Machine Learning** and `grok.ml.applyModel` call Forge's functions by name; without Forge the platform
-  shows no predictive modeling tool (see "Core entry points"). Forge registers no menu of its own; its prediction columns carry the platform's
-  `predictive.model` tag. Its storage stays its own (app, schema).
+  Platform > Predictive models**, the address `/models` and `grok.ml.applyModel` call Forge's functions by name;
+  without Forge the platform shows no predictive modeling tool (see "Core entry points"). Forge registers no menu, no
+  app and no view function of its own: its view **Models** is the core's `/models`; its prediction columns carry the
+  platform's `predictive.model` tag. Its storage stays its own (schema).
 - **Training data never leaves the browser without consent.** Only the `copy` storage mode, chosen in the Save
   dialog, uploads it; `none` keeps a fingerprint of the data and `reference` a link to its source.
 - **Every training attempt is recorded.** Completed, failed and cancelled runs are `training_run` rows, from the Train
@@ -40,9 +41,9 @@ an EMS schema owned by Forge, and the UI on top.
 ## Components and data flow
 
 ```
-package.ts ──> ui/forge-app.ts ───> engines/                     (DG.Func registry, methodsFrame)
-           │                    ├─> storage/, generated/db.ts    (catalog query, modelsChanged)
+package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (catalog query, modelsChanged)
            │                    ├─> catalog/                     (Applicable to, Compare)
+           │                    ├─> ui/gallery.ts, ui/train-launcher.ts
            │                    └─> ui/model-actions.ts, ui/model-handler.ts, ui/model-comparison.ts,
            │                        ui/apply-model-dialog.ts, ui/data-grid.ts
            ├─> ui/train-view.ts ──> training/ ──> preparation/, engines/, metrics/, apply/ (evaluation.ts)
@@ -87,9 +88,8 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
            │                                                  apply/ (loadedModelOf, apiMapping), engines/,
            │                                                  storage/ (findModelRow, dataset-ref)
            ├─> ui/model-handler.ts ──> ui/rich-tooltip.ts (the tooltip), generated/db.ts (features read once),
-           │                       apply/ (featureSchemasOf), catalog/ (featureFit),
-           │                       storage/model-fields.ts (tagsOf), storage/model-store.ts (modelsChanged, followed),
-           │                       ui/save-model-dialog.ts (STORAGE_CAPTIONS)
+           │                       apply/ (featureSchemasOf),
+           │                       storage/model-store.ts (modelsChanged, followed)
            │                       └─> ui/model-panes.ts (modelAccordion, modelIcon, userOf, isShownVersion) ──>
            │                                                  apply/application-store.ts (applicationRecorded),
            │                                                  catalog/, generated/db.ts, grok.dapi (users,
@@ -106,14 +106,13 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
            ├─> ui/model-comparison.ts ──> catalog/, ui/data-grid.ts, ui/model-panes.ts (modelIcon),
            │                              PowerGrid's Forms viewer
            ├─> ui/prediction-column-panel.ts ──> apply/prediction-tag.ts, ui/model-handler.ts (the card)
-           └─> ui/table-models-panel.ts ──> catalog/ (modelsFor, model-activity), constants.ts (MAX_MODELS), generated/db.ts,
-                                            storage/model-fields.ts (tagsOf), ui/model-handler.ts,
-                                            ui/model-panes.ts (modelFacts), ui/apply-model-dialog.ts (openApplyDialog),
+           └─> ui/table-models-panel.ts ──> catalog/ (modelsFor), constants.ts (MAX_MODELS), generated/db.ts,
+                                            ui/model-handler.ts (the tooltip), ui/apply-model-dialog.ts (openApplyDialog),
                                             ui/train-view.ts
 ```
 
-- `package.ts` holds the annotated functions only: the app `forgeApp` (shown as "Forge", `Browse > Apps`),
-  `forgeModels` (opens the app; no menu), `forgeTrain` and `forgeApply` (no menu of their own: the core's `ML | Models
+- `package.ts` holds the annotated functions only: `forgeApp` (the Models view; no `app` tag, so not in
+  `Browse > Apps`; see "Models view"), `forgeModels` (opens or focuses the view; no menu), `forgeTrain` and `forgeApply` (no menu of their own: the core's `ML | Models
   | Train Model...` and `Apply Model...` call them, see "Core entry points"), the API functions `applyModel`, `trainModel`, `deleteModel`, `listMethods`, `listModels`, `getModel`,
   `updateModel`, `evaluateModel` and `shareModel`, the autostart `_initForge` (registers
   the model handler with the model commands and the context panel's follower, and the comparison handler),
@@ -123,7 +122,7 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   `runListMethods`, `runListModels`, `runGetModel` (with `grok.shell.tables`), `runUpdateModel`, `runEvaluateModel`,
   `openShareDialog`, `ForgeModelHandler.registerOnce`, `registerModelActions`, `ForgeModelHandler.followChanges`,
   `ModelComparisonHandler.registerOnce`, `isForgePrediction`, `predictedByPane` and `tableModelsPane`. `_initForge` reads the registered handlers' names once
-  (`DG.ObjectHandler.list()`) and both `registerOnce` calls skip a handler already there, so a second `_initForge` (or
+  (`DG.ObjectHandler.list()`) and every `registerOnce` call skips a handler already there, so a second `_initForge` (or
   the test bundle) registers nothing twice; the model commands and the follower are set up only with a newly
   registered handler.
 - Every table of data in the UI but the model cards' (plain `ui.table` by the user's decision of
@@ -131,29 +130,21 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   current-row indicator and new-row icon, as wide as its host and as tall as its rows (up to 15 by default,
   then it scrolls: an inline height of the header plus `rows * rowHeight + 2` px, the header one row high until the
   grid draws, then `colHeaderHeight` after each `onAfterDrawContent` (a header whose names wrap, as the Runs metric
-  columns', is taller), never less than a row; the app's Methods grid shows every method), with tooltips from `{headers, cells}` (by column name; the cells
-  as functions of the row) through `onCellTooltip` (`gridTooltip`; a cell without its own text shows its value).
+  columns', is taller), never less than a row), with tooltips from `{headers, cells}` (by column name; the cells
+  as functions of the row) through `bindTooltips` (`onCellTooltip`; `gridTooltip` reads them: a cell function's `''`
+  or none shows the cell's value, `null` no tooltip at all, as the metric values without a finding).
   `numberColumn` builds the grids' float columns (format `0.000`); `textColumn` and `boolColumn` (`columns.ts`, not UI,
   also used by `catalog/`, `engines/method-list.ts` and `training/train-api.ts` for the API lists) their string and bool columns.
-- `ForgeApp` lists the methods (section **Methods**, the grid `methodsGrid` over `methodsFrame` of every discovered
-  method, `engines/method-list.ts`, shared with `Forge:listMethods`: Method, Package, Method type, Roles,
-  Hyperparameters; the Method type cell's tooltip says what a function or a script method is, the Roles cell's gives
-  each role's meaning, the Hyperparameters cell's each input's description) and the catalog. Its `aiDescription` (the
-  view's briefing for the platform's AI assistant) describes both sections, **Applicable to**, the context panel and
-  the icons, and names the API functions and `agents/skills.md` (see "Grokky knowledge (agents/)").
-  `ForgeApp.loadModels()` queries the catalog columns and sets the captions; the refresh icon reloads the grid. The
-  play icon (**Apply model**) and the trash icon (**Delete model**) are disabled while the catalog has no current row
-  (re-evaluated on current-row change and on every reload; the subscriptions to the current frame are replaced on
-  reload and dropped in `detach()`). The play icon opens the Apply dialog for the current row's model through
-  `openModelApply` (`ui/model-actions.ts`, shared with the model's **Apply...**): the current table (the catalog is not
-  a table view, so in practice the first open table; without tables, "Open a table first.") and **Applicable to** as
-  `preferredTable` (see "Apply dialog"), and that table's view after applying. The trash icon opens
-  `confirmDeleteModel` (`ui/model-actions.ts`), whose OK calls `deleteModel`. The
-  Compare icon (`compareSelected`, tooltip **Compare in a new view**) is enabled while two or more rows are selected
-  and opens `openComparisonView` (`ui/model-comparison.ts`) of their rows, read with `COMPARE_COLUMNS` and kept in
-  catalog order: the table view **Compare models** of `compareModels` with the PowerGrid **Forms** viewer added
-  (without PowerGrid, a balloon says to install it). **Applicable to** is a `ui.input.table` (empty = every model; the
-  platform's input tracks the open tables and keeps its Open file icon) and filters the grid's rows in the browser with
+- `ForgeApp`, the view **Models** (see "Models view" for its address and gallery), shows the catalog. Its
+  `aiDescription` (the view's briefing for the platform's AI assistant) describes the address, the search, the modes,
+  **Applicable to**, the context panel, the menu, the refresh icon and the empty catalog's **Train a model...**, and names the API functions and `agents/skills.md` (see "Grokky knowledge (agents/)").
+  `ForgeApp.loadModels()` queries the catalog columns and sets the captions; the refresh icon, the toolbar's only
+  action, reloads the catalog (the subscriptions to the current frame are replaced on reload and dropped in
+  `detach()`). Applying, deleting and comparing are the model's menu items (below) and the context panel's. The menu's
+  **Compare** (`compareSelected`) opens `openComparisonView` (`ui/model-comparison.ts`) of the selected rows, read with
+  `COMPARE_COLUMNS` and kept in catalog order: the table view **Compare models** of `compareModels` with the PowerGrid
+  **Forms** viewer added (without PowerGrid, a balloon says to install it). **Applicable to** is a `ui.input.table` (empty = every model; the
+  platform's input tracks the open tables and keeps its Open file icon) and filters the catalog's rows in the browser with
   `requiredFeaturesOf` and `isSuggested`, as `applicableTables` does, once per distinct required feature list in a pass; the input empties itself when its table is closed but
   reports no change, so the catalog filters again on `onTableRemoved` when the table it filters by closed, and treats
   a closed table as none. A new current row becomes the current object
@@ -169,15 +160,19 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   simply gone. The panel keeps the object it shows, unless that is a comparison with a model the reload no longer has
   (`isStaleComparison`, a delete): then it shows the selection again by the rule above (once: a restored selection does it
   through its change event), and is emptied rather than left on the comparison. A single model the panel shows follows
-  its changes and its delete by itself, catalog or not (`followChanges`, see "Model handler and panels"). Right-clicking a row adds `CATALOG_ACTIONS` (`addModelItems`, with
-  **Applicable to** as the preferred table) and, with two or more selected rows, **Compare** to the grid's menu: the
-  grid's menu is its own, so the platform's model commands are not in it. The header holds the **Models** title and
-  the icons on the title's baseline (`forge-pane-header` in `css/forge.css`), the icons in `--blue-1`, the blue of an
-  input's own icons (ui.css), and in the platform's `d4-disabled` grey while disabled; **Applicable to** is on the
-  line under it. The grid takes the full width of the view: an inline `width: 100%`, the override the platform's
-  400px rule for boxes in a panel (`ui.css`) asks for. The grid's `onCellTooltip` (through `modelTooltip(cell)`) shows the
-  model's rich tooltip (`forgeModelHandler.renderTooltip` of the row's catalog values, as the Domains card and the
-  panel title) for a **Name** cell; any other cell gets null and keeps the grid's own tooltip.
+  its changes and its delete by itself, catalog or not (`followChanges`, see "Model handler and panels").
+  Right-clicking a model (`fillMenu`: a card or a list row through the gallery's own popup, a table row through
+  `extendMenu` on `grok.events.onContextMenu`) gives `CATALOG_ACTIONS` (`addModelItems`, with **Applicable to** as the
+  preferred table: Apply... through `openModelApply`, Edit model..., Share..., Download, Delete model through
+  `confirmDeleteModel`, all in `ui/model-actions.ts`) and, with two or more selected rows, a separator and **Compare**;
+  the platform's model commands are not in it. The toolbar holds the refresh icon left of the search box
+  (`forge-gallery-actions` in `css/forge.css`), in `--blue-1`, the blue of an input's own icons (ui.css); **Applicable
+  to** is the gallery's line under it. The
+  table mode's grid takes the full width and height of the view (inline sizes). The grid's `onCellTooltip` shows the
+  model's rich tooltip (`modelTooltip(cell)`: `forgeModelHandler.renderTooltip` of the row's catalog values, as the
+  Domains card and the panel title) for a **Name** cell, the column's meaning (`MODEL_HEADERS`) for a header, and
+  nothing of its own for any other cell, which keeps the grid's tooltip. An empty catalog shows `emptyHint`:
+  `No models yet.` and **Train a model...** (`launchTraining(null)`).
 - `modelsChanged` (an rxjs `Subject` in `storage/model-store.ts`) fires after every successful `saveModel`,
   `updateModelInfo` and `deleteModel`, whoever calls them; every open `ForgeApp` subscribes in `this.subs` and reloads
   itself, 300 ms after the last of a burst (tag chips written one by one reload it once); the context panel follows it
@@ -227,7 +222,9 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   model saved before AUC-ROC, the Crux ids or the probability ids existed gets those rows with Train and Validation empty when evaluated; a change of the
   Test or Evaluation column builds a new one too); a hint shown in between detaches the grid and keeps it. It is a frame of **Metric**, **Train**, **Validation**,
   with `metrics.test` **Test** and, with `MetricsSummary.evaluation`, **Evaluation** (format `0.000`) in a
-  `readOnlyGrid` with the header texts, the metric descriptions and the full-precision values as tooltips, then a
+  `readOnlyGrid` with the header texts and the metric descriptions as tooltips (a value's tooltip is
+  `metricTooltip(value, findings)`: its findings' texts, led by `tinyValueText` (`3.2e-05.`) only for a non-zero value
+  shown as `0.000`; no tooltip at all, `null`, otherwise), then a
   bullet list (`ul`): `Missing values: kept (the method handles them)` (only under `keep` when the training features
   had gaps), `Rows: <used> used, <skipped> skipped (missing values)` (only when rows were skipped),
   `Validation: <folds>-fold cross-validation on <rows> rows` or `Validation: hold out of <p>% (<n> rows)` (from
@@ -247,7 +244,8 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   model whose options record `class-probabilities`; with `thresholdMetric`, the view's result's
   `options.thresholdMetric`, the optimized variant, see "The threshold in the view") and `Evaluation: <table> (<rows> rows[, <n> skipped
   (missing values)])` (with an evaluation). The `metricFindings` of the metrics mark their cells: `onCellPrepare` paints a marked value
-  (the finding's `splits`) in `DG.Color.failure`, and its tooltip ends with the finding's text (`R2 is below 0.3.`).
+  (the finding's `splits`) in `DG.Color.failure`, and its tooltip is the finding's text (`R2 is below 0.3.`), without
+  the value or the column's phrase (the header keeps that).
 - `CollapsibleGroup` (`ui/collapsible-group.ts`, classes `forge-group*` in `css/forge.css`) is the folding block of
   the Train view groups and of the Apply dialog's **Columns** and **More options**: a header with a chevron, the
   caption and an optional summary (red with `forge-group-invalid`), in Diff Studio's style; the chevron sits in a
@@ -437,7 +435,8 @@ after a newer change is discarded. The check (`revalidate`) calls `checkSelectio
 complete methods and logs a method whose check threw once per view (`_package.logger.error`). Then **Method**
 (`methodOf`): while a target or features rule fails, or no method is listed, the method stays; otherwise the user's
 choice (`userChoice`, set when the user picks a method) while it is listed, else the suggested one (`best`), with the
-balloon `<Method> cannot be used with this selection; <suggested> is chosen.` when it replaces the user's choice, which
+balloon of `mismatchText` (`<Method> cannot learn from this selection; <suggested> is chosen for now.`, or with the
+method's check error after a colon) when it replaces the user's choice, which
 is then forgotten; for a changed method, which is listed, only `retrainsLive` is asked again, on the check's
 `prepared` columns. **Method** then lists the methods by name (empty with the
 `No method can learn ...` problem); a failing target or features rule leaves the list as it is. Hyperparameter inputs
@@ -551,7 +550,8 @@ was not shuffled), then `<metric>
 (validation)` for every metric of `METRIC_IDS` any run's validation has, with header tooltips (the metrics'
 `METRIC_DESCRIPTIONS`) and cell tooltips (the hyperparameters without the method's `probabilityInput`, the feature
 names, the error or `Stopped from the task
-bar.`, `Train <0.000>, validation <0.000>` with `-` for a missing value). The newest row is current; a click on a
+bar.`, for a metric `Train <0.000>`, the value the cell does not show, `tinyValueText` for a non-zero value shown as
+`0.000`, `-` for a missing value). The newest row is current; a click on a
 row (`grid.onCellClick` on a table cell, the current row too) calls `restoreRun`, while code that moves the current
 row restores nothing (the read-only grid moves nothing with the arrow keys): a run whose target or a feature the
 table no longer has warns `The table no longer has the columns of this run: <names>.` and sets nothing; a run whose
@@ -1753,8 +1753,9 @@ a feature without one accepts any column of the right kind.
 ## Apply dialog
 
 `ui/apply-model-dialog.ts`. `openApplyDialog(table, {modelId?, switchToTable?, preferredTable?})` is the boundary of
-`forgeApply` (the core's `ML | Models | Apply Model...`; the current table), of a model's **Apply...** and the catalog's play icon (the current
-table, else the first open one) and of the table pane's run icon (the pane's table, also as `preferredTable`);
+`forgeApply` (the core's `ML | Models | Apply Model...`; the current table), of a model's **Apply...** (`openModelApply`: the current
+table, else the first open one, and the catalog's **Applicable to** as `preferredTable`; that table's view after
+applying) and of the table pane's run icon (the pane's table, also as `preferredTable`);
 without a table it says "Open a table first.". It calls `applyModelDialog({table,
 modelId?, switchToTable?, preferredTable?})`, which reads up to 10000 visible model rows once (`MAX_MODELS` of
 `constants.ts`), only the
@@ -1899,8 +1900,8 @@ application rows go with the row (`onDelete: cascade`), the training runs keep t
 columns to `methodList` of `engines/method-list.ts`) lists the complete methods
 (the ones `trainModel` accepts) in discovery order as the frame **Methods**:
 
-1. `methodColumns` gives the app grid's five columns (Method, Package, Method type, Roles, Hyperparameters); the app
-   builds its grid from them (`methodsFrame`) over every discovered method. The frame is built at once
+1. `methodColumns` gives five columns (Method, Package, Method type, Roles, Hyperparameters). The frame is built at
+   once
    (`DG.DataFrame.fromColumns`) in the order below.
 2. **Runs on** (`server` when `isServerEngine`, else `browser`), **Keeps training rows** (`hasTrainingRows`) and
    **Retrains live** (`isLiveUpdate`) go after Method type; **Settings** last: per method the json text of
@@ -2024,6 +2025,61 @@ generated `package-api.ts` types `object`, `map` and `list` as `any`).
 `skills.md` repeats the annotations of `package.ts` and the README's "From scripts and Datagrok AI": a change of a
 function's name, inputs, result keys or error sentences updates it in the same change.
 
+## Models view
+
+`ForgeApp` (`ui/forge-app.ts`) is the view **Models** (`VIEW_NAME`), of type `models` (`VIEW_TYPE`), no app: its root
+is the models `Gallery` itself, no tabs.
+
+**Address.** Forge has no `view`-tagged function: the core's `View.typeFactories['models']` (a restored layout) and
+**Browse > Platform > Predictive models** (`urlNodesMapping['models']`, so `/models` highlights the node) call
+`forgeApp`. The view sets `path` to `/models` (`VIEW_PATH`), which the platform writes to the address bar, and
+`acceptsPath` claims `/models` only (case-insensitive, a trailing `/` ignored); the base `handlePath` keeps the view
+as it is. A view made inside an **app** call gets its path prefixed with `/apps/<package>`: hence no `app` tag on
+`forgeApp` (Forge left Browse > Apps; `/apps/Forge` shows the platform's "Application not found").
+
+**Gallery.** The view is a `Gallery` (`ui/gallery.ts`) over a frame that stays the single source of state: rows
+are the items, `filter` the search AND **Applicable to** (`extraFilter`), `currentRowIdx` the clicked item,
+`selection` the Ctrl/Shift picks. The toolbar reuses the platform gallery's classes (`grok-card-view`,
+`grok-gallery-search-bar`, `d4-search-bar`, `grok-items-view-commands grok-items-view-toggle`, `grok-items-view-counts`,
+`grok-gallery-grid[mode]`, `grok-gallery-grid-item-wrapper`, `grok-items-view-empty`, `d4-current`) and its icons
+(`grip-lines`, `grip-horizontal`, `table`, `sort-alt`); the owner's icons sit in `forge-gallery-actions`, the line
+under the toolbar in `forge-gallery-below` (the toolbar's 12 px side margins). The search box is `ui.input.search`
+with its magnifier (`i.ui-input-icon-left`) hidden by a `forge-gallery`-scoped rule in `css/forge.css`. Cards and
+list render the filtered rows in the sort order (`Gallery.sortedRows`: text case-insensitively through
+one `Intl.Collator` with `sensitivity: 'base'`, numbers and dates by value, an empty value last; at most `MAX_ITEMS` =
+500, then a `forge-note` line); the table mode shows the owner's `DG.Grid` over the same frame (`grid.sort`, the
+frame's text sort columns given the same comparer as `valueComparer` in `rebind`; a sort by one sort field in the
+grid becomes the gallery's sort). `refilter` filters and renders (no `onFilterChanged` subscription: the gallery owns
+the filter), so a new `ForgeApp` renders its cards once (`renderCount`): the constructor only subscribes to the
+frame, and `bindCatalog` (a reload) rebinds. The search is a case-insensitive substring of the search columns (the
+text without its `#word`s, which must each be a tag of `tagsColumn`, `tagsOf`). A plain click sets the current row
+and clears the selection; Ctrl/Cmd toggles a row (the current row counts as selected); Shift selects the shown rows
+from the current one. A right-click on an item neither current nor selected clicks it first, then the owner fills a
+`DG.Menu.popup()`. Re-render on the filter, the mode and the sort: an item is built once per frame and mode
+(`built`, cleared by `rebind` and a mode change), so a search or a sort only moves the built items, and the table
+mode sorts the grid only when the sort changed (`gridSortKey`); `d4-current` follows the current row and the
+selection without a re-render; `forge.css` tints a marked card blue with a blue frame (the platform marks it only with
+its hover shadow), while a marked list item keeps the platform's brief-mode shadow. The sort menu hides itself after a pick (the platform keeps a menu of checked items open). The owner calls `rebind()` after replacing the grid's frame (`ForgeApp.refresh`) and
+`detach()` from its view's `detach`; nodes move with `replaceChildren` (`ui.empty` would kill the grid). The mode and
+the sort are kept in `grok.userSettings` storage `Gallery.storage` (`Forge view`), key `models`, JSON
+`{mode, sort: {column, desc}}`; missing or invalid reads give `cards` and the default sort (`created_on`
+descending). Tests switch the storage to `Forge view tests`.
+
+**Items.** Cards are `ForgeModelHandler.cardContent` (the Domains card's lines without `ui.bind`: the gallery
+handles the clicks), list items `ForgeModelHandler.listLine` (the name alone, a `label` with the platform's link class
+`d4-link-label`, styled as the core's brief lists by `dataset_gallery.css` (`.grok-gallery-grid[mode="Brief"]
+.d4-link-label`: 250 px wide, an ellipsis, a shadow when current); a label, so it goes nowhere and the gallery's
+click, menu, tooltip and drag handling stay), the tooltip the model's rich tooltip, the drag object the
+row (`ui.makeDraggable`, onto a Space), sort fields Created, Name, Method, Target, Task, Training rows.
+
+**Launching training.** `launchTraining(method)` (`ui/train-launcher.ts`) opens `TrainView.openFor(table, method)` on
+the current table, else the only open one, else after the dialog **Train a model** (**Train with <method>** for a
+method; **Table**, OK gated by `ButtonGate`: `Choose a table.`). The empty catalog's **Train a model...** is
+`launchTraining(null)`. `TrainView.create(table, method)` starts with a given method as the user's choice
+(`userChoice`); a method not among the complete ones fails with `The method X is not available.`. When the first check
+does not list it, `methodOf` shows `mismatchText`: `X cannot learn from this selection: <its check's error> Y is chosen
+for now.`, else `X cannot learn from this selection; Y is chosen for now.`.
+
 ## Catalog logic
 
 `catalog/`, one function per file, for the model catalog and the model's panels:
@@ -2031,7 +2087,7 @@ function's name, inputs, result keys or error sentences updates it in the same c
 - `applicableTables(row, tables)` (`applicable-tables.ts`): the tables in which `isSuggested` finds a close column for
   every feature the row needs (`requiredFeaturesOf` of its `features` and `options`); none for a row without a
   feature list. It runs in the browser on the open tables; nothing is uploaded. `featureFit(row, tables)` gives the
-  names of every feature (`featureSchemasOf`) with them (the card and Details). `modelsFor(rows, table)` keeps the
+  names of every feature (`featureSchemasOf`) with them (Details). `modelsFor(rows, table)` keeps the
   rows that fit one table, in their order (the table pane).
 - `modelActivity(id)` (`model-activity.ts`): the model's `application` records, newest first, at most
   `MAX_ACTIVITY_ROWS` (100), the full `count` (the list's length below the cap, a count query at it), and `lastRun`,
@@ -2076,22 +2132,20 @@ and the **Predicted by** pane (which reads only the card's columns). The autosta
 once (`ForgeModelHandler.registerOnce`), together with the model commands and the context panel's follower
 (`followChanges`, below). Its members read only the row's values; a
 row made from catalog values (`ForgeModelHandler.rowOf`, through the platform's `rowFrom`, with the system dates as
-text) carries the catalog columns only. The Domains view's rows come without the json columns: the card and the
-tooltip take the count from `feature_count` and read `features` and `options` once per model and session
-(`withFeatures`), filling the feature list and the **Applicable to** icon in when they come.
+text) carries the catalog columns only. The Domains view's rows come without the json columns: the card takes the
+count from `feature_count`, and the card and the tooltip read `features` and `options` once per model and session
+(`withFeatures`), filling the feature list in when it comes.
 
 - Icon: the model icon. Markup: the icon and the name. Tooltip: Forge's rich tooltip (`ui/rich-tooltip.ts`,
-  `richTooltip`: a bold title, the main lines, the minor lines in grey, at most 320 px wide; `shortList` cuts a list
-  after about two lines with `+N more`; the same file's `bulletList` fills a `ul` for the insights' tooltips and the metrics
-  grid's bullets): the name; `Predicts <target> from <N> features with <method> · <task> · <rows>
-  rows` (the parts the row has: no `from` part without features, no `with` part without a method, no `Predicts` part
-  without a target); the features; in grey `Created <YYYY-MM-DD> by <login> · Data storage: <mode> · Tags: <tags>` (the parts the
-  row has; the author's login is read through `userOf` (`ui/model-panes.ts`: `grok.dapi.users.find` once per user and session, a failed read retried; shared with Details and the table pane's tooltip) and filled in when it comes).
+  `richTooltip`: a bold title, the main lines, the minor lines in grey, at most 320 px wide; the same file's
+  `bulletList` fills a `ul` for the insights' tooltips and the metrics grid's bullets), the same wherever a model shows
+  it: the name; `Predicts <target> with <method> from <features>` (`predictsText`: the parts the row has, no line
+  without any; the feature names joined by commas, cut to `MAX_FEATURES_TEXT` = 50 characters ending in `…`, filled in
+  when a row without them has read them); in grey `Created <YYYY-MM-DD> by <login>` (none without a creation date; the author's login is read through `userOf` (`ui/model-panes.ts`: `grok.dapi.users.find` once per user and session, a failed read retried; shared with Details and the table pane's tooltip) and filled in when it comes).
   Grid header and cell tooltips stay single short lines.
 - Card, the built-in tool's in five lines of one height (`forge-model-card`: 90 px of content, each line 18 px, cut
   with an ellipsis; `content-box`, because `ui.card` gives a gallery card 10 px of padding and `div.ui-div` counts it
-  into the height): the name (`grok-gallery-grid-item-title`) with a table icon when an open table fits the model (its
-  tooltip `Applicable to <tables>`), `Predict <target>`, `by <first five features>...` (`by <N> features` until the
+  into the height): the name (`grok-gallery-grid-item-title`), `Predict <target>`, `by <first five features>...` (`by <N> features` until the
   list is read), `using <method>`, `Created on <YYYY-MM-DD>`; a missing part leaves its line empty. A double-click is the platform's Open (the row's own view).
 - `renderProperties` reads the full row once and returns `modelAccordion` (`ui/model-panes.ts`), whose title is the
   one the platform gives a row: the model icon, the favorites star (`ui.star`), the name and the row's commands
@@ -2145,13 +2199,15 @@ own `followChanges` and unsubscribes it.
 `registerModelActions` as param funcs of `forge.model`: they show wherever the platform shows a model (the Domains
 view, the Browse tree, the panel title's `ui.contextActions`), next to the platform's own Open, Edit..., Clone,
 Delete, Share..., History, Copy link and Watch (no JS API lists param funcs). `CATALOG_ACTIONS` (**Apply...**, **Edit
-model...**, **Download**, **Delete model**) are the catalog grid's menu (`addModelItems`): the grid's menu carries a
-`GridCell`, not the row, so the platform adds nothing there.
+model...**, **Share...**, **Download**, **Delete model**) are the catalog's menu (`addModelItems`) on cards, list items
+and table rows: the gallery's popup and the grid's menu (which carries a `GridCell`, not the row) get nothing from the
+platform.
 
 | Command | Set | Shown | Does |
 |---|---|---|---|
 | **Apply...** | both | always | The Apply dialog for the model (`modelId`), on the current table or the first open one; from the catalog with **Applicable to** as `preferredTable` |
 | **Edit model...** | catalog | always | **Edit model** (`ui/edit-model-dialog.ts`): Name (not blank), Description and Tags, prefilled from a fresh read of those columns; OK writes them with `writeModelInfo` against the read version, a model changed meanwhile asks to reload (the dialog reopens) or overwrite; then the balloon `Model "<name>" updated.`; a context panel showing the model follows the write (`followChanges`, see "Model handler and panels") |
+| **Share...** | catalog | always | `openShareDialog`: the platform's Share dialog of the model |
 | **Download** | both | the model's file is Forge's own (`ownBlob`) | `readModelFile`, saved by the browser as `<model name>.bin` |
 | **Delete model** | catalog | always | `confirmDeleteModel`: "Delete the model "<name>"?", then `deleteModel` (row, file, applications) |
 
@@ -2203,13 +2259,8 @@ preferredTable: table, switchToTable: true})`), the name as a link (`d4-link-lab
 `ui.bind`-ed, since a bound JS row gets the generic menu (only **Properties...**) and Forge's rich tooltip; instead a
 click sets the current object (forced: for 2 s after an accordion pane is expanded the platform drops an unforced
 change), a right-click opens the arrow's menu, `ui.makeDraggable` drags the row (onto a Space),
-and its tooltip is the built-in model tooltip (`modelSummary`: the name, then Created by, Created, Updated, Trained on,
-Last run, Tags, Inputs, Outputs, Method and Applicable to when an open table fits; the built-in **Links** row has no
-Forge data and is left out). The tooltip is built from the pane's row with `modelFacts` (`ui/model-panes.ts`, shared
-with Details); its only reads are the author, through the session's cached user lookup (`userOf`, shared with the
-model's rich tooltip), and the last run, read once per line (a failed read is not kept). It is built inside `ui.wait`
-(the platform builds a tooltip in a timer and silently drops it when the builder throws synchronously; `ui.wait`
-shows the error instead). Without a fitting model the text `No model fits this table.`; then
+and its tooltip is the model's own (`forgeModelHandler.renderTooltip`, the same three lines as in the Models view).
+Without a fitting model the text `No model fits this table.`; then
 the big button **Train** (`Train a new model on this table.`, `TrainView.openFor(table)`). The pane holds no subscription: the platform never detaches a panel's widget, so a
 subscription would leak; the pane is built again whenever the context panel shows the table again, as the built-in
 **Models** pane is.
@@ -2224,7 +2275,7 @@ missing (a restored `models` view shows a one-line note; `grok.ml.applyModel` re
 |---|---|---|
 | `forgeTrain` | none (the current table) | `ML \| Models \| Train Model...` |
 | `forgeApply` | none (the current table) | `ML \| Models \| Apply Model...` |
-| `forgeApp` | none; output `view` | **Browse > Platform > Machine Learning**, the URL `/models`, a restored `models` view (without Forge: a one-line note) |
+| `forgeApp` | none; output `view` | **Browse > Platform > Predictive models**, the URL `/models` (`urlNodesMapping['models']` highlights the node), a restored `models` view (without Forge: a one-line note) |
 | `applyModel` | `model`, `table`, `columnNamesMap`, `showProgress`, passed by name | `grok.ml.applyModel(name, table, map, showProgress)` for any name that is not a model of the earlier tool |
 
 The core hides the earlier tool's table pane **Models**, its **Predicted By** row in a column's **Details**, its
@@ -2339,8 +2390,11 @@ same-data rule: a card is shown only on the target and validation it was trained
 a data change).
 
 The model's menu has no **Add to** (the built-in tool added a model to an open project): a model reaches a Space by
-the platform's drag (see Sharing). Forge's Browse node is **Apps > Forge**; with Forge installed, the core opens Forge's
-catalog from **Browse > Platform > Machine Learning** too; the core no longer has the **MLFlow** node (see "Core entry points").
+the platform's drag (see Sharing). Forge has no Browse node of its own (no app); with Forge installed, the core opens
+Forge's view **Models** from **Browse > Platform > Predictive models** (`/models`); the core no longer has the
+**MLFlow** node (see "Core entry points"). The built-in catalog was the core's card gallery (`DG.CardView`-like, with
+a filter panel, grouping and smart search); Forge's gallery keeps its look (search, list/cards/table, sort, count)
+without those (see "Models view"), and a card's double-click no longer opens Edit.
 There is no catalog menu item (the built-in tool had none either). The Domains view of `model` can be filtered by
 **Tags** (the built-in catalog's tags filter); its **Author** filter has no counterpart.
 
@@ -2377,8 +2431,12 @@ The views publish their state in the DOM, so a test waits on what a view says in
   results are shown or the evaluation ends; a failure or a cancel closes the view, so it has no `aria-invalid`. It has
   no `data-forge-run-id`: an evaluation records no `training_run` (`training/evaluation.ts`), and the view
   shows the one result it opened for.
-- The Forge view (`ForgeApp`): its constructor adds the class `forge-app` to the view root, so a claim can be scoped to
-  Forge's own view. Its models pane, `.forge-catalog`, publishes the catalog's loads (`ForgeApp.publishLoad`): the
+- The Models view (`ForgeApp`, type `models`, `path` `/models`): its
+  constructor adds the class `forge-app` to the view root, so a claim can be scoped to Forge's own view. Its
+  gallery (`modelsGallery`) has `.forge-gallery`, `mode` (`list` / `cards` / `table`), `sort`,
+  `shownRows()` (the rendered rows in order), `itemOf(row)` (a card or list row) and the count
+  `.grok-items-view-counts` (`N` or `x / N`). The gallery's root, `.forge-catalog`, publishes the catalog's
+  loads (`ForgeApp.publishLoad`): the
   constructor sets `data-forge-catalog-load="0"` and `aria-busy="false"` once the first catalog is bound. A
   `modelsChanged` and a **Refresh** click each make a new load due at once (`markStale`: the next load number, per view,
   and `aria-busy="true"`), a change before the 300 ms debounce of its reload; a load still running is then superseded and
@@ -2576,7 +2634,9 @@ The Domains view of `model` offers the filters **Method** (`engine_name`), **Tas
 comma-separated text) and **Created** (a range). A `training_run` json column carries the same `description` as the
 `model` column of the same name (the schema test compares them). The catalog grid reads the same captions with
 `grok.dapi.domains.registry.rowProperties('forge.model')` in `ForgeApp.loadModels()` and sets
-`column.meta.friendlyName`; the system column `created_on` is labelled "Created" explicitly. The grid shows Name,
+`column.meta.friendlyName`; the system column `created_on` is labelled "Created" explicitly and shown as a date
+(`meta.format` = `GRID_DATE_FORMAT`, the cards' `DATE_FORMAT`; values and sorting stay datetimes), and `storage_mode`
+cells show `STORAGE_CAPTIONS` through `onCellPrepare` (`customText`; the stored values stay). The grid shows Name,
 Method, Task, Target, Data storage, Training rows, Tags and Created, in this order (`grid.columns.setOrder` and
 `setVisible`); `id`, `version`, `updated_on`, `author_id` and the loaded `features`, `options` and `blob` (for the
 card, **Applicable to** and **Download**) stay hidden. "No models yet." is shown while the catalog is empty.
@@ -2616,7 +2676,7 @@ probability `on`: Find best model's metric and probability rules), `probabilityI
 type `DG.TYPE.BOOL`, else undefined), `withProbabilityInput(engine, hyperparameters, on)` (the hyperparameters with
 the input set to `on`; unchanged without one) and `visibleHyperparametersOf(engine)` (`hyperparametersOf` without the
 input: the form, `TuneSettings`, the cards' Settings tab, the API's `hyperparametersFor`, `methodColumns`,
-`Forge:listMethods`, the catalog's Methods tooltip and `searchSpaceOf`'s default, so a space naming the input is refused
+`Forge:listMethods` and `searchSpaceOf`'s default, so a space naming the input is refused
 by the view and the API alike) and `visibleValuesOf(engine, values)` (the values without the input: the **Runs** Method
 tooltip). `hyperparametersOf` and `defaultHyperparameters` keep the input (the contract).
 

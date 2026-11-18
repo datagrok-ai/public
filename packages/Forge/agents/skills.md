@@ -328,7 +328,7 @@ dialog.
 Forge:deleteModel(model: string) -> string
 ```
 
-Deletes the model as the catalog's trash icon does, with its model file, its uploaded copy and its applications, and
+Deletes the model as the catalog's **Delete model** does, with its model file, its uploaded copy and its applications, and
 returns its id; its training runs stay, without the model.
 
 ## Recipes
@@ -420,5 +420,5 @@ return t.columns.names().filter((name) => name.startsWith('Species (predicted'))
 - After `shareModel`, complete the dialog it opened with the dialog functions (`list_view_widgets`, then
   `getShareInfo` / `addShareGrantee` / `setShareAccess`, or `getDialogInfo` / `setInput` / `clickButton`).
 - Confirm with the user before `deleteModel`.
-- In the UI, Forge is **ML | Models | Train Model...** and **Apply Model...**, the catalog **Browse > Platform >
-  Machine Learning** (also **Browse > Apps > Forge**) and the table's **Models** pane.
+- In the UI, Forge is **ML | Models | Train Model...** and **Apply Model...**, the view **Models**,
+  the model catalog (**Browse > Platform > Predictive models**, address `/models`), and the table's **Models** pane.

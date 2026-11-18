@@ -221,7 +221,7 @@ export class BrowserSearchExecutor implements SearchExecutor {
       // The time is up and the last trial settled: `finishing 1 trial` stays until the search ends.
       if (budgetMs !== undefined && seconds === 0 && running === 0)
         return;
-      const limit = budgetMs === undefined ? `${finished}/${maxTrials}` :
+      const limit = budgetMs === undefined ? `${Math.floor(100 * finished / maxTrials!)}%` :
         seconds === 0 && running > 0 ? `finishing ${running} ${running === 1 ? 'trial' : 'trials'}` :
           seconds >= 60 ? `${Math.ceil(seconds / 60)} min left` : `${seconds} s left`;
       const share = budgetMs === undefined ? finished / maxTrials! : elapsed() / budgetMs;

@@ -1,9 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import '../../css/forge.css';
 
-/** About two lines of the tooltip's width. */
-const MAX_LIST_LENGTH = 90;
-
 interface RichTooltipContent {
   title: string;
   /** The main lines. */
@@ -27,16 +24,4 @@ export function bulletList(items: (string | HTMLElement)[][], list = ui.element(
     list.append(li);
   }
   return list;
-}
-
-/** [items] joined by commas, cut after about two lines with `+N more`. */
-export function shortList(items: string[]): string {
-  let text = '';
-  for (let i = 0; i < items.length; i++) {
-    const next = i === 0 ? items[i] : `${text}, ${items[i]}`;
-    if (i > 0 && next.length > MAX_LIST_LENGTH)
-      return `${text} +${items.length - i} more`;
-    text = next;
-  }
-  return text;
 }

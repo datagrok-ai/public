@@ -15,6 +15,7 @@ import {deleteModel, modelsChanged, saveModel} from '../storage/model-store';
 import {DEFAULT_VALIDATION} from '../training/k-fold';
 import {prepareTraining, TrainingRequest, TrainingResult, TrainingSelection, trainModel}
   from '../training/train-model';
+import {Gallery} from '../ui/gallery';
 
 export const IRIS = 'System:DemoFiles/iris.csv';
 export const WINE = 'System:DemoFiles/winequality.csv';
@@ -109,6 +110,23 @@ export async function expectGridsFillPanes(host: HTMLElement, grids: {[pane: str
   await awaitCheck(() => narrower() === '', `Grids narrower than their pane once wider: ${narrower()}`, 5000);
 }
 
+/** The tests' own storage of the galleries' modes and sorts: the user's stay as they are, and each category's views
+ * start from the defaults. */
+const TEST_GALLERY_STORAGE = 'Forge view tests';
+
+const USER_GALLERY_STORAGE = Gallery.storage;
+
+export function useTestGalleryStorage(): void {
+  Gallery.storage = TEST_GALLERY_STORAGE;
+  grok.userSettings.put(TEST_GALLERY_STORAGE, {});
+}
+
+/** Empties the tests' storage and gives the galleries the user's storage back. */
+export function clearTestGalleryStorage(): void {
+  grok.userSettings.put(TEST_GALLERY_STORAGE, {});
+  Gallery.storage = USER_GALLERY_STORAGE;
+}
+
 /** The catalog's readiness attributes in the Forge view [root]: `<data-forge-catalog-load>/<aria-busy>`. */
 export function catalogState(root: Element): string {
   const pane = root.querySelector('.forge-catalog');
@@ -120,7 +138,7 @@ export function catalogState(root: Element): string {
  * whether the frame [frame] reads was replaced in between. */
 export async function refreshThenChange(root: HTMLElement, frame: () => unknown):
   Promise<{first: string; later: string; isRebound: boolean}> {
-  const refresh = root.querySelector('.forge-pane-header .fa-sync');
+  const refresh = root.querySelector('.forge-gallery-actions .fa-sync');
   if (!(refresh instanceof HTMLElement))
     throw new Error('No Refresh icon');
   const state = () => catalogState(root);

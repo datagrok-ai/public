@@ -29,7 +29,9 @@ only while one of its inputs applies), **Method** (Method, **Settings** and the 
   method as the built-in tool did: XGBoost for a classifier, PLS Regression for a regression with five or more
   numerical features, Linear Regression for any other regression (Chemprop for a molecule feature, where it is
   installed). The method you choose stays while it can learn from the data; when a change rules it out, a balloon
-  says `<Method> cannot be used with this selection; <suggested> is chosen.` When no method can learn from the
+  says `<Method> cannot learn from this selection; <suggested> is chosen for now.` (or, when the method's own check
+  failed, `<Method> cannot learn from this selection: <its reason> <suggested> is chosen for now.`). When no method can
+  learn from the
   data, **Method** is empty and red: `No method can learn from this selection. Check the features and the target.`
   The first item, **Auto**, finds the best model instead of training one method (see "Find best model"): its
   tooltip reads `Auto: Find tries every checked method and trains the best one`, nothing trains while it is chosen,
@@ -95,7 +97,8 @@ on it`, for two classes, `Positive class: <class>`, and, with **Predict probabil
 `Classification threshold: <t>` (`Classification threshold: <t>, the best F1 on the validation rows: its validation
 values are optimistic` while the threshold is the best value of the metric **Best threshold by** chose, see "Preparation").
 
-Hover a column header or a metric name to see what it means; hover a value to see it in full precision:
+Hover a column header or a metric name to see what it means; hover a red value to see what is wrong with it, and a
+value shown as `0.000` that is not 0 to see it in exponent form (`3.2e-05`); other values have no tooltip:
 
 | Task | Metrics |
 |---|---|
@@ -205,7 +208,7 @@ or a training that did not complete, `probability` for more classes; empty
 when none), **Rows**, **Status** (`completed`,
 `failed` or `cancelled`; hover a failed one for the error, a cancelled one reads `Stopped from the task bar.`),
 **Split seed** (empty when the rows were not shuffled), and the validation value of every metric any run has
-(`Accuracy (validation)`; hover for `Train 0.912, validation 0.845`). Click a row to set its target, features,
+(`Accuracy (validation)`; hover for the training value the cell does not show, `Train 0.912`). Click a row to set its target, features,
 preparation, validation (with the split seed), method and settings again when they differ from the form's. A click on a row whose inputs the form already has, while the results show that training, only makes
 it current; when only **Predict probability**, **Classification threshold** or **Best threshold by** differs, the click sets
 them back (an optimized threshold with its metric, a hand-edited one as edited) and the results are re-cut without
@@ -337,8 +340,8 @@ EDA's methods run up to four fold fits at a time (half the processor's threads, 
 worker. The time limit is checked between fits: no new trial starts after it, and a trial whose first two folds
 forecast an overrun stops (the first trial always completes); one fit of a slow method can run past it. The task bar
 shows
-the method and what is left of the limit: the trials finished (completed, pruned or failed) of this run's limit,
-`Tuning CatBoost (12/50)`, or the time left, `Tuning CatBoost (42 s left)`, `Tuning CatBoost (2 min left)`, and once
+the method and what is left of the limit: the share of this run's trial limit finished (completed, pruned or failed),
+in whole percent, `Tuning CatBoost (24%)`, or the time left, `Tuning CatBoost (42 s left)`, `Tuning CatBoost (2 min left)`, and once
 the time is up the trials still running, `Tuning CatBoost (finishing 3 trials)`; a continued search the same, counting
 this run's trials;
 **Save**, **Train** and **Tune** wait, and the loader is next to the **Performance** header. Until the search and the
@@ -449,7 +452,7 @@ method whose trials all failed or whose ranges are used up leaves without counti
 covers all the methods; a trial whose first two folds
 forecast an overrun stops (abandoned), so a slow method may be left without a completed trial. The trials score the
 labels the form's threshold gives, and the winner's training optimizes the threshold for **Best threshold by** again.
-The task bar shows the same progress as Tune's (`Finding best model (79/100)`, `Finding best model (finishing 2
+The task bar shows the same progress as Tune's (`Finding best model (79%)`, `Finding best model (finishing 2
 trials)`, `Finding best model (42 s left)`,
 `Finding best model (2 min left)`). Each method's best settings follow the one-standard-error rule as Tune's;
 across the methods the one with the highest **<Metric> − SE** (the lowest **<Metric> + SE** for an error) wins, a tie
@@ -586,7 +589,7 @@ catalog open in this browser tab shows the new model right away.
 
 ## Apply a model
 
-Open a table, then **ML | Models | Apply Model...** (or use the play icon in the catalog or the run icon in the table's
+Open a table, then **ML | Models | Apply Model...** (or use a model's **Apply...** in the catalog or the run icon in the table's
 **Models** pane). The **Apply predictive model**
 dialog has:
 
@@ -610,7 +613,7 @@ dialog has:
 * **More options** (folded): **Batch size**, the rows predicted in one step (10000 by default); lower it for heavy
   methods
 
-Opened for a chosen model (the catalog's play icon, a model's **Apply...**), the dialog starts on the catalog's
+Opened for a chosen model (a model's **Apply...**), the dialog starts on the catalog's
 **Applicable to** table while it is open, otherwise on the current table if the model fits it, otherwise on the first
 open table it fits, otherwise on the current table (or the first open one).
 
@@ -631,8 +634,8 @@ number of skipped rows. Every application, completed, failed or cancelled, is re
 Show a table in the context panel (for example, click a cell or an empty area of its grid): the pane **Models** lists
 the models you can see whose features all have a close column in the table, newest first. Each line has the small green run icon (**Run prediction**: the **Apply predictive model** dialog with that model and
 this table, showing the table after applying), the model's name as a link and the menu arrow. Hover the name for the
-model's summary (Created by, Created, Updated, Trained on, Last run, Tags, Inputs, Outputs, Method and, when an open
-table fits, Applicable to); click it to show the model in the context panel; right-click it, or click the arrow, for
+model's tooltip, the same as in the **Models** view (the name, `Predicts <target> with <method> from <features>`,
+`Created <date> by <author>`); click it to show the model in the context panel; right-click it, or click the arrow, for
 the model's menu (the platform's row commands with Forge's **Apply...** and **Download**); drag it onto a Space to
 link the model there. Under the list, the button **Train** (`Train a new model on this table.`) opens the **Predictive
 model** view on the table. When no model fits, the pane says `No model fits this table.` above **Train**. The pane
@@ -654,8 +657,8 @@ grok.shell.addTableView(await grok.functions.call('Forge:listMethods', {}));
 grok.shell.addTableView(await grok.functions.call('Forge:listMethods', {table: grok.shell.t, target: 'Species'}));
 ```
 
-`Forge:listMethods` returns the table **Methods**, one row per method `trainModel` accepts, in the order of the
-catalog's **Methods** grid: **Method**, **Package**, **Method type**, **Runs on** (`browser`, or `server` when the
+`Forge:listMethods` returns the table **Methods**, one row per method `trainModel` accepts, in discovery order (package
+methods by name, then scripts): **Method**, **Package**, **Method type**, **Runs on** (`browser`, or `server` when the
 training data leaves the browser), **Keeps training rows** (the model file holds training rows, as SVM's does),
 **Retrains live**, **Roles**, **Hyperparameters** (the setting names) and **Settings**: a json text with one entry per
 setting, `name`, `type` and, when the method declares them, `default`, `min`, `max`, `choices` and `description`. These
@@ -928,7 +931,7 @@ available to you.` and no dialog.
 await grok.functions.call('Forge:deleteModel', {model: 'Iris species'});
 ```
 
-`Forge:deleteModel` deletes the model as the catalog's trash icon does, with its model file, its uploaded copy and its
+`Forge:deleteModel` deletes the model as the catalog's **Delete model** does, with its model file, its uploaded copy and its
 applications, and returns its id; its training runs stay, without the model, and a context panel showing it is
 emptied. `model` is an id or a unique name, as
 for `applyModel`: `No Forge model 'X' is available to you.`, `Several models are named 'X'. Use the model id.`
@@ -943,25 +946,42 @@ function answers which request, the inputs, the results, the error messages and 
 unless you ask for a copy). Models of the earlier predictive modeling tool are not Forge's; the assistant's Forge
 knowledge does not cover them.
 
-## Model catalog
+## Models view
 
-Open the catalog from **Browse > Apps > Forge** or **Browse > Platform > Machine Learning**. The view has two sections:
+Open the view **Models** from **Browse > Platform > Predictive models**, or at the address `/models`. It is the
+catalog of your models, newest first.
 
-* **Methods**: a grid of every method Forge found, with its package, method type (function or script), roles and the
-  hyperparameters it accepts; hover a header, or a **Method type**, **Roles** or **Hyperparameters** cell, for what it
-  means
-* **Models**: the model catalog with the name, method, task, target, data storage mode, number of training
-  rows, tags and creation date of each model. The refresh icon reloads it; the play icon (**Apply model**) opens the
-  **Apply predictive model** dialog for the chosen model and shows the table after applying; the trash icon
-  (**Delete model**) removes the chosen model after a confirmation. Both are available only while a model is chosen.
-  The Compare icon (**Compare in a new view**) is available while two or more models are selected. The icons sit
-  next to the **Models** title, blue while available and grey while not. The catalog also reloads itself after a model
-  is saved, edited or deleted, keeping the chosen and the selected models; the context panel never keeps a deleted
-  model (it shows the chosen model, a comparison of the selected ones that are left, or nothing)
+It has the platform galleries' toolbar: the search box, the icons **Show as a list**, **Show as cards** (the default)
+and **Show as a table**, **Sort** (a menu of the fields, then **Ascending** or **Descending**) and the count of the
+models, `x / N` while the search leaves `x` of `N` (hover for `x of N models shown`). The view remembers its mode and
+its sort for you. Text sorts ignore case, in every mode. In the card and list modes a search with no match shows the empty-set icon. Cards and
+list show at most 500 models, then `Showing 500 of N. Search to narrow, or switch to the table.`; the table shows all.
 
-**Applicable to**, on the line under the **Models** title, is a table input over the open tables (its folder icon
-opens a file): choose one to see only the models whose features all have a close column in it; empty shows every
-model, and closing the chosen table empties it. Nothing is uploaded for that.
+The search box (`Search models by name, target, method or #tag`, without the magnifier icon) keeps the
+models whose name, target, method or task contains the text, case-insensitively; a `#word` keeps the models with that
+tag. Sort by **Created**, **Name**, **Method**, **Target**, **Task** or **Training rows**.
+
+* As cards: the card of the model (see below)
+* As a list: one line per model, its name as a blue link (a long name ends with an ellipsis), as the platform's other
+  lists
+* As a table: the grid with the name, method, task, target, data storage mode (`Reference`, `None` or `Copy`), number
+  of training rows, tags and creation date (`YYYY-MM-DD`, sorted by the full time) of each model; hover a header for what it means. A sort by one of the sort fields in the table is the
+  view's sort
+
+Hover a card or a list row for the model's tooltip. Click a model to make it the chosen one; Ctrl+click adds or removes
+models (the chosen one counts as selected), Shift+click selects the models from the chosen one to it. The chosen and
+the selected cards are tinted blue with a blue frame; in the list they are framed by a shadow.
+
+Left of the search box, the refresh icon reloads the catalog; applying, deleting and comparing models are in a model's
+right-click menu and in the context panel. The catalog also reloads itself after a model is saved, edited or deleted, keeping the chosen and the
+selected models; the context panel never keeps a deleted model (it shows the chosen model, a comparison of the selected
+ones that are left, or nothing). An empty catalog shows `No models yet.` and **Train a model...**, which opens the
+**Predictive model** view on the current table, else on the only open table, else after the dialog **Train a model**,
+whose **Table** (its folder icon opens a file) must be chosen (OK says `Choose a table.` while it is empty).
+
+**Applicable to**, on the line under the toolbar, is a table input over the open tables (its folder icon opens a
+file): choose one to see only the models whose features all have a close column in it; empty shows every model, and
+closing the chosen table empties it. Nothing is uploaded for that.
 
 Click a model to see it in the context panel. Its title has the model icon, the favorites star, the name and the
 model's commands, then come the panes:
@@ -998,9 +1018,10 @@ model's commands, then come the panes:
 Wherever the platform shows a model (the Domains view, Browse, the title in the context panel), its menu has Forge's
 **Apply...** (the Apply dialog) and **Download** (the model file, `<model name>.bin`) next to the platform's own
 commands. The platform's **Edit...** changes every field of the record and cannot open a saved model yet (a platform
-issue), and its **Delete** removes the record only, leaving the model file behind. Right-clicking a row of the catalog
-offers **Apply...**, **Edit model...** (Name, Description and Tags, the fields `Forge:updateModel` writes from a
-script), **Download** and **Delete model** (with its file and its applications), and **Compare** for a selection of two
+issue), and its **Delete** removes the record only, leaving the model file behind. Right-clicking a model in the
+**Models** view (a card, a list row or a table row) offers **Apply...**, **Edit model...** (Name, Description and Tags,
+the fields `Forge:updateModel` writes from a script), **Share...** (the platform's Share dialog), **Download** (for a
+model with a file) and **Delete model** (with its file and its applications), and **Compare** for a selection of two
 or more models.
 
 With two or more models selected in the catalog, the context panel shows them under the title `Compare N models`
@@ -1015,12 +1036,11 @@ target, training rows and creation date, and the train and validation value of e
 Forms viewer next to the grid.
 
 In **Browse > Platform > Domains > forge > model**, the card view shows each model in five lines of one height: the
-name (with a table icon when an open table fits the model; hover it for `Applicable to <tables>`), what it predicts,
-by which features, the method and the creation date; a long line ends with `...`. Hover a card, a model's **Name**
-in the catalog grid (its other cells keep the grid's own tooltips), or a model anywhere the platform shows it, for the
-full picture: the name in bold, `Predicts <target> from <N> features with <method> ·
-<task> · <rows> rows`, the features (a long list ends with `+N more`), and in grey `Created <date> by <author> · Data
-storage: <mode> · Tags: <tags>`. The view's filter panel offers **Method**, **Task**, **Data storage**, **Tags** and
+name, what it predicts,
+by which features, the method and the creation date; a long line ends with `...`; the **Models** view's cards are the
+same. Hover a card, a model's **Name** in the **Models** view's table (its other cells keep the grid's own tooltips), or a model anywhere the platform shows it, for its
+tooltip: the name in bold, `Predicts <target> with <method> from <features>` (the feature names, cut at 50 characters
+with `…`), and in grey `Created <date> by <author>`. The view's filter panel offers **Method**, **Task**, **Data storage**, **Tags** and
 **Created**.
 
 A prediction column's context panel has a **Predicted by** pane with the card of the model that made it, with the same
@@ -1038,12 +1058,12 @@ model. Every user trains, saves and deletes models of their own the same way.
 Training runs are not shared with their model: each user sees only their own. On a Datagrok 1.28.0 server an
 administrator, too, sees only the models shared with them, not every user's (a platform issue).
 
-To share a model through a Space, drag it onto the Space in **Browse**: its card (**Browse > Platform > Domains >
-forge > model**, card mode), its name in a table's **Models** pane, or its name in the title of its context
+To share a model through a Space, drag it onto the Space in **Browse**: its card or list row in the **Models** view,
+its card in **Browse > Platform > Domains > forge > model** (card mode), its name in a table's **Models** pane, or its name in the title of its context
 panel. The platform asks to confirm and links the model to the Space; everyone with access to the Space can then see
 and apply it. Dropping it again links nothing twice. The platform has no **Add to** command for models yet.
 
-On a server with Forge, **ML | Models**, **Browse > Platform > Machine Learning** and the table's **Models** pane are
+On a server with Forge, **ML | Models**, **Browse > Platform > Predictive models** and the table's **Models** pane are
 Forge's. Without Forge the platform offers no predictive modeling tool. Models of the earlier predictive modeling tool are not listed in Forge's catalog; where the platform still
 lists one (**Recent**, **Favorites**, **Shared with me**, project links), it shows only a note and offers no commands.
 A column predicted by such a model says so in **Predicted by**. Forge needs Datagrok **<minimum platform version: TBD>** or later: on an older server the earlier
@@ -1059,7 +1079,7 @@ Forge does not train models itself. Methods live in other packages and in script
 * **Scripts** that follow the same contract
 
 A method appears only when its package is installed, and every installed method trains in the **Predictive model**
-view. Forge passes an empty cell only to a method that handles missing values (XGBoost, Random Forest, Extra Trees,
+view; `Forge:listMethods` lists them (see "From scripts and Datagrok AI"). Forge passes an empty cell only to a method that handles missing values (XGBoost, Random Forest, Extra Trees,
 Hist Gradient Boosting, CatBoost, Decision Tree, TabM): it gets the rows with gaps as they are, and **Missing values** is
 not shown for it. For every other method, **Missing values** skips or fills them first. Methods
 that run in the browser (all of EDA's) keep the training data there; a method that runs on the server (a Python or R

@@ -4,13 +4,14 @@ import * as rxjs from 'rxjs';
 import {textColumn} from '../columns';
 import {Engine, Hyperparameters, visibleValuesOf} from '../engines/engine';
 import {TrainingRunStatus} from '../generated/db';
-import {METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricId, MetricValues} from '../metrics/metrics';
+import {METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricId} from '../metrics/metrics';
 import {MissingValuesSettings} from '../preparation/missing-values';
 import {PreparationSteps} from '../preparation/pipeline';
 import {ValidationSettings} from '../training/k-fold';
 import {SEARCH_CAPTIONS, SearchRecord} from '../training/search';
 import {MetricsRecord} from '../training/train-model';
 import {numberColumn, readOnlyGrid} from './data-grid';
+import {tinyValueText} from './metrics-table';
 import {resultsTitle} from './results-viewers';
 import {TuneStatus} from './tune-settings';
 
@@ -170,7 +171,7 @@ export class RunsPanel {
   }
 
   private static metricTooltip(metrics: MetricsRecord | undefined, id: MetricId): string {
-    const text = (values: MetricValues | undefined) => values?.[id]?.toFixed(3) ?? '-';
-    return `Train ${text(metrics?.train)}, validation ${text(metrics?.validation)}`;
+    const value = metrics?.train[id];
+    return `Train ${value === undefined ? '-' : tinyValueText(value) ?? value.toFixed(3)}`;
   }
 }

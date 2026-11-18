@@ -25,11 +25,12 @@ const DOWNLOAD: ModelAction = {name: 'Download', isApplicable: (row) => ownBlob(
  * to the platform's own Open, Edit..., Clone, Delete, Share..., History and Copy link. */
 export const MODEL_ACTIONS: readonly ModelAction[] = [APPLY, DOWNLOAD];
 
-/** The catalog grid's commands: also editing and deleting the model the Forge way (Name, Description and Tags; the row
- * with its file and applications), which the platform's own Edit... and Delete do differently. */
+/** The catalog's commands: also editing and deleting the model the Forge way (Name, Description and Tags; the row
+ * with its file and applications), which the platform's own Edit... and Delete do differently, and sharing it. */
 export const CATALOG_ACTIONS: readonly ModelAction[] = [
   APPLY,
   {name: 'Edit model...', run: (row) => openEditModelDialog(row.id)},
+  {name: 'Share...', run: (row) => openShareDialog(row.id)},
   DOWNLOAD,
   {name: 'Delete model', run: (row) => confirmDeleteModel(row.id, row.displayName)},
 ];
@@ -56,13 +57,14 @@ export async function openModelApply(modelId: string, preferredTable: DG.DataFra
     {modelId, switchToTable: true, preferredTable});
 }
 
-/** The commands of a catalog row: the catalog's grid shows its own menu, without the platform's model commands. */
+/** The commands of a catalog row: the catalog's menu (gallery items and grid rows), without the platform's model
+ * commands. */
 export function addModelItems(menu: DG.Menu, row: DG.DomainRow, preferredTable: DG.DataFrame | null): void {
   for (const action of CATALOG_ACTIONS.filter((a) => a.isApplicable?.(row) ?? true))
     menu.item(action.name, () => void runModelAction(action, row, preferredTable));
 }
 
-/** The trash icon's and **Delete model**'s confirmation; OK deletes the row, its file and its applications. */
+/** **Delete model**'s confirmation; OK deletes the row, its file and its applications. */
 export function confirmDeleteModel(id: string, name: string): void {
   ui.dialog('Delete model')
     .add(ui.divText(`Delete the model "${name}"?`))

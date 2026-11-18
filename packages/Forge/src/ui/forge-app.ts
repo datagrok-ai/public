@@ -5,19 +5,18 @@ import * as rxjs from 'rxjs';
 import {requiredFeaturesOf} from '../apply/apply-model';
 import {isSuggested} from '../apply/column-matching';
 import {COMPARE_COLUMNS, CompareModelRow} from '../catalog/compare-models';
-import {APP_NAME, MODEL_TYPE} from '../constants';
-import {Engine, EngineKind, EngineRole, rolesOf, visibleHyperparametersOf} from '../engines/engine';
-import {EngineRegistry} from '../engines/engine-registry';
-import {methodsFrame} from '../engines/method-list';
-import {forgeDb, ModelRow} from '../generated/db';
+import {GRID_DATE_FORMAT, MODEL_TYPE, VIEW_NAME, VIEW_PATH, VIEW_TYPE} from '../constants';
+import {forgeDb, ModelRow, ModelStorageMode} from '../generated/db';
 import {isRecord} from '../preparation/preparation-options';
 import {modelsChanged} from '../storage/model-store';
 import {isOpen} from './apply-model-dialog';
-import {readOnlyGrid} from './data-grid';
-import {addModelItems, confirmDeleteModel, openModelApply} from './model-actions';
+import {Gallery, SortField} from './gallery';
+import {addModelItems} from './model-actions';
 import {ModelComparison, openComparisonView} from './model-comparison';
 import {ForgeModelHandler, forgeModelHandler} from './model-handler';
 import {reportError} from './report-error';
+import {STORAGE_CAPTIONS} from './save-model-dialog';
+import {launchTraining} from './train-launcher';
 import '../../css/forge.css';
 
 const SHOWN = ['name', 'engine_name', 'task', 'target_name', 'storage_mode', 'row_count', 'tags'] as const;
@@ -26,36 +25,34 @@ const CATALOG_COLUMNS = [...SHOWN, 'features', 'options', 'blob'] as const;
 const VISIBLE_COLUMNS = [...SHOWN, 'created_on'];
 const COMPARISON_DELAY_MS = 300;
 const RELOAD_DELAY_MS = 300;
-const METHOD_HEADERS: {[column: string]: string} = {
-  'Method': 'Machine learning method, as its package names it.',
-  'Package': 'Package or script namespace that provides the method.',
-  'Method type': 'How the method is provided.',
-  'Roles': 'What the method can do.',
-  'Hyperparameters': 'Settings of the method\'s train function.',
+const MODEL_HEADERS: {[column: string]: string} = {
+  name: 'Model name.',
+  engine_name: 'The method that trained the model.',
+  task: 'classification (categories) or regression (numbers).',
+  target_name: 'The column the model predicts.',
+  storage_mode: 'What the model keeps of its training data.',
+  row_count: 'Rows the model learned from.',
+  tags: 'The model\'s tags.',
+  created_on: 'When the model was saved.',
 };
-const KIND_MEANINGS: Record<EngineKind, string> = {
-  function: 'A package function.',
-  script: 'A script with the method\'s roles.',
-};
-const ROLE_MEANINGS: Record<EngineRole, string> = {
-  train: 'Trains a model on a table and a target column, returns the model',
-  apply: 'Applies a trained model to a table, returns the predictions',
-  isApplicable: 'Tells whether the method can learn from the given data',
-  isInteractive: 'Tells whether training is fast enough to rerun on every change',
-  visualize: 'Shows method-specific views of a trained model',
-};
+const MODEL_SORT: SortField[] = [
+  {caption: 'Created', column: 'created_on'},
+  {caption: 'Name', column: 'name'},
+  {caption: 'Method', column: 'engine_name'},
+  {caption: 'Target', column: 'target_name'},
+  {caption: 'Task', column: 'task'},
+  {caption: 'Training rows', column: 'row_count'},
+];
 
 interface ContextMenuArgs { item?: unknown; menu?: DG.Menu }
 
 export class ForgeApp extends DG.ViewBase {
-  readonly applyIcon: HTMLElement;
-  readonly deleteIcon: HTMLElement;
-  readonly compareIcon: HTMLElement;
   readonly applicableToInput: DG.InputBase<DG.DataFrame | null>;
-  readonly methodsGrid: DG.Grid;
+  /** The view's content: the catalog as cards, a list or the grid. */
+  readonly modelsGallery: Gallery;
+  /** What the gallery shows while the catalog is empty. */
+  readonly emptyHint: HTMLElement;
   private readonly grid: DG.Grid;
-  private readonly catalogPane: HTMLElement;
-  private readonly emptyHint: HTMLElement;
   // The current frame's subscriptions: a reload replaces the frame and drops them.
   private catalogSubs: rxjs.Subscription[] = [];
   // Numbers the comparison reads, so a slow read never replaces a newer selection's comparison.
@@ -63,45 +60,37 @@ export class ForgeApp extends DG.ViewBase {
   // Numbers the catalog's due loads: a change or a Refresh takes the next one, and a load is shown only while its
   // number is the newest, so a slow reload never replaces a newer one's frame.
   private catalogLoad = 0;
-  // The open table the grid is filtered by.
+  // The open table the catalog is filtered by.
   private filteredBy: DG.DataFrame | null = null;
+  // Whether a catalog row fits the table of Applicable to; null while none is chosen.
+  private fit: ((i: number) => boolean) | null = null;
 
-  private constructor(engines: Engine[], models: DG.DataFrame) {
+  private constructor(models: DG.DataFrame) {
     super();
-    this.name = APP_NAME;
+    this.name = VIEW_NAME;
     this.box = true;
-    this.aiDescription = 'Forge: predictive modeling. Methods lists the installed machine learning methods with ' +
-      'their roles and settings. Models is the catalog of trained models: name, method, task, target, data storage, ' +
-      'training rows, tags and creation date; Applicable to keeps only the models whose features the chosen open ' +
-      'table has; a chosen model is shown in the context panel (details, performance, activity, sharing, history), ' +
-      'the play icon applies it to a table, the trash icon deletes it, Compare opens two or more selected models ' +
-      'side by side. From code or the AI assistant, the Forge functions listMethods, listModels, getModel, ' +
-      'trainModel, applyModel, evaluateModel, updateModel, shareModel and deleteModel do the same without the UI ' +
-      '(see the package\'s agents/skills.md).';
-
-    this.methodsGrid = readOnlyGrid(methodsFrame(engines), {headers: METHOD_HEADERS, cells: {
-      'Method type': (row) => KIND_MEANINGS[engines[row].kind],
-      'Roles': (row) => rolesOf(engines[row]).map((r) => `${r}: ${ROLE_MEANINGS[r]}`).join('\n'),
-      'Hyperparameters': (row) => visibleHyperparametersOf(engines[row]).map((p) => `${p.name}: ${p.description}`)
-        .join('\n'),
-    }}, engines.length);
-    const methodsPane = ui.box(ui.panel([ui.h2('Methods'), this.methodsGrid.root]));
-    // Inline: the split's 50% basis (ui.css) would cut the methods off; the pane takes its rows' height.
-    methodsPane.style.flex = '0 0 auto';
+    this.aiDescription = 'Models (address /models): the catalog of trained predictive models (the Forge package), ' +
+      'with a search box (text and #tags), list, cards and table modes, a sort menu and a model count; it remembers ' +
+      'its mode and sort, and shows cards by default (name, target, features, method, creation date). Applicable to ' +
+      'keeps only the models whose features the chosen open table has; a clicked model is shown in the context panel ' +
+      '(details, performance, activity, sharing, history), Ctrl+click selects more and two or more selected models ' +
+      'are compared there; the right-click menu has Apply..., Edit model..., Share..., Download, Delete model and ' +
+      'Compare (opens the selected models side by side); the toolbar\'s icon refreshes the catalog; with no ' +
+      'models, Train a model... opens the Train view. From code or the AI ' +
+      'assistant, the Forge functions listMethods, listModels, getModel, trainModel, applyModel, evaluateModel, ' +
+      'updateModel, shareModel and deleteModel do the same without the UI (see the package\'s agents/skills.md).';
 
     this.grid = DG.Viewer.grid(models);
-    // Inline: the platform's 400px width for a box in a panel (ui.css) gives way only to an element style.
-    this.grid.root.style.width = '100%';
     this.grid.onCellTooltip((cell, x, y) => {
-      const tooltip = this.modelTooltip(cell);
+      const tooltip = this.modelTooltip(cell) ?? ForgeApp.headerTooltip(cell);
       if (tooltip !== null)
         ui.tooltip.show(tooltip, x, y);
       return tooltip !== null;
     });
-    this.emptyHint = ui.divText('No models yet.');
-    this.applyIcon = ui.iconFA('play', () => this.applyCurrentModel(), 'Apply model');
-    this.deleteIcon = ui.icons.delete(() => this.deleteCurrentModel(), 'Delete model');
-    this.compareIcon = ui.iconFA('columns', () => this.compareSelected(), 'Compare in a new view');
+    this.grid.onCellPrepare((cell) => {
+      if (cell.isTableCell && cell.tableColumn?.name === 'storage_mode')
+        cell.customText = ForgeApp.storageText(cell.cell.value);
+    });
     this.applicableToInput = ui.input.table('Applicable to', {nullable: true,
       tooltipText: 'Show only the models whose features all have a close column in the table; empty shows every model.',
       onValueChanged: () => this.filterModels()});
@@ -109,10 +98,26 @@ export class ForgeApp extends DG.ViewBase {
       this.markStale();
       void this.refresh();
     }, 'Refresh');
-    const header = ui.divH([ui.h2('Models'), refreshIcon, this.applyIcon, this.deleteIcon, this.compareIcon],
-      'forge-pane-header');
-    this.catalogPane = ui.panel([header, this.applicableToInput.root, this.emptyHint, this.grid.root], 'forge-catalog');
-    this.bindCatalog();
+    this.emptyHint = ui.divV([ui.divText('No models yet.'),
+      ui.link('Train a model...', () => void launchTraining(null), 'Open the Train view on a table')],
+    'forge-gallery-empty');
+    const rowOf = (i: number) => ForgeModelHandler.rowOf(this.modelValues(i));
+    this.modelsGallery = new Gallery({key: 'models', noun: 'models',
+      placeholder: 'Search models by name, target, method or #tag', grid: this.grid,
+      searchColumns: ['name', 'target_name', 'engine_name', 'task'], tagsColumn: 'tags', sortFields: MODEL_SORT,
+      defaultSort: {column: 'created_on', desc: true},
+      card: (i) => ForgeModelHandler.cardContent(rowOf(i)),
+      listItem: (i) => ForgeModelHandler.listLine(rowOf(i)),
+      tooltip: (i) => forgeModelHandler.renderTooltip(rowOf(i)),
+      menu: (i, menu) => this.fillMenu(i, menu),
+      dragObject: rowOf,
+      actions: ui.divH([refreshIcon]),
+      below: this.applicableToInput.root,
+      emptyHint: this.emptyHint,
+      extraFilter: (i) => this.fit?.(i) ?? true});
+    this.modelsGallery.root.classList.add('forge-catalog');
+    // The gallery rendered the cards already; Applicable to starts empty.
+    this.subscribeCatalog();
     this.publishLoad(0);
     this.subs.push(
       // Stale from the change, not from the debounced reload.
@@ -126,29 +131,48 @@ export class ForgeApp extends DG.ViewBase {
       }),
       grok.events.onContextMenu.subscribe((event: {args: ContextMenuArgs}) => this.extendMenu(event.args)));
 
+    this.path = VIEW_PATH;
     this.root.classList.add('forge-app');
-    this.root.appendChild(ui.splitV([methodsPane, this.catalogPane]));
+    this.root.appendChild(this.modelsGallery.root);
   }
 
   get models(): DG.DataFrame {
     return this.grid.dataFrame;
   }
 
-  static async create(): Promise<ForgeApp> {
-    return new ForgeApp(EngineRegistry.discover(), await ForgeApp.loadModels());
+  get type(): string {
+    return VIEW_TYPE;
   }
 
-  /** Focuses an open catalog, or opens one. */
+  /** `/models`, in any case and with or without a trailing `/`; the base `handlePath` keeps the view as it is. */
+  acceptsPath(path: string): boolean {
+    return path.toLowerCase().replace(/\/$/, '') === VIEW_PATH;
+  }
+
+  static async create(): Promise<ForgeApp> {
+    return new ForgeApp(await ForgeApp.loadModels());
+  }
+
+  /** Focuses an open view, or opens one. */
   static async open(): Promise<void> {
     try {
-      const open = Array.from(grok.shell.views).find((v) => v instanceof ForgeApp);
-      if (open !== undefined)
-        grok.shell.v = open;
-      else
+      const open = ForgeApp.openView();
+      if (open === undefined) {
         grok.shell.addView(await ForgeApp.create());
+        return;
+      }
+      grok.shell.v = open;
     } catch (e) {
       reportError(e);
     }
+  }
+
+  private static openView(): ForgeApp | undefined {
+    for (const view of grok.shell.views) {
+      if (view instanceof ForgeApp)
+        return view;
+    }
+    return undefined;
   }
 
   static async loadModels(): Promise<DG.DataFrame> {
@@ -165,12 +189,15 @@ export class ForgeApp extends DG.ViewBase {
         col.meta.friendlyName = p.friendlyName;
     }
     const createdOn = models.col('created_on');
-    if (createdOn !== null)
+    if (createdOn !== null) {
       createdOn.meta.friendlyName = 'Created';
+      // The cards' date in the table mode; the grid still sorts by the full datetime.
+      createdOn.meta.format = GRID_DATE_FORMAT;
+    }
     return models;
   }
 
-  /** Opens the models selected in the grid side by side in the table view **Compare models**. */
+  /** Opens the selected models side by side in the table view **Compare models**. */
   async compareSelected(): Promise<void> {
     try {
       openComparisonView(await this.selectedModels());
@@ -181,6 +208,7 @@ export class ForgeApp extends DG.ViewBase {
 
   detach(): void {
     this.unsubscribeCatalog();
+    this.modelsGallery.detach();
     // A comparison read still running finds itself outdated and sets nothing.
     this.comparisonRead++;
     super.detach();
@@ -190,7 +218,7 @@ export class ForgeApp extends DG.ViewBase {
    * is shown. */
   private markStale(): void {
     this.catalogLoad++;
-    this.catalogPane.setAttribute('aria-busy', 'true');
+    this.modelsGallery.root.setAttribute('aria-busy', 'true');
   }
 
   /** Loads the catalog under the due load's number ({@link markStale} first); the current row and the selected rows
@@ -220,15 +248,15 @@ export class ForgeApp extends DG.ViewBase {
         await this.showSelection();
     } catch (e) {
       if (load === this.catalogLoad)
-        this.catalogPane.setAttribute('aria-busy', 'false');
+        this.modelsGallery.root.setAttribute('aria-busy', 'false');
       reportError(e);
     }
   }
 
   /** The catalog's readiness for automation (ARCHITECTURE.md, "Automation surface"): load [load] is shown. */
   private publishLoad(load: number): void {
-    this.catalogPane.setAttribute('data-forge-catalog-load', String(load));
-    this.catalogPane.setAttribute('aria-busy', 'false');
+    this.modelsGallery.root.setAttribute('data-forge-catalog-load', String(load));
+    this.modelsGallery.root.setAttribute('aria-busy', 'false');
   }
 
   /** Whether [x] is a comparison with a model that the catalog no longer has; a single model that is gone leaves the
@@ -240,20 +268,22 @@ export class ForgeApp extends DG.ViewBase {
     return x.rows.some((row) => !ids.has(row.id));
   }
 
+  /** Follows a reloaded frame: the subscriptions, Applicable to and the gallery. */
   private bindCatalog(): void {
+    this.subscribeCatalog();
+    this.updateFit();
+    this.modelsGallery.rebind();
+  }
+
+  private subscribeCatalog(): void {
     this.grid.columns.setOrder(VISIBLE_COLUMNS);
     this.grid.columns.setVisible(VISIBLE_COLUMNS);
-    ui.setDisplay(this.emptyHint, this.models.rowCount === 0);
     this.unsubscribeCatalog();
     this.catalogSubs = [
       this.models.onCurrentRowChanged.subscribe(() => this.showCurrentModel()),
-      this.models.onSelectionChanged.subscribe(() => this.updateCompareIcon()),
       // A selection is often made in several steps: the comparison is read once it settles.
       DG.debounce(this.models.onSelectionChanged, COMPARISON_DELAY_MS).subscribe(() => void this.showSelection()),
     ];
-    this.updateRowIcons();
-    this.updateCompareIcon();
-    this.filterModels();
   }
 
   private unsubscribeCatalog(): void {
@@ -265,7 +295,6 @@ export class ForgeApp extends DG.ViewBase {
   /** The chosen model becomes the current object, shown in the context panel; no current row, or two or more selected
    * rows (the panel compares them), leave the panel as it is. */
   private showCurrentModel(): void {
-    this.updateRowIcons();
     if (this.models.selection.trueCount < 2)
       this.showModel(this.models.currentRowIdx);
   }
@@ -302,7 +331,7 @@ export class ForgeApp extends DG.ViewBase {
     }
   }
 
-  /** The selected models with the columns a comparison reads, in the grid's order. */
+  /** The selected models with the columns a comparison reads, in the catalog's order. */
   private async selectedModels(): Promise<CompareModelRow[]> {
     const ids: string[] = Array.from(this.models.selection.getSelectedIndexes(), (i) => this.models.get('id', i));
     const rows: CompareModelRow[] = await forgeDb.models.query().where('id', '=', ids).select(...COMPARE_COLUMNS)
@@ -311,18 +340,14 @@ export class ForgeApp extends DG.ViewBase {
     return ids.map((id) => byId.get(id)).filter((r): r is CompareModelRow => r !== undefined);
   }
 
-  private updateRowIcons(): void {
-    const hasRow = this.models.currentRowIdx >= 0;
-    ui.setDisabled(this.applyIcon, !hasRow);
-    ui.setDisabled(this.deleteIcon, !hasRow);
-  }
-
-  private updateCompareIcon(): void {
-    ui.setDisabled(this.compareIcon, this.models.selection.trueCount < 2);
-  }
-
-  /** With a table chosen in **Applicable to**, only the models it fits stay in the grid; nothing leaves the browser. */
+  /** With a table chosen in **Applicable to**, only the models it fits stay in the catalog; nothing leaves the
+   * browser. */
   private filterModels(): void {
+    this.updateFit();
+    this.modelsGallery.refilter();
+  }
+
+  private updateFit(): void {
     const chosen = this.applicableToInput.value;
     const table = chosen !== null && isOpen(chosen) ? chosen : null;
     this.filteredBy = table;
@@ -330,29 +355,32 @@ export class ForgeApp extends DG.ViewBase {
     const options = this.models.col('options');
     // Retrained models share their feature lists: each list is matched against the table once.
     const fitting = new Map<string, boolean>();
-    const fits = (i: number, open: DG.DataFrame): boolean => {
+    this.fit = table === null ? null : (i: number): boolean => {
       const required = requiredFeaturesOf({features: jsonOf(features?.get(i)), options: jsonOf(options?.get(i))});
       const key = JSON.stringify(required);
       let fit = fitting.get(key);
       if (fit === undefined) {
-        fit = required !== null && isSuggested(required, open);
+        fit = required !== null && isSuggested(required, table);
         fitting.set(key, fit);
       }
       return fit;
     };
-    this.models.filter.init((i) => table === null || fits(i, table));
   }
 
-  /** Right-clicking a catalog row: the grid's menu gets the model's commands, and Compare for a selection of two or
-   * more. */
+  /** The commands of catalog row [i], and Compare for a selection of two or more: the gallery's and the grid's menu. */
+  private fillMenu(i: number, menu: DG.Menu): void {
+    addModelItems(menu, ForgeModelHandler.rowOf(this.modelValues(i)), this.applicableToInput.value);
+    if (this.models.selection.trueCount >= 2)
+      menu.separator().item('Compare', () => void this.compareSelected());
+  }
+
+  /** Right-clicking a row of the table mode: the grid's menu gets the model's commands. */
   private extendMenu({item, menu}: ContextMenuArgs): void {
     if (!(item instanceof DG.GridCell) || menu === undefined || item.grid.dart !== this.grid.dart)
       return;
     const i = item.tableRowIndex;
     if (i !== null && i >= 0)
-      addModelItems(menu, ForgeModelHandler.rowOf(this.modelValues(i)), this.applicableToInput.value);
-    if (this.models.selection.trueCount >= 2)
-      menu.item('Compare', () => void this.compareSelected());
+      this.fillMenu(i, menu);
   }
 
   /** The model's tooltip for a **Name** [cell]; null for any other cell, which keeps the grid's own tooltip. */
@@ -363,6 +391,17 @@ export class ForgeApp extends DG.ViewBase {
     return i === null || i < 0 ? null : forgeModelHandler.renderTooltip(ForgeModelHandler.rowOf(this.modelValues(i)));
   }
 
+  /** A **Data storage** value as the tooltips and the model panel show it: `Reference`, `None`, `Copy`. */
+  static storageText(value: unknown): string {
+    return STORAGE_CAPTIONS[value as ModelStorageMode] ?? String(value ?? '');
+  }
+
+  /** The column's meaning for a header [cell]; null for any other cell. */
+  private static headerTooltip(cell: DG.GridCell): HTMLElement | null {
+    const text = cell.isColHeader ? MODEL_HEADERS[cell.tableColumn?.name ?? ''] : undefined;
+    return text === undefined ? null : ui.divText(text);
+  }
+
   /** The catalog row [i] as model values, its features and options as objects. */
   private modelValues(i: number): Pick<ModelRow, 'id' | 'name'> & Partial<ModelRow> {
     const values: {[column: string]: unknown} = {};
@@ -370,18 +409,6 @@ export class ForgeApp extends DG.ViewBase {
       values[col.name] = col.isNone(i) ? undefined : col.get(i);
     return {...values, id: this.models.get('id', i), name: this.models.get('name', i),
       features: jsonOf(values.features), options: jsonOf(values.options)};
-  }
-
-  private async applyCurrentModel(): Promise<void> {
-    const row = this.models.currentRowIdx;
-    if (row >= 0)
-      await openModelApply(this.models.getCol('id').get(row), this.applicableToInput.value);
-  }
-
-  private deleteCurrentModel(): void {
-    const row = this.models.currentRowIdx;
-    if (row >= 0)
-      confirmDeleteModel(this.models.getCol('id').get(row), this.models.getCol('name').get(row));
   }
 }
 

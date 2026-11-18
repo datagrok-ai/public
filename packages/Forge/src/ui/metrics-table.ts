@@ -79,9 +79,23 @@ export function findingsOf(findings: MetricFinding[], id: MetricId, column: stri
   return findings.filter((f) => f.id === id && f.splits.some((split) => SPLIT_COLUMNS[split] === column));
 }
 
-/** A value in full precision, what [column] measures and the texts of [findings]; '' without a value. */
-export function metricTooltip(value: number | undefined, column: string, findings: MetricFinding[]): string {
-  return value === undefined ? '' : [`${value}. ${METRIC_HEADERS[column]}`, ...findings.map((f) => f.text)].join(' ');
+/** The texts of [findings], led by the value when it shows as `0.000` but is not 0 ({@link tinyValueText}); null
+ * (no tooltip) without a value or with nothing to say. */
+export function metricTooltip(value: number | undefined, findings: MetricFinding[]): string | null {
+  if (value === undefined)
+    return null;
+  const tiny = tinyValueText(value);
+  const parts = [...(tiny === null ? [] : [`${tiny}.`]), ...findings.map((f) => f.text)];
+  return parts.length === 0 ? null : parts.join(' ');
+}
+
+/** [value] in exponent form with one decimal and a two-digit exponent (`3.2e-05`) when it shows as `0.000` or
+ * `-0.000` but is not 0; null otherwise. */
+export function tinyValueText(value: number): string | null {
+  if (value === 0 || Number(value.toFixed(3)) !== 0)
+    return null;
+  const [mantissa, exponent] = value.toExponential(1).split('e-');
+  return `${mantissa}e-${exponent.padStart(2, '0')}`;
 }
 
 /** `Test: <rows> rows held out before the search`. */
@@ -116,11 +130,10 @@ export class MetricsTable {
     this.hasEvaluation = summary.evaluation !== undefined;
     this.hasTest = summary.metrics.test !== undefined;
     this.findings = metricFindings(summary.metrics);
-    // A value in full precision, with what the column measures and the findings of the cell; read from the current
-    // summary.
+    // Read from the current summary.
     const valueTooltip = (column: string) => (row: number) => {
       const value = valueColumns(this.summary).find(([name]) => name === column)?.[1][this.ids[row]];
-      return metricTooltip(value, column, this.findingsOf(column, row));
+      return metricTooltip(value, this.findingsOf(column, row));
     };
     this.grid = readOnlyGrid(metricsFrame(summary, this.ids), {headers: METRIC_HEADERS, cells: {
       'Metric': (row) => METRIC_DESCRIPTIONS[this.ids[row]],

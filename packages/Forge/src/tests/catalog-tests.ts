@@ -20,17 +20,19 @@ import {NO_NAME, tagsOf, tagsText} from '../storage/model-fields';
 import {deleteModel, modelsChanged} from '../storage/model-store';
 import {ForgeApp} from '../ui/forge-app';
 import {comparisonForms, hasFormsViewer, ModelComparison, NO_FORMS} from '../ui/model-comparison';
-import {ForgeModelHandler, forgeModelHandler} from '../ui/model-handler';
+import {ForgeModelHandler, forgeModelHandler, MAX_FEATURES_TEXT} from '../ui/model-handler';
 import {isForgePrediction, legacyPredictionText, predictedByPane} from '../ui/prediction-column-panel';
 import {runTrainModel} from '../training/train-api';
 import {metricsRecordOf, trainModel} from '../training/train-model';
-import {columnsOf, deleteModelsNamed, deleteRunsOf, expectMetrics, failsWith, insertModelRow, MEASUREMENTS,
-  openDemoTable, openIris, PREDICT_PROBABILITY, requestOf, savedFixture, saveIrisModel, twoSpeciesIris, WINE}
-  from './test-data';
+import {clearTestGalleryStorage, columnsOf, deleteModelsNamed, deleteRunsOf, expectMetrics, failsWith,
+  insertModelRow, MEASUREMENTS, openDemoTable, openIris, PREDICT_PROBABILITY, requestOf, savedFixture, saveIrisModel,
+  twoSpeciesIris, useTestGalleryStorage, WINE} from './test-data';
 
 const TIMEOUT = 90000;
 const WAIT_MS = 10000;
 const IRIS_ROW = {features: {columns: MEASUREMENTS.map((name) => ({name, type: DG.COLUMN_TYPE.FLOAT}))}};
+/** The tooltip's line of the iris XGBoost model: its four features take 52 characters, cut to 50. */
+const IRIS_PREDICTS = 'Predicts Species with XGBoost from Sepal.Length, Sepal.Width, Petal.Length, Petal.Wi…';
 
 const API_TAGS = ['forge-test', 'api'];
 
@@ -66,6 +68,7 @@ function compareRows(): CompareModelRow[] {
 
 category('Catalog', () => {
   before(async () => {
+    useTestGalleryStorage();
     const iris = await openIris();
     const {id, result} = await saveIrisModel(iris, {tags: tagsText(API_TAGS)});
     fixture = {id, blob: result.blob, iris};
@@ -79,6 +82,7 @@ category('Catalog', () => {
   });
 
   after(async () => {
+    clearTestGalleryStorage();
     if (fixture !== undefined)
       await deleteModel(fixture.id);
     if (qualityName !== undefined)
@@ -238,18 +242,29 @@ category('Catalog', () => {
     for (const text of ['Predict Species', 'by Sepal.Length, Sepal.Width, Petal.Length, Petal.Width', 'using XGBoost',
       `Created on ${model.created_on.format('YYYY-MM-DD')}`])
       expect((card.textContent ?? '').includes(text), true, `The card misses '${text}': ${card.textContent}`);
-    const applicable = card.querySelector('.forge-model-card-title > .grok-icon');
-    expect(applicable !== null, applicableTables(IRIS_ROW, grok.shell.tables).length > 0,
-      'The Applicable to icon does not follow the open tables');
+    expect(card.querySelector('.grok-icon') === null, true, 'The card shows an icon');
     const tooltip = forgeModelHandler.renderTooltip(row);
-    const text = tooltip.textContent ?? '';
-    for (const part of [model.name, 'Predicts Species from 4 features with XGBoost · classification · 150 rows',
-      'Sepal.Length, Sepal.Width, Petal.Length, Petal.Width',
-      `Created ${model.created_on.format('YYYY-MM-DD')}`, 'Data storage: None'])
-      expect(text.includes(part), true, `The tooltip misses '${part}': ${text}`);
+    const lines = () => Array.from(tooltip.children, (e) => e.textContent ?? '');
+    const created = `Created ${model.created_on.format('YYYY-MM-DD')} by ${DG.User.current().login}`;
+    await awaitCheck(() => lines()[2] === created, `The tooltip does not name the author: ${lines()}`, WAIT_MS);
+    expectArray(lines(), [model.name, IRIS_PREDICTS, created]);
     expect(tooltip.querySelector('.forge-tooltip-title')?.textContent, model.name);
-    await awaitCheck(() => (tooltip.textContent ?? '').includes(`by ${DG.User.current().login}`),
-      `The tooltip does not name the author: ${tooltip.textContent}`, WAIT_MS);
+    expect(tooltip.lastElementChild?.classList.contains('forge-tooltip-minor'), true, 'The created line is not grey');
+  });
+
+  test('the tooltip\'s Predicts line: target, method, and the features cut at 50 characters', async () => {
+    const predicts = ForgeModelHandler.predictsText;
+    expect(predicts('Species', 'XGBoost', MEASUREMENTS), IRIS_PREDICTS);
+    expect(IRIS_PREDICTS.length - IRIS_PREDICTS.indexOf(' from ') - ' from '.length, MAX_FEATURES_TEXT);
+    expect(predicts('y', 'SVM', ['a', 'b']), 'Predicts y with SVM from a, b');
+    const exact = 'x'.repeat(MAX_FEATURES_TEXT);
+    expect(predicts('y', '', [exact]), `Predicts y from ${exact}`);
+    expect(predicts('y', '', [`${exact}x`]), `Predicts y from ${'x'.repeat(MAX_FEATURES_TEXT - 1)}…`);
+    const long = 'a'.repeat(MAX_FEATURES_TEXT - 2);
+    expect(predicts('y', '', [long, 'b']), `Predicts y from ${long}…`, 'A cut keeps a trailing comma');
+    expect(predicts('y', 'SVM', []), 'Predicts y with SVM');
+    expect(predicts('', 'SVM', ['a']), 'Predicts with SVM from a');
+    expect(predicts('', '', []), '');
   });
 
   test('a row without its json columns, as the Domains view gives it, gets its features read once', async () => {
@@ -261,15 +276,12 @@ category('Catalog', () => {
     expect(byLine(), 'by 4 features');
     const tooltip = forgeModelHandler.renderTooltip(row);
     const tooltipText = () => tooltip.textContent ?? '';
-    expect(tooltipText().includes('Predicts Species from 4 features with XGBoost'), true, tooltipText());
+    expect(tooltipText().includes('Predicts Species with XGBoost'), true, tooltipText());
     const names = 'Sepal.Length, Sepal.Width, Petal.Length, Petal.Width';
     await awaitCheck(() => byLine() === `by ${names}`, `The by line stays '${byLine()}'`, WAIT_MS);
-    await awaitCheck(() => tooltipText().includes(names), `The tooltip lists no features: ${tooltipText()}`, WAIT_MS);
-    expect(tooltipText().includes('0 features'), false, tooltipText());
+    await awaitCheck(() => tooltipText().includes(IRIS_PREDICTS), `The tooltip lists no features: ${tooltipText()}`,
+      WAIT_MS);
     expect(card.children.length, 5);
-    const applicable = card.querySelector('.forge-model-card-title > .grok-icon');
-    expect(applicable !== null, applicableTables(IRIS_ROW, grok.shell.tables).length > 0,
-      'The Applicable to icon does not follow the open tables');
     const again = forgeModelHandler.renderCard(row);
     await awaitCheck(() => again.children[2]?.textContent === `by ${names}`, 'A second card is not filled', WAIT_MS);
   });
@@ -279,6 +291,7 @@ category('Catalog', () => {
     const view = await ForgeApp.create();
     grok.shell.addView(view);
     try {
+      view.modelsGallery.setMode('table');
       const grid = Array.from(view.root.querySelectorAll('.d4-grid'), (e) => DG.toJs(DG.Widget.find(e)))
         .find((g): g is DG.Grid => g instanceof DG.Grid && g.dataFrame.col('id') !== null);
       if (grid === undefined)
@@ -286,7 +299,7 @@ category('Catalog', () => {
       grid.sort(['name'], [false]);
       const row = grid.tableRowToGrid(view.models.getCol('id').toList().indexOf(id));
       const name = view.modelTooltip(grid.cell('name', row))?.textContent ?? '';
-      expect(name.includes('Predicts Species from 4 features with XGBoost'), true, `Name cell tooltip: ${name}`);
+      expect(name.includes(IRIS_PREDICTS), true, `Name cell tooltip: ${name}`);
       expect(view.modelTooltip(grid.cell('engine_name', row)) === null, true, 'Another cell has the model tooltip');
     } finally {
       view.close();
@@ -328,7 +341,7 @@ category('Catalog', () => {
       host.remove();
     }
     const tooltip = forgeModelHandler.renderTooltip(rows[1]).textContent ?? '';
-    expect(/\+\d+ more/.test(tooltip) && !tooltip.includes('forge-test-feature-12'), true, tooltip);
+    expect(tooltip.includes('from forge-test-feature-1, forge-test-feature-2, forge…'), true, tooltip);
   });
 
   test('isPredictionColumn and the Predicted by panel', async () => {

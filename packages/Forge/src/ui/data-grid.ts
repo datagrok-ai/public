@@ -8,8 +8,9 @@ const TOOLTIPS = new WeakMap<HTMLElement, GridTooltips>();
 export interface GridTooltips {
   /** Header tooltips by column name. */
   headers?: {[column: string]: string};
-  /** Cell tooltips by column name, one line per `\n`; without one, or when it returns '', the cell's text. */
-  cells?: {[column: string]: (row: number) => string};
+  /** Cell tooltips by column name, one line per `\n`. `null`: the cell has no tooltip at all; '' or no function: the
+   * cell's text. */
+  cells?: {[column: string]: (row: number) => string | null};
 }
 
 /** The platform grid over [df] for a pane or a section: read-only, no row header, as tall as its rows up to
@@ -32,19 +33,33 @@ export function readOnlyGrid(df: DG.DataFrame, tooltips: GridTooltips = {},
   };
   fit(grid.props.rowHeight);
   grid.sub(grid.onAfterDrawContent.subscribe(() => fit(grid.colHeaderHeight)));
+  bindTooltips(grid, tooltips);
+  return grid;
+}
+
+/** Shows [tooltips] on the headers and the cells of [grid]; a cell whose function returns `null` shows none. */
+function bindTooltips(grid: DG.Grid, tooltips: GridTooltips): void {
   TOOLTIPS.set(grid.root, tooltips);
   grid.onCellTooltip((cell, x, y) => {
-    const text = gridTooltip(grid, cell);
+    const text = cellTooltip(grid, cell);
+    if (text === null) {
+      ui.tooltip.hide();
+      return true;
+    }
     if (text === '')
       return false;
     ui.tooltip.show(ui.divV(text.split('\n').map((line) => ui.divText(line))), x, y);
     return true;
   });
-  return grid;
 }
 
 /** The tooltip of [cell] in a {@link readOnlyGrid}; '' for none. */
 export function gridTooltip(grid: DG.Grid, cell: DG.GridCell): string {
+  return cellTooltip(grid, cell) ?? '';
+}
+
+/** The tooltip of [cell]; '' for the platform's, null for none at all. */
+function cellTooltip(grid: DG.Grid, cell: DG.GridCell): string | null {
   const tooltips = TOOLTIPS.get(grid.root);
   const column = cell.tableColumn;
   if (tooltips === undefined || column === null)
@@ -54,7 +69,10 @@ export function gridTooltip(grid: DG.Grid, cell: DG.GridCell): string {
   const row = cell.tableRowIndex;
   if (!cell.isTableCell || row === null)
     return '';
-  return tooltips.cells?.[column.name]?.(row) || (column.isNone(row) ? '' : column.getString(row));
+  const text = tooltips.cells?.[column.name]?.(row);
+  if (text === null)
+    return null;
+  return text || (column.isNone(row) ? '' : column.getString(row));
 }
 
 /** A float column of [values] shown with three decimals. */

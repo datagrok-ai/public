@@ -15,8 +15,8 @@ export interface SettingDetails {
   description?: string;
 }
 
-/** The app's five method columns, one row per method: **Method**, **Package**, **Method type**, **Roles**,
- * **Hyperparameters**. */
+/** The five method columns of `Forge:listMethods`, one row per method: **Method**, **Package**, **Method type**,
+ * **Roles**, **Hyperparameters**. */
 export function methodColumns(engines: Engine[]): DG.Column[] {
   return [
     textColumn('Method', engines.map((e) => e.name)),
@@ -25,11 +25,6 @@ export function methodColumns(engines: Engine[]): DG.Column[] {
     textColumn('Roles', engines.map((e) => rolesOf(e).join(', '))),
     textColumn('Hyperparameters', engines.map((e) => visibleHyperparametersOf(e).map((p) => p.name).join(', '))),
   ];
-}
-
-/** One row per method with the {@link methodColumns}. */
-export function methodsFrame(engines: Engine[]): DG.DataFrame {
-  return DG.DataFrame.fromColumns(methodColumns(engines));
 }
 
 function methodSettings(engine: Engine): SettingDetails[] {
@@ -51,8 +46,8 @@ function methodSettings(engine: Engine): SettingDetails[] {
   });
 }
 
-/** `Forge:listMethods` without a table: [engines] (by default the complete methods in discovery order) with the app's
- * five columns, **Runs on**, **Keeps training rows**, **Retrains live** and **Settings** (json text). */
+/** `Forge:listMethods` without a table: [engines] (by default the complete methods in discovery order) with the
+ * five {@link methodColumns}, **Runs on**, **Keeps training rows**, **Retrains live** and **Settings** (json text). */
 export function methodList(engines: Engine[] = EngineRegistry.discover().filter(isComplete)): DG.DataFrame {
   const [method, pkg, kind, roles, hyperparameters] = methodColumns(engines);
   const frame = DG.DataFrame.fromColumns([method, pkg, kind,

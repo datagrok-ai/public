@@ -34,16 +34,15 @@ export function _initForge(): void {
   ModelComparisonHandler.registerOnce(registered);
 }
 
-//name: Forge
-//description: Predictive modeling: methods and the model catalog
-//tags: app
+//name: forgeApp
+//description: Opens the Models view (the core's Browse > Platform > Predictive models, the URL /models and the view type models call it)
 //output: view result
 export async function forgeApp(): Promise<DG.ViewBase> {
   return ForgeApp.create();
 }
 
 //name: forgeModels
-//description: Opens the Forge app
+//description: Opens or focuses the Models view
 export async function forgeModels(): Promise<void> {
   await ForgeApp.open();
 }

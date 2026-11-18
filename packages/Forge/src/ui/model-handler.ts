@@ -3,15 +3,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {featureSchemasOf} from '../apply/apply-model';
-import {featureFit} from '../catalog/applicable-tables';
-import {MODEL_TYPE} from '../constants';
-import {forgeDb, ModelRow, ModelStorageMode} from '../generated/db';
-import {tagsOf} from '../storage/model-fields';
+import {DATE_FORMAT, MODEL_TYPE} from '../constants';
+import {forgeDb, ModelRow} from '../generated/db';
 import {modelsChanged} from '../storage/model-store';
 import {isShownVersion, modelAccordion, modelIcon, userOf} from './model-panes';
 import {reportError} from './report-error';
-import {richTooltip, shortList} from './rich-tooltip';
-import {STORAGE_CAPTIONS} from './save-model-dialog';
+import {richTooltip} from './rich-tooltip';
 import '../../css/forge.css';
 
 /** The `model` columns the markup, the card, their rich tooltip and the commands (Download reads blob) read. */
@@ -19,7 +16,8 @@ export const CARD_COLUMNS = ['name', 'features', 'options', 'target_name', 'engi
   'storage_mode', 'tags', 'blob'] as const;
 const HANDLER_NAME = 'Forge model handler';
 const CARD_FEATURES = 5;
-const DATE_FORMAT = 'YYYY-MM-DD';
+/** The tooltip's feature list is cut to this many characters. */
+export const MAX_FEATURES_TEXT = 50;
 const FOLLOW_DELAY_MS = 300;
 type FeatureRow = Pick<ModelRow, 'features' | 'options'>;
 /** The feature lists and options of the models whose rows came without them, by id, read once per session; a failed
@@ -96,48 +94,60 @@ export class ForgeModelHandler extends DG.DomainObjectHandler {
     return ui.span([this.renderIcon(), ui.label(this.rowOrThrow(x).displayName)]);
   }
 
-  /** The name; what it predicts from how many features with which method, the task and the training rows, then the
-   * features; in grey the creation date and author, the data storage and the tags. */
+  /** The name; `Predicts <target> with <method> from <features>`; in grey `Created <date> by <author>`. */
   renderTooltip(x: unknown): HTMLElement {
     const row = this.rowOrThrow(x);
     const v = row.values;
-    const facts = ui.divText('');
-    const list = ui.divText('');
-    const fill = (features: string[]) => {
-      const count = typeof v.feature_count === 'number' ? v.feature_count : features.length;
-      const from = count > 0 ? ` from ${ForgeModelHandler.featureCount(count)}` : '';
-      // A row made by hand may lack any of these.
-      const method = v.engine_name ? ` with ${v.engine_name}` : '';
-      const predicts = v.target_name ? `Predicts ${v.target_name}${from}${method}` : '';
-      facts.textContent = [predicts, v.task ?? '', typeof v.row_count === 'number' ? `${v.row_count} rows` : '']
-        .filter((s) => s !== '').join(' · ');
-      list.textContent = shortList(features);
-      ui.setDisplay(list, features.length > 0);
-    };
-    fill([]);
-    ForgeModelHandler.withFeatures(row, (fit) => fill((featureSchemasOf(fit.features) ?? []).map((f) => f.name)));
-    return richTooltip({title: row.displayName, main: [facts, list], minor: [ForgeModelHandler.minorLine(row)]});
+    // A row made by hand may lack any of these.
+    const [target, method] = [v.target_name, v.engine_name].map((s) => typeof s === 'string' ? s : '');
+    const predicts = ui.divText(ForgeModelHandler.predictsText(target, method, []));
+    ForgeModelHandler.withFeatures(row, (fit) => {
+      predicts.textContent = ForgeModelHandler.predictsText(target, method,
+        (featureSchemasOf(fit.features) ?? []).map((f) => f.name));
+    });
+    return richTooltip({title: row.displayName, main: [predicts], minor: [ForgeModelHandler.createdLine(row)]});
   }
 
-  /** The built-in tool's card in five lines of one height: the name (with an icon when an open table fits), target,
+  /** `Predicts <target> with <method> from <features>`, leaving out the parts that are empty; the features joined by
+   * commas and cut to {@link MAX_FEATURES_TEXT} characters with a trailing `…`; empty when all three are. */
+  static predictsText(target: string, method: string, features: string[]): string {
+    if (target === '' && method === '' && features.length === 0)
+      return '';
+    const joined = features.join(', ');
+    const from = joined.length > MAX_FEATURES_TEXT ?
+      `${joined.slice(0, MAX_FEATURES_TEXT - 1).replace(/[\s,]+$/, '')}…` : joined;
+    return ['Predicts', target, ...(method === '' ? [] : ['with', method]), ...(from === '' ? [] : ['from', from])]
+      .filter((s) => s !== '').join(' ');
+  }
+
+  /** The built-in tool's card in five lines of one height: the name, target,
    * features, method and creation date; the rest is in the tooltip. */
   renderCard(x: unknown): HTMLElement {
     const row = this.rowOrThrow(x);
+    return ui.bind(row, ForgeModelHandler.cardContent(row));
+  }
+
+  /** The card's five lines, not bound to the row: the catalog's gallery handles the clicks itself. */
+  static cardContent(row: DG.DomainRow): HTMLElement {
     const v = row.values;
     const title = ui.divH([ui.label(row.displayName, 'grok-gallery-grid-item-title')], 'forge-model-card-title');
     const count = typeof v.feature_count === 'number' && v.feature_count > 0 ? v.feature_count : 0;
     const by = ui.label(count > 0 ? `by ${ForgeModelHandler.featureCount(count)}` : '');
     ForgeModelHandler.withFeatures(row, (fit) => {
-      const {names, tables} = featureFit(fit, grok.shell.tables);
+      const names = (featureSchemasOf(fit.features) ?? []).map((f) => f.name);
       if (names.length > 0)
         by.textContent = `by ${names.slice(0, CARD_FEATURES).join(', ')}${names.length > CARD_FEATURES ? '...' : ''}`;
-      if (tables.length > 0)
-        title.append(ui.iconFA('table', null, `Applicable to ${tables.map((t) => t.name).join(', ')}`));
     });
     const created = row.createdOn;
-    return ui.bind(row, ui.divV([title, ui.label(`Predict ${v.target_name}`), by, ui.label(`using ${v.engine_name}`),
+    return ui.divV([title, ui.label(`Predict ${v.target_name}`), by, ui.label(`using ${v.engine_name}`),
       ui.label(created === null ? '' : `Created on ${created.format(DATE_FORMAT)}`, 'grok-gallery-grid-item-date'),
-    ], 'd4-gallery-item forge-model-card'));
+    ], 'd4-gallery-item forge-model-card');
+  }
+
+  /** The catalog's list row: the name as a link, as the platform's brief lists show entities (a label: it goes nowhere,
+   * the gallery handles the clicks). */
+  static listLine(row: DG.DomainRow): HTMLElement {
+    return ui.label(row.displayName, 'd4-link-label');
   }
 
   /** Calls [use] with the model's feature list and options: at once when [row] has them, otherwise when they are read
@@ -164,18 +174,12 @@ export class ForgeModelHandler extends DG.DomainObjectHandler {
     });
   }
 
-  /** `Created <date> by <author> · Data storage: <mode> · Tags: <tags>`, the parts the row has; the author's login is
-   * read once and filled in when it comes. */
-  private static minorLine(row: DG.DomainRow): HTMLElement {
-    const v = row.values;
+  /** `Created <date> by <author>`, empty without a date; the author's login is read once and filled in when it
+   * comes. */
+  private static createdLine(row: DG.DomainRow): HTMLElement {
     const created = row.createdOn;
-    const storage: string | undefined = STORAGE_CAPTIONS[v.storage_mode as ModelStorageMode];
-    const tags = tagsOf(typeof v.tags === 'string' ? v.tags : '');
-    const text = (author: string | undefined) => [
-      ...(created === null ? [] : [`Created ${created.format(DATE_FORMAT)}${author ? ` by ${author}` : ''}`]),
-      ...(storage === undefined ? [] : [`Data storage: ${storage}`]),
-      ...(tags.length === 0 ? [] : [`Tags: ${tags.join(', ')}`]),
-    ].join(' · ');
+    const text = (author: string | undefined) =>
+      created === null ? '' : `Created ${created.format(DATE_FORMAT)}${author ? ` by ${author}` : ''}`;
     const authorId = row.authorId;
     const line = ui.divText(text(undefined), 'forge-tooltip-minor');
     // A deleted author is not found: the line stays without a login.

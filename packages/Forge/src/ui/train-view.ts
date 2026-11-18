@@ -6,7 +6,7 @@ import {ModelInfo} from '../catalog/model-edit';
 import {defaultHyperparameters, enabledRules, EnabledRules, Engine, givesProbabilities, handlesMissingValues,
   Hyperparameters, isEnabled, isServerEngine, probabilityInput, visibleHyperparametersOf, withProbabilityInput}
   from '../engines/engine';
-import {errorMessage} from '../forge-error';
+import {errorMessage, ForgeError} from '../forge-error';
 import {ModelTask, TrainingRunStatus} from '../generated/db';
 import {BestThresholdMetric, METRIC_LABELS, taskOf} from '../metrics/metrics';
 import {_package} from '../package';
@@ -171,12 +171,13 @@ export class TrainView extends DG.ViewBase {
    * back at the end. */
   private locked: Map<DG.InputBase, boolean> | null = null;
 
-  private constructor(table: DG.DataFrame, engines: Engine[], engine: Engine) {
+  private constructor(table: DG.DataFrame, engines: Engine[], engine: Engine, method: string | null) {
     super();
     this.name = 'Predictive model';
     this.box = true;
     this.engines = engines;
     this.engine = engine;
+    this.userChoice = method;
     this.trainButton = ui.button('Train', () => void this.train());
     this.trainRow = ui.buttonsInput([this.trainButton]);
     this.trainRow.classList.add('forge-train-row');
@@ -273,9 +274,13 @@ export class TrainView extends DG.ViewBase {
     return this.activeTrainings > 0;
   }
 
-  static async create(table: DG.DataFrame): Promise<TrainView> {
+  /** The view on [table] with [method] chosen, or the suggested method for null. */
+  static async create(table: DG.DataFrame, method: string | null = null): Promise<TrainView> {
     const {engines, engine} = trainingEngines();
-    return new TrainView(table, engines, engine);
+    const chosen = method === null ? engine : engines.find((e) => e.name === method);
+    if (chosen === undefined)
+      throw new ForgeError(`The method ${method} is not available.`);
+    return new TrainView(table, engines, chosen, method);
   }
 
   /** Opens the view on the current table, or "Open a table first." without one: the menu's boundary. */
@@ -287,10 +292,11 @@ export class TrainView extends DG.ViewBase {
       await TrainView.openFor(table);
   }
 
-  /** Opens the view on [table]: the boundary of the menu and the table pane's **Train**. */
-  static async openFor(table: DG.DataFrame): Promise<void> {
+  /** Opens the view on [table] with [method] chosen: the boundary of the menu, the table pane's **Train** and the
+   * empty catalog's **Train a model...**. */
+  static async openFor(table: DG.DataFrame, method: string | null = null): Promise<void> {
     try {
-      grok.shell.addView(await TrainView.create(table));
+      grok.shell.addView(await TrainView.create(table, method));
     } catch (e) {
       reportError(e);
     }
@@ -699,10 +705,21 @@ export class TrainView extends DG.ViewBase {
       return chosen;
     const suggested = best ?? engines[0];
     if (this.userChoice !== null) {
-      grok.shell.info(`${this.userChoice} cannot be used with this selection; ${suggested.name} is chosen.`);
+      grok.shell.info(this.mismatchText(this.userChoice, suggested, check));
       this.userChoice = null;
     }
     return suggested;
+  }
+
+  /** Why the method [name] cannot learn from the selection, and that [suggested] is chosen instead: its check's error,
+   * or its check's refusal. */
+  private mismatchText(name: string, suggested: Engine, check: SelectionCheck): string {
+    const failure = check.failed.find((f) => f.engine.name === name);
+    if (failure !== undefined) {
+      return `${name} cannot learn from this selection: ${errorMessage(failure.error).replace(/\.?$/, '.')} ` +
+        `${suggested.name} is chosen for now.`;
+    }
+    return `${name} cannot learn from this selection; ${suggested.name} is chosen for now.`;
   }
 
   /** **Method** lists the methods that can learn from the selection; it is empty when none can. A failing target or

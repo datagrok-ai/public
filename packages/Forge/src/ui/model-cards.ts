@@ -218,7 +218,7 @@ export class ModelCards {
       ...columns.map(([column, values]) => {
         const value = values[id];
         return ModelCards.described(ui.span([value === undefined ? '' : value.toFixed(3)]),
-          metricTooltip(value, column, findingsOf(findings, id, column)));
+          metricTooltip(value, findingsOf(findings, id, column)) ?? '');
       }),
     ], ['Metric', ...columns.map(([column]) => column)]);
     table.classList.add('forge-card-table');

@@ -742,9 +742,9 @@ category('Search', () => {
     const plan = await bestPlan('cars', CARS_METHODS, 'rmse', 3, 9, 2);
     const texts: string[] = [];
     await runSearch(plan, {canceled: false, update: (_, text) => texts.push(text)}, browserSearch);
-    expect(texts[0], 'Finding best model (0/9)');
-    expect(texts[texts.length - 1], 'Finding best model (9/9)');
-    const counts = texts.map((t) => Number(/\((\d+)\/9\)/.exec(t)?.[1]));
+    expect(texts[0], 'Finding best model (0%)');
+    expect(texts[texts.length - 1], 'Finding best model (100%)');
+    const counts = texts.map((t) => Number(/\((\d+)%\)/.exec(t)?.[1]));
     expect(counts.every((n, i) => i === 0 || n >= counts[i - 1]), true, texts.join('; '));
 
     const iris = await grok.data.files.openTable(IRIS);

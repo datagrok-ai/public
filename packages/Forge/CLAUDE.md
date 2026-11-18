@@ -4,10 +4,12 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
 
 ## Entry points
 
-- `src/package.ts` — annotated functions only, each delegating: `forgeApp`, `forgeModels`, `forgeTrain`, `forgeApply`
-  (no menus: the core's `ML | Models` and Browse node call `forgeApp`, `forgeTrain`, `forgeApply`; `forgeModels` opens or
-  focuses the app for BDD and API callers), the API `applyModel`, `trainModel`, `deleteModel`, `listMethods` (`training/train-api.ts` over
-  `engines/method-list.ts`, whose `methodColumns` the app's Methods grid, `methodsFrame`, shares), `listModels`, `getModel`, `updateModel` (`catalog/list-models.ts`,
+- `src/package.ts` — annotated functions only, each delegating: `forgeApp` (no `app` tag: the view is not an app),
+  `forgeModels`, `forgeTrain`, `forgeApply`
+  (no menus: the core's `ML | Models`, Browse node, `/models` and view type `models` call `forgeApp`, `forgeTrain`,
+  `forgeApply`; `forgeModels` opens or focuses the Models view for BDD and API callers), the API `applyModel`,
+  `trainModel`, `deleteModel`, `listMethods` (`training/train-api.ts` over
+  `engines/method-list.ts`), `listModels`, `getModel`, `updateModel` (`catalog/list-models.ts`,
   `get-model.ts`, `model-edit.ts`), `evaluateModel` (`training/evaluate-api.ts`), `shareModel` (`openShareDialog` in
   `ui/model-actions.ts`), `_initForge` (autostart), the column panel
   **Predicted by** and the table panel **Models** (`ui/table-models-panel.ts`).
@@ -16,8 +18,10 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
   Metric row) plus the platform radio Strategy and multi-choice Candidates, `limit-inputs.ts`: both blocks' Limit
   and Max time / Max trials rows (platform int inputs with `min`/`max`, the platform's validation) and the
   stored-limit migration, `search-panel.ts`: the Search bar chart
-  and leaderboard in a splitter, `validation-inputs.ts`: the Validation group, `model-cards.ts`: the cards under the form), `evaluation-view.ts` (on `results-*.ts`), `forge-app.ts` (catalog),
-  `apply-model-dialog.ts`, `model-*.ts`; their readiness attributes: ARCHITECTURE.md, "Automation surface".
+  and leaderboard in a splitter, `validation-inputs.ts`: the Validation group, `model-cards.ts`: the cards under the form), `evaluation-view.ts` (on `results-*.ts`), `forge-app.ts` (the Models
+  view at `/models`: the catalog gallery), `gallery.ts` (search, list/cards/table, sort and count over a frame),
+  `train-launcher.ts` (the empty catalog's **Train a model...**), `apply-model-dialog.ts`, `model-*.ts`; their
+  readiness attributes: ARCHITECTURE.md, "Automation surface".
 - `src/training/` (`train-api.ts`: `Forge:trainModel`; `training-queue.ts`: one at a time; `search.ts`: the Tune and
   Find best model (equal split or successive halving) searches, their record and continuation (`canContinue`,
   `continueSearch`);
@@ -91,14 +95,21 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
   second and ignores the next plain set: the catalog sets with `setCurrentObject(x, true, true)`.
 - Tests type a tag chip into `input.d4-tags-selector-input` (`typeTag`); assigning the Tags `value` skips Enter.
 - The core calls `forgeTrain`, `forgeApply`, `forgeApp` and `applyModel` (inputs by name) by name: renaming one or its
-  inputs removes `ML | Models`, Browse > Platform > Machine Learning (and `/models`) or breaks `grok.ml.applyModel`
-  (core#1518).
+  inputs removes `ML | Models`, Browse > Platform > Predictive models (and `/models`) or breaks `grok.ml.applyModel`
+  (core#1518). Forge has no `view`-tagged function: `/models` and the view type `models` are the core's. An `app` tag
+  would prefix every view path the call creates with `/apps/Forge`.
+- `readOnlyGrid`/`bindTooltips`: a cell function returning `null` means no tooltip at all, `''` the cell's text. The
+  gallery keeps its mode and sort in `grok.userSettings` (`Gallery.storage`, key `models`); tests switch it to
+  `Forge view tests` (`useTestGalleryStorage`), as `TuneSettings.storage`. A gallery's frame is its state (filter,
+  current row, selection): the owner calls `rebind()` after replacing the grid's frame; `ui.empty` would kill the grid,
+  the gallery moves nodes with `replaceChildren`.
 - A panel function's widget is never detached: a pane holds no subscription. `grok s functions list --filter
   'name = "X"'` matches the friendly name. A JS `ui.bind` row gets only **Properties...**: use `ui.contextActions(row)`.
 - A row reaches a Space only by the platform's drag of a model element (`ui.bind` / `ui.makeDraggable` with the row).
   Column inputs keep a removed column: the Train view drops it on `onColumnsRemoved`.
-- UI tests switch `TuneSettings.storage` to `Forge Tune tests` in the hooks loop at the end of `ui-tests.ts`: a new UI
-  category that opens a Train view must be added there. The storage holds one key per method and `Find best` (the
+- UI tests switch `TuneSettings.storage` to `Forge Tune tests` (and `Gallery.storage`) in the hooks loop at the end of
+  `ui-tests.ts`: a new UI category that opens a Train view or a Models view must be added there (or set both
+  in its own `before`, as `UI: Gallery`: a later `before` replaces an earlier one). The storage holds one key per method and `Find best` (the
   Find best model block); a test that toggles its methods clears the storage in `finally`.
 - Method `Auto` is a view state (`userChoice`), not an engine: `this.engine` stays the suggested method, and
   `Forge:trainModel` takes `method: 'auto'`; the winner's engine must reach both the selection and the request.

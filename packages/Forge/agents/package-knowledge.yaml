@@ -52,8 +52,8 @@ overview: |
   to the Forge catalog without its training data unless asked, applies it to new tables as a prediction column,
   evaluates it on data with known targets, and manages the catalog (list, describe, rename, tag, share, delete).
 
-  UI: ML | Models | Train Model... (the Predictive model view), ML | Models | Apply Model..., the catalog (Browse >
-  Platform > Machine Learning, also Browse > Apps > Forge), the table's context pane "Models", the model's panes Details / Performance / Activity /
+  UI: ML | Models | Train Model... (the Predictive model view), ML | Models | Apply Model..., the Models view,
+  the model catalog (Browse > Platform > Predictive models, address /models), the table's context pane "Models", the model's panes Details / Performance / Activity /
   Sharing. In the view, Search options' Limit ends the search at a Max time (minutes) or Max trials, Find's Strategy is Equal (equal
   split) or Leaders (focus on leaders), Tune or Find again continues the last search on the same data and settings (the limit added
   on top), and after a search of two methods or more the Search panel shows each method's score less one standard error as a bar chart beside the

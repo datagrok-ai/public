@@ -1,11 +1,49 @@
-.forge-pane-header {
-  align-items: baseline;
+.forge-gallery-actions {
+  display: flex;
+  align-items: center;
   gap: 8px;
+  margin-right: 8px;
 }
 
-/* The blue of an input's own icons (ui.css); a disabled icon keeps the platform's d4-disabled grey. */
-.forge-pane-header > .grok-icon {
+/* The blue of an input's own icons (ui.css). */
+.forge-gallery-actions > .grok-icon {
   color: var(--blue-1);
+}
+
+/* The search box without the magnifier ui.input.search puts on its left. */
+.forge-gallery .d4-search-bar i.ui-input-icon-left {
+  display: none;
+}
+
+div.forge-gallery {
+  height: 100%;
+}
+
+/* The items scroll under the toolbar. */
+div.forge-gallery > .grok-gallery-grid {
+  min-height: 0;
+}
+
+/* A current or selected card: the platform gallery marks it only with the hover's shadow (dataset_gallery.css), so it
+   also gets the tint of a current Train card (.forge-card-current) and a blue frame. List items are the platform's
+   brief-mode links (dataset_gallery.css, .grok-gallery-grid[mode="Brief"] .d4-link-label) and keep its look. */
+div.forge-gallery .grok-gallery-grid-item-wrapper.d4-current {
+  border-color: var(--blue-1);
+  background-color: color-mix(in srgb, var(--blue-1) 8%, var(--white));
+}
+
+.forge-gallery-empty {
+  margin: 24px;
+  color: var(--grey-4);
+}
+
+.grok-gallery-grid-item-wrapper > .forge-model-card {
+  padding: 10px;
+}
+
+/* The line under the toolbar starts where the toolbar's icons do (dataset_gallery.css: the bar's 12 px margin). */
+div.forge-gallery > .forge-gallery-below {
+  margin: 0 12px;
 }
 
 /* A model's pane in the context panel spans its width: the accordion's pane content sizes its children to their content,
@@ -627,10 +665,6 @@ div.ui-div.forge-model-card {
 .forge-model-card-title {
   align-items: center;
   gap: 4px;
-}
-
-.forge-model-card-title > .grok-icon {
-  flex: none;
 }
 
 .forge-model-card-title > label {

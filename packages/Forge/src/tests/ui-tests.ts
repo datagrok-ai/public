@@ -3,18 +3,18 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {after, awaitCheck, before, category, delay, expect, expectArray, expectFloat, test}
+import {after, awaitCheck, before, category, delay, expect, expectArray, expectFloat, test, waitUntil}
   from '@datagrok-libraries/test/src/test';
 import {recordApplication} from '../apply/application-store';
 import {applyAndRecord, DEFAULT_BATCH_SIZE, loadModel} from '../apply/apply-model';
 import {exactMapping} from '../apply/column-matching';
 import {updateModelInfo} from '../catalog/model-edit';
-import {APP_NAME, MODEL_TYPE, PANEL_TABLE_MODELS} from '../constants';
+import {MODEL_TYPE, PANEL_TABLE_MODELS} from '../constants';
 import {enabledRules, hyperparametersOf, isEnabled} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
 import {forgeDb, ModelStorageMode} from '../generated/db';
-import {BestThresholdMetric, METRIC_DESCRIPTIONS, METRIC_LABELS} from '../metrics/metrics';
+import {BestThresholdMetric, METRIC_DESCRIPTIONS, METRIC_LABELS, MetricFinding} from '../metrics/metrics';
 import {preparationOptionsOf} from '../preparation/preparation-options';
 import {datasetRefOf, storedDatasetRef} from '../storage/dataset-ref';
 import {deleteModel, modelsChanged} from '../storage/model-store';
@@ -28,23 +28,25 @@ import {FIND_KEY, FindSettings} from '../ui/find-settings';
 import {LimitInputs, TIME, TRIALS} from '../ui/limit-inputs';
 import {EvaluationView, runEvaluation} from '../ui/evaluation-view';
 import {ForgeApp} from '../ui/forge-app';
+import {Gallery, MAX_ITEMS} from '../ui/gallery';
 import {CATALOG_ACTIONS, MODEL_ACTIONS, openShareDialog} from '../ui/model-actions';
 import {hasFormsViewer, ModelComparison} from '../ui/model-comparison';
 import {ForgeModelHandler} from '../ui/model-handler';
-import {metricIdsOf, MetricsTable, storedSummary} from '../ui/metrics-table';
+import {metricIdsOf, MetricsTable, metricTooltip, storedSummary, tinyValueText} from '../ui/metrics-table';
 import {modelAccordion, refreshSharing} from '../ui/model-panes';
 import {PanelKey, resultsLayout} from '../ui/results-layout';
 import {saveModelDialog} from '../ui/save-model-dialog';
 import {tableModelsPane} from '../ui/table-models-panel';
 import {tagsOfInput} from '../ui/tags-input';
+import {launchTraining} from '../ui/train-launcher';
 import {CHECK_DELAY_MS, SHOWN_RUN, TrainView} from '../ui/train-view';
 import {ALL_FIXED, AUTO_TUNE, FIX_RANGE, MANUAL, TuneRow, TuneSettings} from '../ui/tune-settings';
-import {balloonWith, cancelOnceShown, cancelTaskBarEntry, catalogState, CLASSIFIERS, columnsOf, deleteRunsOf,
-  demoDemog, expectNoFrames, expectReleased, expectGridsFillPanes, framesSharing, insertModelRow, IRIS, MEASUREMENTS,
-  openDemoTable, openIris, openIrisFromFile, PREDICT_PROBABILITY, readUntil, refreshThenChange, REGRESSORS, runsOf,
-  savedFixture,
-  saveIrisModel, saveKeptGapsModel, saveSkipUniqueModel, saveTestModel, taskBarEntry, twoSpeciesIris, unbalancedIris,
-  valuesOf, WINE, XGBOOST_FIELDS} from './test-data';
+import {balloonWith, cancelOnceShown, cancelTaskBarEntry, catalogState, clearTestGalleryStorage, CLASSIFIERS,
+  columnsOf, deleteRunsOf, demoDemog, expectNoFrames, expectReleased, expectGridsFillPanes, framesSharing,
+  insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile, PREDICT_PROBABILITY, readUntil,
+  refreshThenChange, REGRESSORS, runsOf, savedFixture, saveIrisModel, saveKeptGapsModel, saveSkipUniqueModel,
+  saveTestModel, taskBarEntry, twoSpeciesIris, unbalancedIris, useTestGalleryStorage, valuesOf, WINE, XGBOOST_FIELDS}
+  from './test-data';
 
 const WAIT_MS = 5000;
 const TIMEOUT = 60000;
@@ -293,44 +295,37 @@ category('UI', () => {
     const view = await ForgeApp.create();
     expect(view.models.currentRowIdx, -1);
     expect(`${view.root.classList.contains('forge-app')} ${catalogState(view.root)}`, 'true 0/false', 'Class, load');
-    expect(isDisabled(view.deleteIcon), true, 'Delete is enabled without a current row');
-    expect(isDisabled(view.applyIcon), true, 'Apply is enabled without a current row');
     grok.shell.addView(view);
     let measured = '';
     try {
-      expect(view.name, APP_NAME);
-      for (const caption of ['Methods', 'Models'])
-        expect((view.root.textContent ?? '').includes(caption), true, `${caption} is missing`);
-      const methods = view.methodsGrid;
-      expectArray(methods.dataFrame.columns.names(), ['Method', 'Package', 'Method type', 'Roles', 'Hyperparameters']);
-      expect(methods.dataFrame.rowCount, EngineRegistry.discover().length);
-      const xgboost = methods.dataFrame.getCol('Method').toList().indexOf('XGBoost');
-      expect(xgboost >= 0 && methods.props.allowEdit === false, true, 'XGBoost is not listed, or Methods is editable');
-      expect(headerTooltip(methods, 'Roles'), 'What the method can do.');
-      expect(gridTooltip(methods, methods.cell('Method type', xgboost)), 'A package function.');
-      const roles = gridTooltip(methods, methods.cell('Roles', xgboost));
-      expect(roles.includes('train: Trains a model'), true, `The Roles tooltip: ${roles}`);
-      measured = expectRowsFit('Methods', methods);
-      expect(view.root.contains(view.deleteIcon), true, 'The delete icon is missing');
-      expect(view.root.contains(view.applyIcon), true, 'The apply icon is missing');
-      const header = view.root.querySelector('.forge-pane-header');
-      const grid = header?.parentElement?.querySelector('.d4-grid');
-      if (!(grid instanceof HTMLElement) || !(header instanceof HTMLElement))
-        throw new Error('No catalog grid or header');
-      await awaitCheck(() => Math.abs(grid.getBoundingClientRect().width - header.getBoundingClientRect().width) < 1,
-        'The catalog grid does not take the width of its pane', WAIT_MS);
+      expect(view.name, 'Models');
+      expect(view.type, 'models');
+      expect(view.path.endsWith('/models'), true, view.path);
+      expect(view.root.querySelector('.d4-tab-host'), null, 'The view has tabs');
+      expect(view.root.firstElementChild === view.modelsGallery.root, true, 'The gallery does not fill the view');
+      const actions = view.root.querySelector('.grok-gallery-search-bar > .forge-gallery-actions');
+      expect(actions?.querySelectorAll('.grok-icon').length, 1, 'The toolbar has other icons than Refresh');
+      view.modelsGallery.setMode('table');
+      const widthOf = (e: Element | null) => e?.getBoundingClientRect().width ?? -10;
+      await waitUntil(() => Math.abs(widthOf(view.modelsGallery.root.querySelector('.d4-grid')) -
+        widthOf(view.modelsGallery.root)) < 2, 'The catalog grid does not take the width of the view', WAIT_MS);
       expect(view.models.col('id') !== null, true, 'The catalog has no id column');
       const captions = {name: 'Name', engine_name: 'Method', task: 'Task', target_name: 'Target',
         storage_mode: 'Data storage', row_count: 'Training rows', tags: 'Tags', created_on: 'Created'};
       for (const [column, caption] of Object.entries(captions))
         expect(view.models.col(column)?.meta.friendlyName, caption, column);
+      expect(view.models.col('created_on')?.type, DG.COLUMN_TYPE.DATE_TIME, 'Created is not sorted as dates');
+      expect(view.models.col('created_on')?.meta.format, 'yyyy-MM-dd', 'Created is not shown as a date');
+      expectArray(['reference', 'none', 'copy'].map((mode) => ForgeApp.storageText(mode)),
+        ['Reference', 'None', 'Copy']);
+      measured = `${view.models.rowCount} models`;
     } finally {
       view.close();
     }
     return measured;
   });
 
-  test('the catalog refreshes itself and the delete icon follows the current row', async () => {
+  test('the catalog refreshes itself after a save and a delete', async () => {
     const view = await ForgeApp.create();
     grok.shell.addView(view);
     const name = `forge-test-model-${Date.now()}`;
@@ -342,29 +337,16 @@ category('UI', () => {
       modelsChanged.next();
       await awaitCheck(() => rowOf() >= 0, 'The saved model does not appear', WAIT_MS);
       expect(catalogState(view.root), '1/false');
-      view.models.currentRowIdx = -1;
-      await awaitCheck(() => isDisabled(view.deleteIcon) && isDisabled(view.applyIcon),
-        'Delete or Apply is enabled without a current row', WAIT_MS);
-      view.models.currentRowIdx = rowOf();
-      await awaitCheck(() => !isDisabled(view.deleteIcon) && !isDisabled(view.applyIcon),
-        'Delete or Apply is disabled with a current row', WAIT_MS);
 
       await deleteModel(modelId);
       modelId = undefined;
       await awaitCheck(() => rowOf() < 0, 'The deleted model stays', WAIT_MS);
-      expect(isDisabled(view.deleteIcon), view.models.currentRowIdx < 0, 'Delete does not follow the current row');
     } finally {
       if (modelId !== undefined)
         await deleteModel(modelId);
       view.close();
     }
   }, {timeout: 30000});
-
-  test('app function is registered', async () => {
-    const apps = DG.Func.find({package: 'Forge', tags: [DG.FUNC_TYPES.APP]});
-    expect(apps.length, 1);
-    expect(apps[0].friendlyName, APP_NAME);
-  });
 
   test('catalog menu item', async () => {
     const topMenu = DG.Func.find({package: 'Forge', name: 'forgeModels'})[0]?.topMenu;
@@ -597,7 +579,7 @@ category('UI', () => {
       view.featuresInput.value = columnsOf(other, ['Sepal.Length', 'Sepal.Width', 'Petal.Length']);
       await awaitTrained(view);
       view.targetInput.value = other.getCol('Petal.Width');
-      const balloon = 'Softmax cannot be used with this selection; Linear Regression is chosen.';
+      const balloon = 'Softmax cannot learn from this selection; Linear Regression is chosen for now.';
       await awaitCheck(() => balloonWith(balloon) !== null, 'No balloon for a dropped choice', WAIT_MS);
       await awaitTrained(view);
       expect(view.methodInput.value, 'Linear Regression');
@@ -787,6 +769,41 @@ category('UI', () => {
       await closeTrainView(view, [iris]);
     }
   }, {timeout: TIMEOUT});
+});
+
+category('UI', () => {
+  test('Forge has no app and no view function', async () => {
+    expect(DG.Func.find({package: 'Forge', tags: [DG.FUNC_TYPES.APP]}).length, 0);
+    expect(DG.Func.find({package: 'Forge', tags: ['view']}).length, 0);
+    expect(DG.Func.find({package: 'Forge', name: 'forgeApp'}).length, 1);
+  });
+
+  test('the view is at /models only', async () => {
+    const view = await ForgeApp.create();
+    grok.shell.addView(view);
+    try {
+      expect(`${view.name} ${view.type} ${view.path.endsWith('/models')}`, 'Models models true', view.path);
+      const accepted = ['/models', '/MODELS/', '/Models', '/ml', '/ml/models', '/ml/methods', '/modelsx', '/models/x',
+        '/'].map((path) => view.acceptsPath(path));
+      expectArray(accepted, [true, true, true, false, false, false, false, false, false]);
+      view.handlePath('/models');
+      expect(`${grok.shell.v === view} ${view.path.endsWith('/models')}`, 'true true', view.path);
+    } finally {
+      view.close();
+    }
+
+    // forgeApp runs in the package's bundle, whose views this bundle's ForgeApp does not recognize: the view is checked
+    // through its name, type and path.
+    const opened: unknown = await grok.functions.call('Forge:forgeApp', {});
+    if (!(opened instanceof DG.ViewBase))
+      throw new Error(`forgeApp returned ${opened}`);
+    grok.shell.addView(opened);
+    try {
+      expect(`${opened.name} ${opened.type} ${opened.path.endsWith('/models')}`, 'Models models true', opened.path);
+    } finally {
+      opened.close();
+    }
+  });
 });
 
 category('UI: Train', () => {
@@ -1319,8 +1336,9 @@ category('UI: Preparation', () => {
       // The column stores single-precision floats.
       expect(Math.abs((recutGrid.dataFrame.getCol('Train').get(sensitivityRow) ?? NaN) - (recut?.sensitivity ?? NaN)) <
         1e-6, true, 'The grid shows the old sensitivity');
-      expect(gridTooltip(recutGrid, recutGrid.cell('Train', sensitivityRow)).startsWith(`${recut?.sensitivity}.`), true,
-        'The cell tooltip shows the old sensitivity');
+      const sensitivityTooltip = gridTooltip(recutGrid, recutGrid.cell('Train', sensitivityRow));
+      expect(!sensitivityTooltip.startsWith(`${recut?.sensitivity}`) && !sensitivityTooltip.includes('Value on'), true,
+        `The cell tooltip shows the value or the column: ${sensitivityTooltip}`);
 
       threshold.value = 1.5;
       await awaitCheck(() => threshold.validity !== null, 'No mark on a threshold of 1.5', WAIT_MS);
@@ -2087,6 +2105,7 @@ category('UI: Results', () => {
       const metrics = gridWith(view.resultsPane.root, 'Metric');
       const tooltip = gridTooltip(metrics, metrics.cell('Train', metricRow(metrics, 'R2')));
       expect(tooltip.endsWith('R2 is below 0.3.'), r2 < 0.3, `Train R2 ${r2}: ${tooltip}`);
+      expect(!tooltip.startsWith(`${r2}`) && !tooltip.includes('Value on'), true, tooltip);
     } finally {
       await closeTrainView(view, [wine]);
     }
@@ -2298,8 +2317,9 @@ category('UI: Results', () => {
     const low = new MetricsTable({metrics: {train: {mse: 1, rmse: 1, mae: 1, r2: 0.1}, validation: {mse: 1, rmse: 1,
       mae: 1, r2: 0.12}}, rowCount: 150, skippedRows: 0});
     const grid = gridWith(low.root, 'Metric');
-    const tooltip = gridTooltip(grid, grid.cell('Train', metricRow(grid, 'R2')));
-    expect(tooltip.endsWith('R2 is below 0.3.'), true, tooltip);
+    expect(gridTooltip(grid, grid.cell('Train', metricRow(grid, 'R2'))), 'R2 is below 0.3.');
+    const plain = gridWith(evaluated.root, 'Metric');
+    expect(gridTooltip(plain, plain.cell('Train', metricRow(plain, 'Accuracy'))), '', 'A plain value has a tooltip');
 
     const evaluationOnly = gridWith(new MetricsTable({metrics: {train: {accuracy: 0.9}, validation: {accuracy: 0.85}},
       rowCount: 150, skippedRows: 0, evaluation: {values: {accuracy: 0.9, auc: 0.8}, tableName: 't', rowCount: 150,
@@ -2443,6 +2463,22 @@ const BALANCED_ACCURACY_LINE =
 
 // One category, split for its length.
 category('UI: Results', () => {
+  test('a metric value\'s tooltip: findings only; a tiny value in exponent form', async () => {
+    expectArray([0.000032, -0.00004, 0, 0.0004, 0.0012].map(tinyValueText), ['3.2e-05', '-4.0e-05', null, '4.0e-04',
+      null]);
+    const finding: MetricFinding = {id: 'r2', kind: 'threshold', splits: ['train'], text: 'R2 is below 0.3.',
+      detail: ''};
+    expect(metricTooltip(0.5, []) === null, true, 'A plain value has a tooltip');
+    expect(metricTooltip(0, [finding]), 'R2 is below 0.3.');
+    expect(metricTooltip(0.000032, []), '3.2e-05.');
+    expect(metricTooltip(undefined, [finding]) === null, true, 'No value has a tooltip');
+    const grid = gridWith(new MetricsTable({metrics: {train: {r2: 0.9}, validation: {r2: 0.8}}, rowCount: 150,
+      skippedRows: 0}).root, 'Metric');
+    expect(headerTooltip(grid, 'Train').startsWith('Value on the training rows'), true, headerTooltip(grid, 'Train'));
+    expect(headerTooltip(grid, 'Validation').startsWith('Value on rows the model did not see'), true,
+      headerTooltip(grid, 'Validation'));
+  });
+
   test('the layout stays while the threshold empties and fills Insights & Tips; one line reads the metric when ' +
     'nothing else does', async () => {
     const demog = await openDemog();
@@ -2954,11 +2990,13 @@ async function expectPaneText(accordion: DG.Accordion, name: string, texts: stri
 
 category('UI: Catalog', () => {
   before(async () => {
+    useTestGalleryStorage();
     const iris = await openIris();
     catalogModel = {id: (await saveIrisModel(iris)).id, iris};
   });
 
   after(async () => {
+    clearTestGalleryStorage();
     if (catalogModel !== undefined)
       await deleteModel(catalogModel.id);
   });
@@ -2969,26 +3007,29 @@ category('UI: Catalog', () => {
     expect(DG.ObjectHandler.forEntity(row)?.name, 'Forge model handler');
   });
 
-  test('the catalog header has Applicable to and a disabled Compare icon', async () => {
+  test('the catalog toolbar has Refresh alone, a search without a magnifier, Applicable to under it', async () => {
     const view = await ForgeApp.create();
     grok.shell.addView(view);
     try {
-      const header = view.root.querySelector('.forge-pane-header');
-      expect(header?.contains(view.compareIcon) && header.contains(view.applyIcon), true, 'An icon is not in header');
-      expect(header?.nextElementSibling, view.applicableToInput.root, 'Applicable to is not on the line under Models');
+      const header = view.root.querySelector('.grok-gallery-search-bar .forge-gallery-actions');
+      const icons = Array.from(header?.querySelectorAll<HTMLElement>('.grok-icon') ?? []);
+      expect(icons.length, 1, 'The toolbar has other icons than Refresh');
+      const searchBar = view.modelsGallery.search.root.closest('.d4-search-bar');
+      expect(searchBar !== null, true, 'The search box is not in the platform\'s search bar');
+      const magnifier = view.modelsGallery.search.root.querySelector<HTMLElement>('i.ui-input-icon-left');
+      expect(magnifier === null || getComputedStyle(magnifier).display === 'none', true,
+        'The search box shows a magnifier');
+      expect(header?.parentElement?.nextElementSibling, view.applicableToInput.root,
+        'Applicable to is not on the line under the toolbar');
+      const lefts = () => [view.applicableToInput.captionLabel, header]
+        .map((e) => e?.getBoundingClientRect().left ?? -100);
+      await waitUntil(() => Math.abs(lefts()[0] - lefts()[1]) < 2,
+        `Applicable to and the icons start at ${lefts()}`, WAIT_MS);
       const colorOf = (e: Element | null | undefined) => e instanceof Element ? getComputedStyle(e).color : 'none';
-      const grey = ui.div([]);
-      grey.style.color = 'var(--grey-3)';
-      view.root.append(grey);
-      const refresh = Array.from(header?.querySelectorAll('.grok-icon') ?? [])
-        .find((i) => i instanceof HTMLElement && !isDisabled(i));
-      expect(colorOf(refresh), colorOf(view.applicableToInput.root.querySelector('.ui-input-options > i')),
-        'An enabled header icon is not the blue of the input\'s icons');
-      expect(colorOf(view.compareIcon), colorOf(grey), 'A disabled header icon is not the platform\'s grey');
-      grey.remove();
+      expect(colorOf(icons[0]), colorOf(view.applicableToInput.root.querySelector('.ui-input-options > i')),
+        'The Refresh icon is not the blue of the input\'s icons');
       expect(view.applicableToInput.inputType, DG.InputType.Table);
       expect(view.applicableToInput.value, null);
-      expect(isDisabled(view.compareIcon), true, 'Compare is enabled without a selection');
       expect(view.models.col('tags') !== null && view.models.col('features') !== null, true,
         view.models.columns.names().join(', '));
     } finally {
@@ -3010,9 +3051,7 @@ category('UI: Catalog', () => {
       expect(current instanceof DG.DomainRow && current.typeName === MODEL_TYPE, true, 'Not a model');
 
       view.models.selection.set(ids.indexOf(id), true);
-      expect(isDisabled(view.compareIcon), true, 'Compare is enabled with one selected row');
       view.models.selection.set(ids.indexOf(otherId), true);
-      await awaitCheck(() => !isDisabled(view.compareIcon), 'Compare stays disabled with two selected rows', WAIT_MS);
       await awaitCheck(() => comparedIds() === [id, otherId].sort().join(),
         `The context panel does not compare the two models: ${grok.shell.o}`, WAIT_MS);
       expect(DG.ObjectHandler.forEntity(grok.shell.o)?.name, 'Forge model comparison handler');
@@ -3082,7 +3121,6 @@ category('UI: Catalog', () => {
       await awaitCheck(() => comparedIds() !== '', 'Two selected rows are not compared', WAIT_MS);
       await reload('refreshed again', 2);
       expectArray(selectedIds(), [id, otherId].sort());
-      expect(isDisabled(view.applyIcon) || isDisabled(view.compareIcon), false, 'An icon greyed out');
       await awaitCheck(() => comparedIds() === [id, otherId].sort().join(), 'The comparison is lost', WAIT_MS);
       const raced = await refreshThenChange(view.root, () => view.models.dart);
       expect(`${raced.later} ${raced.isRebound}`, `${raced.first} false`, 'A Refresh in flight published first');
@@ -3105,7 +3143,8 @@ category('UI: Catalog', () => {
     try {
       view.models.currentRowIdx = indexOf(shownId);
       await awaitCheck(() => shows(shownId), 'The model is not the current object', WAIT_MS);
-      view.deleteIcon.click();
+      const menuDelete = CATALOG_ACTIONS.find((a) => a.name === 'Delete model');
+      await menuDelete?.run(ForgeModelHandler.rowOf(await forgeDb.models.get(shownId)), null);
       const confirm = DG.Dialog.getOpenDialogs().find((d) => d.title === 'Delete model');
       if (confirm === undefined)
         throw new Error('No Delete model dialog');
@@ -3116,7 +3155,6 @@ category('UI: Catalog', () => {
       view.models.selection.set(indexOf(id), true);
       view.models.selection.set(indexOf(comparedId), true);
       await awaitCheck(() => comparedIds() === [id, comparedId].sort().join(), 'The two are not compared', WAIT_MS);
-      const menuDelete = CATALOG_ACTIONS.find((a) => a.name === 'Delete model');
       await menuDelete?.run(ForgeModelHandler.rowOf(await forgeDb.models.get(comparedId)), null);
       DG.Dialog.getOpenDialogs().find((d) => d.title === 'Delete model')?.getButton('OK').click();
       await awaitCheck(() => shows(id), 'A comparison that lost a model does not show the model left', WAIT_MS);
@@ -3197,7 +3235,7 @@ category('UI: Catalog', () => {
         throw new Error('The title has no name label');
       expect(name.getAttribute('name')?.startsWith('label-'), true, `name="${name.getAttribute('name')}"`);
       const tooltip = await enterTooltip(name);
-      expect(tooltip.includes('Predicts Species from 4 features with XGBoost'), true, tooltip);
+      expect(tooltip.includes('Predicts Species with XGBoost from Sepal.Length, Sepal.Width'), true, tooltip);
     } finally {
       ui.tooltip.hide();
       accordion.root.remove();
@@ -3437,7 +3475,8 @@ category('UI: Catalog', () => {
 category('UI: Catalog', () => {
   test('the model commands', async () => {
     expectArray(MODEL_ACTIONS.map((a) => a.name), ['Apply...', 'Download']);
-    expectArray(CATALOG_ACTIONS.map((a) => a.name), ['Apply...', 'Edit model...', 'Download', 'Delete model']);
+    expectArray(CATALOG_ACTIONS.map((a) => a.name),
+      ['Apply...', 'Edit model...', 'Share...', 'Download', 'Delete model']);
     const download = MODEL_ACTIONS[1];
     const saved = ForgeModelHandler.rowOf(await forgeDb.models.get(sharedModel().id));
     expect(download.isApplicable?.(saved), true);
@@ -3647,7 +3686,7 @@ category('UI: Table panel', () => {
     }
   });
 
-  test('the model name has the built-in tooltip and the model\'s menu', async () => {
+  test('the model name has the model\'s tooltip and the model\'s menu', async () => {
     const {name, iris} = paneFixture();
     const pane = tableModelsPane(iris);
     document.body.append(pane);
@@ -3660,9 +3699,10 @@ category('UI: Table panel', () => {
       ui.tooltip.hide();
       const r = link.getBoundingClientRect();
       link.dispatchEvent(new MouseEvent('mouseenter', {clientX: r.left + 2, clientY: r.top + 2}));
-      await awaitCheck(() => ['Created by', 'Trained on', 'Inputs', 'Outputs', 'Method', 'Sepal.Length']
-        .every((t) => (ui.tooltip.root.textContent ?? '').includes(t)),
-      `The tooltip is not the built-in one: ${ui.tooltip.root.textContent}`, WAIT_MS);
+      await awaitCheck(() => [name, 'Predicts ', 'Sepal.Length', 'Created ', ' by ']
+        .every((t) => (ui.tooltip.root.textContent ?? '').includes(t)) &&
+        !(ui.tooltip.root.textContent ?? '').includes('Trained on'),
+      `The tooltip is not the model's: ${ui.tooltip.root.textContent}`, WAIT_MS);
       ui.tooltip.hide();
 
       link.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, clientX: r.left + 2,
@@ -3677,7 +3717,7 @@ category('UI: Table panel', () => {
     }
   });
 
-  test('the panel function\'s pane shows the built-in tooltip on a name, with several tables open', async () => {
+  test('the panel function\'s pane shows the model\'s tooltip on a name, with several tables open', async () => {
     const {name, iris} = paneFixture();
     const tables = [iris, await openDemog(), await openDemoTable(WINE, 'wine'),
       await openDemoTable('System:DemoFiles/cars.csv', 'cars')];
@@ -3695,9 +3735,9 @@ category('UI: Table panel', () => {
       ui.tooltip.hide();
       const r = link.getBoundingClientRect();
       link.dispatchEvent(new MouseEvent('mouseenter', {clientX: r.left + 3, clientY: r.top + 3}));
-      await awaitCheck(() => ui.tooltip.isVisible && ['Created by', 'Trained on', 'Inputs', 'Method']
+      await awaitCheck(() => ui.tooltip.isVisible && [name, 'Predicts ', 'Created ']
         .every((t) => (ui.tooltip.root.textContent ?? '').includes(t)),
-      `No built-in tooltip on the name: ${ui.tooltip.root.textContent}`, WAIT_MS);
+      `No model tooltip on the name: ${ui.tooltip.root.textContent}`, WAIT_MS);
     } finally {
       ui.tooltip.hide();
       pane.remove();
@@ -3815,7 +3855,8 @@ category('UI: Runs', () => {
       expect(gridTooltip(grid, grid.cell('Method', 0)).includes('iterations: 20'), true,
         gridTooltip(grid, grid.cell('Method', 0)));
       expect(gridTooltip(grid, grid.cell('Features', 0)), MEASUREMENTS.join('\n'));
-      expect(gridTooltip(grid, grid.cell('Accuracy (validation)', 0)).startsWith('Train '), true);
+      const accuracyTooltip = gridTooltip(grid, grid.cell('Accuracy (validation)', 0));
+      expect(/^Train (\d\.\d{3}|-?\d\.\de-\d\d)$/.test(accuracyTooltip), true, accuracyTooltip);
 
       const firstShown = shownRun(view);
       expect(firstShown !== null && firstShown === view.lastTraining?.runId, true, `Shown run ${firstShown}`);
@@ -4162,17 +4203,17 @@ function searchBlockLines(block: {statusText: HTMLElement; toggle: HTMLElement; 
 const radioOption = (input: DG.InputBase, caption: string) =>
   Array.from(input.root.querySelectorAll<HTMLElement>('.ui-radio-button')).find((o) => o.textContent === caption);
 
-/** Starts a search of 1000 trials with [start] and cancels it from its own task-bar entry (`<action> (<n>/1000)`, n
- * the finished trials) once more than five finished, so some completed; checks the best so far trains. */
+/** Starts a search of 1000 trials with [start] and cancels it from its own task-bar entry (`<action> (<p>%)`, p the
+ * finished share) once at least 1% finished, so some completed; checks the best so far trains. */
 async function cancelSearchOnceSettled(view: TrainView, action: string,
   start: (maxTrials: number) => Promise<void>): Promise<void> {
   // Only the search's own entry counts, as an earlier one may still be in the task bar.
   const entries = () => Array.from(document.querySelectorAll('.d4-task-bar-entry'));
   const earlier = new Set(entries());
   const searching = start(1000);
-  const pattern = new RegExp(`${action} \\((\\d+)/1000\\)`);
-  const launched = (e: Element) => Number(pattern.exec(e.textContent ?? '')?.[1] ?? 0);
-  const entry = () => entries().find((e) => !earlier.has(e) && launched(e) > 5);
+  const pattern = new RegExp(`${action} \\((\\d+)%\\)`);
+  const finished = (e: Element) => Number(pattern.exec(e.textContent ?? '')?.[1] ?? 0);
+  const entry = () => entries().find((e) => !earlier.has(e) && finished(e) >= 1);
   await awaitCheck(() => entry() !== undefined, 'The search launches no trial after its first ones', TIMEOUT);
   cancelTaskBarEntry(entry());
   await awaitCheck(() => !view.isTraining, 'The cancelled search does not end', TIMEOUT);
@@ -5617,12 +5658,235 @@ category('UI: Find best', () => {
     }, {timeout: TIMEOUT});
 });
 
+/** The two models of `UI: Gallery`: one saved with a file and a tag, one bare row; [name] starts both names. */
+let galleryModels: {saved: string; bare: string; name: string; tag: string} | undefined;
+
+const menuLabels = () => Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'),
+  (label) => label.textContent?.trim() ?? '');
+
+function closeMenus(): void {
+  for (const popup of Array.from(document.querySelectorAll('.d4-menu-popup')))
+    popup.remove();
+}
+
+const clickItem = (item: HTMLElement | undefined, init: MouseEventInit = {}) =>
+  item?.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, ...init}));
+
+/** Right-clicks [item] and returns the labels of the menu it shows; the menu is closed. */
+async function itemMenu(item: HTMLElement | undefined): Promise<string[]> {
+  closeMenus();
+  item?.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, clientX: 20, clientY: 20}));
+  await waitUntil(() => menuLabels().length > 0, 'The item shows no menu', WAIT_MS);
+  const labels = menuLabels();
+  closeMenus();
+  return labels;
+}
+
+/** A gallery over [frame] (a `name` column) with plain cards and the hint `.forge-test-empty`. */
+function testGallery(frame: DG.DataFrame): Gallery {
+  const nameOf = (i: number) => ui.divText(frame.getCol('name').get(i));
+  return new Gallery({key: 'test', noun: 'items', placeholder: 'Search', grid: DG.Viewer.grid(frame),
+    searchColumns: ['name'], sortFields: [{caption: 'Name', column: 'name'}],
+    defaultSort: {column: 'name', desc: false}, card: nameOf, listItem: nameOf, tooltip: () => null, menu: () => {},
+    emptyHint: ui.divText('Nothing yet', 'forge-test-empty')});
+}
+
+category('UI: Gallery', () => {
+  before(async () => {
+    useTestTuneStorage();
+    useTestGalleryStorage();
+    const stamp = Date.now();
+    const name = `forge-test-gallery-${stamp}`;
+    const tag = `forge-test-tag-${stamp}`;
+    const saved = (await saveIrisModel(await openIris(), {name: `${name}-saved`, tags: tag})).id;
+    galleryModels = {saved, bare: await insertModelRow({name: `${name}-bare`}), name, tag};
+  });
+
+  after(async () => {
+    clearTestTuneStorage();
+    clearTestGalleryStorage();
+    if (galleryModels !== undefined) {
+      await deleteModel(galleryModels.saved);
+      await forgeDb.models.delete(galleryModels.bare);
+    }
+  });
+
+  test('the gallery shows cards, models newest first', async () => {
+    const view = await ForgeApp.create();
+    grok.shell.addView(view);
+    try {
+      expect(view.modelsGallery.mode, 'cards');
+      expect(JSON.stringify(view.modelsGallery.sort), '{"column":"created_on","desc":true}');
+      const created = view.models.getCol('created_on');
+      const times = view.modelsGallery.shownRows().map((i) => dayjs(created.get(i)).valueOf());
+      expect(times.every((t, k) => k === 0 || times[k - 1] >= t), true, 'The cards are not newest first');
+      expect(view.modelsGallery.renderCount, 1, 'A new view renders its cards more than once');
+    } finally {
+      view.close();
+      useTestGalleryStorage();
+    }
+  });
+
+  test('the gallery remembers its mode and sort', async () => {
+    const view = await ForgeApp.create();
+    try {
+      view.modelsGallery.setMode('list');
+      view.modelsGallery.setSort('name', false);
+    } finally {
+      view.close();
+    }
+    const again = await ForgeApp.create();
+    try {
+      expect(`${again.modelsGallery.mode} ${JSON.stringify(again.modelsGallery.sort)}`,
+        'list {"column":"name","desc":false}');
+    } finally {
+      again.close();
+      useTestGalleryStorage();
+    }
+  });
+
+  test('the search filters by name and #tag and the count follows it', async () => {
+    const {saved, bare, name, tag} = savedFixture(galleryModels);
+    const view = await ForgeApp.create();
+    grok.shell.addView(view);
+    const gallery = view.modelsGallery;
+    const count = () => gallery.root.querySelector('.grok-items-view-counts')?.textContent ?? '';
+    const shownIds = () => gallery.shownRows().map((i) => view.models.get('id', i));
+    const total = view.models.rowCount;
+    try {
+      expect(count(), `${total}`);
+      const bareRow = view.models.getCol('id').toList().indexOf(bare);
+      const bareItem = gallery.itemOf(bareRow);
+      // A search value change filters and renders at once.
+      gallery.search.value = `${name}-BARE`;
+      expect(shownIds().join(), bare, 'The search');
+      expect(count(), `1 / ${total}`);
+      expect(gallery.itemOf(bareRow) === bareItem, true, 'A search built the item again');
+      gallery.search.value = `#${tag}`;
+      expect(shownIds().join(), saved, 'The tag search');
+      gallery.search.value = 'forge-test-no-such-model';
+      expect(gallery.root.querySelector('.grok-items-view-empty') !== null, true, 'No empty-set icon without a match');
+      gallery.search.value = '';
+      expect(count(), `${total}`);
+    } finally {
+      view.close();
+    }
+  });
+
+  test('a click shows the model, Ctrl+click compares, the menu has the catalog commands', async () => {
+    const {saved, bare} = savedFixture(galleryModels);
+    const view = await ForgeApp.create();
+    grok.shell.addView(view);
+    const gallery = view.modelsGallery;
+    const ids = view.models.getCol('id').toList();
+    const [a, b] = [ids.indexOf(saved), ids.indexOf(bare)];
+    try {
+      const marked = () => [a, b].filter((i) => gallery.itemOf(i)?.classList.contains('d4-current'));
+      clickItem(gallery.itemOf(a));
+      await waitUntil(() => shows(saved), 'A clicked card is not the current object', WAIT_MS);
+      expectArray(marked(), [a]);
+      clickItem(gallery.itemOf(b), {ctrlKey: true});
+      await waitUntil(() => comparedIds() === [saved, bare].sort().join(), 'Ctrl+click compares nothing', WAIT_MS);
+      expectArray(await itemMenu(gallery.itemOf(a)),
+        ['Apply...', 'Edit model...', 'Share...', 'Download', 'Delete model', 'Compare']);
+      clickItem(gallery.itemOf(a), {ctrlKey: true});
+      expectArray(marked(), [b]);
+      expect(view.models.currentRowIdx, b, 'The card left picked is not the current row');
+      await waitUntil(() => shows(bare), 'The card left picked is not the current object', WAIT_MS);
+      clickItem(gallery.itemOf(b));
+      expectArray(await itemMenu(gallery.itemOf(b)), ['Apply...', 'Edit model...', 'Share...', 'Delete model']);
+    } finally {
+      closeMenus();
+      view.close();
+    }
+  }, {timeout: TIMEOUT});
+
+  test('the list shows each model as a link that makes it current', async () => {
+    const {saved, name} = savedFixture(galleryModels);
+    const view = await ForgeApp.create();
+    grok.shell.addView(view);
+    const gallery = view.modelsGallery;
+    try {
+      gallery.setMode('list');
+      const i = view.models.getCol('id').toList().indexOf(saved);
+      const line = gallery.itemOf(i);
+      expect(line?.classList.contains('d4-link-label'), true, 'The line is not the platform\'s link');
+      expect(`${line?.textContent} ${line?.children.length}`, `${name}-saved 0`, 'The line has more than the name');
+      clickItem(line);
+      await waitUntil(() => shows(saved), 'A clicked link is not the current object', WAIT_MS);
+      expect(line?.classList.contains('d4-current'), true, 'The current line is not marked');
+    } finally {
+      view.close();
+      useTestGalleryStorage();
+    }
+  });
+
+  test('the empty states: the hint of an empty frame, the empty-set icon, at most 500 items', async () => {
+    const empty = testGallery(DG.DataFrame.fromColumns([DG.Column.fromStrings('name', [])]));
+    expect(empty.root.querySelector('.forge-test-empty') !== null, true, 'An empty frame shows no hint');
+    empty.detach();
+    const many = testGallery(DG.DataFrame.fromColumns([DG.Column.fromStrings('name',
+      Array.from({length: MAX_ITEMS + 1}, (_, i) => `item ${i}`))]));
+    expect(many.shownRows().length, MAX_ITEMS);
+    expect((many.root.textContent ?? '').includes(`Showing ${MAX_ITEMS} of ${MAX_ITEMS + 1}.`), true,
+      'No line about the items not shown');
+    many.detach();
+    const view = await ForgeApp.create();
+    try {
+      expect(view.emptyHint.textContent?.includes('No models yet.'), true, view.emptyHint.textContent ?? '');
+      expect(view.emptyHint.querySelector('a')?.textContent, 'Train a model...');
+    } finally {
+      view.close();
+    }
+  });
+
+  test('launchTraining opens the Train view with the method; a method that cannot learn says why', async () => {
+    const iris = await openIris();
+    const tableView = grok.shell.addTableView(iris);
+    const trainViews = (): TrainView[] => {
+      const views: unknown[] = Array.from(grok.shell.views);
+      return views.filter((v): v is TrainView => v instanceof TrainView);
+    };
+    try {
+      // launchTraining resolves once the view is added.
+      await launchTraining('XGBoost');
+      expect(trainViews().length, 1, 'launchTraining opens no Train view');
+      const [xgboost] = trainViews();
+      expect(xgboost.methodInput.value, 'XGBoost');
+      await closeTrainView(xgboost, [iris]);
+
+      grok.shell.v = tableView;
+      await launchTraining('Linear Regression');
+      expect(trainViews().length, 1, 'launchTraining opens no Train view');
+      const [linear] = trainViews();
+      try {
+        const mismatch = 'Linear Regression cannot learn from this selection';
+        await waitUntil(() => balloonWith(mismatch) !== null, 'No balloon for the mismatch', WAIT_MS);
+        const balloon = balloonWith(mismatch)?.textContent ?? '';
+        expect(balloon.includes('is chosen for now.'), true, balloon);
+        await waitUntil(() => linear.methodInput.value !== 'Linear Regression' && linear.methodInput.value !== null,
+          'Method keeps Linear Regression', WAIT_MS);
+      } finally {
+        await closeTrainView(linear, [iris]);
+      }
+    } finally {
+      tableView.close();
+    }
+  }, {timeout: TIMEOUT});
+});
+
 // After the categories, so their order stays: the Train views of these keep their tune settings in the tests' storage
 // ('UI: Table panel' uses it in its own hooks).
 for (const name of ['UI', 'UI: Train', 'UI: Preparation', 'UI: Results', 'UI: Save model', 'UI: Runs', 'UI: Search',
   'UI: Cards', 'UI: Find best']) {
   category(name, () => {
-    before(async () => useTestTuneStorage());
-    after(async () => clearTestTuneStorage());
+    before(async () => {
+      useTestTuneStorage();
+      useTestGalleryStorage();
+    });
+    after(async () => {
+      clearTestTuneStorage();
+      clearTestGalleryStorage();
+    });
   });
 }

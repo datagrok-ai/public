@@ -43,12 +43,17 @@ for the BDD resume:
   target (`train-demog` 3.14, `train-iris-gaps`): Predict probability is now shown for every text or yes/no target with
   two or more classes, so the group shows for such a target.
 
-Stale since 5a3: the node is Machine Learning (**Browse > Platform > Predictive models** was renamed); left unedited
-for the BDD resume:
+Stale since stage U1: the view is **Models** (no longer **Forge**) at `/models`, Forge is no app (no **Browse > Apps >
+Forge**, no `/apps/Forge`), the view has no Methods grid, and it shows the models as cards by default (the catalog grid
+only in table mode); left unedited for the BDD resume:
 
-- `app-and-menus` (`:3`, `:23`, the scenario `Forge opens from Apps, from the Predictive models node and from
-  Forge:forgeModels` at `:39` and its step `user clicks on "Predictive models" tree node inside browse tree` at `:53`):
-  it clicks the old node, so the scenario fails at that step.
+- `app/app-and-menus.feature`: opens Forge from Apps, names the view `Forge` and claims the Methods grid and its
+  tooltips.
+- `catalog/catalog.feature`: names the view `Forge` and reads the catalog's grid rows.
+- `train/train-iris.feature`, `apply/apply-iris.feature`, `apply/apply-winequality.feature`: their `the "Forge" view`
+  steps.
+- `bindings/catalog-grid.ts`, `bindings/catalog.ts`: read the Methods grid, the catalog grid outside table mode and the
+  removed toolbar icons.
 
 ## Running
 

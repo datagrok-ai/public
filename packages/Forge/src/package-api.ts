@@ -16,14 +16,14 @@ export namespace funcs {
   }
 
   /**
-   * Predictive modeling: methods and the model catalog
+   * Opens the Models view (the core's Browse > Platform > Predictive models, the URL /models and the view type models call it)
    */
   export async function forgeApp(): Promise<DG.View> {
     return await grok.functions.call('Forge:ForgeApp', {});
   }
 
   /**
-   * Opens the Forge app
+   * Opens or focuses the Models view
    */
   export async function forgeModels(): Promise<void> {
     return await grok.functions.call('Forge:ForgeModels', {});
