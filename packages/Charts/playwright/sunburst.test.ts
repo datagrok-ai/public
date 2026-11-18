@@ -290,11 +290,12 @@ test('Charts / Sunburst viewer', async ({page}) => {
 
   await softStep('Step 4: Reset view via right-click → Reset View context menu item', async () => {
     const result = await page.evaluate(async () => {
-      const sb = document.querySelector('[name="viewer-Sunburst"]') as HTMLElement | null;
-      if (!sb) return {menuOpened: false, resetClicked: false};
-      const canvas = sb.querySelector('canvas') as HTMLCanvasElement | null;
-      if (!canvas) return {menuOpened: false, resetClicked: false};
-      const r = canvas.getBoundingClientRect();
+      // two table views each hold a Sunburst; the first one in the DOM can be the hidden view's
+      const viewer = Array.from((window as any).grok.shell.tv.viewers).find((v: any) => v.type === 'Sunburst') as any;
+      const canvas = viewer?.root.querySelector('canvas') as HTMLCanvasElement | null;
+      const r = canvas?.getBoundingClientRect();
+      if (!canvas || !r || r.width === 0 || r.height === 0)
+        return {menuOpened: false, resetClicked: false, canvas: r ? `${r.width}x${r.height}` : 'none', labels: ''};
       canvas.dispatchEvent(new MouseEvent('contextmenu', {
         bubbles: true, cancelable: true, view: window,
         clientX: r.x + r.width / 2, clientY: r.y + r.height / 2, button: 2,
@@ -303,6 +304,8 @@ test('Charts / Sunburst viewer', async ({page}) => {
         await new Promise((res) => setTimeout(res, 250));
       const reset = document.querySelector('[name="div-Reset-View"]') as HTMLElement | null;
       const menuOpened = !!reset;
+      const labels = Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
+        .map((e) => (e as HTMLElement).innerText.trim()).join(' | ');
       let resetClicked = false;
       if (reset) {
         reset.click();
@@ -311,9 +314,9 @@ test('Charts / Sunburst viewer', async ({page}) => {
       }
       // Close any residual menu.
       document.body.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
-      return {menuOpened, resetClicked};
+      return {menuOpened, resetClicked, canvas: `${r.width}x${r.height}`, labels};
     });
-    expect(result.menuOpened).toBe(true);
+    expect(result.menuOpened, `no "Reset View": canvas ${result.canvas}, menu [${result.labels}]`).toBe(true);
     expect(result.resetClicked).toBe(true);
   });
 

@@ -12,6 +12,7 @@
  */
 
 import type {ReviewDecisionRecord, ReviewLedger, SupersededBy} from './study-schema';
+import {decisionMatches} from './review-units';
 
 export type LedgerMap = ReadonlyMap<string, ReviewLedger>;
 
@@ -63,20 +64,21 @@ export function supersedeDecision(
  * unit no longer needs review / no longer exists. Returns the new map and the reset unit keys —
  * the count drives the "N review decisions reset" notice (F-S3.6).
  *
- * @param fingerprints  current decision fingerprint per unit that NEEDS REVIEW. A unit absent
- *                      from the map (now Accepted, Not applicable, or gone) cannot keep a decision.
- * @param inScope       only ledgers whose key passes are reconciled (others are left as they are).
+ * @param accepted  the fingerprints each unit that NEEDS REVIEW accepts (its current one plus the
+ *                  nca-ip-route F6 aliases; an aliasable legacy composite key maps to its new key's
+ *                  fingerprint). A unit absent from the map (now Accepted, Not applicable, or gone)
+ *                  cannot keep a decision.
+ * @param inScope   only ledgers whose key passes are reconciled (others are left as they are).
  */
 export function reconcileLedgers(
-  m: LedgerMap, fingerprints: ReadonlyMap<string, string>, at: string,
+  m: LedgerMap, accepted: ReadonlyMap<string, ReadonlyArray<string>>, at: string,
   inScope: (unitKey: string) => boolean = () => true,
 ): {map: Map<string, ReviewLedger>; resetKeys: string[]} {
   const out = new Map(m);
   const resetKeys: string[] = [];
   for (const [key, l] of m) {
     if (l.current === null || !inScope(key)) continue;
-    const fp = fingerprints.get(key);
-    if (fp !== undefined && fp === l.current.fingerprint) continue;
+    if (decisionMatches(accepted, key, l.current.fingerprint)) continue;
     out.set(key, supersede(l, 'auto-reset', at));
     resetKeys.push(key);
   }

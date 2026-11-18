@@ -1723,7 +1723,9 @@ export class FittingView {
 
       if (allExtrCount < 1) {
         this.currentFuncCalls = [];
-        this.comparisonView.dataFrame = DG.DataFrame.fromColumns([DG.Column.fromFloat64Array(TITLE.LOSS, [] as any)]);
+        this.comparisonView.dataFrame = DG.DataFrame.fromColumns([
+          DG.Column.fromFloat64Array(TITLE.LOSS, new Float64Array(0)),
+        ]);
         return;
       }
 

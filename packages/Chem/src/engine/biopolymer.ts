@@ -4,15 +4,18 @@
  * engines, as `molzip` is (Crux loads in RDKit mode too; there is no RDKit path, so a call fails when Crux does not
  * load). A column (`assemble`, a long list for `markStereoAbsolute`) runs on the Crux workers (CruxService); one row
  * (`assembleOne`, `toV2000`, a few MOL blocks) on the main thread's module, which compiles each library it is asked for
- * once, as each worker does. The synchronous twins (`assembleOneSync`, `assembleSync`, `markStereoAbsoluteSync`,
- * `toV2000Sync`) serve Bio's legacy synchronous APIs on that module: they need `ready()` first (the module loaded,
- * the library registered), and compile a library on first use there.
+ * once, as each worker does. Molecules to HELM (`toHelm`, the inverse of `assemble`: Bio's Molecules to HELM) runs a
+ * column on the workers and a few molecules on the main thread, with the same compiled library (a worker compiles a
+ * key once for both directions) and its HELM index, built once per compiled library. The synchronous twins
+ * (`assembleOneSync`, `assembleSync`, `markStereoAbsoluteSync`, `toV2000Sync`) serve Bio's legacy synchronous APIs on
+ * that module: they need `ready()` first (the module loaded, the library registered), and compile a library on first
+ * use there.
  */
-import {AsmBatch, AsmLayout, AsmSequence, AssembleOneResult, AssembleOptions, AssembleResult, IMacromoleculeAssembler}
-  from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
+import {AsmBatch, AsmLayout, AsmSequence, AssembleOneResult, AssembleOptions, AssembleResult, IMacromoleculeAssembler,
+  ToHelmOptions, ToHelmResult} from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
 import {getCruxService} from '../crux/crux-searches';
-import {CruxAssembledBatch, CruxAssembledRow, CruxBiopolymerApi, CruxMonomerLibrary, assembleOptionsJson,
-  cruxBiopolymer} from '../crux/crux-api';
+import {CruxAssembledBatch, CruxAssembledRow, CruxBiopolymerApi, CruxHelmBatch, CruxMonomerLibrary,
+  assembleOptionsJson, cruxBiopolymer, toHelmOptionsJson} from '../crux/crux-api';
 import {cruxLoadFailed, loadCrux, noteCruxError} from './crux-module';
 
 /** The libraries kept by key, the least recently used dropped first (Bio keeps a few, each a new key per change). */
@@ -21,11 +24,14 @@ const MAX_LIBRARIES = 8;
 const MAX_COMPILED = 4;
 /** Up to this many MOL blocks `markStereoAbsolute` does on the main thread; more on the Crux workers. */
 const MAIN_THREAD_MOLBLOCKS = 100;
+/** Up to this many molecules `toHelm` converts on the main thread (a single molecule, a panel); more on the Crux
+ * workers. */
+const MAIN_THREAD_TO_HELM = 20;
 /** Counts the worker keys given out: unique in the session, whichever assembler gives them (the pool is shared). */
 let lastWorkerKey = 0;
 
-/** `call()` on the main thread's module; a trap there is noted (Crux is off for the session: its instance may be
- * broken) and thrown. */
+/** `call()` on the main thread's module; what it throws is noted (only a trap the module could not recover from turns
+ * Crux off for the session: crux/crux-recover.ts) and thrown. */
 function onMainThread<T>(call: () => T): T {
   try {
     return call();
@@ -100,6 +106,34 @@ export class CruxMacromoleculeAssembler implements IMacromoleculeAssembler {
     return onMainThread(() => crux.chemToV2000(molblock));
   }
 
+  /** An empty cell (null, '', blanks, a hole of `toList()`) is '' with no error, and is not sent. */
+  async toHelm(molecules: (string | null)[], libraryKey: string, options: ToHelmOptions = {}): Promise<ToHelmResult> {
+    const {json, id} = this.library(libraryKey);
+    const {result, rows, sent} = helmInput(molecules);
+    if (sent.length > 0) {
+      const details = toHelmOptionsJson(options);
+      let part: CruxHelmBatch;
+      if (sent.length <= MAIN_THREAD_TO_HELM) {
+        const library = await this.mainThreadLibrary(id, json);
+        part = onMainThread(() => library.toHelm(sent, details));
+      } else {
+        const onProgress = options.onProgress;
+        part = await (await getCruxService()).moleculesToHelm(sent, id, json, details,
+          onProgress ? (done: number) => onProgress(done, sent.length) : undefined);
+      }
+      rows.forEach((row, k) => {
+        const error = part.errors[k] ?? null;
+        result.errors[row] = error;
+        result.helms[row] = error ? null : part.helms[k] ?? '';
+        result.matched[row] = part.matched[k] ?? 0;
+        result.inline[row] = part.inline[k] ?? 0;
+        result.chem[row] = part.chem[k] ?? 0;
+      });
+    }
+    options.onProgress?.(sent.length, sent.length);
+    return result;
+  }
+
   // -- the synchronous twins (main thread only) --
 
   async ready(libraryKey: string, json: string): Promise<void> {
@@ -166,8 +200,8 @@ export class CruxMacromoleculeAssembler implements IMacromoleculeAssembler {
   }
 
   // The main thread's module for a synchronous twin: loaded by an earlier ready() (or another async call), and not
-  // after a trap there (Crux is off for the session, crux-module.ts noteCruxError: the instance may be broken, and the
-  // async twins refuse it too)
+  // after a trap there that the module could not recover from (Crux is then off for the session, crux-module.ts
+  // noteCruxError, and the async twins refuse it too)
   private syncApi(): CruxBiopolymerApi {
     if (!this.api) {
       throw new Error('Chem | the macromolecule assembler\'s synchronous calls need ready(key, json) first: ' +
@@ -226,6 +260,24 @@ function stereoInput(molblocks: (string | null)[]): {result: (string | null)[], 
       sent.push(m);
     }
   });
+  return {result, rows, sent};
+}
+
+/** The molecules `toHelm` sends (non-blank strings) and the result with the empty rows filled in ('', no error). */
+function helmInput(molecules: (string | null)[]): {result: ToHelmResult, rows: number[], sent: string[]} {
+  const n = molecules.length;
+  const result: ToHelmResult = {helms: new Array<string | null>(n).fill(''),
+    errors: new Array<string | null>(n).fill(null), matched: new Int32Array(n), inline: new Int32Array(n),
+    chem: new Int32Array(n)};
+  const rows: number[] = [];
+  const sent: string[] = [];
+  for (let i = 0; i < n; i++) { // a hole of toList() is an empty row
+    const m = molecules[i];
+    if (typeof m === 'string' && m.trim() !== '') {
+      rows.push(i);
+      sent.push(m);
+    }
+  }
   return {result, rows, sent};
 }
 

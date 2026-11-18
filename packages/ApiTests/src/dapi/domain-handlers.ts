@@ -3,6 +3,7 @@ import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
 import {category, expect, test, before, after, waitUntil} from '@datagrok-libraries/test/src/test';
+import {withRestrictedUser} from './domain-lifecycle';
 
 // DG.DomainRow JS wrapper + ObjectHandler dispatch for domain-table rows (§8.1),
 // including ObjectHandler.renderGrid (ui-js-api WO-1) — the grid-customization
@@ -336,29 +337,27 @@ category('JS: domain handlers', () => {
     }
   });
 
-  test('DomainObjectHandler: row permissions and ribbon actions follow a real grant', async () => {
+  // A fresh user, not the caller: the caller authored the row (the author arm answers
+  // ~can_delete true whatever the grants), and a Share holder grants only what it
+  // holds, so revoking its own Delete could not be undone.
+  // eslint-disable-next-line max-len
+  test('DomainObjectHandler: row permissions and ribbon actions follow a real grant', () => withRestrictedUser('doh', async (probe) => {
     const handler = new DG.DomainObjectHandler('apitests.item');
     const sku = `SKU-DOH-${stamp()}`;
     const [ins] = await items().insert({sku, name: 'Permission probe'});
     // Everything after the insert runs inside the try — a throw in any of the
     // lookups below would otherwise leak the row.
     let group: string | undefined;
-    let hadDelete = false;
     try {
-      const current = await grok.dapi.users.current();
-      const me = await grok.dapi.users.include('group').filter(`login = "${current.login}"`).first();
-      expect(me?.group?.id != null, true, 'current user personal group not resolved');
-      group = me!.group.id;
-      // The fixture's BASELINE grants must survive: revoking a Delete grant the
-      // environment already had would 403 every later row delete in the suite.
-      hadDelete = (await items().grants())
-        .some((g) => g.group.id === group && g.permission === 'Delete');
+      group = probe.group;
+      await items().grant(group, 'View');
       const row = await handler.getById(ins.id) as _DG.DomainRow;
       const names = async () => (await handler.getRibbonActions(row)).map((a) => a.name);
       // Both directions of one real grant round-trip (grant/revoke drop the caches).
       const gate = async (granted: boolean) => {
         granted ? await items().grant(group!, 'Delete') : await items().revoke(group!, 'Delete');
-        return {row: await items().get(ins.id, {withAccess: true}), actions: await names()};
+        return probe.asUser(async () =>
+          ({row: await items().get(ins.id, {withAccess: true}), actions: await names()}));
       };
       const denied = await gate(false);
       const allowed = await gate(true);
@@ -384,20 +383,14 @@ category('JS: domain handlers', () => {
       expect(handler.deepLink(handler.newRow() as any), null,
         'an unsaved row must have no deep link');
     } finally {
-      // Delete needs the grant; restore the baseline only afterwards.
-      if (group != null)
-        try {
-          await items().grant(group, 'Delete');
-        } catch (e) {
-          // Never silent: a failed restore is exactly how a baseline grant gets lost.
-          console.error(`restoring the Delete grant on apitests.item failed: ${e}`);
-        }
       await items().delete(ins.id);
-      if (group != null && !hadDelete)
+      if (group != null) {
         await items().revoke(group, 'Delete');
+        await items().revoke(group, 'View');
+      }
       grok.dapi.domains.invalidateUiCaches();
     }
-  });
+  }));
 
   // ─────────── DG.DomainView + the dialog openers (ui-js-api WO-5) ───────────
   // Every opener enters the SAME Dart flow the built-in surfaces use, so these

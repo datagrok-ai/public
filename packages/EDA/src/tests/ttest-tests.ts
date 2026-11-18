@@ -6,12 +6,15 @@
 // (n0 + n1 − 2 for Student, the Welch–Satterthwaite ν for Welch) — i.e. Delacre et al. 2021.
 // Regenerate with `Rscript` using `t.test(x1, x0, var.equal=<Student>, conf.level=0.95)`.
 
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {twoSampleTTest, TwoSampleTTest, TTestMethod} from '../ttest/ttest-tools';
+import {runTwoSampleTTest} from '../ttest/ttest-ui';
 import {oneWayAnova} from '../anova/anova-tools';
+import {DEMOG_FILE} from './control-comparisons-fixtures';
 
 const ALPHA = 0.05;
 
@@ -304,4 +307,39 @@ category('t-test: guards', () => {
     }
     expect(threw, true, 'both-constant groups must throw');
   }, {timeout: 10000});
+});
+
+category('t-test: dialog', () => {
+  test('A filtered table compares only the rows that pass the filter', async () => {
+    const df = await grok.dapi.files.readCsv(DEMOG_FILE);
+    const sex = df.col('SEX')!;
+    const age = df.col('AGE')!;
+    const race = df.col('RACE')!;
+    df.filter.init((i) => race.get(i) === 'Caucasian');
+    const visibleCount = df.filter.trueCount;
+    const visibleSex = sex.clone(df.filter);
+    const expected = twoSampleTTest(visibleSex, age.clone(df.filter), visibleSex.categories.length,
+      {method: 'Welch', alpha: ALPHA});
+    const whole = twoSampleTTest(sex, age, sex.categories.length, {method: 'Welch', alpha: ALPHA});
+    const view = grok.shell.addTableView(df);
+    runTwoSampleTTest();
+    const dlg = DG.Dialog.getOpenDialogs().find((d) => d.title === 'Two-sample t-test')!;
+    let result: DG.DataFrame | undefined;
+    try {
+      (dlg.input('Category') as DG.InputBase<DG.Column | null>).value = sex;
+      (dlg.input('Feature') as DG.InputBase<DG.Column | null>).value = age;
+      dlg.getButton('Run').click();
+      result = grok.shell.tables.find((t) => t.name === 'T-test result');
+      expect(result !== undefined, true, 'the result table is not open');
+      expect(df.filter.trueCount, visibleCount, 'the run changed the filter');
+      close(result!.get('t', 0), expected.t, 't');
+      close(result!.get('df', 0), expected.df, 'df');
+      expect(Math.abs(expected.t - whole.t) > 1e-6, true, 'the filter does not change the test on this data');
+    } finally {
+      DG.Dialog.getOpenDialogs().find((d) => d.title === 'Two-sample t-test')?.close();
+      view.close();
+      if (result)
+        grok.shell.closeTable(result);
+    }
+  }, {timeout: 60000});
 });

@@ -45,9 +45,11 @@ category('Dapi: models', () => {
     const mlnames = (role: string) => funcs.filter((f) => f.options?.['mlrole'] === role).map((f) => f.options['mlname']);
     const train = mlnames('train');
     const apply = mlnames('apply');
-    expect(train.length > 0, true, 'no function registers meta.mlrole: train');
+    // ApiTests brings an engine of its own (src/package.ts), so there is one on a stand with no EDA or Chem
+    expect(train.includes('ApiTests engine'), true, 'the ApiTests engine is not registered (meta.mlrole: train)');
     for (const name of train)
       expect(apply.includes(name), true, `the "${name}" engine trains but has no apply function`);
+    return `${train.length} engines: ${train.join(', ')}`;
   });
 
   test('A saved model is found, listed and suggested for a table with its inputs', async () => {

@@ -10,9 +10,9 @@ import {ml} from './tracks/ml';
 import {dataTransformation} from './tracks/transform';
 import {scientificComputing} from './tracks/compute';
 import {TutorialWidget} from './widget';
+import {tutorialsView, tutorialView} from './tutorials-view';
 import '../css/tutorial.css';
 import {Track} from '@datagrok-libraries/tutorials/src/track';
-import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {DemoView} from './demo-app/demo-app';
 import {northwindDemo} from './demo-app/northwind-demo';
 import {viewerDemo} from './demo-app/platform-viewers-demo';
@@ -33,13 +33,23 @@ export class PackageFunctions {
     'top-menu': 'Help | Tutorials @Toolbox Help | Tutorials',
   })
   static trackOverview(
-    @grok.decorators.param({options: {'meta.url': true, 'optional': true}}) path?: string) : void {
-    const tutorialRunners = tracks.map((track) => new TutorialRunner(track));
-    TutorialRunner.dock(tutorialRunners.map((runner) => runner.root));
-    if (path)
-      setPath(path, tutorialRunners);
-    else
-      window.history.replaceState(null, '', Tutorial.APP_PATH);
+    @grok.decorators.param({options: {'meta.url': true, 'optional': true}}) path?: string) : DG.View {
+    const [trackName, tutorialName] = (path ?? '').split('/').filter((s) => s !== '');
+    const track = findTrack(trackName);
+    const tutorial = track?.tutorials.find((t) => removeSpaces(t.name) === tutorialName);
+    if (tutorial)
+      TutorialRunner.run(tutorial, track!);
+    return tutorialsView(tracks, track);
+  }
+
+  @grok.decorators.appTreeBrowser({app: 'Tutorials'})
+  static async tutorialsAppTreeBrowser(treeNode: DG.TreeViewGroup) : Promise<void> {
+    for (const track of tracks) {
+      const trackNode = treeNode.group(track.name, null, false);
+      trackNode.onSelected.subscribe(() => grok.shell.preview = tutorialsView(tracks, track));
+      for (const tutorial of track.tutorials)
+        trackNode.item(tutorial.name).onSelected.subscribe(() => grok.shell.preview = tutorialView(tutorial, track));
+    }
   }
 
 
@@ -514,8 +524,12 @@ export class PackageFunctions {
 }
 
 
-function setPath(path: string, tutorialRunners: TutorialRunner[]): void {
-  const removeSpaces = (s: string) => s.replaceAll(' ', '');
+const removeSpaces = (s: string) => s.replaceAll(' ', '');
+
+/** A track by its name in the app's URL: the name without spaces, or a short name. */
+function findTrack(name?: string): Track | undefined {
+  if (!name)
+    return undefined;
   const trackShortNames: {[key: string]: Track} = {
     'eda': eda,
     'ml': ml,
@@ -524,12 +538,8 @@ function setPath(path: string, tutorialRunners: TutorialRunner[]): void {
     'access': da,
     'compute': scientificComputing,
   };
-
-  const [trackName, tutorialName] = path.split('/').filter((s) => s !== '');
-  const track = trackShortNames[trackName] ?? tracks.find((t) => removeSpaces(t.name) === trackName);
-  const tutorial = track?.tutorials.find((t) => removeSpaces(t.name) === tutorialName);
-  if (tutorial)
-    tutorialRunners.find((r) => r.track === track)?.run(tutorial);
+  const track = trackShortNames[name] ?? tracks.find((t) => removeSpaces(t.name) === name);
+  return track && tracks.includes(track) ? track : undefined;
 }
 
 

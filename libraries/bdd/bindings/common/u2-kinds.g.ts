@@ -3720,6 +3720,71 @@ export const U2_KINDS: (U2KindSpec & {interactive?: string[], styling?: Record<s
     "source": "ems"
   },
   {
+    "kind": "space-browser",
+    "noun": "space browser",
+    "aliases": [
+      "open from space"
+    ],
+    "family": "collection",
+    "nameFrom": [
+      "aria"
+    ],
+    "parts": {},
+    "state": [
+      "items",
+      "selection"
+    ],
+    "props": [],
+    "gestures": [
+      "type",
+      "select"
+    ],
+    "items": {
+      "role": "option",
+      "noun": "item",
+      "gestures": [
+        "select"
+      ]
+    },
+    "source": "u2"
+  },
+  {
+    "kind": "space-input",
+    "noun": "space input",
+    "aliases": [
+      "space picker"
+    ],
+    "family": "input",
+    "focusRole": "combobox",
+    "nameFrom": [
+      "label",
+      "aria",
+      "placeholder"
+    ],
+    "parts": {
+      "label": "[data-u2-part=\"label\"]",
+      "editor": "[data-u2-part=\"editor\"]",
+      "options": "[data-u2-part=\"options\"]",
+      "error": "[data-u2-part=\"error\"]"
+    },
+    "state": [
+      "label",
+      "value",
+      "text",
+      "valid",
+      "error",
+      "readOnly",
+      "required",
+      "open"
+    ],
+    "props": [],
+    "gestures": [
+      "open",
+      "pick"
+    ],
+    "source": "u2"
+  },
+  {
     "kind": "splitter",
     "noun": "splitter",
     "aliases": [

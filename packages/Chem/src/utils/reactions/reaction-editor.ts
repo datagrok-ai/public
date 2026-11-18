@@ -9,6 +9,8 @@ import {NamedReaction, ReactionMode} from './types';
 import {getReactionCategories} from './consts';
 import {validateReactionSmarts, saveUserReaction, generateReactionId, loadAllReactions} from './reaction-storage';
 import {runTransformationReaction} from './reactions';
+import {FooterSlot, footerSlot} from '../footguns/footer-slot';
+import {checkReaction, checksModule} from '../footguns/checks';
 
 /**
  * Opens a dialog for creating or editing a named reaction.
@@ -34,6 +36,8 @@ export async function openReactionEditor(
   let currentSmarts = preset?.reactionSmarts ?? '';
   let validationState = {valid: false, error: 'Enter a reaction SMARTS', numReactants: 0, numProducts: 0};
   let _okBtn: HTMLButtonElement | null = null;
+  /** The footer's middle slot: the template's foot-gun flags (Crux mode; a block disables SAVE). */
+  let slot: FooterSlot | null = null;
 
   // ---- Inputs ----
   const nameInput = ui.input.string('Reaction Name', {
@@ -87,7 +91,8 @@ export async function openReactionEditor(
     value: currentSmarts,
     nullable: false,
   });
-  ui.tooltip.bind(smartsInput.input, 'Enter a valid reaction SMIRKS/SMARTS string (reactants>>products).');
+  ui.tooltip.bind(smartsInput.input,
+    'Enter a valid reaction SMIRKS/SMARTS string (reactants>>products, or reactants>agents>products).');
   smartsInput.root.style.minHeight = '60px';
 
   // ---- Preview canvas ----
@@ -110,6 +115,7 @@ export async function openReactionEditor(
     const ctx = previewCanvas.getContext('2d')!;
     ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
 
+    slot?.show(checkReaction(smarts, {template: true}));
     if (!smarts) {
       validationState = {valid: false, error: 'Reaction SMARTS is required.', numReactants: 0, numProducts: 0};
       renderValidation();
@@ -196,7 +202,7 @@ export async function openReactionEditor(
   ui.tooltip.bind(tagsInput.input, 'Comma-separated tags for searching (e.g. "palladium, cross-coupling").');
 
   function canSave(): boolean {
-    return validationState.valid && !!nameInput.value?.trim() && !!categoryInput.value;
+    return validationState.valid && !slot?.blocked && !!nameInput.value?.trim() && !!categoryInput.value;
   }
 
   // ---- Layout ----
@@ -260,6 +266,8 @@ export async function openReactionEditor(
     }
   });
 
+  // the footer's middle slot, made while OK is still OK (Crux mode)
+  slot = checksModule() ? footerSlot(dialog) : null;
   _okBtn = dialog.getButton('OK');
   _okBtn.textContent = 'SAVE';
 

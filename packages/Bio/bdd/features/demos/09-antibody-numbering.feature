@@ -1,5 +1,5 @@
 @guide @demo
-Feature: Bioinformatics · Antibody numbering
+Feature: 6 · Antibodies and proteins · Numbering
   A demo clip, one of the Bio showcase (features/demos, filmed with `grok-bdd guide`: the @demo tag
   leaves the set-up and the checks off camera). The heavy chains of Bio's antibodies sample are numbered
   in IMGT by the default engine, ANARCI from the HMM package (HMMER in the browser): every chain shows its
@@ -8,10 +8,11 @@ Feature: Bioinformatics · Antibody numbering
   dragged along to CDR3, whose positions and region show under the pointer. The light chains are
   numbered the same way, and the clip ends on both CDR3s. Needs the HMM package (without it Bio's own
   immunum engine would be the default; the clip skips). The aligned column starts in the N-terminal
-  flank of the chains that have one; the clip shows it from IMGT position 1.
+  flank of the chains that have one; the clip shows it from IMGT position 1. In the dialog the Scheme list is
+  opened on camera (IMGT, Kabat, Chothia, Martin, AHo, Wolfguy) and IMGT, its default, taken again.
 
   Scenario: Antibody numbering in the browser
-    ANARCI numbers 493 antibodies in IMGT: frameworks and CDRs colored on every chain, and aligned columns with WebLogo and region tracks.
+    ANARCI numbers 493 antibodies in the browser: frameworks and CDRs colored, aligned in IMGT.
 
     Given user is logged in
     And simple mode is off
@@ -26,11 +27,15 @@ Feature: Bioinformatics · Antibody numbering
     Then "Apply Antibody Numbering" dialog should be visible
     And Engine input in "Apply Antibody Numbering" dialog should have value "ANARCI (HMMER)"
     And Scheme input in "Apply Antibody Numbering" dialog should have value "imgt"
+    And Scheme input in "Apply Antibody Numbering" dialog should offer "imgt, kabat, chothia, martin, aho, wolfguy"
+    When user selects "imgt" in Scheme input in "Apply Antibody Numbering" dialog
+    Then Scheme input in "Apply Antibody Numbering" dialog should have value "imgt"
     When user clicks on OK button in "Apply Antibody Numbering" dialog
     Then a new column "AntibodyHC (aligned)" should have been added
     And "AntibodyHC (aligned)" column should have tag ".numberingScheme" equal to "imgt"
     And "AntibodyHC" column should carry at least 7 annotations
-    Given the "AntibodyHC" column of the grid is 1400 px wide
+    Given the notification balloons are closed
+    And the "AntibodyHC" column of the grid is 1400 px wide
     When the video says "Frameworks and CDRs, colored on every chain"
     And user hovers over monomer 54 of the "cell 3 of AntibodyHC" area of grid
     Then tooltip should contain text "CDR2"

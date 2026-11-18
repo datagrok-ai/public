@@ -198,7 +198,7 @@ category('chemical engine: edge cases', () => {
     expect(runs.crux.drawn, 'false,false,false,false');
   });
 
-  test('a trap the RDKit worker code swallows fails its job, and the workers are replaced', async () => {
+  test('a trap the RDKit worker code swallows fails that molecule alone; the workers are kept', async () => {
     // a ring of 20,000 atoms: writing its SMILES overflows the stack (V8's RangeError inside the wasm call), which the
     // RDKit worker code's per-molecule `catch` swallowed, leaving a worker whose stack pointer the overflow moved
     const n = 20000;
@@ -210,18 +210,26 @@ category('chemical engine: edge cases', () => {
       const service = await getCruxService();
       const generation = service.generation;
       const outcome = await service.convertMolNotation([ring, 'CCO'], DG.chem.Notation.Smiles, false)
-        .then((res) => ({error: null, ring: res.results[0] ?? ''}), (e) => ({error: String(e?.message ?? e), ring: ''}));
+        .then((res) => ({error: null, ring: res.results[0] ?? '', rest: res.results[1] ?? ''}),
+          (e) => ({error: String(e?.message ?? e), ring: '', rest: ''}));
       if (outcome.error === null && outcome.ring.length > n) {
         // Crux's SMILES writer no longer recurses (crux-core spike n1102-b3 vendored): the ring is written, nothing
         // overflows, so this input has no trap to watch for (a swallowed one leaves the ring unconverted, below)
         expect(outcome.ring.startsWith('C1'), true, 'the ring\'s SMILES');
         return;
       }
-      const error = outcome.error;
-      expect(error !== null && /RuntimeError/.test(error), true, `the job failed as a trap: ${error}`);
-      expect(service.generation > generation, true, 'the workers were replaced');
+      // the worker's module recovers inside the call (crux-recover.ts), and
+      // the overflow comes again on a fresh instance, so that molecule alone fails (no result, or the job's refusal in
+      // plain words); the workers are kept
+      if (outcome.error === null)
+        expect(outcome.rest, 'CCO', 'the other molecule converted');
+      else {
+        expect(/RuntimeError|unreachable|Maximum call stack/.test(outcome.error), false,
+          `a refusal, no trap's words: ${outcome.error}`);
+      }
+      expect(service.generation, generation, `the workers were kept (${outcome.error ?? 'answered'})`);
       const after = await service.convertMolNotation(['C1CC1', 'CCO'], DG.chem.Notation.Smiles, false);
-      expect(after.results.join(' '), 'C1CC1 CCO', 'the new workers convert');
+      expect(after.results.join(' '), 'C1CC1 CCO', 'the workers convert after it');
     });
   }, {timeout: 120000});
 

@@ -2,20 +2,20 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {_package} from './package-test';
+import {reachable} from './connections/reachable';
 
 category('Queries: expected rows', () => {
   test('Every query returns its meta.testExpectedRows', async () => {
     const queries = (await grok.dapi.queries.filter(`package.id = "${_package.id}"`)
       .include('params,connection').list()).filter((q) => q.options['testExpectedRows'] != null);
     expect(queries.length > 0, true, 'no query declares meta.testExpectedRows');
-    const reachable: {[connectionId: string]: string} = {};
     const unreachable = new Set<string>();
     const wrong: string[] = [];
     for (const q of queries) {
       const connection = q.connection;
-      reachable[connection.id] ??= await (await grok.dapi.connections.find(connection.id)).test();
-      if (reachable[connection.id] !== 'ok') {
-        unreachable.add(`${connection.name}: ${reachable[connection.id]}`);
+      const answer = await reachable(connection);
+      if (answer !== 'ok') {
+        unreachable.add(`${connection.name}: ${answer}`);
         continue;
       }
       try {

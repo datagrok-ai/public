@@ -437,3 +437,26 @@ kbd[data-keys] {
   border-bottom: 1px dotted var(--grey-3);
   cursor: pointer;
 }
+
+/* Tutorials view: the tracks side by side */
+.tutorials-view-tracks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+.tutorials-tutorial-view .ui-image {
+  border: 1px solid var(--grey-1);
+  background-size: cover;
+}
+
+.tutorials-tutorial-view-track {
+  color: var(--grey-4);
+  margin-bottom: 8px;
+}
+
+.tutorials-tutorial-view-status {
+  color: var(--green-2);
+  margin: 8px 0;
+}

@@ -1124,14 +1124,14 @@ scoped('Review lists the planned access by the Created labels, in apply order, a
   assert.equal(await done, null);
 });
 
-/** The access calls of the groups in `failing` fail with `message` while they are listed. */
-function failFor(failing, message) {
+/** The access calls of the groups in `failing` fail with `message` and `code` while they are listed. */
+function failFor(failing, message, code = 'validation') {
   const table = grok.dapi.domains.table;
   grok.dapi.domains.table = (address) => {
     const client = table(address);
     const refuse = (group) => {
       if (failing.includes(group))
-        throw Object.assign(new Error(message(group)), {code: 'validation'});
+        throw Object.assign(new Error(message(group)), {code});
     };
     return {...client,
       grant: async (group, permission) => {
@@ -1148,7 +1148,7 @@ function failFor(failing, message) {
 scoped('WO-A5.1 #11 (P2): a group gone since the look-up is named and not offered for retry', async () => {
   const calls = [];
   stub(calls, () => ({status: 'ok', issues: []}));
-  failFor(['g-dev'], (group) => `Unknown group "${group}"`);
+  failFor(['g-dev'], (group) => `no group ${group}`, 'unknown-group');
   const dialog = new domains.authoring.BindingDialog({connection: CONN, schema: 'public'});
   const done = dialog.open();
   await toReview(dialog, 'nw');

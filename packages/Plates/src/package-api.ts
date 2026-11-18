@@ -69,6 +69,15 @@ export namespace funcs {
     return await grok.functions.call('Plates:PlatesAppTreeBrowser', { treeNode });
   }
 
+  /**
+   * An interactive plate from a table with one row per well: a well column (A01) or row and col columns (0-based), and a column per layer
+   * @param {number} rows - Rows of the plate. With cols, the plate keeps this size whatever wells the table holds
+   * @param {number} cols - Columns of the plate
+   */
+  export async function plateWidget(table: DG.DataFrame , rows?: number , cols?: number ): Promise<any> {
+    return await grok.functions.call('Plates:PlateWidget', { table, rows, cols });
+  }
+
   export async function getPlateByBarcode(barcode: string ): Promise<any> {
     return await grok.functions.call('Plates:GetPlateByBarcode', { barcode });
   }

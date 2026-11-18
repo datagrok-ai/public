@@ -38,6 +38,58 @@ export function sparseUnitKey(groupKey: string): string {
   return `${SPARSE_UNIT_PREFIX}${groupKey}`;
 }
 
+/** Composite unit-key prefix of a route-qualified IP composite, and its legacy spelling. */
+const IP_COMPOSITE_PREFIX = `${SPARSE_UNIT_PREFIX}ROUTE=IP|`;
+const LEGACY_OTHER_COMPOSITE_PREFIX = `${SPARSE_UNIT_PREFIX}ROUTE=other|`;
+
+/**
+ * The key the SAME composite had while its i.p. route spelling read `other` (nca-ip-route F6, user
+ * decision SF-NCA-IP-1): `sparse:ROUTE=IP|…` → `sparse:ROUTE=other|…`; null for any other key. Only
+ * route-qualified keys change (a single-route analysis carries no route in the key); the composite
+ * fingerprint hashes `route: ''`, so it does not change either.
+ */
+export function legacyCompositeKey(unitKey: string): string | null {
+  return unitKey.startsWith(IP_COMPOSITE_PREFIX) ?
+    LEGACY_OTHER_COMPOSITE_PREFIX + unitKey.slice(IP_COMPOSITE_PREFIX.length) : null;
+}
+
+/**
+ * The legacy key → current key aliases of a set of current composite unit keys: an IP composite's
+ * legacy `other` key is an alias ONLY when no current composite owns that key (else the remaining
+ * `other` composite owns its own ledger — the pooled case, AC-6.8).
+ */
+export function compositeKeyAliases(currentKeys: Iterable<string>): Map<string, string> {
+  const keys = new Set(currentKeys);
+  const out = new Map<string, string>();
+  for (const k of keys) {
+    const legacy = legacyCompositeKey(k);
+    if (legacy !== null && !keys.has(legacy)) out.set(legacy, k);
+  }
+  return out;
+}
+
+/**
+ * The composite part of the `accepted` fingerprint map (F6): current key → `[fp]`, and an aliasable
+ * legacy key → `[fp]` of its new key, so the ONE match predicate keeps the legacy-key ledger in
+ * {@link reconcileLedgers} with no special case. Called by `reviewSnapshot` AND the view's sparse
+ * reconcile, so the two cannot disagree.
+ */
+export function compositeAccepted(
+  units: ReadonlyArray<{readonly groupKey: string; readonly fingerprint: string}>,
+): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const c of units) out.set(sparseUnitKey(c.groupKey), [c.fingerprint]);
+  for (const [legacy, key] of compositeKeyAliases(out.keys())) out.set(legacy, [...out.get(key)!]);
+  return out;
+}
+
+/** THE match predicate of a stored decision (F6): its fingerprint is one the unit accepts. */
+export function decisionMatches(
+  accepted: ReadonlyMap<string, ReadonlyArray<string>>, unitKey: string, storedFingerprint: string,
+): boolean {
+  return accepted.get(unitKey)?.includes(storedFingerprint) ?? false;
+}
+
 export type ReviewNeed = 'review' | 'not-needed' | 'not-applicable';
 export type UnitCategory = ReviewCategory | 'accepted';
 
@@ -70,11 +122,13 @@ export interface ClassifyInput {
   readonly viable: boolean;
   /** UC-04 group composites (empty unless the sparse panel ran). */
   readonly composites: ReadonlyArray<CompositeUnitInput>;
-  /** Persisted decision ledgers by unit key. */
+  /** Decision ledgers by unit key — the controller's effective view (a legacy-key composite
+   *  ledger presented under its new key, F6). */
   readonly ledgers: ReadonlyMap<string, ReviewLedger>;
-  /** The CURRENT decision fingerprint by unit key. A ledger's current decision is valid only
-   *  when its fingerprint equals this (D13). A unit with no entry here cannot validate a decision. */
-  readonly fingerprints: ReadonlyMap<string, string>;
+  /** The fingerprints each unit ACCEPTS: its current one, plus the legacy `other`-route alias of
+   *  an IP dense profile (F6). A ledger's current decision is valid only when its fingerprint is
+   *  one of these (D13, {@link decisionMatches}). A unit with no entry cannot validate a decision. */
+  readonly accepted: ReadonlyMap<string, ReadonlyArray<string>>;
 }
 
 export interface ReviewUnit {
@@ -112,8 +166,7 @@ function decisionState(
 ): {decision: ReviewDecisionRecord | null; staleDecision: ReviewDecisionRecord | null} {
   const cur = input.ledgers.get(key)?.current ?? null;
   if (cur === null || need !== 'review') return {decision: null, staleDecision: cur};
-  const fp = input.fingerprints.get(key);
-  return fp !== undefined && fp === cur.fingerprint ?
+  return decisionMatches(input.accepted, key, cur.fingerprint) ?
     {decision: cur, staleDecision: null} : {decision: null, staleDecision: cur};
 }
 

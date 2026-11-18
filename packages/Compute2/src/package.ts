@@ -49,6 +49,7 @@ import {ModelCatalogView,
   setModelCatalogEventHandlers,
   setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import dayjs from 'dayjs';
+import {Compute2ModelHandler} from './model-handler';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -113,7 +114,7 @@ export class PackageFunctions {
 
     modelCatalogOptions.roleOnlyFilter = isRoleOnlyModelFilter();
 
-    setModelCatalogHandler();
+    setModelCatalogHandler(new Compute2ModelHandler());
     setModelCatalogEventHandlers(modelCatalogOptions);
 
     try {
@@ -170,8 +171,12 @@ export class PackageFunctions {
 
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     const detach = attachRunStorage(view, call.func);
-    if (call.aux.initialRunId) {
-      await view.loadRun(call.aux.initialRunId)
+    // as in RFVApp: a programmatic open passes the id via call.aux, deep links via the start URL
+    const runId = call.aux.initialRunId ??
+      (globalThis.initialURLHandled ? null : new URL(grok.shell.startUri).searchParams.get('id'));
+    globalThis.initialURLHandled = true;
+    if (runId) {
+      await view.loadRun(runId)
         .catch((e) => grok.shell.error(`Couldn't open the run: ${e?.message ?? e}`));
     }
 

@@ -70,6 +70,8 @@ export interface IDartApi {
   grok_View_Set_Path(v: any, s: String): any;
   grok_View_Get_BasePath(v: any): any;
   grok_View_Set_BasePath(v: any, s: String): any;
+  grok_View_Get_SaveToProject(v: any): any;
+  grok_View_Set_SaveToProject(v: any, x: Boolean): any;
   grok_View_Get_Description(v: any): any;
   grok_View_Set_Description(v: any, s: String): any;
   grok_View_Get_Type(v: any): any;
@@ -852,6 +854,7 @@ export interface IDartApi {
   grok_Meta_RenderCard(meta: any, x: any, context?: any): any;
   grok_Meta_RenderProperties(meta: any, x: any): any;
   grok_Meta_RenderView(meta: any, x: any): any;
+  grok_Meta_RunDefaultAction(x: any): any;
   grok_Meta_RenderGrid(meta: any, grid: any, items: any): any;
   grok_Meta_RenderListItem(meta: any, x: any, context?: any): any;
   grok_Meta_RenderInput(meta: any, x: any): any;

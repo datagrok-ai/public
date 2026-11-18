@@ -8,7 +8,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function app(): Promise<void> {
+  export async function app(): Promise<DG.View> {
     return await grok.functions.call('EnamineChemSpace:App', {});
   }
 

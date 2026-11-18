@@ -19,7 +19,12 @@ Feature: Oligo Toolkit: the Translator and Structure tools
 
   GROK-20959 is fixed: the refusal names the sequence. It is claimed in one step, since a balloon claim takes
   the balloon it matched and a second claim on it finds none. GROK-20806 (a second conversion of the same
-  column) is fixed: both columns stay, the second named "(2)"; Convert writes HELM.
+  column) is fixed: both columns stay, the second named "(2)". Each bulk scenario picks its Output format: a
+  new Translator shows Nucleotides, and Convert uses the formats its own view shows (before SequenceTranslator
+  read them from its view, an earlier scenario's HELM stayed in effect behind a selector showing Nucleotides).
+
+  The Oligo Translator app opens after the toolkit's view, also named "Oligo Translator", is closed: since
+  core#239 an app's view joins the scratchpad project as it opens, which names a second view of one name "(2)".
 
   The translations themselves (the Axolabs sample's, the typed HELMs', none for an unreadable code), the
   values of the bulk conversion and the GROK-20958 refresh are SequenceTranslator's package tests
@@ -104,7 +109,8 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     And no errors should have been logged
 
   Scenario: The Oligo Translator's monomer library opens as a read-only table
-    When user double-clicks Apps---Peptides---Oligo-Toolkit---Oligo-Translator tree node inside browse tree
+    When user closes the current view
+    And user double-clicks Apps---Peptides---Oligo-Toolkit---Oligo-Translator tree node inside browse tree
     Then the "Oligo Translator" view should be current
     When user clicks on "View monomer library" icon
     Then the "Monomer Library" view should be current
@@ -147,7 +153,8 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     When user double-clicks Files---App-Data---SequenceTranslator---samples---bulk-translation-axolabs.csv tree node inside browse tree
     Then the "bulk-translation-axolabs" view should be current
     When user clicks on the tab of the "Oligo Translator" view
-    When user clicks on Convert button
+    When user selects "HELM" in "Output format" input
+    And user clicks on Convert button
     Then the table should have a column "AxolabsSequences (HELM)"
     When user clicks on the tab of the "Oligo Translator" view
     When user clicks on Convert button

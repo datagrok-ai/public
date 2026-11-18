@@ -318,10 +318,25 @@ test('helpers.playwright.projects C1b — UI helpers suite', async ({page}) => {
         return p ? p.id : null;
       }, name);
       expect(projectId).toBeTruthy();
-      await shareProjectViaContextMenu(page, name, {
-        recipient: 'Test permission group',
-        accessLevel: 'View and use',
-      });
+      // The Share dialog accepts only an existing user/group or an e-mail (core #1598), so bring our own group.
+      const groupName = SESSION_PREFIX_C1B + 'group';
+      const groupId = await page.evaluate(async (g) => {
+        const grok = (window as any).grok;
+        const DG = (window as any).DG;
+        return (await grok.dapi.groups.save(DG.Group.create(g))).id;
+      }, groupName);
+      try {
+        await shareProjectViaContextMenu(page, name, {
+          recipient: groupName,
+          accessLevel: 'View and use',
+        });
+      }
+      finally {
+        await page.evaluate(async (id) => {
+          const grok = (window as any).grok;
+          await grok.dapi.groups.delete(await grok.dapi.groups.find(id));
+        }, groupId);
+      }
       // Verification philosophy: test verifies via user-visible behavior,
       // not internal API state. The helper's
       // successful execution (no UI error during dialog flow + dialog

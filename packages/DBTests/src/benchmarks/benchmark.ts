@@ -1,8 +1,11 @@
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {requireConnection} from '../connections/reachable';
 
 category('Benchmarks', () => {
+  before(async () => await requireConnection('DbTests:PostgreSQLDBTests'));
+
   test('Sequential select 1', async () => {
     const count = DG.Test.isInBenchmark ? 100 : 25;
     return await benchmarkQuery('SimpleSelect', count);

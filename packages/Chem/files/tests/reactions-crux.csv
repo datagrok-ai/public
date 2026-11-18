@@ -1,0 +1,110 @@
+id,kind,reaction
+dgdef-suzuki-coupling,single: named-smirks-datagrok,[c:1][Br].[#5]([OH])([OH])[c:2]>>[c:1][c:2]
+dgdef-heck-reaction,single: named-smirks-datagrok,[C:1]=[C:2].[c:3][Br]>>[C:1]=[C:2][c:3]
+dgdef-sonogashira-coupling,single: named-smirks-datagrok,[C:1]#[CH].[c:2][Br]>>[C:1]#[C][c:2]
+dgdef-grignard-ketone,single: named-smirks-datagrok,[C:1][Mg][Br].[C:2](=[O:3])[C:4]>>[C:2]([O:3])([C:1])[C:4]
+dgdef-wittig-reaction,single: named-smirks-datagrok,[C:1]=[P]([c])(c)c.[C:2]=O>>[C:2]=[C:1]
+dgdef-amide-coupling,single: named-smirks-datagrok,[C:1](=[O:2])[OH].[NH2:3]>>[C:1](=[O:2])[NH:3]
+spec-01,single: specific-with-agents,CC(C)(C)OC(=O)N1CCNCC1.O=C(O)C1CC1>CN(C)C(On1nnc2cccnc21)=[N+](C)C.F[P-](F)(F)(F)(F)F.CCN(C(C)C)C(C)C.CN(C)C=O>CC(C)(C)OC(=O)N1CCN(C(=O)C2CC2)CC1 |f:2.3|
+spec-01m,single: specific-with-agents,[CH3:1][C:2]([CH3:3])([CH3:4])[O:5][C:6](=[O:7])[N:8]1[CH2:9][CH2:10][NH:11][CH2:12][CH2:13]1.O[C:15](=[O:14])[CH:17]1[CH2:18][CH2:19]1>CN(C)C(On1nnc2cccnc21)=[N+](C)C.F[P-](F)(F)(F)(F)F.CCN(C(C)C)C(C)C.CN(C)C=O>[CH3:1][C:2]([CH3:3])([CH3:4])[O:5][C:6](=[O:7])[N:8]1[CH2:9][CH2:10][N:11]([C:15](=[O:14])[CH:17]2[CH2:18][CH2:19]2)[CH2:12][CH2:13]1
+spec-02,single: specific-with-agents,O=Cc1ccc(B(O)O)cc1.O=C(C1CC1)N1CCN(c2ncc(Br)cn2)CC1>[Pd].O=C([O-])[O-].[K+].[K+].C1COCCO1.O>O=Cc1ccc(-c2cnc(N3CCN(C(=O)C4CC4)CC3)nc2)cc1 |f:3.4.5|
+spec-03,single: specific-with-agents,COCCN.O=Cc1ccc(-c2cnc(NCCNC(=O)c3cccs3)nc2)o1>CC(=O)O[BH-](OC(C)=O)OC(C)=O.[Na+].CC(=O)O.ClCCCl>COCCNCc1ccc(-c2cnc(NCCNC(=O)c3cccs3)nc2)o1 |f:2.3|
+spec-03m,single: specific-with-agents,[CH3:1][O:2][CH2:3][CH2:4][NH2:5].O=[CH:7][c:8]1[cH:9][cH:10][c:11](-[c:12]2[cH:13][n:14][c:15]([NH:16][CH2:17][CH2:18][NH:19][C:20](=[O:21])[c:22]3[cH:23][cH:24][cH:25][s:26]3)[n:27][cH:28]2)[o:29]1>CC(=O)O[BH-](OC(C)=O)OC(C)=O.[Na+].CC(=O)O.ClCCCl>[CH3:1][O:2][CH2:3][CH2:4][NH:5][CH2:7][c:8]1[cH:9][cH:10][c:11](-[c:12]2[cH:13][n:14][c:15]([NH:16][CH2:17][CH2:18][NH:19][C:20](=[O:21])[c:22]3[cH:23][cH:24][cH:25][s:26]3)[n:27][cH:28]2)[o:29]1
+spec-04,single: specific-with-agents,COC(=O)c1ccc([N+](=O)[O-])c(O)c1.COCCBr>O=C([O-])[O-].[K+].[K+].CN(C)C=O>COCCOc1cc(C(=O)OC)ccc1[N+](=O)[O-] |f:2.3.4|
+deli-DEL006-step1,single: named-smirks-public,[#6:1]-C(=O)-O.[15N:2]>>[15N:2]-C(=O)-[#6:1]
+deli-DEL006-step2,single: named-smirks-public,[#8]=[#6](-[#8]-[#6]-[#6]1-[#6]2:[#6]:[#6]:[#6]:[#6]:[#6]:2-[#6]2:[#6]-1:[#6]:[#6]:[#6]:[#6]:2)-[#7:1][*:2]>>[#7:1]([H])[*:2]
+deli-DEL006-step3,single: named-smirks-public,[Nh:2].[#6:3](=O)-O >>[#6:3](=O)-[N:2]
+deli-DEL006-step4,single: named-smirks-public,[#6:0]1(-[*:1]):[#6]:[#6]:[#6:2](-[#9]):[#6:4](-[#7+](-[#8-])=[#8]):[#6]:1.[NH2:6][*:3]>>[#6:0]1(-[*:1]):[#6]:[#6]:[#6:2](-[NH:6][*:3]):[#6:4](-[#7+](-[#8-])=[#8]):[#6]:1
+own-smarts-09,single: stereo,[C:1][C@:2]([F:3])([Cl:4])[Br]>>[C:1][C@@:2]([F:3])([Cl:4])O
+own-smarts-10,single: stereo,[C:1][CH:2]=O.[C:3][CH2:4][P+](c1ccccc1)(c1ccccc1)c1ccccc1>>[C:1]/[CH:2]=[CH:4]\[C:3]
+own-smarts-11,single: r-groups,[*:1]C(=O)O.[*:2]N>>[*:1]C(=O)N[*:2]
+own-smarts-12,single: r-groups,[1*]C(=O)O.[2*]N>>[1*]C(=O)N[2*]
+own-rxn-01,single: charges,CN(C)C.CI>>C[N+](C)(C)C.[I-] |f:2.3|
+own-rxn-02,single: charges,NCC(O)=O>>[NH3+]CC([O-])=O
+own-rxn-18,single: five-or-more-components,O=Cc1ccccc1.Nc1ccccc1.CC(O)=O.CC(C)(C)[N+]#[C-]>CO>CC(=O)N(c1ccccc1)C(C(=O)NC(C)(C)C)c1ccccc1.O
+large-01,single: very-large-reactants,COC(=O)[C@H](CC(C)C)NC(=O)[C@H](Cc1ccccc1)NC(=O)CNC(=O)CNC(=O)[C@@H](N)Cc1ccc(O)cc1.CC(C)C[C@H](NC(=O)[C@H](Cc1ccccc1)NC(=O)CNC(=O)CNC(=O)[C@H](Cc1ccc(O)cc1)NC(=O)OC(C)(C)C)C(=O)O>>COC(=O)[C@H](CC(C)C)NC(=O)[C@H](Cc1ccccc1)NC(=O)CNC(=O)CNC(=O)[C@H](Cc1ccc(O)cc1)NC(=O)[C@H](CC(C)C)NC(=O)[C@H](Cc1ccccc1)NC(=O)CNC(=O)CNC(=O)[C@H](Cc1ccc(O)cc1)NC(=O)OC(C)(C)C.O
+edge-06,single: unbalanced,c1ccccc1>>Brc1ccccc1
+own-smarts-05,single: ring-aromaticity,([C:1]=[C;H2].[C:2]=[C;H2])>>[*:1]=[*:2]
+own-rxn-06,single: isotopes,[2H]C([2H])([2H])I.Oc1ccccc1>[K+].[K+].[O-]C([O-])=O>[2H]C([2H])([2H])Oc1ccccc1.I |f:2.3.4|
+own-cx-01,single: cx-features,"CC>>CO |(0,0,;1,0,;0,0,;1,0,)|"
+own-smarts-01,single: recursive-smarts,"[NX3;H2,H1;!$(N[C,S]=[O,S,N]);!$(N[#7]):1].[C:2](=[O:3])[Cl,Br]>>[N:1][C:2]=[O:3]"
+own-smarts-03,single: atom-list,"[c:1][Cl,Br,I,$(OS(=O)(=O)C(F)(F)F)]>>[c:1]B1OC(C)(C)C(C)(C)O1"
+block-v2000,single: rxn-block,"$RXN
+
+      RDKit
+
+  3  2
+$MOL
+
+     RDKit          2D
+
+  4  3  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2990    0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.5981   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2990    2.2500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+  2  3  2  0
+  2  4  1  0
+M  END
+$MOL
+
+     RDKit          2D
+
+  3  2  0  0  0  0  0  0  0  0999 V2000
+    2.5981   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2990    0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+  2  3  1  0
+M  END
+$MOL
+
+     RDKit          2D
+
+  5  4  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2990    0.7500    0.0000 S   0  0  0  0  0  0  0  0  0  0  0  0
+    2.5981    1.5000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    2.0490   -0.5490    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    0.5490    2.0490    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+  2  3  2  0
+  2  4  2  0
+  2  5  1  0
+M  END
+$MOL
+
+     RDKit          2D
+
+  6  5  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2990    0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.5981   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    1.2990    2.2500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    2.5981    3.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.5981    4.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+  2  3  2  0
+  2  4  1  0
+  4  5  1  0
+  5  6  1  0
+M  END
+$MOL
+
+     RDKit          2D
+
+  1  0  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+M  END
+"
+enum-A-01,route: enumeration,CC(C)(C)OC(=O)N1CCNCC1.O=C(O)C1CC1>CN(C)C(On1nnc2cccnc21)=[N+](C)C.F[P-](F)(F)(F)(F)F.CCN(C(C)C)C(C)C.CN(C)C=O>CC(C)(C)OC(=O)N1CCN(C(=O)C2CC2)CC1--**--CC(C)(C)OC(=O)N1CCN(C(=O)C2CC2)CC1>O=C(O)C(F)(F)F.ClCCl>O=C(C1CC1)N1CCNCC1--**--Clc1ncc(Br)cn1.O=C(C1CC1)N1CCNCC1>CCN(C(C)C)C(C)C.CS(C)=O>O=C(C1CC1)N1CCN(c2ncc(Br)cn2)CC1--**--O=Cc1ccc(B(O)O)cc1.O=C(C1CC1)N1CCN(c2ncc(Br)cn2)CC1>[Pd].O=C([O-])[O-].[K+].[K+].C1COCCO1.O>O=Cc1ccc(-c2cnc(N3CCN(C(=O)C4CC4)CC3)nc2)cc1--**--C1COCCN1.O=Cc1ccc(-c2cnc(N3CCN(C(=O)C4CC4)CC3)nc2)cc1>CC(=O)O[BH-](OC(C)=O)OC(C)=O.[Na+].CC(=O)O.ClCCCl>O=C(C1CC1)N1CCN(c2ncc(-c3ccc(CN4CCOCC4)cc3)cn2)CC1
+enum-A-02,route: enumeration,CC(C)(C)OC(=O)NC1CCNCC1.O=C(O)c1cccnc1>CN(C)C(On1nnc2cccnc21)=[N+](C)C.F[P-](F)(F)(F)(F)F.CCN(C(C)C)C(C)C.CN(C)C=O>CC(C)(C)OC(=O)NC1CCN(C(=O)c2cccnc2)CC1--**--CC(C)(C)OC(=O)NC1CCN(C(=O)c2cccnc2)CC1>O=C(O)C(F)(F)F.ClCCl>NC1CCN(C(=O)c2cccnc2)CC1--**--Cc1nc(Cl)ncc1Br.NC1CCN(C(=O)c2cccnc2)CC1>CCN(C(C)C)C(C)C.CS(C)=O>Cc1nc(NC2CCN(C(=O)c3cccnc3)CC2)ncc1Br--**--COc1cc(B(O)O)ccc1C=O.Cc1nc(NC2CCN(C(=O)c3cccnc3)CC2)ncc1Br>[Pd].O=C([O-])[O-].[K+].[K+].C1COCCO1.O>COc1cc(-c2cnc(NC3CCN(C(=O)c4cccnc4)CC3)nc2C)ccc1C=O--**--C1CNC1.COc1cc(-c2cnc(NC3CCN(C(=O)c4cccnc4)CC3)nc2C)ccc1C=O>CC(=O)O[BH-](OC(C)=O)OC(C)=O.[Na+].CC(=O)O.ClCCCl>COc1cc(-c2cnc(NC3CCN(C(=O)c4cccnc4)CC3)nc2C)ccc1CN1CCC1
+enum-A-03,route: enumeration,CC(C)(C)OC(=O)NCCN.O=C(O)c1cccs1>CN(C)C(On1nnc2cccnc21)=[N+](C)C.F[P-](F)(F)(F)(F)F.CCN(C(C)C)C(C)C.CN(C)C=O>CC(C)(C)OC(=O)NCCNC(=O)c1cccs1--**--CC(C)(C)OC(=O)NCCNC(=O)c1cccs1>O=C(O)C(F)(F)F.ClCCl>NCCNC(=O)c1cccs1--**--Clc1ncc(Br)cn1.NCCNC(=O)c1cccs1>CCN(C(C)C)C(C)C.CS(C)=O>O=C(NCCNc1ncc(Br)cn1)c1cccs1--**--O=Cc1ccc(B(O)O)o1.O=C(NCCNc1ncc(Br)cn1)c1cccs1>[Pd].O=C([O-])[O-].[K+].[K+].C1COCCO1.O>O=Cc1ccc(-c2cnc(NCCNC(=O)c3cccs3)nc2)o1--**--COCCN.O=Cc1ccc(-c2cnc(NCCNC(=O)c3cccs3)nc2)o1>CC(=O)O[BH-](OC(C)=O)OC(C)=O.[Na+].CC(=O)O.ClCCCl>COCCNCc1ccc(-c2cnc(NCCNC(=O)c3cccs3)nc2)o1
+drug-aspirin,route: linear,Oc1ccccc1.O=C=O>[Na+].[OH-].O=S(=O)(O)O>O=C(O)c1ccccc1O--**--O=C(O)c1ccccc1O.CC(=O)OC(C)=O>O=P(O)(O)O>CC(=O)Oc1ccccc1C(=O)O.CC(=O)O
+drug-paracetamol-nitration,route: linear,Oc1ccccc1.O=[N+]([O-])O>O>O=[N+]([O-])c1ccc(O)cc1.O--**--O=[N+]([O-])c1ccc(O)cc1.[H][H].[H][H].[H][H]>[Pd].CCO>Nc1ccc(O)cc1.O.O--**--Nc1ccc(O)cc1.CC(=O)OC(C)=O>O>CC(=O)Nc1ccc(O)cc1.CC(=O)O
+tree-aizynth-sampletree-0,route: tree,COS(=O)(=O)OC.Oc1ccc2cc(Cl)ccc2c1>>COc1ccc2cc(Cl)ccc2c1--**--COc1ccc2cc(Cl)ccc2c1.CCC(=O)Oc1ccc(C)cc1OC>>COc1ccc2cc(C(C)C(=O)Oc3ccc(C)cc3OC)ccc2c1
+drug-sildenafil-commercial,route: convergent,CCOc1ccccc1C(=O)O.O=S(=O)(O)Cl>O=S(Cl)Cl>CCOc1ccc(S(=O)(=O)Cl)cc1C(=O)O.O--**--CCOc1ccc(S(=O)(=O)Cl)cc1C(=O)O.CN1CCNCC1>O>CCOc1ccc(S(=O)(=O)N2CCN(C)CC2)cc1C(=O)O.Cl--**--CCCc1nn(C)c(C(N)=O)c1[N+](=O)[O-].[H][H].[H][H].[H][H]>[Pd].CCOC(C)=O>CCCc1nn(C)c(C(N)=O)c1N.O.O--**--CCCc1nn(C)c(C(N)=O)c1N.CCOc1ccc(S(=O)(=O)N2CCN(C)CC2)cc1C(=O)O>O=C(n1ccnc1)n1ccnc1.CCOC(C)=O>CCCc1nn(C)c(C(N)=O)c1NC(=O)c1cc(S(=O)(=O)N2CCN(C)CC2)ccc1OCC.O--**--CCCc1nn(C)c(C(N)=O)c1NC(=O)c1cc(S(=O)(=O)N2CCN(C)CC2)ccc1OCC>CC(C)(C)[O-].[K+].CC(C)(C)O>CCCc1nn(C)c2c(=O)[nH]c(-c3cc(S(=O)(=O)N4CCN(C)CC4)ccc3OCC)nc12.O
+text-sulfanilamide,route: protecting-group,c1ccccc1.O=[N+]([O-])O>O=S(=O)(O)O>O=[N+]([O-])c1ccccc1.O--**--O=[N+]([O-])c1ccccc1>[Sn].Cl>Nc1ccccc1--**--Nc1ccccc1.CC(=O)OC(C)=O>O>CC(=O)Nc1ccccc1.CC(=O)O--**--CC(=O)Nc1ccccc1.O=S(=O)(O)Cl.O=S(=O)(O)Cl>>CC(=O)Nc1ccc(S(=O)(=O)Cl)cc1.O=S(=O)(O)O.Cl--**--CC(=O)Nc1ccc(S(=O)(=O)Cl)cc1.N.N>O>CC(=O)Nc1ccc(S(N)(=O)=O)cc1.[Cl-].[NH4+]--**--CC(=O)Nc1ccc(S(N)(=O)=O)cc1.O>Cl>Nc1ccc(S(N)(=O)=O)cc1.CC(=O)O
+del-T-01,route: del,*CCCN.O=C(O)CNC(=O)OCC1c2ccccc2-c2ccccc21>COc1nc(OC)nc([N+]2(C)CCOCC2)n1.[Cl-].OB(O)O.O>*CCCNC(=O)CNC(=O)OCC1c2ccccc2-c2ccccc21--**--*CCCNC(=O)CNC(=O)OCC1c2ccccc2-c2ccccc21>C1CCNCC1.O>*CCCNC(=O)CN--**--Clc1nc(Cl)nc(Cl)n1.*CCCNC(=O)CN>OB(O)O.CC#N>*CCCNC(=O)CNc1nc(Cl)nc(Cl)n1--**--*CCCNC(=O)CNc1nc(Cl)nc(Cl)n1.C1COCCN1>OB(O)O.CC#N>*CCCNC(=O)CNc1nc(Cl)nc(N2CCOCC2)n1--**--*CCCNC(=O)CNc1nc(Cl)nc(N2CCOCC2)n1.COCCN>OB(O)O.CS(C)=O>*CCCNC(=O)CNc1nc(NCCOC)nc(N2CCOCC2)n1
+onepot-reductive-amination,route: one-pot,O=Cc1ccccc1.Nc1ccccc1>ClCCCl>C(=N\c1ccccc1)/c1ccccc1.O--**--C(=N\c1ccccc1)/c1ccccc1>CC(=O)O[BH-](OC(C)=O)OC(C)=O.[Na+].CC(=O)O.ClCCCl>c1ccc(CNc2ccccc2)cc1

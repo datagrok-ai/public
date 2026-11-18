@@ -14,7 +14,9 @@ category('Files: OpenFile', () => {
     const df: DG.DataFrame = await grok.functions.call('OpenFile', {'fullPath': 'System:DemoFiles/chem/zbb/99_p0_ph7.csv'});
     expect(df.name, '99_p0_ph7', 'Table name differs');
     expect(df.rowCount, 574356);
-  }, {stressTest: true, node: true});
+    // The server converts the 574k-row csv to d42 on first open (cached afterwards); same budget
+    // as 'Project with big table csv', which opens the same file.
+  }, {timeout: 120000, stressTest: true, node: true});
 
   test('Open small csv', async () => {
     const df: DG.DataFrame = await grok.functions.call('OpenFile', {'fullPath': 'System:DemoFiles/cars.csv'});

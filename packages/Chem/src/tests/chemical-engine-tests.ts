@@ -11,7 +11,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {after, waitUntil, before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, waitUntil, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 import {_package} from '../package-test';
 import {PackageFunctions, _package as chemPackage} from '../package';
@@ -19,9 +19,10 @@ import {RDKitCellRenderer} from '../rendering/rdkit-cell-renderer';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {ChemicalEngine, chemSetting, cruxReady, engineInEffect, isCruxRequested, onEngineSwitch, requestedEngine,
   setChemicalEngine} from '../engine/chem-engine';
-import {CRUX_WASM_FILE, cruxHeapBytes, cruxLoadFailed, cruxLoadRequests, cruxWasmUrl, holdCruxForTests, noteCruxError,
-  resetCruxLoaderForTests, setCruxFetchForTests, setCruxLoadFailureForTests, setCruxParseTrapForTests}
-  from '../engine/crux-module';
+import {CRUX_WASM_FILE, armCruxTrapForTests, cruxHeapBytes, cruxLoadFailed, cruxLoadRequests, cruxWasmUrl,
+  holdCruxForTests, noteCruxError, onCruxRecover, resetCruxLoaderForTests, setCruxFetchForTests,
+  loadCrux, setCruxLoadFailureForTests} from '../engine/crux-module';
+import type {CruxRecovery} from '../crux/crux-recover';
 import {calculateDescriptors, forgetCruxTreeForTests, getDescriptorsTree, lastDescriptorTiming,
   setCruxDescriptorGapForTests, setDescriptorTimingForTests} from '../descriptors/descriptors-engine';
 import {cruxFallbackCount, cruxOrRdKitAsync} from '../engine/fallback';
@@ -61,7 +62,8 @@ interface RendererInternals {
   canvasReused: OffscreenCanvas;
   rendersCache: unknown;
   renderUncached(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, molString: string): void;
-  _molToSvg(molString: string, w: number, h: number): string | null;
+  _molToSvg(molString: string, w: number, h: number, scaffolds?: {molecule: string}[],
+    alignByFirstSubstructure?: boolean, engine?: ChemicalEngine, renderOpts?: {[key: string]: any}): string | null;
 }
 
 function newRenderer(): RendererInternals {
@@ -178,6 +180,9 @@ function descriptorDifferences(expected: DG.Column[], actual: DG.Column[]): stri
 }
 /** A ~600-atom peptide-like chain: a very large molecule for the grid. */
 const LARGE = 'N' + 'C(C)C(=O)N'.repeat(120) + 'CC(=O)O';
+/** More ink than a short wavy bond adds to a 200 x 100 drawing (mol1K row 381: 4 px) and less than an error
+ * cross (a few hundred px). */
+const WAVY_MARK_INK = 100;
 
 category('chemical engine', () => {
   before(async () => {
@@ -336,34 +341,114 @@ category('chemical engine', () => {
     expect(await cruxReady(), true, 'Crux back after the reset');
   }, {timeout: 60000 + CONTAINER_TIMEOUT});
 
-  test('a trap in a Crux call leaves RDKit for the session', async () => {
+  // A trap never switches Crux off, and a user is never asked to reload: the module recovers inside the call
+  // (crux/crux-recover.ts). The traps are crux-core's real test trap (the next engine call panics), not a stub.
+  test('a trap in a Crux call is recovered from: the call answers on a fresh instance, Crux stays on', async () => {
     await inEngine(ChemicalEngine.Crux, async () => {
+      noteCruxError(new Error('simulated: a molecule Crux refuses'));
+      expect(isCruxRequested(), true, 'an error other than a trap leaves Crux on');
+      const told: CruxRecovery[] = [];
+      const stop = onCruxRecover((r) => told.push(r));
       try {
-        noteCruxError(new Error('simulated: a molecule Crux refuses'));
-        expect(isCruxRequested(), true, 'an error other than a trap leaves Crux on');
-        noteCruxError(new WebAssembly.RuntimeError('simulated: unreachable'));
-        expect(isCruxRequested(), false, 'after a trap: RDKit');
-        expect(engineInEffect(), ChemicalEngine.RDKit);
-        expect(newRenderer()._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.RDKit);
+        expect(armCruxTrapForTests(1), true, 'the main thread\'s module is loaded');
+        const info = newRenderer()._fetchMol(ASPIRIN, [], false, false, {}, false);
+        expect(info.engine, ChemicalEngine.Crux, 'Crux drew the molecule, on a fresh instance');
+        expect(isCruxRequested(), true, 'Crux stays on');
+        expect(engineInEffect(), ChemicalEngine.Crux);
+        await delay(0);
+        expect(told.length, 1, 'one recovery told');
+        expect(told[0].outcome, 'retried');
+        expect(/crux test trap/.test(told[0].note ?? ''), true, `the note names the panic: ${told[0].note}`);
+        expect(newRenderer()._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.Crux,
+          'the next molecule: Crux');
       } finally {
-        resetCruxLoaderForTests(null); // the next session's Crux
+        stop?.();
       }
-      expect(await cruxReady(), true, 'Crux back after the reset');
     });
   });
 
-  test('a trap while Crux parses a molecule leaves RDKit for the session', async () => {
-    await inEngine(ChemicalEngine.Crux, async () => {
-      setCruxParseTrapForTests(true);
+  test('a Crux call that traps on a fresh instance too fails alone: RDKit draws that molecule, Crux stays on',
+    async () => await inEngine(ChemicalEngine.Crux, async () => {
+      const told: CruxRecovery[] = [];
+      const stop = onCruxRecover((r) => told.push(r));
       try {
+        // each of the renderer's three reads of it (getMolSafe: get_mol, get_mol unkekulized, get_qmol) traps on two
+        // instances, so Crux refuses all three: six armed instances
+        expect(armCruxTrapForTests(1, 6), true, 'the main thread\'s module is loaded');
         const info = newRenderer()._fetchMol(ASPIRIN, [], false, false, {}, false);
-        expect(isCruxRequested(), false, 'the trap in get_mol marked Crux failed');
-        expect(info.engine, ChemicalEngine.RDKit, 'RDKit drew the molecule');
+        expect(info.engine, ChemicalEngine.RDKit, 'RDKit drew the molecule Crux refused');
+        expect(isCruxRequested(), true, 'Crux stays on');
+        await delay(0);
+        expect(told.at(-1)?.outcome, 'refused');
+        expect(newRenderer()._fetchMol(ASPIRIN, [], false, false, {}, false).engine, ChemicalEngine.Crux,
+          'the next molecule: Crux');
       } finally {
-        setCruxParseTrapForTests(false);
-        resetCruxLoaderForTests(null); // the next session's Crux
+        stop?.();
       }
-      expect(await cruxReady(), true, 'Crux back after the reset');
+    }));
+
+  // The same in the workers (crux.worker.ts on crux/crux-recover.ts): a trap in a job is
+  // recovered inside it, the workers are kept, Crux stays on. crux-core's real test trap in every worker's module.
+  test('a trap in a Crux worker\'s job is recovered there: the job answers as without it, the workers are kept',
+    async () => {
+      await inEngine(ChemicalEngine.Crux, async () => {
+        const service = await getCruxService();
+        const calm = await service.scaffoldTree([ASPIRIN], 10, false);
+        const generation = service.generation;
+        await service.trapWorkersForTests(1);
+        try {
+          expect(await service.scaffoldTree([ASPIRIN], 10, false), calm, 'the tree, after a trap in its job');
+          expect(service.generation, generation, 'the workers were kept (no restart)');
+          expect(isCruxRequested(), true, 'Crux stays on');
+        } finally {
+          await service.trapWorkersForTests(0); // the workers the job did not go to: disarmed
+        }
+      });
+    });
+
+  test('a Crux worker\'s call that traps on a fresh instance too fails alone: the workers are kept', async () => {
+    await inEngine(ChemicalEngine.Crux, async () => {
+      const service = await getCruxService();
+      const generation = service.generation;
+      await service.trapWorkersForTests(1, 2);
+      let outcome = 'answered';
+      try {
+        await service.scaffoldTree([ASPIRIN], 10, false);
+      } catch (e: any) {
+        outcome = `refused: ${e?.message ?? e}`;
+      } finally {
+        await service.trapWorkersForTests(0);
+      }
+      expect(/reload|RuntimeError|unreachable/i.test(outcome), false, `a refusal, no trap's words: ${outcome}`);
+      expect(service.generation, generation, `the workers were kept (${outcome})`);
+      const tree = JSON.parse(await service.scaffoldTree([ASPIRIN], 10, false));
+      expect(Array.isArray(tree) && tree.length > 0, true, 'the next job answers');
+    });
+  });
+
+  test('a molecule that traps a Crux index build twice is searched by RDKit; the search is whole', async () => {
+    const source = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList();
+    // a column of its own, so that no index of it is held already
+    const fresh = () => {
+      const col = DG.Column.fromStrings('recover search', source);
+      col.semType = DG.SEMTYPE.MOLECULE;
+      return col;
+    };
+    setSubstructureSearchEngine(null);
+    const search = async (col: DG.Column) =>
+      ((await PackageFunctions.searchSubstructure(col, 'c1ccncc1', '')).get(0) as DG.BitSet).toString();
+    const rdkit = await inEngine(ChemicalEngine.RDKit, () => search(fresh()));
+    await inEngine(ChemicalEngine.Crux, async () => {
+      const service = await getCruxService();
+      const generation = service.generation;
+      await service.buildTrapForTests(3);
+      try {
+        expect(await search(fresh()), rdkit, 'the hits, row 3 of each segment searched by RDKit');
+      } finally {
+        await service.buildTrapForTests(-1);
+      }
+      expect(service.generation, generation, 'the workers were kept');
+      expect(await search(fresh()), rdkit, 'and with no trap');
     });
   });
 
@@ -475,6 +560,61 @@ category('chemical engine', () => {
       expect(inBlue > 100 && inDefault === 0, true, `${engine}: ${inBlue} blue pixels, ${inDefault} in the default color`);
   });
 
+  test('a molecule whose unspecified stereo RDKit cannot mark: RDKit draws it without the marks, Crux with them; ' +
+    'no error cross', async () => {
+    // mol1K.csv's row index 381 (the Chemical Space demo): the wavy bond its unspecified phosphorus gets lands on a
+    // P-O bond too short for one, and RDKit's MolDraw2D throws "too few segments": the canvas was crossed out and the
+    // SVG export threw, as for SequenceTranslator's oligonucleotide structures, so RDKit mode draws it without the
+    // marks. Crux's port draws the short wavy bond (crux-core's decision moldraw2d-wavy-short; the test below): a few
+    // pixels more ink with the marks (1363 against 1359 when measured), far from an error cross's few hundred
+    const molecule: string = (await readDataframe('mol1K.csv')).get('molecule', 381);
+    const draw = (unspecifiedStereoIsUnknown: boolean) => inked(newRenderer()._fetchRender(200, 100, molecule, [],
+      false, false, false, {}, undefined, {unspecifiedStereoIsUnknown}));
+    const ink = await inBothEngines(async () => ({on: draw(true), off: draw(false)}),
+      {noFallback: ['rendering', 'drawing']});
+    expect(ink.rdkit.on, ink.rdkit.off,
+      `rdkit: ${ink.rdkit.on} px with the stereo marked, ${ink.rdkit.off} px without: drawn without the marks`);
+    const {on, off} = ink.crux;
+    expect(on > off && on - off < WAVY_MARK_INK, true,
+      `crux: ${on} px with the stereo marked, ${off} px without: the wavy bond's few more, no error cross`);
+    const svg = await inBothEngines(async () => newRenderer()._molToSvg(molecule, 200, 100, [], false, undefined,
+      {unspecifiedStereoIsUnknown: true}) ?? '', {noFallback: ['drawing']});
+    for (const [engine, s] of Object.entries(svg))
+      expect(s.includes('</svg>'), true, `${engine}: an SVG`);
+  });
+
+  // The same molecule through the engine directly, with a grid's MOL block details in a short cell (150 x 60 and 120 x
+  // 60, device px 1: SequenceTranslator's rule grid): chem-wasm 3330cc1e6 threw "invariant violation: too few segments"
+  // on both paths (crux-core's moldraw2d fix, crates/moldraw2d/tests/data/mol1k_381.mol, came after it). Chem's own
+  // cell details never threw, and the renderer's fallback (drawn without the marks) stays.
+  test('mol1K row 381 draws with the wavy bond marked in a short cell, through the engine directly', async () => {
+    const molecule: string = (await readDataframe('mol1K.csv')).get('molecule', 381);
+    const crux = await loadCrux('tests');
+    const failures: string[] = [];
+    for (const [width, height] of [[150, 60], [120, 60], [200, 100]]) {
+      const options = JSON.stringify({width, height, useMolBlockWedging: true, wedgeBonds: false, addChiralHs: false,
+        unspecifiedStereoIsUnknown: true});
+      const mol = crux.get_mol(molecule, '{}')!;
+      try {
+        const canvas = ui.canvas(width, height);
+        try {
+          mol.draw_to_canvas_with_highlights(canvas, options);
+          expect(inked(canvas.getContext('2d')!.getImageData(0, 0, width, height)) > 0, true, `${width}x${height}`);
+        } catch (e) {
+          failures.push(`${width}x${height} canvas: ${e instanceof Error ? e.message : e}`);
+        }
+        try {
+          expect(mol.get_svg_with_highlights(options).includes('</svg>'), true, `${width}x${height}: an SVG`);
+        } catch (e) {
+          failures.push(`${width}x${height} SVG: ${e instanceof Error ? e.message : e}`);
+        }
+      } finally {
+        mol.delete();
+      }
+    }
+    expect(failures.length, 0, failures.join(' | '));
+  });
+
   test('canvasMol, drawMolecule and the SVG export draw with Crux', async () => {
     await inEngine(ChemicalEngine.Crux, () => expectNoFallback(['canvasMol', 'rendering', 'drawing'], async () => {
       const canvas = document.createElement('canvas');
@@ -523,12 +663,20 @@ category('chemical engine', () => {
       const before = rows.map(picture);
       col.setTag(ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, benzene(0));
       const aligned = rows.map(picture);
-      expect(rows.filter((_, i) => sameImage(aligned[i], before[i])).join(','), '', 'rows a flat benzene leaves as they were');
-      // a structure whose benzene already lies as the scaffold's is not turned (RDKit 2026.03's alignment; HOST-063's
-      // first cell with a pointed benzene)
+      // a structure whose benzene already lies as the scaffold's is not turned: row 7's methoxy benzo ring (atoms 2-7)
+      // lies flat in the grid depiction (every vertex at 0 degrees mod 60), so among the scaffold's equally good matches
+      // Crux takes the face-up, least-turned one, no turn at all (Crux's rule for equally good matches; RDKit's tie had
+      // taken another equal match and moved its substituents)
+      expect(rows.filter((_, i) => sameImage(aligned[i], before[i])).join(','), '6',
+        'rows a flat benzene leaves as they were');
+      // the same with a pointed benzene (HOST-063's first cell): rows 1 and 2 draw every benzene ring pointed (each
+      // vertex at 30 degrees mod 60), so neither is turned (RDKit's tie had turned row 2)
       col.setTag(ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, benzene(90));
       expect(sameImage(picture(0), before[0]), true, 'row 1 with a pointed benzene');
-      expect(sameImage(picture(1), before[1]), false, 'row 2 with a pointed benzene');
+      expect(sameImage(picture(1), before[1]), true, 'row 2 with a pointed benzene');
+      // rows 5 and 6 each draw a benzene ring pointed too (row 6's other ring at 18 degrees fits worse), so neither turns
+      expect([4, 5].filter((row) => !sameImage(picture(row), before[rows.indexOf(row)])).join(','), '',
+        'rows 5 and 6 with a pointed benzene');
       delete col.tags[ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG];
       const cleared = rows.map(picture);
       expect(rows.filter((_, i) => !sameImage(cleared[i], before[i])).join(','), '', 'rows not back without the scaffold');
@@ -1394,32 +1542,20 @@ category('chemical engine', () => {
     expect(other, 0, 'every other row a MOL block');
   }, {timeout: 300000});
 
-  test('break it: a trap in the panels and conversions leaves RDKit for the session', async () => {
+  test('break it: a trap in the panels and conversions is recovered from: each answers as without it', async () => {
     const molecule = 'CC(=O)Oc1ccccc1C(=O)O';
-    const rdkit = await inEngine(ChemicalEngine.RDKit, async () => [JSON.stringify(await getStructuralAlerts(molecule)),
-      PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock)]);
     await inEngine(ChemicalEngine.Crux, async () => {
-      setCruxParseTrapForTests(true);
-      try {
-        const alerts = JSON.stringify(await getStructuralAlerts(molecule));
-        expect(isCruxRequested(), false, 'the trap marked Crux failed');
-        expect(alerts, rdkit[0], 'RDKit\'s alerts');
-        expect(PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock), rdkit[1],
-          'RDKit\'s block');
-        expect(PackageFunctions.isSmiles(molecule), true);
-        expect(PackageFunctions.validateMolecule(molecule), '');
-        let error = '';
-        try {
-          await getToxicityAlertsColumns(DG.Column.fromStrings('m', [molecule]), ['Brenk']);
-        } catch (e: any) {
-          error = e.message;
-        }
-        expect(error, TOXICITY_ALERTS_CRUX_FAILED, 'toxicity alerts name the failure');
-      } finally {
-        setCruxParseTrapForTests(false);
-        resetCruxLoaderForTests(null); // the next session's Crux
-      }
-      expect(await cruxReady(), true, 'Crux back after the reset');
+      const calm = [JSON.stringify(await getStructuralAlerts(molecule)),
+        PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock)];
+      expect(armCruxTrapForTests(1), true, 'the main thread\'s module is loaded');
+      expect(JSON.stringify(await getStructuralAlerts(molecule)), calm[0], 'the alerts, after a trap in them');
+      expect(armCruxTrapForTests(1), true);
+      expect(PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock), calm[1],
+        'the block, after a trap in the conversion');
+      expect(armCruxTrapForTests(1), true);
+      expect(PackageFunctions.isSmiles(molecule), true);
+      expect(PackageFunctions.validateMolecule(molecule), '');
+      expect(isCruxRequested(), true, 'Crux stays on');
     });
   });
 

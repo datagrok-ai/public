@@ -68,7 +68,11 @@ export interface SettingsInterface {
 
   showRecentlyOpenedViewsInHistory: boolean;
 
+  /** Asks before leaving the page while something is not saved */
   warnOnUnsavedChanges: boolean;
+
+  /** Closing a view with unsaved changes says what they are and offers to save the project first */
+  askToSaveOnClose: boolean;
 
   /** Log user clicks */
   logActivity: boolean;
@@ -125,9 +129,6 @@ export interface SettingsInterface {
   orderRules: string;
 
   enableBetaViewers: boolean;
-
-  /** @Prop(editor: 'Beta') bool enableViewerFunctions = false; */
-  saveProjectWithViewLayout: boolean;
 
   allowWidgetsAsColumns: boolean;
 

@@ -12,7 +12,8 @@ import {after, before, category, expect, test} from '@datagrok-libraries/test/sr
 // advertises supportsDdl (WO-B5..B8); on an older stack the `before` dryRun probe fails and
 // every round trip self-skips cleanly.
 category('Dapi: connector ddl', () => {
-  const rnd = () => DG.Utils.randomString(8);
+  // lower case: the checks below name the table in plain SQL, unquoted, which Postgres folds to lower case
+  const rnd = () => DG.Utils.randomString(8).toLowerCase();
   // Same writable-Postgres target convention as `Dapi: connector writes`: the local compose
   // demo `world` DB by default, overridable via a `dgConnectorWritesDb` global.
   const dbCfg = {
@@ -28,6 +29,30 @@ category('Dapi: connector ddl', () => {
 
   const ddl = () => grok.data.db.ddl(conn.nqName).schema(schema);
   const scratch: string[] = [];  // bare table names; dropped in `after` even on failure
+
+  // The rows the ad-hoc query path sees in a table the mutation path wrote. When it does not see the
+  // table, the error says which server, database and user the query path reached and which scratch
+  // tables are there, to tell a second database from a write that was not committed.
+  async function rowCount(fq: string): Promise<number> {
+    try {
+      return (await grok.data.db.query(conn.nqName, `select count(*) as c from ${fq}`)).col('c')!.get(0);
+    } catch (e: any) {
+      let where: string;
+      try {
+        const d = await grok.data.db.query(conn.nqName,
+          `select current_user || '@' || coalesce(host(inet_server_addr()), 'local') || ':' || ` +
+          `coalesce(inet_server_port()::text, '') || '/' || current_database() as target, ` +
+          `(select string_agg(table_schema || '.' || table_name, ', ') from information_schema.tables ` +
+          `where table_name like 'apitests_ddl_%') as tables`);
+        where = `the query path reached ${d.col('target')!.get(0)} and sees these scratch tables: ` +
+          `${d.col('tables')!.get(0) || 'none'}`;
+      } catch (d: any) {
+        where = `the query path could not be asked where it is: ${d.message ?? d}`;
+      }
+      throw new Error(`${fq} was written through the mutation path, but a query on the same connection ` +
+        `does not see it (${e.message ?? e}); ${where}`);
+    }
+  }
 
   const scratchTable = (prefix: string) => {
     const name = `apitests_ddl_${prefix}_${rnd()}`;
@@ -96,8 +121,7 @@ category('Dapi: connector ddl', () => {
     expect(plan.destructive.length, 1);
     expect(plan.destructive[0].code, 'drop-table');
     expect(plan.destructive[0].count, 3);
-    const still = await grok.data.db.query(conn.nqName, `select count(*) as c from ${fq}`);
-    expect(still.col('c')!.get(0), 3, 'a dryRun must not execute the drop');
+    expect(await rowCount(fq), 3, 'a dryRun must not execute the drop');
 
     // Unconfirmed execute: the refusal rethrows typed, with the recomputed plan attached.
     let typed: any = null;
@@ -142,8 +166,7 @@ category('Dapi: connector ddl', () => {
 
     const res = await dbTable.uploadAs(df);
     expect((res.errorMessage ?? '') === '', true, `uploadAs failed: ${res.errorMessage}`);
-    const count = await grok.data.db.query(conn.nqName, `select count(*) as c from ${fq}`);
-    expect(count.col('c')!.get(0), n);
+    expect(await rowCount(fq), n);
     // Spot the dg → native type mapping (Postgres map: int → int4, string → text, float → float8).
     const types = await grok.data.db.query(conn.nqName,
       `select column_name, data_type from information_schema.columns ` +

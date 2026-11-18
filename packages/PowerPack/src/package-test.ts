@@ -9,6 +9,7 @@ import './tests/excel';
 import './tests/filter';
 import './tests/enrichment';
 import './tests/chat-input';
+import './tests/space-save-row';
 import './tests/db-explorer';
 
 export const _package = new DG.Package();

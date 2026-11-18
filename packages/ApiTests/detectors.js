@@ -17,4 +17,15 @@ class ApiTestsPackageDetectors extends DG.Package {
     }
     return null;
   }
+
+  //meta.role: semTypeDetector
+  //input: column col
+  //output: string semType
+  detectApiTestsKey(col) {
+    if (col.name === 'apitests_key' && col.type === DG.TYPE.STRING) {
+      col.semType = 'apitests-key';
+      return col.semType;
+    }
+    return null;
+  }
 }

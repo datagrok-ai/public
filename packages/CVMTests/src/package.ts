@@ -98,7 +98,14 @@ export function jsCvmError(): string {
 //input: int seconds
 //output: string result
 export async function jsCvmCancel(seconds: number): Promise<string> {
-  await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+  // Cancellation in the Node worker is cooperative: a revoke only reaches the function at its
+  // next progress call, and the worker runs one task at a time. One long timer would keep the
+  // worker busy for the rest of [seconds] after the cancel, stalling the next queued call.
+  const until = Date.now() + seconds * 1000;
+  while (Date.now() < until) {
+    (globalThis as any).DG_TASK_PROGRESS?.(null, 'waiting');
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
   return 'done';
 }
 

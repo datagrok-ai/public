@@ -284,12 +284,13 @@ export function buildColumnComparison(
   const longSplits: string[] = [];
   const longRuns: string[] = [];
   const longSteps: string[] = [];
-  const longValues = new Map<string, Array<number | null>>(targets.map((target) => [labels.get(target.key)!, []]));
+  const longValues = new Map<string, unknown[]>(targets.map((target) => [labels.get(target.key)!, []]));
   for (const block of blocks) {
     const {entry, binding} = block;
     const df = entry.dataFrames.get(binding.tablePath)!;
     const step = binding.tableFriendlyPath ?? binding.tablePath;
-    const index = elapsedByBlock?.get(block) ?? df.getCol(binding.indexColumnName).toList();
+    const indexCol = df.getCol(binding.indexColumnName);
+    const index = elapsedByBlock?.get(block) ?? (isKeyIndex ? indexCol.toList() : columnPrimitives(indexCol));
     const splits = binding.splitColumnName ?
       df.col(binding.splitColumnName)?.toList() : undefined;
     for (let i = 0; i < index.length; i++) {
@@ -305,7 +306,7 @@ export function buildColumnComparison(
       const targetBinding = target.bindings.find((b) => b.entryId === entry.id);
       const usable = targetBinding != null && targetBinding.tablePath === binding.tablePath;
       const values = usable ?
-        df.getCol(targetBinding.columnName).toList().map((v) => toTargetUnits(v, targetBinding.factor)) :
+        columnPrimitives(df.getCol(targetBinding.columnName)).map((v) => toTargetUnits(v, targetBinding.factor)) :
         index.map(() => null);
       longValues.get(labels.get(target.key)!)!.push(...values);
     }
@@ -326,7 +327,7 @@ export function buildColumnComparison(
     const meltedRuns: string[] = [];
     const meltedSteps: string[] = [];
     const meltedSeries: string[] = [];
-    const meltedValues: (number | null)[] = [];
+    const meltedValues: unknown[] = [];
     for (const label of valueColumnNames) {
       meltedIndex.push(...longIndex);
       meltedRuns.push(...longRuns);

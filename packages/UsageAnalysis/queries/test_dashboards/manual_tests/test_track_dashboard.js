@@ -50,14 +50,19 @@ async function postprocess() {
     if (ticketsStatusCol)
       ticketsStatusCol.meta.colors.setCategorical({
         'Fixed': '#2ca02c',
-        'Partially Fixed (Lowest)': '#ffe51c',
-        'Partially Fixed (Low)': '#ffa500',
-        'Partially Fixed (Medium)': '#ff5a00',
+        'Not on GitHub': '#b0b0b0',
         'Partially Fixed (Blocker)': '#7b2d24',
-        'Wasn\'t Fixed (Lowest)': '#ffe51c',
-        'Wasn\'t Fixed (Low)': '#ffa500',
-        'Wasn\'t Fixed (Medium)': '#ff5a00',
+        'Partially Fixed (Urgent)': '#7b2d24',
+        'Partially Fixed (High)': '#ff5a00',
+        'Partially Fixed (Medium)': '#ffa500',
+        'Partially Fixed (Low)': '#ffe51c',
+        'Partially Fixed (No priority)': '#ffe51c',
         'Wasn\'t Fixed (Blocker)': '#7b2d24',
+        'Wasn\'t Fixed (Urgent)': '#7b2d24',
+        'Wasn\'t Fixed (High)': '#ff5a00',
+        'Wasn\'t Fixed (Medium)': '#ffa500',
+        'Wasn\'t Fixed (Low)': '#ffe51c',
+        'Wasn\'t Fixed (No priority)': '#ffe51c',
       })
     order.push(`${batchNames[i]} concat unique(result)`);
     order.push(`${batchNames[i]} tickets status`);

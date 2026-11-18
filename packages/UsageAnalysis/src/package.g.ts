@@ -49,10 +49,10 @@ export function releaseDashboardApp(path?: string) : any {
 }
 
 //input: column<string> ticketColumn 
-//input: column<string> resultColumn 
+//output: column result
 //meta.vectorFunc: true
-export async function getTicketsVerdict(ticketColumn: DG.Column, resultColumn: DG.Column) : Promise<void> {
-  await PackageFunctions.getTicketsVerdict(ticketColumn, resultColumn);
+export async function getTicketsVerdict(ticketColumn: DG.Column<any>) : Promise<any> {
+  return await PackageFunctions.getTicketsVerdict(ticketColumn);
 }
 
 //output: dataframe result
@@ -68,17 +68,6 @@ export async function stressSummaryDashboard() : Promise<any> {
 //output: dataframe result
 export async function stressRawDashboard() : Promise<any> {
   return await PackageFunctions.stressRawDashboard();
-}
-
-//name: Metrics
-//input: string path { optional: true; meta.url: true }
-//output: view result
-//meta.role: adminApp,app
-//meta.browsePath: Observability
-//meta.url: /metrics
-//meta.icon: images/icons/metrics.svg
-export function metricsApp(path?: string) : any {
-  return PackageFunctions.metricsApp(path);
 }
 
 //name: Test Track
@@ -98,36 +87,6 @@ export function testTrackApp() : void {
 //meta.icon: images/icons/reports.svg
 export async function reportsApp(path?: string) : Promise<any> {
   return await PackageFunctions.reportsApp(path);
-}
-
-//name: Service Logs
-//input: string path { optional: true; meta.url: true }
-//input: map params { optional: true }
-//input: int limit { optional: true }
-//output: view result
-//meta.role: adminApp,app
-//meta.browsePath: Observability
-//meta.url: /service-logs
-//meta.icon: images/icons/service-logs.svg
-export function serviceLogsApp(path?: string, params?: any, limit?: number) : any {
-  return PackageFunctions.serviceLogsApp(path, params, limit);
-}
-
-//name: Cloud Logs
-//output: view result
-//meta.role: adminApp,app
-//meta.browsePath: Observability
-//meta.url: /cloud-logs
-//meta.icon: images/icons/service-logs.svg
-export function cloudLogsApp() : any {
-  return PackageFunctions.cloudLogsApp();
-}
-
-//input: dynamic treeNode 
-//meta.role: appTreeBrowser
-//meta.app: Service Logs
-export async function serviceLogsAppTreeBrowser(treeNode: any) : Promise<void> {
-  await PackageFunctions.serviceLogsAppTreeBrowser(treeNode);
 }
 
 //input: dynamic treeNode 
@@ -178,10 +137,4 @@ export function _specificClicksPanel() : any {
 //meta.role: autostart
 export function describeCurrentObj() : void {
   PackageFunctions.describeCurrentObj();
-}
-
-//name: Create JIRA ticket
-//description: Creates JIRA ticket using current error log
-export function createJiraTicket() : void {
-  PackageFunctions.createJiraTicket();
 }

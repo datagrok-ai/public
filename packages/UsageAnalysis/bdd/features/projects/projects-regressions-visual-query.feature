@@ -1,7 +1,7 @@
 @journey @realizes:views.projects
 Feature: Projects regressions: a project of a visual query with a parameter
-  GROK-20535 (open): a visual query with a parameter, run with another value than the default and
-  saved in a project, reopens with the default value. The report used Northwind; here the visual query
+  GROK-20535 (fixed in the core on 2026-11-11, core#1484): a visual query with a parameter, run with another value
+  than the default and saved in a project, reopened with the default value. The report used Northwind; here the visual query
   is built in the UI on System:Datagrok's public.entity_types (Browse > Databases > Postgres >
   Datagrok > Schemas > public, New Visual Query...): its Where row takes "name" with the condition
   Project, exposed as a parameter, and its Order by row takes "name" (one row, so the order changes no
@@ -9,8 +9,8 @@ Feature: Projects regressions: a project of a visual query with a parameter
   through the ribbon's Save dialog and reopened from the Dashboards gallery.
 
   The parameter is claimed where the UI shows it: its box checked in the builder, and the Run query
-  dialog offering the Name field with the default Project. The reopen is the known failure: the
-  reopened table holds the Project row, the default, where the project was saved with Script.
+  dialog offering the Name field with the default Project. The reopened table holds the Script row, the value the
+  project was saved with: the creation script calls the saved query by name with that value.
 
   The console is not claimed after the save: the Save dialog's preview logs "Unable to find element
   in cloned iframe" for some views (GROK-18606, won't fix). The query and the project are named with
@@ -65,7 +65,7 @@ Feature: Projects regressions: a project of a visual query with a parameter
     Then the "Share BDDRegVQProj{time}" dialog should close
     And the "BDDRegVQ{time}" table of the "BDDRegVQProj{time}" project should be saved with data sync
 
-  @known-failure:77 @realizes:GROK-20535
+  @realizes:GROK-20535
   Scenario: The reopened project holds the row of the value it was run with
     When user closes all views
     And user clicks on Dashboards tree node inside browse tree

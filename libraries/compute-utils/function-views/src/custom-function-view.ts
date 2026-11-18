@@ -17,8 +17,10 @@ export interface RunStorageHost {
   customView?: string;
 }
 
-declare global {
-  var initialURLHandled: boolean;
+/** An item of the view's Export menu; the file it returns is downloaded under its own name. */
+export interface ViewExport {
+  name: string;
+  export: () => Promise<DG.FileInfo>;
 }
 
 export abstract class CustomFunctionView extends DG.ViewBase {
@@ -28,6 +30,8 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   private _runStorage?: RunStorageHost;
 
+  private _exportEnabled = true;
+
   /** Set by the host that provides the Save and Open dialogs; without it the view has no History and Save buttons. */
   get runStorage(): RunStorageHost | undefined {
     return this._runStorage;
@@ -35,6 +39,20 @@ export abstract class CustomFunctionView extends DG.ViewBase {
 
   set runStorage(host: RunStorageHost | undefined) {
     this._runStorage = host;
+    if (this.funcCall)
+      this.buildRibbonPanels();
+  }
+
+  /** The Export menu; the ribbon's Export icon runs the first one. */
+  exports: ViewExport[] = [];
+
+  /** Off greys out the Export icon and menu, for runs the view can't export yet. */
+  get exportEnabled(): boolean {
+    return this._exportEnabled;
+  }
+
+  set exportEnabled(enabled: boolean) {
+    this._exportEnabled = enabled;
     if (this.funcCall)
       this.buildRibbonPanels();
   }
@@ -53,13 +71,6 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   public async onBeforeSaveRun(callToSave: DG.FuncCall) { }
   public async onAfterSaveRun(savedCall: DG.FuncCall) { }
 
-  exportConfig: {
-    export: ((format: string) => Promise<Blob>);
-    filename: ((format: string) => string);
-    supportedFormats: string[];
-    supportedExtensions: Record<string, string>;
-  } | null = null;
-
   getMocks: ({mockName: string, action: () => Promise<void>}[]) | null = null;
 
   getTemplates: ({name: string, action: () => Promise<void>}[]) | null = null;
@@ -71,23 +82,10 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   requestFeature: (() => Promise<void>) | null = null;
 
   public async init() {
-    const startId = this.getStartId();
-    if (startId)
-      this.setAsLoaded();
-    const pulledRun = startId ? await historyUtils.loadRun(startId).catch((e) => {
-      grok.shell.error(`Couldn't open the run: ${e?.message ?? e}`);
-      return null;
-    }) : null;
-    if (pulledRun)
-      this.linkFunccall(pulledRun);
-    else {
-      const call = DG.Func.byName(this.funcNqName).prepare({});
-      await initNewCall(call, {});
-      this.linkFunccall(call);
-    }
+    const call = DG.Func.byName(this.funcNqName).prepare({});
+    await initNewCall(call, {});
+    this.linkFunccall(call);
     await this.onFuncCallReady();
-    if (pulledRun)
-      await this.onAfterLoadRun(pulledRun);
     this.isReady.next(true);
   }
 
@@ -168,13 +166,13 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   public buildRibbonPanels(): HTMLElement[][] {
     const historyButton = ui.iconFA('history', () => this.openRunWithDialog(), 'Open a saved run');
     const saveButton = ui.iconFA('save', () => this.funcCall ? this.saveRunWithDialog(this.funcCall) : undefined, 'Save');
-    const exportBtn = ui.comboPopup(
-      ui.iconFA('arrow-to-bottom'),
-      this.getFormats(),
-      this.exportRun.bind(this),
-    );
+    const exportButton = ui.iconFA('arrow-to-bottom', () => {
+      if (this.exportEnabled)
+        this.exportRun(this.exports[0]);
+    }, this.exports[0]?.name);
+    exportButton.classList.toggle('d4-disabled', !this.exportEnabled);
     const newRibbonPanels: HTMLElement[][] =
-      [[...(this.runStorage ? [historyButton, saveButton] : []), ...(this.hasExport() ? [exportBtn] : [] )]];
+      [[...(this.runStorage ? [historyButton, saveButton] : []), ...(this.exports.length > 0 ? [exportButton] : [])]];
     this.setRibbonPanels(newRibbonPanels);
     return newRibbonPanels;
   }
@@ -182,7 +180,8 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   public buildRibbonMenu() {
     this.ribbonMenu.clear();
 
-    if (!this.exportConfig && !this.reportBug && !this.requestFeature && !this.getHelp && !this.getMocks && !this.getTemplates) return;
+    if (this.exports.length === 0 && !this.reportBug && !this.requestFeature && !this.getHelp && !this.getMocks &&
+      !this.getTemplates) return;
 
     const ribbonMenu = this.ribbonMenu.group('Model');
 
@@ -210,10 +209,13 @@ export abstract class CustomFunctionView extends DG.ViewBase {
       }
     }
 
-    if (this.hasExport()) {
+    if (this.exports.length > 0) {
       ribbonMenu
         .group('Export')
-        .items(this.getFormats(), this.exportRun.bind(this))
+        .items(this.exports, (item) => this.exportRun(item), {
+          toString: (item) => item.name,
+          isValid: () => this.exportEnabled ? null : 'Export is turned off for this run',
+        })
         .endGroup();
     }
 
@@ -227,16 +229,13 @@ export abstract class CustomFunctionView extends DG.ViewBase {
       ribbonMenu.item('Help', () => this.getHelp!());
   }
 
-  public async exportRun(format: string) {
-    DG.Utils.download(this.exportConfig!.filename(format), await this.exportConfig!.export(format));
-  }
-
-  private getFormats() {
-    return (this.exportConfig?.supportedFormats ?? []);
-  }
-
-  private hasExport() {
-    return this.exportConfig && this.exportConfig.supportedFormats.length > 0;
+  public async exportRun(item: ViewExport) {
+    try {
+      const file = await item.export();
+      DG.Utils.download(file.fileName, new Blob([file.data as any]));
+    } catch (e: any) {
+      grok.shell.error(`Couldn't export the run: ${e?.message ?? e}`);
+    }
   }
 
   private async getPackageData() {
@@ -244,22 +243,15 @@ export abstract class CustomFunctionView extends DG.ViewBase {
     if (!pack)
       return;
 
-    const reportBugUrl = (await pack?.getProperties() as any)?.REPORT_BUG_URL;
+    const props = await pack.getProperties() as any;
+
+    const reportBugUrl = props?.REPORT_BUG_URL;
     if (reportBugUrl && !this.reportBug)
       this.reportBug = async () => {window.open(reportBugUrl, '_blank');};
 
-    const reqFeatureUrl = (await pack?.getProperties() as any)?.REQUEST_FEATURE_URL;
+    const reqFeatureUrl = props?.REQUEST_FEATURE_URL;
     if (reqFeatureUrl && !this.requestFeature)
       this.requestFeature = async () => {window.open(reqFeatureUrl, '_blank');};
-  }
-
-  private getStartId(): string | null {
-    const startUrl = new URL(grok.shell.startUri);
-    return !globalThis.initialURLHandled ? startUrl.searchParams.get('id'): null;
-  }
-
-  private setAsLoaded(): void {
-    globalThis.initialURLHandled = true;
   }
 
   get func() {

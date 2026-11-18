@@ -15,13 +15,6 @@ category('Settings', () => {
   });
   test('Beta Settings', async () => {
     expect(gss.enableBetaViewers, false);
-    expect(gss.saveProjectWithViewLayout, false);
-    try {
-      gss.saveProjectWithViewLayout = true;
-      expect(gss.saveProjectWithViewLayout, true);
-    } finally {
-      gss.saveProjectWithViewLayout = false;
-    }
   });
 
   test('Sync Settings', async () => {

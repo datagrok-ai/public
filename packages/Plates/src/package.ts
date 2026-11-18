@@ -245,6 +245,19 @@ static checkFileIsPlate(content: string): boolean {
     await initPlatesAppTree(treeNode);
   }
 
+  /** For other packages: they hold their plates as tables, since a `Plate` does not cross package bundles. */
+  @grok.decorators.func({
+    description: 'An interactive plate from a table with one row per well: a well column (A01) or row and col columns (0-based), and a column per layer',
+    outputs: [{name: 'widget', type: 'widget'}],
+  })
+  static plateWidget(
+    table: DG.DataFrame,
+    @grok.decorators.param({type: 'int', options: {optional: true, description: 'Rows of the plate. With cols, the plate keeps this size whatever wells the table holds'}}) rows?: number,
+    @grok.decorators.param({type: 'int', options: {optional: true, description: 'Columns of the plate'}}) cols?: number,
+  ): DG.Widget {
+    return PlateWidget.detailedView(Plate.fromTableByRow(table, {rows, cols}));
+  }
+
   @grok.decorators.func()
   static async getPlateByBarcode(barcode: string): Promise<Plate> {
     await initPlates();

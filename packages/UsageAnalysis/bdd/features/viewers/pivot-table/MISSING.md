@@ -9,8 +9,6 @@ surface" and `pivot-table.md`. The Table switch is in `pivot-table-table-switch.
   picks the type in the picker's aggregation selector (`pivot_grid.dart` `showColumnComboBox`).
 - The tag-editor header duplicated on a Table switch (GROK-14995): needs a `tag rows` reading
   (`pivot_viewer_status.dart`).
-- core#467 — a key column header dragged inside the inner grid logs a NullError on every repaint: the known failure of
-  `pivot-table-inner-grid-drag.feature`.
 - The Group by picker of a pivot docked at the right edge opens inside the window (public#3690): needs a `column picker
   popup` kind for `.d4-column-grid:has(.d4-column-selector-backdrop)`.
 

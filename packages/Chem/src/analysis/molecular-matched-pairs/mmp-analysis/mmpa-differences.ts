@@ -123,18 +123,18 @@ function calculateActivityDiffs(
     activityPairsIdxs: BitArray[],
     coreNums: Int32Array,
     pairedActivities: Array<[Float32Array, Float32Array]>,
-    pairsPerActivity: Uint32Array[]
+    pairsPerActivity: Int32Array[]
  ] {
   const variates = activities.length;
   const maxActs = new Array<number>(variates).fill(0);
   const allSize = mmpr.rules.length;
 
   const meanDiffs = new Array<Float32Array>(variates);
-  const pairsPerActivity = new Array<Uint32Array>(variates);
+  const pairsPerActivity = new Array<Int32Array>(variates);
   const pairedActivities = new Array<[Float32Array, Float32Array]>(variates);
   for (let i = 0; i < variates; i++) {
     meanDiffs[i] = new Float32Array(allSize);
-    pairsPerActivity[i] = new Uint32Array(allSize).fill(0);
+    pairsPerActivity[i] = new Int32Array(allSize);
   }
 
   const molFrom = new Array<string>(allCasesNumber);

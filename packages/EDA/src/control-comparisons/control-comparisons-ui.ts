@@ -323,7 +323,12 @@ export function runControlComparisons(): void {
   // --- Method ---
   const methodSource = {method: currentMethod};
   const methodProp = DG.Property.fromOptions({
-    name: 'method', caption: 'Method', inputType: 'Radio', choices: METHODS, defaultValue: 'Dunnett',
+    name: 'method',
+    type: DG.TYPE.STRING,
+    caption: 'Method',
+    inputType: 'Radio',
+    choices: METHODS,
+    defaultValue: 'Dunnett',
   });
   const methodInput = ui.input.forProperty(methodProp, methodSource);
   methodInput.onChanged.subscribe(() => {
@@ -433,7 +438,7 @@ export function runControlComparisons(): void {
       return;
     }
 
-    const nGroups = groupCount(factor);
+    const nGroups = groupCount(factor.clone(df!.filter.anyFalse ? df!.filter : undefined));
     if (nGroups < 2) {
       runBtn.disabled = true;
       ui.tooltip.bind(runBtn, 'The category column needs at least two groups.');

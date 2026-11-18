@@ -26,9 +26,3 @@ export const addWideViewer = Given('user adds a MultiCurveViewer viewer of the s
   await page.locator('[name="viewer-MultiCurveViewer"]').filter({visible: true}).first().waitFor();
 }, {tier: 'api', description: 'a multi curve viewer on the current table, docked to the right of the grid at that share of the view; silent in a guide'});
 
-/* A grid cell draws a legend only from 325 x 275 px inside its 6 px margin, wider than a grid makes a
-   column by default; no library step sets a grid column's width. */
-export const columnWidth = Given('the {string} column of the grid is {int} px wide', async (page: Page, column: string, width: number) => {
-  silent(page);
-  await page.evaluate(([name, w]) => { grok.shell.tv.grid.columns.byName(name).width = w; }, [column, width] as [string, number]);
-}, {tier: 'api', description: 'the width of one column of the current table view\'s grid; silent in a guide'});

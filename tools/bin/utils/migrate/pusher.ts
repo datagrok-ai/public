@@ -387,10 +387,12 @@ async function saveOne(dapi: NodeDapi, bundle: Bundle, op: Op, rows: Row[], idma
     }
   }
 
-  // The server encrypts and masks password-class parameters itself, so target-side
-  // secrets go in as plain parameters and never touch the bundle.
+  // A key the source masked among the parameters is a password-class parameter, which the server
+  // encrypts itself; the rest (a database login and password) belong in the connection's credentials.
+  const masked: string[] = op.json._credentials ?? [];
+  const credentials = Object.fromEntries(Object.entries(op.creds ?? {}).filter(([k]) => !masked.includes(k)));
   if (op.creds)
-    payload.parameters = {...payload.parameters, ...op.creds};
+    payload.parameters = {...payload.parameters, ...Object.fromEntries(Object.entries(op.creds).filter(([k]) => masked.includes(k)))};
 
   try {
     if (spec.bytes && !spec.bytes.afterSave)
@@ -408,6 +410,11 @@ async function saveOne(dapi: NodeDapi, bundle: Bundle, op: Op, rows: Row[], idma
       op.row.action = 'failed';
       op.row.reason = 'Save reported success but not on target';
       return;
+    }
+    if (Object.keys(credentials).length) {
+      const stored = await dapi.internal('/credentials').save({entityBindId: peerId, parameters: credentials});
+      if (!stored?.id)
+        throw new Error(stored?.message ?? 'Credentials were not saved');
     }
     // Names and namespaces are settled by placement, so a clash here is only a candidate.
     if (verified.name !== op.json.name) {

@@ -30,6 +30,8 @@
 * GROK-20932: Added two Forge methods on Crux's neural tabular models: RealMLP (pytabkit 1.7.3) and TabM (TabM 0.0.3 with rtdl_num_embeddings); both have a Model seed hyperparameter; TabM takes rows with missing feature values (meta.mlnativenans)
 * GROK-20932: Rebuilt the Crux module with crux-fn/realmlp and crux-fn/tabm (same crux revision; saved models keep working)
 * GROK-20932: Restored applying pre-Crux models with the same predictions as before (prediction only): PLS Regression with stored feature names, Linear Regression from 1.8.0, Softmax, XGBoost and SVM from 1.9.0 (src/legacy; XGBoost through Crux's ml.xgboost_predict); older models still require retraining; added files/legacy-models/reference.json and five more fixtures (regression, binary and bool targets)
+* [public#4245](https://github.com/datagrok-ai/public/issues/4245): T-test, ANOVA, Control comparisons: Fixed the analysis and its checks running on the whole table instead of the rows that pass the filter
+* [core#1407](https://github.com/datagrok-ai/core/issues/1407): Control comparisons, ANOVA, t-test: Fixed the method radio missing its property type
 * [public#4473](https://github.com/datagrok-ai/public/issues/4473): MCL: Fixed Markov clustering on number columns only never finishing (the dialog passed the clustering no column); added the package test 'DBSCAN'
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Pareto Front: Fixed a 1 s check that ran for the rest of the session when the table was not applicable
 * Tests: `models/share-model` claims the second account's side: it finds the shared model under Shared with me and applies it (back in the serial lane, since it signs in as the second account)

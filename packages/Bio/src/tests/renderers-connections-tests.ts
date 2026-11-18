@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {after, awaitCheck, before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {
-  assignLanes, combineHubs, connectionsGeometry, getDrawnConnections, IDrawnConnection, layoutConnections,
+  assignLanes, combineHubs, connectionLines, connectionsGeometry, getDrawnConnections, IDrawnConnection, layoutConnections,
   lineHeightWithLanes, measureConnectionsFont,
 } from '@datagrok-libraries/bio/src/utils/cell-renderer-connections';
 import {TAGS as mmcrTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
@@ -36,6 +36,9 @@ const bilnRows = {
   trivalent: 'R(1,1)-G-D-dF-K(1,2)(4,3).R(2,1)-G-D-dF-K(2,2)(5,3).R(3,1)-G-D-dF-K(3,2)(6,3).THA(4,1)(5,2)(6,3)',
   apart: 'C(1,3)-A-C(1,3)-G-C(2,3)-A-C(2,3)', // 0-2, 4-6
   twoChainRing: 'F(1,1)-G-D-C(2,3)-Y(3,2).P(3,1)-A-C(2,3)-D-F(1,2)', // two chains closed into one ring, joined end to end
+  // a conjugate as HELM writes it (CHEM1, CHEM2, PEPTIDE1): the two CHEM monomers bonded side by side (R1-R1), the
+  // first one's R2 on the Lys side chain; neither CHEM monomer is in the default library
+  conjugate: '3amPh6MeTzBCN(1,2)(2,1).sCy5(2,1).A-A-A-A-D-E-A-A-C-A-A-K(1,3)-D', // 0-1 side by side, 0-13
 };
 
 const pairs = (conns: IDrawnConnection[]): string[] => conns.map((c) => `${c.from}-${c.to}`).sort();
@@ -153,6 +156,64 @@ category('renderers: connections', () => {
     expectArray(layoutConnections(await splitted(bilnRows.trivalent), 400, 12, met, true)!.chains, []);
     // two chains joined backbone to backbone are one backbone: one line
     expectArray(layoutConnections(await splitted(bilnRows.twoChainRing), 400, 12, met, true)!.chains, []);
+  });
+
+  test('chains bonded side by side are one line, their bond in the chain break', async () => {
+    const met = measureConnectionsFont('12px monospace', 12);
+    const conj = await splitted(bilnRows.conjugate);
+    const conns = getDrawnConnections(conj);
+    expectArray(conns.filter((c) => c.inline).map((c) => `${c.from}:R${c.rFrom}-${c.to}:R${c.rTo}`), ['0:R1-1:R1']);
+    expectArray(connectionLines(conj, conns), [0, 2]);
+    // on one line: a bracket for the Lys bond, the side-by-side bond drawn between the two monomers
+    const flat = layoutConnections(conj, 30, 12, met, true)!;
+    expectArray(flat.chains, []);
+    expectArray(pairs(flat.conns), ['0-13']);
+    expectArray(pairs(flat.inline), ['0-1']);
+    expect(flat.above, 1);
+    // three chains on two lines in a tall cell: the CHEM line over the peptide, joined at the Lys
+    const stacked = layoutConnections(conj, 100, 12, met, true)!;
+    expectArray(stacked.chains, [0, 2]);
+    expectArray(pairs(stacked.inline), ['0-1']);
+    // a ring written as two chains bonded side by side: one line, its closure a ring under it
+    const ring = getDrawnConnections(await splitted(bilnRows.twoChainRing));
+    expectArray(pairs(ring.filter((c) => c.inline)), ['4-5']);
+    expectArray(pairs(ring.filter((c) => c.headToTail)), ['0-9']);
+    expect(layoutConnections(await splitted(bilnRows.twoChainRing), 400, 12, met, true)!.conns
+      .find((c) => c.headToTail)!.side, -1);
+    // a ring of its own chain stays a ring when another chain is bonded side by side to it (to its Lys side chain)
+    const sideRing = getDrawnConnections(await splitted('Y(1,2).K(1,3)(2,1)-G-D-F-P(2,2)'));
+    expectArray(pairs(sideRing.filter((c) => c.inline)), ['0-1']);
+    expectArray(pairs(sideRing.filter((c) => c.headToTail)), ['1-5']);
+    // a monomer bonded to three others keeps its comb: THA is not drawn side by side with the K before it
+    const trivalent = getDrawnConnections(await splitted(bilnRows.trivalent));
+    expect(trivalent.some((c) => c.inline), false);
+    expect(combineHubs(trivalent).filter((c) => c.comb).length, 1);
+  });
+
+  test('the chain break of chains bonded side by side prints no bar', async () => {
+    const col = await bilnColumn([bilnRows.conjugate, bilnRows.insulin, bilnRows.oxytocin]);
+    col.temp[MmcrTemps.maxMonomerLength] = 50;
+    const df = DG.DataFrame.fromColumns([col]);
+    const tv = grok.shell.addTableView(df);
+    try {
+      await awaitGrid(tv.grid);
+      tv.grid.props.rowHeight = 30;
+      const back = await drawnAt(tv, col, 30);
+      // the row drawn off the grid, its texts recorded: the two CHEM monomers whole, one bar (before the peptide)
+      const g = document.createElement('canvas').getContext('2d')!;
+      const texts: string[] = [];
+      const fillText = g.fillText;
+      g.fillText = function(...args: [string, number, number]) {
+        texts.push(args[0]);
+        return fillText.apply(this, args);
+      };
+      const cell = tv.grid.cell('biln', 0);
+      back.render(g, 0, 0, 1200, 30, cell, cell.style);
+      expect(texts.includes('3amPh6MeTzBCN') && texts.includes('sCy5'), true, JSON.stringify(texts));
+      expect(texts.filter((t) => t === '|').length, 1, JSON.stringify(texts));
+    } finally {
+      tv.close();
+    }
   });
 
   test('a row that draws its connections prints canonical symbols, else the originals', async () => {
@@ -388,7 +449,7 @@ category('renderers: connections', () => {
   });
 
   test('the hovered monomer\'s bonds join its tooltip', async () => {
-    const col = await bilnColumn([bilnRows.ziconotide, bilnRows.insulin]);
+    const col = await bilnColumn([bilnRows.ziconotide, bilnRows.insulin, bilnRows.conjugate]);
     const back = new MonomerPlacer(null, col, _package.logger, 4, () => {
       const {font, fontWidth} = MonomerPlacer.getFontSettings(col);
       return {font, fontCharWidth: fontWidth, separatorWidth: 0, monomerToShort, showConnections: true};
@@ -403,6 +464,8 @@ category('renderers: connections', () => {
       };
       expect(tooltipOf(0, 7), 'Bond: C8 ↔ C20 (R3–R3)');
       expect(tooltipOf(1, 27), 'Bond: C7 (chain 2) ↔ C7 (chain 1) (R3–R3)');
+      // a longer symbol in brackets, as HELM writes it, so a trailing digit does not run into the position
+      expect(tooltipOf(2, 1), 'Bond: [sCy5]1 (chain 2) ↔ [3amPh6MeTzBCN]1 (chain 1) (R1–R1)');
     } finally {
       (back as any).destroy();
     }

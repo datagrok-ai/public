@@ -1,5 +1,5 @@
-/* Steps of the Oligo Toolkit demo clip (features/demos/21): the app opened off camera, and the structure picture
-   of its Structure tool opened full size. */
+/* Steps of the Oligo Toolkit demo clip (features/demos/21): the app opened off camera, and the structure picture of
+   its Structure tool opened full size. */
 import type {Page} from '@playwright/test';
 import {Given, When} from '@datagrok-libraries/bdd';
 import {expect, pollMs} from '@datagrok-libraries/bdd/runtime';
@@ -11,7 +11,9 @@ declare const DG: any;
  * "Oligo Translator" view): the library's `user opens the {string} app` waits for a view of the app's name. */
 export const openAppOnView = Given('user opens the {string} app on its {string} view', async (page: Page, app: string, view: string) => {
   await page.evaluate(async (name) => {
-    const fn = DG.Func.find({tags: ['app']}).find((f: any) => f.friendlyName === name || f.name === name);
+    // an admin app (Usage Analysis) carries its role in its meta, not a tag
+    const apps = [...DG.Func.find({tags: ['app']}), ...DG.Func.find({meta: {role: 'adminApp'}})];
+    const fn = apps.find((f: any) => f.friendlyName === name || f.name === name);
     if (!fn)
       throw new Error(`no "${name}" app is registered`);
     const v = await fn.apply({});

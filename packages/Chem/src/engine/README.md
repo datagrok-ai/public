@@ -24,7 +24,7 @@ The history of each move, its parity numbers and timings are in `CHANGELOG.md`.
 | `crux/crux.worker.ts` | The worker: the search segments (`build`, `search`, `drop`) and `JOBS`, every job table by name |
 | `crux/jobs/*.ts`, `crux/crux-analysis-jobs.ts` | The job tables, one per area (`calculations`, `batch`, `molecule-jobs`, `search-types`, `python-free`, `synthon-search`, `biopolymer`, `inchi`, `reactions`; the analyses), each job a `WorkerJob` |
 | `crux/crux-api.ts` | Crux's calls beyond RDKit.js's; the job shape (`WorkerJobContext`, `WorkerJob`, `throwIfTrap`) |
-| `crux/trap-watch.ts` | The worker's trap watch: every call into the module watched, so that a trap the RDKit worker code swallows per molecule (a stack overflow on a very large molecule) fails that job and every later one as a trap, and the service replaces the workers |
+| `crux/crux-recover.ts` | The Crux module, recovering (main thread and workers): a trap in any call makes a fresh instance from the compiled module, rebuilds the objects the call uses from their journals and tries the call once more; a second trap refuses that call alone (a plain error, so the RDKit worker code's per-molecule `catch` goes on, on a whole instance); Crux is never switched off for a trap. Replaces the worker's trap watch |
 | `crux/crux-searches.ts`, `crux/crux-search-types.ts` | The substructure search on Crux: Contains / Not contains on the index; Exact, Stereo agnostic, (Not) included in, Similar |
 | `crux/crux-inchi.ts`, `crux/jobs/inchi.ts` | InChI by the split: InChI's input from Crux, the InChI library in crux-sketch's module (a molecule's on the main thread, a column's in the Crux workers, each loading the same module) |
 | `rdkit-service/` | RDKit: the pool (`rdkit-service.ts`, `rdkit-service-worker-client.ts`, `rdkit-service-worker-api.ts`, `../rdkit.worker.ts`) and the worker code (`rdkit-service-worker*.ts`, `query-features.ts`), which the Crux workers also run, on the Crux module |
@@ -32,7 +32,8 @@ The history of each move, its parity numbers and timings are in `CHANGELOG.md`.
 | `utils/mol-creation_rdkit.ts` | Reading molecules and queries with either engine's module (`getMolSafe`, `getQueryMolSafe`, `readsAsQuery`, `clusterMcsSmiles`) |
 | `utils/convert-notation-utils.ts` | `_convertMolNotation` (by engine) and `_convertMolNotationByRdKit` (RDKit in both modes) |
 | `rendering/rdkit-cell-renderer.ts`, `rendering/mixture-cell-renderer.ts` | The Molecule and mixture cell renderers, by the engine in effect (the "RDKit" names stay: other packages use them); `_fetchMolByEngine` holds the per-molecule fallback |
-| `rendering/rdkit-reaction-renderer.ts`, `rendering/reaction-depiction.ts`, `utils/reactions/reaction-drawing.ts` | Reaction drawing: RDKit in both modes until Crux draws reactions |
+| `rendering/rdkit-reaction-renderer.ts`, `rendering/reaction-depiction.ts`, `utils/reactions/reaction-drawing.ts` | Reaction drawing, by the engine in effect: in Crux mode the cells and the Reaction panel draw through Crux (`rendering/crux-reaction-drawing.ts`, `widgets/reaction-panel.ts`; the panel shows in Crux mode only), in RDKit mode RDKit draws the cells as before; the reaction dialogs' previews are RDKit's in both modes |
+| `utils/reactions/reaction-mapping.ts`, `crux/jobs/reactions.ts` (`map reaction`) | Atom mapping, in the Reaction panel only: RXNMapper in the Crux file, on a Crux worker, its weights `files/rxnmapper/pytorch_model.bin` (its notice `utils/reactions/NOTICE.rxnmapper`); RDKit has no mapper |
 | `rendering/atom-picker-controller.ts`, `rendering/mol3d-hover-handler.ts` | The 2D↔3D atom picker and hover, by engine (`mapAtomIndices2Dto3DByEngine`) |
 
 RDKit mode loads the Crux file only for what is Crux's in both modes (`molzip`, the macromolecule assembler; FCFP and
@@ -129,7 +130,7 @@ RDKit mode changes nothing they receive. In Crux mode, the pictures and values o
 | What | Why |
 |---|---|
 | `getRdKitModule()` / `getRdKitService()` for other packages | they take RDKit objects; each needs its own move (or a Crux object API) |
-| Reaction drawing (`rendering/rdkit-reaction-renderer.ts`, the reaction dialogs' previews: `drawReactionByRdKit` in `utils/reactions/reaction-drawing.ts`, `_convertMolNotationByRdKit`; `validateReactionSmarts` in `utils/reactions/reaction-storage.ts`, which gates the drawing) | crux has no `drawReaction` yet |
+| Reaction drawing (`rendering/rdkit-reaction-renderer.ts`, the reaction dialogs' previews: `drawReactionByRdKit` in `utils/reactions/reaction-drawing.ts`, `_convertMolNotationByRdKit`; `validateReactionSmarts` in `utils/reactions/reaction-storage.ts`, which gates the drawing) | Crux draws reaction cells and the Reaction panel in Crux mode (`rendering/crux-reaction-drawing.ts`); the dialogs' previews and the reaction browser stay RDKit's, and RDKit mode draws reaction cells with RDKit |
 | `validateMolecule`'s messages | RDKit's log; Crux keeps none |
 | The chem-chem container's other identifiers, Toxicity Risks... (OpenChemLib) | not RDKit |
 

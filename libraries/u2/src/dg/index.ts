@@ -33,6 +33,15 @@ export type {FuncCallInputOptions} from './inputs/func-call-input.js';
 export {metaInput} from './inputs/meta-input.js';
 export type {MetaInputOptions} from './inputs/meta-input.js';
 export {fileInput, FileInput} from './inputs/file-input.js';
+export {spaceInput, SpaceInput} from './inputs/space-input.js';
+export type {SpaceInputOptions} from './inputs/space-input.js';
+export {SpaceTree, createSpace, spaceHasName, entityName, recentSpaces, rememberSpace} from './spaces/spaces.js';
+export type {SpaceEntry} from './spaces/spaces.js';
+export {saveToSpace, openFromSpace, SpaceBrowser} from './spaces/space-dialogs.js';
+export {spaceSaveRow, spaceSaveRowFor, SPACE_TOOLTIP} from './spaces/space-save-row.js';
+export type {SpaceSaveRow, SpaceSaveTarget} from './spaces/space-save-row.js';
+export type {SaveToSpaceOptions, SaveToSpaceValues, SpaceBrowserOptions, OpenFromSpaceOptions}
+  from './spaces/space-dialogs.js';
 export type {FileInputOptions, FileInputMode} from './inputs/file-input.js';
 export {filesInput, FilesInput} from './inputs/files-input.js';
 export type {FilesInputOptions} from './inputs/files-input.js';

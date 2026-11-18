@@ -204,15 +204,6 @@
   max-width: 80%;
 }
 
-.tt-dialog .create-ticket-button{
-  align-self: end;
-  pointer-events:all !important;
-}
- 
-.tt-dialog .d4-pane-jira_tickets .d4-flex-col{
-  width: 75%;
-}
-
 .tt-dialog .skipped-textarea textarea{ 
   min-width: 85%;
   max-width: 100%;

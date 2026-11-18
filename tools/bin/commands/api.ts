@@ -69,6 +69,8 @@ const domainTypeMap: {[type: string]: string} = {
 const coreRefAliases: {[type: string]: string} = {
   user: `${CORE_SCHEMA}.users`, group: `${CORE_SCHEMA}.groups`};
 
+const typeAliases: {[type: string]: string} = {double: 'float'};
+
 /** The sealed declaration lists a table's columns and a property schema's columns as
  * `[{name, ...}]`; manifests key them by name. */
 function columnsByName(columns: any): {[name: string]: any} {
@@ -425,6 +427,8 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     const columns: DomainGenColumn[] = [];
     const columnNames = new Set(external ? [] : systemColumnNames);
     const addColumn = (name: string, column: any): boolean => {
+      if (typeAliases[column.type] != null)
+        column = {...column, type: typeAliases[column.type]};
       if (coreRefAliases[column.type] != null) {
         column = {...column, type: 'ref', ref: coreRefAliases[column.type]};
         delete column.onDelete;

@@ -97,6 +97,15 @@ export async function platesAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.platesAppTreeBrowser(treeNode);
 }
 
+//description: An interactive plate from a table with one row per well: a well column (A01) or row and col columns (0-based), and a column per layer
+//input: dataframe table 
+//input: int rows { optional: true; description: Rows of the plate. With cols, the plate keeps this size whatever wells the table holds }
+//input: int cols { optional: true; description: Columns of the plate }
+//output: widget widget
+export function plateWidget(table: DG.DataFrame, rows?: number, cols?: number) : any {
+  return PackageFunctions.plateWidget(table, rows, cols);
+}
+
 //input: string barcode 
 //output: dynamic result
 export async function getPlateByBarcode(barcode: string) : Promise<any> {

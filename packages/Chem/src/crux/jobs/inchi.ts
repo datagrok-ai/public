@@ -25,7 +25,7 @@ let library: Promise<InchiLibrary> | null = null;
 function inchiLibrary(): Promise<InchiLibrary> {
   // the module file of vendor/crux-sketch that crux-sketch.js imports for its InChI calls (its wasm beside it in dist/)
   // @ts-ignore: a vendored ES module without declarations
-  library ??= import('../../../vendor/crux-sketch/inchi-CzWcatSB.js').then((m) => m.start() as Promise<InchiLibrary>)
+  library ??= import('../../../vendor/crux-sketch/inchi-BJfSCJ9F.js').then((m) => m.start() as Promise<InchiLibrary>)
     .catch((e: unknown) => {
       library = null;
       throw e;

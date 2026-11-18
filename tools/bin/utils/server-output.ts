@@ -10,7 +10,8 @@ export function setOutputFormat(format: OutputFormat): void {
   errorFormat = format;
 }
 
-export function printOutput(data: any, format: OutputFormat): void {
+/** [maxColumns] caps the columns of a table or CSV. */
+export function printOutput(data: any, format: OutputFormat, maxColumns: number = 12): void {
   if (data === null || data === undefined) {
     if (format !== 'quiet') console.log('(empty)');
     return;
@@ -21,7 +22,7 @@ export function printOutput(data: any, format: OutputFormat): void {
       console.log(JSON.stringify(data, null, 2));
       break;
     case 'csv':
-      printCsv(rows);
+      printCsv(rows, maxColumns);
       break;
     case 'quiet':
       for (const row of rows) {
@@ -32,7 +33,7 @@ export function printOutput(data: any, format: OutputFormat): void {
       }
       break;
     default:
-      printTable(rows);
+      printTable(rows, maxColumns);
   }
 }
 
@@ -46,13 +47,13 @@ export function cellStr(v: any): string {
   return String(v);
 }
 
-function printTable(rows: any[]): void {
+function printTable(rows: any[], maxColumns: number = 12): void {
   if (!rows.length) { console.log('(no results)'); return; }
   if (typeof rows[0] !== 'object' || rows[0] === null) {
     for (const r of rows) console.log(r);
     return;
   }
-  const keys = getKeys(rows);
+  const keys = getKeys(rows, maxColumns);
   const widths: Record<string, number> = {};
   for (const k of keys) widths[k] = k.length;
   for (const row of rows)
@@ -67,13 +68,13 @@ function printTable(rows: any[]): void {
     console.log(keys.map((k) => cellStr(row[k]).padEnd(widths[k])).join('  '));
 }
 
-function printCsv(rows: any[]): void {
+function printCsv(rows: any[], maxColumns: number): void {
   if (!rows.length) return;
   if (typeof rows[0] !== 'object' || rows[0] === null) {
     for (const r of rows) console.log(csvCell(String(r)));
     return;
   }
-  const keys = getKeys(rows);
+  const keys = getKeys(rows, maxColumns);
   console.log(keys.map(csvCell).join(','));
   for (const row of rows)
     console.log(keys.map((k) => csvCell(cellStr(row[k]))).join(','));
@@ -83,13 +84,13 @@ export function csvCell(s: string): string {
   return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-export function getKeys(rows: any[]): string[] {
+export function getKeys(rows: any[], maxColumns: number = 12): string[] {
   const seen = new Set<string>();
   const keys: string[] = [];
   for (const row of rows)
     for (const k of Object.keys(row))
       if (!seen.has(k)) { seen.add(k); keys.push(k); }
-  return keys.slice(0, 12);
+  return keys.slice(0, maxColumns);
 }
 
 export function printBatchOutput(response: BatchResponse, format: OutputFormat): void {

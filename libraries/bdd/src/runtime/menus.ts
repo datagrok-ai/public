@@ -59,9 +59,10 @@ export async function openTopMenu(page: Page, path: string, pick: boolean): Prom
 async function walkTopMenu(page: Page, segments: string[], names: string[], pick: boolean): Promise<void> {
   const top = page.locator(`.d4-menu-item-horz[name="${names[0]}"]`).filter({visible: true});
   await top.first().waitFor({state: 'visible', timeout: 5000}).catch(() => undefined);
-  // a guide gets every stop of the walk: the group in the bar, then each item in its dropdown
+  // a guide gets every stop of the walk, each taken as the pointer sets off for it: the group in the bar, then each
+  // item in its dropdown (the video cuts to the group opened as the pointer arrives on it)
   if (await top.count() > 0) {
-    await guide.hop(page, top.first());
+    await guide.hop(page, top.first(), 'menu');
     await top.first().hover();
   }
   else {
@@ -70,13 +71,13 @@ async function walkTopMenu(page: Page, segments: string[], names: string[], pick
       const bar = await page.locator('[role="menubar"] .d4-menu-item-horz > .d4-menu-item-label').filter({visible: true}).allTextContents();
       throw new Error(`no "${segments[0]}" in the top menu; it shows: ${bar.map((s) => s.trim()).filter(Boolean).join(' | ') || 'nothing'}`);
     }
-    await guide.hop(page, more.first());
+    await guide.hop(page, more.first(), 'menu');
     await more.first().hover();
     const folded = page.locator(`[name="${names[0]}"]`).filter({visible: true}).first();
     await folded.waitFor({state: 'visible', timeout: 5000}).catch(() => {
       throw new Error(`no "${segments[0]}" in the top menu's overflow group`);
     });
-    await guide.hop(page, folded);
+    await guide.hop(page, folded, 'menu');
     await enterGroup(folded);
   }
   for (let i = 1; i < segments.length; i++) {
@@ -89,11 +90,14 @@ async function walkTopMenu(page: Page, segments: string[], names: string[], pick
       if (!await item.isVisible())
         throw new Error(`no "${segments[i]}" in the ${segments.slice(0, i).join(' > ')} menu; it shows: ${await visibleLabels(page, names[i - 1]) || 'nothing'}`);
     });
-    await guide.hop(page, item);
-    if (i < segments.length - 1 || !pick)
+    if (i < segments.length - 1 || !pick) {
+      await guide.hop(page, item, 'menu');
       await enterGroup(item);
-    else
+    }
+    else {
+      await guide.hopLeaf(page, item);
       await item.click();
+    }
   }
 }
 
@@ -134,7 +138,8 @@ async function pickLeaf(page: Page, segments: string[], names: string[]): Promis
     throw new Error(`no "${segments[segments.length - 1]}" in the ${segments.slice(0, -1).join(' > ')} menu; it shows: ${await visibleLabels(page, names[names.length - 2]) || 'nothing'}`);
   });
   await page.evaluate((p) => (window as any).__bdd.armCommand(p), segments.join(' | '));
-  await guide.hop(page, leaf);
+  // a guide shows the leaf lit under the pointer before the press
+  await guide.hopLeaf(page, leaf, 5000);
   await leaf.click({timeout: 5000});
 }
 

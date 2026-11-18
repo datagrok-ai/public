@@ -247,7 +247,7 @@ Uploads a package
 Checks for errors before publishing — the package won't be published if there are any.
 
 Options:
-[--all] [--refresh] [--link] [--build] [--release] [--rebuild-docker] [--skip-docker-rebuild] [--skip-check] [-v | --verbose]
+[--all] [--refresh] [--link] [--build] [--release] [--rebuild-docker] [--skip-docker-rebuild] [--skip-docker-push] [--skip-check] [-v | --verbose]
 
 --all                  Publish all available packages (run in packages directory)
 --refresh              Publish all available already loaded packages (run in packages directory)
@@ -257,6 +257,7 @@ Options:
 --release              Publish package as release version
 --rebuild-docker       Force rebuild Docker images locally before pushing to registry
 --skip-docker-rebuild  Skip auto-rebuild when Dockerfile folder has changed
+--skip-docker-push     Build and push no Docker image: each container keeps the image the server has
 --skip-check           Skip check stage
 --verbose              Print detailed output
 
@@ -523,12 +524,13 @@ Usage: grok src <command> [options]
 
 Git recipes across the repos of the datagrok umbrella (git submodules). Runs from anywhere
 in the tree; paths are relative to the umbrella root. Every git command that changes
-something is printed; a repo that fails is listed and the exit code is 1. Children that are
-not cloned get no folder: the umbrella's sparse checkout leaves them out.
+something is printed; a repo that fails is listed and the exit code is 1. A child you cannot read
+(not found, or no credentials) is skipped and listed, not failed, unless you typed its path.
+Children that are not cloned get no folder: the umbrella's sparse checkout leaves them out.
 
 Commands:
     clone [profile | path...]   Clone the umbrella and the given children (profiles: .gitprofiles;
-                                none: profile "default", else every child)
+                                none: profile "default", every child you can read)
     add <profile | path>...     Clone more children, each on its branch
     sparse <path> <glob>...     Clone a child with only the matching files
     switch                      Put every child on its branch from .gitmodules
