@@ -123,14 +123,15 @@ test('Helm / lifecycle chain for the Macromolecule HELM column', async ({page}) 
       const grid = (window as any).grok.shell.tv.grid;
       grid.scrollToCell('HELM', 50);
     });
+    // Painting 540 HELM cells holds the main thread; under nightly load it took over 10 s.
     await page.waitForFunction(() =>
-      ((window as any).grok.shell.tv.grid.vertScroll?.min ?? 0) > 0, null, {timeout: 10_000});
+      ((window as any).grok.shell.tv.grid.vertScroll?.min ?? 0) > 0, null, {timeout: 30_000});
     await page.evaluate(() => {
       const grid = (window as any).grok.shell.tv.grid;
       grid.scrollToCell('HELM', 0);
     });
     await page.waitForFunction(() =>
-      ((window as any).grok.shell.tv.grid.vertScroll?.min ?? 0) === 0, null, {timeout: 10_000});
+      ((window as any).grok.shell.tv.grid.vertScroll?.min ?? 0) === 0, null, {timeout: 30_000});
     const canvasStill = await page.locator('[name="viewer-Grid"] canvas').count();
     expect(canvasStill,
       'helm.rendering.cell-renderer LRU cache: scroll round-trip MUST leave grid canvases attached')
