@@ -1,0 +1,51 @@
+{
+  "name": "@datagrok/forge",
+  "friendlyName": "Forge",
+  "version": "0.0.1",
+  "description": "Predictive modeling: train, apply and manage machine learning models",
+  "license": "MIT",
+  "sources": [
+    "css/forge-platform-images.css"
+  ],
+  "dependencies": {
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
+    "rxjs": "catalog:"
+  },
+  "author": {
+    "name": "Viktor Makarichev",
+    "email": "vmakarichev@datagrok.ai"
+  },
+  "devDependencies": {
+    "@datagrok-libraries/bdd": "workspace:^",
+    "@playwright/test": "^1.62.1",
+    "@types/node": "catalog:"
+  },
+  "scripts": {
+    "build": "grok api && grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src --ignore-pattern src/generated/",
+    "test": "grok test",
+    "test:bdd": "grok-bdd run"
+  },
+  "canEdit": [
+    "Administrators"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Forge"
+  },
+  "category": "Machine Learning",
+  "grok": {
+    "testDependencies": [
+      "@datagrok/eda"
+    ]
+  }
+}

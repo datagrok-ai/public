@@ -1,0 +1,8 @@
+/* Rules with the platform's own images. This file is served as it is (package.json "sources"), so their paths stay
+   the platform's: the bundled forge.css would have the build resolve them. */
+
+/* The chevron of the platform's choice input (ui.css .ui-input-root > select.ui-input-editor). */
+.forge-tune-select > select.ui-input-editor,
+.forge-tune-choices-button {
+  background-image: url('/images/chevron.svg');
+}
