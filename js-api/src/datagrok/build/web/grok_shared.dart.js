@@ -199650,9 +199650,9 @@
     call$0() {
       var t1 = new self.DG.ComponentBuildInfo();
       t1.branch = "master";
-      t1.commit = "b4bd9b3184c8a2b29a9c8604e649309016d7904b";
-      t1.date = "2026-11-17T23:45:45.982Z";
-      t1.version = "1.27.12";
+      t1.commit = "c0c33024c2774f143bf0e21e52ad6fead10ef410";
+      t1.date = "2026-11-18T23:45:39.297Z";
+      t1.version = "1.27.13";
       return t1;
     },
     $signature: 2149
