@@ -270,28 +270,5 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({
-    'name': 'Create JIRA ticket',
-    'description': 'Creates JIRA ticket using current error log',
-  })
-  static createJiraTicket() {
-    grok.data.query('JiraCreateIssue', {
-      'createRequest': JSON.stringify({
-        'fields': {
-          'project': {
-            'key': 'GROK',
-          },
-          'summary': 'test',
-          'description': '',
-          'issuetype': {
-            'name': 'Bug',
-          },
-        },
-      }),
-      'updateHistory': false,
-    }).then((t) => {
-      grok.shell.info('Created');
-      console.log(t);
-    });
-  }
+  // TODO: creating a ticket from the error log goes to GitHub issues with the observability work; Jira is gone.
 }

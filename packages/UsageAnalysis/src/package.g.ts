@@ -138,9 +138,3 @@ export function _specificClicksPanel() : any {
 export function describeCurrentObj() : void {
   PackageFunctions.describeCurrentObj();
 }
-
-//name: Create JIRA ticket
-//description: Creates JIRA ticket using current error log
-export function createJiraTicket() : void {
-  PackageFunctions.createJiraTicket();
-}

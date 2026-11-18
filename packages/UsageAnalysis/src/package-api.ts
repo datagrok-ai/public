@@ -603,11 +603,4 @@ export namespace funcs {
   export async function describeCurrentObj(): Promise<void> {
     return await grok.functions.call('UsageAnalysis:DescribeCurrentObj', {});
   }
-
-  /**
-   * Creates JIRA ticket using current error log
-   */
-  export async function createJiraTicket(): Promise<void> {
-    return await grok.functions.call('UsageAnalysis:CreateJiraTicket', {});
-  }
 }
