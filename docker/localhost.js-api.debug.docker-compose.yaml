@@ -1,10 +1,10 @@
-x-datagrok-release: 1.27.12
+x-datagrok-release: 1.27.13
 
 version: "3"
 services:
   datagrok:
     privileged: true
-    image: datagrok/datagrok:${DATAGROK_VERSION:-1.27.12}
+    image: datagrok/datagrok:${DATAGROK_VERSION:-1.27.13}
     environment:
       GROK_PARAMETERS: |
         {
