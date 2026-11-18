@@ -1,4 +1,6 @@
 numpy==1.26.4
+# datagrok-celery-task needs pyarrow (>=17, unpinned); pyarrow 26 requires NumPy 2, which the numpy pin above excludes
+pyarrow<26
 datagrok-celery-task
 celery
 datagrok-api>=0.0.9

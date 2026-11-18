@@ -2,9 +2,9 @@ chem-wasm: Chem's Crux engine (crux-core crates/chem-wasm), one WebAssembly file
 
 crate: chem-wasm
 features: ['chem']
-crux_core_rev: 03c1fcf02dbe28a5f600fe2674b77e5f905423b3
+crux_core_rev: ac616085ad1918250fa63d7a476995c6c82489cb
 crux_core_dirty: False
-built_utc: 2026-11-18T00:57:49.507Z
+built_utc: 2026-11-18T11:57:52.354Z
 cargo.profile: wasm-ship
 cargo.target: wasm32-unknown-unknown
 cargo.rustc: rustc 1.95.0 (59807616e 2026-04-14)
@@ -14,18 +14,18 @@ wasm_bindgen.flags: --target web --remove-name-section
 wasm_bindgen.glue_patch: tools/wasm_glue_fresh.mjs --crate crates/chem-wasm
 wasm_opt.version: wasm-opt version 117 (version_117)
 wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
-files.chem_wasm_bg.wasm.raw: 7035625
-files.chem_wasm_bg.wasm.gzip9: 2731555
-files.chem_wasm_bg.wasm.brotli11: 1994379
+files.chem_wasm_bg.wasm.raw: 7035741
+files.chem_wasm_bg.wasm.gzip9: 2731850
+files.chem_wasm_bg.wasm.brotli11: 1994127
 files.chem_wasm.js.raw: 191167
 files.chem_wasm.js.gzip9: 31951
 files.chem_wasm.js.brotli11: 26642
-cargo_artifact.raw: 8922623
-cargo_artifact.gzip9: 3191980
-cargo_artifact.brotli11: 2254143
+cargo_artifact.raw: 8922797
+cargo_artifact.gzip9: 3192220
+cargo_artifact.brotli11: 2251439
 
-vendored from: a clean build of crux-core main 03c1fcf02 (build-ship.sh chem)
-chem_wasm_bg.wasm: 7,035,625 B raw, sha256 7351594952ca0496
+vendored from: a clean build of crux-core main ac616085a (build-ship.sh chem)
+chem_wasm_bg.wasm: 7,035,741 B raw, sha256 583869fc35e93773
 NOTICE: the build's (crux-core tools/wasm_notices.py)
-includes: crux-core 03c1fcf02 (batch q, land mol-to-helm-cutstereo): molecule → HELM: a centre at a cut keeps its tag (an inline piece's centre bearing two or more R groups writes each * as [*:n] beside _Rn); the rescue first rewrites such pieces
+includes: molecule → HELM: the assembled molecule's canonical SMILES (canon-assembled, crux-core ac616085a)
 files: chem_wasm.js (glue, wasm-bindgen --target web), chem_wasm.d.ts, chem_wasm_bg.wasm, NOTICE.chem-wasm, VERSION.chem-wasm (both emitted to dist)
