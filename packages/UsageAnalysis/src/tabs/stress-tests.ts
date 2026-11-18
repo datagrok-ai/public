@@ -94,10 +94,16 @@ export class StressView extends UaView {
       this.regressionHost.textContent = reg.detail;
       this.regressionHost.className = `ua-metrics-asof ua-metrics-${reg.band}`;
       df.columns.addNewString('threads ').init((i) => `${df.get('threads', i)} threads`);
-      // Build names do not sort by time ('bleeding-edge-<sha>' next to '<date>-<version>'); rows come newest first,
-      // release sweeps last, so those open the chart as the reference.
+      // Build names do not sort by time ('bleeding-edge-<sha>' next to '<date>-<version>'): order them by sweep
+      // start, release sweeps first, so those open the chart as the reference.
       const builds = df.getCol('build');
-      builds.setCategoryOrder([...new Set(builds.toList())].reverse());
+      const key = new Map<string, number[]>();
+      for (let i = 0; i < df.rowCount; i++) {
+        key.set(builds.get(i), [`${df.get('branch', i)}`.startsWith('release/') ? 0 : 1,
+          df.get('started', i)?.valueOf() ?? 0]);
+      }
+      builds.setCategoryOrder([...key.keys()].sort((a, b) => key.get(a)![0] - key.get(b)![0] ||
+        key.get(a)![1] - key.get(b)![1]));
       const byBuild = (y: string): HTMLElement => DG.Viewer.lineChart(df, {
         xColumnName: 'build',
         yColumnNames: [y],

@@ -40,6 +40,8 @@ order by b.branch like 'release/%', b.build_date desc
 -- tests_per_s is the level's throughput: each thread's own rate (its tests over its wall time)
 -- averaged and multiplied by the thread count. Per thread, because threads of one level start
 -- staggered and one build can hold several sweeps, so a level has no single wall-clock span.
+-- started is when the build's first sweep began: builds order by it, because several images can
+-- share one build date and a sweep can run a day after its image was built.
 WITH runs AS (
     select s.total_concurrent_runs as threads, s.test_name, s.duration, s.passed,
            s.task_start, s.task_finish, s.concurrent_run
@@ -61,7 +63,7 @@ WITH runs AS (
 )
 select
     cast(@build as varchar) as build,
-    (select b.build_date from builds b where b.name = @build) as started,
+    (select min(task_start) from runs) as started,
     r.threads,
     count(*) as runs,
     count(distinct r.test_name) as tests,
