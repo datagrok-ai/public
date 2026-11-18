@@ -15,8 +15,8 @@ Feature: Projects regressions: two projects saved under one name
     And Files tree node inside browse tree is expanded
     And Files---Demo tree node inside browse tree is expanded
 
-  # core#546: both saves get the nqName <namespace>:<Name>, and its /p/ address opens no project
-  @known-failure:49 @realizes:core#546
+  # core#546 (fixed): both saves got the nqName <namespace>:<Name>, and its /p/ address opened no project
+  @realizes:core#546
   Scenario: The second project saved under a taken name opens from its own address
     Given no project named "BDDRegDupName{time}" is on the server
     When user double-clicks Files---Demo---demog-1000.csv tree node inside browse tree

@@ -29,6 +29,9 @@ Feature: Column enrichment of a database table
   users_sessions.id, so it is offered an enrichment of users_sessions.id "via users_sessions", and
   not the enrichments made for events.session_id (md 3.6).
 
+  Closing the query's view after an enrichment asks about the columns it added (core#456); the feature
+  answers DON'T SAVE, which closes it without saving.
+
   Background:
     Given user is logged in
     And no enrichment named "bdd-enrich-users-{time}, bdd-enrich-sessions-{time}, bdd-enrich-tokens-{time}, bdd-enrich-types-{time}" is on the server
@@ -151,6 +154,7 @@ Feature: Column enrichment of a database table
 
   Scenario: A second enrichment of session_id and one of event_type_id apply together
     When user closes BDD-enrich-events-{time} view
+    And user clicks on DON'T SAVE button in "Close BDD-enrich-events-{time}?" dialog
     Then the "events" view should be current
     Given the browse panel is open
     When user double-clicks on Databases---Postgres---Datagrok---BDD-enrich-events-{time} tree node inside browse tree

@@ -26,8 +26,8 @@ Feature: Projects regressions: a dashboard named like its query, moved into a sp
       select name from entity_types where name = @typeName
       """
 
-  # core#563: the move rewrites the creation script to call <space>:BDDSameName{time}, the dashboard itself
-  @known-failure:67 @realizes:core#563
+  # core#563: the move rewrote the creation script to call <space>:BDDSameName{time}, the dashboard itself; passes on master since 18 Nov 2026
+  @realizes:core#563
   Scenario: The dashboard named like its query opens after the move into a space
     When user clicks on "Refresh" icon inside browse toolbar
     Given Databases tree node inside browse tree is expanded
