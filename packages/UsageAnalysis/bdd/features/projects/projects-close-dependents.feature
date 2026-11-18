@@ -6,8 +6,8 @@ Feature: Closing a table that other open tables depend on
   (RowCount("cars")), a link between it and another table, and a viewer of another table's view
   bound to it. The dialog, titled after what closes (Close cars?), lists under "Other open tables use
   data from "cars"" each dependent with what closing does to it; CANCEL leaves the tab, the table and
-  every dependent as they were, CLOSE ANYWAY closes the table and leaves the dependents to what the
-  dialog said: the published pivot keeps its rows, the formula column empties, the link is gone, the
+  every dependent as they were, CLOSE closes the table and leaves the dependents to what the dialog
+  said, and a "save the project" link saves the project with both first when they are in one project: the published pivot keeps its rows, the formula column empties, the link is gone, the
   viewer keeps the rows it showed. The last open view of a saved project closes the project with all of its tables,
   so it asks about what another open project reads from them (a table opened while a project is open
   joins that project), though a view of a saved project otherwise leaves its table open.
@@ -21,12 +21,12 @@ Feature: Closing a table that other open tables depend on
   Every table is opened through the API (cars, and its first 10 rows as cars10); the pivot is
   published through the toolbox. Only the two-project scenario saves anything: its projects are
   named with the run's time and removed when it starts and when the feature ends.
-  "Warn on unsaved changes" is off for the feature: a pivot added to the source view is unsaved work,
-  whose own question (projects-close-unsaved) would come first.
+  "Ask to save on close" is off for the feature (its default): a pivot added to the source view is
+  unsaved work, whose own question is projects-close-unsaved's.
 
   Background:
     Given user is logged in
-    And the "Warn on unsaved changes" setting is off until the feature ends
+    And the "Ask to save on close" setting is off until the feature ends
 
   Scenario: A table a published pivot was made from asks before it closes
     Given simple mode is off
@@ -41,12 +41,13 @@ Feature: Closing a table that other open tables depend on
     And "Close cars?" dialog should contain text 'Other open tables use data from "cars"'
     And "Close cars?" dialog should contain text "cars aggregation"
     And "Close cars?" dialog should contain text 'Made from "cars". It stays as it is'
+    And "Close cars?" dialog should contain text 'To keep "cars aggregation" refreshable, save the project first; the tab closes once it is saved.'
     When user clicks on CANCEL button in "Close cars?" dialog
     Then the "Close cars?" dialog should close
     And "cars" view tab should be visible
     And table "cars" should be open
     When user closes "cars" view tab
-    And user clicks on CLOSE ANYWAY button in "Close cars?" dialog
+    And user clicks on CLOSE button in "Close cars?" dialog
     Then the "Close cars?" dialog should close
     And "cars" view tab should be absent
     And the "cars aggregation" view should be current
@@ -67,7 +68,7 @@ Feature: Closing a table that other open tables depend on
     And "cars" view tab should be visible
     And table "cars10" should have no missing values in "n" column
     When user closes "cars" view tab
-    And user clicks on CLOSE ANYWAY button in "Close cars?" dialog
+    And user clicks on CLOSE button in "Close cars?" dialog
     Then the "Close cars?" dialog should close
     And "cars" view tab should be absent
     And table "cars10" should have missing values in "n" column
@@ -89,7 +90,7 @@ Feature: Closing a table that other open tables depend on
     When user makes row 5 of table "cars10" current
     Then 1 rows of table "cars" should pass the filter
     When user closes "cars" view tab
-    And user clicks on CLOSE ANYWAY button in "Close cars?" dialog
+    And user clicks on CLOSE button in "Close cars?" dialog
     Then the "Close cars?" dialog should close
     And "cars" view tab should be absent
 
@@ -109,7 +110,7 @@ Feature: Closing a table that other open tables depend on
     And "cars" view tab should be visible
     And "Table" property of scatter plot viewer should be "cars"
     When user closes "cars" view tab
-    And user clicks on CLOSE ANYWAY button in "Close cars?" dialog
+    And user clicks on CLOSE button in "Close cars?" dialog
     Then the "Close cars?" dialog should close
     And "cars" view tab should be absent
     And "Table" property of scatter plot viewer should be "cars"
@@ -211,7 +212,7 @@ Feature: Closing a table that other open tables depend on
     Then the "Close 2 views?" dialog should close
     And "cars" view tab should be visible
     When user picks "Close others" from the context menu of the current view tab
-    And user clicks on CLOSE ANYWAY button in "Close 2 views?" dialog
+    And user clicks on CLOSE button in "Close 2 views?" dialog
     Then the "Close 2 views?" dialog should close
     And "cars" view tab should be absent
     And the "cars aggregation" view should be current
