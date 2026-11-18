@@ -1,4 +1,5 @@
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
 import {test, category, waitUntil, expect} from '@datagrok-libraries/test/src/test';
 
 category('Chemspace', () => {
@@ -28,7 +29,14 @@ category('Chemspace', () => {
   }, {timeout: 60000});
 
   test('App', async () => {
-    await grok.functions.call('Chemspace:app');
-    await waitUntil(() => grok.shell.tv.dataFrame.rowCount > 0, `Search hasn't been completed`, 30000);
+    const view: DG.TableView = await grok.functions.call('Chemspace:app');
+    grok.shell.addView(view);
+    try {
+      await waitUntil(() => view.dataFrame.rowCount > 0, `Search hasn't been completed`, 30000);
+      expect(view.dataFrame.col('smiles')?.semType, DG.SEMTYPE.MOLECULE);
+      expect(view.toolboxPage.accordion.getPane('Chemspace') !== null, true);
+    } finally {
+      view.close();
+    }
   }, {timeout: 60000});
 });
