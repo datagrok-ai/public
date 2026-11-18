@@ -6,7 +6,7 @@ node_modules/
 
 # Webpack outputs
 dist/
-
+files/DRAFT-NDS-examples 11-2026
 # IDEs
 # VS Code (https://github.com/github/gitignore/blob/master/Global/VisualStudioCode.gitignore)
 .vscode/*

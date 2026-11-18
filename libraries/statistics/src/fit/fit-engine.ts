@@ -662,6 +662,24 @@ export class FourPLDoseResponseFunction extends FourPLRegressionFunction {
     return fourPLDoseResponse(params, x);
   }
 
+  /** The regression's start with a Hill slope of 1 per decade, falling where y falls from the lowest x to the
+   * highest. At 10, a curve sampled at dilution steps is a step between two concentrations and the fit stayed
+   * where it started; the regression reads the direction from the first and last points, the wrong one for a
+   * series listed from the highest concentration down. */
+  override getInitialParameters(x: number[], y: number[]): Float32Array {
+    const params = super.getInitialParameters(x, y);
+    let lowest = 0;
+    let highest = 0;
+    for (let i = 1; i < x.length; i++) {
+      if (x[i] < x[lowest])
+        lowest = i;
+      if (x[i] > x[highest])
+        highest = i;
+    }
+    params[1] = y[lowest] > y[highest] ? -1 : 1;
+    return params;
+  }
+
   /** @param {Float32Array} params - [max, hill, ic50, min].
    * @param {number} fraction - the travelled fraction.
    * @return {number} the x at that fraction. */

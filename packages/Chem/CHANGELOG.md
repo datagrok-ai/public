@@ -2,6 +2,7 @@
 
 ## v.next
 
+* MPO: Fixed every malformed .json file previewed or opened logging a JSON parse error from the MPO profile check; the check now parses a file only when it names the profile type
 * Murcko Scaffolds, Filter by Catalogs: In RDKit mode, a column with an empty cell no longer fails as a whole (the Python script handed the blank, which arrives as NaN, to RDKit); that row gets no scaffold and no match, as in Crux mode
 * Crux sketcher: A charge or isotope set on an atom whose query was typed as SMARTS goes into that SMARTS (`[N;H2;X3:4]` with +1 becomes `[N;H2;X3;+:4]`; charge 0 takes it out again), so a search uses it; before, the atom showed the charge and the query left it out. Typing an element over a mapped atom (by key, the palette or on a selection) keeps its map number, as Atom Properties does (crux-sketch f3646b9a, engine crux-core ac616085a)
 * Crux: Chem's Crux file (`vendor/chem-wasm`) is rebuilt at crux-core ac616085a: a molecule assembled from HELM writes its canonical SMILES when its joins close a ring-stereo pair (a 1,4-disubstituted cyclohexane linker inside a macrocycle wrote both ring tags the other way round), so molecules to HELM converts such linkers, which it refused; HELM to molecule gives the same molecules and drawings as before. 2,731,555 → 2,731,850 bytes gzip

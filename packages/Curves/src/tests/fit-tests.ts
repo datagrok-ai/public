@@ -241,6 +241,18 @@ category('fit', () => {
     expect(fit.bottom, curve.parameters[3]);
   });
 
+  test('4PL dose-response fits the Hill slope of a dilution series', async () => {
+    // a falling curve sampled at 3-fold dilutions: started at a Hill slope of 10, the fit stayed a step
+    const series: IFitSeries = {fitFunction: FIT_FUNCTION_4PL_DOSE_RESPONSE, points: Array.from({length: 8}, (_, i) => {
+      const x = 10 / Math.pow(3, i);
+      return {x, y: 600 + 3600 / (1 + Math.pow(x / 0.3, 1.2))};
+    })};
+    const fitFunc = fitFunctions[FIT_FUNCTION_4PL_DOSE_RESPONSE];
+    const curve = fitSeries(series, fitFunc, undefined, {logX: true, logY: false});
+    expectFloat(curve.parameters[1], -1.2, 0.05);
+    expectFloat(Math.pow(10, curve.parameters[2]), 0.3, 0.01);
+  });
+
   test('fillParams custom function', async () => {
     const curve = fitSeries(polynomialSeries, polynomialFitFunc);
     const fit = polynomialFitFunc.fillParams(curve, polynomialSeries) as JSFunctionFit;

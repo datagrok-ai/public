@@ -119,6 +119,7 @@ import {createMixtureTreeWidget, createMixtureWidget, mixtureSmiles} from './uti
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from '@datagrok-libraries/utils/src/view-utils';
 import {getMpoScoreColumnName, isDesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {DESIRABILITY_PROFILE_TYPE} from '@datagrok-libraries/statistics/src/mpo/mpo-types';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
@@ -3567,7 +3568,14 @@ export class PackageFunctions {
     outputs: [{name: 'result', type: 'bool'}],
   })
   static checkJsonMpoProfile(content: string) {
-    return isDesirabilityProfile(JSON.parse(content));
+    // every JSON file previewed or opened comes through here: no parse unless the profile type is there
+    if (!content.includes(DESIRABILITY_PROFILE_TYPE))
+      return false;
+    try {
+      return isDesirabilityProfile(JSON.parse(content));
+    } catch (_) {
+      return false;
+    }
   }
 
   //#endregion
