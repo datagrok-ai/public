@@ -11,9 +11,6 @@ export interface Suggestion {
   label?: string;
   /** The prompt sent to the assistant. Omitted for `action` suggestions handled client-side. */
   prompt?: string;
-  /** When set, clicking posts this text straight into the chat as the assistant's reply (no AI call)
-   * — used to ask for a missing detail. The user's answer then runs `prompt` as the task context. */
-  immediateResponse?: string;
   /** A client-side action key (see [SUGGESTION_ACTIONS]) — runs immediately instead of prompting the AI. */
   action?: string;
   prefer?: Record<string, string>;
@@ -76,7 +73,7 @@ function resolveSuggestion(s: Suggestion, df: DG.DataFrame | null): Suggestion |
   const taken = new Set<string>();
   let cols: DG.Column[] | null = null;
 
-  const slotSource = `${s.label ?? ''}\n${s.prompt ?? ''}\n${s.immediateResponse ?? ''}`;
+  const slotSource = `${s.label ?? ''}\n${s.prompt ?? ''}`;
   for (const [, name, filter] of slotSource.matchAll(SLOT)) {
     if (name in pickedCols) continue;
     if (!df) return null;
@@ -104,7 +101,6 @@ function resolveSuggestion(s: Suggestion, df: DG.DataFrame | null): Suggestion |
   return {
     label: s.label ? fill(s.label) : undefined,
     prompt: s.prompt ? fill(s.prompt) : undefined,
-    immediateResponse: s.immediateResponse ? fill(s.immediateResponse) : undefined,
     action: s.action,
   };
 }

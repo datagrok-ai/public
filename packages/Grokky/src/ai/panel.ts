@@ -990,15 +990,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   protected runSuggestion(s: Suggestion): void {
     if (runSuggestionAction(s.action, this))
       return;
-    // Ask-for-a-detail suggestions: post the question as the assistant's reply without calling the
-    // AI, and carry the task forward so the user's answer runs it with full context.
-    if (s.immediateResponse) {
-      this.appendMessage('' as any, {title: '', content: s.immediateResponse, fromUser: false, uiOnly: true});
-      if (s.prompt)
-        this.pushNativeContext(s.prompt);
-      this.textArea.focus();
-      return;
-    }
     this.textArea.value = s.prompt ?? '';
     this.handleRun();
   }
@@ -1046,7 +1037,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       const rows = s.suggestions.map((sg) => {
         const row = ui.divText(sg.label ?? sg.prompt ?? '', 'grokky-suggestion-item');
         row.onclick = () => this.runSuggestion(sg);
-        if (!sg.immediateResponse && sg.prompt && sg.label && sg.label !== sg.prompt)
+        if (sg.prompt && sg.label && sg.label !== sg.prompt)
           ui.tooltip.bind(row, () => sg.prompt ?? '');
         return row;
       });

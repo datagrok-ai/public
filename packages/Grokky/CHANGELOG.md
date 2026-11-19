@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Grokky: Removed suggestions that asked a question instead of running
 * Grokky: New chat (+) clears the typed prompt and attached entities
 * Grokky: The assistant's question no longer blocks new prompts; Submit sends the choice as the next prompt
 * Grokky: Removed the "Your administrators log your AI ..." notice under the AI panel, answers and search results
