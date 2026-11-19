@@ -233,9 +233,10 @@ category('chemical engine: edge cases', () => {
     });
   }, {timeout: 120000});
 
-  test('known differences, pinned: dative bonds, cells RDKit reads only as a query', async () => {
-    // a dative bond is a single bond to Crux's descriptor graph (crux-core engine gaps EG-15, EG-30): the N->Pt bonds of
-    // this cisplatin count as rotatable, and the NH2 donors / acceptors are not seen (RDKit: 0 rotatable, 2 and 2)
+  test('dative bonds as RDKit; known difference, pinned: cells RDKit reads only as a query', async () => {
+    // a dative bond keeps its type in Crux's descriptor graph since crux-core e881b8e98 (typed bonds; it was a single
+    // bond there, engine gaps EG-15, EG-30, and this test pinned that gap): the N->Pt bonds of this cisplatin are not
+    // rotatable and the NH2 donors / acceptors are seen, as RDKit's (0 rotatable, 2 and 2)
     const dative = 'C[NH2]->[Pt](Cl)(Cl)<-[NH2]C';
     const counts = (module: any) => {
       const mol = module.get_mol(dative);
@@ -247,7 +248,7 @@ category('chemical engine: edge cases', () => {
       }
     };
     await inEngine(ChemicalEngine.Crux, async () =>
-      expect(counts(cruxModuleSync()), 'rotatable 2, donors 0, acceptors 0', 'Crux (a known gap)'));
+      expect(counts(cruxModuleSync()), 'rotatable 0, donors 2, acceptors 2', 'Crux, as RDKit'));
     expect(counts(chemCommonRdKit.getRdKitModule()), 'rotatable 0, donors 2, acceptors 2', 'RDKit');
 
     // a cell RDKit reads only as a query (an uncharged quaternary N, a pentavalent C): Crux mode matches the query it is,

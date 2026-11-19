@@ -8,7 +8,8 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {readDataframe} from './utils';
 import {CruxAlone, inBothEngines, inEngine, withCruxUnreadable} from './engine-utils';
 import {ChemicalEngine} from '../engine/chem-engine';
-import {cruxFallbackCount} from '../engine/fallback';
+import {cruxFallbackCount, cruxFallbackReason} from '../engine/fallback';
+import {mcsByEngine, rGroupsByEngine} from '../engine/analysis-jobs';
 import {getCruxService} from '../crux/crux-searches';
 import {getMmpFrags} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-fragments';
 import {MmpFragments} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-misc';
@@ -153,6 +154,52 @@ category('crux analyses', () => {
       }
     }
   }, {timeout: 60000});
+
+  // a column with a malformed row went to RDKit whole in Crux mode ("Crux reads not every molecule"), RDKit leaving
+  // that row out as well: now a row neither engine reads is left out on Crux too, and RDKit does the call only where
+  // it reads a row Crux does not
+  test('MCS and R-groups: a row neither engine reads is left out on Crux, RDKit mode\'s answer, no fallback',
+    async () => {
+      // top menu r-groups' malformed SAR table: two rows neither engine reads (an unclosed branch, a stray `|`)
+      const malformed = (await readDataframe('tests/sar-small_test_malformed.csv')).col('smiles')!.toList() as string[];
+      const options = JSON.stringify({matchingStrategy: 'Greedy', includeTargetMolInResults: true,
+        onlyMatchAtRGroups: false});
+      const run = async () => ({mcs: await mcsByEngine(malformed, true, true),
+        rGroups: JSON.stringify((await rGroupsByEngine(malformed, MCS_R26.sar[0], true, options)).smiles)});
+      const {rdkit, crux} = await inBothEngines(run, onCruxAlone('MCS', 'R-group decomposition'));
+      expect(crux.rGroups, rdkit.rGroups, 'the R groups, the malformed rows none');
+      expect(JSON.parse(crux.rGroups)[0].filter((s: string) => !s).length >= 2, true, 'the malformed rows: none');
+      // the readable rows' MCS: Crux's pinned, RDKit mode's the same query (the RDKit pool writes it in another atom
+      // order, as Chem's RDKit 2024.09 does some MCSs)
+      expect(crux.mcs, '[#7]1-[#6](=[#8])-[#6]-[#7]=[#6](-[#6]2:[#6]-1:[#6]:[#6]:[#6]:[#6]:2)-[#6]1-[#6]-[#6]-[#6]-' +
+        '[#6]-[#6]-1', 'the readable rows\' MCS');
+      const rdkitModule = chemCommonRdKit.getRdKitModule();
+      const graph = (smarts: string) => {
+        const query = rdkitModule.get_qmol(smarts);
+        const size = `${query.get_num_atoms()} atoms, ${query.get_num_bonds()} bonds`;
+        query.delete();
+        return size;
+      };
+      expect(graph(crux.mcs), graph(rdkit.mcs), 'RDKit mode\'s MCS');
+    });
+
+  test('MCS and R-groups: RDKit does the call where it reads a row Crux does not', async () => {
+    const sar = (await readDataframe('tests/sar-small_test.csv')).col('smiles')!.toList() as string[];
+    const options = JSON.stringify({matchingStrategy: 'Greedy', includeTargetMolInResults: true,
+      onlyMatchAtRGroups: false});
+    const run = async () => ({mcs: await mcsByEngine(sar, true, true),
+      rGroups: JSON.stringify((await rGroupsByEngine(sar, MCS_R26.sar[0], true, options)).smiles)});
+    const rdkit = await inEngine(ChemicalEngine.RDKit, run);
+    await inEngine(ChemicalEngine.Crux, () => withCruxUnreadable([sar[1]], async () => {
+      const before = cruxFallbackCount('MCS');
+      const beforeRGroups = cruxFallbackCount('R-group decomposition');
+      const crux = await run();
+      expect(cruxFallbackCount('MCS'), before + 1, 'the MCS by RDKit');
+      expect(cruxFallbackCount('R-group decomposition'), beforeRGroups + 1, 'the R groups by RDKit');
+      expect(cruxFallbackReason('MCS'), `Crux reads no molecule from a row RDKit reads: ${sar[1]}`, 'why');
+      expect(JSON.stringify(crux), JSON.stringify(rdkit), 'RDKit mode\'s MCS and R groups');
+    }));
+  });
 
   test('cluster MCS: on the Crux workers, RDKit for a cluster Crux cannot read', async () => {
     // three series of SPGI's MOL blocks (rows 0-9, 10-19, 20-29), the SAR table, a single molecule, an empty cluster

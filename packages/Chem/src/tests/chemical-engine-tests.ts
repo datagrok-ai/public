@@ -21,7 +21,7 @@ import {ChemicalEngine, chemSetting, cruxReady, engineInEffect, isCruxRequested,
   setChemicalEngine} from '../engine/chem-engine';
 import {CRUX_WASM_FILE, armCruxTrapForTests, cruxHeapBytes, cruxLoadFailed, cruxLoadRequests, cruxWasmUrl,
   holdCruxForTests, noteCruxError, onCruxRecover, resetCruxLoaderForTests, setCruxFetchForTests,
-  loadCrux, setCruxLoadFailureForTests} from '../engine/crux-module';
+  loadCrux, setCruxLoadFailureForTests, cruxModuleSync} from '../engine/crux-module';
 import type {CruxRecovery} from '../crux/crux-recover';
 import {calculateDescriptors, forgetCruxTreeForTests, getDescriptorsTree, lastDescriptorTiming,
   setCruxDescriptorGapForTests, setDescriptorTimingForTests} from '../descriptors/descriptors-engine';
@@ -35,7 +35,10 @@ import {FILTER_TYPES, chemGetDiversities, chemGetFingerprints, chemGetSimilariti
 import {alertsByEngine, fingerprintsByEngine, inchisByEngine, structuralAlertsByEngine} from '../engine/worker-jobs';
 import {RuleSet, runStructuralAlertsDetection} from '../panels/structural-alerts';
 import {PHARM_FAMILY_NAMES, PharmFamilySet, runPharmacophoreDetection} from '../panels/pharmacophore-features';
-import {CONTAINER_TIMEOUT, readDataframe} from './utils';
+import {CONTAINER_TIMEOUT, loadFileAsText, readDataframe} from './utils';
+import {compareValidation, CRUX_DEPARTURES} from './validation-parity';
+import {validationTextsByEngine} from '../engine/molecule-jobs';
+import {getMolSafe, validationText} from '../utils/mol-creation_rdkit';
 import {expectNoFallback, inBothEngines, inEngine, withCruxUnreadable} from './engine-utils';
 import {isNoneValue} from '../crux/crux-api';
 import {ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG, SubstructureSearchType} from '../constants';
@@ -1195,15 +1198,17 @@ category('chemical engine', () => {
     }));
   });
 
-  test('fingerprints and alerts: RDKit does a CXSMILES query and an alert SMARTS Crux cannot read', async () => {
-    const QUERY = '*c1ccccc1 |$Q_e;;;;;;$|'; // a query atom's label, which Crux's reader skips (its pattern bits differ)
+  test('fingerprints and alerts: Crux does a CXSMILES query, RDKit an alert SMARTS Crux cannot read', async () => {
+    const QUERY = '*c1ccccc1 |$Q_e;;;;;;$|'; // a query atom's label: Crux reads it as RDKit does (its query atom)
     const BENZENE = 'c1ccccc1';
     const molecules = [ASPIRIN, QUERY, 'CCN'];
     await inEngine(ChemicalEngine.Crux, async () => {
-      const crux = await fingerprintsByEngine(Fingerprint.Pattern, molecules, false);
+      const crux = await expectNoFallback(['fingerprints'], () =>
+        fingerprintsByEngine(Fingerprint.Pattern, molecules, false));
+      expect(crux.engine, ChemicalEngine.Crux, 'Crux computed them');
       const rdkit = await (await chemCommonRdKit.getRdKitService()).getFingerprints(Fingerprint.Pattern, molecules, false);
       expect(crux.fps.map((fp) => fp?.toString()).join('|'), rdkit.fps.map((fp) => fp?.toString()).join('|'),
-        'the CXSMILES query: RDKit\'s pattern fingerprint');
+        'the CXSMILES query: Crux\'s pattern fingerprint is RDKit\'s');
       // the SMARTS: one Crux reads nothing from
       const alerts = await withCruxUnreadable([BENZENE], () =>
         structuralAlertsByEngine({'PAINS': ['[Se]', BENZENE], 'LINT': ['[Se]']}, molecules));
@@ -1423,12 +1428,84 @@ category('chemical engine', () => {
   test('isSmiles and validateMolecule: Crux mode answers as RDKit mode', async () => {
     const strings = ['CCO', 'c1ccccc1O', 'C[C@H](N)C(=O)O', '[#6]~[#7]', 'c1cccc1', 'C1CC(', 'not a molecule', '',
       'C(C)(C)(C)(C)C', ...(await jobMolecules()).slice(-150, -100)];
-    const answers = async () => strings.map((s) => // (RDKit's log lines start with their time)
-      `${PackageFunctions.isSmiles(s)}|${PackageFunctions.validateMolecule(s)?.replace(/\[\d\d:\d\d:\d\d\] /g, '')}`);
-    const {rdkit, crux} = await inBothEngines(answers);
-    const differ = strings.flatMap((s, i) => rdkit[i] === crux[i] ? [] : [`${s.slice(0, 40)}: ${crux[i]} vs ${rdkit[i]}`]);
+    const answers = async () => strings.map((s) => [PackageFunctions.isSmiles(s), PackageFunctions.validateMolecule(s)]);
+    // validateMolecule's messages: Crux's (RDKit 2026.03's lines), the same as RDKit mode's but for the two versions'
+    // listed differences (validation-parity.ts)
+    const {rdkit, crux} = await inBothEngines(answers, {noFallback: ['validateMolecule']});
+    const differ = strings.flatMap((s, i) => rdkit[i][0] === crux[i][0] &&
+      compareValidation(rdkit[i][1] as string, crux[i][1] as string) !== null ? [] :
+      [`${s.slice(0, 40)}: ${JSON.stringify(crux[i])} vs ${JSON.stringify(rdkit[i])}`]);
     expect(differ.join('; '), '');
   });
+
+  test('validateMolecule and validateMolecules: Crux writes the messages alone, as RDKit but for the versions\' ' +
+    'differences', async () => {
+    // 302 strings of crux-core's validation corpus: every kind of message (parse errors with and without their
+    // position, valences, Kekulé, aromaticity, chirality, SMARTS, CXSMILES, MOL blocks valid and broken, assertions,
+    // blank, over-long); RDKit mode's messages are Chem's RDKit.js 2024.09's, Crux mode's RDKit 2026.03's: the file
+    // holds RDKit-js 2026.03.6's answer for each (rdkit2026) and which of getMolSafe's reads gave it a molecule
+    // (read2026: m, k without Kekulé, q the query, - none)
+    const corpus = JSON.parse(await loadFileAsText('tests/validation-corpus.json'));
+    const strings = corpus.strings as string[];
+    const rdkit2026 = corpus.rdkit2026 as string[];
+    const read2026 = corpus.read2026 as string[];
+    const perRow = async () => strings.map((s) => PackageFunctions.validateMolecule(s));
+    const {rdkit, crux} = await inBothEngines(perRow, {noFallback: ['validateMolecule']});
+    // Crux mode writes RDKit 2026.03.6's text exactly (but for the "[HH:MM:SS] " prefixes, the time) and reads as it,
+    // on every string (a CXSMILES with query features too: Crux reads every field of the extension), but for Crux's
+    // departures still open, listed in validation-parity.ts by what departs (and those must still depart: the list is
+    // what remains; none since crux-core e881b8e98)
+    const unprefixed = (m: string | null) => (m ?? '').replace(/^\[\d\d:\d\d:\d\d\] /gm, '');
+    const cruxReads = await inEngine(ChemicalEngine.Crux, async () => {
+      await cruxReady();
+      const cruxModule = cruxModuleSync()!;
+      return strings.map((s) => {
+        const {mol, kekulize, isQMol} = getMolSafe(s, {}, cruxModule);
+        mol?.delete();
+        return !mol ? '-' : isQMol ? 'q' : kekulize ? 'm' : 'k';
+      });
+    });
+    const not2026: string[] = [];
+    const stale: string[] = [];
+    strings.forEach((s, i) => {
+      const departs = CRUX_DEPARTURES.get(s)?.departs;
+      const sameMessage = unprefixed(crux[i]) === rdkit2026[i];
+      const sameRead = cruxReads[i] === read2026[i];
+      if (!sameMessage && departs !== 'message')
+        not2026.push(`${JSON.stringify(s.slice(0, 40))}: ${JSON.stringify(unprefixed(crux[i]).slice(0, 300))} vs RDKit 2026.03's ${JSON.stringify(rdkit2026[i].slice(0, 300))}`);
+      if (!sameRead && departs === undefined)
+        not2026.push(`${JSON.stringify(s.slice(0, 40))}: read ${cruxReads[i]} vs RDKit 2026.03's ${read2026[i]}`);
+      if ((departs === 'message' && sameMessage) || (departs === 'read' && sameRead))
+        stale.push(s.slice(0, 40));
+    });
+    expect(not2026.slice(0, 3).join('\n'), '', `Crux mode's messages and reads are RDKit 2026.03's (${not2026.length} differ)`);
+    expect(stale.join('; '), '', 'a listed departure of Crux that no longer departs: take it out of CRUX_DEPARTURES');
+    expect([...CRUX_DEPARTURES.keys()].every((s) => strings.includes(s)), true, 'every listed departure is in the file');
+    expect(crux.every((m) => !m || m === 'unknown error' || /^\[\d\d:\d\d:\d\d\] /.test(m)), true,
+      'each message starts with its time');
+    // RDKit mode against Crux mode: the same but for the two versions' listed differences
+    const kinds = new Map<string, number>();
+    const differ: string[] = [];
+    strings.forEach((s, i) => {
+      const kind = compareValidation(rdkit[i], crux[i], s);
+      if (kind === null)
+        differ.push(`${JSON.stringify(s.slice(0, 40))}: ${JSON.stringify(crux[i]?.slice(0, 300))} vs RDKit's ${JSON.stringify(rdkit[i]?.slice(0, 300))}`);
+      else
+        kinds.set(kind, (kinds.get(kind) ?? 0) + 1);
+    });
+    console.log(`validateMolecule parity: ${JSON.stringify(Object.fromEntries(kinds))}`);
+    expect(differ.slice(0, 3).join('\n'), '', `the same messages but for the listed differences (${differ.length} differ)`);
+    expect((kinds.get('same') ?? 0) > 50 && (kinds.get('normalised') ?? 0) > 50, true, 'both kinds are there');
+    expect(crux.filter((m) => m && m !== '').length > 150, true, 'most strings have a message');
+    // the column on the Crux workers alone (a CXSMILES with query features too), each row's text the main thread's
+    const plain = strings;
+    const {rdkit: rdkitColumn, crux: cruxColumn} = await inBothEngines(() => validationTextsByEngine(plain),
+      {noFallback: ['validateMolecules'], noRdkitPool: true});
+    const cruxTexts = plain.map((s) => validationText(crux[strings.indexOf(s)]));
+    const rdkitTexts = plain.map((s) => validationText(rdkit[strings.indexOf(s)]));
+    expect(cruxColumn.filter((t, i) => t !== cruxTexts[i]).length, 0, 'Crux mode: the column is validateMolecule\'s');
+    expect(rdkitColumn.filter((t, i) => t !== rdkitTexts[i]).length, 0, 'RDKit mode: the column is validateMolecule\'s');
+  }, {timeout: 300000});
 
   test('structural alerts and pharmacophores panels: Crux matches as RDKit', async () => {
     const all = (await jobMolecules()).filter((m) => m && m !== 'C1CC(');
@@ -1480,7 +1557,8 @@ category('chemical engine', () => {
       DG.chem.Notation.V3KMolBlock, DG.chem.Notation.Smarts, 'cxsmarts' as DG.chem.Notation];
     const all = () => Object.fromEntries(Object.entries(molecules).map(([what, m]) => [what, [
       ...targets.map((t) => PackageFunctions.convertMolNotation(m, DG.chem.Notation.Unknown, t)),
-      `${PackageFunctions.isSmiles(m)}|${PackageFunctions.validateMolecule(m)?.replace(/\[\d\d:\d\d:\d\d\] /g, '')}`]]));
+      `${PackageFunctions.isSmiles(m)}`, // (RDKit's log lines start with their time)
+      PackageFunctions.validateMolecule(m)?.replace(/^\[\d\d:\d\d:\d\d\] /gm, '') ?? '']]));
     /** Whether RDKit reads `smarts` as a query its molecule `m` matches (a SMARTS written by RDKit 2026.03 can differ from
      * 2024.09's, [CH3] as [#6] |^1:0| where 2024.09 wrote [#6H3], the same query on that molecule). */
     const matchesItself = (smarts: string, m: string) => {
@@ -1506,17 +1584,23 @@ category('chemical engine', () => {
     for (const what of Object.keys(molecules)) {
       crux[what].forEach((c: string, k: number) => {
         const r = rdkit[what][k];
-        const t = targets[k] ?? 'isSmiles|validateMolecule';
+        const t: string = targets[k] ?? ['isSmiles', 'validateMolecule'][k - targets.length];
         const query = t === DG.chem.Notation.Smarts || t === 'cxsmarts';
         const plain = (x: string) => x.replace(/ \|.*\|$/, ''); // a CXSMILES' molecule (its extension: below)
+        // RDKit 2026.03's SMARTS writer leaves out H counts 2024.09's wrote (`[#7H3]` as `[#7]` beside a dative bond):
+        // a CXSMARTS of a dative bond matches no molecule in either version (MolToCXSmarts writes it `-`)
+        const noHCounts = (x: string) => x.replace(/(\[[^\]]*?)H\d*(?![a-z])(?=[^\]]*\])/g, '$1');
+        // validateMolecule: Crux's messages (RDKit 2026.03's lines) but for the versions' differences (validation-parity.ts)
         const same = c === r || (k < targets.length && !query && rdkitCanonical(plain(c)) !== null &&
-          rdkitCanonical(plain(c)) === rdkitCanonical(plain(r))) || (query && matchesItself(c, molecules[what]));
+          rdkitCanonical(plain(c)) === rdkitCanonical(plain(r))) || (query && matchesItself(c, molecules[what])) ||
+          (query && noHCounts(c) === noHCounts(r)) ||
+          (t === 'validateMolecule' && compareValidation(r, c) !== null);
         if (!same)
           differences.push(`${what} -> ${t}: ${c.slice(0, 90)} vs RDKit's ${r.slice(0, 90)}`);
       });
     }
     expect(differences.join('\n'), '', 'the same molecules and answers');
-    // what RDKit reads and Crux skips goes to RDKit: the same strings
+    // CXSMILES query features, which Crux reads as RDKit (its writers RDKit 2026.03's): RDKit 2024.09's strings too
     for (const what of ['query label', 'ring bond count'])
       expect(JSON.stringify(crux[what]), JSON.stringify(rdkit[what]), what);
     expect(crux['AND group'][1].includes('&1:'), true, 'the AND group kept in CXSMILES');

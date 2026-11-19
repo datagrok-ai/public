@@ -24,7 +24,7 @@
         "ChemDraw",
         "Crux"
       ],
-      "defaultValue": "Ketcher",
+      "defaultValue": "Crux",
       "category": "Chemical engine",
       "nullable": true
     },

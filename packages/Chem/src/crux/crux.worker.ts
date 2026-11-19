@@ -171,7 +171,8 @@ ctx.addEventListener('message', async (e: MessageEvent) => {
     else if (op === 'drop')
       drop(args[0]);
     else if (Object.hasOwn(JOBS, op)) {
-      const context: WorkerJobContext = {crux: glue, module, rdkitWorker: rdkitShapedWorker, transfer};
+      const context: WorkerJobContext = {crux: glue, module, rdkitWorker: rdkitShapedWorker, transfer,
+        renewals: () => recovering.renewals()};
       result = await JOBS[op](context, ...args);
     } else if (op === 'fail::test') // tests: a job that fails with this message
       throw new Error(args[0]);

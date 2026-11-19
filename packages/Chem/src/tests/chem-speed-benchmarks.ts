@@ -39,7 +39,9 @@ import {convertNotationForColumn} from '../utils/convert-notation-utils';
 import {getStructuralAlertsByRules, RuleSet} from '../panels/structural-alerts';
 import {getInchiKeysImpl, getInchisImpl} from '../panels/inchi';
 import {convertMolNotationByEngine, fingerprintsByEngine, inchisByEngine} from '../engine/worker-jobs';
-import {beautifyMolsByEngine, coordGenCoordsByEngine, flattenMoleculesByEngine} from '../engine/molecule-jobs';
+import {beautifyMolsByEngine, coordGenCoordsByEngine, flattenMoleculesByEngine, validationTextsByEngine}
+  from '../engine/molecule-jobs';
+import {validationText} from '../utils/mol-creation_rdkit';
 import {rGroupsByEngine} from '../engine/analysis-jobs';
 import {cruxInchi} from '../crux/crux-inchi';
 import {loadCruxSketch} from '../crux/crux-sketcher';
@@ -78,6 +80,29 @@ async function interleaved(legs: {[label: string]: () => unknown}, reps = REPS,
   return medians;
 }
 
+/** `run()`'s result and the main thread's longest stall meanwhile (ms): the longest gap between the ticks of a 5 ms
+ * timer (the browser holds nested timers to 4 ms at least, so a free main thread shows ~5). */
+async function withStallWatch<T>(run: () => Promise<T>): Promise<{texts: T, stall: number}> {
+  let last = performance.now();
+  let stall = 0;
+  let on = true;
+  const tick = () => {
+    const now = performance.now();
+    stall = Math.max(stall, now - last);
+    last = now;
+    if (on)
+      setTimeout(tick, 5);
+  };
+  setTimeout(tick, 5);
+  try {
+    const texts = await run();
+    stall = Math.max(stall, performance.now() - last);
+    return {texts, stall};
+  } finally {
+    on = false;
+  }
+}
+
 /** `legs` per engine (`<label> <engine>`), each leg run in its engine. */
 function byEngine(legs: {[label: string]: () => unknown}): {[label: string]: () => unknown} {
   const out: {[label: string]: () => unknown} = {};
@@ -89,14 +114,18 @@ function byEngine(legs: {[label: string]: () => unknown}): {[label: string]: () 
 }
 
 let large: string | null = null;
+/** Where {@link largeCsv}'s table came from: the stand's ChEMBL 100k, or 10x smi10K. */
+let largeSource = '';
 async function largeCsv(): Promise<string> {
   if (large === null) {
     try {
       large = await grok.dapi.files.readAsText(LARGE);
+      largeSource = 'ChEMBL 100k';
     } catch {
       const small = (await readDataframe('tests/smi10K.csv')).toCsv();
       const rows = small.split('\n').slice(1).filter((l) => l !== '');
       large = ['smiles', ...Array.from({length: 10}, () => rows).flat()].join('\n');
+      largeSource = '10x smi10K';
     }
   }
   return large;
@@ -285,6 +314,49 @@ category('chem speed', () => {
       'InChI keys': () => getInchiKeysImpl(col),
     })));
   }, {benchmark: true, timeout: 900000});
+
+  test('validateMolecules 10k and 100k: the column on the workers against a loop of validateMolecule', async () => {
+    if (!DG.Test.isInBenchmark)
+      return;
+    // smi10K and the large table (ChEMBL 100k, or 10x smi10K), each with every 50th row made invalid
+    const spoil = (molecules: string[]) => Array.from(molecules, (m, i) => i % 50 === 25 ? `${m ?? ''}(` : m ?? '');
+    const sets: [string, string[]][] = [
+      ['10k', spoil((await molTable(smi10k)).col('smiles')!.toList())],
+      ['100k', spoil((await molTable(await largeCsv())).col('smiles')!.toList())],
+    ];
+    await getCruxService();
+    await chemCommonRdKit.getRdKitService();
+    const out: {[label: string]: number} = {};
+    for (const [size, molecules] of sets) {
+      const loop = () => molecules.map((m) => validationText(PackageFunctions.validateMolecule(m)));
+      const legs: {[label: string]: () => unknown} = {};
+      const stalls: {[label: string]: number[]} = {};
+      for (const engine of ENGINES) {
+        legs[`loop ${size} ${engine}`] = () => inEngine(engine, async () => loop());
+        legs[`column ${size} ${engine}`] = () => inEngine(engine, async () => {
+          const {texts, stall} = await withStallWatch(() => validationTextsByEngine(molecules));
+          (stalls[`column ${size} ${engine} longest main-thread stall`] ??= []).push(stall);
+          expect(texts.length, molecules.length);
+        });
+      }
+      Object.assign(out, await interleaved(legs));
+      for (const [label, values] of Object.entries(stalls))
+        out[label] = +median(values).toFixed(2);
+      for (const engine of ENGINES) {
+        expect(out[`column ${size} ${engine}`] <= out[`loop ${size} ${engine}`], true,
+          `${size} ${engine}: the column (${out[`column ${size} ${engine}`]} ms) is not slower than the loop ` +
+          `(${out[`loop ${size} ${engine}`]} ms)`);
+      }
+    }
+    // the same texts: the column against the loop on the 10k set, in each engine
+    for (const engine of ENGINES) {
+      const [column, loop] = await inEngine(engine, async () => [await validationTextsByEngine(sets[0][1]),
+        sets[0][1].map((m) => validationText(PackageFunctions.validateMolecule(m)))]);
+      expect(column.filter((t, i) => t !== loop[i]).length, 0, `${engine}: the column's texts are the loop's`);
+    }
+    console.log(`chem speed: validateMolecules ${JSON.stringify(out)}`);
+    return JSON.stringify({...out, '100k table': largeSource, '100k rows': sets[1][1].length});
+  }, {benchmark: true, timeout: 1800000});
 
   test('InChI 10k: column vs molecule by molecule, first call', async () => {
     if (!DG.Test.isInBenchmark)

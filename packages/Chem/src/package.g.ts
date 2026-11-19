@@ -1471,10 +1471,19 @@ export function getMolecularFormula(molecule: string) : string {
   return PackageFunctions.getMolecularFormula(molecule);
 }
 
+//description: Checks a molecule (SMILES, SMARTS or molfile): the error messages of the chemical engine on reading it, each line starting with its time, or an empty string when it reads without an error
 //input: string s 
 //output: object result
 export function validateMolecule(s: string) : any {
   return PackageFunctions.validateMolecule(s);
+}
+
+//description: Checks every molecule of a column (SMILES, SMARTS or molfiles) in background workers: one cell per row with the error messages of the chemical engine on reading that molecule (those of validateMolecule without their times), empty for a molecule that reads without an error. As a formula in Add New Column it is called once for the whole column
+//input: column<string> molecules { semType: Molecule }
+//output: column result
+//meta.vectorFunc: true
+export async function validateMolecules(molecules: DG.Column) : Promise<any> {
+  return await PackageFunctions.validateMolecules(molecules);
 }
 
 //name: Train Chemprop
@@ -1717,6 +1726,17 @@ export async function reactionEnumeratorApp() : Promise<any> {
 //meta.role: app
 export async function reactionsApp() : Promise<any> {
   return await PackageFunctions.reactionsApp();
+}
+
+//name: Sketcher
+//description: Draws a molecule or a query in the Crux sketcher; the page address is a link to the drawing
+//input: string smiles { optional: true; description:  }
+//output: view result
+//meta.browsePath: Chem
+//meta.icon: images/sketcher.png
+//meta.role: app
+export async function sketcherApp(smiles?: string) : Promise<any> {
+  return await PackageFunctions.sketcherApp(smiles);
 }
 
 //input: dynamic treeNode 

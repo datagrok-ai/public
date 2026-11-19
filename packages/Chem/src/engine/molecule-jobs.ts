@@ -1,8 +1,8 @@
 /**
  * Column jobs by the "Chemical engine" setting (README.md beside this file) that ran on RDKit in both modes, on the
  * RDKit pool or on the main thread: in Crux mode the Crux workers run them in chunks (crux/jobs/molecule-jobs.ts), the
- * RDKit path does the rows Crux leaves (a molecule it does not read, a call it refuses, a CXSMILES whose query features
- * its reader skips) and the whole call when Crux fails; in RDKit mode, the RDKit path as before.
+ * RDKit path does the rows Crux leaves (a molecule it does not read, a call it refuses) and the whole call when Crux
+ * fails; in RDKit mode, the RDKit path as before.
  */
 import * as DG from 'datagrok-api/dg';
 import {getRdKitService} from '../utils/chem-common-rdkit';
@@ -10,17 +10,18 @@ import {getCruxService} from '../crux/crux-searches';
 import type {ElementCounts, MoleculeJobResult} from '../crux/jobs/molecule-jobs';
 import {byEngineAsync} from './chem-engine';
 import {rdkitForRows} from './fallback';
-import {cruxInput} from './worker-jobs';
+import {cruxInput, cruxInputSkippingUnreadable} from './worker-jobs';
 
 /** Per molecule, the Crux workers' time allowance of a job (crux-service.ts `inChunks`): CoordGen lays out a
  * macrocycle in seconds. */
-const MS_PER_MOLECULE = {coordGen: 200, flatten: 20, beautify: 100, elements: 20, cores: 50, atomCounts: 5};
+const MS_PER_MOLECULE = {coordGen: 200, flatten: 20, beautify: 100, elements: 20, cores: 50, atomCounts: 5,
+  validate: 20};
 
 /** The molecule job `op` (crux/jobs/molecule-jobs.ts) over `molecules` on the Crux workers: each chunk's result and
- * the rows the RDKit side does (the chunks' `rest` and the skipped CXSMILES), as column rows. */
+ * the rows the RDKit side does (the chunks' `rest` and the rows `toCrux` skipped), as column rows. */
 async function moleculeJob<R extends {rest: number[]}>(op: string, molecules: string[], msPerMolecule: number,
-  args: unknown[] = []): Promise<{parts: R[], starts: number[], rest: number[]}> {
-  const {input, skipped} = cruxInput(molecules);
+  args: unknown[] = [], toCrux = cruxInput): Promise<{parts: R[], starts: number[], rest: number[]}> {
+  const {input, skipped} = toCrux(molecules);
   const starts: number[] = [];
   const parts = await (await getCruxService()).jobInChunks<R>(op, input, msPerMolecule, args, starts);
   return {parts, starts, rest: [...parts.flatMap((part, k) => part.rest.map((row) => starts[k] + row)), ...skipped]};
@@ -32,9 +33,10 @@ async function moleculeJob<R extends {rest: number[]}>(op: string, molecules: st
  * `done` for is logged as a fallback.
  */
 async function resultsByEngine<T>(call: string, op: string, molecules: string[], msPerMolecule: number,
-  rdkit: (molecules: string[]) => Promise<T[]>, done: (result: T) => boolean, args: unknown[] = []): Promise<T[]> {
+  rdkit: (molecules: string[]) => Promise<T[]>, done: (result: T) => boolean, args: unknown[] = [],
+  toCrux = cruxInput): Promise<T[]> {
   return byEngineAsync(call, async () => {
-    const {parts, rest} = await moleculeJob<MoleculeJobResult<T>>(op, molecules, msPerMolecule, args);
+    const {parts, rest} = await moleculeJob<MoleculeJobResult<T>>(op, molecules, msPerMolecule, args, toCrux);
     const results = parts.flatMap((part) => part.results);
     await rdkitForRows(call, rest, (rows) => rdkit(rows.map((i) => molecules[i])),
       (patch, k, row) => done(results[row] = patch[k]), (row) => molecules[row]);
@@ -60,6 +62,18 @@ export function flattenMoleculesByEngine(molecules: string[], flattenDoubleBonds
 export function beautifyMolsByEngine(molecules: string[]): Promise<string[]> {
   return resultsByEngine('beautifyMols', 'beautifyMols', molecules, MS_PER_MOLECULE.beautify,
     async (rows) => (await getRdKitService()).beautifyMolsV3K(rows), (r) => !!r);
+}
+
+/**
+ * `validateMolecules` (package.ts): each molecule's validation text (utils/mol-creation_rdkit.ts: `validationText` of
+ * `validationMessage`, the function `validateMolecule` calls) by the engine. In Crux mode the Crux workers write it on
+ * their module (crux/jobs/molecule-jobs.ts); the RDKit pool does the rows they leave (a read Crux refused, a molecule
+ * the tests mark unreadable) and the whole call when they fail (a Crux file without the log). In RDKit mode, the
+ * RDKit pool. Every row gets a text ('' for a valid molecule).
+ */
+export function validationTextsByEngine(molecules: string[]): Promise<string[]> {
+  return resultsByEngine('validateMolecules', 'validateMolecules', molecules, MS_PER_MOLECULE.validate,
+    async (rows) => (await getRdKitService()).validateMolecules(rows), () => true, [], cruxInputSkippingUnreadable);
 }
 
 /**

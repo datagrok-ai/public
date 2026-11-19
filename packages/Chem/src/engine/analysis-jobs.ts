@@ -7,8 +7,8 @@
  */
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import type {IMmpFragmentsResult, IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
-import type {RGroupCluster} from '../crux/crux-analysis-jobs';
-import {clusterMcsSmiles} from '../utils/mol-creation_rdkit';
+import type {CruxUnread, RGroupCluster} from '../crux/crux-analysis-jobs';
+import {clusterMcsSmiles, getMolSafe} from '../utils/mol-creation_rdkit';
 import {getRdKitModule, getRdKitService} from '../utils/chem-common-rdkit';
 import {getCruxService} from '../crux/crux-searches';
 import {byEngineAsync} from './chem-engine';
@@ -31,27 +31,56 @@ export async function mmpFragmentsByEngine(molecules: string[]): Promise<IMmpFra
   }, rdkit);
 }
 
+/** Whether a Crux job answered with the rows it read no molecule from (crux/crux-analysis-jobs.ts), not a result. */
+function isUnread<R>(answer: R | CruxUnread): answer is CruxUnread {
+  return typeof answer === 'object' && answer !== null && Array.isArray((answer as CruxUnread).unread);
+}
+
+/**
+ * A Crux job over whole `molecules` whose result skips a row the engine reads no molecule from, as the RDKit worker's
+ * code does (MCS leaves it out, R-groups give it none): `job(input)` on the molecules as the Crux workers get them
+ * ({@link forCrux}); where Crux reads none from some rows and RDKit reads none of them either, the job once more with
+ * them empty, so that Crux's result is RDKit mode's (a column with a malformed row stays Crux's). It throws (the call
+ * goes to RDKit, a fallback) where RDKit reads one of those rows: RDKit mode would use it.
+ */
+async function skippingRowsNeitherReads<R>(molecules: string[], job: (input: string[]) => Promise<R | CruxUnread>):
+  Promise<R> {
+  const input = forCrux(molecules);
+  const first = await job(input);
+  if (!isUnread(first))
+    return first;
+  const rdkitReads = first.unread.find((i) => {
+    const read = getMolSafe(molecules[i], {}, getRdKitModule());
+    read.mol?.delete();
+    return read.mol !== null;
+  });
+  if (rdkitReads !== undefined)
+    throw new Error(`Crux reads no molecule from a row RDKit reads: ${molecules[rdkitReads]}`);
+  const unread = new Set(first.unread);
+  const second = await job(input.map((m, i) => unread.has(i) ? '' : m));
+  if (isUnread(second))
+    throw new Error(`Crux reads no molecule from ${input[second.unread[0]]}`);
+  return second;
+}
+
 /** `RdKitService.getRGroups` (one R-group decomposition) by the engine in effect; the caller holds the Chem critical
- * section, as there. */
+ * section, as there. A row neither engine reads gets no R groups in both modes. */
 export async function rGroupsByEngine(molecules: string[], core: string, coreIsQMol: boolean, options?: string):
   Promise<IRGroupAnalysisResult> {
   const rdkit = async () => (await getRdKitService()).getRGroups(molecules, core, coreIsQMol, options);
   return byEngineAsync('R-group decomposition', async () => {
-    const result = await (await getCruxService()).rGroupAnalysis(molecules, core, coreIsQMol, options);
-    if (!result)
-      throw new Error('Crux reads not every molecule');
-    return result;
+    const service = await getCruxService();
+    return skippingRowsNeitherReads(molecules, (input) => service.rGroupAnalysis(input, core, coreIsQMol, options));
   }, rdkit);
 }
 
-/** `RdKitService.getMCS` (FMCS's SMARTS of the molecules) by the engine in effect. */
+/** `RdKitService.getMCS` (FMCS's SMARTS of the molecules) by the engine in effect. A row neither engine reads is left
+ * out in both modes. */
 export async function mcsByEngine(molecules: string[], exactAtoms: boolean, exactBonds: boolean): Promise<string> {
   const rdkit = async () => (await getRdKitService()).getMCS(molecules, exactAtoms, exactBonds);
   return byEngineAsync('MCS', async () => {
-    const mcs = await (await getCruxService()).mostCommonStructure(molecules, exactAtoms, exactBonds);
-    if (mcs === null)
-      throw new Error('Crux reads not every molecule');
-    return mcs;
+    const service = await getCruxService();
+    return skippingRowsNeitherReads(molecules, (input) => service.mostCommonStructure(input, exactAtoms, exactBonds));
   }, rdkit);
 }
 

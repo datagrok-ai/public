@@ -53,8 +53,8 @@ import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
 import {Fingerprint, hasNewLines} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {getMolSafe, _isSmarts, getQueryMolSafe, readsAsQuery, isSmilesSyntax,
-  withoutCxExtension} from './utils/mol-creation_rdkit';
-import {canonicalWith, _rdKitModule, validationMessageByRdKit} from './utils/chem-common-rdkit';
+  withoutCxExtension, validationMessage, ValidationOptions} from './utils/mol-creation_rdkit';
+import {canonicalWith, _rdKitModule} from './utils/chem-common-rdkit';
 import {_convertMolNotation, convertNotationForColumn, molToMolblock, asSmiles} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {getSdfString, saveAsSdfDialog} from './utils/sdf-utils';
@@ -133,17 +133,21 @@ import {applyDesirabilityTags, collectMpoResultColumns, computeMpo, findSuitable
 import {removeWaterAndSalts, runTransformationReaction} from './utils/reactions/reactions';
 import {transformationReactionsUI, transformationReactionsView, twoComponentReactionsView, twoComponentReactionUI} from './utils/reactions/ui';
 import {byEngineAsync, byEngineModule, cruxReady, onEngineSwitch, requestedEngine} from './engine/chem-engine';
-import {noteCruxError} from './engine/crux-module';
+import {cruxRenewals, noteCruxError} from './engine/crux-module';
 import {getCruxService} from './crux/crux-searches';
 import {clusterMcsByEngine, molzip as molzipOnCrux, MolzipParams} from './engine/analysis-jobs';
 import {getMacromoleculeAssembler as cruxMacromoleculeAssembler} from './engine/biopolymer';
 import type {IMacromoleculeAssembler} from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
-import {atomsColumnByEngine, beautifyMolsByEngine, coordGenCoordsByEngine, flattenMoleculesByEngine}
-  from './engine/molecule-jobs';
+import {atomsColumnByEngine, beautifyMolsByEngine, coordGenCoordsByEngine, flattenMoleculesByEngine,
+  validationTextsByEngine} from './engine/molecule-jobs';
 import * as pythonFree from './python-free';
 
 export {getMCS};
 export * from './package.g';
+
+/** `validateMolecule` on Crux's main-thread module: a read Crux throws for, or a renewal of the module while it reads
+ * (its log lost), is RDKit's (utils/mol-creation_rdkit.ts `validationMessage`). */
+const CRUX_VALIDATION: ValidationOptions = {rethrow: true, renewals: cruxRenewals};
 
 /** Temporary polyfill */
 
@@ -182,6 +186,10 @@ const SKETCHER_FUNCS_FRIENDLY_NAMES: { [key: string]: string } = {
   ChemDraw: 'ChemDraw',
   Crux: 'Crux',
 };
+
+/** The sketcher of a user who never picked one (no `sketcher/selected` user setting) and whose groups set no
+ * Sketcher setting: the Sketcher setting's default (package.json); also the fallback for a pick whose package is gone. */
+const DEFAULT_CHEM_SKETCHER = 'Crux';
 
 const PREVIOUS_SKETCHER_NAMES: { [key: string]: string } = {
   'Open Chem Sketcher': 'OpenChemLib',
@@ -247,12 +255,14 @@ async function initChemInt(): Promise<void> {
   if (sketcherFunc)
     DG.chem.currentSketcherType = sketcherFunc.friendlyName;
   else {
+    // Chem's own default (the Sketcher setting's), Crux, which Chem always registers: the API's DG.DEFAULT_SKETCHER is
+    // Crux too since datagrok-api 1.27.13's next release, and an older API's (OpenChemLib) is not taken
     if (!!storedSketcherType) {
       grok.shell.warning(
-        `Package with ${storedSketcherType} function is not installed.Switching to ${DG.DEFAULT_SKETCHER}.`);
+        `Package with ${storedSketcherType} function is not installed. Switching to ${DEFAULT_CHEM_SKETCHER}.`);
     }
 
-    DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
+    DG.chem.currentSketcherType = DEFAULT_CHEM_SKETCHER;
   }
   // here, not in init: other packages call Chem:init too (HitTriage), and each call would add another handler
   DG.ObjectHandler.register(new MpoProfileHandler());
@@ -3151,19 +3161,31 @@ export class PackageFunctions {
     return oclMol(molecule).getMolecularFormula().formula;
   }
 
-  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  @grok.decorators.func({
+    description: 'Checks a molecule (SMILES, SMARTS or molfile): the error messages of the chemical engine on reading it, each line starting with its time, or an empty string when it reads without an error',
+    outputs: [{type: 'object', name: 'result'}],
+  })
   static validateMolecule(s: string): string | null {
-    // "Chemical Engine" (engine/README.md): in Crux mode a molecule Crux reads as it stands (getMolSafe's first read) is
-    // valid; the message for the rest is RDKit's log (Crux keeps none). Not a fallback: an invalid molecule is no Crux
-    // failure, so only a throw on Crux's side is logged as one.
-    const validOnCrux = byEngineModule<boolean>('validateMolecule', _rdKitModule, (module, crux) => {
-      if (!crux)
-        return false;
-      const ctx = getMolSafe(s, {}, module, true, noteCruxError);
-      ctx.mol?.delete();
-      return ctx.mol !== null && ctx.kekulize && !ctx.isQMol;
-    });
-    return validOnCrux ? '' : validationMessageByRdKit(_rdKitModule, s);
+    // "Chemical Engine" (engine/README.md): the engine's own log, by the one function the workers' validateMolecules
+    // calls too (utils/mol-creation_rdkit.ts `validationMessage`): in Crux mode Crux's (RDKit 2026.03's lines), touching
+    // no RDKit, a CXSMILES with query features too; RDKit's when Crux throws (a Crux file without the log, a read it
+    // refused), logged as a fallback
+    return byEngineModule<string>('validateMolecule', _rdKitModule,
+      (module, crux) => validationMessage(s, module, crux ? CRUX_VALIDATION : {}), 'Crux gave no log, RDKit was asked');
+  }
+
+  @grok.decorators.func({
+    description: 'Checks every molecule of a column (SMILES, SMARTS or molfiles) in background workers: one cell per row with the error messages of the chemical engine on reading that molecule (those of validateMolecule without their times), empty for a molecule that reads without an error. As a formula in Add New Column it is called once for the whole column',
+    meta: {vectorFunc: 'true'},
+    outputs: [{name: 'result', type: 'column'}],
+  })
+  static async validateMolecules(
+    @grok.decorators.param({type: 'column<string>', options: {semType: 'Molecule'}}) molecules: DG.Column):
+    Promise<DG.Column> {
+    // engine/molecule-jobs.ts `validationTextsByEngine`: the Crux workers in Crux mode, the RDKit pool in RDKit mode
+    // (toList leaves holes for empty cells, which map skips: Array.from visits them)
+    const texts = await validationTextsByEngine(Array.from(molecules.toList(), (m) => m ?? ''));
+    return DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'validation', texts);
   }
 
   //#region Chemprop
@@ -3678,6 +3700,22 @@ export class PackageFunctions {
   static async reactionsApp(): Promise<DG.ViewBase> {
     const {reactionsAppView} = await import('./utils/reactions/reactions-app');
     return reactionsAppView();
+  }
+
+  // Apps | Chem | Sketcher (utils/sketcher-app/sketcher-app.ts): the Crux sketcher filling its view, the context panel
+  // showing the drawing; `/apps/Chem/Sketcher?smiles=...` opens it on a molecule (core's routing hands an app its URL's
+  // parameters by name), and every change of the drawing writes the link back through the view's path
+  @grok.decorators.app({
+    'name': 'Sketcher',
+    'description': 'Draws a molecule or a query in the Crux sketcher; the page address is a link to the drawing',
+    'meta': {browsePath: 'Chem', icon: 'images/sketcher.png'},
+  })
+  static async sketcherApp(
+    @grok.decorators.param({options: {optional: true, description: 'The molecule to open (SMILES, CXSMILES or ' +
+      'SMARTS, the parameter of the app\'s link), or none for the example'}}) smiles?: string,
+  ): Promise<DG.ViewBase> {
+    const {sketcherAppView} = await import('./utils/sketcher-app/sketcher-app');
+    return sketcherAppView(smiles);
   }
 
   @grok.decorators.func()

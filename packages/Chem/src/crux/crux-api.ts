@@ -17,6 +17,9 @@ export interface WorkerJobContext {
   module: RDModule;
   /** The RDKit worker's code (rdkit-service/) over the Crux module, made on first use, without a molecule cache. */
   rdkitWorker: () => RdKitServiceWorker;
+  /** How many fresh instances the module has had (crux-recover.ts `renewals`): a job that keeps state in the module
+   * (a log capture) compares it around a call to know the state was lost in it. */
+  renewals: () => number;
   /** Buffers of the result that go to the main thread without a copy. */
   transfer: Transferable[];
 }

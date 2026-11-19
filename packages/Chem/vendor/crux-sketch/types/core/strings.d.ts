@@ -296,8 +296,13 @@ export declare const STRINGS: {
     readonly removeExplicitHydrogens: 'Remove explicit hydrogens';
     readonly addExplicitHydrogensLine: 'Draw each implicit H as an atom (the selection, if any)';
     readonly removeExplicitHydrogensLine: 'Fold H atoms back into their atoms (the selection, if any)';
-    /** Why Add explicit hydrogens is disabled in query mode (spike milestone-6-fixes, F3, R3): its tooltip in each menu. */
-    readonly addHydrogensQueryMode: 'Not in query mode: each hydrogen drawn would become part of the query';
+    /**
+     * Add explicit hydrogens in query mode (spike query-add-hydrogens, the product owner's choice B of 2026-11-19; it replaces
+     * milestone-6-fixes' F3): what it does on an atom or a selection, the top bar's line and the context menus' tooltip; and
+     * why it is disabled on the whole drawing (the top bar with nothing selected, the canvas's menu), its tooltip.
+     */
+    readonly addExplicitHydrogensQueryLine: 'Draw each implicit H as an atom: the query then asks each atom for at least that many H';
+    readonly addHydrogensWholeQuery: 'Not on the whole query: each hydrogen drawn becomes part of it, so only molecules with no substituent anywhere would pass; select atoms first';
     /** Straighten (spike layout-tools, L5, L9): RDKit's straightenDepiction, in the selection's and the canvas's menus (P1: no button, no key). */
     readonly straighten: 'Straighten';
     /**

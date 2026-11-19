@@ -508,6 +508,15 @@ export class RdKitService {
     (data: string[][]) => ([] as string[]).concat(...data)));
   }
 
+  /** `validateMolecules`' texts of the molecules, one per molecule ('' for a valid one): RdKitServiceWorker
+   * `validateMolecules` in segments across the workers, inside the critical section as the other column calls (a
+   * cancel elsewhere restarts workers). */
+  async validateMolecules(molecules: string[]): Promise<string[]> {
+    return withChemCriticalSection(() => this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
+      this.parallelWorkers[i].validateMolecules(segment),
+    (data: string[][]) => ([] as string[]).concat(...data)));
+  }
+
   /** Returns InChI identifiers for the provided molecules. Malformed molecules result in an empty string. */
   async getInchis(molecules: string[]): Promise<string[]> {
     return this._getInchis(molecules, false);

@@ -3,7 +3,7 @@
  * What moved to Crux in Crux mode after the first features (src/engine/README.md, "What follows the setting"): the column
  * jobs of engine/molecule-jobs.ts on the Crux workers (CoordGen coordinates, flattening, beautifying, elemental
  * analysis, the R-group dialog's cores), the reactions' canonical SMILES, `getCLogP`, the atom picker's 2D→3D mapping;
- * the CXSMILES query guard of drawing, properties and QED; the fallback report; `Chem:removeDuplicates`. Each test
+ * drawing, properties and QED of a CXSMILES with query features; the fallback report; `Chem:removeDuplicates`. Each test
  * runs both engines where the feature has both, and shows the Crux path ran by a molecule marked unreadable for Crux
  * (`withCruxUnreadable`), which RDKit then does, counted as a fallback.
  */
@@ -14,9 +14,12 @@ import {PackageFunctions} from '../package';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {ChemicalEngine} from '../engine/chem-engine';
 import {cruxModuleSync} from '../engine/crux-module';
-import {cruxFallbackCount, setFallbackReporterForTests, warnCruxFallback} from '../engine/fallback';
+import {cruxFallbackCount, cruxFallbackReason, quietFallbacksForTests, setFallbackReporterForTests, warnCruxFallback}
+  from '../engine/fallback';
 import {atomCountsByEngine, atomsColumnByEngine, beautifyMolsByEngine, coordGenCoordsByEngine, coreMolblocksByCrux,
-  flattenMoleculesByEngine} from '../engine/molecule-jobs';
+  flattenMoleculesByEngine, validationTextsByEngine} from '../engine/molecule-jobs';
+import {validationText} from '../utils/mol-creation_rdkit';
+import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {canonicalSmiles, standardizeFragment} from '../analysis/sar-matrix/build/sar-matrix-columns';
 import {cachedAtomCount} from '../analysis/sar-matrix/build/sar-matrix-decompose';
 import {getAtomsColumn} from '../utils/elemental-analysis-utils';
@@ -193,22 +196,30 @@ category('chemical engine: column jobs', () => {
     expect(mapped.crux, mapped.rdkit);
   });
 
-  test('a CXSMILES query row: RDKit draws it, Crux\'s properties and QED leave it', async () => {
+  test('a CXSMILES query row: Crux draws it and gives its properties and QED, as RDKit', async () => {
+    // Crux reads every field of a CXSMILES extension as RDKit 2026.03 (crux-core e881b8e98): its query features
+    // (rb:, m:, ...) no longer send the row to RDKit's drawing or leave Crux's properties and QED empty
     const queries = ['C1CCCCC1 |rb:0:2|', '*c1ccccc1 |m:0:1.2.3|'];
-    await inEngine(ChemicalEngine.Crux, async () => {
+    await inEngine(ChemicalEngine.Crux, () => expectNoFallback(['rendering', 'properties', 'drugLikeness'], async () => {
       const renderer = new RDKitCellRenderer(rdkit) as any;
-      for (const query of queries)
-        expect(renderer._fetchMol(query, [], false, false, {}, false).engine, ChemicalEngine.RDKit, `drawn: ${query}`);
+      for (const query of queries) {
+        const drawn = renderer._fetchMol(query, [], false, false, {}, false);
+        expect(drawn.engine, ChemicalEngine.Crux, `drawn: ${query}`);
+        expect(drawn.molCtx.mol !== null, true, `read: ${query}`);
+      }
       expect(renderer._fetchMol('C1CCCCC1', [], false, false, {}, false).engine, ChemicalEngine.Crux, 'a plain row');
       expect(renderer._fetchMol('c1ccccc1CC', [{molecule: queries[1]}], false, false, {}, false).engine,
-        ChemicalEngine.RDKit, 'a CXSMILES query scaffold');
-      const col = DG.Column.fromStrings('smiles', ['CCO', ...queries]);
+        ChemicalEngine.Crux, 'a CXSMILES query scaffold');
+      // the query features leave the molecule as it is: MW and QED those of the molecule without them
+      const col = DG.Column.fromStrings('smiles', ['CCO', ...queries, 'C1CCCCC1', '*c1ccccc1']);
       const [mw] = await getPropertiesAsColumns(col, ['MW']);
       expect(mw.isNone(0), false, 'CCO\'s MW');
-      expect([1, 2].map((i) => mw.isNone(i)).join(','), 'true,true', 'no Crux MW for a query row');
-      expect(cruxQed(queries[0]), null, 'no Crux QED for a query row');
+      expect([1, 2].map((i) => mw.isNone(i)).join(','), 'false,false', 'Crux\'s MW for a query row');
+      expect(`${mw.get(1)} ${mw.get(2)}`, `${mw.get(3)} ${mw.get(4)}`, 'the molecules\' MW');
+      expect(JSON.stringify(cruxQed(queries[0])), JSON.stringify(cruxQed('C1CCCCC1')), 'Crux\'s QED of a query row');
+      expect(cruxQed(queries[0]) !== null, true, 'a QED');
       expect(cruxQed('CCO') !== null, true, 'Crux\'s QED of CCO');
-    });
+    }));
   });
 
   test('Chem:removeDuplicates, as js-api\'s Sketcher calls it; the cell editor\'s "edited?" check', async () => {
@@ -237,6 +248,77 @@ category('chemical engine: column jobs', () => {
       setFallbackReporterForTests(previous);
     }
   });
+
+  test('a fallback a test makes on purpose is counted, not reported, and the next real one is still reported',
+    async () => {
+      // the tests' own fallbacks (a molecule marked unreadable) reached the platform's log as real use's, and took the
+      // call's one report of the session: a real fallback of that call after them was never logged
+      const reported: string[] = [];
+      const previous = setFallbackReporterForTests((call, message) => reported.push(`${call}: ${message}`));
+      try {
+        const call = `test quiet ${Date.now()}`;
+        await quietFallbacksForTests(async () => warnCruxFallback(call, 'on purpose'));
+        expect(reported.join(' | '), '', 'the test\'s own fallback: not reported');
+        expect(cruxFallbackCount(call), 1, 'counted');
+        expect(cruxFallbackReason(call), 'on purpose', 'its reason kept');
+        warnCruxFallback(call, new Error('real'));
+        expect(reported.join(' | '), `${call}: real`, 'the first real one reported');
+        expect(cruxFallbackCount(call), 2, 'both counted');
+      } finally {
+        setFallbackReporterForTests(previous);
+      }
+    });
+
+  test('validateMolecules: each row\'s validateMolecule text, in both engines, across chunks', async () => {
+    // valid SMILES, V2000 and V3000 blocks, every kind of message, empty and blank cells, an over-long SMILES, a CXSMILES
+    // query (RDKit's in both modes), SMARTS; 2,500 rows, so the Crux workers' chunks and the RDKit pool's segments cut
+    // between them
+    const valid = (await readDataframe('smiles.csv')).col('canonical_smiles')!.toList().filter((m) => m) as string[];
+    const blocks = [...(await readDataframe('mol1K.csv')).col('molecule')!.toList().slice(0, 40),
+      ...(await readDataframe('v3000_sample.csv')).col('molecule')!.toList().slice(0, 5)] as string[];
+    const brokenBlock = blocks[0].replace(/^ *\d+( +\d+ .*V2000)$/m, 'xxx$1'); // its counts line's atom count broken
+    const kinds = ['C1CC(', 'C1CC', 'CC)', 'c1cccc1', 'C(C)(C)(C)(C)C', '[NH4]', 'N(C)(C)(C)C', 'not a molecule', 'C[Xx]',
+      'C%1', 'C1=CC=CC=C1 |junk', '', '  ', 'C'.repeat(MAX_SMILES_LENGTH + 1), '*c1ccccc1 |$Q_e;;;;;;$|', '[#6]~[#7]',
+      '[NX3][CX3]=[OX1]', 'Cl[Fe](Cl)(Cl)(Cl)(Cl)(Cl)Cl', 'c1ccccc1O |$_AV:;;$|', brokenBlock];
+    const molecules = Array.from({length: 2500}, (_, i) => i % 10 === 3 ? kinds[Math.floor(i / 10) % kinds.length] :
+      i % 10 === 7 ? blocks[Math.floor(i / 10) % blocks.length] : valid[i % valid.length]);
+    const UNREADABLE_INVALID = 'CC(=O'; // a second molecule marked unreadable for Crux below, one with a message
+    for (const [row, m] of [[0, UNREADABLE_BY_CRUX], [999, UNREADABLE_INVALID], [1000, UNREADABLE_BY_CRUX],
+      [1001, ''], [2499, UNREADABLE_INVALID]] as [number, string][])
+      molecules[row] = m;
+    const column = () => validationTextsByEngine(molecules);
+    const loop = async () => molecules.map((m) => validationText(PackageFunctions.validateMolecule(m)));
+    for (const engine of [ChemicalEngine.RDKit, ChemicalEngine.Crux]) {
+      const [texts, perRow] = await inEngine(engine, async () => [await column(), await loop()]);
+      expect(texts.length, molecules.length, `${engine}: one text per row`);
+      const differ = molecules.flatMap((m, i) => texts[i] === perRow[i] ? [] :
+        [`row ${i} ${m.slice(0, 30)}: ${texts[i]} vs ${perRow[i]}`]);
+      expect(differ.slice(0, 3).join('\n'), '', `${engine}: validateMolecule's text on every row (${differ.length} differ)`);
+      // what the texts are, so that both sides cannot be wrong alike
+      expect(texts[1001], '', `${engine}: an empty cell is validateMolecule('')'s: valid`);
+      expect(texts[molecules.indexOf('C'.repeat(MAX_SMILES_LENGTH + 1))], 'unknown error', `${engine}: an over-long SMILES`);
+      expect(texts[molecules.indexOf('C1CC(')].startsWith('SMILES Parse Error: '), true, `${engine}: a syntax error`);
+      expect(texts[molecules.indexOf('c1cccc1')].includes('kekulize'), true, `${engine}: a ring that does not kekulize`);
+      expect(texts[molecules.indexOf(blocks[0])], '', `${engine}: a MOL block`);
+      expect(texts.some((t) => /^\[\d\d:\d\d:\d\d\] |\n$/m.test(t)), false, `${engine}: no times, no last line break`);
+      expect(brokenBlock !== blocks[0], true, 'the broken block differs');
+      expect(texts.filter((t) => t === '').length > 1900, true, `${engine}: the valid molecules are valid`);
+    }
+    // a row the Crux workers leave (marked unreadable): RDKit's text, counted as a fallback; the other rows Crux mode's
+    const rdkitMode = await inEngine(ChemicalEngine.RDKit, loop);
+    const cruxMode = await inEngine(ChemicalEngine.Crux, loop);
+    await withCruxUnreadable([UNREADABLE_BY_CRUX, UNREADABLE_INVALID], async () => {
+      const fallbacks = cruxFallbackCount('validateMolecules');
+      const texts = await inEngine(ChemicalEngine.Crux, column);
+      for (const row of [0, 999, 1000, 2499])
+        expect(texts[row], rdkitMode[row], `row ${row}: RDKit's text for a molecule Crux does not read`);
+      expect(texts[999].includes('SMILES Parse Error'), true, 'the unreadable molecule\'s message');
+      const unmarked = molecules.flatMap((m, i) => m === UNREADABLE_BY_CRUX || m === UNREADABLE_INVALID ||
+        texts[i] === cruxMode[i] ? [] : [i]);
+      expect(unmarked.join(','), '', 'every other row is Crux mode\'s');
+      expect(cruxFallbackCount('validateMolecules'), fallbacks + 1, 'one fallback for the call');
+    });
+  }, {timeout: 300000});
 
   test('InChIs and InChI keys: a row for every molecule, the empty and malformed ones empty', async () => {
     // reported: in Crux mode Chem | Calculate | To InChI on a column with empty cells failed (row counts don't match),

@@ -1,12 +1,14 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {category, test, before, after, waitUntil} from '@datagrok-libraries/test/src/test';
+import {category, test, before, after, expect, waitUntil} from '@datagrok-libraries/test/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {CONTAINER_TIMEOUT} from './utils';
-import {isCruxRequested} from '../engine/chem-engine';
+import {cruxReady, isCruxRequested} from '../engine/chem-engine';
+import {PackageFunctions} from '../package';
+import {validationText} from '../utils/mol-creation_rdkit';
 
 category('vector functions', () => {
   before(async () => {
@@ -58,12 +60,120 @@ category('vector functions', () => {
       isCruxRequested() ? (val) => typeof val === 'string' && canonical(val) === canonical(mol1) : undefined);
   });
 
+  test('validateMolecules: a call, a formula column (one column call), an edit recalculating the edited row', async () => {
+    const {df, col, molecules, expected, calls, stop} = await validationTable(20);
+    try {
+      // called as a function: the platform's FuncCall events report it, one call with the whole column
+      const direct = await grok.functions.call('Chem:validateMolecules', {molecules: col}) as DG.Column<string>;
+      const want = expected(molecules);
+      expect(JSON.stringify(Array.from(direct.toList(), (v) => v ?? '')), JSON.stringify(want), 'the direct call');
+      expect(JSON.stringify(calls.splice(0)), JSON.stringify([`Chem:validateMolecules ${molecules.length}`]),
+        'the direct call, reported');
+      // as a formula: one column call (AddNewColumn's FuncCall events, matched by the function in its formula), which
+      // runs the vector function once with the whole column (core runs a formula's vector function without its own
+      // events: FuncBatchRunner.vectorCall, report: false)
+      await df.columns.addNewCalculated('validation', VALIDATION_FORMULA);
+      await waitUntil(() => JSON.stringify(texts(df)) === JSON.stringify(want), () => firstDifference(df, want), 10000);
+      expect(JSON.stringify(calls.splice(0)), JSON.stringify([`AddNewColumn ${VALIDATION_FORMULA}`]),
+        'one column call with the whole column');
+      // C1CC(, '', c1cccc1, C(C)(C)(C)(C)C, not a molecule, a MOL block, CC): the invalid ones have messages
+      expect(JSON.stringify(want.slice(-7).map((t) => t !== '')), '[true,false,true,true,true,false,true]');
+      expect(want[molecules.indexOf('C1CC(')].startsWith('SMILES Parse Error: '), true);
+      // an edit recalculates the edited row alone (core's updateColumnValuesByIndexes: the formula over that row): a
+      // row the formula did not write since keeps what it holds, and no column call is made
+      df.col('validation')!.set(5, 'not recalculated', false);
+      col.set(0, 'C1CC', true);
+      const edited = expected(col.toList());
+      await waitUntil(() => texts(df)[0] === edited[0], () => `after the edit: ${texts(df)[0]} vs ${edited[0]}`, 10000);
+      expect(edited[0].includes('unclosed ring'), true, 'the edited molecule\'s message');
+      expect(texts(df)[5], 'not recalculated', 'another row');
+      expect(JSON.stringify(texts(df).filter((_, i) => i !== 5)), JSON.stringify(edited.filter((_, i) => i !== 5)),
+        'the whole column after the edit');
+      expect(JSON.stringify(calls), '[]', 'no column call for an edit');
+    } finally {
+      stop();
+    }
+  });
+
+  test('validateMolecules: Add New Column\'s dialog, one column call on OK, none for the preview', async () => {
+    const {df, molecules, expected, calls, stop} = await validationTable(40);
+    const tv = grok.shell.addTableView(df);
+    try {
+      await waitUntil(() => grok.shell.t?.id === df.id, 'the table view');
+      DG.Func.byName('AddNewColumn').prepare({table: df}).edit(); // Edit | Add New Column...: PowerPack's dialog
+      await waitUntil(() => DG.Dialog.getOpenDialogs().some((d) => d.title === 'Add New Column'), 'the dialog');
+      const dialog = DG.Dialog.getOpenDialogs().find((d) => d.title === 'Add New Column')!;
+      await waitUntil(() => !!dialog.root.querySelector('.cm-content'), 'the formula editor');
+      const name = dialog.root.querySelector('input') as HTMLInputElement;
+      name.value = 'validation';
+      name.dispatchEvent(new Event('input', {bubbles: true}));
+      // the formula as typed: CodeMirror's view from its content element
+      const content = dialog.root.querySelector('.cm-content') as any;
+      const tile = content.cmView ?? content.cmTile;
+      const view = tile?.rootView?.view ?? tile?.view ?? tile?.root?.view;
+      expect(!!view, true, 'the formula editor\'s view');
+      view.dispatch({changes: {from: 0, to: view.state.doc.length, insert: VALIDATION_FORMULA}});
+      // the preview runs the formula over the first rows (PowerPack's dialog), not as a column call
+      await new Promise((r) => setTimeout(r, 3000));
+      expect(JSON.stringify(calls), '[]', 'the preview makes no column call');
+      dialog.getButton('OK').click();
+      const want = expected(molecules);
+      await waitUntil(() => df.columns.contains('validation') && JSON.stringify(texts(df)) === JSON.stringify(want),
+        () => df.columns.contains('validation') ? firstDifference(df, want) : 'no column', 15000);
+      expect(JSON.stringify(calls), JSON.stringify([`AddNewColumn ${VALIDATION_FORMULA}`]), 'OK: one column call');
+      expect(df.col('validation')!.getTag(DG.Tags.Formula), VALIDATION_FORMULA, 'the column keeps its formula');
+    } finally {
+      stop();
+      tv.close();
+    }
+  });
+
   test('getProperties', async () => {
     // the stand's engine: OpenChemLib's LogP in RDKit mode, Wildman-Crippen's (RDKit's MolLogP) in Crux mode
     await testVectorFunc('Chem:getProperties(${smiles}, [\'LogP\'])', 'LogP', [0, 9], isCruxRequested() ?
       [Math.fround(3.1784000000000017), Math.fround(0.34159999999999996)] : [2.939000129699707, -0.6422999501228333]);
   });
 });
+
+const VALIDATION_FORMULA = 'Chem:validateMolecules(${smiles})';
+
+/** A formula column's texts: '' for an empty cell (a string column's toList leaves a hole there). */
+const texts = (df: DG.DataFrame): string[] => Array.from(df.col('validation')!.toList(), (v) => v ?? '');
+
+/** The first row where the formula column differs from `want` (a failure's message, short). */
+function firstDifference(df: DG.DataFrame, want: string[]): string {
+  const got = texts(df);
+  const i = want.findIndex((w, k) => got[k] !== w);
+  // (the test runner shows a message from its last ': ' on: none in it)
+  const show = (v: unknown) => JSON.stringify(v)?.replace(/: /g, ':_');
+  return `${got.length} rows vs ${want.length}, row ${i} got ${show(got[i])} want ${show(want[i])}`;
+}
+
+/** A table of `valid` demo molecules and the invalid kinds, a Molecule column `smiles`; each row's validateMolecule
+ * text here (the published package's function runs in the stand's engine, and so does this bundle's); the calls the
+ * platform reports (its FuncCall events, grok.functions.onAfterRunAction) that run `validateMolecules` on this table,
+ * matched by the function: a call of it ("Chem:validateMolecules <rows>") and a column call whose formula calls it
+ * ("AddNewColumn <formula>"), until `stop()`. */
+async function validationTable(valid: number) {
+  const molecules = [...grok.data.demo.molecules(valid).col('smiles')!.toList(), 'C1CC(', '', 'c1cccc1',
+    'C(C)(C)(C)(C)C', 'not a molecule', mol1, 'CC)'] as string[];
+  const col = DG.Column.fromStrings('smiles', molecules);
+  col.semType = DG.SEMTYPE.MOLECULE;
+  const df = DG.DataFrame.fromColumns([col]);
+  await cruxReady(); // in Crux mode this bundle's Crux module too, as the published package's
+  const expected = (ms: (string | null)[]) =>
+    Array.from(ms, (m) => validationText(PackageFunctions.validateMolecule(m ?? '')));
+  const calls: string[] = [];
+  const sub = grok.functions.onAfterRunAction.subscribe((call: DG.FuncCall) => {
+    const name = call.func?.name;
+    if (name === 'validateMolecules' && call.inputs['molecules']?.dataFrame?.id === df.id)
+      calls.push(`Chem:validateMolecules ${call.inputs['molecules'].length}`);
+    else if (name === 'AddNewColumn' && call.inputs['table']?.id === df.id &&
+      /\bChem:validateMolecules\(/.test(call.inputs['expression'] ?? ''))
+      calls.push(`AddNewColumn ${call.inputs['expression']}`);
+  });
+  return {df, col, molecules, expected, calls, stop: () => sub.unsubscribe()};
+}
 
 export async function testVectorFunc(formula: string, colName: string, idxsToCheck: number[],
   expectedVals: any[], checkFunc?: (val: any) => any) {

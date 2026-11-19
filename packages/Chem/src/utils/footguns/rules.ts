@@ -315,12 +315,20 @@ const ELEMENT = 'H|He|Li|Be|B|C|N|O|F|Ne|Na|Mg|Al|Si|P|S|Cl|Ar|K|Ca|Sc|Ti|V|Cr|M
   'Rb|Sr|Y|Zr|Nb|Mo|Tc|Ru|Rh|Pd|Ag|Cd|In|Sn|Sb|Te|I|Xe|Cs|Ba|La|Ce|Pr|Nd|Pm|Sm|Eu|Gd|Tb|Dy|Ho|Er|Tm|Yb|Lu|Hf|Ta|W|Re|' +
   'Os|Ir|Pt|Au|Hg|Tl|Pb|Bi|Po|At|Rn|Fr|Ra|Ac|Th|Pa|U|Np|Pu|Am|Cm|Bk|Cf|Es|Fm|Md|No|Lr|Rf|Db|Sg|Bh|Hs|Mt|Ds|Rg|Cn|Nh|' +
   'Fl|Mc|Lv|Ts|Og|as|se|si|te|[bcnops*]';
+/** What a bracket atom holds after its element in SMILES syntax: chirality, H count, charge, map number. */
+const ATOM_PROPERTIES = '(?:@{1,2}|@TH[12]|@AL[12]|@SP[1-3]|@TB\\d{1,2}|@OH\\d{1,2})?(?:H\\d?)?' +
+  '(?:[+-]\\d{0,2}|\\+\\+|--)?(?::\\d+)?';
 /** A bracket atom in SMILES syntax alone: isotope, element, chirality, H count, charge, map number. */
-const SMILES_ATOM = new RegExp(`^\\d{0,3}(?:${ELEMENT})(?:@{1,2}|@TH[12]|@AL[12]|@SP[1-3]|@TB\\d{1,2}|@OH\\d{1,2})?` +
-  '(?:H\\d?)?(?:[+-]\\d{0,2}|\\+\\+|--)?(?::\\d+)?$');
+const SMILES_ATOM = new RegExp(`^\\d{0,3}(?:${ELEMENT})${ATOM_PROPERTIES}$`);
+/** A molecule's own atom as SMARTS writes it (get_smarts of a molecule, not of a query): the element as its atomic
+ * number, then the atom's isotope, chirality, H count, charge and map number, joined with no `&` or `;` (`[#6@H]`,
+ * `[#7+]`, `[2#1]`). Those are the molecule's features, not query features: the same atom as a query is written
+ * `[#6&H1]`, `[#7&+]`. */
+const NUMBERED_ATOM = new RegExp(`^\\d{0,3}#\\d{1,3}${ATOM_PROPERTIES}$`);
 
-/** What makes a bracket atom a query, as the words name it; null for an atom SMILES writes. `#n` counts here (no SMILES
- * writes it); the product check leaves it out. */
+/** What makes a bracket atom a query, as the words name it; null for an atom SMILES writes. `#n`, alone or with the
+ * atom's own properties ({@link NUMBERED_ATOM}), counts here (no SMILES writes it); the molecule checks (a molblock
+ * read as SMARTS) and the product check leave it out. */
 export function atomQuery(atom: string): string | null {
   if (SMILES_ATOM.test(atom))
     return null;
@@ -331,7 +339,7 @@ export function atomQuery(atom: string): string | null {
     return 'an atom list';
   if (/[;&!]/.test(a))
     return 'an atom query';
-  if (/^#\d+$/.test(a))
+  if (NUMBERED_ATOM.test(a))
     return 'an atomic-number atom';
   return 'an atom query';
 }

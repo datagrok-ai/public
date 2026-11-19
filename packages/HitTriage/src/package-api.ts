@@ -112,8 +112,8 @@ export namespace funcs {
     return await grok.functions.call('HitTriage:PepTriageAppTreeBrowser', { treeNode });
   }
 
-  export async function pepTriageApp(): Promise<DG.View> {
-    return await grok.functions.call('HitTriage:PepTriageApp', {});
+  export async function pepTriageApp(campaignId?: string ): Promise<DG.View> {
+    return await grok.functions.call('HitTriage:PepTriageApp', { campaignId });
   }
 
   export async function demoFileIngest(): Promise<DG.DataFrame> {

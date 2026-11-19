@@ -405,6 +405,11 @@ export const slotNoBlock = Then('the middle slot of the footer shows no block fl
   expectSlot(page, null, undefined, 'a middle slot without a block', (s) => s.present && s.level !== 'block'),
 {description: 'the topmost dialog\'s middle slot is there, and shows no block'});
 
+export const slotNoWord = Then('the middle slot of the footer shows no flag mentioning {string}',
+  (page: Page, word: string) => expectSlot(page, null, undefined, `a middle slot with no flag mentioning "${word}"`,
+    (s) => s.present && !linesOf(s).some((l) => hasWords(l, [word]))),
+{description: 'the topmost dialog\'s middle slot is there (its checks ran as it opened); no flag of it holds the word'});
+
 export const namedNoBlock = Then('the footer of the {string} dialog shows no block flag', (page: Page, title: string) =>
   expectSlot(page, null, title, 'a middle slot without a block', (s) => s.present && s.level !== 'block'),
 {description: 'the dialog\'s middle slot is there, and shows no block'});
@@ -625,6 +630,15 @@ export const checksNone = Then('the context panel\'s Checks section lists no fla
   const lines = await checksLines(page);
   expect(lines ?? [], 'the Checks section lists nothing (or there is none)').toEqual([]);
 }, {description: 'Crux mode: Chem\'s Checks exist; the current cell has no Checks section, or one that lists nothing'});
+
+export const checksNoWord = Then('the context panel\'s Checks section lists no flag mentioning {string}',
+  async (page: Page, word: string) => {
+    await checkerThere(page);
+    const lines = await checksLines(page);
+    expect((lines ?? []).filter((l) => hasWords(l.text, [word])),
+      `the Checks section lists no flag mentioning "${word}"; it lists ${JSON.stringify(lines)}`).toEqual([]);
+  },
+{description: 'Crux mode: Chem\'s Checks exist; the current cell\'s Checks section has no flag with the word'});
 
 export const noChecks = Then('the context panel has no Checks section', async (page: Page) => {
   expect(await checksLines(page), 'no Checks section in the context panel').toBeNull();

@@ -384,13 +384,14 @@ category('Crux sketcher', () => {
   test('registered', async () => {
     const funcs = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}});
     expect(funcs.some((f) => f.friendlyName === 'Crux'), true, 'Crux is not a molecule sketcher');
-    // HOST-001, HOST-003: registered by Chem alone; a choice of Chem's Sketcher setting, never its default
+    // HOST-001, HOST-003: registered by Chem alone; a choice of Chem's Sketcher setting, and its default since
+    // 2026-11-19 (the product owner: the sketcher of a user who never picked one)
     expect(funcs.filter((f) => f.friendlyName === 'Crux').map((f) => f.package?.name).join(', '), 'Chem',
       'the packages that register Crux');
     const sketcher = (await (await fetch(`${_package.webRoot}package.json`)).json())
       .properties.find((p: {name: string}) => p.name === 'Sketcher');
     expect(sketcher.choices.includes('Crux'), true, `Chem's Sketcher setting offers ${sketcher.choices.join(', ')}`);
-    expect(sketcher.defaultValue, 'Ketcher', 'the default of Chem\'s Sketcher setting');
+    expect(sketcher.defaultValue, 'Crux', 'the default of Chem\'s Sketcher setting');
     const s = await openCrux();
     try {
       expect(s.changes(), 0, 'onChanged events on open');
@@ -908,6 +909,96 @@ category('Crux sketcher', () => {
       dialog.close();
     }
   });
+
+  // js-api's ISketcherOptions (2026-11-19, the owner's decision 11 on Apps | Chem | Sketcher): a host given its own
+  // sketcher shows it whatever the session's, and leaves the session's alone; a switch through `sketcherType` is the
+  // host's own from then on (a host following the session's sketcher would wait for the session's to match, and show
+  // nothing)
+  test('a host given its own sketcher shows it whatever the session\'s, which it leaves as it is', async () => {
+    grok.chem.currentSketcherType = 'OpenChemLib';
+    const host = new DG.chem.Sketcher(undefined, undefined, {sketcherType: 'Crux'});
+    host.setSmiles(SMILES);
+    const dialog = ui.dialog().add(host).show();
+    let other: DG.Dialog | null = null;
+    try {
+      const shown = await host.sketcherReady();
+      expect(shown.root.classList.contains('crux-sketcher'), true, 'the host shows its own sketcher, Crux');
+      expect(grok.chem.currentSketcherType, 'OpenChemLib', 'the session\'s sketcher');
+      expect(canonical(host.getMolFile()), canonical(SMILES), 'the molecule in Crux');
+      const plain = new DG.chem.Sketcher();
+      other = ui.dialog().add(plain).show();
+      expect((await plain.sketcherReady()).root.classList.contains('crux-sketcher'), false,
+        'a host without its own sketcher shows the session\'s, OpenChemLib');
+      other.close();
+      other = null;
+      host.sketcherType = 'OpenChemLib';
+      expect((await host.sketcherReady()).root.classList.contains('crux-sketcher'), false, 'switched to OpenChemLib');
+      await waitUntil(() => canonical(host.getMolFile()) === canonical(SMILES), 'the molecule in OpenChemLib', 5000);
+      // the session's sketcher is still OpenChemLib: the host switches to Crux all the same
+      host.sketcherType = 'Crux';
+      const back = await host.sketcherReady();
+      expect(back.root.classList.contains('crux-sketcher'), true, 'switched back to Crux, the session on OpenChemLib');
+      await waitUntil(() => back.root.querySelector<CruxElement>('crux-sketch')?.isEmpty === false,
+        'the molecule did not come back to Crux', 5000);
+      expect(canonical(host.sketcher!.molFile), canonical(SMILES), 'the molecule back in Crux');
+      expect(grok.chem.currentSketcherType, 'OpenChemLib', 'the session\'s sketcher after the switches');
+    } finally {
+      other?.close();
+      dialog.close();
+    }
+  });
+
+  // HOST-021, Apps | Chem | Sketcher (2026-11-19): `grok.shell.o = x` freezes the current object for a second, and the
+  // host's next drawing within it was dropped: two strokes in a row left the context panel on the first drawing (the
+  // app's BDD, a bond drawn as the app opened). The host's own next drawing replaces its last one.
+  test('a drawing within a second of the host\'s last one still becomes the current object', async () => {
+    const s = await openCrux();
+    const current = () => {
+      const o = grok.shell.o;
+      return o instanceof DG.SemanticValue && o.semType === DG.SEMTYPE.MOLECULE ? canonical(String(o.value)) : null;
+    };
+    try {
+      s.host.setSmiles('CCO');
+      await waitUntil(() => current() === canonical('CCO'), 'the first drawing did not become the current object', 5000);
+      // at once: within the second the platform keeps the first drawing current
+      s.host.setSmiles('CCN');
+      await waitUntil(() => current() === canonical('CCN'), () => `the second drawing is not the current object, ` +
+        `${current()} is`, 5000);
+      await delay(1500);
+      expect(current(), canonical('CCN'), 'the current object a second and a half later');
+    } finally {
+      s.dialog.close();
+    }
+  });
+
+  test('showInput: false leaves the host\'s input row out and the sketcher takes the host; by default it is there',
+    async () => {
+      grok.chem.currentSketcherType = 'Crux';
+      // Chem's validateMolecule as the platform calls it (package.js's: this bundle's has no RDKit of its own)
+      const validate = (molecule: string) => DG.Func.find({package: 'Chem', name: 'validateMolecule'})[0]
+        .prepare({s: molecule}).callSync().getOutputParamValue();
+      const bare = new DG.chem.Sketcher(undefined, validate, {showInput: false});
+      const usual = new DG.chem.Sketcher();
+      const dialogs = [ui.dialog().add(bare).show(), ui.dialog().add(usual).show()];
+      try {
+        await Promise.all([bare.sketcherReady(), usual.sketcherReady()]);
+        const row = (host: DG.chem.Sketcher) => host.root.querySelector<HTMLElement>('.grok-sketcher-input');
+        expect(row(bare), null, 'showInput: false: no input row');
+        expect(bare.molInput.isConnected, false, 'showInput: false: no molecule field in the page');
+        expect(row(usual) !== null && row(usual)!.getClientRects().length > 0, true, 'by default: the input row shown');
+        // the sketcher's box is the in-place sketcher's: nothing above it
+        const inplace = bare.root.querySelector<HTMLElement>('.chem-inplace-sketcher')!.getBoundingClientRect();
+        const box = bare.host.getBoundingClientRect();
+        expect(Math.abs(box.top - inplace.top) <= 1 && Math.abs(box.height - inplace.height) <= 1, true,
+          `the sketcher's box ${box.top},${box.height} in the in-place sketcher's ${inplace.top},${inplace.height}`);
+        // the host still says when a molecule is malformed
+        bare.setMolecule('C1CC(');
+        await waitUntil(() => (bare.root.querySelector('.chem-invalid-molecule-warning')?.textContent ?? '')
+          .includes('Malformed molecule'), 'the host shows the molecule as malformed', 5000);
+      } finally {
+        dialogs.forEach((d) => d.close());
+      }
+    });
 
   // The SketcherBase contract in Datagrok (HOST-007 to 015, 022, 023, 042, 046, 047; spike datagrok-chem, R3): what was
   // crux-sketch's @datagrok contract feature. A user's edit is made as the user makes it, on Crux's own controls in the

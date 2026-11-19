@@ -333,6 +333,31 @@ export class CollectionBuilder {
 }
 
 /**
+ * RDKit-js's `Log` (MinimalLib's `JSLog`, minilib.h:283-292, minilib.cpp:932-950): what
+ * [`set_log_capture`] / [`set_log_tee`] give, a buffer RDKit's error log writes to while it lives
+ * (`smi_compiler::rdgeneral::rdlog`; spike rdkit-error-log, decision `chem-wasm`).
+ */
+export class JSLog {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * PORT(minilib.cpp:940): `clear_buffer()`.
+     */
+    clear_buffer(): void;
+    /**
+     * Embind's `delete()` (`~JSLog`, minilib.cpp:936): the log back as it was, free for another
+     * `set_log_capture` (the same as wasm-bindgen's `free()`).
+     */
+    delete(): void;
+    /**
+     * PORT(minilib.cpp:938): `get_buffer()`: the records since the log was set or last cleared, each
+     * `"[HH:MM:SS] "` (the local time) and RDKit's text.
+     */
+    get_buffer(): string;
+}
+
+/**
  * RDKit-js `JSMol`.
  */
 export class JSMol {
@@ -442,8 +467,13 @@ export class JSMol {
     get_avalon_fp(details?: string | null): string;
     /**
      * PORT(SmartsWrite.cpp `MolToCXSmarts`): `get_cxsmarts(details)`: the SMARTS, then
-     * `getCXExtensions(mol, CX_ALL)` over the SMARTS writer's atom and bond output order: with a
+     * `getCXExtensions(mol, flags)` over the SMARTS writer's atom and bond output order: with a
      * conformer its coordinates and their wedges, and the link nodes, as `get_cxsmiles` writes them.
+     * `flags` are the details' `CX_*` keys as `get_cxsmiles` reads them (none: `CX_ALL`, RDKit-js's
+     * `get_cxsmarts`, which reads no `CX_*` key): a Crux extension (spike cxsmiles-fields, for the
+     * Sketcher app's query link, e.g. `{"CX_ALL_BUT_COORDS": true}`), RDKit's own extension writer
+     * with those flags, what `MolToCXSmiles(mol, params, flags)` writes after its SMILES.
+     * `restoreBondDirOption` is not read, as RDKit-js's `get_cxsmarts`.
      */
     get_cxsmarts(details?: string | null): string;
     /**
@@ -1177,7 +1207,10 @@ export function get_mol_copy(other: JSMol): JSMol;
 /**
  * PORT(common.h `qmol_from_input`): RDKit-js `get_qmol(input)`: a SMARTS (`SmartsToMol`) or
  * a MOL block read as a query (`MolBlockToMol(sanitize=false, removeHs=false)`, its query
- * atoms and bonds); `null` when it does not parse.
+ * atoms and bonds); `null` when it does not parse. PORT(SmilesParse.cpp:386-417
+ * `handleCXPartAndName`, CXSmilesOps.cpp:1553-1560): a SMARTS whose CXSMILES extension does not
+ * parse throws (`strictCXSMILES`; RDKit's `SmartsToMol` lets the exception out, MinimalLib's
+ * `get_qmol` does not catch it), as RDKit-js does (spike cxsmiles-fields).
  */
 export function get_qmol(input: string): JSMol | null;
 
@@ -1236,15 +1269,17 @@ export function prefer_coordgen(prefer: boolean): void;
 export function scaffoldTree(smiles: string[], ring_cutoff: number, discharge: boolean): string;
 
 /**
- * RDKit-js `set_log_capture(logName)` / `set_log_tee(logName)`: Crux keeps no RDKit log (its
- * messages are not RDKit's), so these throw `not supported by Crux` rather than being undefined.
+ * PORT(minilib.cpp:947-950): RDKit-js `set_log_capture(logName)`: a [`JSLog`] whose buffer takes the
+ * log's records (in place of its destination); `null` for a name that is no log or a log another handle
+ * holds; throws `not supported by Crux` for the logs Crux does not keep ([`open_log`]).
  */
-export function set_log_capture(log_name: string): any;
+export function set_log_capture(log_name: string): JSLog | null;
 
 /**
- * See [`set_log_capture`].
+ * PORT(minilib.cpp:942-945): RDKit-js `set_log_tee(logName)`: as [`set_log_capture`], the records also
+ * going on to the log's destination; Crux's logs have none, so the buffer reads the same.
  */
-export function set_log_tee(log_name: string): any;
+export function set_log_tee(log_name: string): JSLog | null;
 
 /**
  * RDKit `SimilarityMaps.GetSimilarityMapForFingerprint(ref, probe, fp, draw2d)`
@@ -1299,6 +1334,7 @@ export interface InitOutput {
     readonly __wbg_chemsynthonspace_free: (a: number, b: number) => void;
     readonly __wbg_collection_free: (a: number, b: number) => void;
     readonly __wbg_collectionbuilder_free: (a: number, b: number) => void;
+    readonly __wbg_jslog_free: (a: number, b: number) => void;
     readonly __wbg_jsmol_free: (a: number, b: number) => void;
     readonly __wbg_jsmollistlist_free: (a: number, b: number) => void;
     readonly __wbg_mollist_free: (a: number, b: number) => void;
@@ -1389,12 +1425,15 @@ export interface InitOutput {
     readonly get_mcs_as_smarts: (a: number, b: number, c: number) => [number, number, number, number];
     readonly get_mol: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly get_mol_copy: (a: number) => number;
-    readonly get_qmol: (a: number, b: number) => any;
+    readonly get_qmol: (a: number, b: number) => [number, number, number];
     readonly get_rgd: (a: number, b: number, c: number) => [number, number, number];
     readonly get_rgd_smarts: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly get_rgd_text: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly get_rxn: (a: number, b: number, c: number, d: number) => number;
     readonly initRxnMapper: (a: number, b: number) => [number, number];
+    readonly jslog_clear_buffer: (a: number) => void;
+    readonly jslog_delete: (a: number) => void;
+    readonly jslog_get_buffer: (a: number) => [number, number];
     readonly jsmol_add_hs: (a: number) => [number, number, number, number];
     readonly jsmol_add_hs_in_place: (a: number) => [number, number, number];
     readonly jsmol_canonical_tautomer: (a: number, b: number, c: number) => [number, number, number];

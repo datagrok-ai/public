@@ -35,7 +35,6 @@ import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
 import {ChemicalEngine, engineGeneration, renderingModule} from '../engine/chem-engine';
 import {cruxModuleSync, noteCruxError} from '../engine/crux-module';
 import {cruxOrRdKit, warnCruxFallback} from '../engine/fallback';
-import {cruxReadsCxExtension} from '../crux/crux-service';
 import {getGridCellColTemp} from '../utils/ui-utils';
 import {errInfo} from '../utils/err-info';
 import {extractAtomPositionsFromSvg} from '../utils/chem-atom-picker-utils';
@@ -490,11 +489,7 @@ M  END
       scaffoldRegenerateCoords, details, alignByFirstSubstructure, engine);
     if (renderingModule(this.rdKitModule).engine !== ChemicalEngine.Crux)
       return fetch(ChemicalEngine.RDKit);
-    // a CXSMILES whose query features Crux's reader skips (the molecule's, a scaffold's): RDKit draws it
-    if (!(cruxReadsCxExtension(molString) && scaffolds.every((s) => cruxReadsCxExtension(s.molecule ?? '')))) {
-      warnCruxFallback('rendering', `RDKit draws a CXSMILES query Crux's reader skips, e.g. ${molString}`);
-      return fetch(ChemicalEngine.RDKit);
-    }
+    // (a CXSMILES with query features, the molecule's or a scaffold's, is Crux's too)
     const crux = fetch(ChemicalEngine.Crux);
     if (crux.molCtx.mol !== null)
       return crux;

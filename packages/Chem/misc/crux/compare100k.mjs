@@ -1390,17 +1390,16 @@ RUN.searchtypes = async (engine, rows, source = 'dataset') => {
   const counts = {queries: queries.length, rowsCruxDoesNotRead: 0, queriesOnRdkit: 0};
   if (engine === 'crux') {
     const {SearchTypeKeys, searchTypeHits} = await chem('crux/jobs/search-types.ts');
-    const {cruxReadsCxExtension} = await chem('crux/crux-service.ts');
-    const sent = mols.map((m) => cruxReadsCxExtension(m) ? m : '');
-    const keys = new SearchTypeKeys(sent);
+    // (a CXSMILES with query features is Crux's too, as in Chem since crux-core e881b8e98)
+    const keys = new SearchTypeKeys(mols);
     keys.patternFps(module);
-    const unread = [...keys.unread(module), ...sent.flatMap((m, i) => !m && mols[i] ? [i] : [])].sort((a, b) => a - b);
+    const unread = [...keys.unread(module)].sort((a, b) => a - b);
     counts.rowsCruxDoesNotRead = unread.length;
     const rdkitKeys = new SearchTypeKeys(unread.map((i) => mols[i]));
     search = (q, type) => {
       let cruxQuery = null;
       try {
-        cruxQuery = cruxReadsCxExtension(q) ? getQueryMolSafe(q, '', module) : null;
+        cruxQuery = getQueryMolSafe(q, '', module);
       } catch (e) {}
       if (!cruxQuery)
         return null; // RDKit's search (RDKit mode's hits)

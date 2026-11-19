@@ -12,7 +12,7 @@ import {ChemicalEngine, byEngineAsync, engineInEffect} from '../engine/chem-engi
 import {ChemWasm, cruxModuleSync} from '../engine/crux-module';
 import {cruxOrRdKit} from '../engine/fallback';
 import {getCruxService} from '../crux/crux-searches';
-import {withinCruxReader} from '../crux/crux-service';
+import {withinSmilesLimit} from '../utils/chem-common';
 
 const DGTypeMap = {
   'float': DG.TYPE.FLOAT,
@@ -54,7 +54,7 @@ export const CRUX_PROPERTY_METHODS: {[name: string]: string} = {
  * for a molecule Crux cannot read (the caller's OpenChemLib path then gives them).
  */
 function cruxProperties(molecule: string, names: string[]): {[name: string]: any} | null {
-  const m = withinCruxReader(molecule);
+  const m = withinSmilesLimit(molecule);
   if (engineInEffect() !== ChemicalEngine.Crux || m === null)
     return null;
   return cruxOrRdKit('properties', () => {
@@ -178,7 +178,7 @@ export async function getPropertiesAsColumns(smilesCol: DG.Column<string>, props
     }
   };
   const props = await byEngineAsync('properties', async () => {
-    return (await getCruxService()).chemProperties(smilesCol.toList().map(withinCruxReader), propsMap);
+    return (await getCruxService()).chemProperties(smilesCol.toList().map(withinSmilesLimit), propsMap);
   }, ocl);
   return propsMap.map((p) => DG.Column.fromList(DGTypeMap[PROP_MAP[p].type], p, props[p]));
 }

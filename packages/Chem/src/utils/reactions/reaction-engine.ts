@@ -2,13 +2,13 @@
  * Chem's reactions by the "Chemical Engine" setting (src/engine/README.md): in Crux mode, once the Crux module is ready
  * on the main thread, `get_rxn`, `run_reactants` and the molecules they read and write run on it (RDKit.js's calls;
  * the same products as RDKit on Chem's reactions, reaction files and enumeration demo: crux-core's decision
- * chem-wasm-ports), with RDKit behind them; on RDKit's module otherwise. Reaction drawing (the reaction renderer, the
- * dialogs' previews: reaction-drawing.ts) stays RDKit's in both modes: crux has no `drawReaction` yet.
+ * chem-wasm-ports), with RDKit behind them; on RDKit's module otherwise. Reaction drawing follows the engine in effect
+ * too: the cells (rendering/rdkit-reaction-renderer.ts) and the dialogs' previews (reaction-drawing.ts).
  */
 import {RDModule, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ChemicalEngine, engineInEffect} from '../../engine/chem-engine';
 import {cruxLoadFailed, cruxModuleSync, noteCruxError} from '../../engine/crux-module';
-import {cruxOrRdKit, cruxOrRdKitAsync, warnCruxFallback} from '../../engine/fallback';
+import {cruxOrRdKitAsync, warnCruxFallback} from '../../engine/fallback';
 
 let lastEngine: ChemicalEngine | null = null;
 
@@ -87,7 +87,9 @@ export class EngineReaction {
     return this.crux !== null && !cruxLoadFailed() && unreadableForTests === null;
   }
 
-  /** `react(module, rxn)` on Crux in Crux mode, on RDKit when it throws there; RDKit's error propagates. */
+  /** `react(module, rxn)` on Crux in Crux mode, on RDKit when it throws there; RDKit's error propagates. A fallback is
+   * counted and logged only when RDKit did it: a molecule neither engine reads (`C1CC(`) fails alike in both modes,
+   * no fallback, as a column job's row neither engine does (engine/fallback.ts `rdkitForRows`). */
   run<T>(react: (module: RDModule, rxn: RDReaction) => T): T {
     const rdkit = (): T => {
       const rxn = this.rdkitReaction();
@@ -96,7 +98,16 @@ export class EngineReaction {
       return react(this.rdkit, rxn);
     };
     const crux = this.crux;
-    return crux && !cruxLoadFailed() ? cruxOrRdKit(this.call, () => react(crux.module, crux.rxn), rdkit) : rdkit();
+    if (!crux || cruxLoadFailed())
+      return rdkit();
+    try {
+      return react(crux.module, crux.rxn);
+    } catch (e) {
+      noteCruxError(e);
+      const answer = rdkit();
+      warnCruxFallback(this.call, e);
+      return answer;
+    }
   }
 
   delete(): void {

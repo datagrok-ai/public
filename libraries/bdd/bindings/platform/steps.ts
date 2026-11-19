@@ -892,7 +892,7 @@ export const sketcherIs = Given('the molecule sketcher is {string}', async (page
     await expect.poll(() => page.evaluate(async () => String(await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY) ?? '')),
       {message: 'the sketcher setting of the account on the server, put back', timeout: pollMs(30000)}).toBe(was ?? '');
   });
-}, {tier: 'api', description: 'the sketcher every molecule editor opens from then on (OpenChemLib is the platform\'s default), or the one BDD_MOLECULE_SKETCHER names for the whole run (a @sketcher-controls feature pinning another then skips); the account\'s own choice comes back at feature end, read back from the server; not in the video'});
+}, {tier: 'api', description: 'the sketcher every molecule editor opens from then on (Crux is the platform\'s default), or the one BDD_MOLECULE_SKETCHER names for the whole run (a @sketcher-controls feature pinning another then skips); the account\'s own choice comes back at feature end, read back from the server; not in the video'});
 
 /** Every guide's second step (the compiler insists): the shell as a person has it, view tabs and
  * menu bar included, in a plain run as much as in a filmed one. Silent, like the login. */

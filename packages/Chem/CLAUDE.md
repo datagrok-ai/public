@@ -135,8 +135,9 @@ molecule `getQueryMolSafe` builds, as for RDKit (a typed query whose SMILES read
 `[CH3]`, is read as SMARTS by both engines): each crux worker builds it on Chem's Crux module and searches with
 `Collection.substructureSearchMol`, which matches what RDKit's `get_substruct_match` matches (explicit H, `R`/`r`/`v`/
 `h`/`x`, isotopes, radicals; rings are the SSSR of the sanitized molecule; stereo ignored, as there). Crux searches every
-query its module reads (`CruxService.readsQuery`, on the main thread); one it does not read, a CXSMILES whose
-extension holds query features its reader skips (query atom labels, `m:`, `rb:`, `u:`, `s:`, ...) runs on RDKit.
+query its module reads (`CruxService.readsQuery`, on the main thread), a CXSMILES with query features in its
+extension too (query atom labels, `m:`, `rb:`, `u:`, `s:`, ...: read as RDKit 2026.03 since crux-core e881b8e98);
+one it does not read runs on RDKit.
 The other search types run on Crux too (`src/crux/crux-search-types.ts`, the workers' jobs
 `src/crux/jobs/search-types.ts`): Exact, Stereo agnostic, Included in and Not included in over the same index segments,
 each segment's worker keeping per row what RDKit mode's search reads from the molecule `getMolSafe` reads (its

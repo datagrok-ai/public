@@ -9,7 +9,7 @@ import {ChemicalEngine, byEngineAsync, engineInEffect} from '../engine/chem-engi
 import {ChemWasm, cruxModuleSync} from '../engine/crux-module';
 import {cruxOrRdKit} from '../engine/fallback';
 import {getCruxService} from '../crux/crux-searches';
-import {withinCruxReader} from '../crux/crux-service';
+import {withinSmilesLimit} from '../utils/chem-common';
 import '../../css/chem.css';
 
 /**
@@ -37,7 +37,7 @@ export const QED_COLUMN = 'QED';
  * `chemQed`; null otherwise, and for a molecule Crux cannot read (OpenChemLib's score then shows).
  */
 export function cruxQed(molecule: string): {[key: string]: number} | null {
-  const m = withinCruxReader(molecule);
+  const m = withinSmilesLimit(molecule);
   if (engineInEffect() !== ChemicalEngine.Crux || m === null)
     return null;
   return cruxOrRdKit('drugLikeness', () => {
@@ -63,7 +63,7 @@ export async function getDrugLikenessColumn(molCol: DG.Column<string>): Promise<
     }
   };
   return byEngineAsync('drugLikeness', async () => {
-    const values = await (await getCruxService()).chemQed(molCol.toList().map(withinCruxReader));
+    const values = await (await getCruxService()).chemQed(molCol.toList().map(withinSmilesLimit));
     return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, QED_COLUMN, values[QED_COLUMN]);
   }, ocl);
 }

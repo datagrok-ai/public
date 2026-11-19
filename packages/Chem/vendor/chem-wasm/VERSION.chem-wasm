@@ -2,9 +2,9 @@ chem-wasm: Chem's Crux engine (crux-core crates/chem-wasm), one WebAssembly file
 
 crate: chem-wasm
 features: ['chem']
-crux_core_rev: ac616085ad1918250fa63d7a476995c6c82489cb
+crux_core_rev: 967d92f5b44be100954456c7c8f595820e6d854a
 crux_core_dirty: False
-built_utc: 2026-11-18T11:57:52.354Z
+built_utc: 2026-11-19T19:42:31.586Z
 cargo.profile: wasm-ship
 cargo.target: wasm32-unknown-unknown
 cargo.rustc: rustc 1.95.0 (59807616e 2026-04-14)
@@ -14,18 +14,18 @@ wasm_bindgen.flags: --target web --remove-name-section
 wasm_bindgen.glue_patch: tools/wasm_glue_fresh.mjs --crate crates/chem-wasm
 wasm_opt.version: wasm-opt version 117 (version_117)
 wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
-files.chem_wasm_bg.wasm.raw: 7035741
-files.chem_wasm_bg.wasm.gzip9: 2731850
-files.chem_wasm_bg.wasm.brotli11: 1994127
-files.chem_wasm.js.raw: 191167
-files.chem_wasm.js.gzip9: 31951
-files.chem_wasm.js.brotli11: 26642
-cargo_artifact.raw: 8922797
-cargo_artifact.gzip9: 3192220
-cargo_artifact.brotli11: 2251439
+files.chem_wasm_bg.wasm.raw: 7193457
+files.chem_wasm_bg.wasm.gzip9: 2793053
+files.chem_wasm_bg.wasm.brotli11: 2034221
+files.chem_wasm.js.raw: 194920
+files.chem_wasm.js.gzip9: 32873
+files.chem_wasm.js.brotli11: 27343
+cargo_artifact.raw: 9119379
+cargo_artifact.gzip9: 3264567
+cargo_artifact.brotli11: 2293503
 
-vendored from: a clean build of crux-core main ac616085a (build-ship.sh chem)
-chem_wasm_bg.wasm: 7,035,741 B raw, sha256 583869fc35e93773
+vendored from: crux-core main e881b8e98 (land: cxsmiles-fields), as a clean build of its spike commit 967d92f5b (spike/cxsmiles-fields, lane CXQ, run19; build-ship.sh chem): the same tree, so no rebuild
+chem_wasm_bg.wasm: 7,193,457 B raw, sha256 aac06d5b094392a0
 NOTICE: the build's (crux-core tools/wasm_notices.py)
-includes: molecule → HELM: the assembled molecule's canonical SMILES (canon-assembled, crux-core ac616085a)
+includes: every CXSMILES extension field read as RDKit 2026.03 reads it (get_qmol applies the whole extension; get_mol makes the u: / rb: / s: / query-label query atoms), RDKit's SMARTS arrows (-> / <-) and typed bonds (dative / hydrogen / zero bonds in valence, rings, matching, fingerprints and descriptors); RDKit's rdApp.error log of crux-core 2aa92596d with no departure left (crux-core main e881b8e98)
 files: chem_wasm.js (glue, wasm-bindgen --target web), chem_wasm.d.ts, chem_wasm_bg.wasm, NOTICE.chem-wasm, VERSION.chem-wasm (both emitted to dist)

@@ -36,6 +36,8 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {ChemicalEngine} from '../engine/chem-engine';
 import {_package} from '../package-test';
 import {inEngine} from './engine-utils';
+import {loadFileAsBytes} from './utils';
+import {_importSdf} from '../open-chem/sdf-importer';
 import {CruxSketcher, setCruxSketchLoaderForTests} from '../crux/crux-sketcher';
 
 /** `run(module)` in Crux mode, with the checks' module (Crux's). */
@@ -179,6 +181,42 @@ category('Foot-guns: Crux', () => {
         'warn', ['query']);
       expectFlag('MOL-04 cell', moleculeFlags(m, q, {units: 'molblock'}), 'warn', ['query']);
       expectNone('an empty drawing', sketcherWriteFlags(m, '', {units: 'smiles'}, null, ''), ['block', 'warn']);
+    }));
+
+  // The product owner (2026-11-19): opening the molecule editor on row 2 or 3 of mol1K.sdf (a molblock column) warned
+  // "A query (an atom query) in a molecule column". The check reads a molblock as SMARTS, and SMARTS writes a
+  // molecule's own stereo centres, charges, H counts and isotopes as `[#6@H]`, `[#7+]`, `[13#6]`: molecule features.
+  test('rules: a molecule\'s stereo, charges, H counts and isotopes in a molblock column are no query (MOL-04)',
+    async () => inCrux(async (m) => {
+      const M = {units: 'molblock'};
+      const noQuery = (name: string, flags: Flag[]) => expect(flags.some((f) => f.rule === 'queryInMoleculeColumn'),
+        false, `${name}: no query warn; said: ${said(flags)}`);
+      const molecules = [
+        '[H][C@]1(O[C@H]2C[C@H](N)[C@H](O)[C@H](C)O2)C[C@](O)(C(=O)CO)Cc2c(O)c3c(c(O)c21)C(=O)c1c(OC)cccc1C3=O',
+        'Cc1cn([C@H]2C[C@H](N=[N+]=[N-])[C@@H](COP(=O)(O)O)O2)c(=O)[nH]c1=O',
+        'C[13CH2]O', '[2H]OC', 'C[N+](C)(C)[O-]', '[NH4+].[Cl-]', 'C[S@@](=O)C', '[Fe+2].[Cl-].[Cl-]',
+        'C[C@](F)(Cl)Br |&1:1|', 'c1cc[nH]c1',
+      ];
+      for (const s of molecules) {
+        const mol = m.get_mol(s);
+        const blocks = [mol.get_molblock(), mol.get_v3Kmolblock()];
+        mol.delete();
+        for (const [i, block] of blocks.entries()) {
+          const name = `${s} (${i ? 'V3000' : 'V2000'})`;
+          noQuery(`${name} cell`, moleculeFlags(m, block, M));
+          noQuery(`${name} editor opened`, sketcherWriteFlags(m, block, M, null, block, block));
+        }
+      }
+      // the file itself, as the editor and the Checks section see each of its cells
+      const [df] = _importSdf(await loadFileAsBytes('mol1K.sdf'));
+      const col = df.columns.byName('molecule');
+      expect(col.length, 1000, 'mol1K.sdf read as 1,000 molblocks');
+      const flagged = col.toList().map((v, i) => [i + 1, v] as [number, string])
+        .filter(([, v]) => moleculeFlags(m, v, M).some((f) => f.rule === 'queryInMoleculeColumn')).map(([i]) => i);
+      expect(flagged.length, 0, `mol1K.sdf rows flagged as queries: ${flagged.slice(0, 20).join(', ')}`);
+      // a query drawn into the column is still one
+      expectFlag('MOL-04 a charged query atom', moleculeFlags(m, molblockOf(m, '[N+;H0](C)(C)(C)C', true), M),
+        'warn', ['query']);
     }));
 
   test('rules: what an edit adds that a canonical SMILES misreads (MOL-05, 06, 08, 10..13)', async () => inCrux((m) => {

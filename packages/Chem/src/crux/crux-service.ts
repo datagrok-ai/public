@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {WorkerMessageBusClient} from '../worker-message-bus-client';
-import {Fingerprint, hasNewLines, withinSmilesLimit} from '../utils/chem-common';
+import {Fingerprint, hasNewLines} from '../utils/chem-common';
 import {compileCrux, loadCrux, noteCruxError} from '../engine/crux-module';
 import {DescriptorTiming, INDEX_LOST, INT_NONE, PackedDescriptorValues, ToxicityAlert, isNoneValue} from './crux-api';
 import {BIOPOLYMER_LIBRARIES, BIOPOLYMER_LIBRARY_MISSING, CLUSTER_MCS_TIMEOUT_S, CruxAssembledBatch, CruxHelmBatch,
@@ -14,7 +14,7 @@ import type {IFpResult} from '../rdkit-service/rdkit-service-worker-similarity';
 import type {RuleId} from '../panels/structural-alerts';
 import type {FingerprintOptions} from '../utils/fingerprint-options';
 import type {IMmpFragmentsResult, IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
-import type {RGroupCluster} from './crux-analysis-jobs';
+import type {CruxUnread, RGroupCluster} from './crux-analysis-jobs';
 import {AsmBatch, AsmLayout, AssembleOptions, AssembleResult}
   from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
 
@@ -129,44 +129,10 @@ const MAX_INDEXED_ROWS = 3000000;
  * this many, the searches gain little.
  */
 const MAX_WORKERS = 16;
-/**
- * The fields of a CXSMILES extension the Crux module reads as RDKit does (checked against RDKit 2026.03 and Chem's
- * RDKit.js on Chem's datasets): coordinates, stereo groups (&n, on, a, r), wedges (w, wU, wD), radicals
- * (^n) and atom labels (checked apart: {@link CX_QUERY_LABEL}). Its reader skips the query features (positional
- * variation m:, ring bond count rb:, unsaturation u:, substitution s:, c:/t: bond lists, link nodes LN:, ...), so a
- * query holding any other field runs on RDKit.
- */
-const CX_FIELDS_CRUX_READS = [/^\([^)]*\)/, /^\$(?!_AV:)[^$]*\$/, /^(?:&|o)\d+:\d+(?:,\d+)*/, /^a:\d+(?:,\d+)*/,
-  /^r(?=,|$)/, /^w[UD]?:\d+\.\d+(?:,\d+\.\d+)*/, /^\^\d:\d+(?:,\d+)*/];
-/** CXSMILES atom labels of query atoms (RDKit's Q_e, QH_p, AH_p, X_p, XH_p, M_p, MH_p, star_e), which the Crux module
- * reads as plain dummy atoms (matching nothing). */
-const CX_QUERY_LABEL = /_[pe]$/;
-
-/** Whether the Crux module reads the CXSMILES extension of `molString`, if it has one, as RDKit does. */
-export function cruxReadsCxExtension(molString: string): boolean {
-  const extension = hasNewLines(molString) ? null : /\s\|([^|]*)\|\s*$/.exec(molString);
-  let rest = extension?.[1] ?? '';
-  while (rest !== '') {
-    const field = CX_FIELDS_CRUX_READS.map((re) => re.exec(rest)?.[0]).find((f) => f !== undefined);
-    if (field === undefined ||
-      (field.startsWith('$') && field.slice(1, -1).split(';').some((label) => CX_QUERY_LABEL.test(label))))
-      return false;
-    rest = rest.slice(field.length);
-    if (rest.startsWith(','))
-      rest = rest.slice(1);
-    else if (rest !== '')
-      return false;
-  }
-  return true;
-}
-
-/** `m` as Chem hands it to Crux's calculations (properties, QED; utils/chem-common.ts `withinSmilesLimit`), and null
- * for a CXSMILES whose query features Crux's reader skips ({@link cruxReadsCxExtension}): what a molecule Crux cannot
- * read gets. */
-export function withinCruxReader(m: unknown): string | null {
-  const s = withinSmilesLimit(m);
-  return s !== null && cruxReadsCxExtension(s) ? s : null;
-}
+// (The Crux module reads every field of a CXSMILES extension as RDKit 2026.03 does, its query features too: positional
+// variation m:, ring bond count rb:, unsaturation u:, substitution s:, query atom labels, c:/t: bond lists, link nodes
+// LN:, ... (crux-core e881b8e98, decision chem-wasm "CXSMILES extensions read as RDKit 2026.03 reads them"). Chem sent
+// a CXSMILES holding any of them to RDKit before (`cruxReadsCxExtension`); it is Crux's now, as any other molecule.)
 
 /** `arg` with no holes: a hole (`toList()`'s empty cell) as null, the empty cell it is. */
 function withoutHoles(arg: unknown): unknown {
@@ -359,13 +325,10 @@ export class CruxService {
 
   /**
    * Whether Crux reads the query the way Chem's RDKit search builds it (getQueryMolSafe gives a molecule on the Crux
-   * module): the workers then search with that molecule; any query they read they search as RDKit matches it. A
-   * CXSMILES whose extension holds query features the Crux module does not read yet ({@link CX_FIELDS_CRUX_READS}) is
-   * not read.
+   * module): the workers then search with that molecule; any query they read they search as RDKit matches it, a
+   * CXSMILES with query features in its extension too.
    */
   readsQuery(molString: string, molBlockFailover: string): boolean {
-    if (!cruxReadsCxExtension(molString) || !cruxReadsCxExtension(molBlockFailover))
-      return false;
     try {
       const query = getQueryMolSafe(molString, molBlockFailover, this.crux!);
       query?.delete();
@@ -732,16 +695,17 @@ export class CruxService {
       unread: parts.flatMap((part, k) => part.unread.map((row) => starts[k] + row))};
   }
 
-  /** The RDKit pool's `getRGroups` (one decomposition, on the least busy worker); null where Crux cannot read a
-   * molecule. */
+  /** The RDKit pool's `getRGroups` (one decomposition, on the least busy worker); the rows Crux reads no molecule from
+   * instead, where there are some. */
   rGroupAnalysis(molecules: string[], core: string, coreIsQMol: boolean, options?: string):
-    Promise<IRGroupAnalysisResult | null> {
+    Promise<IRGroupAnalysisResult | CruxUnread> {
     return this.job(this.leastBusy().run('rGroupAnalysis', [molecules, core, coreIsQMol, options]),
       JOB_BASE_MS + molecules.length * ANALYSIS_MS.rGroups);
   }
 
-  /** The RDKit pool's `getMCS` (FMCS's SMARTS, on the least busy worker); null where Crux cannot read a molecule. */
-  mostCommonStructure(molecules: string[], exactAtoms: boolean, exactBonds: boolean): Promise<string | null> {
+  /** The RDKit pool's `getMCS` (FMCS's SMARTS, on the least busy worker); the rows Crux reads no molecule from instead,
+   * where there are some. */
+  mostCommonStructure(molecules: string[], exactAtoms: boolean, exactBonds: boolean): Promise<string | CruxUnread> {
     return this.job(this.leastBusy().run('mostCommonStructure', [molecules, exactAtoms, exactBonds]),
       JOB_BASE_MS + ANALYSIS_MS.mcs);
   }

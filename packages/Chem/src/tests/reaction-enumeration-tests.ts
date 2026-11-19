@@ -18,9 +18,8 @@ import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {parseMultiStepReaction} from '../rendering/rdkit-reaction-renderer';
 import {ChemicalEngine} from '../engine/chem-engine';
-import {inBothEngines, inEngine} from './engine-utils';
+import {expectFallback, expectNoFallback, inBothEngines, inEngine} from './engine-utils';
 import {lastReactionEngine, setCruxUnreadableReactantsForTests} from '../utils/reactions/reaction-engine';
-import {cruxFallbackCount} from '../engine/fallback';
 import {loadCrux} from '../engine/crux-module';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
@@ -858,10 +857,11 @@ category('Reaction Enumeration', () => {
     await inEngine(ChemicalEngine.Crux, async () => {
       setCruxUnreadableReactantsForTests([setup.buildingBlocks[0]]);
       try {
-        const fallbacks = cruxFallbackCount('reaction enumeration');
-        const cruxMode = await run();
+        // the run went to RDKit, once (kept off the platform's log: this fallback is the test's own; it was the
+        // session's one "Crux fallback: reaction enumeration" event, read as one of the end-to-end tests' below)
+        const {result: cruxMode, reason} = await expectFallback('reaction enumeration', run);
         expectSameRows(cruxMode.rows, rdkitMode.rows, `Crux mode, ${setup.buildingBlocks[0]} unreadable by Crux`);
-        expect(cruxFallbackCount('reaction enumeration'), fallbacks + 1, 'the run went to RDKit');
+        expect(reason, `Crux reads an input otherwise than RDKit: molecule ${setup.buildingBlocks[0]}`, 'why');
       } finally {
         setCruxUnreadableReactantsForTests(null);
       }
@@ -1152,9 +1152,10 @@ category('Reaction Enumeration', () => {
     config.products_specs.max_num_unsaturated_nonaromatic_bonds = -1;
     config.products_specs.only_these_atoms_allowed = [];
 
-    const {rows, warnings} = await enumerate({
-      rdkit, config, templates: [template], buildingBlocks, exclusionSmarts: [],
-    });
+    // on Crux in Crux mode, RDKit doing none of it: Crux reads CCN and the template's slots as RDKit does
+    const {rows, warnings} = await inEngine(ChemicalEngine.Crux, () => expectNoFallback(['reaction enumeration'],
+      () => enumerate({rdkit, config, templates: [template], buildingBlocks, exclusionSmarts: []})));
+    expect(lastReactionEngine(), ChemicalEngine.Crux, 'the enumeration\'s engine');
     expect(rows.length > 0, true,
       `Expected at least one product. Warnings (${warnings.length}): ${warnings.slice(0, 5).join(' | ')}`);
   }, {timeout: 60000});

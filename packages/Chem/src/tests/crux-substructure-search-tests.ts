@@ -331,13 +331,14 @@ category('crux substructure search', () => {
     const smiles = (await readDataframe('smiles.csv')).col('canonical_smiles')!;
     for (const col of [smiles, moleculeColumn(SPECIAL_CASES)])
       await expectRdkitHitsThroughCrux(col, read);
-    // query features in the extension its reader does not read yet (query atom labels, positional variation, ring bond
-    // count, unsaturation, substitution, bond lists): RDKit searches them, Crux mode gives RDKit's search
+    // query features in the extension (query atom labels, positional variation, ring bond count, unsaturation,
+    // substitution, bond lists), which Crux reads as RDKit 2026.03 since crux-core e881b8e98 (RDKit searched them
+    // before): Crux searches them, with RDKit's hits
     const notRead = ['Cc1ccccc1 |$;;;;Q_e;;$|', 'Cc1ccccc1 |$;;;;AH_p;;$|', 'ClC |$X_p;$|',
       'c1ccccc1* |$;;;;;;star_e$|', '*c1ccccc1 |m:0:1.2.3|', 'C=CC |$;;$,rb:1:*|', 'CCC |u:1|', 'CCC |s:1:1|',
       'c1ccccc1 |c:0,2,4|'];
     for (const query of notRead) {
-      expect(await cruxReadsQuery(query, ''), false, `Crux searches for ${query}`);
+      expect(await cruxReadsQuery(query, ''), true, `Crux searches for ${query}`);
       const crux = await search(SubstructureSearchEngine.Crux, smiles, query);
       const rdkit = await search(SubstructureSearchEngine.RDKit, smiles, query);
       expect(crux.equals(rdkit), true, `Crux mode differs from RDKit: ${query} (${crux.trueCount()}, ` +

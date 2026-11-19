@@ -7,7 +7,7 @@
  * the RDKit path does (a molecule Crux does not read, a call it refuses).
  */
 import type {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {getMolSafe} from '../../utils/mol-creation_rdkit';
+import {getMolSafe, validationMessage, validationText, VALIDATION_LOG} from '../../utils/mol-creation_rdkit';
 import {hasNewLines} from '../../utils/chem-common';
 import {MAX_SMILES_LENGTH} from '../../utils/chem-constants';
 import {V2000_ATOM_NAME_LEN, V2000_ATOM_NAME_POS} from '../../constants';
@@ -162,6 +162,26 @@ export const MOLECULE_JOBS: {[op: string]: WorkerJob} = {
       }
       rest.push(row);
       return '';
+    });
+    return {results, rest};
+  },
+  /**
+   * `validateMolecules` (engine/molecule-jobs.ts `validationTextsByEngine`): each molecule's validation text, by the
+   * function the main thread's `validateMolecule` calls (utils/mol-creation_rdkit.ts `validationMessage`) on the
+   * worker's Crux module; `rest`, the molecules whose read Crux refused (it trapped twice) or whose log a renewal of
+   * the module lost. A Crux file without the log fails the job at its first capture, and RDKit does the call.
+   */
+  validateMolecules: ({module, renewals}, molecules: string[]): MoleculeJobResult<string> => {
+    module.set_log_capture(VALIDATION_LOG)?.delete();
+    const rest: number[] = [];
+    const results = molecules.map((molecule, row) => {
+      try {
+        return validationText(validationMessage(molecule, module, {rethrow: true, renewals}));
+      } catch (e) {
+        throwIfTrap(e);
+        rest.push(row);
+        return '';
+      }
     });
     return {results, rest};
   },

@@ -77,4 +77,7 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
 
   beautifyMols = async (molecules: string[]): Promise<string[]> =>
     this.call(WORKER_CALL.BEAUTIFY_MOLS, [molecules]);
+
+  validateMolecules = async (molecules: string[]): Promise<string[]> =>
+    this.call(WORKER_CALL.VALIDATE_MOLECULES, [molecules]);
 }
