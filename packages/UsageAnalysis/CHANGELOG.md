@@ -6,6 +6,7 @@
 * Test dashboards: Ticket verdicts read GitHub issues instead of Jira
 * Test dashboards: Fixed the Test Track tickets status column
 * Removed Jira ticket creation (the Jira connection, Create JIRA ticket, Test Track's Jira Tickets pane)
+* Reports: Added a Ticket column with the report's GitHub issue (needs the `githubToken` credential)
 
 ## 2.7.2 (2026-11-17)
 
