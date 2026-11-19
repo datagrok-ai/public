@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Grokky: Tool activity shows in a status strip above the prompt
 * Grokky: Removed suggestions that asked a question instead of running
 * Grokky: New chat (+) clears the typed prompt and attached entities
 * Grokky: The assistant's question no longer blocks new prompts; Submit sends the choice as the next prompt

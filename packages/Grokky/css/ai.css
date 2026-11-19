@@ -439,9 +439,41 @@
   border-radius: 3px;
 }
 
-/* Loader spinner + (voice mode only) the "Say "cancel" to stop" caption beside it. */
+.grokky-status-bar {
+  height: 24px;
+  flex: none;
+  padding: 0 8px;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--text-color-light);
+}
+
 .d4-ai-loader {
   align-items: center;
+  height: 100%;
+  min-width: 0;
+}
+
+.grokky-status-bar .grok-loader {
+  width: 36px;
+  height: 10px;
+  top: 0;
+  flex-shrink: 0;
+}
+
+.grokky-status-label {
+  margin-left: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grokky-status-in {
+  animation: grokky-status-in .25s ease-out;
+}
+
+@keyframes grokky-status-in {
+  from { transform: translateY(100%); opacity: 0; }
 }
 
 .d4-ai-voice-cancel-hint {

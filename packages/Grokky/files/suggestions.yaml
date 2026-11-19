@@ -338,5 +338,3 @@
       requires: [Chem]
     - label: 'Python: render Gasteiger partial charges'
       prompt: 'Python: write a script that accepts a molecule and renders Gasteiger partial charges as a result'
-    - label: 'JS: build a custom viewer'
-      prompt: 'JS: Write and run a script that builds a custom viewer for the currently selected columns, or for a few relevant columns if none are selected.'

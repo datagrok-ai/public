@@ -325,6 +325,13 @@ async function runClaudeStreaming(
   }
 }
 
+enum Status {
+  None = '',
+  Tool = 'tool',
+  Writing = 'writing',
+  Revising = 'revising',
+}
+
 async function streamOnce(
   panel: StreamingPanel, userPrompt: string, view: DG.ViewBase,
   systemPromptMode: string | undefined,
@@ -334,7 +341,7 @@ async function streamOnce(
     const sessionId = panel.sessionId;
     let accumulated = '';
     let segmentStart = 0;
-    let toolStatus = '';
+    let status = Status.None;
     let nextBlockIndex = 0;
     const execCodes: string[] = [];
     let preRevisionExecCodes: string[] | null = null;
@@ -381,14 +388,17 @@ async function streamOnce(
             accumulated += '\n\n';
         }
         accumulated += evt.content;
-        toolStatus = '';
-        panel.updateStreaming(accumulated.slice(segmentStart), chatSession.loader);
+        if (status !== Status.Writing) {
+          status = Status.Writing;
+          panel.setStatus('Writing…');
+        }
+        panel.updateStreaming(accumulated.slice(segmentStart));
       });
 
       forSession(client.onToolActivity, (evt) => {
         pendingSegmentBreak = true;
-        toolStatus = `\n\n---\n**${evt.summary}**`;
-        panel.updateStreaming(accumulated.slice(segmentStart) + toolStatus, chatSession.loader);
+        status = Status.Tool;
+        panel.setStatus(evt.summary);
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
       });
 
@@ -399,9 +409,9 @@ async function streamOnce(
         // original. The status appears only if revising takes noticeable time — an immediate
         // NO_REVISION resolves before it ever shows.
         revisingTimer = window.setTimeout(() => {
-          if (toolStatus) return; // a live tool-activity status is more informative
-          toolStatus = '\n\n---\n*Revising…*';
-          panel.updateStreaming(accumulated.slice(segmentStart) + toolStatus, chatSession.loader);
+          if (status === Status.Tool) return;
+          status = Status.Revising;
+          panel.setStatus('Revising…');
         }, 1200);
         preRevisionExecCodes = [...execCodes];
       });
@@ -418,9 +428,7 @@ async function streamOnce(
             // The revision supersedes the visible answer — render it in place of the original.
             accumulated = evt.content;
             segmentStart = 0;
-            toolStatus = '';
-          } else if (evt.revision === 'kept')
-            toolStatus = ''; // original answer stands; just drop the Revising status
+          }
           const fullContent = accumulated || evt.content;
           const segmentContent = accumulated ? accumulated.slice(segmentStart) : fullContent;
           chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
@@ -460,7 +468,6 @@ async function streamOnce(
           if (element) {
             panel.appendStreamedElement(element);
             segmentStart = accumulated.length;
-            toolStatus = '';
           }
           let result: any = error ?
             {success: false, error: error.error} :
@@ -490,7 +497,6 @@ async function streamOnce(
             panel.appendStreamedElement(buildConfirmCard(evt.input ?? {}, resolve));
           });
           segmentStart = accumulated.length;
-          toolStatus = '';
           client.respondToInput(sessionId, evt.requestId, {confirmed});
           return;
         }
@@ -498,7 +504,6 @@ async function streamOnce(
         if (evt.toolName === 'datagrok_show_entities') {
           panel.appendStreamedElement(renderEntityRefList(evt.input.entities ?? []));
           segmentStart = accumulated.length;
-          toolStatus = '';
           client.respondToInput(sessionId, evt.requestId, {success: true});
           return;
         }
@@ -516,7 +521,6 @@ async function streamOnce(
         // Default: AskUserQuestion
         accumulated = '';
         segmentStart = 0;
-        toolStatus = '';
         panel.clearStreaming();
         panel.showInputRequest(evt.input);
       });

@@ -99,10 +99,11 @@ export type AIPanelFuncs<T extends MessageType = MessageType> = {
 
 export interface StreamingPanel<T extends MessageType = MessageType> {
   sessionId: string;
-  startChatSession(): {session: AIPanelFuncs<T>, endSession: () => void, loader: HTMLElement};
+  startChatSession(): {session: AIPanelFuncs<T>, endSession: () => void};
   prependViewContext(prompt: string, view: DG.ViewBase): string;
   prependEntityContext(prompt: string): string;
-  updateStreaming(content: string, loader: HTMLElement): void;
+  updateStreaming(content: string): void;
+  setStatus(text: string): void;
   finalizeStreaming(displayContent: string, execCodes: string[], view: DG.ViewBase): Promise<void>;
   appendStreamedElement(el: HTMLElement): void;
   appendUiMessage(content: string): void;
@@ -173,7 +174,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
 
   protected _streamingContainer: HTMLElement | null = null;
   protected _streamingMarkdownEl: HTMLElement | null = null;
-  private _loaderPauseTimer: number | null = null;
+  private statusBar: HTMLElement = ui.divH([], 'grokky-status-bar');
+  private statusLabel: HTMLElement = ui.divText('', 'grokky-status-label');
+  private statusRepeats = 0;
+  private followOutput = true;
   private _sessionId: string;
   private _skillMenu: DG.Menu | null = null;
   private _inline: boolean = false;
@@ -300,7 +304,12 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.inputArea.appendChild(controlsDiv);
     this.root.appendChild(this.header);
     this.root.appendChild(this.outputArea);
+    this.root.appendChild(this.statusBar);
     this.root.appendChild(this.inputArea);
+    this.outputArea.addEventListener('scroll', () => {
+      const o = this.outputArea;
+      this.followOutput = o.scrollHeight - o.clientHeight - o.scrollTop < 30;
+    });
 
     if (this._inline)
       this.root.classList.add('d4-ai-inline-mode');
@@ -336,7 +345,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   dispose() {
-    this.clearStreamingLoaderTimer();
     this.stopRecognition();
     this.root.remove();
     this._messages = [];
@@ -497,7 +505,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   protected appendMessage(
     aiMessage: T, uiMessage: {
       title: string, content: string, fromUser: boolean, onlyAddToMessages?: boolean, uiOnly?: boolean, messageOptions?: UIMessageOptions, execCode?: string[]
-    }, loader?: HTMLElement
+    }
   ): PanelMessageRet | undefined {
     let ret: PanelMessageRet | undefined = undefined;
     this.removeChoiceBlocks();
@@ -585,37 +593,35 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       const assistantDiv = ui.divV([...titleText, markDown], 'd4-ai-assistant-response-container');
       this._aiMessagesAccordionPane!.appendChild(assistantDiv);
     }
-    // reapend loader to the end
-    if (loader)
-      this.outputArea.appendChild(loader);
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
     this.showContentIcons();
     return ret;
   }
 
-  public startChatSession(): {session: AIPanelFuncs<T>, endSession: () => void, loader: HTMLElement} {
+  public startChatSession(): {session: AIPanelFuncs<T>, endSession: () => void} {
     const spinner = ui.icons.loader();
-    dartLike(spinner.style).set('height', '20px');
     // Speech is easy to mishear, so while the AI works in voice mode show the word that aborts the run.
     const cancelHint = ui.divText('Say "cancel" to stop', 'd4-ai-voice-cancel-hint');
     cancelHint.style.display = this.isRecognizing ? '' : 'none';
     this._voiceCancelHint = cancelHint;
-    const loader = ui.divH([spinner, cancelHint], 'd4-ai-loader');
-    dartLike(loader.style).set('alignSelf', 'center').set('marginTop', '8px');
+    this.statusRepeats = 0;
+    this.setStatus('Thinking…');
+    const loader = ui.divH([spinner, this.statusLabel, cancelHint], 'd4-ai-loader');
+    ui.empty(this.statusBar);
+    this.statusBar.appendChild(loader);
     this.runButton.classList.remove('fal', 'fa-paper-plane');
     this.runButton.classList.add('fas', 'fa-stop');
     this.runButton.style.color = 'orangered';
     this.runButtonTooltip = actionButtionValues.stop;
     this.syncConversationButtons();
     return {
-      loader,
       session: {
-        addAIMessage: (aiMessage, title, content) => this.appendMessage(aiMessage, {title: title, content: content, fromUser: false}, loader),
-        addEngineMessage: (aiMessage) => this.appendMessage(aiMessage, {title: '', content: '', fromUser: false, onlyAddToMessages: true}, loader),
-        addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => this.appendMessage('' as any, {title: '', content: msg, fromUser: fromUser, uiOnly: true, messageOptions: messageOptions}, loader),
+        addAIMessage: (aiMessage, title, content) => this.appendMessage(aiMessage, {title: title, content: content, fromUser: false}),
+        addEngineMessage: (aiMessage) => this.appendMessage(aiMessage, {title: '', content: '', fromUser: false, onlyAddToMessages: true}),
+        addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => this.appendMessage('' as any, {title: '', content: msg, fromUser: fromUser, uiOnly: true, messageOptions: messageOptions}),
         markHandledNatively: () => this.markPromptHandledNatively(),
-        addUserMessage: (aiMsg, content) => this.appendMessage(aiMsg, {title: '', content: content, fromUser: true}, loader),
-        addConfirmMessage: (msg?: string) => this.appendMessage('' as any, {title: '', content: '', fromUser: false, uiOnly: true, messageOptions: {confirm: {message: msg}}}, loader)!.confirmPromise,
+        addUserMessage: (aiMsg, content) => this.appendMessage(aiMsg, {title: '', content: content, fromUser: true}),
+        addConfirmMessage: (msg?: string) => this.appendMessage('' as any, {title: '', content: '', fromUser: false, uiOnly: true, messageOptions: {confirm: {message: msg}}})!.confirmPromise,
         showInputRequest: (input: AskUserInput) => this.showInputRequest(input),
       },
       endSession: () => {
@@ -626,7 +632,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         this.syncConversationButtons();
         this._voiceCancelHint = null;
         this.saveCurrentConversation().catch((e) => console.error('Failed to save conversation before hiding panel:', e));
-        this.clearStreamingLoaderTimer();
         loader.remove();
       }
     };
@@ -754,13 +759,12 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return md;
   }
 
-  updateStreaming(content: string, loader: HTMLElement): void {
+  updateStreaming(content: string): void {
     if (!this._streamingContainer) {
       this.ensureResponseBlock();
       this._streamingMarkdownEl = this.createStreamingEl(content) ?? plainTextEl(content);
       this._streamingContainer = ui.divV([this._streamingMarkdownEl], 'd4-ai-assistant-response-container');
       this._aiMessagesAccordionPane!.appendChild(this._streamingContainer);
-      this.outputArea.appendChild(loader);
     } else {
       const el = this.createStreamingEl(content);
       if (el) {
@@ -768,28 +772,28 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         this._streamingMarkdownEl = el;
       }
     }
-    this.refreshStreamingLoader(loader);
-    this.outputArea.scrollTop = this.outputArea.scrollHeight;
+    this.scrollIfFollowing();
   }
 
-  refreshStreamingLoader(loader: HTMLElement): void {
-    loader.style.display = 'none';
-    this.clearStreamingLoaderTimer();
-    this._loaderPauseTimer = window.setTimeout(() => {
-      loader.style.display = '';
-      this.outputArea.scrollTop = this.outputArea.scrollHeight;
-    }, 600);
-  }
-
-  clearStreamingLoaderTimer(): void {
-    if (this._loaderPauseTimer != null) {
-      clearTimeout(this._loaderPauseTimer);
-      this._loaderPauseTimer = null;
+  setStatus(text: string): void {
+    if (this.statusRepeats && this.statusLabel.dataset.status === text) {
+      this.statusLabel.textContent = `${text} \u00d7${++this.statusRepeats}`;
+      return;
     }
+    this.statusRepeats = 1;
+    this.statusLabel.dataset.status = text;
+    this.statusLabel.textContent = text;
+    this.statusLabel.classList.remove('grokky-status-in');
+    void this.statusLabel.offsetWidth;
+    this.statusLabel.classList.add('grokky-status-in');
+  }
+
+  private scrollIfFollowing(): void {
+    if (this.followOutput)
+      this.outputArea.scrollTop = this.outputArea.scrollHeight;
   }
 
   async finalizeStreaming(displayContent: string, execCodes: string[], view: DG.ViewBase): Promise<void> {
-    this.clearStreamingLoaderTimer();
     if (this._rawRender) {
       this._streamingMarkdownEl = null;
       this._streamingContainer = null;
@@ -804,6 +808,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this._aiMessagesAccordionPane!.appendChild(ui.divV([el], 'd4-ai-assistant-response-container'));
     this._streamingContainer = null;
     this._streamingMarkdownEl = null;
+    this.scrollIfFollowing();
   }
 
   public appendUiMessage(content: string): void {
@@ -811,7 +816,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected renderFinalContent(content: string, execCodes: string[], view: DG.ViewBase): void {
-    this.clearStreamingLoaderTimer();
     const markDown = this.createStyledMarkdown(content);
     this.appendFeedbackButtons(markDown, undefined,
       execCodes.length ? {codes: execCodes, ranThisSession: true, view} : undefined);
@@ -829,7 +833,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   clearStreaming(): void {
-    this.clearStreamingLoaderTimer();
     this._streamingContainer?.remove();
     this._streamingContainer = null;
     this._streamingMarkdownEl = null;
@@ -975,7 +978,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected handleClear() {
-    this.clearStreamingLoaderTimer();
     this._messages = [];
     this._uiMessages = [];
     this._pendingNativeContext = [];
