@@ -400,6 +400,10 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
    * the viewer was created with, so the columns can only be guessed once those options are in. */
   private autoColumnsPending: boolean = false;
 
+  /** Layout states this viewer sent to Mol* itself. Mirroring them back would let an update still in flight
+   * overwrite a property that was changed again in the meantime. */
+  private ownLayoutStates = new WeakSet<Partial<PluginLayoutStateProps>>();
+
   /** Picks the structure and ligand columns the caller left unset, unless the caller passed the structure itself. */
   private async _initProps() {
     if (!this.dataFrame || this.pdb || (this.dataJson && this.dataJson !== BiostructureDataJson.empty)) return;
@@ -494,6 +498,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         //   break;
         // }
       }
+      this.ownLayoutStates.add(state);
       //eslint-disable-next-line new-cap
       await PluginCommands.Layout.Update(plugin, {state: state});
       this.logger.debug(`${logPrefix}.applyProperty(), end`);
@@ -964,8 +969,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     if (!this.viewer) throw new Error(`The 'viewer' is not created.`);
 
     const plugin = this.viewer.plugin;
-    this.viewSubs.push(plugin.commands.subscribe(PluginCommands.Layout.Update, () => {
-
+    this.viewSubs.push(plugin.commands.subscribe(PluginCommands.Layout.Update, ({state}) => {
+      if (this.ownLayoutStates.has(state)) return;
+      if (state.showControls !== undefined && state.showControls !== this.layoutShowControls)
+        this.setOptions({[PROPS.layoutShowControls]: state.showControls});
+      if (state.isExpanded !== undefined && state.isExpanded !== this.layoutIsExpanded)
+        this.setOptions({[PROPS.layoutIsExpanded]: state.isExpanded});
     }));
 
     const isPdbColumn = this.biostructureIdColumnName ?
