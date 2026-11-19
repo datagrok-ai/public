@@ -100,8 +100,7 @@ def modeling_predict():
         prediction = engine.predict(id, request.data, table_server_url, table_token)
         # TODO Return column list
         # TODO Add converter Pandas dataframe -> ColumnList or DataFrame
-        return _make_response(json.dumps({'outcome': prediction['pred_0'].tolist()}),
-                              headers=headers_app_json), 201
+        return _outcome_response(prediction)
     except Exception as e:
         return _make_response(str(e)), 400
 
@@ -111,12 +110,11 @@ def modeling_predict_chemprop():
     model_blob = bytes(data.get('modelBlob'))
     table_str = data.get('table', '')
     table_hash = hashlib.sha256(table_str.encode('utf-8')).hexdigest()
-    table = pd.read_csv(StringIO(table_str))
+    table = pd.read_csv(StringIO(table_str), skip_blank_lines=False)
     chemprop = ChemProp()
     try:
         prediction = chemprop.predict_impl(table_hash, model_blob, table)
-        return _make_response(json.dumps({'outcome': prediction[prediction.columns[0]].tolist()}),
-                              headers=headers_app_json), 201
+        return _outcome_response(prediction)
     except Exception as e:
         return _make_response(str(e)), 400
 
@@ -129,6 +127,10 @@ def modeling_model(id, command):
 def modeling_models():
     # All models status
     return _make_response(None)
+
+def _outcome_response(prediction):
+    outcome = [None if pd.isna(v) else v for v in prediction.iloc[:, 0]]
+    return _make_response(json.dumps({'outcome': outcome}), headers=headers_app_json), 201
 
 def _make_response(data, headers=None):
     response = Response(data)

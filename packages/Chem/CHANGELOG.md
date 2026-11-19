@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Chemprop: Made Train Chemprop and Apply Chemprop work with Forge: molecule features declared, errors passed to the caller, unreadable molecules predicted as empty values, performance metrics fixed
 * Chemical Engine: In Crux mode, MCS and R-Groups Analysis of a column with a row neither engine reads (a malformed SMILES) run on Crux, that row left out as RDKit mode leaves it out; before, one such row sent the whole call to RDKit. RDKit still does the call when it reads a row Crux does not
 * Reactions: In Crux mode, a molecule neither engine reads in Transformation, Two-Component Reaction or Deprotect fails as in RDKit mode and is no longer logged as a Crux fallback; a molecule only RDKit reads is RDKit's, and the fallback says which (`no molecule read from ...`) instead of an engine type error
 * Reactions: In Crux mode the reaction previews are drawn by Crux, as the reaction cells are: the Transformation and Two-Component Reaction dialogs and views (their full-screen preview included, fitted to the window as the Reaction panel's full screen), the reaction browser's cards, and New Reaction and Edit Reaction. Before, RDKit drew them in both modes. Crux reads and draws all 59 templates of the reaction library; a template Crux reads no reaction from is drawn by RDKit (logged once as `Crux fallback: reaction preview`). RDKit mode draws them with RDKit, as before

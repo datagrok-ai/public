@@ -129,10 +129,12 @@ class Engine(object):
             log_loss = None
 
         r2 = metrics.r2_score(y_true, y_pred)
+        mse = metrics.mean_squared_error(y_true, y_pred)
 
         return {
-            'mse': metrics.mean_absolute_error(y_true, y_pred),
-            'rmse': metrics.mean_squared_error(y_true, y_pred),
+            'mse': mse,
+            'rmse': math.sqrt(mse),
+            'mae': metrics.mean_absolute_error(y_true, y_pred),
             'corr': math.sqrt(abs(r2)),
             'nobs': len(y_true),
             'r2': r2,

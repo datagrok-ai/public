@@ -3229,7 +3229,7 @@ export class PackageFunctions {
     return new Uint8Array(await response.arrayBuffer());
   }
 
-  static async applyModelChemprop(modelBlob: Uint8Array, table: string): Promise<DG.Column> {
+  static async applyModelChemprop(modelBlob: Uint8Array, table: string, rowCount: number): Promise<DG.Column> {
     let chempropContainer = await PackageFunctions.getContainer();
 
     const body = {
@@ -3252,13 +3252,14 @@ export class PackageFunctions {
     }
 
     const data = await response.json();
-    return DG.Column.fromStrings('outcome', data['outcome'].map((v: any) => v?.toString()));
+    return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'outcome',
+      Array.from({length: rowCount}, (_, i) => data['outcome'][i] ?? DG.FLOAT_NULL));
   }
 
   @grok.decorators.func({
     name: 'Train Chemprop',
     description: 'Trains a Chemprop message-passing neural network model on molecular structures.',
-    meta: {mlname: 'Chemprop', mlrole: 'train'},
+    meta: {mlname: 'Chemprop', mlrole: 'train', mlsemtypes: 'Molecule'},
     outputs: [{name: 'model', type: 'dynamic'}],
   })
   static async trainChemprop(
@@ -3309,7 +3310,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {category: 'Training', initialValue: '0.0001', description: 'Final learning rate'}})
     final_lr: number,
     @grok.decorators.param({options: {category: 'Training', initialValue: 'false', description: 'Turn off scaling of features'}})
-    no_descriptor_scaling: boolean): Promise<Uint8Array | undefined> {
+    no_descriptor_scaling: boolean): Promise<Uint8Array> {
     const parameterValues = {
       'dataset_type': dataset_type,
       'metric': metric,
@@ -3337,16 +3338,9 @@ export class PackageFunctions {
     };
     predictColumn.name = df.columns.getUnusedName(predictColumn.name);
     df.columns.add(predictColumn);
-    try {
-      const modelBlob = await PackageFunctions.trainModelChemprop(df.toCsv(), predictColumn.name, parameterValues);
-      const zip = new JSZip();
-      const archive = await zip.loadAsync(modelBlob);
-      const file = archive.file('blob.bin');
-      const binBlob = await file?.async('uint8array')!;
-      return binBlob;
-    } catch (error: any) {
-      grok.shell.error(error);
-    }
+    const modelBlob = await PackageFunctions.trainModelChemprop(df.toCsv(), predictColumn.name, parameterValues);
+    const archive = await new JSZip().loadAsync(modelBlob);
+    return await archive.file('blob.bin')!.async('uint8array');
   }
 
   @grok.decorators.func({
@@ -3357,12 +3351,8 @@ export class PackageFunctions {
   })
   static async applyChemprop(df: DG.DataFrame,
     @grok.decorators.param({type: 'dynamic'}) model: Uint8Array) {
-    try {
-      const column = await PackageFunctions.applyModelChemprop(model, df.toCsv());
-      return DG.DataFrame.fromColumns([column]);
-    } catch (error: any) {
-      grok.shell.error(error);
-    }
+    const column = await PackageFunctions.applyModelChemprop(model, df.toCsv(), df.rowCount);
+    return DG.DataFrame.fromColumns([column]);
   }
 
   @grok.decorators.func({

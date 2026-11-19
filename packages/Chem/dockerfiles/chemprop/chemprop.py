@@ -61,11 +61,12 @@ class ChemProp(Engine):
         with open(model_path, 'wb') as f:
             f.write(model_blob)
         
-        table = table.iloc[:, [0]]
-        table.columns = ['smiles']
-        table['smiles'] = table['smiles'].apply(self.convert_to_smiles)
+        smiles = table.iloc[:, 0].apply(self.convert_to_smiles).dropna()
+        if smiles.empty:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            return pd.DataFrame({'pred_0': np.nan}, index=table.index)
 
-        ChemProp._save_table(table, table_path)
+        ChemProp._save_table(smiles.to_frame('smiles'), table_path)
         predictions_path = os.path.join(tmp_dir, 'table_preds_0.csv')
         
         params = [
@@ -77,10 +78,10 @@ class ChemProp(Engine):
         
         call_process(params)
         
-        prediction = pd.read_csv(predictions_path, na_values=['Invalid SMILES'])
+        prediction = pd.read_csv(predictions_path)
         preds_column = next((col for col in prediction.columns if 'pred' in col), None)
         shutil.rmtree(tmp_dir, ignore_errors=True)
-        return prediction[[preds_column]]
+        return pd.Series(prediction[preds_column].values, index=smiles.index).reindex(table.index).to_frame(preds_column)
 
     @staticmethod
     def _get_model_blob_path(tmp_dir: str):
@@ -96,7 +97,7 @@ class ChemProp(Engine):
         for fn in (Chem.MolFromSmiles, Chem.MolFromMolBlock):
             try:
                 mol = fn(s)
-                if mol:
+                if mol and mol.GetNumAtoms() > 0:
                     return Chem.MolToSmiles(mol)
             except:
                 pass
