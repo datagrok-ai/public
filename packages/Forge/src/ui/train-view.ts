@@ -3,6 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {ModelInfo} from '../catalog/model-edit';
+import {applicableEngines, ApplicableEngines, EngineFailure} from '../engines/applicable-engines';
+import {CHECK_TIMEOUT_MS, NoAnswerError} from '../engines/engine-calls';
 import {defaultHyperparameters, enabledRules, EnabledRules, Engine, givesProbabilities, handlesMissingValues,
   Hyperparameters, isEnabled, isServerEngine, probabilityInput, visibleHyperparametersOf, withProbabilityInput}
   from '../engines/engine';
@@ -11,7 +13,7 @@ import {ModelTask, TrainingRunStatus} from '../generated/db';
 import {BestThresholdMetric, METRIC_LABELS, taskOf} from '../metrics/metrics';
 import {_package} from '../package';
 import {missingColumnsOf, MissingValuesSettings} from '../preparation/missing-values';
-import {twoClasses} from '../preparation/pipeline';
+import {PreparedFeatures, twoClasses} from '../preparation/pipeline';
 import {DatasetFingerprint, datasetFingerprint, featuresHadGaps} from '../storage/dataset-fingerprint';
 import {datasetRefOf} from '../storage/dataset-ref';
 import {StorageChoice, TrainingRunRecord, trainingRunOf} from '../storage/model-fields';
@@ -24,7 +26,7 @@ import {bestCandidates, bestSearchPlan, canContinue, failedSearchMessage, quickE
   from '../training/search';
 import {bestThresholdOf, checkSelection, failedCheck, hasDataProblems, MetricsRecord, prepareTraining,
   problemMessages, recutResult, retrainsLive, selectedMissingValues, SelectionCheck, trainingEngines, TrainingRequest,
-  TrainingResult, TrainingSelection, trainModel, trainPredictionOf} from '../training/train-model';
+  TrainingResult, TrainingSelection, trainModel, trainPredictionOf, withLateEngines} from '../training/train-model';
 import {TrainingQueue} from '../training/training-queue';
 import {openApplyDialog} from './apply-model-dialog';
 import {ButtonGate} from './button-gate';
@@ -58,6 +60,7 @@ const AUTO_TOOLTIP = 'Auto: Find tries every checked method and trains the best 
 const AUTO_HINT = 'Click Find to try every checked method on this data and train the best one.';
 const CONTINUE_TOOLTIP = 'Continue the search';
 const CHECKING = 'Checking the selection...';
+const waitingText = (name: string) => `Waiting for ${name} to check the data...`;
 const TRAINING = 'Training is in progress.';
 const TRAINED = 'The model is trained on this selection. Change an input to train again.';
 const CANCELLED = 'Training was cancelled.';
@@ -144,6 +147,10 @@ export class TrainView extends DG.ViewBase {
   private readonly loggedFailures = new Set<string>();
   /** Whether each method retrains on every change, as the last check of this table that could ask said. */
   private readonly interactivity = new Map<string, boolean>();
+  /** Methods whose check did not answer in time: not asked again in this view. */
+  readonly silentMethods = new Set<string>();
+  /** The time a method's check may take; tests shorten it. */
+  checkTimeoutMs = CHECK_TIMEOUT_MS;
   private engine: Engine;
   /** The method the user picked, or {@link AUTO}; null while the suggested one applies. */
   private userChoice: string | null = null;
@@ -208,6 +215,8 @@ export class TrainView extends DG.ViewBase {
   }
 
   detach(): void {
+    // A late check answer must not train in a closed view.
+    this.checkNumber++;
     this.queue.supersede();
     this.unsubscribeForm();
     this.unsubscribeMethod();
@@ -274,9 +283,10 @@ export class TrainView extends DG.ViewBase {
     return this.activeTrainings > 0;
   }
 
-  /** The view on [table] with [method] chosen, or the suggested method for null. */
-  static async create(table: DG.DataFrame, method: string | null = null): Promise<TrainView> {
-    const {engines, engine} = trainingEngines();
+  /** The view on [table] with [method] chosen, or the suggested method for null; [discovered] replaces the installed
+   * methods: tests. */
+  static async create(table: DG.DataFrame, method: string | null = null, discovered?: Engine[]): Promise<TrainView> {
+    const {engines, engine} = trainingEngines(discovered);
     const chosen = method === null ? engine : engines.find((e) => e.name === method);
     if (chosen === undefined)
       throw new ForgeError(`The method ${method} is not available.`);
@@ -608,80 +618,158 @@ export class TrainView extends DG.ViewBase {
     const selection = this.selection();
     if (selection === null)
       return failedCheck({target: [NO_TARGET]});
-    const check = await checkSelection(selection, this.engines);
-    for (const {engine: failed, error} of check.failed) {
-      if (!this.loggedFailures.has(failed.name)) {
-        this.loggedFailures.add(failed.name);
-        _package.logger.error(`The method ${failed.name} could not check the data: ${errorMessage(error)}`);
-      }
-    }
+    const check = await checkSelection(selection, this.engines.filter((e) => !this.silentMethods.has(e.name)),
+      {waitsForServer: false, timeoutMs: this.checkTimeoutMs});
+    this.noteFailures(check.failed);
     return check;
   }
 
+  /** Logs each failed method once; one that did not answer is not asked again in this view. */
+  private noteFailures(failed: EngineFailure[]): void {
+    for (const {engine, error} of failed) {
+      if (error instanceof NoAnswerError)
+        this.silentMethods.add(engine.name);
+      if (!this.loggedFailures.has(engine.name)) {
+        this.loggedFailures.add(engine.name);
+        _package.logger.error(`The method ${engine.name} could not check the data: ${errorMessage(error)}`);
+      }
+    }
+  }
+
   /** Checks the selection, updates **Method** (the user's choice while it is listed, the suggested method otherwise)
-   * and, when the method retrains live, trains. */
+   * and, when the method retrains live, trains; the methods whose check runs on the server join when they answer. */
   private async revalidate(): Promise<void> {
     const checkNumber = this.checkNumber;
     try {
-      let check = await this.checkCurrent();
+      const check = await this.checkCurrent();
       if (checkNumber !== this.checkNumber)
         return;
-      const engine = this.methodOf(check);
-      if (engine !== this.engine && check.prepared !== undefined) {
-        this.engine = engine;
-        this.fillMethod(this.form);
-        // The data and the list stand; only the new method, which is listed, is asked whether it retrains live.
-        const {columns, target} = check.prepared;
-        const isInteractive = await retrainsLive(engine, columns, target);
-        if (checkNumber !== this.checkNumber)
-          return;
-        check = {...check, problems: {...check.problems, method: []}, isInteractive};
-      }
-      // Under Auto the suggested method is not trained: its "cannot learn" is no problem while another method can.
-      if (this.isAutoMethod && check.engines.length > 0)
-        check = {...check, problems: {...check.problems, method: []}};
-      if (this.isAutoMethod && check.prepared !== undefined) {
-        const {columns, target} = check.prepared;
-        const browser = searchableEngines(check.engines, this.engines);
-        const live = await quickEngines(browser, columns, target, false);
-        if (checkNumber !== this.checkNumber)
-          return;
-        for (const e of browser)
-          this.interactivity.set(e.name, live.includes(e));
-        this.form.find.setMethods([...browser.map((e) => FindSettings.entryOf(e, live.includes(e))),
-          ...check.engines.filter(isServerEngine).map((e) => FindSettings.entryOf(e, false))]);
-        this.form.preparation.setProbabilityReason(this.probabilityReason(this.form));
-      }
-      // The prepared columns (one-hot copies of the whole table) are not kept beyond this check.
-      this.check = {...check, prepared: undefined};
-      this.resultsPane.setDataInsights(check.insights);
-      this.showMethods(check);
-      const settings = this.form.preparation.missingValues.visibleInputs;
-      for (const input of [this.form.target, this.form.features, this.form.method, this.form.preparation.threshold,
-        ...settings, ...this.form.validation.usedInputs, ...this.activeHyperparameters(), ...this.form.find.inputs])
-        input.validate();
-      if (check.engines.length > 0)
-        this.interactivity.set(this.engine.name, check.isInteractive);
-      this.showTrainRow();
-      this.updateControls();
-      if (this.problem() !== null)
-        this.showHint(TrainView.dataProblems(check).length === 0 ? FIX_SETTINGS : RESULTS_HINT);
-      else if (this.isAutoMethod) {
-        if (this.lastTraining === undefined)
-          this.showHint(AUTO_HINT);
-      } else if (check.isInteractive)
-        await this.startTraining(true);
-      else
-        this.showHint(this.notInteractiveHint());
+      const {prepared} = check;
+      const late = check.pending.length === 0 || prepared === undefined ? undefined :
+        applicableEngines(check.pending, prepared.columns, prepared.target, this.checkTimeoutMs);
+      await this.applyCheck(check, checkNumber, late);
     } catch (e) {
+      this.failCheck(e, checkNumber);
+    }
+  }
+
+  /** Shows [check]: updates **Method**, the validators and the controls, then joins the [late] answers of its pending
+   * methods and, when the method retrains live, trains. */
+  private async applyCheck(check: SelectionCheck, checkNumber: number,
+    late?: Promise<ApplicableEngines>): Promise<void> {
+    const engine = this.methodOf(check);
+    if (engine !== this.engine && check.prepared !== undefined) {
+      this.engine = engine;
+      this.fillMethod(this.form);
+      // The data and the list stand; only the new method, which is listed, is asked whether it retrains live.
+      const {columns, target} = check.prepared;
+      const isInteractive = await retrainsLive(engine, columns, target, this.checkTimeoutMs);
       if (checkNumber !== this.checkNumber)
         return;
-      this.check = failedCheck({method: [errorMessage(e)]});
-      this.resultsPane.setDataInsights([]);
-      this.showTrainRow();
-      this.updateControls();
-      reportError(e, true);
+      check = {...check, problems: {...check.problems, method: []}, isInteractive};
     }
+    // Under Auto the suggested method is not trained: its "cannot learn" is no problem while another method can.
+    if (this.isAutoMethod && check.engines.length > 0)
+      check = {...check, problems: {...check.problems, method: []}};
+    if (this.isAutoMethod && check.prepared !== undefined) {
+      const {columns, target} = check.prepared;
+      const browser = searchableEngines(check.engines, this.engines);
+      const live = await quickEngines(browser, columns, target, false);
+      if (checkNumber !== this.checkNumber)
+        return;
+      for (const e of browser)
+        this.interactivity.set(e.name, live.includes(e));
+      this.setFindMethods(check.engines);
+    }
+    this.check = {...check, prepared: undefined};
+    this.resultsPane.setDataInsights(check.insights);
+    this.showMethods(check);
+    const settings = this.form.preparation.missingValues.visibleInputs;
+    for (const input of [this.form.target, this.form.features, this.form.method, this.form.preparation.threshold,
+      ...settings, ...this.form.validation.usedInputs, ...this.activeHyperparameters(), ...this.form.find.inputs])
+      input.validate();
+    if (check.engines.length > 0)
+      this.interactivity.set(this.engine.name, check.isInteractive);
+    this.showTrainRow();
+    this.updateControls();
+    // The late answers join only after this check is shown, and before a live training starts.
+    if (late !== undefined && check.prepared !== undefined)
+      void this.joinLate(late, check.prepared, checkNumber);
+    if (this.problem() !== null)
+      this.showHint(this.waitingFor() ?? (TrainView.dataProblems(check).length === 0 ? FIX_SETTINGS : RESULTS_HINT));
+    else if (this.isAutoMethod) {
+      if (this.lastTraining === undefined)
+        this.showHint(AUTO_HINT);
+    } else if (check.isInteractive)
+      await this.startTraining(true);
+    else
+      this.showHint(this.notInteractiveHint());
+  }
+
+  private failCheck(e: unknown, checkNumber: number): void {
+    if (checkNumber !== this.checkNumber)
+      return;
+    if (e instanceof NoAnswerError)
+      this.silentMethods.add(this.engine.name);
+    this.check = failedCheck({method: [errorMessage(e)]});
+    this.resultsPane.setDataInsights([]);
+    this.showTrainRow();
+    this.updateControls();
+    reportError(e, true);
+  }
+
+  /** Find's Candidates for [engines] (the browser methods cheapest first, then the server ones) and the Predict
+   * probability reason they give. */
+  private setFindMethods(engines: Engine[]): void {
+    this.form.find.setMethods([...searchableEngines(engines, this.engines).map((e) =>
+      FindSettings.entryOf(e, this.interactivity.get(e.name) === true)),
+    ...engines.filter(isServerEngine).map((e) => FindSettings.entryOf(e, false))]);
+    this.form.preparation.setProbabilityReason(this.probabilityReason(this.form));
+  }
+
+  /** Merges the [late] answers of the pending methods into the check shown, unless a newer check started: a method in
+   * force that was listed keeps training as it was (only **Method** and Find's Candidates change); one
+   * that was pending, or none listed, is applied as a fresh check. */
+  private async joinLate(late: Promise<ApplicableEngines>, prepared: PreparedFeatures,
+    checkNumber: number): Promise<void> {
+    const answer = await late;
+    const shown = this.check;
+    if (checkNumber !== this.checkNumber || shown === undefined)
+      return;
+    try {
+      this.noteFailures(answer.failed);
+      const named = (list: Engine[]) => list.some((e) => e.name === this.engine.name);
+      const wasPending = named(shown.pending);
+      const wasListed = named(shown.engines);
+      let merged = withLateEngines(shown, answer, this.engine, this.engines);
+      if (wasListed) {
+        this.check = merged;
+        this.showMethods(merged);
+        if (this.isAutoMethod)
+          this.setFindMethods(merged.engines);
+        this.updateControls();
+        return;
+      }
+      if (wasPending && !this.isAutoMethod && named(merged.engines)) {
+        merged = {...merged,
+          isInteractive: await retrainsLive(this.engine, prepared.columns, prepared.target, this.checkTimeoutMs)};
+        if (checkNumber !== this.checkNumber)
+          return;
+      }
+      await this.applyCheck({...merged, prepared}, checkNumber);
+    } catch (e) {
+      this.failCheck(e, checkNumber);
+    }
+  }
+
+  /** The text of a pending check of the method in force (a chosen server method); null otherwise. */
+  private waitingFor(): string | null {
+    return this.check !== undefined && this.waitsOn(this.check) ? waitingText(this.engine.name) : null;
+  }
+
+  /** The method in force is a chosen server method still checking [check]'s data. */
+  private waitsOn(check: SelectionCheck): boolean {
+    return !this.isAutoMethod && check.pending.some((e) => e.name === this.engine.name);
   }
 
   /** **Train** is shown in Manual for a method known not to retrain on every change, never for an interactive or an
@@ -697,6 +785,8 @@ export class TrainView extends DG.ViewBase {
   private methodOf(check: SelectionCheck): Engine {
     const {problems, engines, best} = check;
     if (hasDataProblems(problems) || engines.length === 0)
+      return this.engine;
+    if (this.waitsOn(check))
       return this.engine;
     if (this.isAutoMethod)
       return best ?? engines[0];
@@ -722,15 +812,16 @@ export class TrainView extends DG.ViewBase {
     return `${name} cannot learn from this selection; ${suggested.name} is chosen for now.`;
   }
 
-  /** **Method** lists the methods that can learn from the selection; it is empty when none can. A failing target or
-   * features rule leaves the list as it is. */
-  private showMethods({problems, engines}: SelectionCheck): void {
+  /** **Method** lists the methods that can learn from the selection, and the method in force while its check is
+   * pending; it is empty when none can. A failing target or features rule leaves the list as it is. */
+  private showMethods({problems, engines, pending}: SelectionCheck): void {
     if (hasDataProblems(problems))
       return;
     this.isSettingMethod = true;
     try {
-      this.form.method.items = [AUTO, ...engines.map((e) => e.name)];
-      this.form.method.value = this.isAutoMethod ? AUTO : engines.includes(this.engine) ? this.engine.name : null;
+      const listed = this.engines.filter((e) => engines.includes(e) || (e === this.engine && pending.includes(e)));
+      this.form.method.items = [AUTO, ...listed.map((e) => e.name)];
+      this.form.method.value = this.isAutoMethod ? AUTO : listed.includes(this.engine) ? this.engine.name : null;
     } finally {
       this.isSettingMethod = false;
     }
@@ -758,6 +849,9 @@ export class TrainView extends DG.ViewBase {
   private problem(): string | null {
     if (this.check === undefined)
       return CHECKING;
+    const waiting = this.waitingFor();
+    if (waiting !== null)
+      return waiting;
     const captioned = (inputs: DG.InputBase[]) => inputs.filter((input) => input.validity !== null)
       .map((input) => `${input.caption}: ${input.validity}`);
     const settings = this.form.preparation.missingValues.visibleInputs.map((input) => input.validity)
@@ -800,10 +894,11 @@ export class TrainView extends DG.ViewBase {
 
   /** The results' readiness for automation (ARCHITECTURE.md, "Automation surface"). */
   private publishState(problem: string | null): void {
-    TrainView.setAttribute(this.results, 'aria-busy', String(this.check === undefined || this.isTraining ||
-      this.showing > 0));
-    TrainView.setAttribute(this.results, 'aria-invalid', String(this.check !== undefined && (problem !== null ||
-      this.isFailed)));
+    const waiting = this.waitingFor() !== null;
+    TrainView.setAttribute(this.results, 'aria-busy', String(this.check === undefined || waiting ||
+      this.isTraining || this.showing > 0));
+    TrainView.setAttribute(this.results, 'aria-invalid', String(this.check !== undefined && !waiting &&
+      (problem !== null || this.isFailed)));
   }
 
   private static setAttribute(element: Element, name: string, value: string): void {

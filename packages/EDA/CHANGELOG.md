@@ -2,6 +2,8 @@
 
 ## v.next
 
+* GROK-20932: Removed the Playwright tests of the old ML | Models Train view (playwright/MLMethods), which the platform replaced with Forge
+* GROK-20932: ML methods: Fixed training XGBoost, SVM, Softmax and Linear Regression through the API with inputs left out: they now take the defaults of the function's inputs
 * [core#1518](https://github.com/datagrok-ai/core/issues/1518): Required the Forge plugin for predictive modeling with EDA's methods in the platform's UI; the earlier tool no longer works with this version (needs Datagrok <minimum platform version: TBD> or later)
 * GROK-20932: Added SVM's Max iterations (default 1000000), so a non-converging fit stops and still returns a model
 * GROK-20932: Added meta.mlprobabilities on every classifier's train function and the Class probabilities input of SVM (Platt scaling, set by Forge's Predict probability)

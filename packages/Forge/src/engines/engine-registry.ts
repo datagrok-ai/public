@@ -24,8 +24,14 @@ export class EngineRegistry {
       a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === 'function' ? -1 : 1);
   }
 
+  /** A package's own function takes the feature table and the target column; a script or a container's function one
+   * table and the target name. */
+  static kindOf(func: DG.Func): EngineKind {
+    return func.type.startsWith('function') ? 'function' : 'script';
+  }
+
   private static create(name: string, func: DG.Func): Engine {
-    const kind: EngineKind = func instanceof DG.Script ? 'script' : 'function';
+    const kind = EngineRegistry.kindOf(func);
     const pkg: unknown = func.package;
     const namespace = kind === 'function' && pkg instanceof DG.Package ? pkg.name : func.nqName.split(':')[0];
     return {name, namespace, kind, functions: {}, isLiveUpdate: true};

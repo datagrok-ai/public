@@ -1,9 +1,11 @@
 import * as DG from 'datagrok-api/dg';
-import {applicableEngines, EngineFailure} from '../engines/applicable-engines';
+import {ApplicableEngines, applicableEngines, EngineFailure} from '../engines/applicable-engines';
 import {selectBestEngine} from '../engines/best-engine';
-import {defaultMissingValues, Engine, handlesMissingValues, Hyperparameters, isComplete} from '../engines/engine';
+import {defaultMissingValues, Engine, handlesMissingValues, Hyperparameters, isComplete, isServerCheck}
+  from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
-import {apply, EnginePrediction, isInteractive, LoopProgress, train, yieldToEventLoop} from '../engines/engine-calls';
+import {apply, CHECK_TIMEOUT_MS, EnginePrediction, isInteractive, LoopProgress, NoAnswerError, train,
+  yieldToEventLoop} from '../engines/engine-calls';
 import {ForgeError} from '../forge-error';
 import {ModelTask} from '../generated/db';
 import {bestThreshold, BestThresholdMetric, classesOf, classLabelMetrics, ClassMetrics, ClassProbabilities, Curves,
@@ -121,6 +123,9 @@ export interface SelectionCheck {
   isInteractive: boolean;
   /** Methods whose check threw; they are left out of `engines`. */
   failed: EngineFailure[];
+  /** Methods whose check runs on the server and was not awaited ({@link CheckOptions}); the view adds their answers as
+   * they come. */
+  pending: Engine[];
   /** The columns and target the methods were asked about; none while a target or features rule fails. */
   prepared?: PreparedFeatures;
   /** The data insights of the prepared columns and the selection's target; none while a target or features rule
@@ -163,9 +168,20 @@ function stratifyColumn({validation, target}: TrainingRequest): DG.Column | unde
   return validation.stratified && taskOf(target) === 'classification' ? target : undefined;
 }
 
+export interface CheckOptions {
+  /** False: the methods whose check runs on the server ({@link isServerCheck}) are not asked, only returned as
+   * pending. */
+  waitsForServer?: boolean;
+  /** The time each method's check may take. */
+  timeoutMs?: number;
+}
+
 /** The rules, then the methods of [engines] that can learn from the selection, the suggested one and whether the
- * selection's method retrains live; the methods are asked about the prepared columns, as they will get them. */
-export async function checkSelection(selection: TrainingSelection, engines: Engine[]): Promise<SelectionCheck> {
+ * selection's method retrains live; the methods are asked about the prepared columns, as they will get them, each
+ * check at most `timeoutMs`. Without `waitsForServer` the methods whose check runs on the server are returned as
+ * `pending`; the selection's method is no problem while it is pending. */
+export async function checkSelection(selection: TrainingSelection, engines: Engine[],
+  {waitsForServer = true, timeoutMs = CHECK_TIMEOUT_MS}: CheckOptions = {}): Promise<SelectionCheck> {
   const {engine} = selection;
   // The missing values are handled only when it trains.
   const prepared = prepareFeatures(selection.features, selection.target, selection.steps,
@@ -174,20 +190,45 @@ export async function checkSelection(selection: TrainingSelection, engines: Engi
   const problems = ruleProblems(selection, columns);
   if (hasDataProblems(problems))
     return failedCheck(problems);
-  const {applicable, failed} = await applicableEngines(engines, columns, target);
+  const pending = waitsForServer ? [] : engines.filter((e) => isComplete(e) && isServerCheck(e));
+  const {applicable, failed} = await applicableEngines(engines.filter((e) => !pending.includes(e)), columns, target,
+    timeoutMs);
+  problems.method.push(...methodProblem(engine, applicable, pending, failed));
   const isListed = applicable.some((e) => e.name === engine.name);
-  if (!isListed)
-    problems.method.push(applicable.length === 0 ? NO_METHOD : cannotLearn(engine));
   return {problems, engines: applicable,
     best: selectBestEngine(applicable, columns, selection.target, selection.features),
-    isInteractive: isListed && await retrainsLive(engine, columns, target), failed, prepared,
+    isInteractive: isListed && await retrainsLive(engine, columns, target, timeoutMs), failed, pending, prepared,
     insights: dataInsights(columns, selection.target)};
+}
+
+/** [check] with the [late] answers of its pending methods: the methods in [discovery] order, nothing pending, the
+ * failures added, the method problem of [engine] recomputed; the suggested method is kept (the first listed when
+ * there was none). */
+export function withLateEngines(check: SelectionCheck, late: ApplicableEngines, engine: Engine,
+  discovery: Engine[]): SelectionCheck {
+  const names = new Set([...check.engines, ...late.applicable].map((e) => e.name));
+  const engines = discovery.filter((e) => names.has(e.name));
+  const failed = [...check.failed, ...late.failed];
+  return {...check, engines, pending: [], failed, best: check.best ?? engines[0],
+    problems: {...check.problems, method: methodProblem(engine, engines, [], failed)}};
+}
+
+/** Rule 8: none while [engine] is listed or pending; its own message when its check did not answer; else why it
+ * cannot learn, or that no method can. */
+function methodProblem(engine: Engine, applicable: Engine[], pending: Engine[], failed: EngineFailure[]): string[] {
+  const isNamed = (e: Engine) => e.name === engine.name;
+  if (applicable.some(isNamed) || pending.some(isNamed))
+    return [];
+  const error = failed.find((f) => isNamed(f.engine))?.error;
+  if (error instanceof NoAnswerError)
+    return [error.message];
+  return [applicable.length === 0 && pending.length === 0 ? NO_METHOD : cannotLearn(engine)];
 }
 
 /** A check that lists no method: the selection cannot be trained for [problems]. */
 export function failedCheck(problems: Partial<TrainingProblems>): SelectionCheck {
   return {problems: {...noProblems(), ...problems}, engines: [], best: undefined, isInteractive: false, failed: [],
-    insights: []};
+    pending: [], insights: []};
 }
 
 function noProblems(): TrainingProblems {
@@ -204,9 +245,9 @@ export function problemMessages({target, features, missingValues, method}: Train
   return [...target, ...features, ...missingValues, ...method];
 }
 
-/** The complete methods in discovery order, and the one a training starts with. */
-export function trainingEngines(): {engines: Engine[]; engine: Engine} {
-  const engines = EngineRegistry.discover().filter(isComplete);
+/** The complete methods of [discovered] in their order, and the one a training starts with. */
+export function trainingEngines(discovered: Engine[] = EngineRegistry.discover()): {engines: Engine[]; engine: Engine} {
+  const engines = discovered.filter(isComplete);
   const engine = engines.find((e) => e.name === PREFERRED_ENGINE) ?? engines[0];
   if (engine === undefined)
     throw new ForgeError('No machine learning method is installed. Install the EDA package.');
@@ -214,8 +255,9 @@ export function trainingEngines(): {engines: Engine[]; engine: Engine} {
 }
 
 /** Live retraining is on for [engine] and it says it is interactive on this data. */
-export async function retrainsLive(engine: Engine, features: DG.Column[], target: DG.Column): Promise<boolean> {
-  return engine.isLiveUpdate && await isInteractive(engine, features, target);
+export async function retrainsLive(engine: Engine, features: DG.Column[], target: DG.Column,
+  timeoutMs: number = CHECK_TIMEOUT_MS): Promise<boolean> {
+  return engine.isLiveUpdate && await isInteractive(engine, features, target, timeoutMs);
 }
 
 /** Rules 1-7 and 9: checks of the column list that call no method; rules 1b and 7 look at the [prepared] columns,

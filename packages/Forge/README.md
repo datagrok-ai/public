@@ -33,6 +33,9 @@ only while one of its inputs applies), **Method** (Method, **Settings** and the 
   failed, `<Method> cannot learn from this selection: <its reason> <suggested> is chosen for now.`). When no method can
   learn from the
   data, **Method** is empty and red: `No method can learn from this selection. Check the features and the target.`
+  A method whose check runs on the server (a script in another language than JavaScript, or a package container's
+  function) does not hold the view back: the other methods are listed and train at once, and it joins the list when
+  it answers. One that does not answer in 30 s is left out while the view is open. A server method you chose shows `Waiting for <Method> to check the data...` in place of the results until it answers.
   The first item, **Auto**, finds the best model instead of training one method (see "Find best model"): its
   tooltip reads `Auto: Find tries every checked method and trains the best one`, nothing trains while it is chosen,
   **Train** is hidden, the results of the model shown stay, and when no model is shown (after a change of the data)
@@ -658,8 +661,10 @@ grok.shell.addTableView(await grok.functions.call('Forge:listMethods', {table: g
 ```
 
 `Forge:listMethods` returns the table **Methods**, one row per method `trainModel` accepts, in discovery order (package
-methods by name, then scripts): **Method**, **Package**, **Method type**, **Runs on** (`browser`, or `server` when the
-training data leaves the browser), **Keeps training rows** (the model file holds training rows, as SVM's does),
+methods by name, then scripts and package containers' functions): **Method**, **Package**, **Method type** (`function`,
+or `script` for a script or a package container's function), **Runs on** (`browser`, or `server` when the training
+data leaves the browser: a script in another language than JavaScript, a package container's function, or a method
+that says so), **Keeps training rows** (the model file holds training rows, as SVM's does),
 **Retrains live**, **Roles**, **Hyperparameters** (the setting names) and **Settings**: a json text with one entry per
 setting, `name`, `type` and, when the method declares them, `default`, `min`, `max`, `choices` and `description`. These
 are the names and values `trainModel`'s `hyperparameters` accepts. A method's probability setting (SVM's
@@ -817,6 +822,8 @@ its inputs, whose data preparation fails or whose search completes no trial reco
 
 * `The table has no column 'Specie'.`, `The table has no columns 'a', 'b'.`
 * `No method 'Boost' is installed. The methods are: <methods>.`
+* `The method '<name>' did not answer in 30 s.` (the chosen method's check; every method's check may take up to 30 s,
+  and one that does not answer is left out, also in `Forge:listMethods`)
 * `The method XGBoost has no setting 'speed'. Its settings are: <settings>.`, `The setting 'rate' of Softmax needs a
   number.`, `The setting 'iterations' of XGBoost must be at most 100.`
 * `Unknown option 'cutof'. The options are: missingValues, neighbors, distance, oneHot, skipUniqueCategories,

@@ -25,12 +25,25 @@ export function isComplete(engine: Engine): boolean {
   return train !== undefined && apply !== undefined && isApplicable !== undefined;
 }
 
-/** The training data leaves the browser: a script in a language other than JavaScript, a `train` with
- * `meta.mlserver: true`, or one of {@link SERVER_ENGINES}. */
+/** The training data leaves the browser: a `train` that {@link runsOnServer} (a script in a language other than
+ * JavaScript or a package container's function), a `train` with `meta.mlserver: true`, or one of
+ * {@link SERVER_ENGINES}. */
 export function isServerEngine(engine: Engine): boolean {
   const train = engine.functions.train;
-  const isServerScript = train instanceof DG.Script && train.language !== 'javascript';
-  return isServerScript || train?.options['mlserver'] === 'true' || SERVER_ENGINES.includes(engine.name);
+  return runsOnServer(train) || train?.options['mlserver'] === 'true' || SERVER_ENGINES.includes(engine.name);
+}
+
+export const DOCKER_FUNC = 'docker-func';
+
+/** [func] runs on the server: a script in a language other than JavaScript or a package container's function. */
+export function runsOnServer(func: DG.Func | undefined): boolean {
+  return func !== undefined &&
+    ((func instanceof DG.Script && func.language !== 'javascript') || func.type === DOCKER_FUNC);
+}
+
+/** The method's isApplicable runs on the server: the Train view does not wait for it. */
+export function isServerCheck(engine: Engine): boolean {
+  return runsOnServer(engine.functions.isApplicable);
 }
 
 /** The model file embeds training rows (`meta.mlhasrows: true` on `train`), such as SVM's support vectors. */

@@ -408,21 +408,28 @@ as a method would get them); rule 8 calls the engines on those prepared columns,
 
 Rows with a missing target are skipped by `prepareTraining`, never refused.
 
-**Choosing the method.** `checkSelection(selection, engines)` is the check for a view that offers the methods of
-`engines` (the view passes its own list, to keep its `Engine` objects). It runs rules 1-7 and 9; while a target or
+**Choosing the method.** `checkSelection(selection, engines, options?)` is the check for a view that offers the methods
+of `engines` (the view passes its own list, to keep its `Engine` objects). It runs rules 1-7 and 9; while a target or
 features rule fails it asks no method and returns no engines (`failedCheck(problems)`, the shape of every check that
 lists no method). Otherwise it asks every
 complete method at once (`applicableEngines`, see "Choosing a method" under the engine contract) about the prepared
-columns and target (the selection's target: Predict probability lists the same classifiers), and rule 8
-becomes: the selection's method is not among them (the rule 8 text), or none is (`No method can learn from this
-selection. Check the features and the target.`). The result (`SelectionCheck`) also has `best` (`selectBestEngine`
+columns and target (the selection's target: Predict probability lists the same classifiers), each check at most
+`CheckOptions.timeoutMs` (`CHECK_TIMEOUT_MS`, 30 s, by default). With `waitsForServer: false` (the view; the API keeps
+the default `true`) the methods whose check runs on the server (`isServerCheck`) are not asked but returned in
+`pending`. Rule 8 becomes: no problem while the selection's method is listed or pending; its own
+`The method '<name>' did not answer in 30 s.` when its check timed out (`NoAnswerError`); else the rule 8 text, or,
+when nothing is listed or pending, `No method can learn from this selection. Check the features and the target.`
+`withLateEngines(check, late, engine, discovery)` merges the late answers of the pending methods into a check: the
+methods in discovery order, nothing pending, the failures appended, rule 8 recomputed for `engine`, `best` kept (the
+first listed when there was none). The result (`SelectionCheck`) also has `best` (`selectBestEngine`
 over the listed methods, the prepared columns (one-hot copies count as numerical features) and the selection's target;
 the molecule rule reads the selection's features, as
 preparation drops or one-hot encodes a molecule column), `failed` (the methods whose check threw, for the caller to log),
 `isInteractive`: the selection's method is listed and `retrainsLive` (its `isLiveUpdate` is on and its
 `isInteractive` says yes on the prepared columns), `prepared`, those columns and target (none from
 `failedCheck`), and `insights`, the data insights of the prepared columns and the selection's target (see "Insights";
-empty from `failedCheck`). A method's `isInteractive` that throws makes the whole check throw.
+empty from `failedCheck`), and `pending` (empty everywhere but the view's check). A method's `isInteractive` that
+throws or does not answer in time makes the whole check throw.
 
 The view adds a validator to **Target**, **Features**, **Method** (the `method` messages) and **Missing values** that
 returns the view's current problems for that input. Every change of Table, Target, Features, a **Preparation** input
@@ -432,13 +439,28 @@ threshold, Method or a hyperparameter (`requestCheck`) numbers a new check, clea
 already shown on it then reads "Checking the selection...") and schedules the check `CHECK_DELAY_MS` (200 ms, the
 built-in tool's delay) after the last change; one timer serves the check and the live training. A check that finishes
 after a newer change is discarded. The check (`revalidate`) calls `checkSelection` with the view's own list of
-complete methods and logs a method whose check threw once per view (`_package.logger.error`). Then **Method**
-(`methodOf`): while a target or features rule fails, or no method is listed, the method stays; otherwise the user's
+complete methods but the silent ones, `waitsForServer: false` and the view's `checkTimeoutMs`, and logs a method whose
+check threw once per view (`noteFailures`, `_package.logger.error`); a method whose check did not answer
+(`NoAnswerError`, also from the method in force's `retrainsLive` through `failCheck`) goes to `silentMethods` and is
+not asked again in this view (a new view asks again). Right after
+the browser check `revalidate` asks the `pending` methods (`applicableEngines`, the prepared columns are held by that
+request until it settles, at most the timeout) and shows the browser check at once (`applyCheck`); after the check
+is shown, before a live training starts, `applyCheck` starts `joinLate`, which waits for the answer and merges it (`withLateEngines`) under the
+same `checkNumber` (a newer check, or closing the view, discards it). When the method in force was listed before,
+only **Method**'s items and Find's Candidates with the Predict probability reason (under Auto) change: nothing
+retrains, no balloon. When it
+was pending (a chosen server method) or nothing was listed, the merged check is applied as a fresh one (`applyCheck`):
+listed, it is asked `retrainsLive` and trains or shows **Train**; refused or silent, the balloon of `mismatchText`
+and the suggested method. While the method in force is pending, `waitingFor()` gives
+`Waiting for <Method> to check the data...`, the view's problem (Train and Tune disabled with it, the results' hint);
+**Method** keeps showing that method, not red. The pending and silent methods are not named in the UI. Then
+**Method** (`methodOf`): while a target or features rule fails, or no method is listed, the method stays; otherwise the user's
 choice (`userChoice`, set when the user picks a method) while it is listed, else the suggested one (`best`), with the
 balloon of `mismatchText` (`<Method> cannot learn from this selection; <suggested> is chosen for now.`, or with the
 method's check error after a colon) when it replaces the user's choice, which
 is then forgotten; for a changed method, which is listed, only `retrainsLive` is asked again, on the check's
-`prepared` columns. **Method** then lists the methods by name (empty with the
+`prepared` columns; the method in force while it is pending stays. **Method** then lists the methods by name, and the
+method in force while it is pending (empty with the
 `No method can learn ...` problem); a failing target or features rule leaves the list as it is. Hyperparameter inputs
 are rebuilt on a Method change from the defaults overlaid with `hyperparameterValues`, the values per method name
 kept for the view's session (filled on every hyperparameter change; a Table change keeps them). After the check the
@@ -968,11 +990,10 @@ optimizes`, Limit (label and options) `What ends the search: a time or a trial l
 the user sees ends on one vertical line, the block's right edge: the reset and pin glyphs (their 30 px buttons put the
 glyph at the right, `justify-content: flex-end`, the hit area extending left), the selects' underlines with their
 chevrons, and Tune's letters (no right margin or padding). The toggle (`margin-top: -3px`) puts the Search options text
-as far under the status text as the status text is under the Settings label; the layout test measures the text
-through DOM Ranges and the glyph boxes, beside and above the inputs. The fields, selects and choices button share
-`forge-tune-control` (the underline, focus, `aria-invalid` and disabled rules, scoped to the grid so they beat the
-platform's `select.ui-input-editor`). The selects are `ui-input-editor`s with the platform choice input's chevron and
-no focus frame; focused, they underline in `--blue-1`. The chevron rule (`url('/images/chevron.svg')`) is in
+as far under the status text as the status text is under the Settings label. The fields, selects and choices button
+share `forge-tune-control` (the underline, focus, `aria-invalid` and disabled rules, scoped to the grid so they beat
+the platform's `select.ui-input-editor`). The selects are `ui-input-editor`s with the platform choice input's chevron
+and no focus frame; focused, they underline in `--blue-1`. The chevron rule (`url('/images/chevron.svg')`) is in
 `css/forge-platform-images.css`, listed in `package.json` `sources`: the platform loads it with the package, unbundled,
 so the path stays the platform's (the bundled `forge.css` would have the build resolve it). `togglePin` swaps only its
 row's slot and pin state, and hides the tooltip first: the pin's tooltip text changes with the click, and a hovered
@@ -2075,7 +2096,8 @@ row (`ui.makeDraggable`, onto a Space), sort fields Created, Name, Method, Targe
 **Launching training.** `launchTraining(method)` (`ui/train-launcher.ts`) opens `TrainView.openFor(table, method)` on
 the current table, else the only open one, else after the dialog **Train a model** (**Train with <method>** for a
 method; **Table**, OK gated by `ButtonGate`: `Choose a table.`). The empty catalog's **Train a model...** is
-`launchTraining(null)`. `TrainView.create(table, method)` starts with a given method as the user's choice
+`launchTraining(null)`. `TrainView.create(table, method, engines?)` (`engines` replaces the installed methods: tests
+add a stub server method, `stuckEngine`) starts with a given method as the user's choice
 (`userChoice`); a method not among the complete ones fails with `The method X is not available.`. When the first check
 does not list it, `methodOf` shows `mismatchText`: `X cannot learn from this selection: <its check's error> Y is chosen
 for now.`, else `X cannot learn from this selection; Y is chosen for now.`.
@@ -2413,7 +2435,8 @@ the shuffle and a split seed (42 by default); settings a method ignores are disa
 The views publish their state in the DOM, so a test waits on what a view says instead of on a timer:
 
 - The Train view's results (`.forge-train-results`, `TrainView.publishState`, run by every `updateControls` and when a
-  `ResultsPane.show` settles): `aria-busy="true"` while a check is pending (`check` undefined), a training is queued,
+  `ResultsPane.show` settles): `aria-busy="true"` while a check is pending (`check` undefined) or the method in force
+  waits for its server check (`waitingFor()`; `aria-invalid` is then false: waiting is not a problem), a training is queued,
   running or being recorded (`isTraining`) or results are being shown (`showing`, the `ResultsPane.show` calls not
   settled); `aria-invalid="true"` once checked while the selection has a problem (`problem()`, an invalid setting
   included) or its last training ended `failed` or `cancelled` (`isFailed`, cleared by any change but the threshold and a re-cutting Predict probability toggle, and by
@@ -2681,10 +2704,14 @@ by the view and the API alike) and `visibleValuesOf(engine, values)` (the values
 tooltip). `hyperparametersOf` and `defaultHyperparameters` keep the input (the contract).
 
 - An engine is complete, and usable, only with `train`, `apply` and `isApplicable`.
-- A function engine receives the feature table and the target column. A script engine (`DG.Script`) receives one
-  table with a copy of the target appended, and the target name.
+- A function engine receives the feature table and the target column. A script engine (a `DG.Script` or a package
+  container's function) receives one table with a copy of the target appended, and the target name.
 - The calls (`isApplicable`, `isInteractive`, `train`, `apply` in `engines/engine-calls.ts`) take the feature columns
   and build the table themselves, a frame of the columns given back by `onFrame` when the call ends.
+- `isApplicable` and `isInteractive` race the call against their `timeoutMs` (`CHECK_TIMEOUT_MS`, 30 s, by default)
+  inside the `onFrame` callback, so a check that does not answer gives the shared frame back at the timeout; it then
+  fails with `NoAnswerError` (a `ForgeError`: `The method '<name>' did not answer in 30 s.`). `train` and `apply`
+  have no timeout.
 - `train` returns the blob as a `Uint8Array` or a `DG.FileInfo` (its `data` is used); anything else is a
   `ForgeError`. `apply` must return a dataframe with at least one column; columns named `proba_<class>` after the
   first are read as the class probabilities (AUC-ROC, log loss, Brier, the two-class curves, Predict probability), any
@@ -2694,7 +2721,9 @@ tooltip). `hyperparametersOf` and `defaultHyperparameters` keep the input (the c
   `defaultValuesOf` (used by `defaultHyperparameters` and for the imputation inputs) converts them by the input type
   and strips the quotes.
 - `EngineRegistry.discover()` calls `DG.Func.find({meta: {mlrole}})` once per role, groups by `mlname`, takes kind and
-  namespace from the `train` function, and lists function engines first, then scripts, each by name.
+  namespace from the `train` function, and lists function engines first, then scripts, each by name. The kind is
+  `EngineRegistry.kindOf(func)`: `function` for a function type starting with `function` (a package's own functions),
+  `script` for any other (a script, `docker-func` of a package container).
   If a package is registered twice, the later function of a role wins.
 - The namespace is the package name for function engines (EDA registers as `Eda`) and the `nqName` prefix for scripts.
 - `isApplicable` on an engine without that role throws `ForgeError`; `isInteractive` without it returns `false`.
@@ -2703,8 +2732,10 @@ tooltip). `hyperparametersOf` and `defaultHyperparameters` keep the input (the c
 
 ### Choosing a method
 
-- `applicableEngines(engines, features, target)` (`engines/applicable-engines.ts`) asks every complete engine's
-  `isApplicable` at once (`Promise.allSettled`) on the feature columns (each call with its own frame). `applicable` keeps the given order (discovery order: functions first); an engine whose check throws is
+- `applicableEngines(engines, features, target, timeoutMs?)` (`engines/applicable-engines.ts`) asks every complete
+  engine's `isApplicable` at once (`Promise.allSettled`) on the feature columns (each call with its own frame).
+  `applicable` keeps the given order (discovery order: functions first); an engine whose check throws, or does not
+  answer within `timeoutMs` (`CHECK_TIMEOUT_MS`, 30 s: `NoAnswerError`), is
   left out and returned in `failed` with its error, for the caller to log (nothing is logged here). On iris, Species
   gets every EDA method but Linear Regression and PLS Regression (14); Petal.Length every one but Softmax, Naive Bayes
   and LDA (13).
@@ -2716,9 +2747,12 @@ tooltip). `hyperparametersOf` and `defaultHyperparameters` keep the input (the c
   tool); a feature named like the target is not counted. A suggestion not in the list gives the first engine, an
   empty list undefined. The built-in tool matched `<package>: <name>`; Forge's registry keeps one engine per name, so
   it matches the name.
-- `isServerEngine(engine)` (`engines/engine.ts`): the training data leaves the browser (no UI uses it yet; `Forge:listMethods` reports it as **Runs on**). True for a script `train` in
-  a language other than JavaScript, a `train` with `meta.mlserver: 'true'`, or a name in `SERVER_ENGINES`
-  (`['Chemprop']`, whose functions do not say so yet).
+- `runsOnServer(func)` (`engines/engine.ts`): a `DG.Script` in a language other than JavaScript, or a package
+  container's function (`func.type` `docker-func`). `isServerCheck(engine)`: its `isApplicable` runs on the server, so
+  the Train view does not wait for it.
+- `isServerEngine(engine)`: the training data leaves the browser (`Forge:listMethods` reports it as **Runs on**; Find
+  best model leaves such a method out). True for a `train` that `runsOnServer`, a `train` with
+  `meta.mlserver: 'true'`, or a name in `SERVER_ENGINES` (`['Chemprop']`, whose functions do not say so yet).
 - `hasTrainingRows(engine)`: `meta.mlhasrows: 'true'` on `train`.
 - `handlesMissingValues(engine)`: `meta.mlnativenans: 'true'` on `train`; it makes `keep` the default missing-values
   mode (see "Missing values").
