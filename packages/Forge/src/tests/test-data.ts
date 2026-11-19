@@ -19,6 +19,7 @@ import {Gallery} from '../ui/gallery';
 
 export const IRIS = 'System:DemoFiles/iris.csv';
 export const WINE = 'System:DemoFiles/winequality.csv';
+export const SOLUBILITY = 'System:DemoFiles/chem/solubility_train.csv';
 export const MEASUREMENTS = ['Sepal.Length', 'Sepal.Width', 'Petal.Length', 'Petal.Width'];
 export const EDA_METHODS = ['Linear Regression', 'Softmax', 'PLS Regression', 'XGBoost', 'SVM', 'Random Forest',
   'Extra Trees', 'Hist Gradient Boosting', 'CatBoost', 'Decision Tree', 'k-Nearest Neighbors', 'Naive Bayes', 'LDA',
@@ -216,6 +217,46 @@ export function stuckEngine(name: string, answer: Promise<unknown>, calls = {cou
     apply}, isLiveUpdate: true};
 }
 
+/** A browser method that declares [semTypes] features (`mlsemtypes`), whose check answers [answer] and counts the
+ * [calls]; an engine stub, not a platform mock. */
+export function moleculeEngine(name: string, {calls = {count: 0}, answer = true, semTypes = 'Molecule'}:
+  {calls?: {count: number}; answer?: boolean; semTypes?: string} = {}): Engine {
+  const {isApplicable, train, apply} = xgboost().functions;
+  if (isApplicable === undefined || train === undefined)
+    throw new Error('XGBoost has no isApplicable or train');
+  const trainStub: DG.Func = Object.create(train);
+  Object.defineProperty(trainStub, 'options', {value: {mlname: name, mlrole: 'train', mlsemtypes: semTypes}});
+  const check: DG.Func = Object.create(isApplicable);
+  check.apply = () => {
+    calls.count++;
+    return Promise.resolve(answer);
+  };
+  return {name, namespace: 'Forge', kind: 'function', functions: {isApplicable: check, train: trainStub, apply},
+    isLiveUpdate: true};
+}
+
+/** A text column of SMILES [values] with the semantic type Molecule. */
+export function smilesColumn(name: string, values: string[]): DG.Column {
+  const col = DG.Column.fromStrings(name, values);
+  col.semType = DG.SEMTYPE.MOLECULE;
+  return col;
+}
+
+/** [rows] different SMILES: `CO`, `CCO`, `CCCO`, ... */
+export function smilesSeries(rows: number): string[] {
+  return Array.from({length: rows}, (_, i) => `C${'C'.repeat(i)}O`);
+}
+
+/** [rows] rows: `smiles` all different (Molecule), `color` of three values, floats `x` and `y`. */
+export function moleculeFrame(rows: number): {smiles: DG.Column; color: DG.Column; x: DG.Column; y: DG.Column} {
+  return {
+    smiles: smilesColumn('smiles', smilesSeries(rows)),
+    color: DG.Column.fromStrings('color', Array.from({length: rows}, (_, i) => ['red', 'green', 'blue'][i % 3])),
+    x: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', valuesOf(rows, (i) => i / 2)),
+    y: DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', valuesOf(rows, (i) => i + 1)),
+  };
+}
+
 /** The demo file [path], named `forge-test-<prefix>-<time>`. */
 export async function openDemoTable(path: string, prefix: string): Promise<DG.DataFrame> {
   const table = await grok.data.files.openTable(path);
@@ -225,6 +266,13 @@ export async function openDemoTable(path: string, prefix: string): Promise<DG.Da
 
 export async function openIris(): Promise<DG.DataFrame> {
   return openDemoTable(IRIS, 'iris');
+}
+
+/** solubility_train.csv with `smiles` marked Molecule (not relying on Chem's detectors). */
+export async function openSolubility(): Promise<DG.DataFrame> {
+  const table = await openDemoTable(SOLUBILITY, 'solubility');
+  table.getCol('smiles').semType = DG.SEMTYPE.MOLECULE;
+  return table;
 }
 
 /** iris opened as Browse > Files opens a file (an unprocessed `OpenServerFile` call), so the platform records its

@@ -3,22 +3,22 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
 import {applicableEngines} from '../engines/applicable-engines';
 import {selectBestEngine} from '../engines/best-engine';
-import {defaultHyperparameters, defaultValuesOf, Engine, givesProbabilities, handlesMissingValues, hasTrainingRows,
-  hyperparametersOf, isComplete, isServerCheck, isServerEngine, probabilityInput, rolesOf, runsOnServer,
-  visibleHyperparametersOf, withProbabilityInput} from '../engines/engine';
+import {defaultHyperparameters, defaultValuesOf, Engine, featureSemTypesOf, givesProbabilities, handlesMissingValues,
+  hasTrainingRows, hyperparametersOf, isComplete, isServerCheck, isServerEngine, probabilityInput, rolesOf,
+  runsOnServer, takesSemTypes, visibleHyperparametersOf, withProbabilityInput} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {apply, isApplicable, isInteractive, NoAnswerError} from '../engines/engine-calls';
 import {methodList, SettingDetails} from '../engines/method-list';
 import {errorMessage} from '../forge-error';
 import {runListMethods, runTrainModel} from '../training/train-api';
 import {CLASSIFIERS, columnsOf, deleteRunsOf, demoDemog, EDA_METHODS, engineByName, expectReleased, failsWith,
-  framesSharing, inDiscoveryOrder, IRIS, MEASUREMENTS, NATIVE_NANS, openDemoTable, REGRESSORS, stuckEngine, valuesOf}
-  from './test-data';
+  framesSharing, inDiscoveryOrder, IRIS, MEASUREMENTS, moleculeEngine, NATIVE_NANS, openDemoTable, REGRESSORS,
+  stuckEngine, valuesOf, xgboost} from './test-data';
 
 const ROWS_ENGINES = ['SVM', 'k-Nearest Neighbors'];
 const BEST_NAMES = ['Chemprop', 'XGBoost', 'PLS Regression', 'Linear Regression'];
-const METHOD_COLUMNS = ['Method', 'Package', 'Method type', 'Runs on', 'Keeps training rows', 'Retrains live', 'Roles',
-  'Hyperparameters', 'Settings'];
+const METHOD_COLUMNS = ['Method', 'Package', 'Method type', 'Runs on', 'Semantic types', 'Keeps training rows',
+  'Retrains live', 'Roles', 'Hyperparameters', 'Settings'];
 
 /** An engine with a name only, for the rules that read names. */
 function namedEngine(name: string, functions: Engine['functions'] = {}): Engine {
@@ -289,6 +289,25 @@ category('Engines', () => {
   test('listMethods marks a container method as server', async () => {
     const methods = methodList([stuckEngine('forge-test-stuck', new Promise(() => {}))]);
     expect(methods.get('Runs on', 0), 'server');
+  });
+
+  test('featureSemTypesOf reads meta.mlsemtypes', async () => {
+    const stub = moleculeEngine('forge-test-mol');
+    expectArray(featureSemTypesOf(stub), ['molecule']);
+    expectArray(featureSemTypesOf(moleculeEngine('forge-test-mols', {semTypes: ' Molecule , Macromolecule,'})),
+      ['molecule', 'macromolecule']);
+    const engines = EngineRegistry.discover();
+    for (const name of EDA_METHODS)
+      expect(featureSemTypesOf(engineByName(engines, name)).length, 0, name);
+    expect(takesSemTypes(stub, ['MOLECULE']), true);
+    expect(takesSemTypes(xgboost(), ['Molecule']), false);
+    expect(takesSemTypes(xgboost(), []), true);
+  });
+
+  test('listMethods shows the semantic types a method takes', async () => {
+    const methods = methodList([xgboost(), moleculeEngine('forge-test-mol')]);
+    const semTypes = methods.getCol('Semantic types');
+    expectArray([semTypes.getString(0), semTypes.getString(1)], ['', 'Molecule']);
   });
 
   test('listMethods lists the complete methods with their settings', async () => {

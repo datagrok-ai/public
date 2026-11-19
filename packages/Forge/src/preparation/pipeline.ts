@@ -3,6 +3,7 @@ import {ForgeError} from '../forge-error';
 import {BestThresholdMetric, ClassProbabilities, classesOf, isAtThreshold, probabilityOf} from '../metrics/metrics';
 import {BINARY_CLASSIFICATION, CLASS_PROBABILITIES, IGNORE_MISSING, IMPUTE_MISSING, ONE_HOT, PreparationOptions,
   SKIP_UNIQUE_CATEGORIES} from './preparation-options';
+import {isSemTypeFeature} from './semtype-feature';
 
 /** The preparation steps chosen for a training, applied after the missing values are handled. With
  * [thresholdMetric], the threshold of two classes is the one that maximizes it on the out-of-fold probabilities
@@ -30,21 +31,22 @@ const COLUMN_TYPES: string[] = Object.values(DG.COLUMN_TYPE);
 /** Training: applies [steps] to [columns], in this order: skip unique categories, one-hot, and records each step that
  * changed something in a copy of [options]; predict probability on a text or yes/no target with two or more classes
  * records `class-probabilities` (with the two classes, the threshold and its metric for two). Only Forge's own columns
- * are created; [columns] and [target] are never changed. */
+ * are created; [columns] and [target] are never changed; columns of [semTypes] ({@link isSemTypeFeature}) are passed
+ * on as they are. */
 export function prepareFeatures(columns: DG.Column[], target: DG.Column, steps: PreparationSteps,
-  options: PreparationOptions): PreparedFeatures {
+  options: PreparationOptions, semTypes: readonly string[] = []): PreparedFeatures {
   const preprocessingInfo = [...options.preprocessingInfo];
   const prepared: PreparationOptions = {...options, preprocessingInfo};
   let features = columns;
   if (steps.skipUniqueCategories) {
-    const kept = withoutUniqueCategories(features);
+    const kept = features.filter((c) => !(isEncodable(c, semTypes) && hasUniqueCategories(c)));
     if (kept.length < features.length) {
       preprocessingInfo.push(SKIP_UNIQUE_CATEGORIES);
       prepared.skippedColumns = features.filter((c) => !kept.includes(c)).map((c) => c.name);
     }
     features = kept;
   }
-  const categorical = features.filter((c) => c.isCategorical);
+  const categorical = features.filter((c) => isEncodable(c, semTypes));
   if (steps.oneHot && categorical.length > 0) {
     prepared.oneHotCategories = Object.fromEntries(categorical.map((c) => [c.name, c.categories]));
     features = oneHotEncoded(features, prepared.oneHotCategories);
@@ -61,8 +63,9 @@ export function prepareFeatures(columns: DG.Column[], target: DG.Column, steps: 
 }
 
 /** Application: replays `options.preprocessingInfo` on [columns]; returns [columns] itself when there is nothing to
- * replay. One-hot uses the recorded training categories, or without a record (the built-in tool's models) the
- * applied data's own; skip unique categories drops the recorded `skippedColumns`, or without one the core's rule. */
+ * replay. One-hot encodes exactly the recorded columns with the recorded training categories, or without a record (the
+ * built-in tool's models) every text or yes/no column with the applied data's own; skip unique categories drops the
+ * recorded `skippedColumns`, or without one the core's rule. */
 export function replayPreprocessing(columns: DG.Column[], options: PreparationOptions): DG.Column[] {
   const steps = options.preprocessingInfo.filter((id) => !RECORDED_ONLY.includes(id));
   const unknown = steps.find((id) => id !== ONE_HOT && id !== SKIP_UNIQUE_CATEGORIES);
@@ -99,10 +102,19 @@ export function twoClasses(target: DG.Column): [string, string] | null {
 }
 
 /** One-hot encoding's default for [features]: on while a feature is text or yes/no and every such feature it would
- * encode (the all-unique ones aside while [skipUniqueCategories]) has at most [ONE_HOT_MAX_CATEGORIES] categories. */
-export function defaultOneHot(features: DG.Column[], skipUniqueCategories: boolean): boolean {
-  const encoded = features.filter((c) => c.isCategorical && !(skipUniqueCategories && hasUniqueCategories(c)));
-  return features.some((c) => c.isCategorical) && encoded.every((c) => c.categories.length <= ONE_HOT_MAX_CATEGORIES);
+ * encode (the all-unique ones aside while [skipUniqueCategories]) has at most [ONE_HOT_MAX_CATEGORIES] categories;
+ * columns of [semTypes] ({@link isSemTypeFeature}) do not count. */
+export function defaultOneHot(features: DG.Column[], skipUniqueCategories: boolean,
+  semTypes: readonly string[] = []): boolean {
+  const encoded = features.filter((c) => isEncodable(c, semTypes) &&
+    !(skipUniqueCategories && hasUniqueCategories(c)));
+  return features.some((c) => isEncodable(c, semTypes)) &&
+    encoded.every((c) => c.categories.length <= ONE_HOT_MAX_CATEGORIES);
+}
+
+/** A text or yes/no column one-hot encoding would encode: not one of [semTypes] ({@link isSemTypeFeature}). */
+export function isEncodable(c: DG.Column, semTypes: readonly string[]): boolean {
+  return !isSemTypeFeature(c, semTypes) && c.isCategorical;
 }
 
 /** A text or yes/no column whose values are all different, such as an id: Skip unique categories leaves it out. */
@@ -151,22 +163,24 @@ function mostProbableClass(probabilities: ClassProbabilities, i: number): string
   return best;
 }
 
-/** Every text or yes/no column replaced by one 0/1 column `<column>=<category>` per category, after the other columns:
- * the [recorded] categories of the column (a value not among them is 0 in each), else its own. */
+/** The encoded columns replaced by one 0/1 column `<column>=<category>` per category, after the other columns: with
+ * [recorded], exactly the recorded columns (any other column is passed on) with their recorded categories (a value not
+ * among them is 0 in each), else every text or yes/no column with its own. */
 function oneHotEncoded(columns: DG.Column[], recorded?: {[column: string]: string[]}): DG.Column[] {
+  const isEncoded = (c: DG.Column) => recorded !== undefined ? Object.hasOwn(recorded, c.name) : c.isCategorical;
   const encoded: DG.Column[] = [];
-  for (const col of columns.filter((c) => c.isCategorical)) {
+  for (const col of columns.filter(isEncoded)) {
     // A text column's raw data are the indexes of its categories (-1, a category it lacks, matches no row).
     const isText = col.type === DG.COLUMN_TYPE.STRING;
     const codes: ArrayLike<number | string> = isText ? col.getRawData().subarray(0, col.length) :
       Array.from({length: col.length}, (_, i) => col.isNone(i) ? '' : String(col.get(i)));
-    for (const category of recorded?.[col.name] ?? col.categories) {
+    for (const category of recorded !== undefined ? recorded[col.name] : col.categories) {
       const code = isText ? col.categories.indexOf(category) : category;
       encoded.push(DG.Column.fromInt32Array(`${col.name}=${category}`,
         Int32Array.from(codes, (value) => value === code ? 1 : 0)));
     }
   }
-  return [...columns.filter((c) => !c.isCategorical), ...encoded];
+  return [...columns.filter((c) => !isEncoded(c)), ...encoded];
 }
 
 /** [columns] without the ones training left out: the [skipped] names when recorded, else those whose values are all

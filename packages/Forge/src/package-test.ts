@@ -7,6 +7,7 @@ import './tests/search-tests';
 import './tests/preparation-tests';
 import './tests/storage-tests';
 import './tests/apply-tests';
+import './tests/check-method-tests';
 import './tests/catalog-tests';
 import './tests/ui-tests';
 

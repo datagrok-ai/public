@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {defaultValuesOf} from '../engines/engine';
 import {ForgeError} from '../forge-error';
 import {columnRowCopy, compactCategories, rowCopy} from './row-copy';
+import {isSemTypeFeature} from './semtype-feature';
 import {onFrame} from './shared-frame';
 
 export const MISSING_VALUES_MODES = ['skip', 'impute', 'keep'] as const;
@@ -49,15 +50,18 @@ export function imputeSettingsOf(func: DG.Func): DG.Property[] {
   return func.inputs.filter((p) => !IMPUTE_DATA_INPUTS.includes(p.name));
 }
 
-/** Why the chosen handling cannot run on these features; empty for Skip rows and for features without gaps. */
-export function missingValuesProblems(features: DG.Column[], settings: MissingValuesSettings): string[] {
+/** Why the chosen handling cannot run on these features; empty for Skip rows and for features without gaps. Impute
+ * never fills a feature of [semTypes] ({@link isSemTypeFeature}). */
+export function missingValuesProblems(features: DG.Column[], settings: MissingValuesSettings,
+  semTypes: readonly string[] = []): string[] {
   if (settings.mode !== 'impute')
     return [];
-  return imputeProblems(features, missingColumnsOf(features).map((m) => m.name), imputeFunction());
+  return imputeProblems(features, missingColumnsOf(features).map((m) => m.name), imputeFunction(), semTypes);
 }
 
 /** {@link missingValuesProblems} of Impute for [features] whose gapped columns are [missing]. */
-function imputeProblems(features: DG.Column[], missing: string[], func: DG.Func | undefined): string[] {
+function imputeProblems(features: DG.Column[], missing: string[], func: DG.Func | undefined,
+  semTypes: readonly string[]): string[] {
   if (missing.length === 0)
     return [];
   if (func === undefined)
@@ -65,15 +69,17 @@ function imputeProblems(features: DG.Column[], missing: string[], func: DG.Func 
   const problems = features
     .filter((c) => c.type === DG.COLUMN_TYPE.BOOL && missing.includes(c.name))
     .map((c) => `Impute cannot fill the yes/no column '${c.name}'. Choose Skip rows.`);
-  if (imputableColumns(features).length < 2)
+  for (const col of features.filter((c) => isSemTypeFeature(c, semTypes) && missing.includes(c.name)))
+    problems.push(`Impute cannot fill the ${col.semType} column '${col.name}'. Choose Skip rows.`);
+  if (imputableColumns(features, semTypes).length < 2)
     problems.push(TWO_FEATURES);
   return problems;
 }
 
 /** [features] with the missing values handled; the input columns are never changed. keep: only the rows without a
- * target are skipped. */
+ * target are skipped. A feature of [semTypes] is never an imputer feature. */
 export async function prepareMissingValues(features: DG.Column[], target: DG.Column | undefined,
-  settings: MissingValuesSettings): Promise<PreparedData> {
+  settings: MissingValuesSettings, semTypes: readonly string[] = []): Promise<PreparedData> {
   const rowCount = features[0]?.length ?? target?.length ?? 0;
   if (settings.mode !== 'impute') {
     const gapped = [...(settings.mode === 'skip' ? features : []), ...(target === undefined ? [] : [target])]
@@ -83,7 +89,7 @@ export async function prepareMissingValues(features: DG.Column[], target: DG.Col
 
   const func = imputeFunction();
   const gapped = missingColumnsOf(features).map((m) => m.name);
-  const problems = imputeProblems(features, gapped, func);
+  const problems = imputeProblems(features, gapped, func, semTypes);
   if (problems.length > 0)
     throw new ForgeError(problems.join(' '));
   const withTarget = keep(features, target, keptRowsOf(target !== undefined && hasGaps(target) ? [target] : [],
@@ -98,7 +104,7 @@ export async function prepareMissingValues(features: DG.Column[], target: DG.Col
   const isShared = withTarget.keptRows === null;
   const columns = withTarget.features.map((c) => isShared && missing.includes(c.name) ? c.clone() : c);
   await onFrame(columns, (table) => func.apply({...defaultValuesOf(imputeSettingsOf(func)), ...settings.impute, table,
-    columns: missing, features: imputableColumns(columns).map((c) => c.name)}));
+    columns: missing, features: imputableColumns(columns, semTypes).map((c) => c.name)}));
   const filled = columns.filter((c) => missing.includes(c.name));
   // The filled columns are Forge's copies; a filled text column still lists the empty category.
   for (const col of filled)
@@ -114,8 +120,8 @@ function hasGaps(col: DG.Column): boolean {
   return col.stats.missingValueCount > 0;
 }
 
-function imputableColumns(columns: DG.Column[]): DG.Column[] {
-  return columns.filter((c) => IMPUTABLE_TYPES.includes(c.type));
+function imputableColumns(columns: DG.Column[], semTypes: readonly string[]): DG.Column[] {
+  return columns.filter((c) => IMPUTABLE_TYPES.includes(c.type) && !isSemTypeFeature(c, semTypes));
 }
 
 /** Rows without a missing value in any of [gapped], or null when no row has one. */

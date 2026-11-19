@@ -48,7 +48,8 @@ Forge:listMethods(table?: dataframe, target?: string) -> dataframe
 Returns the table **Methods**, one row per method `trainModel` accepts: **Method**, **Package**, **Method type**
 (`function`, or `script` for a script or a package container's function), **Runs on** (`browser`, or `server` when the
 training data leaves the browser: a script in another language than JavaScript, a package container's function, or a
-method that says so), **Keeps training rows** (the model
+method that says so), **Semantic types** (the column types the method takes as features as they are, such as
+`Molecule`: such a method learns from a molecule column directly; empty for most methods), **Keeps training rows** (the model
 file holds training rows, as SVM's does), **Retrains live**, **Roles**, **Hyperparameters** (the setting names),
 **Settings** (a json text with one entry per setting: `name`, `type` and, when the method declares them, `default`,
 `min`, `max`, `choices` and `description`; these are the names and values `trainModel`'s `hyperparameters` accepts)
@@ -209,6 +210,8 @@ Errors, for example:
 - `No method 'Boost' is installed. The methods are: <methods>.`
 - `The method '<name>' did not answer in 30 s.` (the chosen method's check; every method's check may take up to 30 s,
   and one that does not answer is left out, also in `listMethods`)
+- `XGBoost cannot learn from Molecule features. Uncheck: smiles.` (a molecule feature and a method whose
+  **Semantic types** in `listMethods` lacks `Molecule`; leave `method` out to get one that takes it)
 - `The method XGBoost has no setting 'speed'. Its settings are: <settings>.`,
   `The setting 'rate' of Softmax needs a number.`, `The setting 'iterations' of XGBoost must be at most 100.`
 - `Unknown option 'cutof'. The options are: missingValues, neighbors, distance, oneHot, skipUniqueCategories, predictProbability, threshold, thresholdMetric, seed, scheme, folds, testFraction, stratified, shuffle, search.`

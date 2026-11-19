@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {PREDICTION_TAG} from '../constants';
-import {defaultMissingValues, Engine, isComplete} from '../engines/engine';
+import {defaultMissingValues, Engine, featureSemTypesOf, isComplete} from '../engines/engine';
 import {apply, EnginePrediction, LoopProgress, yieldToEventLoop} from '../engines/engine-calls';
 import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
@@ -188,7 +188,7 @@ export function checkApplyRequest({model, table, mapping}: ApplyRequest): void {
 export async function predictRows(request: ApplyRequest, progress?: LoopProgress): Promise<RowPredictions> {
   const {model, table, mapping} = request;
   const prepared = await prepareMissingValues(featureColumns(table, model.features, mapping), undefined,
-    request.missingValues);
+    request.missingValues, featureSemTypesOf(model.engine));
   const rowCount = table.rowCount - prepared.skippedRows;
   if (rowCount === 0) {
     throw new ForgeError('Every row has a missing value in the columns the model needs, so nothing can be ' +

@@ -56,6 +56,36 @@ export function handlesMissingValues(engine: Engine): boolean {
   return engine.functions.train?.options['mlnativenans'] === 'true';
 }
 
+/** The semantic types of the feature columns the method takes as they are (`meta.mlsemtypes` on `train`:
+ * comma-separated, such as `Molecule`) in its own spelling, each once ignoring case; empty without the key. */
+export function declaredSemTypesOf(engine: Engine): string[] {
+  const text: unknown = engine.functions.train?.options['mlsemtypes'];
+  if (typeof text !== 'string')
+    return [];
+  const semTypes: string[] = [];
+  for (const s of text.split(',').map((s) => s.trim())) {
+    if (s !== '' && !semTypes.some((t) => t.toLowerCase() === s.toLowerCase()))
+      semTypes.push(s);
+  }
+  return semTypes;
+}
+
+/** {@link declaredSemTypesOf}, lower-cased. */
+export function featureSemTypesOf(engine: Engine): string[] {
+  return declaredSemTypesOf(engine).map((s) => s.toLowerCase());
+}
+
+/** Every semantic type one of [engines] takes ({@link featureSemTypesOf}), once. */
+export function featureSemTypes(engines: Engine[]): string[] {
+  return [...new Set(engines.flatMap(featureSemTypesOf))];
+}
+
+/** [engine] takes every one of [semTypes] ({@link featureSemTypesOf}), compared ignoring case. */
+export function takesSemTypes(engine: Engine, semTypes: readonly string[]): boolean {
+  const own = featureSemTypesOf(engine);
+  return semTypes.every((s) => own.includes(s.toLowerCase()));
+}
+
 /** The method returns class probabilities (`meta.mlprobabilities` on `train`: 'true', or the name of the bool train
  * input that turns them on). */
 export function givesProbabilities(engine: Engine): boolean {

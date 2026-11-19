@@ -23,15 +23,16 @@ import {dataInsights, metricInsights, resultInsights, summaryInsight} from '../t
 import {quickEngines, searchableEngines, searchRecordOf} from '../training/search';
 import {runTrainModel, TrainModelInput} from '../training/train-api';
 import {bestThresholdOf, checkSelection, failedCheck, foldMasks, foldPrediction, needsRowsWithoutGaps,
-  outOfFoldProbabilities, prepareTraining, recutResult, TrainingProblems, TrainingRequest, TrainingResult,
-  TrainingSelection, trainingEngines, trainModel, trainPredictionOf, validationSplit, withLateEngines}
+  outOfFoldProbabilities, prepareTraining, problemMessages, recutResult, TrainingProblems, TrainingRequest,
+  TrainingResult, TrainingSelection, trainingEngines, trainModel, trainPredictionOf, validationSplit, withLateEngines}
   from '../training/train-model';
 import {QueuedTraining, TrainingQueue} from '../training/training-queue';
 import {cancelTaskBarEntry, CLASSIFIERS, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, EDA_METHODS,
   engineByName, expectMetrics, expectNoFrames, expectReleased, failsWith, framesSharing, GAP_ROWS, IMPUTE,
-  inDiscoveryOrder, IRIS, MEASUREMENTS, names, NO_OPTIONS, NO_PREPARATION_STEPS, ONE_HOT_STEPS, openDemoTable, openIris,
-  PREDICT_PROBABILITY, REGRESSORS, requestOf, runsOf, selectionOf, SKIP_UNIQUE_STEPS, stuckEngine, taskBarEntry,
-  twoSpeciesIris, valuesOf, withGaps} from './test-data';
+  inDiscoveryOrder, IRIS, MEASUREMENTS, moleculeEngine, moleculeFrame, names, NO_OPTIONS, NO_PREPARATION_STEPS,
+  ONE_HOT_STEPS, openDemoTable, openIris, PREDICT_PROBABILITY, REGRESSORS, requestOf, runsOf, selectionOf,
+  SKIP_UNIQUE_STEPS, smilesColumn, stuckEngine, taskBarEntry, twoSpeciesIris, valuesOf, withGaps, xgboost}
+  from './test-data';
 
 const TIMEOUT = 60000;
 const ENGINE_TIMEOUT = 120000;
@@ -858,6 +859,8 @@ category('Training', () => {
     expect(JSON.stringify(unbalanced), JSON.stringify([
       {text: 'The classes are unbalanced.', detail: 'a: 80.0%\nb: 20.0%', panel: 'classBalance'},
       {text: 'The classes of f are unbalanced.', detail: 'c: 10.0%\nd: 90.0%'}]));
+    const molecules = smilesColumn('m', Array.from({length: rows}, (_, i) => i < 1 ? 'CO' : 'CCO'));
+    expectArray(dataInsights([molecules], balanced).map((i) => i.text), []);
     // 1 : 1 : 4 is 16.67% : 16.67% : 66.67%; the two largest remainders round up so the shares sum to 100%.
     const sixths = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 't', ['a', 'b', 'c', 'c', 'c', 'c']);
     const shares = dataInsights([], sixths)[0].detail ?? '';
@@ -1719,5 +1722,80 @@ category('Training', () => {
       'description: string', 'tags: string', 'storage: string', 'showProgress: bool']);
     expectArray(func.inputs.find((p) => p.name === 'storage')?.choices ?? [], ['none', 'reference', 'copy']);
     expectArray(func.outputs.map((p) => `${p.name}: ${p.propertyType}`), ['result: object']);
+  });
+});
+
+/** 12 rows: `smiles` (Molecule) and `x` as the features, a numerical `y`. */
+function moleculeData(): {features: DG.Column[]; y: DG.Column} {
+  const {smiles, x, y} = moleculeFrame(12);
+  return {features: [smiles, x], y};
+}
+
+const MOLECULE_PROBLEM = 'XGBoost cannot learn from Molecule features. Uncheck: smiles.';
+
+// Molecule features: a method that declares them (meta.mlsemtypes) gets them as they are, the others are not asked.
+category('Training', () => {
+  test('a method that does not take molecules is not asked and names the feature', async () => {
+    const {features, y} = moleculeData();
+    const xgboostCalls = {count: 0};
+    const calls = {count: 0};
+    const counted = moleculeEngine('XGBoost', {calls: xgboostCalls, semTypes: ''});
+    const check = await checkSelection(selectionOf(features, y, SKIP, counted),
+      [counted, moleculeEngine('forge-test-mol', {calls})]);
+    expectArray(check.problems.features, []);
+    expectArray(check.problems.method, [MOLECULE_PROBLEM]);
+    expectArray(check.engines.map((e) => e.name), ['forge-test-mol']);
+    expect(xgboostCalls.count, 0, 'XGBoost was asked');
+    expect(calls.count, 1);
+    expect(check.semTypeFeatures.length, 1);
+    const [smiles] = check.semTypeFeatures;
+    expect(smiles.name, 'smiles');
+    expect(smiles.type, 'string');
+    expect(smiles.semType, 'Molecule');
+  });
+
+  test('withLateEngines keeps the semType problem', async () => {
+    const {features, y} = moleculeData();
+    const counted = moleculeEngine('XGBoost', {semTypes: ''});
+    const engines = [counted, moleculeEngine('forge-test-mol')];
+    const check = await checkSelection(selectionOf(features, y, SKIP, counted), engines);
+    expectArray(withLateEngines(check, {applicable: [], failed: []}, counted, engines).problems.method,
+      [MOLECULE_PROBLEM]);
+  });
+
+  test('nothing declared: a molecule feature is text as before', async () => {
+    const {features, y} = moleculeData();
+    const check = await checkSelection(selectionOf(features, y), [xgboost()]);
+    expectArray(check.problems.features, ['XGBoost needs numerical features. Check One-hot encoding in Preparation, ' +
+      'or uncheck: smiles.']);
+    expectArray(check.semTypeFeatures, []);
+  });
+
+  test('a SMILES column without a semantic type is text while a molecule method is installed', async () => {
+    const {features: [molecules, x], y} = moleculeData();
+    const smiles = DG.Column.fromStrings('smiles', molecules.toList().map(String));
+    const xgboostCalls = {count: 0};
+    const calls = {count: 0};
+    const counted = moleculeEngine('XGBoost', {calls: xgboostCalls, semTypes: ''});
+    const engines = [counted, moleculeEngine('forge-test-mol', {calls})];
+    const text = await checkSelection(selectionOf([smiles, x], y, SKIP, counted), engines);
+    expectArray(text.problems.features, ['XGBoost needs numerical features. Check One-hot encoding in Preparation, ' +
+      'or uncheck: smiles.']);
+    expectArray(text.semTypeFeatures, []);
+    const selection = selectionOf([smiles, x], y, SKIP, counted);
+    const encoded = await checkSelection({...selection, steps: ONE_HOT_STEPS}, engines);
+    expect(problemMessages(encoded.problems).length, 0, problemMessages(encoded.problems).join(' '));
+    expectArray(encoded.semTypeFeatures, []);
+    expectArray(encoded.engines.map((e) => e.name), ['XGBoost', 'forge-test-mol']);
+    expect(xgboostCalls.count, 1, 'XGBoost was not asked once');
+    expect(calls.count, 1, 'The molecule method was not asked once');
+  });
+
+  test('the molecule method\'s own selection has no problem', async () => {
+    const {features, y} = moleculeData();
+    const stub = moleculeEngine('forge-test-mol');
+    const check = await checkSelection(selectionOf(features, y, SKIP, stub), [xgboost(), stub]);
+    expect(problemMessages(check.problems).length, 0, problemMessages(check.problems).join(' '));
+    expectArray(check.engines.map((e) => e.name), ['forge-test-mol']);
   });
 });

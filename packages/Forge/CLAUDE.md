@@ -126,6 +126,11 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
   (`div.ui-div.forge-panel-fill > div.ui-box`); a grid keeps its own inline height unless a flex column sizes it.
 - Search and Runs are bottom blocks of `ResultsPane` (one `splitV` with the result rows): after showing or hiding one,
   call `resultsPane.layout()`; never `ui.empty` the rows host without taking those boxes out first.
+- A method's `meta.mlsemtypes` (`featureSemTypesOf`) makes columns of that semType pass every preparation step as they
+  are (`isSemTypeFeature`; the `semTypes` parameters default to `[]` = today's behavior); `checkSelection` asks only the
+  methods that take every such feature and gives the selection's method rule 7c; the Train view computes its
+  `semTypes` once and passes the same list to Preparation and `checkSelection`. Forge Check (molecules)
+  (`engines/check-method.ts`, tests named "Forge Check:") is temporary.
 - Test rows are `forge-test-*`, deleted in `finally`; `expect(x, undefined)` checks against `true`; close a Train view
   with `closeTrainView` (waits for `isTraining`); `openTable` records no creation script (use `openIrisFromFile`).
 

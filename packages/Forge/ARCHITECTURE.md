@@ -268,7 +268,10 @@ package.ts ──> ui/forge-app.ts ───> storage/, generated/db.ts    (cata
   categories is checked, has at most `ONE_HOT_MAX_CATEGORIES` (20) categories (`defaultOneHot` in
   `preparation/pipeline.ts`, also `Forge:trainModel`'s default), else unchecked: a deviation from the
   built-in tool, which always starts unchecked; it follows that default until the user toggles it, `isOneHotChosen`,
-  and hiding resets it), **Skip unique categories** (checked; shown while a checked feature has `hasUniqueCategories`),
+  and hiding resets it), **Skip unique categories** (checked; shown while a checked feature has `hasUniqueCategories`;
+  both leave out the semantic-type features of the constructor's last argument `semTypes`, which the view passes as
+  its `semTypes` (`featureSemTypes(engines)`, computed once when it opens and passed to `checkSelection` too), so a
+  molecule feature alone hides the group),
   **Predict probability** (unchecked; shown while the target is categorical with two or more `classesOf` classes;
   `setProbabilityReason(reason)` from the view's `probabilityReason(form)` (`<Method> gives no class probabilities`
   when the method gives none; under Auto the Find block's reason, `No checked method gives class
@@ -401,30 +404,37 @@ as a method would get them); rule 8 calls the engines on those prepared columns,
 | 4 | a bigint target ("holds very large whole numbers", `bigIntProblem` in `training/default-features.ts`) | Target |
 | 5 | a classification target with fewer than two values | Target |
 | 6 | the target is neither numerical, text nor boolean (dates included) | Target |
-| 7 | a prepared feature is text or yes/no, which happens only while One-hot encoding is off: `<Method> needs numerical features. Check One-hot encoding in Preparation, or uncheck: SEX, RACE.`; any other prepared feature that is not numerical (dates included): `<Method> needs numerical features. Uncheck: <names>.` | Features |
+| 7 | a prepared feature is text or yes/no, which happens only while One-hot encoding is off: `<Method> needs numerical features. Check One-hot encoding in Preparation, or uncheck: SEX, RACE.`; any other prepared feature that is not numerical (dates included): `<Method> needs numerical features. Uncheck: <names>.` Semantic-type features (`isSemTypeFeature`, see "Preparation") are left out | Features |
 | 7b | a bigint feature, one message per column | Features |
+| 7c | the selection's method does not take every semantic-type feature present (`takesSemTypes`): `XGBoost cannot learn from Molecule features. Uncheck: smiles.` (the distinct semantic types as the columns have them, the names); only the methods that take them all are asked | Method |
 | 8 | the engine's `isApplicable` says no: `<Method> cannot learn from this selection. It needs numerical features and a numerical, text or boolean target.` | Method |
-| 9 | Impute chosen but not available, a yes/no feature with gaps, or fewer than two features to impute from | Missing values |
+| 9 | Impute chosen but not available, a yes/no feature with gaps, a semantic-type feature with gaps (`isSemTypeFeature`: "Impute cannot fill the Molecule column 'smiles'. Choose Skip rows."), or fewer than two features to impute from | Missing values |
 
 Rows with a missing target are skipped by `prepareTraining`, never refused.
 
 **Choosing the method.** `checkSelection(selection, engines, options?)` is the check for a view that offers the methods
 of `engines` (the view passes its own list, to keep its `Engine` objects). It runs rules 1-7 and 9; while a target or
 features rule fails it asks no method and returns no engines (`failedCheck(problems)`, the shape of every check that
-lists no method). Otherwise it asks every
-complete method at once (`applicableEngines`, see "Choosing a method" under the engine contract) about the prepared
+lists no method). It prepares and runs rule 7 with `CheckOptions.semTypes`, by default `featureSemTypes` of the
+complete methods (the union of their `meta.mlsemtypes`; the view passes the union of all its methods, silent ones
+included, as its **Preparation** does), so a non-numerical feature of a declared semantic type passes as it is; the prepared features of
+such a type are the check's `semTypeFeatures` (`ColumnSchema`s, empty from `failedCheck`). Otherwise it asks every
+complete method that takes every one of them (`takesSemTypes`; all of them without such a feature) at once
+(`applicableEngines`, see "Choosing a method" under the engine contract) about the prepared
 columns and target (the selection's target: Predict probability lists the same classifiers), each check at most
 `CheckOptions.timeoutMs` (`CHECK_TIMEOUT_MS`, 30 s, by default). With `waitsForServer: false` (the view; the API keeps
 the default `true`) the methods whose check runs on the server (`isServerCheck`) are not asked but returned in
-`pending`. Rule 8 becomes: no problem while the selection's method is listed or pending; its own
+`pending`. Rule 7c comes first: a selection's method that does not take the `semTypeFeatures` gets its sentence as the
+`method` problem (not a Features one, so the view switches to a method that takes them). Rule 8 becomes: no problem
+while the selection's method is listed or pending; its own
 `The method '<name>' did not answer in 30 s.` when its check timed out (`NoAnswerError`); else the rule 8 text, or,
 when nothing is listed or pending, `No method can learn from this selection. Check the features and the target.`
 `withLateEngines(check, late, engine, discovery)` merges the late answers of the pending methods into a check: the
-methods in discovery order, nothing pending, the failures appended, rule 8 recomputed for `engine`, `best` kept (the
-first listed when there was none). The result (`SelectionCheck`) also has `best` (`selectBestEngine`
-over the listed methods, the prepared columns (one-hot copies count as numerical features) and the selection's target;
-the molecule rule reads the selection's features, as
-preparation drops or one-hot encodes a molecule column), `failed` (the methods whose check threw, for the caller to log),
+methods in discovery order, nothing pending, the failures appended, rules 7c and 8 recomputed for `engine` (7c from the
+check's `semTypeFeatures`), `best` kept (the first listed when there was none). The result (`SelectionCheck`) also has
+`best` (`selectBestEngine` over the listed methods, the prepared columns (one-hot copies count as numerical features)
+and the selection's target; the molecule rule reads the selection's features, as preparation drops or one-hot encodes
+a molecule column while no installed method declares `Molecule`), `failed` (the methods whose check threw, for the caller to log),
 `isInteractive`: the selection's method is listed and `retrainsLive` (its `isLiveUpdate` is on and its
 `isInteractive` says yes on the prepared columns), `prepared`, those columns and target (none from
 `failedCheck`), and `insights`, the data insights of the prepared columns and the selection's target (see "Insights";
@@ -457,7 +467,9 @@ and the suggested method. While the method in force is pending, `waitingFor()` g
 **Method** (`methodOf`): while a target or features rule fails, or no method is listed, the method stays; otherwise the user's
 choice (`userChoice`, set when the user picks a method) while it is listed, else the suggested one (`best`), with the
 balloon of `mismatchText` (`<Method> cannot learn from this selection; <suggested> is chosen for now.`, or with the
-method's check error after a colon) when it replaces the user's choice, which
+method's check error after a colon; for a method that does not take the check's `semTypeFeatures`, the rule 7c
+sentence of `semTypeProblem`: `XGBoost cannot learn from Molecule features. Uncheck: smiles. <suggested> is chosen for
+now.`) when it replaces the user's choice, which
 is then forgotten; for a changed method, which is listed, only `retrainsLive` is asked again, on the check's
 `prepared` columns; the method in force while it is pending stays. **Method** then lists the methods by name, and the
 method in force while it is pending (empty with the
@@ -1235,6 +1247,11 @@ It takes and returns column lists; the returned `features` may be the user's own
 available: the EDA package has no knnImpute function."), for a yes/no column with gaps ("Impute cannot fill the yes/no
 column 'X'. Choose Skip rows.") and with fewer than two features the imputer can read ("Impute needs at least two
 features. Choose Skip rows or check more features."); it says nothing for Skip rows or for features without gaps.
+Both functions take an optional last `semTypes` (default `[]`, today's behavior): a semantic-type feature of it
+(`isSemTypeFeature`, see "Preparation") with gaps is refused ("Impute cannot fill the Molecule column 'smiles'. Choose
+Skip rows.", the semantic type as the column has it) and is never an imputer feature. `checkSelection` passes the
+union of the methods' types, `prepareTraining`, `predictRows` and the Apply dialog the model's method's own
+(`featureSemTypesOf`). Skip rows copies such a column with its semantic type.
 `missingColumnsOf(columns)` lists the columns with gaps and their counts. Both take column lists, so the UI checks
 build no frame.
 
@@ -1266,6 +1283,18 @@ thresholdMetric?}` (`DEFAULT_THRESHOLD` 0.5; `thresholdProblem` refuses a value 
 changes nothing and is not recorded. Only Forge's own columns are created; the user's columns are never copied or
 changed, and those no step touches are passed on as they are.
 
+A method takes columns of a semantic type as they are when its `train` declares it (`meta.mlsemtypes`, see "Engine
+contract"). `isSemTypeFeature(col, semTypes)` (`preparation/semtype-feature.ts`, apart so that `missing-values.ts` and
+`pipeline.ts` do not import each other through `preparation-options.ts`) is true for a non-numerical column whose
+semantic type is in the lower-cased `semTypes`. `prepareFeatures`, `defaultOneHot`, `missingValuesProblems` and
+`prepareMissingValues` take an optional last `semTypes` (default `[]`: today's behavior for any caller that passes
+none); no step touches such a column: Skip unique categories keeps it, One-hot neither encodes it nor counts it for its
+default, Impute refuses it (see "Missing values"). Callers pass the union of the methods they offer
+(`featureSemTypes`: `checkSelection`, `Forge:trainModel`'s and `Forge:listMethods`' One-hot default, the Train view's
+**Preparation** inputs) or the trained method's own (`featureSemTypesOf`: `prepareTraining`, `predictRows`, the Apply
+dialog). For a trainable selection both agree on the columns present: a method that does not take such a feature is
+refused by rule 7c and never trained.
+
 - **Skip unique categories**: drops the text and yes/no columns whose values are all different (`hasUniqueCategories`:
   `categories.length` equals the length), such as ids; `preprocessingInfo` gains `skip-unique-categories` and
   `options.skippedColumns` records the dropped names.
@@ -1285,8 +1314,11 @@ changed, and those no step touches are passed on as they are.
 `replayPreprocessing(columns, options)` (application) replays `options.preprocessingInfo` on the mapped columns and
 returns the columns the method gets (the given list itself when there is nothing to replay): `ignore-missing` and
 `impute-missing` are skipped, any other unknown id is refused ("The model uses the preparation step 'X', which Forge
-cannot replay yet."). With `oneHotCategories`, `one-hot` builds exactly the recorded columns (a value training never
-saw is 0 in each, a category the table lacks is a column of zeros); with `skippedColumns`, `skip-unique-categories`
+cannot replay yet."). With `oneHotCategories`, `one-hot` encodes exactly the recorded columns and builds exactly their
+recorded columns (a value training never saw is 0 in each, a category the table lacks is a column of zeros), and passes
+any other column on (a molecule column a method took as it is; a column is recorded only as the record's own key,
+`Object.hasOwn`, so a numerical feature named `constructor` or `toString` is passed on too); the record lists every column training encoded, so
+this is the same for every model saved before; with `skippedColumns`, `skip-unique-categories`
 drops exactly those columns by name, whatever their values (the application does not map them, see "Application
 pipeline", so they are there only when passed directly); without it (the built-in tool's models) it drops the
 all-unique columns (the core's rule); without `oneHotCategories` one-hot uses the applied data's categories.
@@ -1400,7 +1432,7 @@ with Predict probability that is the text target, not the 0/1 one, so its classe
 
 | Check | Columns | Text |
 |---|---|---|
-| Unbalanced classes | text and yes/no, the target first; a class whose rows are more than 20% off the average per class (empty cells and unused categories aside); the first four such columns | the target: `The classes are unbalanced.` (panel `classBalance`); a feature: `The classes of <column> are unbalanced.`; detail `<class>: 24.6%` per class, one decimal, rounded so the shares add up to exactly 100% (largest remainders); past ten classes the nine largest and `other <n> classes: <share>%` |
+| Unbalanced classes | text and yes/no (a feature with a semantic type, such as a molecule column, is not checked), the target first; a class whose rows are more than 20% off the average per class (empty cells and unused categories aside); the first four such columns | the target: `The classes are unbalanced.` (panel `classBalance`); a feature: `The classes of <column> are unbalanced.`; detail `<class>: 24.6%` per class, one decimal, rounded so the shares add up to exactly 100% (largest remainders); past ten classes the nine largest and `other <n> classes: <share>%` |
 | Highly correlated | numerical (not dates), 2 to 99 of them; the pairs with Pearson correlation above 0.9 | one insight `Features are highly correlated.`; `items` `<a> and <b>: 0.96` per pair; panel `correlation` when a pair has no target |
 | Almost unique | text and yes/no without a semantic type, more than 80% of the values different | `Almost every value of <column> is different; it will not help the model.`; detail `90% of its values are unique (above 80%).` |
 
@@ -1924,14 +1956,17 @@ columns to `methodList` of `engines/method-list.ts`) lists the complete methods
 1. `methodColumns` gives five columns (Method, Package, Method type, Roles, Hyperparameters). The frame is built at
    once
    (`DG.DataFrame.fromColumns`) in the order below.
-2. **Runs on** (`server` when `isServerEngine`, else `browser`), **Keeps training rows** (`hasTrainingRows`) and
-   **Retrains live** (`isLiveUpdate`) go after Method type; **Settings** last: per method the json text of
+2. **Runs on** (`server` when `isServerEngine`, else `browser`), **Semantic types** (`declaredSemTypesOf`: the `train`
+   function's `meta.mlsemtypes` in its own spelling, trimmed, each once ignoring case, joined with `, `; empty without
+   it), **Keeps training
+   rows** (`hasTrainingRows`) and **Retrains live** (`isLiveUpdate`) go after Method type; **Settings** last: per method the json text of
    `methodSettings(engine)`, one `{name, type, default?, min?, max?, choices?, description?}` per `train` input
    (`visibleHyperparametersOf`: a method's probability input is left out, as from the Hyperparameters column; `default`
    from `defaultHyperparameters`, a key the input does not declare is left out).
 3. With a `table`: the target column is `target` by name ("The table has no column 'x'.", as `trainModel`), by
    default the table's last column (the Train view's default; no columns: "The table has no columns."); the features are `defaultFeatures(table, target)`.
-   Then `trainModel`'s steps without a method: `trainingEngines`, `optionsOf({})`, `checkSelection` and `engineOf`,
+   Then `trainModel`'s steps without a method: `trainingEngines`, `optionsOf({}, ..., featureSemTypes(engines))`,
+   `checkSelection` and `engineOf`,
    which throws the check's problems as `trainModel` does. **Applicable** is the check's `engines` (the prepared
    columns, an engine whose check throws is not applicable), **Suggested** the one `engineOf` gives (`best`, else the
    first applicable). Nothing is copied: the checks run on a shared frame of the prepared columns.
@@ -2099,8 +2134,9 @@ method; **Table**, OK gated by `ButtonGate`: `Choose a table.`). The empty catal
 `launchTraining(null)`. `TrainView.create(table, method, engines?)` (`engines` replaces the installed methods: tests
 add a stub server method, `stuckEngine`) starts with a given method as the user's choice
 (`userChoice`); a method not among the complete ones fails with `The method X is not available.`. When the first check
-does not list it, `methodOf` shows `mismatchText`: `X cannot learn from this selection: <its check's error> Y is chosen
-for now.`, else `X cannot learn from this selection; Y is chosen for now.`.
+does not list it, `methodOf` shows `mismatchText`: the rule 7c sentence and `Y is chosen for now.` when X does not take
+the semantic-type features, `X cannot learn from this selection: <its check's error> Y is chosen for now.` when its
+check failed, else `X cannot learn from this selection; Y is chosen for now.`.
 
 ## Catalog logic
 
@@ -2365,6 +2401,12 @@ of the balloon after Save. Scripts train, save and delete models with `Forge:tra
 target are skipped instead of blocking training, and dates and bigint columns are refused as features and targets.
 Missing values are a **Missing values** choice (Skip rows / Impute) with the imputation settings inline, instead of
 two checkboxes and EDA's own dialog, and the target is never imputed.
+Molecules: the built-in tool had no Forge-side rule and asked every method's check on the columns as they were, but its
+One-hot (offered only while a text feature without a semantic type was checked) and Skip unique categories also
+encoded or dropped a molecule column, and its imputation copied a neighbour's molecule. In Forge a method declares the
+semantic types it takes (`meta.mlsemtypes`); while one is installed, a column of that type is never encoded, skipped
+or imputed and the other methods are not offered for it (rule 7c); the class-imbalance insight skips any feature with
+a semantic type, installed method or not, as the almost-unique one always did.
 
 Applying lists every visible model, up to 10000 (those that fit first), instead of only the suggested ones, unfolds
 the feature rows in place under a **Columns** summary instead of a sub-dialog, checks every mapped column's kind
@@ -2702,6 +2744,15 @@ input: the form, `TuneSettings`, the cards' Settings tab, the API's `hyperparame
 `Forge:listMethods` and `searchSpaceOf`'s default, so a space naming the input is refused
 by the view and the API alike) and `visibleValuesOf(engine, values)` (the values without the input: the **Runs** Method
 tooltip). `hyperparametersOf` and `defaultHyperparameters` keep the input (the contract).
+The optional `mlsemtypes` lists, comma-separated, the semantic types of the feature columns the method takes as they
+are (`Molecule`; compared ignoring case and surrounding spaces): such a non-numerical column passes every preparation step
+untouched (see "Preparation"), rule 7 leaves it out, and only the methods that take it are asked (rule 7c, see
+"Training pipeline"). A numerical column keeps being a number whatever its semantic type. No EDA method declares it.
+The temporary check method **Forge Check (molecules)** (`engines/check-method.ts`, four functions in `package.ts`,
+tests named `Forge Check:`) declares `Molecule`: ordinary least squares with an intercept on the numerical features,
+molecules ignored (all zeros with molecules alone), applicable only with a Molecule feature, every other feature
+numerical and a numerical target. It is published only as a debug version and is deleted before this work reaches
+master.
 
 - An engine is complete, and usable, only with `train`, `apply` and `isApplicable`.
 - A function engine receives the feature table and the target column. A script engine (a `DG.Script` or a package
@@ -2756,3 +2807,7 @@ tooltip). `hyperparametersOf` and `defaultHyperparameters` keep the input (the c
 - `hasTrainingRows(engine)`: `meta.mlhasrows: 'true'` on `train`.
 - `handlesMissingValues(engine)`: `meta.mlnativenans: 'true'` on `train`; it makes `keep` the default missing-values
   mode (see "Missing values").
+- `declaredSemTypesOf(engine)`: the method's `meta.mlsemtypes` split on commas, trimmed, empties dropped, once each
+  ignoring case, in the method's own spelling (`Forge:listMethods`' **Semantic types**); `[]` without the key.
+  `featureSemTypesOf(engine)`: that list lower-cased. `featureSemTypes(engines)`: their union, once each.
+  `takesSemTypes(engine, semTypes)`: the method's list holds every one of `semTypes` (ignoring case; true for none).
