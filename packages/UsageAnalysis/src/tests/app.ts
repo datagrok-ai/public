@@ -59,7 +59,8 @@ category('App', () => {
       const path = reopened.view.path;
       expect(path.includes('date=this%20month'), true, `the date filter was not applied: ${path}`);
       expect(path.includes('groups='), true, `the groups filter is not in the address: ${path}`);
-      expect(new URLSearchParams(path.split('?')[1] ?? '').get('tags'), tag!.toLowerCase(),
+      // Choices.js trims the value of a selected item
+      expect(new URLSearchParams(path.split('?')[1] ?? '').get('tags'), tag!.trim().toLowerCase(),
         `the tag filter of the Functions tab was not applied: ${path}`);
     } finally {
       reopened.view.close();
