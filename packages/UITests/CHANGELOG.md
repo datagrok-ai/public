@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: `UI: Groups` creates its own group, so `group.panel` no longer needs a stand that already has groups
 * [core#1050](https://github.com/datagrok-ai/core/issues/1050): Replaced fixed delays and short `awaitCheck` polls with event and state waits, unskipped six fixed tests, registered the eight `gui/viewers` suites, and removed the obsolete Add New Column, Leaflet and Packages tests
 * core-857: Shell: Fixed View.createByType failing for the packages view type
 * Tests: `Viewers` (close, Reset/Set default properties), `View: Events` layout events and `lineChart.api` now add viewers to a freshly added — and therefore active — table view. A view that is not active has a zero-sized dock area, so `DockView.addViewer` queues the viewer instead of docking it: it never reaches `view.viewers`, is missing from `saveLayout()`, and default settings are not applied.

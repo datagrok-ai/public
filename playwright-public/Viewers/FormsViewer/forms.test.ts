@@ -3,7 +3,7 @@ realizes: [formsviewer.cp.color-and-renderer-presentation, formsviewer.edge.mole
 --- */
 import {expect, Page} from '@playwright/test';
 import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
-import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {loginToDatagrok, specTestOptions, softStep, skipWithoutPackage} from '@datagrok-libraries/test/src/playwright/spec-login';
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 import {HOST, ORDINARY, CURRENT, withConsoleErrorCount} from '@datagrok-libraries/test/src/playwright/forms';
 
@@ -323,7 +323,10 @@ test('Forms viewer — colour coding and renderer presentation (p2)', async ({pa
     }));
   });
 
+  const noCurves = await skipWithoutPackage(page, 'Curves', 'Scenario 4 (fit columns in Forms)');
+
   await softStep('Scenario 4 setup — open curves, add Forms without touching Renderer Size, pick smiles + multiple prefit', async () => {
+    if (noCurves) return;
 
     await v.openTable(page, {path: curvesPath, semTypeTimeoutMs: 3000});
     await expect.poll(() => page.evaluate(() =>
@@ -341,6 +344,7 @@ test('Forms viewer — colour coding and renderer presentation (p2)', async ({pa
   });
 
   await softStep('Step 4a — the curve canvas is at the normal step of the ladder without touching Renderer Size', async () => {
+    if (noCurves) return;
 
     await expect.poll(async () => page.evaluate((sel) => {
       const grid = grok.shell.tv.grid;
@@ -368,6 +372,7 @@ test('Forms viewer — colour coding and renderer presentation (p2)', async ({pa
   });
 
   await softStep('Step 4b — smiles and multiple prefit both render as canvases; no raw-JSON input, no error', async () => {
+    if (noCurves) return;
     const errCount = await withConsoleErrorCount(page, async () => {
       await page.evaluate(() => { grok.shell.t.currentRowIdx = 2; grok.shell.t.currentRowIdx = 0; });
       await expect.poll(() => page.evaluate((sel) => {
@@ -388,6 +393,7 @@ test('Forms viewer — colour coding and renderer presentation (p2)', async ({pa
   });
 
   await softStep('Step 4c — with three rows selected, every drawn card holds both a molecule and a curve canvas', async () => {
+    if (noCurves) return;
     await page.evaluate(() => {
       const df = grok.shell.t;
       df.mouseOverRowIdx = -1;

@@ -5,7 +5,11 @@ import * as DG from 'datagrok-api/dg';
 
 
 category('UI: Groups', () => {
+  let group: DG.Group;
+
   before(async () => {
+    // a fresh stand has no groups to show: the built-in ones are roles
+    group = await grok.dapi.groups.createNew(`UITests group ${DG.Utils.randomString(6)}`);
     grok.shell.windows.showBrowse = true;
     let platform: any;
     await waitUntil(() => {
@@ -22,6 +26,10 @@ category('UI: Groups', () => {
       return groups !== undefined;
     }, 'cannot find Groups in Browse');
     groups!.click();
+  });
+
+  after(async () => {
+    await grok.dapi.groups.delete(group);
   });
 
   /*
@@ -94,10 +102,10 @@ category('UI: Groups', () => {
       if (document.querySelector('.grok-gallery-grid') !== null)
         return document.querySelector('.grok-gallery-grid')!.children.length !== 0;
       return false;
-    }, 'cannot load all users');
-    const group = document.querySelector('.grok-gallery-grid')!.children[0] as HTMLElement;
+    }, 'the Groups view shows no groups');
+    const card = document.querySelector('.grok-gallery-grid')!.children[0] as HTMLElement;
     grok.shell.windows.showContextPanel = true;
-    group.click();
+    card.click();
     const regex = new RegExp('MANAGE', 'g');
     await waitUntil(() => {
       if (document.querySelector('.grok-entity-prop-panel') !== null)
