@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Fixed the type of `ServerMetrics.queue`, the result of `grok.dapi.admin.getMetrics()`: the server sends the RabbitMQ message totals (`messages`, `ready`, `unacknowledged`) or null, not `queued` / `running` / `stale`
 * [core#1407](https://github.com/datagrok-ai/core/issues/1407): `addProperty` creates the property with its setter, instead of a null setter replaced right after
 * [#3481](https://github.com/datagrok-ai/public/issues/3481): Renamed `DG.DomainSavedFilter` to `DG.SavedFilter`: filter presets are now shareable entities for any table, not only domain tables
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Added `projectId` to `ui.spaceSaveRow()`: a space that links that project is no name clash for its move
