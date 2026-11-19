@@ -498,8 +498,7 @@ Subcommands:
     label    Add labels to a JIRA ticket
     attach   Attach a file to a JIRA ticket
 
-JIRA subcommands need JIRA_TOKEN (plus JIRA_USER for a user API token); ticket also needs
---project or $JIRA_PROJECT.
+JIRA subcommands need JIRA_TOKEN (plus JIRA_USER for a user API token).
 
 Read flags:
     --extract-screenshot <path>  Write the screenshot binary to <path>
