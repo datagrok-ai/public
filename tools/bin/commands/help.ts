@@ -493,14 +493,12 @@ Subcommands:
     fetch    Download a report zip from a managed instance (writes <stem>_meta.json next to it)
     read     Normalize a report (zip or json) into one JSON object on stdout
     resolve  Mark a report as resolved (needs the _meta.json written by fetch)
-    ticket   Create a JIRA ticket for a report directly in JIRA (no dedup; the key is NOT
-             written back to the report — prefer POST /reports/{id}/jira for that)
+    ticket   Request a GitHub issue for a report (POST /reports/{id}/ticket; the monitoring stack files it)
     comment  Add a comment to a JIRA ticket (--body <text> | --body-file <path>)
     label    Add labels to a JIRA ticket
     attach   Attach a file to a JIRA ticket
 
-JIRA subcommands need JIRA_TOKEN (plus JIRA_USER for a user API token); ticket also needs
---project or $JIRA_PROJECT.
+JIRA subcommands need JIRA_TOKEN (plus JIRA_USER for a user API token).
 
 Read flags:
     --extract-screenshot <path>  Write the screenshot binary to <path>
@@ -514,7 +512,7 @@ Examples:
   grok report read dev 1528              Fetch + normalize report #1528 from 'dev'
   grok report read /tmp/report.zip --extract-screenshot ./shot.png
   grok report resolve dev 1528           Resolve report #1528 on the 'dev' instance
-  grok report ticket dev <report-uuid>   Create a JIRA ticket for a report
+  grok report ticket dev <report-uuid>   Request a GitHub issue for a report
 
 The instance name must match a server alias in ~/.grok/config.yaml.
 `;

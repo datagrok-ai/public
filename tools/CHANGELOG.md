@@ -2,6 +2,7 @@
 
 ## v.next
 
+* `grok report ticket`: Requests a GitHub issue through the instance (`POST /reports/{id}/ticket`) instead of creating a Jira ticket
 * `grok s push --creds`: Fixed a pushed connection getting the login and password as ordinary parameters instead of its credentials
 
 ## 6.7.12 (2026-11-18)
