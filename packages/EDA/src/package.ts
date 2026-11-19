@@ -46,6 +46,7 @@ import {cruxPredict, isCruxModel, modelFeatures, readCruxManifest} from './crux/
 import {LEGACY_MODEL_ERROR, featureColumns} from './crux/model-common';
 import {readLegacyModel} from './legacy/legacy-models';
 import {ClassificationReport, classificationReport} from './crux/crux-metrics';
+import {withDefaults} from './crux/input-defaults';
 
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
 import {ParetoFrontViewer} from './pareto-optimization/pareto-front-viewer';
@@ -517,7 +518,8 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'L1', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L1 (Lasso) regularization term. 0 means plain ordinary least squares.'}}) alpha: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L2 (Ridge) regularization term. 0 means plain ordinary least squares.'}}) lambda: number,
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed of the ridge and elastic net solvers. The solvers used here are deterministic, so with these settings the model does not depend on it.'}}) seed: number): Promise<Uint8Array> {
-    return trainLinearRegression(df, predictColumn, alpha, lambda, iterations, seed);
+    const p = withDefaults('trainLinearRegression', {iterations, alpha, lambda, seed});
+    return trainLinearRegression(df, predictColumn, p.alpha, p.lambda, p.iterations, p.seed);
   }
 
 
@@ -579,7 +581,8 @@ export class PackageFunctions {
     @grok.decorators.param({'options': {'initialValue': '100', 'min': '1', 'max': '10000', 'step': '10', 'description': 'Largest number of training steps before training stops.'}}) iterations: number,
     @grok.decorators.param({'options': {'initialValue': '0.1', 'min': '0.0001', 'max': '1', 'description': 'Regularization rate.'}}) penalty: number,
     @grok.decorators.param({'options': {'initialValue': '0.001', 'min': '0.00001', 'max': '0.1', 'description': 'Smallest improvement worth continuing training for.'}}) tolerance: number): Promise<Uint8Array> {
-    return trainSoftmax(df, predictColumn, iterations, penalty, tolerance);
+    const p = withDefaults('trainSoftmax', {iterations, penalty, tolerance});
+    return trainSoftmax(df, predictColumn, p.iterations, p.penalty, p.tolerance);
   }
 
 
@@ -739,7 +742,9 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'Row sample', 'min': '0.1', 'max': '1', 'initialValue': '1', 'description': 'Share of the rows sampled for each tree. Below 1 adds randomness that Model seed controls.'}}) subsample: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'Column sample', 'min': '0.1', 'max': '1', 'initialValue': '1', 'description': 'Share of the features sampled for each tree. Below 1 adds randomness that Model seed controls.'}}) colsample: number,
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed of the row and column sampling. Has an effect only when Row sample or Column sample is below 1.'}}) seed: number): Promise<Uint8Array> {
-    return trainXgboost(df, predictColumn, iterations, eta, maxDepth, lambda, alpha, subsample, colsample, seed);
+    const p = withDefaults('trainXGBooster', {iterations, eta, maxDepth, lambda, alpha, subsample, colsample, seed});
+    return trainXgboost(df, predictColumn, p.iterations, p.eta, p.maxDepth, p.lambda, p.alpha, p.subsample, p.colsample,
+      p.seed);
   }
 
 
@@ -809,7 +814,9 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '10', 'initialValue': '0.1', 'description': 'Width of the error-insensitive tube in SVR regression. Training errors smaller than this are not penalized, so larger values give a smoother model with fewer support vectors. Used for regression targets only.'}}) epsilon: number,
     @grok.decorators.param({'type': 'int', 'options': {'caption': 'Max iterations', 'min': '1', 'max': '1000000000', 'initialValue': '1000000', 'description': 'Solver iterations before it stops unconverged. The model is still returned, so a slow fit cannot hang.'}}) maxIterations: number,
     @grok.decorators.param({'type': 'bool', 'options': {'caption': 'Class probabilities', 'initialValue': 'false', 'description': 'Also estimates the probability of each class (Platt scaling: an internal 5-fold cross-validation, about 5 times the training time). Classification targets only.'}}) probability: boolean): Promise<Uint8Array> {
-    return trainSvm(df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon, probability, maxIterations);
+    const p = withDefaults('trainSVM', {kernel, cost, gamma, degree, coef0, epsilon, maxIterations, probability});
+    return trainSvm(df, predictColumn, p.kernel, p.cost, p.gamma, p.degree, p.coef0, p.epsilon, p.probability,
+      p.maxIterations);
   }
 
 

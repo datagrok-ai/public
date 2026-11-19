@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
+import {defaultsOf} from '../crux/input-defaults';
 import {irisMeasurements, mulberry32, seededRegression} from './utils';
 
 const IRIS = 'System:DemoFiles/iris.csv';
@@ -27,18 +28,6 @@ function trainFunctions(): DG.Func[] {
 function spaceOf(f: DG.Func): Space | undefined {
   const text = f.options['mlspace'];
   return text === undefined || text === null ? undefined : JSON.parse(text);
-}
-
-function defaultsOf(f: DG.Func): {[name: string]: Value} {
-  const values: {[name: string]: Value} = {};
-  for (const p of f.inputs.filter((p) => !['df', 'predictColumn'].includes(p.name))) {
-    const text = p.initialValue;
-    if (typeof text === 'string' && text !== '') {
-      values[p.name] = p.propertyType === DG.TYPE.STRING ? text.replace(/^(["'])(.*)\1$/, '$2') :
-        p.propertyType === DG.TYPE.BOOL ? text.toLowerCase() === 'true' : Number(text);
-    }
-  }
-  return values;
 }
 
 function sample(dim: Dimension, rng: () => number): Value {

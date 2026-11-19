@@ -10,7 +10,8 @@ import {isCatBoostApplicable, isCatBoostInteractive, isDecisionTreeApplicable, i
   isRandomForestInteractive, isRealMlpApplicable, isRealMlpInteractive, isTabmApplicable, isTabmInteractive,
   trainCatBoost, trainHistGradientBoosting, trainKnn, trainLda, trainMlp, trainRandomForest, trainRealMlp,
   trainTabm} from '../crux/methods';
-import {readCruxManifest} from '../crux/crux-model';
+import {CruxManifest, readCruxManifest} from '../crux/crux-model';
+import {defaultsOf, InputValue} from '../crux/input-defaults';
 import {Fit, FITS, loadCase} from './baseline';
 import {accuracy, applyTwice, asTable, classificationDataset, copyCol, demogFrame, expectGapsKept,
   expectProbabilities, expectRejected, GAP_ROWS, IRIS_SPECIES, irisMeasurements, numericFeatures, predictColumn,
@@ -357,6 +358,67 @@ for (const m of METHODS) {
       test(name, body, {timeout: TIMEOUT});
   });
 }
+
+type Defaults = {[name: string]: InputValue};
+
+interface OlderCall {
+  name: string;
+  func: string;
+  regression: boolean;
+  /** The inputs the call passes; every other one is left out */
+  inputs: (defaults: Defaults) => object;
+  /** Manifest params that must hold the default of the named input */
+  params: {[param: string]: string};
+  check?: (manifest: CruxManifest, defaults: Defaults) => void;
+}
+
+const pick = (defaults: Defaults, names: string[]) => Object.fromEntries(names.map((n) => [n, defaults[n]]));
+const none = () => ({});
+
+const XGBOOST_PARAMS = {n_estimators: 'iterations', learning_rate: 'eta', max_depth: 'maxDepth', reg_lambda: 'lambda',
+  reg_alpha: 'alpha', subsample: 'subsample', colsample_bytree: 'colsample', random_state: 'seed'};
+const SVM_PARAMS = {C: 'cost', degree: 'degree', coef0: 'coef0', max_iter: 'maxIterations'};
+
+function svmCheck(manifest: CruxManifest): void {
+  expect(manifest.params.kernel, 'rbf');
+  expect(manifest.params.gamma, 1 / 4, 'gamma 0 means 1 / n_features');
+  expect('probability' in manifest.params, false, 'class probabilities are off by default');
+}
+
+const OLDER_CALLS: OlderCall[] = [
+  {name: 'XGBoost with only the older inputs', func: 'trainXGBooster', regression: false,
+    inputs: (d) => pick(d, ['iterations', 'eta', 'maxDepth', 'lambda', 'alpha']), params: XGBOOST_PARAMS},
+  {name: 'XGBoost without any hyperparameter', func: 'trainXGBooster', regression: false, inputs: none,
+    params: XGBOOST_PARAMS},
+  {name: 'SVM with only the older inputs', func: 'trainSVM', regression: false,
+    inputs: (d) => pick(d, ['kernel', 'cost', 'gamma', 'degree', 'coef0', 'epsilon']), params: SVM_PARAMS,
+    check: svmCheck},
+  {name: 'SVM without any hyperparameter', func: 'trainSVM', regression: false, inputs: none, params: SVM_PARAMS,
+    check: svmCheck},
+  {name: 'Softmax without any hyperparameter', func: 'trainSoftmax', regression: false, inputs: none,
+    params: {max_iter: 'iterations', tol: 'tolerance'},
+    check: (m, d) => expect(m.params.C, 1 / (d.penalty as number), 'C of the default penalty on three classes')},
+  {name: 'Linear Regression without seed', func: 'trainLinearRegression', regression: true,
+    inputs: (d) => ({...pick(d, ['iterations', 'alpha']), lambda: 0.5}), params: {random_state: 'seed'},
+    check: (m) => expect(m.model, 'ridge')},
+  {name: 'Linear Regression without any hyperparameter', func: 'trainLinearRegression', regression: true,
+    inputs: none, params: {}, check: (m) => expect(m.model, 'linear', 'plain least squares')},
+];
+
+category('Crux methods: older API calls', () => {
+  for (const c of OLDER_CALLS) {
+    test(c.name, async () => {
+      const defaults = defaultsOf(DG.Func.find({package: 'Eda', name: c.func})[0]);
+      const {df, species} = await irisSpecies();
+      const predictColumn = c.regression ? splitTarget(df, 'Petal.Length') : species;
+      const manifest = readCruxManifest(await grok.functions.call(`Eda:${c.func}`,
+        {df, predictColumn, ...c.inputs(defaults)}));
+      for (const [param, input] of Object.entries(c.params))
+        expect(manifest.params[param], defaults[input], `${param} from the default of ${input}`);
+      c.check?.(manifest, defaults);
+    }, {timeout: TIMEOUT});
+  }
+});
 
 type BenchCase = {name: string, features: DG.DataFrame, target: DG.Column, gaps: boolean};
 
