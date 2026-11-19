@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Chem: Added `DG.chem.ISketcherOptions`, the third argument of `new DG.chem.Sketcher(mode, validationFunc, options)`: `sketcherType` shows that sketcher in the host whatever the session's (`DG.chem.currentSketcherType`, left as it is), and `showInput: false` leaves out the host's input row (the molecule field and its ≡ menu), the sketcher taking the whole host (Chem's Sketcher app)
+* Chem: Fixed `DG.chem.Sketcher` leaving the context panel on an earlier drawing: `grok.shell.o` keeps an object set as current for a second, so a drawing made within a second of the host's last one never became the current object; the host's next drawing now replaces its own last one (anything else made current since is replaced as before)
+* Chem: `DG.DEFAULT_SKETCHER` is `'Crux'` (was `'OpenChemLib'`), as Chem's Sketcher setting's default: the session's sketcher before Chem's init sets it, and the fallback of a molecule editor asked for a sketcher that has no function
 * Fixed the type of `ServerMetrics.queue`, the result of `grok.dapi.admin.getMetrics()`: the server sends the RabbitMQ message totals (`messages`, `ready`, `unacknowledged`) or null, not `queued` / `running` / `stale`
 * [core#1407](https://github.com/datagrok-ai/core/issues/1407): `addProperty` creates the property with its setter, instead of a null setter replaced right after
 * [#3481](https://github.com/datagrok-ai/public/issues/3481): Renamed `DG.DomainSavedFilter` to `DG.SavedFilter`: filter presets are now shareable entities for any table, not only domain tables
