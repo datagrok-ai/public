@@ -249,6 +249,7 @@ export async function runPromptWithLifecycle(
   view: DG.ViewBase,
   quotaCategory: string,
   displayPrompt?: string,
+  isAnswer = false,
 ): Promise<void> {
   if (prompt.startsWith('!!'))
     prompt = prompt.slice(1); // !!cmd → !cmd, falls through to normal pipeline
@@ -275,7 +276,7 @@ export async function runPromptWithLifecycle(
     } else
       session.session.addUserMessage({role: 'user', content: [{type: 'text', text: prompt}]}, prompt);
 
-    if (await grok.ai.processPrompt(prompt)) {
+    if (!isAnswer && await grok.ai.processPrompt(prompt)) {
       // Built-in handler claimed the prompt — no AI response, just a green check next to it.
       session.session.markHandledNatively();
       session.endSession();
@@ -576,7 +577,7 @@ export function initAIWindow(): AIPanel | null {
         _shellAIPanel!.enableNoPrompt();
         return;
       }
-      await runPromptWithLifecycle(_shellAIPanel!, args.currentPrompt.prompt, grok.shell.v, 'shell-ai');
+      await runPromptWithLifecycle(_shellAIPanel!, args.currentPrompt.prompt, grok.shell.v, 'shell-ai', undefined, args.currentPrompt.isAnswer);
     });
     AIWindowManager.instance.init(_shellAIPanel);
   }

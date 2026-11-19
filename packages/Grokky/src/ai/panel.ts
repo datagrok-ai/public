@@ -17,6 +17,7 @@ export type MessageType = {role: string; content: any};
 
 type AIPanelInputs = {
     prompt: string,
+    isAnswer?: boolean,
 }
 
 
@@ -239,10 +240,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       if (this.isBusy && (e as any).sourceCapabilities === null)
         Promise.resolve().then(() => this.textArea.focus());
     });
-    this.runButton.addEventListener('mousedown', (e) => {
-      if (document.activeElement === this.textArea)
-        e.preventDefault();
-    });
     ui.tooltip.bind(this.runButton, () => this.runButtonTooltip, 'left');
     this.tryAgainButton = ui.icons.sync(() => this.tryAgain(), 'Try Again');
     this.historyButton = ui.iconFA('history', () => this.showHistory());
@@ -298,6 +295,10 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     sessionControls.style.marginLeft = 'auto';
     const messageControls = ui.divH([this.tryAgainButton, this.runButton], 'd4-ai-panel-run-controls');
     const controlsDiv = ui.divH([this.inputControlsDiv, sessionControls, ui.div([], 'd4-ribbon-separator'), messageControls], 'd4-ai-panel-controls-container');
+    controlsDiv.addEventListener('mousedown', (e) => {
+      if (document.activeElement === this.textArea)
+        e.preventDefault();
+    });
     this.textAreaDiv = ui.divV([this.attachmentsRow, this.textArea], {classes: 'd4-ai-input-textarea-div', style: {position: 'relative'}});
     ui.makeDroppable(this.textAreaDiv, {
       acceptDrop: (o) => o instanceof DG.Entity,
@@ -863,7 +864,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       if (this.isBusy)
         return;
       lock();
-      this._onRunRequest.next({prevMessages: this._messages, currentPrompt: {prompt: answerPrompt()} as K});
+      this._onRunRequest.next({prevMessages: this._messages, currentPrompt: {prompt: answerPrompt(), isAnswer: true} as K});
     }) as HTMLButtonElement;
 
     const form = ui.divV([...questions.map((q, i) => ui.divV([ui.divText(q.question), choices[i].root])), submit]);
@@ -998,10 +999,11 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected runSuggestion(s: Suggestion): void {
-    if (runSuggestionAction(s.action, this))
-      return;
-    this.textArea.value = s.prompt ?? '';
-    this.handleRun();
+    if (!runSuggestionAction(s.action, this)) {
+      this.textArea.value = s.prompt ?? '';
+      this.handleRun();
+    }
+    this.textArea.focus();
   }
 
   /** The view the panel currently works against: the pinned one for owned panels, else the live current view. */
@@ -1133,6 +1135,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         ClaudeRuntimeClient.getInstance().expectResume(meta.sessionId);
       }
       this.afterConversationLoad(conv);
+      this.textArea.focus();
       //grok.shell.info(`Loaded conversation: ${conv.initialPrompt.substring(0, 50)}...`);
     } catch (error) {
       console.error('Failed to load conversation:', error);
