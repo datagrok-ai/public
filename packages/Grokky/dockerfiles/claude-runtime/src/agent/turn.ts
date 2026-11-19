@@ -124,7 +124,7 @@ export function runTurn(req: AgentTurnRequest): AsyncIterator<AgentEvent, undefi
   req.signal.addEventListener('abort', () => {
     const proc = processForSession(req.sessionKey);
     if (proc?.turn?.settled === settled) {
-      proc.send({type: 'cancel'});
+      proc.send({type: 'cancel', reason: (req.signal.reason as Error | undefined)?.message});
       // Hermes stops the tool it is running, but not what that tool started in a session of its own.
       void settled.then(() => {
         if (!proc.disposed && proc.proc.pid)

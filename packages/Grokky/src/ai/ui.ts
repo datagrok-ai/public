@@ -243,6 +243,16 @@ export async function setupAIQueryEditorUI(_v: DG.ViewBase, _connectionID: strin
   return true;
 }
 
+async function withinLimit(panel: StreamingPanel, quotaCategory: string): Promise<boolean> {
+  try {
+    await UsageLimiter.getInstance().checkAndIncrement(quotaCategory);
+    return true;
+  } catch (e: any) {
+    panel.showError(e.message);
+    return false;
+  }
+}
+
 export async function runPromptWithLifecycle(
   panel: StreamingPanel,
   prompt: string,
@@ -255,7 +265,7 @@ export async function runPromptWithLifecycle(
     prompt = prompt.slice(1); // !!cmd → !cmd, falls through to normal pipeline
   else if (prompt.startsWith('!')) {
     const command = prompt.slice(1).trimStart();
-    if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory))
+    if (!await withinLimit(panel, quotaCategory))
       return;
     await runClaudeStreaming(panel, command, view, 'bash');
     return;
@@ -284,7 +294,7 @@ export async function runPromptWithLifecycle(
       return;
     }
   }
-  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory)) {
+  if (!await withinLimit(panel, quotaCategory)) {
     session?.endSession();
     return;
   }
@@ -360,7 +370,7 @@ async function streamOnce(
 
     const endWithError = (msg: string) => {
       panel.clearStreaming();
-      grok.shell.error(msg);
+      panel.showError(msg);
       cleanup();
       resolve();
     };
@@ -446,7 +456,7 @@ async function streamOnce(
       });
 
       forSession(client.onError, (evt) => {
-        endWithError(`AI assistant: ${evt.message}`);
+        endWithError(evt.message);
       });
 
       forSession(client.onAborted, async () => {
@@ -526,7 +536,8 @@ async function streamOnce(
         panel.showInputRequest(evt.input);
       });
 
-      subs.push(client.onClose.subscribe(() => endWithError('AI assistant: connection lost')));
+      subs.push(client.onClose.subscribe(() =>
+        endWithError('Connection lost, the request was stopped. Send it again.')));
 
       subs.push(getAIAbortSubscription().subscribe(() => {
         client.abort(sessionId);
@@ -544,23 +555,20 @@ async function streamOnce(
         // Queued-task admission (queue-task.ts): the queued call only holds the turn's
         // admission slot; the turn itself streams over this socket as usual.
         sendChatTurn(client, sessionId, message, options)
-          .catch((e: any) => endWithError(`AI assistant: ${e?.message ?? e}`));
+          .catch((e: any) => endWithError(e?.message ?? String(e)));
       };
 
       forSession(client.onSessionReset, () => {
         if (resentAfterReset)
-          return endWithError('AI assistant: the session was lost and could not be restored');
+          return endWithError('The session was lost and could not be restored. Start a new chat.');
         resentAfterReset = true;
         sendPrompt();
       });
 
       sendPrompt();
     } catch (e: any) {
-      panel.clearStreaming();
-      grok.shell.error(`AI runtime: ${e.message}`);
       console.error('Claude runtime error:', e);
-      cleanup();
-      resolve();
+      endWithError(e.message);
     }
   });
 }

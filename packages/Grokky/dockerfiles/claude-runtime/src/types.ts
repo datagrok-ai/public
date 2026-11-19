@@ -134,7 +134,7 @@ export type AgentCommand =
       restore?: string} &
       Omit<AgentTurnRequest, 'sessionKey' | 'resumeExpected' | 'gates' | 'awaitBrowser' | 'showInBrowser' | 'signal' | 'credentials'>)
   | {type: 'continue'; text: string}
-  | {type: 'cancel'}
+  | {type: 'cancel'; reason?: string}
   | {type: 'browser_result'; id: string; value?: unknown; error?: string};
 
 export type AgentProcessEvent =

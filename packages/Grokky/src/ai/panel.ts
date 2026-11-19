@@ -105,6 +105,7 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   prependEntityContext(prompt: string): string;
   updateStreaming(content: string): void;
   setStatus(text: string): void;
+  showError(text: string): void;
   finalizeStreaming(displayContent: string, execCodes: string[], view: DG.ViewBase): Promise<void>;
   appendStreamedElement(el: HTMLElement): void;
   appendUiMessage(content: string): void;
@@ -795,6 +796,13 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.statusLabel.classList.remove('grokky-status-in');
     void this.statusLabel.offsetWidth;
     this.statusLabel.classList.add('grokky-status-in');
+  }
+
+  showError(text: string): void {
+    const error = ui.divText(text, 'grokky-status-error');
+    ui.tooltip.bind(error, text);
+    ui.empty(this.statusBar);
+    this.statusBar.appendChild(error);
   }
 
   private scrollIfFollowing(): void {

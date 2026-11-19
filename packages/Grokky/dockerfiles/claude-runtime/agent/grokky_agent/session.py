@@ -282,7 +282,7 @@ class Session:
         assert self.agent is not None, 'a continue follows its turn'
         self._run(self.agent, t, cmd['text'])
 
-    def cancel(self) -> None:
+    def cancel(self, reason: str | None = None) -> None:
         t = self.latest
         if t is None or t.cancelled:
             return
@@ -290,7 +290,7 @@ class Session:
         if self.turn is t and self.agent:
             self.agent.interrupt('cancelled by the user', hard_cancel=True)
         for call in list(self.calls.values()):
-            call.answer(error='aborted')
+            call.answer(error=reason or 'aborted')
 
     def browser_answer(self, cmd: BrowserResultCommand) -> None:
         call = self.calls.get(cmd['id'])

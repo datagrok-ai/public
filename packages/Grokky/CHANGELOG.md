@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Grokky: A prompt that fails or loses its connection says why above the prompt box, and the next prompt reconnects
 * Grokky: Fixed SAVE staying active after the AI saved the project
 * Grokky: Properties (F4) open on top of the AI panel instead of beside it, and the AI panel keeps its width when they close
 * Grokky: Clicking the icons under the prompt box no longer takes focus from it

@@ -102,7 +102,7 @@ export class ClaudeRuntimeClient {
     if (this.connected)
       return;
 
-    if (await this.discover()) {
+    for (let attempt = 0; attempt < 2 && !this.ws && await this.discover(); attempt++) {
       try {
         this.ws = await grok.dapi.docker.dockerContainers.webSocketProxy(this.containerId!, '/ws', 180_000);
       } catch (e) {
@@ -114,7 +114,7 @@ export class ClaudeRuntimeClient {
     }
 
     if (!this.ws)
-      throw new Error('AI runtime container is not running');
+      throw new Error('The AI runtime is not available. Try again in a minute.');
 
     this.ws.onmessage = (event: MessageEvent) => {
       let data: any;

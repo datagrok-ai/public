@@ -484,6 +484,14 @@
   text-overflow: ellipsis;
 }
 
+.grokky-status-error {
+  line-height: 22px;
+  color: var(--failure);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .grokky-status-in {
   animation: grokky-status-in .25s ease-out;
 }

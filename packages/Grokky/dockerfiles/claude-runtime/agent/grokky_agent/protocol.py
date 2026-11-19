@@ -62,6 +62,7 @@ class ContinueCommand(TypedDict):
 
 class CancelCommand(TypedDict):
     type: Literal['cancel']
+    reason: NotRequired[str]
 
 
 class BrowserResultCommand(TypedDict):
