@@ -261,6 +261,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       }
       this.resetSession();
       this.handleClear();
+      this.textArea.value = '';
+      this.clearAttachments();
       this.currentConversationId = null;
     });
     this.syncConversationButtons();
