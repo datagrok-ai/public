@@ -2,6 +2,8 @@
 
 ## v.next
 
+* dapi/domains/handler.js creates the issue it shows and deletes it, instead of failing on a tracker with no issues
+* Tests: Skipped the samples a test stand cannot run: the ai/ samples that need a model, dapi/cloud-logs.js (AWS), data-access/db-ddl.js and db-table-writes.js (a writable database) and ui/dialogs/pick-file.js (a dialog only a user closes)
 * [core#637](https://github.com/datagrok-ai/core/issues/637): Added ui/components/color-picker.js (`ui.colorPicker` with an alpha channel) and data-frame/metadata/annotation-region-fill.js (`AnnotationRegionsHelper.getFillColor`); formula-lines.js, inputs.js and scatter-plot.js set opacity through the color alpha (`#rrggbbaa`, `useAlphaChannel`, `viewer.setMarkerOpacity`)
 * [#3924](https://github.com/datagrok-ai/public/issues/3924): Added ui/viewers/order-categories-by-property.js (a custom `categoryOrderer` function ordering a viewer's categorical axis)
 * Added data-access/db/catalogs.js (`grok.dapi.connections.getCatalogs`: the catalogs of a database server and the schemas of one of them)

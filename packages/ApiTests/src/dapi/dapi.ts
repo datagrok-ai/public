@@ -36,7 +36,8 @@ category('Dapi', () => {
     expect(isIso(m.window.start) && isIso(m.window.end), true, 'window');
     expect(typeof m.http.now.count === 'number' && m.http.now.count >= 0, true, 'http.now.count');
     expect(Array.isArray(m.http.routes) && m.http.routes.length <= 5, true, 'http.routes');
-    expect(typeof m.queue.queued === 'number' && typeof m.queue.running === 'number', true, 'queue');
+    const q = m.queue;
+    expect(q === null || [q.messages, q.ready, q.unacknowledged].every((n) => typeof n === 'number'), true, 'queue');
     expect(m.database.sizeBytes > 0, true, 'database.sizeBytes');
     expect(m.database.connections.total >= 1, true, 'database.connections.total');
     expect(typeof m.database.statements.available, 'boolean', 'database.statements.available');

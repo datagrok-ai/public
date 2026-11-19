@@ -10,7 +10,8 @@ category('ui: spaceSaveRow', () => {
   const noProvider = 'skipped: no package on this stand registers the spaceSaveRow role';
 
   test('the provider is the spaceSaveRow function', async () => {
-    if (!(await grok.dapi.packages.filter('PowerPack').list({pageSize: 5})).length) {
+    // grok.dapi.packages lists the packages of the registry too, installed or not
+    if (!DG.Func.find({package: 'PowerPack'}).length) {
       console.log(noProvider);
       return;
     }
