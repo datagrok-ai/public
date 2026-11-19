@@ -183,7 +183,7 @@ export class PackageFunctions {
   static async reportsApp(
     @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string): Promise<DG.ViewBase> {
     const parent = grok.functions.getCurrentCall();
-    const app = new ReportingApp(parent);
+    const app = new ReportingApp(parent, githubIssues);
     app.init(path).catch((e) => console.log(e));
     return app.view;
   }

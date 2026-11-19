@@ -12,6 +12,8 @@ const ISSUES_PER_LOOKUP = 50;
 const KEYS_PER_SEARCH = 5;
 const SEARCH_RESULTS_LIMIT = 1000;
 const MOVED_FROM = /^>\s*Moved from \[(GROK-\d+)\]/m;
+const REPORT_MARKER = /^datagrok-report: \S+\/([\w-]+)\s*$/m;
+const REPORT_ISSUES_TTL_MS = 10 * 60 * 1000;
 
 const ISSUE_FIELDS = `number title url state stateReason body @include(if: $withBody)
   repository { name }
@@ -35,6 +37,31 @@ const SEARCH_QUERY = `query($q: String!, $cursor: String, $withBody: Boolean!) {
     nodes { ... on Issue { ${ISSUE_FIELDS} } }
   }
 }`;
+
+const REPORT_ISSUES_QUERY = `query($q: String!, $cursor: String) {
+  search(type: ISSUE, query: $q, first: 100, after: $cursor) {
+    pageInfo { hasNextPage endCursor }
+    nodes { ... on Issue { number url state body repository { name } } }
+  }
+}`;
+
+export interface ReportIssue {
+  key: string;
+  url: string;
+  open: boolean;
+}
+
+interface ReportIssueNode {
+  number: number;
+  url: string;
+  state: string;
+  body: string;
+  repository: Named;
+}
+
+interface ReportIssuesData {
+  search: {pageInfo: {hasNextPage: boolean; endCursor: string | null}; nodes: (ReportIssueNode | Record<string, never>)[]};
+}
 
 interface GraphQLError {
   message: string;
@@ -86,6 +113,7 @@ export class GitHubIssuesClient {
   pkg: DG.Package;
   token: Promise<string> | null = null;
   cache = new DG.LruCache<string, GitHubIssue | null>(CACHE_SIZE);
+  reportIssuesCache: {at: number; issues: Promise<Map<string, ReportIssue>>} | null = null;
 
   constructor(pkg: DG.Package) {
     this.pkg = pkg;
@@ -96,6 +124,35 @@ export class GitHubIssuesClient {
     const [open, closed] = await Promise.all([
       this.search(`${scope} is:open`, false), this.search(`${scope} is:closed`, false)]);
     return [...open, ...closed].map(toIssue);
+  }
+
+  /** Issues ticket-relay filed for reports, by report id. Newest first up to GitHub's 1000 search results;
+   *  an open issue wins over a closed one. */
+  reportIssues(): Promise<Map<string, ReportIssue>> {
+    if (!this.reportIssuesCache || Date.now() - this.reportIssuesCache.at > REPORT_ISSUES_TTL_MS) {
+      const issues = this.searchReportIssues();
+      issues.catch(() => this.reportIssuesCache = null);
+      this.reportIssuesCache = {at: Date.now(), issues};
+    }
+    return this.reportIssuesCache.issues;
+  }
+
+  async searchReportIssues(): Promise<Map<string, ReportIssue>> {
+    const q = `repo:${GITHUB_ORG}/core is:issue in:body "datagrok-report" sort:created-desc`;
+    const byReport = new Map<string, ReportIssue>();
+    let cursor: string | null = null;
+    do {
+      const data: ReportIssuesData = await this.graphql<ReportIssuesData>(REPORT_ISSUES_QUERY, {q, cursor});
+      const search = data.search;
+      for (const node of search.nodes) {
+        const id = 'body' in node ? REPORT_MARKER.exec(node.body)?.[1] : undefined;
+        if (!id || byReport.get(id)?.open)
+          continue;
+        byReport.set(id, {key: `${node.repository.name}#${node.number}`, url: node.url, open: node.state === 'OPEN'});
+      }
+      cursor = search.pageInfo.hasNextPage ? search.pageInfo.endCursor : null;
+    } while (cursor);
+    return byReport;
   }
 
   async findIssues(refs: IssueRef[]): Promise<Map<string, GitHubIssue>> {
