@@ -1,14 +1,14 @@
---name: MariaDB Orders
---friendlyName: Orders
---connection: MariaDBNorthwind
---input: int employeeid = 5
---input: string shipvia = "= 3" {pattern: int}
---input: double freight = 10.0
---input: string shipcountry = "france" {choices: query("select distinct shipcountry from orders")}
---input: string shipcity = "starts with r" {pattern: string}
---input: bool freightless1000 = true
---input: datetime requireddate = "1/1/1995"
---input: string orderdate = "after 1/1/1995" {pattern: datetime}
+-- name: MariaDB Orders
+-- friendlyName: Orders
+-- connection: MariaDBNorthwind
+-- input: int employeeid = 5
+-- input: string shipvia = "= 3" {pattern: int}
+-- input: double freight = 10.0
+-- input: string shipcountry = "france" {choices: query("select distinct shipcountry from orders")}
+-- input: string shipcity = "starts with r" {pattern: string}
+-- input: bool freightless1000 = true
+-- input: datetime requireddate = "1/1/1995"
+-- input: string orderdate = "after 1/1/1995" {pattern: datetime}
 
 SELECT *
 FROM orders
@@ -21,13 +21,13 @@ WHERE (employeeid = @employeeid)
     and @orderdate(orderdate)
     and (requireddate >= @requireddate)
 
---end
+-- end
 
---name: MariaDB Products
---friendlyName: Products
---connection: MariaDBNorthwind
+-- name: MariaDB Products
+-- friendlyName: Products
+-- connection: MariaDBNorthwind
 
 SELECT *
 FROM products
 
---end
+-- end
