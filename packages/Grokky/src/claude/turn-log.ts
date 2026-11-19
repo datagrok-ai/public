@@ -1,4 +1,3 @@
-import * as ui from 'datagrok-api/ui';
 import {_package} from '../package';
 import {featureOf} from './ai-feature';
 import type {FinalEvent} from './runtime-client';
@@ -20,14 +19,6 @@ function contentLogging(): {prompts: boolean, responses: boolean, toolCalls: boo
 
 function capped(text: string): string {
   return new TextDecoder().decode(new TextEncoder().encode(text).slice(0, MAX_TEXT_BYTES));
-}
-
-export function contentLoggingNotice(): HTMLElement | null {
-  const logging = contentLogging();
-  const logged = [logging.prompts && 'prompts', logging.responses && 'responses', logging.toolCalls && 'tool calls']
-    .filter((name) => name);
-  return logged.length ? ui.divText(`Your administrators log your AI ${logged.join(', ')}.`,
-    'grokky-content-log-notice') : null;
 }
 
 export class TurnLog {
