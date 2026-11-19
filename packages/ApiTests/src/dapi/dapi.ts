@@ -30,6 +30,12 @@ category('Dapi', () => {
     }, {owner: 'aparamonov@datagrok.ai', stressTest: true});
   }
 
+  test('find without an id returns nothing', async () => {
+    for (const id of [undefined, null, ''])
+      for (const source of [grok.dapi.groups, grok.dapi.projects, grok.dapi.queries])
+        expect((await source.find(id as any)) == null, true, `${JSON.stringify(id) ?? 'undefined'}`);
+  });
+
   test('admin.getMetrics', async () => {
     const isIso = (s: string) => typeof s === 'string' && !isNaN(Date.parse(s));
     const m = await grok.dapi.admin.getMetrics({date: 'last 7 days', limit: 5});
