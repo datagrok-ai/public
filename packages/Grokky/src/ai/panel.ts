@@ -235,6 +235,14 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       }
     });
     this.textArea.addEventListener('input', () => { this._promptHistoryIndex = null; this._updateSkillMenu(); });
+    this.textArea.addEventListener('blur', (e) => {
+      if (this.isBusy && (e as any).sourceCapabilities === null)
+        Promise.resolve().then(() => this.textArea.focus());
+    });
+    this.runButton.addEventListener('mousedown', (e) => {
+      if (document.activeElement === this.textArea)
+        e.preventDefault();
+    });
     ui.tooltip.bind(this.runButton, () => this.runButtonTooltip, 'left');
     this.tryAgainButton = ui.icons.sync(() => this.tryAgain(), 'Try Again');
     this.historyButton = ui.iconFA('history', () => this.showHistory());

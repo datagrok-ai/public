@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Grokky: Return focus to the prompt box when the AI's actions take it
 * Grokky: Tool activity shows in a status strip above the prompt
 * Grokky: Removed suggestions that asked a question instead of running
 * Grokky: New chat (+) clears the typed prompt and attached entities
