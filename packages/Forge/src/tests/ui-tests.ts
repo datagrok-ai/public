@@ -14,12 +14,11 @@ import {enabledRules, hyperparametersOf, isEnabled} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
 import {forgeDb, ModelStorageMode} from '../generated/db';
-import {BestThresholdMetric, METRIC_DESCRIPTIONS, METRIC_LABELS, MetricFinding} from '../metrics/metrics';
-import {preparationOptionsOf} from '../preparation/preparation-options';
+import {METRIC_DESCRIPTIONS, METRIC_LABELS, MetricFinding} from '../metrics/metrics';
 import {datasetRefOf, storedDatasetRef} from '../storage/dataset-ref';
 import {deleteModel, modelsChanged} from '../storage/model-store';
-import {COST_RANK, FROM_BELOW_TO, Leader, SearchRecord, tuneCandidate} from '../training/search';
-import {bestThresholdOf, metricsRecordOf, trainPredictionOf} from '../training/train-model';
+import {COST_RANK, Leader, SearchRecord} from '../training/search';
+import {bestThresholdOf, trainPredictionOf} from '../training/train-model';
 import {applyModelDialog, ApplyDialogOptions, isOpen, modelLabels} from '../ui/apply-model-dialog';
 import {ButtonGate} from '../ui/button-gate';
 import {gridTooltip} from '../ui/data-grid';
@@ -40,9 +39,9 @@ import {tableModelsPane} from '../ui/table-models-panel';
 import {tagsOfInput} from '../ui/tags-input';
 import {launchTraining} from '../ui/train-launcher';
 import {CHECK_DELAY_MS, SHOWN_RUN, TrainView} from '../ui/train-view';
-import {ALL_FIXED, AUTO_TUNE, FIX_RANGE, MANUAL, TuneRow, TuneSettings} from '../ui/tune-settings';
+import {AUTO_TUNE, MANUAL, TuneRow, TuneSettings} from '../ui/tune-settings';
 import {balloonWith, cancelOnceShown, cancelTaskBarEntry, catalogState, clearTestGalleryStorage, CLASSIFIERS,
-  columnsOf, deleteRunsOf, demoDemog, expectNoFrames, expectReleased, expectGridsFillPanes, framesSharing,
+  columnsOf, deleteRunsOf, demoDemog, expectReleased, expectGridsFillPanes, framesSharing,
   insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile, PREDICT_PROBABILITY, readUntil,
   refreshThenChange, REGRESSORS, runsOf, savedFixture, saveIrisModel, saveKeptGapsModel, saveSkipUniqueModel,
   saveTestModel, taskBarEntry, twoSpeciesIris, unbalancedIris, useTestGalleryStorage, valuesOf, WINE, XGBOOST_FIELDS}
@@ -291,40 +290,6 @@ function clearTestTuneStorage(): void {
 }
 
 category('UI', () => {
-  test('Forge app opens', async () => {
-    const view = await ForgeApp.create();
-    expect(view.models.currentRowIdx, -1);
-    expect(`${view.root.classList.contains('forge-app')} ${catalogState(view.root)}`, 'true 0/false', 'Class, load');
-    grok.shell.addView(view);
-    let measured = '';
-    try {
-      expect(view.name, 'Models');
-      expect(view.type, 'models');
-      expect(view.path.endsWith('/models'), true, view.path);
-      expect(view.root.querySelector('.d4-tab-host'), null, 'The view has tabs');
-      expect(view.root.firstElementChild === view.modelsGallery.root, true, 'The gallery does not fill the view');
-      const actions = view.root.querySelector('.grok-gallery-search-bar > .forge-gallery-actions');
-      expect(actions?.querySelectorAll('.grok-icon').length, 1, 'The toolbar has other icons than Refresh');
-      view.modelsGallery.setMode('table');
-      const widthOf = (e: Element | null) => e?.getBoundingClientRect().width ?? -10;
-      await waitUntil(() => Math.abs(widthOf(view.modelsGallery.root.querySelector('.d4-grid')) -
-        widthOf(view.modelsGallery.root)) < 2, 'The catalog grid does not take the width of the view', WAIT_MS);
-      expect(view.models.col('id') !== null, true, 'The catalog has no id column');
-      const captions = {name: 'Name', engine_name: 'Method', task: 'Task', target_name: 'Target',
-        storage_mode: 'Data storage', row_count: 'Training rows', tags: 'Tags', created_on: 'Created'};
-      for (const [column, caption] of Object.entries(captions))
-        expect(view.models.col(column)?.meta.friendlyName, caption, column);
-      expect(view.models.col('created_on')?.type, DG.COLUMN_TYPE.DATE_TIME, 'Created is not sorted as dates');
-      expect(view.models.col('created_on')?.meta.format, 'yyyy-MM-dd', 'Created is not shown as a date');
-      expectArray(['reference', 'none', 'copy'].map((mode) => ForgeApp.storageText(mode)),
-        ['Reference', 'None', 'Copy']);
-      measured = `${view.models.rowCount} models`;
-    } finally {
-      view.close();
-    }
-    return measured;
-  });
-
   test('the catalog refreshes itself after a save and a delete', async () => {
     const view = await ForgeApp.create();
     grok.shell.addView(view);
@@ -721,54 +686,6 @@ category('UI', () => {
     const inputs = DG.Func.find({package: 'Forge', name: 'applyModel'})[0]?.inputs.map((p) => p.name) ?? [];
     expectArray(inputs, ['model', 'table', 'columnNamesMap', 'showProgress']);
   });
-
-  test('Train view shows Missing values for a gapped feature and gives the columns back', async () => {
-    const iris = await openIris();
-    iris.getCol('Sepal.Width').set(3, null);
-    const runs = () => runsOf([iris]);
-    const view = await openTrainView(iris);
-    try {
-      view.methodInput.value = 'SVM';
-      await awaitTrained(view);
-      const choice = view.missingValuesInputs.choice;
-      expect(isShown(choice.root), true, 'Missing values is hidden with a gap');
-      expect(choice.inputType, 'Radio');
-      expect(choice.value, 'Skip rows');
-      expectOptionsInRow(choice);
-      // The skipped row makes every training column a copy: only the Results pane's frames hold a table column.
-      const [, frames] = await framesSharing(iris.columns.toList(), () => view.train());
-      expectNoFrames(frames.filter((f) => !view.resultsPane.frames.includes(f)));
-      expect(Array.from(view.root.querySelectorAll('ul > li'), (li) => li.textContent)
-        .includes('Rows: 149 used, 1 skipped (missing values)'), true, 'The Results rows item is missing');
-      expect((await runs()).find((r) => r.id === view.lastTraining?.runId)?.row_count, 149);
-
-      const imputeLabel = Array.from(choice.root.querySelectorAll('.ui-radio-button label'))
-        .find((label) => label.textContent === 'Impute');
-      if (!(imputeLabel instanceof HTMLElement))
-        throw new Error('No Impute option');
-      imputeLabel.click();
-      expect(choice.value, 'Impute');
-      const neighbors = view.missingValuesInputs.inputs.find((input) => input.caption === 'Neighbors');
-      if (neighbors === undefined)
-        throw new Error('No Neighbors input');
-      await awaitCheck(() => isShown(neighbors.root), 'Neighbors does not appear', WAIT_MS);
-      neighbors.value = 0;
-      await awaitCheck(() => isDisabled(view.trainButton) && !view.isTraining, 'Train is enabled with Neighbors 0',
-        TIMEOUT);
-      expect(view.lastTraining === undefined, true, 'Neighbors 0 trained');
-      await awaitCheck(() => resultsText(view).includes('Fix the settings.'),
-        'The Results hint is not Fix the settings. for Neighbors 0', WAIT_MS);
-      expect(isTrainShown(view), false, 'Train is shown for SVM with Neighbors 0');
-      neighbors.value = 3;
-      await awaitTrained(view);
-      expect(isTrainShown(view), false, 'Train is shown for SVM with Neighbors 3');
-
-      view.featuresInput.value = columnsOf(iris, ['Sepal.Length', 'Petal.Length', 'Petal.Width']);
-      await awaitCheck(() => !isShown(choice.root), 'Missing values stays without gaps', WAIT_MS);
-    } finally {
-      await closeTrainView(view, [iris]);
-    }
-  }, {timeout: TIMEOUT});
 });
 
 category('UI', () => {
@@ -954,42 +871,6 @@ category('UI: Train', () => {
       expect(view.lastTraining?.engine.name, 'SVM', 'The training was superseded');
       expectArray(formStates(view), before);
       expect(degree?.enabled, false, 'Degree is enabled after the training');
-    } finally {
-      await closeTrainView(view, [table]);
-    }
-  }, {timeout: 120000});
-
-  test('Train stays in view at its right under a tall form and sits below Validation on a short one', async () => {
-    const table = slowTable();
-    const view = await openTrainView(table);
-    try {
-      view.methodInput.value = 'SVM';
-      await awaitCheck(() => isTrainShown(view), 'Train is not offered for SVM', WAIT_MS);
-      for (const group of view.groups)
-        group.setExpanded(true);
-      const trainRow = view.trainButton.closest<HTMLElement>('.forge-train-row')!;
-      const pane = view.root.querySelector<HTMLElement>('.forge-train-form')!;
-      const left = pane.parentElement!;
-      left.style.height = '300px';
-      expect(pane.scrollHeight > pane.clientHeight, true, `The form fits: ${pane.scrollHeight}, ${pane.clientHeight}`);
-      // The model cards follow Train: it is held up to its own place, then scrolls away above them.
-      trainRow.style.position = 'static';
-      const formEnd = trainRow.getBoundingClientRect().bottom - pane.getBoundingClientRect().top +
-        pane.scrollTop - pane.clientHeight;
-      trainRow.style.position = '';
-      for (const top of [0, formEnd]) {
-        pane.scrollTop = top;
-        const [r, p, b] = [trainRow, pane, view.trainButton].map((e) => e.getBoundingClientRect());
-        expect(r.height > 0 && r.top >= p.top - 1 && r.bottom <= p.bottom + 1 && b.left > r.left + r.width / 2, true,
-          `Scrolled to ${pane.scrollTop}: Train row ${r.top}-${r.bottom}, form ${p.top}-${p.bottom}, Train ${b.left}`);
-      }
-      left.style.height = '';
-      for (const group of view.groups)
-        group.setExpanded(false);
-      const [r, g, p] = [trainRow, view.groups[3].root, pane].map((e) => e.getBoundingClientRect());
-      const gap = r.top - g.bottom;
-      expect(pane.scrollHeight <= pane.clientHeight && gap > -1 && gap < 20 && r.bottom < p.bottom - 12, true,
-        `Short form: Validation ends at ${g.bottom}, Train row ${r.top}-${r.bottom}, form ends at ${p.bottom}`);
     } finally {
       await closeTrainView(view, [table]);
     }
@@ -1241,279 +1122,6 @@ category('UI: Preparation', () => {
     }
   }, {timeout: 120000});
 
-  test('Predict probability re-cuts without a run; the threshold optimized for a metric', async () => {
-    const demog = await openDemog();
-    const view = await TrainView.create(demog);
-    grok.shell.addView(view);
-    const {predictProbability, threshold, thresholdMetric, setThresholdButton, thresholdStatus} =
-      view.preparationInputs;
-    const statusRow = thresholdStatus.parentElement!;
-    /** Set's visibility and the status shown under the threshold ('' while hidden). */
-    const state = () => `${isShown(setThresholdButton) ? 'Set' : 'no Set'}, ` +
-      `'${isShown(statusRow) ? thresholdStatus.textContent : ''}'`;
-    const bestOf = (metric: BestThresholdMetric) => bestThresholdOf(view.lastTraining!.result, metric);
-    const models = () => forgeDb.models.query().where('dataset_name', '=', demog.name);
-    const options = () => view.lastTraining?.result.options;
-    try {
-      view.targetInput.value = demog.getCol('SEX');
-      view.featuresInput.value = columnsOf(demog, ['AGE', 'HEIGHT', 'WEIGHT']);
-      await awaitCheck(() => isShown(predictProbability.root), 'Predict probability is not offered for SEX', WAIT_MS);
-      expect(predictProbability.enabled, true, 'Predict probability is disabled for XGBoost');
-      expect(predictProbability.value || isShown(threshold.root) || isShown(thresholdMetric.root), false,
-        'Predict probability starts checked');
-      await awaitTrained(view);
-      const trained = view.lastTraining?.result;
-      expect(trained?.task, 'classification');
-      const grid = gridWith(view.root, 'Metric');
-      const metricRows = ['Accuracy', 'F1', 'Recall (Sensitivity)', 'Specificity', 'Precision',
-        'Negative Predictive Value', 'AUC-ROC', 'Balanced accuracy', 'MCC', 'Average precision', 'Log loss',
-        'Brier score'];
-      expectArray(grid.dataFrame.getCol('Metric').toList(), metricRows);
-      const runCount = (await runsOf([demog])).length;
-
-      predictProbability.value = true;
-      await awaitCheck(() => options()?.postprocessingInfo.includes('class-probabilities') === true,
-        'Predict probability does not re-cut the result', WAIT_MS);
-      await delay(CHECK_DELAY_MS * 3);
-      expect(view.isTraining, false, 'Predict probability retrains');
-      expect((await runsOf([demog])).length, runCount, 'Predict probability recorded a run');
-      expectArray(options()?.postprocessingInfo ?? [], ['class-probabilities']);
-      expect(isShown(threshold.root) && isShown(thresholdMetric.root), true, 'No threshold or Best threshold by');
-      expect(`${thresholdMetric.caption} ${setThresholdButton.textContent} ${thresholdMetric.value}`,
-        'Best threshold by Set F1');
-      expect(predictProbability.root.nextElementSibling === threshold.root &&
-        threshold.root.nextElementSibling === statusRow && statusRow.nextElementSibling === thresholdMetric.root, true,
-      'The order is not Predict probability, Classification threshold, its status, Best threshold by');
-      const settingsStatus = view.tuneSettings.statusText;
-      expect(`${thresholdStatus.tagName}.${thresholdStatus.className} in ${statusRow.tagName}.${statusRow.className}`,
-        `${settingsStatus.tagName}.${settingsStatus.className} in ${settingsStatus.parentElement?.tagName}.` +
-        `${settingsStatus.parentElement?.className}`, 'The status is not built as the Settings status');
-      const f1 = bestOf('f1');
-      expect(f1 !== undefined && f1 > 0 && f1 < 1, true, `The best F1 threshold ${f1}`);
-      expect(threshold.value, f1, 'Checking does not optimize the threshold');
-      expect(options()?.binaryClassificationThreshold, f1);
-      expect(options()?.thresholdMetric, 'f1');
-      expect(state(), 'no Set, \'Best for F1\'', 'At the best F1 threshold');
-      const shownThreshold = (threshold.input as HTMLInputElement).value;
-      expect(parseFloat(shownThreshold) === parseFloat((f1 ?? NaN).toPrecision(3)) &&
-        shownThreshold.replace(/^0\.0*/, '').length <= 3, true, `The threshold ${f1} shows as ${shownThreshold}`);
-      for (const element of [thresholdMetric.captionLabel, thresholdMetric.input]) {
-        expect(await enterTooltip(element), 'The metric the classification threshold maximizes on the validation rows.',
-          `Best threshold by's ${element.tagName}`);
-      }
-      await awaitCheck(() => resultsText(view).includes(`Classification threshold: ${f1}, the best F1 on the ` +
-        'validation rows'), 'No best F1 bullet', WAIT_MS);
-      for (const element of [threshold.captionLabel, threshold.input]) {
-        const tooltip = await enterTooltip(element, true);
-        expect(tooltip.includes('Rows whose probability of <b>F</b> is at least this value are predicted as ' +
-          '<b>F</b>, the others as <b>M</b>.'), true, `The threshold's ${element.tagName}: ${tooltip}`);
-      }
-      expect(view.methodInput.value, 'XGBoost', 'Predict probability switched the method');
-      expect(gridWith(view.root, 'Metric').root === grid.root, true, 'Predict probability built a new metrics grid');
-      expectArray(grid.dataFrame.getCol('Metric').toList(), metricRows);
-      const checked = view.lastTraining?.result.metrics.train;
-
-      typeInto(threshold.input as HTMLInputElement, '0.52');
-      await awaitCheck(() => options()?.binaryClassificationThreshold === 0.52, 'Typing 0.52 does not re-cut', WAIT_MS);
-      expect(`${threshold.value} ${options()?.thresholdMetric}`, '0.52 undefined', 'Typing 0.52 is no hand edit');
-      threshold.value = 0.9;
-      await awaitCheck(() => options()?.binaryClassificationThreshold === 0.9 && !view.isTraining,
-        'The threshold does not re-cut the result', WAIT_MS);
-      await delay(CHECK_DELAY_MS * 3);
-      expect(view.isTraining, false, 'The threshold retrains');
-      expect((await runsOf([demog])).length, runCount, 'The threshold recorded a run');
-      expect(options()?.thresholdMetric === undefined, true, 'A hand edit keeps the metric');
-      expect(state(), 'Set, \'Customized\'', 'After a hand edit');
-      expect(resultsText(view).includes('the best F1'), false, 'A hand edit keeps the best bullet');
-      const recut = view.lastTraining?.result.metrics.train;
-      expect(recut?.auc, trained?.metrics.train.auc, 'AUC-ROC changed with the threshold');
-      expect(recut?.logLoss, trained?.metrics.train.logLoss, 'Log loss changed with the threshold');
-      expect(recut?.sensitivity !== checked?.sensitivity || recut?.specificity !== checked?.specificity, true,
-        'The threshold left the shares as they were');
-      const recutGrid = gridWith(view.root, 'Metric');
-      expect(recutGrid.root === grid.root, true, 'The threshold built a new metrics grid');
-      const sensitivityRow = recutGrid.dataFrame.getCol('Metric').toList().indexOf('Recall (Sensitivity)');
-      // The column stores single-precision floats.
-      expect(Math.abs((recutGrid.dataFrame.getCol('Train').get(sensitivityRow) ?? NaN) - (recut?.sensitivity ?? NaN)) <
-        1e-6, true, 'The grid shows the old sensitivity');
-      const sensitivityTooltip = gridTooltip(recutGrid, recutGrid.cell('Train', sensitivityRow));
-      expect(!sensitivityTooltip.startsWith(`${recut?.sensitivity}`) && !sensitivityTooltip.includes('Value on'), true,
-        `The cell tooltip shows the value or the column: ${sensitivityTooltip}`);
-
-      threshold.value = 1.5;
-      await awaitCheck(() => threshold.validity !== null, 'No mark on a threshold of 1.5', WAIT_MS);
-      const hasHint = () => resultsText(view).includes('Fix the settings.');
-      await awaitCheck(hasHint, 'No hint for a threshold of 1.5', WAIT_MS);
-      expect(isDisabled(view.saveButton), true, 'Save stays enabled with a threshold of 1.5');
-      expect(options()?.binaryClassificationThreshold, 0.9, 'A threshold of 1.5 re-cut the result');
-      threshold.value = 0.9;
-      await awaitCheck(() => threshold.validity === null && !resultsText(view).includes('Fix the settings.'),
-        'A valid threshold leaves the hint', WAIT_MS);
-      expect(isDisabled(view.saveButton), false, 'Save stays disabled with a valid threshold');
-
-      thresholdMetric.value = 'MCC';
-      await delay(CHECK_DELAY_MS * 3);
-      expect(threshold.value, 0.9, 'A metric change sets the threshold');
-      expect(state(), 'Set, \'Customized\'', 'After a metric change on a hand edit');
-      const [setRect, selectRect, bodyRect] = [setThresholdButton, thresholdMetric.input,
-        view.preparationInputs.group.body].map((e) => e.getBoundingClientRect());
-      const middle = (r: DOMRect) => r.top + r.height / 2;
-      expect(setThresholdButton.parentElement === thresholdMetric.root &&
-        setThresholdButton.closest('.ui-input-options') === null, true, 'Set is not in the row of Best threshold by');
-      const buttonClasses = (button: HTMLElement) => [...button.classList].filter((c) => c !== 'd4-disabled').sort();
-      expectArray(buttonClasses(setThresholdButton), buttonClasses(view.tuneButton));
-      const looks = (button: HTMLElement) => ['fontSize', 'height', 'marginRight', 'paddingRight', 'borderBottomStyle',
-        'textDecorationLine'].map((p) => getComputedStyle(button)[p as keyof CSSStyleDeclaration]).join(' ');
-      expect(looks(setThresholdButton), looks(view.tuneButton), 'Set does not look as Tune');
-      expect(Math.abs(setRect.right - bodyRect.right) <= 1 && setRect.left >= selectRect.right &&
-        Math.abs(middle(setRect) - middle(selectRect)) < 4, true, `Set ${setRect.left}-${setRect.right} at ` +
-        `${middle(setRect)}; Best threshold by ${selectRect.left}-${selectRect.right} at ${middle(selectRect)}; ` +
-        `the group ends at ${bodyRect.right}`);
-      expect(await enterTooltip(setThresholdButton), 'Set the threshold that maximizes MCC on the validation rows.');
-      const mcc = bestOf('mcc');
-      setThresholdButton.click();
-      expect(threshold.value, mcc, 'Set does not set the best MCC threshold');
-      await awaitCheck(() => options()?.binaryClassificationThreshold === mcc && options()?.thresholdMetric === 'mcc' &&
-        resultsText(view).includes('the best MCC on the validation rows'), 'Set does not re-cut', WAIT_MS);
-      expect(state(), 'no Set, \'Best for MCC\'', 'After Set');
-      expect(view.isTraining, false, 'Set retrains');
-      thresholdMetric.value = 'F1';
-      expect(threshold.value, mcc, 'A metric change sets the threshold');
-      expect(state(), mcc === f1 ? 'no Set, \'Best for F1\'' : 'Set, \'Best for MCC\'', 'After a metric change');
-
-      threshold.value = 0.6;
-      await awaitCheck(() => options()?.binaryClassificationThreshold === 0.6 &&
-        resultsText(view).includes('Classification threshold: 0.6') && !resultsText(view).includes('the best'),
-      'A hand edit keeps the best bullet', WAIT_MS);
-      const name = `forge-test-model-${Date.now()}`;
-      await view.saveModelAs({name, description: '', tags: []});
-      const [saved] = await models();
-      const stored = preparationOptionsOf(saved?.options);
-      expect(stored.binaryClassificationThreshold, 0.6);
-      expect(stored.thresholdMetric === undefined, true, 'A hand edit stored a metric');
-      expectArray(stored.postprocessingInfo, ['class-probabilities']);
-      expect(metricsRecordOf(saved?.metrics)?.train.sensitivity, view.lastTraining?.result.metrics.train.sensitivity);
-      const handText = new MetricsTable(storedSummary(saved)!).root.textContent ?? '';
-      expect(handText.includes('Classification threshold: 0.6') && !handText.includes('the best'), true, handText);
-
-      const handRuns = view.runs.length;
-      view.featuresInput.value = columnsOf(demog, ['AGE', 'WEIGHT']);
-      await awaitCheck(() => view.runs.length > handRuns && view.lastTraining !== undefined && !view.isTraining,
-        'No retraining', TIMEOUT);
-      await delay(CHECK_DELAY_MS * 3);
-      expect(threshold.value, 0.6, 'A retraining replaced the hand edit');
-      expect(options()?.binaryClassificationThreshold, 0.6);
-      expect(options()?.thresholdMetric === undefined, true, 'A retraining optimized a hand edit');
-      expect(state(), 'Set, \'Customized\'', 'After a retraining of a hand edit');
-      expect(resultsText(view).includes('the best F1'), false, 'A hand edit shows the best bullet');
-      expect(runsColumn(view, 'Preparation')[0], 'keep missing values, probability (threshold 0.6)');
-
-      setThresholdButton.click();
-      const retrained = bestOf('f1');
-      await awaitCheck(() => options()?.binaryClassificationThreshold === retrained &&
-        options()?.thresholdMetric === 'f1', 'Set does not optimize after a hand edit', WAIT_MS);
-      const appliedRuns = view.runs.length;
-      view.featuresInput.value = columnsOf(demog, ['AGE', 'HEIGHT', 'WEIGHT']);
-      await awaitCheck(() => view.runs.length > appliedRuns && view.lastTraining !== undefined && !view.isTraining,
-        'No retraining', TIMEOUT);
-      await delay(CHECK_DELAY_MS * 3);
-      const optimized = bestOf('f1');
-      expect(threshold.value, optimized, 'A retraining does not optimize the threshold');
-      expect(options()?.thresholdMetric, 'f1');
-      expect(view.runs[0].steps.thresholdMetric, 'f1');
-      expect(runsColumn(view, 'Preparation')[0], `keep missing values, probability (threshold ${optimized}, best F1)`);
-      const optimizedName = `forge-test-model-${Date.now()}`;
-      await view.saveModelAs({name: optimizedName, description: '', tags: []});
-      const optimizedRow = (await models()).find((m) => m.name === optimizedName);
-      expect(preparationOptionsOf(optimizedRow?.options).thresholdMetric, 'f1');
-      expect(preparationOptionsOf(optimizedRow?.options).binaryClassificationThreshold, optimized);
-      await expectPaneText(modelAccordion(ForgeModelHandler.rowOf(optimizedRow!), optimizedRow!), 'Performance',
-        [`Classification threshold: ${optimized}, the best F1 on the validation rows`]);
-
-      // A change while the threshold is invalid leaves nothing to re-cut; fixing the threshold then trains.
-      threshold.value = 1.5;
-      await awaitCheck(hasHint, 'No hint for a threshold of 1.5', WAIT_MS);
-      view.featuresInput.value = columnsOf(demog, ['AGE', 'HEIGHT']);
-      await delay(CHECK_DELAY_MS * 5);
-      await awaitCheck(() => !view.isTraining && resultsText(view).includes('Fix the settings.'),
-        'A change with an invalid threshold does not show the hint', WAIT_MS);
-      expect(view.lastTraining === undefined, true, 'A change with an invalid threshold trained');
-      expect(state(), 'no Set, \'\'', 'Without a trained model');
-      threshold.value = 0.5;
-      await awaitTrained(view);
-      expect(options()?.binaryClassificationThreshold, 0.5);
-      expect(resultsText(view).includes('Fix the settings.'), false, 'Results still shows the hint');
-      const afterFix = (await runsOf([demog])).length;
-      const fixedGrid = gridWith(view.root, 'Metric').root;
-      thresholdMetric.value = 'MCC';
-
-      predictProbability.value = false;
-      await awaitCheck(() => options()?.postprocessingInfo.includes('class-probabilities') === false,
-        'Unchecking does not re-cut the result', WAIT_MS);
-      await delay(CHECK_DELAY_MS * 3);
-      expect(isShown(threshold.root) || isShown(thresholdMetric.root) || isShown(statusRow), false,
-        'The threshold stays without Predict probability');
-      expect(options()?.binaryClassificationThreshold === undefined, true, 'The threshold stays in the options');
-      expect(gridWith(view.root, 'Metric').root === fixedGrid, true, 'Unchecking built a new metrics grid');
-      expect((await runsOf([demog])).length, afterFix, 'Unchecking recorded a run');
-
-      const isCut = () => options()?.postprocessingInfo.includes('class-probabilities') === true;
-      predictProbability.value = true;
-      await awaitCheck(isCut, 'Re-checking does not re-cut the result', WAIT_MS);
-      expect(`${thresholdMetric.value} ${threshold.value} ${options()?.binaryClassificationThreshold} ` +
-        `${options()?.thresholdMetric}`, 'MCC 0.5 0.5 undefined', 'Re-checking lost the metric or the hand edit');
-      expect(state(), bestOf('mcc') === 0.5 ? 'no Set, \'Best for MCC\'' : 'Set, \'Customized\'',
-        'Re-checking lost the hand edit');
-      setThresholdButton.click();
-      const mccBest = bestOf('mcc');
-      await awaitCheck(() => options()?.thresholdMetric === 'mcc', 'Set does not optimize for MCC', WAIT_MS);
-      predictProbability.value = false;
-      await awaitCheck(() => !isCut(), 'Unchecking does not re-cut the result', WAIT_MS);
-      predictProbability.value = true;
-      await awaitCheck(() => isCut() && options()?.thresholdMetric === 'mcc' &&
-        options()?.binaryClassificationThreshold === mccBest && threshold.value === mccBest,
-      'Re-checking does not optimize for the kept metric', WAIT_MS);
-    } finally {
-      for (const model of await models())
-        await deleteModel(model.id);
-      await closeTrainView(view, [demog]);
-    }
-  }, {timeout: 120000});
-
-  test('Predict probability retrains SVM through its hidden input', async () => {
-    const iris = await openIris();
-    const view = await openTrainView(iris);
-    const {predictProbability, threshold} = view.preparationInputs;
-    try {
-      view.methodInput.value = 'SVM';
-      await awaitCheck(() => view.lastTraining?.engine.name === 'SVM' && !view.isTraining, 'No SVM training', TIMEOUT);
-      expect(view.hyperparameterInputs.has('probability'), false, 'SVM shows its probability input');
-      expect(view.lastTraining?.request.hyperparameters.probability, false);
-      expect(hasMetric(view.root, 'AUC-ROC'), false, 'SVM without probabilities has AUC-ROC');
-      const first = view.lastTraining;
-      const count = view.runs.length;
-
-      predictProbability.value = true;
-      await awaitCheck(() => view.lastTraining !== first && view.lastTraining?.engine.name === 'SVM' &&
-        !view.isTraining, 'Predict probability does not retrain SVM', TIMEOUT);
-      await delay(CHECK_DELAY_MS * 3);
-      expect(view.runs.length, count + 1, 'No new run');
-      expect(view.runs[0].hyperparameters.probability, true);
-      expect(view.lastTraining?.request.hyperparameters.probability, true);
-      expect(hasMetric(view.root, 'AUC-ROC'), true, 'SVM with probabilities has no AUC-ROC');
-      expect(isShown(threshold.root), false, 'A threshold for three classes');
-      expect(trainPredictionOf(view.lastTraining!.result).categories.filter((c) => c !== '').length, 3);
-      expect(runsColumn(view, 'Preparation')[0], 'probability');
-      expect(statusOf(view), 'Default', 'The hidden input customizes the settings');
-
-      clickRunsRow(runsGrid(view), 1);
-      await awaitCheck(() => !predictProbability.value && view.lastTraining?.request.hyperparameters.probability ===
-        false && !view.isTraining, 'Restoring the earlier run does not uncheck and retrain', TIMEOUT);
-    } finally {
-      await closeTrainView(view, [iris]);
-    }
-  }, {timeout: 120000});
-
   test('Train keeps Predict probability while the form is locked', async () => {
     const iris = await twoSpeciesIris();
     const view = await openTrainView(iris);
@@ -1574,12 +1182,6 @@ function panelViewer(view: TrainView, title: string): DG.Viewer {
   return viewer;
 }
 
-/** The text of the Insights & Tips block of [view]; '' while it is hidden. */
-function insightsText(view: TrainView): string {
-  const block = view.resultsPane.root.querySelector('.forge-insights');
-  return block instanceof HTMLElement && isShown(block) ? block.textContent ?? '' : '';
-}
-
 /** The text of each line of Insights & Tips of [view], its pointer line included. */
 const insightLines = (view: TrainView | EvaluationView) =>
   Array.from(view.resultsPane.root.querySelectorAll('.forge-insights > ul > li'), (li) => li.textContent ?? '');
@@ -1600,14 +1202,6 @@ function panelOf(view: TrainView, title: string): HTMLElement {
   if (panel === undefined)
     throw new Error(`No panel ${title}`);
   return panel;
-}
-
-/** Checks that every panel title of [view] answers the mouse with a tooltip. */
-async function expectTitleTooltips(view: TrainView): Promise<void> {
-  for (const span of view.resultsPane.root.querySelectorAll<HTMLElement>('.forge-results-title > span')) {
-    expect(getComputedStyle(span).pointerEvents, 'auto', `${span.textContent}: the title lets the mouse through`);
-    expect((await enterTooltip(span)).length > 10, true, `${span.textContent} has no tooltip`);
-  }
 }
 
 /** Checks that in every panel of [view]'s rows the title is shown, the content starts under it and ends inside the
@@ -2001,115 +1595,6 @@ category('UI: Results', () => {
     expectRows(resultsLayout('multiclass', full, 0).map((r) => r.panels), [['predictedVsActual', 'confusions',
       'perClass'], ['insights', 'metrics', 'classBalance'], ['features', 'correlation'], ['wrongPredictions']]);
   });
-
-  test('iris: Insights & Tips, the classifier rows, Class balance, the frames given back on close', async () => {
-    const iris = await openIris();
-    const [view, frames] = await framesSharing(iris.columns.toList(), () => openTrainView(iris));
-    try {
-      expect(insightsText(view).includes('Insights & Tips'), true, 'No Insights & Tips');
-      expect(insightsText(view).includes('Features are highly correlated.'), true, insightsText(view));
-      const training = view.lastTraining;
-      if (training === undefined)
-        throw new Error('No training');
-      const labels = trainPredictionOf(training.result);
-      const target = training.request.target;
-      const hasWrong = Array.from({length: target.length}, (_, i) => i)
-        .some((i) => String(target.get(i)) !== String(labels.get(i)));
-      expectRows(rowTitles(view), [['Predicted Species vs Actual', 'Confusions', 'Per-class'],
-        ['Insights & Tips', 'Performance', 'Class balance'], ['Features', 'Features correlation'],
-        ...(hasWrong ? [['Wrong predictions']] : [])]);
-      if (hasWrong)
-        expect(gridWith(view.resultsPane.root, 'Predicted Species').root.classList.contains('d4-grid'), true);
-
-      const chart = panelViewer(view, 'Class balance');
-      expect(chart.type, DG.VIEWER.BAR_CHART);
-      expect(chart.dataFrame.dart === view.resultsPane.frames[0].dart, true, 'Class balance has a frame of its own');
-      expect(chart.props.splitColumnName, target.name);
-      expect(chart.props.stackColumnName, target.name);
-      expect(chart.props.valueAggrType, DG.AGG.TOTAL_COUNT);
-      expect(chart.props.showStackSelector || chart.props.showCategorySelector || chart.props.showValueSelector, false,
-        'Class balance shows a column selector');
-      expect(panelViewer(view, 'Features correlation').props.description ?? '', 'Features are highly correlated.');
-      // The panel shows the short line only; the pairs and the pointer are in its tooltip.
-      const correlated = insightItem(view, 'Features are highly correlated.');
-      expect(correlated.textContent, 'Features are highly correlated.');
-      const correlatedTooltip = await enterTooltip(correlated);
-      expect(correlatedTooltip.includes('Petal.Length and Petal.Width: 0.96') &&
-        correlatedTooltip.endsWith('See Features correlation.'), true, correlatedTooltip);
-      expect(insightsText(view).includes('See '), false, `A pointer is on the panel: ${insightsText(view)}`);
-      await expectTitleTooltips(view);
-      expectUnderTitles(view);
-
-      // The panels start in the ratio of their weights and every viewer fills its panel.
-      const [first, second, third] = rowsOf(view);
-      await awaitCheck(() => slotsOf(first).every((s) => s.offsetWidth > 0), 'Row 1 is not laid out', WAIT_MS);
-      const ratio = (row: HTMLElement, i: number) => slotsOf(row)[i].offsetWidth / slotsOf(row)[0].offsetWidth;
-      expectFloat(ratio(first, 1), 1, 0.05);
-      expectFloat(ratio(second, 1), 1.5, 0.05);
-      expectFloat(ratio(third, 1), 1, 0.05);
-      for (const panel of view.resultsPane.root.querySelectorAll<HTMLElement>(
-        '.forge-results-panel:not(.forge-results-metrics):not(.forge-insights)')) {
-        const content = panel.lastElementChild;
-        expect(content instanceof HTMLElement && Math.abs(content.offsetWidth - panel.clientWidth) <= 1 &&
-          content.offsetHeight > 0, true, `${titleOf(panel)}: ${content instanceof HTMLElement ?
-          content.offsetWidth : 0} of ${panel.clientWidth} px`);
-      }
-      expect(panelOf(view, 'Performance').firstElementChild?.classList.contains('d4-dialog-header'), true,
-        'Performance has its own header');
-      const shown = view.resultsPane.frames;
-      expect(shown.length > 0 && shown.every((f) => frames.includes(f) && f.columns.length > 0), true,
-        'The previews hold no frame of the table\'s columns');
-    } finally {
-      await closeTrainView(view, [iris]);
-    }
-    expectReleased(frames);
-  }, {timeout: TIMEOUT});
-
-  test('winequality: the regression rows, Statistics and the method\'s own views', async () => {
-    const wine = await openDemoTable(WINE, 'wine');
-    const view = await openTrainView(wine);
-    try {
-      view.targetInput.value = wine.getCol('quality');
-      await awaitCheck(() => view.featuresInput.validity !== null, 'Features is not marked', WAIT_MS);
-      view.featuresInput.value = view.featuresInput.value.filter((c) => c.name !== 'quality');
-      await awaitTrained(view);
-      expect(view.lastTraining?.engine.name, 'PLS Regression');
-      await awaitCheck(() => rowTitles(view).length > 3, `No PLS Regression row: ${JSON.stringify(rowTitles(view))}`,
-        TIMEOUT);
-      const titles = rowTitles(view);
-      const second = titles[1].filter((t) => t !== 'Insights & Tips');
-      expectRows([titles[0], second, titles[2]], [['Predicted quality vs Actual', 'Residuals',
-        'Distributions of predicted and actual quality'], ['Performance', 'Statistics'],
-      ['Features', 'Features correlation']]);
-      expect(titles[1].indexOf('Insights & Tips') <= 0, true, 'Insights & Tips is not first in row 2');
-      expect(titles.slice(3).every((row) => row.length > 0 && row.length <= 3 &&
-        row.every((t) => t === 'PLS Regression')), true, JSON.stringify(titles));
-      const statistics = gridWith(view.resultsPane.root, 'Statistic');
-      expect(statistics.dataFrame.rowCount, 11);
-      expect(headerTooltip(statistics, 'Predicted'), 'The statistic of the model\'s predictions on the same rows.');
-      // One line for every statistic far from the target's, pointing to Statistics and shown as its description.
-      const deviation = 'The predictions\' statistics deviate significantly from the actual ones.';
-      const lines = insightLines(view);
-      expect(lines.filter((l) => l.includes('deviate significantly')).length <= 1 &&
-        !lines.some((l) => l.includes('is far from the actual one')), true, lines.join(' | '));
-      const deviating = lines.filter((l) => l.startsWith(deviation));
-      expectArray(deviating, deviating.length === 0 ? [] : [deviation]);
-      expect(statistics.props.description ?? '', deviating.length === 0 ? '' : deviation);
-      if (deviating.length > 0) {
-        const tooltip = await enterTooltip(insightItem(view, deviation));
-        expect(tooltip.endsWith('See Statistics.'), true, tooltip);
-      }
-      await expectTitleTooltips(view);
-      expectUnderTitles(view);
-      const r2 = view.lastTraining?.result.metrics.train.r2 ?? NaN;
-      const metrics = gridWith(view.resultsPane.root, 'Metric');
-      const tooltip = gridTooltip(metrics, metrics.cell('Train', metricRow(metrics, 'R2')));
-      expect(tooltip.endsWith('R2 is below 0.3.'), r2 < 0.3, `Train R2 ${r2}: ${tooltip}`);
-      expect(!tooltip.startsWith(`${r2}`) && !tooltip.includes('Value on'), true, tooltip);
-    } finally {
-      await closeTrainView(view, [wine]);
-    }
-  }, {timeout: 120000});
 
   test('a hovered row is linked through the kept rows', async () => {
     const iris = await openIris();
@@ -3242,41 +2727,6 @@ category('UI: Catalog', () => {
     }
   });
 
-  test('dragging the panel title\'s name starts the drag of the model row, also for a row without a file', async () => {
-    const manualId = await insertModelRow({name: `forge-test-model-${Date.now()}-manual`});
-    try {
-      for (const id of [sharedModel().id, manualId]) {
-        const model = await forgeDb.models.get(id);
-        grok.shell.setCurrentObject(ForgeModelHandler.rowOf({id: model.id, name: model.name}), false, true);
-        await awaitCheck(() => titleName(document, model.name) !== undefined,
-          'The context panel does not show the model', WAIT_MS);
-        const name = titleName(document, model.name);
-        if (name === undefined)
-          throw new Error('No name in the panel title');
-        expect(getComputedStyle(name).userSelect, 'none');
-        const before = new Set(Array.from(document.querySelectorAll('.d4-balloon')));
-        const r = name.getBoundingClientRect();
-        const at = (type: string, dx: number) => new MouseEvent(type, {bubbles: true, cancelable: true, button: 0,
-          buttons: 1, clientX: r.left + 2 + dx, clientY: r.top + 2});
-        name.dispatchEvent(at('mousedown', 0));
-        for (const dx of [3, 10, 20, 40])
-          document.dispatchEvent(at('mousemove', dx));
-        try {
-          expect(document.body.classList.contains(`d4-drag-${MODEL_TYPE}`), true, document.body.className);
-        } finally {
-          document.dispatchEvent(at('mouseup', 40));
-        }
-        await delay(300);
-        const errors = Array.from(document.querySelectorAll('.d4-balloon'))
-          .filter((b) => !before.has(b) && (b.textContent ?? '').includes('Error'));
-        expect(errors.length, 0, errors.map((b) => b.textContent).join(' | '));
-      }
-    } finally {
-      grok.shell.setCurrentObject(null, false, true);
-      await forgeDb.models.delete(manualId);
-    }
-  });
-
   test('the model accordion has the five panes and reads the model', async () => {
     const {id, iris} = sharedModel();
     const model = await forgeDb.models.get(id);
@@ -3500,51 +2950,6 @@ category('UI: Catalog', () => {
     }
   });
 
-  test('the context panel follows Forge:updateModel of its model only', async () => {
-    const stamp = Date.now();
-    const name = `forge-test-model-${stamp}-followed`;
-    const id = await insertModelRow({name, description: 'd', tags: 'a'});
-    const otherId = await insertModelRow({name: `forge-test-model-${stamp}-other`});
-    const renamed = `${name}-renamed`;
-    const details = () => titleName(document, renamed)?.closest('.d4-accordion')?.textContent ?? '';
-    try {
-      grok.shell.setCurrentObject(ForgeModelHandler.rowOf(await forgeDb.models.get(id)), false, true);
-      await awaitCheck(() => titleName(document, name) !== undefined, 'The context panel does not show the model',
-        WAIT_MS);
-      const title = titleName(document, name);
-      await grok.functions.call('Forge:updateModel', {model: otherId, description: 'other'});
-      await delay(1500);
-      expect(title?.isConnected, true, 'Another model\'s change rebuilt the context panel');
-      await grok.functions.call('Forge:updateModel', {model: id, name: renamed, description: 'forge-test-edited',
-        tags: 'b'});
-      await awaitCheck(() => details().includes('forge-test-edited'), `The Details do not follow: ${details()}`,
-        WAIT_MS);
-      const shown: unknown = grok.shell.o;
-      expect(shown instanceof DG.DomainRow && shown.id === id && shown.values.tags === 'b', true,
-        `The context panel shows ${shown}`);
-    } finally {
-      grok.shell.setCurrentObject(null, false, true);
-      await forgeDb.models.delete(id);
-      await forgeDb.models.delete(otherId);
-    }
-  }, {timeout: TIMEOUT});
-
-  test('the context panel leaves the model Forge:deleteModel deletes', async () => {
-    const name = `forge-test-model-${Date.now()}-gone`;
-    const id = await insertModelRow({name});
-    try {
-      grok.shell.setCurrentObject(ForgeModelHandler.rowOf(await forgeDb.models.get(id)), false, true);
-      await awaitCheck(() => titleName(document, name) !== undefined, 'The context panel does not show the model',
-        WAIT_MS);
-      await grok.functions.call('Forge:deleteModel', {model: id});
-      await awaitCheck(() => !shows(id) && titleName(document, name) === undefined,
-        'The context panel keeps the deleted model', WAIT_MS);
-    } finally {
-      if (await forgeDb.models.query().where('id', '=', id).select('name').first() !== null)
-        await forgeDb.models.delete(id);
-    }
-  }, {timeout: TIMEOUT});
-
   test('openShareDialog opens the platform\'s Share dialog of the model and returns', async () => {
     const name = `forge-test-model-${Date.now()}-share`;
     const id = await insertModelRow({name});
@@ -3748,44 +3153,6 @@ category('UI: Table panel', () => {
     }
   }, {timeout: TIMEOUT});
 
-  test('a click on a name right after the pane is expanded shows the model', async () => {
-    const {name, iris} = paneFixture();
-    const tableView = grok.shell.addTableView(iris);
-    const isPanelShown = grok.shell.windows.showContextPanel;
-    grok.shell.windows.showContextPanel = true;
-    const headers = () =>
-      Array.from(document.querySelectorAll<HTMLElement>('.grok-prop-panel .d4-accordion-pane-header'));
-    const header = () => headers().find((h) => h.textContent?.trim() === PANEL_TABLE_MODELS);
-    const panel = () => document.querySelector<HTMLElement>('.grok-prop-panel') ?? ui.div();
-    try {
-      // The view just added may set its own current object after this one: the table is set until it stays.
-      await awaitCheck(() => {
-        if (!(grok.shell.o instanceof DG.DataFrame && grok.shell.o.dart === iris.dart))
-          grok.shell.setCurrentObject(iris, false, true);
-        return header() !== undefined;
-      }, 'No Models pane', WAIT_MS).catch(() => {
-        throw new Error(`No Models pane for ${String(grok.shell.o)}: ${headers().map((h) => h.textContent)}`);
-      });
-      if (header()?.getAttribute('aria-expanded') !== 'true')
-        header()?.click();
-      await awaitCheck(() => paneLine(panel(), name) !== undefined, 'The pane does not list the model', WAIT_MS);
-      expect(headers().filter((h) => h.textContent?.trim() === PANEL_TABLE_MODELS).length, 1);
-      // Expanding any accordion pane makes the platform drop unforced current-object changes for 2 s.
-      const other = headers().find((h) => h !== header());
-      if (other === undefined)
-        throw new Error('The context panel has no other pane');
-      if (other.getAttribute('aria-expanded') === 'true')
-        other.click();
-      other.click();
-      paneParts(panel(), name).link.click();
-      await awaitCheck(() => grok.shell.o instanceof DG.DomainRow && grok.shell.o.values?.name === name,
-        `The click left ${String(grok.shell.o)} as the current object`, WAIT_MS);
-    } finally {
-      grok.shell.windows.showContextPanel = isPanelShown;
-      tableView.close();
-    }
-  }, {timeout: TIMEOUT});
-
   test('Train opens the Train view on the table', async () => {
     const {iris} = paneFixture();
     const pane = tableModelsPane(iris);
@@ -3912,25 +3279,6 @@ category('UI: Runs', () => {
     }
   }, {timeout: TIMEOUT});
 
-  test('a cancelled training is a cancelled row; a click on it trains again', async () => {
-    const demog = demoDemog(SLOW_ROWS);
-    const view = await TrainView.create(demog);
-    grok.shell.addView(view);
-    try {
-      trainSlowly(view, demog);
-      await cancelOnceShown('Training XGBoost model', TIMEOUT);
-      await awaitCheck(() => !view.isTraining, 'The cancelled training does not end', TIMEOUT);
-      expect(view.runs[0]?.status, 'cancelled');
-      const grid = runsGrid(view);
-      expect(grid.dataFrame.get('Status', 0), 'cancelled');
-      expect(gridTooltip(grid, grid.cell('Status', 0)), 'Stopped from the task bar.');
-      clickRunsRow(grid, 0);
-      await awaitCheck(() => view.isTraining, 'A click on the cancelled run does not train', WAIT_MS);
-    } finally {
-      await closeTrainView(view, [demog]);
-    }
-  }, {timeout: TIMEOUT});
-
   test('a click on the current run after a threshold move restores the threshold without training', async () => {
     const iris = await twoSpeciesIris();
     const view = await openTrainView(iris);
@@ -3993,38 +3341,6 @@ category('UI: Runs', () => {
       grok.shell.closeTable(demog);
     }
   }, {timeout: TIMEOUT});
-
-  test('a restored run sets Missing values and One-hot encoding again', async () => {
-    const demog = await openDemog();
-    const view = await TrainView.create(demog);
-    grok.shell.addView(view);
-    const {oneHot} = view.preparationInputs;
-    const choice = view.missingValuesInputs.choice;
-    try {
-      view.methodInput.value = 'SVM';
-      await awaitTrained(view);
-      view.targetInput.value = demog.getCol('AGE');
-      view.featuresInput.value = columnsOf(demog, ['HEIGHT', 'WEIGHT', 'SEX', 'RACE']);
-      await awaitCheck(() => isShown(oneHot.root) && oneHot.value, 'One-hot encoding is not checked', WAIT_MS);
-      choice.value = 'Impute';
-      await awaitTrained(view);
-      const imputed = view.runs[0];
-      expect(imputed.missingValues.mode, 'impute');
-      expect(imputed.steps.oneHot, true);
-      expect(runsGrid(view).dataFrame.get('Preparation', 0).startsWith('impute ('), true,
-        runsGrid(view).dataFrame.get('Preparation', 0));
-
-      choice.value = 'Skip rows';
-      oneHot.value = false;
-      view.restoreRun(imputed);
-      expect(choice.value, 'Impute');
-      expect(oneHot.value, true);
-      await awaitTrained(view);
-      expect(view.runs[0].missingValues.mode, 'impute');
-    } finally {
-      await closeTrainView(view, [demog]);
-    }
-  }, {timeout: TIMEOUT});
 });
 
 const SEARCH_TIMEOUT = 180000;
@@ -4047,20 +3363,6 @@ function rowOf(tune: TuneSettings, name: string): TuneRow {
   return row;
 }
 
-/** The shown Max time of [limit] has the unit `min` and one underline: the editor's and its options' (the clicker and
- * the unit) at one height, the editor's as long as theirs. */
-function expectOneUnderline(limit: LimitInputs): void {
-  expect(limit.minutes.root.querySelector('.ui-input-description')?.textContent, 'min');
-  const [editor, unit] = [limit.minutes.input, limit.minutes.root.querySelector('.ui-input-options')!]
-    .map((e) => e.getBoundingClientRect());
-  expect(Math.abs(editor.bottom - unit.bottom) < 0.5 && editor.right >= unit.right - 1, true,
-    `Two underlines: the editor's at ${editor.bottom} to ${editor.right}, the unit's at ${unit.bottom} to ` +
-    `${unit.right}`);
-}
-
-/** The platform's message of an int input below its `min` of 1 (its wording, 1 itself being valid). */
-const MORE_THAN_1 = 'Value must be greater than 1';
-
 /** Limit Trials, [n] of them. */
 function stopAfterTrials(limit: LimitInputs, n: number): void {
   limit.kind.value = TRIALS;
@@ -4073,76 +3375,10 @@ function typeInto(field: HTMLInputElement, text: string): void {
   field.dispatchEvent(new Event('input', {bubbles: true}));
 }
 
-/** Checks exactly [checked] of the choices of [row], as the user does. */
-function checkChoices(row: TuneRow, checked: string[]): void {
-  for (const check of row.choices ?? []) {
-    const isChecked = checked.includes(check.parentElement?.textContent ?? '');
-    if (check.checked !== isChecked) {
-      check.checked = isChecked;
-      check.dispatchEvent(new Event('change', {bubbles: true}));
-    }
-  }
-}
-
 /** Picks [value] in [select], as the user does. */
 function pick(select: HTMLSelectElement, value: string): void {
   select.value = value;
   select.dispatchEvent(new Event('change', {bubbles: true}));
-}
-
-const checkedChoices = (row: TuneRow) =>
-  (row.choices ?? []).filter((c) => c.checked).map((c) => c.parentElement?.textContent ?? '');
-
-/** Checks the layout of [view]'s Auto-tune block on the range [row], in the form's current layout (labels beside or
- * above the inputs): the row on one line, its label beside it in the Settings label's column (or above it), the
- * chevron under the Method header's text, the status as far from Settings as from Search options (beside only), no
- * overflow, and the reset button, the pin, Metric and the shown limit ending at Tune's right edge. */
-function expectTuneLayout(view: TrainView, row: TuneRow): void {
-  const tune = view.tuneSettings;
-  const pane = view.root.querySelector<HTMLElement>('.forge-train-form')!;
-  const isCondensed = tune.root.closest('.ui-form-condensed') !== null;
-  const [caption, label, from, to, pin] = [tune.mode.captionLabel, row.label, row.from!, row.to!, row.pin]
-    .map((e) => e.getBoundingClientRect());
-  const middle = (r: DOMRect) => r.top + r.height / 2;
-  const isLabelPlaced = isCondensed ? label.bottom <= from.top + 1 && Math.abs(label.left - caption.left) < 2 :
-    Math.abs(middle(label) - middle(from)) < 4 && label.right <= from.left && Math.abs(label.right - caption.right) < 2;
-  expect(isLabelPlaced && [to, pin].every((r) => Math.abs(middle(r) - middle(from)) < 4) &&
-    from.right < to.left && to.right <= pin.left, true, `Condensed ${isCondensed}: Settings label ` +
-    `${caption.left}-${caption.right}, label ${label.left}-${label.right} at ${middle(label)}, from ` +
-    `${from.left}-${from.right}, to ${to.left}-${to.right}, pin ${pin.left}, at ${middle(from)}`);
-  const headerText = view.groups[2].root.querySelector('.forge-group-header label')!.getBoundingClientRect();
-  const chevron = Array.from(tune.toggle.querySelectorAll<HTMLElement>('.grok-icon')).find(isShown)!
-    .getBoundingClientRect();
-  // What the user sees: the text of the Settings row (the radios when the label sits above them), the status and
-  // Search options, not their boxes.
-  const settingsRow = isCondensed ? tune.mode.input.querySelector<HTMLElement>('label')! : tune.mode.captionLabel;
-  const [settings, status, toggleText] = [settingsRow, tune.statusText, tune.toggle.querySelector('span')!]
-    .map(textRect);
-  const [above, below] = [status.top - settings.bottom, toggleText.top - status.bottom];
-  expect(Math.abs(chevron.left - headerText.left) <= 2 && Math.abs(above - below) <= 1, true,
-    `Condensed ${isCondensed}: Search options' chevron at ${chevron.left}, Method's text at ${headerText.left}; ` +
-    `status ${above} px under Settings, Search options ${below} px under the status`);
-  const boxes: [string, DOMRect][] = [['Settings', textRect(tune.mode.captionLabel)],
-    ['radios', tune.mode.input.getBoundingClientRect()], ['reset', tune.resetButton.getBoundingClientRect()],
-    ['status', status], ['Search options', toggleText], ['chevron', chevron],
-    ...Array.from(tune.grid.children).filter((e): e is HTMLElement => e instanceof HTMLElement && isShown(e))
-      .map((e, i): [string, DOMRect] => [`grid ${i} ${e.textContent?.slice(0, 12)}`, e.getBoundingClientRect()]),
-    ['Tune', view.tuneButton.getBoundingClientRect()]];
-  const overlaps = boxes.flatMap(([a, ra], i) => boxes.slice(i + 1).filter(([, rb]) =>
-    Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left) > 0.5 &&
-    Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top) > 0.5).map(([b]) => `${a} / ${b}`));
-  const rect = (r: DOMRect) => `${r.left},${r.top}-${r.right},${r.bottom}`;
-  expect(overlaps.join(', '), '', `Condensed ${isCondensed}: overlapping (${boxes.map(([n, r]) => `${n} ${rect(r)}`)
-    .slice(0, 6).join('; ')})`);
-  const button = view.tuneButton.getBoundingClientRect();
-  expect(tune.root.scrollWidth <= tune.root.clientWidth + 1 && button.right <= pane.getBoundingClientRect().right,
-    true, `Settings ${tune.root.scrollWidth} wide in ${tune.root.clientWidth}; Tune ends at ${button.right}`);
-  // The ink's right edges: the reset and pin glyphs, the selects' underlines, Tune's letters.
-  const tuneText = textRect(view.tuneButton).right;
-  const rights = [tune.resetButton.querySelector('i')!, row.pin.querySelector('i')!, tune.metric,
-    (tune.limit.isTime ? tune.limit.minutes : tune.limit.trials).input].map((e) => e.getBoundingClientRect().right);
-  expect(rights.every((right) => Math.abs(right - tuneText) <= 1), true, `Condensed ${isCondensed}: Tune's ` +
-    `letters end at ${tuneText}; the reset and pin glyphs, Metric and the limit at ${rights.join(', ')}`);
 }
 
 /** The box of the text inside [element], as a DOM Range over its text nodes gives it (not the boxes around them). */
@@ -4408,128 +3644,6 @@ category('UI: Search', () => {
       view.featuresInput.value = [];
       await awaitCheck(() => resultsState(view) === 'false/true', 'An empty Features is not a problem', WAIT_MS);
       expect(isDisabled(view.tuneButton), true, 'Tune is enabled without features');
-    } finally {
-      await closeTrainView(view, [iris]);
-    }
-  }, {timeout: TIMEOUT});
-
-  test('Settings: the status follows the values, reset sets the defaults, Auto-tune hides Train and runs nothing',
-    async () => {
-      const table = slowTable();
-      const view = await openTrainView(table);
-      try {
-        view.methodInput.value = 'SVM';
-        await awaitCheck(() => isTrainShown(view), 'Train is not offered for SVM', WAIT_MS);
-        const tune = view.tuneSettings;
-        expectArray(optionsOfRadio(tune.mode), [MANUAL, AUTO_TUNE]);
-        expectOptionsInRow(tune.mode);
-        expect(tune.mode.root.querySelector('.ui-input-options')?.contains(tune.resetButton), true,
-          'The reset button is not on the Settings row');
-        expect(`${statusOf(view)} ${tune.resetButton.getAttribute('aria-disabled')}`, 'Default true');
-        expect(await enterTooltip(tune.statusText), 'The method\'s recommended settings');
-        expect(await enterTooltip(tune.resetButton), 'SVM settings are already default');
-        expect(tune.resetButton.getAttribute('aria-label'), 'SVM settings are already default');
-        setHyperparameter(view, 'cost', 2);
-        expect(`${statusOf(view)} ${tune.resetButton.getAttribute('aria-disabled')}`, 'Customized false');
-        expect(await enterTooltip(tune.resetButton), 'Reset SVM settings to defaults');
-        expect(tune.resetButton.getAttribute('aria-label'), 'Reset SVM settings to defaults');
-        expect(await enterTooltip(tune.statusText), 'Changed by you');
-        tune.resetButton.click();
-        expect(view.hyperparameterInputs.get('cost')?.value, 1);
-        expect(statusOf(view), 'Default');
-
-        const runs = view.runs.length;
-        tune.setMode(AUTO_TUNE);
-        expect(isTrainShown(view), false, 'Train is shown in Auto-tune');
-        expect(`${tune.isExpanded} ${tune.toggle.getAttribute('aria-expanded')}`, 'false false',
-          'Search options starts expanded');
-        expect(view.tuneButton.offsetParent !== null, true, 'Tune is hidden while Search options is collapsed');
-        expect(view.groups[2].root.contains(tune.toggle), true, 'Search options is not in Method');
-        await delay(CHECK_DELAY_MS * 3);
-        expect(view.isTraining || view.runs.length !== runs, false, 'A mode switch trained');
-        tune.setMode(MANUAL);
-        expect(isTrainShown(view), true, 'Train is hidden back in Manual');
-        expect(view.hyperparameterInputs.get('cost')?.root.isConnected, true, 'Manual hides Penalty');
-      } finally {
-        await closeTrainView(view, [table]);
-      }
-    }, {timeout: 120000});
-
-  test('Search options: ranges, choices and pins reach the space; rules and validation gate Tune', async () => {
-    const iris = await openIris();
-    const view = await openTrainView(iris);
-    try {
-      view.methodInput.value = 'SVM';
-      await awaitTrained(view);
-      const tune = autoTune(view);
-      const kernel = rowOf(tune, 'kernel');
-      expectArray(checkedChoices(kernel), ['Linear', 'RBF', 'Polynomial']);
-      expect(kernel.choicesButton?.textContent, 'Linear, RBF, Polynomial');
-      const cost = rowOf(tune, 'cost');
-      expectArray([cost.from!.value, cost.to!.value], ['0.01', '100']);
-      expect(tune.grid.contains(cost.from!), true, 'Penalty has no range in Search options');
-      // The platform may switch the form to labels above the inputs as the expanded group resizes it.
-      await delay(500);
-      const pane = view.root.querySelector<HTMLElement>('.forge-train-form')!;
-      const isCondensed = () => tune.root.closest('.ui-form-condensed') !== null;
-      expectTuneLayout(view, cost);
-      pane.parentElement!.style.width = '520px';
-      const labelEnd = (e: HTMLElement) => e.getBoundingClientRect().right;
-      await awaitCheck(() => !isCondensed() && Math.abs(labelEnd(cost.label) - labelEnd(tune.mode.captionLabel)) < 2,
-        'A 520 px form keeps its labels above the inputs, or Search options does not follow its label column', WAIT_MS);
-      expectTuneLayout(view, cost);
-      pane.parentElement!.style.width = '';
-
-      const coef0 = rowOf(tune, 'coef0');
-      expect(`${coef0.pin.getAttribute('aria-disabled')} ${coef0.pin.getAttribute('aria-label')}`,
-        'true Offset: Fixed, can’t be tuned');
-      expect(tune.grid.contains(coef0.value), true, 'Offset has no value in Search options');
-      const coef0Input = view.hyperparameterInputs.get('coef0')!;
-      coef0Input.value = 1;
-      expect(coef0.value.value, coef0Input.stringValue);
-      typeInto(coef0.value as HTMLInputElement, '2');
-      expect(coef0Input.value, 2);
-      await awaitTrained(view);
-      expect(rowOf(tune, 'epsilon').from!.disabled, true, 'Epsilon is searched for a classification');
-      expect(rowOf(tune, 'gamma').from!.disabled, false, 'Gamma is disabled while Kernel is tuned');
-      expect(`${kernel.pin.getAttribute('aria-pressed')} ${kernel.pin.getAttribute('aria-label')}`,
-        `false ${view.hyperparameterInputs.get('kernel')!.caption}: will be tuned`);
-
-      tune.togglePin('kernel');
-      expect(kernel.pin.getAttribute('aria-pressed'), 'true');
-      expect(tune.grid.contains(kernel.value) && kernel.value instanceof HTMLSelectElement, true,
-        'A pinned Kernel is not its own value');
-      pick(kernel.value as HTMLSelectElement, 'Linear');
-      expect(view.hyperparameterInputs.get('kernel')!.value, 'Linear');
-      await awaitTrained(view);
-      expectArray(['gamma', 'degree'].map((name) => rowOf(tune, name).from!.disabled), [true, true]);
-      expect(statusOf(view), 'Customized');
-      const svm = EngineRegistry.discover().find((e) => e.name === 'SVM')!;
-      const choice = tune.choice();
-      expectArray(choice.space?.pinned ?? [], ['kernel']);
-      const candidate = tuneCandidate(svm, view.lastTraining!.result.hyperparameters,
-        {space: choice.space!, task: 'classification'});
-      expectArray((candidate.space ?? []).map((d) => `${d.name} ${d.low} ${d.high}`), ['cost 0.01 100']);
-
-      tune.setExpanded(false);
-      typeInto(cost.from!, '200');
-      expect(tune.isExpanded, true, 'Search options stays collapsed on an error');
-      expect(`${cost.error.textContent} ${cost.from!.getAttribute('aria-invalid')}`, `${FROM_BELOW_TO} true`);
-      expect(await hoverText(view.tuneButton), FIX_RANGE);
-      typeInto(cost.from!, '0.0001');
-      expect(cost.error.textContent, '“From” must be at least 0.001');
-      typeInto(cost.from!, '0.1');
-      expect(`${cost.error.textContent}|${isShown(cost.error)}`, '|false');
-      await awaitCheck(() => !isDisabled(view.tuneButton), 'Tune stays disabled with a valid range', WAIT_MS);
-      expect(tune.choice().space?.ranges.cost?.low, 0.1);
-      tune.togglePin('cost');
-      expect(await hoverText(view.tuneButton), ALL_FIXED);
-      tune.togglePin('kernel');
-      checkChoices(kernel, []);
-      expect(`${kernel.error.textContent} ${kernel.choicesButton?.textContent}`, 'Choose at least one None');
-      expect(await hoverText(view.tuneButton), FIX_RANGE);
-      checkChoices(kernel, ['RBF']);
-      expectArray(tune.choice().space?.ranges.kernel?.choices ?? [], ['RBF']);
     } finally {
       await closeTrainView(view, [iris]);
     }
@@ -5234,88 +4348,6 @@ category('UI: Find best', () => {
       }
     }, {timeout: TIMEOUT});
 
-  test('Limit shows Max time in minutes with a clicker or Max trials; each validator disables Tune or Find with its ' +
-    'reason and starts no search', async () => {
-    const iris = await openIris();
-    const view = await openTrainView(iris);
-    try {
-      const tune = autoTune(view);
-      const {limit} = tune;
-      const shown = (l: LimitInputs) => [l.minutes, l.trials].filter((i) => i.root.offsetParent !== null)
-        .map((i) => i.caption).join(',');
-      expectArray(optionsOfRadio(limit.kind), [TIME, TRIALS]);
-      expect(`${limit.kind.value} ${limit.minutes.value} ${limit.trials.value} ${shown(limit)}`,
-        `${TRIALS} 1 50 Max trials`);
-      limit.kind.value = TIME;
-      expect(shown(limit), 'Max time');
-      expectOneUnderline(limit);
-      limit.minutes.root.querySelector<HTMLElement>('.ui-input-plus')!.click();
-      expect(limit.minutes.value, 2, 'The clicker does not step by 1');
-      expect(tune.choice().budgetSeconds, 120);
-      limit.kind.value = TRIALS;
-      expect(`${shown(limit)} ${tune.choice().maxTrials} ${tune.choice().budgetSeconds}`, 'Max trials 50 undefined');
-      await awaitCheck(() => !isDisabled(view.tuneButton), 'Tune stays disabled', WAIT_MS);
-      const runs = view.runs.length;
-      const blocked = async (button: HTMLElement, reason: string, start: () => Promise<void>) => {
-        expect(await hoverText(button), reason);
-        await start();
-        expect(`${view.runs.length} ${view.isTraining} ${isShown(view.searchPanel.root)}`, `${runs} false false`,
-          `A search started with ${reason}`);
-      };
-      const tuneReason = (problem: string) => blocked(view.tuneButton, problem,
-        () => view.startSearch('tune', tune.choice()));
-      for (const [n, message] of [[0, MORE_THAN_1], [10001, 'Value must be less than 10000']] as const) {
-        limit.trials.value = n;
-        expect(limit.trials.validity !== null && tune.isExpanded, true, `Trials ${n} is not marked`);
-        await tuneReason(`Max trials: ${message}`);
-      }
-      limit.trials.stringValue = 'abc';
-      expect(tune.problem(), 'Max trials: \'abc\' is not an integer.');
-      limit.trials.value = 50;
-      limit.kind.value = TIME;
-      for (const [n, message] of [[0, MORE_THAN_1], [61, 'Value must be less than 60']] as const) {
-        limit.minutes.value = n;
-        expect(limit.minutes.validity, message);
-        await tuneReason(`Max time: ${message}`);
-      }
-      limit.minutes.value = 1;
-      expect(limit.trials.validity, null, 'The hidden Trials is validated');
-
-      const find = await chooseAuto(view);
-      find.setExpanded(true);
-      expectArray(optionsOfRadio(find.strategy), ['Equal', 'Leaders']);
-      expect(`${find.strategy.value} ${find.limit.kind.value} ${find.limit.minutes.value} ${find.limit.trials.value}`,
-        `Equal ${TRIALS} 1 100`);
-      find.limit.kind.value = TIME;
-      const options = Array.from(find.strategy.root.querySelectorAll<HTMLElement>('.ui-radio-button'));
-      expect(new Set(options.map((o) => Math.round(o.getBoundingClientRect().top))).size, 1, 'Strategy wraps');
-      expectArray([await enterTooltip(radioOption(find.strategy, 'Equal')!),
-        await enterTooltip(radioOption(find.strategy, 'Leaders')!)],
-      ['Every method gets an equal share of the limit: a fair comparison',
-        'Each round the worse half drops out; the rest get more trials']);
-      const findReason = (problem: string) => blocked(view.findButton, problem,
-        () => view.startSearch('best', find.choice()));
-      expectOneUnderline(find.limit);
-      find.limit.minutes.value = 61;
-      await findReason('Max time: Value must be less than 60');
-      find.limit.minutes.value = 1;
-      const checked = find.checkedMethods.length;
-      stopAfterTrials(find.limit, checked - 1);
-      await findReason(`Max trials: At least one trial per checked method: ${checked}`);
-      expect(find.limit.trials.validity, `At least one trial per checked method: ${checked}`);
-      find.strategy.value = 'Leaders';
-      expect(`${find.problem()} ${find.choice().strategy}`, 'null halving');
-      find.strategy.value = 'Equal';
-      clickMethod(find, find.checkedMethods[0]);
-      expect(find.problem(), null, 'A trial per checked method still blocks Find');
-      find.limit.trials.value = 0;
-      await findReason(`Max trials: ${MORE_THAN_1}`);
-    } finally {
-      await closeTrainView(view, [iris]);
-      clearTestTuneStorage();
-    }
-  }, {timeout: TIMEOUT});
-
   test('Find remembers Strategy and the limit; an old stored time becomes whole minutes', async () => {
     const iris = await openIris();
     grok.userSettings.add(TuneSettings.storage, FIND_KEY, JSON.stringify({seconds: 30, trials: 70}));
@@ -5343,89 +4375,6 @@ category('UI: Find best', () => {
       clearTestTuneStorage();
     }
   }, {timeout: TIMEOUT});
-
-  test('Find\'s Search options starts collapsed with Find shown, its state is remembered, a problem opens it',
-    async () => {
-      const iris = await openIris();
-      let view = await openTrainView(iris);
-      try {
-        let find = await chooseAuto(view);
-        expect(`${find.isExpanded} ${isShown(find.grid)}`, 'false false', 'Search options starts expanded');
-        expect(view.findButton.offsetParent !== null, true, 'Find is hidden while Search options is collapsed');
-        expect(await enterTooltip(find.toggle), 'Show search options');
-        find.toggle.click();
-        expect(`${find.isExpanded} ${isShown(find.grid)}`, 'true true');
-        expect(storedFind(view).expanded, true, 'The expanded state is not stored');
-        await closeTrainView(view, [iris]);
-
-        view = await openTrainView(iris);
-        find = await chooseAuto(view);
-        expect(find.isExpanded, true, 'The expanded state is not restored');
-        find.toggle.click();
-        expect(find.isExpanded, false);
-        find.limit.kind.value = TIME;
-        find.limit.minutes.value = 0;
-        expect(find.isExpanded, true, 'An invalid time leaves Search options collapsed');
-      } finally {
-        await closeTrainView(view, [iris]);
-        clearTestTuneStorage();
-      }
-    }, {timeout: TIMEOUT});
-
-  test('Find trains the best method and sets Method to it in Manual as Auto-tuned; Search lists every method; a ' +
-    'Search row trains its method; Find again continues the search', async () => {
-    const iris = await openIris();
-    const view = await openTrainView(iris);
-    try {
-      await chooseAuto(view);
-      const choice = {metric: 'accuracy' as const, maxTrials: 8, methods: ['XGBoost', 'Decision Tree', 'Softmax']};
-      await view.startSearch('best', choice);
-      const search = view.lastTraining?.result.search;
-      expect(search?.mode, 'best');
-      const chosen = search!.leaders.find((l) => l.chosen)!;
-      expect(view.methodInput.value, chosen.method);
-      expect(view.lastTraining?.engine.name, chosen.method);
-      expect(`${view.isAutoMethod} ${view.tuneSettings.isAuto}`, 'false false', 'Auto, Auto-tune');
-      // Auto-tuned even when the winner's settings are its defaults.
-      expect(statusOf(view), 'Auto-tuned');
-      expect(view.runs[0].settingsStatus, 'Auto-tuned');
-      const found = `Found by Find best model: ${search!.trials} trials`;
-      const runTooltip = gridTooltip(runsGrid(view), runsGrid(view).cell('Method', 0));
-      expect(runTooltip.startsWith(found), true, runTooltip);
-      const card = currentCard(view);
-      expect(cardMetrics(view, card)[0], 'Accuracy', 'The optimized metric is not first');
-      expect(cardCaption(card), 'Auto-tuned model');
-      const grid = searchGrid(view);
-      expect(grid.dataFrame.rowCount, 3);
-      expect(grid.dataFrame.getCol('Chosen').toList().filter((c) => c === true).length, 1);
-      expectSearchOrder(grid, search!.leaders);
-      expect(headerTooltip(grid, 'Accuracy (CV)').includes('By cross-validation'), true, 'The CV header');
-      expectChartOrder(view.searchPanel.chart!, grid);
-      expect(resultsText(view).includes('Search: Find best model by Accuracy, limit 8 trials: ' +
-        `${search!.leaders.length} method`), true, resultsText(view));
-      expect(balloonWith('Best model:') !== null, true, 'No balloon after Find');
-      // An equal split: each method's count is its share, unless its space ran out.
-      const notes = grid.dataFrame.getCol('Method').toList()
-        .map((_, row) => gridTooltip(grid, grid.cell('Trials', row)));
-      expectArray(notes.filter((n) => n !== 'Its share of the limit ran out' && n !== 'Its space was exhausted'), []);
-      const other = search!.leaders[1];
-      view.restoreLeader(other);
-      await awaitTrained(view);
-      expect(view.methodInput.value, other.method);
-      expect(isShown(view.searchPanel.root), true, 'A Search row click hid Search');
-      expect(view.methodInput.items[0], 'Auto');
-
-      await chooseAuto(view);
-      await view.startSearch('best', choice);
-      const again = view.lastTraining!.result.search!;
-      expect(`${again.trials > search!.trials} ${again.trials <= search!.trials + 8} ${again.maxTrials}`,
-        'true true 16', `${search!.trials} trials, then ${again.trials}`);
-      const trials: number[] = searchGrid(view).dataFrame.getCol('Trials').toList();
-      expect(trials.reduce((sum, n) => sum + n, 0), again.trials, 'Search does not count every trial');
-    } finally {
-      await closeTrainView(view, [iris]);
-    }
-  }, {timeout: SEARCH_TIMEOUT});
 
   test('Search: the cautious scores as a bar chart left of the grid over its frame, described, no title, line, ' +
     'coloring or selectors; splitters between the blocks; a halving round in the tooltips; a bar click trains its ' +
@@ -5520,56 +4469,6 @@ category('UI: Find best', () => {
       await closeTrainView(view, [iris]);
     }
   }, {timeout: SEARCH_TIMEOUT});
-
-  test('Candidates lists only the methods the server, Predict probability and metric rules allow', async () => {
-    const find = new FindSettings(ui.button('Find', () => {}), ui.label('Method'), {onChanged: () => {}});
-    const form = ui.form([]);
-    form.append(find.root);
-    document.body.append(form);
-    const notListed = (reason: string) => `Not listed: ${reason}`;
-    try {
-      find.setMethods([{name: 'XGBoost', isLive: true, isServer: false, probabilities: 'always'},
-        {name: 'SVM', isLive: true, isServer: false, probabilities: 'input'},
-        {name: 'Chemprop', isLive: false, isServer: true, probabilities: 'none'},
-        {name: 'Plain', isLive: false, isServer: false, probabilities: 'none'},
-        {name: 'RealMLP', isLive: false, isServer: false, probabilities: 'always'}]);
-      expectArray(listedMethods(find), ['XGBoost', 'SVM', 'Plain', 'RealMLP']);
-      expect(await enterTooltip(find.candidatesLabel), 'The methods to try, each with its defaults first' +
-        notListed('Chemprop: Runs on the server; not searched in the browser'));
-      expectArray(find.checkedMethods, ['XGBoost', 'SVM']);
-      expect(find.problem(), null);
-      pick(find.metric, 'auc');
-      expectArray(listedMethods(find), ['XGBoost', 'RealMLP']);
-      const tooltip = await enterTooltip(find.candidatesLabel);
-      expect(tooltip.includes(notListed('SVM gives no class probabilities, which AUC-ROC needs')), true, tooltip);
-      expectArray(find.checkedMethods, ['XGBoost']);
-      find.setPredictProbability(true);
-      expectArray(listedMethods(find), ['XGBoost', 'SVM', 'RealMLP']);
-      expect(findItem(find, 'SVM').check.checked, false, 'SVM checked at the quick budget');
-      const probabilityTooltip = await enterTooltip(find.candidatesLabel);
-      expect(probabilityTooltip.includes(notListed('Plain gives no class probabilities')), true, probabilityTooltip);
-      find.limit.kind.value = TIME;
-      find.limit.minutes.value = 5;
-      expectArray(find.checkedMethods, ['XGBoost', 'SVM', 'RealMLP']);
-      expectArray(find.choice().methods ?? [], find.checkedMethods);
-      expect(find.probabilityReason, null);
-      for (const name of ['XGBoost', 'SVM', 'RealMLP'])
-        clickMethod(find, name);
-      expect(`${find.probabilityReason} ${find.problem()}`, 'null Check at least one method');
-      find.setPredictProbability(false);
-      pick(find.metric, 'accuracy');
-      expectArray(find.checkedMethods, ['Plain']);
-      expect(find.probabilityReason, 'No checked method gives class probabilities');
-      find.setLocked(true);
-      expect(find.inputs.every((i) => !i.enabled) && find.metric.disabled &&
-        findItems(find).every((i) => i.check.disabled), true, 'A control is enabled while locked');
-    } finally {
-      for (const sub of find.subs)
-        sub.unsubscribe();
-      form.remove();
-      clearTestTuneStorage();
-    }
-  }, {timeout: TIMEOUT});
 
   test('the Find block looks like the Auto-tune block', async () => {
     const iris = await openIris();

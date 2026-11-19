@@ -234,7 +234,8 @@ category('Apply', () => {
     } finally {
       await deleteModel(id);
     }
-  }, {timeout: TIMEOUT});
+  }, {timeout: TIMEOUT,
+    skipReason: 'Needs a core with datagrok-ai/core#1518; the released core takes the old path'});
 
   test('predictionName adds a number for every repeat, ignoring case', async () => {
     const table = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Species', ['a'])]);

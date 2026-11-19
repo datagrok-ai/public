@@ -968,11 +968,10 @@ optimizes`, Limit (label and options) `What ends the search: a time or a trial l
 the user sees ends on one vertical line, the block's right edge: the reset and pin glyphs (their 30 px buttons put the
 glyph at the right, `justify-content: flex-end`, the hit area extending left), the selects' underlines with their
 chevrons, and Tune's letters (no right margin or padding). The toggle (`margin-top: -3px`) puts the Search options text
-as far under the status text as the status text is under the Settings label; the layout test measures the text
-through DOM Ranges and the glyph boxes, beside and above the inputs. The fields, selects and choices button share
-`forge-tune-control` (the underline, focus, `aria-invalid` and disabled rules, scoped to the grid so they beat the
-platform's `select.ui-input-editor`). The selects are `ui-input-editor`s with the platform choice input's chevron and
-no focus frame; focused, they underline in `--blue-1`. The chevron rule (`url('/images/chevron.svg')`) is in
+as far under the status text as the status text is under the Settings label. The fields, selects and choices button
+share `forge-tune-control` (the underline, focus, `aria-invalid` and disabled rules, scoped to the grid so they beat
+the platform's `select.ui-input-editor`). The selects are `ui-input-editor`s with the platform choice input's chevron
+and no focus frame; focused, they underline in `--blue-1`. The chevron rule (`url('/images/chevron.svg')`) is in
 `css/forge-platform-images.css`, listed in `package.json` `sources`: the platform loads it with the package, unbundled,
 so the path stays the platform's (the bundled `forge.css` would have the build resolve it). `togglePin` swaps only its
 row's slot and pin state, and hides the tooltip first: the pin's tooltip text changes with the click, and a hovered
