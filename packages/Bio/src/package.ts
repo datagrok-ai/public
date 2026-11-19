@@ -1881,7 +1881,7 @@ async function initBioInt() {
   const libHelper = await MonomerLibManager.getInstance();
   // Fix user lib settings for explicit stuck from a terminated test
   const libSettings = await getUserLibSettings();
-  if (libSettings.explicit) {
+  if ((libSettings.explicit?.length ?? 0) > 0) { // an empty list (always an array here) needs no fix and no write
     libSettings.explicit = [];
     await setUserLibSettings(libSettings);
   }

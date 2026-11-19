@@ -1,4 +1,4 @@
-import{A as e,Mr as t,Si as n,Sn as r,_o as i,a,ai as o,bo as s,c,d as l,di as u,fi as d,fo as f,i as p,li as m,r as h,t as g,u as _,vo as v,xi as ee}from"./shared-Cw8JyIse.js";var y=[{index:0,name:`alpha-D-Allopyranose`,group:`alpha-D-Sugars`,atomid:0,bondid:0,abbreviation:null,molblock:`alpha-D-Allopyranose
+import{A as e,Mr as t,Si as n,Sn as r,_o as i,a,ai as o,bo as s,c,d as l,di as u,fi as d,fo as f,i as p,li as m,r as h,t as g,u as _,vo as v,xi as ee}from"./shared-Az92hXkE.js";var y=[{index:0,name:`alpha-D-Allopyranose`,group:`alpha-D-Sugars`,atomid:0,bondid:0,abbreviation:null,molblock:`alpha-D-Allopyranose
   Ketcher 11161713142D 1   1.00000     0.00000     0
 
  12 12  0     1  0            999 V2000
