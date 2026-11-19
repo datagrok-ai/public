@@ -873,9 +873,11 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
         return;
       lock();
       this._onRunRequest.next({prevMessages: this._messages, currentPrompt: {prompt: answerPrompt(), isAnswer: true} as K});
+      this.textArea.focus();
     }) as HTMLButtonElement;
 
     const form = ui.divV([...questions.map((q, i) => ui.divV([ui.divText(q.question), choices[i].root])), submit]);
+    form.addEventListener('change', () => this.textArea.focus());
     this.ensureResponseBlock();
     this._aiMessagesAccordionPane!.appendChild(ui.divV([form], 'd4-ai-assistant-response-container'));
     this.outputArea.scrollTop = this.outputArea.scrollHeight;

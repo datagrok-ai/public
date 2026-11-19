@@ -6,6 +6,7 @@
 * Grokky: Fixed SAVE staying active after the AI saved the project
 * Grokky: Properties (F4) open on top of the AI panel instead of beside it, and the AI panel keeps its width when they close
 * Grokky: Clicking the icons under the prompt box no longer takes focus from it
+* Grokky: Answering the AI's question (choosing an option, clicking Submit) returns focus to the prompt box
 * Grokky: Return focus to the prompt box when the AI's actions take it
 * Grokky: Tool activity shows in a status strip above the prompt
 * Grokky: Removed suggestions that asked a question instead of running
