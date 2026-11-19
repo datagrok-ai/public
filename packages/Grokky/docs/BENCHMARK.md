@@ -284,7 +284,7 @@ too weak to carry the accuracy axis. It is also part of `node dev/check.mjs`.
 ## Caveats / scope
 
 - The runner sends prompts headlessly; **AskUserQuestion** can't be answered, so any prompt that
-  triggers it is unblocked with an empty answer and won't score well — keep suite prompts specific.
+  triggers it ends the turn with the question unanswered and won't score well — keep suite prompts specific.
 - Server-side config (effort, thinking budget, model default) is **not** visible to the browser, so
   it isn't auto-captured — the run **label** is how you denote which config produced it. Client-visible
   config (tool-def count, workspace-context size, model the browser sends) *is* recorded.

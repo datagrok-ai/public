@@ -152,7 +152,7 @@ class Session:
         self.calls: dict[str, BrowserCall] = {}
         self.skills: list[skills.Skill] = []
         self.hooks_registered = False
-        browser_tools.register(registry, self.call_browser)
+        browser_tools.register(registry, self.call_browser, self.show_in_browser)
         threading.Thread(target=self._beat_every_second, daemon=True).start()
 
     def register_hooks(self, ctx: hermes.PluginContext) -> None:
@@ -308,6 +308,9 @@ class Session:
         if call.error:
             raise RuntimeError(call.error)
         return call.value
+
+    def show_in_browser(self, name: str, args: JsonObject) -> None:
+        self.emit({'type': 'browser_show', 'name': name, 'input': args})
 
     def build_agent(self, hermes_session: str | None = None) -> hermes.Agent:
         self.hermes_session = hermes_session or uuid.uuid4().hex

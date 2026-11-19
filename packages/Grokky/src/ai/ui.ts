@@ -410,7 +410,6 @@ async function streamOnce(
       forSession(client.onFinal, async (evt) => {
         // Always end the turn: otherwise the panel stays busy and the chat is not saved.
         try {
-          panel.cancelInputRequest();
           if (revisingTimer != null) {
             clearTimeout(revisingTimer);
             revisingTimer = null;
@@ -438,12 +437,10 @@ async function streamOnce(
       });
 
       forSession(client.onError, (evt) => {
-        panel.cancelInputRequest();
         endWithError(`AI assistant: ${evt.message}`);
       });
 
       forSession(client.onAborted, async () => {
-        panel.cancelInputRequest();
         panel.clearStreaming();
         chatSession.session.addUiMessage('**Processing aborted by user**', false, {system: true});
         cleanup();
@@ -521,17 +518,7 @@ async function streamOnce(
         segmentStart = 0;
         toolStatus = '';
         panel.clearStreaming();
-        // The ball is in the user's court — a spinning loader would read as "still working".
-        chatSession.loader.style.display = 'none';
-        const response = await panel.showInputRequest(evt.input);
-        if (response) {
-          client.respondToInput(sessionId, evt.requestId, response);
-          const answerText = Object.values(response.answers).join(', ');
-          chatSession.session.addEngineMessage({role: 'user', content: [{type: 'text', text: answerText}]});
-          // And back to us: show the loader immediately — the next runtime event (thinking,
-          // tool call) can be many seconds away, and dead air here reads as "nothing happened".
-          panel.showWaitingIndicator(chatSession.loader);
-        }
+        panel.showInputRequest(evt.input);
       });
 
       subs.push(client.onClose.subscribe(() => endWithError('AI assistant: connection lost')));

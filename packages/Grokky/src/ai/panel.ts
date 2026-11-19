@@ -36,11 +36,6 @@ interface AskUserInput {
   questions: AskUserQuestion[];
 }
 
-interface AskUserResponse {
-  questions: AskUserQuestion[];
-  answers: Record<string, string>;
-}
-
 const actionButtionValues = {
   run: 'Run AI Prompt',
   stop: 'Stop AI Generation',
@@ -99,7 +94,7 @@ export type AIPanelFuncs<T extends MessageType = MessageType> = {
   /**Adds confirmation section to the panel and awaits result */
   addConfirmMessage: (msg?: string) => Promise<boolean>,
   /** Shows options to the user and returns their selection */
-  showInputRequest?: (input: AskUserInput) => Promise<AskUserResponse | null>,
+  showInputRequest?: (input: AskUserInput) => void,
 }
 
 export interface StreamingPanel<T extends MessageType = MessageType> {
@@ -112,11 +107,7 @@ export interface StreamingPanel<T extends MessageType = MessageType> {
   appendStreamedElement(el: HTMLElement): void;
   appendUiMessage(content: string): void;
   clearStreaming(): void;
-  showInputRequest(input: any): Promise<any>;
-  cancelInputRequest(): void;
-  /** Shows the turn's loader again (e.g. right after the user answers an input request),
-   * so the wait for the assistant's next move is visibly "working", not dead air. */
-  showWaitingIndicator(loader: HTMLElement): void;
+  showInputRequest(input: AskUserInput): void;
   restoredTranscript(): string;
   get rawRender(): boolean;
   get noPrompt(): boolean;
@@ -184,7 +175,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   protected _streamingMarkdownEl: HTMLElement | null = null;
   private _loaderPauseTimer: number | null = null;
   private _sessionId: string;
-  private _pendingInputResolve: ((value: AskUserResponse | null) => void) | null = null;
   private _skillMenu: DG.Menu | null = null;
   private _inline: boolean = false;
   private _feature: AiFeature;
@@ -843,60 +833,29 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this._streamingMarkdownEl = null;
   }
 
-  showInputRequest(input: AskUserInput): Promise<AskUserResponse | null> {
+  showInputRequest(input: AskUserInput): void {
     const questions = input.questions ?? [];
-    let resolved = false;
-    const choiceInputs: DG.InputBase<string>[] = [];
-
-    for (const q of questions) {
+    const choices = questions.map((q) => {
       const items = q.options.map((o) => o.label);
-      choiceInputs.push(ui.input.choice(q.header ?? '', {items, value: items[0], nullable: false}) as DG.InputBase<string>);
-    }
-    const form = ui.divV(questions.map((q, i) => ui.divV([ui.divText(q.question), choiceInputs[i].root])));
-
-    return new Promise<AskUserResponse | null>((resolve) => {
-      const submitButton = ui.button('Submit', () => {
-        const answers: Record<string, string> = {};
-        for (let i = 0; i < questions.length; i++)
-          answers[questions[i].question] = choiceInputs[i].value!;
-        doResolve({questions, answers});
-      }) as HTMLButtonElement;
-
-      const doResolve = (value: AskUserResponse | null) => {
-        if (resolved)
-          return;
-        resolved = true;
-        this._pendingInputResolve = null;
-        for (const inp of choiceInputs)
-          (inp.input as HTMLSelectElement).disabled = true;
-        // Instant feedback on click — the assistant's next event can be seconds away.
-        submitButton.disabled = true;
-        if (value)
-          submitButton.textContent = 'Submitted';
-        resolve(value);
-      };
-
-      form.appendChild(submitButton);
-
-      this._pendingInputResolve = doResolve;
-      this.ensureResponseBlock();
-      const wrapper = ui.divV([form], 'd4-ai-assistant-response-container');
-      this._aiMessagesAccordionPane!.appendChild(wrapper);
-      this.outputArea.scrollTop = this.outputArea.scrollHeight;
+      return ui.input.choice(q.header ?? '', {items, value: items[0], nullable: false}) as DG.InputBase<string>;
     });
-  }
+    const answerPrompt = () => questions.length === 1 ? choices[0].value! :
+      questions.map((q, i) => `${q.question} ${choices[i].value}`).join('\n');
+    const lock = () => {
+      choices.forEach((c) => c.enabled = false);
+      submit.disabled = true;
+      submit.textContent = 'Submitted';
+    };
+    const submit = ui.button('Submit', () => {
+      if (this.isBusy)
+        return;
+      lock();
+      this._onRunRequest.next({prevMessages: this._messages, currentPrompt: {prompt: answerPrompt()} as K});
+    }) as HTMLButtonElement;
 
-  cancelInputRequest(): void {
-    if (this._pendingInputResolve) {
-      this._pendingInputResolve(null);
-      this._pendingInputResolve = null;
-    }
-  }
-
-  showWaitingIndicator(loader: HTMLElement): void {
-    this.clearStreamingLoaderTimer();
-    loader.style.display = '';
-    this.outputArea.appendChild(loader);
+    const form = ui.divV([...questions.map((q, i) => ui.divV([ui.divText(q.question), choices[i].root])), submit]);
+    this.ensureResponseBlock();
+    this._aiMessagesAccordionPane!.appendChild(ui.divV([form], 'd4-ai-assistant-response-container'));
     this.outputArea.scrollTop = this.outputArea.scrollHeight;
   }
 
@@ -948,8 +907,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected handleRun() {
-    if (this._pendingInputResolve)
-      return;
     if (this.isBusy)
       return;
     if (!this.textArea.value.trim())

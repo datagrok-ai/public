@@ -130,6 +130,12 @@ class BrowserCallEvent(TypedDict):
     timeoutMs: int
 
 
+class BrowserShowEvent(TypedDict):
+    type: Literal['browser_show']
+    name: str
+    input: JsonObject
+
+
 class UsageEvent(TypedDict):
     type: Literal['usage']
     metrics: Metrics
@@ -161,6 +167,6 @@ class SessionLostEvent(TypedDict):
 
 
 Event = (ReadyEvent | FatalEvent | SessionEvent | TextEvent | ActivityEvent | ToolStartEvent |
-         ToolEndEvent | BrowserCallEvent | UsageEvent | StoppedEvent | LimitEvent | ErrorEvent |
+         ToolEndEvent | BrowserCallEvent | BrowserShowEvent | UsageEvent | StoppedEvent | LimitEvent | ErrorEvent |
          CancelledEvent | SessionLostEvent)
 Emit = Callable[[Event], None]

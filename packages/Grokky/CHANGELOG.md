@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Grokky: The assistant's question no longer blocks new prompts; Submit sends the choice as the next prompt
 * Grokky: Removed the "Your administrators log your AI ..." notice under the AI panel, answers and search results
 * [public#4552](https://github.com/datagrok-ai/public/issues/4552): Grokky: suggestions use an ID column (USUBJID) for categorical slots
 * [public#4551](https://github.com/datagrok-ai/public/issues/4551): Grokky: AI panel hangs for good when the final answer fails to render (markdown RangeError)

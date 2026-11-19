@@ -235,6 +235,8 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
       limits: TURN_LIMITS[fullPromptTurn ? 'full' : 'bash'],
       gates: [verifier, groundingGate].filter((g) => g !== undefined),
       awaitBrowser: (toolName, input, timeoutMs) => awaitBrowserInput(sid, active, toolName, input, timeoutMs),
+      showInBrowser: (toolName, input) =>
+        emit(active.ws, {type: 'input_request', sessionId: sid, requestId: randomUUID(), toolName, input}),
       signal: abortController.signal,
       credentials: turnCredentials,
     });

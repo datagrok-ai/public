@@ -223,8 +223,7 @@ server sends an `input_request` and waits for the matching `input_response` (cor
   (see [`src/ai/view-tools.ts`](../src/ai/view-tools.ts)). A declared tool needs a plain name and a
   description; a name another tool already has is skipped.
 
-`AskUserQuestion` round-trips the same way with a 60s answer timeout: an unanswered question returns
-"did not answer in time" to the model instead of holding the turn open.
+`AskUserQuestion` does not wait: the card is shown, the turn ends, and Submit sends the choice as the next prompt.
 
 ### Verification and grounding gates
 
