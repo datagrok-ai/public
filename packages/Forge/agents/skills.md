@@ -45,8 +45,10 @@ Forge:listMethods(table?: dataframe, target?: string) -> dataframe
 - `table`: a table to check the methods against, with the view's default features
 - `target`: name of the column to predict in the table; by default the table's last column
 
-Returns the table **Methods**, one row per method `trainModel` accepts: **Method**, **Package**, **Method type**,
-**Runs on** (`browser`, or `server` when the training data leaves the browser), **Keeps training rows** (the model
+Returns the table **Methods**, one row per method `trainModel` accepts: **Method**, **Package**, **Method type**
+(`function`, or `script` for a script or a package container's function), **Runs on** (`browser`, or `server` when the
+training data leaves the browser: a script in another language than JavaScript, a package container's function, or a
+method that says so), **Keeps training rows** (the model
 file holds training rows, as SVM's does), **Retrains live**, **Roles**, **Hyperparameters** (the setting names),
 **Settings** (a json text with one entry per setting: `name`, `type` and, when the method declares them, `default`,
 `min`, `max`, `choices` and `description`; these are the names and values `trainModel`'s `hyperparameters` accepts)
@@ -205,6 +207,8 @@ Errors, for example:
 
 - `The table has no column 'Specie'.`, `The table has no columns 'a', 'b'.`
 - `No method 'Boost' is installed. The methods are: <methods>.`
+- `The method '<name>' did not answer in 30 s.` (the chosen method's check; every method's check may take up to 30 s,
+  and one that does not answer is left out, also in `listMethods`)
 - `The method XGBoost has no setting 'speed'. Its settings are: <settings>.`,
   `The setting 'rate' of Softmax needs a number.`, `The setting 'iterations' of XGBoost must be at most 100.`
 - `Unknown option 'cutof'. The options are: missingValues, neighbors, distance, oneHot, skipUniqueCategories, predictProbability, threshold, thresholdMetric, seed, scheme, folds, testFraction, stratified, shuffle, search.`

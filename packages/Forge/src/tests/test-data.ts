@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {awaitCheck, delay, expect, expectArray, expectFloat} from '@datagrok-libraries/test/src/test';
-import {defaultHyperparameters, Engine} from '../engines/engine';
+import {defaultHyperparameters, DOCKER_FUNC, Engine} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {forgeDb, ModelInsert, TrainingRunRow} from '../generated/db';
@@ -195,6 +195,26 @@ export function edaEngine(name: string): Engine {
 
 export const xgboost = () => edaEngine('XGBoost');
 export const svm = () => edaEngine('SVM');
+
+/** A server method whose check answers [answer] (never: `new Promise(() => {})`), counting the calls; an engine stub,
+ * not a platform mock. */
+export function stuckEngine(name: string, answer: Promise<unknown>, calls = {count: 0}): Engine {
+  const {isApplicable, train, apply} = xgboost().functions;
+  if (isApplicable === undefined || train === undefined)
+    throw new Error('XGBoost has no isApplicable or train');
+  const containerFunc = (func: DG.Func): DG.Func => {
+    const stub: DG.Func = Object.create(func);
+    Object.defineProperty(stub, 'type', {value: DOCKER_FUNC});
+    return stub;
+  };
+  const check = containerFunc(isApplicable);
+  check.apply = () => {
+    calls.count++;
+    return answer;
+  };
+  return {name, namespace: 'Forge', kind: 'script', functions: {isApplicable: check, train: containerFunc(train),
+    apply}, isLiveUpdate: true};
+}
 
 /** The demo file [path], named `forge-test-<prefix>-<time>`. */
 export async function openDemoTable(path: string, prefix: string): Promise<DG.DataFrame> {

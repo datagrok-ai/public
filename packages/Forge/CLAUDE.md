@@ -67,6 +67,9 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
   continued Tune or halving search draws the points one longer run would (an equal split splits the new limit
   equally again).
 - A loop of awaited engine calls must `yieldToEventLoop` (microtasks hold back a cancel click and the repaint).
+- Every `isApplicable` / `isInteractive` call ends within `CHECK_TIMEOUT_MS` (`NoAnswerError`); the Train view awaits
+  only browser checks (`isServerCheck`) and merges the rest in `joinLate` under the same `checkNumber`;
+  `TrainView.create(table, method, engines)` lets a test add a stub server method (`stuckEngine`).
 - `ignore-missing` / `impute-missing` are recorded in `options`, never replayed. Prediction columns carry `predictive.model`
   (`PREDICTION_TAG`; `predictRows` adds none; an old model's markup is recognized by `apply/prediction-tag.ts`). Inserts of applications and runs need explicit `source`, `status`.
 - Header defaults (`= 20`) are in `Property.initialValue`, strings in quotes (`'RBF'`): use `defaultValuesOf`.

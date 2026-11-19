@@ -4,14 +4,15 @@ import {category, expect, expectArray, expectExceptionAsync, test} from '@datagr
 import {applicableEngines} from '../engines/applicable-engines';
 import {selectBestEngine} from '../engines/best-engine';
 import {defaultHyperparameters, defaultValuesOf, Engine, givesProbabilities, handlesMissingValues, hasTrainingRows,
-  hyperparametersOf, isComplete, isServerEngine, probabilityInput, rolesOf, visibleHyperparametersOf,
-  withProbabilityInput} from '../engines/engine';
+  hyperparametersOf, isComplete, isServerCheck, isServerEngine, probabilityInput, rolesOf, runsOnServer,
+  visibleHyperparametersOf, withProbabilityInput} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
-import {apply, isApplicable, isInteractive} from '../engines/engine-calls';
-import {SettingDetails} from '../engines/method-list';
+import {apply, isApplicable, isInteractive, NoAnswerError} from '../engines/engine-calls';
+import {methodList, SettingDetails} from '../engines/method-list';
+import {errorMessage} from '../forge-error';
 import {runListMethods, runTrainModel} from '../training/train-api';
 import {CLASSIFIERS, columnsOf, deleteRunsOf, demoDemog, EDA_METHODS, engineByName, expectReleased, failsWith,
-  framesSharing, inDiscoveryOrder, IRIS, MEASUREMENTS, NATIVE_NANS, openDemoTable, REGRESSORS, valuesOf}
+  framesSharing, inDiscoveryOrder, IRIS, MEASUREMENTS, NATIVE_NANS, openDemoTable, REGRESSORS, stuckEngine, valuesOf}
   from './test-data';
 
 const ROWS_ENGINES = ['SVM', 'k-Nearest Neighbors'];
@@ -244,6 +245,50 @@ category('Engines', () => {
     expect(hasTrainingRows(namedEngine('forge-test-js', {train: scriptTrain('javascript', {mlhasrows: 'true'})})),
       true, 'meta.mlhasrows');
     expect(hasTrainingRows(namedEngine('forge-test-none')), false, 'No train function');
+  });
+
+  test('runsOnServer and isServerCheck', async () => {
+    const stuck = stuckEngine('forge-test-stuck', new Promise(() => {}));
+    expect(runsOnServer(stuck.functions.isApplicable), true, 'The container check');
+    expect(runsOnServer(stuck.functions.train), true, 'The container train');
+    expect(isServerCheck(stuck), true, 'isServerCheck of the container method');
+    expect(isServerEngine(stuck), true, 'isServerEngine of the container method');
+    const engines = EngineRegistry.discover();
+    for (const name of EDA_METHODS) {
+      const engine = engineByName(engines, name);
+      expect(runsOnServer(engine.functions.train), false, `${name} train`);
+      expect(isServerCheck(engine), false, `${name} check`);
+    }
+    expect(runsOnServer(scriptTrain('python')), true, 'Python');
+    expect(runsOnServer(scriptTrain('javascript')), false, 'JavaScript');
+    expect(runsOnServer(undefined), false, 'No function');
+  });
+
+  test('a check that does not answer fails with NoAnswerError', async () => {
+    const iris = await grok.data.files.openTable(IRIS);
+    const stuck = stuckEngine('forge-test-stuck', new Promise(() => {}));
+    const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
+    const {applicable, failed} = await applicableEngines([stuck, xgboost], columnsOf(iris, MEASUREMENTS),
+      iris.getCol('Species'), 200);
+    expectArray(applicable.map((e) => e.name), ['XGBoost']);
+    expectArray(failed.map((f) => f.engine.name), ['forge-test-stuck']);
+    expect(failed[0].error instanceof NoAnswerError, true, String(failed[0].error));
+    expect(errorMessage(failed[0].error), 'The method \'forge-test-stuck\' did not answer in 0.2 s.');
+  });
+
+  test('EngineRegistry.kindOf', async () => {
+    const stuck = stuckEngine('forge-test-stuck', new Promise(() => {}));
+    const train = stuck.functions.train;
+    const edaTrain = engineByName(EngineRegistry.discover(), 'XGBoost').functions.train;
+    if (train === undefined || edaTrain === undefined)
+      throw new Error('No train function');
+    expect(EngineRegistry.kindOf(train), 'script', 'A container function');
+    expect(EngineRegistry.kindOf(edaTrain), 'function', 'An EDA function');
+  });
+
+  test('listMethods marks a container method as server', async () => {
+    const methods = methodList([stuckEngine('forge-test-stuck', new Promise(() => {}))]);
+    expect(methods.get('Runs on', 0), 'server');
   });
 
   test('listMethods lists the complete methods with their settings', async () => {

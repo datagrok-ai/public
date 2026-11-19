@@ -4,14 +4,27 @@ import {ForgeError} from '../forge-error';
 import {ClassProbabilities} from '../metrics/metrics';
 import {onFrame} from '../preparation/shared-frame';
 
-export async function isApplicable(engine: Engine, features: DG.Column[], target: DG.Column): Promise<boolean> {
-  const func = roleFunc(engine, 'isApplicable', 'does not say which data it supports');
-  return await callCheck(engine, func, features, target);
+/** The time a method's `isApplicable` or `isInteractive` may take. */
+export const CHECK_TIMEOUT_MS = 30000;
+
+/** A method's check did not answer in time. */
+export class NoAnswerError extends ForgeError {
+  constructor(engine: Engine, ms: number) {
+    super(`The method '${engine.name}' did not answer in ${ms / 1000} s.`);
+    this.name = 'NoAnswerError';
+  }
 }
 
-export async function isInteractive(engine: Engine, features: DG.Column[], target: DG.Column): Promise<boolean> {
+export async function isApplicable(engine: Engine, features: DG.Column[], target: DG.Column,
+  timeoutMs: number = CHECK_TIMEOUT_MS): Promise<boolean> {
+  const func = roleFunc(engine, 'isApplicable', 'does not say which data it supports');
+  return await callCheck(engine, func, features, target, timeoutMs);
+}
+
+export async function isInteractive(engine: Engine, features: DG.Column[], target: DG.Column,
+  timeoutMs: number = CHECK_TIMEOUT_MS): Promise<boolean> {
   const func = engine.functions.isInteractive;
-  return func === undefined ? false : await callCheck(engine, func, features, target);
+  return func === undefined ? false : await callCheck(engine, func, features, target, timeoutMs);
 }
 
 export async function train(engine: Engine, features: DG.Column[], target: DG.Column,
@@ -75,9 +88,24 @@ function roleFunc(engine: Engine, role: EngineRole, problem: string): DG.Func {
   return func;
 }
 
-async function callCheck(engine: Engine, func: DG.Func, features: DG.Column[], target: DG.Column): Promise<boolean> {
-  const result: unknown = await onFrame(features, (frame) => func.apply(dataArgs(engine, frame, target)));
+// The race runs inside onFrame, so a check that does not answer gives the shared frame back at the timeout.
+async function callCheck(engine: Engine, func: DG.Func, features: DG.Column[], target: DG.Column,
+  timeoutMs: number): Promise<boolean> {
+  const result: unknown = await onFrame(features, (frame) =>
+    answerWithin<unknown>(engine, func.apply(dataArgs(engine, frame, target)), timeoutMs));
   return result === true;
+}
+
+async function answerWithin<T>(engine: Engine, call: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new NoAnswerError(engine, ms)), ms);
+  });
+  try {
+    return await Promise.race([call, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /** Function engines take the feature table and the target column; script engines one table and the target name. */

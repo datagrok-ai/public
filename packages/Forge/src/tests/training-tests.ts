@@ -5,7 +5,7 @@ import {awaitCheck, category, expect, expectArray, expectExceptionAsync, expectF
 import {defaultHyperparameters, Engine, hyperparametersOf} from '../engines/engine';
 import {applicableEngines} from '../engines/applicable-engines';
 import {runGetModel} from '../catalog/get-model';
-import {apply, EnginePrediction, LoopProgress, yieldToEventLoop} from '../engines/engine-calls';
+import {apply, EnginePrediction, LoopProgress, NoAnswerError, yieldToEventLoop} from '../engines/engine-calls';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {defaultFeatures} from '../training/default-features';
@@ -22,15 +22,16 @@ import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {dataInsights, metricInsights, resultInsights, summaryInsight} from '../training/insights';
 import {quickEngines, searchableEngines, searchRecordOf} from '../training/search';
 import {runTrainModel, TrainModelInput} from '../training/train-api';
-import {bestThresholdOf, checkSelection, foldMasks, foldPrediction, needsRowsWithoutGaps, outOfFoldProbabilities,
-  prepareTraining, recutResult, TrainingProblems, TrainingRequest, TrainingResult, TrainingSelection, trainingEngines,
-  trainModel, trainPredictionOf, validationSplit} from '../training/train-model';
+import {bestThresholdOf, checkSelection, failedCheck, foldMasks, foldPrediction, needsRowsWithoutGaps,
+  outOfFoldProbabilities, prepareTraining, recutResult, TrainingProblems, TrainingRequest, TrainingResult,
+  TrainingSelection, trainingEngines, trainModel, trainPredictionOf, validationSplit, withLateEngines}
+  from '../training/train-model';
 import {QueuedTraining, TrainingQueue} from '../training/training-queue';
 import {cancelTaskBarEntry, CLASSIFIERS, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, EDA_METHODS,
   engineByName, expectMetrics, expectNoFrames, expectReleased, failsWith, framesSharing, GAP_ROWS, IMPUTE,
   inDiscoveryOrder, IRIS, MEASUREMENTS, names, NO_OPTIONS, NO_PREPARATION_STEPS, ONE_HOT_STEPS, openDemoTable, openIris,
-  PREDICT_PROBABILITY, REGRESSORS, requestOf, runsOf, selectionOf, SKIP_UNIQUE_STEPS, taskBarEntry, twoSpeciesIris,
-  valuesOf, withGaps} from './test-data';
+  PREDICT_PROBABILITY, REGRESSORS, requestOf, runsOf, selectionOf, SKIP_UNIQUE_STEPS, stuckEngine, taskBarEntry,
+  twoSpeciesIris, valuesOf, withGaps} from './test-data';
 
 const TIMEOUT = 60000;
 const ENGINE_TIMEOUT = 120000;
@@ -48,6 +49,7 @@ const KEEP_TARGETS: [string, string[]][] = [['XGBoost', ['Species', 'Petal.Lengt
 const NOT_SOFTMAX = 'Softmax cannot learn from this selection. ' +
   'It needs numerical features and a numerical, text or boolean target.';
 const NO_METHOD = 'No method can learn from this selection. Check the features and the target.';
+const STUCK = 'forge-test-stuck';
 const needsRows = (name: string) => needsRowsWithoutGaps(engineByName(EngineRegistry.discover(), name));
 
 /** A selection of [engine] with its default hyperparameters. */
@@ -548,6 +550,62 @@ category('Training', () => {
     expect(check.engines.some((e) => e.name === 'SVM'), true, 'SVM is not listed');
     expect(check.problems.method.length, 0, check.problems.method.join(' '));
     expect(check.isInteractive, false);
+  }, {timeout: TIMEOUT});
+
+  test('checkSelection does not wait for a server check', async () => {
+    const iris = await openIris();
+    const calls = {count: 0};
+    const stuck = stuckEngine(STUCK, new Promise(() => {}), calls);
+    const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
+    const check = await checkSelection(selectionOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species')),
+      [stuck, xgboost], {waitsForServer: false});
+    expect(calls.count, 0, 'The server check was asked');
+    expectArray(check.pending.map((e) => e.name), [STUCK]);
+    expect(check.engines.some((e) => e.name === 'XGBoost'), true, 'XGBoost is not listed');
+    expectArray(check.problems.method, []);
+  }, {timeout: TIMEOUT});
+
+  test('the selection\'s pending method is no problem', async () => {
+    const iris = await openIris();
+    const stuck = stuckEngine(STUCK, new Promise(() => {}));
+    const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
+    const check = await checkSelection(engineSelection(stuck, columnsOf(iris, MEASUREMENTS), iris.getCol('Species')),
+      [stuck, xgboost], {waitsForServer: false});
+    expectArray(check.problems.method, []);
+    expect(check.isInteractive, false);
+  }, {timeout: TIMEOUT});
+
+  test('withLateEngines', async () => {
+    const stuck = stuckEngine(STUCK, new Promise(() => {}));
+    const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
+    const discovery = [stuck, xgboost];
+    const waiting = {...failedCheck({method: [NO_METHOD]}), pending: [stuck]};
+    const joined = withLateEngines(waiting, {applicable: [stuck], failed: []}, stuck, discovery);
+    expectArray(joined.engines.map((e) => e.name), [STUCK]);
+    expectArray(joined.problems.method, []);
+    expect(joined.best?.name, STUCK);
+    expectArray(joined.pending, []);
+    expectArray(withLateEngines(waiting, {applicable: [], failed: []}, stuck, discovery).problems.method, [NO_METHOD]);
+    const silent = withLateEngines(waiting, {applicable: [], failed: [{engine: stuck, error: new NoAnswerError(stuck,
+      200)}]}, stuck, discovery);
+    expectArray(silent.problems.method, [`The method '${STUCK}' did not answer in 0.2 s.`]);
+    const listed = {...failedCheck({}), engines: [xgboost], best: xgboost, pending: [stuck]};
+    const merged = withLateEngines(listed, {applicable: [stuck], failed: []}, xgboost, discovery);
+    expectArray(merged.engines.map((e) => e.name), [STUCK, 'XGBoost']);
+    expect(merged.best?.name, 'XGBoost');
+    expectArray(merged.problems.method, []);
+  });
+
+  test('checkSelection waits for a server check up to the timeout', async () => {
+    const iris = await openIris();
+    const stuck = stuckEngine(STUCK, new Promise(() => {}));
+    const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
+    const check = await checkSelection(selectionOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species')),
+      [stuck, xgboost], {timeoutMs: 200});
+    expectArray(check.failed.map((f) => f.engine.name), [STUCK]);
+    expect(check.failed[0].error instanceof NoAnswerError, true, String(check.failed[0].error));
+    expect(check.engines.some((e) => e.name === 'XGBoost'), true, 'XGBoost is not listed');
+    expectArray(check.pending, []);
   }, {timeout: TIMEOUT});
 });
 

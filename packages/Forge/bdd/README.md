@@ -223,6 +223,7 @@ Steps that another package could use carry a `LIB-PROMOTE:` comment.
 - The Train view publishes `aria-busy`, `aria-invalid` and `data-forge-run-id` on its results (`ARCHITECTURE.md`,
   "Automation surface"), so "a new training's result should be shown" waits for the training that a change starts and
   names its run, and "should be invalid" waits for the problem it found; the groups publish `aria-expanded`.
+  `aria-busy` is also true while a chosen server method waits for its check.
 - The scatter plot reports `hovered row` (1-based) and `marker of row <n>` areas; the grids of the results report
   `row order` and their cells by table row (`text of cell 71 of Sepal.Length` in Wrong predictions).
 - Every grid of the results reports its cells (`text of cell 1 of Metric`), the scatter, bar and PC plots their rows,

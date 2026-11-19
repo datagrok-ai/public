@@ -10,7 +10,7 @@ import {applyAndRecord, DEFAULT_BATCH_SIZE, loadModel} from '../apply/apply-mode
 import {exactMapping} from '../apply/column-matching';
 import {updateModelInfo} from '../catalog/model-edit';
 import {MODEL_TYPE, PANEL_TABLE_MODELS} from '../constants';
-import {enabledRules, hyperparametersOf, isEnabled} from '../engines/engine';
+import {enabledRules, Engine, hyperparametersOf, isEnabled, isServerEngine} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
 import {forgeDb, ModelStorageMode} from '../generated/db';
@@ -18,7 +18,7 @@ import {METRIC_DESCRIPTIONS, METRIC_LABELS, MetricFinding} from '../metrics/metr
 import {datasetRefOf, storedDatasetRef} from '../storage/dataset-ref';
 import {deleteModel, modelsChanged} from '../storage/model-store';
 import {COST_RANK, Leader, SearchRecord} from '../training/search';
-import {bestThresholdOf, trainPredictionOf} from '../training/train-model';
+import {bestThresholdOf, trainingEngines, trainPredictionOf} from '../training/train-model';
 import {applyModelDialog, ApplyDialogOptions, isOpen, modelLabels} from '../ui/apply-model-dialog';
 import {ButtonGate} from '../ui/button-gate';
 import {gridTooltip} from '../ui/data-grid';
@@ -44,14 +44,26 @@ import {balloonWith, cancelOnceShown, cancelTaskBarEntry, catalogState, clearTes
   columnsOf, deleteRunsOf, demoDemog, expectReleased, expectGridsFillPanes, framesSharing,
   insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile, PREDICT_PROBABILITY, readUntil,
   refreshThenChange, REGRESSORS, runsOf, savedFixture, saveIrisModel, saveKeptGapsModel, saveSkipUniqueModel,
-  saveTestModel, taskBarEntry, twoSpeciesIris, unbalancedIris, useTestGalleryStorage, valuesOf, WINE, XGBOOST_FIELDS}
-  from './test-data';
+  saveTestModel, stuckEngine, taskBarEntry, twoSpeciesIris, unbalancedIris, useTestGalleryStorage, valuesOf, WINE,
+  XGBOOST_FIELDS} from './test-data';
 
 const WAIT_MS = 5000;
 const TIMEOUT = 60000;
 /** The methods Method offers on iris, sorted: for Species, and for Petal.Length. */
 const IRIS_CLASSIFIERS = [...CLASSIFIERS].sort();
 const IRIS_REGRESSORS = [...REGRESSORS].sort();
+const STUCK = 'forge-test-stuck';
+
+/** The installed methods and {@link stuckEngine} [STUCK] answering [answer]. */
+const withStuck = (answer: Promise<unknown>, calls?: {count: number}): Engine[] =>
+  [...trainingEngines().engines.filter((e) => !isServerEngine(e)), stuckEngine(STUCK, answer, calls)];
+
+/** A check answer the test gives when it chooses. */
+function deferred(): {promise: Promise<boolean>; resolve: (value: boolean) => void} {
+  const holder: {resolve: (value: boolean) => void} = {resolve: () => {}};
+  const promise = new Promise<boolean>((resolve) => holder.resolve = resolve);
+  return {promise, resolve: (value) => holder.resolve(value)};
+}
 
 /** Opens the Train view on [table] and waits for the training it starts by itself. */
 async function openTrainView(table: DG.DataFrame): Promise<TrainView> {
@@ -1024,6 +1036,78 @@ category('UI: Train', () => {
       await closeTrainView(view, [iris]);
     }
   }, {timeout: 120000});
+
+  test('a server method that does not answer does not hold back the training', async () => {
+    const iris = await openIris();
+    const view = await TrainView.create(iris, null, withStuck(new Promise(() => {})));
+    view.checkTimeoutMs = 3000;
+    grok.shell.addView(view);
+    try {
+      await awaitTrained(view);
+      expect(view.methodInput.items.includes(STUCK), false, 'Method lists the method still checking');
+      expectArray((await runsOf([iris])).map((r) => r.status), ['completed']);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a server method\'s late answer joins Method without retraining', async () => {
+    const iris = await openIris();
+    const answer = deferred();
+    const view = await TrainView.create(iris, null, withStuck(answer.promise));
+    grok.shell.addView(view);
+    try {
+      await awaitTrained(view);
+      const shown = shownRun(view);
+      answer.resolve(true);
+      await waitUntil(() => view.methodInput.items.includes(STUCK), 'The late method does not join Method', WAIT_MS);
+      expect(view.isTraining, false, 'The late answer trains');
+      expect(shownRun(view), shown, 'The results show another run');
+      expect((await runsOf([iris])).length, 1, 'The late answer recorded a run');
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a method that does not answer is not asked again', async () => {
+    const iris = await openIris();
+    const calls = {count: 0};
+    const view = await TrainView.create(iris, null, withStuck(new Promise(() => {}), calls));
+    view.checkTimeoutMs = 300;
+    grok.shell.addView(view);
+    try {
+      await awaitTrained(view);
+      await waitUntil(() => view.silentMethods.has(STUCK), `${STUCK} is not marked silent`, WAIT_MS);
+      view.featuresInput.value = columnsOf(iris, ['Sepal.Length', 'Petal.Length', 'Petal.Width']);
+      await awaitTrained(view);
+      expect(calls.count, 1, 'The silent method was asked again');
+      expect(balloonWith('did not answer') === null, true, 'A balloon names the silent method');
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a chosen server method waits for its answer', async () => {
+    const iris = await openIris();
+    const answer = deferred();
+    const view = await TrainView.create(iris, STUCK, withStuck(answer.promise));
+    grok.shell.addView(view);
+    try {
+      await waitUntil(() => resultsState(view) === 'true/false' &&
+        resultsText(view).includes(`Waiting for ${STUCK} to check the data...`),
+      () => `Results: ${resultsState(view)} ${resultsText(view)}`, WAIT_MS);
+      expect(view.methodInput.value, STUCK);
+      expect(view.lastTraining === undefined, true, 'The view trained before the method answered');
+      expect((await runsOf([iris])).length, 0, 'A run was recorded before the method answered');
+      answer.resolve(false);
+      await waitUntil(() => balloonWith(`${STUCK} cannot learn from this selection; XGBoost is chosen for now.`) !==
+        null, 'No balloon for the refusing method', WAIT_MS);
+      await awaitTrained(view);
+      expect(view.methodInput.value, 'XGBoost');
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
 });
 
 category('UI: Preparation', () => {
