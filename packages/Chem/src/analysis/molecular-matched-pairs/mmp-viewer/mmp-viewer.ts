@@ -670,7 +670,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
     }});
     showPairs.root.classList.add('chem-mmp-show-pairs-checkbox');
 
-    ui.setUpdateIndicator(this.sp.root, true, 'Genarating cliffs scatter plot...');
+    ui.setUpdateIndicator(this.sp.root, true, 'Generating cliffs scatter plot...');
 
     const hints: MMPHint[] = [
       {
