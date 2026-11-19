@@ -19,6 +19,13 @@ export function skipOnMinimalStack(what: string, reason: string): boolean {
   return true;
 }
 
+/** Skips a step whose subject comes from a package the minimal CI stand does not publish. */
+export async function skipWithoutPackage(page: Page, pkg: string, what: string): Promise<boolean> {
+  if (!MINIMAL_CI_STACK) return false;
+  const published = await page.evaluate((p) => (window as any).DG.Func.find({package: p}).length > 0, pkg);
+  return !published && skipOnMinimalStack(what, `the ${pkg} package is not published on this stand`);
+}
+
 export const specTestOptions = {
   viewport: {width: 1920, height: 1080},
   launchOptions: {
