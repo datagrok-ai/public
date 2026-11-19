@@ -6,6 +6,7 @@ import {runApplyModel} from './apply/apply-model';
 import {ModelDetails, runGetModel} from './catalog/get-model';
 import {runListModels} from './catalog/list-models';
 import {runUpdateModel, UpdatedModel} from './catalog/model-edit';
+import {checkApply, checkTrain, isCheckApplicable} from './engines/check-method';
 import {runDeleteModel} from './storage/model-store';
 import {EvaluateModelResult, runEvaluateModel} from './training/evaluate-api';
 import {runListMethods, runTrainModel, TrainModelResult} from './training/train-api';
@@ -105,7 +106,7 @@ export async function deleteModel(model: string): Promise<string> {
 //description: Lists the installed machine learning methods with their package, type, where they run, roles and settings (hyperparameters) with their defaults and ranges. With a table, marks the methods that can learn from it and the one Forge suggests
 //input: dataframe table {optional: true; description: A table to check the methods against, with the view's default features}
 //input: string target {optional: true; description: Name of the column to predict in the table. By default the table's last column}
-//output: dataframe result {description: One row per method, Method, Package, Method type, Runs on, Keeps training rows, Retrains live, Roles, Hyperparameters, Settings (json text, name, type, default, min, max, choices, description per setting) and, with a table, Applicable and Suggested}
+//output: dataframe result {description: One row per method, Method, Package, Method type, Runs on, Semantic types (the column types the method takes as features as they are, such as Molecule), Keeps training rows, Retrains live, Roles, Hyperparameters, Settings (json text, name, type, default, min, max, choices, description per setting) and, with a table, Applicable and Suggested}
 export async function listMethods(table: DG.DataFrame | null, target: string | null): Promise<DG.DataFrame> {
   return runListMethods(table, target);
 }
@@ -181,6 +182,51 @@ export function isPredictionColumn(col: DG.Column): boolean {
 //condition: Forge:isPredictionColumn(col)
 export function predictedByPanel(col: DG.Column): DG.Widget {
   return new DG.Widget(predictedByPane(col));
+}
+
+//name: trainForgeCheck
+//description: Temporary method to check molecule features: linear regression on the numerical features, molecules ignored
+//input: dataframe df
+//input: column predictColumn
+//output: dynamic model
+//meta.mlname: Forge Check (molecules)
+//meta.mlrole: train
+//meta.mlsemtypes: Molecule
+export function trainForgeCheck(df: DG.DataFrame, predictColumn: DG.Column): Uint8Array {
+  return checkTrain(df, predictColumn);
+}
+
+//name: applyForgeCheck
+//description: Applies a Forge Check (molecules) model
+//input: dataframe df
+//input: dynamic model
+//output: dataframe result
+//meta.mlname: Forge Check (molecules)
+//meta.mlrole: apply
+export function applyForgeCheck(df: DG.DataFrame, model: unknown): DG.DataFrame {
+  return checkApply(df, model);
+}
+
+//name: isApplicableForgeCheck
+//description: Whether Forge Check (molecules) can learn from the data: molecules, numerical features and a numerical target
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+//meta.mlname: Forge Check (molecules)
+//meta.mlrole: isApplicable
+export function isApplicableForgeCheck(df: DG.DataFrame, predictColumn: DG.Column): boolean {
+  return isCheckApplicable(df, predictColumn);
+}
+
+//name: isInteractiveForgeCheck
+//description: Forge Check (molecules) retrains live
+//input: dataframe df
+//input: column predictColumn
+//output: bool result
+//meta.mlname: Forge Check (molecules)
+//meta.mlrole: isInteractive
+export function isInteractiveForgeCheck(_df: DG.DataFrame, _predictColumn: DG.Column): boolean {
+  return true;
 }
 
 //name: Models

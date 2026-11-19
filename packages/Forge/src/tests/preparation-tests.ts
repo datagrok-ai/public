@@ -1,11 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
 import {defaultValuesOf} from '../engines/engine';
-import {imputeFunction, imputeSettingsOf, prepareMissingValues} from '../preparation/missing-values';
-import {prepareFeatures, replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
+import {imputeFunction, imputeSettingsOf, missingValuesProblems, prepareMissingValues}
+  from '../preparation/missing-values';
+import {defaultOneHot, prepareFeatures, replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
 import {PreparationOptions, preparationOptionsOf} from '../preparation/preparation-options';
-import {columnNamed, expectReleased, failsWith, framesSharing, IMPUTE, names, NO_OPTIONS, PREDICT_PROBABILITY,
-  valuesOf} from './test-data';
+import {columnNamed, expectReleased, failsWith, framesSharing, IMPUTE, moleculeFrame, names, NO_OPTIONS,
+  PREDICT_PROBABILITY, SKIP_UNIQUE_STEPS, smilesColumn, smilesSeries, valuesOf} from './test-data';
 
 const gapCount = (columns: DG.Column[]) => columns.reduce((sum, c) => sum + c.stats.missingValueCount, 0);
 
@@ -258,5 +259,67 @@ category('Preparation', () => {
     expect(withEmptyRow.keptRows?.get(12), false);
     expect(gapCount(withEmptyRow.features), 0);
     expectReleased(frames);
+  }, {timeout: 30000});
+
+  test('a semType feature is never skipped or one-hot encoded', async () => {
+    const {smiles, color, x, y} = moleculeFrame(12);
+    const encoded = color.categories.map((c) => `color=${c}`);
+    const prepared = prepareFeatures([smiles, color, x], y, {...SKIP_UNIQUE_STEPS, oneHot: true}, NO_OPTIONS,
+      ['molecule']);
+    expectArray(names(prepared.columns), ['smiles', 'x', ...encoded]);
+    expect(prepared.columns[0] === smiles, true, 'The molecule column was copied');
+    expectArray(Object.keys(prepared.options.oneHotCategories ?? {}), ['color']);
+    expect(prepared.options.preprocessingInfo.includes('skip-unique-categories'), false, 'smiles was skipped');
+    const withoutSemTypes = prepareFeatures([smiles, color, x], y, {...SKIP_UNIQUE_STEPS, oneHot: true}, NO_OPTIONS);
+    expectArray(withoutSemTypes.options.skippedColumns ?? [], ['smiles']);
+  });
+
+  test('one-hot passes on a numerical column named as an Object property', async () => {
+    const {color, x, y} = moleculeFrame(12);
+    const named = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'constructor', valuesOf(12, (i) => i));
+    const encoded = color.categories.map((c) => `color=${c}`);
+    const prepared = prepareFeatures([named, color, x], y, {...SKIP_UNIQUE_STEPS, oneHot: true}, NO_OPTIONS);
+    expectArray(names(prepared.columns), ['constructor', 'x', ...encoded]);
+    expectArray(Object.keys(prepared.options.oneHotCategories ?? {}), ['color']);
+    expectArray(names(replayPreprocessing([named, x, color], prepared.options)),
+      ['constructor', 'x', ...encoded]);
+  });
+
+  test('one-hot replays exactly the recorded columns', async () => {
+    const {smiles, color, x} = moleculeFrame(12);
+    const options: PreparationOptions = {preprocessingInfo: ['one-hot'], postprocessingInfo: [],
+      oneHotCategories: {color: [...color.categories]}};
+    expectArray(names(replayPreprocessing([smiles, x, color], options)),
+      ['smiles', 'x', ...color.categories.map((c) => `color=${c}`)]);
+    const unrecorded = names(replayPreprocessing([smiles, x, color], {...options, oneHotCategories: undefined}));
+    expect(unrecorded[0], 'x');
+    expect(unrecorded.filter((name) => name.startsWith('smiles=')).length, 12);
+  });
+
+  test('defaultOneHot ignores semType features', async () => {
+    const {smiles, color} = moleculeFrame(25);
+    expect(defaultOneHot([smiles, color], false), false);
+    expect(defaultOneHot([smiles, color], false, ['molecule']), true);
+  });
+
+  test('Impute refuses a gapped molecule feature and never uses one', async () => {
+    const rows = 12;
+    const molecules = smilesSeries(rows);
+    const gappedSmiles = smilesColumn('smiles', molecules.map((m, i) => i === 3 ? '' : m));
+    const fullSmiles = smilesColumn('smiles', molecules);
+    const a = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', valuesOf(rows, (i) => i, [5]));
+    const b = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', valuesOf(rows, (i) => 2 * i));
+    const fullA = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', valuesOf(rows, (i) => i));
+    expect(missingValuesProblems([gappedSmiles, fullA, b], IMPUTE, ['molecule'])
+      .includes('Impute cannot fill the Molecule column \'smiles\'. Choose Skip rows.'), true);
+    const imputed = await prepareMissingValues([fullSmiles, a, b], undefined, IMPUTE, ['molecule']);
+    expectArray(imputed.imputedColumns, ['a']);
+    expect(gapCount(imputed.features), 0);
+    expect(imputed.features[0] === fullSmiles, true, 'The molecule column was copied');
+    const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', valuesOf(rows, (i) => i));
+    const skipped = await prepareMissingValues([gappedSmiles, fullA], y, {mode: 'skip'}, ['molecule']);
+    const copy = columnNamed(skipped.features, 'smiles');
+    expect(copy.semType, DG.SEMTYPE.MOLECULE);
+    expect(copy.length, rows - 1);
   }, {timeout: 30000});
 });

@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {boolColumn} from '../columns';
-import {defaultHyperparameters, defaultValuesOf, Engine, givesProbabilities, Hyperparameters, isServerEngine,
-  NUMBER_TYPES, visibleHyperparametersOf, withProbabilityInput} from '../engines/engine';
+import {defaultHyperparameters, defaultValuesOf, Engine, featureSemTypes, givesProbabilities, Hyperparameters,
+  isServerEngine, NUMBER_TYPES, visibleHyperparametersOf, withProbabilityInput} from '../engines/engine';
 import {methodList} from '../engines/method-list';
 import {errorMessage, ForgeError} from '../forge-error';
 import {ModelStorageMode, ModelTask, TrainingRunStatus} from '../generated/db';
@@ -92,7 +92,7 @@ export async function runTrainModel(input: TrainModelInput): Promise<TrainModelR
   const method = input.method || null;
   const isAuto = method === 'auto';
   const chosen = method !== null && !isAuto ? engineNamed(engines, method) : preferred;
-  const options = optionsOf(input.options ?? {}, features, target, isAuto);
+  const options = optionsOf(input.options ?? {}, features, target, featureSemTypes(engines), isAuto);
   if (isAuto && Object.keys(input.hyperparameters ?? {}).length > 0) {
     throw new ForgeError('The hyperparameters cannot be given with method auto: ' +
       'every method starts from its defaults.');
@@ -163,9 +163,10 @@ export async function runListMethods(table: DG.DataFrame | null, target: string 
     throw new ForgeError(target ? `The table has no column '${target}'.` : 'The table has no columns.');
   const features = defaultFeatures(table, targetColumn);
   const {engines, engine: preferred} = trainingEngines();
-  const options = optionsOf({}, features, targetColumn);
+  const semTypes = featureSemTypes(engines);
+  const options = optionsOf({}, features, targetColumn, semTypes);
   const check = await checkSelection({engine: preferred, features, target: targetColumn, hyperparameters: {},
-    ...options}, engines);
+    ...options}, engines, {semTypes});
   const suggested = engineOf(check, preferred, false);
   const frame = methodList(engines);
   frame.columns.add(boolColumn('Applicable', engines.map((e) => check.engines.includes(e))));
@@ -283,7 +284,7 @@ function hyperparametersFor(engine: Engine, given: {[name: string]: unknown}): H
 
 /** The preparation, the split seed and the validation of [options], with the Train view's defaults. */
 function optionsOf(input: {[name: string]: unknown}, features: DG.Column[], target: DG.Column,
-  isAuto = false): TrainingOptions {
+  semTypes: readonly string[], isAuto = false): TrainingOptions {
   const unknown = firstUnknown(input, [...OPTION_NAMES, 'cutoff']);
   if (unknown !== undefined)
     throw new ForgeError(`Unknown option '${unknown}'. The options are: ${OPTION_NAMES.join(', ')}.`);
@@ -312,8 +313,8 @@ function optionsOf(input: {[name: string]: unknown}, features: DG.Column[], targ
     DEFAULT_THRESHOLD_METRIC));
   if (thresholdMetric === undefined)
     throw new ForgeError(`The option 'thresholdMetric' needs one of: ${BEST_THRESHOLD_METRICS.join(', ')}.`);
-  const steps: PreparationSteps = {oneHot: boolOption(options, 'oneHot', defaultOneHot(features, skipUniqueCategories)),
-    skipUniqueCategories, predictProbability, threshold,
+  const oneHot = boolOption(options, 'oneHot', defaultOneHot(features, skipUniqueCategories, semTypes));
+  const steps: PreparationSteps = {oneHot, skipUniqueCategories, predictProbability, threshold,
     ...(options.threshold === undefined ? {thresholdMetric} : {})};
   const seed = wholeOption(options, 'seed', DEFAULT_SEED, 0, MAX_SEED);
   const scheme = SCHEMES.find((s) => s === (options.scheme ?? DEFAULT_VALIDATION.scheme));

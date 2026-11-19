@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import {boolColumn, textColumn} from '../columns';
-import {defaultHyperparameters, Engine, hasTrainingRows, isComplete, isServerEngine, rolesOf,
+import {declaredSemTypesOf, defaultHyperparameters, Engine, hasTrainingRows, isComplete, isServerEngine, rolesOf,
   visibleHyperparametersOf} from './engine';
 import {EngineRegistry} from './engine-registry';
 
@@ -47,11 +47,13 @@ function methodSettings(engine: Engine): SettingDetails[] {
 }
 
 /** `Forge:listMethods` without a table: [engines] (by default the complete methods in discovery order) with the
- * five {@link methodColumns}, **Runs on**, **Keeps training rows**, **Retrains live** and **Settings** (json text). */
+ * five {@link methodColumns}, **Runs on**, **Semantic types**, **Keeps training rows**, **Retrains live** and
+ * **Settings** (json text). */
 export function methodList(engines: Engine[] = EngineRegistry.discover().filter(isComplete)): DG.DataFrame {
   const [method, pkg, kind, roles, hyperparameters] = methodColumns(engines);
   const frame = DG.DataFrame.fromColumns([method, pkg, kind,
     textColumn('Runs on', engines.map((e) => isServerEngine(e) ? 'server' : 'browser')),
+    textColumn('Semantic types', engines.map((e) => declaredSemTypesOf(e).join(', '))),
     boolColumn('Keeps training rows', engines.map(hasTrainingRows)),
     boolColumn('Retrains live', engines.map((e) => e.isLiveUpdate)),
     roles, hyperparameters,

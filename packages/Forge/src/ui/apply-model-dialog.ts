@@ -8,7 +8,7 @@ import {ColumnMapping, compatibility, isSuggested, kindText, MappingProblem, map
   from '../apply/column-matching';
 import {applicableTables} from '../catalog/applicable-tables';
 import {MAX_MODELS, MINUTE_FORMAT, SECOND_FORMAT} from '../constants';
-import {Engine} from '../engines/engine';
+import {Engine, featureSemTypesOf} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {forgeDb, ModelRow} from '../generated/db';
@@ -347,7 +347,8 @@ class ApplyForm {
   private missingValuesProblem(): string | null {
     if (!this.missingValues.isImpute)
       return null;
-    const problems = missingValuesProblems(this.mappedColumns(this.mapping()), this.missingValues.settings());
+    const semTypes = this.model === null ? [] : featureSemTypesOf(this.model.engine);
+    const problems = missingValuesProblems(this.mappedColumns(this.mapping()), this.missingValues.settings(), semTypes);
     return problems.length > 0 ? problems.join(' ') : null;
   }
 

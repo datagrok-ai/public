@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {BEST_THRESHOLD_METRICS, BestThresholdMetric, classesOf, METRIC_DESCRIPTIONS, METRIC_LABELS}
   from '../metrics/metrics';
 import {missingColumnsOf, MissingValuesSettings} from '../preparation/missing-values';
-import {DEFAULT_STEPS, DEFAULT_THRESHOLD, DEFAULT_THRESHOLD_METRIC, defaultOneHot, hasUniqueCategories,
+import {DEFAULT_STEPS, DEFAULT_THRESHOLD, DEFAULT_THRESHOLD_METRIC, defaultOneHot, hasUniqueCategories, isEncodable,
   PreparationSteps, thresholdProblem} from '../preparation/pipeline';
 import {CollapsibleGroup} from './collapsible-group';
 import {MissingValuesInputs} from './missing-values-inputs';
@@ -48,10 +48,11 @@ export class PreparationInputs {
 
   /** [onChanged] follows every input but Predict probability, which calls [onProbabilityChanged], and the threshold,
    * which calls [onThresholdChanged] (**Set** too); [bestThreshold] gives a metric's best threshold on the last
-   * result, undefined while there is none; [missingValuesProblem] is the validator of **Missing values**. */
+   * result, undefined while there is none; [missingValuesProblem] is the validator of **Missing values**; [semTypes]:
+   * the semantic types the view's methods take as they are; such features are not text here. */
   constructor(onChanged: () => void, onProbabilityChanged: () => void, onThresholdChanged: () => void,
     private readonly bestThreshold: (metric: BestThresholdMetric) => number | undefined,
-    missingValuesProblem: () => string | null) {
+    missingValuesProblem: () => string | null, private readonly semTypes: readonly string[]) {
     this.missingValues = new MissingValuesInputs(onChanged, missingValuesProblem);
     this.oneHot = ui.input.bool('One-hot encoding', {value: false,
       tooltipText: 'Lets the model use categories as numbers without implying an order: each category gets its own ' +
@@ -228,11 +229,11 @@ export class PreparationInputs {
   }
 
   private get hasText(): boolean {
-    return this.features.some((c) => c.isCategorical);
+    return this.features.some((c) => isEncodable(c, this.semTypes));
   }
 
   private get hasUniqueText(): boolean {
-    return this.features.some(hasUniqueCategories);
+    return this.features.some((c) => isEncodable(c, this.semTypes) && hasUniqueCategories(c));
   }
 
   private get stepInputs(): DG.InputBase[] {
@@ -270,7 +271,7 @@ export class PreparationInputs {
       return;
     }
     ui.setDisplay(this.oneHot.root, true);
-    this.oneHotDefault = defaultOneHot(this.features, this.skipUniqueCategories.value);
+    this.oneHotDefault = defaultOneHot(this.features, this.skipUniqueCategories.value, this.semTypes);
     if (!this.isOneHotChosen)
       this.oneHot.value = this.oneHotDefault;
   }

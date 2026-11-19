@@ -156,6 +156,34 @@ export namespace funcs {
   }
 
   /**
+   * Temporary method to check molecule features: linear regression on the numerical features, molecules ignored
+   */
+  export async function trainForgeCheck(df: DG.DataFrame , predictColumn: DG.Column ): Promise<any> {
+    return await grok.functions.call('Forge:TrainForgeCheck', { df, predictColumn });
+  }
+
+  /**
+   * Applies a Forge Check (molecules) model
+   */
+  export async function applyForgeCheck(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Forge:ApplyForgeCheck', { df, model });
+  }
+
+  /**
+   * Whether Forge Check (molecules) can learn from the data: molecules, numerical features and a numerical target
+   */
+  export async function isApplicableForgeCheck(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('Forge:IsApplicableForgeCheck', { df, predictColumn });
+  }
+
+  /**
+   * Forge Check (molecules) retrains live
+   */
+  export async function isInteractiveForgeCheck(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('Forge:IsInteractiveForgeCheck', { df, predictColumn });
+  }
+
+  /**
    * The models that fit the table, and training a new one
    */
   export async function tableModelsPanel(table: DG.DataFrame ): Promise<any> {

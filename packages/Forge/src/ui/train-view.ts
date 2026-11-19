@@ -5,9 +5,9 @@ import * as rxjs from 'rxjs';
 import {ModelInfo} from '../catalog/model-edit';
 import {applicableEngines, ApplicableEngines, EngineFailure} from '../engines/applicable-engines';
 import {CHECK_TIMEOUT_MS, NoAnswerError} from '../engines/engine-calls';
-import {defaultHyperparameters, enabledRules, EnabledRules, Engine, givesProbabilities, handlesMissingValues,
-  Hyperparameters, isEnabled, isServerEngine, probabilityInput, visibleHyperparametersOf, withProbabilityInput}
-  from '../engines/engine';
+import {defaultHyperparameters, enabledRules, EnabledRules, Engine, featureSemTypes, givesProbabilities,
+  handlesMissingValues, Hyperparameters, isEnabled, isServerEngine, probabilityInput, visibleHyperparametersOf,
+  withProbabilityInput} from '../engines/engine';
 import {errorMessage, ForgeError} from '../forge-error';
 import {ModelTask, TrainingRunStatus} from '../generated/db';
 import {BestThresholdMetric, METRIC_LABELS, taskOf} from '../metrics/metrics';
@@ -25,8 +25,9 @@ import {bestCandidates, bestSearchPlan, canContinue, failedSearchMessage, quickE
   runPlanned, SearchChoice, SearchMode, searchableEngines, SearchState, searchTitle, tuneSearchPlan}
   from '../training/search';
 import {bestThresholdOf, checkSelection, failedCheck, hasDataProblems, MetricsRecord, prepareTraining,
-  problemMessages, recutResult, retrainsLive, selectedMissingValues, SelectionCheck, trainingEngines, TrainingRequest,
-  TrainingResult, TrainingSelection, trainModel, trainPredictionOf, withLateEngines} from '../training/train-model';
+  problemMessages, recutResult, retrainsLive, selectedMissingValues, SelectionCheck, semTypeProblem, trainingEngines,
+  TrainingRequest, TrainingResult, TrainingSelection, trainModel, trainPredictionOf, withLateEngines}
+  from '../training/train-model';
 import {TrainingQueue} from '../training/training-queue';
 import {openApplyDialog} from './apply-model-dialog';
 import {ButtonGate} from './button-gate';
@@ -131,6 +132,8 @@ export class TrainView extends DG.ViewBase {
   private readonly findGate: ButtonGate;
   /** The complete methods discovered when the view opened, in discovery order. */
   private readonly engines: Engine[];
+  /** The semantic types [engines] take as they are: Preparation and the check both pass such features on. */
+  private readonly semTypes: string[];
   private readonly formPane: HTMLDivElement;
   private readonly changes = new rxjs.Subject<void>();
   private readonly queue = new TrainingQueue();
@@ -183,6 +186,7 @@ export class TrainView extends DG.ViewBase {
     this.name = 'Predictive model';
     this.box = true;
     this.engines = engines;
+    this.semTypes = featureSemTypes(engines);
     this.engine = engine;
     this.userChoice = method;
     this.trainButton = ui.button('Train', () => void this.train());
@@ -360,7 +364,8 @@ export class TrainView extends DG.ViewBase {
     const target = table.columns.byIndex(table.columns.length - 1);
     const onChanged = () => this.requestCheck();
     const preparation = new PreparationInputs(onChanged, () => this.onProbabilityToggled(), () => this.requestRecut(),
-      (metric) => this.bestThreshold(metric), () => TrainView.messageOf(this.check?.problems.missingValues));
+      (metric) => this.bestThreshold(metric), () => TrainView.messageOf(this.check?.problems.missingValues),
+      this.semTypes);
     const validation = new ValidationInputs(onChanged);
     if (previous !== undefined)
       validation.restore(previous.settings(), previous.seedValue);
@@ -619,7 +624,7 @@ export class TrainView extends DG.ViewBase {
     if (selection === null)
       return failedCheck({target: [NO_TARGET]});
     const check = await checkSelection(selection, this.engines.filter((e) => !this.silentMethods.has(e.name)),
-      {waitsForServer: false, timeoutMs: this.checkTimeoutMs});
+      {waitsForServer: false, timeoutMs: this.checkTimeoutMs, semTypes: this.semTypes});
     this.noteFailures(check.failed);
     return check;
   }
@@ -801,9 +806,13 @@ export class TrainView extends DG.ViewBase {
     return suggested;
   }
 
-  /** Why the method [name] cannot learn from the selection, and that [suggested] is chosen instead: its check's error,
-   * or its check's refusal. */
+  /** Why the method [name] cannot learn from the selection, and that [suggested] is chosen instead: the semantic-type
+   * features it does not take (rule 7c), its check's error, or its check's refusal. */
   private mismatchText(name: string, suggested: Engine, check: SelectionCheck): string {
+    const chosen = this.engines.find((e) => e.name === name);
+    const refusal = chosen === undefined ? null : semTypeProblem(chosen, check.semTypeFeatures);
+    if (refusal !== null)
+      return `${refusal} ${suggested.name} is chosen for now.`;
     const failure = check.failed.find((f) => f.engine.name === name);
     if (failure !== undefined) {
       return `${name} cannot learn from this selection: ${errorMessage(failure.error).replace(/\.?$/, '.')} ` +

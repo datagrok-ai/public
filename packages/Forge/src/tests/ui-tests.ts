@@ -3,13 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {after, awaitCheck, before, category, delay, expect, expectArray, expectFloat, test, waitUntil}
-  from '@datagrok-libraries/test/src/test';
+import {after, awaitCheck, before, category, delay, expect, expectArray, expectFloat, test, waitUntil,
+  waitUntilAsync} from '@datagrok-libraries/test/src/test';
 import {recordApplication} from '../apply/application-store';
 import {applyAndRecord, DEFAULT_BATCH_SIZE, loadModel} from '../apply/apply-model';
 import {exactMapping} from '../apply/column-matching';
 import {updateModelInfo} from '../catalog/model-edit';
 import {MODEL_TYPE, PANEL_TABLE_MODELS} from '../constants';
+import {CHECK_METHOD} from '../engines/check-method';
 import {enabledRules, Engine, hyperparametersOf, isEnabled, isServerEngine} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
@@ -42,10 +43,10 @@ import {CHECK_DELAY_MS, SHOWN_RUN, TrainView} from '../ui/train-view';
 import {AUTO_TUNE, MANUAL, TuneRow, TuneSettings} from '../ui/tune-settings';
 import {balloonWith, cancelOnceShown, cancelTaskBarEntry, catalogState, clearTestGalleryStorage, CLASSIFIERS,
   columnsOf, deleteRunsOf, demoDemog, expectReleased, expectGridsFillPanes, framesSharing,
-  insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile, PREDICT_PROBABILITY, readUntil,
-  refreshThenChange, REGRESSORS, runsOf, savedFixture, saveIrisModel, saveKeptGapsModel, saveSkipUniqueModel,
-  saveTestModel, stuckEngine, taskBarEntry, twoSpeciesIris, unbalancedIris, useTestGalleryStorage, valuesOf, WINE,
-  XGBOOST_FIELDS} from './test-data';
+  insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile, openSolubility, PREDICT_PROBABILITY,
+  readUntil, refreshThenChange, REGRESSORS, runsOf, savedFixture, saveIrisModel, saveKeptGapsModel,
+  saveSkipUniqueModel, saveTestModel, stuckEngine, taskBarEntry, twoSpeciesIris, unbalancedIris, useTestGalleryStorage,
+  valuesOf, WINE, XGBOOST_FIELDS} from './test-data';
 
 const WAIT_MS = 5000;
 const TIMEOUT = 60000;
@@ -758,6 +759,38 @@ category('UI: Train', () => {
         !listItems().includes('Missing values: kept (the method handles them)'), listItems().join(' | '), WAIT_MS);
     } finally {
       await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Forge Check: checking a molecule feature switches Method to the method that takes it', async () => {
+    const table = await openSolubility();
+    const view = await openTrainView(table);
+    try {
+      view.featuresInput.value = [table.getCol('smiles')];
+      view.targetInput.value = table.getCol('SOL');
+      await waitUntil(() => view.methodInput.value === CHECK_METHOD, `Method is ${view.methodInput.value}`, WAIT_MS);
+      await waitUntilAsync(async () => (await runsOf([table])).some((r) => r.engine_name === CHECK_METHOD &&
+        r.status === 'completed'), `No completed run of ${CHECK_METHOD}`, TIMEOUT / 2);
+      expect(view.methodInput.items.includes('XGBoost'), false, view.methodInput.items.join(', '));
+      expect(isShown(view.preparationInputs.group.root), false, 'Preparation is shown');
+      expect(balloonWith('cannot learn') === null, true, 'A balloon named a refused method');
+    } finally {
+      await closeTrainView(view, [table]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Forge Check: a chosen method that does not take a molecule feature says so', async () => {
+    const table = await openSolubility();
+    const view = await TrainView.create(table, 'XGBoost');
+    grok.shell.addView(view);
+    const refusal = `XGBoost cannot learn from Molecule features. Uncheck: smiles. ${CHECK_METHOD} is chosen for now.`;
+    try {
+      await awaitTrained(view);
+      view.featuresInput.value = [table.getCol('smiles'), table.getCol('MolLogP')];
+      await waitUntil(() => balloonWith(refusal) !== null, 'No balloon for the refused method', WAIT_MS);
+      await waitUntil(() => view.methodInput.value === CHECK_METHOD, `Method is ${view.methodInput.value}`, WAIT_MS);
+    } finally {
+      await closeTrainView(view, [table]);
     }
   }, {timeout: TIMEOUT});
 

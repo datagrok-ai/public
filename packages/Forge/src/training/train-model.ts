@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {ApplicableEngines, applicableEngines, EngineFailure} from '../engines/applicable-engines';
 import {selectBestEngine} from '../engines/best-engine';
-import {defaultMissingValues, Engine, handlesMissingValues, Hyperparameters, isComplete, isServerCheck}
-  from '../engines/engine';
+import {defaultMissingValues, Engine, featureSemTypes, featureSemTypesOf, handlesMissingValues, Hyperparameters,
+  isComplete, isServerCheck, takesSemTypes} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {apply, CHECK_TIMEOUT_MS, EnginePrediction, isInteractive, LoopProgress, NoAnswerError, train,
   yieldToEventLoop} from '../engines/engine-calls';
@@ -17,6 +17,7 @@ import {DEFAULT_THRESHOLD, PreparationSteps, PreparedFeatures, prepareFeatures, 
   from '../preparation/pipeline';
 import {CLASS_PROBABILITIES, IGNORE_MISSING, IMPUTE_MISSING, isRecord, MissingValuesRecord, PreparationOptions}
   from '../preparation/preparation-options';
+import {isSemTypeFeature} from '../preparation/semtype-feature';
 import {bigIntProblem} from './default-features';
 import {dataInsights, Insight} from './insights';
 import {minimumRows, splitRows, validationFolds, ValidationSettings} from './k-fold';
@@ -131,6 +132,9 @@ export interface SelectionCheck {
   /** The data insights of the prepared columns and the selection's target; none while a target or features rule
    * fails. */
   insights: Insight[];
+  /** The prepared features of a semantic type a method takes as it is ({@link isSemTypeFeature}); only the methods
+   * that take every one were asked. */
+  semTypeFeatures: ColumnSchema[];
 }
 
 /** The method a training starts with when it is installed; the check then suggests one for the data. */
@@ -174,31 +178,40 @@ export interface CheckOptions {
   waitsForServer?: boolean;
   /** The time each method's check may take. */
   timeoutMs?: number;
+  /** The semantic types whose features are passed as they are ({@link isSemTypeFeature}); by default every one the
+   * complete [engines] take. */
+  semTypes?: readonly string[];
 }
 
 /** The rules, then the methods of [engines] that can learn from the selection, the suggested one and whether the
  * selection's method retrains live; the methods are asked about the prepared columns, as they will get them, each
  * check at most `timeoutMs`. Without `waitsForServer` the methods whose check runs on the server are returned as
- * `pending`; the selection's method is no problem while it is pending. */
+ * `pending`; the selection's method is no problem while it is pending. A non-numerical feature of a semantic type some
+ * method declares is passed as it is, and only the methods that take every such feature are asked. */
 export async function checkSelection(selection: TrainingSelection, engines: Engine[],
-  {waitsForServer = true, timeoutMs = CHECK_TIMEOUT_MS}: CheckOptions = {}): Promise<SelectionCheck> {
+  {waitsForServer = true, timeoutMs = CHECK_TIMEOUT_MS, semTypes = featureSemTypes(engines.filter(isComplete))}:
+  CheckOptions = {}): Promise<SelectionCheck> {
   const {engine} = selection;
+  const complete = engines.filter(isComplete);
   // The missing values are handled only when it trains.
   const prepared = prepareFeatures(selection.features, selection.target, selection.steps,
-    {preprocessingInfo: [], postprocessingInfo: []});
+    {preprocessingInfo: [], postprocessingInfo: []}, semTypes);
   const {columns, target} = prepared;
-  const problems = ruleProblems(selection, columns);
+  const problems = ruleProblems(selection, columns, semTypes);
   if (hasDataProblems(problems))
     return failedCheck(problems);
-  const pending = waitsForServer ? [] : engines.filter((e) => isComplete(e) && isServerCheck(e));
-  const {applicable, failed} = await applicableEngines(engines.filter((e) => !pending.includes(e)), columns, target,
+  const semTypeFeatures = columns.filter((c) => isSemTypeFeature(c, semTypes)).map(columnSchemaOf);
+  const featureKinds = semTypesOf(semTypeFeatures);
+  const asked = complete.filter((e) => takesSemTypes(e, featureKinds));
+  const pending = waitsForServer ? [] : asked.filter(isServerCheck);
+  const {applicable, failed} = await applicableEngines(asked.filter((e) => !pending.includes(e)), columns, target,
     timeoutMs);
-  problems.method.push(...methodProblem(engine, applicable, pending, failed));
+  problems.method.push(...methodProblem(engine, applicable, pending, failed, semTypeFeatures));
   const isListed = applicable.some((e) => e.name === engine.name);
   return {problems, engines: applicable,
     best: selectBestEngine(applicable, columns, selection.target, selection.features),
     isInteractive: isListed && await retrainsLive(engine, columns, target, timeoutMs), failed, pending, prepared,
-    insights: dataInsights(columns, selection.target)};
+    insights: dataInsights(columns, selection.target), semTypeFeatures};
 }
 
 /** [check] with the [late] answers of its pending methods: the methods in [discovery] order, nothing pending, the
@@ -210,12 +223,16 @@ export function withLateEngines(check: SelectionCheck, late: ApplicableEngines, 
   const engines = discovery.filter((e) => names.has(e.name));
   const failed = [...check.failed, ...late.failed];
   return {...check, engines, pending: [], failed, best: check.best ?? engines[0],
-    problems: {...check.problems, method: methodProblem(engine, engines, [], failed)}};
+    problems: {...check.problems, method: methodProblem(engine, engines, [], failed, check.semTypeFeatures)}};
 }
 
-/** Rule 8: none while [engine] is listed or pending; its own message when its check did not answer; else why it
- * cannot learn, or that no method can. */
-function methodProblem(engine: Engine, applicable: Engine[], pending: Engine[], failed: EngineFailure[]): string[] {
+/** Rule 7c: that [engine] does not take the [semTypeFeatures]. Rule 8: none while [engine] is listed or pending; its
+ * own message when its check did not answer; else why it cannot learn, or that no method can. */
+function methodProblem(engine: Engine, applicable: Engine[], pending: Engine[], failed: EngineFailure[],
+  semTypeFeatures: ColumnSchema[]): string[] {
+  const refusal = semTypeProblem(engine, semTypeFeatures);
+  if (refusal !== null)
+    return [refusal];
   const isNamed = (e: Engine) => e.name === engine.name;
   if (applicable.some(isNamed) || pending.some(isNamed))
     return [];
@@ -225,10 +242,24 @@ function methodProblem(engine: Engine, applicable: Engine[], pending: Engine[], 
   return [applicable.length === 0 && pending.length === 0 ? NO_METHOD : cannotLearn(engine)];
 }
 
+function semTypesOf(features: ColumnSchema[]): string[] {
+  return features.map((f) => f.semType ?? '');
+}
+
+/** Rule 7c: that [engine] does not take every one of the semantic-type [features] (`semTypeFeatures`), with their
+ * distinct semantic types as the columns have them, and their names; null when it takes them. */
+export function semTypeProblem(engine: Engine, features: ColumnSchema[]): string | null {
+  const semTypes = semTypesOf(features);
+  if (takesSemTypes(engine, semTypes))
+    return null;
+  const kinds = [...new Set(semTypes)].join(', ');
+  return `${engine.name} cannot learn from ${kinds} features. Uncheck: ${features.map((f) => f.name).join(', ')}.`;
+}
+
 /** A check that lists no method: the selection cannot be trained for [problems]. */
 export function failedCheck(problems: Partial<TrainingProblems>): SelectionCheck {
   return {problems: {...noProblems(), ...problems}, engines: [], best: undefined, isInteractive: false, failed: [],
-    pending: [], insights: []};
+    pending: [], insights: [], semTypeFeatures: []};
 }
 
 function noProblems(): TrainingProblems {
@@ -261,8 +292,10 @@ export async function retrainsLive(engine: Engine, features: DG.Column[], target
 }
 
 /** Rules 1-7 and 9: checks of the column list that call no method; rules 1b and 7 look at the [prepared] columns,
- * which only Skip unique categories can leave empty. */
-function ruleProblems(selection: TrainingSelection, prepared: DG.Column[]): TrainingProblems {
+ * which only Skip unique categories can leave empty; rule 7 leaves out the features of [semTypes] (rule 7c is the
+ * method's, {@link methodProblem}). */
+function ruleProblems(selection: TrainingSelection, prepared: DG.Column[], semTypes: readonly string[]):
+  TrainingProblems {
   const {engine, features, target} = selection;
   const problems = noProblems();
   const targetName = target.name;
@@ -288,7 +321,7 @@ function ruleProblems(selection: TrainingSelection, prepared: DG.Column[]): Trai
       'Choose a numerical, text or boolean target.');
   }
   // Text and yes/no columns are left only while One-hot encoding is off.
-  const nonNumerical = prepared.filter((c) => !c.matches(NUMERICAL));
+  const nonNumerical = prepared.filter((c) => !c.matches(NUMERICAL) && !isSemTypeFeature(c, semTypes));
   const text = nonNumerical.filter((c) => c.isCategorical).map((c) => c.name);
   const others = nonNumerical.filter((c) => !c.isCategorical).map((c) => c.name);
   if (text.length > 0) {
@@ -300,7 +333,7 @@ function ruleProblems(selection: TrainingSelection, prepared: DG.Column[]): Trai
   for (const col of features.filter((c) => c.type === DG.COLUMN_TYPE.BIG_INT))
     problems.features.push(bigIntProblem(col.name, engine.name, 'uncheck it'));
   const missingValues = selectedMissingValues(selection);
-  problems.missingValues.push(...missingValuesProblems(features, missingValues));
+  problems.missingValues.push(...missingValuesProblems(features, missingValues, semTypes));
   if (missingValues.mode === 'keep' && !handlesMissingValues(engine))
     problems.missingValues.push(needsRowsWithoutGaps(engine));
   return problems;
@@ -323,7 +356,8 @@ export async function prepareTraining(selection: TrainingSelection): Promise<Tra
   const missingValues = selectedMissingValues(selection);
   const isSkip = missingValues.mode === 'skip';
   const hasFeatureGaps = isSkip && missingColumnsOf(selection.features).length > 0;
-  const handled = await prepareMissingValues(selection.features, selection.target, missingValues);
+  const semTypes = featureSemTypesOf(engine);
+  const handled = await prepareMissingValues(selection.features, selection.target, missingValues, semTypes);
   const {features, target, skippedRows} = handled;
   const needed = minimumRows(validation);
   if (target === undefined || target.length < needed) {
@@ -339,7 +373,7 @@ export async function prepareTraining(selection: TrainingSelection): Promise<Tra
   const record: MissingValuesRecord = impute === undefined ? {mode: missingValues.mode, skippedRows} :
     {mode: 'impute', neighbors: impute.neighbors, distance: impute.distance, skippedRows};
   const prepared = prepareFeatures(features, target, selection.steps,
-    {preprocessingInfo, postprocessingInfo: [], missingValues: record});
+    {preprocessingInfo, postprocessingInfo: [], missingValues: record}, semTypes);
   return {engine, features, target, keptRows: handled.keptRows, prepared, hyperparameters, seed, validation};
 }
 

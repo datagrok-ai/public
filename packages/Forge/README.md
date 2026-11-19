@@ -30,7 +30,9 @@ only while one of its inputs applies), **Method** (Method, **Settings** and the 
   numerical features, Linear Regression for any other regression (Chemprop for a molecule feature, where it is
   installed). The method you choose stays while it can learn from the data; when a change rules it out, a balloon
   says `<Method> cannot learn from this selection; <suggested> is chosen for now.` (or, when the method's own check
-  failed, `<Method> cannot learn from this selection: <its reason> <suggested> is chosen for now.`). When no method can
+  failed, `<Method> cannot learn from this selection: <its reason> <suggested> is chosen for now.`, and, when it does
+  not take a checked feature of a semantic type such as Molecule, `XGBoost cannot learn from Molecule features.
+  Uncheck: smiles. <suggested> is chosen for now.`). When no method can
   learn from the
   data, **Method** is empty and red: `No method can learn from this selection. Check the features and the target.`
   A method whose check runs on the server (a script in another language than JavaScript, or a package container's
@@ -494,12 +496,14 @@ an input to see what it does.
   Preparation, or uncheck: <features>.` Checked, it turns each text or yes/no feature into one 0/1 column per value.
   The values are saved with the model, and applying it builds exactly those columns: a value the
   new table lacks, or one the training never saw, does not stop the application (an unseen value counts as none of
-  the known ones)
+  the known ones). A molecule feature, while a method that takes molecules is installed (see "Methods"), is never
+  encoded and does not count for the default
 * **Skip unique categories** (checked when it appears): shown while a checked text feature has a different value in
   every row, such as an id. It leaves such features out, so an id never becomes thousands of 0/1 columns. The left-out
   features are saved with the model, and the **Apply predictive model** dialog does not ask for them: a table without
   them can be applied to. When it leaves no feature, **Features** turns red: `Skip unique categories leaves no
-  feature. Check more features.`
+  feature. Check more features.` A molecule feature, while a method that takes molecules is installed, is never left
+  out, although SMILES are usually all different
 * **Predict probability** (unchecked by default): shown while the target is text or yes/no with two or more classes.
   It uses the method's own class probabilities; the method stays the classifier it is. Its tooltip: `Adds the
   probability of each class when the model is applied; for two classes, lets you choose the classification threshold
@@ -664,7 +668,8 @@ grok.shell.addTableView(await grok.functions.call('Forge:listMethods', {table: g
 methods by name, then scripts and package containers' functions): **Method**, **Package**, **Method type** (`function`,
 or `script` for a script or a package container's function), **Runs on** (`browser`, or `server` when the training
 data leaves the browser: a script in another language than JavaScript, a package container's function, or a method
-that says so), **Keeps training rows** (the model file holds training rows, as SVM's does),
+that says so), **Semantic types** (the column types the method takes as features as they are, such as `Molecule`;
+empty for most methods, see "Methods"), **Keeps training rows** (the model file holds training rows, as SVM's does),
 **Retrains live**, **Roles**, **Hyperparameters** (the setting names) and **Settings**: a json text with one entry per
 setting, `name`, `type` and, when the method declares them, `default`, `min`, `max`, `choices` and `description`. These
 are the names and values `trainModel`'s `hyperparameters` accepts. A method's probability setting (SVM's
@@ -824,6 +829,8 @@ its inputs, whose data preparation fails or whose search completes no trial reco
 * `No method 'Boost' is installed. The methods are: <methods>.`
 * `The method '<name>' did not answer in 30 s.` (the chosen method's check; every method's check may take up to 30 s,
   and one that does not answer is left out, also in `Forge:listMethods`)
+* `XGBoost cannot learn from Molecule features. Uncheck: smiles.` (a method that does not take molecules, given a
+  molecule feature while a method that takes them is installed, see "Methods")
 * `The method XGBoost has no setting 'speed'. Its settings are: <settings>.`, `The setting 'rate' of Softmax needs a
   number.`, `The setting 'iterations' of XGBoost must be at most 100.`
 * `Unknown option 'cutof'. The options are: missingValues, neighbors, distance, oneHot, skipUniqueCategories,
@@ -1132,6 +1139,22 @@ One more optional key of the `train` function serves **Predict probability**: `m
 (EDA's SVM: `probability`). Such an input is set from **Predict probability**, hidden from the settings, Search options,
 the card's **Settings** tab and `Forge:listMethods`, and refused in `trainModel`'s `hyperparameters`. Without the key, **Predict
 probability** is disabled for the method. EDA declares `'true'` on every classifier but SVM.
+
+### Methods that take molecules
+
+A method that learns from molecules declares it on its `train` function: `meta.mlsemtypes: Molecule` (a
+comma-separated list of semantic types, compared ignoring case; `Forge:listMethods` shows it as **Semantic types**).
+While such a method is installed, a checked text feature of that type (a `smiles` column that shows molecules) goes to
+it as it is: **One-hot encoding** and **Skip unique categories** leave it alone, and **Impute** does not fill it
+(`Impute cannot fill the Molecule column 'smiles'. Choose Skip rows.`; **Skip rows** works as for any column). The
+methods that do not declare it are not offered while such a feature is checked: **Method** switches to one that takes
+it, and a method you chose says so in a balloon: `XGBoost cannot learn from Molecule features. Uncheck: smiles.
+<suggested> is chosen for now.` Without such a method
+installed, a molecule column is a text feature like any other. A saved model remembers that `smiles` is a Molecule
+column, and **Apply** asks for a Molecule column for it.
+
+Builds of the molecule branch register a temporary method, **Forge Check (molecules)** (linear regression on the
+numerical features, molecules ignored), to check this end to end; it is deleted before that branch merges.
 
 ## Data storage
 

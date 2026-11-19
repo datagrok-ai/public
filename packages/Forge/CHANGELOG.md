@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20932: Added molecule features: a method that declares meta.mlsemtypes (for example Molecule) gets such columns as they are (no One-hot, Skip unique categories or Impute on them), other methods are not offered for them and a chosen one says why in its balloon; Forge:listMethods shows Semantic types
 * GROK-20932: Fixed the Train view waiting forever for a method checked on the server: it joins Method when it answers, and one silent for 30 s is left out
 * [core#1518](https://github.com/datagrok-ai/core/issues/1518): Introduced the Models view at /models in place of the Forge app: the model catalog with search (text and #tags), list, cards and table modes, a sort menu (both remembered), a model count and Train a model... when empty; the list mode shows the names as links, the toolbar keeps only Refresh (Apply..., Delete model and Compare are in the model's menu, which also gained Share...), the search box has no magnifier and the card no Applicable to icon; the model tooltip is three lines (the name, `Predicts <target> with <method> from <features>`, `Created <date> by <author>`); Forge left Browse > Apps
 * GROK-20932: Improved metric value tooltips: only findings, a value shown as 0.000 in exponent form

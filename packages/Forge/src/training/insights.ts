@@ -101,11 +101,11 @@ export function summaryInsight(stored: Record<Split, MetricValues>, evaluation?:
     panel: 'metrics'};
 }
 
-/** A class far from the average count makes its column unbalanced; [target]'s classes are shown in **Class
- * balance**. */
+/** A class far from the average count makes its column unbalanced (a feature with a semantic type is not checked);
+ * [target]'s classes are shown in **Class balance**. */
 function imbalanceInsights(columns: DG.Column[], target: DG.Column): Insight[] {
   const insights: Insight[] = [];
-  for (const col of columns.filter((c) => c.isCategorical)) {
+  for (const col of columns.filter((c) => c.isCategorical && (c === target || !c.semType))) {
     const counts = classCounts(col);
     const total = [...counts.values()].reduce((sum, n) => sum + n, 0);
     const reference = total / counts.size;
