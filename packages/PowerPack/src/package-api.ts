@@ -44,6 +44,10 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:ActivityDashboardWidget', {});
   }
 
+  export async function showSpotlightPreview(content: any , title?: string ): Promise<void> {
+    return await grok.functions.call('PowerPack:ShowSpotlightPreview', { content, title });
+  }
+
   export async function communityWidget(): Promise<any> {
     return await grok.functions.call('PowerPack:CommunityWidget', {});
   }

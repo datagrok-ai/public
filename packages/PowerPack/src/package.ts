@@ -25,6 +25,7 @@ import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
 import {SpotlightWidget} from './spotlight/spotlight-widget';
+import {showWorkspacePreview} from './spotlight/preview-host';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {setupDBQueryCellHandler, setupGlobalDBExplorer} from './db-explorer';
 import {runEnrichmentFromConfig} from './enrichment';
@@ -152,6 +153,18 @@ export class PackageFunctions {
   })
   static activityDashboardWidget(): DG.Widget {
     return new SpotlightWidget();
+  }
+
+  @grok.decorators.func({
+    description: 'Shows a widget in the preview below the home page\'s Spotlight, where the Workspace tab previews ' +
+      'what is picked: for a tab a package adds to the Spotlight (meta.role: spotlightTab) to show what it found ' +
+      'without leaving home. The other widgets step aside while it shows; switching tabs clears it.',
+  })
+  static showSpotlightPreview(
+    @grok.decorators.param({type: 'widget'}) content: DG.Widget,
+    @grok.decorators.param({options: {optional: true}}) title?: string,
+  ): void {
+    showWorkspacePreview(content.root, title || undefined, undefined, true);
   }
 
   @grok.decorators.dashboard({
