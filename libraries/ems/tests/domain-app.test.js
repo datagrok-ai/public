@@ -8,6 +8,7 @@ import {backends, Scope, Rows, notify, allowedActions, Control} from '@datagrok-
 import {Usage} from 'datagrok-api/u2core';
 import {SharedSession} from '../src/core/session.js';
 import {backend} from './domain-fixtures.mjs';
+import {byKind} from '@datagrok-libraries/u2/testing';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -1817,4 +1818,64 @@ scoped('domains.views: a view per table, addressed and brought forward, where it
     for (const app of [...DomainApp.live])
       app.dispose();
   }
+});
+
+scoped('a reader denied View is told so on the list and the row page, not "no rows" or "not found"', async () => {
+  // the server answers such a reader's reads with no rows: only the access tells it from an empty table
+  emsBackends.domain = backend({rows: {project: [], issue: []},
+    access: {can: {view: false, insert: false, edit: false, delete: false, share: false}, fields: {}}});
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  const [add, save, discard] = testOwner().build(() => a.ribbon()).main;
+  await flush();
+  const said = () => byKind(a, 'empty-state').map((el) => el.textContent).join(' ');
+  assert.match(said(), /You do not have access to issues\. Ask the table's owner/);
+  assert.doesNotMatch(said(), /No issues yet/);
+  assert.deepEqual([add.root.hidden, save.root.hidden, discard.root.hidden], [true, true, true],
+    'nothing to create or save where nothing may be viewed');
+  assert.equal(await a.goTo('entity', UUID), true);
+  await flush();
+  const page = byKind(a, 'domain-form')[0].textContent;
+  assert.match(page, /You do not have access to issues\./);
+  assert.doesNotMatch(page, /was not found/);
+  assert.deepEqual([save.root.hidden, discard.root.hidden], [true, true]);
+  a.dispose();
+});
+
+scoped('View revoked after the list loaded: the row opened from it re-reads the access and says no access', async () => {
+  // the platform's shape: the access is cached until the caches are dropped, and a reader without View gets no rows
+  const memory = backend();
+  const issues = memory.tableSync('grit.issue');
+  const query = issues.query.bind(issues);
+  let revoked = false;
+  let cached = null;
+  let drops = 0;
+  const live = () => ({can: {view: !revoked, insert: false, edit: false, delete: false, share: false},
+    fields: {title: 'readonly'}});
+  issues.access = () => Promise.resolve(cached ??= live());
+  issues.query = (spec) => revoked ? Promise.resolve([]) : query(spec);
+  memory.dropAccess = () => {
+    drops++;
+    cached = null;
+  };
+  emsBackends.domain = memory;
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  const [, save, discard] = testOwner().build(() => a.ribbon()).main;
+  await flush();
+  assert.equal(a.listSource.rows.items.value.length, 3, 'the list loaded under View');
+  revoked = true;
+  a.listSource.currentRow.value = a.listSource.rows.byKey('i1');
+  a.listSource.activate.value++;
+  await flush();
+  await flush();
+  assert.equal(a.entity.value, 'i1');
+  const page = byKind(a, 'domain-form')[0].textContent;
+  assert.match(page, /You do not have access to issues\./);
+  assert.doesNotMatch(page, /was not found/);
+  assert.equal(drops, 1, 'the caches go once');
+  assert.deepEqual([save.root.hidden, discard.root.hidden], [true, true]);
+  a.dispose();
 });

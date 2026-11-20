@@ -1,4 +1,4 @@
-import {emsBackends} from '../core/domain-backend.js';
+import {emsBackends, nounOf} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
 import {Rows, notify} from '@datagrok-libraries/u2';
 import type {NotifyHandle} from '@datagrok-libraries/u2';
@@ -41,6 +41,15 @@ export class DomainErrors {
     const row = staged.length !== 1 ? null : (name == null ? null : staged[0][name]) ?? staged[0].id;
     return `Cannot restore${row === null ? '' : ` "${String(row)}"`}: its ${target} was deleted too. ` +
       `Restore the ${target} first.`;
+  }
+
+  /** What a page over `source` says in place of its empty or not-found state when the table denies the caller
+   * View: the server answers such a reader's reads with no rows, by design, so only the access tells "no access"
+   * from "nothing there". Null while the caller may view. */
+  static noView(source: DomainSource): string | null {
+    if (source.access.value.can('view'))
+      return null;
+    return `You do not have access to ${nounOf(source.schema.info)}. Ask the table's owner to share it with you.`;
   }
 
   /** One balloon; after a 403 the affordances were built from an access snapshot the server just
