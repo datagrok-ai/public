@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
-import {backends, Scope, Rows, notify, allowedActions, Control} from '@datagrok-libraries/u2';
+import {backends, Filters, Scope, Rows, notify, allowedActions, Control} from '@datagrok-libraries/u2';
 import {Usage} from 'datagrok-api/u2core';
 import {SharedSession} from '../src/core/session.js';
 import {backend} from './domain-fixtures.mjs';
@@ -725,6 +725,26 @@ scoped('a saved search that sorts by a column removed since drops the sort, says
   await flush();
   assert.equal(a.listSource.sort.value, '', 'a sort of removed columns only is the default order');
   assert.equal(a.listSource.state.value, 'ready');
+  a.dispose();
+});
+
+scoped('a ?q= or a saved search is sent as the box formats it: any case, [bracketed] names, a like\\ backslash', async () => {
+  const {app: a} = await app();
+  const sent = async (open) => {
+    await open();
+    await flush();
+    return a.listSource.query.value;
+  };
+  const want = Filters.format(Filters.parse('title = "x"', a.listSource.schema, 'domain').root);
+  assert.equal(await sent(() => a.open('?q=' + encodeURIComponent('TITLE = "x"'))), want, 'LOT vs lot: the name as the schema spells it');
+  assert.equal(await sent(() => a.open('?q=' + encodeURIComponent('[title] = "y"'))), want.replace('x', 'y'),
+    'a [bracketed] name is sent bare');
+  const slash = Filters.format(Filters.parse('title like "back\\\\slash"', a.listSource.schema, 'domain').root);
+  assert.equal(await sent(() => a.open('?q=' + encodeURIComponent('title like "back\\\\slash"'))), slash,
+    'a like value is escaped the way the box sends it');
+  assert.notEqual(slash, 'title like "back\\\\slash"', 'the box does not send the raw text');
+  assert.equal(await sent(() => SavedSearches.apply(a.listSource, {q: '[TITLE] = "z"', search: '', sort: ''})),
+    want.replace('x', 'z'), 'a saved or recent search goes through the same normalisation');
   a.dispose();
 });
 

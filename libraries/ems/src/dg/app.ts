@@ -13,7 +13,7 @@ import {DomainList} from './list.js';
 import type {DomainListMode} from './list.js';
 import {SAVE_SHORTCUTS, isSaveKey, DomainForm} from './form.js';
 import {DomainFilters} from './filters.js';
-import {SavedSearches, sortable} from './saved-searches.js';
+import {SavedSearches, sortable, normalized} from './saved-searches.js';
 import type {DomainFiltersOptions} from './filters.js';
 import type {DomainChildrenOptions} from './children.js';
 import {DomainAddress} from './address.js';
@@ -974,7 +974,7 @@ export class DomainApp extends Control {
     }
     if (!await this._goTo('list', null))
       return false;
-    const q = params.get('q') ?? '';
+    const q = normalized(params.get('q') ?? '', this.listSource.schema);
     const search = params.get('search') ?? '';
     const trash = this._mode.peek() === 'trash';
     const sort = trash ? this.listSource.sort.peek() : this._sortable(params.get('sort') ?? this._options.sort ?? '');

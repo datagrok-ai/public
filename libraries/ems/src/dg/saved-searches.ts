@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import {batch, computed, iconButton, signal, Dialog, Filters, Menu, TextInput, notify} from '@datagrok-libraries/u2';
-import type {Signal} from '@datagrok-libraries/u2';
+import type {Signal, FilterProperty, FilterSchema} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {confirmDiscard} from '../core/session.js';
 
@@ -21,6 +21,17 @@ const label = (s: DomainSearch) => [s.q, s.search && `Search "${s.search}"`].fil
 export function sortable(sort: string, properties: readonly {name?: string}[]): string {
   const columns = new Set(properties.map((p) => p.name));
   return sort.split(',').filter((key) => key !== '' && columns.has(key.replace(/^!/, ''))).join(',');
+}
+
+/** The query text as the box reads it, in the form the box sends: a link's, a saved or a recent search's text goes
+ * through the schema's grammar (case-insensitive and `[bracket]` names, its `like` escapes) and is written back
+ * formatted, so the server parses what the box validated. Text the grammar or the schema refuses stays as it is: the
+ * box shows its refusal and sends nothing. */
+export function normalized(q: string, schema: {properties: readonly FilterProperty[]}): string {
+  if (q.trim() === '' || schema.properties.length === 0)
+    return q;
+  const parsed = Filters.parse(q, schema as FilterSchema, 'domain');
+  return parsed.problems.length > 0 ? q : Filters.format(parsed.root);
 }
 
 export class SavedSearches {
@@ -83,7 +94,7 @@ export class SavedSearches {
           'the default order' : `the order by ${sort}`}`);
       }
       batch(() => {
-        source.query.value = search.q;
+        source.query.value = normalized(search.q, source.schema);
         source.search.value = search.search;
         source.sort.value = sort;
       });

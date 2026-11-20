@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Routes: Fixed a `?q=` link, a saved search or a recent search sending its text to the server as written: the box read `LOT = "S90"` or `[lot] = "S90"` as valid while the server refused it ("Unknown or inaccessible column"), and a `like` backslash selected other rows than the same text typed. The text now goes through the box's grammar and is sent formatted; text the box refuses is shown refused and not sent
 * Saved searches: Fixed a saved or recent search that sorts by a column removed since failing the list ("Unknown or inaccessible sort column") and putting `&sort=` into the address on every reload; the sort is dropped, once with a warning, and the rows load in the default order
 * Column security: Fixed a column the caller may not see being offered in Sort by, the search box placeholder, the filter box and builder (also through a ref, `project_id.…`), the table view's Output and Aggregations pickers, and searched by a ref picker's key search; picking it failed the list ("Unknown or inaccessible sort column", "Filter refused"). A table handle now describes only the columns its access lists (`DgDomainTable.load`, the memory backend alike), and a shared `?sort=` drops a column the caller may not read
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
