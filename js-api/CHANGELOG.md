@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: `scripts/unit/domain-conflict.test.cjs` runs the built bundle's `DomainFrameEditor.buildOps` and `resolveConflict` for a stale delete and restore (RELOAD re-reads the row, a restore with `deleted: 'include'`, and drops the op; OVERWRITE resends at the current version)
 * Domains: Fixed RELOAD in the conflict dialog of a stale restore reporting the row as gone (it read the trashed row without `deleted`); `DomainObjectHandler.showConflictDialog(subject, op)` words the dialog for a delete or restore ("Delete anyway, or reload to see their changes?") on servers that have that wording, the edit wording elsewhere
 * Domains: `DomainFrameEditor.buildOps` sends `expectedVersion` on delete and restore ops of a version-guarded table, so a stale delete or restore goes through the reload/overwrite conflict dialog like a stale update once the server honours it (servers before that ignore the key)
 * Domains: `DomainSession.lastRefusal.code` carries the server's error code (`'forbidden'` for a 403), so a host can tell a revoked grant from any other refusal
