@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {Form, Rows, component, div, notify, signal} from '@datagrok-libraries/u2';
+import {Form, Rows, component, div, notify, signal, untracked} from '@datagrok-libraries/u2';
 import type {IProperty, ReadonlySignal, RowView} from '@datagrok-libraries/u2';
 import {ColumnsInput, AggregatedColumnsInput} from '@datagrok-libraries/u2/dg';
 import type {ColumnAggregation} from '@datagrok-libraries/u2/dg';
@@ -13,11 +13,12 @@ import {DomainErrors} from './errors.js';
 const LIMIT = 100000;
 
 /** Where an aggregated field lives: its table, the column naming the list's row (`batch_id.compound_id` one table
- * away), and the field. */
+ * away), the field, and every table a write to which moves the value (the one between, for a grandchild). */
 interface Linked {
   address: string;
   path: string;
   column: string;
+  tables: string[];
 }
 
 const own = (p: IProperty) => !SYSTEM_COLUMNS.some(([name]) => name === p.name) && !Rows.isService(p.name!);
@@ -49,26 +50,27 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
   const linkedFields = async () => {
     type Ref = {schema: string, table: string, fkColumn: string, label: string};
     const open = (refs: Ref[]) => Promise.allSettled(refs.map((r) => DomainTable.shared(`${r.schema}.${r.table}`)));
-    const reached: {from: DomainTable, path: string, via: string}[] = [];
+    const reached: {from: DomainTable, path: string, via: string, tables: string[]}[] = [];
     const children = table.info.childTables;
     for (const [i, child] of (await open(children)).entries()) {
       if (child.status === 'rejected')
         continue;
-      reached.push({from: child.value, path: children[i].fkColumn, via: children[i].label});
+      reached.push({from: child.value, path: children[i].fkColumn, via: children[i].label,
+        tables: [child.value.address]});
       const grands = child.value.info.childTables.filter((g) => `${g.schema}.${g.table}` !== table.address);
       for (const [j, grand] of (await open(grands)).entries()) {
         if (grand.status === 'fulfilled') {
           reached.push({from: grand.value, path: `${grands[j].fkColumn}.${children[i].fkColumn}`,
-            via: `${children[i].label} › ${grands[j].label}`});
+            via: `${children[i].label} › ${grands[j].label}`, tables: [grand.value.address, child.value.address]});
         }
       }
     }
     const fields: [string, IProperty][] = [];
-    for (const {from, path, via} of reached) {
+    for (const {from, path, via, tables} of reached) {
       const title = DomainApp.titleOf(from.info);
       const name = reached.filter((r) => r.from.address === from.address).length > 1 ? `${title} (${via})` : title;
       for (const p of from.properties.filter((p) => own(p) && !DomainTable.isReference(p))) {
-        linked.set(`${name}.${DomainTable.captionOf(p)}`, {address: from.address, path, column: p.name!});
+        linked.set(`${name}.${DomainTable.captionOf(p)}`, {address: from.address, path, column: p.name!, tables});
         fields.push([`${name}.${DomainTable.captionOf(p)}`, p]);
       }
     }
@@ -129,10 +131,34 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
           }
           root.replaceChildren(form.root);
         });
+        const ids = () => source.rows.items.value.filter((row: RowView) => !Rows.isDraft(row)).map((row) => String(row.id));
         self.effect(() => {
-          const ids = source.rows.items.value.filter((row: RowView) => !Rows.isDraft(row)).map((row) => String(row.id));
           if (shown.value)
-            fetch(ids, aggregations.value).catch((e) => DomainErrors.report(e));
+            fetch(ids(), aggregations.value).catch((e) => DomainErrors.report(e));
+        });
+        // the values live in the tables aggregated, not in the rows: a write there (a save here, a peer's write
+        // the list's live probe sees) asks again — one watch per table, however many aggregations read it
+        const watching = new Map<string, () => void>();
+        const moved = () => {
+          if (shown.peek())
+            fetch(untracked(ids), aggregations.peek()).catch((e) => DomainErrors.report(e));
+        };
+        self.effect(() => {
+          const tables = new Set(aggregations.value.flatMap((a) => linked.get(a.column)?.tables ?? []));
+          for (const [address, unwatch] of [...watching]) {
+            if (!tables.has(address)) {
+              unwatch();
+              watching.delete(address);
+            }
+          }
+          for (const address of tables) {
+            if (!watching.has(address))
+              watching.set(address, source.watch(address, moved));
+          }
+        });
+        self.own(() => {
+          for (const unwatch of watching.values())
+            unwatch();
         });
       });
     };
