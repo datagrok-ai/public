@@ -27,15 +27,14 @@ export class Model {
   }
 
   private showHelpPanel(): void {
-    const helpMD = ui.markdown(this.info);
-    helpMD.classList.add('diff-studio-demo-app-div-md');
-    const divHelp = ui.div([helpMD], 'diff-studio-demo-app-div-help');
-
-    grok.shell.windows.help.showHelp(divHelp);
     grok.shell.windows.context.visible = true;
     grok.shell.windows.showContextPanel = false;
-    grok.shell.windows.showContextPanel = false;
     grok.shell.windows.help.visible = true;
+
+    // Last: showing the panel switches it to the view's help, which would replace the demo info
+    const helpMD = ui.markdown(this.info);
+    helpMD.classList.add('diff-studio-demo-app-div-md');
+    grok.shell.windows.help.showHelp(ui.div([helpMD], 'diff-studio-demo-app-div-help'));
   }
 
   public run(): Promise<void> {

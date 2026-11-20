@@ -39,7 +39,7 @@ import {unusedFileName, sanitizeModelFileName, getTableFromLastRows, getInputsTa
   prefetchFolderListing, getCachedFileInfo, invalidateFolderListing,
   getCachedFileInfoSync,
   loadModelContent, setCachedModelContent, readAndCacheModelContent, prefetchMyModelFilesContent,
-  findParamsIdx, parseStartingInputs,
+  findParamsIdx, parseStartingInputs, getArgIssue, ArgSpec,
   ExternalLibraryEntry} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
@@ -374,15 +374,15 @@ export class DiffStudio {
     this.updateRibbonWgts();
 
     this.toChangePath = false;
-    const helpMD = ui.markdown(demoInfo);
-    helpMD.classList.add('diff-studio-demo-app-div-md');
-    const divHelp = ui.div([helpMD], 'diff-studio-demo-app-div-help');
-    grok.shell.windows.help.showHelp(divHelp);
     grok.shell.windows.context.visible = true;
-    grok.shell.windows.showContextPanel = false;
     grok.shell.windows.showContextPanel = false;
     grok.shell.windows.help.visible = true;
     await this.runSolving();
+
+    // Last: showing the panel and solving switch it to the view's help, which would replace the demo info
+    const helpMD = ui.markdown(demoInfo);
+    helpMD.classList.add('diff-studio-demo-app-div-md');
+    grok.shell.windows.help.showHelp(ui.div([helpMD], 'diff-studio-demo-app-div-help'));
   } // runSolverDemoApp
 
   /** Return file preview view. When `addToRecent` is true (default), the file is
@@ -1579,9 +1579,6 @@ export class DiffStudio {
     const customSettings = (ivp.solverSettings !== DEFAULT_SOLVER_SETTINGS);
 
     try {
-      if (this.toChangePath)
-        this.solverView.path = `${this.mainPath}${this.entityPath}${PATH.PARAM}${inputsPath}`;
-
       const start = ivp.arg.initial.value;
       const finish = ivp.arg.final.value;
       const step = ivp.arg.step.value;
@@ -1591,6 +1588,10 @@ export class DiffStudio {
 
       if ((step <= 0) || (step > finish - start))
         return;
+
+      // Only after the checks: a shared link must not carry inputs that were not solved
+      if (this.toChangePath)
+        this.solverView.path = `${this.mainPath}${this.entityPath}${PATH.PARAM}${inputsPath}`;
 
       if (this.toCheckPerformance && !customSettings)
         ivp.solverSettings = `{maxTimeMs: ${this.secondsLimit * 1000}}`;
@@ -1941,25 +1942,75 @@ export class DiffStudio {
 
     // Inputs for argument. Lookup keys use the script-form names (`_t0`/`_t1`/`_h`) so the values
     // lookup matches the dataframe columns by the same names the model and RFV use.
-    const argLookupKey: Record<string, string> = {
+    const argLookupKey: ArgSpec<string> = {
       initial: `_${ivp.arg.name}0`, final: `_${ivp.arg.name}1`, step: '_h',
     };
-    for (const key of ARG_INPUT_KEYS) {
-      //@ts-ignore
-      options = getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG);
+    const argKeys = ARG_INPUT_KEYS as (keyof ArgSpec<unknown>)[];
+    const argDefaults: ArgSpec<number> = {
+      initial: ivp.arg.initial.value, final: ivp.arg.final.value, step: ivp.arg.step.value,
+    };
+    const argOptions = {} as ArgSpec<DG.IProperty>;
+    const argCaptions = {} as ArgSpec<string>;
+    const argInputs = {} as ArgSpec<DG.InputBase>;
+
+    for (const key of argKeys) {
+      argOptions[key] = getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG);
+      argCaptions[key] = argOptions[key].friendlyName ?? argOptions[key].name!;
+    }
+
+    /** Return the current argument range of the model */
+    const getArgValues = (): ArgSpec<number> => ({
+      initial: ivp.arg.initial.value, final: ivp.arg.final.value, step: ivp.arg.step.value,
+    });
+
+    // The parser rejects an invalid range in the model text, so here it can only come from the link
+    const linkIssue = getArgIssue(getArgValues(), argCaptions);
+    if (linkIssue !== null) {
+      for (const key of argKeys) {
+        ivp.arg[key].value = argDefaults[key];
+        argOptions[key].defaultValue = argDefaults[key];
+      }
+      grok.shell.warning(`Invalid ${linkIssue.culprit} in the link (${linkIssue.shortRule}). ` +
+        ERROR_MSG.LINK_DEFAULTS_USED);
+    }
+
+    /** Solve the model; with an invalid argument range, keep the previous solution and say why */
+    const trySolve = () => {
+      const issue = getArgIssue(getArgValues(), argCaptions);
+      if (issue !== null)
+        grok.shell.warning(`${issue.rule}. ${ERROR_MSG.PREV_SOLUTION_SHOWN}`);
+      else
+        this.solve(ivp, getInputsPath());
+    };
+
+    for (const key of argKeys) {
+      options = argOptions[key];
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
-      input.caption = options.friendlyName ?? options.name;
+      input.caption = argCaptions[key];
+      argInputs[key] = input;
 
       DG.debounce(input.onChanged, UI_TIME.SOLVE_DEBOUNCE_MS).subscribe((value) => {
         if (value !== null) {
-          //@ts-ignore
           ivp.arg[key].value = value;
-          this.solve(ivp, getInputsPath());
+          // The range constraints involve all three inputs, so a change may set or clear the others' marks
+          argKeys.forEach((k) => argInputs[k].validate());
+          trySolve();
         }
       });
 
       categorizeInput(options, input);
       saveInput(argLookupKey[key], input);
+    }
+
+    for (const key of argKeys) {
+      argInputs[key].addValidator((value) => {
+        const values: ArgSpec<number> = {
+          initial: argInputs.initial.value, final: argInputs.final.value, step: argInputs.step.value,
+        };
+        values[key] = Number(value); // the edited value may not be committed to the input yet
+        const issue = getArgIssue(values, argCaptions);
+        return (issue !== null) && issue.keys.includes(key) ? issue.rule : null;
+      });
     }
 
     // Inputs for initial values
@@ -1971,7 +2022,7 @@ export class DiffStudio {
       DG.debounce(input.onChanged, UI_TIME.SOLVE_DEBOUNCE_MS).subscribe((value) => {
         if (value !== null) {
           ivp.inits.get(key)!.value = value;
-          this.solve(ivp, getInputsPath());
+          trySolve();
         }
       });
 
@@ -1989,7 +2040,7 @@ export class DiffStudio {
         DG.debounce(input.onChanged, UI_TIME.SOLVE_DEBOUNCE_MS).subscribe((value) => {
           if (value !== null) {
             ivp.params!.get(key)!.value = value;
-            this.solve(ivp, getInputsPath());
+            trySolve();
           }
         });
 
@@ -2009,7 +2060,7 @@ export class DiffStudio {
       DG.debounce(input.onChanged, UI_TIME.SOLVE_DEBOUNCE_MS).subscribe((value) => {
         if (value !== null) {
           ivp.loop!.count.value = value;
-          this.solve(ivp, getInputsPath());
+          trySolve();
         }
       });
 
