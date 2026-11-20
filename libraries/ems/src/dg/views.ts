@@ -83,18 +83,35 @@ export class DomainViews {
     return view;
   }
 
+  /** Every open view of the schema's tables rebuilt over its new columns (Edit properties… saved). A view whose
+   * session has unsaved changes is not rebuilt under them: it is marked ({@link DomainApp.reshape}) and rebuilt once
+   * they are saved or discarded. */
   static async reload(schema: string): Promise<void> {
     DomainTable.forget(schema);
     for (const app of [...DomainApp.live]) {
-      const old = DomainApp.viewOf(app);
-      if (!app.table.address.startsWith(`${schema}.`) || old === undefined || app.session.isDirty.peek())
+      if (!app.table.address.startsWith(`${schema}.`) || DomainApp.viewOf(app) === undefined)
         continue;
+      if (!app.session.isDirty.peek()) {
+        await DomainViews._rebuild(app);
+        continue;
+      }
       const views = DomainViews._byTable.get(app.table.address);
-      const view = views !== undefined ? await views._new(app.path.peek().slice(views._options.path.length)) :
-        (await domains.table(app.table.address)).app({path: app.base});
-      grok.shell.addView(view);
-      old.close();
+      const fresh = await (views?._options.handle ?? domains.table)(app.table.address);
+      const kept = new Set(fresh.properties.map((p) => p.name));
+      app.reshape(app.table.properties.filter((p) => !kept.has(p.name)), () => DomainViews._rebuild(app));
     }
+  }
+
+  // a new view of the app's table at the app's address, in place of the app's own
+  private static async _rebuild(app: DomainApp): Promise<void> {
+    const old = DomainApp.viewOf(app);
+    if (old === undefined)
+      return;
+    const views = DomainViews._byTable.get(app.table.address);
+    const view = views !== undefined ? await views._new(app.path.peek().slice(views._options.path.length)) :
+      (await domains.table(app.table.address)).app({path: app.base});
+    grok.shell.addView(view);
+    old.close();
   }
 
   /** An item per view under `node` — the app's tree browser: one selected brings its view forward at the list —
