@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Column security: Fixed a column the caller may not see being offered in Sort by, the search box placeholder, the filter box and builder (also through a ref, `project_id.…`), the table view's Output and Aggregations pickers, and searched by a ref picker's key search; picking it failed the list ("Unknown or inaccessible sort column", "Filter refused"). A table handle now describes only the columns its access lists (`DgDomainTable.load`, the memory backend alike), and a shared `?sort=` drops a column the caller may not read
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input

@@ -977,7 +977,7 @@ export class DomainApp extends Control {
     const q = params.get('q') ?? '';
     const search = params.get('search') ?? '';
     const trash = this._mode.peek() === 'trash';
-    const sort = trash ? this.listSource.sort.peek() : params.get('sort') ?? this._options.sort ?? '';
+    const sort = trash ? this.listSource.sort.peek() : this._sortable(params.get('sort') ?? this._options.sort ?? '');
     const current = this.listSource.query.peek();
     // already on the list, the gate `goTo` skipped: the query is changing under pending changes
     if ((typeof current === 'string' ? current : Filters.format(current)) === q &&
@@ -991,6 +991,13 @@ export class DomainApp extends Control {
       this.listSource.sort.value = sort;
     });
     return true;
+  }
+
+  // a shared `?sort=` may name a column this caller may not read (the table does not describe it):
+  // the server refuses the whole read for it, so it is dropped and the rest of the order kept
+  private _sortable(sort: string): string {
+    const columns = new Set(this.table.properties.map((p) => p.name));
+    return sort.split(',').filter((key) => key !== '' && columns.has(key.replace(/^!/, ''))).join(',');
   }
 
   // `draft` is the create page: an entity of "new" without it is the row so keyed
