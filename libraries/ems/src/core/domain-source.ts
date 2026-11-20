@@ -176,6 +176,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _captionOption: string[] | undefined;
   private _table: DomainTableLike | undefined;
   private _ready: Promise<DomainTableLike> | undefined;
+  // the other tables the live probe follows for whoever reads them off these rows ({@link watch})
+  private readonly _watched = new Map<string, {moved: Set<() => void>, table?: Promise<DomainTableLike>,
+    last?: DomainProbeLike}>();
   private _frame: DomainFrameLike | undefined;
   private _schema: DomainSchema = {properties: [], info: NO_INFO};
   private _unwire: (() => void) | undefined;
@@ -698,6 +701,26 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return this._rows.pending() as RowView<TRow>[];
   }
 
+  /** Follows another table `address` on this source's live probe — what is read off these rows
+   * but lives elsewhere (the table view's aggregations over the child tables): every tick asks it
+   * once, unscoped (the change token where the backend keeps one), however many callers watch it,
+   * and `moved` runs when it changed, or when a save in this browser wrote it. Answers the unwatch. */
+  watch(address: string, moved: () => void): () => void {
+    let entry = this._watched.get(address);
+    if (entry === undefined) {
+      this._watched.set(address, entry = {moved: new Set()});
+      // the baseline now, not at the first tick: a write before that tick is a move, as for the rows (EQ-037)
+      if (this.live.peek())
+        void this._probeWatched(address, entry);
+    }
+    entry.moved.add(moved);
+    return () => {
+      entry!.moved.delete(moved);
+      if (entry!.moved.size === 0 && this._watched.get(address) === entry)
+        this._watched.delete(address);
+    };
+  }
+
   /** After a batch this source took part in landed: the loaded window re-read so paging starts
    * from the offset the server agrees with, the total counted again, and every other live source
    * of the same table reloaded — it is holding the rows this batch just rewrote. */
@@ -720,6 +743,17 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         source._isStale.value = true;
       else
         source.refresh().catch((e) => source.fail(e));
+    }
+    // what this batch wrote is news to whoever follows this table off another one's rows; their
+    // baseline moves past our own write, so the next probe does not report it a second time
+    for (const source of DomainSource.live) {
+      const entry = source._watched.get(this.table);
+      if (entry === undefined)
+        continue;
+      entry.last = undefined;
+      void source._probeWatched(this.table, entry);
+      for (const moved of [...entry.moved])
+        moved();
     }
     if (!this._noRows && this._table !== undefined) {
       const total = await this._count(this._table);
@@ -1052,6 +1086,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this._failures = 0;
       const before = this._probed;
       this._probed = now;
+      await Promise.all([...this._watched].map(([address, entry]) => this._probeWatched(address, entry)));
       if (before === undefined || (before.count === now.count && before.last === now.last))
         return;
       // pending changes anywhere in its session — a child collection under its current row too, which the
@@ -1067,6 +1102,26 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         this._stopPolling();
     } finally {
       this._probing = false;
+    }
+  }
+
+  // one watched table asked on the tick: the first answer is its baseline, a later one that differs
+  // tells its watchers; a failed ask keeps the baseline, as the rows' probe does
+  private async _probeWatched(address: string, entry: {moved: Set<() => void>, table?: Promise<DomainTableLike>,
+    last?: DomainProbeLike}): Promise<void> {
+    try {
+      const table = await (entry.table ??= this._backend.table(address));
+      if (table.probe === undefined)
+        return;
+      const now = await table.probe({});
+      const before = entry.last;
+      entry.last = now;
+      if (before !== undefined && (before.count !== now.count || before.last !== now.last)) {
+        for (const moved of [...entry.moved])
+          moved();
+      }
+    } catch {
+      entry.table = undefined;
     }
   }
 
