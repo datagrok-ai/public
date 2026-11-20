@@ -555,12 +555,15 @@ export class DomainFrameEditor implements IFrameEditor {
    *
    * Numeric properties take a dart2js-safe path (under dart2js every whole number
    * `is double`, which would reject every integer), and `string_list` values are
-   * left to the server, which coerces them. Returns null when the value is fine.
+   * left to the server, which coerces them. So is a `json` (map) value given as
+   * text: the frame holds a json cell as its JSON text (`queryDf`, the post-save
+   * re-read), and the server decodes it. Returns null when the value is fine.
    */
   static validateCellValue(p: Property, value: any): string | null {
     if (!p.nullable && (value == null || value === ''))
       return "Value can't be empty";
-    if (value == null || p.propertyType === TYPE.STRING_LIST)
+    if (value == null || p.propertyType === TYPE.STRING_LIST ||
+        (p.propertyType === TYPE.MAP && typeof value === 'string'))
       return null;
     const type = valueTypeOf(value);
     if (isNumerical(p))

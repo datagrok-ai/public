@@ -56,6 +56,37 @@ export interface EditState {
 
 type Row = Record<string, unknown>;
 
+/** Whether two cells hold the same JSON value — text (a frame's `string_list` / `json` cell) or not:
+ * a value retyped as it was is no change, however its text is spelled (key order, spacing). */
+export function sameJson(a: unknown, b: unknown): boolean {
+  const x = jsonOf(a);
+  const y = jsonOf(b);
+  return x !== undefined && y !== undefined && jsonEqual(x, y);
+}
+
+// a JSON value's plain form — undefined for text that is no JSON list or object, and for an object
+// that has none (a Dart map is cyclic through its type information)
+function jsonOf(v: unknown): unknown {
+  if (typeof v === 'string' && !/^\s*[[{]/.test(v) || typeof v !== 'string' && (typeof v !== 'object' || v === null))
+    return undefined;
+  try {
+    return JSON.parse(typeof v === 'string' ? v : JSON.stringify(v));
+  } catch (_) {
+    return undefined;
+  }
+}
+
+function jsonEqual(a: unknown, b: unknown): boolean {
+  if (Array.isArray(a) || Array.isArray(b))
+    return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((x, i) => jsonEqual(x, b[i]));
+  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null)
+    return a === b;
+  const x = a as Record<string, unknown>;
+  const y = b as Record<string, unknown>;
+  const keys = Object.keys(x);
+  return keys.length === Object.keys(y).length && keys.every((k) => Object.hasOwn(y, k) && jsonEqual(x[k], y[k]));
+}
+
 /** One op of the writer's batch with the row it came from — what `applyResults` writes back to. */
 export interface MemoryPendingOp {
   op: DomainTransactionOpLike;
@@ -137,6 +168,10 @@ export class MemoryEditState implements EditState {
     if (state !== 'new') {
       const originals = this._originals.get(row) ?? new Map<string, unknown>();
       this._originals.set(row, originals);
+      // as the dg writer: a JSON value retyped as the row had it reverts the cell, whatever its text
+      const original = originals.has(column) ? originals.get(column) : row[column];
+      if (typeof value === 'string' && sameJson(original, value))
+        value = original;
       if (!originals.has(column))
         originals.set(column, row[column]);
       else if (Object.is(originals.get(column), value))
@@ -342,9 +377,6 @@ export class MemoryEditState implements EditState {
   static problemOf(prop: IProperty, value: unknown): string | null {
     if (isEmpty(value))
       return prop.nullable === false ? EMPTY : null;
-    // the platform editor's type check (`validateCellValue`): a `json` cell takes an object, never text
-    if ((prop.propertyType ?? prop.type) === 'map' && typeof value !== 'object')
-      return `Types differ. Expected: map, passed: ${typeof value === 'string' ? 'string' : typeof value}`;
     const choices = prop.choices;
     if (choices !== undefined && choices !== null && choices.length > 0 && !choices.includes(String(value)))
       return `Must be one of: ${choices.join(', ')}`;
@@ -369,6 +401,17 @@ export class MemoryEditState implements EditState {
   static isTextCell(prop: IProperty): boolean {
     const type = prop.propertyType ?? prop.type;
     return type === 'string_list' || type === 'map';
+  }
+
+  // js-api `validateCellValue` on a `json` cell: an object or its JSON text (left to the server);
+  // a list or a scalar is refused, spelled as the platform types it
+  private static _typeProblem(prop: IProperty, value: unknown): string | null {
+    if ((prop.propertyType ?? prop.type) !== 'map' || value === null || value === undefined ||
+        typeof value === 'string' || (typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)))
+      return null;
+    const type = Array.isArray(value) ? 'list' : typeof value === 'boolean' ? 'bool' : typeof value === 'number' ?
+      (Number.isInteger(value) ? 'int' : 'double') : value instanceof Date ? 'datetime' : 'map';
+    return `Types differ. Expected: map, passed: ${type}`;
   }
 
   private static _reference(v: unknown): unknown {
@@ -428,7 +471,8 @@ export class MemoryEditState implements EditState {
     if (!state || state === 'deleted' || state === 'restored')
       return null;
     const changed = state === 'new' || this._originals.get(row)?.has(prop.name!) === true;
-    return changed ? MemoryEditState.problemOf(prop, row[prop.name!]) : null;
+    return changed ? MemoryEditState.problemOf(prop, row[prop.name!]) ??
+      MemoryEditState._typeProblem(prop, row[prop.name!]) : null;
   }
 
   private _touch(key: string | null): void {

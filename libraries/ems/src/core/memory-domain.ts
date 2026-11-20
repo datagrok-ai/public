@@ -728,32 +728,29 @@ export class MemoryTable implements DomainTableLike {
     }
   }
 
-  /** A written value as the server coerces it (`DomainBatchLoader._coerceCell`): a `string_list` or
-   * `json` cell sent as text — what the platform frame holds — is the JSON it encodes: a list of
-   * scalars (its items text), an object. */
+  /** A written value as the server coerces it (`DomainBatchLoader._coerceCell`), for the cells the
+   * frame holds as text: `''` is none; a `string_list` is a list of scalars, given as one or as its
+   * JSON text, its items made text; a `json` cell is an object, given as one or as its JSON text —
+   * anything else is refused as the server words it. */
   decode(column: string, value: unknown, index: number): unknown {
     const prop = this.properties.find((p) => p.name === column);
-    if (prop === undefined || !MemoryEditState.isTextCell(prop))
-      return value;
-    const list = (prop.propertyType ?? prop.type) === 'string_list';
-    // what reaches the server is the value's JSON, never the object a frame held
-    if (typeof value === 'object' && value !== null && !list)
-      return JSON.parse(JSON.stringify(value));
-    if (typeof value !== 'string')
+    if (prop === undefined || !MemoryEditState.isTextCell(prop) || value === null || value === undefined)
       return value;
     if (value === '')
       return null;
+    const type = prop.propertyType ?? prop.type;
     let decoded: unknown;
     try {
-      decoded = JSON.parse(value);
+      // what reaches the server is the value's JSON, never the object a frame held
+      decoded = JSON.parse(typeof value === 'string' ? value : JSON.stringify(value));
     } catch (_) {
       decoded = undefined;
     }
-    const ok = list ? Array.isArray(decoded) && !decoded.some((x) => typeof x === 'object' && x !== null) :
-      typeof decoded === 'object' && decoded !== null && !Array.isArray(decoded);
-    if (!ok)
-      throw new DomainBackendError('validation', `Operation ${index}: Cannot convert "${value}" to ${list ? 'string_list' : 'map'}`);
-    return list ? (decoded as unknown[]).map((x) => `${x}`) : decoded;
+    if (type === 'string_list' && Array.isArray(decoded) && !decoded.some((x) => typeof x === 'object' && x !== null))
+      return decoded.map((x) => `${x}`);
+    if (type === 'map' && typeof decoded === 'object' && decoded !== null && !Array.isArray(decoded))
+      return decoded;
+    throw new DomainBackendError('validation', `Operation ${index}: Cannot convert "${typeof value === 'string' ? value : JSON.stringify(value)}" to ${type}`);
   }
 
   withDefaults(values: Row): Row {

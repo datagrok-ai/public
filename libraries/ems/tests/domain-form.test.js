@@ -1342,3 +1342,35 @@ scoped('EQ-057: a nested json value read back from the frame text is no phantom 
   form.dispose();
   src.dispose();
 });
+
+scoped('EQ-057: retyping the original pair of a json field is no change', async () => {
+  const {src, form, type} = await jsonForm({k: 'v'});
+  await type(0, 'k', 'w');
+  assert.equal(src.changeCount.value, 1);
+  await type(0, 'k', 'v');
+  assert.equal(src.changeCount.value, 0, 'the json field typed back to the stored pair is no unsaved change');
+  form.dispose();
+  src.dispose();
+});
+
+scoped('EQ-057: the memory backend takes json and string_list cells as the server coerces them', async () => {
+  const memory = new MemoryDomainBackend({name: 'qa', tables: {item: {columns: {
+    name: {type: 'string', required: true}, meta: {type: 'json'}, tags: {type: 'string_list'}}}}});
+  const [made] = await memory.transaction([{op: 'insert', table: 'item',
+    values: {name: 'a', meta: '{"k":"v"}', tags: '["x","y"]'}}]);
+  const row = memory.tableSync('qa.item').rows.find((r) => r.id === made.id);
+  assert.deepEqual([row.meta, row.tags], [{k: 'v'}, ['x', 'y']], 'JSON text is decoded, as the server does');
+  for (const [values, message] of [[{meta: ['k']}, 'Cannot convert "["k"]" to map'],
+    [{meta: '{bad'}, 'Cannot convert "{bad" to map'], [{tags: {k: 'v'}}, 'Cannot convert "{"k":"v"}" to string_list']]) {
+    await assert.rejects(memory.transaction([{op: 'insert', table: 'item', values: {name: 'b', ...values}}]),
+      (e) => e.message.endsWith(message), `refused as the server words it: ${message}`);
+  }
+  const table = memory.tableSync('qa.item');
+  const frame = await table.frame({});
+  frame.edit.setValue(made.id, 'meta', ['k']);
+  assert.equal(frame.edit.errorOf(made.id, 'meta'), 'Types differ. Expected: map, passed: list',
+    'a list in a json cell is refused as the platform editor refuses it');
+  frame.edit.setValue(made.id, 'meta', '{"k":"w"}');
+  assert.equal(frame.edit.errorOf(made.id, 'meta'), null, 'its JSON text is left to the server');
+  frame.dispose();
+});
