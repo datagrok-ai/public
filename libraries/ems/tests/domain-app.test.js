@@ -564,6 +564,47 @@ scoped('DomainTable.app(): the shell rewrites the view path only AFTER onViewAdd
   }
 });
 
+scoped('EQ-021: a save the server refuses as forbidden re-gates the app and says so plainly (EMS-032)', async () => {
+  const DG = await import('datagrok-api/dg');
+  const {app: a} = await app();
+  const [add, , , more] = testOwner().build(() => a.ribbon()).main;
+  await a.goTo('entity', 'i1');
+  await flush();
+  a.form.value.input('title').value = 'Revoked meanwhile';
+  await flush();
+  // the platform path: the save goes through the js-api session, which answers the 403 as a refusal
+  const {DgDomainBackend} = await import('../src/dg/backend.js');
+  const dg = new DgDomainBackend();
+  const memory = emsBackends.domain;
+  memory.saveAll = (edits) => dg.saveAll(edits);
+  // Edit revoked meanwhile: what the server answers once the platform caches are dropped
+  const revoked = {can: {view: true, insert: false, edit: false, delete: false, share: false}, fields: {title: 'readonly'}};
+  const cached = memory.tableSync('grit.issue').access.bind(memory.tableSync('grit.issue'));
+  const before = grok.dapi.domains.invalidated;
+  memory.tableSync('grit.issue').access = async () => grok.dapi.domains.invalidated > before ? revoked : cached();
+  DG.DomainSession.next = {message: 'forbidden', editor: null, code: 'forbidden'};
+  try {
+    assert.equal(await a.session.save(), false);
+    await flush();
+  } finally {
+    DG.DomainSession.next = true;
+  }
+  assert.equal(grok.dapi.domains.invalidated > before, true, 'a forbidden save drops the platform access caches');
+  assert.equal(a.entitySource.value.access.value.can('edit'), false, 'the entity source re-read its access');
+  assert.equal(a.form.value.input('title'), undefined, 'the form is read-only: Title is no longer an input');
+  assert.equal(a.summary.value, 'Revoked meanwhile — Cannot save: you do not have permission to make these ' +
+    'changes. Discard the changes, or ask the table\'s owner for access', 'the status line says what happened and what to do');
+  assert.equal(a.session.isDirty.value, true, 'the edit is not lost until Discard');
+  a.session.discard();
+  assert.equal(await a.goTo('list'), true);
+  await flush();
+  assert.equal(add.root.hidden, true, 'no New without insert');
+  assert.equal(allowedActions(a.menuActions(), {access: a.listSource.access.value}).length, 0,
+    'no Import…, Bulk edit… or Show deleted');
+  assert.equal(more.root.hidden, true, 'the ⋯ menu has nothing left to offer');
+  a.dispose();
+});
+
 scoped('the ambient session is the app\'s; New is hidden without insert', async () => {
   emsBackends.domain = backend({access: {can: {view: true, insert: false, edit: true, delete: true, share: true},
     fields: {title: 'editable'}}});

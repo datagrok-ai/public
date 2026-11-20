@@ -467,6 +467,19 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     }
   }
 
+  /** Re-reads the table-level access — the session calls it after a 403, which says the one the
+   * affordances were built from is stale. A failed read keeps the access the source has. */
+  async reloadAccess(): Promise<void> {
+    if (this.scope.isDisposed || this._ready === undefined)
+      return;
+    try {
+      const data = await (await this._ready).access();
+      if (!this.scope.isDisposed)
+        this._access.value = Access.from(data);
+    } catch {
+    }
+  }
+
   /** Stages the restore of soft-deleted rows into the session's unit of work — they are pending
    * changes until Save, shown as such, dropped by Discard, and guarded by the unsaved gate. The
    * write itself rides `save()`; `DomainTable.restore(id)` is still the way to restore a row with
