@@ -1,5 +1,6 @@
 import {emsBackends} from '../src/core/domain-backend.js';
 import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
+import {mock} from 'node:test';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
@@ -209,3 +210,54 @@ scoped('a branch that answers with no children keeps no twistie', async () => {
   assert.equal(twistie('Site').className.includes('u2-tree-twistie-hidden'), false);
   t.dispose();
 });
+
+// EQ-067: the tree was read once; a peer's write reached the containers beside it, never the tree
+scoped('the tree follows a peer\'s rename and delete of the selected node on a live source\'s probe (EQ-067)',
+  async () => {
+    mock.timers.enable({apis: ['setInterval']});
+    try {
+      const be = hierarchyBackend();
+      emsBackends.domain = be;
+      const table = await domains.table('stock.location');
+      const settle = async () => {
+        for (let i = 0; i < 12; i++)
+          await flush();
+      };
+      const source = testOwner().build(() => table.source({live: true, liveMs: 1000, pageSize: 10}));
+      await settle();
+      const t = testOwner().build(() => domains.tree(table, {follow: source, expandTo: 'l4'}));
+      document.body.append(t.root);
+      viewport(t);
+      await settle();
+      assert.deepEqual(labels(t), ['Other site', 'Site', 'Room', 'Shelf', 'Box']);
+      assert.equal(t.selected.value.id, 'l4');
+
+      const peer = be.tableSync('stock.location');
+      await peer.transaction([{op: 'update', table: 'location', id: 'l4', values: {name: 'Box 2'}},
+        {op: 'insert', table: 'location', values: {id: 'l0', name: 'Annex', parent_id: 'l1'}}]);
+      mock.timers.tick(1000);
+      await settle();
+      assert.deepEqual(labels(t), ['Other site', 'Site', 'Annex', 'Room', 'Shelf', 'Box 2'],
+        'a peer\'s rename and insert reach the tree on the next live probe');
+      assert.equal(t.selected.value.id, 'l4', 'the renamed row stays selected, though a row landed above it');
+      assert.equal(t.selected.value.name, 'Box 2');
+      assert.equal(t.notice.value, null);
+
+      await peer.transaction([{op: 'delete', table: 'location', id: 'l4'}]);
+      mock.timers.tick(1000);
+      await settle();
+      assert.deepEqual(labels(t), ['Other site', 'Site', 'Annex', 'Room', 'Shelf'],
+        'a node a peer deleted is no longer offered');
+      assert.equal(t.selected.value?.id, 'l3', 'the deleted selection gives way to its parent');
+      assert.equal(t.notice.value, 'Box 2 was deleted');
+      assert.match(t.root.textContent, /Box 2 was deleted/, 'and the tree says so');
+
+      await t.tree.expandPath(['l9']);
+      await settle();
+      assert.equal(t.notice.value, null, 'picking another node retires the notice');
+      t.dispose();
+      source.dispose();
+    } finally {
+      mock.timers.reset();
+    }
+  });
