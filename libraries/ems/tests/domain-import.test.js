@@ -711,3 +711,71 @@ scoped('an unmapped user column neither hints nor refuses', async () => {
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
 });
+
+/** The server's answer to a batch a table CHECK fails (`repository.dart` `_mapPgError`): the statement aborts, so
+ * the dry run and the commit both get HTTP 409 `{error: 'validation', rows: [...]}` pinned on row 0, which the
+ * js-api client resolves rather than rejects — no `validateOnly`, no counts, no `status` or `predicted`. */
+function checkRefusing(memory) {
+  const issue = memory.tableSync('grit.issue');
+  const refuse = (rows) => rows.some((r) => Number(r.weight) < 0) ? {error: 'validation', rows: [{index: 0, id: null,
+    errors: [{column: null, code: 'check', message: 'Weight is positive', constraint: 'weight_positive'}]}]} : null;
+  const validate = issue.validate?.bind(issue);
+  const batch = issue.batch.bind(issue);
+  if (validate !== undefined)
+    issue.validate = async (rows, options) => refuse(rows) ?? validate(rows, options);
+  issue.batch = async (rows, options) => refuse(rows) ?? batch(rows, options);
+  return issue;
+}
+
+const weighted = () => frame(['project_id', 'title', 'weight'], [{project_id: 'p1', title: 'QA-A', weight: '1'},
+  {project_id: 'p1', title: 'QA-B', weight: '-1'}, {project_id: 'p1', title: 'QA-C', weight: '2'},
+  {project_id: 'p1', title: 'QA-D', weight: '-3'}]);
+
+async function rowCells(step) {
+  const rows = document.body.querySelector(`.u2-domain-import-${step} .u2-domain-import-rows`);
+  layout(rows, {clientHeight: 400});
+  fire(rows, 'scroll');
+  await flush();
+  return [...rows.querySelectorAll('.u2-data-table-row')].map((r) => [...r.children].map((c) => c.textContent).join('|'));
+}
+
+for (const allOrNothing of [true, false]) {
+  scoped(`a dry run the server refuses whole over a table CHECK names the rows that break it and offers no import ` +
+    `(all or nothing ${allOrNothing ? 'on' : 'off'})`, async () => {
+    const memory = backend();
+    checkRefusing(memory);
+    const {running} = await opened(memory, weighted());
+    named('allOrNothing').value = allOrNothing;
+    await toMapping();
+    await toPreview();
+    assert.doesNotMatch(importButton().textContent, /NaN/, 'the import button never counts NaN rows');
+    assert.deepEqual(counts('preview'), ['2 errors'], 'the refused rows are counted, not "Nothing to import"');
+    assert.deepEqual(await rowCells('preview'), ['1||p1|QA-A|1|', '2|Error|p1|QA-B|-1|Weight is positive',
+      '3||p1|QA-C|2|', '4|Error|p1|QA-D|-3|Weight is positive'], 'the constraint message is under the rows that break it');
+    assert.match(reason(), /The server refuses the whole batch — Weight is positive\. Nothing would be imported/);
+    assert.equal(importButton().disabled, true, 'nothing would land: the button is off');
+    fire(buttonNamed('CANCEL'), 'click');
+    assert.equal(await running, null);
+  });
+}
+
+scoped('a commit the server refuses whole reports each row that breaks the CHECK as an error with its message',
+  async () => {
+    const memory = backend();
+    noDryRun(memory);
+    checkRefusing(memory);
+    const {running} = await opened(memory, weighted());
+    named('allOrNothing').value = false;
+    await toMapping();
+    await toPreview();
+    fire(importButton(), 'click');
+    for (let i = 0; i < 3; i++)
+      await flush();
+    assert.match(reportText(), /Import aborted — 2 rows have errors; nothing was committed\./);
+    assert.deepEqual((await rowCells('report')).map((r) => r.split('|').filter((c) => c !== '').join('|')),
+      ['1|Not imported|Another row has errors', '2|Error|Weight is positive', '3|Not imported|Another row has errors',
+        '4|Error|Weight is positive'], 'a row carrying errors is an error, whatever its status');
+    fire(buttonNamed('CLOSE'), 'click');
+    await running;
+    assert.equal(issues(memory).length, 3, 'nothing landed');
+  });
