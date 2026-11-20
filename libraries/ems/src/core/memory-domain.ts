@@ -415,6 +415,7 @@ export class MemoryTable implements DomainTableLike {
   }
 
   async query(spec: DomainQueryLike = {}): Promise<Row[]> {
+    this._checkColumns(spec);
     const captions = this._captionTargets(spec.captions);
     let rows = await this._where(spec);
     if (spec.sort)
@@ -422,8 +423,9 @@ export class MemoryTable implements DomainTableLike {
     const offset = spec.offset ?? 0;
     rows = rows.slice(offset, spec.limit === undefined ? undefined : offset + spec.limit);
     return rows.map((row) => {
-      const out: Row = spec.columns ?
-        Object.fromEntries(spec.columns.filter((c) => c in row).map((c) => [c, row[c]])) : {...row};
+      // as the server: `columns` picks among the declared columns, the system ones always ride along
+      const out: Row = spec.columns ? Object.fromEntries([...SYSTEM.map(([c]) => c), ...spec.columns]
+        .filter((c) => c in row).map((c) => [c, row[c]])) : {...row};
       // as the server off row mode: edit and delete are the table's answer, share is not
       // carried (null); a seed row carrying its own boolean is a row-mode table
       if (spec.withAccess) {
@@ -441,6 +443,19 @@ export class MemoryTable implements DomainTableLike {
       }
       return out;
     });
+  }
+
+  // the server's `_query` refusal word for word: `columns` names declared columns the caller may see (a system
+  // column such as `id` is not one — it is always projected), an access column under `withAccess`, and the
+  // deleted mark under a `deleted` read
+  private _checkColumns(spec: DomainQueryLike): void {
+    for (const c of spec.columns ?? []) {
+      const declared = !SYSTEM.some(([s]) => s === c) && this.properties.some((p) => p.name === c) &&
+        this._access.fields[c] !== 'hidden';
+      if (!declared && !(spec.withAccess === true && Access.ROW_COLUMNS.some(([name]) => name === c)) &&
+          !(spec.deleted !== undefined && spec.deleted !== 'exclude' && c === Rows.DELETED))
+        throw new DomainBackendError('filter', `Unknown or inaccessible column "${c}"`);
+    }
   }
 
   // the server's `_compileCaptionExpand` refusals word for word: unknown, hidden and non-ref share one (no oracle)
@@ -483,7 +498,8 @@ export class MemoryTable implements DomainTableLike {
       edit,
       append: async (page) => {
         const more = await this.query(page);
-        df.rows.push(...more);
+        const held = new Set(df.rows.map((row) => row.id));
+        df.rows.push(...more.filter((row) => row.id === undefined || !held.has(row.id)));
         df.onRowsAdded.fire(undefined);
         return more.length;
       },
