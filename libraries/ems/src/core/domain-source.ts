@@ -838,6 +838,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
           this._error.value = undefined;
           this._problemRow.value = null;
         });
+        // and a refusal the session copied onto the other sources of the batch with it, once its
+        // cause is gone
+        this.session.changed?.(this);
         this._rows.rebuild();
         bump();
       }),
