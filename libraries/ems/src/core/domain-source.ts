@@ -457,7 +457,15 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         // leaves the rows behind the server, and the mark has to say so
         this._isStale.value = false;
       };
-      if (shownFrame !== undefined && shownFrame === this._frame)
+      if (readFor === this._shownFor && this._frame !== undefined && this._frame !== shownFrame) {
+        // the collection shown was swapped while this read was in flight — a save's or a page's re-base —
+        // and which of the two reads is newer is unknown: this one is dropped and the collection read
+        // again over the frame now held, never through `_drop` (that would null the current row)
+        frame.dispose();
+        await this.refresh();
+        return;
+      }
+      if (shownFrame !== undefined)
         this._swap(frame, window, baseline, this._keep(), landed);
       else {
         this._drop();
@@ -808,17 +816,17 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const df = this._df.peek();
     if (df === undefined)
       return;
-    if (kept.current !== null) {
-      const at = this._rows.indexOf(kept.current);
-      const to = at >= 0 ? at : Math.min(kept.at, df.rowCount - 1);
-      if (to >= 0) {
-        df.currentRowIdx = to;
-        this._syncCurrent();
-      }
-    }
-    const selection = df.selection as {set?(i: number, value: boolean): void} | null | undefined;
-    // one batch: the selection lands whole, never a row at a time
+    // one batch: the current row and the selection land together, the selection whole
     batch(() => {
+      if (kept.current !== null) {
+        const at = this._rows.indexOf(kept.current);
+        const to = at >= 0 ? at : Math.min(kept.at, df.rowCount - 1);
+        if (to >= 0) {
+          df.currentRowIdx = to;
+          this._syncCurrent();
+        }
+      }
+      const selection = df.selection as {set?(i: number, value: boolean): void} | null | undefined;
       if (typeof selection?.set === 'function') {
         for (const id of kept.selected) {
           const index = this._rows.indexOf(id);

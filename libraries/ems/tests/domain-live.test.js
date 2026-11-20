@@ -4,7 +4,7 @@ import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
-import {backends, Scope} from '@datagrok-libraries/u2';
+import {backends, Scope, Control, untracked} from '@datagrok-libraries/u2';
 import {DomainSource} from '../src/core/domain-source.js';
 import {SharedSession} from '../src/core/session.js';
 import {backend} from './domain-fixtures.mjs';
@@ -698,7 +698,7 @@ scoped('the current row is never null while a peer\'s write reloads the rows (EQ
   src.dispose();
 });
 
-scoped('a child collection under the current row does not reload when a peer\'s write reloads its parent (EQ-002)',
+scoped('a child collection under the current row is not rebuilt when a peer\'s write reloads its parent (EQ-002)',
   async () => {
     const be = counted();
     emsBackends.domain = be.backend;
@@ -712,20 +712,71 @@ scoped('a child collection under the current row does not reload when a peer\'s 
     const child = children.child('grit.issue.project_id');
     assert.equal(child.query.value, 'project_id = "p1"');
     await tick();
-    let reloads = 0;
-    const reload = child.refresh.bind(child);
-    child.refresh = () => {
-      reloads++;
-      return reload();
-    };
+    // what the user would see: the children rebuild their source (and its pane) whenever the parent's current
+    // row passes through null, so the same instance, alive, is the child that was never torn down
+    const built = [];
+    const watch = testOwner().build(() => new Control());
+    watch.effect(() => {
+      const row = parent.currentRow.value;
+      const now = untracked(() => children.child('grit.issue.project_id'));
+      built.push(`${row?.id ?? null}: ${now === child ? 'the same child' : now === undefined ? 'no child' : 'a new child'}`);
+    });
     const project = await be.backend.table('grit.project');
     await project.transaction([{op: 'update', table: 'project', id: 'p2', values: {name: 'Theirs'}}]);
     await tick();
     await flush();
     assert.equal(parent.rows.byKey('p2').name, 'Theirs', 'the poll saw the write and read the parent again');
     assert.equal(parent.currentRow.value?.id, 'p1');
-    assert.equal(child.query.value, 'project_id = "p1"');
-    assert.equal(reloads, 0, 'the child under the kept current row is not read again');
+    // compared by identity, not by `equal`: a failing diff of two sources is too big to print
+    assert.ok(children.child('grit.issue.project_id') === child, 'the same child source, not a new one');
+    assert.equal(child.scope.isDisposed, false, 'and it was never torn down');
+    assert.deepEqual(built.filter((b) => b !== 'p1: the same child'), [],
+      'the parent\'s current row never left, no other child was built');
+    watch.dispose();
     children.dispose();
     parent.dispose();
+  });
+
+scoped('a save that re-bases while a peer\'s reload is in flight keeps the current row and the selection (EQ-002)',
+  async () => {
+    const be = counted();
+    // the next frame read is held until released: the poll's reload, so the save's re-base lands first
+    let hold;
+    const inner = be.backend.table;
+    be.backend.table = async (address) => {
+      const t = await inner(address);
+      return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {
+        frame: async (spec) => {
+          const gate = hold;
+          hold = undefined;
+          if (gate !== undefined)
+            await gate.promise;
+          return t.frame(spec);
+        },
+      });
+    };
+    const src = await started(be);
+    await tick();
+    src.currentRow.value = src.rows.byKey('i2');
+    selectRows(src, 'i2', 'i3');
+    await flush();
+    let release;
+    hold = {promise: new Promise((r) => release = r)};
+    const issue = await be.backend.table('grit.issue');
+    await issue.transaction([{op: 'update', table: 'issue', id: 'i3', values: {title: 'Theirs'}}]);
+    await tick();
+    assert.equal(src.state.value, 'loading', 'the poll\'s reload is in flight');
+    src.rows.byKey('i1').title = 'Mine';
+    await flush();
+    assert.equal(await src.save(), true);
+    await flush();
+    release();
+    await flush();
+    await flush();
+    await tick();
+    assert.equal(src.rows.byKey('i1').title, 'Mine', 'the save stands');
+    assert.equal(src.rows.byKey('i3').title, 'Theirs', 'and the peer\'s write is shown');
+    assert.equal(src.currentRow.value?.id, 'i2', 'the current row stays on the row it was');
+    assert.deepEqual(selectedIds(src), ['i2', 'i3'], 'and so does the selection');
+    src.dispose();
   });
