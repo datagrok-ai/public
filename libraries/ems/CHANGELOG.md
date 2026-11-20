@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Properties: Fixed the save confirmation listing only what you changed: it lists every table and column the server's plan drops, with the values each holds, and a plan that deletes anything waits for the "Delete N stored values" checkbox before SAVE, even when the drop is not one you asked for
 * Properties: Fixed a column you added showing as a locked plugin column after a reload, and adding the next column deleting it with its values: Edit properties reads who owns each column from the registry (`DomainTable.userColumns`), on open and after a conflict reload, and every extension sends all your columns back; on a server too old to say who owns a column, Edit properties refuses to open rather than risk deleting them
 * Properties: Fixed two people editing a table's properties at once silently dropping each other's columns: a save names the extension version the dialog was opened at, so a concurrent change is a conflict that reloads with your edits on top
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message

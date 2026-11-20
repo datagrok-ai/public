@@ -4,7 +4,7 @@ import {register} from 'node:module';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {Scope, notify} from '@datagrok-libraries/u2';
-import {byKind, byName} from '@datagrok-libraries/u2/testing';
+import {byKind, byName, state, user} from '@datagrok-libraries/u2/testing';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const grok = await import('datagrok-api/grok');
@@ -73,7 +73,7 @@ function stub(calls, server) {
           {status: 409, code: 'version-conflict', body: {error: 'version-conflict'}});
       }
       if (options?.dryRun === true)
-        return PLAN({extVersion: server.extVersion});
+        return PLAN({extVersion: server.extVersion, ...(body.extend !== undefined ? server.plan ?? {} : {})});
       return {...PLAN(), applied: true, extVersion: ++server.extVersion};
     },
   });
@@ -129,5 +129,43 @@ scoped('Edit properties sends the extension version it was opened at: a concurre
   assert.ok(commit, 'the second save commits');
   assert.equal(commit[1].ifVersion, '97');
   assert.deepEqual(Object.keys(commit[1].extend.issue.columns).sort(), ['mine', 'property', 'theirs']);
+  assert.equal(await done, true);
+});
+
+scoped('Edit properties confirms the drops the server plans, not the client diff: SAVE waits for the checkbox', async () => {
+  const calls = [];
+  // the client only adds a column; the server's plan, disagreeing, also drops one that holds values
+  const server = {manifest: MANIFEST, extVersion: 96, plan: {destructive: true,
+    drops: {tables: [], columns: [{table: 'issue', column: 'mine', nonNullValues: 3}]}}};
+  stub(calls, server);
+  const done = domains.editProperties(NAME, 'issue');
+  await flush();
+  await flush();
+  await addProperty();
+  save();
+  await flush();
+  await flush();
+
+  const confirm = byKind(document, 'dialog').find((d) => state(d).name === 'properties-confirm');
+  assert.ok(confirm, 'a destructive plan asks before saving');
+  assert.match(confirm.textContent, /issue\.mine dropped.*3 values deleted/,
+    'the confirmation lists the plan\'s drop with its value count');
+  const box = byName(confirm, 'confirmDestructive');
+  assert.equal(state(box).visible, true, 'the deletion checkbox is shown');
+  assert.equal(state(box).label, 'Delete 3 stored values');
+  assert.equal(byName(confirm, 'SAVE').disabled, true, 'SAVE waits for the checkbox');
+  byName(confirm, 'SAVE').click();
+  await flush();
+  assert.deepEqual(commits(calls), [], 'nothing committed before the deletion is confirmed');
+
+  user.click(byName(box, 'Delete 3 stored values'));
+  await flush();
+  assert.equal(byName(confirm, 'SAVE').disabled, false, 'ticking the checkbox enables SAVE');
+  byName(confirm, 'SAVE').click();
+  await flush();
+  await flush();
+  const [commit] = commits(calls);
+  assert.ok(commit, 'the confirmed save commits');
+  assert.equal(commit[1].confirmDestructive, true);
   assert.equal(await done, true);
 });

@@ -129,19 +129,36 @@ export class PropertyDialog {
     return true;
   }
 
+  // built from the server's plan, not from the client's diff: every drop the plan holds is listed, and a destructive
+  // plan always needs the checkbox, since SAVE sends confirmDestructive for the whole plan, drops the client never
+  // meant included
   private static _confirm(changes: ManifestChange[], plan: DG.DomainApplyPlan): Promise<boolean> {
-    const values = (c: ManifestChange): number => !c.removes ? 0 :
-      plan.drops.columns.find((d) => d.table === c.table && d.column === c.column)?.nonNullValues ?? 0;
-    const lost = changes.reduce((n, c) => n + values(c), 0);
-    const confirmed = signal(lost === 0);
-    const lines = changes.map((c) => div([span(c.text),
-      ...(values(c) > 0 ? [span(`${plural(values(c), 'value', 'values')} deleted`, 'u2-binding-change-note')] : [])],
-    `u2-binding-change${c.removes ? ' u2-binding-change-removes' : ''}`));
+    const note = (text: string): HTMLElement[] => [span(text, 'u2-binding-change-note')];
+    const counted = (n: number | undefined, one: string, many: string): HTMLElement[] =>
+      n !== undefined && n > 0 ? note(`${plural(n, one, many)} deleted`) : [];
+    type Drop = DG.DomainApplyPlan['drops']['columns'][number];
+    const drop = (c: ManifestChange): Drop | undefined => !c.removes ? undefined : plan.drops.columns.find((d) =>
+      d.table === c.table && d.column === c.column);
+    const shown = new Set(changes.map(drop).filter((d) => d !== undefined));
+    const lines = [
+      ...changes.map((c) => div([span(c.text), ...counted(drop(c)?.nonNullValues, 'value', 'values')],
+        `u2-binding-change${c.removes ? ' u2-binding-change-removes' : ''}`)),
+      ...plan.drops.tables.map((t) => div([span(`Table ${t.name} dropped`), ...counted(t.liveRows, 'row', 'rows')],
+        'u2-binding-change u2-binding-change-removes')),
+      ...plan.drops.columns.filter((d) => !shown.has(d)).map((d) => div([span(`Column ${d.table}.${d.column} dropped`),
+        ...counted(d.nonNullValues, 'value', 'values')], 'u2-binding-change u2-binding-change-removes')),
+    ];
+    const values = plan.drops.columns.reduce((n, d) => n + (d.nonNullValues ?? 0), 0);
+    const rows = plan.drops.tables.reduce((n, t) => n + (t.liveRows ?? 0), 0);
+    const lost = [...(values > 0 ? [plural(values, 'stored value', 'stored values')] : []),
+      ...(rows > 0 ? [plural(rows, 'row', 'rows')] : [])];
+    const label = lost.length > 0 ? `Delete ${lost.join(' and ')}` : 'Apply the destructive changes';
+    const confirmed = signal(false);
     return new Promise((resolve) => {
       let answer = false;
       const dialog = Dialog.create('Save these changes?', {name: 'properties-confirm'});
-      const box = dialog.build(() => new BoolInput({label: `Delete ${plural(lost, 'stored value', 'stored values')}`,
-        name: 'confirmDestructive', visible: lost > 0, onChanged: (v) => confirmed.value = v}));
+      const box = dialog.build(() => new BoolInput({label, name: 'confirmDestructive',
+        onChanged: (v) => confirmed.value = v}));
       dialog.add(divV([...lines, box.root], 'u2-binding-changes'))
         .okDisabled(computed(() => confirmed.value ? null : 'Confirm the deletion first'))
         .onOK(() => answer = true, {text: 'SAVE', primary: true})
