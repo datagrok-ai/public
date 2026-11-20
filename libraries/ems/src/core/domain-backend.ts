@@ -291,6 +291,9 @@ export interface DomainBackend {
    * backend throws its `DomainBackendError`; the platform answers false after its own dialogs
    * (the js-api `DomainSession` owns the conflict and validation loop). */
   saveAll(edits: EditState[]): Promise<boolean>;
+  /** Drops every cached access snapshot the backend keeps — the session calls it after a 403,
+   * before its sources re-read their access. A backend without caches has none. */
+  dropAccess?(): void;
 }
 
 /** Filled by `DgDomainBackend` at dg import, by `MemoryDomainBackend` in tests. */

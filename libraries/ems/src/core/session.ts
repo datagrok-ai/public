@@ -129,7 +129,10 @@ export class SharedSession implements DomainSession {
       const heard = batch.map((s) => s.edit.peek()!.onSaved.subscribe((r) => Object.assign(assigned, r.assigned)));
       try {
         if (!await emsBackends.domain!.saveAll(batch.map((s) => s.edit.peek()!))) {
-          this._raise(batch, SharedSession._refused(batch));
+          const forbidden = batch.some((s) => s.edit.peek()?.problemCode === 'forbidden');
+          this._raise(batch, SharedSession._refused(batch, forbidden));
+          if (forbidden)
+            await this._reloadAccess();
           return false;
         }
       } catch (e) {
@@ -138,6 +141,8 @@ export class SharedSession implements DomainSession {
         // the error names no source the client can tell: whichever source changes next, the
         // batch is no longer the one refused, and the server decides again
         this._raise(batch, () => false);
+        if ((e as {code?: unknown} | null)?.code === 'forbidden')
+          await this._reloadAccess();
         return false;
       } finally {
         for (const sub of heard)
@@ -187,15 +192,31 @@ export class SharedSession implements DomainSession {
       source.edit.peek()?.setSaving(saving);
   }
 
+  // every source, not just the batch: New and the ⋯ menu follow the list source
+  private async _reloadAccess(): Promise<void> {
+    // the snapshot every affordance was built from is stale: the caches go before anything re-reads
+    emsBackends.domain?.dropAccess?.();
+    await Promise.all(this._sources.peek().map((source) => source.reloadAccess()));
+  }
+
+  /** What the status line says for a save the server refused as forbidden: its own sentence where
+   * it sent one (`Insufficient privileges to insert into "…"`), a plain one for a bare code, and
+   * what the user can still do. */
+  static forbidden(message: string | null | undefined): string {
+    const said = (message ?? '').trim().replace(/\.$/, '');
+    return `${said === '' || said.toLowerCase() === 'forbidden' ? 'you do not have permission to make these changes' :
+      said}. Discard the changes, or ask the table's owner for access`;
+  }
+
   // the platform editor reports the server's error itself and answers false: the summary still says they are
   // stuck. Answers whether the refusal still holds after a change of the session's sources
-  private static _refused(batch: readonly DomainSource[]): (changed: DomainSource) => boolean {
+  private static _refused(batch: readonly DomainSource[], forbidden = false): (changed: DomainSource) => boolean {
     // a refusal naming a column reaches that cell and is the source's validity; one about a whole
     // row (a delete a child's reference vetoes) reaches nothing, and the writer kept the sentence
     const problem = batch.map((s) => s.validity.peek() ?? s.edit.peek()?.problem ?? null)
       .find((v) => v != null) ?? 'the changes were refused';
     for (const source of batch)
-      source.refuse(problem);
+      source.refuse(forbidden ? SharedSession.forbidden(problem) : problem);
     // the cause is known to sit in one source only when one cell alone says it: a change beside it
     // leaves it as it was. A sentence about a row (a delete its children veto: the cause is in the
     // children) or about the batch (on every source) may be answered by a change anywhere, and
