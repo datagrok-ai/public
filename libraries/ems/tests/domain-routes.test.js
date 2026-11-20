@@ -224,3 +224,44 @@ test('DomainAddress: how a row is spelled in a path, and read back out of one', 
   assert.equal(DomainAddress.keyQuery('p1-1-2', ['project_id', 'number'], {properties: []}), null,
     'an arity that does not match is read as an id');
 });
+
+// a table with no name and no searchable column: a backend refuses `search` on it
+const DISPOSALS = {
+  name: 'demo',
+  tables: {disposal: {businessKey: ['code'], friendlyName: 'Disposals', columns: {code: {type: 'string', required: true}}}},
+};
+const disposals = () => new MemoryDomainBackend(DISPOSALS, {rows: {disposal: [{id: 'd1', code: 'D-1'}, {id: 'd2', code: 'D-2'}]}});
+
+scoped('a table with no searchable column: the search box is off, and a search from the route does not break the list', async () => {
+  emsBackends.domain = disposals();
+  const view = await domains.route('/domains/demo/disposal?search=abc');
+  document.body.append(view.root);
+  const a = DomainApp.of(view);
+  await flush();
+  const list = a.listSource;
+  assert.equal(list.error.value, undefined, 'a search on a table with no searchable column leaves the list loaded');
+  assert.equal(list.rows.items.value.length, 2, 'the list still shows its rows');
+  assert.equal(list.searchable.value, false, 'the source knows the table cannot be searched');
+  assert.match(a.summary.value, /Search not applied/, 'the status says the search was not applied');
+  const [search] = a.ribbon().tools;
+  assert.equal(search.disabled, 'Nothing to search in this table', 'the search box is off, with the reason');
+  // a search made later (a saved or a recent one) goes the same way
+  list.search.value = 'zzz';
+  await flush();
+  assert.equal(list.error.value, undefined, 'a later search on a table with no searchable column leaves the list loaded');
+  assert.equal(list.rows.items.value.length, 2);
+  a.dispose();
+});
+
+scoped('a table with a searchable column keeps its search box on and searching', async () => {
+  emsBackends.domain = widgets();
+  const view = await domains.route('/domains/demo/widget?search=alp');
+  document.body.append(view.root);
+  const a = DomainApp.of(view);
+  await flush();
+  assert.equal(a.listSource.searchable.value, true);
+  assert.equal(a.listSource.rows.items.value.length, 1, 'the search narrows the list');
+  assert.equal(a.ribbon().tools[0].disabled, null);
+  assert.doesNotMatch(a.summary.value, /Search not applied/);
+  a.dispose();
+});

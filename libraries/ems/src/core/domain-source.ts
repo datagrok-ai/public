@@ -99,6 +99,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readonly query: Signal<string | FilterGroup>;
   /** The search text, re-queried on change like {@link query}. */
   readonly search: Signal<string>;
+  /** False once the table is loaded and has no searchable column (`info.searchableColumns` is empty): a backend
+   * refuses `search` on it, so the source never sends one and the controls offer none. True until then, and
+   * for a backend that does not say. */
+  readonly searchable: ReadonlySignal<boolean>;
   /** The row order — see {@link DomainSourceOptions.sort}; a signal, so a mode that wants its
    * own order (the trash, newest first) is a write and the collection re-reads. */
   readonly sort: Signal<string>;
@@ -163,6 +167,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _selection = signal<readonly RowView<TRow>[]>([]);
   private readonly _isStale = signal(false);
   private readonly _writable = signal(true);
+  private readonly _searchable = signal(true);
   private readonly _errorStep: ReadonlySignal<string>;
   // the `source` step: the resolver walks to a signal, so the source hands itself over in one
   private readonly _self = signal<DomainSource<TRow>>(this);
@@ -208,6 +213,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this.isEmpty = options.empty ?? this.isDraft;
     this.query = signal<string | FilterGroup>(options.query ?? '');
     this.search = signal(options.search ?? '');
+    this.searchable = this._searchable;
     this.sort = signal(options.sort ?? '');
     this.deleted = signal<DomainDeletedMode>(options.deleted ?? 'exclude');
     this.live = signal(options.live ?? false);
@@ -801,6 +807,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       return;
     this._table = table;
     this._writable.value = table.support.transaction;
+    const searchable = table.info?.searchableColumns;
+    this._searchable.value = !Array.isArray(searchable) || searchable.length > 0;
     this._schema = {
       properties: table.properties.map((p): FilterProperty => {
         const prop: FilterProperty = {...p, name: p.name!};
@@ -960,7 +968,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _scope(): DomainReadScope {
     const query = this.query.peek();
     const q = this._served?.query === query ? this._served.as : query;
-    const search = this.search.peek();
+    // a table with no searchable column refuses a search: the text stays in the box and the route, unsent
+    const search = this._searchable.peek() ? this.search.peek() : '';
     const deleted = this.deleted.peek();
     return {filter: typeof q === 'string' ? (q === '' ? undefined : q) : Filters.toDomainTree(q),
       ...(search === '' ? {} : {search}), ...(deleted === 'exclude' ? {} : {deleted})};

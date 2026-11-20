@@ -32,6 +32,9 @@ export type DomainAppMode = 'live' | 'trash';
 /** What the status bar says while a live source is behind the server ({@link DomainApp.refresh}). */
 const STALE = 'Data changed — Refresh';
 
+/** What it says when a search is set on a table with no searchable column: the list shows every row. */
+const SEARCH_IGNORED = 'Search not applied: this table has no searchable column';
+
 /** Below this width the ribbon has no room for the presets. */
 const COMPACT_WIDTH = 700;
 
@@ -390,6 +393,9 @@ export class DomainApp extends Control {
       // what a bulk action would act on, beside the count — the platform grid's own convention
       const selected = entity ? 0 : this.listSource.selection.value.length;
       const problem = source !== null && source.error.value !== undefined ? source.summary.value : null;
+      // a search from the route, a saved or a recent one, on a table that cannot be searched: not sent, and said so
+      const ignored = !entity && !this.listSource.searchable.value && this.listSource.search.value !== '' ?
+        SEARCH_IGNORED : null;
       // the rows answer the filter that was applied, not the one in the box: while that one is
       // invalid they are shown stale, and a refusal of the old one is not the news
       if (!entity && this.list.stale.value && !dirty)
@@ -397,8 +403,8 @@ export class DomainApp extends Control {
       // a live source saw the collection move while this session had changes to protect: what is
       // pending still matters, and so does that the rows under it are no longer the server's
       if (source !== null && source.stale.value)
-        return {count, selected, notice: pending === null ? STALE : `${pending} — ${STALE}`, problem};
-      return {count, selected, notice: pending, problem};
+        return {count, selected, notice: [pending, STALE, ignored].filter((n) => n !== null).join(' — '), problem};
+      return {count, selected, notice: [pending, ignored].filter((n) => n !== null).join(' — ') || null, problem};
     });
     this.summary = computed(() => DomainApp.summaryOf(this.status.value));
     this.stale = computed(() =>
