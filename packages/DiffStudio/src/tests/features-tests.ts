@@ -209,7 +209,13 @@ category('Features: Argument range', () => {
   });
 
   test('Built-in models have valid ranges', async () => {
-    for (const model of [TEMPLATES.BASIC, TEMPLATES.ADVANCED, TEMPLATES.EXTENDED, ...Object.values(USE_CASES)]) {
+    // Not Object.values(USE_CASES): its members are non-literal, so the enum also holds a reverse (value -> name) mapping
+    const models = [
+      TEMPLATES.BASIC, TEMPLATES.ADVANCED, TEMPLATES.EXTENDED,
+      USE_CASES.CHEM_REACT, USE_CASES.ROBERTSON, USE_CASES.FERMENTATION, USE_CASES.PK, USE_CASES.PK_PD,
+      USE_CASES.ACID_PROD, USE_CASES.NIMOTUZUMAB, USE_CASES.BIOREACTOR, USE_CASES.POLLUTION, USE_CASES.LOTKA_VOLT,
+    ];
+    for (const model of models) {
       const arg = getIVP(model).arg;
       const values = {initial: arg.initial.value, final: arg.final.value, step: arg.step.value};
       expect(getArgIssue(values, captions), null);
