@@ -401,6 +401,14 @@ export const aiPanelNewChat = Given('the AI panel is open on a new chat', async 
   turns.set(page, []);
 }, {tier: 'ui', description: 'shows the AI panel and starts a new chat with its + icon when the current one has messages'});
 
+export const openDemog = Given('user opens the demog demo table', async (page: Page) => {
+  await page.evaluate(() => {
+    grok.shell.addTableView(grok.data.demo.demog());
+  });
+  await expect.poll(() => page.evaluate(() => grok.shell.tv?.dataFrame?.columns.contains('disease') === true),
+    {message: 'a table view of demog'}).toBe(true);
+}, {tier: 'api', description: 'grok.data.demo.demog() in a table view: readable where the DemoFiles copy is not'});
+
 export const askAI = When('user asks the AI panel {string}', async (page: Page, prompt: string) => {
   await waitTurn(page, requireRuntime(await sendPrompt(page, prompt)));
 }, {tier: 'ui', description: 'types the prompt, presses Enter and waits for the runtime\'s final, error or aborted event for the panel\'s session and the panel to go idle'});
