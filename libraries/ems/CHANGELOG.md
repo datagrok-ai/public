@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Save: Fixed Save staying off after a refused save of several sources once its cause is gone — the offending field fixed (back to its original value too), the offending child row fixed, or one of two overlapping edits discarded; the refusal copied onto the other sources now goes with its cause, and stays while it holds
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input
