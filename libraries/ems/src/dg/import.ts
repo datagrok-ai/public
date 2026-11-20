@@ -458,7 +458,7 @@ class ImportFlow {
     const sent = ImportFlow._sent(plan);
     // no row at all: nothing could land, whatever the storage says about a dry run
     if (report === null)
-      this._previewBlock.value = sent.length === 0 ? 'There are no rows to import.' : null;
+      this._previewBlock.value = sent.length === 0 ? 'Nothing would be imported — the file has no rows.' : null;
     const judged = report !== null || this._table.importer?.prepare !== undefined;
     const rows = this._previewRows(plan, sent, report).slice(0, PREVIEW_SHOWN);
     host.replaceChildren(this._rowsTable(owner, 'preview', rows, judged ? this._previewColumns(mapping) :
@@ -497,8 +497,10 @@ class ImportFlow {
     // verdict on all of them
     this._previewBlock.value = options.allOrNothing !== false && errors > 0 ? this._abortReason(errors, valid) :
       // rows past the preview cap are unjudged and still count; within it, nothing to add or update lands nothing
-      sent.length <= PREVIEW_ROWS && report.willInsert + report.willUpdate === 0 ?
-        'No row would be added or updated, so there is nothing to import.' : null;
+      // (a dry run counts updates as `willUpdate`, merges included: a storage that merges answers no dry run)
+      sent.length <= PREVIEW_ROWS && valid === 0 ?
+        `Nothing would be imported — ${errors > 0 ? `${plural(errors, 'row has errors', 'rows have errors')}, and ` +
+          'no row is valid' : 'no row would be added or updated'}.` : null;
   }
 
   // a batch the server refuses whole (a table CHECK fails the statement) answers even a dry run with the commit's
