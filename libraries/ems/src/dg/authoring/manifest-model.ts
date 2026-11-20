@@ -1144,7 +1144,7 @@ export class ManifestModel {
     this._order.push(remote);
   }
 
-  /** Extend mode: whether the user added [column] to [table] — the registry's word, never the manifest's. */
+  // extend mode: whether the user added [column] to [table], the registry's word, never the manifest's
   private _userOwned(table: string, column: string): boolean {
     const owned = this._ownership[table]?.userColumns;
     return Array.isArray(owned) && owned.includes(column);

@@ -4,6 +4,7 @@ import {register} from 'node:module';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {Scope, notify} from '@datagrok-libraries/u2';
+import {byKind, byName} from '@datagrok-libraries/u2/testing';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const grok = await import('datagrok-api/grok');
@@ -73,29 +74,25 @@ function stub(calls, server) {
 }
 
 const commits = (calls) => calls.filter((c) => c[0] === 'apply' && !c[2] && c[1].extend !== undefined);
-const button = (text) => [...document.body.querySelectorAll('.u2-dialog button')].find((b) => b.textContent === text);
-const node = (name) => [...document.querySelectorAll('.u2-manifest-tree .u2-manifest-node')]
-  .find((n) => n.querySelector('.u2-manifest-node-name')?.textContent === name);
+const tree = () => byKind(document, 'manifest-tree')[0];
+const node = (name) => [...tree().querySelectorAll('[role="treeitem"]')].find((n) => n.textContent.startsWith(name));
 
 async function open() {
   const done = domains.editProperties(NAME, 'issue');
   await flush();
   await flush();
-  layout(document.querySelector('.u2-manifest-tree .u2-list'), {clientHeight: 800});
+  layout(byKind(tree(), 'list')[0], {clientHeight: 800});
   await flush();
   return {done};
 }
 
 async function addProperty() {
-  const add = [...document.querySelectorAll('.u2-manifest-tree a, .u2-manifest-tree .u2-link')]
-    .find((a) => a.textContent === '+ Add property');
-  assert.ok(add, 'the tree offers "+ Add property" on the extensible table');
-  add.click();
+  byName(tree(), '+ Add property').click();
   await flush();
 }
 
 async function save() {
-  button('SAVE').click();
+  byName(byKind(document, 'dialog')[0], 'SAVE').click();
   await flush();
   await flush();
 }
@@ -127,7 +124,7 @@ scoped('EQ-018: after a version conflict the reload re-reads ownership: a peer\'
   const {done} = await open();
   await addProperty();
   await save();
-  assert.match(document.querySelector('.u2-manifest-properties').textContent,
+  assert.match(byKind(document, 'status-line')[0].textContent,
     /Someone else changed these properties meanwhile/);
   calls.length = 0;
   await save();
@@ -152,7 +149,7 @@ for (const [server, table] of Object.entries(OLD_SERVERS)) {
     stub(calls, {manifest: copy(MANIFEST), userColumns: [], conflicts: 0, table});
     await assert.rejects(domains.editProperties(NAME, 'issue'), /unavailable on this server version/,
       'a clear refusal, not a TypeError from inside the dialog');
-    assert.equal(document.querySelector('.u2-dialog'), null, 'no dialog opened');
+    assert.throws(() => byKind(document, 'dialog'), /no dialog/, 'no dialog opened');
     assert.deepEqual(commits(calls), [], 'no extension sent');
   });
 }
