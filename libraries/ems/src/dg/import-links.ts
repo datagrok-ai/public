@@ -38,23 +38,19 @@ export class ImportLinks {
     return DomainTable.isReference(prop) && prop.semType !== 'User' && prop.semType !== 'Group';
   }
 
-  // what a user or group column takes, as the mapping says it and the preview refuses by it; null for any other
-  private static _kind(prop: IProperty): string | null {
-    return prop.semType === 'User' ? 'user' : prop.semType === 'Group' ? 'group' : null;
-  }
-
-  /** The mapping's hint for a column that takes ids; null for any other. */
+  /** The mapping's guidance for a column that takes ids; null for any other. */
   static idHint(prop: IProperty): string | null {
-    const kind = ImportLinks._kind(prop);
-    return kind === null ? null : `${DomainTable.captionOf(prop)} takes a ${kind} id (uuid), not a name or login`;
+    const kind = prop.semType === 'User' ? 'user' : prop.semType === 'Group' ? 'group' : null;
+    return kind === null ? null : `${DomainTable.captionOf(prop)} takes a ${kind} id (uuid), ` +
+      `not a ${kind === 'user' ? 'login or name' : 'group name'}`;
   }
 
-  /** The refusal of a value in a user or group column that is no id, before the server's own; null if it is one. */
+  /** What is wrong with a value in a user or group column that is no id, in the wording of a row's error; null if it
+   * is one or the column is another. The server accepts the dashed uuid in either case, as sent, spaces refused. */
   static idProblem(prop: IProperty, value: unknown): string | null {
-    const kind = ImportLinks._kind(prop);
-    const given = typeof value === 'string' ? value.trim() : '';
-    return kind === null || given === '' || UUID.test(given) ? null :
-      `${DomainTable.captionOf(prop)}: expected a ${kind} id (uuid), got "${given}"`;
+    const kind = prop.semType === 'User' ? 'user' : prop.semType === 'Group' ? 'group' : null;
+    return kind === null || typeof value !== 'string' || value === '' || UUID.test(value) ? null :
+      `expected a ${kind} id (uuid), got "${value}"`;
   }
 
   /** The links among `targets`, each with the fields its records can be found by. */
