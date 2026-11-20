@@ -1009,3 +1009,50 @@ scoped('EQ-007: a mix of reloaded and landed changes announces only what landed'
   projects.dispose();
   issues.dispose();
 });
+
+scoped('EQ-007: SAVE in the navigation prompt, then RELOAD discarding every change, lets the navigation proceed: the session is clean', async () => {
+  emsBackends.domain = backend();
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  reloading([issues]);
+  issues.rows.byKey('i1').title = 'Mine';
+  const asking = confirmDiscard(session);
+  fire(buttonNamed('SAVE'), 'click');
+  assert.equal(await asking, true, 'save() said nothing landed, but nothing unsaved is left');
+  assert.equal(balloon(), 'Reloaded; your changes were discarded');
+  projects.dispose();
+  issues.dispose();
+});
+
+scoped('EQ-007: SAVE in the prompt over a save the server refuses still holds the navigation', async () => {
+  emsBackends.domain = backend();
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  issues.rows.byKey('i1').title = 'Mine';
+  emsBackends.domain.tableSync('grit.issue').rows[0].version = 9;
+  const asking = confirmDiscard(session);
+  fire(buttonNamed('SAVE'), 'click');
+  assert.equal(await asking, false, 'the changes are still pending');
+  projects.dispose();
+  issues.dispose();
+});
+
+scoped('EQ-007: a source that wrote only part of its rows counts the rows that landed, never more than its changes', async () => {
+  emsBackends.domain = backend();
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  const real = emsBackends.domain.saveAll.bind(emsBackends.domain);
+  // RELOAD drops one row of the source's batch: the backend writes the other
+  emsBackends.domain.saveAll = async (edits) => {
+    issues.rows.byKey('i2').title = 'Ibuprofen';
+    return real(edits);
+  };
+  issues.rows.byKey('i1').title = 'Mine';
+  issues.rows.byKey('i1').done = false;
+  issues.rows.byKey('i2').title = 'Theirs?';
+  assert.equal(session.changeCount.value, 3, 'two fields of one row and one of another');
+  assert.equal(await session.save(), true);
+  assert.equal(balloon(), 'Issue saved', 'one row landed: one change, not the three asked for');
+  projects.dispose();
+  issues.dispose();
+});

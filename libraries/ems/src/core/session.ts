@@ -401,7 +401,7 @@ export function confirmDiscard(session: DomainSession, options: {action?: string
         session.discard();
         decide(true);
       })
-      .addButton('SAVE', () => decide(session.save()), {primary: true,
+      .addButton('SAVE', () => decide(session.save().then((saved) => saved || !session.isDirty.peek())), {primary: true,
         disabled: session.blocking ?? session.validity})
       .onCancel(() => decide(false))
       .show({modal: true});
