@@ -715,10 +715,11 @@ scoped('an unmapped user column neither hints nor refuses', async () => {
 /** The server's answer to a batch a table CHECK fails (`repository.dart` `_mapPgError`): the statement aborts, so
  * the dry run and the commit both get HTTP 409 `{error: 'validation', rows: [...]}` pinned on row 0, which the
  * js-api client resolves rather than rejects — no `validateOnly`, no counts, no `status` or `predicted`. */
-function checkRefusing(memory) {
+function checkRefusing(memory, {constraint = 'weight_positive', message = 'Weight is positive',
+  when = (rows) => rows.some((r) => Number(r.weight) < 0)} = {}) {
   const issue = memory.tableSync('grit.issue');
-  const refuse = (rows) => rows.some((r) => Number(r.weight) < 0) ? {error: 'validation', rows: [{index: 0, id: null,
-    errors: [{column: null, code: 'check', message: 'Weight is positive', constraint: 'weight_positive'}]}]} : null;
+  const refuse = (rows) => when(rows) ? {error: 'validation', rows: [{index: 0, id: null,
+    errors: [{column: null, code: 'check', message, constraint}]}]} : null;
   const validate = issue.validate?.bind(issue);
   const batch = issue.batch.bind(issue);
   if (validate !== undefined)
@@ -779,3 +780,102 @@ scoped('a commit the server refuses whole reports each row that breaks the CHECK
     await running;
     assert.equal(issues(memory).length, 3, 'nothing landed');
   });
+
+/** The preview of `source` over a backend whose dry run is refused as `refusal` says; answers what it shows. */
+async function refusedPreview(source, refusal, memory = backend()) {
+  checkRefusing(memory, refusal);
+  const {running} = await opened(memory, source);
+  await toMapping();
+  await toPreview();
+  const shown = {cells: await rowCells('preview'), counts: counts('preview'), problems: [text()], reason: reason(),
+    disabled: importButton().disabled, button: importButton().textContent};
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+  return shown;
+}
+
+const unplaced = /The server refuses the whole batch — .*; it does not say which row, and no row here breaks it\./;
+
+scoped('a refused CHECK whose constraint the table does not declare stays on the batch, on no row', async () => {
+  const shown = await refusedPreview(weighted(), {constraint: 'nonesuch', message: 'Something is off'});
+  assert.equal(shown.cells.some((c) => /Something is off/.test(c)), false, 'no row is guessed');
+  assert.deepEqual(shown.counts, ['Refused by the server']);
+  assert.match(shown.problems.join('\n'), unplaced);
+  assert.match(shown.reason, /The server refuses the whole batch — Something is off\./);
+  assert.equal(shown.disabled, true);
+  assert.doesNotMatch(shown.button, /NaN/);
+});
+
+scoped('a refused CHECK the browser cannot evaluate stays on the batch and keeps the button off', async () => {
+  const issue = SCHEMA.tables.issue;
+  const floored = {...SCHEMA, tables: {...SCHEMA.tables, issue: {...issue,
+    constraints: {...issue.constraints, floor: {expr: 'weight >= $min', message: 'Weight is under the floor'}}}}};
+  const memory = new MemoryDomainBackend(floored, {rows: Object.fromEntries(
+    Object.entries(ROWS).map(([t, list]) => [t, list.map((r) => ({...r}))]))});
+  const shown = await refusedPreview(weighted(), {constraint: 'floor', message: 'Weight is under the floor'}, memory);
+  assert.equal(shown.cells.some((c) => /under the floor/.test(c)), false);
+  assert.match(shown.problems.join('\n'), unplaced);
+  assert.equal(shown.disabled, true, 'a throwing check is no reason to turn the button back on');
+});
+
+scoped('a refused CHECK no row here breaks (an update keeps its stored weight) stays on the batch', async () => {
+  // the stored row would break it once merged: the payload does not carry the column
+  const shown = await refusedPreview(frame(['project_id', 'number', 'title'], [{project_id: 'p1', number: '1',
+    title: 'QA-Renamed'}, {project_id: 'p1', number: '9', title: 'QA-New'}]), {when: () => true});
+  assert.equal(shown.cells.some((c) => /Weight is positive/.test(c)), false);
+  assert.match(shown.problems.join('\n'), unplaced);
+  assert.equal(shown.disabled, true);
+});
+
+scoped('an empty weight passes the CHECK as SQL reads it; the offender past the rows shown is named in the note',
+  async () => {
+    const rows = Array.from({length: 30}, (_, i) => ({project_id: 'p1', title: `QA-${i + 1}`,
+      weight: i === 1 ? '' : i === 24 ? '-1' : '1'}));
+    const shown = await refusedPreview(frame(['project_id', 'title', 'weight'], rows));
+    assert.equal(shown.cells[1], '2||p1|QA-2||', 'a NULL in the checked column is not an offender');
+    assert.equal(shown.cells.some((c) => /Weight is positive/.test(c)), false, 'row 25 is past the rows shown');
+    assert.deepEqual(shown.counts, ['1 error']);
+    assert.match(shown.problems.join('\n'), /The server refuses the whole batch — Weight is positive \(row 25\)\./);
+  });
+
+scoped('a commit the server refuses whole names the offender past the 1,000 rows previewed, and does not say ' +
+  'to uncheck All or nothing', async () => {
+  const memory = backend();
+  checkRefusing(memory);
+  const rows = Array.from({length: 1005}, (_, i) => ({project_id: 'p1', title: `QA-${i + 1}`,
+    weight: i === 1003 ? '-2' : '1'}));
+  const {running} = await opened(memory, frame(['project_id', 'title', 'weight'], rows));
+  await toMapping();
+  await toPreview();
+  assert.equal(importButton().disabled, false, 'the first 1,000 rows pass the dry run');
+  fire(importButton(), 'click');
+  for (let i = 0; i < 3; i++)
+    await flush();
+  const shown = reportText();
+  assert.match(shown, /Import aborted — 1 row has errors; nothing was committed\./);
+  assert.match(shown, /The server refuses the whole batch — Weight is positive \(row 1,004\)\./);
+  assert.doesNotMatch(shown, /Uncheck "All or nothing"/, 'unchecking it cannot help a statement the server refuses');
+  fire(buttonNamed('CLOSE'), 'click');
+  const report = await running;
+  assert.deepEqual(report.rows.filter((r) => r.errors?.length).map((r) => r.index), [1003]);
+});
+
+scoped('a commit refused over a CHECK no row breaks reports it on the batch, on no row', async () => {
+  const memory = backend();
+  noDryRun(memory);
+  checkRefusing(memory, {when: () => true});
+  const {running} = await opened(memory, frame(['project_id', 'title', 'weight'],
+    [{project_id: 'p1', title: 'QA-A', weight: '1'}, {project_id: 'p1', title: 'QA-B', weight: '2'}]));
+  named('allOrNothing').value = false;
+  await toMapping();
+  await toPreview();
+  fire(importButton(), 'click');
+  for (let i = 0; i < 3; i++)
+    await flush();
+  const shown = reportText();
+  assert.match(shown, /Import aborted — the server refused the whole batch; nothing was committed\./);
+  assert.match(shown, /The server refuses the whole batch — Weight is positive; it does not say which row/);
+  assert.equal((await rowCells('report')).some((c) => /Error/.test(c)), false, 'no row is guessed');
+  fire(buttonNamed('CLOSE'), 'click');
+  await running;
+});

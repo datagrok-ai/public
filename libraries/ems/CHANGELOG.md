@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Import: Fixed a batch the server refuses whole (a table CHECK such as `quantity <= initial_quantity`) previewing as "Nothing to import" with "Import NaN …" and the reason on the wrong row: the preview puts the constraint's message under the rows that break it, says the server refuses the batch, and keeps the button off; the report shows those rows as errors with the message
+* Import: Fixed a batch the server refuses whole (a table CHECK such as `quantity <= initial_quantity`) previewing as "Nothing to import" with "Import NaN …" and the reason on the wrong row: the constraint is judged in the browser and its message put under the rows that break it, or kept on the batch when no row can be named; the button stays off, the report shows those rows as errors, and it no longer suggests unchecking All or nothing
 * Import: Fixed rows past the 1,000 the server itemizes in a commit report showing no result and no key, and the key written back empty for them: the report reads them back by business key (the batch stays one call, so All or nothing stays atomic), and says how many rows it could not itemize instead of leaving them blank
 * Import: a user or group column says in the mapping step that it takes ids, and the preview refuses a login with `Owner: expected a user id (uuid), got "admin"` instead of the server's "Cannot convert"
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
