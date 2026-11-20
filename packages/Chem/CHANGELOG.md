@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Chemical space: UMAP's Random Seed applies with Use WebGPU too: the same seed gives the same coordinates (on the same GPU). Test: `top menu chem space`, chemSpace: same seed, same coordinates, on the GPU and on the CPU
+* Chemical space: The scatter plot labels points with the molecules only for tables of fewer than 20,000 rows, and always draws circle markers
+
 * Chemprop: Made Train Chemprop and Apply Chemprop work with Forge: molecule features declared, errors passed to the caller, unreadable molecules predicted as empty values, performance metrics fixed
 * Chemical Engine: In Crux mode, MCS and R-Groups Analysis of a column with a row neither engine reads (a malformed SMILES) run on Crux, that row left out as RDKit mode leaves it out; before, one such row sent the whole call to RDKit. RDKit still does the call when it reads a row Crux does not
 * Reactions: In Crux mode, a molecule neither engine reads in Transformation, Two-Component Reaction or Deprotect fails as in RDKit mode and is no longer logged as a Crux fallback; a molecule only RDKit reads is RDKit's, and the fallback says which (`no molecule read from ...`) instead of an engine type error

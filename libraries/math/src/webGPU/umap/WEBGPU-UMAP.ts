@@ -7,7 +7,6 @@ import {initializeSimplicialSetEmbedding} from './simplical-set-embedding';
 import {smoothKNNDistance} from './smooth-knn-distance';
 
 // TODO: FIT ASYNC METHOD WITH CALLBACKS on each step
-// TODO: random function passing in params
 
 
 export class UmapParams {
@@ -21,6 +20,9 @@ export class UmapParams {
   negativeSampleRate: number = 5;
   localConnectivity: number = 1.0;
   setOpMixRatio: number = 1.0;
+  /** Numbers in [0, 1): the initial embedding and the seed of the negative sampling; a seeded one gives the same
+   * coordinates on every run (on the same GPU) */
+  random: () => number = Math.random;
 }
 
 export class WebGPUUMAP {
@@ -96,7 +98,8 @@ export class WebGPUUMAP {
     } = umapParams;
 
     const resEmbeddings = await optimizationLoop(
-      head, tail, entryLen, epochsPerSample, epochsPerNegativeSample, initialAlpha, gamma, a, b, nComponents, nEpochs, entryLen
+      head, tail, entryLen, epochsPerSample, epochsPerNegativeSample, initialAlpha, gamma, a, b, nComponents, nEpochs, entryLen,
+      this.params.random
     );
     return resEmbeddings;
   }

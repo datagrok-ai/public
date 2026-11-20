@@ -7,9 +7,15 @@ import {_package} from '../package-test';
 
 import {category, expect, test, uiSettled} from '@datagrok-libraries/test/src/test';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-import {KnownMetrics, NumberMetricsNames, StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
+import {KnownMetrics, NumberMetricsNames, StringMetricsNames, VectorMetricsNames}
+  from '@datagrok-libraries/ml/src/typed-metrics';
 import {multiColReduceDimensionality}
   from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/reduce-dimensionality';
+import {BYPASS_LARGE_DATA_WARNING} from '@datagrok-libraries/ml/src/functionEditors/consts';
+import {multiColWebGPUKNN, WEBGPUDISTANCE} from '@datagrok-libraries/math';
+import {WEBGSLAGGREGATION} from '@datagrok-libraries/math/src/webGPU/multi-col-distances/webGPU-aggregation';
+import {WebGPUUMAP} from '@datagrok-libraries/math/src/webGPU/umap';
+import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 
 const DEMOG_COLNAMES = {
   SUBJ: 'subj',
@@ -76,6 +82,57 @@ category('Dimensionality reduction: T-SNE', () => {
   });
 });
 
+category('Dimensionality reduction: UMAP random seed', () => {
+  const NUMERIC_COLS = [DEMOG_COLNAMES.AGE, DEMOG_COLNAMES.HEIGHT, DEMOG_COLNAMES.WEIGHT];
+
+  test('GPU fit: same seed, same coordinates', async () => {
+    if (!await getGPUDevice())
+      return 'No WebGPU device in this browser: nothing to check';
+    const df = grok.data.demo.demog(1000);
+    const cols = NUMERIC_COLS.map((name) => df.col(name)!.toList());
+    const vectors = Array.from({length: df.rowCount}, (_, i) => Float32Array.from(cols, (col) => col[i]));
+    const knn = (await multiColWebGPUKNN([vectors], 15, [WEBGPUDISTANCE.EUCLIDEAN], WEBGSLAGGREGATION.MANHATTAN,
+      [1], [{}]))!;
+    const fit = async (seed: number) => {
+      const umap = new WebGPUUMAP(vectors.length, {random: seededRandom(seed)});
+      umap.setPrecomputedKNN(knn.knnIndexes, knn.knnDistances);
+      return (await umap.fit())!;
+    };
+    const first = await fit(1);
+    expect(sameCoordinates(await fit(1), first), true, 'seed 1 gave other coordinates on the second run');
+    expect(sameCoordinates(await fit(2), first), false, 'seeds 1 and 2 gave the same coordinates');
+  }, {timeout: 60000});
+
+  // what the Reduce Dimensionality dialog runs on numeric columns, in the dimensionality reduction worker
+  test('Same seed, same coordinates, on the GPU and on the CPU', async () => {
+    const df = grok.data.demo.demog(1000);
+    const cols = NUMERIC_COLS.map((name) => df.col(name)!);
+    const embed = async (randomSeed: string, useWebGPU: boolean) => {
+      const before = df.columns.names();
+      await multiColReduceDimensionality(df, cols, DimReductionMethods.UMAP,
+        cols.map(() => NumberMetricsNames.Difference), cols.map(() => 1), cols.map(() => undefined), 'EUCLIDEAN',
+        false, false, {preprocessingFuncArgs: cols.map(() => ({})), randomSeed, useWebGPU},
+        {[BYPASS_LARGE_DATA_WARNING]: true}, null, {}, VectorMetricsNames.Euclidean);
+      return df.columns.names().filter((name) => !before.includes(name)).map((name) => df.col(name)!.toList());
+    };
+    const gpu = await getGPUDevice() != null;
+    const firstRuns: number[][][] = [];
+    for (const useWebGPU of gpu ? [true, false] : [false]) {
+      const device = useWebGPU ? 'GPU' : 'CPU';
+      const first = await embed('42', useWebGPU);
+      expect(first.length, 2, `${device}: no embedding columns added`);
+      expect(sameCoordinates(await embed('42', useWebGPU), first), true,
+        `${device}: seed 42 gave other coordinates on the second run`);
+      expect(sameCoordinates(await embed('43', useWebGPU), first), false,
+        `${device}: seeds 42 and 43 gave the same coordinates`);
+      firstRuns.push(first);
+    }
+    // a failed GPU fit falls back to the CPU fit, which keeps to the seed too: the checks above would pass without it
+    if (gpu)
+      expect(sameCoordinates(firstRuns[0], firstRuns[1]), false, 'the GPU run gave the CPU coordinates');
+  }, {timeout: 120000});
+});
+
 category('DBSCAN', () => {
   test('two dense groups and a far point', async () => {
     const df = DG.DataFrame.fromColumns([
@@ -88,6 +145,30 @@ category('DBSCAN', () => {
     expect(clusters.toList().join(', '), '1, 1, 1, 1, 2, 2, 2, 2, -1');
   });
 });
+
+/** mulberry32: numbers in [0, 1) from a seed */
+function seededRandom(seed: number): () => number {
+  return () => {
+    seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function sameCoordinates(a: ArrayLike<number>[], b: ArrayLike<number>[]): boolean {
+  if (a.length !== b.length)
+    return false;
+  for (let d = 0; d < a.length; d++) {
+    if (a[d].length !== b[d].length)
+      return false;
+    for (let i = 0; i < a[d].length; i++) {
+      if (a[d][i] !== b[d][i])
+        return false;
+    }
+  }
+  return true;
+}
 
 async function testDimensionalityReductionUI(
   columns: string[], methodName: DimReductionMethods, metrics: KnownMetrics[],

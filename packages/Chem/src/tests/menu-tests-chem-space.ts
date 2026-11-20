@@ -80,6 +80,24 @@ category('top menu chem space', async () => {
     } finally {tv.close();}
   });
 
+  test('chemSpace: same seed, same coordinates, on the GPU and on the CPU', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', smallDf.col('smiles')!.toList())]);
+    await grok.data.detectSemanticTypes(df);
+    let run = 0;
+    const embed = async (randomSeed: string, useWebGPU: boolean) => {
+      const names = [`X ${++run}`, `Y ${run}`];
+      await runChemSpace(df, df.getCol('smiles'), DimReductionMethods.UMAP, BitArrayMetricsNames.Tanimoto, false,
+        {randomSeed, useWebGPU, fastRowCount: 100000}, undefined, false, undefined, names);
+      return JSON.stringify(names.map((name) => df.col(name)!.toList()));
+    };
+    for (const useWebGPU of gd ? [true, false] : [false]) {
+      const device = useWebGPU ? 'GPU' : 'CPU';
+      const first = await embed('42', useWebGPU);
+      expect(await embed('42', useWebGPU), first, `${device}: seed 42 gave other coordinates on the second run`);
+      expect(await embed('43', useWebGPU) !== first, true, `${device}: seeds 42 and 43 gave the same coordinates`);
+    }
+  }, {timeout: 120000});
+
   test('chemSpace.allEmpty', async () => {
     const df = DG.DataFrame.fromColumns([
       DG.Column.fromInt32Array('id', Int32Array.from({length: 10}, (_, i) => i + 1)),

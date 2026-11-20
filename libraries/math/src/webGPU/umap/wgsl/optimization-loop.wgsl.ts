@@ -2,7 +2,7 @@
 export function optimizeLayoutWGSL(
   headSize: number, embedSize: number, moveOther: boolean, initialAlpha: number, gamma: number,
   a: number, b: number, dim: number, nEpochs: number, nVertices: number, workgroupDim: number, threadsPerRow: number,
-  divisionFactor = 100000
+  divisionFactor = 100000, stepsPerEpoch = 1, threadsPerStep = headSize
 ) {
   return `
 // first define some functions
@@ -26,7 +26,7 @@ fn clip(x: f32, clipValue: f32) -> f32 {
     return x;
 }
 
-var<private> randomSeedInt: u32 = 0;
+var<private> rngState: u32 = 0;
 var<private> nVertices: u32 = ${nVertices};
 var<private> initialAlpha: f32 = ${initialAlpha};
 var<private> gamma: f32 = ${gamma};
@@ -36,18 +36,16 @@ var<private> dim: u32 = ${dim};
 var<private> nEpochs: f32 = ${nEpochs};
 var<private> moveOther: u32  = ${moveOther === true ? 1 : 0};
 
-fn random() -> u32 {
-    randomSeedInt = (randomSeedInt ^ 61) ^ (randomSeedInt >> 16);
-    randomSeedInt *= 9;
-    randomSeedInt = randomSeedInt ^ (randomSeedInt >> 4);
-    randomSeedInt *= 0x27d4eb2d;
-    randomSeedInt = randomSeedInt ^ (randomSeedInt >> 15);
-    return randomSeedInt;
+// PCG hash (Jarzynski and Olano, Hash Functions for GPU Rendering, 2020)
+fn pcgHash(v: u32) -> u32 {
+    let state = v * 747796405u + 2891336453u;
+    let word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+    return (word >> 22u) ^ word;
 }
 
 fn randInt(maxVal: u32) -> u32 {
-    let nextRandomNum = random();
-    return u32(floor((f32(nextRandomNum) * (f32(maxVal) / 4294967296.0))));
+    rngState = pcgHash(rngState);
+    return rngState % maxVal;
 }
 
 struct MatrixStorage {
@@ -68,16 +66,25 @@ struct EmbeddingStorage {
     tailEmbeddings: array<array<atomic<i32>, ${dim}>, ${embedSize}>
 }
 
+// the embeddings as they were when the step started. Threads read only these and add their moves to EmbeddingStorage:
+// read from EmbeddingStorage, a thread would see whichever moves of other threads happened to land first, and the
+// same seed would give other coordinates on every run. Integer sums do not depend on the order of the adds.
+struct EmbeddingSnapshot {
+    headEmbeddings: array<array<i32, ${dim}>, ${embedSize}>,
+    tailEmbeddings: array<array<i32, ${dim}>, ${embedSize}>
+}
+
 struct ComputeInfo {
     n: f32,
     alpha: f32,
-    randomNumbers: array<u32, ${headSize}>,
-    //tailOffsets: array<u32, ${embedSize + 1}>
+    seed: u32,
 }
     @group(0) @binding(0) var<storage, read_write> matrixStorage: MatrixStorage;
     @group(0) @binding(1) var<storage, read_write> epochStorage: EpochStorage;
     @group(0) @binding(2) var<storage, read_write> embedStorage: EmbeddingStorage;
     @group(0) @binding(3) var<storage, read_write> computeInfo: ComputeInfo;
+    @group(0) @binding(4) var<storage, read> embedSnapshot: EmbeddingSnapshot;
+    @group(0) @binding(5) var<storage, read> step: u32;
     @compute @workgroup_size(${workgroupDim}, ${workgroupDim}) fn optimizeStep(
         @builtin(global_invocation_id) id: vec3<u32>,
      ) {
@@ -87,15 +94,19 @@ struct ComputeInfo {
         let threadIndex: u32 = row * ${threadsPerRow} + col;
         let clipValue: f32 = 4.0;
 
-        if (threadIndex >= ${headSize}) {
+        if (threadIndex >= ${threadsPerStep}u) {
             return;
         }
 
-        let workingIndex = threadIndex;
+        let workingIndex = threadIndex * ${stepsPerEpoch}u + step;
+        if (workingIndex >= ${headSize}u) {
+            return;
+        }
         //let startAtOffset = computeInfo.tailOffsets[threadIndex];
         //let endAtOffset = computeInfo.tailOffsets[threadIndex + 1];
         //for (var workingIndex = startAtOffset; workingIndex < endAtOffset; workingIndex++) {
-            randomSeedInt = computeInfo.randomNumbers[workingIndex] * u32(computeInfo.n);
+            // a stream of its own for every edge and epoch, all from the one seed
+            rngState = pcgHash(workingIndex + pcgHash(u32(computeInfo.n) + pcgHash(computeInfo.seed)));
 
             let epochOfNextSample = epochStorage.epochOfNextSample[workingIndex];
             if (epochOfNextSample > computeInfo.n) {
@@ -109,8 +120,8 @@ struct ComputeInfo {
             var current: array<f32, ${dim}>;
             var other: array<f32, ${dim}>;
             for (var i = 0u; i < ${dim}u; i++) {
-                current[i] = f32(atomicLoad(&embedStorage.headEmbeddings[j][i])) / divisionFactor;
-                other[i] = f32(atomicLoad(&embedStorage.tailEmbeddings[k][i])) / divisionFactor;
+                current[i] = f32(embedSnapshot.headEmbeddings[j][i]) / divisionFactor;
+                other[i] = f32(embedSnapshot.tailEmbeddings[k][i]) / divisionFactor;
             }
 
             let distSquared = rDist(current, other);
@@ -142,7 +153,7 @@ struct ComputeInfo {
                 let k1 = randInt(nVertices);
                 var other1: array<f32, ${dim}>;
                 for (var i = 0u; i < ${dim}u; i++) {
-                    other1[i] = f32(atomicLoad(&embedStorage.tailEmbeddings[k1][i])) / divisionFactor;
+                    other1[i] = f32(embedSnapshot.tailEmbeddings[k1][i]) / divisionFactor;
                 }
 
                 let distSquared1 = rDist(current, other1);

@@ -2,14 +2,20 @@ import {getGPUDevice} from '../getGPUDevice';
 import {optimizeLayoutWGSL} from './wgsl/optimization-loop.wgsl';
 import {WORKGROUP_DIM} from '../workgroup';
 
+/** An epoch runs its edges in this many steps, edge i in step i % STEPS_PER_EPOCH, each step reading the embeddings
+ * the previous one left. With one step, a vertex took all its moves of an epoch from the same position, and a layout of
+ * 30K rows kept 18% fewer of its nearest neighbors than the CPU one; with 8 it keeps as many. */
+const STEPS_PER_EPOCH = 8;
+
 export async function optimizationLoop(
   head: Uint32Array, tail: Uint32Array, embeddingSize: number,
   epochsPerSample: Float32Array, epochsPerNegativeSample: Float32Array, initialAlpha: number, gamma: number,
-  a: number, b: number, dim: number, nEpochs: number, nVertices: number
+  a: number, b: number, dim: number, nEpochs: number, nVertices: number, random: () => number
 ) {
   const threadsPerWorkgroupDim = WORKGROUP_DIM;
   const threadsPerWorkgroup = threadsPerWorkgroupDim * threadsPerWorkgroupDim;
-  const requiredWorkgroups = Math.ceil(head.length / threadsPerWorkgroup);
+  const threadsPerStep = Math.ceil(head.length / STEPS_PER_EPOCH);
+  const requiredWorkgroups = Math.ceil(threadsPerStep / threadsPerWorkgroup);
   const numOfWorkgroupsPerDim = Math.ceil(Math.sqrt(requiredWorkgroups));
   const threadsPerYDimension = threadsPerWorkgroupDim * numOfWorkgroupsPerDim;
   const device = await getGPUDevice();
@@ -19,7 +25,8 @@ export async function optimizationLoop(
   const divisionFactor = 10_000_000;
   const headSize = head.length;
   const processWGSL = optimizeLayoutWGSL(headSize, embeddingSize, true, initialAlpha,
-    gamma, a, b, dim, nEpochs, nVertices, threadsPerWorkgroupDim, threadsPerYDimension, divisionFactor
+    gamma, a, b, dim, nEpochs, nVertices, threadsPerWorkgroupDim, threadsPerYDimension, divisionFactor,
+    STEPS_PER_EPOCH, threadsPerStep
   );
 
 
@@ -45,7 +52,7 @@ export async function optimizationLoop(
     paddedembedStorageSize += 16 - remainder3;
 
 
-  const comuteInfo32Size = 2 + headSize;
+  const comuteInfo32Size = 3;
   let paddedComputeInfoSize = comuteInfo32Size * 4;
   const remainder4 = paddedComputeInfoSize & 15;
   if (remainder4 !== 0)
@@ -115,7 +122,7 @@ export async function optimizationLoop(
 
 
   const headEmbeddings =
-    new Int32Array(embeddingSize * dim).map(() => Math.floor((Math.random() * 2 -1) * divisionFactor));
+    new Int32Array(embeddingSize * dim).map(() => Math.floor((random() * 2 -1) * divisionFactor));
   const tailEmbeddings = new Int32Array(embeddingSize * dim);
   tailEmbeddings.set(headEmbeddings);
   const embeddingStorageBuffer = device.createBuffer({
@@ -133,6 +140,12 @@ export async function optimizationLoop(
   mappedEmbeddingStorageArray.set(headEmbeddings, headEmbeddings.length);
   embeddingStorageBuffer.unmap();
 
+  const embeddingSnapshotBuffer = device.createBuffer({
+    label: 'embedding snapshot buffer',
+    size: paddedembedStorageSize,
+    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+  });
+
 
   const computeInfoBuffer = device.createBuffer({
     label: 'compute info buffer',
@@ -143,25 +156,38 @@ export async function optimizationLoop(
             GPUBufferUsage.COPY_DST,
     mappedAtCreation: true,
   });
-  const randomNumbers = new Uint32Array(headSize).map(() => Math.floor(Math.random() * divisionFactor));
   const computeInfoArrayBuffer = computeInfoBuffer.getMappedRange();
   const computeInfoMappedArray = new Float32Array(computeInfoArrayBuffer, 0, 2);
   computeInfoMappedArray.set([0.0, initialAlpha]);
-  const randomNumbersView = new Uint32Array(computeInfoArrayBuffer, 8, headSize);
-  randomNumbersView.set(randomNumbers);
+  new Uint32Array(computeInfoArrayBuffer, 8, 1)[0] = Math.floor(random() * 0x100000000);
 
   computeInfoBuffer.unmap();
 
-  const bindGroup = device.createBindGroup({
-    label: 'bindGroup for optimize',
+  // the step indexes, one per bind group, each at an offset the device can bind
+  const stepStride = device.limits.minStorageBufferOffsetAlignment;
+  const stepBuffer = device.createBuffer({
+    label: 'step buffer',
+    size: STEPS_PER_EPOCH * stepStride,
+    usage: GPUBufferUsage.STORAGE,
+    mappedAtCreation: true,
+  });
+  const stepArray = new Uint32Array(stepBuffer.getMappedRange());
+  for (let step = 0; step < STEPS_PER_EPOCH; step++)
+    stepArray[step * stepStride / 4] = step;
+  stepBuffer.unmap();
+
+  const bindGroups = Array.from({length: STEPS_PER_EPOCH}, (_, step) => device.createBindGroup({
+    label: `bindGroup for optimize step ${step}`,
     layout: pipeline.getBindGroupLayout(0),
     entries: [
       {binding: 0, resource: {buffer: matrixStorageBuffer}},
       {binding: 1, resource: {buffer: epochStorageBuffer}},
       {binding: 2, resource: {buffer: embeddingStorageBuffer}},
-      {binding: 3, resource: {buffer: computeInfoBuffer}}
+      {binding: 3, resource: {buffer: computeInfoBuffer}},
+      {binding: 4, resource: {buffer: embeddingSnapshotBuffer}},
+      {binding: 5, resource: {buffer: stepBuffer, offset: step * stepStride, size: 4}},
     ],
-  });
+  }));
 
 
   let alpha = initialAlpha;
@@ -182,17 +208,19 @@ export async function optimizationLoop(
     const encoder = device.createCommandEncoder({
       label: 'matrix ops encoder',
     });
-
-    const pass = encoder.beginComputePass({
-      label: 'matrix ops compute pass',
-    });
-    pass.setPipeline(pipeline);
-    pass.setBindGroup(0, bindGroup);
-    pass.dispatchWorkgroups(
-      numOfWorkgroupsPerDim,
-      numOfWorkgroupsPerDim
-    );
-    pass.end();
+    for (let step = 0; step < STEPS_PER_EPOCH; step++) {
+      encoder.copyBufferToBuffer(embeddingStorageBuffer, 0, embeddingSnapshotBuffer, 0, embeddingSnapshotBuffer.size);
+      const pass = encoder.beginComputePass({
+        label: 'matrix ops compute pass',
+      });
+      pass.setPipeline(pipeline);
+      pass.setBindGroup(0, bindGroups[step]);
+      pass.dispatchWorkgroups(
+        numOfWorkgroupsPerDim,
+        numOfWorkgroupsPerDim
+      );
+      pass.end();
+    }
 
     // here, we copy the head/tail views to their correct places in embeddings.
 
@@ -224,6 +252,8 @@ export async function optimizationLoop(
   matrixStorageBuffer.destroy();
   epochStorageBuffer.destroy();
   embeddingStorageBuffer.destroy();
+  embeddingSnapshotBuffer.destroy();
+  stepBuffer.destroy();
   computeInfoBuffer.destroy();
   outEmbedViewBuffer.destroy();
 
