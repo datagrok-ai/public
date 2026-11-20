@@ -187,8 +187,9 @@ RUN set -e ; \
     apk add --no-cache \
       bash procps gettext-envsubst \
       python-${PYTHON_VERSION} libstdc++ libgomp zlib libprotobuf \
-      # Wolfi's nginx-stable lags behind its security fixes \
-      nginx-mainline nginx-mainline-mime-types \
+      # Wolfi's nginx-stable lags behind its security fixes (1.30.2 on the day 1.30.7 \
+      # fixed nginx2root, CVE-2026-123007); the floor fails a build on a stale index \
+      'nginx-mainline>=1.31.9' nginx-mainline-mime-types \
       # NLP \
       tesseract tesseract-eng tesseract-osd unrtf poppler-utils \
       # NLP END \
