@@ -1390,15 +1390,27 @@ scoped('the table view counts every row picked in it, and takes over a selection
 
   a.view.value = 'table';
   await flush();
-  const table = a.list.root.nextElementSibling.firstElementChild;
-  layout(table, {clientHeight: 300});
-  fire(table, 'scroll');
+  const shown = () => {
+    const el = a.list.root.nextElementSibling.firstElementChild;
+    layout(el, {clientHeight: 300});
+    fire(el, 'scroll');
+    return el;
+  };
+  let table = shown();
   await flush();
   const rowsOf = (el) => [...el.lastElementChild.children].filter((r) => r.getAttribute('role') === 'row');
   const pickedIn = (el) => rowsOf(el).filter((r) => r.getAttribute('aria-selected') === 'true').length;
   const rowOf = (i) => rowsOf(table).find((el) => el.getAttribute('aria-rowindex') === String(i + 2));
   assert.equal(a.status.value.selected, 2, 'the table shows the rows the list picked');
   assert.equal(pickedIn(table), 2);
+
+  // the table is rebuilt over a collection read again (its columns changed): the rows stay picked
+  a.output.columns.value = a.output.columns.peek().slice(0, 2);
+  await a.listSource.refresh();
+  await flush();
+  table = shown();
+  await flush();
+  assert.equal(a.status.value.selected, 2, 'a rebuilt table over a reloaded collection keeps the rows');
 
   fire(rowOf(0), 'click');
   fire(rowOf(1), 'click', {ctrlKey: true});

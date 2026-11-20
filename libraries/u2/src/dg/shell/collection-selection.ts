@@ -19,6 +19,10 @@ export interface SelectableCollection {
   readonly selection?: ReadonlySignal<readonly RowView[]>;
 }
 
+/** The keys a source's user picked, kept past the control that held them: a table rebuilt over a
+ * collection that was read again (its columns changed) takes over what the one it replaces kept. */
+const KEPT = new WeakMap<object, string[]>();
+
 /** Binds `rows` (any `VirtualRows`) to `source` inside `owner`'s scope, and answers nothing: the
  * binding lives as long as the owner does.
  *
@@ -79,6 +83,7 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
     if ((e as KeyboardEvent).key !== 'Escape')
       return;
     picked.value = false;
+    KEPT.delete(source);
     rows.selectedIndex.value = -1;
   };
   rows.root.addEventListener('click', onPick);
@@ -103,7 +108,8 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
     // shown (again): the rows the frame has selected are the ones to show selected
     const fresh = !live;
     live = true;
-    const taken = fresh ? untracked(() => (source.selection?.peek() ?? []).map((r) => r.id)) : [];
+    const frames = fresh ? untracked(() => (source.selection?.peek() ?? []).map((r) => r.id)) : [];
+    const taken = frames.length > 0 || !fresh ? frames : KEPT.get(source) ?? [];
     const bits = df?.selection as
       {get?(i: number): boolean, set?(i: number, value: boolean): void} | null | undefined;
     if (df === undefined || typeof bits?.set !== 'function')
@@ -117,6 +123,7 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
       const again = taken.length > 0 ? taken : own ? kept : [];
       if (again.length === 0) {
         picked.value = false;
+        KEPT.delete(source);
         return;
       }
       // the scroller copies the items in an effect of its own, which runs AFTER this one: the
@@ -127,6 +134,8 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
         const present = new Set(source.rows.items.peek().map((row) => row.id));
         const back = again.filter((id) => present.has(id));
         picked.value = back.length > 0;
+        if (back.length === 0)
+          KEPT.delete(source);
         if (back.length > 0)
           untracked(() => rows.selectKeys(back, source.currentRow.peek()?.id));
       });
@@ -144,7 +153,7 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
     // the emptying the scroller does when its items are replaced is not the user clearing
     // the selection: only a non-empty one is remembered, and `own` is what clears it
     if (own && selected.size > 0)
-      kept = rows.selectedKeys();
+      KEPT.set(source, kept = rows.selectedKeys());
     // read before writing: a bitset that fires per write would send a change event per ROW on
     // every pass, and a frame the platform writer holds is not to be touched for nothing
     for (let i = 0; i < df.rowCount; i++) {
