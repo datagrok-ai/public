@@ -1879,3 +1879,70 @@ scoped('View revoked after the list loaded: the row opened from it re-reads the 
   assert.deepEqual([save.root.hidden, discard.root.hidden], [true, true]);
   a.dispose();
 });
+
+/** EQ-054: the platform caches the caller's access with no expiry, and a grant made by another session never
+ * drops it. The memory table answers the cached access until the caches are dropped, as the platform does. */
+function grantedElsewhere() {
+  const memory = backend();
+  const issues = memory.tableSync('grit.issue');
+  const query = issues.query.bind(issues);
+  const state = {granted: false, drops: 0, reads: 0};
+  let cached = null;
+  const live = () => ({can: {view: state.granted, insert: state.granted, edit: state.granted, delete: false,
+    share: false}, fields: {}});
+  issues.access = () => {
+    if (cached === null)
+      state.reads++;
+    return Promise.resolve(cached ??= live());
+  };
+  issues.query = (spec) => state.granted ? query(spec) : Promise.resolve([]);
+  memory.dropAccess = () => {
+    state.drops++;
+    cached = null;
+  };
+  emsBackends.domain = memory;
+  return state;
+}
+
+scoped('EQ-054: a grant made while the app is open reaches it through Refresh, on the no-access page too', async () => {
+  const state = grantedElsewhere();
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  const [add, , , more, refresh] = testOwner().build(() => a.ribbon()).main;
+  await flush();
+  assert.match(byKind(a, 'empty-state').map((el) => el.textContent).join(' '), /You do not have access to issues/);
+  assert.equal(refresh.root.hidden, false, 'Refresh is offered on the no-access page');
+  assert.equal(add.root.hidden, true);
+  state.granted = true;
+  const reads = state.reads;
+  fire(refresh.root.querySelector('button') ?? refresh.root, 'click');
+  await flush();
+  await flush();
+  assert.equal(a.listSource.rows.items.value.length, 3, 'the rows show after Refresh');
+  assert.equal(add.root.hidden, false, 'New appears once the re-read finds the grant');
+  assert.equal(more.root.hidden, false, 'the actions menu appears once the re-read finds the grant');
+  assert.equal(refresh.root.hidden, true, 'Refresh goes once the page is not the no-access one');
+  assert.equal(state.reads - reads, 1, 'one real access read per Refresh (the rest is the platform\'s cache)');
+  a.dispose();
+});
+
+scoped('EQ-054: opening the app again reads the access afresh, so New and the menu follow a grant made meanwhile', async () => {
+  const state = grantedElsewhere();
+  const first = await domains.route('/domains/grit/issue');
+  await flush();
+  assert.equal(state.drops, 1, 'opening drops the caches once');
+  const denied = DomainApp.of(first);
+  assert.equal(denied.listSource.access.value.can('insert'), false);
+  first.close?.();
+  denied.dispose();
+  state.granted = true;
+  const reopened = DomainApp.of(await domains.route('/domains/grit/issue'));
+  await flush();
+  await flush();
+  assert.equal(reopened.listSource.rows.items.value.length, 3, 'the rows show');
+  assert.equal(reopened.listSource.access.value.can('insert'), true, 'the reopened app reads the grant');
+  const [add] = testOwner().build(() => reopened.ribbon()).main;
+  assert.equal(add.root.hidden, false, 'New follows the grant');
+  reopened.dispose();
+});

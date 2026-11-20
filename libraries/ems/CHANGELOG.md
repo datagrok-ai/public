@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Apps: Fixed a grant made while the app is open never reaching it: opening the app or a view and the ribbon's Refresh now read the caller's access afresh (the platform caches it with no expiry), the no-access page offers Refresh, and New and the ⋯ menu follow once the access reads View
 * EMS-032: Fixed a refused new record (Edit or Insert revoked meanwhile) not re-gating the app on today's servers: their refusal carries no code and says "Insufficient privileges to insert into …", which is now recognised as forbidden like the bare "forbidden" of an update or delete, so New and the ⋯ menu go
 * Save: Fixed the balloon announcing changes as saved after RELOAD in the conflict dialog dropped them ("Item saved", "2 changes saved" with one landed): it counts only what the server wrote, says "Reloaded; your changes were discarded" when every change was reloaded away, and `save()` then answers false
 * Save: Fixed Save and Ctrl+S staying off after the server refused a save whose cause was then removed elsewhere (the clashing row deleted in another tab); the refusal stays shown on the field and the status line, and Save sends the batch again for the server to decide. A client error and a save refused as forbidden still hold Save

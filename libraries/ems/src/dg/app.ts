@@ -502,7 +502,11 @@ export class DomainApp extends Control {
     // the status bar is text: the way to act on "Data changed" is here, and only while it stands
     const reload = new Control(button('Refresh', () => void this.refresh()));
     reload.root.dataset.u2 = 'refresh-button';
-    reload.effect(() => reload.root.hidden = !this.stale.value);
+    // a reader denied View is offered it too: the grant that would let them in reaches no page by itself
+    reload.effect(() => {
+      const source = this._page.value === 'entity' ? this._entitySource.value : this.listSource;
+      reload.root.hidden = !this.stale.value && source?.access.value.can('view') !== false;
+    });
     const search = domains.search(this.listSource);
     const sort = this._sortMenu();
     const switcher = this._viewSwitch();
@@ -629,6 +633,9 @@ export class DomainApp extends Control {
     const source = this._page.peek() === 'entity' ? this._entitySource.peek() : this.listSource;
     if (source === null || !await confirmDiscard(this.session, {action: 'reload the rows'}))
       return false;
+    // the access is read again too, once: the platform caches it until told otherwise, and a grant made by
+    // another session never tells
+    emsBackends.domain?.dropAccess?.();
     await source.refresh();
     return true;
   }
