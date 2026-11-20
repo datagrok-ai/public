@@ -203,8 +203,11 @@ export class DomainChildren extends Control {
       const pending = scope = new Scope();
       pending.build(() => untracked(() => {
         const draft = Rows.isDraft(row);
-        const child = entry.table.source({query: draft ? '' : `${entry.fk} = "${row.id}"`,
-          defaults: {[entry.fk]: row.id}, session: this.parent.session, empty: draft});
+        // a tab that cannot be shown asks nothing: the server refuses a read through a column the caller cannot see
+        const denied = this._denied(entry);
+        const child = entry.table.source({query: draft || denied !== null ? '' : `${entry.fk} = "${row.id}"`,
+          defaults: denied !== null ? {} : {[entry.fk]: row.id}, session: this.parent.session,
+          empty: draft || denied !== null});
         this._sources.set(entry.id, child);
         state.current.value = child;
         // the parent's id is the same on every row here, and the column is not the user's to edit
@@ -215,7 +218,6 @@ export class DomainChildren extends Control {
         const body = grid?.root ??
           divH([domains.list(child).root, domains.form(child).root], 'u2-domain-children-split');
         const empty = span(`No ${entry.label.toLowerCase()}.`, 'u2-domain-children-empty');
-        const denied = this._denied(entry);
         const add = domains.newButton(child);
         // a list's form takes the focus itself; the grid needs it handed over once the button's own click has refocused it
         if (grid !== null)
@@ -223,7 +225,7 @@ export class DomainChildren extends Control {
         pane.replaceChildren(divH([add.root], 'u2-domain-children-toolbar'), body, empty);
         pending.effect(() => {
           const ready = child.state.value === 'ready';
-          const none = ready && (denied !== null || child.rows.items.value.length === 0);
+          const none = denied !== null || (ready && child.rows.items.value.length === 0);
           if (denied !== null)
             empty.textContent = denied;
           add.root.hidden = denied !== null;
