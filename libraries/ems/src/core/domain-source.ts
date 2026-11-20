@@ -329,7 +329,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this.search.value;
       this.sort.value;
       this.deleted.value;
-      if (!this.isDirty.peek() && !this._rebinding)
+      // read, not peeked: a re-query skipped over pending edits runs when the source turns clean (Discard,
+      // or a Save) — the rows shown were read for another scope. Clean with the same scope reloads nothing
+      const dirty = this.isDirty.value;
+      if (!dirty && !this._rebinding && (this._shownFor === undefined || this._readFor() !== this._shownFor))
         void this.refresh();
     });
     this.effect(() => {

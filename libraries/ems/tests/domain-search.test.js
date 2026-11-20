@@ -151,3 +151,38 @@ scoped('the box carries the class its sheet selects, and a search during a write
   search.dispose();
   src.dispose();
 });
+
+scoped('a search changed over pending edits applies when Discard makes the source clean (EQ-008)', async () => {
+  const src = await issues();
+  const all = src.rows.items.value.map((r) => r.title);
+  assert.ok(all.length > 1, 'the fixture lists several issues');
+  const keep = all[1];
+  src.rows.byKey(src.rows.items.value[0].id ?? 'i1').title = 'Edited';
+  assert.equal(src.isDirty.value, true);
+  src.search.value = keep;
+  await flush();
+  assert.deepEqual(src.rows.items.value.map((r) => r.title).includes('Edited'), true, 'held while dirty');
+  src.discard();
+  await flush();
+  await wait(20);
+  assert.deepEqual(src.rows.items.value.map((r) => r.title), [keep],
+    `after discard the deferred search ran: rows ${JSON.stringify(src.rows.items.value.map((r) => r.title))}`);
+  assert.equal(src.total.value, 1, 'the total follows the search');
+  src.dispose();
+});
+
+scoped('a search changed over pending edits applies after Save too (EQ-008)', async () => {
+  const src = await issues();
+  const all = src.rows.items.value.map((r) => r.title);
+  const keep = all[1];
+  src.rows.byKey('i1').title = 'Edited';
+  src.search.value = keep;
+  await flush();
+  assert.equal(await src.save(), true);
+  await flush();
+  await wait(20);
+  assert.deepEqual(src.rows.items.value.map((r) => r.title), [keep],
+    `after save the pending search ran: rows ${JSON.stringify(src.rows.items.value.map((r) => r.title))}`);
+  assert.equal(src.total.value, 1);
+  src.dispose();
+});
