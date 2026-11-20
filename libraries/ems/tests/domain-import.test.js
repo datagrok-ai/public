@@ -42,6 +42,7 @@ const importButton = () => [...document.body.querySelectorAll('.u2-dialog button
 const named = (name) => Control.forElement(document.querySelector(`[data-u2-name="${name}"]`));
 const reason = () => document.body.querySelector('.u2-wizard-reason')?.textContent ?? '';
 const mapping = () => document.body.querySelector('.u2-domain-import-mapping');
+const reportText = () => document.body.querySelector('.u2-domain-import-report').textContent;
 const issues = (memory) => memory.tableSync('grit.issue').rows;
 /** The outcome a step leads with, one entry per count. */
 const counts = (step) => [...document.body.querySelectorAll(`.u2-domain-import-${step} .u2-domain-import-count`)]
@@ -323,7 +324,7 @@ scoped('a refused row leaves nothing behind and the report says so', async () =>
   fire(importButton(), 'click');
   await flush();
   assert.equal(issues(memory).length, 3, 'nothing was committed');
-  const shown = document.body.querySelector('.u2-domain-import-report').textContent;
+  const shown = reportText();
   assert.match(shown, /Import aborted — 1 row has errors/);
   assert.match(shown, /Uncheck "All or nothing" to import the 1 valid row and skip the rest\./,
     'an aborted all-or-nothing run says what to change');
@@ -489,7 +490,7 @@ scoped('an aborted run on a storage without partial imports never recommends the
   await toPreview();
   fire(importButton(), 'click');
   await flush();
-  const shown = document.body.querySelector('.u2-domain-import-report').textContent;
+  const shown = reportText();
   assert.match(shown, /Import aborted — 1 row has errors/);
   assert.doesNotMatch(shown, /Uncheck "All or nothing"/);
   assert.notEqual(reportBack(), undefined, 'the way back is still the mapping');
@@ -530,7 +531,7 @@ scoped('a warehouse refusal — the failing rows and no totals — still renders
   await toPreview();
   fire(importButton(), 'click');
   await flush();
-  const shown = document.body.querySelector('.u2-domain-import-report').textContent;
+  const shown = reportText();
   assert.match(shown, /Import aborted — 1 row has errors; nothing was committed\./);
   assert.match(shown, /Title is already used/, 'the row error is listed, a unique refusal in words');
   assert.notEqual(reportBack(), undefined, 'the way back stands');
@@ -574,4 +575,75 @@ scoped('an importer maps, derives and keeps rows out, and makes the preview its 
   const report = await running;
   assert.deepEqual(report.rows.map((r) => [r.index, r.status]), [[0, 'inserted'], [1, 'skipped'], [2, 'skipped'], [3, 'error']]);
   assert.equal(memory.tableSync('grit.project').rows.find((r) => r.key === 'NEW')?.description, 'About New');
+});
+
+/** The server itemizes at most 1,000 rows of a batch report (`maxBatchReportRows` in `batch_loader.dart`) —
+ * errors, then duplicates, then updates, then inserts — and counts them all. */
+function capped(table) {
+  const batch = table.batch.bind(table);
+  const rank = {error: 0, duplicate: 1, updated: 2, merged: 2, inserted: 3};
+  table.batch = async (rows, options) => {
+    const report = await batch(rows, options);
+    return {...report, rows: [...report.rows].sort((a, b) => rank[a.status] - rank[b.status] || a.index - b.index)
+      .slice(0, 1000)};
+  };
+}
+
+/** Imports `source` into `grit.project` and answers the report's text and the column written back. */
+async function importProjects(memory, source, allOrNothing, mode = 'insert') {
+  // the frame double has no string column to add: the write-back's column is kept here
+  const written = [];
+  source.columns.getUnusedName = (name) => source.columns.names().some((n) => n.toLowerCase() === name.toLowerCase()) ?
+    `${name} (2)` : name;
+  source.columns.addNewString = (name) => ({name, init(value) {
+    for (let i = 0; i < source.rowCount; i++)
+      written.push(value(i));
+    return this;
+  }});
+  emsBackends.domain = memory;
+  const projects = await domains.table('grit.project');
+  const running = testOwner().build(() => domains.import(projects, {source}));
+  await flush();
+  named('allOrNothing').value = allOrNothing;
+  await toMapping();
+  named('mode').value = mode;
+  await flush();
+  await toPreview();
+  fire(importButton(), 'click');
+  for (let i = 0; i < 5; i++)
+    await flush();
+  const shown = reportText();
+  fire(buttonNamed('CLOSE'), 'click');
+  await running;
+  return {shown, written};
+}
+
+const projectRows = (count, prefix) => Array.from({length: count}, (_, i) =>
+  ({key: `${prefix}-${String(i + 1).padStart(4, '0')}`, name: `Project ${i + 1}`}));
+
+for (const allOrNothing of [true, false]) {
+  scoped(`a commit past the 1,000 rows the server itemizes still reports and writes back every row's key ` +
+    `(all or nothing ${allOrNothing ? 'on' : 'off'})`, async () => {
+    const memory = backend();
+    capped(memory.tableSync('grit.project'));
+    const rows = [...projectRows(1200, 'BIG'), {key: 'GRIT', name: 'Grit again'}];
+    const {shown, written} = await importProjects(memory, frame(['key', 'name'], rows), allOrNothing);
+    assert.match(shown, /1,200 added/);
+    assert.equal(written.filter((key, i) => key !== rows[i].key).length, 0,
+      'every imported row has its key written back, past the 1,000 rows the server itemizes');
+    assert.doesNotMatch(shown, /not itemized/);
+  });
+}
+
+scoped('rows the server leaves out of its report and that cannot be told apart are counted, not left blank', async () => {
+  const memory = backend();
+  const projects = memory.tableSync('grit.project');
+  // 1,050 updates fill the itemized 1,000; the 150 inserts after them could be either
+  projects.batch = async (rows) => ({inserted: 150, updated: 1050, skipped: 0, errorCount: 0,
+    rows: rows.slice(0, 1000).map((_, index) => ({index, id: 'p1', status: 'updated'}))});
+  const {shown, written} = await importProjects(memory, frame(['key', 'name'], projectRows(1200, 'MIX')), false,
+    'upsert');
+  assert.match(shown, /200 rows are not itemized by the server/);
+  assert.match(shown, /empty for the 200 rows not itemized/);
+  assert.equal(written.filter((key) => key === '').length, 200);
 });
