@@ -359,3 +359,27 @@ scoped('EQ-052: a child tab whose link to the parent is a column the user cannot
   children.dispose();
   parent.dispose();
 });
+
+scoped('EQ-053: a children tab whose table needs a column the user cannot set has its New off and says why', async () => {
+  const schema = {...SCHEMA, tables: {...SCHEMA.tables, contact: {...SCHEMA.tables.contact, columns: {
+    ...SCHEMA.tables.contact.columns, badge: {type: 'string', required: true}}}}};
+  const can = {view: true, insert: true, edit: true, delete: true, share: true};
+  for (const badge of ['readonly', undefined]) {
+    const fields = {name: 'editable', company_id: 'editable', ...(badge === undefined ? {} : {badge})};
+    emsBackends.domain = new MemoryDomainBackend(schema, {access: {can, fields},
+      rows: Object.fromEntries(Object.entries(ROWS).map(([t, list]) => [t, list.map((r) => ({...r}))]))});
+    const companies = await domains.table('crm.company');
+    const parent = testOwner().build(() => companies.source({pageSize: 10}));
+    await flush();
+    parent.currentRow.value = parent.rows.byKey('c1');
+    const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+    await settle();
+    await flush();
+    const add = byKind(children, 'new-button')[0];
+    assert.equal(add.disabled, true, `the children New is off (badge ${badge ?? 'hidden'})`);
+    assert.equal(add.getAttribute('aria-description'), 'You cannot create contacts: they need a value for Badge, ' +
+      'which you cannot set. Ask the table\'s owner to share Badge with you.');
+    children.dispose();
+    parent.dispose();
+  }
+});

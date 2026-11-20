@@ -232,10 +232,24 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
 
   /** The required columns a new row cannot get a value for from the caller: no default, nothing fills them, and
    * the access hides them or leaves them read-only on a draft. Every Save would be refused for them. */
-  static unsettable(properties: readonly IProperty[], info: DomainTableInfoLike, access: Access): IProperty[] {
+  static unsettable(properties: readonly IProperty[], info: DomainTableInfoLike, access: Access,
+    except: readonly string[] = []): IProperty[] {
     const draft = access.columnPolicy().forDraft();
     return properties.filter((p) => p.nullable === false && !DomainTable.isAssignedOnSave(info, p) &&
+      !except.includes(p.name!) &&
       !SYSTEM_COLUMNS.some(([name]) => name === p.name) && draft.field(p.name!) !== 'editable');
+  }
+
+  /** What every way into a new row (the ribbon, the empty list, `/new`, a children tab) says when the caller
+   * cannot create a savable row on `source`'s table; null while the table is loading or when they can. A column
+   * the source's defaults fill is not the caller's to set. */
+  static noCreate(source: DomainSource): string | null {
+    if (source.edit.value === undefined)
+      return null;
+    const filled = Object.entries(source.defaults).filter(([, v]) => v !== undefined && v !== null).map(([k]) => k);
+    const columns = DomainTable.unsettable(source.schema.properties, source.schema.info, source.access.value, filled);
+    return columns.length === 0 ? null :
+      DomainErrors.noRequired(source.schema.info, columns.map((p) => DomainTable.captionOf(p)));
   }
 
   /** A started source over this table. */

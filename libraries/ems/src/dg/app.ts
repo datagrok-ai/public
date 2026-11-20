@@ -480,15 +480,7 @@ export class DomainApp extends Control {
       return this._ribbon;
     const singular = nounOf(this.table.info, true);
     // a required column the caller cannot set makes every Save fail: say so before they type
-    const blocked = computed(() => {
-      const source = this.listSource;
-      // the access is only known once the table is loaded
-      if (source.edit.value === undefined)
-        return null;
-      const names = DomainTable.unsettable(source.schema.properties, source.schema.info, source.access.value)
-        .map((p) => DomainTable.captionOf(p));
-      return names.length === 0 ? null : DomainErrors.noRequired(source.schema.info, names);
-    });
+    const blocked = computed(() => DomainTable.noCreate(this.listSource));
     const add = new Control(this.build(() =>
       iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`, disabled: blocked})));
     add.root.dataset.u2 = 'new-button';
@@ -1083,6 +1075,20 @@ export class DomainApp extends Control {
           [domains.history(source, undefined, {include, exclude})]),
       ]);
       this._formHost.replaceChildren(form.root);
+      // a new row that can never be saved shows why instead of the form
+      if (draft) {
+        const why = div([], 'u2-domain-form-empty');
+        source.effect(() => {
+          const reason = DomainTable.noCreate(source);
+          if (reason === null)
+            why.replaceChildren();
+          else
+            why.replaceChildren(span(reason, 'u2-domain-form-hint'));
+          form.root.hidden = reason !== null;
+          why.hidden = reason === null;
+        });
+        this._formHost.append(why);
+      }
       this.panes.replaceChildren(...this._panes.map((pane) => pane.root));
       batch(() => {
         this._entitySource.value = source;

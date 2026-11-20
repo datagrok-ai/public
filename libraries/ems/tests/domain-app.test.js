@@ -1866,6 +1866,8 @@ scoped('EQ-042: a row page denied View builds no History or children panes', asy
 });
 
 const FULL = {view: true, insert: true, edit: true, delete: true, share: true};
+const REASON = 'You cannot create issues: they need a value for Project id, which you cannot set. ' +
+  'Ask the table\'s owner to share Project id with you.';
 
 scoped('EQ-053: a required column the user cannot see or write turns New off and says why', async () => {
   // project_id and title are required with no default; project_id is not in the access, so it is hidden
@@ -1877,7 +1879,7 @@ scoped('EQ-053: a required column the user cannot see or write turns New off and
   const add = testOwner().build(() => a.ribbon()).main[0];
   assert.equal(add.root.disabled, true, 'New is off: a save would be refused for project_id');
   assert.equal(add.root.getAttribute('aria-description'),
-    'New issues need a value for Project id, which you can\'t set. Ask the table\'s owner.');
+    REASON);
   a.dispose();
 });
 
@@ -1905,4 +1907,22 @@ scoped('EQ-053: a draft field the user may not write says "assigned on save" onl
     'weight is restricted with nothing to fill it: it does not say "assigned on save"');
   form.dispose();
   src.dispose();
+});
+
+scoped('EQ-053: a View-only required column turns New off too, and so do the empty list and the /new page', async () => {
+  emsBackends.domain = backend({access: {can: FULL,
+    fields: {title: 'editable', number: 'readonly', project_id: 'readonly'}}, rows: {project: [], issue: []}});
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await flush();
+  const add = testOwner().build(() => a.ribbon()).main[0];
+  assert.equal(add.root.getAttribute('aria-description'), REASON, 'New is off for a View-only required column');
+  assert.equal(a.root.textContent.includes(REASON), true, 'the empty list says why instead of offering New');
+  assert.equal([...a.root.querySelectorAll('button')].some((b) => b.textContent === 'New issue'), false,
+    'the empty list offers no New button');
+  assert.equal(await a.create(), true);
+  await flush();
+  assert.equal(a.root.textContent.includes(REASON), true, 'the /new page shows the reason');
+  a.dispose();
 });

@@ -1,5 +1,6 @@
 import {Control, Scope, button, component, computed} from '@datagrok-libraries/u2';
 import {DomainSource} from '../core/domain-source.js';
+import {DomainTable} from './facade.js';
 import type {DomainSession} from '../core/session.js';
 import type {RowView} from '@datagrok-libraries/u2';
 
@@ -77,7 +78,7 @@ export function newButton(source: DomainSource,
   const control = component((self) => {
     const el = button(options.text ?? 'New', () => source.newRow(
       typeof values === 'function' ? values(source.currentRow.peek()) : values),
-    {disabled: computed(() => source.edit.value === undefined ? 'Loading…' : null)});
+    {disabled: computed(() => source.edit.value === undefined ? 'Loading…' : DomainTable.noCreate(source))});
     self.effect(() => {
       el.hidden = !source.access.value.can('insert');
     });
