@@ -157,6 +157,30 @@ if (sp)
   sp.setOptions({colorColumnName: 'logP'});
 ```
 
+### A stacked bar chart that draws uniform bars
+
+When the user says the bars of an existing bar chart are all one color,
+read `stackColumnName` and `valueAggrType` first. A stack draws colored
+segments only under an additive `valueAggrType` (`count`, `values`, `sum`);
+under `avg`, `med`, `min` or `max` every bar stays whole in the default color,
+though `stackColumnName` reads back as set. That is the cause. Column color
+coding (`col.meta.colors.setCategorical()`) is not: it colors grid cells, not
+bar segments, so never change it to fix a chart.
+
+Fix it without changing what the bars measure:
+
+1. Remove the stack (`bc.setOptions({stackColumnName: ''})`): it draws nothing
+   under that aggregation, so the bars stay the same.
+2. Say why the bars were uniform, and that bars of averages cannot be colored
+   by a category.
+3. Offer, in the answer, what can show the category: a count or sum stacked by
+   it (`{valueAggrType: 'count', stackColumnName: 'sex'}`), or a pivot table of
+   the average per category. Switching to count or sum changes the measure, so
+   do it only when the user agrees.
+
+Never say the segments are colored unless the chart has a stack under an
+additive aggregation.
+
 `view.addViewer(...)` returns the freshly attached viewer, so you can chain
 create + configure:
 
