@@ -4,6 +4,7 @@ import {register} from 'node:module';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {Scope, notify} from '@datagrok-libraries/u2';
+import {byKind, byName} from '@datagrok-libraries/u2/testing';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const grok = await import('datagrok-api/grok');
@@ -79,15 +80,13 @@ function stub(calls, server) {
 }
 
 const commits = (calls) => calls.filter((c) => c[0] === 'apply' && !c[2] && Object.keys(c[1]).length > 0);
-const button = (text) => [...document.body.querySelectorAll('.u2-dialog button')].find((b) => b.textContent === text);
+const save = () => byName(byKind(document, 'dialog')[0], 'SAVE').click();
 
 async function addProperty() {
-  layout(document.querySelector('.u2-manifest-tree .u2-list'), {clientHeight: 800});
+  const [tree] = byKind(document, 'manifest-tree');
+  layout(byKind(tree, 'list')[0], {clientHeight: 800});
   await flush();
-  const add = [...document.querySelectorAll('.u2-manifest-tree a, .u2-manifest-tree .u2-link')]
-    .find((a) => a.textContent === '+ Add property');
-  assert.ok(add, 'the tree offers "+ Add property" on the extensible table');
-  add.click();
+  byName(tree, '+ Add property').click();
   await flush();
 }
 
@@ -106,7 +105,7 @@ scoped('Edit properties sends the extension version it was opened at: a concurre
   server.manifest = copy(MANIFEST);
   server.manifest.tables.issue.columns.theirs = {type: 'string', origin: 'user'};
 
-  button('SAVE').click();
+  save();
   await flush();
   await flush();
   const sent = calls.filter((c) => c[0] === 'apply' && c[1].extend !== undefined);
@@ -118,12 +117,12 @@ scoped('Edit properties sends the extension version it was opened at: a concurre
     'the version is read before the manifest and the ownership: a change between the reads is a conflict, ' +
     'never an overwrite or a drop');
   assert.deepEqual(commits(calls).filter((c) => c[1].extend !== undefined), [], 'nothing committed over the newer extension');
-  assert.match(document.querySelector('.u2-manifest-properties').textContent,
+  assert.match(byKind(document, 'status-line')[0].textContent,
     /Someone else changed these properties meanwhile/);
 
   // the reload rebased onto the current version: saving again names it and keeps their column
   calls.length = 0;
-  button('SAVE').click();
+  save();
   await flush();
   await flush();
   const [commit] = commits(calls);

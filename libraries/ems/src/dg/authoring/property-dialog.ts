@@ -56,11 +56,8 @@ export class PropertyDialog {
     return new Set(Object.keys(tables).filter((t) => tables[t].extensible === true));
   }
 
-  /** The registered manifest with the `extVersion` an extension apply sends back as `ifVersion`, and who owns each
-   * column. The manifest does not carry `ext_version`; a dry-run apply echoes it (`DomainApplyPlan.extVersion`), and
-   * an empty body plans nothing. The token is read FIRST, the manifest and the ownership after it: a change landing
-   * between the reads makes the token older than what was read, a conflict and a reload, never a save over (or a
-   * drop of) columns this dialog did not see. */
+  // manifest() has no ext_version, a dry-run plan does; read the token FIRST, then the manifest and the ownership,
+  // so a change landing between the reads is a conflict and a reload, never an overwrite or a dropped column
   private static async _baseline(handle: DG.DomainSchemaClient): Promise<{manifest: ManifestJson,
     ownership: ManifestOwnership}> {
     const {extVersion} = await handle.apply({}, {dryRun: true});
@@ -75,9 +72,9 @@ export class PropertyDialog {
     return {manifest: {...manifest, extVersion: String(extVersion)}, ownership};
   }
 
-  /** Who owns each table and column, from the registry: the manifest never says, and a column read as the plugin's
-   * is left out of the extension — which the server takes as the user dropping it, values and all. A server whose
-   * API cannot say (older than `DomainTable.userColumns`) is refused: a patch with unknown ownership is never sent. */
+  // who owns each column, from the registry: the manifest never says, and a column read as the plugin's is left
+  // out of the full-state extension, which the server takes as dropping it with its values. A server whose API
+  // cannot say (older than DomainTable.userColumns) is refused: a patch with unknown ownership is never sent
   private static async _ownership(schema: string): Promise<ManifestOwnership> {
     const entity = (await grok.dapi.domains.schemas.include('tables.columns.property').list())
       .find((s) => s.name === schema);
