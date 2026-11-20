@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Properties: Fixed a page with unsaved changes keeping its old columns after Edit properties… saves: it says "Properties changed — save or discard, then the page reloads", offers Refresh, and is rebuilt with the new columns once its changes are saved or discarded; a pending change to a column that was removed is refused by name instead of sent (`DomainApp.reshape`)
+* Properties: Fixed a page with unsaved changes keeping its old columns after Edit properties… saves: it says "Properties changed: save or discard to reload", offers Refresh, and is rebuilt with the new columns once its changes are saved or discarded; a pending change to a column that was removed, on the page or in a children tab, is refused by name instead of sent (`DomainApp.reshape`)
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input

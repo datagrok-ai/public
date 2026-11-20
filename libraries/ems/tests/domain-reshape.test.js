@@ -2,7 +2,7 @@ import {emsBackends} from '../src/core/domain-backend.js';
 import {test} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {register} from 'node:module';
-import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
+import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, notify} from '@datagrok-libraries/u2';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {SCHEMA, backend} from './domain-fixtures.mjs';
@@ -14,6 +14,9 @@ const {DomainViews} = await import('../src/dg/views.js');
 const grok = await import('datagrok-api/grok');
 
 const BASE = '/apps/T/Issues';
+const NOTICE = '1 unsaved change — Properties changed: save or discard to reload';
+const DROPPED = 'Priority was removed in Edit properties…: undo your change to it, or Discard all changes';
+const buttonNamed = (text) => [...document.body.querySelectorAll('button')].find((b) => b.textContent === text);
 
 /** The schema as Edit properties… left it: the issue table's columns with `change` applied. */
 function reshaped(change) {
@@ -24,10 +27,10 @@ function reshaped(change) {
 }
 
 /** A docked app over grit.issue, the views the reload docks, and the cleanup. */
-async function docked() {
+async function docked(address = 'grit.issue', options = {path: BASE}) {
   emsBackends.domain = backend();
-  const table = await domains.table('grit.issue');
-  const view = table.app({path: BASE});
+  const table = await domains.table(address);
+  const view = table.app(options);
   document.body.append(view.root);
   await flush();
   const added = [];
@@ -72,7 +75,7 @@ scoped('reshaped: a page with unsaved changes is marked when Edit properties… 
     emsBackends.domain = reshaped((columns) => ({...columns, severity: {type: 'string'}}));
     await DomainViews.reload('grit');
     await flush();
-    assert.equal(app.status.value.notice, '1 unsaved change — Properties changed — save or discard, then the page reloads',
+    assert.equal(app.status.value.notice, NOTICE,
       'a dirty page says its columns changed');
     assert.equal(app.stale.value, true, 'and is stale: Refresh is offered');
     assert.equal(added.length, 0, 'not rebuilt under the pending change');
@@ -101,9 +104,9 @@ scoped('reshaped: a pending change to a column Edit properties… dropped is nev
     emsBackends.domain = next;
     await DomainViews.reload('grit');
     await flush();
-    assert.equal(app.status.value.notice, '1 unsaved change — Properties changed — save or discard, then the page reloads',
+    assert.equal(app.status.value.notice, NOTICE,
       'a dirty page says its columns changed');
-    assert.equal(app.session.validity.value, 'Priority was removed in Edit properties… — discard its change',
+    assert.equal(app.session.validity.value, DROPPED,
       'Save is off and says why');
     assert.equal(await app.session.save(), false);
     assert.equal(sent, 0, 'the change to the dropped column is not sent');
@@ -115,6 +118,61 @@ scoped('reshaped: a pending change to a column Edit properties… dropped is nev
     assert.equal(view.dart.closed, 1);
     assert.equal(DomainApp.of(added[0]).table.properties.some((p) => p.name === 'priority'), false,
       'the new view has no dropped column');
+  } finally {
+    done();
+  }
+});
+
+scoped('reshaped: Refresh asks to discard the pending changes, then rebuilds the page with the new columns', async () => {
+  const {app, view, added, done} = await docked();
+  try {
+    app.listSource.rows.byKey('i1').title = 'Edited';
+    await flush();
+    emsBackends.domain = reshaped((columns) => ({...columns, severity: {type: 'string'}}));
+    await DomainViews.reload('grit');
+    await flush();
+    const reload = app.ribbon().main[4];
+    assert.equal(reload.root.dataset.u2, 'refresh-button');
+    assert.equal(reload.root.hidden, false, 'Refresh is offered');
+    fire(reload.root.querySelector('button') ?? reload.root, 'click');
+    await flush();
+    assert.notEqual(buttonNamed('DISCARD'), undefined, 'the gate asks before anything is dropped');
+    assert.equal(added.length, 0, 'nothing rebuilt while it asks');
+    fire(buttonNamed('DISCARD'), 'click');
+    await flush();
+    assert.equal(app.session.isDirty.value, false);
+    assert.equal(added.length, 1, 'rebuilt once, after the discard');
+    assert.equal(view.dart.closed, 1);
+    assert.ok(DomainApp.of(added[0]).table.properties.some((p) => p.name === 'severity'));
+  } finally {
+    done();
+  }
+});
+
+scoped('reshaped: a pending change in a children tab to a column its table lost is never sent', async () => {
+  const {app, view, added, done} = await docked('grit.project', {path: '/apps/T/Projects', children: {mode: 'list'}});
+  try {
+    assert.equal(await app.goTo('entity', 'p1'), true);
+    await flush();
+    const issues = app.session.sources.value.find((s) => s.table === 'grit.issue');
+    assert.notEqual(issues, undefined, 'the issues tab is in the session');
+    issues.rows.byKey('i1').priority = 'low';
+    await flush();
+    const next = reshaped(({priority, ...columns}) => columns);
+    let sent = 0;
+    const real = next.saveAll.bind(next);
+    next.saveAll = (edits) => (sent++, real(edits));
+    emsBackends.domain = next;
+    await DomainViews.reload('grit');
+    await flush();
+    assert.equal(app.status.value.notice, NOTICE, 'the page says its columns changed');
+    assert.equal(app.session.validity.value, DROPPED, 'Save is off and says why');
+    assert.equal(await app.session.save(), false);
+    assert.equal(sent, 0, 'the change to the dropped child column is not sent');
+    app.session.discard();
+    await flush();
+    assert.equal(added.length, 1, 'rebuilt once the change is discarded');
+    assert.equal(view.dart.closed, 1);
   } finally {
     done();
   }

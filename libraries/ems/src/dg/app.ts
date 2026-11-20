@@ -33,7 +33,7 @@ export type DomainAppMode = 'live' | 'trash';
 const STALE = 'Data changed — Refresh';
 
 /** What it says while Edit properties… changed the table's columns under pending changes ({@link DomainApp.reshape}). */
-const RESHAPED = 'Properties changed — save or discard, then the page reloads';
+const RESHAPED = 'Properties changed: save or discard to reload';
 
 /** Below this width the ribbon has no room for the presets. */
 const COMPACT_WIDTH = 700;
@@ -191,7 +191,8 @@ export class DomainApp extends Control {
   private readonly _sync: ViewSync;
   private _opening: {address: string, done: Promise<boolean>} | undefined;
   // the columns Edit properties… dropped under pending changes, and how the page is rebuilt once they are settled
-  private readonly _reshaped = signal<{removed: IProperty[], rebuild: () => Promise<void>} | null>(null);
+  private readonly _reshaped =
+    signal<{removed: ReadonlyMap<string, IProperty[]>, rebuild: () => Promise<void>} | null>(null);
 
   private static readonly _byView = new WeakMap<DG.ViewBase, DomainApp>();
   private static readonly _views = new WeakMap<DomainApp, DG.ViewBase>();
@@ -641,10 +642,11 @@ export class DomainApp extends Control {
     return true;
   }
 
-  /** Edit properties… changed the table's columns while the session has changes the page cannot carry over: the
+  /** Edit properties… changed the tables' columns while the session has changes the page cannot carry over: the
    * page keeps its columns, says so and is {@link stale}, and `rebuild` runs once the session is saved or
-   * discarded. A pending change to a column in `removed` is never sent: Save refuses it by name. */
-  reshape(removed: IProperty[], rebuild: () => Promise<void>): void {
+   * discarded. `removed` holds the columns each table (`<schema>.<table>`: the app's own, its children tabs') lost:
+   * a pending change to one of them is never sent — Save refuses it by name. */
+  reshape(removed: ReadonlyMap<string, IProperty[]>, rebuild: () => Promise<void>): void {
     const first = this._reshaped.peek() === null;
     this._reshaped.value = {removed, rebuild};
     if (!first)
@@ -654,25 +656,26 @@ export class DomainApp extends Control {
     const guarded = new WeakSet<DomainSource>();
     this.effect(() => {
       for (const source of this.session.sources.value) {
-        if (source.table !== this.table.address || guarded.has(source))
+        if (guarded.has(source))
           continue;
         guarded.add(source);
         const problem = computed(() => {
           source.changeCount.value;
-          return this._removedChange(source, this._reshaped.value?.removed ?? []);
+          return this._removedChange(source, this._reshaped.value?.removed.get(source.table) ?? []);
         });
         source.guard(() => problem.peek(), problem);
       }
     });
   }
 
-  // a column dropped under a pending change: "Property 2 was removed in Edit properties… — discard its change"
+  // a column dropped under a pending change: Discard drops every change, so undoing this one alone is said first
   private _removedChange(source: DomainSource, removed: IProperty[]): string | null {
     const edit = source.edit.peek();
     for (const row of source.pending()) {
       const prop = removed.find((p) => Rows.isDraft(row) ? row[p.name!] != null : edit?.isChanged(row.id, p.name!));
       if (prop !== undefined)
-        return `${DomainTable.captionOf(prop)} was removed in Edit properties… — discard its change`;
+        return `${DomainTable.captionOf(prop)} was removed in Edit properties…: ` +
+          'undo your change to it, or Discard all changes';
     }
     return null;
   }

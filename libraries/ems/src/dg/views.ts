@@ -6,6 +6,7 @@ import {DomainApp} from './app.js';
 import {DomainAddress} from './address.js';
 import {SavedSearches} from './saved-searches.js';
 import {rawEffect} from 'datagrok-api/u2core';
+import type {IProperty} from '@datagrok-libraries/u2';
 
 /** What `DomainTable.app()` takes for one view, less what the views decide: its name and path. */
 export type DomainViewOptions = Omit<DomainAppViewOptions, 'name' | 'path'>;
@@ -95,10 +96,20 @@ export class DomainViews {
         await DomainViews._rebuild(app);
         continue;
       }
-      const views = DomainViews._byTable.get(app.table.address);
-      const fresh = await (views?._options.handle ?? domains.table)(app.table.address);
-      const kept = new Set(fresh.properties.map((p) => p.name));
-      app.reshape(app.table.properties.filter((p) => !kept.has(p.name)), () => DomainViews._rebuild(app));
+      // per table of the schema the page shows — its own, and its children tabs' — the columns it lost
+      const shown = new Map<string, IProperty[]>([[app.table.address, app.table.properties]]);
+      for (const source of app.session.sources.peek()) {
+        if (source.table.startsWith(`${schema}.`) && !shown.has(source.table))
+          shown.set(source.table, source.schema.properties);
+      }
+      const removed = new Map<string, IProperty[]>();
+      for (const [address, properties] of shown) {
+        const views = DomainViews._byTable.get(address);
+        const fresh = await (views?._options.handle ?? domains.table)(address);
+        const kept = new Set(fresh.properties.map((p) => p.name));
+        removed.set(address, properties.filter((p) => !kept.has(p.name)));
+      }
+      app.reshape(removed, () => DomainViews._rebuild(app));
     }
   }
 
