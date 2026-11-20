@@ -1,5 +1,5 @@
 import * as grok from 'datagrok-api/grok';
-import {batch, computed, iconButton, signal, Dialog, Filters, Menu, TextInput} from '@datagrok-libraries/u2';
+import {batch, computed, iconButton, signal, Dialog, Filters, Menu, TextInput, notify} from '@datagrok-libraries/u2';
 import type {Signal} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {confirmDiscard} from '../core/session.js';
@@ -15,6 +15,13 @@ const RECENT = 'ems-recent-searches';
 const savedKey = (table: string) => `ems-searches|${table}`;
 const same = (a: DomainSearch, b: DomainSearch) => a.q === b.q && a.search === b.search && a.sort === b.sort;
 const label = (s: DomainSearch) => [s.q, s.search && `Search "${s.search}"`].filter((x) => x).join(' · ');
+
+/** The keys of `sort` over columns the table describes (a column the caller may not read, or one removed since, is
+ * refused by the server for the whole read, so it is dropped and the rest of the order kept). */
+export function sortable(sort: string, properties: readonly {name?: string}[]): string {
+  const columns = new Set(properties.map((p) => p.name));
+  return sort.split(',').filter((key) => key !== '' && columns.has(key.replace(/^!/, ''))).join(',');
+}
 
 export class SavedSearches {
   static readonly changed = signal(0);
@@ -64,11 +71,23 @@ export class SavedSearches {
   }
 
   static apply(source: DomainSource, search: DomainSearch): void {
-    void confirmDiscard(source.session, {action: 'change the filter'}).then((ok) => ok && batch(() => {
-      source.query.value = search.q;
-      source.search.value = search.search;
-      source.sort.value = search.sort;
-    }));
+    // a saved sort may name a column removed since: dropped, and said once, never written into the address
+    const sort = sortable(search.sort, source.schema.properties);
+    void confirmDiscard(source.session, {action: 'change the filter'}).then((ok) => {
+      if (!ok)
+        return;
+      if (sort !== search.sort) {
+        const gone = search.sort.split(',').filter((k) => k !== '' && !sort.split(',').includes(k))
+          .map((k) => k.replace(/^!/, ''));
+        notify.warning(`Sort by ${gone.join(', ')} is no longer available; showing ${sort === '' ?
+          'the default order' : `the order by ${sort}`}`);
+      }
+      batch(() => {
+        source.query.value = search.q;
+        source.search.value = search.search;
+        source.sort.value = sort;
+      });
+    });
   }
 
   static query({q, search, sort}: DomainSearch): string {

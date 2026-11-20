@@ -13,6 +13,7 @@ register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
 const {DomainApp} = await import('../src/dg/app.js');
 const {DgDomainTable} = await import('../src/dg/backend.js');
+const {SavedSearches} = await import('../src/dg/saved-searches.js');
 const grok = await import('datagrok-api/grok');
 
 /** The address bar at `url`, as the platform's router leaves it — past any spy on replaceState. */
@@ -673,6 +674,57 @@ scoped('a refused save says why in the status bar and balloons once, with no for
   await flush();
   assert.equal(a.summary.value, '3 issues', 'a discard takes the refusal back');
   off();
+  a.dispose();
+});
+
+scoped('a column the access hides is offered nowhere: Sort by, the search box, the filter, the Output picker, ' +
+  'nor kept from a shared ?sort=', async () => {
+  // the schema declares `description` searchable; the access leaves it out
+  const fields = Object.fromEntries(['id', 'version', 'created_on', 'updated_on', 'author_id', 'project_id',
+    'number', 'title', 'done', 'reporter', 'tags', 'due', 'weight', 'priority'].map((c) => [c, 'editable']));
+  emsBackends.domain = backend({access: {can: {view: true, insert: true, edit: true, delete: true, share: true},
+    fields}});
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await flush();
+  const [search, sort] = testOwner().build(() => a.ribbon()).tools;
+  assert.equal(search.root.querySelector('input').placeholder, 'Search title…');
+  document.body.append(sort.root);
+  fire(sort.root, 'click');
+  // the item's text, by role: the label and nothing else a sort item carries
+  const items = [...document.body.querySelectorAll('[role^="menuitem"]')].map((e) => e.textContent.trim());
+  assert.equal(items.some((t) => t.includes('Title')), true, 'the menu is the sort menu');
+  assert.equal(items.some((t) => t.includes('Description')), false, 'Sort by offers no hidden column');
+  const filter = a.filters.input.value.options.schema;
+  assert.equal(filter.properties.some((p) => p.name === 'description'), false, 'nor does the filter');
+  assert.equal(a.output.columns.peek().includes('description'), false, 'nor the table view');
+  assert.equal(await a.open('?sort=description,!number'), true);
+  await flush();
+  assert.equal(a.listSource.sort.value, '!number', 'a shared ?sort= keeps only the columns this caller may read');
+  assert.equal(a.listSource.state.value, 'ready');
+  assert.equal(table.properties.some((p) => p.name === 'description'), false,
+    'the handle describes only what the caller may read');
+  a.dispose();
+});
+
+scoped('a saved search that sorts by a column removed since drops the sort, says so once, and loads', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await flush();
+  SavedSearches.apply(a.listSource, {q: '', search: '', sort: 'qa_gone,!number'});
+  await flush();
+  assert.equal(a.listSource.sort.value, '!number', 'only the columns the table describes are kept');
+  assert.equal(a.listSource.state.value, 'ready');
+  const balloons = [...document.body.querySelectorAll('[role="alert"]')].map((e) => e.textContent);
+  assert.equal(balloons.length, 1, 'said once');
+  assert.match(balloons[0], /Sort by qa_gone is no longer available/);
+  SavedSearches.apply(a.listSource, {q: '', search: '', sort: 'qa_gone'});
+  await flush();
+  assert.equal(a.listSource.sort.value, '', 'a sort of removed columns only is the default order');
+  assert.equal(a.listSource.state.value, 'ready');
   a.dispose();
 });
 
