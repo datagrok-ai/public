@@ -42,6 +42,9 @@ const actionButtionValues = {
   stop: 'Stop AI Generation',
 } as const;
 
+/** Silence after which a spoken phrase is sent as the prompt. */
+const VOICE_SUBMIT_DELAY_MS = 1500;
+
 const micTooltips = {
   default: 'Voice Input',
   accessDenied: 'Microphone access denied. Please enable microphone permissions.',
@@ -140,6 +143,9 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private _pendingNativeContext: string[] = [];
   private recognition: SpeechRecognition | null = null;
   private isRecognizing: boolean = false;
+  /** The final results of the phrase being spoken, not yet submitted. */
+  private voiceTranscript: string = '';
+  private voiceSubmitTimer?: number;
   /** `Say "cancel" to stop` caption shown next to the loader while the AI is working in voice mode. */
   private _voiceCancelHint: HTMLElement | null = null;
   private micAccessDenied: boolean = false;
@@ -1215,44 +1221,56 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   private startRecognition() {
-    try {
-      this.recognition = new SpeechRecognition();
-      this.recognition.continuous = false;
-      this.recognition.interimResults = false;
-      this.recognition.lang = 'en-US';
+    this.isRecognizing = true;
+    this.voiceTranscript = '';
+    this.micButton.classList.remove('fa-microphone');
+    this.micButton.classList.add('fa-stop');
+    this.micButton.style.color = 'orangered';
+    this.syncVoiceCancelHint();
+    this.listen();
+  }
 
-      // Update UI to show recording state
-      this.isRecognizing = true;
-      this.micButton.classList.remove('fa-microphone');
-      this.micButton.classList.add('fa-stop');
-      this.micButton.style.color = 'orangered';
-      ui.setUpdateIndicator(this.textAreaDiv, true, 'Listening...');
-      this.syncVoiceCancelHint();
+  /** Starts a recognition session. Chrome ends a continuous session on its own after a while or on
+   * a network hiccup; `onend` then calls this again, keeping the phrase heard so far. */
+  private listen() {
+    try {
+      // Continuous mode, so a pause between words does not end the phrase: Chrome's own end-of-speech
+      // detection cut it after the first word for mics that gate the signal to silence between words.
+      // The phrase is submitted after VOICE_SUBMIT_DELAY_MS without new speech instead.
+      this.recognition = new SpeechRecognition();
+      this.recognition.continuous = true;
+      this.recognition.interimResults = true;
+      this.recognition.lang = 'en-US';
+      if (!this.voiceTranscript)
+        ui.setUpdateIndicator(this.textAreaDiv, true, 'Listening...');
 
       this.recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
         ui.setUpdateIndicator(this.textAreaDiv, false);
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const text = event.results[i][0].transcript;
+          if (!event.results[i].isFinal) {
+            interim += text;
+            continue;
+          }
+          const command = text.trim().replace(/[.,;:!?]+$/, '').toLowerCase();
+          if (command === 'stop' || command === 'cancel') {
+            this.onVoiceCancel();
+            return;
+          }
+          this.voiceTranscript += text;
+        }
 
-        const command = transcript.trim().replace(/[.,;:!?]+$/, '').toLowerCase();
-        const isCancelWord = command === 'stop' || command === 'cancel';
-
-        // While a prompt is being processed, "stop"/"cancel" aborts the AI run instead of being sent
-        // as a new prompt — speech is easy to mishear, so keep this escape hatch reliable. Anything
-        // else said while busy is ignored (a new prompt can't be submitted yet anyway).
-        if (this.runButtonTooltip === actionButtionValues.stop) {
-          if (isCancelWord)
-            this.terminate();
+        // Speech while the AI works is not a prompt (one can't be submitted yet); only "stop"/"cancel"
+        // counts then, to abort the run.
+        if (this.isBusy) {
+          this.voiceTranscript = '';
           return;
         }
 
-        if (isCancelWord) {
-          this.stopRecognition();
-          this.textArea.focus();
-          return;
-        }
-
-        this.textArea.value = transcript;
-        this.handleRun();
+        this.textArea.value = (this.voiceTranscript + interim).trim();
+        window.clearTimeout(this.voiceSubmitTimer);
+        this.voiceSubmitTimer = window.setTimeout(() => this.submitVoicePrompt(), VOICE_SUBMIT_DELAY_MS);
       };
 
       this.recognition.onerror = (event) => {
@@ -1289,14 +1307,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       };
 
       this.recognition.onend = () => {
-        if (this.isRecognizing) {
-          this.startRecognition();
-          return;
-        }
-        this.micButton.classList.remove('fa-stop');
-        this.micButton.classList.add('fa-microphone');
-        this.micButton.style.color = '';
-        ui.setUpdateIndicator(this.textAreaDiv, false);
+        if (this.isRecognizing)
+          this.listen();
       };
 
       this.recognition.start();
@@ -1307,8 +1319,29 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     }
   }
 
+  /** "stop"/"cancel" aborts the AI run while it works, and otherwise drops the phrase and the mic. */
+  private onVoiceCancel() {
+    window.clearTimeout(this.voiceSubmitTimer);
+    this.voiceTranscript = '';
+    if (this.isBusy) {
+      this.terminate();
+      return;
+    }
+    this.textArea.value = '';
+    this.stopRecognition();
+    this.textArea.focus();
+  }
+
+  private submitVoicePrompt() {
+    this.voiceTranscript = '';
+    this.handleRun();
+  }
+
+  /** Stops listening; a phrase heard so far stays in the prompt box, unsent, to edit or send by hand. */
   private stopRecognition() {
     this.isRecognizing = false;
+    this.voiceTranscript = '';
+    window.clearTimeout(this.voiceSubmitTimer);
     this.syncVoiceCancelHint();
 
     if (this.recognition) {
