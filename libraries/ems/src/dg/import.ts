@@ -887,8 +887,15 @@ class ImportFlow {
     this._report.replaceChildren(ImportFlow._headline(failed ? [[aborted, 'error']] : counts, 'Nothing was imported'));
     this._report.classList.toggle('u2-domain-import-aborted', failed);
     this._wizard.setStepFailed('report', failed || errorCount > 0);
-    const outcomes = this._outcomes(report, plan, failed);
+    let itemized = report;
     let saved = new Map<string, RowView>();
+    try {
+      itemized = await this._itemized(report, plan);
+    } catch (e) {
+      this._report.append(span(`The rows the server did not itemize could not be read: ${DomainErrors.message(e)}`,
+        'u2-domain-import-problem'));
+    }
+    const outcomes = this._outcomes(itemized, plan, failed);
     try {
       saved = await this._rowsById([...new Set(outcomes.map((o) => o.id).filter((id): id is string => id !== null))]);
     } catch (e) {
@@ -896,6 +903,14 @@ class ImportFlow {
     }
     for (const row of outcomes)
       row.key = row.id === null || !saved.has(row.id) ? '' : this._keyOf(saved.get(row.id)!);
+    // what the server's capped report leaves out and nothing could recover is said, never left blank
+    const unitemized = failed ?
+      Math.max(0, errorCount - report.rows.filter((r) => r.status === 'error').length) :
+      outcomes.filter((o) => o.kind === '').length;
+    if (unitemized > 0) {
+      this._report.append(span(`${plural(unitemized, 'row is', 'rows are')} not itemized by the server: ` +
+        (failed ? 'their errors are not listed.' : 'their outcome and key are unknown.'), 'u2-domain-import-problem'));
+    }
     // a dialog closed while the keys were read has no report to show; the write-back and the balloon still follow
     if (!this._wizard.scope.isDisposed)
       this._report.append(this._rowsTable(this._wizard, 'report', outcomes, this._reportColumns(saved)));
@@ -905,7 +920,8 @@ class ImportFlow {
         frame.columns.remove(column);
       // column names ignore case: a source's own "sku" keeps its values beside the "Sku" written back
       const added = frame.columns.addNewString(frame.columns.getUnusedName(column)).init((i) => outcomes[i].key);
-      this._report.append(span(`Added a "${added.name}" column to ${frame.name} with each row's ${this._keyHeader()}.`,
+      this._report.append(span(`Added a "${added.name}" column to ${frame.name} with each row's ${this._keyHeader()}` +
+        (unitemized > 0 ? `; it is empty for the ${plural(unitemized, 'row', 'rows')} not itemized.` : '.'),
         'u2-domain-import-summary'));
     }
     if (failed) {
@@ -938,7 +954,8 @@ class ImportFlow {
       if (p.payload === null)
         return this._kept(i, p);
       if (failed || row === undefined)
-        return this._row(i, p, failed ? 'aborted' : '', failed ? 'Another row has errors' : '', errors);
+        return this._row(i, p, failed ? 'aborted' : '', failed ? 'Another row has errors' : 'Not itemized by the server',
+          errors);
       return {...this._row(i, p, row.status === 'inserted' ? 'insert' : 'update', p.verdict.note ?? '', errors),
         id: row.id};
     });
@@ -947,6 +964,55 @@ class ImportFlow {
         outcomes[i].id = outcomes[p.verdict.sameAs]?.id ?? null;
     });
     return outcomes;
+  }
+
+  // the server itemizes at most 1,000 rows (errors, duplicates, updates, inserts) and counts them all: a row it
+  // leaves out takes the one kind the counts leave over, and its id from the row its business key names now. The
+  // batch stays one call: splitting it would let an all-or-nothing import commit part of the file, and change which
+  // of two rows with one key wins. More than one kind left over, or no one-column key in the rows: it stays unknown
+  private async _itemized(report: DomainBatchReportLike, plan: Planned[]): Promise<DomainBatchReportLike> {
+    const listed = new Set(report.rows.map((r) => r.index));
+    const missing = plan.flatMap((p, i) => p.payload === null || listed.has(i) ? [] : [i]);
+    const key = this._table.info.businessKey;
+    if (report.error !== undefined || missing.length === 0)
+      return report;
+    // the totals count what the plan kept out too (`_merged`): the server's own are what is left
+    const sent = report.rows.filter((r) => plan[r.index].payload !== null);
+    const keptErrors = plan.filter((p) => p.payload === null && p.verdict.error !== undefined).length;
+    const keptSkips = plan.filter((p) => p.payload === null).length - keptErrors;
+    const listedAs = (status: string) => sent.filter((r) => r.status === status).length;
+    const left = ([['error', (report.errorCount ?? 0) - keptErrors], ['duplicate', (report.skipped ?? 0) - keptSkips],
+      ['updated', report.updated ?? 0], ['merged', report.merged ?? 0], ['inserted', report.inserted ?? 0]] as const)
+      .map(([status, total]) => [status, total - listedAs(status)] as const).filter(([, count]) => count > 0);
+    if (left.length !== 1 || left[0][1] !== missing.length)
+      return report;
+    const status = left[0][0];
+    if (status === 'error') {
+      return {...report, rows: [...report.rows, ...missing.map((index) => ({index, id: null, status,
+        errors: [{message: 'The server did not itemize this row\'s errors'}]}))]};
+    }
+    if (key.length !== 1)
+      return report;
+    const value = (index: number) => plan[index].payload![key[0]];
+    const ids = await this._idsByKey(key[0], missing.map(value).filter((v) => v !== null && v !== undefined));
+    const found = missing.flatMap((index) => {
+      const id = ids.get(String(value(index)));
+      return id === undefined ? [] : [{index, id, status, ...(status === 'duplicate' ? {existingId: id} : {})}];
+    });
+    return {...report, rows: [...report.rows, ...found]};
+  }
+
+  // the live row each key names, by id
+  private async _idsByKey(column: string, values: unknown[]): Promise<Map<string, string>> {
+    const ids = new Map<string, string>();
+    const unique = [...new Set(values)];
+    for (let at = 0; at < unique.length; at += KEY_CHUNK) {
+      const chunk = unique.slice(at, at + KEY_CHUNK);
+      const filter = {property: column, operator: '=', value: chunk};
+      for (const row of await this._table.table.query({filter, limit: chunk.length}))
+        ids.set(String(row[column]), String(row.id));
+    }
+    return ids;
   }
 
   private async _rowsById(ids: string[]): Promise<Map<string, RowView>> {
