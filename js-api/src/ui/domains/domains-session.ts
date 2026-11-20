@@ -60,6 +60,9 @@ export interface DomainSessionRefusal {
   editor: DomainFrameEditor | null;
   /** The transaction-wide index of the failing op, where the server named one. */
   opIndex?: number;
+  /** The server's error code (`DomainError.code`) — `'forbidden'` says the access the
+   * participants were built from is stale. */
+  code?: string;
 }
 
 /**
@@ -218,7 +221,7 @@ export class DomainSession implements IEditorHost {
           const at = this._locate(parts, e?.opIndex);
           if (e instanceof DomainVersionConflictError && at != null) {
             if (!(await at.editor.resolveConflict(e, at.failing)))
-              return this._refuse(e?.message ?? `${e}`, at.editor, e?.opIndex);
+              return this._refuse(e?.message ?? `${e}`, at.editor, e?.opIndex, e?.code);
             parts = this.buildOps();
             if (parts == null)
               return this._refuse(DomainSession.CELL_ERRORS);
@@ -226,7 +229,7 @@ export class DomainSession implements IEditorHost {
           }
           if (at == null) {
             balloon.error(e?.message ?? `${e}`);
-            return this._refuse(e?.message ?? `${e}`, null, e?.opIndex);
+            return this._refuse(e?.message ?? `${e}`, null, e?.opIndex, e?.code);
           }
           // ONE sentence for all four surfaces: the cells, the status line that reads them,
           // the balloon, and `lastRefusal` for a host that words it itself
@@ -234,7 +237,7 @@ export class DomainSession implements IEditorHost {
           if (e instanceof DomainValidationError)
             at.editor.mapValidationError(e, at.failing, message);
           balloon.error(message);
-          return this._refuse(message, at.editor, e?.opIndex);
+          return this._refuse(message, at.editor, e?.opIndex, e?.code);
         }
         const total: DomainSaveResult = {inserted: 0, updated: 0, deleted: 0, assigned: Object.create(null)};
         const slices: any[][] = [];
@@ -283,9 +286,9 @@ export class DomainSession implements IEditorHost {
       editor.discard();
   }
 
-  private _refuse(message: string, editor?: DomainFrameEditor | null, opIndex?: unknown): false {
+  private _refuse(message: string, editor?: DomainFrameEditor | null, opIndex?: unknown, code?: unknown): false {
     this._lastRefusal = {message: message, editor: editor ?? null,
-      opIndex: typeof opIndex === 'number' ? opIndex : undefined};
+      opIndex: typeof opIndex === 'number' ? opIndex : undefined, code: typeof code === 'string' ? code : undefined};
     return false;
   }
 
