@@ -37,6 +37,8 @@ BASE_TOOLSETS = ['file', 'terminal', 'skills', 'web', browser_tools.TOOLSET]
 # empty reply, which a limit of one would refuse and report as the provider's error.
 RETRY_STRUCTURED = ('Your reply did not match the required JSON schema: {}. '
                     'Reply again with only the corrected JSON object.')
+# Hermes leaves a stopped request in the history, often with no reply after it, which the model reads as still open.
+STOPPED = '[Stopped by the user before it finished. The request is withdrawn: not resumed unless the user asks again.]'
 
 current: 'Session | None' = None
 
@@ -396,6 +398,7 @@ class Session:
                 self.hermes_session = agent.session_id
                 self.emit({'type': 'session', 'id': agent.session_id})
             if t.cancelled:
+                self.history.append({'role': 'assistant', 'content': STOPPED})
                 self.emit({'type': 'cancelled'})
                 return
             if t.limit or str(result.get('turn_exit_reason') or '').startswith('max_iterations'):
