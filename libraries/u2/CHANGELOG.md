@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Forms: Fixed a map field over a string cell holding the JSON text of an object (a domain frame's `json`) reading as empty: `ObjectForm.coerce` reads it as the object. `ObjectForm.same` compares nested lists and objects by value, so a nested value re-read from its text is no change
 * Forms: Fixed a list field over a string cell holding the JSON text of a list (a domain frame's `string_list`) splitting that text at its commas: `ObjectForm.coerce` reads it as the list. Added `ObjectForm.fromJsonText`
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Spaces: Fixed Open from space drawing an item's name in its icon slot, listing a space's own Files connection not marking a linked item, a cut-off search box and a bare caption as an app's preview, and OPEN doing nothing for an app, a script or a query (they open as in Browse); Down arrow in its search and in the Space picker's goes to the first match. Added `focusRows()` to `VirtualList` and `VirtualTree`
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Spaces: Fixed the Space row refusing to move a project into a space that links it: `spaceHasName()` takes the project that does not count

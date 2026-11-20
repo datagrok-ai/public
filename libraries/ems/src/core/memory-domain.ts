@@ -468,7 +468,7 @@ export class MemoryTable implements DomainTableLike {
     const [rows, access] = await Promise.all([this.query(spec), this.access()]);
     const columns: MemoryColumn[] = [
       ...this.properties.map((p) => ({name: p.name!,
-        type: MemoryEditState.isTextList(p) ? 'string' : p.propertyType ?? p.type ?? 'string', semType: p.semType})),
+        type: MemoryEditState.isTextCell(p) ? 'string' : p.propertyType ?? p.type ?? 'string', semType: p.semType})),
       {name: Rows.STATE, type: 'string'},
       ...(spec.withAccess ? Access.ROW_COLUMNS.map(([name]) => ({name, type: 'bool'})) : []),
       ...(spec.deleted === undefined || spec.deleted === 'exclude' ? [] : [{name: Rows.DELETED, type: 'bool'}]),
@@ -728,21 +728,32 @@ export class MemoryTable implements DomainTableLike {
     }
   }
 
-  /** A written value as the server coerces it (`DomainBatchLoader._coerceCell`): a `string_list`
-   * sent as text — what the platform frame holds — is the JSON array it encodes, its items text. */
+  /** A written value as the server coerces it (`DomainBatchLoader._coerceCell`): a `string_list` or
+   * `json` cell sent as text — what the platform frame holds — is the JSON it encodes: a list of
+   * scalars (its items text), an object. */
   decode(column: string, value: unknown, index: number): unknown {
     const prop = this.properties.find((p) => p.name === column);
-    if (prop === undefined || !MemoryEditState.isTextList(prop) || typeof value !== 'string')
+    if (prop === undefined || !MemoryEditState.isTextCell(prop))
       return value;
-    let list: unknown;
+    const list = (prop.propertyType ?? prop.type) === 'string_list';
+    // what reaches the server is the value's JSON, never the object a frame held
+    if (typeof value === 'object' && value !== null && !list)
+      return JSON.parse(JSON.stringify(value));
+    if (typeof value !== 'string')
+      return value;
+    if (value === '')
+      return null;
+    let decoded: unknown;
     try {
-      list = JSON.parse(value);
+      decoded = JSON.parse(value);
     } catch (_) {
-      list = undefined;
+      decoded = undefined;
     }
-    if (!Array.isArray(list) || list.some((x) => typeof x === 'object' && x !== null))
-      throw new DomainBackendError('validation', `Operation ${index}: Cannot convert "${value}" to string_list`);
-    return list.map((x) => `${x}`);
+    const ok = list ? Array.isArray(decoded) && !decoded.some((x) => typeof x === 'object' && x !== null) :
+      typeof decoded === 'object' && decoded !== null && !Array.isArray(decoded);
+    if (!ok)
+      throw new DomainBackendError('validation', `Operation ${index}: Cannot convert "${value}" to ${list ? 'string_list' : 'map'}`);
+    return list ? (decoded as unknown[]).map((x) => `${x}`) : decoded;
   }
 
   withDefaults(values: Row): Row {

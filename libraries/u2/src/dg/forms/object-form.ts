@@ -618,8 +618,13 @@ export class ObjectForm extends Form {
         return Array.isArray(parsed) ? parsed.map((item) => item === null ? '' : String(item)) :
           ListInput.parse(String(value));
       }
-      case 'map':
-        return typeof value === 'object' && value !== null && !Array.isArray(value) ? value : {};
+      case 'map': {
+        if (typeof value === 'object' && value !== null && !Array.isArray(value))
+          return value;
+        // a DG string column holds an object as its JSON text (a domain frame's `json`)
+        const parsed = ObjectForm.fromJsonText(value);
+        return ObjectForm._isRecord(parsed) ? parsed : {};
+      }
       // the platform's own value (a FileInfo), handed to the platform's own editor untouched
       case 'file':
         return value ?? null;
@@ -647,10 +652,10 @@ export class ObjectForm extends Form {
     if (a instanceof Date && b instanceof Date)
       return a.getTime() === b.getTime();
     if (Array.isArray(a) && Array.isArray(b))
-      return a.length === b.length && a.every((item, i) => Object.is(item, b[i]));
+      return a.length === b.length && a.every((item, i) => ObjectForm.same(item, b[i]));
     if (ObjectForm._isRecord(a) && ObjectForm._isRecord(b)) {
       const keys = Object.keys(a);
-      return keys.length === Object.keys(b).length && keys.every((k) => Object.is(a[k], b[k]));
+      return keys.length === Object.keys(b).length && keys.every((k) => k in b && ObjectForm.same(a[k], b[k]));
     }
     return Object.is(a, b);
   }

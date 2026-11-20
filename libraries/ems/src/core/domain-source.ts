@@ -1086,12 +1086,19 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return hit ? rebound : query;
   }
 
-  /** A value as `df` holds it in `column`: a list written into a string column — how the platform
-   * frame carries a `string_list` cell — becomes its JSON text, the form the frame's own reads and
-   * its post-save re-read hold, and the text the server decodes into the list on write (a JS array
-   * handed to `df.set` as is would be stored as a Dart object). Anything else is as given. */
+  /** A value as `df` holds it in `column`, for a string column — how the platform frame carries
+   * `string_list` and `json` cells. A list becomes its JSON text, the form the frame's reads and its
+   * post-save re-read hold, which the server decodes into the list. A plain object becomes a
+   * {@link JsonCell}: handed to `df.set` as is it would be stored as a Dart map, which
+   * `JSON.stringify` (the editor's change compare) throws on; and its JSON text is refused by the
+   * editor's check of a `json` value ("Types differ. Expected: map"). Anything else is as given. */
   static frameValue(df: DataFrameLike | undefined, column: string, value: unknown): unknown {
-    return Array.isArray(value) && df?.columns.byName(column)?.type === 'string' ? JSON.stringify(value) : value;
+    if (typeof value !== 'object' || value === null || df?.columns.byName(column)?.type !== 'string')
+      return value;
+    if (Array.isArray(value))
+      return JSON.stringify(value);
+    const proto = Object.getPrototypeOf(value);
+    return proto === Object.prototype || proto === null ? new JsonCell(value as Record<string, unknown>) : value;
   }
 
   private static _message(error: unknown): string {
@@ -1100,5 +1107,18 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
 
   private static _queryOf(value: unknown): string | FilterGroup {
     return typeof value === 'string' ? value : value === null || value === undefined ? '' : value as FilterGroup;
+  }
+}
+
+/** A `json` cell's object as a frame holds it: not a plain object, so `df.set` stores it as it is
+ * (js-api `toDart` turns only plain objects into Dart maps); its own keys are the pairs and it
+ * serializes as them, so the editor compares it and the transaction sends the object. */
+export class JsonCell {
+  constructor(value: Record<string, unknown>) {
+    Object.assign(this, value);
+  }
+
+  toJSON(): Record<string, unknown> {
+    return {...this as Record<string, unknown>};
   }
 }

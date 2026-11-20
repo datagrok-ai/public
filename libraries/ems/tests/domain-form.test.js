@@ -1253,3 +1253,92 @@ scoped('EQ-056: a string_list typed from scratch is saved as items and still sho
   form.dispose();
   src.dispose();
 });
+
+/* EQ-057: the platform frame holds a `json` cell as the JSON text of the object, like a `string_list` one
+   (EQ-056); the memory backend holds it the same way. The form must show the pairs, write a typed pair
+   (as the frame's text — a JS object handed to the frame is stored as a Dart map, which throws on compare),
+   save it, and treat an empty object as no change. */
+const JSON_SCHEMA = {name: 'qa', tables: {item: {columns: {
+  name: {type: 'string', required: true, isName: true}, meta: {type: 'json'}}}}};
+
+async function jsonForm(meta) {
+  emsBackends.domain = new MemoryDomainBackend(JSON_SCHEMA,
+    {rows: {item: [{id: 'r1', name: 'R1', ...(meta === undefined ? {} : {meta})}]}});
+  const store = emsBackends.domain.tableSync('qa.item');
+  const table = await domains.table('qa.item');
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  await flush();
+  src.currentRow.value = src.rows.byKey('r1');
+  const form = testOwner().build(() => domains.form(src));
+  document.body.append(form.root);
+  await flush();
+  const input = form.input('meta');
+  const cells = () => [...input.root.querySelectorAll('input[aria-label="Key"], input[aria-label="Value"]')].map((c) => c.value);
+  const type = async (row, key, value) => {
+    for (const [part, text] of [['Key', key], ['Value', value]]) {
+      const cell = input.root.querySelectorAll(`input[aria-label="${part}"]`)[row];
+      cell.value = text;
+      fire(cell, 'input');
+    }
+    await flush();
+  };
+  const addRow = async () => {
+    const buttons = input.root.querySelectorAll('button[aria-label="Add row"]');
+    fire(buttons[buttons.length - 1], 'click');
+    await flush();
+  };
+  const stored = () => store.rows.find((r) => r.id === 'r1');
+  return {src, form, input, cells, type, addRow, stored};
+}
+
+scoped('EQ-057: a stored json object shows its pairs, not one empty pair', async () => {
+  const {src, form, input, cells} = await jsonForm({k: 'v'});
+  assert.deepEqual(input.value, {k: 'v'}, 'the json field reads the stored object as its pairs');
+  assert.deepEqual(cells(), ['k', 'v']);
+  assert.equal(src.changeCount.value, 0, 'opening the record is no change');
+  form.dispose();
+  src.dispose();
+});
+
+scoped('EQ-057: a pair typed into a json field is written to the row and saved with the stored pairs', async () => {
+  const {src, form, input, cells, type, addRow, stored} = await jsonForm({k: 'v'});
+  await addRow();
+  await type(1, 'k2', 'v2');
+  assert.equal(src.changeCount.value, 1, 'the typed pair is one unsaved change');
+  assert.equal(await src.save(), true);
+  await flush();
+  assert.deepEqual(stored().meta, {k: 'v', k2: 'v2'}, 'the saved json holds the stored pair and the typed one');
+  assert.equal(stored().version, 2, 'the save wrote the row');
+  assert.deepEqual(input.value, {k: 'v', k2: 'v2'}, 'after the save the field shows the saved pairs');
+  assert.deepEqual(cells(), ['k', 'v', 'k2', 'v2']);
+  assert.equal(src.changeCount.value, 0, 'and nothing is left unsaved');
+  form.dispose();
+  src.dispose();
+});
+
+scoped('EQ-057: an empty json shows one empty pair, is no change, and takes a typed pair', async () => {
+  for (const meta of [undefined, {}]) {
+    const {src, form, input, cells, type, stored} = await jsonForm(meta);
+    assert.deepEqual(input.value, {}, 'an empty json field holds no pairs');
+    assert.deepEqual(cells(), ['', ''], 'and shows one empty pair to type into');
+    assert.equal(src.changeCount.value, 0, 'an empty json is no change');
+    await type(0, 'a', '1');
+    assert.equal(await src.save(), true);
+    await flush();
+    assert.deepEqual(stored().meta, {a: '1'}, 'a pair typed into an empty json field is saved');
+    assert.deepEqual(input.value, {a: '1'}, 'and shown after the save');
+    form.dispose();
+    src.dispose();
+    resetDom();
+  }
+});
+
+scoped('EQ-057: a nested json value read back from the frame text is no phantom change', async () => {
+  const {src, form, input} = await jsonForm({b: 1, a: {n: 2}});
+  await flush();
+  assert.deepEqual(input.value, {b: 1, a: {n: 2}}, 'the json field reads the nested object');
+  assert.equal(src.changeCount.value, 0, 'a json value re-read from its text counts as no change');
+  assert.equal(form.form.unwritten.value, 0, 'and the field holds nothing unwritten');
+  form.dispose();
+  src.dispose();
+});

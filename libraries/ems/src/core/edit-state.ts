@@ -342,6 +342,9 @@ export class MemoryEditState implements EditState {
   static problemOf(prop: IProperty, value: unknown): string | null {
     if (isEmpty(value))
       return prop.nullable === false ? EMPTY : null;
+    // the platform editor's type check (`validateCellValue`): a `json` cell takes an object, never text
+    if ((prop.propertyType ?? prop.type) === 'map' && typeof value !== 'object')
+      return `Types differ. Expected: map, passed: ${typeof value === 'string' ? 'string' : typeof value}`;
     const choices = prop.choices;
     if (choices !== undefined && choices !== null && choices.length > 0 && !choices.includes(String(value)))
       return `Must be one of: ${choices.join(', ')}`;
@@ -355,14 +358,17 @@ export class MemoryEditState implements EditState {
   }
 
   /** A stored value as the platform frame holds it: `queryDf` and the post-save re-read give a
-   * `string_list` cell as the JSON text of the list, in a string column. */
+   * `string_list` or `json` cell as the JSON text of the list or object, in a string column. */
   static frameCell(prop: IProperty, value: unknown): unknown {
-    return MemoryEditState.isTextList(prop) && Array.isArray(value) ? JSON.stringify(value) : value;
+    return MemoryEditState.isTextCell(prop) && typeof value === 'object' && value !== null && !(value instanceof Date) ?
+      JSON.stringify(value) : value;
   }
 
-  /** Whether the frame holds `prop` as text where the store holds a list — see {@link frameCell}. */
-  static isTextList(prop: IProperty): boolean {
-    return (prop.propertyType ?? prop.type) === 'string_list';
+  /** Whether the frame holds `prop` as text where the store holds a list or an object — see
+   * {@link frameCell}. */
+  static isTextCell(prop: IProperty): boolean {
+    const type = prop.propertyType ?? prop.type;
+    return type === 'string_list' || type === 'map';
   }
 
   private static _reference(v: unknown): unknown {
