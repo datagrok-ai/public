@@ -55,8 +55,10 @@ export class DgDomainBackend implements DomainBackend {
    * what was saved. */
   async saveAll(edits: EditState[]): Promise<boolean> {
     const states = edits as EditorEditState[];
-    for (const state of states)
+    for (const state of states) {
       state.problem = null;
+      state.retry();
+    }
     const session = new DG.DomainSession(states.map((e) => e.editor), {quiet: true});
     try {
       if (await session.save())
@@ -66,6 +68,7 @@ export class DgDomainBackend implements DomainBackend {
       // names, and on every one for a refusal the batch as a whole answers for
       const refusal = session.lastRefusal;
       for (const state of states) {
+        state.markRefused();
         if (refusal !== null && (refusal.editor === null || refusal.editor === state.editor))
           state.problem = refusal.message;
       }

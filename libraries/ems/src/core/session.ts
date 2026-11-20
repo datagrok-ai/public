@@ -8,6 +8,9 @@ export interface DomainSession {
   readonly changeCount: ReadonlySignal<number>;
   /** The first blocking problem, null when the batch may be saved. */
   readonly validity: ReadonlySignal<string | null>;
+  /** Why Save is off: {@link validity} without the server's refusals, which stay shown while Save
+   * sends again. Absent: {@link validity}. */
+  readonly blocking?: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
   /** A batch landed — the paired form returns the focus to its fields. */
   readonly onSaved: ObservableLike<void>;
@@ -45,6 +48,7 @@ export class SharedSession implements DomainSession {
   readonly isDirty: ReadonlySignal<boolean>;
   readonly changeCount: ReadonlySignal<number>;
   readonly validity: ReadonlySignal<string | null>;
+  readonly blocking: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
   /** `''` when clean, `'N unsaved changes'`, `' in M tables'` appended when several are dirty. */
   readonly summary: ReadonlySignal<string>;
@@ -66,6 +70,7 @@ export class SharedSession implements DomainSession {
     this.isDirty = computed(() => this._sources.value.some((s) => s.isDirty.value));
     this.changeCount = computed(() => this._sources.value.reduce((n, s) => n + s.changeCount.value, 0));
     this.validity = computed(() => this._sources.value.map((s) => s.blocked.value).find((v) => v !== null) ?? null);
+    this.blocking = computed(() => this._sources.value.map((s) => s.blocking.value).find((v) => v !== null) ?? null);
     this.isSaving = computed(() => this._saving.value || this._sources.value.some((s) => s.isSaving.value));
     this.summary = computed(() => {
       const changes = this.changeCount.value;
@@ -348,7 +353,8 @@ export function confirmDiscard(session: DomainSession, options: {action?: string
         session.discard();
         decide(true);
       })
-      .addButton('SAVE', () => decide(session.save()), {primary: true, disabled: session.validity})
+      .addButton('SAVE', () => decide(session.save()), {primary: true,
+        disabled: session.blocking ?? session.validity})
       .onCancel(() => decide(false))
       .show({modal: true});
   });

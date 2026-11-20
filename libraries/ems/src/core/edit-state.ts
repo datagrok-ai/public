@@ -16,6 +16,12 @@ export interface EditState {
   readonly changeCount: ReadonlySignal<number>;
   /** The first blocking problem, null when the batch may be saved. */
   readonly validity: ReadonlySignal<string | null>;
+  /** What keeps the batch from being sent: {@link validity} without the cells the server's last
+   * refusal marked — those stay shown, and a retry goes to the server, which decides again.
+   * Absent: {@link validity}. */
+  readonly blocking?: ReadonlySignal<string | null>;
+  /** Whether the cell's error is the server's last refusal rather than the client's verdict. */
+  refused?(key: string, column: string): boolean;
   readonly isSaving: ReadonlySignal<boolean>;
   /** Why the last save was refused, where the refusal named no column and so reached no cell — a
    * delete a child's reference vetoes, say. Null until a save is refused that way. */

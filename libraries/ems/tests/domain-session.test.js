@@ -5,6 +5,7 @@ import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, Rows, notify, signal} from '@datagrok-libraries/u2';
 import {DomainSource} from '../src/core/domain-source.js';
 import {SharedSession, confirmDiscard} from '../src/core/session.js';
+import {saveButton} from '../src/dg/buttons.js';
 import {backend} from './domain-fixtures.mjs';
 
 function scoped(name, body) {
@@ -843,4 +844,51 @@ scoped('a field error the server set holds through an edit elsewhere and clears 
   unguard();
   projects.dispose();
   issues.dispose();
+});
+
+// EQ-033: a refusal is the server's verdict on the batch as it was; its cause may go where the
+// page cannot see it, so it stays shown and Save sends again for the server to decide
+
+scoped('a refused key whose clash is removed elsewhere: the refusal stays shown, Save sends again and lands', async () => {
+  const memory = backend();
+  // the clashing project lives in another tab's hands: the server refuses the key while it stands
+  let clash = true;
+  let sent = 0;
+  emsBackends.domain = {
+    table: (address) => memory.table(address),
+    saveAll: (edits) => {
+      sent++;
+      const refused = clash && edits.some((e) => e.df.rows.some((r) => r.id === 'p1' && r.key === 'DG'));
+      if (!refused)
+        return memory.saveAll(edits);
+      for (const edit of edits)
+        edit.problem = 'Key DG already belongs to Datagrok';
+      return Promise.resolve(false);
+    },
+  };
+  const session = new SharedSession();
+  const projects = new DomainSource({table: 'grit.project', session}, env);
+  projects.start();
+  await flush();
+  const save = testOwner().build(() => saveButton(session));
+  projects.rows.byKey('p1').key = 'DG';
+  await flush();
+  fire(save.button, 'click');
+  await flush();
+  await flush();
+  assert.equal(sent, 1);
+  assert.match(projects.blocked.value ?? '', /already belongs to Datagrok/, 'the refusal stays shown');
+  assert.match(session.validity.value ?? '', /already belongs to Datagrok/);
+
+  clash = false;
+  await flush();
+  assert.equal(save.button.disabled, false, 'Save is enabled, a server refusal is not the client\'s to hold on');
+  fire(save.button, 'click');
+  await flush();
+  await flush();
+  assert.equal(sent, 2, 'the batch went to the server again');
+  assert.equal(projects.isDirty.value, false, 'and landed');
+  assert.equal((await (await memory.table('grit.project')).query({})).find((r) => r.id === 'p1').key, 'DG');
+  save.dispose();
+  projects.dispose();
 });

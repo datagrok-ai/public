@@ -141,8 +141,13 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   readonly isDirty: ReadonlySignal<boolean>;
   readonly changeCount: ReadonlySignal<number>;
   readonly validity: ReadonlySignal<string | null>;
-  /** Why Save stays off: an unanswered refusal, then {@link validity}. */
+  /** What a refused save left standing, then {@link validity}: what the page says is wrong. */
   readonly blocked: ReadonlySignal<string | null>;
+  /** Why Save stays off: {@link validity} without the server's refusals — the copy a refused save
+   * left here, the cells it marked. A refusal is the server's verdict on the batch as it was, and
+   * its cause may go where the client cannot see (the clashing row deleted in another tab): it
+   * stays shown, and Save sends again for the server to decide. */
+  readonly blocking: ReadonlySignal<string | null>;
   readonly isSaving: ReadonlySignal<boolean>;
   /** "50 of 2,077", "12 issues", "3 unsaved changes" — what a status bar shows. */
   readonly summary: ReadonlySignal<string>;
@@ -251,6 +256,14 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if ((code === 'validation' || code === DomainSource.REFUSED) && this._state.value !== 'error')
         return DomainSource._message(error);
       return this.validity.value;
+    });
+    this.blocking = computed(() => {
+      for (const problem of this._problems.value) {
+        if (problem.value !== null)
+          return problem.value;
+      }
+      const edit = this._edit.value;
+      return (edit?.blocking ?? edit?.validity)?.value ?? null;
     });
     this.isSaving = computed(() => this._edit.value?.isSaving.value ?? false);
     this.summary = computed(() => this._summary());
@@ -588,7 +601,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (problem !== null)
         return this._refuse(problem);
     }
-    const problem = edit.validity.peek();
+    const problem = (edit.blocking ?? edit.validity).peek();
     return problem === null ? null : this._refuse(this._locate(edit, problem) ?? problem);
   }
 
