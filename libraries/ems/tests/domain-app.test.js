@@ -1421,9 +1421,10 @@ scoped('live by default (R-b): an app polls unless it is told not to', async () 
     await flush();
     assert.equal(a.listSource.live.value, true, 'no `live` option is `live: true`');
     assert.equal(ticks.length, 1, 'and the poll is armed');
+    assert.equal(probes.length, 1, 'the load took the baseline');
     ticks[0]();
     await flush();
-    assert.equal(probes.length, 1, 'one probe per tick');
+    assert.equal(probes.length, 2, 'one probe per tick');
     b = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10, live: false}));
     await flush();
     assert.equal(b.listSource.live.value, false, 'and `live: false` still turns it off');

@@ -313,3 +313,166 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
   children.dispose();
   parent.dispose();
 });
+
+scoped('another view\'s save of the same table never drops a page\'s pending child rows: the clean parent is marked stale', async () => {
+  const memory = crm();
+  emsBackends.domain = memory;
+  const companies = await domains.table('crm.company');
+  // page A — an entity page over c1, its own row clean, a new contact and an edited one pending
+  // under it; page B — another view of the table, in a session of its own
+  const parent = testOwner().build(() => companies.source({query: 'id = "c1"', pageSize: 1}));
+  const other = testOwner().build(() => companies.source({pageSize: 10}));
+  await flush();
+  assert.equal(other.session !== parent.session, true, 'two views, two sessions');
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await settle();
+  const contacts = children.child(CONTACTS);
+  await flush();
+  contacts.newRow({name: 'Unsaved'});
+  contacts.rows.byKey('k1').name = 'Ann edited';
+  assert.equal(parent.isDirty.value, false, 'the parent row itself is clean');
+  assert.equal(parent.session.changeCount.value, 2);
+
+  other.rows.byKey('c2').name = 'Globex edited';
+  assert.equal(await other.session.save(), true);
+  await settle();
+  assert.equal(children.child(CONTACTS) === contacts, true, 'the child source with its pending rows is still the one shown');
+  assert.equal(parent.currentRow.value?.id, 'c1');
+  assert.equal(parent.session.changeCount.value, 2, 'the pending child rows survive another view\'s save');
+  assert.equal(parent.stale.value, true, 'the page says its rows are behind the server instead');
+
+  assert.equal(await parent.session.save(), true);
+  await settle();
+  const stored = memory.tableSync('crm.contact').rows;
+  assert.deepEqual(stored.filter((r) => r.company_id === 'c1').map((r) => r.name).sort(), ['Ann edited', 'Unsaved']);
+  children.dispose();
+  other.dispose();
+  parent.dispose();
+});
+
+/** A backend whose reads of `crm.company` frames wait for `release()` while `hold` is on — a reload in flight. */
+function heldCompanies(memory) {
+  const gate = {hold: false, waiting: [], offsets: [], release() {
+    gate.hold = false;
+    for (const go of gate.waiting.splice(0))
+      go();
+  }};
+  const table = memory.table.bind(memory);
+  memory.table = async (address) => {
+    const t = await table(address);
+    if (address === 'crm.company' && !t.held) {
+      const frame = t.frame.bind(t);
+      t.frame = async (spec) => {
+        gate.offsets.push(spec.offset);
+        const f = await frame(spec);
+        if (gate.hold)
+          await new Promise((go) => gate.waiting.push(go));
+        return f;
+      };
+      t.held = true;
+    }
+    return t;
+  };
+  return gate;
+}
+
+scoped('a child row typed while the clean parent\'s reload is in flight survives it landing: the parent is marked stale', async () => {
+  const memory = crm();
+  const gate = heldCompanies(memory);
+  emsBackends.domain = memory;
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({query: 'id = "c1"', pageSize: 1}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await settle();
+  const contacts = children.child(CONTACTS);
+  await flush();
+  assert.equal(parent.session.isDirty.value, false, 'the page is clean when the reload starts');
+
+  // the reload of the clean page (another view's save, the ribbon Refresh) is slower than the user
+  gate.hold = true;
+  const reload = parent.refresh();
+  await settle();
+  assert.equal(parent.state.value, 'loading');
+  contacts.newRow({name: 'Typed during reload'});
+  await flush();
+  assert.equal(parent.session.changeCount.value, 1);
+
+  gate.release();
+  await reload;
+  await settle();
+  assert.equal(children.child(CONTACTS) === contacts, true, 'the child source with its pending row is still the one shown');
+  assert.equal(parent.currentRow.value?.id, 'c1', 'the parent keeps its current row');
+  assert.equal(parent.session.changeCount.value, 1, 'the child row typed during the reload survives it landing');
+  assert.equal(parent.stale.value, true, 'the page says its rows are behind the server instead');
+
+  assert.equal(await parent.session.save(), true);
+  await settle();
+  assert.deepEqual(memory.tableSync('crm.contact').rows.filter((r) => r.company_id === 'c1').map((r) => r.name).sort(),
+    ['Ann', 'Typed during reload']);
+  children.dispose();
+  parent.dispose();
+});
+
+scoped('a filter change still lands over a child row typed while it was in flight: the new collection is shown', async () => {
+  const memory = crm();
+  const gate = heldCompanies(memory);
+  emsBackends.domain = memory;
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await settle();
+  await flush();
+
+  gate.hold = true;
+  parent.search.value = 'Globex';
+  await settle();
+  assert.equal(parent.state.value, 'loading');
+  children.child(CONTACTS).newRow({name: 'Typed during search'});
+  await flush();
+  gate.release();
+  await settle();
+  await settle();
+  assert.deepEqual(parent.rows.items.value.map((r) => r.id), ['c2'], 'the search the user asked for is applied');
+  assert.equal(parent.stale.value, false);
+  children.dispose();
+  parent.dispose();
+});
+
+scoped('a reload that keeps the rows over a child row typed in flight keeps their window lost: the next page starts over', async () => {
+  const memory = crm();
+  const gate = heldCompanies(memory);
+  emsBackends.domain = memory;
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({pageSize: 1}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await settle();
+  await flush();
+  // a save landed but its re-read failed: the window the next page follows is lost
+  parent.markStale(new Error('offline'));
+
+  gate.hold = true;
+  const reload = parent.refresh();
+  await settle();
+  children.child(CONTACTS).newRow({name: 'Typed during reload'});
+  await flush();
+  gate.release();
+  await reload;
+  await settle();
+  assert.equal(parent.session.changeCount.value, 1, 'the reload kept the rows');
+  assert.equal(await parent.session.save(), true);
+  await settle();
+
+  gate.offsets.length = 0;
+  await parent.loadMore();
+  await settle();
+  assert.deepEqual(gate.offsets, [0], 'the next page reloads from the first page, not from the lost window\'s offset');
+  children.dispose();
+  parent.dispose();
+});
