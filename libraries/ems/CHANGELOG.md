@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Apps: Fixed a user without View on the table being told "No items yet" on the list and `Item "<id>" was not found.` on a row's page: both now say the user has no access to the table and to ask its owner, with no New, Save or Discard
+* Apps: Fixed a user without View on the table being told "No items yet" on the list and `Item "<id>" was not found.` on a row's page: both now say the user has no access to the table and to ask its owner, with no New, Save or Discard. A row opened from a list loaded before View was revoked drops the cached access once and reads it again, instead of saying the row was not found
 * EMS-032: Fixed a save the server refused as forbidden (Edit revoked meanwhile) leaving the app on the access it was built from: the platform access caches are dropped and every source of the session re-reads its access, so the form turns read-only and New, Import… and Bulk edit… go without a reload; the status line says "Cannot save: you do not have permission to make these changes. Discard the changes, or ask the table's owner for access" instead of "Cannot save: forbidden". Recognised on today's servers too, whose js-api refusal has no code (the bare "forbidden" message), and on a save that throws; the writer a grid edits through (lists, children grids) is rebuilt under the new access at once, or after Discard where pending changes hold it
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
