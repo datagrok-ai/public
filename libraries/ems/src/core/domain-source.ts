@@ -384,6 +384,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     if (this.scope.isDisposed)
       return;
     const gen = ++this._gen;
+    // a load that keeps the shown rows below keeps what is known about their window too
+    const restart = this._restart;
+    const moved = this._moved;
     this._restart = false;
     this._moved = false;
     const readFor = this._readFor();
@@ -431,6 +434,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (this.isDirty.peek() || (keepOverSession && this.session.isDirty.peek())) {
         frame.dispose();
         this._probed = shown;
+        this._restart ||= restart;
+        this._moved ||= moved;
         batch(() => {
           // over changes elsewhere in the session the rows are behind the server, as a peer save marks them
           if (!this.isDirty.peek())
@@ -1069,11 +1074,12 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return listed === undefined ? refs : listed.filter((name) => refs.includes(name));
   }
 
-  // the one scope `_spec`, `count` and `probe` all take, so none forgets the search or the trash mode
+  // what a load reads for: the same key is a reload of the collection shown, another one a filter change
   private _readFor(): string {
     return JSON.stringify([this.query.peek(), this.search.peek(), this.sort.peek(), this.deleted.peek()]);
   }
 
+  // the one scope `_spec`, `count` and `probe` all take, so none forgets the search or the trash mode
   private _scope(): DomainReadScope {
     const query = this.query.peek();
     const q = this._served?.query === query ? this._served.as : query;

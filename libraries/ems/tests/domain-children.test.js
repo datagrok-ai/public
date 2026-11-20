@@ -353,7 +353,7 @@ scoped('another view\'s save of the same table never drops a page\'s pending chi
 
 /** A backend whose reads of `crm.company` frames wait for `release()` while `hold` is on — a reload in flight. */
 function heldCompanies(memory) {
-  const gate = {hold: false, waiting: [], release() {
+  const gate = {hold: false, waiting: [], offsets: [], release() {
     gate.hold = false;
     for (const go of gate.waiting.splice(0))
       go();
@@ -364,6 +364,7 @@ function heldCompanies(memory) {
     if (address === 'crm.company' && !t.held) {
       const frame = t.frame.bind(t);
       t.frame = async (spec) => {
+        gate.offsets.push(spec.offset);
         const f = await frame(spec);
         if (gate.hold)
           await new Promise((go) => gate.waiting.push(go));
@@ -438,6 +439,40 @@ scoped('a filter change still lands over a child row typed while it was in fligh
   await settle();
   assert.deepEqual(parent.rows.items.value.map((r) => r.id), ['c2'], 'the search the user asked for is applied');
   assert.equal(parent.stale.value, false);
+  children.dispose();
+  parent.dispose();
+});
+
+scoped('a reload that keeps the rows over a child row typed in flight keeps their window lost: the next page starts over', async () => {
+  const memory = crm();
+  const gate = heldCompanies(memory);
+  emsBackends.domain = memory;
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({pageSize: 1}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await settle();
+  await flush();
+  // a save landed but its re-read failed: the window the next page follows is lost
+  parent.markStale(new Error('offline'));
+
+  gate.hold = true;
+  const reload = parent.refresh();
+  await settle();
+  children.child(CONTACTS).newRow({name: 'Typed during reload'});
+  await flush();
+  gate.release();
+  await reload;
+  await settle();
+  assert.equal(parent.session.changeCount.value, 1, 'the reload kept the rows');
+  assert.equal(await parent.session.save(), true);
+  await settle();
+
+  gate.offsets.length = 0;
+  await parent.loadMore();
+  await settle();
+  assert.deepEqual(gate.offsets, [0], 'the next page reloads from the first page, not from the lost window\'s offset');
   children.dispose();
   parent.dispose();
 });
