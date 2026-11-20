@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Children: Fixed a child saved live under a deleted parent: New in a children tab is off while the parent's delete is staged, saying why, and a Save that adds a child under a parent in the trash (a peer deleted it, or the same Save does) is refused naming the parent (Cannot save "Peter": its company "Initech" was deleted), once the server refuses it too; the memory backend refuses an insert or a ref update onto a deleted row as the server does
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input
