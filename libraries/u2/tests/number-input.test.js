@@ -62,6 +62,9 @@ smoke('an int input without bounds is held to the int32 range; a float input is 
   const float = mount(new NumberInput({label: 'Mass'}));
   type(float, '3000000000');
   assert.equal(float.validity.value, null);
+  input.dispose();
+  wide.dispose();
+  float.dispose();
 });
 
 smoke('out-of-range text stays on screen, reaches the value, and only marks the input invalid', () => {

@@ -280,7 +280,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     return (this._int ? INT : FLOAT).test(trimmed) ? Number(trimmed) : undefined;
   }
 
-  /** The declared bounds; an int input is never wider than the int32 range. */
+  // the declared bounds; an int input is never wider than the int32 range
   private _bounds(): {min: number | undefined, max: number | undefined} {
     const {min, max} = this.options;
     return this._int ? {min: Math.max(min ?? INT32_MIN, INT32_MIN), max: Math.min(max ?? INT32_MAX, INT32_MAX)} :
