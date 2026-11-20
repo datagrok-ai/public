@@ -6,7 +6,8 @@ import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {backends, Scope, Control, notify} from '@datagrok-libraries/u2';
-import {SCHEMA, backend} from './domain-fixtures.mjs';
+import {SCHEMA, ROWS, backend} from './domain-fixtures.mjs';
+import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -646,4 +647,67 @@ scoped('rows the server leaves out of its report and that cannot be told apart a
   assert.match(shown, /200 rows are not itemized by the server/);
   assert.match(shown, /empty for the 200 rows not itemized/);
   assert.equal(written.filter((key) => key === '').length, 200);
+});
+
+const UID = '5d1f2a4e-0b6c-4c1e-9a53-7a3f0e6b9c10';
+const text = () => document.body.textContent;
+
+scoped('a login in a user column is refused in the preview as a missing user id, and the mapping says so', async () => {
+  const memory = backend();
+  const {running} = await opened(memory, frame(['project_id', 'title', 'reporter'],
+    [{project_id: 'p1', title: 'A', reporter: 'admin'}, {project_id: 'p1', title: 'B', reporter: UID}]));
+  await toMapping();
+  assert.match(text(), /Reporter takes a user id \(uuid\), not a login or name/,
+    'the mapping step says the column takes user ids');
+  await toPreview();
+  assert.match(text(), /Reporter: expected a user id \(uuid\), got "admin"/, 'the preview names the field and what it expects');
+  assert.deepEqual(counts('preview'), ['1 to add', '1 error'], 'only the login row is refused');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
+scoped('a user id in any case, an empty or a missing cell passes; a padded one is refused as the server refuses it',
+  async () => {
+    const memory = backend();
+    const {running} = await opened(memory, frame(['project_id', 'number', 'title', 'reporter'],
+      [{project_id: 'p1', number: '14', title: 'D', reporter: ` ${UID} `},
+        {project_id: 'p1', number: '11', title: 'A', reporter: UID.toUpperCase()},
+        {project_id: 'p1', number: '12', title: 'B', reporter: ''},
+        {project_id: 'p1', number: '13', title: 'C', reporter: null}]));
+    await toMapping();
+    await toPreview();
+    assert.deepEqual(counts('preview'), ['3 to add', '1 error']);
+    assert.match(text(), new RegExp(`Reporter: expected a user id \\(uuid\\), got " ${UID} "`));
+    fire(buttonNamed('CANCEL'), 'click');
+    assert.equal(await running, null);
+  });
+
+scoped('a name in a group column is refused as a missing group id, and the mapping says so', async () => {
+  const issue = SCHEMA.tables.issue;
+  const withTeam = {...SCHEMA, tables: {...SCHEMA.tables, issue: {...issue, columns: {...issue.columns, team: {type: 'group'}}}}};
+  const memory = new MemoryDomainBackend(withTeam, {rows: Object.fromEntries(
+    Object.entries(ROWS).map(([t, list]) => [t, list.map((r) => ({...r}))]))});
+  const {running} = await opened(memory, frame(['project_id', 'title', 'team'],
+    [{project_id: 'p1', title: 'A', team: 'Developers'}, {project_id: 'p1', title: 'B', team: UID}]));
+  await toMapping();
+  assert.match(text(), /Team takes a group id \(uuid\), not a group name/);
+  await toPreview();
+  assert.match(text(), /Team: expected a group id \(uuid\), got "Developers"/);
+  assert.deepEqual(counts('preview'), ['1 to add', '1 error']);
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
+scoped('an unmapped user column neither hints nor refuses', async () => {
+  const memory = backend();
+  const {running} = await opened(memory, frame(['project_id', 'title', 'who'],
+    [{project_id: 'p1', title: 'A', who: 'admin'}]));
+  await toMapping();
+  assert.equal(named('who').value, '(skip)');
+  assert.doesNotMatch(text(), /takes a user id/);
+  await toPreview();
+  assert.doesNotMatch(text(), /expected a user id/);
+  assert.deepEqual(counts('preview'), ['1 to add']);
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
 });

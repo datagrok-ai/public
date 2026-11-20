@@ -296,7 +296,8 @@ class ImportFlow {
     table.root.classList.add('u2-domain-import-mapping');
     const links = divV([]);
     links.dataset.u2Part = 'import-links';
-    const step = divV([table.root, links, statusLine(signal(null), computed(() => this._mappingStatus()))],
+    const hints = divV([]);
+    const step = divV([table.root, links, hints, statusLine(signal(null), computed(() => this._mappingStatus()))],
       'u2-domain-import-mapping-step');
     const control = new Control(step);
     control.effect(() => {
@@ -304,6 +305,12 @@ class ImportFlow {
       const frame = this._frame.value;
       if (frame !== null && this._links.size > 0)
         void this._checkLinks(frame);
+    });
+    control.effect(() => {
+      this._recheck.value;
+      const mapped = this._mapping();
+      hints.replaceChildren(...this._targets.filter((p) => mapped.has(p.name!))
+        .flatMap((p) => ImportLinks.idHint(p) ?? []).map((line) => divH([dot('accent'), span(line)])));
     });
     control.effect(() => links.replaceChildren(...this._linkStatus.value.map((line) =>
       divH([dot(line.ok ? 'success' : 'error'), span(line.text)]))));
@@ -638,6 +645,12 @@ class ImportFlow {
 
   private _validate(row: Record<string, unknown>): string | null {
     const validators = this._table.validators;
+    // a user or group column takes ids: the server's "Cannot convert" does not say so
+    for (const prop of this._targets) {
+      const problem = ImportLinks.idProblem(prop, row[prop.name!]);
+      if (problem !== null)
+        return `${ImportFlow._caption(this, prop.name!)}: ${problem}`;
+    }
     for (const column of validators.columns) {
       const problem = validators.check(column, row[column], row as RowView);
       if (problem !== null)
