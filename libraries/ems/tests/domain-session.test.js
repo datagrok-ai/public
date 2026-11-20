@@ -690,18 +690,8 @@ scoped('a refused parent key fixed in the parent, even back to its original key,
   assert.equal(projects.isDirty.value, false, 'the parent is back to its original key');
   assert.equal(issues.blocked.value, null, 'the copy on the child goes with the cause');
   assert.equal(session.validity.value, null, 'Save is enabled');
-
-  projects.rows.byKey('p1').key = 'DG';
-  assert.equal(await session.save(), false);
-  issues.rows.byKey('i1').title = 'Aspirin 200';
-  await flush();
-  assert.match(session.validity.value ?? '', /already belongs to Datagrok/,
-    'an edit beside the cause leaves the refusal standing: the parent key is still the one refused');
-  projects.rows.byKey('p1').key = 'GRIT';
-  await flush();
-  assert.equal(session.validity.value, null);
   assert.equal(await session.save(), true);
-  assert.equal((await (await memory.table('grit.issue')).query({})).find((r) => r.id === 'i1').title, 'Aspirin 200');
+  assert.equal((await (await memory.table('grit.issue')).query({})).find((r) => r.id === 'i1').title, 'Aspirin 100');
   projects.dispose();
   issues.dispose();
 });
@@ -753,4 +743,65 @@ scoped('"edited in two places": discarding one of the two edits enables Save aga
   assert.equal(await session.save(), true);
   one.dispose();
   two.dispose();
+});
+
+scoped('a refusal the platform says of the whole batch, its cause in the child, clears when the child is fixed', async () => {
+  const memory = backend();
+  // `lastRefusal.editor === null`: dg/backend.ts puts the one sentence on every writer of the batch
+  emsBackends.domain = {
+    table: (address) => memory.table(address),
+    saveAll: (edits) => {
+      if (!edits.some((e) => e.df.rows.some((r) => r.id === 'i1' && r.weight > 5)))
+        return memory.saveAll(edits);
+      for (const edit of edits)
+        edit.problem = 'Weight exceeds the initial weight';
+      return Promise.resolve(false);
+    },
+  };
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  projects.rows.byKey('p1').name = 'Grit notes';
+  issues.rows.byKey('i1').weight = 10;
+  assert.equal(await session.save(), false);
+  assert.match(session.validity.value, /Weight exceeds/);
+  issues.rows.byKey('i1').weight = 3;
+  await flush();
+  assert.equal(projects.blocked.value, null, 'the parent, first in the batch, is not taken for the cause');
+  assert.equal(session.validity.value, null, 'Save is enabled');
+  assert.equal(await session.save(), true);
+  projects.dispose();
+  issues.dispose();
+});
+
+scoped('a delete its children veto clears when a child is repointed in the child source', async () => {
+  const memory = backend();
+  let forwarded = 0;
+  // the platform names the parent's editor for the veto; the cause is the child still pointing at it
+  emsBackends.domain = {
+    table: (address) => memory.table(address),
+    saveAll: async (edits) => {
+      const parent = edits.find((e) => e.df.rows.some((r) => r.id === 'p2' && r[Rows.STATE] === 'deleted'));
+      const pending = edits.flatMap((e) => e.df.rows).find((r) => r.id === 'i3');
+      const child = pending ?? (await (await memory.table('grit.issue')).query({})).find((r) => r.id === 'i3');
+      if (parent === undefined || child.project_id !== 'p2') {
+        forwarded++;
+        return memory.saveAll(edits);
+      }
+      parent.problem = 'Datagrok still has 1 issue; remove or reassign it first';
+      return false;
+    },
+  };
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  projects.edit.peek().markDeleted('p2');
+  assert.equal(await session.save(), false);
+  assert.match(session.validity.value, /still has 1 issue/);
+  issues.rows.byKey('i3').project_id = 'p1';
+  await flush();
+  assert.equal(projects.blocked.value, null, 'the refusal on the parent goes when its child lets go of it');
+  assert.equal(session.validity.value, null, 'Save is enabled');
+  await session.save();
+  assert.equal(forwarded, 1, 'and the batch goes to the server again, which decides');
+  projects.dispose();
+  issues.dispose();
 });

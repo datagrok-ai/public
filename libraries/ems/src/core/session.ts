@@ -54,8 +54,8 @@ export class SharedSession implements DomainSession {
 
   private readonly _sources = signal<readonly DomainSource[]>([]);
   private readonly _saving = signal(false);
-  // the refusal the last save copied onto every source it held back: any of their writers
-  // changing re-asks whether its cause still holds (the changed source in hand), and when it no
+  // the refusal the last save copied onto every source it held back: any writer of the session
+  // changing (a child the batch did not hold among them) re-asks whether its cause still holds (the changed source in hand), and when it no
   // longer does every copy still standing goes with it — a copy clears on its own source's change
   // alone, and Save would stay off over a batch that is now saveable
   private _refusal: {copies: Map<DomainSource, unknown>, holds: (changed: DomainSource) => boolean} | undefined;
@@ -123,7 +123,7 @@ export class SharedSession implements DomainSession {
       const heard = batch.map((s) => s.edit.peek()!.onSaved.subscribe((r) => Object.assign(assigned, r.assigned)));
       try {
         if (!await emsBackends.domain!.saveAll(batch.map((s) => s.edit.peek()!))) {
-          this._refused(batch);
+          this._raise(batch, SharedSession._refused(batch));
           return false;
         }
       } catch (e) {
@@ -181,19 +181,22 @@ export class SharedSession implements DomainSession {
       source.edit.peek()?.setSaving(saving);
   }
 
-  // the platform editor reports the server's error itself and answers false: the summary still says they are stuck
-  private _refused(batch: readonly DomainSource[]): void {
+  // the platform editor reports the server's error itself and answers false: the summary still says they are
+  // stuck. Answers whether the refusal still holds after a change of the session's sources
+  private static _refused(batch: readonly DomainSource[]): (changed: DomainSource) => boolean {
     // a refusal naming a column reaches that cell and is the source's validity; one about a whole
     // row (a delete a child's reference vetoes) reaches nothing, and the writer kept the sentence
-    const problems = batch.map((s) => s.validity.peek() ?? s.edit.peek()?.problem ?? null);
-    const at = problems.findIndex((v) => v != null);
-    const problem = problems[at] ?? 'the changes were refused';
+    const problem = batch.map((s) => s.validity.peek() ?? s.edit.peek()?.problem ?? null)
+      .find((v) => v != null) ?? 'the changes were refused';
     for (const source of batch)
       source.refuse(problem);
-    // the source the sentence came from holds the cause: a change beside it leaves the cause as
-    // it was; with no such source, any change makes it another batch
-    const origin = batch[at];
-    this._raise(batch, (changed) => origin !== undefined && changed !== origin);
+    // the cause is known to sit in one source only when one cell alone says it: a change beside it
+    // leaves it as it was. A sentence about a row (a delete its children veto: the cause is in the
+    // children) or about the batch (on every source) may be answered by a change anywhere, and
+    // the server decides again — a needless second refusal, never a Save that stays off
+    const cells = batch.filter((s) => s.validity.peek() !== null);
+    const origin = cells.length === 1 ? cells[0] : undefined;
+    return (changed) => origin !== undefined && changed !== origin;
   }
 
   private _raise(sources: readonly DomainSource[], holds: (changed: DomainSource) => boolean): void {
@@ -202,7 +205,7 @@ export class SharedSession implements DomainSession {
 
   changed(source: DomainSource): void {
     const refusal = this._refusal;
-    if (refusal === undefined || !refusal.copies.has(source) || refusal.holds(source))
+    if (refusal === undefined || refusal.holds(source))
       return;
     this._refusal = undefined;
     for (const [holder, error] of refusal.copies) {
