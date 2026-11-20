@@ -444,6 +444,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         });
         return;
       }
+      // the same collection read again — a peer's write the poll saw, another source's save, Refresh —
+      // keeps the current row and the selection by id, as the re-base after a save does; a new query,
+      // search, sort or trash mode is a new collection and starts over
+      const kept = readFor === this._shownFor ? this._keep() : undefined;
       this._drop();
       this._shownFor = readFor;
       this._frame = frame;
@@ -463,6 +467,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       });
       this._syncCurrent();
       this._syncSelection();
+      if (kept !== undefined)
+        this._restore(kept);
       if (this.isDraft)
         this.newRow({}, {pristine: true});
     } catch (e) {
@@ -744,9 +750,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     // the frame may have just lost every row of it to a delete
     const window = Math.max(this._loaded, frame.df.rowCount) || this.pageSize;
     const gen = this._gen;
-    const selected = this._selection.peek().map((row) => row.id);
-    // read before the swap: a row the replacement does not hold takes `currentRow` with it
-    const current = this.currentRow.peek()?.id ?? null;
+    const kept = this._keep();
     await this._serve(true);
     // read BEFORE the window, as a load does: a write by someone else after the save is a change
     // to the next poll, not its baseline
@@ -772,14 +776,34 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this._edit.value = replacement.edit;
     });
     frame.dispose();
-    const at = current === null ? -1 : this._rows.indexOf(current);
-    if (at >= 0) {
-      replacement.df.currentRowIdx = at;
-      this._syncCurrent();
+    this._restore(kept);
+  }
+
+  // the current row and the selection by id, read before the frame is swapped: a row the replacement
+  // does not hold takes `currentRow` with it. `at` is where the current row stood, for its neighbour
+  private _keep(): {current: string | null, at: number, selected: string[]} {
+    const current = this.currentRow.peek()?.id ?? null;
+    return {current, at: current === null ? -1 : this._rows.indexOf(current),
+      selected: this._selection.peek().map((row) => row.id)};
+  }
+
+  // back onto the frame now held: a current row the server no longer answers hands on to the row now at
+  // its place (the last one past the end), as a saved delete does; selected rows that left are dropped
+  private _restore(kept: {current: string | null, at: number, selected: string[]}): void {
+    const df = this._df.peek();
+    if (df === undefined)
+      return;
+    if (kept.current !== null) {
+      const at = this._rows.indexOf(kept.current);
+      const to = at >= 0 ? at : Math.min(kept.at, df.rowCount - 1);
+      if (to >= 0) {
+        df.currentRowIdx = to;
+        this._syncCurrent();
+      }
     }
-    const selection = replacement.df.selection as {set?(i: number, value: boolean): void} | null | undefined;
+    const selection = df.selection as {set?(i: number, value: boolean): void} | null | undefined;
     if (typeof selection?.set === 'function') {
-      for (const id of selected) {
+      for (const id of kept.selected) {
         const index = this._rows.indexOf(id);
         if (index >= 0)
           selection.set(index, true);

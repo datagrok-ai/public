@@ -597,3 +597,65 @@ scoped('the trash reads newest-deleted first, and leaving it gives the order bac
   app.dispose();
   assert.equal(DomainApp.live.size, 0, 'no app left behind');
 });
+
+// EQ-002: a peer's write reloads a clean live source, and the reload went through `_drop`, which empties the
+// current row and the selection; the new frame's current row is -1, so a form bound to the current row lost
+// it and a list re-seeded its lead on another row. The source's own save (`_rebase`) keeps both by id.
+const selectRows = (src, ...keys) => {
+  for (const key of keys)
+    src.df.value.selection.set(src.rows.indexOf(key), true);
+};
+const selectedIds = (src) => src.selection.value.map((r) => r.id);
+
+scoped('a peer\'s write refreshes the rows in place: the current row and the selection stay by id (EQ-002)', async () => {
+  const be = counted();
+  const src = await started(be);
+  await tick();
+  src.currentRow.value = src.rows.byKey('i3');
+  selectRows(src, 'i2', 'i3');
+  await flush();
+  const before = src.df.value;
+  const issue = await be.backend.table('grit.issue');
+  await issue.transaction([{op: 'update', table: 'issue', id: 'i1', values: {title: 'Theirs'}}]);
+  await tick();
+  await flush();
+  assert.notEqual(src.df.value, before, 'the poll saw the write and read the rows again');
+  assert.equal(src.rows.byKey('i1').title, 'Theirs');
+  assert.equal(src.currentRow.value?.id, 'i3', 'the current row stays on the row it was');
+  assert.equal(src.df.value.currentRowIdx, src.rows.indexOf('i3'), 'and the frame says the same');
+  assert.deepEqual(selectedIds(src), ['i2', 'i3'], 'the selection stays on the same rows');
+  src.dispose();
+});
+
+scoped('a peer\'s delete of the current row hands it to a neighbour; the other selected rows stay (EQ-002)', async () => {
+  const be = counted();
+  const src = await started(be);
+  await tick();
+  src.currentRow.value = src.rows.byKey('i2');
+  selectRows(src, 'i1', 'i2');
+  await flush();
+  const issue = await be.backend.table('grit.issue');
+  await issue.transaction([{op: 'delete', table: 'issue', id: 'i2'}]);
+  await tick();
+  await flush();
+  assert.equal(src.rows.byKey('i2'), undefined, 'the deleted row is gone');
+  assert.equal(src.currentRow.value?.id, 'i3', 'the current row is the deleted row\'s neighbour');
+  assert.deepEqual(selectedIds(src), ['i1'], 'the other selected row stays selected');
+  src.dispose();
+});
+
+scoped('a filter change still starts over: no current row, nothing selected (EQ-002)', async () => {
+  const be = counted();
+  const src = await started(be);
+  await tick();
+  src.currentRow.value = src.rows.byKey('i2');
+  selectRows(src, 'i2', 'i3');
+  await flush();
+  src.query.value = 'done = false';
+  await flush();
+  await flush();
+  assert.equal(src.rows.items.value.length, 2);
+  assert.equal(src.currentRow.value, null, 'a new collection has no current row');
+  assert.deepEqual(selectedIds(src), [], 'and nothing selected');
+  src.dispose();
+});
