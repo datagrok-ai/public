@@ -38,9 +38,10 @@ function scoped(name, body) {
   });
 }
 
-/** The registry listing (`grok.dapi.domains.schemas`) carries ownership: `DomainTable.origin` / `userColumns`. */
+/** The registry listing (`grok.dapi.domains.schemas`) carries ownership: `DomainTable.origin` / `userColumns`.
+ * `server.table`, when set, builds the listed table instead — an older server's. */
 function listing(server) {
-  const tables = () => [{name: 'issue', origin: 'package', userColumns: [...server.userColumns]}];
+  const tables = () => [server.table?.() ?? {name: 'issue', origin: 'package', userColumns: [...server.userColumns]}];
   const list = async () => [{name: NAME, managedBy: 'package', tables: tables()}];
   return {list, include: () => ({list})};
 }
@@ -136,3 +137,22 @@ scoped('EQ-018: after a version conflict the reload re-reads ownership: a peer\'
     'every user column the reloaded registry names travels with the extension');
   assert.equal(await done, true);
 });
+
+// datagrok-api comes from the server: an older one has no `userColumns` getter, or declares getters its client does
+// not register. Ownership is then unknown, and a full-state extension over it would drop the user's columns.
+const OLD_SERVERS = {
+  'a js-api without DomainTable.origin / userColumns': () => ({name: 'issue'}),
+  'a js-api over a client without the interop': () => ({name: 'issue',
+    get origin() { throw new TypeError('api.grok_DomainTable_Get_Origin is not a function'); },
+    get userColumns() { throw new TypeError('api.grok_DomainTable_Get_UserColumns is not a function'); }}),
+};
+for (const [server, table] of Object.entries(OLD_SERVERS)) {
+  scoped(`EQ-018: on ${server} Edit properties refuses before opening, and nothing is saved`, async () => {
+    const calls = [];
+    stub(calls, {manifest: copy(MANIFEST), userColumns: [], conflicts: 0, table});
+    await assert.rejects(domains.editProperties(NAME, 'issue'), /unavailable on this server version/,
+      'a clear refusal, not a TypeError from inside the dialog');
+    assert.equal(document.querySelector('.u2-dialog'), null, 'no dialog opened');
+    assert.deepEqual(commits(calls), [], 'no extension sent');
+  });
+}

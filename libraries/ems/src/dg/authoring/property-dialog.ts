@@ -12,6 +12,9 @@ const OPTIONS = ['friendlyName', 'description', 'choices', 'min', 'max', 'format
 export class PropertyDialog {
   private static readonly _extensible = new Map<string, Promise<Set<string>>>();
 
+  static readonly UNSUPPORTED = 'Edit properties is unavailable on this server version: it cannot report which ' +
+    'columns you added, and saving without that could delete them';
+
   static extensible(schema: string): Promise<Set<string>> {
     let tables = PropertyDialog._extensible.get(schema);
     if (tables === undefined)
@@ -73,14 +76,29 @@ export class PropertyDialog {
   }
 
   /** Who owns each table and column, from the registry: the manifest never says, and a column read as the plugin's
-   * is left out of the extension — which the server takes as the user dropping it, values and all.
-   */
+   * is left out of the extension — which the server takes as the user dropping it, values and all. A server whose
+   * API cannot say (older than `DomainTable.userColumns`) is refused: a patch with unknown ownership is never sent. */
   private static async _ownership(schema: string): Promise<ManifestOwnership> {
     const entity = (await grok.dapi.domains.schemas.include('tables.columns.property').list())
       .find((s) => s.name === schema);
     if (entity === undefined)
       throw new Error(`${schema} is not a registered schema`);
-    return Object.fromEntries(entity.tables.map((t) => [t.name, {origin: t.origin, userColumns: t.userColumns}]));
+    const ownership: ManifestOwnership = {};
+    for (const t of entity.tables) {
+      let origin: unknown;
+      let userColumns: unknown;
+      try {
+        origin = t.origin;
+        userColumns = t.userColumns;
+      } catch {
+        // a js-api that declares the getters over a client that does not register them
+      }
+      if ((origin !== 'package' && origin !== 'user') || !Array.isArray(userColumns) ||
+        !userColumns.every((c) => typeof c === 'string'))
+        throw new Error(PropertyDialog.UNSUPPORTED);
+      ownership[t.name] = {origin, userColumns: userColumns as string[]};
+    }
+    return ownership;
   }
 
   private static async _save(handle: DG.DomainSchemaClient, editor: ManifestEditor,

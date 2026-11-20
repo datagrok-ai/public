@@ -788,6 +788,9 @@ export class ManifestModel {
     const patch: ExtendPatch = {};
     for (const state of this._tables.values()) {
       const own = [...state.columns.values()].filter((c) => c.owned && (c.registered || c.included));
+      // full state over columns whose owner is unknown would drop the user's: no patch at all
+      if (own.length > 0 && state.registered && !Array.isArray(this._ownership[state.logical]?.userColumns))
+        throw new Error(`u2: who owns the columns of ${state.logical} is unknown — an extension cannot be sent`);
       const now = Object.fromEntries(own.filter((c) => c.included).map((c) => [c.logical, this._columnJSON(c, false)]));
       const before = Object.fromEntries(Object.entries(this._baseline!.tables[state.logical]?.columns ?? {})
         .filter(([name]) => this._userOwned(state.logical, name)));
@@ -1143,7 +1146,8 @@ export class ManifestModel {
 
   /** Extend mode: whether the user added [column] to [table] — the registry's word, never the manifest's. */
   private _userOwned(table: string, column: string): boolean {
-    return this._ownership[table]?.userColumns.includes(column) === true;
+    const owned = this._ownership[table]?.userColumns;
+    return Array.isArray(owned) && owned.includes(column);
   }
 
   private _markTableDrift(): void {
