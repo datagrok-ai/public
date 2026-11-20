@@ -1215,14 +1215,16 @@ export class DomainFrameEditor implements IFrameEditor {
     // The op's guard decides the shape, not the body: a 409 without `current` must still not
     // reach the version dialog, whose Overwrite would retry the same stale guard.
     const guarded = failing.op.expected != null;
+    const kind = failing.op.op === 'delete' || failing.op.op === 'restore' ? failing.op.op : undefined;
     const decision = guarded ? await this._expectedConflictDialog(e, row, subject)
-      : await DomainObjectHandler.showConflictDialog(subject);
+      : await DomainObjectHandler.showConflictDialog(subject, kind);
     if (decision === 'reload') {
       // a gone row resolves null and is reported; a read that FAILED keeps the edit, as Cancel does
       let fresh: any = null;
       let read = true;
       try {
-        fresh = await this.client.get(id);
+        // a staged restore's row is in the trash
+        fresh = await this.client.get(id, kind === 'restore' ? {deleted: 'include'} : undefined);
       } catch (x: any) {
         balloon.error(`${subject} could not be reloaded: ${x?.message ?? x}`);
         read = false;
