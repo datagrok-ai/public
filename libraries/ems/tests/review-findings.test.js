@@ -354,6 +354,23 @@ scoped('EQ-025: an insert after the boundary row is counted when the last page l
     src.dispose();
   });
 
+scoped('EQ-025: a boundary check the server refuses keeps the page and the status', {}, async () => {
+    const be = backend();
+    emsBackends.domain = be;
+    const src = await issues({pageSize: 2, sort: 'title'});
+    const table = await be.table('grit.issue');
+    const query = table.query.bind(table);
+    // a page read carries no `columns`; the check is the one read that does
+    table.query = (spec) => spec.columns !== undefined ?
+      Promise.reject(new Error('Unknown or inaccessible column "id"')) : query(spec);
+    await src.loadMore();
+    assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Aspirin', 'Ibuprofen', 'Naproxen']);
+    assert.equal(src.state.value, 'ready');
+    assert.equal(src.error.value, undefined);
+    assert.equal(src.total.value, 3);
+    src.dispose();
+  });
+
 // ───────────────────────── 5. every standalone save leaks a session ─────────────────────────────
 
 /** The participant surface `DomainSession` subscribes to and drives; an empty batch is enough —

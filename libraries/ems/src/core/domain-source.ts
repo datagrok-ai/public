@@ -919,9 +919,16 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     if (table === undefined || id === null || count === 0 || this._noRows)
       return false;
     const sort = this.sort.peek();
-    const [row] = await table.query({...this._scope(), ...(sort === '' ? {} : {sort}),
-      columns: ['id'], limit: 1, offset: count - 1});
-    return String(row?.id ?? '') !== id;
+    let rows: Record<string, unknown>[];
+    try {
+      // `columns: []`: the system columns alone — `id` is always projected, and never a column to name
+      rows = await table.query({...this._scope(), ...(sort === '' ? {} : {sort}),
+        columns: [], limit: 1, offset: count - 1});
+    } catch {
+      // the check is a guard, not the load: the page that landed stays and the status is the load's
+      return false;
+    }
+    return String(rows[0]?.id ?? '') !== id;
   }
 
   // the id of the last of the first `count` rows of `df` (the server's rows come first, drafts after);
