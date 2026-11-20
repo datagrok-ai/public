@@ -1,4 +1,4 @@
-/* Preload (NODE_OPTIONS=--import) that makes a loaded machine on purpose: a timer of 15-25 ms (the 20 ms read
+/** Preload (NODE_OPTIONS=--import) that makes a loaded machine on purpose: a timer of 15-25 ms (the 20 ms read
    timeout the binding-dialog tests set) fires 150 ms late. A test that sleeps a fixed time past it always loses;
    one that waits for the condition still passes. */
 const realSetTimeout = globalThis.setTimeout;
