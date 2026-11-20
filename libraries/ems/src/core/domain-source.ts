@@ -393,6 +393,12 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     // a reload of the collection shown, started over a clean session, keeps the rows when changes appear
     // in the session before it lands — a child row typed under the current row, which `_drop` would dispose
     const keepOverSession = readFor === this._shownFor && !this.session.isDirty.peek();
+    // the same collection read again — a peer's write the poll saw, another source's save, Refresh — is
+    // re-read over the window shown (EQ-025), as the re-base after a save is, and swapped in place: the
+    // current row and the selection stay by id, never through null (EQ-002). A new query, search, sort or
+    // trash mode is a new collection and starts over from the first page
+    const shownFrame = readFor === this._shownFor ? this._frame : undefined;
+    const window = shownFrame === undefined ? this.pageSize : Math.max(this._loaded, this.pageSize);
     // the rows about to arrive are the server's again, and the baseline is taken with them below; the
     // one the rows shown now were read with is kept for a load that bails over pending changes
     const shown = this._probed;
@@ -424,7 +430,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (gen !== this._gen)
         return;
       const [frame, total] = await Promise.all([
-        table.frame(this._spec(0)), this._noRows ? 0 : this._count(table)]);
+        table.frame(this._spec(0, window)), this._noRows ? 0 : this._count(table)]);
       if (gen !== this._gen) {
         frame.dispose();
         return;
@@ -444,31 +450,32 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         });
         return;
       }
-      // the same collection read again — a peer's write the poll saw, another source's save, Refresh —
-      // keeps the current row and the selection by id, as the re-base after a save does; a new query,
-      // search, sort or trash mode is a new collection and starts over
-      const kept = readFor === this._shownFor ? this._keep() : undefined;
-      this._drop();
-      this._shownFor = readFor;
-      this._frame = frame;
-      this._loaded = frame.df.rowCount;
-      this._last = DomainSource._lastOf(frame.df, this._loaded);
-      this._done = this._noRows || this._loaded < this.pageSize;
-      this._probed = baseline;
-      this._wire(frame);
-      batch(() => {
-        this._df.value = frame.df;
-        this._edit.value = frame.edit;
+      const landed = () => {
         this._total.value = total;
         this._state.value = 'ready';
         // cleared where the load LANDS, not where it starts: one that bails over pending changes
         // leaves the rows behind the server, and the mark has to say so
         this._isStale.value = false;
-      });
-      this._syncCurrent();
-      this._syncSelection();
-      if (kept !== undefined)
-        this._restore(kept);
+      };
+      if (shownFrame !== undefined && shownFrame === this._frame)
+        this._swap(frame, window, baseline, this._keep(), landed);
+      else {
+        this._drop();
+        this._shownFor = readFor;
+        this._frame = frame;
+        this._loaded = frame.df.rowCount;
+        this._last = DomainSource._lastOf(frame.df, this._loaded);
+        this._done = this._noRows || this._loaded < this.pageSize;
+        this._probed = baseline;
+        this._wire(frame);
+        batch(() => {
+          this._df.value = frame.df;
+          this._edit.value = frame.edit;
+          landed();
+        });
+        this._syncCurrent();
+        this._syncSelection();
+      }
       if (this.isDraft)
         this.newRow({}, {pristine: true});
     } catch (e) {
@@ -760,22 +767,30 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       replacement.dispose();
       return;
     }
-    // swapped in place, never through `_drop`: a row's proxy is keyed, reads whatever frame the
-    // source holds, and everything bound to it stays bound
+    this._swap(replacement, window, baseline, kept);
+  }
+
+  // the window re-read swapped in place, never through `_drop`: a row's proxy is keyed, reads whatever
+  // frame the source holds, and everything bound to it stays bound — the current row is never null on the
+  // way, so nothing under it reloads. `also` lands with the frame, in the same batch
+  private _swap(frame: DomainFrameLike, window: number, baseline: DomainProbeLike | undefined,
+    kept: {current: string | null, at: number, selected: string[]}, also?: () => void): void {
+    const old = this._frame;
     this._unwire?.();
     this._unwire = undefined;
-    this._frame = replacement;
-    this._loaded = replacement.df.rowCount;
-    this._last = DomainSource._lastOf(replacement.df, this._loaded);
+    this._frame = frame;
+    this._loaded = frame.df.rowCount;
+    this._last = DomainSource._lastOf(frame.df, this._loaded);
     this._moved = false;
-    this._done = this._loaded < window;
+    this._done = this._noRows || this._loaded < window;
     this._probed = baseline;
-    this._wire(replacement);
+    this._wire(frame);
     batch(() => {
-      this._df.value = replacement.df;
-      this._edit.value = replacement.edit;
+      this._df.value = frame.df;
+      this._edit.value = frame.edit;
+      also?.();
     });
-    frame.dispose();
+    old?.dispose();
     this._restore(kept);
   }
 
@@ -802,14 +817,17 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       }
     }
     const selection = df.selection as {set?(i: number, value: boolean): void} | null | undefined;
-    if (typeof selection?.set === 'function') {
-      for (const id of kept.selected) {
-        const index = this._rows.indexOf(id);
-        if (index >= 0)
-          selection.set(index, true);
+    // one batch: the selection lands whole, never a row at a time
+    batch(() => {
+      if (typeof selection?.set === 'function') {
+        for (const id of kept.selected) {
+          const index = this._rows.indexOf(id);
+          if (index >= 0)
+            selection.set(index, true);
+        }
       }
-    }
-    this._syncSelection();
+      this._syncSelection();
+    });
   }
 
   /** What the last save threw — the session hands every dirty source the backend's refusal. */

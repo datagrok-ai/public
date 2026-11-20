@@ -659,3 +659,73 @@ scoped('a filter change still starts over: no current row, nothing selected (EQ-
   assert.deepEqual(selectedIds(src), [], 'and nothing selected');
   src.dispose();
 });
+
+scoped('a current row past the first page stays where it is: the reload re-reads the window shown (EQ-002)', async () => {
+  const be = counted();
+  const src = await started(be, {pageSize: 2});
+  await src.loadMore();
+  await flush();
+  assert.equal(src.rows.items.value.length, 3, 'two pages shown');
+  await tick();
+  src.currentRow.value = src.rows.byKey('i3');
+  selectRows(src, 'i1', 'i3');
+  await flush();
+  const issue = await be.backend.table('grit.issue');
+  await issue.transaction([{op: 'update', table: 'issue', id: 'i1', values: {title: 'Theirs'}}]);
+  await tick();
+  await flush();
+  assert.equal(src.rows.byKey('i1').title, 'Theirs', 'the poll saw the write and read the rows again');
+  assert.equal(src.rows.items.value.length, 3, 'the window shown, not the first page alone');
+  assert.equal(src.currentRow.value?.id, 'i3', 'the current row on page two stays on the row it was');
+  assert.deepEqual(selectedIds(src), ['i1', 'i3'], 'and so do the selected rows on either page');
+  src.dispose();
+});
+
+scoped('the current row is never null while a peer\'s write reloads the rows (EQ-002)', async () => {
+  const be = counted();
+  const src = await started(be);
+  await tick();
+  src.currentRow.value = src.rows.byKey('i2');
+  await flush();
+  const seen = [];
+  src.effect(() => seen.push(src.currentRow.value?.id ?? null));
+  const issue = await be.backend.table('grit.issue');
+  await issue.transaction([{op: 'update', table: 'issue', id: 'i3', values: {title: 'Theirs'}}]);
+  await tick();
+  await flush();
+  assert.equal(src.rows.byKey('i3').title, 'Theirs', 'the poll saw the write and read the rows again');
+  assert.deepEqual(seen.filter((id) => id !== 'i2'), [], 'the current row went nowhere on the way, not even null');
+  src.dispose();
+});
+
+scoped('a child collection under the current row does not reload when a peer\'s write reloads its parent (EQ-002)',
+  async () => {
+    const be = counted();
+    emsBackends.domain = be.backend;
+    const projects = await domains.table('grit.project');
+    const parent = testOwner().build(() => projects.source({pageSize: 10, live: true, liveMs: 1000}));
+    await flush();
+    parent.currentRow.value = parent.rows.byKey('p1');
+    const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+    await flush();
+    await flush();
+    const child = children.child('grit.issue.project_id');
+    assert.equal(child.query.value, 'project_id = "p1"');
+    await tick();
+    let reloads = 0;
+    const reload = child.refresh.bind(child);
+    child.refresh = () => {
+      reloads++;
+      return reload();
+    };
+    const project = await be.backend.table('grit.project');
+    await project.transaction([{op: 'update', table: 'project', id: 'p2', values: {name: 'Theirs'}}]);
+    await tick();
+    await flush();
+    assert.equal(parent.rows.byKey('p2').name, 'Theirs', 'the poll saw the write and read the parent again');
+    assert.equal(parent.currentRow.value?.id, 'p1');
+    assert.equal(child.query.value, 'project_id = "p1"');
+    assert.equal(reloads, 0, 'the child under the kept current row is not read again');
+    children.dispose();
+    parent.dispose();
+  });
