@@ -174,9 +174,7 @@ export class SharedSession implements DomainSession {
       source.edit.peek()?.setSaving(saving);
   }
 
-  /** After a 403, every source of the session re-reads its access, not just the batch: New and
-   * the ⋯ menu follow the list source, the form its own, a grid the writer the source rebuilds —
-   * they re-gate without a reload. */
+  // every source, not just the batch: New and the ⋯ menu follow the list source
   private async _reloadAccess(): Promise<void> {
     // the snapshot every affordance was built from is stale: the caches go before anything re-reads
     emsBackends.domain?.dropAccess?.();
