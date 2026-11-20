@@ -13,7 +13,7 @@ import {DomainList} from './list.js';
 import type {DomainListMode} from './list.js';
 import {SAVE_SHORTCUTS, isSaveKey, DomainForm} from './form.js';
 import {DomainFilters} from './filters.js';
-import {SavedSearches} from './saved-searches.js';
+import {SavedSearches, sortable} from './saved-searches.js';
 import type {DomainFiltersOptions} from './filters.js';
 import type {DomainChildrenOptions} from './children.js';
 import {DomainAddress} from './address.js';
@@ -996,8 +996,7 @@ export class DomainApp extends Control {
   // a shared `?sort=` may name a column this caller may not read (the table does not describe it):
   // the server refuses the whole read for it, so it is dropped and the rest of the order kept
   private _sortable(sort: string): string {
-    const columns = new Set(this.table.properties.map((p) => p.name));
-    return sort.split(',').filter((key) => key !== '' && columns.has(key.replace(/^!/, ''))).join(',');
+    return sortable(sort, this.table.properties);
   }
 
   // `draft` is the create page: an entity of "new" without it is the row so keyed
