@@ -1,6 +1,6 @@
 ---
 name: datagrok-viewers
-description: Add a viewer, configure a viewer, change viewer options, find viewer, close viewer, view a scatter plot, bar chart, histogram, line chart, box plot, pie chart, heat map, correlation plot, 3D scatter, trellis, density plot, statistics, on a Datagrok TableView via the datagrok_exec tool. Use whenever the user asks to plot, chart, visualize, show a graph, draw a distribution, color by a column, swap a viewer's axis, toggle a legend / regression line / log scale, replace one viewer with another, close every chart, reset the view to just the grid, or find an existing viewer by type. Plugin viewers like "Chem space", "sequence space", "activity cliffs" are NOT viewer types — they're registered functions — route those to `grok.functions.call`. Does NOT cover filtering (separate skill `datagrok-filtering`), selection (`datagrok-selection`), grid cell rendering (`datagrok-grid-customization`), layout save/restore, or custom-viewer authoring.
+description: Add a viewer, configure a viewer, change viewer options, find viewer, close viewer, view a scatter plot, bar chart, histogram, line chart, box plot, pie chart, heat map, correlation plot, 3D scatter, trellis, density plot, tree map, statistics, on a Datagrok TableView via the datagrok_exec tool. Use whenever the user asks to plot, chart, visualize, show a graph, draw a distribution, color by a column, swap a viewer's axis, toggle a legend / regression line / log scale, replace one viewer with another, close every chart, reset the view to just the grid, or find an existing viewer by type. Plugin viewers like "Chem space", "sequence space", "activity cliffs" are NOT viewer types — they're registered functions — route those to `grok.functions.call`. Does NOT cover filtering (separate skill `datagrok-filtering`), selection (`datagrok-selection`), grid cell rendering (`datagrok-grid-customization`), layout save/restore, or custom-viewer authoring.
 ---
 
 # datagrok-viewers
@@ -93,7 +93,7 @@ Always use the `DG.VIEWER.*` constants, never literal strings:
 | `DG.VIEWER.SCATTER_PLOT_3D`    | `'3d scatter plot'`  | `xColumnName`, `yColumnName`, `zColumnName`, `colorColumnName`                    |
 | `DG.VIEWER.TRELLIS_PLOT`       | `'Trellis plot'`     | `xColumnNames`, `yColumnNames`, `viewerType`                                      |
 | `DG.VIEWER.PC_PLOT`            | `'PC Plot'`          | `columnNames`                                                                     |
-| `DG.VIEWER.TREE_MAP`           | `'Tree map'`         | `splitColumnNames`, `sizeColumnName`                                              |
+| `DG.VIEWER.TREE_MAP`           | `'Tree map'`         | `splitByColumnNames` (array), `sizeColumnName`, `colorColumnName` (numeric only, see below) |
 | `DG.VIEWER.MATRIX_PLOT`        | `'Matrix plot'`      | `xColumnNames`, `yColumnNames`                                                    |
 | `DG.VIEWER.FILTERS`            | `'Filters'`          | `columnNames` (see `datagrok-filtering` for the real filtering API)               |
 | `DG.VIEWER.FORM`               | `'Form'`             | `columnNames`                                                                     |
@@ -111,6 +111,28 @@ Always use the `DG.VIEWER.*` constants, never literal strings:
 | `DG.VIEWER.GRID`               | `'Grid'`             | (the main grid — `view.grid` is the typed accessor)                               |
 
 Full canonical list at runtime: `Object.values(DG.VIEWER)`.
+
+## Tree map colors
+
+With `colorColumnName` empty, a tree map colors each block by the category of
+its **last** split column. `colorColumnName` is numeric only: it averages the
+column per block (`colorAggrType`) on a grey-to-red scale, so a text column
+paints every block grey with no error and the verify still passes. To show
+how categories overlap, or to "color a tree map by" a text column, put that
+column last in `splitByColumnNames` and leave `colorColumnName` unset:
+
+```js
+view.addViewer(DG.VIEWER.TREE_MAP, {splitByColumnNames: ['sex', 'site', 'disease']});
+```
+
+## Describing a chart
+
+Say what the chart shows from counts computed for the groups it draws, in
+this turn: one read-only `datagrok_exec` grouping by the same columns. Name
+only combinations that the counts contain. Do not generalize ("every site
+has all three diseases", "the biggest block in each site") unless the counts
+show it for each group. You have not seen the picture, so do not describe
+colors or shapes you did not set and read back.
 
 ## Adding viewers
 
