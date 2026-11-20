@@ -7,6 +7,10 @@ export type RowState = '' | 'new' | 'modified' | 'deleted' | 'restored';
 /** What a landed batch answers: every draft id the writer stamped → the id the server gave. */
 export interface EditSaved {
   assigned: Record<string, string>;
+  /** Rows this writer's transaction wrote (inserts, updates, deletes). A backend that can drop
+   * pending changes inside a save (the platform session's RELOAD in the conflict dialog) says so
+   * here; absent, every pending row is taken as written. */
+  written?: number;
 }
 
 export interface EditState {
@@ -324,7 +328,7 @@ export class MemoryEditState implements EditState {
       }
     }
     this._settle();
-    this.onSaved.fire({assigned});
+    this.onSaved.fire({assigned, written: pending.length});
   }
 
   /** The draft id of every insert of the batch → the id the backend gave it. */

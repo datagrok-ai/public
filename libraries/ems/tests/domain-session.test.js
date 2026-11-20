@@ -963,3 +963,49 @@ scoped('a save refused as forbidden still holds Save and Ctrl+S; an ordinary ref
   save.dispose();
   projects.dispose();
 });
+
+// the platform session's RELOAD in the conflict dialog drops the conflicting writer's edits inside
+// `saveAll` and retries the rest: the backend still answers true, and says what each writer wrote
+function reloading(dropped) {
+  const real = emsBackends.domain.saveAll.bind(emsBackends.domain);
+  emsBackends.domain.saveAll = async (edits) => {
+    const kept = edits.filter((edit) => !dropped.some((s) => s.edit.peek() === edit));
+    const gone = edits.filter((edit) => !kept.includes(edit));
+    for (const edit of gone)
+      edit.discard();
+    const landed = await real(kept);
+    for (const edit of gone)
+      edit.onSaved.fire({assigned: {}, written: 0});
+    return landed;
+  };
+}
+
+scoped('EQ-007: every change reloaded away is announced as discarded, not saved, and save() says nothing landed', async () => {
+  emsBackends.domain = backend();
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  reloading([issues]);
+  issues.rows.byKey('i1').title = 'Mine';
+  assert.equal(session.changeCount.value, 1);
+  assert.equal(await session.save(), false, 'nothing landed');
+  assert.equal(balloon(), 'Reloaded; your changes were discarded');
+  assert.doesNotMatch(document.body.textContent, /saved/);
+  assert.equal(session.isDirty.value, false);
+  projects.dispose();
+  issues.dispose();
+});
+
+scoped('EQ-007: a mix of reloaded and landed changes announces only what landed', async () => {
+  emsBackends.domain = backend();
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  reloading([issues]);
+  issues.rows.byKey('i1').title = 'Mine';
+  projects.rows.byKey('p1').name = 'Grit 2';
+  assert.equal(session.changeCount.value, 2);
+  assert.equal(await session.save(), true, 'one change landed');
+  assert.equal(balloon(), 'Project saved');
+  assert.equal(emsBackends.domain.tableSync('grit.project').rows.find((r) => r.id === 'p1').name, 'Grit 2');
+  projects.dispose();
+  issues.dispose();
+});

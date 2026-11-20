@@ -107,7 +107,6 @@ export class SharedSession implements DomainSession {
     this._saving.value = true;
     this._refusal = undefined;
     try {
-      const changes = this.changeCount.peek();
       const batch = this._withReferenced(dirty);
       // what the batch DOES, read before it lands and empties the pending rows: a batch of deletes
       // alone is not "saved", it is deleted, and one of restores is restored — the balloon has to
@@ -126,7 +125,15 @@ export class SharedSession implements DomainSession {
       // must be about the id that parent was given. No prototype: what is read against this map is
       // any string a cell or a literal may hold, `constructor` among them
       const assigned: Record<string, string> = Object.create(null);
-      const heard = batch.map((s) => s.edit.peek()!.onSaved.subscribe((r) => Object.assign(assigned, r.assigned)));
+      // what each source had pending, and how much of it the backend then wrote: the platform
+      // session's RELOAD drops the conflicting row's edits inside the save and retries the rest
+      const before = new Map(batch.map((s) => [s, {changes: s.changeCount.peek(), rows: s.pending().length}]));
+      const written = new Map<DomainSource, number>();
+      const heard = batch.map((s) => s.edit.peek()!.onSaved.subscribe((r) => {
+        Object.assign(assigned, r.assigned);
+        if (r.written !== undefined)
+          written.set(s, (written.get(s) ?? 0) + r.written);
+      }));
       try {
         if (!await emsBackends.domain!.saveAll(batch.map((s) => s.edit.peek()!))) {
           const forbidden = batch.some((s) => s.edit.peek()?.problemCode === 'forbidden');
@@ -172,9 +179,23 @@ export class SharedSession implements DomainSession {
       } finally {
         SharedSession._hold(batch, false);
       }
-      const tables = new Set(batch.map((s) => s.table)).size;
-      notify.info(tables > 1 ? `${plural(changes, 'change', 'changes')} saved in ${tables} tables` :
-        SharedSession._landed(batch[0], changes, verb));
+      // the changes that landed, not the ones the user asked for: a source that wrote nothing had
+      // its edits reloaded away; one that wrote part of its rows counts those rows
+      const landing = batch.map((s) => {
+        const was = before.get(s)!;
+        const rows = written.get(s);
+        const dropped = rows === 0 && was.rows > 0;
+        return {source: s, changes: dropped ? 0 : rows === undefined || rows >= was.rows ? was.changes : Math.min(rows, was.changes),
+          dropped};
+      }).filter((l) => !l.dropped);
+      if (landing.length === 0) {
+        notify.info('Reloaded; your changes were discarded');
+        return false;
+      }
+      const landed = landing.reduce((n, l) => n + l.changes, 0);
+      const tables = new Set(landing.map((l) => l.source.table)).size;
+      notify.info(tables > 1 ? `${plural(landed, 'change', 'changes')} saved in ${tables} tables` :
+        SharedSession._landed(landing[0].source, landed, verb));
       this.onSaved.fire();
       return true;
     } finally {

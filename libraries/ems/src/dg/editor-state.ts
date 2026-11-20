@@ -56,7 +56,11 @@ export class EditorEditState implements EditState {
       }),
       editor.onDirtyChanged.subscribe((d) => dirty.value = d),
       editor.onSavingChanged.subscribe((s) => saving.value = s),
-      editor.onSaved.subscribe((r) => this.onSaved.fire({assigned: r.assigned})),
+      editor.onSaved.subscribe((r) => {
+        // an editor that reports no counters (an older js-api) wrote everything it had pending
+        const written = r.inserted + r.updated + r.deleted;
+        this.onSaved.fire(Number.isNaN(written) ? {assigned: r.assigned} : {assigned: r.assigned, written});
+      }),
       df.onValuesChanged.subscribe(drop),
       df.onRowsAdded.subscribe(drop),
       df.onRowsRemoved.subscribe(drop),
