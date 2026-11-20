@@ -169,3 +169,39 @@ scoped('Edit properties confirms the drops the server plans, not the client diff
   assert.equal(commit[1].confirmDestructive, true);
   assert.equal(await done, true);
 });
+
+scoped('Edit properties confirms a type change the server plans though nothing is dropped', async () => {
+  const calls = [];
+  // the client only adds a column; the server's plan also changes the type of one, which no drop shows
+  const server = {manifest: MANIFEST, extVersion: 96, plan: {destructive: true,
+    typeChanges: [{table: 'issue', column: 'mine', to: 'int'}]}};
+  stub(calls, server);
+  const done = domains.editProperties(NAME, 'issue');
+  await flush();
+  await flush();
+  await addProperty();
+  save();
+  await flush();
+  await flush();
+
+  const confirm = byKind(document, 'dialog').find((d) => state(d).name === 'properties-confirm');
+  assert.ok(confirm, 'a destructive plan asks before saving');
+  assert.match(confirm.textContent, /issue\.mine: type changes to int/, 'the confirmation lists the plan\'s type change');
+  const box = byName(confirm, 'confirmDestructive');
+  assert.equal(state(box).visible, true, 'the checkbox is shown');
+  assert.equal(state(box).label, 'Change the type of 1 column', 'the checkbox names what it consents to');
+  assert.equal(byName(confirm, 'SAVE').disabled, true, 'SAVE waits for the checkbox');
+  byName(confirm, 'SAVE').click();
+  await flush();
+  assert.deepEqual(commits(calls), [], 'nothing committed before the change is confirmed');
+
+  user.click(byName(box, 'Change the type of 1 column'));
+  await flush();
+  byName(confirm, 'SAVE').click();
+  await flush();
+  await flush();
+  const [commit] = commits(calls);
+  assert.ok(commit, 'the confirmed save commits');
+  assert.equal(commit[1].confirmDestructive, true);
+  assert.equal(await done, true);
+});

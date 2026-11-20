@@ -129,30 +129,47 @@ export class PropertyDialog {
     return true;
   }
 
-  // built from the server's plan, not from the client's diff: every drop the plan holds is listed, and a destructive
-  // plan always needs the checkbox, since SAVE sends confirmDestructive for the whole plan, drops the client never
-  // meant included
+  // built from the server's plan, not from the client's diff: every destructive entry the plan holds (what the
+  // server counts as destructive: drops, type, unique, auto-number and business-key changes, constraint drops) is
+  // listed unless a change of the user's already says it, and named in the checkbox a destructive plan always needs,
+  // since SAVE sends confirmDestructive for the whole plan, entries the client never meant included
   private static _confirm(changes: ManifestChange[], plan: DG.DomainApplyPlan): Promise<boolean> {
-    const note = (text: string): HTMLElement[] => [span(text, 'u2-binding-change-note')];
     const counted = (n: number | undefined, one: string, many: string): HTMLElement[] =>
-      n !== undefined && n > 0 ? note(`${plural(n, one, many)} deleted`) : [];
-    type Drop = DG.DomainApplyPlan['drops']['columns'][number];
-    const drop = (c: ManifestChange): Drop | undefined => !c.removes ? undefined : plan.drops.columns.find((d) =>
-      d.table === c.table && d.column === c.column);
-    const shown = new Set(changes.map(drop).filter((d) => d !== undefined));
+      n !== undefined && n > 0 ? [span(`${plural(n, one, many)} deleted`, 'u2-binding-change-note')] : [];
+    const removed = (table: string, column?: string): ManifestChange | undefined =>
+      changes.find((c) => c.removes && c.table === table && c.column === column);
+    // a type, unique or auto-number change the user made reads as their edit of that column's declaration
+    const edited = (table: string, column: string): boolean => changes.some((c) => c.table === table &&
+      c.column === column && (c.id.endsWith(':decl') || c.id.endsWith(':ref')));
+    const line = (text: string, notes: HTMLElement[] = []): HTMLElement =>
+      div([span(text), ...notes], 'u2-binding-change u2-binding-change-removes');
+    const {tables, columns} = plan.drops;
+    const constraints = Object.entries(plan.constraintDrops as {[table: string]: string[]} | null ?? {});
+    const autoNumbered = Object.entries(plan.autoNumberChanges ?? {})
+      .flatMap(([table, cs]) => cs.map((column) => ({table, column})));
+    // what a removal of the user's deletes, from the plan's counts
+    const lost = (c: ManifestChange): HTMLElement[] => !c.removes ? [] : c.column === undefined ?
+      counted(tables.find((t) => t.name === c.table)?.liveRows, 'row', 'rows') :
+      counted(columns.find((d) => d.table === c.table && d.column === c.column)?.nonNullValues, 'value', 'values');
     const lines = [
-      ...changes.map((c) => div([span(c.text), ...counted(drop(c)?.nonNullValues, 'value', 'values')],
+      ...changes.map((c) => div([span(c.text), ...lost(c)],
         `u2-binding-change${c.removes ? ' u2-binding-change-removes' : ''}`)),
-      ...plan.drops.tables.map((t) => div([span(`Table ${t.name} dropped`), ...counted(t.liveRows, 'row', 'rows')],
-        'u2-binding-change u2-binding-change-removes')),
-      ...plan.drops.columns.filter((d) => !shown.has(d)).map((d) => div([span(`Column ${d.table}.${d.column} dropped`),
-        ...counted(d.nonNullValues, 'value', 'values')], 'u2-binding-change u2-binding-change-removes')),
+      ...tables.filter((t) => removed(t.name) === undefined)
+        .map((t) => line(`Table ${t.name} dropped`, counted(t.liveRows, 'row', 'rows'))),
+      ...columns.filter((d) => removed(d.table, d.column) === undefined)
+        .map((d) => line(`Column ${d.table}.${d.column} dropped`, counted(d.nonNullValues, 'value', 'values'))),
+      ...(plan.typeChanges ?? []).filter((t) => !edited(t.table, t.column))
+        .map((t) => line(`Column ${t.table}.${t.column}: type changes to ${t.to}`)),
+      ...(plan.uniqueDrops ?? []).filter((u) => !edited(u.table, u.column))
+        .map((u) => line(`Column ${u.table}.${u.column}: unique constraint dropped`)),
+      ...autoNumbered.filter((a) => !edited(a.table, a.column))
+        .map((a) => line(`Column ${a.table}.${a.column}: auto-numbering changes`)),
+      ...(plan.businessKeyChanges ?? []).map((k) => line(`Table ${k.table}: business key ` +
+        (k.businessKey.length === 0 ? 'removed' : `changes to ${k.businessKey.join(', ')}`))),
+      ...constraints.flatMap(([table, names]) => names.map((k) => line(`Table ${table}: constraint ${k} dropped`))),
     ];
-    const values = plan.drops.columns.reduce((n, d) => n + (d.nonNullValues ?? 0), 0);
-    const rows = plan.drops.tables.reduce((n, t) => n + (t.liveRows ?? 0), 0);
-    const lost = [...(values > 0 ? [plural(values, 'stored value', 'stored values')] : []),
-      ...(rows > 0 ? [plural(rows, 'row', 'rows')] : [])];
-    const label = lost.length > 0 ? `Delete ${lost.join(' and ')}` : 'Apply the destructive changes';
+    const label = PropertyDialog._consent(plan, autoNumbered.length,
+      constraints.reduce((n, [, names]) => n + names.length, 0));
     const confirmed = signal(false);
     return new Promise((resolve) => {
       let answer = false;
@@ -160,10 +177,34 @@ export class PropertyDialog {
       const box = dialog.build(() => new BoolInput({label, name: 'confirmDestructive',
         onChanged: (v) => confirmed.value = v}));
       dialog.add(divV([...lines, box.root], 'u2-binding-changes'))
-        .okDisabled(computed(() => confirmed.value ? null : 'Confirm the deletion first'))
+        .okDisabled(computed(() => confirmed.value ? null : 'Confirm the destructive changes first'))
         .onOK(() => answer = true, {text: 'SAVE', primary: true})
         .onClose(() => resolve(answer))
         .show({width: 520});
     });
+  }
+
+  // the checkbox names everything the plan destroys, so ticking it is consent to all of it
+  private static _consent(plan: DG.DomainApplyPlan, autoNumbered: number, constraints: number): string {
+    const values = plan.drops.columns.reduce((n, d) => n + (d.nonNullValues ?? 0), 0);
+    const rows = plan.drops.tables.reduce((n, t) => n + (t.liveRows ?? 0), 0);
+    const uncounted = (n: number, total: number): number => total > 0 ? 0 : n;
+    const parts = [
+      ...(values > 0 ? [`delete ${plural(values, 'stored value', 'stored values')}`] : []),
+      ...(rows > 0 ? [`delete ${plural(rows, 'row', 'rows')}`] : []),
+      ...([
+        {n: uncounted(plan.drops.columns.length, values), verb: 'drop', one: 'column', many: 'columns'},
+        {n: uncounted(plan.drops.tables.length, rows), verb: 'drop', one: 'table', many: 'tables'},
+        {n: plan.typeChanges?.length ?? 0, verb: 'change the type of', one: 'column', many: 'columns'},
+        {n: plan.uniqueDrops?.length ?? 0, verb: 'drop', one: 'unique constraint', many: 'unique constraints'},
+        {n: autoNumbered, verb: 'change the auto-numbering of', one: 'column', many: 'columns'},
+        {n: plan.businessKeyChanges?.length ?? 0, verb: 'change', one: 'business key', many: 'business keys'},
+        {n: constraints, verb: 'drop', one: 'constraint', many: 'constraints'},
+      ]).filter((p) => p.n > 0).map((p) => `${p.verb} ${plural(p.n, p.one, p.many)}`),
+    ];
+    if (parts.length === 0)
+      return 'Apply the destructive changes';
+    const text = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
 }
