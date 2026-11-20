@@ -30,10 +30,8 @@ export class MolTrackTables {
   }
 
   static keyNumber(table: DomainTable, column: string, text: string): number | null {
-    const {prefix} = MolTrackTables.keyFormat(table, column);
-    const typed = text.trim().toUpperCase();
-    const digits = typed.startsWith(prefix) ? typed.slice(prefix.length) : typed;
-    return /^\d+$/.test(digits) ? Number(digits) : null;
+    const prop = table.properties.find((p) => p.name === column);
+    return prop === undefined ? null : DomainTable.parseKey(prop, text);
   }
 
   // the server captions a reference by the bare number
