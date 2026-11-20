@@ -1868,6 +1868,7 @@ scoped('EQ-042: a row page denied View builds no History or children panes', asy
 const FULL = {view: true, insert: true, edit: true, delete: true, share: true};
 const REASON = 'You cannot create issues: they need a value for Project id, which you cannot set. ' +
   'Ask the table\'s owner to share Project id with you.';
+const REASON_VIEW_ONLY = REASON.replace('share Project id with you', 'let you edit Project id');
 
 scoped('EQ-053: a required column the user cannot see or write turns New off and says why', async () => {
   // project_id and title are required with no default; project_id is not in the access, so it is hidden
@@ -1917,12 +1918,12 @@ scoped('EQ-053: a View-only required column turns New off too, and so do the emp
   document.body.append(a.root);
   await flush();
   const add = testOwner().build(() => a.ribbon()).main[0];
-  assert.equal(add.root.getAttribute('aria-description'), REASON, 'New is off for a View-only required column');
-  assert.equal(a.root.textContent.includes(REASON), true, 'the empty list says why instead of offering New');
+  assert.equal(add.root.getAttribute('aria-description'), REASON_VIEW_ONLY, 'New is off for a View-only required column');
+  assert.equal(a.root.textContent.includes(REASON_VIEW_ONLY), true, 'the empty list says why instead of offering New');
   assert.equal([...a.root.querySelectorAll('button')].some((b) => b.textContent === 'New issue'), false,
     'the empty list offers no New button');
   assert.equal(await a.create(), true);
   await flush();
-  assert.equal(a.root.textContent.includes(REASON), true, 'the /new page shows the reason');
+  assert.equal(a.root.textContent.includes(REASON_VIEW_ONLY), true, 'the /new page shows the reason');
   a.dispose();
 });

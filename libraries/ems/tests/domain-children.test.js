@@ -378,7 +378,7 @@ scoped('EQ-053: a children tab whose table needs a column the user cannot set ha
     const add = byKind(children, 'new-button')[0];
     assert.equal(add.disabled, true, `the children New is off (badge ${badge ?? 'hidden'})`);
     assert.equal(add.getAttribute('aria-description'), 'You cannot create contacts: they need a value for Badge, ' +
-      'which you cannot set. Ask the table\'s owner to share Badge with you.');
+      `which you cannot set. Ask the table's owner to ${badge === undefined ? 'share Badge with you' : 'let you edit Badge'}.`);
     children.dispose();
     parent.dispose();
   }
