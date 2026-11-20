@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Save: Fixed the disabled Save naming only "Value can't be empty" for an invalid grid cell; its reason names the row and the field, as the refusal does ("New container: Initial quantity: Value can't be empty")
 * Refusals: Fixed a refusal over a row whose title is emptied naming it by ids ("<project id>-1: Title: …"); a caption made of ids names the row by its place ("Issue 1"), a readable handler caption stays
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
