@@ -335,3 +335,27 @@ scoped('EQ-042: a child tab for a table the user cannot view says so, not "No co
   children.dispose();
   parent.dispose();
 });
+
+scoped('EQ-052: a child tab whose link to the parent is a column the user cannot read says so: no count, no New, no blank pane', async () => {
+  const memory = crm();
+  const contact = memory.tableSync('crm.contact');
+  const open = contact.access;
+  contact.access = () => open.call(contact).then((a) => {
+    const {company_id: _hidden, ...fields} = a.fields;
+    return {...a, fields: {...fields, company_id: 'hidden'}};
+  });
+  emsBackends.domain = memory;
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await settle();
+  await settle();
+  assert.match(children.root.textContent, /you cannot see how contacts link to this company/);
+  assert.doesNotMatch(children.root.textContent, /Contacts \(\d/, 'no count');
+  assert.doesNotMatch(children.root.textContent, /No contacts\./);
+  assert.equal(byKind(children, 'new-button')[0].hidden, true, 'no New that waits for a load that never comes');
+  children.dispose();
+  parent.dispose();
+});

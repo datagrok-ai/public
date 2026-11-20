@@ -149,6 +149,15 @@ export class DomainChildren extends Control {
       (code !== 'validation' && code !== DomainSource.REFUSED) ? null : DomainErrors.message(error, source);
   }
 
+  /** Why the tab cannot show its children, or null: the table is not viewable, or its link to the parent is a
+   * column the caller cannot read (the server refuses a filter, a default and a write on it). */
+  private _denied(entry: ChildEntry): string | null {
+    if (!entry.table.access.can('view'))
+      return DomainErrors.noAccess(entry.table.info);
+    return entry.table.access.field(entry.fk) !== 'hidden' ? null :
+      DomainErrors.noLink(entry.table.info, this.parent.schema.info);
+  }
+
   private async _count(entries: readonly ChildEntry[], row: RowView | null, pick: boolean): Promise<void> {
     for (const e of entries)
       this._tabStates.get(e.id)!.count.value = null;
@@ -156,7 +165,7 @@ export class DomainChildren extends Control {
       return;
     const opened = this.tabs.activeTab.peek();
     // a table the caller may not view answers a count of 0: not a count to show
-    const counts = await Promise.all(entries.map((e) => !e.table.access.can('view') ? null :
+    const counts = await Promise.all(entries.map((e) => this._denied(e) !== null ? null :
       e.table.table.count({filter: `${e.fk} = "${row.id}"`}).catch(() => null)));
     if (this.scope.isDisposed || this.parent.currentRow.peek()?.id !== row.id)
       return;
@@ -206,7 +215,7 @@ export class DomainChildren extends Control {
         const body = grid?.root ??
           divH([domains.list(child).root, domains.form(child).root], 'u2-domain-children-split');
         const empty = span(`No ${entry.label.toLowerCase()}.`, 'u2-domain-children-empty');
-        const denied = !entry.table.access.can('view') ? DomainErrors.noAccess(entry.table.info) : null;
+        const denied = this._denied(entry);
         const add = domains.newButton(child);
         // a list's form takes the focus itself; the grid needs it handed over once the button's own click has refocused it
         if (grid !== null)

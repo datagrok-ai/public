@@ -57,6 +57,13 @@ export class DomainErrors {
     return `You do not have access to ${nounOf(info)}. Ask the table's owner to share it with you.`;
   }
 
+  /** The wording for a child tab whose FK to the parent is a column the caller cannot read: the server refuses
+   * every read and write through that column, so the tab cannot show or add the children. */
+  static noLink(child: Parameters<typeof nounOf>[0], parent: Parameters<typeof nounOf>[0]): string {
+    return `You do not have access to ${nounOf(child)}: you cannot see how ${nounOf(child)} link to this ` +
+      `${nounOf(parent, true)}. Ask the table's owner to share the link column with you.`;
+  }
+
   /** One balloon; after a 403 the affordances were built from an access snapshot the server just
    * contradicted, so every cache of it goes. */
   static report(e: unknown, source?: DomainSource): NotifyHandle | null {
