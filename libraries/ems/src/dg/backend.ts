@@ -56,12 +56,21 @@ export class DgDomainBackend implements DomainBackend {
     this.invalidate();
   }
 
-  /** A refusal the server answered with 403. A js-api that carries the code says so; the one
-   * today's servers ship (`/js/api/js-api.js`, not bundled) has only the message, and Datlas's
-   * `_error` puts the bare code there when the 403 carries no sentence — the update and delete
-   * refusals (`repository.dart` `_mapWriteOutcome`) do not. */
+  /** A refusal the server answered with 403. A js-api that carries the code says so. The one today's
+   * servers ship (`/js/api/js-api.js`, not bundled) records no code in `lastRefusal`, only the message,
+   * and the 403 body's `error: 'forbidden'` is not reachable from it: the bare `forbidden` of an update
+   * or delete refusal (`repository.dart` `_mapWriteOutcome`), and the sentences of the insert refusal
+   * ("Insufficient privileges to insert into "<table>"", `repository.dart`) and of a schema-level one
+   * ("You don't have Edit permission on schema "<schema>"", `domains_service.dart`) are recognised by
+   * their stable prefix. */
   static isForbidden(refusal: {message?: string, code?: string} | null): boolean {
-    return refusal != null && (refusal.code === 'forbidden' || (refusal.code === undefined && refusal.message === 'forbidden'));
+    if (refusal == null)
+      return false;
+    if (refusal.code !== undefined)
+      return refusal.code === 'forbidden';
+    const message = refusal.message ?? '';
+    return message === 'forbidden' || message.startsWith('Insufficient privileges to ') ||
+      message.startsWith('You don\'t have ');
   }
 
   /** Every writer's batch as ONE `/transaction` through the js-api `DomainSession`, which owns

@@ -626,6 +626,36 @@ scoped('EQ-021: a save refused as forbidden re-gates the app and says so plainly
 scoped('EQ-021: the same on today\'s servers — their js-api refusal has no code, only the bare "forbidden"', () =>
   refusedAsForbidden({message: 'forbidden', editor: null}));
 
+scoped('EQ-055: a refused new record re-gates on today\'s servers — the insert refusal has no code and a sentence message', async () => {
+  const DG = await import('datagrok-api/dg');
+  const {DgDomainBackend} = await import('../src/dg/backend.js');
+  const refusals = [
+    {message: 'Insufficient privileges to insert into "grit.issue"', editor: null},
+    {message: 'You don\'t have Edit permission on schema "grit"', editor: null},
+    {message: 'Insufficient privileges to insert into "grit.issue"', editor: null, code: 'forbidden'},
+  ];
+  for (const refusal of refusals) {
+    const state = {problem: null, problemCode: null, editor: null, errorCells: () => [], retry: () => {}};
+    DG.DomainSession.next = refusal;
+    try {
+      assert.equal(await new DgDomainBackend().saveAll([state]), false);
+    } finally {
+      DG.DomainSession.next = true;
+    }
+    assert.equal(state.problemCode, 'forbidden', `"${refusal.message}" is a refusal as forbidden: access is re-read`);
+  }
+  for (const refusal of [{message: 'Ethanol still has 3 containers', editor: null}, {message: 'Too many version conflicts in a row', editor: null}]) {
+    const state = {problem: null, problemCode: null, editor: null, errorCells: () => [], retry: () => {}};
+    DG.DomainSession.next = refusal;
+    try {
+      await new DgDomainBackend().saveAll([state]);
+    } finally {
+      DG.DomainSession.next = true;
+    }
+    assert.equal(state.problemCode, null, `"${refusal.message}" is not forbidden`);
+  }
+});
+
 scoped('EQ-021: a save that throws forbidden drops the access caches before the sources re-read', async () => {
   const {app: a} = await app();
   const memory = emsBackends.domain;
