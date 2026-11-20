@@ -58,6 +58,8 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   private declare _slider: HTMLInputElement | null;
   /** Why the text in the field is no value, while it is not. */
   private declare _bad: Signal<string | null>;
+  // the text this input last wrote into the field; a blur over the same text is no edit
+  private declare _written: string;
 
   constructor(options: NumberInputOptions = {}) {
     super(options, null);
@@ -104,6 +106,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
 
   protected createEditor(): HTMLElement {
     this._bad = signal<string | null>(null);
+    this._written = '';
     this._slider = null;
     const input = document.createElement('input');
     this._input = input;
@@ -120,7 +123,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
         echo = false;
       // a float32 column echoes the typed value rounded: the typed text already says it
       else if (!NumberInput._sameFloat32(this._parse(input.value), value))
-        input.value = this._format(value);
+        this._show(this._format(value));
       this._syncSlider();
     });
     this.scope.listen(input, 'input', () => {
@@ -248,7 +251,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
 
   protected resetEditor(): void {
     this._bad.value = null;
-    this._input.value = this._format(this.peek());
+    this._show(this._format(this.peek()));
     this._syncSlider();
   }
 
@@ -256,7 +259,11 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     return this._bad.value !== null;
   }
 
+  // only text the user changed is an edit: a blur over the displayed text (rounded by a `format`)
+  // must not parse it back over the full-precision value
   private _commit(): void {
+    if (this._input.value === this._written)
+      return;
     const parsed = this._parse(this._input.value);
     if (parsed !== undefined)
       this._set(parsed);
@@ -265,8 +272,13 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   private _set(value: number | null): void {
     this._bad.value = null;
     this.value = value;
-    this._input.value = this._format(this.peek());
+    this._show(this._format(this.peek()));
     this._syncSlider();
+  }
+
+  private _show(text: string): void {
+    this._input.value = text;
+    this._written = text;
   }
 
   private _parse(text: string): number | null | undefined {
