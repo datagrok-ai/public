@@ -53,10 +53,7 @@ export class PropertyDialog {
     return new Set(Object.keys(tables).filter((t) => tables[t].extensible === true));
   }
 
-  /** The registered manifest with the `extVersion` an extension apply sends back as `ifVersion`. The manifest does
-   * not carry `ext_version`; a dry-run apply echoes it (`DomainApplyPlan.extVersion`), and an empty body plans
-   * nothing. The token is read FIRST: a change landing between the two reads makes it older than the manifest, a
-   * conflict and a reload, never a save over columns this dialog did not see. */
+  // manifest() has no ext_version, a dry-run plan does; read it first, so a race is a conflict, never an overwrite
   private static async _baseline(handle: DG.DomainSchemaClient): Promise<ManifestJson> {
     const {extVersion} = await handle.apply({}, {dryRun: true});
     if (extVersion === undefined)
