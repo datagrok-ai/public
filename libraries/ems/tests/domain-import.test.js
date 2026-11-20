@@ -6,7 +6,8 @@ import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {backends, Scope, Control, notify} from '@datagrok-libraries/u2';
-import {SCHEMA, backend} from './domain-fixtures.mjs';
+import {SCHEMA, ROWS, backend} from './domain-fixtures.mjs';
+import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -42,6 +43,7 @@ const importButton = () => [...document.body.querySelectorAll('.u2-dialog button
 const named = (name) => Control.forElement(document.querySelector(`[data-u2-name="${name}"]`));
 const reason = () => document.body.querySelector('.u2-wizard-reason')?.textContent ?? '';
 const mapping = () => document.body.querySelector('.u2-domain-import-mapping');
+const reportText = () => document.body.querySelector('.u2-domain-import-report').textContent;
 const issues = (memory) => memory.tableSync('grit.issue').rows;
 /** The outcome a step leads with, one entry per count. */
 const counts = (step) => [...document.body.querySelectorAll(`.u2-domain-import-${step} .u2-domain-import-count`)]
@@ -323,7 +325,7 @@ scoped('a refused row leaves nothing behind and the report says so', async () =>
   fire(importButton(), 'click');
   await flush();
   assert.equal(issues(memory).length, 3, 'nothing was committed');
-  const shown = document.body.querySelector('.u2-domain-import-report').textContent;
+  const shown = reportText();
   assert.match(shown, /Import aborted — 1 row has errors/);
   assert.match(shown, /Uncheck "All or nothing" to import the 1 valid row and skip the rest\./,
     'an aborted all-or-nothing run says what to change');
@@ -489,7 +491,7 @@ scoped('an aborted run on a storage without partial imports never recommends the
   await toPreview();
   fire(importButton(), 'click');
   await flush();
-  const shown = document.body.querySelector('.u2-domain-import-report').textContent;
+  const shown = reportText();
   assert.match(shown, /Import aborted — 1 row has errors/);
   assert.doesNotMatch(shown, /Uncheck "All or nothing"/);
   assert.notEqual(reportBack(), undefined, 'the way back is still the mapping');
@@ -530,7 +532,7 @@ scoped('a warehouse refusal — the failing rows and no totals — still renders
   await toPreview();
   fire(importButton(), 'click');
   await flush();
-  const shown = document.body.querySelector('.u2-domain-import-report').textContent;
+  const shown = reportText();
   assert.match(shown, /Import aborted — 1 row has errors; nothing was committed\./);
   assert.match(shown, /Title is already used/, 'the row error is listed, a unique refusal in words');
   assert.notEqual(reportBack(), undefined, 'the way back stands');
@@ -574,4 +576,306 @@ scoped('an importer maps, derives and keeps rows out, and makes the preview its 
   const report = await running;
   assert.deepEqual(report.rows.map((r) => [r.index, r.status]), [[0, 'inserted'], [1, 'skipped'], [2, 'skipped'], [3, 'error']]);
   assert.equal(memory.tableSync('grit.project').rows.find((r) => r.key === 'NEW')?.description, 'About New');
+});
+
+/** The server itemizes at most 1,000 rows of a batch report (`maxBatchReportRows` in `batch_loader.dart`) —
+ * errors, then duplicates, then updates, then inserts — and counts them all. */
+function capped(table) {
+  const batch = table.batch.bind(table);
+  const rank = {error: 0, duplicate: 1, updated: 2, merged: 2, inserted: 3};
+  table.batch = async (rows, options) => {
+    const report = await batch(rows, options);
+    return {...report, rows: [...report.rows].sort((a, b) => rank[a.status] - rank[b.status] || a.index - b.index)
+      .slice(0, 1000)};
+  };
+}
+
+/** Imports `source` into `grit.project` and answers the report's text and the column written back. */
+async function importProjects(memory, source, allOrNothing, mode = 'insert') {
+  // the frame double has no string column to add: the write-back's column is kept here
+  const written = [];
+  source.columns.getUnusedName = (name) => source.columns.names().some((n) => n.toLowerCase() === name.toLowerCase()) ?
+    `${name} (2)` : name;
+  source.columns.addNewString = (name) => ({name, init(value) {
+    for (let i = 0; i < source.rowCount; i++)
+      written.push(value(i));
+    return this;
+  }});
+  emsBackends.domain = memory;
+  const projects = await domains.table('grit.project');
+  const running = testOwner().build(() => domains.import(projects, {source}));
+  await flush();
+  named('allOrNothing').value = allOrNothing;
+  await toMapping();
+  named('mode').value = mode;
+  await flush();
+  await toPreview();
+  fire(importButton(), 'click');
+  for (let i = 0; i < 5; i++)
+    await flush();
+  const shown = reportText();
+  fire(buttonNamed('CLOSE'), 'click');
+  await running;
+  return {shown, written};
+}
+
+const projectRows = (count, prefix) => Array.from({length: count}, (_, i) =>
+  ({key: `${prefix}-${String(i + 1).padStart(4, '0')}`, name: `Project ${i + 1}`}));
+
+for (const allOrNothing of [true, false]) {
+  scoped(`a commit past the 1,000 rows the server itemizes still reports and writes back every row's key ` +
+    `(all or nothing ${allOrNothing ? 'on' : 'off'})`, async () => {
+    const memory = backend();
+    capped(memory.tableSync('grit.project'));
+    const rows = [...projectRows(1200, 'BIG'), {key: 'GRIT', name: 'Grit again'}];
+    const {shown, written} = await importProjects(memory, frame(['key', 'name'], rows), allOrNothing);
+    assert.match(shown, /1,200 added/);
+    assert.equal(written.filter((key, i) => key !== rows[i].key).length, 0,
+      'every imported row has its key written back, past the 1,000 rows the server itemizes');
+    assert.doesNotMatch(shown, /not itemized/);
+  });
+}
+
+scoped('rows the server leaves out of its report and that cannot be told apart are counted, not left blank', async () => {
+  const memory = backend();
+  const projects = memory.tableSync('grit.project');
+  // 1,050 updates fill the itemized 1,000; the 150 inserts after them could be either
+  projects.batch = async (rows) => ({inserted: 150, updated: 1050, skipped: 0, errorCount: 0,
+    rows: rows.slice(0, 1000).map((_, index) => ({index, id: 'p1', status: 'updated'}))});
+  const {shown, written} = await importProjects(memory, frame(['key', 'name'], projectRows(1200, 'MIX')), false,
+    'upsert');
+  assert.match(shown, /200 rows are not itemized by the server/);
+  assert.match(shown, /empty for the 200 rows not itemized/);
+  assert.equal(written.filter((key) => key === '').length, 200);
+});
+
+const UID = '5d1f2a4e-0b6c-4c1e-9a53-7a3f0e6b9c10';
+const text = () => document.body.textContent;
+
+scoped('a login in a user column is refused in the preview as a missing user id, and the mapping says so', async () => {
+  const memory = backend();
+  const {running} = await opened(memory, frame(['project_id', 'title', 'reporter'],
+    [{project_id: 'p1', title: 'A', reporter: 'admin'}, {project_id: 'p1', title: 'B', reporter: UID}]));
+  await toMapping();
+  assert.match(text(), /Reporter takes a user id \(uuid\), not a login or name/,
+    'the mapping step says the column takes user ids');
+  await toPreview();
+  assert.match(text(), /Reporter: expected a user id \(uuid\), got "admin"/, 'the preview names the field and what it expects');
+  assert.deepEqual(counts('preview'), ['1 to add', '1 error'], 'only the login row is refused');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
+scoped('a user id in any case, an empty or a missing cell passes; a padded one is refused as the server refuses it',
+  async () => {
+    const memory = backend();
+    const {running} = await opened(memory, frame(['project_id', 'number', 'title', 'reporter'],
+      [{project_id: 'p1', number: '14', title: 'D', reporter: ` ${UID} `},
+        {project_id: 'p1', number: '11', title: 'A', reporter: UID.toUpperCase()},
+        {project_id: 'p1', number: '12', title: 'B', reporter: ''},
+        {project_id: 'p1', number: '13', title: 'C', reporter: null}]));
+    await toMapping();
+    await toPreview();
+    assert.deepEqual(counts('preview'), ['3 to add', '1 error']);
+    assert.match(text(), new RegExp(`Reporter: expected a user id \\(uuid\\), got " ${UID} "`));
+    fire(buttonNamed('CANCEL'), 'click');
+    assert.equal(await running, null);
+  });
+
+scoped('a name in a group column is refused as a missing group id, and the mapping says so', async () => {
+  const issue = SCHEMA.tables.issue;
+  const withTeam = {...SCHEMA, tables: {...SCHEMA.tables, issue: {...issue, columns: {...issue.columns, team: {type: 'group'}}}}};
+  const memory = new MemoryDomainBackend(withTeam, {rows: Object.fromEntries(
+    Object.entries(ROWS).map(([t, list]) => [t, list.map((r) => ({...r}))]))});
+  const {running} = await opened(memory, frame(['project_id', 'title', 'team'],
+    [{project_id: 'p1', title: 'A', team: 'Developers'}, {project_id: 'p1', title: 'B', team: UID}]));
+  await toMapping();
+  assert.match(text(), /Team takes a group id \(uuid\), not a group name/);
+  await toPreview();
+  assert.match(text(), /Team: expected a group id \(uuid\), got "Developers"/);
+  assert.deepEqual(counts('preview'), ['1 to add', '1 error']);
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
+scoped('an unmapped user column neither hints nor refuses', async () => {
+  const memory = backend();
+  const {running} = await opened(memory, frame(['project_id', 'title', 'who'],
+    [{project_id: 'p1', title: 'A', who: 'admin'}]));
+  await toMapping();
+  assert.equal(named('who').value, '(skip)');
+  assert.doesNotMatch(text(), /takes a user id/);
+  await toPreview();
+  assert.doesNotMatch(text(), /expected a user id/);
+  assert.deepEqual(counts('preview'), ['1 to add']);
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
+/** The server's answer to a batch a table CHECK fails (`repository.dart` `_mapPgError`): the statement aborts, so
+ * the dry run and the commit both get HTTP 409 `{error: 'validation', rows: [...]}` pinned on row 0, which the
+ * js-api client resolves rather than rejects — no `validateOnly`, no counts, no `status` or `predicted`. */
+function checkRefusing(memory, {constraint = 'weight_positive', message = 'Weight is positive',
+  when = (rows) => rows.some((r) => Number(r.weight) < 0)} = {}) {
+  const issue = memory.tableSync('grit.issue');
+  const refuse = (rows) => when(rows) ? {error: 'validation', rows: [{index: 0, id: null,
+    errors: [{column: null, code: 'check', message, constraint}]}]} : null;
+  const validate = issue.validate?.bind(issue);
+  const batch = issue.batch.bind(issue);
+  if (validate !== undefined)
+    issue.validate = async (rows, options) => refuse(rows) ?? validate(rows, options);
+  issue.batch = async (rows, options) => refuse(rows) ?? batch(rows, options);
+  return issue;
+}
+
+const weighted = () => frame(['project_id', 'title', 'weight'], [{project_id: 'p1', title: 'QA-A', weight: '1'},
+  {project_id: 'p1', title: 'QA-B', weight: '-1'}, {project_id: 'p1', title: 'QA-C', weight: '2'},
+  {project_id: 'p1', title: 'QA-D', weight: '-3'}]);
+
+async function rowCells(step) {
+  const rows = document.body.querySelector(`.u2-domain-import-${step} .u2-domain-import-rows`);
+  layout(rows, {clientHeight: 400});
+  fire(rows, 'scroll');
+  await flush();
+  return [...rows.querySelectorAll('.u2-data-table-row')].map((r) => [...r.children].map((c) => c.textContent).join('|'));
+}
+
+for (const allOrNothing of [true, false]) {
+  scoped(`a dry run the server refuses whole over a table CHECK names the rows that break it and offers no import ` +
+    `(all or nothing ${allOrNothing ? 'on' : 'off'})`, async () => {
+    const memory = backend();
+    checkRefusing(memory);
+    const {running} = await opened(memory, weighted());
+    named('allOrNothing').value = allOrNothing;
+    await toMapping();
+    await toPreview();
+    assert.doesNotMatch(importButton().textContent, /NaN/, 'the import button never counts NaN rows');
+    assert.deepEqual(counts('preview'), ['2 errors'], 'the refused rows are counted, not "Nothing to import"');
+    assert.deepEqual(await rowCells('preview'), ['1||p1|QA-A|1|', '2|Error|p1|QA-B|-1|Weight is positive',
+      '3||p1|QA-C|2|', '4|Error|p1|QA-D|-3|Weight is positive'], 'the constraint message is under the rows that break it');
+    assert.match(reason(), /The server refuses the whole batch — Weight is positive\. Nothing would be imported/);
+    assert.equal(importButton().disabled, true, 'nothing would land: the button is off');
+    fire(buttonNamed('CANCEL'), 'click');
+    assert.equal(await running, null);
+  });
+}
+
+scoped('a commit the server refuses whole reports each row that breaks the CHECK as an error with its message',
+  async () => {
+    const memory = backend();
+    noDryRun(memory);
+    checkRefusing(memory);
+    const {running} = await opened(memory, weighted());
+    named('allOrNothing').value = false;
+    await toMapping();
+    await toPreview();
+    fire(importButton(), 'click');
+    for (let i = 0; i < 3; i++)
+      await flush();
+    assert.match(reportText(), /Import aborted — 2 rows have errors; nothing was committed\./);
+    assert.deepEqual((await rowCells('report')).map((r) => r.split('|').filter((c) => c !== '').join('|')),
+      ['1|Not imported|Another row has errors', '2|Error|Weight is positive', '3|Not imported|Another row has errors',
+        '4|Error|Weight is positive'], 'a row carrying errors is an error, whatever its status');
+    fire(buttonNamed('CLOSE'), 'click');
+    await running;
+    assert.equal(issues(memory).length, 3, 'nothing landed');
+  });
+
+/** The preview of `source` over a backend whose dry run is refused as `refusal` says; answers what it shows. */
+async function refusedPreview(source, refusal, memory = backend()) {
+  checkRefusing(memory, refusal);
+  const {running} = await opened(memory, source);
+  await toMapping();
+  await toPreview();
+  const shown = {cells: await rowCells('preview'), counts: counts('preview'), problems: [text()], reason: reason(),
+    disabled: importButton().disabled, button: importButton().textContent};
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+  return shown;
+}
+
+const unplaced = /The server refuses the whole batch — .*; it does not say which row, and no row here breaks it\./;
+
+scoped('a refused CHECK whose constraint the table does not declare stays on the batch, on no row', async () => {
+  const shown = await refusedPreview(weighted(), {constraint: 'nonesuch', message: 'Something is off'});
+  assert.equal(shown.cells.some((c) => /Something is off/.test(c)), false, 'no row is guessed');
+  assert.deepEqual(shown.counts, ['Refused by the server']);
+  assert.match(shown.problems.join('\n'), unplaced);
+  assert.match(shown.reason, /The server refuses the whole batch — Something is off\./);
+  assert.equal(shown.disabled, true);
+  assert.doesNotMatch(shown.button, /NaN/);
+});
+
+scoped('a refused CHECK the browser cannot evaluate stays on the batch and keeps the button off', async () => {
+  const issue = SCHEMA.tables.issue;
+  const floored = {...SCHEMA, tables: {...SCHEMA.tables, issue: {...issue,
+    constraints: {...issue.constraints, floor: {expr: 'weight >= $min', message: 'Weight is under the floor'}}}}};
+  const memory = new MemoryDomainBackend(floored, {rows: Object.fromEntries(
+    Object.entries(ROWS).map(([t, list]) => [t, list.map((r) => ({...r}))]))});
+  const shown = await refusedPreview(weighted(), {constraint: 'floor', message: 'Weight is under the floor'}, memory);
+  assert.equal(shown.cells.some((c) => /under the floor/.test(c)), false);
+  assert.match(shown.problems.join('\n'), unplaced);
+  assert.equal(shown.disabled, true, 'a throwing check is no reason to turn the button back on');
+});
+
+scoped('a refused CHECK no row here breaks (an update keeps its stored weight) stays on the batch', async () => {
+  // the stored row would break it once merged: the payload does not carry the column
+  const shown = await refusedPreview(frame(['project_id', 'number', 'title'], [{project_id: 'p1', number: '1',
+    title: 'QA-Renamed'}, {project_id: 'p1', number: '9', title: 'QA-New'}]), {when: () => true});
+  assert.equal(shown.cells.some((c) => /Weight is positive/.test(c)), false);
+  assert.match(shown.problems.join('\n'), unplaced);
+  assert.equal(shown.disabled, true);
+});
+
+scoped('an empty weight passes the CHECK as SQL reads it; the offender past the rows shown is named in the note',
+  async () => {
+    const rows = Array.from({length: 30}, (_, i) => ({project_id: 'p1', title: `QA-${i + 1}`,
+      weight: i === 1 ? '' : i === 24 ? '-1' : '1'}));
+    const shown = await refusedPreview(frame(['project_id', 'title', 'weight'], rows));
+    assert.equal(shown.cells[1], '2||p1|QA-2||', 'a NULL in the checked column is not an offender');
+    assert.equal(shown.cells.some((c) => /Weight is positive/.test(c)), false, 'row 25 is past the rows shown');
+    assert.deepEqual(shown.counts, ['1 error']);
+    assert.match(shown.problems.join('\n'), /The server refuses the whole batch — Weight is positive \(row 25\)\./);
+  });
+
+scoped('a commit the server refuses whole names the offender past the 1,000 rows previewed, and does not say ' +
+  'to uncheck All or nothing', async () => {
+  const memory = backend();
+  checkRefusing(memory);
+  const rows = Array.from({length: 1005}, (_, i) => ({project_id: 'p1', title: `QA-${i + 1}`,
+    weight: i === 1003 ? '-2' : '1'}));
+  const {running} = await opened(memory, frame(['project_id', 'title', 'weight'], rows));
+  await toMapping();
+  await toPreview();
+  assert.equal(importButton().disabled, false, 'the first 1,000 rows pass the dry run');
+  fire(importButton(), 'click');
+  for (let i = 0; i < 3; i++)
+    await flush();
+  const shown = reportText();
+  assert.match(shown, /Import aborted — 1 row has errors; nothing was committed\./);
+  assert.match(shown, /The server refuses the whole batch — Weight is positive \(row 1,004\)\./);
+  assert.doesNotMatch(shown, /Uncheck "All or nothing"/, 'unchecking it cannot help a statement the server refuses');
+  fire(buttonNamed('CLOSE'), 'click');
+  const report = await running;
+  assert.deepEqual(report.rows.filter((r) => r.errors?.length).map((r) => r.index), [1003]);
+});
+
+scoped('a commit refused over a CHECK no row breaks reports it on the batch, on no row', async () => {
+  const memory = backend();
+  noDryRun(memory);
+  checkRefusing(memory, {when: () => true});
+  const {running} = await opened(memory, frame(['project_id', 'title', 'weight'],
+    [{project_id: 'p1', title: 'QA-A', weight: '1'}, {project_id: 'p1', title: 'QA-B', weight: '2'}]));
+  named('allOrNothing').value = false;
+  await toMapping();
+  await toPreview();
+  fire(importButton(), 'click');
+  for (let i = 0; i < 3; i++)
+    await flush();
+  const shown = reportText();
+  assert.match(shown, /Import aborted — the server refused the whole batch; nothing was committed\./);
+  assert.match(shown, /The server refuses the whole batch — Weight is positive; it does not say which row/);
+  assert.equal((await rowCells('report')).some((c) => /Error/.test(c)), false, 'no row is guessed');
+  fire(buttonNamed('CLOSE'), 'click');
+  await running;
 });
