@@ -1025,6 +1025,24 @@ scoped('a schema constraint refuses Save with its message; fixing the value clea
   src.dispose();
 });
 
+scoped('an int field refuses a number beyond the 32-bit range: the field says so and the row keeps its value', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  form.input('number').value = 3000000000;
+  await flush();
+  assert.equal(form.input('number').validity.value, 'Value must be at most 2147483647',
+    'an int column wraps 3000000000 to -1294967296; the server refuses it');
+  assert.equal(src.rows.byKey('i1').number, 1, 'the out-of-range number never reaches the row');
+  assert.equal(await src.save(), false);
+  form.input('number').value = 2147483647;
+  await flush();
+  assert.equal(form.input('number').validity.value, null, 'the largest int is still accepted');
+  form.dispose();
+  src.dispose();
+});
+
 scoped('a constraint naming a column the caller may not see is left to the server', async () => {
   emsBackends.domain = backend({access: {can: CAN, fields: {title: 'editable', number: 'editable', project_id: 'editable'}}});
   const {src} = await issues();

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Forms: Fixed an int field accepting a number beyond 2,147,483,647 and saving it wrapped (3000000000 became -1294967296): the field says "Value must be at most 2147483647" and nothing reaches the row
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input

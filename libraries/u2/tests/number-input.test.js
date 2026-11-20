@@ -48,6 +48,22 @@ function type(input, text) {
   return el;
 }
 
+smoke('an int input without bounds is held to the int32 range; a float input is not', () => {
+  const input = mount(new NumberInput({label: 'Count', mode: 'int'}));
+  type(input, '3000000000');
+  assert.equal(input.validity.value, 'Value must be at most 2147483647');
+  type(input, '-2147483649');
+  assert.equal(input.validity.value, 'Value must be at least -2147483648');
+  type(input, '2147483647');
+  assert.equal(input.validity.value, null);
+  const wide = mount(new NumberInput({label: 'Wide', mode: 'int', max: 5000000000}));
+  type(wide, '3000000000');
+  assert.equal(wide.validity.value, 'Value must be at most 2147483647', 'a declared bound never widens the range');
+  const float = mount(new NumberInput({label: 'Mass'}));
+  type(float, '3000000000');
+  assert.equal(float.validity.value, null);
+});
+
 smoke('out-of-range text stays on screen, reaches the value, and only marks the input invalid', () => {
   const input = mount(new NumberInput({label: 'Dose', min: 0, max: 100}));
   type(input, '1000');
