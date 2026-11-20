@@ -11,7 +11,7 @@ export type {ManifestEditorOptions, ManifestPlan, PlannedGrant, PlannedRestricti
 export type {DraftEnvelope, DraftInventory, InventoryTable, InventoryColumn, InventoryRelation, ManifestJson,
   ManifestTableJson, ManifestColumnJson, ManifestStorageJson, ManifestDiagnostic, ManifestSelection, TableView,
   ColumnView, RelationView, DriftView, ManifestChange, ManifestPatch, RebaseOp, RebaseReport, ManifestModelOptions,
-  AccessGrant, AccessCapability, ColumnVisibility, AccessJson, AccessSnapshot, AccessSnapshotTable,
+  ManifestOwnership, AccessGrant, AccessCapability, ColumnVisibility, AccessJson, AccessSnapshot, AccessSnapshotTable,
   AccessSnapshotColumn, AccessSnapshotGrant, AccessSnapshotGroup, AccessDelta, AccessTriple, AccessRestriction,
   AccessEditOptions}
   from './manifest-model.js';

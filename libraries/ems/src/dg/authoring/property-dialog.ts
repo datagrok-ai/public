@@ -5,12 +5,15 @@ import {computed, div, divV, span, plural, statusLine, signal, Signal, Dialog, B
 import {DomainErrors} from '../errors.js';
 import {BindingWizard} from './binding-dialog.js';
 import {ManifestEditor} from './manifest-editor.js';
-import type {ManifestChange, ManifestJson} from './manifest-model.js';
+import type {ManifestChange, ManifestJson, ManifestOwnership} from './manifest-model.js';
 
 const OPTIONS = ['friendlyName', 'description', 'choices', 'min', 'max', 'format'] as const;
 
 export class PropertyDialog {
   private static readonly _extensible = new Map<string, Promise<Set<string>>>();
+
+  static readonly UNSUPPORTED = 'Edit properties is unavailable on this server version: it cannot report which ' +
+    'columns you added, and saving without that could delete them';
 
   static extensible(schema: string): Promise<Set<string>> {
     let tables = PropertyDialog._extensible.get(schema);
@@ -23,11 +26,11 @@ export class PropertyDialog {
     if ((await PropertyDialog.extensible(schema)).size === 0)
       throw new Error(`You may not add properties to ${schema}`);
     const handle = grok.dapi.domains.schema(schema);
-    const manifest = await handle.manifest() as unknown as ManifestJson;
+    const {manifest, ownership} = await PropertyDialog._baseline(handle);
     const name = table === undefined ? manifest.name : manifest.tables[table]?.['singularName'] as string ?? table;
     const dialog = Dialog.create(`${name.charAt(0).toUpperCase()}${name.slice(1)} properties`, {name: 'properties'});
     const editor = dialog.build(() => new ManifestEditor(null, {context: {mode: 'extend', storage: 'domain'},
-      baseline: manifest, columnOptions: OPTIONS.map((option) => DG.Property.propertyOptions[option]!)}));
+      baseline: manifest, ownership, columnOptions: OPTIONS.map((option) => DG.Property.propertyOptions[option]!)}));
     const changes = computed(() => {
       editor.model.revision.value;
       return editor.model.changes();
@@ -53,6 +56,48 @@ export class PropertyDialog {
     return new Set(Object.keys(tables).filter((t) => tables[t].extensible === true));
   }
 
+  // manifest() has no ext_version, a dry-run plan does; read the token FIRST, then the manifest and the ownership,
+  // so a change landing between the reads is a conflict and a reload, never an overwrite or a dropped column
+  private static async _baseline(handle: DG.DomainSchemaClient): Promise<{manifest: ManifestJson,
+    ownership: ManifestOwnership}> {
+    const {extVersion} = await handle.apply({}, {dryRun: true});
+    if (extVersion === undefined)
+      throw new Error(`${handle.name} answered no extension version: properties cannot be saved safely`);
+    const manifest = await handle.manifest() as unknown as ManifestJson;
+    const ownership = await PropertyDialog._ownership(handle.name);
+    for (const table of Object.keys(manifest.tables)) {
+      if (ownership[table] === undefined)
+        throw new Error(`${handle.name}.${table} is not in the registry yet: reload and try again`);
+    }
+    return {manifest: {...manifest, extVersion: String(extVersion)}, ownership};
+  }
+
+  // who owns each column, from the registry: the manifest never says, and a column read as the plugin's is left
+  // out of the full-state extension, which the server takes as dropping it with its values. A server whose API
+  // cannot say (older than DomainTable.userColumns) is refused: a patch with unknown ownership is never sent
+  private static async _ownership(schema: string): Promise<ManifestOwnership> {
+    const entity = (await grok.dapi.domains.schemas.include('tables.columns.property').list())
+      .find((s) => s.name === schema);
+    if (entity === undefined)
+      throw new Error(`${schema} is not a registered schema`);
+    const ownership: ManifestOwnership = {};
+    for (const t of entity.tables) {
+      let origin: unknown;
+      let userColumns: unknown;
+      try {
+        origin = t.origin;
+        userColumns = t.userColumns;
+      } catch {
+        // a js-api that declares the getters over a client that does not register them
+      }
+      if ((origin !== 'package' && origin !== 'user') || !Array.isArray(userColumns) ||
+        !userColumns.every((c) => typeof c === 'string'))
+        throw new Error(PropertyDialog.UNSUPPORTED);
+      ownership[t.name] = {origin, userColumns: userColumns as string[]};
+    }
+    return ownership;
+  }
+
   private static async _save(handle: DG.DomainSchemaClient, editor: ManifestEditor,
     reloaded: Signal<string | null>): Promise<boolean> {
     const {payload, changes} = editor.extendPlan();
@@ -72,8 +117,8 @@ export class PropertyDialog {
         editor.diagnostics.value = BindingWizard.issues(e);
         throw new Error(DomainErrors.message(e));
       }
-      const report = editor.rebase(await handle.manifest() as unknown as ManifestJson, null, null,
-        {friendlyName: '', description: ''});
+      const {manifest, ownership} = await PropertyDialog._baseline(handle);
+      const report = editor.rebase(manifest, null, null, {friendlyName: '', description: '', ownership});
       const lost = [...report.conflicts, ...report.dropped].map((op) => op.note ?? `${op.text} no longer applies`);
       reloaded.value = 'Someone else changed these properties meanwhile; reloaded with your edits on top. ' +
         `${lost.length > 0 ? `${lost.join('; ')}. ` : ''}Review and save again.`;
