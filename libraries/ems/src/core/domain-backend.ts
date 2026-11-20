@@ -135,7 +135,8 @@ export interface DomainProbeLike {
  * schema or `'<schema>.<table>'`; an insert may name itself with `ref`, and any op's value
  * `'$<ref>'` — earlier or later in the batch — is replaced by that row's id. */
 export interface DomainTransactionOpLike {
-  /** A `restore` carries `id` alone and undoes a landed soft delete — the Delete grant, not a new one. */
+  /** A `restore` carries `id` (and `expectedVersion`) and undoes a landed soft delete — the Delete
+   * grant, not a new one. */
   op: 'insert' | 'update' | 'delete' | 'restore';
   table: string;
   ref?: string;

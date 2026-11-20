@@ -275,6 +275,7 @@ category('Dapi: domain frame editor', () => {
 
       const del = ops.find((o) => o.op === 'delete')!;
       expect(del.id, df.get('id', 2), 'the delete addresses the wrong row');
+      expect(del.expectedVersion, df.get('version', 2), 'the delete lost its optimistic-concurrency guard');
 
       // A row that was added and then deleted never reached the server: no op.
       const ghost = editor.addRow({sku: `${prefix}-ghost`, name: 'Ghost', quantity: 0});
@@ -379,8 +380,8 @@ category('Dapi: domain frame editor', () => {
       expect(ops.length, 1, `a staged restore built ${ops.length} ops`);
       expect(ops[0].op.op, 'restore', `the op is not a restore: ${JSON.stringify(ops[0].op)}`);
       expect(`${ops[0].op.id}`, ids[0], 'the restore op does not name the row');
-      expect(ops[0].op.values === undefined && ops[0].op.expectedVersion === undefined, true,
-        `a restore op carries its id alone: ${JSON.stringify(ops[0].op)}`);
+      expect(ops[0].op.values === undefined && ops[0].op.expectedVersion === versionBefore, true,
+        `a restore op carries its id and the version it read: ${JSON.stringify(ops[0].op)}`);
 
       expect(await editor.save(), true, 'save() failed');
       expect(editor.isDirty, false, 'the editor stayed dirty after the restore landed');

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Save: Fixed a delete or restore of a record another session changed meanwhile landing silently over the change: the ops carry the version the record was read at, and a stale one is refused as a version conflict (the conflict dialog on the platform) like a stale edit; the memory backend refuses it too. The server honours the version once core passes it to delete and restore; until then it is ignored
 * EMS-032: Fixed a refused new record (Edit or Insert revoked meanwhile) not re-gating the app on today's servers: their refusal carries no code and says "Insufficient privileges to insert into …", which is now recognised as forbidden like the bare "forbidden" of an update or delete, so New and the ⋯ menu go
 * Save: Fixed the balloon announcing changes as saved after RELOAD in the conflict dialog dropped them ("Item saved", "2 changes saved" with one landed): it counts only what the server wrote, says "Reloaded; your changes were discarded" when every change was reloaded away, and `save()` then answers false
 * Save: Fixed Save and Ctrl+S staying off after the server refused a save whose cause was then removed elsewhere (the clashing row deleted in another tab); the refusal stays shown on the field and the status line, and Save sends the batch again for the server to decide. A client error and a save refused as forbidden still hold Save

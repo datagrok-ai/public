@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Domains: `DomainFrameEditor.buildOps` sends `expectedVersion` on delete and restore ops of a version-guarded table, so a stale delete or restore goes through the reload/overwrite conflict dialog like a stale update once the server honours it (servers before that ignore the key)
 * Domains: `DomainSession.lastRefusal.code` carries the server's error code (`'forbidden'` for a 403), so a host can tell a revoked grant from any other refusal
 * Chem: Added `DG.chem.ISketcherOptions`, the third argument of `new DG.chem.Sketcher(mode, validationFunc, options)`: `sketcherType` shows that sketcher in the host whatever the session's (`DG.chem.currentSketcherType`, left as it is), and `showInput: false` leaves out the host's input row (the molecule field and its ≡ menu), the sketcher taking the whole host (Chem's Sketcher app)
 * Chem: Fixed `DG.chem.Sketcher` leaving the context panel on an earlier drawing: `grok.shell.o` keeps an object set as current for a second, so a drawing made within a second of the host's last one never became the current object; the host's next drawing now replaces its own last one (anything else made current since is replaced as before)

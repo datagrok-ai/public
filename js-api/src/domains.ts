@@ -1333,8 +1333,9 @@ export interface DomainTransactionOp {
   ref?: string;
   values?: object;
   id?: string;
-  /** Optimistic-concurrency guard for update ops on a platform-stored table
-   * (`support.concurrency === 'version'`). */
+  /** Optimistic-concurrency guard for update, delete and restore ops on a platform-stored table
+   * (`support.concurrency === 'version'`). Servers that predate the delete and restore guard
+   * ignore it on those ops. */
   expectedVersion?: number;
   /** Old-value guard for update ops on an external table (`support.concurrency === 'expected'`):
    * the columns' values as last read, every one AND-ed to the key; a mismatch refuses the whole

@@ -252,7 +252,12 @@ export class MemoryDomainBackend implements DomainBackend {
         entry(op.op, row.id as string, null, {...row});
       } else if (at < 0)
         throw new DomainBackendError('not-found', `Operation ${index}: no row "${id}"`);
-      else if (op.op === 'delete') {
+      else if (op.op === 'restore' && rows[at][IS_DELETED] !== true)
+        throw new DomainBackendError('not-found', `Operation ${index}: no deleted row "${id}"`);
+      else if (op.expectedVersion !== undefined && rows[at].version !== op.expectedVersion) {
+        throw new DomainBackendError('version-conflict',
+          `Operation ${index}: row "${id}" is at version ${rows[at].version}, expected ${op.expectedVersion}`);
+      } else if (op.op === 'delete') {
         // the server's FK veto the child-first ordering exists to beat; a child already in the
         // trash holds nothing back
         for (const child of this._tables.values()) {
@@ -267,8 +272,6 @@ export class MemoryDomainBackend implements DomainBackend {
         rows[at] = table.stamp({...rows[at], [IS_DELETED]: true}, (rows[at].version as number) + 1);
         results[index] = {id};
       } else if (op.op === 'restore') {
-        if (rows[at][IS_DELETED] !== true)
-          throw new DomainBackendError('not-found', `Operation ${index}: no deleted row "${id}"`);
         for (const [column, target] of Object.entries(table.refs)) {
           const parentTable = this._tables.get(target);
           const parent = parentTable === undefined ? undefined :
@@ -283,10 +286,6 @@ export class MemoryDomainBackend implements DomainBackend {
         rows[at] = row;
         results[index] = MemoryDomainBackend._stamped(row, row.version as number);
       } else {
-        if (op.expectedVersion !== undefined && rows[at].version !== op.expectedVersion) {
-          throw new DomainBackendError('version-conflict',
-            `Operation ${index}: row "${id}" is at version ${rows[at].version}, expected ${op.expectedVersion}`);
-        }
         const moved = Object.keys(op.expected ?? {})
           .filter((c) => rows[at][c] !== resolve(op.expected![c], index));
         if (moved.length > 0) {

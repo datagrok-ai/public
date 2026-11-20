@@ -277,10 +277,11 @@ export class MemoryEditState implements EditState {
       const state = row[Rows.STATE] as RowState | undefined;
       const values: Row = {};
       const writable = this._writable(row);
+      const guard = typeof row.version === 'number' ? {expectedVersion: row.version} : {};
       if (state === 'deleted')
-        pending.push({row, op: {op: 'delete', table, id: String(row.id)}});
+        pending.push({row, op: {op: 'delete', table, id: String(row.id), ...guard}});
       else if (state === 'restored')
-        pending.push({row, op: {op: 'restore', table, id: String(row.id)}});
+        pending.push({row, op: {op: 'restore', table, id: String(row.id), ...guard}});
       else if (state === 'new') {
         for (const name of writable) {
           if (row[name] != null)
@@ -292,11 +293,8 @@ export class MemoryEditState implements EditState {
           if (writable.includes(name))
             values[name] = MemoryEditState._reference(row[name]);
         }
-        if (Object.keys(values).length > 0) {
-          const version = row.version;
-          pending.push({row, op: {op: 'update', table, id: String(row.id), values,
-            ...(typeof version === 'number' ? {expectedVersion: version} : {})}});
-        }
+        if (Object.keys(values).length > 0)
+          pending.push({row, op: {op: 'update', table, id: String(row.id), values, ...guard}});
       }
     }
     return pending;
