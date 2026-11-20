@@ -305,6 +305,9 @@ export class MemoryEditState implements EditState {
         Object.assign(row, results[i]);
         if (op.op === 'restore' && Rows.DELETED in row)
           row[Rows.DELETED] = false;
+        // the platform editor's post-save re-read writes a list cell back as its JSON text
+        for (const prop of this._table.properties)
+          row[prop.name!] = MemoryEditState.frameCell(prop, row[prop.name!]);
       }
     }
     this.df.rows.splice(0, this.df.rowCount, ...this.df.rows.filter((row) => !removed.has(row)));
@@ -349,6 +352,17 @@ export class MemoryEditState implements EditState {
         return `Must be at most ${prop.max}`;
     }
     return null;
+  }
+
+  /** A stored value as the platform frame holds it: `queryDf` and the post-save re-read give a
+   * `string_list` cell as the JSON text of the list, in a string column. */
+  static frameCell(prop: IProperty, value: unknown): unknown {
+    return MemoryEditState.isTextList(prop) && Array.isArray(value) ? JSON.stringify(value) : value;
+  }
+
+  /** Whether the frame holds `prop` as text where the store holds a list — see {@link frameCell}. */
+  static isTextList(prop: IProperty): boolean {
+    return (prop.propertyType ?? prop.type) === 'string_list';
   }
 
   private static _reference(v: unknown): unknown {

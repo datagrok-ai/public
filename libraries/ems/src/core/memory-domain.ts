@@ -236,7 +236,8 @@ export class MemoryDomainBackend implements DomainBackend {
       const op = ops[index];
       const table = tables[index];
       const rows = rowsOf(table);
-      const values = Object.fromEntries(Object.entries(op.values ?? {}).map(([k, v]) => [k, resolve(v, index)]));
+      const values = Object.fromEntries(Object.entries(op.values ?? {})
+        .map(([k, v]) => [k, resolve(table.decode(k, v, index), index)]));
       const id = op.op === 'insert' ? undefined : String(resolve(op.id, index));
       const at = rows.findIndex((row) => row.id === id);
       const entry = (name: string, rowId: string, prior: Row | null, next: Row | null): void => {
@@ -466,13 +467,14 @@ export class MemoryTable implements DomainTableLike {
   async frame(spec: DomainQueryLike): Promise<DomainFrameLike> {
     const [rows, access] = await Promise.all([this.query(spec), this.access()]);
     const columns: MemoryColumn[] = [
-      ...this.properties.map((p) => ({name: p.name!, type: p.propertyType ?? p.type ?? 'string', semType: p.semType})),
+      ...this.properties.map((p) => ({name: p.name!,
+        type: MemoryEditState.isTextList(p) ? 'string' : p.propertyType ?? p.type ?? 'string', semType: p.semType})),
       {name: Rows.STATE, type: 'string'},
       ...(spec.withAccess ? Access.ROW_COLUMNS.map(([name]) => ({name, type: 'bool'})) : []),
       ...(spec.deleted === undefined || spec.deleted === 'exclude' ? [] : [{name: Rows.DELETED, type: 'bool'}]),
       ...(spec.captions ?? []).map((name) => ({name: Rows.caption(name), type: 'string'})),
     ];
-    const df = new MemoryFrame(columns, rows);
+    const df = new MemoryFrame(columns, rows.map((row) => this._frameRow(row)));
     // a frame over deleted rows is read-only until they are restored — the same upper bound
     // `DomainSource.access` publishes, so the writer and the controls agree
     const bound = Access.from(access);
@@ -482,13 +484,21 @@ export class MemoryTable implements DomainTableLike {
       df,
       edit,
       append: async (page) => {
-        const more = await this.query(page);
+        const more = (await this.query(page)).map((row) => this._frameRow(row));
         df.rows.push(...more);
         df.onRowsAdded.fire(undefined);
         return more.length;
       },
       dispose: () => edit.dispose(),
     };
+  }
+
+  // a queried row as the platform frame holds it (`MemoryEditState.frameCell`)
+  private _frameRow(row: Row): Row {
+    for (const prop of this.properties)
+      if (prop.name! in row)
+        row[prop.name!] = MemoryEditState.frameCell(prop, row[prop.name!]);
+    return row;
   }
 
   async count(scope: DomainReadScope = {}): Promise<number> {
@@ -716,6 +726,23 @@ export class MemoryTable implements DomainTableLike {
       if (problem !== null)
         throw new DomainBackendError('validation', `Operation ${index}: column "${prop.name}": ${problem}`);
     }
+  }
+
+  /** A written value as the server coerces it (`DomainBatchLoader._coerceCell`): a `string_list`
+   * sent as text — what the platform frame holds — is the JSON array it encodes, its items text. */
+  decode(column: string, value: unknown, index: number): unknown {
+    const prop = this.properties.find((p) => p.name === column);
+    if (prop === undefined || !MemoryEditState.isTextList(prop) || typeof value !== 'string')
+      return value;
+    let list: unknown;
+    try {
+      list = JSON.parse(value);
+    } catch (_) {
+      list = undefined;
+    }
+    if (!Array.isArray(list) || list.some((x) => typeof x === 'object' && x !== null))
+      throw new DomainBackendError('validation', `Operation ${index}: Cannot convert "${value}" to string_list`);
+    return list.map((x) => `${x}`);
   }
 
   withDefaults(values: Row): Row {
