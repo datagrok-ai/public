@@ -8,6 +8,7 @@ import {SharedSession} from '../src/core/session.js';
 import {backend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
+const DG = await import('datagrok-api/dg');
 const {domains} = await import('../src/dg/facade.js');
 const {DomainApp} = await import('../src/dg/app.js');
 
@@ -154,6 +155,27 @@ scoped('the writer\'s own cell refusal names the row and the field, and marks th
   await flush();
   assert.equal(await source.save(), true);
   source.dispose();
+});
+
+scoped('a refusal over a saved row whose handler caption is only ids names the row by its place', async () => {
+  class IdHandle extends DG.DomainObjectHandler {
+    getCaption(x) { return `${x.values.project_id}-${x.values.number}`; }
+  }
+  DG.ObjectHandler.register(new IdHandle('grit.issue'));
+  try {
+    emsBackends.domain = backend();
+    const table = await domains.table('grit.issue');
+    const source = testOwner().build(() => table.source({}));
+    await flush();
+    source.rows.byKey('i2').title = '';
+    await flush();
+    assert.equal(await source.save(), false);
+    assert.equal(source.error.value.message, 'Cannot save: Issue 2: Title: Value can\'t be empty',
+      'the place, not the project id and the number');
+    source.dispose();
+  } finally {
+    DG.ObjectHandler.registered.length = 0;
+  }
 });
 
 scoped('the validators run over a row the frame filter hides — the writer sends it all the same', async () => {
