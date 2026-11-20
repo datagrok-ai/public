@@ -479,8 +479,18 @@ export class DomainApp extends Control {
     if (this._ribbon !== undefined)
       return this._ribbon;
     const singular = nounOf(this.table.info, true);
+    // a required column the caller cannot set makes every Save fail: say so before they type
+    const blocked = computed(() => {
+      const source = this.listSource;
+      // the access is only known once the table is loaded
+      if (source.edit.value === undefined)
+        return null;
+      const names = DomainTable.unsettable(source.schema.properties, source.schema.info, source.access.value)
+        .map((p) => DomainTable.captionOf(p));
+      return names.length === 0 ? null : DomainErrors.noRequired(source.schema.info, names);
+    });
     const add = new Control(this.build(() =>
-      iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`})));
+      iconButton('plus', () => void this.create(), {tooltip: `New ${singular}`, disabled: blocked})));
     add.root.dataset.u2 = 'new-button';
     // in the trash the slot stays, so SAVE and DISCARD do not move
     add.effect(() => {

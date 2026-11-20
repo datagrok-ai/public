@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Apps: Fixed a new item's read-only field saying "assigned on save" when nothing fills it (a column the user can only view, with no default), and New being offered on a table with a required column the user cannot see or write, where every Save failed with `Value for "secret" is required`: the field now shows empty, and New is off saying "New issues need a value for secret, which you can't set. Ask the table's owner." (this lands after the no-View children tab)
 * Apps: Fixed a children tab whose link to the parent is a column the user cannot read staying blank with a New stuck on "Loading…": it says the user cannot see how the children link to this item, with no count and no New (this lands after the no-View children tab)
 * Apps: Fixed a user without View on a related table being told it is empty: a children tab says the user has no access to the table instead of "No contacts." and a count of 0, a reference picker over it says so instead of "No contacts yet", and a row page denied View builds no History or children panes
 * Apps: Fixed a user without View on the table being told "No items yet" on the list and `Item "<id>" was not found.` on a row's page: both now say the user has no access to the table and to ask its owner, with no New, Save or Discard. A row opened from a list loaded before View was revoked drops the cached access once and reads it again, instead of saying the row was not found

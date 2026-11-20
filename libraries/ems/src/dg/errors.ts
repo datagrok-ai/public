@@ -64,6 +64,12 @@ export class DomainErrors {
       `${nounOf(parent, true)}. Ask the table's owner to share the link column with you.`;
   }
 
+  /** The wording for New on a table with required columns the caller cannot set: every Save would be refused. */
+  static noRequired(info: Parameters<typeof nounOf>[0], columns: readonly string[]): string {
+    return `New ${nounOf(info)} need a value for ${columns.join(', ')}, which you can't set. ` +
+      `Ask the table's owner.`;
+  }
+
   /** One balloon; after a 403 the affordances were built from an access snapshot the server just
    * contradicted, so every cache of it goes. */
   static report(e: unknown, source?: DomainSource): NotifyHandle | null {
