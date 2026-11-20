@@ -3,6 +3,7 @@
 ## v.next
 
 * Lists: Fixed scrolling while another session writes repeating a row (after an insert) or skipping one (after a delete or an update that moves a row): after each page the source checks that the row its window ended on is still at that offset, and when it moved re-reads the window and the total, as after its own save; a page never appends a row the list already holds, and "N of M" is recounted when the last page lands. Over pending changes the list shows "Data changed" instead of dropping them, and re-bases on the next page once they are saved or discarded. Known limits: an insert and a delete before the window that cancel out are not seen; with ties on the sort column (EMS-082) a page may re-read the window with nothing written
+* Live refresh: Fixed saving in another view of the same table (an issue saved from its project page) silently discarding an entity page's unsaved child rows (a new or edited comment): a source whose session has pending changes is no longer reloaded under them; it shows "Data changed" with Refresh instead
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input

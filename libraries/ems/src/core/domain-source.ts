@@ -658,7 +658,14 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     // clears the stale mark as a reload does, or "Data changed — Refresh" would stand for good
     this._isStale.value = false;
     for (const source of DomainSource.live) {
-      if (source !== this && source.table === this.table && !source.isDirty.peek())
+      if (source === this || source.table !== this.table)
+        continue;
+      // pending changes anywhere in its session — its own rows, or a child collection under its
+      // current row that the reload's `_drop` would dispose — are never someone else's to throw
+      // away: the source is marked behind the server instead, as a live probe marks it
+      if (source.isDirty.peek() || source.session.isDirty.peek())
+        source._isStale.value = true;
+      else
         source.refresh().catch((e) => source.fail(e));
     }
     if (!this._noRows && this._table !== undefined) {
