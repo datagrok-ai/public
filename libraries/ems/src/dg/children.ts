@@ -155,7 +155,8 @@ export class DomainChildren extends Control {
     if (row === null || Rows.isDraft(row))
       return;
     const opened = this.tabs.activeTab.peek();
-    const counts = await Promise.all(entries.map((e) =>
+    // a table the caller may not view answers a count of 0: not a count to show
+    const counts = await Promise.all(entries.map((e) => !e.table.access.can('view') ? null :
       e.table.table.count({filter: `${e.fk} = "${row.id}"`}).catch(() => null)));
     if (this.scope.isDisposed || this.parent.currentRow.peek()?.id !== row.id)
       return;
@@ -205,6 +206,7 @@ export class DomainChildren extends Control {
         const body = grid?.root ??
           divH([domains.list(child).root, domains.form(child).root], 'u2-domain-children-split');
         const empty = span(`No ${entry.label.toLowerCase()}.`, 'u2-domain-children-empty');
+        const denied = !entry.table.access.can('view') ? DomainErrors.noAccess(entry.table.info) : null;
         const add = domains.newButton(child);
         // a list's form takes the focus itself; the grid needs it handed over once the button's own click has refocused it
         if (grid !== null)
@@ -212,11 +214,14 @@ export class DomainChildren extends Control {
         pane.replaceChildren(divH([add.root], 'u2-domain-children-toolbar'), body, empty);
         pending.effect(() => {
           const ready = child.state.value === 'ready';
-          const none = ready && child.rows.items.value.length === 0;
+          const none = ready && (denied !== null || child.rows.items.value.length === 0);
+          if (denied !== null)
+            empty.textContent = denied;
+          add.root.hidden = denied !== null;
           empty.hidden = !none;
           body.hidden = none;
           state.blank.value = none;
-          if (ready && !draft)
+          if (ready && !draft && denied === null)
             state.count.value = child.total.value;
         });
       }));

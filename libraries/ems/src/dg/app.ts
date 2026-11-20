@@ -1048,6 +1048,14 @@ export class DomainApp extends Control {
         const rows = source.rows.items.value;
         if (source.state.value !== 'ready')
           return;
+        // a table the caller may not view has no history or children to show: the form says so
+        if (!source.access.value.can('view') && this._panes.length > 0) {
+          for (const pane of this._panes)
+            pane.dispose();
+          this._panes = [];
+          this.panes.replaceChildren();
+          return;
+        }
         if (rows.length > 0 && source.currentRow.peek() === null)
           source.currentRow.value = rows[0];
         else if (rows.length === 0 && !rechecked && source.access.peek().can('view')) {

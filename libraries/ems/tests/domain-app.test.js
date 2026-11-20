@@ -1849,3 +1849,18 @@ scoped('View revoked after the list loaded: the row opened from it re-reads the 
   assert.deepEqual([save.root.hidden, discard.root.hidden], [true, true]);
   a.dispose();
 });
+
+scoped('EQ-042: a row page denied View builds no History or children panes', async () => {
+  emsBackends.domain = backend({rows: {project: [], issue: []},
+    access: {can: {view: false, insert: false, edit: false, delete: false, share: false}, fields: {}}});
+  const table = await domains.table('grit.project');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await flush();
+  assert.equal(await a.goTo('entity', UUID), true);
+  await flush();
+  await flush();
+  assert.match(byKind(a, 'domain-form')[0].textContent, /You do not have access to projects\./);
+  assert.equal(a.panes.children.length, 0, 'no History or children for a table that cannot be viewed');
+  a.dispose();
+});

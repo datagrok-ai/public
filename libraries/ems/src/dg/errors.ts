@@ -49,7 +49,12 @@ export class DomainErrors {
   static noView(source: DomainSource): string | null {
     if (source.access.value.can('view'))
       return null;
-    return `You do not have access to ${nounOf(source.schema.info)}. Ask the table's owner to share it with you.`;
+    return DomainErrors.noAccess(source.schema.info);
+  }
+
+  /** The no-View wording for a table whose access is known without a source (a picker's target). */
+  static noAccess(info: Parameters<typeof nounOf>[0]): string {
+    return `You do not have access to ${nounOf(info)}. Ask the table's owner to share it with you.`;
   }
 
   /** One balloon; after a 403 the affordances were built from an access snapshot the server just
