@@ -313,3 +313,51 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
   children.dispose();
   parent.dispose();
 });
+
+scoped('a child grid row deletes from its context menu: staged in the parent\'s session, deleted by the Save', async () => {
+  emsBackends.domain = crm();
+  const grok = await import('datagrok-api/grok');
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {tables: ['contact']}));
+  await settle();
+  const contacts = children.child(CONTACTS);
+  const grid = [...platform.widgets].find((w) => w.type === 'Grid' && children.root.contains(w.root));
+  assert.notEqual(grid, undefined, 'the tab hosts the grid');
+  const at = Array.from({length: grid.dataFrame.rowCount}, (_, i) => grid.dataFrame.get('id', i)).indexOf('k1');
+  const items = [];
+  const menu = {item: (text, run) => items.push({text, run})};
+  grok.events.onContextMenu.fire({args: {context: grid, item: {isTableCell: true, tableRowIndex: at, grid}, menu}});
+  assert.deepEqual(items.map((i) => i.text), ['Delete'], 'the row\'s menu offers Delete');
+  items.find((i) => i.text === 'Delete').run();
+  await flush();
+  assert.equal(contacts.rows.byKey('k1')[Rows.STATE], 'deleted', 'staged, not sent');
+  assert.equal(parent.session.isDirty.value, true, 'the parent\'s Save/Discard holds it');
+  assert.equal(await emsBackends.domain.tableSync('crm.contact').count({filter: 'id = "k1"'}), 1);
+  assert.equal(await parent.session.save(), true);
+  assert.equal(await emsBackends.domain.tableSync('crm.contact').count({filter: 'id = "k1"'}), 0,
+    'the Save deletes it');
+  children.dispose();
+  parent.dispose();
+});
+
+scoped('a child grid row offers no Delete where the caller may not delete', async () => {
+  emsBackends.domain = new MemoryDomainBackend(SCHEMA, {access: {can: {delete: false}},
+    rows: Object.fromEntries(Object.entries(ROWS).map(([t, list]) => [t, list.map((r) => ({...r}))]))});
+  const grok = await import('datagrok-api/grok');
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {tables: ['contact']}));
+  await settle();
+  const grid = [...platform.widgets].find((w) => w.type === 'Grid' && children.root.contains(w.root));
+  const items = [];
+  grok.events.onContextMenu.fire({args: {context: grid, item: {isTableCell: true, tableRowIndex: 0, grid},
+    menu: {item: (text) => items.push(text)}}});
+  assert.deepEqual(items, []);
+  children.dispose();
+  parent.dispose();
+});

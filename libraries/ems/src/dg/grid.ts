@@ -1,4 +1,5 @@
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import {Control, signal, text, textWidth, Dates, span, timestamp, DataTable, Rows} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, IProperty, ObjectRenderer, CellStateLike, DataTableColumn,
   RowView} from '@datagrok-libraries/u2';
@@ -11,7 +12,7 @@ import {EditorEditState} from './editor-state.js';
 import {DomainTable} from './facade.js';
 import type {DomainAction} from './facade.js';
 import {DomainForm} from './form.js';
-import {pageOnScroll} from './list.js';
+import {DomainList, pageOnScroll} from './list.js';
 
 export interface DomainGridOptions {
   /** The grid's look, each option a value or a signal the grid follows. */
@@ -87,6 +88,16 @@ export class DomainGrid extends Control {
       const row = source.rows.byKey(String(cell.grid.dataFrame.get('id', cell.tableRowIndex!)));
       if (row !== undefined && !Rows.isDraft(row))
         open.run(row);
+    });
+    // the platform's grid menu over a row takes the row's staged Delete (Restore once marked), as a list row's
+    type GridMenu = {args?: {context?: DG.Grid, item?: DG.GridCell, menu?: DG.Menu}};
+    this.subscribe(grok.events.onContextMenu, (e: GridMenu) => {
+      const {context, item, menu} = e.args ?? {};
+      if (menu === undefined || context?.dart !== this.grid.dart || item?.isTableCell !== true)
+        return;
+      const row = source.rows.byKey(String(item.grid.dataFrame.get('id', item.tableRowIndex!)));
+      for (const action of row === undefined ? [] : DomainList.stagedDelete(source, row))
+        menu.item(action.text, action.run);
     });
     this.own(() => {
       repointed.unsubscribe();
