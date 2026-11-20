@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Lists: Fixed scrolling while another session writes repeating a row (after an insert) or skipping one (after a delete): before appending a page the source checks that the row its window ends on is still at that offset, and when it moved re-reads the window and the total, as after its own save; over pending changes it shows "Data changed" instead of dropping them
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input

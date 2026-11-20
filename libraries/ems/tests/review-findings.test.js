@@ -257,6 +257,55 @@ scoped('finding 4: an update that takes the row out of the query re-bases it as 
     src.dispose();
   });
 
+// EQ-025: the same shift made by ANOTHER session's write between two pages — nothing re-based it
+scoped('EQ-025: another session\'s insert before the window does not repeat a row on the next page', {}, async () => {
+    const be = backend();
+    emsBackends.domain = be;
+    const src = await issues({pageSize: 2, sort: 'title'});
+    assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Aspirin', 'Ibuprofen']);
+    const other = await be.table('grit.issue');
+    await other.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 7, title: 'Acetaminophen'}}]);
+    await src.loadMore();
+    assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Acetaminophen', 'Aspirin', 'Ibuprofen', 'Naproxen'],
+      'no row twice, and the inserted one is shown');
+    assert.equal(src.total.value, 4, 'the total follows the write');
+    src.dispose();
+  });
+
+scoped('EQ-025: another session\'s delete before the window does not skip a row on the next page', {}, async () => {
+    const be = backend();
+    emsBackends.domain = be;
+    const src = await issues({pageSize: 2, sort: 'title'});
+    assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Aspirin', 'Ibuprofen']);
+    const other = await be.table('grit.issue');
+    await other.transaction([{op: 'delete', table: 'issue', id: 'i1'}]);
+    await src.loadMore();
+    await src.loadMore();
+    assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Ibuprofen', 'Naproxen'],
+      'the row behind the deleted one is not skipped, and the deleted one is gone');
+    assert.equal(src.total.value, 2, 'the total follows the write');
+    src.dispose();
+  });
+
+scoped('EQ-025: over pending changes the shift is reported, never re-read away', {}, async () => {
+    const be = backend();
+    emsBackends.domain = be;
+    const src = await issues({pageSize: 2, sort: 'title'});
+    src.rows.byKey('i2').title = 'Ibuprofen edited';
+    const other = await be.table('grit.issue');
+    await other.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 7, title: 'Acetaminophen'}}]);
+    await src.loadMore();
+    assert.equal(src.isDirty.value, true, 'the edit is still pending');
+    assert.equal(src.rows.byKey('i2').title, 'Ibuprofen edited');
+    assert.equal(src.stale.value, true, 'the source says the data changed');
+    assert.deepEqual(src.rows.items.value.map((r) => r.id), ['i1', 'i2'], 'and appends no page that would repeat a row');
+    src.edit.value.discard();
+    await src.loadMore();
+    assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Acetaminophen', 'Aspirin', 'Ibuprofen', 'Naproxen'],
+      'once the changes are gone the next page re-bases');
+    src.dispose();
+  });
+
 // ───────────────────────── 5. every standalone save leaks a session ─────────────────────────────
 
 /** The participant surface `DomainSession` subscribes to and drives; an empty batch is enough —
