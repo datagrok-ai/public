@@ -412,6 +412,46 @@ category('Crux sketcher', () => {
     }
   });
 
+  // run20 STAND S-004: the filter's text box gave Crux `[NH2]c1ccccc1` as SMILES, which drops a bracket atom's H count:
+  // the filter searched any N on benzene (264 of mol1K's rows where the text finds 11), and `[CH3]c` drew nothing. A
+  // substructure filter's host now sets such a text as SMARTS; a sketcher outside a filter still takes it as a molecule.
+  test('a typed bracket H count stays the query\'s in the substructure filter', async () => {
+    // the text typed, in a filter or not; molecules the drawn query finds, and ones it misses
+    const rows: [string, boolean, string[], string[]][] = [
+      ['[NH2]c1ccccc1', true, ['Nc1ccccc1'], ['CNc1ccccc1']],
+      ['[CH3]c', true, ['Cc1ccccc1'], ['CCc1ccccc1']],
+      ['c1cc[nH]c1', true, ['c1cc[nH]c1'], ['Cn1cccc1']],
+      ['[NH2]c1ccccc1', false, ['Nc1ccccc1', 'CNc1ccccc1'], []],
+    ];
+    const problems: string[] = [];
+    for (const filter of [true, false]) {
+      const s = await openCrux(undefined, filter);
+      try {
+        for (const [text, , finds, misses] of rows.filter((r) => r[1] === filter)) {
+          const before = cruxElement(s)!.smarts;
+          s.host.setValue(text);
+          for (let i = 0; i < 30 && cruxElement(s)!.smarts === before; i++)
+            await delay(100);
+          await cruxSettled(s.host.sketcher!);
+          const smarts = cruxElement(s)!.smarts;
+          const where = `${text} ${filter ? 'in a filter' : 'outside a filter'}, drawn as "${smarts}"`;
+          // the filter's key (chem-substructure-filter.ts getSketcherMolecule): read as a query, not as a molecule
+          const key = s.host.sketcher!.explicitMol?.value ?? s.host.getMolFile();
+          if (filter && !DG.chem.isMolBlock(key) && !DG.chem.isSmarts(key))
+            problems.push(`${where}: the filter's key "${key}" reads as a molecule`);
+          for (const [target, want] of [...finds.map((t) => [t, true] as const), ...misses.map((t) => [t, false] as const)]) {
+            const got = smarts !== '' && matchSets(target, smarts) !== '[]';
+            if (got !== want)
+              problems.push(`${where}: ${got ? 'finds' : 'misses'} ${target}`);
+          }
+        }
+      } finally {
+        s.dialog.close();
+      }
+    }
+    expect(problems.join('; '), '', 'typed texts');
+  });
+
   test('size', async () => {
     const s = await openCrux();
     try {
@@ -1526,14 +1566,16 @@ category('Crux sketcher', () => {
   test('every query tool in the substructure filter passes the rows of its intended SMARTS', async () => {
     const probes = ['CO', 'C=O', 'CC=O', 'CCO', 'OCCO', 'c1ccncc1', 'C1CCNCC1', 'CN', 'C=N', 'CC#N', 'CCF', 'CCCl', 'CBr',
       'CI', 'C[Na]', 'C[Mg]C', 'CS', 'CC', 'C', 'C1CCCCC1', 'c1ccccc1', 'C1CC1', 'CC(C)(C)C', 'C=C', 'C#C', 'CC(=O)O',
-      'Oc1ccccc1', 'C[Se]', 'CC1CCCCC1', 'Cc1ccccc1', 'NC=O', 'OC1CCCCC1', 'Oc1ccncc1'];
+      'Oc1ccccc1', 'C[Se]', 'CC1CCCCC1', 'Cc1ccccc1', 'NC=O', 'OC1CCCCC1', 'Oc1ccncc1', 'O=C=O'];
     const metals = '[Li,Na,K,Rb,Cs,Mg,Ca,Sr,Ba,Al,Sc,Ti,V,Cr,Mn,Fe,Co,Ni,Cu,Zn,Y,Zr,Nb,Mo,Ru,Rh,Pd,Ag,Cd,Hf,Ta,W,Re,Os,Ir,Pt,Au,Hg]';
     const field = (props: string, hhh = 0) => ['field', '', '', '  2  1  0  0  0  0  0  0  0  0999 V2000',
       `    0.0000    0.0000    0.0000 C   0  0  0  ${hhh}  0  0  0  0  0  0  0  0`,
       '    1.2990    0.7500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0', '  1  2  1  0', ...props.split('|').filter(Boolean),
       'M  END', ''].join('\n');
-    // [the tool, Crux's model of what it makes, its intended SMARTS]
-    const tools: [string, string, string][] = [
+    // [the tool, Crux's model of what it makes, its intended SMARTS, the SMARTS Crux writes when it differs]. A generic
+    // with H (AH, QH, XH, MH) also accepts an implicit H on the atom it hangs from (the owner's meaning 2, 2026-11-20:
+    // Crux mode's adjust_drawn_query, applied when the filter reads the query); Crux's own SMARTS stays the literal one
+    const tools: [string, string, string, string?][] = [
       ['any bond', '[#6]~[#8]', '[#6]~[#8]'],
       ['single or double bond', '[#6]-,=[#8]', '[#6]-,=[#8]'],
       ['single or aromatic bond', '[#6]-,:[#7]', '[#6]-,:[#7]'],
@@ -1544,13 +1586,13 @@ category('Crux sketcher', () => {
       ['atom list', '[#6]-[#7,#8]', '[#6]-[#7,#8]'],
       ['NOT list', '[#6]-[!#7&!#8]', '[#6]-[!#7&!#8]'],
       ['generic A', '[#6]-[!#1]', '[#6]-[!#1]'],
-      ['generic AH', 'C* |$;AH_p$|', '[#6]-*'],
+      ['generic AH', 'C* |$;AH_p$|', '[#6;!H0,$([#6]-*)]', '[#6]-*'],
       ['generic Q', 'C* |$;Q_e$|', '[#6]-[!#6&!#1]'],
-      ['generic QH', 'C* |$;QH_p$|', '[#6]-[!#6]'],
+      ['generic QH', 'C* |$;QH_p$|', '[#6;!H0,$([#6]-[!#6])]', '[#6]-[!#6]'],
       ['generic X', 'C* |$;X_p$|', '[#6]-[F,Cl,Br,I]'],
-      ['generic XH', 'C* |$;XH_p$|', '[#6]-[F,Cl,Br,I,#1]'],
+      ['generic XH', 'C* |$;XH_p$|', '[#6;!H0,$([#6]-[F,Cl,Br,I])]', '[#6]-[F,Cl,Br,I,#1]'],
       ['generic M', 'C* |$;M_p$|', `[#6]-${metals}`],
-      ['generic MH', 'C* |$;MH_p$|', `[#6]-${metals.replace(']', ',#1]')}`],
+      ['generic MH', 'C* |$;MH_p$|', `[#6;!H0,$([#6]-${metals})]`, `[#6]-${metals.replace(']', ',#1]')}`],
       ['generic *', 'C* |$;star_e$|', '[#6]-*'],
       ['ring bond count 2', field('M  RBC  1   1   2'), '[#6;x2]-[#8]'],
       ['ring bond count as drawn', field('M  RBC  1   1  -2'), '[#6;x0]-[#8]'],
@@ -1592,7 +1634,7 @@ category('Crux sketcher', () => {
       expect(el.mode, 'query', 'Crux\'s mode in the substructure filter');
       expect(el.disabledQueryElements.join(', '), '', 'the query elements turned off in the filter');
       const rows = (bits: DG.BitSet) => probes.filter((_, i) => bits.get(i)).join(' ');
-      for (const [tool, made, intended] of tools) {
+      for (const [tool, made, intended, written] of tools) {
         const qmol = rdkit.get_qmol(intended);
         const want = DG.BitSet.create(probes.length, (i) => {
           const mol = rdkit.get_mol(probes[i]);
@@ -1611,7 +1653,8 @@ category('Crux sketcher', () => {
         // as the user's drawing does, the canvas's own molblock is the query (no caller's string)
         impl.explicitMol = null;
         el.setValue(made, made.includes('|') || made.includes('\n') ? undefined : {format: 'smarts'});
-        expect(sameQuery(el.smarts, intended), true, `${tool}: Crux's own SMARTS ${el.smarts} finds what ${intended} finds`);
+        expect(sameQuery(el.smarts, written ?? intended), true,
+          `${tool}: Crux's own SMARTS ${el.smarts} finds what ${written ?? intended} finds`);
         await waitUntil(() => rows(df.filter) === rows(want),
           `${tool}: the filter passes [${rows(df.filter)}], ${intended} matches [${rows(want)}]`, 15000);
       }

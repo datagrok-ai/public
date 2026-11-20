@@ -41,6 +41,33 @@ const ALIGN_SYNC_EVENT = 'chem-align-sync';
 const HIGHLIGHT_SYNC_EVENT = 'chem-highlight-sync';
 let chemFilterid = 0;
 
+/**
+ * What defines a drawn query, its layout aside: the molblock without its header, its atoms' coordinates and its data
+ * S-groups' display lines; any other notation as it is. The filter names a query by its SMARTS, which can be one for two
+ * queries (lane STAND's S-003, run20: RDKit's and Crux's writers drop "single or aromatic" next to a ring / chain
+ * topology, so an any ring bond and a single-or-aromatic one are both `@`): a moved atom is the same query, a changed
+ * bond type is not.
+ */
+export function queryIdentity(molecule: string): string {
+  if (!DG.chem.isMolBlock(molecule))
+    return molecule;
+  const lines = molecule.replace(/\r/g, '').split('\n');
+  const counts = lines.findIndex((l) => /V[23]000\s*$/.test(l));
+  if (counts < 0)
+    return molecule;
+  const atoms = lines[counts].includes('V2000') ? parseInt(lines[counts].slice(0, 3)) || 0 : 0;
+  let inAtoms = false;
+  return lines.slice(counts).map((l, i) => {
+    if (i > 0 && i <= atoms) // V2000 atom line: x, y, z in its first 30 columns
+      return l.slice(30);
+    if (l.startsWith('M  V30 BEGIN ATOM') || l.startsWith('M  V30 END ATOM'))
+      inAtoms = l.startsWith('M  V30 BEGIN ATOM');
+    else if (inAtoms) // V3000: M  V30 index symbol x y z ...
+      return l.split(/\s+/).filter((_, k) => k < 4 || k > 6).join(' ');
+    return l.startsWith('M  SDD') ? '' : l.replace(/ FIELDDISP="[^"]*"/, '');
+  }).join('\n');
+}
+
 const searchTypeHints = {
   [SubstructureSearchType.CONTAINS]: 'search structures which contain sketched pattern as a substructure',
   [SubstructureSearchType.INCLUDED_IN]: 'search structures for which sketched pattern is a superstructure',
@@ -508,8 +535,8 @@ export class SubstructureFilter extends DG.Filter {
     const activeFilterId = this.column!.temp[CHEM_APPLY_FILTER_SYNC] ? this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId : -1;
     if (activeFilterId !== this.filterId) {
       if (activeFilterId === -1) {
-        this.column!.temp[CHEM_APPLY_FILTER_SYNC] =
-          {filterId: this.filterId, summary: this.getFilterSummary(this.currentMolecule)};
+        this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: this.filterId,
+          summary: this.getFilterSummary(this.currentMolecule), query: queryIdentity(this.currentMolecule)};
       } else {
         _package.logger.debug(`return from apply filter , true count: ${this.bitset?.trueCount}, filter id${this.filterId}`);
         return;
@@ -703,7 +730,8 @@ export class SubstructureFilter extends DG.Filter {
   private async startSearch(newMolecule: string, newSmarts: string): Promise<void> {
     this.recalculateFilter = false;
     this.modifiedRows.clear(); // full search covers all rows including any modified ones
-    this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: this.filterId, summary: this.getFilterSummary(newMolecule)};
+    this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: this.filterId, summary: this.getFilterSummary(newMolecule),
+      query: queryIdentity(newMolecule)};
     this.searchNotCompleted = false;
     this.terminatePreviousSearch();
     this.currentMolecule = newMolecule;
@@ -821,9 +849,13 @@ export class SubstructureFilter extends DG.Filter {
     return drawn !== null && drawn === smiles(molecule, false);
   }
 
+  /** Whether the column's search in effect is `molecule`'s: the same name ({@link getFilterSummary}) and, where the
+   * search recorded it, the same query ({@link queryIdentity}): two queries can share a name (S-003). */
   isFilteringBySameStructure(molecule: string): boolean {
     const col = this.resolveColumn();
-    return !!col && !!col.temp[CHEM_APPLY_FILTER_SYNC] && col.temp[CHEM_APPLY_FILTER_SYNC].summary === this.getFilterSummary(molecule);
+    const sync = col?.temp[CHEM_APPLY_FILTER_SYNC];
+    return !!sync && sync.summary === this.getFilterSummary(molecule) &&
+      (sync.query === undefined || sync.query === queryIdentity(molecule));
   }
 
   updateExternalSketcher() {

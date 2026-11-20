@@ -482,7 +482,11 @@ export class CruxSketcher extends grok.chem.SketcherBase {
     // SMILES with setMolFile) is read as the SMILES it is
     else if ((notation === 'molblock' || notation === 'molblockV3000') && value && !DG.chem.isMolBlock(value))
       notation = 'smiles';
-    this.explicitMol = {notation, value};
+    // A SMARTS that also reads as SMILES (`[NH2]c1ccccc1`, which js-api's substructure host sets as SMARTS for its bracket
+    // H count; run20 STAND S-004) is not kept as the caller's string: the substructure filter tells SMARTS from SMILES by
+    // the text, took it for a molecule and dropped the H count (264 of mol1K's rows where it finds 11). The drawing's own
+    // query answers instead.
+    this.explicitMol = notation === 'smarts' && !DG.chem.isSmarts(value) ? null : {notation, value};
     if (this.sketch === null || this.isDetached) {
       this.unshown = {notation, value};
       if (this.isDetached)

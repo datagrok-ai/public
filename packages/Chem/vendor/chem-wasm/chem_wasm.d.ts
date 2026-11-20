@@ -375,6 +375,18 @@ export class JSMol {
      */
     add_hs_in_place(): boolean;
     /**
+     * Crux extension, no RDKit.js call (spikes query-read-match and drawn-query): the query a chemist means by a query
+     * drawn in a sketcher, in place: first [`rk::drawn_query::adjust_drawn_query`] (a drawn aromatic ring stays
+     * aromatic despite its query features; an H count counts drawn H atoms too; a NOT list is a heavy atom; the valence
+     * set on an atom is asked for; "unsaturated" is a double, triple or aromatic bond), then
+     * [`smi_compiler::query_mol::adjust_drawn_query`] (a plain single or double bond at an aromatic query atom whose
+     * ring is not drawn also matches an aromatic bond; an atom list holding H on one atom is that atom's implicit H or
+     * the list's other atoms), which reads the rings the first made aromatic as drawn aromatic. Datagrok's Chem calls
+     * it on the query its substructure search builds from a MOL block, after its rings are aromatized and its H merged;
+     * RDKit has no such step. `true` when the query changed.
+     */
+    adjust_drawn_query(): boolean;
+    /**
      * PORT(common.h:894-904): `canonical_tautomer(details)` —
      * `TautomerEnumerator(params).canonicalize`.
      */
@@ -1436,6 +1448,7 @@ export interface InitOutput {
     readonly jslog_get_buffer: (a: number) => [number, number];
     readonly jsmol_add_hs: (a: number) => [number, number, number, number];
     readonly jsmol_add_hs_in_place: (a: number) => [number, number, number];
+    readonly jsmol_adjust_drawn_query: (a: number) => number;
     readonly jsmol_canonical_tautomer: (a: number, b: number, c: number) => [number, number, number];
     readonly jsmol_charge_parent: (a: number, b: number, c: number) => [number, number, number];
     readonly jsmol_cleanup: (a: number, b: number, c: number) => [number, number, number];

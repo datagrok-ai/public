@@ -971,6 +971,22 @@ export class JSMol {
         return ret[0] !== 0;
     }
     /**
+     * Crux extension, no RDKit.js call (spikes query-read-match and drawn-query): the query a chemist means by a query
+     * drawn in a sketcher, in place: first [`rk::drawn_query::adjust_drawn_query`] (a drawn aromatic ring stays
+     * aromatic despite its query features; an H count counts drawn H atoms too; a NOT list is a heavy atom; the valence
+     * set on an atom is asked for; "unsaturated" is a double, triple or aromatic bond), then
+     * [`smi_compiler::query_mol::adjust_drawn_query`] (a plain single or double bond at an aromatic query atom whose
+     * ring is not drawn also matches an aromatic bond; an atom list holding H on one atom is that atom's implicit H or
+     * the list's other atoms), which reads the rings the first made aromatic as drawn aromatic. Datagrok's Chem calls
+     * it on the query its substructure search builds from a MOL block, after its rings are aromatized and its H merged;
+     * RDKit has no such step. `true` when the query changed.
+     * @returns {boolean}
+     */
+    adjust_drawn_query() {
+        const ret = wasm.jsmol_adjust_drawn_query(this.__wbg_ptr);
+        return ret !== 0;
+    }
+    /**
      * PORT(common.h:894-904): `canonical_tautomer(details)` —
      * `TautomerEnumerator(params).canonicalize`.
      * @param {string | null} [details]
@@ -5155,4 +5171,4 @@ export function setTrapHook(hook) {
 }
 
 /** Each class's methods that change the object (the crate's `&mut self` and `self` methods), by JS name. */
-export const cruxChanging = Object.freeze({"ChemSmartsSet":["match"],"ChemMonomerLibrary":[],"ChemReactionScheme":[],"ChemCheMeleon":["fingerprints"],"ChemSynthonSpace":["installFingerprints","search"],"JSMol":["add_hs_in_place","canonical_tautomer","charge_parent","cleanup","clear_prop","convert_to_aromatic_form","convert_to_kekule_form","delete","disconnect_metals","disconnect_organometallics","fragment_parent","generate_aligned_coords","isotope_parent","largest_fragment","neutralize","normalize","normalize_depiction","normalize_in_place","reionize","remove_fragments","remove_hs_in_place","set_new_coords","set_prop","stereo_parent","straighten_depiction","super_parent","tautomer_parent","uncharge"],"MolList":["append","delete","insert","next","pop","reset"],"JSLog":["delete"],"RGroupDecomposition":["add","add_text","delete","process"],"JSMolListList":["delete"],"Reaction":["delete","run_reactants"],"ReactionEnumerator":["delete","next","next_smiles","reset_state","set_state"],"SimilarityResult":[],"CollectionBuilder":["addMany","addSdf","finish","finishSdf","setLenient"],"Collection":[]});
+export const cruxChanging = Object.freeze({"ChemSmartsSet":["match"],"ChemMonomerLibrary":[],"ChemReactionScheme":[],"ChemCheMeleon":["fingerprints"],"ChemSynthonSpace":["installFingerprints","search"],"JSMol":["add_hs_in_place","adjust_drawn_query","canonical_tautomer","charge_parent","cleanup","clear_prop","convert_to_aromatic_form","convert_to_kekule_form","delete","disconnect_metals","disconnect_organometallics","fragment_parent","generate_aligned_coords","isotope_parent","largest_fragment","neutralize","normalize","normalize_depiction","normalize_in_place","reionize","remove_fragments","remove_hs_in_place","set_new_coords","set_prop","stereo_parent","straighten_depiction","super_parent","tautomer_parent","uncharge"],"MolList":["append","delete","insert","next","pop","reset"],"JSLog":["delete"],"RGroupDecomposition":["add","add_text","delete","process"],"JSMolListList":["delete"],"Reaction":["delete","run_reactants"],"ReactionEnumerator":["delete","next","next_smiles","reset_state","set_state"],"SimilarityResult":[],"CollectionBuilder":["addMany","addSdf","finish","finishSdf","setLenient"],"Collection":[]});

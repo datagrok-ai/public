@@ -2,9 +2,9 @@ chem-wasm: Chem's Crux engine (crux-core crates/chem-wasm), one WebAssembly file
 
 crate: chem-wasm
 features: ['chem']
-crux_core_rev: 967d92f5b44be100954456c7c8f595820e6d854a
+crux_core_rev: 5cc1527518a6d0c5cad86884a044484366094157
 crux_core_dirty: False
-built_utc: 2026-11-19T19:42:31.586Z
+built_utc: 2026-11-20T04:53:01.478Z
 cargo.profile: wasm-ship
 cargo.target: wasm32-unknown-unknown
 cargo.rustc: rustc 1.95.0 (59807616e 2026-04-14)
@@ -14,18 +14,18 @@ wasm_bindgen.flags: --target web --remove-name-section
 wasm_bindgen.glue_patch: tools/wasm_glue_fresh.mjs --crate crates/chem-wasm
 wasm_opt.version: wasm-opt version 117 (version_117)
 wasm_opt.flags: -O1 --mvp-features --enable-bulk-memory --enable-multivalue --enable-mutable-globals --enable-nontrapping-float-to-int --enable-reference-types --enable-sign-ext --enable-simd --skip-pass=constraint-analysis --strip-producers --strip-debug
-files.chem_wasm_bg.wasm.raw: 7193457
-files.chem_wasm_bg.wasm.gzip9: 2793053
-files.chem_wasm_bg.wasm.brotli11: 2034221
-files.chem_wasm.js.raw: 194920
-files.chem_wasm.js.gzip9: 32873
-files.chem_wasm.js.brotli11: 27343
-cargo_artifact.raw: 9119379
-cargo_artifact.gzip9: 3264567
-cargo_artifact.brotli11: 2293503
+files.chem_wasm_bg.wasm.raw: 7237117
+files.chem_wasm_bg.wasm.gzip9: 2811730
+files.chem_wasm_bg.wasm.brotli11: 2045166
+files.chem_wasm.js.raw: 196097
+files.chem_wasm.js.gzip9: 33278
+files.chem_wasm.js.brotli11: 27681
+cargo_artifact.raw: 9170241
+cargo_artifact.gzip9: 3284109
+cargo_artifact.brotli11: 2307624
 
-vendored from: crux-core main e881b8e98 (land: cxsmiles-fields), as a clean build of its spike commit 967d92f5b (spike/cxsmiles-fields, lane CXQ, run19; build-ship.sh chem): the same tree, so no rebuild
-chem_wasm_bg.wasm: 7,193,457 B raw, sha256 aac06d5b094392a0
+vendored from: crux-core main 5cc152751 (build-ship.sh chem, paths remapped)
+chem_wasm_bg.wasm: 7,237,117 B raw, sha256 fddbe0f8b913fdd0
 NOTICE: the build's (crux-core tools/wasm_notices.py)
-includes: every CXSMILES extension field read as RDKit 2026.03 reads it (get_qmol applies the whole extension; get_mol makes the u: / rb: / s: / query-label query atoms), RDKit's SMARTS arrows (-> / <-) and typed bonds (dative / hydrogen / zero bonds in valence, rings, matching, fingerprints and descriptors); RDKit's rdApp.error log of crux-core 2aa92596d with no departure left (crux-core main e881b8e98)
+includes: everything in crux-core main 973f67f60 (built from spike/heavy-degree 5cc152751, whose tree dcffc1a5 is main 973f67f60's): JSMol adjust_drawn_query (decisions drawn-query and query-read-match: the owner's five meanings of 2026-11-20), a vvv equal to a generic or list atom's drawn valence ignored, RDKit's bond-order aromaticity port fix, ring facts from the whole molecule's ring info, a list atom with an H count drawn as its list, the heavy-degree primitive d as fast as D; molfile writes both H counts; with crux-core e881b8e98's CXSMILES fields
 files: chem_wasm.js (glue, wasm-bindgen --target web), chem_wasm.d.ts, chem_wasm_bg.wasm, NOTICE.chem-wasm, VERSION.chem-wasm (both emitted to dist)

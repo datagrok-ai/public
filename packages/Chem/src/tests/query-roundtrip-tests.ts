@@ -19,6 +19,11 @@ import {SubstructureFilter} from '../widgets/chem-substructure-filter';
 
 // RDKit's own generics (QueryOps), the meanings Crux's generics have
 const RD_M = '[!#0&!#2&!#5&!#6&!#7&!#8&!#9&!#10&!#14&!#15&!#16&!#17&!#18&!#33&!#34&!#35&!#36&!#52&!#53&!#54&!#85&!#86&!#1]';
+// The product owner's meanings (run20, 2026-11-20; Crux mode departs from RDKit, which reads both literally): a generic
+// with H on C's single bond is C's H (implicit too) or the generic without H; a plain bond from an atom marked aromatic
+// is single or aromatic. `*` and A stay an atom.
+const withH = (heavy: string) => `[#6;!H0,$(*-${heavy})]`;
+const AROMATIC_ATOM = '[#6;a]-,:[#8]';
 
 export type CruxStep = ['tool', string, 'atom' | 'bond', number] | ['menu', 'atom' | 'bond', number, ...string[]] |
   ['label', number, string] | ['atomCustom', number, string] | ['bondCustom', number, string];
@@ -39,13 +44,13 @@ const CRUX: CruxFeature[] = [
   ['atom list', 'CN', [['label', 1, '[N,O]']], '[#6]-[#7,#8]'],
   ['NOT list', 'CN', [['label', 1, '[!N,O]']], '[#6]-[!#7&!#8]'],
   ['generic A', 'CC', [['label', 1, 'A']], '[#6]-[!#1]'],
-  ['generic AH', 'CC', [['label', 1, 'AH']], '[#6]-*'],
+  ['generic AH', 'CC', [['label', 1, 'AH']], withH('[!#1]')],
   ['generic Q', 'CC', [['label', 1, 'Q']], '[#6]-[!#6&!#1]'],
-  ['generic QH', 'CC', [['label', 1, 'QH']], '[#6]-[!#6]'],
+  ['generic QH', 'CC', [['label', 1, 'QH']], withH('[!#6&!#1]')],
   ['generic X', 'CC', [['label', 1, 'X']], '[#6]-[F,Cl,Br,I,At]'],
-  ['generic XH', 'CC', [['label', 1, 'XH']], '[#6]-[F,Cl,Br,I,At,#1]'],
+  ['generic XH', 'CC', [['label', 1, 'XH']], withH('[F,Cl,Br,I,At]')],
   ['generic M', 'CC', [['label', 1, 'M']], `[#6]-${RD_M}`],
-  ['generic MH', 'CC', [['label', 1, 'MH']], `[#6]-${RD_M.replace('&!#1]', ']')}`],
+  ['generic MH', 'CC', [['label', 1, 'MH']], withH(RD_M)],
   ['generic *', 'CC', [['label', 1, '*']], '[#6]-*'],
   ['charge', 'CN', [['menu', 'atom', 1, 'charge', 'charge.plus']], '[#6]-[#7+]'],
   ['ring bond count 2', 'CO', [['menu', 'atom', 0, 'query', 'query.ring-bond-count', 'query.ring-bond-count.2']], '[#6;x2]-[#8]'],
@@ -54,7 +59,7 @@ const CRUX: CruxFeature[] = [
   ['substitution count as drawn', 'CO', [['menu', 'atom', 0, 'query', 'query.substitution', 'query.substitution.as-drawn']], '[#6;D1]-[#8]'],
   ['unsaturated', 'CO', [['menu', 'atom', 0, 'query', 'query.unsaturated']], '[#6;$(*=,:,#*)]-[#8]'],
   ['H count 1 or more', 'CO', [['menu', 'atom', 0, 'query', 'query.h-count', 'query.h-count.1']], '[#6;h{1-}]-[#8]'],
-  ['aromatic atom', 'CO', [['menu', 'atom', 0, 'query', 'query.aromaticity', 'query.aromaticity.aromatic']], '[#6;a]-[#8]'],
+  ['aromatic atom', 'CO', [['menu', 'atom', 0, 'query', 'query.aromaticity', 'query.aromaticity.aromatic']], AROMATIC_ATOM],
   ['aliphatic atom', 'CO', [['menu', 'atom', 0, 'query', 'query.aromaticity', 'query.aromaticity.aliphatic']], '[#6;A]-[#8]'],
   ['implicit H count 3', 'CO', [['menu', 'atom', 0, 'query', 'query.implicit-h', 'query.implicit-h.3']], '[#6;h3]-[#8]'],
   ['ring membership 1', 'CO', [['menu', 'atom', 0, 'query', 'query.ring-membership', 'query.ring-membership.1']], '[#6;R1]-[#8]'],
@@ -86,13 +91,13 @@ const KETCHER: KetFeature[] = [
   ['atom list', ...at2({label: 'C'}, {type: 'atom-list', elements: ['N', 'O'], notList: false}), '[#6]-[#7,#8]'],
   ['NOT list', ...at2({label: 'C'}, {type: 'atom-list', elements: ['N', 'O'], notList: true}), '[#6]-[!#7&!#8]'],
   ['generic A', ...at2({label: 'C'}, {label: 'A'}), '[#6]-[!#1]'],
-  ['generic AH', ...at2({label: 'C'}, {label: 'AH'}), '[#6]-*'],
+  ['generic AH', ...at2({label: 'C'}, {label: 'AH'}), withH('[!#1]')],
   ['generic Q', ...at2({label: 'C'}, {label: 'Q'}), '[#6]-[!#6&!#1]'],
-  ['generic QH', ...at2({label: 'C'}, {label: 'QH'}), '[#6]-[!#6]'],
+  ['generic QH', ...at2({label: 'C'}, {label: 'QH'}), withH('[!#6&!#1]')],
   ['generic X', ...at2({label: 'C'}, {label: 'X'}), '[#6]-[F,Cl,Br,I,At]'],
-  ['generic XH', ...at2({label: 'C'}, {label: 'XH'}), '[#6]-[F,Cl,Br,I,At,#1]'],
+  ['generic XH', ...at2({label: 'C'}, {label: 'XH'}), withH('[F,Cl,Br,I,At]')],
   ['generic M', ...at2({label: 'C'}, {label: 'M'}), `[#6]-${RD_M}`],
-  ['generic MH', ...at2({label: 'C'}, {label: 'MH'}), `[#6]-${RD_M.replace('&!#1]', ']')}`],
+  ['generic MH', ...at2({label: 'C'}, {label: 'MH'}), withH(RD_M)],
   ['generic *', ...at2({label: 'C'}, {label: '*'}), '[#6]-*'],
   ['charge', ...at2({label: 'C'}, {label: 'N', charge: 1}), '[#6]-[#7+]'],
   ['ring bond count 2', ...at2({label: 'C', ringBondCount: 2}, {label: 'O'}), '[#6;x2]-[#8]'],
@@ -101,7 +106,7 @@ const KETCHER: KetFeature[] = [
   ['substitution count as drawn', ...at2({label: 'C', substitutionCount: -2}, {label: 'O'}), '[#6;D1]-[#8]'],
   ['unsaturated', ...at2({label: 'C', unsaturatedAtom: true}, {label: 'O'}), '[#6;$(*=,:,#*)]-[#8]'],
   ['H count 1 or more', ...at2({label: 'C', hCount: 2}, {label: 'O'}), '[#6;h{1-}]-[#8]'],
-  ['aromatic atom', ...at2({label: 'C', queryProperties: {aromaticity: 'aromatic'}}, {label: 'O'}), '[#6;a]-[#8]'],
+  ['aromatic atom', ...at2({label: 'C', queryProperties: {aromaticity: 'aromatic'}}, {label: 'O'}), AROMATIC_ATOM],
   ['aliphatic atom', ...at2({label: 'C', queryProperties: {aromaticity: 'aliphatic'}}, {label: 'O'}), '[#6;A]-[#8]'],
   ['implicit H count 3', ...at2({label: 'C', implicitHCount: 3}, {label: 'O'}), '[#6;h3]-[#8]'],
   ['ring membership 1', ...at2({label: 'C', queryProperties: {ringMembership: 1}}, {label: 'O'}), '[#6;R1]-[#8]'],
