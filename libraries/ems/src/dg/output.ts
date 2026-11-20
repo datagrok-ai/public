@@ -32,7 +32,8 @@ export function outputKey(a: ColumnAggregation): string {
  * first time it is shown. */
 export function domainOutput(source: DomainSource, table: DomainTable, exclude: string[],
   shown: ReadonlySignal<boolean>) {
-  const props = table.properties.filter(own);
+  // the table's access is in hand when the app is built, the source's only once it loads
+  const props = table.properties.filter((p) => own(p) && table.access.field(p.name!) !== 'hidden');
   const columns = signal(props.map((p) => p.name!).filter((name) => !exclude.includes(name)));
   const aggregations = signal<ColumnAggregation[]>([]);
   const values = signal(new Map<string, Record<string, unknown>>());
@@ -67,7 +68,8 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
     for (const {from, path, via} of reached) {
       const title = DomainApp.titleOf(from.info);
       const name = reached.filter((r) => r.from.address === from.address).length > 1 ? `${title} (${via})` : title;
-      for (const p of from.properties.filter((p) => own(p) && !DomainTable.isReference(p))) {
+      for (const p of from.properties.filter((p) => own(p) && !DomainTable.isReference(p) &&
+        from.access.field(p.name!) !== 'hidden')) {
         linked.set(`${name}.${DomainTable.captionOf(p)}`, {address: from.address, path, column: p.name!});
         fields.push([`${name}.${DomainTable.captionOf(p)}`, p]);
       }

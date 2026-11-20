@@ -812,7 +812,8 @@ export class DomainApp extends Control {
         const desc = current.startsWith('!');
         const column = desc ? current.slice(1) : current;
         const menu = new Menu();
-        for (const prop of source.schema.properties.filter((p) => p.ref === undefined && p.name !== 'id')) {
+        for (const prop of source.schema.properties.filter((p) => p.ref === undefined && p.name !== 'id' &&
+          source.readable(p.name))) {
           menu.item(DomainTable.captionOf(prop), () => write(`${desc ? '!' : ''}${prop.name}`),
             {check: prop.name === column});
         }

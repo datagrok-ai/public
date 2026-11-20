@@ -298,8 +298,7 @@ export class DomainDataTable extends Control {
    * see that is neither a system nor a service column, the name column first. */
   columns(): string[] {
     const hidden = new Set([...SYSTEM_COLUMNS.map(([column]) => column), ...(this._options.hiddenColumns ?? [])]);
-    const access = this.source.access.peek();
-    const shown = (name: string) => !hidden.has(name) && !Rows.isService(name) && access.field(name) !== 'hidden';
+    const shown = (name: string) => !hidden.has(name) && !Rows.isService(name) && this.source.readable(name);
     if (this._options.columns !== undefined)
       return this._options.columns.filter(shown);
     const names = this.source.schema.properties.map((p) => p.name!).filter(shown);
