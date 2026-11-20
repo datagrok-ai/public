@@ -55,3 +55,10 @@ test('every skill has name and description frontmatter', () => {
     assert.match(fm[1], /^description:\s*\S.{40,}/m, `${file} needs a routing description`);
   }
 });
+
+test('the viewers skill gives the tree map its real split property and its numeric-only color', () => {
+  const text = fs.readFileSync(path.join(SKILLS, 'datagrok-viewers', 'SKILL.md'), 'utf8');
+  assert.match(text, /`DG\.VIEWER\.TREE_MAP`.*`splitByColumnNames`/);
+  assert.ok(!/\bsplitColumnNames`, `sizeColumnName`/.test(text), 'tree map lists splitColumnNames again');
+  assert.match(text, /## Tree map colors[\s\S]*\*\*last\*\* split column[\s\S]*numeric only/);
+});

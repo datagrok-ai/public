@@ -110,6 +110,11 @@ you are doing:
   API and the conventions to follow (which call to prefer, which footgun to avoid). Open it and
   follow it. The help docs are user-facing, so they do not override the skill.
 
+- **Describing data or a chart you made** (what it shows, which groups overlap, what is biggest):
+  the source is counts computed this turn for the groups you name. Name only the combinations those
+  counts contain, and generalize ("every site", "each group") only when they show it for each one.
+  You do not see the rendered chart: do not describe colors or shapes you did not read back.
+
 Either way, answer only what a source supports, quoting it where the exact wording matters. Give one
 verified answer, not a list of unverified possibilities. If no source covers it, say so rather than
 guess.

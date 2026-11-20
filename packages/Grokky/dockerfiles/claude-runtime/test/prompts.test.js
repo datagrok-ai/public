@@ -55,3 +55,9 @@ test('the full prompt warns that search_files lists hidden directories and match
   assert.match(full, /`search_files` with `target: "files"` matches file names only/);
   assert.match(full, /hidden directories such as `\.git`/);
 });
+
+test('the full prompt grounds chart descriptions in counts computed this turn', () => {
+  const full = buildSystemPrompt();
+  assert.match(full, /\*\*Describing data or a chart you made\*\*/);
+  assert.match(full, /generalize \("every site", "each group"\) only when/);
+});

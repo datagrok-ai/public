@@ -604,6 +604,13 @@ export const helpPageCited = Then('the AI answer should link to the help page {s
   expect(hrefs.map((h) => h.replace(/(\.md)?\/?([?#].*)?$/, '')), 'the links of the answer').toContain(`https://datagrok.ai/help/${helpPage}`);
 }, {description: 'the turn read workspace/help/<page>.md (its read_file activity) and the last answer links to https://datagrok.ai/help/<page>'});
 
+export const treeMapColoredBy = Then('the tree map should color its blocks by {string}', async (page: Page, column: string) => {
+  await expect.poll(() => page.evaluate(() => Array.from(grok.shell.tv.viewers as Iterable<any>)
+    .filter((v) => v.type === 'Tree map')
+    .map((v) => ({colorColumnName: v.props.colorColumnName ?? '', lastSplit: (v.props.splitByColumnNames ?? []).slice(-1)[0] ?? ''}))),
+  {message: 'the color column and the last split column of the tree maps'}).toEqual([{colorColumnName: '', lastSplit: column}]);
+}, {tier: 'api', description: 'one tree map, with no color column and the column last in splitByColumnNames: a tree map averages a color column, so a text one paints every block grey'});
+
 // --- the table and the grid -------------------------------------------------------------------------
 
 export const bmiValues = Then('every value of {string} column should be the BMI of {string} in kg and {string} in cm',
