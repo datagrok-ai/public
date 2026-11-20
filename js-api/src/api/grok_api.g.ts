@@ -71,7 +71,7 @@ export interface IDartApi {
   grok_View_Get_BasePath(v: any): any;
   grok_View_Set_BasePath(v: any, s: String): any;
   grok_View_Get_SaveToProject(v: any): any;
-  grok_View_Set_SaveToProject(v: any, x: Boolean): any;
+  grok_View_Set_SaveToProject(v: any, x: Bool): any;
   grok_View_Get_Description(v: any): any;
   grok_View_Set_Description(v: any, s: String): any;
   grok_View_Get_Type(v: any): any;
@@ -1346,6 +1346,8 @@ export interface IDartApi {
   grok_DomainTable_Get_SecurityMode(t: any): any;
   grok_DomainTable_Get_BusinessKey(t: any): any;
   grok_DomainTable_Get_Audit(t: any): any;
+  grok_DomainTable_Get_Origin(t: any): any;
+  grok_DomainTable_Get_UserColumns(t: any): any;
   grok_DomainRow_Get_SchemaName(r: any): any;
   grok_DomainRow_Get_TableName(r: any): any;
   grok_DomainRow_Get_TypeName(r: any): any;

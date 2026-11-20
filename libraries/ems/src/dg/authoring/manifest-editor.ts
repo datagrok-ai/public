@@ -2,7 +2,7 @@ import {Control, signal, Signal, ReadonlySignal, Splitter} from '@datagrok-libra
 import type {EditorContext, FieldOffer} from './editor-context.js';
 import {AccessModel, ManifestModel} from './manifest-model.js';
 import type {AccessJson, AccessPrincipal, AccessSnapshot, DraftEnvelope, ExtendPatch, ManifestChange,
-  ManifestDiagnostic, ManifestJson, ManifestPatch, ManifestSelection, RebaseReport} from './manifest-model.js';
+  ManifestDiagnostic, ManifestJson, ManifestOwnership, ManifestPatch, ManifestSelection, RebaseReport} from './manifest-model.js';
 import {ManifestTree} from './manifest-tree.js';
 import {ManifestContextPanel} from './manifest-panel.js';
 import type {ColumnOption, PrincipalPicker} from './manifest-panel.js';
@@ -21,6 +21,8 @@ export interface ManifestEditorOptions {
   access?: Partial<AccessJson>;
   /** Edit mode: the registered manifest (`GET …/manifest`, with `version` and `incarnation`). */
   baseline?: ManifestJson;
+  /** Extend mode: who owns which column, from the registry (the manifest never says). */
+  ownership?: ManifestOwnership;
   /** Edit mode: the access snapshot (`GET …/access`); null when it could not be read — access
    * is then shown as far as it goes and never changed. */
   snapshot?: AccessSnapshot | null;
@@ -117,7 +119,7 @@ export class ManifestEditor extends Control {
       throw new Error('u2: the manifest editor needs a draft');
     this._author = options.author;
     this.model = new ManifestModel(draft, {friendlyName: options.friendlyName, description: options.description,
-      baseline: editing ? options.baseline : undefined, extend: extending});
+      baseline: editing ? options.baseline : undefined, extend: extending, ownership: options.ownership});
     this.access = editing && !extending ? this._accessOf(options.snapshot ?? null, options.baseline!) :
       new AccessModel(options.access);
     this.diagnostics = signal<ManifestDiagnostic[]>(draft?.diagnostics ?? []);
@@ -231,7 +233,7 @@ export class ManifestEditor extends Control {
    * registered manifest, its access snapshot and a fresh draft. Same-field conflicts and edits on
    * items that vanished are reported, never applied silently; the tree and the panel rebuild. */
   rebase(baseline: ManifestJson, snapshot: AccessSnapshot | null, draft: DraftEnvelope | null,
-    options: {friendlyName: string, description: string}): RebaseReport {
+    options: {friendlyName: string, description: string, ownership?: ManifestOwnership}): RebaseReport {
     if (this.model.extending)
       return this.model.rebase(baseline, null, options);
     const manifest = this.model.rebase(baseline, draft, options);

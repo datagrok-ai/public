@@ -316,14 +316,14 @@ export interface DomainManifestColumn {
   friendlyName?: string;
   /** The remote column name where it differs from the key (external). */
   column?: string;
-  /** `'user'` on a column a user added to a plugin table (read-only). */
-  origin?: 'user';
   /** Any other key of the column vocabulary, kept as written. */
   [key: string]: unknown;
 }
 
 /** One table of a manifest, keyed by its logical name: its columns, business key and the
- * table-level keys of the manifest vocabulary. */
+ * table-level keys of the manifest vocabulary. Who owns a table or column of a plugin schema (the
+ * plugin, or a user who extended it) is never part of the manifest: read it from the registry
+ * (`DomainTable.origin`, `DomainTable.userColumns` of `grok.dapi.domains.schemas`). */
 export interface DomainManifestTable {
   /** The columns by logical name. */
   columns: {[name: string]: DomainManifestColumn};
@@ -337,8 +337,6 @@ export interface DomainManifestTable {
   readOnly?: boolean;
   /** Whether users holding Extend may add columns to this plugin table. */
   extensible?: boolean;
-  /** `'user'` on a table a user added to a plugin schema (read-only). */
-  origin?: 'user';
   /** Any other key of the table vocabulary, kept as written. */
   [key: string]: unknown;
 }
