@@ -23,8 +23,7 @@ export class PropertyDialog {
     if ((await PropertyDialog.extensible(schema)).size === 0)
       throw new Error(`You may not add properties to ${schema}`);
     const handle = grok.dapi.domains.schema(schema);
-    const manifest = await handle.manifest() as unknown as ManifestJson;
-    const ownership = await PropertyDialog._ownership(schema);
+    const {manifest, ownership} = await PropertyDialog._baseline(handle);
     const name = table === undefined ? manifest.name : manifest.tables[table]?.['singularName'] as string ?? table;
     const dialog = Dialog.create(`${name.charAt(0).toUpperCase()}${name.slice(1)} properties`, {name: 'properties'});
     const editor = dialog.build(() => new ManifestEditor(null, {context: {mode: 'extend', storage: 'domain'},
@@ -54,8 +53,28 @@ export class PropertyDialog {
     return new Set(Object.keys(tables).filter((t) => tables[t].extensible === true));
   }
 
+  /** The registered manifest with the `extVersion` an extension apply sends back as `ifVersion`, and who owns each
+   * column. The manifest does not carry `ext_version`; a dry-run apply echoes it (`DomainApplyPlan.extVersion`), and
+   * an empty body plans nothing. The token is read FIRST, the manifest and the ownership after it: a change landing
+   * between the reads makes the token older than what was read, a conflict and a reload, never a save over (or a
+   * drop of) columns this dialog did not see. */
+  private static async _baseline(handle: DG.DomainSchemaClient): Promise<{manifest: ManifestJson,
+    ownership: ManifestOwnership}> {
+    const {extVersion} = await handle.apply({}, {dryRun: true});
+    if (extVersion === undefined)
+      throw new Error(`${handle.name} answered no extension version: properties cannot be saved safely`);
+    const manifest = await handle.manifest() as unknown as ManifestJson;
+    const ownership = await PropertyDialog._ownership(handle.name);
+    for (const table of Object.keys(manifest.tables)) {
+      if (ownership[table] === undefined)
+        throw new Error(`${handle.name}.${table} is not in the registry yet: reload and try again`);
+    }
+    return {manifest: {...manifest, extVersion: String(extVersion)}, ownership};
+  }
+
   /** Who owns each table and column, from the registry: the manifest never says, and a column read as the plugin's
-   * is left out of the extension — which the server takes as the user dropping it, values and all. */
+   * is left out of the extension — which the server takes as the user dropping it, values and all.
+   */
   private static async _ownership(schema: string): Promise<ManifestOwnership> {
     const entity = (await grok.dapi.domains.schemas.include('tables.columns.property').list())
       .find((s) => s.name === schema);
@@ -83,8 +102,8 @@ export class PropertyDialog {
         editor.diagnostics.value = BindingWizard.issues(e);
         throw new Error(DomainErrors.message(e));
       }
-      const report = editor.rebase(await handle.manifest() as unknown as ManifestJson, null, null,
-        {friendlyName: '', description: '', ownership: await PropertyDialog._ownership(handle.name)});
+      const {manifest, ownership} = await PropertyDialog._baseline(handle);
+      const report = editor.rebase(manifest, null, null, {friendlyName: '', description: '', ownership});
       const lost = [...report.conflicts, ...report.dropped].map((op) => op.note ?? `${op.text} no longer applies`);
       reloaded.value = 'Someone else changed these properties meanwhile; reloaded with your edits on top. ' +
         `${lost.length > 0 ? `${lost.join('; ')}. ` : ''}Review and save again.`;
