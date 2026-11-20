@@ -186,6 +186,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   // a page found the window shifted while changes were pending: the next clean page re-bases it
   private _moved = false;
   private _done = false;
+  // what the shown rows were read for (query, search, sort, deleted) — a reload of the same collection
+  // is told from a filter change by it
+  private _shownFor: string | undefined;
   // the loaded window is no longer the server's: the next load starts over, not at the next page
   private _restart = false;
   // the caller of `rebind` re-reads; a refresh here would drop the frame the batch just landed in
@@ -383,6 +386,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const gen = ++this._gen;
     this._restart = false;
     this._moved = false;
+    const readFor = this._readFor();
+    // a reload of the collection shown, started over a clean session, keeps the rows when changes appear
+    // in the session before it lands — a child row typed under the current row, which `_drop` would dispose
+    const keepOverSession = readFor === this._shownFor && !this.session.isDirty.peek();
     // the rows about to arrive are the server's again, and the baseline is taken with them below; the
     // one the rows shown now were read with is kept for a load that bails over pending changes
     const shown = this._probed;
@@ -421,13 +428,19 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       }
       // an edit landed on the live frame while this load was in flight: the edited frame stays, and
       // so does the baseline it was read with — a write since then is still a change to the next poll
-      if (this.isDirty.peek()) {
+      if (this.isDirty.peek() || (keepOverSession && this.session.isDirty.peek())) {
         frame.dispose();
         this._probed = shown;
-        this._state.value = 'ready';
+        batch(() => {
+          // over changes elsewhere in the session the rows are behind the server, as a peer save marks them
+          if (!this.isDirty.peek())
+            this._isStale.value = true;
+          this._state.value = 'ready';
+        });
         return;
       }
       this._drop();
+      this._shownFor = readFor;
       this._frame = frame;
       this._loaded = frame.df.rowCount;
       this._last = DomainSource._lastOf(frame.df, this._loaded);
@@ -875,6 +888,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._unwire = undefined;
     const frame = this._frame;
     this._frame = undefined;
+    this._shownFor = undefined;
     frame?.dispose();
     batch(() => {
       this._df.value = undefined;
@@ -1056,6 +1070,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   }
 
   // the one scope `_spec`, `count` and `probe` all take, so none forgets the search or the trash mode
+  private _readFor(): string {
+    return JSON.stringify([this.query.peek(), this.search.peek(), this.sort.peek(), this.deleted.peek()]);
+  }
+
   private _scope(): DomainReadScope {
     const query = this.query.peek();
     const q = this._served?.query === query ? this._served.as : query;
