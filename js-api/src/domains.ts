@@ -500,7 +500,8 @@ export interface DomainRegisteredManifest extends DomainManifest {
   /** The schema row's creation instant (ISO 8601): what {@link DomainApplyBody.ifIncarnation} names.
    * A name deleted and re-created starts at version `'1'` again with a new incarnation. */
   incarnation: string;
-  /** Plugin schema: the `ifVersion` of an extension apply. */
+  /** Plugin schema: the `ifVersion` of an extension apply. The server's manifest does not carry it: read it from
+   * the plan of a dry-run apply ({@link DomainApplyPlan.extVersion}; an empty body plans nothing). */
   extVersion?: string;
 }
 

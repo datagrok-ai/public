@@ -223,8 +223,13 @@ export class ManifestEditor extends Control {
     return {payload, changes, blockers: model.blockers.peek()};
   }
 
+  /** The extension apply body: the user's columns as full state per table, guarded by the baseline's `extVersion` —
+   * without it a concurrent extension would be overwritten, its columns dropped, so there is no body. */
   extendPlan(): {payload: {ifVersion: string, extend: ExtendPatch}, changes: ManifestChange[]} {
-    return {payload: {ifVersion: this.model.extVersion!, extend: this.model.extendPatch()}, changes: this.model.changes()};
+    const ifVersion = this.model.extVersion;
+    if (ifVersion === undefined)
+      throw new Error('u2: the baseline carries no extVersion — an extension apply cannot name its base');
+    return {payload: {ifVersion, extend: this.model.extendPatch()}, changes: this.model.changes()};
   }
 
   /** After a `version-conflict`: the user's edits replayed over the schema as it is now — the

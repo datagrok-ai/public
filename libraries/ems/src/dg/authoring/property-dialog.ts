@@ -23,7 +23,7 @@ export class PropertyDialog {
     if ((await PropertyDialog.extensible(schema)).size === 0)
       throw new Error(`You may not add properties to ${schema}`);
     const handle = grok.dapi.domains.schema(schema);
-    const manifest = await handle.manifest() as unknown as ManifestJson;
+    const manifest = await PropertyDialog._baseline(handle);
     const name = table === undefined ? manifest.name : manifest.tables[table]?.['singularName'] as string ?? table;
     const dialog = Dialog.create(`${name.charAt(0).toUpperCase()}${name.slice(1)} properties`, {name: 'properties'});
     const editor = dialog.build(() => new ManifestEditor(null, {context: {mode: 'extend', storage: 'domain'},
@@ -53,6 +53,18 @@ export class PropertyDialog {
     return new Set(Object.keys(tables).filter((t) => tables[t].extensible === true));
   }
 
+  /** The registered manifest with the `extVersion` an extension apply sends back as `ifVersion`. The manifest does
+   * not carry `ext_version`; a dry-run apply echoes it (`DomainApplyPlan.extVersion`), and an empty body plans
+   * nothing. The token is read FIRST: a change landing between the two reads makes it older than the manifest, a
+   * conflict and a reload, never a save over columns this dialog did not see. */
+  private static async _baseline(handle: DG.DomainSchemaClient): Promise<ManifestJson> {
+    const {extVersion} = await handle.apply({}, {dryRun: true});
+    if (extVersion === undefined)
+      throw new Error(`${handle.name} answered no extension version: properties cannot be saved safely`);
+    const manifest = await handle.manifest() as unknown as ManifestJson;
+    return {...manifest, extVersion: String(extVersion)};
+  }
+
   private static async _save(handle: DG.DomainSchemaClient, editor: ManifestEditor,
     reloaded: Signal<string | null>): Promise<boolean> {
     const {payload, changes} = editor.extendPlan();
@@ -72,7 +84,7 @@ export class PropertyDialog {
         editor.diagnostics.value = BindingWizard.issues(e);
         throw new Error(DomainErrors.message(e));
       }
-      const report = editor.rebase(await handle.manifest() as unknown as ManifestJson, null, null,
+      const report = editor.rebase(await PropertyDialog._baseline(handle), null, null,
         {friendlyName: '', description: ''});
       const lost = [...report.conflicts, ...report.dropped].map((op) => op.note ?? `${op.text} no longer applies`);
       reloaded.value = 'Someone else changed these properties meanwhile; reloaded with your edits on top. ' +
