@@ -54,7 +54,7 @@ conformance` category. A server rule belongs there, not in a memory-only asserti
 | `withAccess` | adds `~can_edit`, `~can_delete`, `~can_share` (and `~can_<name>` per custom permission) to every row: booleans on a row-mode table; off row mode `~can_edit`/`~can_delete` are the table's answer and `~can_share` is **null** in JSON and **absent** from a frame (a bool column holds no null) — `Access.row` treats both as "not carried" |
 | `deleted` | which rows a query answers: `'exclude'` (the default — live rows only), `'include'` or `'only'` (the trash). Anything but `'exclude'` projects `~is_deleted` with every row (a bool column on a frame), and the filter, the search and the paging still apply |
 | `count(scope)` | the total under the same read scope (`{filter, search, deleted}`) a query takes — the ONE object every read is scoped by |
-| `frame(spec)` | the rows as a frame with the writer attached (`DomainFrameLike`): the frame carries `~state` and the access columns as service columns; `append` adds a page into the same frame; `dispose` detaches the writer |
+| `frame(spec)` | the rows as a frame with the writer attached (`DomainFrameLike`): the frame carries `~state` and the access columns as service columns; `append` adds a page into the same frame, skipping an id the frame already holds, and answers the rows the server returned; `dispose` detaches the writer |
 
 ## Transaction
 

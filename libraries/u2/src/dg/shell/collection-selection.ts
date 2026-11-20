@@ -40,11 +40,23 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
     if (row?.id !== source.currentRow.peek()?.id)
       source.currentRow.value = row;
   });
+  // the row the lead sat on: when it leaves the collection (a saved delete) the source hands the
+  // current row on, and that move is not the user's — the rows they picked stay picked (EQ-040)
+  let leadId = current?.id ?? null;
+  const picked = signal(false);
   owner.effect(() => {
     const row = source.currentRow.value;
     const items = source.rows.items.value;
     const at = row === null ? -1 : items.findIndex((r) => r.id === row.id);
-    if (at !== rows.selectedIndex.peek())
+    const left = untracked(() => leadId !== null && leadId !== row?.id && source.rows.byKey(leadId) === undefined);
+    leadId = row?.id ?? null;
+    if (at === rows.selectedIndex.peek())
+      return;
+    const others = row === null || !left || !picked.peek() ? [] :
+      untracked(() => rows.selectedKeys().filter((key) => source.rows.byKey(key) !== undefined));
+    if (row !== null && others.length > 0)
+      untracked(() => rows.selectKeys(others, row.id));
+    else
       rows.selectedIndex.value = at;
   });
   // the control's multi-selection IS the collection's: everything that acts on "the selected rows"
@@ -52,7 +64,6 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
   // the frame's selection bitset, and nothing else on a list page writes it. A selection is a
   // USER's: the lead a load puts on the first row is not one, so nothing is mirrored until the
   // control is clicked or keyed, and a new collection starts over.
-  const picked = signal(false);
   const onPick = () => picked.value = true;
   const onEscape = (e: Event) => {
     if ((e as KeyboardEvent).key !== 'Escape')
@@ -98,7 +109,7 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
         const back = again.filter((id) => present.has(id));
         picked.value = back.length > 0;
         if (back.length > 0)
-          untracked(() => rows.selectKeys(back));
+          untracked(() => rows.selectKeys(back, source.currentRow.peek()?.id));
       });
       return;
     }
