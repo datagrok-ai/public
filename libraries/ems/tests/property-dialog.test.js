@@ -81,6 +81,7 @@ scoped('Edit properties sends the extension version it was opened at: a concurre
   const done = domains.editProperties(NAME, 'issue');
   await flush();
   await flush();
+  const opening = copy(calls);
   await addProperty();
 
   // someone else extends the table meanwhile
@@ -95,6 +96,9 @@ scoped('Edit properties sends the extension version it was opened at: a concurre
   assert.ok(sent.length > 0, 'the save reached apply');
   assert.deepEqual(sent.map((c) => c[1].ifVersion), sent.map(() => '96'),
     'every apply of the save names the extension version the dialog was opened at');
+  // the first manifest read is the extensible-tables check; the dialog's baseline reads come after it
+  assert.deepEqual(opening, [['manifest'], ['apply', {}, true], ['manifest']],
+    'the version is read before the manifest: a change between the reads is a conflict, never an overwrite');
   assert.deepEqual(commits(calls).filter((c) => c[1].extend !== undefined), [], 'nothing committed over the newer extension');
   assert.match(document.querySelector('.u2-manifest-properties').textContent,
     /Someone else changed these properties meanwhile/);

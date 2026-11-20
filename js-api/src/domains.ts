@@ -845,7 +845,8 @@ export interface DomainApplyPlan {
   /** Set on the answer of a commit that found nothing to change — the schema already holds what
    * the body declares: nothing is written and `version` stays the one the apply was made against. */
   noop?: true;
-  /** Package-managed schema: the extension version the apply moved to. */
+  /** Package-managed schema: the schema's `ext_version` — the current one on a dry run (and on a noop or a plan
+   * awaiting confirmation), what the next extension apply sends as `ifVersion`; the one it moved to on a commit. */
   extVersion?: number;
 }
 
