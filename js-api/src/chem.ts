@@ -386,9 +386,12 @@ export namespace chem {
       return Sketcher.isEmptyMolfile(this.sketcher?.explicitMol?.value ?? this.getMolFile());
     }
 
-    /** Sets the molecule, supports either SMILES, SMARTS or MOLBLOCK formats */
+    /** Sets the molecule, supports either SMILES, SMARTS or MOLBLOCK formats. A substructure filter's sketcher takes a
+     * SMILES with a bracket atom's H count (`[NH2]c1ccccc1`, `[CH3]c`, `c1cc[nH]c1`) as SMARTS, so that the H count stays
+     * the query's: set as SMILES it was dropped, and the filter searched any N on benzene (264 of mol1K's rows where
+     * `[NH2]c1ccccc1` finds 11). */
     setMolecule(molString: string, substructure: boolean = false): void {
-      if (substructure || isSmarts(molString))
+      if (substructure || isSmarts(molString) || (this._isSubstructureFilter && hasBracketHCount(molString)))
         this.setSmarts(molString);
       else if (isMolBlock(molString))
         this.setMolFile(molString);
@@ -1182,6 +1185,13 @@ export namespace chem {
     funcCall.callSync();
     const resultBool = funcCall.getOutputParamValue();
     return resultBool;
+  }
+
+  /** Whether a one-line text has a bracket atom with an H count: `[NH2]`, `[nH]`, `[C@@H]`, `[13CH3]`, `[OH-]`; not a
+   * bracket hydrogen (`[2H]`, `[H+]`) or an element whose symbol starts with H (`[Hg]`). */
+  function hasBracketHCount(s: string): boolean {
+    const text = s.trim();
+    return !/\s/.test(text) && /\[\d*(?:[A-Z][a-z]?|[a-z]{1,2}|\*)@*H/.test(text);
   }
 
   export function isSmarts(s: string): boolean {
