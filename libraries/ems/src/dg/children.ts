@@ -149,8 +149,7 @@ export class DomainChildren extends Control {
       (code !== 'validation' && code !== DomainSource.REFUSED) ? null : DomainErrors.message(error, source);
   }
 
-  /** Why the tab cannot show its children, or null: the table is not viewable, or its link to the parent is a
-   * column the caller cannot read (the server refuses a filter, a default and a write on it). */
+  // null unless the table is not viewable or its link to the parent is a column the caller cannot read
   private _denied(entry: ChildEntry): string | null {
     if (!entry.table.access.can('view'))
       return DomainErrors.noAccess(entry.table.info);
