@@ -4,6 +4,7 @@
 
 * Grokky: A prompt that fails or loses its connection says why above the prompt box, and the next prompt reconnects
 * Grokky: Fixed SAVE staying active after the AI saved the project
+* Grokky: Asked to fix a bar chart of averages stacked by a category that draws uniform bars, the AI removes the stack and says why instead of turning on column color coding
 * Grokky: Properties (F4) open on top of the AI panel instead of beside it, and the AI panel keeps its width when they close
 * Grokky: Clicking the icons under the prompt box no longer takes focus from it
 * Grokky: Answering the AI's question (choosing an option, clicking Submit) returns focus to the prompt box
