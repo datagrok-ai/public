@@ -123,6 +123,45 @@ scoped('a write between the load and the first poll is seen by that poll (EQ-037
   }
 });
 
+scoped('a write by another session right after a save is seen by the next poll (EQ-037)', async () => {
+  const be = counted();
+  const src = await started(be);
+  await tick();
+  src.rows.byKey('i1').title = 'Mine';
+  await flush();
+  assert.equal(await src.save(), true);
+  await flush();
+  // another session inserts before this list's next poll is due
+  const issue = await be.backend.table('grit.issue');
+  await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'Theirs'}}]);
+  await tick();
+  await flush();
+  assert.equal(src.rows.items.value.length, 4,
+    'a write after the save: the next poll compares with the re-base, it does not adopt the write as its baseline');
+  assert.equal(src.rows.byKey('i1').title, 'Mine');
+  src.dispose();
+});
+
+scoped('a load that bails over pending changes keeps the baseline its rows were read with (EQ-037)', async () => {
+  const be = counted();
+  const src = await started(be);
+  await tick();
+  // an edit lands while a reload is in flight: the load keeps the edited frame
+  const reload = src.refresh();
+  src.rows.byKey('i1').title = 'Mine';
+  await reload;
+  await flush();
+  assert.equal(src.isDirty.value, true);
+  assert.equal(src.rows.byKey('i1').title, 'Mine');
+
+  const issue = await be.backend.table('grit.issue');
+  await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'Theirs'}}]);
+  await tick();
+  assert.equal(src.stale.value, true, 'the next poll compares with what the shown rows were read with, and says the data changed');
+  assert.equal(src.rows.items.value.length, 3, 'without dropping the edit');
+  src.dispose();
+});
+
 scoped('the poll keeps pending rows anywhere in the session: a clean source over them is marked stale (EQ-037)',
   async () => {
     const be = counted();

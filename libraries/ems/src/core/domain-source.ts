@@ -383,7 +383,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const gen = ++this._gen;
     this._restart = false;
     this._moved = false;
-    // the rows about to arrive are the server's again, and the baseline is taken with them below
+    // the rows about to arrive are the server's again, and the baseline is taken with them below; the
+    // one the rows shown now were read with is kept for a load that bails over pending changes
+    const shown = this._probed;
     this._probed = undefined;
     batch(() => {
       this._error.value = undefined;
@@ -417,9 +419,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         frame.dispose();
         return;
       }
-      // an edit landed on the live frame while this load was in flight: the edited frame stays
+      // an edit landed on the live frame while this load was in flight: the edited frame stays, and
+      // so does the baseline it was read with — a write since then is still a change to the next poll
       if (this.isDirty.peek()) {
         frame.dispose();
+        this._probed = shown;
         this._state.value = 'ready';
         return;
       }
@@ -485,6 +489,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (moved && this.isDirty.peek())
         this._isStale.value = true;
       else if (moved) {
+        // the re-base takes a fresh baseline with the window it re-reads
         this._probed = undefined;
         await this._rebase();
       }
@@ -659,7 +664,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * of the same table reloaded — it is holding the rows this batch just rewrote. */
   async afterSave(): Promise<void> {
     const gen = this._gen;
-    // the batch moved the collection itself: the next probe baselines on what we just wrote
+    // the batch moved the collection itself: the re-base takes the baseline again with the window it
+    // re-reads; until then (and where it cannot) the next probe adopts, never reads our own write as theirs
     this._probed = undefined;
     await this._rebase();
     // and the re-base has just re-read the window, so the rows are the server's again — a save
@@ -724,6 +730,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     // read before the swap: a row the replacement does not hold takes `currentRow` with it
     const current = this.currentRow.peek()?.id ?? null;
     await this._serve(true);
+    // read BEFORE the window, as a load does: a write by someone else after the save is a change
+    // to the next poll, not its baseline
+    const baseline = await this._baseline(table);
     const replacement = await table.frame(this._spec(0, window));
     if (gen !== this._gen) {
       replacement.dispose();
@@ -738,6 +747,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._last = DomainSource._lastOf(replacement.df, this._loaded);
     this._moved = false;
     this._done = this._loaded < window;
+    this._probed = baseline;
     this._wire(replacement);
     batch(() => {
       this._df.value = replacement.df;
