@@ -241,7 +241,7 @@ export class MemoryDomainBackend implements DomainBackend {
           rowsOf(parentTable).find((r) => r.id === row[column]);
         if (parent?.[IS_DELETED] === true) {
           throw new DomainBackendError('restrict',
-            `Column "${column}" references a deleted row in "${parentTable!.name}"`);
+            `Column "${column}" references a deleted row in "${parentTable!.name}" ("${String(row[column])}")`);
         }
       }
     };

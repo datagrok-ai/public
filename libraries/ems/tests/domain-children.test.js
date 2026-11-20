@@ -339,7 +339,7 @@ scoped('EQ-062: a child added on a page whose parent a peer deleted is refused, 
     'Cannot save "Peter": its company "Initech" was deleted. Restore the company first.');
   // an FK moved onto a row in the trash is the same refusal, as the server's
   await assert.rejects(memory.transaction([{op: 'update', table: 'crm.contact', id: 'k2', values: {company_id: 'c3'}}]),
-    {code: 'restrict', message: 'Column "company_id" references a deleted row in "company"'});
+    {code: 'restrict', message: 'Column "company_id" references a deleted row in "company" ("c3")'});
   children.dispose();
   parent.dispose();
 });
@@ -376,4 +376,26 @@ scoped('EQ-062: NEW is off while the parent\'s delete is staged; a child drafted
   assert.equal(add.getAttribute('aria-disabled'), null, 'undoing the deletion turns NEW back on');
   children.dispose();
   parent.dispose();
+});
+
+scoped('EQ-062: the refusal names the row under the deleted parent, not another edit of the same Save', async () => {
+  const memory = crmWithEmpty();
+  emsBackends.domain = memory;
+  const contacts = await domains.table('crm.contact');
+  const src = testOwner().build(() => contacts.source({pageSize: 10}));
+  await flush();
+  await memory.transaction([{op: 'delete', table: 'crm.company', id: 'c3'}]);
+  src.rows.byKey('k1').name = 'Ann B.';
+  src.newRow({name: 'Peter', company_id: 'c3'});
+  assert.equal(await src.save(), false);
+  await flush();
+  assert.equal(DomainErrors.message(src.error.value, src),
+    'Cannot save "Peter": its company was deleted. Restore the company first.',
+    'Peter points at the deleted company; Ann, edited under a live one, is not the row refused');
+  assert.equal(memory.tableSync('crm.contact').rows.find((r) => r.id === 'k1').name, 'Ann', 'nothing landed');
+  // an older server words it without the parent's id: two candidates nothing tells apart name no row
+  assert.equal(DomainErrors.message({code: 'refused',
+    message: 'Cannot save: Column "company_id" references a deleted row in "company"'}, src),
+  'Cannot save: a reference points at a deleted company. Restore the company first.');
+  src.dispose();
 });
