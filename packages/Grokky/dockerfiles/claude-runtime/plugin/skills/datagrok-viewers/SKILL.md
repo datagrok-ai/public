@@ -34,7 +34,7 @@ path. Always use the full `*ColumnName(s)` form.
 |---------------------|-------------------------------------|---------------------------------|
 | `x is mw`           | `xColumnName: 'mw'`                 | `xColumnNames: ['mw', ...]`     |
 | `y is logp`         | `yColumnName: 'logp'`               | `yColumnNames: ['logp', ...]`   |
-| `color by activity` | `colorColumnName: 'activity'`       | —                               |
+| `color by activity` | `colorColumnName: 'activity'` (bar chart: numeric only, see below) | —        |
 | `size by mw`        | `sizeColumnName: 'mw'`              | —                               |
 | `label by smiles`   | `labelColumnName: 'smiles'`         | —                               |
 | `split by class`    | `splitColumnName: 'class'`          | `splitColumnNames: ['class']`   |
@@ -83,7 +83,7 @@ Always use the `DG.VIEWER.*` constants, never literal strings:
 | `DG.VIEWER.SCATTER_PLOT`       | `'Scatter plot'`     | `xColumnName`, `yColumnName`, `colorColumnName`, `sizeColumnName`, `showRegressionLine` |
 | `DG.VIEWER.HISTOGRAM`          | `'Histogram'`        | `valueColumnName`, `splitColumnName`, `bins`                                      |
 | `DG.VIEWER.LINE_CHART`         | `'Line chart'`       | `xColumnName`, `yColumnNames` (array)                                             |
-| `DG.VIEWER.BAR_CHART`          | `'Bar chart'`        | `splitColumnName`, `valueColumnName`, `valueAggrType`                             |
+| `DG.VIEWER.BAR_CHART`          | `'Bar chart'`        | `splitColumnName`, `valueColumnName`, `valueAggrType`, `stackColumnName`, `colorColumnName` (numeric), `colorAggrType` |
 | `DG.VIEWER.PIE_CHART`          | `'Pie chart'`        | `categoryColumnName`                                                              |
 | `DG.VIEWER.BOX_PLOT`           | `'Box plot'`         | `valueColumnName`, `category1ColumnName`, `category2ColumnName` (no `categoryColumnName`) |
 | `DG.VIEWER.HEAT_MAP`           | `'Heat map'`         | (returns a Grid subclass — column tag-driven color coding)                        |
@@ -143,6 +143,30 @@ view.addViewer(DG.VIEWER.BAR_CHART, {
   valueAggrType: 'sum',
 });
 ```
+
+### Bar chart: color by a category
+
+A bar chart has no categorical coloring. `colorColumnName` takes a **numeric**
+column, aggregated per bar by `colorAggrType`: a string column there makes the
+chart draw the error `avg(disease): "avg" is not supported for string` instead
+of bars. To show a category inside the bars, stack by it:
+
+```js
+// Count per race, each bar split into disease segments.
+view.addViewer(DG.VIEWER.BAR_CHART, {
+  splitColumnName: 'race',
+  stackColumnName: 'disease',
+  valueAggrType: 'count',
+});
+```
+
+Stacking draws segments only with an additive `valueAggrType` (`count`,
+`values`, `sum`). With `avg`, `med`, `min`, `max` the bars stay whole and
+uniform, though `stackColumnName` reads back as set. So "average height by race,
+colored by disease" cannot be drawn as asked: show the averages unstacked, say
+that a bar of averages cannot be colored by a category, and offer what can
+(a sum or count stacked by it, or a pivot table of the average per race and
+disease). Describe the chart by what it draws, never by the settings you wrote.
 
 ## Configuring an existing viewer
 
