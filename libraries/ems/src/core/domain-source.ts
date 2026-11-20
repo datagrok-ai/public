@@ -83,6 +83,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   static readonly live = new Set<DomainSource>();
   /** The `code` of a refusal the backend already reported ({@link refuse}). */
   static readonly REFUSED = 'refused';
+  private static readonly _forbidden = new WeakSet<object>();
   /** How often a `live` source probes the server by default. */
   static readonly liveMs = 30000;
   /** How many probes may fail in a row before the poll gives up ({@link DomainSource.live}). */
@@ -144,7 +145,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** What a refused save left standing, then {@link validity}: what the page says is wrong. */
   readonly blocked: ReadonlySignal<string | null>;
   /** Why Save stays off: {@link validity} without the server's refusals — the copy a refused save
-   * left here, the cells it marked. A refusal is the server's verdict on the batch as it was, and
+   * left here, the cells it marked — save a 403, which holds. What the client refused before sending
+   * holds too. A refusal is the server's verdict on the batch as it was, and
    * its cause may go where the client cannot see (the clashing row deleted in another tab): it
    * stays shown, and Save sends again for the server to decide. */
   readonly blocking: ReadonlySignal<string | null>;
@@ -261,6 +263,12 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       return this.validity.value;
     });
     this.blocking = computed(() => {
+      // what the client refused before sending (a guard, two edits of one row) and a 403 hold
+      // Save; the server's verdict on a value does not
+      const error = this._error.value;
+      const code = (error as {code?: unknown} | undefined)?.code;
+      if ((code === 'validation' || DomainSource.isForbidden(error)) && this._state.value !== 'error')
+        return DomainSource._message(error);
       for (const problem of this._problems.value) {
         if (problem.value !== null)
           return problem.value;
@@ -626,6 +634,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const edit = this._edit.peek();
     if (edit === undefined)
       return null;
+    // a 403 is about access, not the values: resending only meets it again, until the user lets
+    // go of the changes
+    const error = this._error.peek();
+    if (DomainSource.isForbidden(error) && this._state.peek() !== 'error')
+      return DomainSource._message(error);
     batch(() => {
       this._error.value = undefined;
       this._problemRow.value = null;
@@ -776,8 +789,18 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** A refusal the backend answered with `false` instead of an exception ("Cannot save: …"):
    * carried by the summary like every other, but marked as already reported — the platform
    * editor balloons its own, and nothing says it twice. */
-  refuse(problem: string): void {
-    this._error.value = new DomainBackendError(DomainSource.REFUSED, `Cannot save: ${problem}`);
+  refuse(problem: string, forbidden = false): void {
+    const error = new DomainBackendError(DomainSource.REFUSED, `Cannot save: ${problem}`);
+    if (forbidden)
+      DomainSource._forbidden.add(error);
+    this._error.value = error;
+  }
+
+  /** Whether the error is a save the server refused as forbidden — thrown with its code, or the
+   * copy {@link refuse} carries of one. */
+  static isForbidden(error: unknown): boolean {
+    return (error as {code?: unknown} | undefined)?.code === 'forbidden' ||
+      (typeof error === 'object' && error !== null && DomainSource._forbidden.has(error));
   }
 
   /** A refusal raised over one row before anything was sent — the session's preflight. Shown the

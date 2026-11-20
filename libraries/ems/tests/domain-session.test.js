@@ -892,3 +892,74 @@ scoped('a refused key whose clash is removed elsewhere: the refusal stays shown,
   save.dispose();
   projects.dispose();
 });
+
+scoped('after a server refusal a client error still disables Save, and Ctrl+S sends nothing', async () => {
+  const memory = backend();
+  let sent = 0;
+  emsBackends.domain = {
+    table: (address) => memory.table(address),
+    saveAll: (edits) => {
+      sent++;
+      for (const edit of edits)
+        edit.problem = 'Key DG already belongs to Datagrok';
+      return Promise.resolve(false);
+    },
+  };
+  const session = new SharedSession();
+  const projects = new DomainSource({table: 'grit.project', session}, env);
+  projects.start();
+  await flush();
+  const save = testOwner().build(() => saveButton(session));
+  projects.rows.byKey('p1').key = 'DG';
+  assert.equal(await session.save(), false);
+  await flush();
+  assert.equal(save.button.disabled, false, 'the server\'s refusal holds nothing');
+  projects.rows.byKey('p1').name = '';
+  await flush();
+  assert.equal(save.button.disabled, true, 'the client\'s own verdict does');
+  assert.match(session.blocking.value ?? '', /required|empty/i);
+  assert.equal(await session.save(), false, 'Ctrl+S');
+  assert.equal(sent, 1, 'nothing was sent');
+  save.dispose();
+  projects.dispose();
+});
+
+scoped('a save refused as forbidden still holds Save and Ctrl+S; an ordinary refusal does not', async () => {
+  const memory = backend();
+  let sent = 0;
+  let code = null;
+  emsBackends.domain = {
+    table: (address) => memory.table(address),
+    saveAll: (edits) => {
+      sent++;
+      for (const edit of edits) {
+        edit.problem = code === 'forbidden' ? 'forbidden' : 'Key DG already belongs to Datagrok';
+        edit.problemCode = code;
+      }
+      return Promise.resolve(false);
+    },
+  };
+  const session = new SharedSession();
+  const projects = new DomainSource({table: 'grit.project', session}, env);
+  projects.start();
+  await flush();
+  const save = testOwner().build(() => saveButton(session));
+  projects.rows.byKey('p1').key = 'DG';
+  assert.equal(await session.save(), false);
+  await flush();
+  assert.equal(save.button.disabled, false, 'an ordinary refusal: Save sends again');
+
+  code = 'forbidden';
+  assert.equal(await session.save(), false);
+  await flush();
+  assert.equal(sent, 2);
+  assert.match(projects.blocked.value ?? '', /do not have permission/);
+  assert.equal(save.button.disabled, true, 'a 403 holds Save: resending only meets it again');
+  assert.equal(await session.save(), false, 'Ctrl+S');
+  assert.equal(sent, 2, 'and sends nothing');
+  session.discard();
+  await flush();
+  assert.equal(projects.blocked.value, null, 'until the user lets go of the changes');
+  save.dispose();
+  projects.dispose();
+});

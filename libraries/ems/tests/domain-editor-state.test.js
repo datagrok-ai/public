@@ -3,7 +3,12 @@ import assert from 'node:assert/strict';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {Scope, FrameRows, Rows} from '@datagrok-libraries/u2';
 import {DataFrame, Stream} from '@datagrok-libraries/u2/tests/platform-doubles.mjs';
+import {register} from 'node:module';
 import {EditorEditState} from '../src/dg/editor-state.js';
+
+register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
+const DG = await import('datagrok-api/dg');
+const {DgDomainBackend} = await import('../src/dg/backend.js');
 
 function scoped(name, body) {
   test(name, async () => {
@@ -204,8 +209,9 @@ scoped('a cell the server\'s refusal marked stays shown but does not hold the ba
   };
   const state = new EditorEditState(editor);
   // the refused save: the platform session maps the server's error onto the cell it names
+  const before = state.errorCells?.();
   editor.fail(0, 'title', 'Title Aspirin already belongs to i7');
-  state.markRefused?.();
+  state.markRefused?.(before);
   assert.equal(state.validity.value, 'Title Aspirin already belongs to i7', 'the refusal stays shown');
   assert.equal((state.blocking ?? state.validity).value, null, 'a server refusal does not hold Save');
   assert.equal(state.refused?.('i1', 'title'), true);
@@ -225,13 +231,94 @@ scoped('a cell the server\'s refusal marked stays shown but does not hold the ba
 scoped('a server mark the editor took back is not exempt when the client says the same later', async () => {
   const {editor} = fakeEditor(ROWS);
   const state = new EditorEditState(editor);
+  const before = state.errorCells();
   editor.fail(0, 'title', 'Taken');
-  state.markRefused();
+  state.markRefused(before);
   assert.equal(state.blocking.value, null);
   delete editor.errorsOf(0).title;
   editor.onChanged.fire(editor);
   editor.fail(0, 'title', 'Taken');
   assert.equal(state.blocking.value, 'Taken');
   assert.equal(state.refused('i1', 'title'), false);
+  state.dispose();
+});
+
+/** The js-api session double, its `save` played by [play] for the length of [body]: the server's
+ * answer is what [play] does to the editors and returns. */
+async function playing(play, body) {
+  const real = DG.DomainSession.prototype.save;
+  DG.DomainSession.prototype.save = async function() {
+    const refusal = await play(this);
+    this.lastRefusal = refusal === true ? null : refusal;
+    return refusal === true;
+  };
+  try {
+    return await body();
+  } finally {
+    DG.DomainSession.prototype.save = real;
+  }
+}
+
+function validating(editor, client = () => {}) {
+  editor.validated = 0;
+  // the editor re-runs its own checks: every error they do not find goes, the ones they find stay
+  editor.validate = function() {
+    this.validated++;
+    for (let row = 0; row < this.dataFrame.rowCount; row++) {
+      for (const column of Object.keys(this.errorsOf(row)))
+        delete this.errorsOf(row)[column];
+    }
+    client(this);
+    this.onChanged.fire(this);
+    return 0;
+  };
+}
+
+scoped('saveAll: the cell the server marks is kept apart; the next save takes it back and is sent', async () => {
+  const {editor} = fakeEditor(ROWS);
+  validating(editor);
+  const state = new EditorEditState(editor);
+  const dg = new DgDomainBackend();
+  let sent = 0;
+  await playing((session) => {
+    sent++;
+    if (sent > 1)
+      return true;
+    // the platform maps the server's field error onto the cell it names
+    session.editors[0].fail(0, 'title', 'Title Aspirin already belongs to i7');
+    return {message: 'Title Aspirin already belongs to i7', editor: session.editors[0]};
+  }, async () => {
+    assert.equal(await dg.saveAll([state]), false);
+    assert.equal(state.validity.value, 'Title Aspirin already belongs to i7', 'the refusal stays shown');
+    assert.equal(state.blocking.value, null, 'and holds nothing');
+    assert.equal(state.refused('i1', 'title'), true);
+    assert.equal(editor.validated, 0);
+    assert.equal(await dg.saveAll([state]), true);
+    assert.equal(editor.validated, 1, 'the next save took the server\'s mark back before the editor built its batch');
+    assert.equal(sent, 2);
+  });
+  state.dispose();
+});
+
+scoped('saveAll: a client error the retry finds is the client\'s, and holds', async () => {
+  const {editor} = fakeEditor(ROWS);
+  // the server's mark goes; the client finds the second row's title empty
+  validating(editor, (e) => e.errorsOf(1).title = {message: 'Title is required', kind: 'error'});
+  const state = new EditorEditState(editor);
+  const dg = new DgDomainBackend();
+  await playing((session) => {
+    if (session.editors[0].validated === 0) {
+      session.editors[0].fail(0, 'title', 'Taken');
+      return {message: 'Taken', editor: session.editors[0]};
+    }
+    // the editor refuses its own cells and sends nothing
+    return {message: 'Fix the cell errors first', editor: null};
+  }, async () => {
+    assert.equal(await dg.saveAll([state]), false);
+    assert.equal(state.blocking.value, null);
+    assert.equal(await dg.saveAll([state]), false);
+    assert.equal(state.refused('i2', 'title'), false, 'never taken for the server\'s');
+    assert.equal(state.blocking.value, 'Title is required', 'the client\'s error holds the batch');
+  });
   state.dispose();
 });

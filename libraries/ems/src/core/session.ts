@@ -139,9 +139,11 @@ export class SharedSession implements DomainSession {
         for (const source of batch)
           source.fail(e);
         // the error names no source the client can tell: whichever source changes next, the
-        // batch is no longer the one refused, and the server decides again
-        this._raise(batch, () => false);
-        if ((e as {code?: unknown} | null)?.code === 'forbidden')
+        // batch is no longer the one refused, and the server decides again — but a 403 holds
+        // until the user lets go of the changes
+        const forbidden = (e as {code?: unknown} | null)?.code === 'forbidden';
+        this._raise(batch, () => forbidden);
+        if (forbidden)
           await this._reloadAccess();
         return false;
       } finally {
@@ -216,11 +218,15 @@ export class SharedSession implements DomainSession {
     const problem = batch.map((s) => s.validity.peek() ?? s.edit.peek()?.problem ?? null)
       .find((v) => v != null) ?? 'the changes were refused';
     for (const source of batch)
-      source.refuse(forbidden ? SharedSession.forbidden(problem) : problem);
+      source.refuse(forbidden ? SharedSession.forbidden(problem) : problem, forbidden);
     // the cause is known to sit in one source only when one cell alone says it: a change beside it
     // leaves it as it was. A sentence about a row (a delete its children veto: the cause is in the
     // children) or about the batch (on every source) may be answered by a change anywhere, and
     // the server decides again — a needless second refusal, never a Save that stays off
+    // a 403 is about access, not a value: it holds until the user lets go of the changes, and
+    // a resend would only be refused again
+    if (forbidden)
+      return () => true;
     const cells = batch.filter((s) => s.validity.peek() !== null);
     const origin = cells.length === 1 ? cells[0] : undefined;
     return (changed) => origin !== undefined && changed !== origin;

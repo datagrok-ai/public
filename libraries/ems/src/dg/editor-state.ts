@@ -94,10 +94,10 @@ export class EditorEditState implements EditState {
     return message !== undefined && message === this.errorOf(key, column);
   }
 
-  /** After a refused save: every blocking cell error standing now is the server's — the session
-   * checked the batch before it went — and is kept apart from the client's verdict. */
-  markRefused(): void {
-    this._refused.clear();
+  /** Every blocking cell error standing now, by row key and column: what {@link markRefused}
+   * compares against. */
+  errorCells(): Map<string, Map<string, string>> {
+    const found = new Map<string, Map<string, string>>();
     const df = this.df;
     for (let row = 0; row < df.rowCount; row++) {
       const errors = this.editor.errorsOf(row);
@@ -105,10 +105,28 @@ export class EditorEditState implements EditState {
         if (errors[column].kind !== 'error')
           continue;
         const key = FrameRows.keyOf(df as unknown as DataFrameLike, row);
-        let cells = this._refused.get(key);
+        let cells = found.get(key);
         if (cells === undefined)
-          this._refused.set(key, cells = new Map());
+          found.set(key, cells = new Map());
         cells.set(column, errors[column].message);
+      }
+    }
+    return found;
+  }
+
+  /** After a save the server refused: the cell errors that were not there when the save began
+   * ([before], from {@link errorCells}) are the server's, mapped onto the cells it named, and are
+   * kept apart from the client's verdict. An error the client had already found is never one. */
+  markRefused(before: Map<string, Map<string, string>>): void {
+    this._refused.clear();
+    for (const [key, cells] of this.errorCells()) {
+      for (const [column, message] of cells) {
+        if (before.get(key)?.get(column) === message)
+          continue;
+        let marked = this._refused.get(key);
+        if (marked === undefined)
+          this._refused.set(key, marked = new Map());
+        marked.set(column, message);
       }
     }
     this._version.value = this._version.peek() + 1;

@@ -72,8 +72,11 @@ export class DgDomainBackend implements DomainBackend {
     for (const state of states) {
       state.problem = null;
       state.problemCode = null;
-      state.retry();
+      // optional: a test drives this backend over writers of its own
+      state.retry?.();
     }
+    // what the client finds before anything is sent: an error standing now is never the server's
+    const before = states.map((state) => state.errorCells?.());
     const session = new DG.DomainSession(states.map((e) => e.editor), {quiet: true});
     try {
       if (await session.save())
@@ -82,8 +85,10 @@ export class DgDomainBackend implements DomainBackend {
       // containers") and balloons it; the u2 status line says it on the state whose editor it
       // names, and on every one for a refusal the batch as a whole answers for
       const refusal = session.lastRefusal;
+      // the editor's own refusal of its cells (a client error `retry` found) sent nothing
+      const sent = refusal !== null && refusal.message !== DG.DomainSession.CELL_ERRORS;
+      states.forEach((state, i) => state.markRefused?.(sent ? before[i]! : state.errorCells()));
       for (const state of states) {
-        state.markRefused();
         if (refusal !== null && (refusal.editor === null || refusal.editor === state.editor))
           state.problem = refusal.message;
         state.problemCode = DgDomainBackend.isForbidden(refusal) ? 'forbidden' : refusal?.code ?? null;
