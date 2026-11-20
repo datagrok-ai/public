@@ -8,8 +8,7 @@ import {moltrackDb} from '../generated/db';
 import {Chemistry, HASH_COLUMNS, IDENTITY_COLUMNS} from './chemistry';
 import type {CompoundIdentity, MatchRule} from './chemistry';
 import {MolTrackTables} from './tables';
-
-const LOOKUP_CHUNK = 500;
+import {lookupFirstByHash} from './lookup';
 
 const STRUCTURE = 'original_structure';
 
@@ -70,15 +69,6 @@ export class BulkRegistration {
   // under the matching rule in force: a compound registered under another rule is not "the same" here
   private static async _registered(hashes: string[], rule: MatchRule): Promise<Map<string, CompoundRow>> {
     const column = HASH_COLUMNS[rule];
-    const found = new Map<string, CompoundRow>();
-    for (let at = 0; at < hashes.length; at += LOOKUP_CHUNK) {
-      const filter = DG.cond(column, '=', hashes.slice(at, at + LOOKUP_CHUNK));
-      const rows = await moltrackDb.compounds.query({filter, columns: [column, 'molregno'], sort: 'molregno'});
-      for (const row of rows) {
-        if (!found.has(row[column]!))
-          found.set(row[column]!, row);
-      }
-    }
-    return found;
+    return lookupFirstByHash<CompoundRow>(hashes, column, (spec) => moltrackDb.compounds.query(spec as any));
   }
 }
