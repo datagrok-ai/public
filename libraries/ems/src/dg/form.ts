@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Rows, Access, Filters, div, span,
-  timestamp, EMPTY, isEmpty, text, loader, link, iconButton, notify, PickInput} from '@datagrok-libraries/u2';
+  timestamp, EMPTY, isEmpty, text, loader, link, iconButton, notify, PickInput, ChoiceInput} from '@datagrok-libraries/u2';
 import type {Input, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
   RowView} from '@datagrok-libraries/u2';
 import {propertyForm, ObjectForm, Editors, userPick, groupPick, kindOf} from '@datagrok-libraries/u2/dg';
@@ -342,6 +342,8 @@ export class DomainForm extends Control {
       const kind = kindOf(source.schema.properties.find((p) => p.name === name)!);
       input.addValidator((value) => (ObjectForm.same(value, ObjectForm.coerce(kind, row[name])) ?
         source.edit.peek()?.errorOf(row.id, name) : null) ?? table?.validators.check(name, value, row) ?? null);
+      if (!draft)
+        DomainForm._markStored(input, () => ObjectForm.same(input.value, ObjectForm.coerce(kind, row[name])));
       // and a constraint is judged on what the fields hold, written or not
       if (this._constraints.some((c) => c.columns.includes(name))) {
         let initial = true;
@@ -356,6 +358,25 @@ export class DomainForm extends Control {
     }
     this._markChanged(form, row);
     return form;
+  }
+
+  // a saved record's stored value that a rule tightened since refuses (a max lowered under it, its choice
+  // removed) holds Save off from the start, so its field says why at once: the touch rule spares a new
+  // record's empty fields, not a stored value; a choice no longer listed stays shown, marked, and refused
+  private static _markStored(input: Input<any>, stored: () => boolean): void {
+    if (input instanceof ChoiceInput) {
+      const value = input.peek();
+      const listed = input.items.map((item) => typeof item === 'string' ? item : item.value);
+      if (typeof value === 'string' && value !== '' && listed.length > 0 && !listed.includes(value)) {
+        input.setItems([...input.items, {value, label: `${value} (not in the list)`}]);
+        input.addValidator((v) => v === null || v === '' || listed.includes(v) ? null :
+          `Must be one of: ${listed.join(', ')}`);
+      }
+    }
+    input.effect(() => {
+      if (!input.touched.value && input.validity.value !== null && stored())
+        untracked(() => input.touch());
+    });
   }
 
   // a draft is new whole: none of its fields is marked

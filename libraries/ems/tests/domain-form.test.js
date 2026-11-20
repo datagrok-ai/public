@@ -1199,3 +1199,66 @@ scoped('a draft shows the column defaults, so a required column with one is alre
   create.dispose();
   draft.dispose();
 });
+
+/** A ticket table whose rules were tightened after rows were stored: `score` holds 50 under a max lowered to
+ * 10, `kind` holds `alpha` after `alpha` left its choices. */
+function tightened() {
+  return new MemoryDomainBackend({name: 'desk', tables: {
+    ticket: {businessKey: ['code'], columns: {
+      code: {type: 'string', required: true, isName: true},
+      score: {type: 'int', max: 10, friendlyName: 'Score'},
+      kind: {type: 'string', choices: ['beta', 'gamma'], friendlyName: 'Kind'},
+    }},
+  }}, {rows: {ticket: [{id: 't1', code: 'T1', score: 50, kind: 'alpha'}]}});
+}
+
+scoped('a stored value a tightened max refuses is marked on its field at once, where Save is held off', async () => {
+  emsBackends.domain = tightened();
+  const table = await domains.table('desk.ticket');
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  await flush();
+  src.currentRow.value = src.rows.byKey('t1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  const score = form.input('score');
+  assert.equal(score.value, 50, 'the stored value is shown');
+  assert.equal(src.session.validity.value, 'Score: Value must be at most 10', 'Save is held off for it');
+  assert.equal(score.getState().error, 'Value must be at most 10',
+    'the untouched stored value shows why on its field');
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a stored value whose choice was removed stays shown, marked not in the list, with an error', async () => {
+  emsBackends.domain = tightened();
+  const table = await domains.table('desk.ticket');
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  await flush();
+  src.currentRow.value = src.rows.byKey('t1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  const kind = form.input('kind');
+  assert.equal(kind.value, 'alpha', 'the input holds the stored value');
+  assert.equal(kind.getState().text, 'alpha (not in the list)',
+    'the stored choice is shown, marked as not one of the choices, not an empty dropdown');
+  assert.equal(kind.getState().error, 'Must be one of: beta, gamma', 'the field says why');
+  kind.value = 'beta';
+  await flush();
+  assert.equal(kind.getState().error, null, 'a listed choice clears it');
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a draft still waits for a touch: the stored-value mark is for saved records only', async () => {
+  emsBackends.domain = tightened();
+  const table = await domains.table('desk.ticket');
+  const src = testOwner().build(() => table.draft({score: 50}));
+  await flush();
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  assert.equal(form.input('score').validity.peek(), 'Value must be at most 10', 'the draft breaks the rule too');
+  assert.equal(form.input('score').getState().error, null,
+    'a new record does not nag before the user is in the field');
+  form.dispose();
+  src.dispose();
+});
