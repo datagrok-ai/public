@@ -1027,6 +1027,32 @@ scoped('?trash=1 round-trips through open(); without the delete grant the menu d
   c.dispose();
 });
 
+scoped('row mode: the entity page\'s ⋯ menu offers Delete where the row grants it, as the list does (EQ-022)',
+  async () => {
+    const memory = backend({access: {can: {view: true, insert: true, edit: true, delete: false, share: false},
+      fields: {title: 'editable'}}});
+    const issue = memory.tableSync('grit.issue');
+    // a row-mode author: the server's author arm grants every right on the row the table denies
+    issue.rows[0]['~can_delete'] = true;
+    emsBackends.domain = memory;
+    const table = await domains.table('grit.issue');
+    const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+    document.body.append(a.root);
+    const more = ribbonControl(testOwner().build(() => a.ribbon()).main, 'actions-menu');
+    document.body.append(more.root);
+    await flush();
+    assert.equal(a.listSource.access.value.can('delete'), false, 'the table says no');
+    assert.equal(await a.open(`${BASE}?entity=i1`), true);
+    await flush();
+    assert.equal(a.entitySource.value.currentRow.value.id, 'i1');
+    assert.equal(more.root.hidden, false);
+    fire(more.root, 'click');
+    await flush();
+    const items = [...document.querySelectorAll('[role="menuitem"] .u2-menu-label')].map((el) => el.textContent);
+    assert.deepEqual(items, ['Delete', 'Import…', 'Bulk edit…'], 'the row\'s own ~can_delete, no table-level Trash');
+    a.dispose();
+  });
+
 scoped('Refresh is in the ribbon only while the page is stale, and reloads through the gate', async () => {
   const memory = backend();
   let last = '2026-01-01T00:00:00Z';
