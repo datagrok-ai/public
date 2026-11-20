@@ -149,13 +149,22 @@ export class DomainChildren extends Control {
       (code !== 'validation' && code !== DomainSource.REFUSED) ? null : DomainErrors.message(error, source);
   }
 
+  // null unless the table is not viewable or its link to the parent is a column the caller cannot read
+  private _denied(entry: ChildEntry): string | null {
+    if (!entry.table.access.can('view'))
+      return DomainErrors.noAccess(entry.table.info);
+    return entry.table.access.field(entry.fk) !== 'hidden' ? null :
+      DomainErrors.noLink(entry.table.info, this.parent.schema.info);
+  }
+
   private async _count(entries: readonly ChildEntry[], row: RowView | null, pick: boolean): Promise<void> {
     for (const e of entries)
       this._tabStates.get(e.id)!.count.value = null;
     if (row === null || Rows.isDraft(row))
       return;
     const opened = this.tabs.activeTab.peek();
-    const counts = await Promise.all(entries.map((e) =>
+    // a table the caller may not view answers a count of 0: not a count to show
+    const counts = await Promise.all(entries.map((e) => this._denied(e) !== null ? null :
       e.table.table.count({filter: `${e.fk} = "${row.id}"`}).catch(() => null)));
     if (this.scope.isDisposed || this.parent.currentRow.peek()?.id !== row.id)
       return;
@@ -193,8 +202,11 @@ export class DomainChildren extends Control {
       const pending = scope = new Scope();
       pending.build(() => untracked(() => {
         const draft = Rows.isDraft(row);
-        const child = entry.table.source({query: draft ? '' : `${entry.fk} = "${row.id}"`,
-          defaults: {[entry.fk]: row.id}, session: this.parent.session, empty: draft});
+        // a tab that cannot be shown asks nothing: the server refuses a read through a column the caller cannot see
+        const denied = this._denied(entry);
+        const child = entry.table.source({query: draft || denied !== null ? '' : `${entry.fk} = "${row.id}"`,
+          defaults: denied !== null ? {} : {[entry.fk]: row.id}, session: this.parent.session,
+          empty: draft || denied !== null});
         this._sources.set(entry.id, child);
         state.current.value = child;
         // the parent's id is the same on every row here, and the column is not the user's to edit
@@ -212,11 +224,14 @@ export class DomainChildren extends Control {
         pane.replaceChildren(divH([add.root], 'u2-domain-children-toolbar'), body, empty);
         pending.effect(() => {
           const ready = child.state.value === 'ready';
-          const none = ready && child.rows.items.value.length === 0;
+          const none = denied !== null || (ready && child.rows.items.value.length === 0);
+          if (denied !== null)
+            empty.textContent = denied;
+          add.root.hidden = denied !== null;
           empty.hidden = !none;
           body.hidden = none;
           state.blank.value = none;
-          if (ready && !draft)
+          if (ready && !draft && denied === null)
             state.count.value = child.total.value;
         });
       }));

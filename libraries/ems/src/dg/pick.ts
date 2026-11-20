@@ -4,6 +4,7 @@ import type {ObjectRenderer, DomainCondition, DomainConditionNode, DomainConditi
   FilterSchema} from '@datagrok-libraries/u2';
 import type {DomainTableInfoLike, DomainTableLike} from '../core/domain-backend.js';
 import {DomainSource} from '../core/domain-source.js';
+import {DomainErrors} from './errors.js';
 import type {DomainTable} from './facade.js';
 
 export interface PickItem {
@@ -50,6 +51,7 @@ export class DomainPick extends PickInput<PickItem> {
     const listItem = renderer?.listItem?.bind(renderer);
     let unbound: string[] = [];
     let more = false;
+    let denied: string | null = null;
     const caption = (name: string) => siblings?.properties.find((p) => p.name === name)?.friendlyName ?? name;
     const host = DomainPick.host;
     super({
@@ -60,6 +62,12 @@ export class DomainPick extends PickInput<PickItem> {
             const bound = DomainPick.bind(filter, params?.());
             unbound = bound.unbound;
             if (unbound.length > 0)
+              return [];
+            // the server answers a reader without View with no rows: only the access tells it from an empty table
+            const info = (await DomainPick.table(table)).info;
+            denied = (await (await DomainPick.table(table)).access()).can.view === false ?
+              DomainErrors.noAccess(info) : null;
+            if (denied !== null)
               return [];
             const page = await DomainPick.page(table, query, {filter: bound.filter, limit});
             more = page.more;
@@ -78,7 +86,7 @@ export class DomainPick extends PickInput<PickItem> {
           footer: () => more ? 'More match — type to narrow' : null,
           // an empty table is not a dead end: say what there is none of yet
           emptyText: (query) => unbound.length > 0 ? `Pick a ${caption(unbound[0]).toLowerCase()} first` :
-            query.trim() === '' ?
+            denied !== null ? denied : query.trim() === '' ?
               `No ${(DomainPick._plural.get(table) ?? table.split('.').pop()!).toLowerCase()} yet` : 'No matches',
         });
         return typeAhead;
