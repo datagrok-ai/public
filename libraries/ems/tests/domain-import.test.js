@@ -879,3 +879,14 @@ scoped('a commit refused over a CHECK no row breaks reports it on the batch, on 
   fire(buttonNamed('CLOSE'), 'click');
   await running;
 });
+
+scoped('nothing that would land keeps the import button off: a header-only file', async () => {
+  const memory = backend();
+  const {running} = await opened(memory, frame(['project_id', 'title'], []));
+  await toMapping();
+  await toPreview();
+  assert.equal(importButton().disabled, true, 'a header-only file has nothing to import: the button is off');
+  assert.match(reason(), /nothing to import/i);
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
