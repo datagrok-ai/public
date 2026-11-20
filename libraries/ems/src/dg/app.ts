@@ -492,9 +492,12 @@ export class DomainApp extends Control {
     const pristine = () => !this.session.isDirty.value && this._page.value === 'entity' &&
       DomainApp._isDraft(this._entitySource.value, this._entitySource.value?.currentRow.value ?? null);
     const discard = domains.discardButton(this.session, {leave: {when: pristine, run: () => void this.goTo('list')}});
-    // nothing on a read-only page is saved — the trash until a restore is staged
-    save.effect(() => save.root.hidden = discard.root.hidden = !this.session.isDirty.value &&
-      ((this._page.value === 'entity' ? this._entitySource.value : this.listSource)?.readOnly.value ?? false));
+    // nothing on a read-only page is saved — the trash until a restore is staged — nor on one the caller may not view
+    save.effect(() => {
+      const source = this._page.value === 'entity' ? this._entitySource.value : this.listSource;
+      save.root.hidden = discard.root.hidden = !this.session.isDirty.value &&
+        (source?.readOnly.value === true || source?.access.value.can('view') === false);
+    });
     const more = this._actionsMenu();
     // the status bar is text: the way to act on "Data changed" is here, and only while it stands
     const reload = new Control(button('Refresh', () => void this.refresh()));
