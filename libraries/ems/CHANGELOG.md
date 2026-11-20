@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Forms: Fixed a field whose write the writer refuses (a column another session dropped: "No such column: note") counting as an unsaved change while every Save said "Item saved" and wrote nothing: the field says it cannot be saved and to reload the page, and Save is refused; a session whose batch carries no row is refused, never announced as saved (`DomainSource.unapplied`)
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input

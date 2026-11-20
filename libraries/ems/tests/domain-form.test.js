@@ -655,6 +655,62 @@ scoped('text a number field cannot read is an unsaved change too: the gates ask,
   src.dispose();
 });
 
+scoped('a write the writer throws on is a problem on its field: Save is refused, never "saved" for nothing (EQ-024)', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  const save = domains.saveButton(src);
+  document.body.append(save.root);
+  await flush();
+  // the platform writer over a frame that lost the column since the form was built (dropped in another session)
+  const edit = src.edit.peek();
+  const setValue = edit.setValue;
+  edit.setValue = (key, column, value) => {
+    if (column === 'title')
+      throw new Error('No such column: title');
+    return setValue.call(edit, key, column, value);
+  };
+  const title = form.input('title');
+  const box = title.root.querySelector('input');
+  box.value = 'typed into a dropped column';
+  fire(box, 'input');
+  fire(box, 'focusout');
+  await flush();
+  assert.equal(src.rows.byKey('i1').title, 'Aspirin', 'the write did not land');
+  assert.match(title.validity.value ?? '', /cannot be saved \(No such column: title\): reload the page/,
+    'the field says its value cannot be saved, and what to do');
+  assert.match(src.session.validity.value ?? '', /^Title: cannot be saved/, 'Save says why it is off');
+  assert.equal(save.button.getAttribute('aria-disabled'), 'true', 'Save is off');
+  assert.equal(await src.save(), false, 'a Save run anyway is refused');
+  assert.equal(document.querySelector('[role="status"]'), null, 'and no "saved" balloon');
+  assert.match(String(src.error.value?.message), /Cannot save: Title: cannot be saved/);
+  edit.setValue = setValue;
+  box.value = 'Aspirin 2';
+  fire(box, 'input');
+  await flush();
+  assert.equal(src.rows.byKey('i1').title, 'Aspirin 2', 'a write that lands clears the problem');
+  assert.equal(title.validity.value, null);
+  save.dispose();
+  form.dispose();
+  src.dispose();
+});
+
+scoped('a dirty session whose batch carries no row is refused, never announced as saved (EQ-024)', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  await flush();
+  // an edit held for the row that no field reports and no row carries
+  const unhold = src.holdUnwritten(signal({row: 'i1', values: {title: 'held'}}));
+  await flush();
+  assert.equal(src.isDirty.value, true);
+  assert.deepEqual(src.pending(), []);
+  assert.equal(await src.save(), false, 'nothing was written, so the save did not happen');
+  assert.equal(document.querySelector('[role="status"]'), null, 'no "saved" balloon');
+  assert.match(String(src.error.value?.message), /Cannot save: the unsaved changes could not be written/);
+  unhold();
+  src.dispose();
+});
+
 scoped('a field left invalid over a changed cell is one change, and the row reads as the field holds it', async () => {
   const {src} = await issues();
   src.currentRow.value = src.rows.byKey('i1');
