@@ -484,20 +484,24 @@ function rowName<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowV
   return at < 0 ? caption : `${capital(nounOf(table.info, true))} ${at + 1}`;
 }
 
-const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Whether a caption is empty or holds an id: the row's own, a reference column's value, or a uuid. */
-function madeOfIds<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>,
+/** Whether a caption names nothing: empty, exactly a uuid, or only the row's id, its reference ids, numbers and
+ * separators ("<project id>-1"). "Sample A-1" and a caption that merely contains a uuid name the row. */
+export function madeOfIds<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>,
   caption: string): boolean {
-  if (caption === '' || caption === row.id || UUID.test(caption))
+  if (caption === '' || UUID.test(caption))
     return true;
-  const ids = new Set<string>([row.id]);
+  const ids = [row.id];
   for (const p of table.properties) {
     const value = p.name === undefined || !DomainTable.isReference(p) ? undefined : (row as any)[p.name];
     if (typeof value === 'string' && value !== '')
-      ids.add(value);
+      ids.push(value);
   }
-  return caption.split(/[\s\-_:/,.]+/).some((token) => ids.has(token));
+  let rest = caption;
+  for (const id of ids.sort((x, y) => y.length - x.length))
+    rest = rest.split(id).join(' ');
+  return /^[\s\d\-_:/,.#]*$/.test(rest);
 }
 
 /** `domains.table(address)` and every domain control (`domains.form(src)`, `domains.list(src)`, …), each made at

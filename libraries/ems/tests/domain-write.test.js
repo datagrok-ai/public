@@ -157,25 +157,55 @@ scoped('the writer\'s own cell refusal names the row and the field, and marks th
   source.dispose();
 });
 
-scoped('a refusal over a saved row whose handler caption is only ids names the row by its place', async () => {
-  class IdHandle extends DG.DomainObjectHandler {
-    getCaption(x) { return `${x.values.project_id}-${x.values.number}`; }
+/** The message of the refusal over issue `id` emptied of its title, under a handler captioning rows `caption(x)`. */
+async function emptiedTitle(caption, id = 'i2') {
+  class Handle extends DG.DomainObjectHandler {
+    getCaption(x) { return caption(x.values); }
   }
-  DG.ObjectHandler.register(new IdHandle('grit.issue'));
+  DG.ObjectHandler.register(new Handle('grit.issue'));
   try {
     emsBackends.domain = backend();
     const table = await domains.table('grit.issue');
     const source = testOwner().build(() => table.source({}));
     await flush();
-    source.rows.byKey('i2').title = '';
+    source.rows.byKey(id).title = '';
     await flush();
     assert.equal(await source.save(), false);
-    assert.equal(source.error.value.message, 'Cannot save: Issue 2: Title: Value can\'t be empty',
-      'the place, not the project id and the number');
+    const message = source.error.value.message;
     source.dispose();
+    return message;
   } finally {
     DG.ObjectHandler.registered.length = 0;
   }
+}
+
+scoped('an emptied title is named by place when the handler caption is only ids', async () => {
+  assert.equal(await emptiedTitle((v) => `${v.project_id}-${v.number}`),
+    'Cannot save: Issue 2: Title: Value can\'t be empty', 'the project id and the number name nothing');
+  assert.equal(await emptiedTitle(() => '0b9d7c1e-5a3f-4c2e-9d1a-7f3e2b6a8c40'),
+    'Cannot save: Issue 2: Title: Value can\'t be empty', 'nor does a bare uuid');
+});
+
+scoped('a readable handler caption names the row; ids inside it do not unname it', async () => {
+  assert.equal(await emptiedTitle((v) => `QAT070A-${v.number}`), 'Cannot save: QAT070A-2: Title: Value can\'t be empty');
+  assert.equal(await emptiedTitle((v) => `Sample ${v.project_id}-${v.number}`),
+    'Cannot save: Sample p1-2: Title: Value can\'t be empty', 'a reference id among words');
+  assert.equal(await emptiedTitle(() => 'Sample A-1'), 'Cannot save: Sample A-1: Title: Value can\'t be empty');
+  assert.equal(await emptiedTitle((v) => `Run 0b9d7c1e-5a3f-4c2e-9d1a-7f3e2b6a8c40 (${v.number})`),
+    'Cannot save: Run 0b9d7c1e-5a3f-4c2e-9d1a-7f3e2b6a8c40 (2): Title: Value can\'t be empty',
+    'a caption that merely contains a uuid');
+});
+
+scoped('with no handler an emptied title is named by place', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const source = testOwner().build(() => table.source({}));
+  await flush();
+  source.rows.byKey('i1').title = '';
+  await flush();
+  assert.equal(await source.save(), false);
+  assert.equal(source.error.value.message, 'Cannot save: Issue 1: Title: Value can\'t be empty');
+  source.dispose();
 });
 
 scoped('the validators run over a row the frame filter hides — the writer sends it all the same', async () => {
