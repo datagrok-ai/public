@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, Registry, registerAll} from '@datagrok-libraries/u2';
-import {backend} from './domain-fixtures.mjs';
+import {backend, until} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -55,7 +55,7 @@ scoped('typing searches after the pause; Enter at once; Escape clears; the total
   assert.equal(input.placeholder, 'Search title, description…', 'names what it searches');
   type(input, 'asp');
   assert.equal(src.search.value, '', 'not yet');
-  await wait(30);
+  await until(() => src.search.value === 'asp');
   assert.equal(src.search.value, 'asp');
   await flush();
   assert.equal(src.total.value, 1, 'the memory backend searched the title');

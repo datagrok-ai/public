@@ -1,3 +1,4 @@
+import {flush} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 
 export const SCHEMA = {
@@ -80,4 +81,12 @@ export function hierarchyBackend(options = {}) {
 /** The `stock.location` table of a fresh {@link hierarchyBackend}. */
 export function locations(options = {}) {
   return hierarchyBackend(options).tableSync('stock.location');
+}
+
+/** Waits until `cond()` holds, polling, with a generous cap so a loaded machine cannot race a short timer. */
+export async function until(cond, cap = 2000) {
+  const end = Date.now() + cap;
+  while (!cond() && Date.now() < end)
+    await new Promise((r) => setTimeout(r, 5));
+  await flush();
 }
