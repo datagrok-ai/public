@@ -483,7 +483,8 @@ export class MemoryTable implements DomainTableLike {
       edit,
       append: async (page) => {
         const more = await this.query(page);
-        df.rows.push(...more);
+        const held = new Set(df.rows.map((row) => row.id));
+        df.rows.push(...more.filter((row) => row.id === undefined || !held.has(row.id)));
         df.onRowsAdded.fire(undefined);
         return more.length;
       },
