@@ -83,6 +83,7 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
     if ((e as KeyboardEvent).key !== 'Escape')
       return;
     picked.value = false;
+    kept = [];
     KEPT.delete(source);
     rows.selectedIndex.value = -1;
   };
@@ -110,6 +111,15 @@ export function collectionSelection(source: SelectableCollection, rows: VirtualR
     live = true;
     const frames = fresh ? untracked(() => (source.selection?.peek() ?? []).map((r) => r.id)) : [];
     const taken = frames.length > 0 || !fresh ? frames : KEPT.get(source) ?? [];
+    // shown again with nothing picked anywhere (Escape cleared it in the other control): what this
+    // control still shows selected is stale, and it falls back to the lead alone
+    if (fresh && own && taken.length === 0) {
+      kept = [];
+      picked.value = false;
+      const lead = untracked(() => source.currentRow.peek()?.id);
+      untracked(() => rows.selectKeys(lead === undefined ? [] : [lead], lead));
+      return;
+    }
     const bits = df?.selection as
       {get?(i: number): boolean, set?(i: number, value: boolean): void} | null | undefined;
     if (df === undefined || typeof bits?.set !== 'function')

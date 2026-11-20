@@ -136,12 +136,12 @@
    the selection's when the row is both, so it reads apart from the other picked rows */
 .u2-data-table-row-current,
 .u2-data-table-row-current:hover {
-  background: var(--dg-grid-current-row);
+  background: var(--u2-row-current-bg);
 }
 
 .u2-data-table-row-current.u2-data-table-row-selected,
 .u2-data-table-row-current.u2-data-table-row-selected:hover {
-  background: linear-gradient(var(--dg-grid-current-row), var(--dg-grid-current-row)), var(--dg-selection-bg);
+  background: linear-gradient(var(--u2-row-current-bg), var(--u2-row-current-bg)), var(--u2-row-selected-bg);
 }
 
 /* the editor's per-cell verdicts, the platform grid's colours in table terms: an unsaved edit is

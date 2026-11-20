@@ -1380,6 +1380,32 @@ scoped('the status bar is four slots, and a refusal never takes the count off th
   a.dispose();
 });
 
+scoped('the table counts every row picked in it, after the collection is read again (EQ-041)', async () => {
+  const {app: a} = await app();
+  a.view.value = 'table';
+  await flush();
+  const el = () => {
+    const t = a.list.root.nextElementSibling.firstElementChild;
+    layout(t, {clientHeight: 300});
+    fire(t, 'scroll');
+    return t;
+  };
+  let table = el();
+  await flush();
+  const rowAt = (i) => [...table.lastElementChild.children]
+    .find((r) => r.getAttribute('aria-rowindex') === String(i + 2));
+  fire(rowAt(0), 'click');
+  fire(rowAt(2), 'click', {ctrlKey: true});
+  await flush();
+  assert.equal(a.status.value.selected, 2, 'the table counts every row picked in it');
+  await a.listSource.refresh();
+  await flush();
+  table = el();
+  await flush();
+  assert.equal(a.status.value.selected, 2, 'and after the collection is read again');
+  a.dispose();
+});
+
 scoped('the table view counts every row picked in it, and takes over a selection the list made (EQ-041)', async () => {
   const {app: a} = await app();
   const listRow = (id) => [...a.list.root.getElementsByTagName('*')].find((el) => el.getAttribute('data-u2-row') === id);
@@ -1397,6 +1423,11 @@ scoped('the table view counts every row picked in it, and takes over a selection
     return el;
   };
   let table = shown();
+  await flush();
+  // the collection is read again once the table is mounted: both views' bindings see the new frame
+  await a.listSource.refresh();
+  await flush();
+  table = shown();
   await flush();
   const rowsOf = (el) => [...el.lastElementChild.children].filter((r) => r.getAttribute('role') === 'row');
   const pickedIn = (el) => rowsOf(el).filter((r) => r.getAttribute('aria-selected') === 'true').length;
@@ -1424,6 +1455,20 @@ scoped('the table view counts every row picked in it, and takes over a selection
   a.view.value = 'list';
   await flush();
   assert.equal(a.status.value.selected, 3, 'the list takes the selection back');
+
+  // a selection cleared is a selection of nothing, and no view switch brings the rows back
+  a.view.value = 'table';
+  await flush();
+  table = shown();
+  await flush();
+  fire(table, 'keydown', {key: 'Escape'});
+  await flush();
+  assert.equal(a.status.value.selected, 0, 'Escape clears the selection');
+  a.view.value = 'list';
+  await flush();
+  a.view.value = 'table';
+  await flush();
+  assert.equal(a.status.value.selected, 0, 'a view switch does not bring them back');
   a.dispose();
 });
 
