@@ -85,7 +85,7 @@ Always use the `DG.VIEWER.*` constants, never literal strings:
 | `DG.VIEWER.LINE_CHART`         | `'Line chart'`       | `xColumnName`, `yColumnNames` (array)                                             |
 | `DG.VIEWER.BAR_CHART`          | `'Bar chart'`        | `splitColumnName`, `valueColumnName`, `valueAggrType`                             |
 | `DG.VIEWER.PIE_CHART`          | `'Pie chart'`        | `categoryColumnName`                                                              |
-| `DG.VIEWER.BOX_PLOT`           | `'Box plot'`         | `valueColumnName`, `category1ColumnName`, `category2ColumnName` (no `categoryColumnName`) |
+| `DG.VIEWER.BOX_PLOT`           | `'Box plot'`         | `valueColumnName`, `categoryColumnNames` (array; no `categoryColumnName`)       |
 | `DG.VIEWER.HEAT_MAP`           | `'Heat map'`         | (returns a Grid subclass — column tag-driven color coding)                        |
 | `DG.VIEWER.STATISTICS`         | `'Statistics'`       | `columnNames`                                                                     |
 | `DG.VIEWER.CORR_PLOT`          | `'Correlation plot'` | `columnNames` (or `xs` / `ys`)                                                    |
@@ -175,6 +175,40 @@ To discover property names, ask the viewer:
 const v = view.addViewer(DG.VIEWER.SCATTER_PLOT);
 const names = v.getProperties().map((p) => p.name);
 return ui.divText(names.join(', '));
+```
+
+### Ordering categories per viewer
+
+A column's category order (`col.setCategoryOrder(...)`, the `.category-order`
+tag) is shared: every viewer of that column that has no order of its own
+follows it. To order one viewer ("box plot light first", "flip the bars"),
+set that viewer's own property and leave the column alone; changing the column
+re-orders every other viewer of it, which the user did not ask for. Do not
+change another viewer's sort to compensate either.
+
+| Viewer                  | Own order property                                        |
+|-------------------------|-----------------------------------------------------------|
+| Box plot                | `categoryOrder`                                           |
+| Bar chart               | `categoryOrder`, read only under `barSortType: 'custom'`  |
+| Pie chart               | `categoryOrder`, read only under `pieSortType: 'custom'`  |
+| Scatter plot            | `xCategoryOrder`, `yCategoryOrder`                        |
+| Line chart              | `xCategoryOrder`                                          |
+| 3D scatter plot         | `xCategoryOrder`, `yCategoryOrder`, `zCategoryOrder`      |
+
+The value is a JSON **string** `{"manual": [...]}`; a plain array or a
+comma-separated string is silently dropped while `props` still echoes it. So
+check the drawn order of the viewer you changed and of the other viewers of
+that column: a box plot's `hitAreas` has a `<category> values` rect per box,
+left to right.
+
+```js
+const bp = view.addViewer(DG.VIEWER.BOX_PLOT, {valueColumnName: 'age',
+  categoryColumnNames: ['weight class'],
+  categoryOrder: JSON.stringify({manual: ['light', 'medium', 'heavy']})});
+await DG.delay(500);
+const areas = bp.getWidgetStatus().hitAreas;
+return Object.keys(areas).filter((k) => k.endsWith(' values'))
+  .sort((a, b) => areas[a].x - areas[b].x).map((k) => k.slice(0, -7));
 ```
 
 ## Finding viewers

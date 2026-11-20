@@ -673,6 +673,27 @@ export const hiddenInGrid = Then('the {string} column should be hidden in the gr
   }, column), {message: `the "${column}" column of the current table view's grid`}).toBe('hidden');
 }, {tier: 'api', description: 'the grid column of the current table view is not visible; the table keeps the column'});
 
+export const columnCategoryOrder = Given('the categories of {string} column are ordered {string}', async (page: Page, column: string, order: string) => {
+  await page.evaluate(([c, o]) => grok.shell.tv.dataFrame.col(c)!.setCategoryOrder(o.split(', ')), [column, order]);
+}, {tier: 'api', description: 'col.setCategoryOrder with the comma-separated categories: the order every viewer of the column follows unless it has its own'});
+
+const DRAWN_CATEGORY = {'Bar chart': /^bar /, 'Box plot': / values$/};
+
+export const categoriesDrawnInOrder = Then('the {string} viewer should draw its categories in the order {string}', async (page: Page, type: string, order: string) => {
+  await expect.poll(() => page.evaluate(([t, src]) => {
+    const viewer = Array.from(grok.shell.tv.viewers as Iterable<any>).find((v) => v.type === t);
+    if (!viewer)
+      return `no ${t}`;
+    const re = new RegExp(src);
+    const areas: {[k: string]: {x: number, y: number}} = viewer.getWidgetStatus().hitAreas;
+    const keys = Object.keys(areas).filter((k) => re.test(k) && !k.includes(' | '));
+    const spread = (f: (k: string) => number) => Math.max(...keys.map(f)) - Math.min(...keys.map(f));
+    const along = spread((k) => areas[k].y) >= spread((k) => areas[k].x) ? 'y' : 'x';
+    return keys.sort((a, b) => areas[a][along] - areas[b][along]).map((k) => k.replace(re, '')).join(', ');
+  }, [type, DRAWN_CATEGORY[type as keyof typeof DRAWN_CATEGORY]?.source ?? '^$'] as [string, string]),
+  {message: `the categories of the first ${type} as drawn, top to bottom (or left to right)`}).toBe(order);
+}, {tier: 'api', description: 'a bar chart\'s "bar <category>" or a box plot\'s "<category> values" hit areas in drawing order, not categoryOrder'});
+
 // --- the server -------------------------------------------------------------------------------------
 
 export const fileCards = Then('the AI panel should show the files of {string} as cards', async (page: Page, folder: string) => {
