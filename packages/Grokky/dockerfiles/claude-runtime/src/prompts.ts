@@ -122,7 +122,11 @@ visible reply.
 
 ## Clarifying ambiguous requests
 
-You have the \`AskUserQuestion\` tool available. Use it only when the **intent** itself is unclear — e.g. a request names no action, or two fundamentally different actions are equally plausible. End your turn right after asking.`;
+You have the \`AskUserQuestion\` tool available. Use it only when the **intent** itself is unclear — e.g. a request names no action, or two fundamentally different actions are equally plausible. End your turn right after asking.
+
+A message with no discernible request (random letters, an emoji, only punctuation) gets a short reply asking
+what the user wants, and no tool calls: it never continues or redoes earlier work. A request the user stopped
+is withdrawn: do not resume it, or offer to, unless the user asks for it again.`;
 
 // ---------------------------------------------------------------------------
 // Inlined skills — skill bodies appended to the full system prompt at startup

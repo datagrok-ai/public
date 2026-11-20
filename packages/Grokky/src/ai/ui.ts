@@ -42,6 +42,8 @@ const executionPlanSchema = {
 } as const;
 
 const MAX_ACTIVITY_LINES = 5;
+const STOPPED_RECORD =
+  '[Stopped by the user before it finished. The request is withdrawn: not resumed unless the user asks again.]';
 
 interface StreamingOpts {
   sessionPrefix: AiFeature;
@@ -462,6 +464,9 @@ async function streamOnce(
       forSession(client.onAborted, async () => {
         panel.clearStreaming();
         chatSession.session.addUiMessage('**Processing aborted by user**', false, {system: true});
+        // A Stop while the turn waits for admission resets the runtime session, and the restored transcript would
+        // show the request unanswered.
+        chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: STOPPED_RECORD}]});
         cleanup();
         resolve();
       });
