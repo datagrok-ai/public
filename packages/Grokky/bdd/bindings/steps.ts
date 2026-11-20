@@ -425,6 +425,14 @@ export const sendToAI = When('user sends {string} to the AI panel', async (page:
   requireRuntime(await sendPrompt(page, prompt));
 }, {tier: 'ui', description: 'types the prompt and presses Enter; done once the runtime has the prompt, while the turn runs'});
 
+export const enterWhileBusy = When('user presses Enter on {string} in the AI panel while it answers',
+  async (page: Page, prompt: string) => {
+    expect((await panel(page)).busy, 'the AI panel is still answering the previous prompt').toBe(true);
+    const box = page.locator(AI_PROMPT_BOX).filter({visible: true}).first();
+    await box.fill(prompt);
+    await box.press('Enter');
+  }, {tier: 'ui', description: 'types the prompt and presses Enter while the Stop icon shows; no turn awaited'});
+
 export const submitToAI = When('user submits {string} in the AI panel', async (page: Page, prompt: string) => {
   await waitTurn(page, await sendPrompt(page, prompt));
 }, {tier: 'ui', description: 'whoever takes it, the platform\'s own prompt interpreter or the runtime; done when that one is — for a claim on the outcome alone'});
