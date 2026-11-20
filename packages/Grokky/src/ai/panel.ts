@@ -931,10 +931,12 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   }
 
   protected handleRun() {
-    if (this.isBusy)
-      return;
     if (!this.textArea.value.trim())
       return;
+    if (this.isBusy) {
+      grok.shell.info('Wait for the response or press Stop, then send your prompt');
+      return;
+    }
     const inputs = this.getCurrentInputs();
     this.textArea.value = '';
     this._pendingEntityContext = this.attachedEntities.length ?
