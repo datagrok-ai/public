@@ -348,7 +348,7 @@ export class MemoryTable implements DomainTableLike {
   readonly properties: IProperty[];
   /** The table's info, its `searchableColumns` narrowed the same way. */
   readonly info: DomainTableInfoLike;
-  /** Every declared column and the system ones: what the "server" side of this table runs on. */
+  // every declared column and the system ones: what the "server" side of this table runs on
   private readonly _columns: IProperty[];
   private readonly _info: DomainTableInfoLike;
   readonly support: DomainSupportLike;

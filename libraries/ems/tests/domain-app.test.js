@@ -691,10 +691,10 @@ scoped('a column the access hides is offered nowhere: Sort by, the search box, t
   assert.equal(search.root.querySelector('input').placeholder, 'Search title…');
   document.body.append(sort.root);
   fire(sort.root, 'click');
-  const menu = [...document.body.querySelectorAll('.u2-menu')].at(-1);
-  const items = [...menu.querySelectorAll('.u2-menu-label')].map((e) => e.textContent);
-  assert.equal(items.includes('Title'), true, 'the menu is the sort menu');
-  assert.equal(items.includes('Description'), false, 'Sort by offers no hidden column');
+  // the item's text, by role: the label and nothing else a sort item carries
+  const items = [...document.body.querySelectorAll('[role^="menuitem"]')].map((e) => e.textContent.trim());
+  assert.equal(items.some((t) => t.includes('Title')), true, 'the menu is the sort menu');
+  assert.equal(items.some((t) => t.includes('Description')), false, 'Sort by offers no hidden column');
   const filter = a.filters.input.value.options.schema;
   assert.equal(filter.properties.some((p) => p.name === 'description'), false, 'nor does the filter');
   assert.equal(a.output.columns.peek().includes('description'), false, 'nor the table view');
