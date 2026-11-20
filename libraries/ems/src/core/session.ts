@@ -55,9 +55,10 @@ export class SharedSession implements DomainSession {
   private readonly _sources = signal<readonly DomainSource[]>([]);
   private readonly _saving = signal(false);
   // the refusal the last save copied onto every source it held back: any writer of the session
-  // changing (a child the batch did not hold among them) re-asks whether its cause still holds (the changed source in hand), and when it no
-  // longer does every copy still standing goes with it — a copy clears on its own source's change
-  // alone, and Save would stay off over a batch that is now saveable
+  // changing (a child the batch did not hold among them) re-asks whether its cause still holds
+  // (the changed source in hand), and when it no longer does every copy still standing goes with
+  // it — a copy clears on its own source's change alone, and Save would stay off over a batch
+  // that is now saveable
   private _refusal: {copies: Map<DomainSource, unknown>, holds: (changed: DomainSource) => boolean} | undefined;
 
   constructor() {
