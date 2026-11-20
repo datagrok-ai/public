@@ -4,18 +4,20 @@ channels:
   - defaults
 dependencies:
   # 3.10 (min) so the VEX floors below are installable: urllib3>=2.7 and
-  # pyarrow>=23 require py>=3.10; numpy 1.24 / pandas 1.5 / scikit-learn 1.2
+  # pyarrow>=23 require py>=3.10; numpy 1.24 / pandas 2.2 (datagrok-celery-task needs pandas>=2.0.3) / scikit-learn 1.5
   # all support 3.10.
   - python=3.10
   - pip
   - numpy=1.24.*
-  - pandas=1.5.*
+  - pandas=2.2.*
   - scikit-learn=1.5.*
   - pip:
     - datagrok-celery-task==0.1.8
     - celery
-    # VEX security floors (setuptools/wheel are floored in the Dockerfile upgrade)
+    # VEX security floors (pip and wheel are removed from the final image)
+    - setuptools>=84.1.0
     - urllib3>=2.7
-    - pyarrow>=23.0.1
+    # pyarrow 26 refuses to import with NumPy 1.x
+    - pyarrow>=23.0.1,<26
     - jaraco.context>=6.1
     - brotli>=1.2

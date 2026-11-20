@@ -1,34 +1,31 @@
-FROM mambaorg/micromamba:1.5.3
+# The conda env is built with micromamba in a builder stage and copied onto Wolfi (glibc, near-zero CVEs);
+# the final image carries only the env, without micromamba, pip or the Debian base.
+FROM mambaorg/micromamba:1.5.3 AS builder
 
-USER root
+COPY environment.yaml /tmp/environment.yaml
 
-SHELL ["/bin/bash", "-c"]
+RUN micromamba create -y -p /opt/conda/envs/myenv -f /tmp/environment.yaml && \
+    /opt/conda/envs/myenv/bin/python -m pip uninstall -y pip wheel && \
+    rm -rf /opt/conda/envs/myenv/lib/python*/ensurepip && \
+    micromamba clean --all --yes
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    build-essential \
-    gcc \
-    g++ \
-    gfortran \
-    && rm -rf /var/lib/apt/lists/*
+FROM cgr.dev/chainguard/wolfi-base
+
+RUN apk upgrade --no-cache
+
+COPY --from=builder /opt/conda/envs/myenv /opt/conda/envs/myenv
+ENV PATH=/opt/conda/envs/myenv/bin:$PATH
 
 WORKDIR /app
 
-COPY environment.yaml .
-
-RUN micromamba create -n myenv -f environment.yaml && \
-    micromamba run -n myenv pip install --no-cache-dir --upgrade pip 'setuptools>=78.1.1' 'wheel>=0.46.2' && \
-    micromamba clean --all --yes && \
-    rm -rf /opt/conda/pkgs/* && \
-    rm -f /opt/conda/envs/myenv/lib/python*/ensurepip/_bundled/*.whl
-
-SHELL ["micromamba", "run", "-n", "myenv", "/bin/bash", "-c"]
-
 COPY . .
+
+RUN python -c "import app"
 
 EXPOSE 5555
 
-ENTRYPOINT micromamba run -n myenv celery -A app worker \
+ENTRYPOINT celery -A app worker \
     --loglevel=info \
-    --hostname=$CELERY_HOSTNAME \
+    --hostname=${CELERY_HOSTNAME:-samples@%h} \
     --concurrency=1 \
-    -Q $TASK_QUEUE_NAME
+    -Q ${TASK_QUEUE_NAME:-celery}
