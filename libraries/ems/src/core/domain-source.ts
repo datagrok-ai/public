@@ -1,6 +1,6 @@
 import {signal, computed, batch, Signal, ReadonlySignal, Component, Access, plural, Filters, requireBackend, subBind,
   Rows, FrameRows} from '@datagrok-libraries/u2';
-import type {FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterScalar, FilterSchema, DomainRowLike,
+import type {AccessData, FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterScalar, FilterSchema, DomainRowLike,
   RowsLike, RowValues, RowView, DataFrameLike, BindProp, BindSource, ComponentEnv,
   ComponentStart} from '@datagrok-libraries/u2';
 import type {EditState} from './edit-state.js';
@@ -186,6 +186,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _restart = false;
   // the caller of `rebind` re-reads; a refresh here would drop the frame the batch just landed in
   private _rebinding = false;
+  // the writer was built under an access a 403 contradicted, and pending changes kept it: the
+  // next revert rebuilds it
+  private _regate = false;
   private readonly _liveMs: number;
   private _timer: ReturnType<typeof setInterval> | undefined;
   // undefined until the first probe after a load, which only sets the baseline
@@ -464,6 +467,37 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         this._error.value = e;
         this._state.value = 'error';
       });
+    }
+  }
+
+  /** Re-reads the table-level access — the session calls it after a 403, which says the one the
+   * affordances were built from is stale. A failed read keeps the access the source has. The
+   * writer a grid edits through was built under the old one too: rebuilt over the same window
+   * now, or — while it holds pending changes, which a new writer would drop — on the revert. */
+  async reloadAccess(): Promise<void> {
+    if (this.scope.isDisposed || this._ready === undefined)
+      return;
+    let data: AccessData;
+    try {
+      data = await (await this._ready).access();
+    } catch {
+      return;
+    }
+    if (this.scope.isDisposed)
+      return;
+    this._access.value = Access.from(data);
+    this._regate = true;
+    if (!this.isDirty.peek())
+      await this._rebuildWriter();
+  }
+
+  private async _rebuildWriter(): Promise<void> {
+    this._regate = false;
+    try {
+      await this._rebase();
+    } catch {
+      // the rows and the writer stay as they were; the next revert tries again
+      this._regate = true;
     }
   }
 
@@ -748,6 +782,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** Drops this source's pending changes — what its session calls. */
   revert(): void {
     this._edit.peek()?.discard();
+    if (this._regate && !this.isDirty.peek())
+      void this._rebuildWriter();
   }
 
   bindStep(name: string): Signal<unknown> | BindSource | null {
