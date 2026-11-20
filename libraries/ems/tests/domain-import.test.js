@@ -575,3 +575,19 @@ scoped('an importer maps, derives and keeps rows out, and makes the preview its 
   assert.deepEqual(report.rows.map((r) => [r.index, r.status]), [[0, 'inserted'], [1, 'skipped'], [2, 'skipped'], [3, 'error']]);
   assert.equal(memory.tableSync('grit.project').rows.find((r) => r.key === 'NEW')?.description, 'About New');
 });
+
+scoped('a login in a user column is refused in the preview as a missing user id, and the mapping says so', async () => {
+  const memory = backend();
+  const {running} = await opened(memory, frame(['project_id', 'title', 'reporter'],
+    [{project_id: 'p1', title: 'A', reporter: 'admin'},
+      {project_id: 'p1', title: 'B', reporter: '5d1f2a4e-0b6c-4c1e-9a53-7a3f0e6b9c10'}]));
+  await toMapping();
+  assert.match(document.body.textContent,
+    /Reporter takes a user id \(uuid\), not a name or login/, 'the mapping step says the column takes user ids');
+  await toPreview();
+  assert.match(document.body.textContent, /Reporter: expected a user id \(uuid\), got "admin"/,
+    'the preview names the field and what it expects');
+  assert.deepEqual(counts('preview'), ['1 to add', '1 error'], 'only the login row is refused');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});

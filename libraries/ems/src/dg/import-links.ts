@@ -10,6 +10,7 @@ import {SYSTEM_COLUMNS} from './backend.js';
 const MATCHABLE = ['string', 'int', 'bigint', 'datetime'];
 const PAGE = 10000;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** A field a linked record is found by; `path` is what the query reads: `<ref>.<key>` for a link of its own. */
 export interface LinkField {
@@ -35,6 +36,25 @@ export interface LinkMatch {
 export class ImportLinks {
   static isLink(prop: IProperty): boolean {
     return DomainTable.isReference(prop) && prop.semType !== 'User' && prop.semType !== 'Group';
+  }
+
+  // what a user or group column takes, as the mapping says it and the preview refuses by it; null for any other
+  private static _kind(prop: IProperty): string | null {
+    return prop.semType === 'User' ? 'user' : prop.semType === 'Group' ? 'group' : null;
+  }
+
+  /** The mapping's hint for a column that takes ids; null for any other. */
+  static idHint(prop: IProperty): string | null {
+    const kind = ImportLinks._kind(prop);
+    return kind === null ? null : `${DomainTable.captionOf(prop)} takes a ${kind} id (uuid), not a name or login`;
+  }
+
+  /** The refusal of a value in a user or group column that is no id, before the server's own; null if it is one. */
+  static idProblem(prop: IProperty, value: unknown): string | null {
+    const kind = ImportLinks._kind(prop);
+    const given = typeof value === 'string' ? value.trim() : '';
+    return kind === null || given === '' || UUID.test(given) ? null :
+      `${DomainTable.captionOf(prop)}: expected a ${kind} id (uuid), got "${given}"`;
   }
 
   /** The links among `targets`, each with the fields its records can be found by. */

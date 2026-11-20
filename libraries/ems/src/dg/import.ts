@@ -379,6 +379,10 @@ class ImportFlow {
     return [...(required.length > 0 ? [`Required: ${required.join(', ')}`] : []),
       ...[...mapped.keys()].filter((t) => this._claimants(t).length > 1)
         .map((name) => `${ImportFlow._caption(this, name)} is mapped twice`),
+      ...[...mapped.keys()].flatMap((name) => {
+        const prop = this._targets.find((p) => p.name === name);
+        return prop === undefined ? [] : [ImportLinks.idHint(prop) ?? []].flat();
+      }),
       `${imported} of ${plural(this._choices.size, 'column', 'columns')} imported`].join(' · ');
   }
 
@@ -622,6 +626,11 @@ class ImportFlow {
           row[column] = matches[i].id;
         missed[i] ??= matches[i].error;
       }
+    }
+    // a user or group column takes ids: say so before the server's "Cannot convert" does
+    for (const prop of this._targets.filter((p) => mapping.some(([target]) => target === p.name))) {
+      for (const [i, row] of rows.entries())
+        missed[i] ??= ImportLinks.idProblem(prop, row[prop.name!]);
     }
     const prepare = this._table.importer?.prepare;
     const verdicts = prepare === undefined ? [] : await prepare(rows, progress);
