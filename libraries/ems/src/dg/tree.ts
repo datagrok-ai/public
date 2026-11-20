@@ -21,8 +21,11 @@ export interface DomainTreeOptions<TRow extends DomainRowLike = DomainRowLike> {
   pageSize?: number;
   /** A live source the tree rides: its probe follows the tree's table too ({@link DomainSource.watch}),
    * and a peer's rename, insert, move or delete there — or a save in this browser — reads the open
-   * tree again. Without it the tree is read once, and again only on {@link DomainTree.refresh}. */
-  follow?: {watch(address: string, moved: () => void): () => void};
+   * tree again. Without it the tree is read once, and again only on {@link DomainTree.refresh}. While the
+   * source or its session holds pending changes, a selected node a peer deleted stays `selected` (marked
+   * deleted) instead of handing the source to its parent; it moves on once they are saved or discarded. */
+  follow?: {watch(address: string, moved: () => void): () => void, isDirty?: ReadonlySignal<boolean>,
+    session?: {isDirty: ReadonlySignal<boolean>}};
 }
 
 const PAGE_SIZE = 500;
@@ -52,6 +55,8 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
   private _refreshing: Promise<void> | undefined;
   private _again = false;
   private _noticeAt: string | null = null;
+  // the selected row a peer deleted while `follow` had pending changes: still `selected`, so nothing rebinds
+  private readonly _kept = signal<RowView<TRow> | null>(null);
   private readonly _loading = signal(true);
   private readonly _status = div([], 'u2-domain-tree-status');
   private readonly _ready: Promise<DomainTable<TRow>>;
@@ -84,7 +89,9 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     // selecting it clear a collection's subtree filter
     this.selected = computed(() => {
       const held = this._held.value;
-      return held !== null ? held.row : this.tree.selectedNode.value?.data ?? null;
+      if (held !== null)
+        return held.row;
+      return this._kept.value ?? this.tree.selectedNode.value?.data ?? null;
     });
     this.root.append(this.tree.root, this._status);
     // clicking the selected node again, and Escape, clear the selection — a tree is a navigator,
@@ -125,6 +132,16 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
         this._notice.value = null;
     });
     const follow = _options.follow;
+    // a kept row leaves once the pending changes are saved or discarded — or at once when the user picks a node
+    this.effect(() => {
+      const kept = this._kept.value;
+      if (kept === null)
+        return;
+      if (this.tree.selectedNode.value !== null && this._held.peek() === null)
+        this._kept.value = null;
+      else if (!this._pending(true))
+        void this._leave(kept);
+    });
     if (follow !== undefined) {
       void this._ready.then((table) => {
         if (!this.scope.isDisposed)
@@ -183,10 +200,14 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       const reveal = this._options.expandTo;
       if (first && reveal !== undefined)
         await this.expandTo(reveal);
+      else if (this._kept.peek() !== null)
+        await this._reopen();
       else if (first || was === null)
         await this._clear();
       else {
         await this._reopen();
+        // the index still points where the row was: placed afresh, so a row that left is not found "there"
+        this.tree.clearSelection();
         if (row === null)
           await this.tree.expandPath([was.id]);
         else
@@ -201,7 +222,8 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
   }
 
   // every open branch read again under the new roots before the selection is placed, parents first, so no
-  // answer lands above it afterwards: `expandPath` to an id no node has awaits the tree's own reads
+  // answer lands above it afterwards: `expandPath` to an id no node has awaits the tree's own reads. One read
+  // per open branch, one after another, per change the probe sees; changes during a refresh make one more
   private async _reopen(): Promise<void> {
     const done = new Set<string>();
     for (;;) {
@@ -224,6 +246,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
   }
 
   // the row selected before the refresh, found again: where it now is, or its parent when a peer deleted it
+  // (two to four reads, on top of `_reopen`'s one per open branch: a tree's refresh costs what it shows)
   private async _reselect(row: RowView<TRow>): Promise<void> {
     const table = this._table!;
     const [now] = await table.table.query({filter: {property: 'id', operator: '=', value: row.id}, limit: 1});
@@ -235,7 +258,35 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
         return;
     }
     const caption = table.renderer.caption(row);
-    const gone = now === undefined ? `${caption} was deleted` : `${caption} is no longer reachable from here`;
+    if (now === undefined && this._pending(false)) {
+      // as a list keeps its rows over pending edits and says "Data changed": what is bound to the row stays
+      this.tree.clearSelection();
+      this._kept.value = row;
+      this._noticeAt = row.id;
+      this._notice.value = `${caption} was deleted — save or discard your changes to leave it`;
+      return;
+    }
+    await this._toParent(row, now === undefined ? `${caption} was deleted` : `${caption} is no longer reachable from here`);
+  }
+
+  private _pending(track: boolean): boolean {
+    const follow = this._options.follow;
+    const read = (s: ReadonlySignal<boolean> | undefined): boolean => s === undefined ? false : track ? s.value : s.peek();
+    return read(follow?.isDirty) || read(follow?.session?.isDirty);
+  }
+
+  private async _leave(row: RowView<TRow>): Promise<void> {
+    this._held.value = {row};
+    this._kept.value = null;
+    try {
+      await this._toParent(row, `${this._table!.renderer.caption(row)} was deleted`);
+    } finally {
+      this._held.value = null;
+    }
+  }
+
+  private async _toParent(row: RowView<TRow>, gone: string): Promise<void> {
+    const table = this._table!;
     const parent = (row as Record<string, unknown>)[table.info.parentColumn!];
     if (typeof parent === 'string' && parent !== '') {
       const [up] = await table.table.query({filter: {property: 'id', operator: '=', value: parent}, limit: 1});

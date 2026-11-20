@@ -38,8 +38,9 @@ function scoped(name, body) {
 const labels = (t) => [...t.tree.root.querySelectorAll('.u2-tree-label')].map((el) => el.textContent);
 
 /** The test DOM lays nothing out: the scroller inside the tree is the element that needs a viewport. */
+const scroller = (t) => t.tree.root.querySelector('.u2-list');
 function viewport(t, height = 400) {
-  layout(t.tree.root.querySelector('.u2-list'), {clientHeight: height});
+  layout(scroller(t), {clientHeight: height});
 }
 
 async function tree(options = {}, be = hierarchyBackend()) {
@@ -261,3 +262,127 @@ scoped('the tree follows a peer\'s rename and delete of the selected node on a l
       mock.timers.reset();
     }
   });
+
+/** A tree over `be` that follows a live source of the same table; `tick` is one live poll. */
+async function following(options = {}, be = hierarchyBackend()) {
+  mock.timers.enable({apis: ['setInterval']});
+  emsBackends.domain = be;
+  const table = await domains.table('stock.location');
+  const source = testOwner().build(() => table.source({live: true, liveMs: 1000, pageSize: 10}));
+  await settle();
+  const t = testOwner().build(() => domains.tree(table, {follow: source, ...options}));
+  document.body.append(t.root);
+  viewport(t);
+  await settle();
+  const peer = be.tableSync('stock.location');
+  const tick = async () => {
+    mock.timers.tick(1000);
+    await settle();
+  };
+  const done = () => {
+    t.dispose();
+    source.dispose();
+    mock.timers.reset();
+  };
+  return {table, source, tree: t, peer, tick, done};
+}
+
+async function settle() {
+  for (let i = 0; i < 12; i++)
+    await flush();
+}
+
+scoped('a peer\'s delete of the selected node over pending changes keeps it selected and says so (EQ-067)', async () => {
+  const f = await following({expandTo: 'l4'});
+  try {
+    f.source.newRow({name: 'Draft', parent_id: 'l4'});
+    await flush();
+    assert.equal(f.source.isDirty.value, true);
+    await f.peer.transaction([{op: 'delete', table: 'location', id: 'l4'}]);
+    await f.tick();
+    assert.equal(labels(f.tree).includes('Box'), false, 'the deleted node is no longer offered');
+    assert.equal(f.tree.selected.value?.id, 'l4', 'what is bound to the selection is not rebound over pending changes');
+    assert.equal(f.tree.notice.value, 'Box was deleted — save or discard your changes to leave it');
+    await f.tick();
+    assert.equal(f.tree.selected.value?.id, 'l4', 'another poll keeps it too');
+
+    f.source.discard();
+    await settle();
+    assert.equal(f.tree.selected.value?.id, 'l3', 'once the changes are gone, the parent takes over');
+    assert.equal(f.tree.notice.value, 'Box was deleted');
+  } finally {
+    f.done();
+  }
+});
+
+scoped('a refresh keeps every open branch, siblings and a deep one, and the scroll position (EQ-067)', async () => {
+  const rows = [...TREE.location, {id: 'l10', name: 'Lab', parent_id: 'l9'}, {id: 'l11', name: 'Bench', parent_id: 'l10'},
+    ...Array.from({length: 30}, (_, i) => ({id: `r${i}`, name: `Zone ${String(i).padStart(2, '0')}`}))];
+  const f = await following({}, hierarchyBackend({rows: {location: rows}}));
+  try {
+    await f.tree.tree.expandPath(['l9', 'l10', 'l11']);
+    await f.tree.tree.expandPath(['l1', 'l2', 'l3', 'l4']);
+    await settle();
+    const all = () => f.tree.tree.getItems({all: true}).list.map((item) => item.label);
+    assert.deepEqual(all().slice(0, 8), ['Other site', 'Lab', 'Bench', 'Site', 'Room', 'Shelf', 'Box', 'Zone 00']);
+    const open = [...f.tree.tree.expanded.value].sort();
+    scroller(f.tree).scrollTop = 100;
+    fire(scroller(f.tree), 'scroll');
+    await settle();
+
+    await f.peer.transaction([{op: 'insert', table: 'location', values: {id: 'l12', name: 'Annex', parent_id: 'l10'}},
+      {op: 'update', table: 'location', id: 'l3', values: {name: 'Shelf 2'}}]);
+    await f.tick();
+    assert.deepEqual([...f.tree.tree.expanded.value].sort(), open, 'every branch open before is open after');
+    assert.deepEqual(all().slice(0, 9),
+      ['Other site', 'Lab', 'Annex', 'Bench', 'Site', 'Room', 'Shelf 2', 'Box', 'Zone 00'],
+      'both sibling branches and the deep one are read again');
+    assert.equal(f.tree.selected.value?.id, 'l4');
+    assert.equal(scroller(f.tree).scrollTop, 100, 'the selection still in view, the list does not scroll');
+  } finally {
+    f.done();
+  }
+});
+
+scoped('a selected node moved out of sight gives way to its parent and says it is no longer reachable (EQ-067)',
+  async () => {
+    const f = await following({expandTo: 'l4'});
+    try {
+      // moved under a parent the caller cannot see: the memory backend answers [] for a chain that does not
+      // resolve, the shape the server's path has when it stops at an ancestor out of sight
+      await f.peer.transaction([{op: 'update', table: 'location', id: 'l4', values: {parent_id: 'hidden'}}]);
+      await f.tick();
+      assert.equal(f.tree.selected.value?.id, 'l3');
+      assert.equal(f.tree.notice.value, 'Box is no longer reachable from here');
+      assert.equal(labels(f.tree).includes('Box'), false);
+    } finally {
+      f.done();
+    }
+  });
+
+scoped('a disposed tree reads nothing more when its source sees a change (EQ-067)', async () => {
+  const f = await following({expandTo: 'l4'});
+  try {
+    const memory = f.peer;
+    const real = memory.query;
+    let reads = 0;
+    memory.query = (spec) => {
+      // the tree's reads: a level by parent, a row by id; the source's own reload reads a frame
+      if (spec.filter?.property === 'parent_id' || spec.filter?.property === 'id')
+        reads++;
+      return real.call(memory, spec);
+    };
+    await f.peer.transaction([{op: 'update', table: 'location', id: 'l2', values: {name: 'Room 2'}}]);
+    await f.tick();
+    assert.ok(reads > 0, 'a live tree reads on a change');
+    f.tree.dispose();
+    reads = 0;
+    await f.peer.transaction([{op: 'update', table: 'location', id: 'l2', values: {name: 'Room 3'}}]);
+    await f.tick();
+    await f.tick();
+    assert.equal(reads, 0, 'the watch went with the tree');
+    memory.query = real;
+  } finally {
+    f.done();
+  }
+});
