@@ -177,6 +177,27 @@ const names = v.getProperties().map((p) => p.name);
 return ui.divText(names.join(', '));
 ```
 
+### Ordering bar chart categories
+
+To put the bars in a given order ("youngest to oldest", "Low, Medium, High"),
+set `barSortType: 'custom'` and `categoryOrder` to a JSON **string**
+`{"manual": [...]}`. A plain array, the column's `.category-order` tag or
+`col.setCategoryOrder(...)` under `by category` are silently ignored: the bars
+stay alphabetical, while `props.categoryOrder` still echoes what you wrote. So
+check the drawn order, not the property: after the redraw, `hitAreas` has a
+`bar <category>` rect per bar, top to bottom (stack segments are `bar A | B`).
+
+```js
+const bc = Array.from(view.viewers).slice(1)
+  .find((v) => v.type === DG.VIEWER.BAR_CHART);
+bc.setOptions({barSortType: 'custom',
+  categoryOrder: JSON.stringify({manual: ['Under 30', '30 to 50', 'Over 50']})});
+await DG.delay(500);
+const areas = bc.getWidgetStatus().hitAreas;
+return Object.keys(areas).filter((k) => k.startsWith('bar ') && !k.includes(' | '))
+  .sort((a, b) => areas[a].y - areas[b].y).map((k) => k.slice(4));
+```
+
 ## Finding viewers
 
 `view.viewers` is an array; **index 0 is always the grid**, so iteration always

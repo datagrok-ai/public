@@ -401,6 +401,14 @@ export const aiPanelNewChat = Given('the AI panel is open on a new chat', async 
   turns.set(page, []);
 }, {tier: 'ui', description: 'shows the AI panel and starts a new chat with its + icon when the current one has messages'});
 
+export const openDemog = Given('user opens the demog demo table', async (page: Page) => {
+  await page.evaluate(() => {
+    grok.shell.addTableView(grok.data.demo.demog());
+  });
+  await expect.poll(() => page.evaluate(() => grok.shell.tv?.dataFrame?.columns.contains('disease') === true),
+    {message: 'a table view of demog'}).toBe(true);
+}, {tier: 'api', description: 'grok.data.demo.demog() in a table view: readable where the DemoFiles copy is not'});
+
 export const askAI = When('user asks the AI panel {string}', async (page: Page, prompt: string) => {
   await waitTurn(page, requireRuntime(await sendPrompt(page, prompt)));
 }, {tier: 'ui', description: 'types the prompt, presses Enter and waits for the runtime\'s final, error or aborted event for the panel\'s session and the panel to go idle'});
@@ -672,6 +680,19 @@ export const hiddenInGrid = Then('the {string} column should be hidden in the gr
     return gc ? (gc.visible ? 'shown' : 'hidden') : `the grid has no "${c}" column`;
   }, column), {message: `the "${column}" column of the current table view's grid`}).toBe('hidden');
 }, {tier: 'api', description: 'the grid column of the current table view is not visible; the table keeps the column'});
+
+export const barsDrawnInOrder = Then('the bar chart should draw its bars in the order {string}', async (page: Page, order: string) => {
+  await expect.poll(() => page.evaluate(() => {
+    const bc = Array.from(grok.shell.tv.viewers as Iterable<any>).find((v) => v.type === 'Bar chart');
+    if (!bc)
+      return 'no bar chart';
+    const areas: {[k: string]: {x: number, y: number}} = bc.getWidgetStatus().hitAreas;
+    const bars = Object.keys(areas).filter((k) => k.startsWith('bar ') && !k.includes(' | '));
+    const spread = (f: (k: string) => number) => Math.max(...bars.map(f)) - Math.min(...bars.map(f));
+    const along = spread((k) => areas[k].y) >= spread((k) => areas[k].x) ? 'y' : 'x';
+    return bars.sort((a, b) => areas[a][along] - areas[b][along]).map((k) => k.slice(4)).join(', ');
+  }), {message: 'the categories of the bar chart\'s bars as drawn, top to bottom (or left to right)'}).toBe(order);
+}, {tier: 'api', description: 'the "bar <category>" hit areas of the first bar chart in drawing order, not categoryOrder'});
 
 // --- the server -------------------------------------------------------------------------------------
 
