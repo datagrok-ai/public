@@ -99,6 +99,14 @@ const buttonNamed = (text) => [...document.body.querySelectorAll('.u2-dialog but
   .find((b) => b.textContent === text);
 const reason = () => document.querySelector('.u2-wizard-reason').textContent;
 const status = () => document.querySelector('.u2-wizard-status');
+
+/** Waits until `cond()` holds, polling, with a generous cap so a loaded machine cannot race a short timer. */
+async function until(cond, cap = 2000) {
+  const end = Date.now() + cap;
+  while (!cond() && Date.now() < end)
+    await new Promise((r) => setTimeout(r, 5));
+  await flush();
+}
 const accessCalls = (calls) => calls.filter((c) => c[0].endsWith('grant') || c[0].endsWith('Column')).map((c) => c.join(' '));
 
 /** Design (opened on, the name set) › Review, ready to validate. */
@@ -511,8 +519,7 @@ scoped('a warehouse read that never answers fails by name after the timeout; the
   try {
     const dialog = new BindingDialog({connection: CONN, catalog: 'bogus'});
     const done = dialog.open();
-    await new Promise((r) => setTimeout(r, 40));
-    await flush();
+    await until(() => document.body.textContent.includes('The connection did not answer within 0.02 s'));
     assert.equal(document.querySelector('.u2-binding-facts').textContent,
       'Postgres · The schemas could not be read: The connection did not answer within 0.02 s');
     assert.equal(dialog.connection.disabled, null);
@@ -523,8 +530,7 @@ scoped('a warehouse read that never answers fails by name after the timeout; the
     dialog.connection.value = CONN.id;
     await flush();
     dialog.schema.value = 'public';
-    await new Promise((r) => setTimeout(r, 40));
-    await flush();
+    await until(() => reason() === 'The draft did not answer within 0.02 s');
     assert.equal(reason(), 'The draft did not answer within 0.02 s');
     assert.equal(buttonNamed('NEXT').disabled, true);
     buttonNamed('CANCEL').click();
@@ -546,8 +552,7 @@ scoped('opened on Design over a preset whose reads never answer: the draft fails
   try {
     const dialog = new BindingDialog({connection: CONN, schema: 'public', catalog: 'bogus'});
     const done = dialog.open();
-    await new Promise((r) => setTimeout(r, 60));
-    await flush();
+    await until(() => status()?.textContent === 'The draft did not answer within 0.02 s');
     assert.equal(dialog.wizard.currentStep.value, 'design');
     assert.equal(dialog.schema.value, 'public', 'the preset schema is still picked');
     assert.equal(status().textContent, 'The draft did not answer within 0.02 s');
