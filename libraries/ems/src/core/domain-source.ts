@@ -5,7 +5,7 @@ import type {FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterSca
   ComponentStart} from '@datagrok-libraries/u2';
 import type {EditState} from './edit-state.js';
 import {emsBackends, DomainBackendError, capital, nounOf} from './domain-backend.js';
-import type {DomainBackend, DomainDeletedMode, DomainFrameLike, DomainQueryLike, DomainReadScope,
+import type {DomainBackend, DomainDeletedMode, DomainFrameLike, DomainProbeLike, DomainQueryLike, DomainReadScope,
   DomainTableInfoLike, DomainTableLike} from './domain-backend.js';
 import {SharedSession} from './session.js';
 import type {DomainSession} from './session.js';
@@ -192,7 +192,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _rebinding = false;
   private readonly _liveMs: number;
   private _timer: ReturnType<typeof setInterval> | undefined;
-  // undefined until the first probe after a load, which only sets the baseline
+  // what the server looked like when the rows landed — read just before them by a live load; undefined
+  // (after a save, or a load that could not ask) until the next probe, which then only sets it
   private _probed: {count: number, last: string | null} | undefined;
   private _probing = false;
   private _failures = 0;
@@ -382,7 +383,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const gen = ++this._gen;
     this._restart = false;
     this._moved = false;
-    // the rows about to arrive are the server's again, and the next probe baselines on them
+    // the rows about to arrive are the server's again, and the baseline is taken with them below
     this._probed = undefined;
     batch(() => {
       this._error.value = undefined;
@@ -404,6 +405,12 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       await this._serve(true);
       if (gen !== this._gen)
         return;
+      // the baseline the first poll compares with, read BEFORE the rows: a write after it is seen by
+      // that poll, one between it and the rows costs one reload at worst. Adopting the first poll's
+      // answer instead let a write between this load and that poll (up to `liveMs`) go unseen for good
+      const baseline = await this._baseline(table);
+      if (gen !== this._gen)
+        return;
       const [frame, total] = await Promise.all([
         table.frame(this._spec(0)), this._noRows ? 0 : this._count(table)]);
       if (gen !== this._gen) {
@@ -421,6 +428,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this._loaded = frame.df.rowCount;
       this._last = DomainSource._lastOf(frame.df, this._loaded);
       this._done = this._noRows || this._loaded < this.pageSize;
+      this._probed = baseline;
       this._wire(frame);
       batch(() => {
         this._df.value = frame.df;
@@ -967,7 +975,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this._probed = now;
       if (before === undefined || (before.count === now.count && before.last === now.last))
         return;
-      if (this.isDirty.peek() || this.isSaving.peek())
+      // pending changes anywhere in its session — a child collection under its current row too, which the
+      // reload's `_drop` would dispose — are never the poll's to throw away (as in `afterSave`)
+      if (this.isDirty.peek() || this.session.isDirty.peek() || this.isSaving.peek())
         this._isStale.value = true;
       else
         await this.refresh();
@@ -978,6 +988,18 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         this._stopPolling();
     } finally {
       this._probing = false;
+    }
+  }
+
+  // a live load's {@link _probe} baseline; none where nothing polls, and none over a failed ask — the
+  // first poll then sets it, as before
+  private async _baseline(table: DomainTableLike): Promise<DomainProbeLike | undefined> {
+    if (!this.live.peek() || table.probe === undefined || this._noRows)
+      return undefined;
+    try {
+      return await table.probe(this._scope());
+    } catch {
+      return undefined;
     }
   }
 
