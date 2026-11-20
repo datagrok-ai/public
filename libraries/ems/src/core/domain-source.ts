@@ -181,6 +181,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private _unwire: (() => void) | undefined;
   private _gen = 0;
   private _loaded = 0;
+  // the id of the last row the server answered at offset `_loaded - 1`: the next page checks it is still there
+  private _last: string | null = null;
+  // a page found the window shifted while changes were pending: the next clean page re-bases it
+  private _moved = false;
   private _done = false;
   // the loaded window is no longer the server's: the next load starts over, not at the next page
   private _restart = false;
@@ -377,6 +381,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       return;
     const gen = ++this._gen;
     this._restart = false;
+    this._moved = false;
     // the rows about to arrive are the server's again, and the next probe baselines on them
     this._probed = undefined;
     batch(() => {
@@ -414,6 +419,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this._drop();
       this._frame = frame;
       this._loaded = frame.df.rowCount;
+      this._last = DomainSource._lastOf(frame.df, this._loaded);
       this._done = this._noRows || this._loaded < this.pageSize;
       this._wire(frame);
       batch(() => {
@@ -451,11 +457,36 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._state.value = 'loading';
     try {
       await this._serve();
-      const added = await frame.append(this._spec(this._loaded));
+      const offset = this._loaded;
+      const boundary = this._last;
+      // what the server answered at `offset`; an id the frame already holds is not appended a second time
+      const read = await frame.append(this._spec(offset));
       if (gen !== this._gen)
         return;
-      this._loaded += added;
-      this._done = added < this.pageSize;
+      this._loaded += read;
+      this._last = read === 0 ? this._last : DomainSource._lastOf(frame.df, frame.df.rowCount);
+      this._done = read < this.pageSize;
+      // checked AFTER the page was read, so a write that landed before the read is seen too: another
+      // session's insert, delete or update before the boundary moved the offsets, and the page repeated or
+      // skipped a row. The window is then re-read from offset 0, as after a save; over pending changes,
+      // which a re-read would drop, the source says the data changed and the next clean page re-bases
+      this._moved ||= await this._shifted(offset, boundary);
+      if (gen !== this._gen)
+        return;
+      const moved = this._moved;
+      if (moved && this.isDirty.peek())
+        this._isStale.value = true;
+      else if (moved) {
+        this._probed = undefined;
+        await this._rebase();
+      }
+      // the total too: a write after the boundary is not a shift, but it moves "N of M"
+      if ((moved || this._done) && this._table !== undefined && gen === this._gen) {
+        const total = await this._count(this._table);
+        if (gen !== this._gen)
+          return;
+        this._total.value = total;
+      }
       this._state.value = 'ready';
     } catch (e) {
       if (gen !== this._gen)
@@ -689,6 +720,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._unwire = undefined;
     this._frame = replacement;
     this._loaded = replacement.df.rowCount;
+    this._last = DomainSource._lastOf(replacement.df, this._loaded);
+    this._moved = false;
     this._done = this._loaded < window;
     this._wire(replacement);
     batch(() => {
@@ -876,6 +909,33 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       }
     }
     this._selection.value = rows;
+  }
+
+  // whether `id`, the row a window of `count` rows ended on, has left offset `count - 1` on the server: one
+  // id, not a page. With ties on the sort (EMS-082) the server may answer another id with nothing written,
+  // and the window is re-read needlessly; an empty sort is total (`created_on, id`)
+  private async _shifted(count: number, id: string | null): Promise<boolean> {
+    const table = this._table;
+    if (table === undefined || id === null || count === 0 || this._noRows)
+      return false;
+    const sort = this.sort.peek();
+    let rows: Record<string, unknown>[];
+    try {
+      // `columns: []`: the system columns alone — `id` is always projected, and never a column to name
+      rows = await table.query({...this._scope(), ...(sort === '' ? {} : {sort}),
+        columns: [], limit: 1, offset: count - 1});
+    } catch {
+      // the check is a guard, not the load: the page that landed stays and the status is the load's
+      return false;
+    }
+    return String(rows[0]?.id ?? '') !== id;
+  }
+
+  // the id of the last of the first `count` rows of `df` (the server's rows come first, drafts after);
+  // null where there is none, and then no page is checked
+  private static _lastOf(df: DataFrameLike, count: number): string | null {
+    const id = count === 0 || df.columns.byName('id') === null ? null : df.get('id', count - 1);
+    return id === null || id === undefined || id === '' ? null : String(id);
   }
 
   private _count(table: DomainTableLike): Promise<number> {
