@@ -1380,6 +1380,41 @@ scoped('the status bar is four slots, and a refusal never takes the count off th
   a.dispose();
 });
 
+scoped('the table view counts every row picked in it, and takes over a selection the list made (EQ-041)', async () => {
+  const {app: a} = await app();
+  const listRow = (id) => [...a.list.root.getElementsByTagName('*')].find((el) => el.getAttribute('data-u2-row') === id);
+  fire(listRow('i1'), 'click');
+  fire(listRow('i3'), 'click', {ctrlKey: true});
+  await flush();
+  assert.equal(a.status.value.selected, 2, 'the list picked two rows');
+
+  a.view.value = 'table';
+  await flush();
+  const table = a.list.root.nextElementSibling.firstElementChild;
+  layout(table, {clientHeight: 300});
+  fire(table, 'scroll');
+  await flush();
+  const rowsOf = (el) => [...el.lastElementChild.children].filter((r) => r.getAttribute('role') === 'row');
+  const pickedIn = (el) => rowsOf(el).filter((r) => r.getAttribute('aria-selected') === 'true').length;
+  const rowOf = (i) => rowsOf(table).find((el) => el.getAttribute('aria-rowindex') === String(i + 2));
+  assert.equal(a.status.value.selected, 2, 'the table shows the rows the list picked');
+  assert.equal(pickedIn(table), 2);
+
+  fire(rowOf(0), 'click');
+  fire(rowOf(1), 'click', {ctrlKey: true});
+  await flush();
+  assert.equal(a.status.value.selected, 2, 'two rows picked in the table');
+  fire(rowOf(2), 'click', {metaKey: true});
+  await flush();
+  assert.equal(a.status.value.selected, 3, 'three rows picked in the table');
+  assert.equal(pickedIn(table), 3);
+
+  a.view.value = 'list';
+  await flush();
+  assert.equal(a.status.value.selected, 3, 'the list takes the selection back');
+  a.dispose();
+});
+
 scoped('mode: ONE signal behind the deleted rows, the sort, the breadcrumb and the ?trash=1', async () => {
   const {app: a} = await app();
   assert.equal(a.mode.value, 'live');

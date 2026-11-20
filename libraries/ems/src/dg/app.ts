@@ -221,7 +221,8 @@ export class DomainApp extends Control {
       live: _options.live ?? true, liveMs: _options.liveMs});
     this.own(() => this.listSource.dispose());
     this.list = this.build(() => new DomainList(this.listSource, {mode: _options.mode,
-      itemHeight: _options.itemHeight, create: () => void this.create()}));
+      itemHeight: _options.itemHeight, create: () => void this.create(),
+      active: computed(() => this.view.value !== 'table')}));
     // Enter on a row is the way into the entity page
     let seen = this.listSource.activate.peek();
     this.effect(() => {
@@ -538,6 +539,7 @@ export class DomainApp extends Control {
       this.list.root.after(view.root);
       return () => {
         view.root.remove();
+        view.dispose();
         shown = null;
       };
     });
