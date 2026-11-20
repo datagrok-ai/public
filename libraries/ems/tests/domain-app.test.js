@@ -1706,3 +1706,28 @@ scoped('domains.views: a view per table, addressed and brought forward, where it
       app.dispose();
   }
 });
+
+scoped('table view: aggregation and reference headers take no sort; a plain header still does (EQ-058, EQ-059)', async () => {
+  const {app: a} = await app();
+  a.view.value = 'table';
+  a.output.aggregations.value = [{column: 'Notes.Weight', aggregation: 'avg'}];
+  await flush();
+  const head = (column) => [...a.root.querySelectorAll('[role="columnheader"]')].find((h) => h.dataset.column === column);
+  const sort = a.listSource.sort;
+  const before = sort.peek();
+  fire(head('avg(Notes.Weight)'), 'click');
+  await flush();
+  assert.equal(sort.peek(), before, 'the aggregation header sets no sort the server would refuse');
+  assert.equal(head('avg(Notes.Weight)').className.includes('sortable'), false,
+    'the aggregation header is not drawn sortable');
+  assert.equal(head('avg(Notes.Weight)').getAttribute('aria-sort'), 'none', 'no arrow on it');
+  fire(head('project_id'), 'click');
+  await flush();
+  assert.equal(sort.peek(), before, 'a reference header does not sort by the referenced ids');
+  assert.equal(head('project_id').className.includes('sortable'), false,
+    'a reference header is not sortable');
+  fire(head('title'), 'click');
+  await flush();
+  assert.equal(sort.peek(), 'title', 'an own-value header still sorts');
+  a.dispose();
+});
