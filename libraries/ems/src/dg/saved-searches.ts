@@ -47,6 +47,12 @@ export class SavedSearches {
     return new Map(Object.entries(grok.userSettings.get(savedKey(table)) ?? {}).map(([k, v]) => [k, JSON.parse(v)]));
   }
 
+  /** The saved search `name` collides with (names compare trimmed and ignoring case), or null. */
+  static taken(table: string, name: string): string | null {
+    const key = name.trim().toLowerCase();
+    return [...SavedSearches.saved(table).keys()].find((k) => k.trim().toLowerCase() === key) ?? null;
+  }
+
   static save(table: string, name: string, search: DomainSearch): void {
     grok.userSettings.add(savedKey(table), name, JSON.stringify(search));
     SavedSearches.changed.value++;
@@ -151,8 +157,14 @@ export class SavedSearches {
 
   private static _saveDialog(source: DomainSource): void {
     const name = new TextInput({label: 'Name', value: label(SavedSearches.of(source)).slice(0, 40)});
+    // saving under a taken name would silently replace that search: refused until the name changes
+    const clash = (value: string) => {
+      const other = SavedSearches.taken(source.table, value);
+      return other === null ? null : `A saved search named ${other} exists.`;
+    };
+    name.addValidator(clash);
     Dialog.create('Save search').add(name)
-      .okDisabled(computed(() => name.value.trim() === '' ? 'Enter a name' : null))
+      .okDisabled(computed(() => name.value.trim() === '' ? 'Enter a name' : clash(name.value)), {footer: true})
       .onOK(() => SavedSearches._saveAs(source, name.peek().trim()), {text: 'SAVE', primary: true})
       .show();
   }
