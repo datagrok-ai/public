@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Forms: Fixed a saved record whose stored value a tightened rule refuses (a max lowered under it) opening with Save off and the reason only in its tooltip: the field shows its error at once, untouched; a stored value whose choice was removed shows as itself, marked "(not in the list)", with the field's error, instead of an empty dropdown. New records still wait for a touch
+* Forms: Fixed a saved record whose stored value a tightened rule refuses (a max lowered under it, its choice removed) blocking every Save with the reason only in Save's tooltip: the field shows its error at once, an unrelated edit saves (the update sends only edited columns, which is all the server checks), and a value the user changes is still refused; a removed choice shows as itself, marked "(not in the list)", until another is picked, instead of an empty dropdown. New records still wait for a touch. The memory backend checks an update over the columns it sends, as the server's `patch` does
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input

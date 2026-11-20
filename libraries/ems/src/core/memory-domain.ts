@@ -294,7 +294,7 @@ export class MemoryDomainBackend implements DomainBackend {
             `Operation ${index}: row "${id}" changed since it was read: ${moved.join(', ')}`);
         }
         const row = table.stamp({...rows[at], ...values}, (rows[at].version as number) + 1);
-        table.check(row, index);
+        table.check(row, index, Object.keys(values));
         entry(op.op, id!, {...rows[at]}, {...row});
         rows[at] = row;
         results[index] = MemoryDomainBackend._stamped(row, row.version as number);
@@ -709,9 +709,13 @@ export class MemoryTable implements DomainTableLike {
     return chain.reverse();
   }
 
-  /** The schema's rules — required, choices, min, max — as the server's `_validateRow` refuses on. */
-  check(row: Row, index: number): void {
+  /** The schema's rules — required, choices, min, max — as the server's `_validateRow` refuses on: an update
+   * (`patch`) over the columns it sends alone, so a stored value a rule tightened since refuses does not
+   * block an edit of another column. */
+  check(row: Row, index: number, columns?: string[]): void {
     for (const prop of this.properties) {
+      if (columns !== undefined && !columns.includes(prop.name!))
+        continue;
       const problem = MemoryEditState.problemOf(prop, row[prop.name!]);
       if (problem !== null)
         throw new DomainBackendError('validation', `Operation ${index}: column "${prop.name}": ${problem}`);
