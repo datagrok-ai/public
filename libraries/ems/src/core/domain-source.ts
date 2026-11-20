@@ -230,7 +230,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._errorStep = computed(() => DomainSource._message(this._error.value));
     this.currentRow = signal<RowView<TRow> | null>(null);
     this._rows = new FrameRows(this._df, {owner: this.scope,
-      onWrite: (id, column, value) => this._edit.peek()?.setValue(id, column, value)});
+      onWrite: (id, column, value) =>
+        this._edit.peek()?.setValue(id, column, DomainSource.frameValue(this._df.peek(), column, value))});
     this.rows = this._rows as RowsLike<RowView> as RowsLike<RowView<TRow>>;
     this.isDirty = computed(() => (this._edit.value?.isDirty.value ?? false) || this._holding());
     this.changeCount = computed(() => {
@@ -1083,6 +1084,14 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       n.value === undefined ? n : {...n, value: Array.isArray(n.value) ? n.value.map(swap) : swap(n.value)};
     const rebound = copy(query) as FilterGroup;
     return hit ? rebound : query;
+  }
+
+  /** A value as `df` holds it in `column`: a list written into a string column — how the platform
+   * frame carries a `string_list` cell — becomes its JSON text, the form the frame's own reads and
+   * its post-save re-read hold, and the text the server decodes into the list on write (a JS array
+   * handed to `df.set` as is would be stored as a Dart object). Anything else is as given. */
+  static frameValue(df: DataFrameLike | undefined, column: string, value: unknown): unknown {
+    return Array.isArray(value) && df?.columns.byName(column)?.type === 'string' ? JSON.stringify(value) : value;
   }
 
   private static _message(error: unknown): string {

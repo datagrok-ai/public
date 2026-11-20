@@ -1199,3 +1199,57 @@ scoped('a draft shows the column defaults, so a required column with one is alre
   create.dispose();
   draft.dispose();
 });
+
+/* EQ-056: the platform frame holds a `string_list` cell as the JSON text of the list (`queryDf`, and the
+   editor's post-save re-read); the memory backend holds it the same way. The form must show the items,
+   save what was typed as items, and show a saved list as items again. */
+async function listForm(tags) {
+  emsBackends.domain = backend();
+  const store = emsBackends.domain.tableSync('grit.issue');
+  store.rows.find((r) => r.id === 'i1').tags = tags;
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  document.body.append(form.root);
+  await flush();
+  const input = form.input('tags');
+  const field = input.root.querySelector('input');
+  const stored = () => store.rows.find((r) => r.id === 'i1').tags;
+  return {src, form, input, field, stored};
+}
+
+scoped('EQ-056: a stored string_list shows its items, not its JSON text split at the commas', async () => {
+  const {src, form, input, field} = await listForm(['a', 'b']);
+  assert.deepEqual(input.value, ['a', 'b'], 'the string_list field reads the stored list as its items');
+  assert.equal(field.value, 'a,b', 'and shows them as the list editor joins them');
+  form.dispose();
+  src.dispose();
+});
+
+scoped('EQ-056: adding an item to a shown string_list saves the items, and the field shows them after', async () => {
+  const {src, form, input, field, stored} = await listForm(['a', 'b']);
+  field.value = `${field.value},c`;
+  fire(field, 'input');
+  await flush();
+  assert.equal(await src.save(), true);
+  await flush();
+  assert.deepEqual(stored(), ['a', 'b', 'c'], 'the edited string_list is saved as the items the field showed plus c');
+  assert.deepEqual(input.value, ['a', 'b', 'c'], 'after the save the field shows the saved items');
+  form.dispose();
+  src.dispose();
+});
+
+scoped('EQ-056: a string_list typed from scratch is saved as items and still shows them after the save', async () => {
+  const {src, form, input, field, stored} = await listForm(undefined);
+  assert.equal(field.value, '', 'an empty string_list shows nothing');
+  field.value = 'x, y';
+  fire(field, 'input');
+  await flush();
+  assert.equal(await src.save(), true);
+  await flush();
+  assert.deepEqual(stored(), ['x', 'y'], 'the typed string_list is saved as its items');
+  assert.deepEqual(input.value, ['x', 'y'], 'after the save the typed string_list still shows its items');
+  assert.equal(field.value, 'x,y');
+  form.dispose();
+  src.dispose();
+});

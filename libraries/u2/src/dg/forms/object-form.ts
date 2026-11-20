@@ -608,9 +608,16 @@ export class ObjectForm extends Form {
         const date = typeof dayjsLike.toDate === 'function' ? dayjsLike.toDate() : new Date(value as string | number);
         return isNaN(date.getTime()) ? null : date;
       }
-      case 'list':
-        return Array.isArray(value) ? value :
-          (value === null || value === undefined || value === '' ? [] : ListInput.parse(String(value)));
+      case 'list': {
+        if (Array.isArray(value))
+          return value;
+        if (value === null || value === undefined || value === '')
+          return [];
+        // a DG string column holds a list as its JSON text (a domain frame's `string_list`)
+        const parsed = ObjectForm.fromJsonText(value);
+        return Array.isArray(parsed) ? parsed.map((item) => item === null ? '' : String(item)) :
+          ListInput.parse(String(value));
+      }
       case 'map':
         return typeof value === 'object' && value !== null && !Array.isArray(value) ? value : {};
       // the platform's own value (a FileInfo), handed to the platform's own editor untouched
@@ -618,6 +625,18 @@ export class ObjectForm extends Form {
         return value ?? null;
       default:
         return text(value);
+    }
+  }
+
+  /** A cell holding JSON text — how a DG string column carries a list or an object — as the value
+   * it encodes; `undefined` for anything that is not the text of a JSON array or object. */
+  static fromJsonText(value: unknown): unknown {
+    if (typeof value !== 'string' || !/^\s*[[{]/.test(value))
+      return undefined;
+    try {
+      return JSON.parse(value);
+    } catch (_) {
+      return undefined;
     }
   }
 
