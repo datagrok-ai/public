@@ -1,23 +1,24 @@
 // was `FilterSchemas.forDomainTable` in u2; moved so u2 never calls `grok.dapi.domains`
 import * as grok from 'datagrok-api/grok';
 import {propertyFields} from 'datagrok-api/u2core';
-import {Access, Filters} from '@datagrok-libraries/u2';
+import {Filters} from '@datagrok-libraries/u2';
 import type {FilterProperty, FilterSchema, FilterValueItem} from '@datagrok-libraries/u2';
 import {filterRenderer, filterRef} from '@datagrok-libraries/u2/dg';
+import {DgDomainTable} from './backend.js';
 
 const VALUES_LIMIT = 50;
 const REF_ADDRESS = /^\w+\.\w+$/;
 
-/** The registry's row properties of `'<schema>.<table>'` the caller may read — the registry
- * lists a restricted column too, the table's access does not; a ref column's semType is its
- * target address. Values come from the table's `categories` facet under the typed text — on a
+/** The registry's row properties of `'<schema>.<table>'` the caller may read, narrowed as the
+ * {@link DgDomainTable} handle is; a ref column's semType is its target address. Values come
+ * from the table's `categories` facet under the typed text — on a
  * `'basic'` backend (`support.filters`) for string and ref columns only, the ones it searches. */
 export async function domainFilterSchema(address: string): Promise<FilterSchema> {
   const registry = grok.dapi.domains.registry;
   const [rowProperties, access] = await Promise.all([registry.rowProperties(address),
     grok.dapi.domains.table(address).access()]);
-  const readable = Access.from(access);
-  const properties = rowProperties.filter((p) => readable.field(p.name) !== 'hidden').map((p) => {
+  const readable = DgDomainTable.readable(access);
+  const properties = rowProperties.filter((p) => readable(p.name)).map((p) => {
     const prop: FilterProperty = {...propertyFields(p), name: p.name};
     if (REF_ADDRESS.test(p.semType ?? ''))
       prop.ref = p.semType;

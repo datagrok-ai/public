@@ -82,7 +82,7 @@ export class DomainSearch extends TextInput {
 
   private static columns(source: DomainSource): string[] {
     const props = source.schema.properties;
-    return source.schema.info.searchableColumns.filter((name) => source.readable(name)).map((name) => {
+    return source.schema.info.searchableColumns.map((name) => {
       const prop = props.find((p) => p.name === name);
       return DomainTable.captionOf(prop ?? {name}).toLowerCase();
     });

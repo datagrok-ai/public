@@ -93,12 +93,12 @@ export class DomainFilters extends Control {
       values: (prop, query, signal, ctx) => this._under(prop, query, ctx) ?? values!(prop, query, signal, ctx)};
   }
 
-  // the columns the caller may read, the name column first, so a new condition starts on it
+  // the name column first, so a new condition starts on it
   private _ordered(): FilterProperty[] {
     const {properties, info} = this.source.schema;
     const name = info.nameColumn ?? info.businessKey[0];
     const rank = (p: FilterProperty) => p.name === name ? 0 : SYSTEM_COLUMNS.some(([n]) => n === p.name) ? 2 : 1;
-    return properties.filter((p) => this.source.readable(p.name)).sort((a, b) => rank(a) - rank(b));
+    return [...properties].sort((a, b) => rank(a) - rank(b));
   }
 
   // the rows of the hierarchy, not the handful the column holds, by `u2-domain-pick`'s search: a caption shows

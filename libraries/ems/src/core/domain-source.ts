@@ -340,13 +340,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return this._schema;
   }
 
-  /** Whether the caller may read the column: the schema describes every column, a restricted one
-   * too, and only the access says which are hidden. What every control that shows a column or
-   * offers one to sort, search or filter by asks. */
-  readable(name: string): boolean {
-    return this._access.peek().field(name) !== 'hidden';
-  }
-
   /** The draft a `~new:` id names, in whichever live source holds it — how a picker or a readonly
    * reference shows a parent that is not saved yet. */
   static draftOf(id: string): {source: DomainSource, row: RowView} | undefined {
