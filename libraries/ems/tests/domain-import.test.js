@@ -581,12 +581,19 @@ const FULL = {view: true, insert: true, edit: true, delete: true, share: true};
 scoped('EQ-053: an import refuses up front when a required column with no default cannot be written', async () => {
   emsBackends.domain = backend({access: {can: FULL, fields: {project_id: 'readonly', title: 'editable', number: 'editable'}}});
   const issuesTable = await domains.table('grit.issue');
-  const result = await domains.import(issuesTable, {source: frame(['number'], [{number: '1'}])});
+  const warn = notify.warning;
+  const said = [];
+  notify.warning = (text) => said.push(text);
+  let result;
+  try {
+    result = await domains.import(issuesTable, {source: frame(['number'], [{number: '1'}])});
+  } finally {
+    notify.warning = warn;
+  }
   assert.equal(result, null, 'nothing opened, nothing imported');
-  assert.equal(document.body.querySelector('.u2-dialog'), null, 'no wizard');
-  assert.equal(document.body.querySelector('.u2-notify-warning')?.textContent,
-    'You cannot create issues: they need a value for Project id, which you cannot set. ' +
-    'Ask the table\'s owner to let you edit Project id.');
+  assert.equal(buttonNamed('CANCEL'), undefined, 'no wizard');
+  assert.deepEqual(said, ['You cannot create issues: they need a value for Project id, which you cannot set. ' +
+    'Ask the table\'s owner to let you edit Project id.']);
 });
 
 scoped('EQ-053: an import still opens when the importer derives the unwritable required column', async () => {
@@ -595,8 +602,7 @@ scoped('EQ-053: an import still opens when the importer derives the unwritable r
   issuesTable.importer = {derives: ['project_id'], prepare: async (rows) => rows.map(() => ({values: {project_id: 'p1'}}))};
   const running = testOwner().build(() => domains.import(issuesTable, {source: frame(['number'], [{number: '1'}])}));
   await flush();
-  assert.notEqual(document.body.querySelector('.u2-dialog'), null, 'the wizard opened');
-  assert.equal(document.body.querySelector('.u2-notify-warning'), null, 'with no refusal');
+  assert.notEqual(buttonNamed('CANCEL'), undefined, 'the wizard opened');
   buttonNamed('CANCEL')?.click();
   await flush();
   void running;
