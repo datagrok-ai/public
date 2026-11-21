@@ -8,6 +8,7 @@
 * string-utils: `tryParseJson` takes an optional `warning` to log on malformed JSON, and a `reviver`
 * validation-utils: Added `isLinkedRestriction` and `hasValidationIssue`
 * Forms viewer: Fixed the mouse-over row staying set after the pointer left the viewer when the card under it had been re-rendered
+* [#4647](https://github.com/datagrok-ai/public/issues/4647): Forms viewer: Fixed colour-coded fields keeping the dark text colour on a dark background
 * format-version-utils: Added `isClientAtLeast(version)`
 
 ## 4.7.10 (WIP)
