@@ -127,7 +127,7 @@ export async function spaceHasName(space: DG.Project, friendlyName: string, exce
   if (!except)
     return true;
   const held = await grok.dapi.spaces.id(space.id).children.ofTypes('Project', true).list();
-  return held.some((p) => p.name === name && p.id !== except);
+  return held.some((p) => p.name.toLowerCase() === name.toLowerCase() && p.id !== except);
 }
 
 /** The ids of the spaces the user saved to last, the latest first. */
