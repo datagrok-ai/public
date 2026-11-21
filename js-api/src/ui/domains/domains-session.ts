@@ -157,11 +157,12 @@ export class DomainSession implements IEditorHost {
 
   /** Every editor's batch (`prepareSave`), in editor order — what {@link save}
    * concatenates; null when any editor refused (a blocking cell error, already
-   * reported). */
+   * reported). A value is a reference when it is the draft id of any editor's row. */
   buildOps(): DomainSessionPart[] | null {
     const parts: DomainSessionPart[] = [];
+    const drafts = new Set(this.editors.flatMap((editor) => [...editor.draftIds()]));
     for (const editor of this.editors) {
-      const pending = editor.prepareSave();
+      const pending = editor.prepareSave(drafts);
       if (pending == null)
         return null;
       parts.push({editor: editor, pending: pending});

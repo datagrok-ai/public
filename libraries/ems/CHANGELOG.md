@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Writes: Fixed a text starting with `~new:` ("~new:release notes") failing to save over the memory backend with "unknown reference": only the id of a draft row of a live writer is sent as a `$` reference, any other text as typed. On the platform the fix is in js-api's writer and takes effect when the server ships it
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input

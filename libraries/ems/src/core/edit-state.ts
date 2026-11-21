@@ -81,9 +81,13 @@ export class MemoryEditState implements EditState {
   private readonly _version = signal(0);
   private readonly _saving = signal(false);
 
+  // the writers not disposed: a value of any batch that is one of their draft ids is a reference
+  private static readonly _live = new Set<MemoryEditState>();
+
   /** `access` is what a row is written under (`Access.row`): a draft under `insert`, an existing
    * row under `edit` as its own columns narrow it — the columns a save may send. */
   constructor(private readonly _table: DomainTableLike, readonly df: MemoryFrame, private readonly _access: Access) {
+    MemoryEditState._live.add(this);
     this.changeCount = computed(() => {
       this._version.value;
       return this.df.rows.reduce((n, row) => n + this._contribution(row), 0);
@@ -255,8 +259,9 @@ export class MemoryEditState implements EditState {
   }
 
   /** The batch in row order, as the js-api editor builds it: an insert names itself with its
-   * draft id, a value that is a draft id (this writer's or another's) becomes the `$` reference
-   * the server resolves, a literal leading `$` is escaped; `id` is never sent. */
+   * draft id, a value that is the id of a draft row of a live writer (this one's or another's)
+   * becomes the `$` reference the server resolves, a literal leading `$` is escaped, and any
+   * other text, `~new:…` included, is sent as typed; `id` is never sent. */
   buildOps(): MemoryPendingOp[] {
     const table = this._table.address;
     const pending: MemoryPendingOp[] = [];
@@ -330,6 +335,7 @@ export class MemoryEditState implements EditState {
   }
 
   dispose(): void {
+    MemoryEditState._live.delete(this);
     this.onChanged.clear();
     this.onSaved.clear();
   }
@@ -354,7 +360,11 @@ export class MemoryEditState implements EditState {
   private static _reference(v: unknown): unknown {
     if (Array.isArray(v))
       return v.map((x) => MemoryEditState._reference(x));
-    return typeof v === 'string' && (Rows.isDraft(v) || v.startsWith('$')) ? `$${v}` : v;
+    if (typeof v !== 'string')
+      return v;
+    const draft = Rows.isDraft(v) &&
+      [...MemoryEditState._live].some((edit) => edit.df.rows.some((row) => row.id === v));
+    return draft || v.startsWith('$') ? `$${v}` : v;
   }
 
   private static _resolve(v: unknown, ids: Record<string, string>): unknown {
