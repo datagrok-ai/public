@@ -577,12 +577,14 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
 
   // Gather the files
   const localTimestamps: Indexable = {};
-  const files = await walk({
+  // a package's bdd/ suite never runs on the server, and the walk reads only the package's own ignore files, not the
+  // repository root's: without this, its filmed guides (a gigabyte for Bio's demos) and its login token were uploaded
+  const files = (await walk({
     path: '.',
     ignoreFiles: ['.npmignore', '.gitignore', '.grokignore'],
     includeEmpty: false,
     follow: true,
-  });
+  })).filter((f: string) => !f.replace(/\\/g, '/').startsWith('bdd/'));
 
   // A bundled package ships dist/package.js: built by webpack (legacy) or by `grok build`
   // (rspack via @datagrok/build-config, which needs no config file at all).

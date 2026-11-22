@@ -230,6 +230,12 @@ scenario per clip, filmed with the same `grok-bdd guide <feature>` (the tag film
   and `<out>.md` lists them with where each starts. The set is listed in that order in
   `features/demos/INDEX.md` of the package that owns it (Bio's: the bioinformatics showcase, from four packages).
 
+- **A how-to clip** (`@guide @tutorial`, in `packages/Tutorials/bdd/features/howto/<NN-section>/`): a demo clip
+  that teaches, for the how-to playlists. The same shell, card and pace, plus an orange outline on what each step
+  presses over a lightly dimmed page, a moment's rest before the press, and notes that rise into place and wait to
+  be read. One idea per clip, as long as the idea needs; a note says what a thing is for, not "click X". The clip is
+  copied to `packages/Tutorials/videos/<NN-section>/<NN - Title>.mp4`, with its YouTube description beside it.
+
 What makes a good clip: one idea, 20–90 s; the data opened off camera unless opening it is the point (a
 file format: open the files from Browse); the window arranged off camera so the sequences and results are
 large; a tooltip on the monomer that matters (`user hovers over monomer 12 of the "cell 2 of sequence"

@@ -17,6 +17,9 @@ says …`, or a caption) is a line over the page for as long as it takes to read
 quicker, and a step rests as long as its change takes to take in. review-sheet.png (the last frame of
 every step) and timeline.json (when each step starts and ends) are written for a review.
 
+--tutorial makes a demo clip that teaches (a short how-to of a series): the element each stop is about to press is
+outlined over a lightly dimmed page, the pointer rests on it a moment longer, and the notes rise into place.
+
 --reel <out.mp4> cuts demo clips (the folders a --demo rendering wrote) together, in the order given, into
 one video; each clip is copied beside it as `NN - <scenario>.mp4`, and `<out>.md` lists them with where
 each starts in the reel.
@@ -27,7 +30,7 @@ not a frame. A press is marked where it landed, under the pointer's tip: a yello
 left button, a green one for the right. audit.png shows every press as the video shows it, and
 audit.json how far the mark's centre and the pointer's tip are from the press.
 
-    py tool/guide-render.py <scenario dir> [--gif] [--help | --demo] [--fps 30] [--hold 1.4] [--travel 0.7]
+    py tool/guide-render.py <scenario dir> [--gif] [--help | --demo | --tutorial] [--fps 30] [--hold 1.4] [--travel 0.7]
         [--zoom 1.8] [--zoom-time 0.8] [--gif-fps 12] [--colors 256] [--gif-width <px>] [--end-hold <s>]
         [--ffmpeg <path>] [--quiet]
     py tool/guide-render.py --reel <out.mp4> <demo clip dir>…   cuts the clips together in that order
@@ -203,10 +206,13 @@ def key_label(keys):
 
 
 class Renderer:
-    def __init__(self, folder, fps, hold, travel, zoom, zoom_time=0.8, help=False, demo=False):
+    def __init__(self, folder, fps, hold, travel, zoom, zoom_time=0.8, help=False, demo=False, tutorial=False):
         self.folder = folder
         self.fps = fps
         self.help = help
+        # a tutorial is a demo clip that teaches: the element about to be pressed is outlined, and its notes rise
+        # into place
+        self.tutorial = tutorial and demo
         self.demo = demo
         self.hold = hold
         self.travel = travel
@@ -216,6 +222,9 @@ class Renderer:
         # before a press, the ripple, a stop on a path's way, the step's picture before its result, a typing beat
         self.rest_s, self.pulse_s, self.leg_s, self.cut_s, self.beat_s = \
             (0.2, 0.42, 0.22, 0.12, 0.1) if demo else (0.4, PULSE_S, 0.4, 0.3, BEAT_S)
+        # a tutorial's pointer rests on the outlined element long enough for the viewer to find it before the press
+        if self.tutorial:
+            self.rest_s = 0.4
         # but a menu's items (and a list's) are read as the pointer goes: a stop of a menu holds its opened group, the
         # rest before its leaf is pressed is longer, and an opened list stays up longer still
         self.menu_s, self.menu_rest_s, self.list_s = (0.38, 0.35, 0.45) if demo else (0.4, 0.4, 0.5)
@@ -291,6 +300,8 @@ class Renderer:
         self.note = None
         self.cap = None
         self.plain = None
+        # the page the last frame was composed from, before its pointer, marks and note
+        self.base_now = None
         # where each part of the video starts (the title, every step, the end): timeline.json, review-sheet.png
         self.marks = []
         if demo:
@@ -350,7 +361,10 @@ class Renderer:
         return img
 
     def spotlight(self, img, box, color=ACCENT):
-        """The frame with everything but the box dimmed and the box outlined — none in a help GIF or a demo."""
+        """The frame with everything but the box dimmed and the box outlined — none in a help GIF or a demo; a
+        tutorial outlines the box over a lighter dimming."""
+        if self.tutorial:
+            return self.highlight(img, box)
         if self.help or self.demo:
             return img
         pad = 6
@@ -363,6 +377,32 @@ class Renderer:
         out.alpha_composite(layer)
         d = ImageDraw.Draw(out)
         d.rounded_rectangle((x0, y0, x1, y1), radius=6, outline=color + (255,), width=3)
+        return out.convert('RGB')
+
+    def highlight(self, img, box):
+        """A tutorial's mark of where to press: the page dimmed a little round the box, the box outlined in the accent
+        colour over a soft glow, so it reads on a white page and on a dark one."""
+        # an icon is marked by a box larger than itself, so a status-bar toggle reads at a glance
+        least = 44 * self.s
+        cx, cy = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
+        half_w = max(box['width'] / 2 + 5 * self.s, least / 2)
+        half_h = max(box['height'] / 2 + 5 * self.s, least / 2)
+        x0, y0 = max(0, cx - half_w), max(0, cy - half_h)
+        x1, y1 = min(self.w - 1, cx + half_w), min(self.h - 1, cy + half_h)
+        radius = round(6 * self.s)
+        layer = Image.new('RGBA', (self.w, self.h), (0, 0, 0, 70))
+        d = ImageDraw.Draw(layer)
+        d.rounded_rectangle((x0, y0, x1, y1), radius=radius, fill=(0, 0, 0, 0))
+        glow = Image.new('RGBA', (self.w, self.h), (0, 0, 0, 0))
+        g = round(4 * self.s)
+        ImageDraw.Draw(glow).rounded_rectangle((x0 - g, y0 - g, x1 + g, y1 + g), radius=radius + g,
+                                               outline=ACCENT + (120,), width=2 * g)
+        glow = glow.filter(ImageFilter.GaussianBlur(radius=g))
+        out = img.convert('RGBA')
+        out.alpha_composite(layer)
+        out.alpha_composite(glow)
+        ImageDraw.Draw(out).rounded_rectangle((x0, y0, x1, y1), radius=radius, outline=ACCENT + (255,),
+                                              width=max(3, round(3 * self.s)))
         return out.convert('RGB')
 
     def caption_layer(self, step, index, total):
@@ -496,6 +536,7 @@ class Renderer:
                                        f'({self.drawn[0]:.0f}, {self.drawn[1]:.0f}) to ({cursor[0]:.0f}, {cursor[1]:.0f})')
             self.drawn = self.cur = cursor
         self.frame_no += 1
+        self.base_now = base
         self.plain = self.compose(base, cursor, **kw)
         return self.with_note(self.plain)
 
@@ -657,18 +698,22 @@ class Renderer:
     def with_note(self, img):
         """The frame with the note and the key cap over it, each faded in and out; each counts the frame."""
         out = img
-        for name, fade_s in (('note', 0.25), ('cap', 0.1)):
+        for name, fade_s in (('note', 0.35 if self.tutorial else 0.25), ('cap', 0.1)):
             layer = getattr(self, name)
             if layer is None:
                 continue
             fade = max(1, int(fade_s * self.fps))
             a = min(1.0, (layer['shown'] + 1) / fade, (layer['total'] - layer['shown']) / fade)
+            x, y = layer['at']
+            # a tutorial's note rises into place as it fades in
+            if self.tutorial and name == 'note':
+                y += round((1 - ease(min(1.0, (layer['shown'] + 1) / fade))) * 18 * self.video[1] / 1080)
             layer['shown'] += 1
             if layer['shown'] >= layer['total']:
                 setattr(self, name, None)
             if out is img:
                 out = img.copy()
-            out.paste(layer['rgb'], layer['at'], layer['alpha'] if a >= 1 else layer['alpha'].point(lambda v: int(v * a)))
+            out.paste(layer['rgb'], (x, y), layer['alpha'] if a >= 1 else layer['alpha'].point(lambda v: int(v * a)))
         return out
 
     def change(self, a, b):
@@ -690,7 +735,8 @@ class Renderer:
         opened long enough to read its inputs."""
         result = self._image(step['settled']) if step.get('settled') else after
         change = self.change(shown, result)
-        hold = self.rest_for(change, 0.3, 1.5)
+        # a tutorial rests a little longer on each result: the viewer follows along, and may pause to do the same
+        hold = self.rest_for(change, 0.5, 1.9) if self.tutorial else self.rest_for(change, 0.3, 1.5)
         events = [p['type'] for leg in step.get('legs', []) for p in leg.get('pointer', [])]
         # a hover brought up a tooltip: the bigger it is, the longer it takes to read
         if 'down' not in events and 'move' in events and change > 0.002:
@@ -698,6 +744,14 @@ class Renderer:
         if step.get('dialog'):
             hold = max(hold, min(2.5, max(1.2, 0.9 + 0.12 * step['dialog']['inputs'])))
         yield from self.hold_frames(hold, result, self.cur)
+
+    def finish_note(self):
+        """A tutorial's note is read to its end before the next one comes up: the page holds where it is meanwhile."""
+        if not (self.tutorial and self.note and self.base_now is not None):
+            return
+        left = (self.note['total'] - self.note['shown']) / self.fps
+        if left > 0:
+            yield from self.hold_frames(left, self.base_now, self.cur)
 
     def end_stale_note(self, step):
         """A note is about the view it was put up in: a step that brings another view (a file opened) fades it out as
@@ -852,6 +906,7 @@ class Renderer:
         if step['kind'] == 'note':
             self.compose(after, self.cur, caption=caption).save(still_path)
             if self.demo:
+                yield from self.finish_note()
                 self.start_note(step['caption'], self.ahead(step), self.before(step), step.get('noteAt'),
                                 step.get('view'))
                 yield from self.hold_frames(0.8, self._image(step['settled']) if step.get('settled') else after, self.cur)
@@ -859,6 +914,7 @@ class Renderer:
                 yield from self.hold_frames(self.reading(step['caption']), after, self.cur, caption=caption)
             return
         if self.demo and step.get('captioned'):
+            yield from self.finish_note()
             self.start_note(step['caption'], self.ahead(step), self.before(step), step.get('noteAt'),
                             step.get('view'))
         if step['kind'] == 'check' and self.demo:
@@ -972,7 +1028,8 @@ class Renderer:
         yield from self.hold_frames(self.cut_s, lit, self.cur, zoom=zoom, anchor=zoom_at, caption=caption)
         if self.demo:
             yield from self.key_frames(step, lit)
-            yield from self.demo_result(step, lit, after)
+            # the rest is measured on the page as filmed: a tutorial's outline and dimming are no change of the page
+            yield from self.demo_result(step, shot, after)
             return
         # the page after the step: zooming out over the step's picture, then cut to the page after it,
         # whose light fades — a cross-fade of two pictures of a changed page shows both at once
@@ -1383,7 +1440,8 @@ def main(argv):
     gif = flag('--gif')
     quiet = flag('--quiet')
     help = flag('--help')
-    demo = flag('--demo') and not help
+    tutorial = flag('--tutorial') and not help
+    demo = (flag('--demo') or tutorial) and not help
     fps = int(opt('--fps', 30))
     hold = float(opt('--hold', 0.9 if help else 1.4))
     gif_fps = int(opt('--gif-fps', 12))
@@ -1409,7 +1467,7 @@ def main(argv):
         return 3
     if reel_out:
         return reel(ffmpeg, reel_out, args)
-    renderer = Renderer(args[0], fps, hold, travel, zoom, zoom_time, help, demo)
+    renderer = Renderer(args[0], fps, hold, travel, zoom, zoom_time, help, demo, tutorial)
     renderer.write_markdown()
     outputs, count = renderer.encode(ffmpeg, gif, gif_fps, colors, gif_width, end_hold)
     report = renderer.write_audit()

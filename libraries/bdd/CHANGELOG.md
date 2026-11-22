@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Guides: Added the `@tutorial` tag (renderer `--tutorial`): a demo clip that teaches — what each stop presses is outlined over a lightly dimmed page (an icon gets a box of at least 44 px), the pointer rests on it a moment, notes rise into place, a new note waits until the last one is read, and each result is held a little longer
 * core#456: Gestures: `user closes "<name>" view tab` clicks the tab's close button; it pressed Escape, which left the tab open
 * Runner: The shell reset reopens the Home view when a scenario closed it (Close others closes Home too): the next feature waited for Home and timed out at login
 * Runner: Added `BDD_EXCLUDE_PACKAGES=<names>` — those packages stay out of every shell of the run (the platform's `excludePackages` startup parameter); features gated on one skip, the others run without its autostart and handlers
