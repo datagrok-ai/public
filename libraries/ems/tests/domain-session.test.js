@@ -2,7 +2,7 @@ import {emsBackends} from '../src/core/domain-backend.js';
 import {test, testOwner} from '@datagrok-libraries/u2/tests/owned-test.js';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
-import {backends, Scope, Rows, notify} from '@datagrok-libraries/u2';
+import {backends, Scope, Rows, notify, signal} from '@datagrok-libraries/u2';
 import {DomainSource} from '../src/core/domain-source.js';
 import {SharedSession, confirmDiscard} from '../src/core/session.js';
 import {backend} from './domain-fixtures.mjs';
@@ -688,6 +688,64 @@ scoped('EQ-001: a refused parent key fixed in the parent enables Save again', as
   assert.equal(issues.blocked.value, null, 'the copy on the child goes with the cause');
   assert.equal(session.validity.value, null, 'Save is enabled');
   assert.equal(await session.save(), true);
+  projects.dispose();
+  issues.dispose();
+});
+
+scoped('EQ-001: a refusal said of the whole batch, its cause in the child, clears when the child is fixed', async () => {
+  const memory = backend();
+  // `lastRefusal.editor === null`: dg/backend.ts puts the one sentence on every writer of the batch
+  emsBackends.domain = {
+    table: (address) => memory.table(address),
+    saveAll: (edits) => {
+      if (!edits.some((e) => e.df.rows.some((r) => r.id === 'i1' && r.weight > 5)))
+        return memory.saveAll(edits);
+      for (const edit of edits)
+        edit.problem = 'Weight exceeds the initial weight';
+      return Promise.resolve(false);
+    },
+  };
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  projects.rows.byKey('p1').name = 'Grit notes';
+  issues.rows.byKey('i1').weight = 10;
+  assert.equal(await session.save(), false);
+  issues.rows.byKey('i1').weight = 3;
+  await flush();
+  assert.equal(projects.blocked.value, null, 'the parent, first in the batch, is not taken for the cause');
+  assert.equal(session.validity.value, null, 'Save is enabled');
+  projects.dispose();
+  issues.dispose();
+});
+
+scoped('EQ-001: a server error on a field holds through an edit elsewhere and clears when the field is fixed', async () => {
+  const memory = backend();
+  // the platform editor puts the server's error on the cell it names and takes it back when that
+  // cell is edited: what a cell error joins the source's validity through
+  const cell = signal(null);
+  emsBackends.domain = {
+    table: (address) => memory.table(address),
+    saveAll: (edits) => {
+      if (!edits.some((e) => e.df.rows.some((r) => r.id === 'p1' && r.key === 'DG')))
+        return memory.saveAll(edits);
+      cell.value = 'Key DG already belongs to Datagrok';
+      return Promise.resolve(false);
+    },
+  };
+  const session = new SharedSession();
+  const {projects, issues} = await pair(session);
+  const unguard = projects.guard(() => null, cell);
+  projects.rows.byKey('p1').key = 'DG';
+  issues.rows.byKey('i1').title = 'Aspirin 100';
+  assert.equal(await session.save(), false);
+  issues.rows.byKey('i1').title = 'Aspirin 200';
+  await flush();
+  assert.match(session.validity.value ?? '', /already belongs to Datagrok/, 'an edit beside the field leaves it standing');
+  cell.value = null;
+  projects.rows.byKey('p1').key = 'GRIT';
+  await flush();
+  assert.equal(session.validity.value, null, 'fixing the field enables Save');
+  unguard();
   projects.dispose();
   issues.dispose();
 });
