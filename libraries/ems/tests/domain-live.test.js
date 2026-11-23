@@ -7,7 +7,7 @@ import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope} from '@datagrok-libraries/u2';
 import {DomainSource} from '../src/core/domain-source.js';
 import {SharedSession} from '../src/core/session.js';
-import {backend} from './domain-fixtures.mjs';
+import {backend, until} from './domain-fixtures.mjs';
 
 // before any test(): a later top-level await lets dg/backend.js reassign the seam mid-test
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
@@ -593,6 +593,37 @@ scoped('a peer\'s write refreshes the rows in place: the current row (never null
   assert.equal(src.rows.byKey('i1').title, 'Theirs', 'the poll saw the write and read the rows again');
   assert.deepEqual(seen.filter((id) => id !== 'i3'), [], 'the current row stays on the row it was');
   assert.deepEqual(selectedIds(src), ['i2', 'i3']);
+  src.dispose();
+});
+
+scoped('a current row and a selection picked while a save re-reads the rows are the ones that stand', async () => {
+  const be = counted();
+  const inner = be.backend.table;
+  const gate = {hold: false, waiting: []};
+  be.backend.table = async (address) => {
+    const t = await inner(address);
+    return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {
+      frame: async (spec) => (gate.hold && await new Promise((go) => gate.waiting.push(go)), t.frame(spec)),
+    });
+  };
+  const src = await started(be, {live: false});
+  src.currentRow.value = src.rows.byKey('i1');
+  selectRows(src, 'i1');
+  await flush();
+  src.rows.byKey('i2').title = 'Edited';
+  gate.hold = true;
+  const saving = src.session.save();
+  await until(() => gate.waiting.length === 1);
+  src.currentRow.value = src.rows.byKey('i3');
+  src.df.value.selection.set(src.rows.indexOf('i1'), false);
+  selectRows(src, 'i2');
+  await flush();
+  gate.hold = false;
+  gate.waiting.splice(0).forEach((go) => go());
+  assert.equal(await saving, true);
+  await flush();
+  assert.equal(src.currentRow.value?.id, 'i3', 'the row picked during the re-read stays current');
+  assert.deepEqual(selectedIds(src), ['i2'], 'and the selection made during it stands');
   src.dispose();
 });
 

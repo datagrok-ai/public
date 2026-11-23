@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Lists: Fixed the current row and the selection snapping back to where they were when a save started (or a Load more that found the list shifted) if you moved them while the rows were re-read: your newer choice stands
 * Lists: Fixed a Load more after a save whose re-read failed, and a reload that failed too, appending at the lost window's offset (skipping or repeating rows): the next page starts over from the first one until a load lands
 * Lists: Fixed a Load more clicked just before the filter changed appending a page of the new filter's rows to the old list, which stayed mixed until the new rows landed (or for good if they failed): the page is dropped
 * Lists: Fixed a Load more that found the list shifted marking the list loaded while a new filter's rows were still being read, or over that filter's error: the newer load sets the status

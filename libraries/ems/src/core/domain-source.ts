@@ -971,7 +971,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     // the frame may have just lost every row of it to a delete
     const window = Math.max(this._loaded, frame.df.rowCount) || this.pageSize;
     const gen = this._gen;
-    const kept = this._keep();
     const readFor = this._readFor();
     await this._serve(true);
     // read BEFORE the window, as a load does: a write by someone else after the save is a change
@@ -993,7 +992,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     }
     // the rows now shown were read for this scope: a query or search changed over the pending edits is applied
     this._shownFor = readFor;
-    this._swap(replacement, window, baseline, kept);
+    // read at the swap, off the frame about to go: a row or a selection picked while the window was read stands
+    this._swap(replacement, window, baseline, this._keep());
     return true;
   }
 
