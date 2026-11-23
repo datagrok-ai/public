@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Permissions: Fixed an empty child tab still saying "You do not have access to …" after View was granted and it re-read with no rows: it now says "No <children>."
 * Saving: Fixed a row named only by digits (a lot "12345", a batch "2024-05") being treated as nameless: a refusal called it "Batch 2" instead of by its name, and the entity page kept the old title while such a name was typed; only a caption built from the row's ids counts as no name
 * Lists: Fixed an empty list telling a user with View only that they "cannot create issues: they need a value for Project id, which you cannot set": the reason is given only to a user who may insert; one who may not reads "No issues yet"
 * Forms: Fixed retyping JSON-looking text in a plain text column (`{"a":1}` as `{"a": 1}`) being dropped: the field snapped back and Save sent a no-op update (or nothing was written at all on the platform); only json and string list columns now compare by their JSON value, and retyping one as it was no longer counts as a change

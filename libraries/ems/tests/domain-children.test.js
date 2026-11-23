@@ -542,3 +542,28 @@ scoped('a child tab hides New from a user who may view the child table but not i
   children.dispose();
   parent.dispose();
 });
+
+scoped('an empty child tab says it is empty once View is granted, not that access is denied', async () => {
+  const memory = crm();
+  const contact = memory.tableSync('crm.contact');
+  let view = false;
+  contact.access = () => Promise.resolve({can: {view, insert: false, edit: false, delete: false, share: false},
+    fields: {name: 'readonly', company_id: 'readonly'}});
+  contact.query = () => Promise.resolve([]);
+  emsBackends.domain = memory;
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {tables: ['contact'], mode: 'list'}));
+  await settle();
+  await flush();
+  assert.match(children.root.textContent, /You do not have access to contacts\./);
+  view = true;
+  await children.child(CONTACTS).reloadAccess();
+  await settle();
+  assert.match(children.root.textContent, /No contacts\./);
+  assert.doesNotMatch(children.root.textContent, /You do not have access/);
+  children.dispose();
+  parent.dispose();
+});

@@ -216,7 +216,7 @@ export class DomainChildren extends Control {
           ...(open === undefined ? {} : {open: {column: open, run: (r: RowView) => entry.table.open(r)}})}) : null;
         const body = grid?.root ??
           divH([domains.list(child).root, domains.form(child).root], 'u2-domain-children-split');
-        const empty = span(`No ${entry.label.toLowerCase()}.`, 'u2-domain-children-empty');
+        const empty = span('', 'u2-domain-children-empty');
         // a child saved under a parent the same Save deletes would land live under a row in the trash
         const add = domains.newButton(child, {}, {disabled: () => {
           this.parent.changeCount.value;
@@ -234,8 +234,7 @@ export class DomainChildren extends Control {
           const ready = child.state.value === 'ready';
           const blocked = denied ?? (ready ? DomainErrors.noView(child) : null);
           const none = blocked !== null || (ready && child.rows.items.value.length === 0);
-          if (blocked !== null)
-            empty.textContent = blocked;
+          empty.textContent = blocked ?? `No ${entry.label.toLowerCase()}.`;
           toolbar.hidden = blocked !== null;
           empty.hidden = !none;
           body.hidden = none;
