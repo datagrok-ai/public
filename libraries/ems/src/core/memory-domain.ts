@@ -253,7 +253,7 @@ export class MemoryDomainBackend implements DomainBackend {
       const table = tables[index];
       const rows = rowsOf(table);
       const values = Object.fromEntries(Object.entries(op.values ?? {})
-        .map(([k, v]) => [k, resolve(table.decode(k, v, index), index)]));
+        .map(([k, v]) => [k, table.decode(k, resolve(v, index), index)]));
       const id = op.op === 'insert' ? undefined : String(resolve(op.id, index));
       const at = rows.findIndex((row) => row.id === id);
       const entry = (name: string, rowId: string, prior: Row | null, next: Row | null): void => {
