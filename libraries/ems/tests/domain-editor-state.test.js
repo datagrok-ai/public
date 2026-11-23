@@ -197,13 +197,13 @@ scoped('validity is the first blocking error on a row that is not deleted; a con
 scoped('EQ-033: a cell the server refused stays shown, does not hold Save, and the next save is sent', async () => {
   const {editor} = fakeEditor(ROWS);
   let validated = 0;
-  editor.validate = function() { // the editor re-runs its own checks: the server's mark goes
+  editor.commitEdit = function(row, column) { // the editor re-runs the cell's own checks: the server's mark goes
     validated++;
-    delete this.errorsOf(0).title;
+    delete this.errorsOf(row)[column];
     this.onChanged.fire(this);
-    return 0;
   };
   const state = new EditorEditState(editor);
+  state.setValue('i1', 'title', 'Aspirin');
   const real = DG.DomainSession.prototype.save;
   let sent = 0;
   DG.DomainSession.prototype.save = async function() {
@@ -228,13 +228,12 @@ scoped('EQ-033: a cell the server refused stays shown, does not hold Save, and t
 
 scoped('EQ-033: a client error the retry finds is the client\'s, and holds', async () => {
   const {editor} = fakeEditor(ROWS);
-  editor.validate = function() { // the server's mark goes; the client finds the second title empty
-    delete this.errorsOf(0).title;
-    this.errorsOf(1).title = {message: 'Title is required', kind: 'error'};
+  editor.commitEdit = function(row, column) { // the server's mark goes; the client finds the title empty
+    this.errorsOf(row)[column] = {message: 'Title is required', kind: 'error'};
     this.onChanged.fire(this);
-    return 1;
   };
   const state = new EditorEditState(editor);
+  state.setValue('i1', 'title', '');
   const real = DG.DomainSession.prototype.save;
   let sent = 0;
   DG.DomainSession.prototype.save = async function() {
@@ -249,13 +248,50 @@ scoped('EQ-033: a client error the retry finds is the client\'s, and holds', asy
     const dg = new DgDomainBackend();
     assert.equal(await dg.saveAll([state]), false);
     assert.equal(await dg.saveAll([state]), false);
-    assert.equal(state.refused('i2', 'title'), false, 'never taken for the server\'s');
+    assert.equal(state.refused('i1', 'title'), false, 'never taken for the server\'s');
     assert.equal(state.blocking.value, 'Title is required', 'the client\'s error holds the batch');
   } finally {
     DG.DomainSession.prototype.save = real;
   }
   state.dispose();
 });
+
+scoped('a save after a server refusal is not held by a stored value of the row that the user never touched',
+  async () => {
+    const {editor} = fakeEditor(ROWS);
+    // as the platform's: every rule over every cell of the pending rows, the stored empty status included
+    editor.validate = function() {
+      delete this.errorsOf(0).title;
+      this.errorsOf(0).status = {message: 'Value can\'t be empty', kind: 'error'};
+      this.onChanged.fire(this);
+      return 1;
+    };
+    editor.commitEdit = function(row, column) { // the rules of that one cell: the typed title passes
+      delete this.errorsOf(row)[column];
+      this.onChanged.fire(this);
+    };
+    const state = new EditorEditState(editor);
+    state.setValue('i1', 'title', 'Aspirin 2');
+    const real = DG.DomainSession.prototype.save;
+    let sent = 0;
+    DG.DomainSession.prototype.save = async function() {
+      if (Object.values(editor.errorsOf(0)).some((e) => e.kind === 'error'))
+        return (this.lastRefusal = {message: DG.DomainSession.CELL_ERRORS, editor: null}, false);
+      this.lastRefusal = ++sent > 1 ? null : {message: 'Title Aspirin 2 already belongs to i7', editor: this.editors[0]};
+      if (this.lastRefusal)
+        this.editors[0].fail(0, 'title', this.lastRefusal.message);
+      return this.lastRefusal === null;
+    };
+    try {
+      const dg = new DgDomainBackend();
+      assert.equal(await dg.saveAll([state]), false);
+      assert.equal(await dg.saveAll([state]), true, 'the second Save is sent');
+      assert.equal(state.errorOf('i1', 'status'), null, 'the untouched status is not marked');
+    } finally {
+      DG.DomainSession.prototype.save = real;
+    }
+    state.dispose();
+  });
 
 scoped('JSON-looking text retyped in a plain string column is written as typed, by both writers', async () => {
   const {df, editor} = fakeEditor([{id: 'i1', title: '{"a":1}'}]);

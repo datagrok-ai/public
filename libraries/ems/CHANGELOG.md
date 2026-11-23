@@ -7,6 +7,9 @@
 * Pages: Fixed a new unsaved row that held a value in a column removed in Edit properties staying unsavable after the value was cleared, so the whole draft had to be discarded: Save is on again once nothing removed is pending
 * Permissions: Fixed New staying on, with a draft whose Name said "assigned on save", for a user who cannot write a required name column: every save was refused for the empty name; New is now off with the reason
 * Import: Fixed a file whose rows all exist stopping at the preview with "Nothing would be imported" and writing no key column: the button reads "Write back N keys", the report lists each row as found, and their keys are written back
+* Lists: Fixed a Load more that landed while a save (or a re-read of your access) re-read the list losing that page: the next page skipped those rows, and on the last page they never showed until a refresh
+* Saving: Fixed a second Save after the server refused a cell being held by a value stored in another field of the row that you never edited (an empty field since made required): only the cells the server marked are checked again
+* Permissions: Fixed a save refused for lack of permission keeping Save off after the access was granted again: once a re-read of the access finds the grant, Save sends the pending changes
 * Lists: Fixed scrolling a list whose filter was changed over unsaved edits appending rows of the new filter behind the old ones
 * Lists: Fixed the current row and the selection snapping back to where they were when a save started (or a Load more that found the list shifted) if you moved them while the rows were re-read: your newer choice stands
 * Lists: Fixed a Load more after a save whose re-read failed, and a reload that failed too, appending at the lost window's offset (skipping or repeating rows): the next page starts over from the first one until a load lands

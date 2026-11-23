@@ -1217,6 +1217,36 @@ source('a page asked for just before a new query is not a page of the new query 
   src.dispose();
 });
 
+source('a page that lands after a save re-read the list is not lost: the next page starts after the rows shown',
+  async () => {
+    emsBackends.domain = backend();
+    const inner = emsBackends.domain.table.bind(emsBackends.domain);
+    const gate = {hold: false, waiting: []};
+    emsBackends.domain.table = async (address) => {
+      const t = await inner(address);
+      return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {
+        frame: async (spec) => {
+          const f = await t.frame(spec);
+          const append = f.append.bind(f);
+          f.append = (page) => gate.hold ? new Promise((go) => gate.waiting.push(() => go(append(page)))) : append(page);
+          return f;
+        },
+      });
+    };
+    const src = await issues({pageSize: 1});
+    gate.hold = true;
+    const paging = src.loadMore();
+    await until(() => gate.waiting.length === 1);
+    gate.hold = false;
+    await src.afterSave();
+    gate.waiting.splice(0).forEach((go) => go());
+    await paging;
+    await src.loadMore();
+    await src.loadMore();
+    assert.deepEqual(titles(src), ['Aspirin', 'Ibuprofen', 'Naproxen'], 'no row skipped');
+    src.dispose();
+  });
+
 source('a page asked for under a query changed over pending edits is not read for the new query', async () => {
   emsBackends.domain = backend();
   const src = await issues({pageSize: 1});
