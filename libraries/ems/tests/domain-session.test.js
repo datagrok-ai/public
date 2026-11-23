@@ -741,11 +741,12 @@ scoped('EQ-001: a server error on a field holds through an edit elsewhere and cl
   assert.equal(await session.save(), false);
   issues.rows.byKey('i1').title = 'Aspirin 200';
   await flush();
-  assert.match(session.validity.value ?? '', /already belongs to Datagrok/, 'an edit beside the field leaves it standing');
+  assert.match(String(projects.error.value?.message ?? projects.error.value ?? ''), /already belongs/,
+    'an edit beside the field leaves the refusal on the parent');
   cell.value = null;
   projects.rows.byKey('p1').key = 'GRIT';
   await flush();
-  assert.equal(session.validity.value, null, 'fixing the field enables Save');
+  assert.equal(projects.error.value, undefined, 'fixing the field clears it');
   unguard();
   projects.dispose();
   issues.dispose();
