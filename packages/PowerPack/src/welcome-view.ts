@@ -50,8 +50,8 @@ export function welcomeView(): DG.View | undefined {
   setWorkspacePreviewHost(previewHost);
   const view = DG.View.create();
   view.root.appendChild(viewHost);
-  // The search takes the otherwise empty top row: the view's ribbon without tabs, or the tab strip while Home is its
-  // only tab. The mode is known only after the settings load.
+  // The search takes a row that is there anyway: the tab strip while Home is its only tab, otherwise the view's ribbon.
+  // The mode is known only after the settings load.
   let place: 'ribbon' | 'strip' | 'page' | null = null;
   const tabStrip = () => view.root.closest('.grok-tab-host')?.querySelector<HTMLElement>(':scope > .tab-handle-list-container');
   const stripRoom = (strip: HTMLElement) => {
@@ -62,12 +62,13 @@ export function welcomeView(): DG.View | undefined {
   };
   const placeSearch = () => {
     const strip = tabStrip();
-    const newPlace = grok.shell.windows.simpleMode ? 'ribbon' :
-      strip && strip.querySelectorAll('.tab-handle:not(.tab-handle-preview, .tab-handle-temp-tab)').length === 1 &&
-      stripRoom(strip) >= 300 ? 'strip' : 'page';
+    const newPlace = !grok.shell.windows.simpleMode && strip &&
+      strip.querySelectorAll('.tab-handle:not(.tab-handle-preview, .tab-handle-temp-tab)').length === 1 &&
+      stripRoom(strip) >= 300 ? 'strip' : grok.shell.windows.simpleMode || grok.shell.windows.showRibbon ? 'ribbon' : 'page';
     if (newPlace === place)
       return;
     place = newPlace;
+    view.root.classList.toggle('power-pack-search-on-top', place !== 'page');
     view.setRibbonPanels(place === 'ribbon' ? [[inputHost]] : []);
     if (place === 'strip')
       strip!.append(inputHost);
