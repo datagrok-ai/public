@@ -407,7 +407,8 @@ export class DomainApp extends Control {
       // pending still matters, and so does that the rows under it are no longer the server's
       // the page's columns are not the table's any more: say so before what the rows did
       if (this._reshaped.value !== null)
-        return {count, selected, notice: pending === null ? RESHAPED : `${pending} — ${RESHAPED}`, problem};
+        // clean and still marked: the rebuild failed (its balloon said why), and Refresh tries it again
+        return {count, selected, notice: pending === null ? STALE : `${pending} — ${RESHAPED}`, problem};
       if (source !== null && source.stale.value)
         return {count, selected, notice: pending === null ? STALE : `${pending} — ${STALE}`, problem};
       return {count, selected, notice: pending, problem};
@@ -711,7 +712,7 @@ export class DomainApp extends Control {
       return Promise.resolve();
     return this._settling ??= reshaped.rebuild().then(() => {
       this._reshaped.value = null;
-    }).finally(() => this._settling = null);
+    }, (e: unknown) => void DomainErrors.report(e)).finally(() => this._settling = null);
   }
 
   /** A query switch for the ribbon — one button per preset, the pressed one writing the list's

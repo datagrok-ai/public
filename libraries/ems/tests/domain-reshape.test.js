@@ -151,3 +151,21 @@ scoped('reshaped: clearing a draft value in a removed column turns Save back on'
     done();
   }
 });
+
+scoped('reshaped: a rebuild that fails says why, and Refresh tries again', async () => {
+  const {app, done} = await docked();
+  try {
+    app.listSource.rows.byKey('i1').title = 'Edited';
+    await flush();
+    let tries = 0;
+    app.reshape(new Map(), () => (tries++, Promise.reject(new Error('The table did not load'))));
+    app.session.discard();
+    await flush();
+    assert.match(document.body.querySelector('[role="alert"]')?.textContent ?? '', /The table did not load/);
+    assert.equal(app.status.value.notice, 'Data changed — Refresh', 'nothing left to save or discard');
+    assert.equal(await app.refresh(), true);
+    assert.equal(tries, 2, 'the page is still marked: Refresh rebuilds again');
+  } finally {
+    done();
+  }
+});
