@@ -285,6 +285,36 @@ scoped('EQ-025: over pending changes the shift is reported, never re-read away',
     src.dispose();
   });
 
+scoped('EQ-025: a write landing while the page is read is caught too', {}, async () => {
+    const be = backend();
+    emsBackends.domain = be;
+    const src = await issues({pageSize: 2, sort: 'title'});
+    const table = await be.table('grit.issue');
+    const query = table.query.bind(table);
+    let written = false;
+    // the other session's insert lands just before the server answers the next page
+    table.query = async (spec) => {
+      if (!written && spec.offset === 2 && spec.columns === undefined)
+        await insertBefore(be).then(() => { written = true; });
+      return query(spec);
+    };
+    await src.loadMore();
+    assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Acetaminophen', 'Aspirin', 'Ibuprofen', 'Naproxen']);
+    src.dispose();
+  });
+
+scoped('EQ-025: an insert after the boundary row is counted when the last page lands', {}, async () => {
+    const be = backend();
+    emsBackends.domain = be;
+    const src = await issues({pageSize: 2, sort: 'title'});
+    await (await be.table('grit.issue')).transaction(
+      [{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 7, title: 'Zyrtec'}}]);
+    await src.loadMore();
+    await src.loadMore();
+    assert.equal(src.total.value, 4, 'not "4 of 3"');
+    src.dispose();
+  });
+
 scoped('EQ-025: a boundary check the server refuses keeps the page', {}, async () => {
     emsBackends.domain = backend();
     const src = await issues({pageSize: 2, sort: 'title'});
