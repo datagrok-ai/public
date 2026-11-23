@@ -133,3 +133,21 @@ scoped('reshaped: an edit undone by hand leaves the session clean, and the page 
     done();
   }
 });
+
+scoped('reshaped: clearing a draft value in a removed column turns Save back on', async () => {
+  const {app, done} = await docked();
+  try {
+    const draft = app.listSource.newRow({project_id: 'p1', number: 9, title: 'New', priority: 'low'});
+    await flush();
+    emsBackends.domain = reshaped(({priority, ...columns}) => columns);
+    await DomainViews.reload('grit');
+    await flush();
+    assert.equal(app.session.validity.value, DROPPED);
+    draft.priority = null;
+    await flush();
+    assert.equal(app.session.changeCount.value, 1, 'still one change: the draft');
+    assert.equal(app.session.validity.value, null, 'nothing removed is pending any more');
+  } finally {
+    done();
+  }
+});

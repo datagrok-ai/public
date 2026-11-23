@@ -679,7 +679,10 @@ export class DomainApp extends Control {
           continue;
         guarded.add(source);
         const problem = computed(() => {
+          // a draft is one change however many cells it holds: clearing its value in a removed column moves
+          // no count, only the rows
           source.changeCount.value;
+          source.rows.items.value;
           return this._removedChange(source, this._reshaped.value?.removed.get(source.table) ?? []);
         });
         source.guard(() => problem.peek(), problem);
