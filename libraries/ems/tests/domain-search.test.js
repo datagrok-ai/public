@@ -207,6 +207,46 @@ scoped('a search changed over pending edits is applied by the Save\'s own re-bas
   src.dispose();
 });
 
+for (const [what, change, expected] of [
+  ['search', (src) => src.search.value = 'Ibuprofen', ['Ibuprofen']],
+  ['query', (src) => src.query.value = 'title = "Naproxen"', ['Naproxen']],
+]) {
+  scoped(`a ${what} changed while a Save's re-base read is in flight is applied when it lands`, async () => {
+    emsBackends.domain = backend();
+    const inner = emsBackends.domain.table.bind(emsBackends.domain);
+    const reads = {frames: 0, hold: false, waiting: []};
+    emsBackends.domain.table = async (address) => {
+      const t = await inner(address);
+      return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {frame: async (spec) => {
+        reads.frames++;
+        const f = await t.frame(spec);
+        if (reads.hold)
+          await new Promise((go) => reads.waiting.push(go));
+        return f;
+      }});
+    };
+    const table = await domains.table('grit.issue');
+    const src = testOwner().build(() => table.source({pageSize: 10}));
+    await flush();
+    await wait(10);
+    src.rows.byKey('i1').title = 'Edited';
+    reads.frames = 0;
+    reads.hold = true;
+    const saving = src.save();
+    await until(() => reads.waiting.length > 0);
+    change(src);
+    await flush();
+    reads.hold = false;
+    reads.waiting.splice(0).forEach((go) => go());
+    assert.equal(await saving, true);
+    await flush();
+    await wait(30);
+    assert.deepEqual(src.rows.items.value.map((r) => r.title), expected, `the rows of the new ${what}`);
+    assert.equal(reads.frames, 2, 'the re-base read, then one read for the new scope');
+    src.dispose();
+  });
+}
+
 scoped('a search on a table with no searchable column is dropped and the list read once', async () => {
   emsBackends.domain = backend();
   const inner = emsBackends.domain.table.bind(emsBackends.domain);

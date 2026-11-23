@@ -955,6 +955,13 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       replacement.dispose();
       return false;
     }
+    // the scope changed while the window was read — during a save, when the re-query effect starts no load
+    // and does not run again once it ends: these rows are the old scope's, so the new one is read instead
+    if (readFor !== this._readFor()) {
+      replacement.dispose();
+      await this.refresh();
+      return true;
+    }
     // the rows now shown were read for this scope: a query or search changed over the pending edits is applied
     this._shownFor = readFor;
     this._swap(replacement, window, baseline, kept);
