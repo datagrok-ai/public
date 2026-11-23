@@ -1964,6 +1964,19 @@ scoped('EQ-053: a View-only required column turns New off, on the ribbon, the em
   a.dispose();
 });
 
+scoped('a View-only required name column turns New off: the server does not fill a name', async () => {
+  emsBackends.domain = backend({access: {can: {view: true, insert: true, edit: true, delete: true, share: true},
+    fields: {title: 'readonly', number: 'readonly', project_id: 'editable'}}});
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await flush();
+  const add = testOwner().build(() => a.ribbon()).main[0];
+  assert.equal(add.root.getAttribute('aria-description'), 'You cannot create issues: they need a value for Title, ' +
+    'which you cannot set. Ask the table\'s owner to let you edit Title.');
+  a.dispose();
+});
+
 // EQ-054: the platform caches the caller's access with no expiry and a grant made by another
 // session never drops it: the memory table answers the cached access until the caches go
 function grantedElsewhere() {

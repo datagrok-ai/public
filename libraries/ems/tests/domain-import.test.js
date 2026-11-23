@@ -765,11 +765,13 @@ scoped('a commit refused whole names the offender past the 1,000 rows previewed,
     assert.deepEqual(report.rows.filter((r) => r.errors?.length).map((r) => r.index), [1003]);
   });
 
-/** Opens `grit.project` with `source`, goes to the preview and answers the button and the reason. */
+/** Opens `grit.project` with `source`, goes to the preview and answers the button and the reason. Keys are not
+ * written back: a found row's key alone is a reason to commit. */
 async function projectPreview(source) {
   emsBackends.domain = backend();
   const running = testOwner().build(async () => domains.import(await domains.table('grit.project'), {source}));
   await flush();
+  named('writeBack').value = false;
   await toMapping();
   await toPreview();
   const shown = {disabled: importButton().disabled, counts: counts('preview')};
@@ -788,10 +790,39 @@ scoped('every previewed row skipped keeps the button off, up to the preview cap 
   assert.equal(past.disabled, false, 'the row past the 1,000 previewed is unjudged: the commit decides');
 });
 
-scoped('a commit that lands nothing adds no write-back column', async () => {
+scoped('a commit that lands nothing still writes back the keys of the rows it found', async () => {
   const {shown, written} = await importProjects(backend(), frame(['key', 'name'], existing(1001)), true);
   assert.match(shown, /1,001 skipped/);
-  assert.deepEqual(written, [], 'no column was added to the user\'s table');
+  assert.deepEqual(new Set(written), new Set(['GRIT']), 'each duplicate has its key written back');
+});
+
+scoped('a file whose rows all exist still imports to write their keys back, and promises no additions', async () => {
+  emsBackends.domain = backend();
+  const projects = await domains.table('grit.project');
+  // row 1 the importer finds itself, row 2 the dry run and the commit find by its key
+  projects.importer = {prepare: async (rows) => rows.map((_, i) => i === 0 ? {existing: 'p2', label: 'Registered'} : {})};
+  const source = frame(['key', 'name'], [{key: 'DG', name: 'Datagrok'}, {key: 'GRIT', name: 'Grit'}]);
+  const written = [];
+  source.columns.getUnusedName = (name) => name;
+  source.columns.addNewString = (name) => ({name, init(value) {
+    for (let i = 0; i < source.rowCount; i++)
+      written.push(value(i));
+    return this;
+  }});
+  const running = testOwner().build(() => domains.import(projects, {source}));
+  await flush();
+  await toMapping();
+  await toPreview();
+  const button = buttonNamed('Write back 2 keys');
+  assert.notEqual(button, undefined, `the button names the keys, not additions: ${reason()}`);
+  assert.equal(button.disabled, false);
+  fire(button, 'click');
+  for (let i = 0; i < 5; i++)
+    await flush();
+  assert.deepEqual(counts('report'), ['2 skipped']);
+  assert.deepEqual(written, ['DG', 'GRIT'], 'each row\'s key is written back');
+  fire(buttonNamed('CLOSE'), 'click');
+  await running;
 });
 
 // mapping only: the linked records are found through `grok.dapi.domains`, which the memory backend does not serve

@@ -5,6 +5,8 @@
 * Pages: Fixed a page whose rebuild after Edit properties failed staying on "Properties changed: save or discard to reload" with nothing left to save or discard, and the failure going unreported: it balloons why, the page reads "Data changed — Refresh", and Refresh tries the rebuild again
 * Trees: Fixed a node you clicked while a followed tree was refreshing (after a peer's change) being ignored and the previous node selected again when the refresh ended: your pick is selected at once and stays
 * Pages: Fixed a new unsaved row that held a value in a column removed in Edit properties staying unsavable after the value was cleared, so the whole draft had to be discarded: Save is on again once nothing removed is pending
+* Permissions: Fixed New staying on, with a draft whose Name said "assigned on save", for a user who cannot write a required name column: every save was refused for the empty name; New is now off with the reason
+* Import: Fixed a file whose rows all exist stopping at the preview with "Nothing would be imported" and writing no key column: the button reads "Write back N keys", the report lists each row as found, and their keys are written back
 * Lists: Fixed scrolling a list whose filter was changed over unsaved edits appending rows of the new filter behind the old ones
 * Lists: Fixed the current row and the selection snapping back to where they were when a save started (or a Load more that found the list shifted) if you moved them while the rows were re-read: your newer choice stands
 * Lists: Fixed a Load more after a save whose re-read failed, and a reload that failed too, appending at the lost window's offset (skipping or repeating rows): the next page starts over from the first one until a load lands
