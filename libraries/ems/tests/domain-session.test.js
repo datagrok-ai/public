@@ -896,6 +896,44 @@ scoped('a save refused as forbidden lets go once its edits are undone by hand: t
   projects.dispose();
 });
 
+scoped('a save refused as forbidden is sent once a later re-read of the access finds the grant restored', async () => {
+  const memory = backend();
+  const table = memory.tableSync('grit.project');
+  const access = table.access.bind(table);
+  let granted = true;
+  table.access = async () => {
+    const data = await access();
+    return {...data, can: {...data.can, edit: granted}};
+  };
+  emsBackends.domain = {
+    table: (address) => memory.table(address),
+    saveAll: (edits) => {
+      if (granted)
+        return memory.saveAll(edits);
+      for (const edit of edits)
+        Object.assign(edit, {problem: 'forbidden', problemCode: 'forbidden'});
+      return Promise.resolve(false);
+    },
+  };
+  const session = new SharedSession();
+  const projects = testOwner().build(() => new DomainSource({table: 'grit.project', session}, env));
+  projects.start();
+  const save = testOwner().build(() => saveButton(session));
+  await flush();
+  projects.rows.byKey('p1').name = 'Grit 2';
+  granted = false;
+  assert.equal(await session.save(), false);
+  assert.equal(save.button.disabled, true, 'the 403 holds Save');
+  granted = true;
+  await projects.reloadAccess();
+  await flush();
+  assert.equal(save.button.disabled, false, 'the grant restored lets Save go');
+  assert.equal(await session.save(), true, 'and the pending edit is sent');
+  assert.equal((await table.query({})).find((r) => r.id === 'p1').name, 'Grit 2');
+  save.dispose();
+  projects.dispose();
+});
+
 // the platform session's RELOAD in the conflict dialog drops the conflicting writer's edits inside
 // `saveAll` and retries the rest: the backend still answers true, and says what each writer wrote
 function reloading(dropped) {

@@ -1,7 +1,7 @@
 import {signal, computed, batch, Signal, ReadonlySignal, Component, Access, plural, Filters, requireBackend, subBind,
   Rows, FrameRows} from '@datagrok-libraries/u2';
-import type {AccessData, FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterScalar, FilterSchema,
-  DomainRowLike, RowsLike, RowValues, RowView, DataFrameLike, BindProp, BindSource, ComponentEnv,
+import type {AccessData, Capability, FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterScalar,
+  FilterSchema, DomainRowLike, RowsLike, RowValues, RowView, DataFrameLike, BindProp, BindSource, ComponentEnv,
   ComponentStart} from '@datagrok-libraries/u2';
 import type {EditState} from './edit-state.js';
 import {emsBackends, DomainBackendError, capital, nounOf} from './domain-backend.js';
@@ -661,11 +661,32 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     }
     if (this.scope.isDisposed)
       return;
-    this._access.value = Access.from(data);
+    const before = this._access.peek();
+    const access = Access.from(data);
+    // a 403 holds Save over a revoked grant: a re-read that grants what the pending rows need, where the
+    // access before it did not, says it was given back, and the writer still holds them to send
+    const error = this._error.peek();
+    batch(() => {
+      this._access.value = access;
+      if (DomainSource.isForbidden(error) && this._state.peek() !== 'error' && this._grants(access) &&
+          !this._grants(before)) {
+        this._error.value = undefined;
+        this._problemRow.value = null;
+      }
+    });
     this._regate = true;
     this._regated = data;
     if (!this.isDirty.peek())
       await this._rebuildWriter();
+  }
+
+  // a restore rides the Delete grant
+  private _grants(access: Access): boolean {
+    const needs: Record<string, Capability> = {new: 'insert', modified: 'edit', deleted: 'delete', restored: 'delete'};
+    return this.pending().every((row) => {
+      const need: Capability | undefined = needs[String(row[Rows.STATE])];
+      return need === undefined || access.can(need);
+    });
   }
 
   private async _rebuildWriter(): Promise<void> {
