@@ -316,6 +316,31 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
   parent.dispose();
 });
 
+// EQ-034: the grid's row menu takes the list's staged delete; a review found it once offered Delete to any row
+scoped('a child grid row deletes from its menu, as a list row: never Delete for a row restored or in the trash', async () => {
+  emsBackends.domain = crm();
+  const grok = await import('datagrok-api/grok');
+  const {DomainList} = await import('../src/dg/list.js');
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {tables: ['contact']}));
+  await settle();
+  const contacts = children.child(CONTACTS);
+  const grid = [...platform.widgets].find((w) => w.type === 'Grid' && children.root.contains(w.root));
+  const items = [];
+  grok.events.onContextMenu.fire({args: {context: grid, item: {isTableCell: true, tableRowIndex: 0, grid},
+    menu: {item: (text) => items.push(text)}}});
+  assert.deepEqual(items, ['Delete'], 'the row\'s menu offers Delete');
+  const row = contacts.rows.byKey('k1');
+  const texts = (r) => DomainList.stagedDelete(contacts, r).map((a) => a.text);
+  assert.deepEqual(texts({...row, id: row.id, [Rows.STATE]: 'restored'}), ['Undo restore']);
+  assert.deepEqual(texts({...row, id: row.id, [Rows.DELETED]: true}), ['Restore']);
+  children.dispose();
+  parent.dispose();
+});
+
 // EQ-062: no live child under a parent in the trash, whatever order the Save sends the ops in
 const crmWithEmpty = () => new MemoryDomainBackend(SCHEMA, {rows: Object.fromEntries(Object.entries(ROWS).map(([t, list]) =>
   [t, [...list, ...t === 'company' ? [{id: 'c3', name: 'Initech'}] : []].map((r) => ({...r}))]))});

@@ -137,19 +137,31 @@ export class DomainList extends Control {
   actionsFor(row: RowView): Action[] {
     const source = this.source;
     const table = this._table;
+    if (DomainList.isStaged(row))
+      return DomainList.stagedDelete(source, row);
+    const extra = this._options.actions ?? [];
+    const actions = table === undefined ? ActionRegistry.bind(extra, row) :
+      table.rowActions(row, extra, 'Enter');
+    return [...allowedActions(actions, {access: source.access.peek(), row}), ...DomainList.stagedDelete(source, row)];
+  }
+
+  /** A row's delete as the session stages it, landing with the Save — none where the row's own access denies
+   * `delete`: a row staged for restore offers Undo restore, one marked deleted Restore, one already in the trash
+   * Restore (staged), any other row Delete. */
+  static stagedDelete(source: DomainSource, row: RowView): Action[] {
     if (row[Rows.STATE] === 'restored')
       return [{text: 'Undo restore', icon: 'undo', run: () => source.unstageRestore([row.id])}];
     if (row[Rows.STATE] === 'deleted')
       return [{text: 'Restore', icon: 'undo', run: () => source.edit.peek()?.unmarkDeleted(row.id)}];
-    if (Rows.isDeleted(row)) {
-      return allowedActions([{text: 'Restore', icon: 'undo', requires: 'delete',
-        run: () => source.stageRestore([row.id])}], {access: source.access.peek(), row});
-    }
-    const extra = this._options.actions ?? [];
-    const actions = table === undefined ? ActionRegistry.bind(extra, row) :
-      table.rowActions(row, extra, 'Enter');
-    return allowedActions([...actions, DomainList.deleteAction(() => source.edit.peek()?.markDeleted(row.id))],
-      {access: source.access.peek(), row});
+    const run: Action = Rows.isDeleted(row) ?
+      {text: 'Restore', icon: 'undo', requires: 'delete', run: () => source.stageRestore([row.id])} :
+      DomainList.deleteAction(() => source.edit.peek()?.markDeleted(row.id));
+    return allowedActions([run], {access: source.access.peek(), row});
+  }
+
+  /** Whether the row is deleted or about to change its deleted state: it offers {@link stagedDelete} alone. */
+  static isStaged(row: RowView): boolean {
+    return row[Rows.STATE] === 'restored' || row[Rows.STATE] === 'deleted' || Rows.isDeleted(row);
   }
 
   static deleteAction(run: () => void): Action {

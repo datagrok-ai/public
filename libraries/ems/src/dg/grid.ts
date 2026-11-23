@@ -1,8 +1,10 @@
 import * as DG from 'datagrok-api/dg';
-import {Control, signal, text, textWidth, Dates, span, timestamp, DataTable, Rows} from '@datagrok-libraries/u2';
+import * as grok from 'datagrok-api/grok';
+import {Control, signal, text, textWidth, Dates, span, timestamp, DataTable, Rows, notify} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, IProperty, ObjectRenderer, CellStateLike, DataTableColumn,
   RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
+import {nounOf} from '../core/domain-backend.js';
 import {viewers} from '@datagrok-libraries/u2/dg';
 import {collectionSelection} from '@datagrok-libraries/u2/dg';
 import type {Bindable} from '@datagrok-libraries/u2/dg';
@@ -11,7 +13,7 @@ import {EditorEditState} from './editor-state.js';
 import {DomainTable} from './facade.js';
 import type {DomainAction} from './facade.js';
 import {DomainForm} from './form.js';
-import {pageOnScroll} from './list.js';
+import {DomainList, pageOnScroll} from './list.js';
 
 export interface DomainGridOptions {
   /** The grid's look, each option a value or a signal the grid follows. */
@@ -88,6 +90,24 @@ export class DomainGrid extends Control {
       if (row !== undefined && !Rows.isDraft(row))
         open.run(row);
     });
+    // the platform's grid menu over a row (a cell or its header) takes the row's staged Delete, as a list row's;
+    // the editor hides a row marked deleted, so the balloon says where it went and what brings it back
+    type GridMenu = {args?: {context?: DG.Grid, item?: DG.GridCell, menu?: DG.Menu}};
+    this.subscribe(grok.events.onContextMenu, (e: GridMenu) => {
+      const {context, item, menu} = e.args ?? {};
+      if (menu === undefined || context?.dart !== this.grid.dart || item === undefined ||
+          !(item.isTableCell || item.isRowHeader) || (item.tableRowIndex ?? -1) < 0)
+        return;
+      const row = source.rows.byKey(String(item.grid.dataFrame.get('id', item.tableRowIndex!)));
+      for (const action of row === undefined ? [] : DomainList.stagedDelete(source, row)) {
+        menu.item(action.text, () => {
+          const caption = this._captionOf(row!);
+          void action.run();
+          if (action.text === 'Delete')
+            notify.info(`${caption} will be deleted when you save; Discard brings it back`);
+        });
+      }
+    });
     this.own(() => {
       repointed.unsubscribe();
       clicked.unsubscribe();
@@ -95,6 +115,11 @@ export class DomainGrid extends Control {
       for (const s of this._rows)
         s.unsubscribe();
     });
+  }
+
+  private _captionOf(row: RowView): string {
+    const renderer = DomainTable.of(this.source)?.renderer ?? DomainTable.schemaRenderer(() => this.source.schema);
+    return renderer.caption(row) || `The ${nounOf(this.source.schema.info, true)}`;
   }
 
   // only over the frame the grid holds: it re-resolves the ref-cell renderers on its own only at its first
