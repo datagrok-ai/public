@@ -655,35 +655,49 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** Re-reads the table-level access — the session calls it after a 403, which says the one the
    * affordances were built from is stale. A failed read keeps the access the source has. The
    * writer a grid edits through was built under the old one too: rebuilt over the same window
-   * now, or — while it holds pending changes, which a new writer would drop — on the revert. */
-  async reloadAccess(): Promise<void> {
+   * now, or — while it holds pending changes, which a new writer would drop — on the revert. Answers
+   * whether it gave back a grant a 403 held Save over. */
+  async reloadAccess(): Promise<boolean> {
     if (this.scope.isDisposed || this._ready === undefined)
-      return;
+      return false;
     let data: AccessData;
     try {
       data = await (await this._ready).access();
     } catch {
-      return;
+      return false;
     }
     if (this.scope.isDisposed)
-      return;
+      return false;
     const before = this._access.peek();
     const access = Access.from(data);
     // a 403 holds Save over a revoked grant: a re-read that grants what the pending rows need, where the
     // access before it did not, says it was given back, and the writer still holds them to send
-    const error = this._error.peek();
+    const restored = this._held403() && this._grants(access) && !this._grants(before);
     batch(() => {
       this._access.value = access;
-      if (DomainSource.isForbidden(error) && this._state.peek() !== 'error' && this._grants(access) &&
-          !this._grants(before)) {
-        this._error.value = undefined;
-        this._problemRow.value = null;
-      }
+      if (restored)
+        this.releaseForbidden();
     });
     this._regate = true;
     this._regated = data;
     if (!this.isDirty.peek())
       await this._rebuildWriter();
+    return restored;
+  }
+
+  /** Lifts a 403's hold where the access now grants what the pending rows need — the session's call
+   * once a re-read gave the grant back on another source of the refused batch. */
+  releaseForbidden(): void {
+    if (this._held403() && this._grants(this._access.peek())) {
+      batch(() => {
+        this._error.value = undefined;
+        this._problemRow.value = null;
+      });
+    }
+  }
+
+  private _held403(): boolean {
+    return DomainSource.isForbidden(this._error.peek()) && this._state.peek() !== 'error';
   }
 
   // a restore rides the Delete grant
