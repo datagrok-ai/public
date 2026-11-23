@@ -10,6 +10,7 @@ import {SYSTEM_COLUMNS} from './backend.js';
 const MATCHABLE = ['string', 'int', 'bigint', 'datetime'];
 const PAGE = 10000;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** A field a linked record is found by; `path` is what the query reads: `<ref>.<key>` for a link of its own. */
 export interface LinkField {
@@ -37,6 +38,21 @@ export class ImportLinks {
     return DomainTable.isReference(prop) && prop.semType !== 'User' && prop.semType !== 'Group';
   }
 
+  /** The mapping's guidance for a column that takes ids; null for any other. */
+  static idHint(prop: IProperty): string | null {
+    const kind = prop.semType === 'User' ? 'user' : prop.semType === 'Group' ? 'group' : null;
+    return kind === null ? null : `${DomainTable.captionOf(prop)} takes a ${kind} id (uuid), ` +
+      `not a ${kind === 'user' ? 'login or name' : 'group name'}`;
+  }
+
+  /** What is wrong with a value in a user or group column that is no id, in the wording of a row's error; null if it
+   * is one or the column is another. The server accepts the dashed uuid in either case, as sent, spaces refused. */
+  static idProblem(prop: IProperty, value: unknown): string | null {
+    const kind = prop.semType === 'User' ? 'user' : prop.semType === 'Group' ? 'group' : null;
+    return kind === null || typeof value !== 'string' || value === '' || UUID.test(value) ? null :
+      `expected a ${kind} id (uuid), got "${value}"`;
+  }
+
   /** The links among `targets`, each with the fields its records can be found by. */
   static async of(targets: IProperty[]): Promise<Map<string, ImportLink>> {
     const open = (p: IProperty) => DomainTable.shared(p.semType!).catch(() => null);
@@ -57,7 +73,9 @@ export class ImportLinks {
   /** Per row of `values` (each row's values for `fields`, in order), the one record of `link` they find. */
   static async resolve(link: ImportLink, fields: LinkField[], values: unknown[][]): Promise<LinkMatch[]> {
     const keys = values.map((row) => row.map(ImportLinks._read));
-    const named = keys.filter((key) => key.some((v) => v !== ''));
+    // a whole-number key typed as its format shows it (DG-000072) is the number the record stores
+    const sought = keys.map((key) => key.map((v, i) => ImportLinks._number(fields[i], v) ?? v));
+    const named = sought.filter((key) => key.some((v) => v !== ''));
     const found = new Map<string, string[]>();
     if (named.length > 0) {
       const conditions = fields.map((f, i) =>
@@ -76,10 +94,10 @@ export class ImportLinks {
       }
     }
     const one = nounOf(link.target.info, true);
-    return keys.map((key): LinkMatch => {
+    return keys.map((key, row): LinkMatch => {
       if (key.every((v) => v === ''))
         return {id: null, error: null};
-      const ids = found.get(JSON.stringify(key)) ?? [];
+      const ids = found.get(JSON.stringify(sought[row])) ?? [];
       const said = fields.map((f, i) => `${DomainTable.captionOf(f.prop)} ${key[i]}`).join(', ');
       return ids.length === 1 ? {id: ids[0], error: null} : {id: null, error: ids.length === 0 ?
         `No ${one} with ${said}` : `${plural(ids.length, one, nounOf(link.target.info))} have ${said}: ` +
@@ -98,7 +116,16 @@ export class ImportLinks {
     }
     const numeric = type === 'int' || type === 'bigint';
     return {property: field.path, operator: '=', value: numeric ?
-      values.filter((v) => /^-?\d+$/.test(v)).map(Number) : values};
+      values.flatMap((v) => ImportLinks._number(field, v) ?? []).map(Number) : values};
+  }
+
+  // the number a whole-number field's value stands for, as a string; null when it is no such key
+  private static _number(field: LinkField, value: string): string | null {
+    const type = field.prop.propertyType ?? field.prop.type;
+    if (type !== 'int' && type !== 'bigint')
+      return null;
+    const n = /^-\d+$/.test(value) ? Number(value) : DomainTable.parseKey(field.prop, value);
+    return n === null ? null : String(n);
   }
 
   // a value as the file and the record both spell it: a date as its day

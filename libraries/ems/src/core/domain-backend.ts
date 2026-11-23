@@ -181,7 +181,7 @@ export interface DomainBatchReportLike {
   skipped?: number;
   errorCount?: number;
   rows: {index: number, id: string | null, status: string, existingId?: string,
-    errors?: {column?: string, code?: string, message: string}[]}[];
+    errors?: {column?: string, code?: string, message: string, constraint?: string}[]}[];
   error?: string;
 }
 

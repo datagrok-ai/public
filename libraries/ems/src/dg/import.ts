@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import type * as DG from 'datagrok-api/dg';
 import {signal, computed, Control, div, divH, divV, span, plural, text, link, Wizard, DataTable, ChoiceInput,
-  BoolInput, badge, dot, statusLine, Form, notify, Scope} from '@datagrok-libraries/u2';
-import type {IProperty, ChoiceItem, BadgeVariant, RowView} from '@datagrok-libraries/u2';
+  BoolInput, badge, dot, statusLine, Form, notify, Scope, Filters} from '@datagrok-libraries/u2';
+import type {IProperty, ChoiceItem, BadgeVariant, RowView, FilterProperty} from '@datagrok-libraries/u2';
 import {capital, nounOf} from '../core/domain-backend.js';
 import type {DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchValidationLike} from '../core/domain-backend.js';
 import {fromDartInput} from '@datagrok-libraries/u2/dg';
@@ -191,6 +191,8 @@ class ImportFlow {
   // '' while the dry run runs, a reason where all-or-nothing would abort
   private readonly _previewBlock = signal<string | null>(null);
   private readonly _importText = signal('Import');
+  // the commit's batch-level notes on a whole-batch refusal
+  private _refusal: string[] = [];
   private readonly _aborted = signal(false);
   private _linked: {frame: DG.DataFrame, key: string, matches: Promise<Map<string, LinkMatch[]>>} | undefined;
   private readonly _linkStatus = signal<{text: string, ok: boolean}[]>([]);
@@ -302,7 +304,8 @@ class ImportFlow {
     table.root.classList.add('u2-domain-import-mapping');
     const links = divV([]);
     links.dataset.u2Part = 'import-links';
-    const step = divV([table.root, links, statusLine(signal(null), computed(() => this._mappingStatus()))],
+    const hints = divV([]);
+    const step = divV([table.root, links, hints, statusLine(signal(null), computed(() => this._mappingStatus()))],
       'u2-domain-import-mapping-step');
     const control = new Control(step);
     control.effect(() => {
@@ -310,6 +313,12 @@ class ImportFlow {
       const frame = this._frame.value;
       if (frame !== null && this._links.size > 0)
         void this._checkLinks(frame);
+    });
+    control.effect(() => {
+      this._recheck.value;
+      const mapped = this._mapping();
+      hints.replaceChildren(...this._targets.filter((p) => mapped.has(p.name!))
+        .flatMap((p) => ImportLinks.idHint(p) ?? []).map((line) => divH([dot('accent'), span(line)])));
     });
     control.effect(() => links.replaceChildren(...this._linkStatus.value.map((line) =>
       divH([dot(line.ok ? 'success' : 'error'), span(line.text)]))));
@@ -416,6 +425,9 @@ class ImportFlow {
     host.replaceChildren(status);
     let plan: Planned[];
     let report: DomainBatchValidationLike | null = null;
+    // the server refused the dry run whole: what it says, and the batch-level notes on it
+    let refusal: string | null = null;
+    let notes: string[] = [];
     try {
       plan = await this._plan(frame, mapping,
         (done) => status.textContent = `Checking rows: ${done} of ${frame.rowCount}`);
@@ -427,6 +439,13 @@ class ImportFlow {
           this._checked = {key, report: this._table.table.validate(scanned, options)};
         }
         report = await this._checked.report;
+        if (ImportFlow._refused(report)) {
+          refusal = ImportFlow._refusalText(report);
+          const scanned = sent.slice(0, PREVIEW_ROWS);
+          const judged = await this._attributed(report.rows, scanned.map((i) => plan[i].payload!));
+          notes = ImportFlow._refusalNotes(judged.notes, scanned);
+          report = ImportFlow._predicted(judged.rows, scanned.length);
+        }
       }
       if (gen !== this._previewGen)
         return;
@@ -443,8 +462,9 @@ class ImportFlow {
     if (owner.scope.isDisposed)
       return;
     const sent = ImportFlow._sent(plan);
+    // no row at all: nothing could land, whatever the storage says about a dry run
     if (report === null)
-      this._previewBlock.value = null;
+      this._previewBlock.value = sent.length === 0 ? 'Nothing would be imported — the file has no rows.' : null;
     const judged = report !== null || this._table.importer?.prepare !== undefined;
     const rows = this._previewRows(plan, sent, report).slice(0, PREVIEW_SHOWN);
     host.replaceChildren(this._rowsTable(owner, 'preview', rows, judged ? this._previewColumns(mapping) :
@@ -463,17 +483,111 @@ class ImportFlow {
       `${sent.length.toLocaleString()} rows — the rest are checked on import:` : '';
     host.prepend(ImportFlow._headline(ImportFlow._counts([[report.willInsert, 'to add', 'success'],
       [report.willUpdate, 'to update', 'success'], [report.willSkip + kept.length - keptErrors, 'to skip', 'default'],
-      [errors, errors === 1 ? 'error' : 'errors', 'error']]), 'Nothing to import'));
+      [errors, errors === 1 ? 'error' : 'errors', 'error']]), refusal === null ? 'Nothing to import' :
+      'Refused by the server'));
     if (checked !== '')
       host.prepend(span(checked, 'u2-domain-import-summary'));
     if (showing !== '')
       host.append(span(`${showing}.`, 'u2-domain-import-summary'));
+    if (refusal !== null) {
+      host.append(...notes.map((note) => span(note, 'u2-domain-import-problem')));
+      // the commit runs the same statement and is refused the same way, all or nothing or not
+      this._previewBlock.value = `The server refuses the whole batch — ${refusal}. Nothing would be imported ` +
+        'until that is fixed.';
+      return;
+    }
     const valid = sent.length > PREVIEW_ROWS ? null : report.willInsert + report.willUpdate;
     const noun = (n: number) => plural(n, nounOf(this._table.info, true), nounOf(this._table.info));
     this._importText.value = `Import ${noun(valid ?? sent.length)}`;
     // the counts are what the batch WOULD do row by row; all-or-nothing makes one bad row the
     // verdict on all of them
-    this._previewBlock.value = options.allOrNothing !== false && errors > 0 ? this._abortReason(errors, valid) : null;
+    this._previewBlock.value = options.allOrNothing !== false && errors > 0 ? this._abortReason(errors, valid) :
+      // rows past the preview cap are unjudged and still count; within it, nothing to add or update lands nothing
+      // (a dry run counts updates as `willUpdate`, merges included: a storage that merges answers no dry run)
+      sent.length <= PREVIEW_ROWS && valid === 0 ?
+        `Nothing would be imported — ${errors > 0 ? `${plural(errors, 'row has errors', 'rows have errors')}, and ` +
+          'no row is valid' : 'no row would be added or updated'}.` : null;
+  }
+
+  // a batch the server refuses whole (a table CHECK fails the statement) answers even a dry run with the commit's
+  // refusal, which the js-api client resolves: `error` set, no counts, rows with `errors` and no `status`/`predicted`
+  private static _refused(answer: DomainBatchValidationLike | DomainBatchReportLike): answer is DomainBatchReportLike {
+    return (answer as DomainBatchValidationLike).validateOnly !== true;
+  }
+
+  private static _refusalText(refusal: DomainBatchReportLike): string {
+    const messages = [...new Set(refusal.rows.flatMap((r) => (r.errors ?? []).map((e) => e.message)))];
+    return messages.length > 0 ? messages.join('; ') : refusal.error ?? 'no reason given';
+  }
+
+  // a refused dry run as the preview reads one: each placed error under its row, nothing to add or update
+  private static _predicted(rows: DomainBatchReportLike['rows'], rowCount: number): DomainBatchValidationLike {
+    const refused = rows.filter((r) => r.errors?.length);
+    return {validateOnly: true, rowCount, willInsert: 0, willUpdate: 0, willSkip: 0, errorCount: refused.length,
+      rows: refused.map((r) => ({index: r.index, predicted: 'error', errors: r.errors}))};
+  }
+
+  // the server pins a CHECK that fails a set-based write on the batch's first row (core EMS-038), so that row is no
+  // answer: a grammar constraint is judged here on every payload row and its error put on the rows that break it.
+  // One that cannot be judged, or that no row here breaks (an update's stored columns, a server default), stays on
+  // the batch as a note. Any other error stays on the row the server named
+  private async _attributed(rows: DomainBatchReportLike['rows'], payloads: Record<string, unknown>[]):
+    Promise<{rows: DomainBatchReportLike['rows'], notes: {message: string, at: number[]}[]}> {
+    type Row = DomainBatchReportLike['rows'][number];
+    const out = new Map<number, Row>();
+    const notes: {message: string, at: number[]}[] = [];
+    const add = (index: number, error: DomainImportError, from: Row) => {
+      // a moved error's row is a refusal's row too: no status
+      const row: Row = out.get(index) ?? (index === from.index ? {...from, errors: []} :
+        {index, id: null, errors: []} as unknown as Row);
+      row.errors!.push(error);
+      out.set(index, row);
+    };
+    for (const row of rows) {
+      if (!out.has(row.index))
+        out.set(row.index, {...row, errors: []});
+      for (const error of row.errors ?? []) {
+        if (error.code !== 'check') {
+          add(row.index, error, row);
+          continue;
+        }
+        const at = await this._breaking(error.constraint, payloads) ?? [];
+        notes.push({message: error.message, at});
+        for (const index of at)
+          add(index, error, row);
+      }
+    }
+    return {rows: [...out.values()].filter((r) => r.errors!.length > 0 || r.status !== undefined)
+      .sort((a, b) => a.index - b.index), notes};
+  }
+
+  // the payload rows a grammar constraint refuses, as Postgres reads a CHECK; null where it cannot be judged here
+  private async _breaking(name: string | undefined, payloads: Record<string, unknown>[]): Promise<number[] | null> {
+    const declared = this._table.info.constraints.find((c) => c.name === name);
+    if (declared === undefined)
+      return null;
+    const properties = this._table.properties as FilterProperty[];
+    try {
+      const {root, problems} = Filters.parse(declared.expr, {properties});
+      if (problems.length > 0)
+        return null;
+      const admitted = await Filters.toCheckMask(Filters.recordsFrame(payloads, properties), root);
+      return payloads.flatMap((_, i) => admitted.get(i) ? [] : [i]);
+    } catch {
+      // as the form: an expression a frame cannot evaluate is the server's to judge
+      return null;
+    }
+  }
+
+  // `sent` maps a payload row to its source row
+  private static _refusalNotes(notes: {message: string, at: number[]}[], sent: number[]): string[] {
+    return notes.map(({message, at}) => {
+      const shown = at.slice(0, 10).map((i) => (sent[i] + 1).toLocaleString()).join(', ');
+      const more = at.length > 10 ? ` and ${(at.length - 10).toLocaleString()} more` : '';
+      return `The server refuses the whole batch — ${message}` + (at.length === 0 ?
+        '; it does not say which row, and no row here breaks it.' :
+        ` (${at.length === 1 ? 'row' : 'rows'} ${shown}${more}).`);
+    });
   }
 
   private static _headline(items: [string, BadgeVariant][], none: string): HTMLElement {
@@ -644,6 +758,12 @@ class ImportFlow {
 
   private _validate(row: Record<string, unknown>): string | null {
     const validators = this._table.validators;
+    // a user or group column takes ids: the server's "Cannot convert" does not say so
+    for (const prop of this._targets) {
+      const problem = ImportLinks.idProblem(prop, row[prop.name!]);
+      if (problem !== null)
+        return `${ImportFlow._caption(this, prop.name!)}: ${problem}`;
+    }
     for (const column of validators.columns) {
       const problem = validators.check(column, row[column], row as RowView);
       if (problem !== null)
@@ -859,8 +979,16 @@ class ImportFlow {
       const sent = ImportFlow._sent(plan);
       // a row the plan refuses is an error like the server's: all-or-nothing sends nothing then
       const refused = plan.some((p) => p.verdict.error !== undefined) && options.allOrNothing !== false;
-      const report = refused ? {inserted: 0, updated: 0, skipped: 0, errorCount: 0, error: 'validation', rows: []} :
-        await this._table.table.batch!(sent.map((i) => plan[i].payload!), options);
+      const payloads = sent.map((i) => plan[i].payload!);
+      let report: DomainBatchReportLike = refused ?
+        {inserted: 0, updated: 0, skipped: 0, errorCount: 0, error: 'validation', rows: []} :
+        await this._table.table.batch!(payloads, options);
+      this._refusal = [];
+      if (report.error !== undefined) {
+        const judged = await this._attributed(report.rows, payloads);
+        report = {...report, rows: judged.rows};
+        this._refusal = ImportFlow._refusalNotes(judged.notes, sent);
+      }
       this._result = ImportFlow._merged(report, sent, plan);
     } catch (e) {
       this._report.replaceChildren(span(DomainErrors.message(e), 'u2-domain-import-problem'));
@@ -888,13 +1016,23 @@ class ImportFlow {
     // a warehouse refusal carries the failing rows and no totals
     const errorCount = report.errorCount ?? report.rows.filter((row) => row.errors?.length).length;
     const counts = ImportFlow._counts(ImportFlow._landed(report, errorCount));
-    const aborted = `Import aborted — ${plural(errorCount, 'row has errors', 'rows have errors')}; ` +
-      'nothing was committed.';
+    const aborted = errorCount === 0 && this._refusal.length > 0 ?
+      'Import aborted — the server refused the whole batch; nothing was committed.' :
+      `Import aborted — ${plural(errorCount, 'row has errors', 'rows have errors')}; nothing was committed.`;
     this._report.replaceChildren(ImportFlow._headline(failed ? [[aborted, 'error']] : counts, 'Nothing was imported'));
     this._report.classList.toggle('u2-domain-import-aborted', failed);
     this._wizard.setStepFailed('report', failed || errorCount > 0);
-    const outcomes = this._outcomes(report, plan, failed);
+    if (failed)
+      this._report.append(...this._refusal.map((note) => span(note, 'u2-domain-import-problem')));
+    let itemized = report;
     let saved = new Map<string, RowView>();
+    try {
+      itemized = await this._itemized(report, plan);
+    } catch (e) {
+      this._report.append(span(`The rows the server did not itemize could not be read: ${DomainErrors.message(e)}`,
+        'u2-domain-import-problem'));
+    }
+    const outcomes = this._outcomes(itemized, plan, failed);
     try {
       saved = await this._rowsById([...new Set(outcomes.map((o) => o.id).filter((id): id is string => id !== null))]);
     } catch (e) {
@@ -902,22 +1040,34 @@ class ImportFlow {
     }
     for (const row of outcomes)
       row.key = row.id === null || !saved.has(row.id) ? '' : this._keyOf(saved.get(row.id)!);
+    // what the server's capped report leaves out and nothing could recover is said, never left blank
+    const unitemized = failed ?
+      Math.max(0, errorCount - report.rows.filter(ImportFlow._isError).length) :
+      outcomes.filter((o) => o.kind === '').length;
+    if (unitemized > 0) {
+      this._report.append(span(`${plural(unitemized, 'row is', 'rows are')} not itemized by the server: ` +
+        (failed ? 'their errors are not listed.' : 'their outcome and key are unknown.'), 'u2-domain-import-problem'));
+    }
     // a dialog closed while the keys were read has no report to show; the write-back and the balloon still follow
     if (!this._wizard.scope.isDisposed)
       this._report.append(this._rowsTable(this._wizard, 'report', outcomes, this._reportColumns(saved)));
     const column = this._keyColumn();
-    if (!failed && column !== null && this._writeBack?.peek()) {
+    // a column of keys no row has is no write-back: only a commit that landed rows adds it
+    const landed = (report.inserted ?? 0) + (report.updated ?? 0) + (report.merged ?? 0) > 0;
+    if (!failed && landed && column !== null && this._writeBack?.peek()) {
       if (frame.columns.names().includes(column))
         frame.columns.remove(column);
       // column names ignore case: a source's own "sku" keeps its values beside the "Sku" written back
       const added = frame.columns.addNewString(frame.columns.getUnusedName(column)).init((i) => outcomes[i].key);
-      this._report.append(span(`Added a "${added.name}" column to ${frame.name} with each row's ${this._keyHeader()}.`,
+      this._report.append(span(`Added a "${added.name}" column to ${frame.name} with each row's ${this._keyHeader()}` +
+        (unitemized > 0 ? `; it is empty for the ${plural(unitemized, 'row', 'rows')} not itemized.` : '.'),
         'u2-domain-import-summary'));
     }
     if (failed) {
-      const refused = report.rows.filter((r) => r.status === 'error' && plan[r.index].payload !== null).length;
+      const refused = report.rows.filter((r) => ImportFlow._isError(r) && plan[r.index].payload !== null).length;
       const valid = ImportFlow._sent(plan).length - refused;
-      if (this._allOrNothing?.peek() && valid > 0) {
+      // a statement the server refuses whole is refused all or nothing or not
+      if (this._allOrNothing?.peek() && valid > 0 && this._refusal.length === 0) {
         this._report.append(span(`Uncheck "All or nothing" to import the ${plural(valid, 'valid row', 'valid rows')} ` +
           'and skip the rest.', 'u2-domain-import-summary'));
       }
@@ -931,20 +1081,26 @@ class ImportFlow {
       notify.info(`Imported: ${counts.map(([words]) => words).join(', ')}`);
   }
 
+  // a refusal's rows carry `errors` and no `status`
+  private static _isError(row: DomainBatchReportLike['rows'][number]): boolean {
+    return row.status === 'error' || (row.errors?.length ?? 0) > 0;
+  }
+
   // a repeat takes its first row's id
   private _outcomes(report: DomainBatchReportLike, plan: Planned[], failed: boolean): DomainImportRow[] {
     const bySource = new Map(report.rows.map((r) => [r.index, r]));
     const outcomes = plan.map((p, i): DomainImportRow => {
       const row = bySource.get(i);
       const errors = row?.errors ?? [];
-      if (row?.status === 'error')
+      if (row !== undefined && ImportFlow._isError(row))
         return this._row(i, p, 'error', p.payload === null ? p.verdict.error ?? '' : this._describe(errors), errors);
       if (row?.status === 'duplicate')
         return {...this._row(i, p, 'skip', this._duplicate(), errors), id: row.existingId ?? null};
       if (p.payload === null)
         return this._kept(i, p);
       if (failed || row === undefined)
-        return this._row(i, p, failed ? 'aborted' : '', failed ? 'Another row has errors' : '', errors);
+        return this._row(i, p, failed ? 'aborted' : '', failed ? 'Another row has errors' : 'Not itemized by the server',
+          errors);
       return {...this._row(i, p, row.status === 'inserted' ? 'insert' : 'update', p.verdict.note ?? '', errors),
         id: row.id};
     });
@@ -953,6 +1109,55 @@ class ImportFlow {
         outcomes[i].id = outcomes[p.verdict.sameAs]?.id ?? null;
     });
     return outcomes;
+  }
+
+  // the server itemizes at most 1,000 rows (errors, duplicates, updates, inserts) and counts them all: a row it
+  // leaves out takes the one kind the counts leave over, and its id from the row its business key names now. The
+  // batch stays one call: splitting it would let an all-or-nothing import commit part of the file, and change which
+  // of two rows with one key wins. More than one kind left over, or no one-column key in the rows: it stays unknown
+  private async _itemized(report: DomainBatchReportLike, plan: Planned[]): Promise<DomainBatchReportLike> {
+    const listed = new Set(report.rows.map((r) => r.index));
+    const missing = plan.flatMap((p, i) => p.payload === null || listed.has(i) ? [] : [i]);
+    const key = this._table.info.businessKey;
+    if (report.error !== undefined || missing.length === 0)
+      return report;
+    // the totals count what the plan kept out too (`_merged`): the server's own are what is left
+    const sent = report.rows.filter((r) => plan[r.index].payload !== null);
+    const keptErrors = plan.filter((p) => p.payload === null && p.verdict.error !== undefined).length;
+    const keptSkips = plan.filter((p) => p.payload === null).length - keptErrors;
+    const listedAs = (status: string) => sent.filter((r) => r.status === status).length;
+    const left = ([['error', (report.errorCount ?? 0) - keptErrors], ['duplicate', (report.skipped ?? 0) - keptSkips],
+      ['updated', report.updated ?? 0], ['merged', report.merged ?? 0], ['inserted', report.inserted ?? 0]] as const)
+      .map(([status, total]) => [status, total - listedAs(status)] as const).filter(([, count]) => count > 0);
+    if (left.length !== 1 || left[0][1] !== missing.length)
+      return report;
+    const status = left[0][0];
+    if (status === 'error') {
+      return {...report, rows: [...report.rows, ...missing.map((index) => ({index, id: null, status,
+        errors: [{message: 'The server did not itemize this row\'s errors'}]}))]};
+    }
+    if (key.length !== 1)
+      return report;
+    const value = (index: number) => plan[index].payload![key[0]];
+    const ids = await this._idsByKey(key[0], missing.map(value).filter((v) => v !== null && v !== undefined));
+    const found = missing.flatMap((index) => {
+      const id = ids.get(String(value(index)));
+      return id === undefined ? [] : [{index, id, status, ...(status === 'duplicate' ? {existingId: id} : {})}];
+    });
+    return {...report, rows: [...report.rows, ...found]};
+  }
+
+  // the live row each key names, by id
+  private async _idsByKey(column: string, values: unknown[]): Promise<Map<string, string>> {
+    const ids = new Map<string, string>();
+    const unique = [...new Set(values)];
+    for (let at = 0; at < unique.length; at += KEY_CHUNK) {
+      const chunk = unique.slice(at, at + KEY_CHUNK);
+      const filter = {property: column, operator: '=', value: chunk};
+      for (const row of await this._table.table.query({filter, limit: chunk.length}))
+        ids.set(String(row[column]), String(row.id));
+    }
+    return ids;
   }
 
   private async _rowsById(ids: string[]): Promise<Map<string, RowView>> {

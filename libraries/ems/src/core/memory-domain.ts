@@ -338,6 +338,8 @@ export class MemoryDomainBackend implements DomainBackend {
 export class MemoryTable implements DomainTableLike {
   /** The server's `maxUpdateWhereRows` (= `maxDeleteWhereRows`). */
   static readonly maxUpdateWhereRows = 1000;
+  /** The server's `maxBatchReportRows`: a batch report itemizes at most this many rows. */
+  static readonly maxBatchReportRows = 1000;
   /** How deep `ancestors` walks before it gives up — the server's recursion cap. */
   static readonly maxPathDepth = 64;
 
@@ -586,19 +588,25 @@ export class MemoryTable implements DomainTableLike {
   async batch(rows: Record<string, unknown>[],
     options: DomainBatchOptionsLike = {}): Promise<DomainBatchReportLike> {
     const {errors, duplicate, ops, posted, failed} = this._plan(rows, options);
-    if (options.allOrNothing !== false && errors.size > 0)
-      return {error: 'validation', inserted: 0, updated: 0, skipped: 0, errorCount: errors.size, rows: failed};
+    const cap = MemoryTable.maxBatchReportRows;
+    if (options.allOrNothing !== false && errors.size > 0) {
+      return {error: 'validation', inserted: 0, updated: 0, skipped: 0, errorCount: errors.size,
+        rows: failed.slice(0, cap)};
+    }
     const results = await this.transaction(ops);
+    const landed = posted.map((index, i) => ({index, id: results[i].id ?? null,
+      status: ops[i].op === 'insert' ? 'inserted' : 'updated'}));
     return {
       inserted: ops.filter((op) => op.op === 'insert').length,
       updated: ops.filter((op) => op.op === 'update').length,
       skipped: duplicate.size,
       errorCount: errors.size,
+      // capped as the server caps it: errors, then duplicates, then updates, then inserts
       rows: [...failed,
         ...[...duplicate.entries()].sort(([a], [b]) => a - b).map(([index, existingId]) =>
           ({index, id: existingId, status: 'duplicate', ...(existingId === null ? {} : {existingId})})),
-        ...posted.map((index, i) => ({index, id: results[i].id ?? null,
-          status: ops[i].op === 'insert' ? 'inserted' : 'updated'}))],
+        ...landed.filter((r) => r.status === 'updated'), ...landed.filter((r) => r.status === 'inserted')]
+        .slice(0, cap),
     };
   }
 
