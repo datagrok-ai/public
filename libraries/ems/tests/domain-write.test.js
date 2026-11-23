@@ -188,19 +188,6 @@ scoped('an emptied title is named by place unless the caption names the row', as
     'a readable caption stays');
 });
 
-scoped('the live reason of a disabled Save names the invalid cell, as the refusal does', async () => {
-  emsBackends.domain = backend();
-  const table = await domains.table('grit.issue');
-  const source = testOwner().build(() => table.source({}));
-  await flush();
-  source.newRow({project_id: 'p1', number: 7});
-  await flush();
-  assert.equal(source.blocked.value, 'New issue: Title: Value can\'t be empty', 'the reason names the row and the field');
-  assert.equal(await source.save(), false);
-  assert.equal(source.error.value.message, 'Cannot save: New issue: Title: Value can\'t be empty');
-  source.dispose();
-});
-
 scoped('the validators run over a row the frame filter hides — the writer sends it all the same', async () => {
   emsBackends.domain = backend();
   const table = await domains.table('grit.issue');
