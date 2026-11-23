@@ -184,8 +184,11 @@ scoped('an emptied title is named by place unless the caption names the row', as
   const byPlace = 'Cannot save: Issue 2: Title: Value can\'t be empty';
   assert.equal(await emptiedTitle((v) => `${v.project_id}-${v.number}`), byPlace, 'a project id and a number');
   assert.equal(await emptiedTitle(null), byPlace, 'no handler');
-  assert.equal(await emptiedTitle((v) => `QAT070A-${v.number}`), 'Cannot save: QAT070A-2: Title: Value can\'t be empty',
-    'a readable caption stays');
+  const kept = async (caption) => assert.equal(await emptiedTitle(() => caption),
+    `Cannot save: ${caption}: Title: Value can't be empty`, 'a readable caption stays, ids among its words or not');
+  await kept('QAT070A-2');
+  await kept('Sample p1-2');
+  await kept('Run 0b9d7c1e-5a3f-4c2e-9d1a-7f3e2b6a8c40 (2)');
 });
 
 scoped('the validators run over a row the frame filter hides — the writer sends it all the same', async () => {
