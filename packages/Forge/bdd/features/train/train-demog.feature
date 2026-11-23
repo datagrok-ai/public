@@ -265,7 +265,7 @@ Feature: Training on demog in the Train view: dates, one-hot, ids, Predict proba
     And Method input should offer "CatBoost, Decision Tree, Extra Trees, Hist Gradient Boosting, k-Nearest Neighbors, LDA, Naive Bayes, Neural Network, Random Forest, RealMLP, Softmax, SVM, TabM, XGBoost"
     And the "rows" reading of grid viewer in "Performance" results panel should be 10
     And the "text of cell 1 of Metric" reading of grid viewer in "Performance" results panel should be "Accuracy"
-    And the "text of cell 2 of Metric" reading of grid viewer in "Performance" results panel should be "F1"
+    And the "text of cell 2 of Metric" reading of grid viewer in "Performance" results panel should be "F1 score"
     And the "text of cell 3 of Metric" reading of grid viewer in "Performance" results panel should be "Recall (Sensitivity)"
     And the "text of cell 4 of Metric" reading of grid viewer in "Performance" results panel should be "Specificity"
     And the "text of cell 5 of Metric" reading of grid viewer in "Performance" results panel should be "Precision"

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, expectFloat, test} from '@datagrok-libraries/test/src/test';
-import {defaultHyperparameters, enabledRules, Engine, hasProbabilities, Hyperparameters, hyperparametersOf, isEnabled}
+import {defaultHyperparameters, enabledRules, Engine, Hyperparameters, hyperparametersOf, isEnabled}
   from '../engines/engine';
 import {LoopProgress} from '../engines/engine-calls';
 import {EngineRegistry} from '../engines/engine-registry';
@@ -13,12 +13,12 @@ import {DEFAULT_VALIDATION, mulberry32, ValidationSettings} from '../training/k-
 import {fnv1a, FNV_OFFSET} from '../storage/dataset-fingerprint';
 import {defaultFeatures} from '../training/default-features';
 import {bestCandidates, bestSearch, bestSearchPlan, canContinue, chooseLeader, COMBINED_LIMITS, continueSearch,
-  COST_RANK, costRankOf, drawnPoints,
+  COST_RANK, costRankOf, defaultUncheckReason, drawnPoints, failedSearchMessage,
   FLOAT_DIGITS, FROM_BELOW_TO, holdOutSplit, isInsideSpace, Leader, leadersOf, MAX_FAILED_WITHOUT_COMPLETE,
   NO_PROGRESS, PARALLEL_FITS, rangeProblem, requestFingerprint, runSearch, SearchCandidate, SearchChoice,
   searchableEngines, SearchPlan, searchPlanOf, SearchRecord, searchRecordFrom, searchRecordOf, SearchSpace,
-  searchSpaceOf, SearchState, SearchStrategy, Trial, trialPoints, tuneCandidate, tuneSearch, tuneSearchPlan,
-  userSpace}
+  searchSpaceOf, SearchState, SearchStrategy, Trial, trialPoints, tuneCandidate, tuneSearch,
+  tuneSearchPlan, userSpace}
   from '../training/search';
 import {TrainingRequest, trainModel} from '../training/train-model';
 import {columnsOf, edaEngine, IRIS, MEASUREMENTS, NO_PREPARATION_STEPS, PREDICT_PROBABILITY, requestOf, svm,
@@ -126,7 +126,7 @@ async function bestPlan(table: 'cars' | 'iris', names: string[], metric: MetricI
   const frame = await grok.data.files.openTable(isCars ? 'System:DemoFiles/cars.csv' : IRIS);
   const target = frame.getCol(isCars ? 'price' : 'Species');
   const features = isCars ? defaultFeatures(frame, target) : columnsOf(frame, MEASUREMENTS);
-  const candidates = bestCandidates(names.map(edaEngine), EngineRegistry.discover(), false);
+  const candidates = bestCandidates(names.map(edaEngine), EngineRegistry.discover());
   const request = {...await requestOf(features, target, NO_PREPARATION_STEPS, candidates[0].engine), seed};
   const {search} = holdOutSplit(request, seed);
   return searchPlanOf('best', search, candidates, {metric, ...limitOf(maxTrials), topK, strategy}, seed);
@@ -401,6 +401,19 @@ category('Search', () => {
     expect(chosen === undefined, true, 'A leader was chosen');
   }, {timeout: TIMEOUT});
 
+  test('failedSearchMessage names the first failure of a search where every trial fails', async () => {
+    const {outcome, chosen} = await runSearch(await irisPlan('auc', 3, 2, svm()), NO_PROGRESS, browserSearch);
+    const message = failedSearchMessage(outcome) ?? '';
+    expect(chosen === undefined, true);
+    expect(message.startsWith('No trial completed: ') && message.includes('needs class probabilities'), true, message);
+  }, {timeout: TIMEOUT});
+
+  test('defaultUncheckReason: SVM above 1000 rows only', async () => {
+    expect(defaultUncheckReason('SVM', 1000), null);
+    expect(defaultUncheckReason('SVM', 1001), 'SVM: unchecked by default on more than 1000 rows');
+    expect(defaultUncheckReason('XGBoost', 100000), null);
+  });
+
   test('The trials score the labels the step gives', async () => {
     const iris = await twoSpeciesIris();
     const species = iris.getCol('Species');
@@ -609,25 +622,23 @@ category('Search', () => {
 
 // Find best model: the candidates, the executor over several methods and the record.
 category('Search', () => {
-  test('bestCandidates sorts by cost rank, keeps a malformed space as a note, carries the probability input and ' +
-    'refuses an empty list', async () => {
+  test('bestCandidates sorts by cost rank, keeps a malformed space as a note, carries the probability input on ' +
+    'and refuses an empty list', async () => {
     const discovery = EngineRegistry.discover();
-    const candidates = bestCandidates(CARS_METHODS.map(edaEngine), discovery, false);
+    const candidates = bestCandidates(CARS_METHODS.map(edaEngine), discovery);
     expectArray(candidates.map((c) => `${c.engine.name} ${c.costRank}`),
       ['Linear Regression 0', 'PLS Regression 1', 'XGBoost 7']);
     for (const c of candidates)
       expect(JSON.stringify(c.start), JSON.stringify(defaultHyperparameters(c.engine)), c.engine.name);
-    const [malformed] = bestCandidates([withSpace(xgboost(), '{"speed": [1, 2]}')], discovery, false);
+    const [malformed] = bestCandidates([withSpace(xgboost(), '{"speed": [1, 2]}')], discovery);
     expect(malformed.space === undefined, true, 'A malformed space kept');
     expect(malformed.note?.includes('names no setting'), true, malformed.note);
-    for (const on of [true, false]) {
-      const [candidate] = bestCandidates([svm()], discovery, on);
-      expect(candidate.start.probability, on);
-      expect(trialPoint(candidate, 1, 'classification', 1).probability, on);
-    }
+    const [candidate] = bestCandidates([svm()], discovery);
+    expect(candidate.start.probability, true);
+    expect(trialPoint(candidate, 1, 'classification', 1).probability, true);
     let error = '';
     try {
-      bestCandidates([], discovery, false);
+      bestCandidates([], discovery);
     } catch (e) {
       error = e instanceof ForgeError ? e.message : String(e);
     }
@@ -636,8 +647,6 @@ category('Search', () => {
     expect(costRankOf(zeta, [...discovery, zeta]), COST_RANK.length + discovery.length);
     expectArray(searchableEngines([xgboost(), onServer(xgboost(), 'Remote'), edaEngine('Linear Regression')],
       discovery).map((e) => e.name), ['Linear Regression', 'XGBoost']);
-    expectArray([hasProbabilities(svm(), false), hasProbabilities(svm(), true), hasProbabilities(xgboost(), false)],
-      [false, true, true]);
   });
 
   test('A best search tries every candidate in cost order, then tunes the top ones round-robin', async () => {
@@ -861,7 +870,7 @@ category('Search', () => {
     const tunePlan = (r: TrainingRequest, s: Hyperparameters, choice: SearchChoice, seed: number = 1) =>
       tuneSearchPlan(r, xgboost(), s, choice, seed).plan;
     const discovery = EngineRegistry.discover();
-    const candidates = (names: string[]) => bestCandidates(names.map(edaEngine), discovery, false);
+    const candidates = (names: string[]) => bestCandidates(names.map(edaEngine), discovery);
     const best = stateOf(bestSearchPlan(request, candidates(['XGBoost', 'Softmax']), pinnedChoice, 1).plan);
     const twoSpecies = await twoSpeciesIris();
     const cases: [string, SearchState, SearchPlan, boolean][] = [
@@ -958,7 +967,7 @@ category('Search', () => {
     const iris = await grok.data.files.openTable(IRIS);
     const request = await requestOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'), NO_PREPARATION_STEPS,
       xgboost());
-    const candidates = () => bestCandidates(EQUAL_METHODS.map(edaEngine), EngineRegistry.discover(), false);
+    const candidates = () => bestCandidates(EQUAL_METHODS.map(edaEngine), EngineRegistry.discover());
     const choice: SearchChoice = {metric: 'accuracy', maxTrials: 8, strategy: 'equal'};
     const first = await bestSearch(request, candidates(), choice, 3, NO_PROGRESS, browserSearch);
     expectArray(countsOf(first.plan, first.outcome.trials), [2, 2, 2, 2]);
@@ -974,7 +983,7 @@ category('Search', () => {
     const iris = await grok.data.files.openTable(IRIS);
     const request = await requestOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'), NO_PREPARATION_STEPS,
       xgboost());
-    const candidates = bestCandidates(EQUAL_METHODS.map(edaEngine), EngineRegistry.discover(), false);
+    const candidates = bestCandidates(EQUAL_METHODS.map(edaEngine), EngineRegistry.discover());
     const errorOf = (choice: SearchChoice) => {
       try {
         bestSearchPlan(request, candidates, choice, 1);

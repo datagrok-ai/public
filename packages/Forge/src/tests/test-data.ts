@@ -217,6 +217,53 @@ export function stuckEngine(name: string, answer: Promise<unknown>, calls = {cou
     apply}, isLiveUpdate: true};
 }
 
+/** [base] as a method that never retrains live, so a small table reaches the slow-method paths; with [gate] its train
+ * calls wait for it, so a test cancels a training at a known point. An engine stub, not a platform mock. */
+export function slowEngine(base: Engine, gate?: Promise<void>): Engine {
+  const {train} = base.functions;
+  if (gate === undefined || train === undefined)
+    return {...base, isLiveUpdate: false};
+  const gated: DG.Func = Object.create(train);
+  gated.apply = async (params) => {
+    await gate;
+    return train.apply(params);
+  };
+  return {...base, isLiveUpdate: false, functions: {...base.functions, train: gated}};
+}
+
+/** [rows] rows of two alternating classes and two float features; a test's own table. */
+export function twoClassTable(rows: number = 1000): DG.DataFrame {
+  const a = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', valuesOf(rows, (i) => i % 2 + (i % 7) / 100));
+  const b = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', valuesOf(rows, (i) => (i % 11) / 10));
+  const label = DG.Column.fromStrings('label', Array.from({length: rows}, (_, i) => i % 2 === 0 ? 'even' : 'odd'));
+  const table = DG.DataFrame.fromColumns([a, b, label]);
+  table.name = `forge-test-two-class-${rows}-${Date.now()}`;
+  return table;
+}
+
+/** At most [rows] rows of [table] spread evenly over it, the rows [isKept] marks first: a test's copy, so a file
+ * sorted by class keeps every class. */
+export function spreadRows(table: DG.DataFrame, rows: number, isKept: (i: number) => boolean = () => false):
+  DG.DataFrame {
+  const mask = Array.from({length: table.rowCount}, (_, i) => isKept(i));
+  const keptRows = mask.filter((m) => m).length;
+  const otherRows = table.rowCount - keptRows;
+  const k = Math.ceil(otherRows / Math.max(1, rows - keptRows));
+  let left = rows - keptRows;
+  let other = 0;
+  for (let i = 0; i < table.rowCount && left > 0; i++) {
+    if (mask[i])
+      continue;
+    if (other++ % k === 0) {
+      mask[i] = true;
+      left--;
+    }
+  }
+  const copy = table.clone(DG.BitSet.create(table.rowCount, (i) => mask[i]));
+  copy.name = `${table.name}-${rows}`;
+  return copy;
+}
+
 /** A browser method that declares [semTypes] features (`mlsemtypes`), whose check answers [answer] and counts the
  * [calls]; an engine stub, not a platform mock. */
 export function moleculeEngine(name: string, {calls = {count: 0}, answer = true, semTypes = 'Molecule'}:
@@ -233,6 +280,18 @@ export function moleculeEngine(name: string, {calls = {count: 0}, answer = true,
   };
   return {name, namespace: 'Forge', kind: 'function', functions: {isApplicable: check, train: trainStub, apply},
     isLiveUpdate: true};
+}
+
+/** XGBoost under [name] whose every fit fails with [error]: an engine stub, not a platform mock. */
+export function failingEngine(name: string, error: string): Engine {
+  const engine = xgboost();
+  const {train} = engine.functions;
+  if (train === undefined)
+    throw new Error('XGBoost has no train');
+  const trainStub: DG.Func = Object.create(train);
+  Object.defineProperty(trainStub, 'options', {value: {...train.options, mlname: name}});
+  trainStub.apply = () => Promise.reject(new Error(error));
+  return {...engine, name, functions: {...engine.functions, train: trainStub}};
 }
 
 /** A text column of SMILES [values] with the semantic type Molecule. */

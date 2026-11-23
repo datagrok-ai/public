@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {after, awaitCheck, before, category, expect, expectArray, expectExceptionAsync, expectFloat, test}
-  from '@datagrok-libraries/test/src/test';
+import {after, awaitCheck, before, category, expect, expectArray, expectExceptionAsync, expectFloat, test,
+  waitUntil} from '@datagrok-libraries/test/src/test';
 import {applyAndRecord, ApplyRequest, DEFAULT_BATCH_SIZE, loadModel} from '../apply/apply-model';
 import {exactMapping} from '../apply/column-matching';
 import {applicableTables, modelsFor} from '../catalog/applicable-tables';
@@ -98,8 +98,8 @@ category('Catalog', () => {
     expect(df.rowCount, 2);
     expectArray(df.columns.names(), ['Name', 'Description', 'Method', 'Task', 'Target', 'Training rows', 'Created',
       'MSE (train)', 'MSE (validation)', 'RMSE (train)', 'RMSE (validation)', 'MAE (train)', 'MAE (validation)',
-      'R2 (train)', 'R2 (validation)', 'Accuracy (train)', 'Accuracy (validation)', 'F1 (train)',
-      'F1 (validation)']);
+      'R2 (train)', 'R2 (validation)', 'Accuracy (train)', 'Accuracy (validation)', 'F1 score (train)',
+      'F1 score (validation)']);
     expectArray(df.columns.toList().slice(5).map((c) => c.type), [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.DATE_TIME,
       ...Array<string>(12).fill(DG.COLUMN_TYPE.FLOAT)]);
     expectArray(df.getCol('Name').toList(), ['forge-test-regressor', 'forge-test-classifier']);
@@ -111,7 +111,7 @@ category('Catalog', () => {
     expect(df.getCol('Accuracy (validation)').isNone(0), true, 'The regressor has an accuracy');
     expectArray(compareFormFields(df), ['Name', 'Method', 'Task', 'Target', 'Training rows', 'Created',
       'MSE (validation)', 'RMSE (validation)', 'MAE (validation)', 'R2 (validation)', 'Accuracy (validation)',
-      'F1 (validation)']);
+      'F1 score (validation)']);
 
     await expectExceptionAsync(async () => {
       compareModels([regressor]);
@@ -157,8 +157,8 @@ category('Catalog', () => {
       if (!hasFormsViewer())
         expect(root.textContent?.includes(NO_FORMS), true, root.textContent ?? '');
       else {
-        await awaitCheck(() => labels().includes('Name') && labels().includes('F1 (validation)'),
-          `No forms with Name and F1 (validation): ${root.outerHTML.slice(0, 500)}`, WAIT_MS);
+        await waitUntil(() => labels().includes('Name') && labels().includes('F1 score (validation)'),
+          `No forms with Name and F1 score (validation): ${root.outerHTML.slice(0, 500)}`, WAIT_MS);
         const widthOf = (e: Element | null) => Math.round(e?.getBoundingClientRect().width ?? -1);
         const widths = [root.children[1], root.querySelector('.d4-multi-form')].map(widthOf);
         expectArray(widths, [widthOf(host), widthOf(host)]);

@@ -18,7 +18,8 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
   Metric row) plus the platform radio Strategy and multi-choice Candidates, `limit-inputs.ts`: both blocks' Limit
   and Max time / Max trials rows (platform int inputs with `min`/`max`, the platform's validation) and the
   stored-limit migration, `search-panel.ts`: the Search bar chart
-  and leaderboard in a splitter, `validation-inputs.ts`: the Validation group, `model-cards.ts`: the cards under the form), `evaluation-view.ts` (on `results-*.ts`), `forge-app.ts` (the Models
+  and leaderboard in a splitter, `preparation-inputs.ts`: the Preparation group, `output-inputs.ts`: the Output group,
+  `validation-inputs.ts`: the Validation group, `model-cards.ts`: the Trained models group), `evaluation-view.ts` (on `results-*.ts`), `forge-app.ts` (the Models
   view at `/models`: the catalog gallery), `gallery.ts` (search, list/cards/table, sort and count over a frame),
   `train-launcher.ts` (the empty catalog's **Train a model...**), `apply-model-dialog.ts`, `model-*.ts`; their
   readiness attributes: ARCHITECTURE.md, "Automation surface".
@@ -58,7 +59,7 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
 - Predict probability is post-processing (`class-probabilities`): every label comes from `replayPostprocessing(prediction,
   options, probabilities)`; a toggle or a threshold change re-cuts (`recutResult`) without retraining. A method's
   probability input (`meta.mlprobabilities` naming a `train` input: SVM's `probability`) is hidden from the form
-  (`visibleHyperparametersOf`) and set from the checkbox (`withProbabilityInput`), so toggling it retrains.
+  (`visibleHyperparametersOf`) and always on (`withProbabilityInput`), so a toggle never retrains.
   `binary-classification` is the former regression mode: replayed for old models, never recorded.
 - A plan has ONE limit, `budgetMs` or `maxTrials` (`searchPlanOf` refuses both). The trial cap counts every trial
   launched. An equal split runs the methods one after another and waits for a method's trials before the next share
@@ -93,8 +94,9 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
   `_initForge`; a gone model empties the panel, a new `version` rebuilds it). `modelsChanged` is per bundle: a test
   that writes from the test bundle and checks the panel starts its own `followChanges` and unsubscribes it.
 - `grok.dapi.permissions.get` reads the wrapper project; a `grant` on a row is refused in tests (`shareRow`, `grok s`).
-- Tables of data are grids (`readOnlyGrid`), never `ui.table`; the one exception is the model cards (`ui.table`
-  by the user's decision of 2026-11-05). A plain `grok.shell.o =` freezes the panel for a
+- Tables of data are grids (`readOnlyGrid`), never `ui.table`; the exceptions are the model cards' tooltips and
+  their settings name/value table (`ui.table`, the platform's `d4-item-table` look; the user's decisions of 2026-11-05
+  and 2026-11-23). A plain `grok.shell.o =` freezes the panel for a
   second and ignores the next plain set: the catalog sets with `setCurrentObject(x, true, true)`.
 - Tests type a tag chip into `input.d4-tags-selector-input` (`typeTag`); assigning the Tags `value` skips Enter.
 - The core calls `forgeTrain`, `forgeApply`, `forgeApp` and `applyModel` (inputs by name) by name: renaming one or its
@@ -133,6 +135,8 @@ Predictive modeling (train, apply, catalog) behind the platform's `ML | Models` 
   (`engines/check-method.ts`, tests named "Forge Check:") is temporary.
 - Test rows are `forge-test-*`, deleted in `finally`; `expect(x, undefined)` checks against `true`; close a Train view
   with `closeTrainView` (waits for `isTraining`); `openTable` records no creation script (use `openIrisFromFile`).
+- Tests keep SVM at 1000 rows or fewer (it always fits class probabilities): a small table (`twoClassTable`,
+  `spreadRows` in `src/tests/test-data.ts`) or the stub `slowEngine` where a test needs a slow method.
 
 ## Commands
 

@@ -117,13 +117,12 @@ category('Engines', () => {
     const always = stub('true');
     expect(givesProbabilities(always), true, 'mlprobabilities true');
     expect(probabilityInput(always) === undefined, true, 'An input of mlprobabilities true');
-    expect(JSON.stringify(withProbabilityInput(always, {a: 1}, true)), JSON.stringify({a: 1}));
+    expect(JSON.stringify(withProbabilityInput(always, {a: 1})), JSON.stringify({a: 1}));
     expectArray(visibleHyperparametersOf(always).map((p) => p.name), ['a', 'probability', 'count']);
     const named = stub('probability');
     expect(givesProbabilities(named), true, 'A named bool input');
     expect(probabilityInput(named), 'probability');
-    expect(JSON.stringify(withProbabilityInput(named, {a: 1}, true)), JSON.stringify({a: 1, probability: true}));
-    expect(JSON.stringify(withProbabilityInput(named, {a: 1}, false)), JSON.stringify({a: 1, probability: false}));
+    expect(JSON.stringify(withProbabilityInput(named, {a: 1})), JSON.stringify({a: 1, probability: true}));
     expectArray(visibleHyperparametersOf(named).map((p) => p.name), ['a', 'count']);
     for (const value of ['missing', 'count']) {
       const engine = stub(value);

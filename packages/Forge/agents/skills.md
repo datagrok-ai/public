@@ -105,7 +105,7 @@ Returns one object with what the model's **Details**, **Performance** and **Acti
 | `preparation` | the recorded preparation |
 | `metrics` | `train`, `validation`, `test` (after a search that held rows out), for two classes `positiveClass` and, for a classifier, `classes` (per class: `label`, `rows`, `train` and `validation` values of `precision`, `sensitivity`, `f1`, `auc`, `averagePrecision`); null when none were saved |
 | `search` | the search that chose the settings, as `trainModel` returns it; null without one |
-| `findings` | `{text, detail}` for a metric below its threshold or a validation value far from the training one |
+| `findings` | `{text, detail}` for a metric below its threshold or a validation value worse than the training one by the overfitting rule (0.05 for a 0-1 score, 0.1 for MCC and R2, 1.5 times for an error) |
 | `seed`, `splitting` | how the data was split: the split seed and `{scheme: kfold \| holdout, folds?, trainFraction?, isStratified?, isShuffled?}` |
 | `storage` | `mode`, with a reference its `source`, with a copy its `tableId` |
 | `dataset` | `name`, `rows` and `summary` (the data summary kept instead of the data) |
@@ -164,7 +164,7 @@ Trains as the Predictive model view does, with its defaults (5-fold cross-valida
   | `neighbors`, `distance` | the EDA imputer's (`4`, `Euclidean`) | the settings of `impute` |
   | `oneHot` | on when every text or yes/no feature has at most 20 categories (while `skipUniqueCategories` is on, features whose values are all different do not count) | One-hot encoding of text and yes/no features |
   | `skipUniqueCategories` | `true` | leaves out text features whose values are all different |
-  | `predictProbability` | `false` | for a text or boolean target: the saved model adds the class probabilities when applied, and the labels come from them (for two classes, at `threshold`; for more, the most probable class). It stays on with `search` (the trials score those labels) and sets SVM's `probability` setting (which `hyperparameters` cannot set) |
+  | `predictProbability` | `false` | for a text or boolean target: the saved model adds the class probabilities when applied, and the labels come from them (for two classes, at `threshold`; for more, the most probable class). It stays on with `search` (the trials score those labels) (SVM always trains with its `probability` setting on, which `hyperparameters` cannot set) |
   | `threshold` | optimized | two classes with `predictProbability`: the probability of the first class from which a row is predicted as it. Without it, the value that maximizes `thresholdMetric` on the validation rows (after a search, on the winner's), stored with the model as `thresholdMetric`; `0.5` when there is none (the validation rows hold one class). A given `threshold` is used as it is and no metric is stored. `cutoff` is accepted as its old name; `threshold` wins when both are given |
   | `thresholdMetric` | `f1` | the metric the threshold is optimized for: `f1`, `balancedAccuracy`, `mcc` or `accuracy`; ignored when `threshold` (or `cutoff`) is given |
   | `scheme` | `kfold` | how Validation is measured: `kfold` (cross-validation) or `holdout` (one held out part, then the final model on all rows) |
@@ -173,7 +173,7 @@ Trains as the Predictive model view does, with its defaults (5-fold cross-valida
   | `stratified` | `true` | each class keeps its share in every part or in the hold out; ignored for a regression |
   | `shuffle` | `true` | shuffles the rows by `seed` before the split; `false`: blocks of consecutive rows, or the last rows held out |
   | `seed` | `42` | the split seed, a whole number from 0 to 2147483647 (with `search`, also of the search's hold out and of the trials' settings) |
-  | `search` | none (`{budgetSeconds: 60}` with `auto`) | `{metric, budgetSeconds, maxTrials, strategy, methods, topK}`, each key optional, but ONE limit: `budgetSeconds` or `maxTrials`, never both (neither: `budgetSeconds: 60`); `strategy` (`equal`, the default, or `halving`; with `equal` and `maxTrials`, at least one trial per method), `methods` (the method names to try; by default every browser method that can learn from the data, without the ones lacking class probabilities while `predictProbability` is on or under `auc`, `logLoss`, `brier`, at 60 seconds or less or with `maxTrials` only those that retrain live, not SVM with `predictProbability`) and `topK` (how many methods successive halving keeps to tune, default `3`) only with `auto`, which finds the best model; with a method it tunes the method's settings first (a seeded random search of the space the method declares, validated as the options above say on a split every trial shares; with 500 rows or more a fifth, rounded and kept between 100 and 2000 rows, stratified for a classifier, is held out first), then trains the chosen ones. `metric`: `r2` (regression default), `rmse`, `mae`, `balancedAccuracy` (classifier default), `accuracy`, `f1`, `mcc`, `auc`, `logLoss`, `brier` (these two minimized; `auc`, `logLoss` and `brier` need class probabilities); `budgetSeconds`: a whole number, at least 1; `maxTrials`: starts no more than that many trials (of all methods; completed, pruned and failed ones alike) |
+  | `search` | none (`{budgetSeconds: 60}` with `auto`) | `{metric, budgetSeconds, maxTrials, strategy, methods, topK}`, each key optional, but ONE limit: `budgetSeconds` or `maxTrials`, never both (neither: `budgetSeconds: 60`); `strategy` (`equal`, the default, or `halving`; with `equal` and `maxTrials`, at least one trial per method), `methods` (the method names to try; by default every browser method that can learn from the data, without the ones lacking class probabilities while `predictProbability` is on or under `auc`, `logLoss`, `brier`, at 60 seconds or less or with `maxTrials` only those that retrain live, not SVM for a classifier, and never SVM on a table of more than 1000 rows unless methods names it) and `topK` (how many methods successive halving keeps to tune, default `3`) only with `auto`, which finds the best model; with a method it tunes the method's settings first (a seeded random search of the space the method declares, validated as the options above say on a split every trial shares; with 500 rows or more a fifth, rounded and kept between 100 and 2000 rows, stratified for a classifier, is held out first), then trains the chosen ones. `metric`: `r2` (regression default), `rmse`, `mae`, `balancedAccuracy` (classifier default), `accuracy`, `f1`, `mcc`, `auc`, `logLoss`, `brier` (these two minimized; `auc`, `logLoss` and `brier` need class probabilities); `budgetSeconds`: a whole number, at least 1; `maxTrials`: starts no more than that many trials (of all methods; completed, pruned and failed ones alike) |
 
 - `name`: saves the model under this name; without a name the model is trained and measured but not saved.
   `description` and `tags` (comma-separated) go with it
@@ -229,7 +229,7 @@ Errors, for example:
 - `Naive Bayes declares no search space, so it cannot be tuned.`,
   `No trial completed within the budget. Give the search more time.`,
   `No trial completed: <the first failed trial's error>` (e.g. `No trial completed: The metric AUC-ROC needs class
-  probabilities; SVM gives none.`),
+  probabilities; <Method> gives none.`, a method without class probabilities),
   `The search was cancelled before a trial completed.`
 - with `auto`: `The search option 'methods' needs a list of method names.`,
   `The option 'topK' needs a whole number of at least 1.`,
@@ -238,14 +238,14 @@ Errors, for example:
   `Linear Regression cannot take part in the search: it cannot learn from this selection.` (`...: it runs on the
   server.` for a server method),
   `<Method> gives no class probabilities, so Predict probability cannot be used with it.`,
-  `SVM cannot take part in the search: it gives no class probabilities, which AUC-ROC needs.`,
+  `<Method> cannot take part in the search: it gives no class probabilities, which AUC-ROC needs.`,
   `No method can take part in the search. Check the features and the target.`;
   with a method: `The search options 'strategy', 'methods' and 'topK' need method auto.`
 - `Predict probability needs a text or boolean target.`,
   `Chemprop gives no class probabilities, so Predict probability cannot be used with it.`,
   `Enter a number from 0 to 1.` (a two-class `threshold` outside 0..1),
   `The method SVM has no setting 'probability'. Its settings are: kernel, cost, gamma, degree, coef0, epsilon, maxIterations.`
-  (`predictProbability` sets it)
+  (always on)
 - `The option 'missingValues' needs skip, impute, keep (keep: only for a method that handles missing values).`,
   `SVM needs rows without missing values. Choose Skip rows or Impute.`
 - `Enter a name for the model.`,

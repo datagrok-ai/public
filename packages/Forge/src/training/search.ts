@@ -5,7 +5,7 @@ import {defaultHyperparameters, enabledRules, EnabledRules, Engine, givesProbabi
 import {LoopProgress} from '../engines/engine-calls';
 import {errorMessage, ForgeError} from '../forge-error';
 import {ModelTask} from '../generated/db';
-import {METRIC_IDS, METRIC_LABELS, MetricId, taskOf} from '../metrics/metrics';
+import {METRIC_IDS, METRIC_LABELS, MetricId, MINIMIZED_METRICS, taskOf} from '../metrics/metrics';
 import {isScoreMetric} from '../metrics/report';
 import {isRecord} from '../preparation/preparation-options';
 import {datasetFingerprint, fnv1a, FNV_OFFSET} from '../storage/dataset-fingerprint';
@@ -126,7 +126,6 @@ const HALVING_CAPTION = 'Focus on leaders';
 const FIND_TITLE = 'Finding best model';
 export const SEARCH_METRICS: Record<ModelTask, MetricId[]> = {regression: ['r2', 'rmse', 'mae'],
   classification: ['balancedAccuracy', 'accuracy', 'f1', 'mcc', 'auc', 'logLoss', 'brier']};
-const METRIC_DIRECTIONS: Partial<Record<MetricId, -1>> = {mse: -1, rmse: -1, mae: -1, logLoss: -1, brier: -1};
 export const DEFAULT_BUDGET_SECONDS = 60;
 export const DEFAULT_STRATEGY: SearchStrategy = 'equal';
 export const TOP_K = 3;
@@ -155,7 +154,7 @@ export const NO_PROGRESS: LoopProgress = {canceled: false, update: () => {}};
 const SIMPLER = ['low', 'high', 'first'] as const;
 
 export function directionOf(metric: MetricId): 1 | -1 {
-  return METRIC_DIRECTIONS[metric] ?? 1;
+  return MINIMIZED_METRICS.has(metric) ? -1 : 1;
 }
 
 export function defaultMetric(task: ModelTask): MetricId {
@@ -173,7 +172,8 @@ export function cautiousCaption(metric: MetricId): string {
   return `${METRIC_LABELS[metric]} ${directionOf(metric) === 1 ? '−' : '+'} SE`;
 }
 
-/** Whether a method gives class probabilities: always, only through its probability input, or never. */
+/** Whether a method gives class probabilities: always, through a train input, which Forge always turns on (its
+ * classifier fits several times slower), or never. */
 export type MethodProbabilities = 'always' | 'input' | 'none';
 
 export function probabilitiesOf(engine: Engine): MethodProbabilities {
@@ -181,14 +181,13 @@ export function probabilitiesOf(engine: Engine): MethodProbabilities {
 }
 
 /** Why a method of [probabilities] cannot take part in a search: `predictProbability` when it gives none while
- * Predict probability is on, `metric` when [metric] needs class probabilities it does not give then; null when it
- * can. The Find block and `Forge:trainModel` word each reason their own way. */
+ * Predict probability is on, `metric` when it gives none and [metric] needs them; null when it can. The Find block and
+ * `Forge:trainModel` word each reason their own way. */
 export function exclusionOf(probabilities: MethodProbabilities, predictProbability: boolean, metric: MetricId):
   'predictProbability' | 'metric' | null {
-  if (predictProbability && probabilities === 'none')
-    return 'predictProbability';
-  const has = probabilities === 'input' ? predictProbability : probabilities === 'always';
-  return isScoreMetric(metric) && !has ? 'metric' : null;
+  if (probabilities !== 'none')
+    return null;
+  return predictProbability ? 'predictProbability' : isScoreMetric(metric) ? 'metric' : null;
 }
 
 /** Whether a limit of [budgetSeconds] (undefined: a trial limit) is quick: no time limit above
@@ -197,11 +196,19 @@ export function isQuickLimit(budgetSeconds: number | undefined): boolean {
   return (budgetSeconds ?? 0) <= QUICK_BUDGET_SECONDS;
 }
 
-/** Whether a method is quick: it retrains live ([isLive]) and its probabilities are not a train input while
- * [predictProbability] is on (it fits several times slower with them). */
-export function isQuickMethod(isLive: boolean, probabilities: MethodProbabilities, predictProbability: boolean):
+/** Whether a method is quick: it retrains live ([isLive]) and, for a classifier ([isClassification]), its
+ * probabilities are not a train input (Forge always turns it on, and it fits several times slower with them). */
+export function isQuickMethod(isLive: boolean, probabilities: MethodProbabilities, isClassification: boolean):
   boolean {
-  return isLive && !(probabilities === 'input' && predictProbability);
+  return isLive && !(probabilities === 'input' && isClassification);
+}
+
+/** Find best model leaves SVM unchecked by default above it: its fits grow fast with the rows. */
+const SVM_DEFAULT_MAX_ROWS = 1000;
+
+export function defaultUncheckReason(name: string, rowCount: number): string | null {
+  return name === 'SVM' && rowCount > SVM_DEFAULT_MAX_ROWS ?
+    `${name}: unchecked by default on more than ${SVM_DEFAULT_MAX_ROWS} rows` : null;
 }
 
 /** The search space [engine] declares, checked: every name a hyperparameter of its train function, int / float with
@@ -455,21 +462,20 @@ export function searchableEngines(applicable: Engine[], discovery: Engine[]): En
 
 /** The quick ones of [engines] ({@link isQuickMethod}), whether each retrains live on [columns] / [target] asked at
  * once. */
-export async function quickEngines(engines: Engine[], columns: DG.Column[], target: DG.Column,
-  predictProbability: boolean): Promise<Engine[]> {
+export async function quickEngines(engines: Engine[], columns: DG.Column[], target: DG.Column): Promise<Engine[]> {
+  const isClassification = taskOf(target) === 'classification';
   const live = await Promise.all(engines.map((e) => retrainsLive(e, columns, target)));
-  return engines.filter((e, i) => isQuickMethod(live[i], probabilitiesOf(e), predictProbability));
+  return engines.filter((e, i) => isQuickMethod(live[i], probabilitiesOf(e), isClassification));
 }
 
 /** The candidates of Find best model: each of [engines] with its space (a malformed one becomes a note and the
- * defaults only), its defaults with the probability input of [predictProbability] as the start and its cost rank,
- * cheapest first; none throws. */
-export function bestCandidates(engines: Engine[], discovery: Engine[], predictProbability: boolean):
-  SearchCandidate[] {
+ * defaults only), its defaults with the probability input on ({@link withProbabilityInput}) as the start and its cost
+ * rank, cheapest first; none throws. */
+export function bestCandidates(engines: Engine[], discovery: Engine[]): SearchCandidate[] {
   if (engines.length === 0)
     throw new ForgeError('No method can take part in the search. Check the features and the target.');
   return engines.map((engine): SearchCandidate => {
-    const start = withProbabilityInput(engine, defaultHyperparameters(engine), predictProbability);
+    const start = withProbabilityInput(engine, defaultHyperparameters(engine));
     const costRank = costRankOf(engine, discovery);
     try {
       return {engine, space: searchSpaceOf(engine), start, costRank};

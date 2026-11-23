@@ -57,4 +57,12 @@ export class CollapsibleGroup {
         this.setExpanded(true);
     }));
   }
+
+  /** Shows or hides [input]; a hidden input gets [defaultValue] back. */
+  static showInput<T>(input: DG.InputBase<T>, isShown: boolean, defaultValue: T): void {
+    const wasShown = input.visible;
+    input.visible = isShown;
+    if (wasShown && !isShown)
+      input.value = defaultValue;
+  }
 }
