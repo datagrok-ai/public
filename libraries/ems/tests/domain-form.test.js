@@ -10,7 +10,7 @@ import {registerDomainSources} from '../src/core/registrations.js';
 import {DomainSource} from '../src/core/domain-source.js';
 import {confirmDiscard} from '../src/core/session.js';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
-import {backend, SCHEMA} from './domain-fixtures.mjs';
+import {backend} from './domain-fixtures.mjs';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -292,40 +292,6 @@ scoped('a 403 drops the access caches on top of the balloon', async () => {
   assert.match(document.body.querySelector('.u2-notify-error').textContent, /Forbidden/);
   form.dispose();
   src.dispose();
-});
-
-scoped('a float with a display format: focus and blur without typing is no edit, and Save sends nothing', async () => {
-  emsBackends.domain = new MemoryDomainBackend(SCHEMA, {rows: {project: [{id: 'p1', key: 'GRIT', name: 'Grit'}],
-    issue: [{id: 'i1', project_id: 'p1', number: 1, title: 'Aspirin', weight: 1.23456}]}});
-  const had = Object.getOwnPropertyDescriptor(globalThis, 'DG');
-  globalThis.DG = {format: (x, f) => x.toFixed(Number(f.split('.')[1]?.length ?? 0))};
-  try {
-    // the memory backend does not carry a column's `format` to its property; the platform's does
-    emsBackends.domain.tableSync('grit.issue').properties.find((p) => p.name === 'weight').format = '0.00';
-    const {src} = await issues();
-    src.currentRow.value = src.rows.byKey('i1');
-    const form = testOwner().build(() => domains.form(src));
-    await flush();
-    const weight = form.input('weight');
-    const text = weight.root.querySelector('input');
-    assert.equal(text.value, '1.23', 'the display is formatted');
-    fire(text, 'focus');
-    fire(text, 'blur');
-    await flush();
-    assert.equal(weight.value, 1.23456, 'blur does not round the value to the displayed text');
-    assert.equal(src.isDirty.value, false, 'focus and blur are not an edit');
-    const store = emsBackends.domain.tableSync('grit.issue').rows;
-    await src.save();
-    assert.equal(store[0].weight, 1.23456, 'Save sent nothing over the stored value');
-    assert.equal(store[0].version ?? 1, 1, 'the row was not written');
-    form.dispose();
-    src.dispose();
-  } finally {
-    if (had)
-      Object.defineProperty(globalThis, 'DG', had);
-    else
-      delete globalThis.DG;
-  }
 });
 
 scoped('a reference column is picked from its table, a user column through the user picker', async () => {

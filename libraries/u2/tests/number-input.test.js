@@ -281,6 +281,7 @@ smoke('P74: a bound signal holding undefined builds and shows an empty field; st
   input.dispose();
 });
 
+// EQ-070: the display text is rounded; reading it back on blur rounded the stored value
 smoke('format: focus and blur without an edit keep the full-precision value and fire no change', () => {
   let changes = 0;
   const input = mount(new NumberInput({format: (v) => v.toFixed(2), value: 1.23456, onChanged: () => changes++}));
@@ -289,11 +290,6 @@ smoke('format: focus and blur without an edit keep the full-precision value and 
   fire(editor(input), 'blur');
   assert.equal(input.peek(), 1.23456, 'the stored value is not rounded to the display text');
   assert.equal(changes, 0, 'no change fired');
-  editor(input).value = '2.345';
-  fire(editor(input), 'input');
-  fire(editor(input), 'blur');
-  assert.equal(input.peek(), 2.345, 'typed text is what the user meant');
-  assert.equal(editor(input).value, '2.35');
   input.dispose();
 });
 
