@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Rows, Access, Filters, div, span,
-  timestamp, EMPTY, isEmpty, text, loader, link, iconButton, notify, PickInput} from '@datagrok-libraries/u2';
+  timestamp, EMPTY, isEmpty, text, loader, link, iconButton, notify, PickInput, ChoiceInput} from '@datagrok-libraries/u2';
 import type {Input, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
   RowView} from '@datagrok-libraries/u2';
 import {propertyForm, ObjectForm, Editors, userPick, groupPick, kindOf} from '@datagrok-libraries/u2/dg';
@@ -65,6 +65,9 @@ export class DomainForm extends Control {
   private static readonly _parsed = new WeakMap<DomainTable, Constraint[]>();
   private _constraints: Constraint[] = [];
   private readonly _violations = new Map<string, string>();
+  // per field of a saved record, whether it holds its stored value unedited: an update sends only edited
+  // columns and the server checks only those, so such a value a tightened rule refuses holds no Save off
+  private readonly _stored = new Map<Input<any>, ReadonlySignal<boolean>>();
   private readonly _violationsVersion = signal(0);
   private _attached = new Set<string>();
   private _checkGen = 0;
@@ -89,7 +92,7 @@ export class DomainForm extends Control {
       for (const input of this._form.value?.inputs ?? []) {
         const message = input.validity.value;
         // the server's mark on the field stays shown in it, and is not the form's to hold Save on
-        if (message !== null && !this._refused(input.name, message)) {
+        if (message !== null && !this._refused(input.name, message) && !this._stored.get(input)?.value) {
           const caption = capital(input.label);
           return message === EMPTY ? `${caption} is required` : `${caption}: ${message}`;
         }
@@ -311,6 +314,7 @@ export class DomainForm extends Control {
     const draft = Rows.isDraft(row);
     const system = new Set(SYSTEM_COLUMNS.map(([name]) => name));
     const view = access.row(row);
+    this._stored.clear();
     // a ref column with a schema filter picks among the rows its siblings allow
     let overrides = options.overrides;
     for (const [name, filter] of Object.entries(table?.info.refFilters ?? {})) {
@@ -359,6 +363,16 @@ export class DomainForm extends Control {
         return failed !== null && ObjectForm.same(value, failed.value) ?
           `cannot be saved (${failed.message}): reload the page to see the table as it is now` : null;
       });
+      if (!draft) {
+        const stored = computed(() => {
+          const edit = source.edit.value;
+          edit?.changeCount.value;
+          return ObjectForm.same(input.value, ObjectForm.coerce(kind, row[name])) &&
+            edit?.isChanged(row.id, name) !== true;
+        });
+        this._stored.set(input, stored);
+        DomainForm._markStored(input, stored);
+      }
       // and a constraint is judged on what the fields hold, written or not
       if (this._constraints.some((c) => c.columns.includes(name))) {
         let initial = true;
@@ -373,6 +387,31 @@ export class DomainForm extends Control {
     }
     this._markChanged(form, row);
     return form;
+  }
+
+  // a saved record's stored value that a rule tightened since refuses (a max lowered under it, its choice
+  // removed) says why on its field at once: the touch rule spares a new record's empty fields, not a stored
+  // value. A choice no longer listed stays shown and marked while the field holds it; picked away, it goes
+  private static _markStored(input: Input<any>, stored: ReadonlySignal<boolean>): void {
+    if (input instanceof ChoiceInput) {
+      const stale = input.peek();
+      const listed = [...input.items];
+      const values = listed.map((item) => typeof item === 'string' ? item : item.value);
+      if (typeof stale === 'string' && stale !== '' && values.length > 0 && !values.includes(stale)) {
+        const extra = {value: stale, label: `${stale} (not in the list)`};
+        input.addValidator((v) => v === null || v === '' || values.includes(v) ? null :
+          `Must be one of: ${values.join(', ')}`);
+        input.effect(() => {
+          const want = input.value === stale;
+          if (want !== (input.items.length > listed.length))
+            untracked(() => input.setItems(want ? [...listed, extra] : listed));
+        });
+      }
+    }
+    input.effect(() => {
+      if (!input.touched.value && input.validity.value !== null && stored.value)
+        untracked(() => input.touch());
+    });
   }
 
   // a draft is new whole: none of its fields is marked

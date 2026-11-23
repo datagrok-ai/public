@@ -1227,6 +1227,59 @@ scoped('a draft shows the column defaults, so a required column with one is alre
   draft.dispose();
 });
 
+/** A ticket table whose rules were tightened after rows were stored: `score` holds 50 under a max lowered to
+ * 10, `kind` holds `alpha` after `alpha` left its choices. */
+function tightened() {
+  return new MemoryDomainBackend({name: 'desk', tables: {
+    ticket: {businessKey: ['code'], columns: {
+      code: {type: 'string', required: true, isName: true},
+      score: {type: 'int', max: 10, friendlyName: 'Score'},
+      kind: {type: 'string', choices: ['beta', 'gamma'], friendlyName: 'Kind'},
+    }},
+  }}, {rows: {ticket: [{id: 't1', code: 'T1', score: 50, kind: 'alpha'}]}});
+}
+
+scoped('an unrelated edit saves over stored values a tightened rule refuses, and the update leaves them out', async () => {
+  const memory = emsBackends.domain = tightened();
+  const sent = [];
+  const real = memory.transaction.bind(memory);
+  memory.transaction = (ops) => (sent.push(...ops), real(ops));
+  const table = await domains.table('desk.ticket');
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  await flush();
+  src.currentRow.value = src.rows.byKey('t1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  form.input('code').value = 'T1 edited';
+  await flush();
+  assert.equal(src.session.validity.value, null, 'Save is allowed');
+  assert.equal(await src.save(), true, 'and the save lands');
+  assert.deepEqual(Object.keys(sent.find((op) => op.op === 'update')?.values ?? {}), ['code'],
+    'only the edited column is sent, not score or kind');
+  const stored = memory.tableSync('desk.ticket').rows.find((row) => row.id === 't1');
+  assert.deepEqual([stored.code, stored.score, stored.kind], ['T1 edited', 50, 'alpha'], 'the stored values stay');
+  form.dispose();
+  src.dispose();
+});
+
+// a review found the stale choice kept as a pickable option after the user moved off it
+scoped('a stored value whose choice was removed is offered only until the user picks another', async () => {
+  emsBackends.domain = tightened();
+  const table = await domains.table('desk.ticket');
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  await flush();
+  src.currentRow.value = src.rows.byKey('t1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  const kind = form.input('kind');
+  assert.equal(kind.getState().text, 'alpha (not in the list)', 'the stored choice is shown, not an empty dropdown');
+  kind.value = 'beta';
+  await flush();
+  assert.deepEqual(kind.getItems().list.map((i) => i.key), ['beta', 'gamma'], 'the stale choice is no longer offered');
+  form.dispose();
+  src.dispose();
+});
+
 /* EQ-056: the platform frame holds a `string_list` cell as the JSON text of the list (`queryDf`, and the
    editor's post-save re-read); the memory backend holds it the same way. The form must show the items,
    save what was typed as items, and show a saved list as items again. */
