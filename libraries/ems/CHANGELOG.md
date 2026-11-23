@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Pages: Fixed a page marked "Properties changed: save or discard to reload" keeping its old columns and the notice when the changes went away another way (an edit undone by hand, a save that reloaded over a conflict): the page is rebuilt as soon as nothing is left to save, and a rebuild that fails leaves the notice up
 * Saving: Fixed a refusal about a new row under a deleted parent quoting the row as `""` when its name was cleared, or by its internal id when it had no caption: it is called "New <row>" as in the list, and a row with no name is not quoted
 * Lists: Fixed a `?sort=` link or a saved sort written with a space after a comma (`!run_date, name`), or with a `prop.<name>` key, silently dropping those keys: keys are trimmed and a `prop.` key sorts by the column it names, as the server reads them
 * Import: Fixed the import wizard refusing to open ("You cannot create …") for a user who cannot write a required column, even to update existing rows: where the table offers Add or update, the wizard opens and matched rows are updated by their key
