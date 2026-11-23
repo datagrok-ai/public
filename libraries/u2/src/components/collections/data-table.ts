@@ -22,6 +22,9 @@ export interface DataTableColumn<T> {
    * narrow for the columns scrolls sideways instead of drawing them one letter wide. */
   width?: string;
   align?: 'left' | 'right' | 'center';
+  /** Whether a click on the header sorts by this column; true by default. A column the owner cannot order by (a value
+   * computed on the client) is `false`: its header takes no click, shows no arrow and is not drawn as sortable. */
+  sortable?: boolean;
   /** A string becomes the cell text, an element its content; `cell` is the pooled cell element,
    * reset before each call — set `title` and extra classes on it. The item's own `name` value by
    * default, as `Format.value` reads it. */
@@ -170,7 +173,8 @@ export class DataTable<T> extends VirtualRows<T> {
     scope.listen(this.root, 'click', (e) => {
       const target = e.target as Element;
       const head = target.closest('.u2-data-table-head') as HTMLElement | null;
-      if (head !== null && this._sort !== undefined && target.closest('.u2-data-table-resize') === null)
+      if (head !== null && this._sort !== undefined && head.classList.contains('u2-data-table-sortable') &&
+        target.closest('.u2-data-table-resize') === null)
         this._sort.value = SortOrder.next(this._sort.peek(), head.dataset.column!);
     });
     scope.listen(this.root, 'pointerdown', (e) => {
@@ -202,7 +206,8 @@ export class DataTable<T> extends VirtualRows<T> {
     const key = SortOrder.parse(sort);
     for (const head of header.children) {
       const cell = head as HTMLElement;
-      const sorted = key !== null && cell.dataset.column === key.column;
+      const sorted = key !== null && cell.classList.contains('u2-data-table-sortable') &&
+        cell.dataset.column === key.column;
       cell.setAttribute('aria-sort', !sorted ? 'none' : key.descending ? 'descending' : 'ascending');
       cell.querySelector('.u2-data-table-sort')?.remove();
       if (sorted) {
@@ -330,13 +335,13 @@ export class DataTable<T> extends VirtualRows<T> {
     header.style.gridTemplateColumns = this._template;
     header.style.height = `${this._headerHeight}px`;
     this.root.style.setProperty('--u2-data-table-header-height', `${this._headerHeight}px`);
-    header.classList.toggle('u2-data-table-sortable', this._sort !== undefined);
     for (const column of this._columns) {
       const cell = document.createElement('div');
       cell.className = `${DataTable._cellClass(column)} u2-data-table-head`;
       cell.dataset.u2 = 'column-header';
       cell.setAttribute('role', 'columnheader');
       cell.dataset.column = column.name;
+      cell.classList.toggle('u2-data-table-sortable', this._sort !== undefined && column.sortable !== false);
       const label = document.createElement('span');
       label.className = 'u2-data-table-head-label';
       label.textContent = cell.title = column.header ?? column.name;

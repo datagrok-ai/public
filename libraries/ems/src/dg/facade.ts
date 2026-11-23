@@ -228,6 +228,13 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
     return DomainTable._byRow.get(row);
   }
 
+  /** Whether the server can order the list by this column: its own value, not a reference (which would sort by
+   * the referenced ids, not the names it shows) and not the key. The Sort by menu and the table's headers offer
+   * only these. */
+  static isSortable(prop: {name?: string, ref?: string}): boolean {
+    return prop.ref === undefined && prop.name !== 'id';
+  }
+
   /** Whether the column holds another row's id rather than a value of its own — a ref column
    * (semType `<schema>.<table>`), a user or a group (the js-api editor's `isReferenceProperty`). */
   static isReference(prop: IProperty): boolean {

@@ -340,6 +340,7 @@ export class DomainDataTable extends Control {
       name,
       header: byName.get(name)?.friendlyName || name,
       width: DomainDataTable.width(byName.get(name), name === nameColumn),
+      sortable: byName.get(name) !== undefined && DomainTable.isSortable(byName.get(name)!),
       ...(DomainDataTable.isNumeric(byName.get(name)) ? {align: 'right' as const} : {}),
       render: (row) => this._options.cells?.[name]?.(row) ?? this._cell(row, name, byName.get(name)),
     })).concat(this._options.extraColumns ?? []);

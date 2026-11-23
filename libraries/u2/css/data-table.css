@@ -63,7 +63,7 @@
   text-overflow: ellipsis;
 }
 
-.u2-data-table-sortable > .u2-data-table-head {
+.u2-data-table-head.u2-data-table-sortable {
   cursor: pointer;
 }
 

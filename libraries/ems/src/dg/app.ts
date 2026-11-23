@@ -541,7 +541,7 @@ export class DomainApp extends Control {
       const table = this.view.value === 'table';
       const columns = this.output.columns.value;
       const extraColumns = this.output.aggregations.value.map((a) => ({name: outputKey(a),
-        header: outputKey(a), align: 'right' as const, render: (row: RowView) => {
+        header: outputKey(a), align: 'right' as const, sortable: false, render: (row: RowView) => {
           const value = this.output.values.peek().get(String(row.id))?.[outputKey(a)];
           return typeof value === 'number' ? DomainDataTable.number(value) : text(value);
         }}));
@@ -887,7 +887,7 @@ export class DomainApp extends Control {
         const desc = current.startsWith('!');
         const column = desc ? current.slice(1) : current;
         const menu = new Menu();
-        for (const prop of source.schema.properties.filter((p) => p.ref === undefined && p.name !== 'id')) {
+        for (const prop of source.schema.properties.filter((p) => DomainTable.isSortable(p))) {
           menu.item(DomainTable.captionOf(prop), () => write(`${desc ? '!' : ''}${prop.name}`),
             {check: prop.name === column});
         }

@@ -1865,6 +1865,22 @@ scoped('domains.views: a view per table, addressed and brought forward, where it
   }
 });
 
+scoped('table view: an aggregation header click sets no sort the server would refuse; a plain header still sorts', async () => {
+  const {app: a} = await app();
+  a.view.value = 'table';
+  a.output.aggregations.value = [{column: 'Notes.Weight', aggregation: 'avg'}];
+  await flush();
+  const head = (column) => [...a.root.querySelectorAll('[role="columnheader"]')].find((h) => h.dataset.column === column);
+  const before = a.listSource.sort.peek();
+  fire(head('avg(Notes.Weight)'), 'click');
+  await flush();
+  assert.equal(a.listSource.sort.peek(), before, 'the aggregation header sets no sort the server would refuse');
+  fire(head('title'), 'click');
+  await flush();
+  assert.equal(a.listSource.sort.peek(), 'title', 'an own-value header still sorts');
+  a.dispose();
+});
+
 // EQ-023: the access is cached until the caches are dropped, and a reader without View gets no
 // rows: a row opened from a list loaded before the revoke must re-read the access, once
 scoped('EQ-023: View revoked after the list loaded: the row opened from it re-reads the access and says no access', async () => {
