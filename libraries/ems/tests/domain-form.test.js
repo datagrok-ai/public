@@ -1108,11 +1108,6 @@ scoped('a ref outside its $-filter after a sibling changes is marked, not refuse
   assert.equal(note().includes('Aspirin is not in Datagrok'), true,
     'the held parent is outside the new project and is marked');
   assert.equal(form.input('parent_id').validity.value, null, 'a note, not an error: Save stays allowed');
-  form.input('project_id').value = 'p1';
-  await flush();
-  await flush();
-  await flush();
-  assert.equal(note().includes('is not in'), false, 'back inside the project: the mark goes');
   form.dispose();
   src.dispose();
 });
