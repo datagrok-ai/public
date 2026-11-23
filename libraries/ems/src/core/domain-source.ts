@@ -453,11 +453,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     if (this.scope.isDisposed)
       return;
     const gen = ++this._gen;
-    // a load that keeps the shown rows below keeps what is known about their window too
-    const restart = this._restart;
-    const moved = this._moved;
-    this._restart = false;
-    this._moved = false;
     let readFor = this._readFor();
     // a reload of the collection shown, started over a clean session, keeps the rows when changes appear
     // in the session before it lands — a child row typed under the current row, which `_drop` would dispose
@@ -511,8 +506,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (this.isDirty.peek() || (keepOverSession && this.session.isDirty.peek())) {
         frame.dispose();
         this._probed = shown;
-        this._restart ||= restart;
-        this._moved ||= moved;
         batch(() => {
           // over changes elsewhere in the session the rows are behind the server, as a peer save marks them
           if (!this.isDirty.peek())
@@ -543,6 +536,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         await this.refresh();
         return;
       }
+      // what is known about the old window (a lost one, a shift) is dropped only with it: a load that fails,
+      // bails over pending changes or is overtaken leaves the next page to start over or re-base
+      this._restart = false;
+      this._moved = false;
       if (shownFrame !== undefined)
         this._swap(frame, window, baseline, this._keep(), landed);
       else {
@@ -595,6 +592,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._state.value = 'loading';
     try {
       await this._serve();
+      // a load started meanwhile reads another scope: a page of it does not belong in this frame
+      if (gen !== this._gen)
+        return;
       const offset = this._loaded;
       const boundary = this._last;
       // what the server answered at `offset`; an id the frame already holds is not appended a second time
@@ -971,7 +971,6 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     // the frame may have just lost every row of it to a delete
     const window = Math.max(this._loaded, frame.df.rowCount) || this.pageSize;
     const gen = this._gen;
-    const kept = this._keep();
     const readFor = this._readFor();
     await this._serve(true);
     // read BEFORE the window, as a load does: a write by someone else after the save is a change
@@ -993,7 +992,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     }
     // the rows now shown were read for this scope: a query or search changed over the pending edits is applied
     this._shownFor = readFor;
-    this._swap(replacement, window, baseline, kept);
+    // read at the swap, off the frame about to go: a row or a selection picked while the window was read stands
+    this._swap(replacement, window, baseline, this._keep());
     return true;
   }
 
