@@ -5,8 +5,11 @@ import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope, Rows, notify, signal} from '@datagrok-libraries/u2';
 import {DomainSource} from '../src/core/domain-source.js';
 import {SharedSession, confirmDiscard} from '../src/core/session.js';
-import {saveButton} from '../src/dg/buttons.js';
 import {backend} from './domain-fixtures.mjs';
+import {register} from 'node:module';
+
+register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
+const {saveButton} = await import('../src/dg/buttons.js');
 
 function scoped(name, body) {
   test(name, async () => {
