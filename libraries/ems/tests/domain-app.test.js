@@ -1800,29 +1800,51 @@ scoped('EQ-023: View revoked after the list loaded: the row opened from it re-re
 });
 
 // EQ-054: the platform caches the caller's access with no expiry and a grant made by another
-// session never drops it: opening the app must drop the caches and read the access afresh
-scoped('EQ-054: opening the app again reads the access afresh, so it follows a grant made meanwhile', async () => {
+// session never drops it: the memory table answers the cached access until the caches go
+function grantedElsewhere() {
   const memory = backend();
   const issues = memory.tableSync('grit.issue');
   const query = issues.query.bind(issues);
-  let granted = false;
+  const state = {granted: false, drops: 0, issues};
   let cached = null;
-  let drops = 0;
-  issues.access = () => Promise.resolve(cached ??= {can: {view: granted, insert: granted, edit: granted,
-    delete: false, share: false}, fields: {}});
-  issues.query = (spec) => granted ? query(spec) : Promise.resolve([]);
-  memory.dropAccess = () => (drops++, cached = null);
+  issues.access = () => Promise.resolve(cached ??= {can: {view: state.granted, insert: state.granted,
+    edit: state.granted, delete: false, share: false}, fields: {}});
+  issues.query = (spec) => state.granted ? query(spec) : Promise.resolve([]);
+  memory.dropAccess = () => (state.drops++, cached = null);
   emsBackends.domain = memory;
+  return state;
+}
+
+scoped('EQ-054: opening the app again reads the access afresh, so it follows a grant made meanwhile', async () => {
+  const state = grantedElsewhere();
   const first = await domains.route('/domains/grit/issue');
   await flush();
-  assert.equal(drops, 1, 'opening drops the caches once');
+  assert.equal(state.drops, 1, 'opening drops the caches once');
   first.close?.();
   DomainApp.of(first).dispose();
-  granted = true;
+  await state.issues.access();
+  state.granted = true;
   const reopened = DomainApp.of(await domains.route('/domains/grit/issue'));
   await flush();
   await flush();
   assert.equal(reopened.listSource.rows.items.value.length, 3, 'the rows show');
   assert.equal(reopened.listSource.access.value.can('insert'), true, 'the reopened app reads the grant');
   reopened.dispose();
+});
+
+scoped('EQ-054: Refresh on the no-access page reads the access afresh and brings the rows and New back', async () => {
+  const state = grantedElsewhere();
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  const [add, , , , refresh] = testOwner().build(() => a.ribbon()).main;
+  await flush();
+  await state.issues.access();
+  state.granted = true;
+  fire(refresh.root.querySelector('button') ?? refresh.root, 'click');
+  await flush();
+  await flush();
+  assert.equal(a.listSource.rows.items.value.length, 3, 'the rows show after Refresh');
+  assert.equal(add.root.hidden, false, 'New appears once the re-read finds the grant');
+  a.dispose();
 });
