@@ -669,6 +669,7 @@ form('a column named description is a textarea unless an editor hint says otherw
   f.dispose();
 });
 
+// EQ-057 regression (u2 half): node scripts/gen-styles.mjs, grok tsc, run-tests --test-name-pattern=ObjectForm.same
 test('ObjectForm.same: a cyclic value or a Dart-backed wrapper compares without overflowing', () => {
   const a = {k: 'v'};
   a.self = a;
