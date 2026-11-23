@@ -109,3 +109,12 @@ test('a stale delete, RELOAD: the row is shown again before the retry', async ()
   assert.equal(await ed.resolveConflict(conflict(2), ed.buildOps()[0]), true);
   assert.equal(ed._df.filter.get(0), true, 'the dropped delete no longer hides the row, whatever the retry does');
 });
+
+test('a stale update, RELOAD: json and string_list values land as the JSON text the frame holds', async () => {
+  dialog('reload');
+  const {ed} = editor('modified', {id: 'r1', name: 'Theirs', version: 2, spec: {a: 1}, tags: ['x', 'y']});
+  Object.assign(ed._df.cols, {spec: ['{}'], tags: ['[]']});
+  assert.equal(await ed.resolveConflict(conflict(2), {op: {op: 'update', table: 'item', id: 'r1'}, row: 0}), true);
+  assert.equal(ed._df.cols.spec[0], '{"a":1}');
+  assert.equal(ed._df.cols.tags[0], '["x","y"]');
+});
