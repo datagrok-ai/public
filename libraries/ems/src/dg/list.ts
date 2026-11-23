@@ -191,7 +191,7 @@ export class DomainList extends Control {
 
   private _empty(filtered: boolean, clearFilter: () => HTMLElement): HTMLElement {
     const source = this.source;
-    const denied = DomainErrors.noView(source);
+    const denied = DomainErrors.noView(source, filtered);
     const search = source.search.value;
     const info = source.schema.info;
     const what = nounOf(info);

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Permissions: Fixed a user who reaches rows through row grants only being told "You do not have access to …", with no Clear button, whenever a filter, a search or the text typed in a picker matched nothing: they now read that nothing matches and can clear the filter or search
 * Lists: Fixed a search or filter changed while a save was re-reading the list showing the previous scope's rows until something else reloaded it: the rows of the new scope are read once the save's re-read lands
 * Lists: Fixed a list over a table with no searchable column, opened with a search (from the address or a saved search), loading its rows twice: the dropped search no longer reads as a scope change
 * Permissions: Fixed a save refused for lack of permission enabling Save again once you edited another field of the refused row, so Save sent the same refused changes again: the refusal holds through any edit until you discard the changes
