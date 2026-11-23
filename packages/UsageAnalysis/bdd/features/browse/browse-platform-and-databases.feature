@@ -50,7 +50,6 @@ Feature: The Platform and Databases sections of the Browse tree
       | Platform---Users tree node inside browse tree             |
       | Platform---Groups tree node inside browse tree            |
       | Platform---Roles tree node inside browse tree             |
-      | Platform---Predictive-models tree node inside browse tree |
       | Platform---Dockers tree node inside browse tree           |
     And no errors should have been logged
     And no error or warning balloon should have been shown
@@ -130,13 +129,14 @@ Feature: The Platform and Databases sections of the Browse tree
       | Functions         | Functions    |
       | Roles             | Roles        |
       | MCP-Servers       | MCP Servers  |
-      | Predictive-models | Models       |
       | Sync              | Sync         |
       | Layouts           | View layouts |
       | URL-Aliases       | URL Aliases  |
       | Settings          | Settings     |
       | Sticky-Meta       | Schemas      |
 
+  # Platform > Machine Learning (once Predictive models) shows only where Forge is installed (core#1518): Forge's
+  # app-and-menus feature opens it
   # the tree lists Notebooks only where a package registers the notebooks functions
   Scenario: Platform > Notebooks opens the Notebooks view
     Given the "Notebooks" package is installed

@@ -26,6 +26,7 @@ declare global {
   interface Window {
     __cruxNext?: {changes: number, created: boolean, cleared: boolean | null};
     __cruxCurrent?: {semType: string | null, value: string}[];
+    __cruxCurrentSub?: {unsubscribe(): void};
   }
 }
 
@@ -141,16 +142,26 @@ export const dragThenClick = When('user drags the {string} area of {widget} by {
 
 // ---------------------------------------------------------------- the current object
 
-export const watchCurrent = Given('the molecules made the current object are counted', (page: Page) =>
-  page.evaluate(() => {
+// One count per page: the page outlives its features, and a subscription an earlier count left counts every change again
+const stopCounting = (page: Page): Promise<void> => page.evaluate(() => {
+  window.__cruxCurrentSub?.unsubscribe();
+  window.__cruxCurrentSub = undefined;
+  window.__cruxCurrent = undefined;
+});
+
+export const watchCurrent = Given('the molecules made the current object are counted', async (page: Page) => {
+  await page.evaluate(() => {
+    window.__cruxCurrentSub?.unsubscribe();
     window.__cruxCurrent = [];
-    grok.events.onCurrentObjectChanged.subscribe(() => {
+    window.__cruxCurrentSub = grok.events.onCurrentObjectChanged.subscribe(() => {
       const o = grok.shell.o;
       if (window.__cruxCurrent && o?.semType === DG.SEMTYPE.MOLECULE && typeof o.value === 'string' && o.value.trim() !== '')
         window.__cruxCurrent.push({semType: o.semType, value: o.value});
     });
-  }),
-{tier: 'api', description: 'from now on, each change of the current object to a Molecule semantic value with a molecule in it (what a sketcher\'s host sets on an edit); a dialog the platform makes current, or an empty cell, is not one'});
+  });
+  atFeatureEnd(page, () => stopCounting(page));
+},
+{tier: 'api', description: 'from now on, each change of the current object to a Molecule semantic value with a molecule in it (what a sketcher\'s host sets on an edit); a dialog the platform makes current, or an empty cell, is not one; a later count replaces this one, and the count ends with the feature'});
 
 export const currentCount = Then('a molecule should have become the current object {int} time(s)', async (page: Page, n: number) => {
   await viewers.settle(page, el('crux sketcher widget')).catch(() => undefined);

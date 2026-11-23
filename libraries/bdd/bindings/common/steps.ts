@@ -60,8 +60,12 @@ export const replaceTextOf = When('user replaces the text of {element} with {str
   const loc = await locate(page, target);
   await loc.selectText();
   await page.keyboard.type(text);
-  await expect(loc, `the text typed into ${target.phrase}`).toHaveText(text);
-}, {tier: 'ui', description: 'the text selected as a drag over it does, then typed: for a contenteditable whose app owns the select-all key; not committed'});
+  // an input's text is its value: its textContent is always empty
+  if (await loc.evaluate((e) => e instanceof HTMLInputElement || e instanceof HTMLTextAreaElement))
+    await expect(loc, `the text typed into ${target.phrase}`).toHaveValue(text);
+  else
+    await expect(loc, `the text typed into ${target.phrase}`).toHaveText(text);
+}, {tier: 'ui', description: 'the text selected as a drag over it does, then typed: for a contenteditable whose app owns the select-all key, or an input; not committed'});
 export const pressKey = When('user presses {key}', (page: Page, key: string) => g.press(page, key), {tier: 'ui'});
 export const pressKeyIn = When('user presses {key} in {element}', (page: Page, key: string, target: ElementRef) => g.pressIn(page, target, key), {tier: 'ui'});
 export const selectIn = When('user selects {string} in {element}', (page: Page, option: string, target: ElementRef) => g.select(page, target, option), {tier: 'ui'});

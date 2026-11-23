@@ -1,6 +1,6 @@
 @journey
 Feature: The Forge app, the platform's entry points that open it
-  The Forge app from Browse > Apps, from Browse > Platform > Predictive models and from Forge:forgeModels, its Methods
+  The Forge app from Browse > Apps, from Browse > Platform > Machine Learning and from Forge:forgeModels, its Methods
   grid, its catalog's columns and icons, and ML | Models opening Forge's Train view and Apply dialog. Translated from
   the manual scenarios 1.1, 1.2, 1.3, 1.4, 1.6, 2.9, 4.13 (steps 1-2) and 6.4 of
   core/docs/features/platform/predictive-modeling/forge/manual-checks.md. Only the Train view's training run of the
@@ -20,7 +20,7 @@ Feature: The Forge app, the platform's entry points that open it
   target and features inputs (the Train view is told apart from the old one by its form, and by the old one's model
   preview missing); 1.6 step 3 and 2.9 step 3 (models of the earlier tool are not named); 4.13 step 2's Predicted By
   tag (apply-iris.feature claims the Forge side), step 3 (the table pane, M1c); 6.4's MLFlow node hidden under
-  Predictive models; that ML has no Forge group (the package test UI "catalog menu item").
+  Machine Learning; that ML has no Forge group (the package test UI "catalog menu item").
 
   Where the product moved on from the manual text: ML | Models opens Forge, and the catalog has no menu item; the
   feature opens it with Forge:forgeModels, which focuses an open catalog rather than opening a second one (1.2's "a
@@ -36,7 +36,7 @@ Feature: The Forge app, the platform's entry points that open it
     Then no balloon of any colour should have been shown
     And no errors should have been logged
 
-  Scenario: Forge opens from Apps, from the Predictive models node and from Forge:forgeModels (1.1, 1.2, 6.4, 4.13)
+  Scenario: Forge opens from Apps, from the Machine Learning node and from Forge:forgeModels (1.1, 1.2, 6.4, 4.13)
     Then the top menu should list:
       | ML > Models > Train Model... |
       | ML > Models > Apply Model... |
@@ -50,7 +50,7 @@ Feature: The Forge app, the platform's entry points that open it
     And first grid viewer should be visible
     And second grid viewer should be visible
     When user expands "Platform" tree node inside browse tree
-    And user clicks on "Predictive models" tree node inside browse tree
+    And user clicks on "Machine Learning" tree node inside browse tree
     Then the "Forge" view should be current
     And forge app should be visible
     When user switches to the "forge-test-iris-{time}" table view

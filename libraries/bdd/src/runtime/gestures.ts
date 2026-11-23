@@ -412,8 +412,13 @@ export async function pickInColumnGrid(page: Page, option: string, what: string,
  * press that opened no column grid is made again on the selector as it is now. */
 export async function openColumnSelector(page: Page, selector: Locator, leave = true): Promise<void> {
   const popup = page.locator('.d4-column-grid:has(.d4-column-selector-backdrop)').filter({visible: true});
+  // a selector that aggregates (a bar chart's Value, a line chart's Y) starts with its aggregation's <select>: the
+  // press goes on the column's name, which opens the picker
+  const column = selector.locator('.d4-column-selector-column').first();
+  const aggregates = await selector.locator('select').count() > 0;
+  const target = aggregates && await column.isVisible().catch(() => false) ? column : selector;
   for (let attempt = 1; ; attempt++) {
-    const box = await selector.boundingBox();
+    const box = await target.boundingBox();
     if (!box)
       throw new Error('the column selector has no box');
     await page.mouse.move(box.x + Math.min(10, box.width / 2), box.y + box.height / 2);
@@ -432,14 +437,19 @@ export async function openColumnSelector(page: Page, selector: Locator, leave = 
 
 /** A guide's pointer steps just off the selector, clear of the picker it opened: the page's corner,
  * where a test's goes, is a flight across the video and back. */
-async function besidePicker(page: Page, box: guide.GuideBox): Promise<{x: number; y: number}> {
+export async function besidePicker(page: Page, box: guide.GuideBox): Promise<{x: number; y: number}> {
   const popup = page.locator('.d4-column-grid:has(.d4-column-selector-backdrop)').filter({visible: true}).last();
   await popup.waitFor({state: 'visible', timeout: 5000}).catch(() => undefined);
   const picker = await popup.boundingBox().catch(() => null);
   const view = page.viewportSize() ?? {width: 1920, height: 1080};
+  // the sidebar's icons slide their panels out under a resting pointer: a selector at the view's left edge (a tree
+  // map's Color) stepped aside onto it, and the Toolbox slid over the clip until the pick ended
+  const sidebar = await page.locator('.layout-sidebar').filter({visible: true}).first().boundingBox({timeout: 200})
+    .catch(() => null);
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height / 2;
   const clear = (p: {x: number; y: number}): boolean => p.x > 0 && p.y > 0 && p.x < view.width && p.y < view.height &&
+    (!sidebar || p.x > sidebar.x + sidebar.width + 8) &&
     (!picker || p.x < picker.x - 4 || p.x > picker.x + picker.width + 4 || p.y < picker.y - 4 || p.y > picker.y + picker.height + 4);
   return [{x: box.x - 16, y: cy}, {x: cx, y: box.y - 16}, {x: box.x + box.width + 16, y: cy}, {x: cx, y: box.y + box.height + 16}]
     .find(clear) ?? {x: 2, y: 2};
@@ -948,6 +958,9 @@ export async function setSwitched(page: Page, target: ElementRef, on: boolean): 
   const sw = await switchOf(page, target);
   if (await readSwitch(sw) === on)
     return;
+  // the switch can sit outside the input it governs (a fitting form puts it before the input): a guide lights it, not
+  // the input the step named
+  await guide.hop(page, sw);
   await sw.click();
   await expect.poll(() => readSwitch(sw),
     {message: `the switch of ${target.phrase} after switching it ${on ? 'on' : 'off'}`}).toBe(on);

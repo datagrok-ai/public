@@ -6,8 +6,8 @@ Feature: Projects regressions: a dashboard named like its query, moved into a sp
   the query's own. The dashboard is moved into a space through Move to Space... on its Dashboards
   card, found in the space's gallery (a reload right after OK can come before the move lands, and the
   dashboard then opens as it was), the page is reloaded, and the dashboard is opened from its card. The table's creation script
-  should still call the query; the move re-points the call at the dashboard's new namespace, and the
-  open fails with a Data loading error. The scenario is a known failure until the dashboard opens.
+  should still call the query; the move used to re-point the call at the dashboard's new namespace, and the
+  open failed with a Data loading error.
 
   The query, the dashboard and the space carry the run's time and are removed when the feature
   starts and ends; the space is made through the API (the Create Space dialog is spaces-create's).
@@ -26,8 +26,8 @@ Feature: Projects regressions: a dashboard named like its query, moved into a sp
       select name from entity_types where name = @typeName
       """
 
-  # core#563: the move rewrites the creation script to call <space>:BDDSameName{time}, the dashboard itself
-  @known-failure:67 @realizes:core#563
+  # core#563: the move rewrote the creation script to call <space>:BDDSameName{time}, the dashboard itself
+  @realizes:core#563
   Scenario: The dashboard named like its query opens after the move into a space
     When user clicks on "Refresh" icon inside browse toolbar
     Given Databases tree node inside browse tree is expanded

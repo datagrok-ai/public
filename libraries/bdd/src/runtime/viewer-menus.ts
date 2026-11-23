@@ -54,7 +54,7 @@ export async function openContextMenuAt(page: Page, x: number, y: number): Promi
  * right-click reached, and a click that missed the element is aimed again. */
 export async function openContextMenuOf(page: Page, target: ElementRef, area?: string): Promise<Locator> {
   for (let attempt = 1; ; attempt++) {
-    const {x, y, token} = await onReachable(page, target, (el, [a, cap]) => {
+    const {x, y, token, area: lit} = await onReachable(page, target, (el, [a, cap]) => {
       const w = window as any;
       w.__bddMenuHit = undefined;
       w.__bddMenuReached = 'no contextmenu event';
@@ -66,6 +66,8 @@ export async function openContextMenuOf(page: Page, target: ElementRef, area?: s
       }, {capture: true, once: true});
       return w.__bdd.menuPoint(el, a, cap);
     }, [area ?? null, MENU_SHOWN_MS()] as [string | null, number]);
+    if (lit)
+      guide.locatedArea(page, lit);
     const menu = await rightClickArmed(page, x, y, token);
     if (attempt === 3 || await page.evaluate(() => (window as any).__bddMenuHit !== false)) {
       await page.evaluate((n) => (window as any).__bddMenuReached += ` (try ${n})`, attempt).catch(() => undefined);

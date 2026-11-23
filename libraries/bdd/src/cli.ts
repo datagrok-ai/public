@@ -276,13 +276,18 @@ async function guide(project: Project, flags: string[]): Promise<number> {
   for (const manifest of manifests) {
     const dir = dirname(manifest);
     const filmed = JSON.parse(readFileSync(manifest, 'utf8'));
-    // what the title card says under the title: the scenario's own description, else the feature's first paragraph
-    const model = models.find((m) => slugOf(m.name) === slugOf(filmed.feature));
+    // what the title card says under the title: the scenario's own description, else the feature's first paragraph —
+    // never for a tutorial, whose feature paragraph is the maintainer's note. Features can share a name (every clip of a
+    // how-to section is "How-to · Data"): the one filmed is the one holding the scenario
+    const tutorial = (filmed.tags ?? []).includes('@tutorial');
+    const model = models.find((m) => slugOf(m.name) === slugOf(filmed.feature) &&
+      m.scenarios.some((s) => slugOf(s.name) === slugOf(filmed.scenario))) ??
+      models.find((m) => slugOf(m.name) === slugOf(filmed.feature));
     const scenario = model?.scenarios.find((s) => slugOf(s.name) === slugOf(filmed.scenario));
-    const description = (scenario?.description || model?.description.split(/\n\s*\n/)[0] || '').replace(/\s*\n\s*/g, ' ');
+    const description = (scenario?.description || (tutorial ? '' : model?.description.split(/\n\s*\n/)[0]) || '')
+      .replace(/\s*\n\s*/g, ' ');
     if (description !== filmed.description)
       writeFileSync(manifest, JSON.stringify({...filmed, description}, null, 2));
-    const tutorial = (filmed.tags ?? []).includes('@tutorial');
     const demo = demoAll || tutorial || (filmed.tags ?? []).includes('@demo');
     console.log(`guide: ${relative(project.root, dir)}`);
     const exit = await exec(python, [script, dir, ...(gif ? ['--gif'] : []), ...(help ? ['--help'] : []),

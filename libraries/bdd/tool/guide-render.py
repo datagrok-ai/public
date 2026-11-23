@@ -189,7 +189,9 @@ def along(points, lengths, d):
     return points[-1]
 
 
-KEY_NAMES = {'ControlOrMeta': 'Ctrl', 'Control': 'Ctrl', 'Meta': 'Cmd', 'Escape': 'Esc', 'Delete': 'Del', ' ': 'Space'}
+# a step names Control and the gesture goes through ControlOrMeta, which a Mac's browser receives as Meta: a cap names the
+# key the step meant, since a film made on a Mac is watched on every platform
+KEY_NAMES = {'ControlOrMeta': 'Ctrl', 'Control': 'Ctrl', 'Meta': 'Ctrl', 'Escape': 'Esc', 'Delete': 'Del', ' ': 'Space'}
 
 
 def key_label(keys):
@@ -222,12 +224,15 @@ class Renderer:
         # before a press, the ripple, a stop on a path's way, the step's picture before its result, a typing beat
         self.rest_s, self.pulse_s, self.leg_s, self.cut_s, self.beat_s = \
             (0.2, 0.42, 0.22, 0.12, 0.1) if demo else (0.4, PULSE_S, 0.4, 0.3, BEAT_S)
-        # a tutorial's pointer rests on the outlined element long enough for the viewer to find it before the press
+        # a tutorial is followed, not watched: the outlined element is up long enough to find before the press and
+        # stays a moment after it, a menu's stops are read, and the pointer moves at a guide's pace
         if self.tutorial:
-            self.rest_s = 0.4
+            self.rest_s, self.cut_s, self.leg_s = 0.75, 0.5, 0.4
         # but a menu's items (and a list's) are read as the pointer goes: a stop of a menu holds its opened group, the
         # rest before its leaf is pressed is longer, and an opened list stays up longer still
         self.menu_s, self.menu_rest_s, self.list_s = (0.38, 0.35, 0.45) if demo else (0.4, 0.4, 0.5)
+        if self.tutorial:
+            self.menu_s, self.menu_rest_s, self.list_s = 0.6, 0.6, 0.7
         with open(os.path.join(folder, 'steps.json'), encoding='utf-8') as f:
             self.manifest = json.load(f)
         # the page records CSS pixels; the pictures have `scale` times as many. A guide framed to a part
@@ -370,6 +375,8 @@ class Renderer:
         pad = 6
         x0, y0 = max(0, box['x'] - pad), max(0, box['y'] - pad)
         x1, y1 = min(self.w, box['x'] + box['width'] + pad), min(self.h, box['y'] + box['height'] + pad)
+        if x1 - x0 < 2 or y1 - y0 < 2:
+            return img
         layer = Image.new('RGBA', (self.w, self.h), (0, 0, 0, 105))
         d = ImageDraw.Draw(layer)
         d.rounded_rectangle((x0, y0, x1, y1), radius=6, fill=(0, 0, 0, 0))
@@ -389,6 +396,9 @@ class Renderer:
         half_h = max(box['height'] / 2 + 5 * self.s, least / 2)
         x0, y0 = max(0, cx - half_w), max(0, cy - half_h)
         x1, y1 = min(self.w - 1, cx + half_w), min(self.h - 1, cy + half_h)
+        # a box the page had not scrolled into view yet when it was read: nothing of it to outline
+        if x1 - x0 < 2 or y1 - y0 < 2:
+            return img
         radius = round(6 * self.s)
         layer = Image.new('RGBA', (self.w, self.h), (0, 0, 0, 70))
         d = ImageDraw.Draw(layer)
@@ -727,7 +737,7 @@ class Renderer:
         """How long a demo rests on a change: a checkbox ticked hardly at all, a new view the longest."""
         return least + (most - least) * min(1.0, max(0.0, (change - 0.01) / 0.24))
 
-    def demo_result(self, step, shown, after):
+    def demo_result(self, step, shown, after, lit=None):
         """The page a demo's step led to — once the steps after it settled it (a column computed, a viewer
         drawn, the new column sized), the page they left, cut to straight from the gesture: the page as the
         gesture left it (a file opened raw, a viewer docked before its set-up moved it) is never shown — held
@@ -736,7 +746,12 @@ class Renderer:
         result = self._image(step['settled']) if step.get('settled') else after
         change = self.change(shown, result)
         # a tutorial rests a little longer on each result: the viewer follows along, and may pause to do the same
-        hold = self.rest_for(change, 0.5, 1.9) if self.tutorial else self.rest_for(change, 0.3, 1.5)
+        hold = self.rest_for(change, 0.7, 2.2) if self.tutorial else self.rest_for(change, 0.3, 1.5)
+        # and dissolves into it from the outlined page, so a changed page does not jump in
+        if self.tutorial and lit is not None:
+            n = int(0.35 * self.fps)
+            for i in range(n):
+                yield self.frame(Image.blend(lit, result, ease((i + 1) / n)), self.cur)
         events = [p['type'] for leg in step.get('legs', []) for p in leg.get('pointer', [])]
         # a hover brought up a tooltip: the bigger it is, the longer it takes to read
         if 'down' not in events and 'move' in events and change > 0.002:
@@ -780,7 +795,8 @@ class Renderer:
         for i in range(n):
             t = ease((i + 1) / n)
             pos = along(points, lengths, t * distance)
-            mix = ease((t - 0.5) / 0.5) if fade and lit is not base else 1.0
+            # a tutorial's outline comes up early in the way, so the eye finds the target before the pointer gets there
+            mix = (ease(t / 0.35) if self.tutorial else ease((t - 0.5) / 0.5)) if fade and lit is not base else 1.0
             yield self.frame(lit if mix >= 1 else Image.blend(base, lit, mix) if mix > 0 else base, pos, caption=caption)
 
     def elbow(self, came_from, to, dest):
@@ -909,7 +925,14 @@ class Renderer:
                 yield from self.finish_note()
                 self.start_note(step['caption'], self.ahead(step), self.before(step), step.get('noteAt'),
                                 step.get('view'))
-                yield from self.hold_frames(0.8, self._image(step['settled']) if step.get('settled') else after, self.cur)
+                page = self._image(step['settled']) if step.get('settled') else after
+                # a tutorial dissolves into a page the set-up after the note changed, rather than cutting to it
+                if self.tutorial and self.base_now is not None and self.change(self.base_now, page) > 0.01:
+                    n = int(0.35 * self.fps)
+                    start = self.base_now
+                    for i in range(n):
+                        yield self.frame(Image.blend(start, page, ease((i + 1) / n)), self.cur)
+                yield from self.hold_frames(0.8, page, self.cur)
             else:
                 yield from self.hold_frames(self.reading(step['caption']), after, self.cur, caption=caption)
             return
@@ -936,7 +959,7 @@ class Renderer:
             self.compose(after, self.cur, caption=caption).save(still_path)
             if self.demo:
                 yield from self.key_frames(step, self._image(step['before']))
-                yield from self.demo_result(step, self._image(step['before']), after)
+                yield from self.demo_result(step, self._image(step['before']), after, self._image(step['before']))
             else:
                 yield from self.hold_frames(self.hold, after, self.cur, caption=caption)
             return
@@ -1029,7 +1052,7 @@ class Renderer:
         if self.demo:
             yield from self.key_frames(step, lit)
             # the rest is measured on the page as filmed: a tutorial's outline and dimming are no change of the page
-            yield from self.demo_result(step, shot, after)
+            yield from self.demo_result(step, shot, after, lit)
             return
         # the page after the step: zooming out over the step's picture, then cut to the page after it,
         # whose light fades — a cross-fade of two pictures of a changed page shows both at once
@@ -1449,7 +1472,7 @@ def main(argv):
     gif_width = opt('--gif-width')
     gif_width = int(gif_width) if gif_width else None if help else 880
     end_hold = float(opt('--end-hold', 2.0 if help or demo else 0.8))
-    travel = float(opt('--travel', 0.5 if demo else 0.7))
+    travel = float(opt('--travel', 0.5 if demo and not tutorial else 0.7))
     zoom = float(opt('--zoom', 1.8))
     zoom_time = float(opt('--zoom-time', 0.8))
     ffmpeg = find_ffmpeg(opt('--ffmpeg'))
