@@ -7,7 +7,7 @@ import type {Input, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
 import {propertyForm, ObjectForm, Editors, userPick, groupPick, kindOf} from '@datagrok-libraries/u2/dg';
 import type {ObjectFormOptions} from '@datagrok-libraries/u2/dg';
 import {DomainSource} from '../core/domain-source.js';
-import {capital, nounOf} from '../core/domain-backend.js';
+import {capital, nounOf, emsBackends} from '../core/domain-backend.js';
 import {DomainTable} from './facade.js';
 import {SYSTEM_COLUMNS} from './backend.js';
 import {DomainErrors} from './errors.js';
@@ -386,6 +386,7 @@ export class DomainForm extends Control {
       }
     }
     this._markChanged(form, row);
+    this._noteOutsideFilters(form, row, table);
     return form;
   }
 
@@ -412,6 +413,65 @@ export class DomainForm extends Control {
       if (!input.touched.value && input.validity.value !== null && stored.value)
         untracked(() => input.touch());
     });
+  }
+
+  // a ref whose schema filter names other fields (`site = $site`) is checked against them on load and when one
+  // changes; a held value the filter would not offer gets a note, never an error: filters only narrow the picker
+  private _noteOutsideFilters(form: ObjectForm, row: RowView, table: DomainTable | undefined): void {
+    for (const [name, filter] of Object.entries(table?.info.refFilters ?? {})) {
+      const input = form.input(name);
+      const prop = this.source.schema.properties.find((p) => p.name === name);
+      const params = [...new Set(DomainPick.bind(filter).unbound)];
+      if (input === undefined || prop === undefined || params.length === 0)
+        continue;
+      const note = span('', 'u2-form-note');
+      note.dataset.u2Part = 'note';
+      note.hidden = true;
+      input.root.append(note);
+      let gen = 0;
+      const valueOf = (field: string) => form.input(field)?.value ?? row[field];
+      const check = async (): Promise<void> => {
+        const mine = ++gen;
+        const held = valueOf(name);
+        const values = Object.fromEntries(params.map((p) => [p, valueOf(p)]));
+        const bound = DomainPick.bind(filter, values);
+        let message = '';
+        try {
+          const target = emsBackends.domain === undefined || bound.unbound.length > 0 || isEmpty(held) ||
+            Rows.isDraft(String(held)) ? undefined : await emsBackends.domain.table(prop.semType ?? '');
+          if (target !== undefined && bound.filter !== undefined &&
+              (await target.query({filter: [{property: 'id', operator: '=', value: held}, 'and', bound.filter],
+                limit: 1})).length === 0) {
+            const caption = async (p: IProperty | undefined, v: unknown) => {
+              const known = p !== undefined && DomainTable.isReference(p) ?
+                await DomainForm.captionOf(p, String(v)).catch(() => null) : null;
+              return known ?? text(v);
+            };
+            const where = await Promise.all(params.map((field) =>
+              caption(this.source.schema.properties.find((p) => p.name === field), values[field])));
+            message = `${await caption(prop, held)} is not in ${where.join(', ')}`;
+          }
+        } catch {
+          message = '';
+        }
+        if (mine === gen) {
+          note.textContent = message;
+          note.hidden = message === '';
+        }
+      };
+      void check();
+      for (const field of params) {
+        const sibling = form.input(field);
+        let initial = true;
+        sibling?.effect(() => {
+          sibling.value;
+          if (initial)
+            initial = false;
+          else
+            untracked(() => void check());
+        });
+      }
+    }
   }
 
   // a draft is new whole: none of its fields is marked

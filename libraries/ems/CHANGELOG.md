@@ -48,6 +48,7 @@
 * Properties: Fixed a page with unsaved changes keeping its old columns after Edit properties… saves: it says "Properties changed: save or discard to reload", offers Refresh, and is rebuilt with the new columns once its changes are saved or discarded; a pending change to a column that was removed, on the page or in a children tab, is refused by name instead of sent (`DomainApp.reshape`)
 * Permissions: Fixed the entity page's ⋯ menu dropping row actions the row allows when the table does not (a row-mode author's own row): it offers Delete and any per-row-allowed action exactly where the list does
 * Tests: Fixed the binding dialog's read-timeout and search-debounce tests failing on a loaded machine: they wait for the condition instead of a fixed sleep past a 20 ms timer
+* Forms: A reference whose schema filter names another field (`site = $site`) is marked when its held value falls outside the filter after that field changes, and on load ("Lab 101 is not in Pilot plant"); the filter stays picker narrowing, so Save is not refused
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input

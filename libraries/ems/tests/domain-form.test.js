@@ -1105,6 +1105,40 @@ scoped('a ref column with a schema filter picks among the rows its siblings allo
   src.dispose();
 });
 
+scoped('a ref outside its $-filter after a sibling changes is marked, not refused', async () => {
+  emsBackends.domain = new MemoryDomainBackend({name: 'grit', tables: {
+    project: {friendlyName: 'Projects', columns: {name: {type: 'string', isName: true}}},
+    issue: {friendlyName: 'Issues', columns: {
+      project_id: {type: 'ref', ref: 'project', friendlyName: 'Project'},
+      title: {type: 'string', isName: true},
+      parent_id: {type: 'ref', ref: 'issue', filter: 'project_id = $project_id', friendlyName: 'Parent'},
+    }},
+  }}, {rows: {
+    project: [{id: 'p1', name: 'Grit'}, {id: 'p2', name: 'Datagrok'}],
+    issue: [{id: 'i1', project_id: 'p1', title: 'Aspirin'}, {id: 'i2', project_id: 'p1', title: 'Ibuprofen', parent_id: 'i1'},
+      {id: 'i3', project_id: 'p2', title: 'Naproxen'}],
+  }});
+  const table = await domains.table('grit.issue');
+  const src = testOwner().build(() => table.source());
+  await flush();
+  src.currentRow.value = src.rows.byKey('i2');
+  const form = testOwner().build(() => domains.form(src));
+  document.body.append(form.root);
+  await flush();
+  await flush();
+  const note = () => form.input('parent_id').root.textContent;
+  assert.equal(note().includes('is not in'), false, 'a parent inside the project is not marked');
+  form.input('project_id').value = 'p2';
+  await flush();
+  await flush();
+  await flush();
+  assert.equal(note().includes('Aspirin is not in Datagrok'), true,
+    'the held parent is outside the new project and is marked');
+  assert.equal(form.input('parent_id').validity.value, null, 'a note, not an error: Save stays allowed');
+  form.dispose();
+  src.dispose();
+});
+
 scoped('the system footer follows the row: a saved draft shows the number, version, times and author', async () => {
   emsBackends.domain = backend();
   const find = grok.dapi.users.find;
