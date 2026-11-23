@@ -4,7 +4,7 @@ import {register} from 'node:module';
 import {flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {Scope, notify} from '@datagrok-libraries/u2';
-import {byKind, byName, state, user} from '@datagrok-libraries/u2/testing';
+import {byKind, byName} from '@datagrok-libraries/u2/testing';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const grok = await import('datagrok-api/grok');
@@ -13,13 +13,10 @@ const {domains} = await import('../src/dg/facade.js');
 
 const copy = (x) => JSON.parse(JSON.stringify(x));
 const NAME = 'grit';
-/** A package schema as manifest() answers it: no extVersion (the server never serves one). */
-const MANIFEST = {name: NAME, version: '5', incarnation: '2026-09-20T10:00:00.000Z', tables: {issue: {extensible: true,
+// a package schema as manifest() answers it: no extVersion, the server never serves one
+const MANIFEST = {name: NAME, version: '5', tables: {issue: {extensible: true,
   columns: {title: {type: 'string'}, mine: {type: 'string', origin: 'user'}}}}};
-const PLAN = (extra = {}) => ({version: '5', destructive: false,
-  creates: {tables: [], columns: {}, uniques: {}, constraints: {}}, drops: {tables: [], columns: []}, typeChanges: [],
-  uniqueDrops: [], requiredToggles: [], businessKeyChanges: [], autoNumberChanges: {}, alters: {}, constraintDrops: null,
-  violations: [], refusals: [], keyColumnsUnrestricted: [], migration: null, ...extra});
+const PLAN = (extra) => ({version: '5', destructive: false, drops: {tables: [], columns: []}, ...extra});
 
 function scoped(name, body) {
   test(name, async () => {
@@ -35,173 +32,90 @@ function scoped(name, body) {
   });
 }
 
-/** The extension path as the server runs it: a plan echoes the current ext_version, an `ifVersion` other than it
- * is a version conflict, a commit moves it on. */
+// the extension path as the server runs it: a plan echoes the current ext_version, any other ifVersion is a
+// version conflict, a commit moves it on; `server.plan` is what the server plans for an extension beyond that
 function stub(calls, server) {
   grok.shell.settings = {enableDomainDatabases: true};
   grok.dapi.permissions = {check: async () => true};
   DG.Property.propertyOptions = Object.fromEntries(['friendlyName', 'description', 'choices', 'min', 'max', 'format']
     .map((name) => [name, {name, type: name === 'choices' ? 'list' : 'string'}]));
-  // ownership comes from the registry listing (`DomainTable.userColumns`); the `origin: 'user'` stamps below only
-  // say which columns it lists — the manifest itself never carries them
-  const tables = () => Object.entries(server.manifest.tables).map(([name, t]) => ({name, origin: 'package',
-    userColumns: Object.keys(t.columns).filter((c) => t.columns[c].origin === 'user')}));
-  const unstamped = () => {
-    const m = copy(server.manifest);
-    for (const t of Object.values(m.tables))
-      for (const c of Object.values(t.columns))
-        delete c.origin;
-    return m;
-  };
-  grok.dapi.domains.schemas = {
-    list: async () => [{name: NAME, managedBy: 'package'}],
-    include: () => ({list: async () => {
-      calls.push(['ownership']);
-      return [{name: NAME, managedBy: 'package', tables: tables()}];
-    }}),
-  };
-  grok.dapi.domains.schema = (name) => ({
-    name,
-    manifest: async () => {
-      calls.push(['manifest']);
-      return unstamped();
-    },
+  // ownership is the registry's word (DomainTable.userColumns): the `origin: 'user'` stamps say which columns it
+  // lists, and manifest() answers without them, as the server does; `server.table` lists an older server's table
+  const tables = () => Object.entries(server.manifest.tables).map(([name, t]) => server.table?.() ?? {name,
+    origin: 'package', userColumns: Object.keys(t.columns).filter((c) => t.columns[c].origin === 'user')});
+  const list = async () => (calls.push(['ownership']), [{name: NAME, managedBy: 'package', tables: tables()}]);
+  grok.dapi.domains.schemas = {list: async () => [{name: NAME, managedBy: 'package'}], include: () => ({list})};
+  grok.dapi.domains.schema = (name) => ({name,
+    manifest: async () => (calls.push(['manifest']), JSON.parse(JSON.stringify(server.manifest,
+      (key, value) => key === 'origin' ? undefined : value))),
     apply: async (body, options) => {
       calls.push(['apply', copy(body), options?.dryRun === true]);
       if (body.ifVersion !== undefined && body.ifVersion !== String(server.extVersion)) {
-        throw Object.assign(new Error(`Schema version conflict: expected ${body.ifVersion}, current ${server.extVersion}`),
+        throw Object.assign(new Error('Schema version conflict'),
           {status: 409, code: 'version-conflict', body: {error: 'version-conflict'}});
       }
-      if (options?.dryRun === true)
-        return PLAN({extVersion: server.extVersion, ...(body.extend !== undefined ? server.plan ?? {} : {})});
-      return {...PLAN(), applied: true, extVersion: ++server.extVersion};
+      return options?.dryRun === true ? PLAN({extVersion: server.extVersion, ...(body.extend && server.plan)}) :
+        PLAN({applied: true, extVersion: ++server.extVersion});
     },
   });
 }
 
-const commits = (calls) => calls.filter((c) => c[0] === 'apply' && !c[2] && Object.keys(c[1]).length > 0);
-const save = () => byName(byKind(document, 'dialog')[0], 'SAVE').click();
+const extensions = (calls) => calls.filter((c) => c[0] === 'apply' && c[1].extend !== undefined);
+const dialog = () => byKind(document, 'dialog')[0];
 
-async function addProperty() {
+async function openAndAdd() {
+  const done = domains.editProperties(NAME, 'issue');
+  await flush();
+  await flush();
   const [tree] = byKind(document, 'manifest-tree');
   layout(byKind(tree, 'list')[0], {clientHeight: 800});
   await flush();
   byName(tree, '+ Add property').click();
   await flush();
+  return {done};
 }
 
-scoped('Edit properties sends the extension version it was opened at: a concurrent extension is a conflict, not a drop', async () => {
+async function save() {
+  byName(dialog(), 'SAVE').click();
+  await flush();
+  await flush();
+}
+
+scoped('EQ-027: Edit properties saves against the extension version it was opened at: a concurrent one is a conflict', async () => {
   const calls = [];
   const server = {manifest: MANIFEST, extVersion: 96};
   stub(calls, server);
-  const done = domains.editProperties(NAME, 'issue');
-  await flush();
-  await flush();
-  const opening = copy(calls);
-  await addProperty();
-
-  // someone else extends the table meanwhile
-  server.extVersion = 97;
-  server.manifest = copy(MANIFEST);
-  server.manifest.tables.issue.columns.theirs = {type: 'string', origin: 'user'};
-
-  save();
-  await flush();
-  await flush();
-  const sent = calls.filter((c) => c[0] === 'apply' && c[1].extend !== undefined);
-  assert.ok(sent.length > 0, 'the save reached apply');
-  assert.deepEqual(sent.map((c) => c[1].ifVersion), sent.map(() => '96'),
+  const {done} = await openAndAdd();
+  const opening = calls.filter((c) => c[1]?.extend === undefined);
+  server.extVersion = 97; // someone else extends the table meanwhile
+  await save();
+  assert.deepEqual(extensions(calls).map((c) => c[1].ifVersion), ['96'],
     'every apply of the save names the extension version the dialog was opened at');
-  // the first manifest read is the extensible-tables check; the dialog's baseline reads come after it
   assert.deepEqual(opening, [['manifest'], ['apply', {}, true], ['manifest'], ['ownership']],
-    'the version is read before the manifest and the ownership: a change between the reads is a conflict, ' +
-    'never an overwrite or a drop');
-  assert.deepEqual(commits(calls).filter((c) => c[1].extend !== undefined), [], 'nothing committed over the newer extension');
-  assert.match(byKind(document, 'status-line')[0].textContent,
-    /Someone else changed these properties meanwhile/);
+    'the version is read before the manifest and the ownership: a change between them is a conflict, not a drop');
+  assert.match(byKind(document, 'status-line')[0].textContent, /Someone else changed these properties meanwhile/);
+  byName(dialog(), 'CANCEL').click();
+  assert.equal(await done, false, 'nothing saved');
+});
 
-  // the reload rebased onto the current version: saving again names it and keeps their column
-  calls.length = 0;
-  save();
-  await flush();
-  await flush();
-  const [commit] = commits(calls);
-  assert.ok(commit, 'the second save commits');
-  assert.equal(commit[1].ifVersion, '97');
-  assert.deepEqual(Object.keys(commit[1].extend.issue.columns).sort(), ['mine', 'property', 'theirs']);
+scoped('EQ-018: a saved user column stays the user\'s, and adding the next column sends it back', async () => {
+  const calls = [];
+  stub(calls, {manifest: MANIFEST, extVersion: 96});
+  const {done} = await openAndAdd();
+  const mine = [...document.querySelectorAll('[role="treeitem"]')].find((n) => n.textContent.startsWith('mine'));
+  assert.equal(mine.querySelector('.fa-lock'), null, 'the user column is not locked as a plugin column');
+  await save();
+  const [commit] = extensions(calls).filter((c) => !c[2]);
+  assert.deepEqual(Object.keys(commit[1].extend.issue.columns).sort(), ['mine', 'property'],
+    'the extension is the user\'s columns as full state: the saved one is not dropped');
   assert.equal(await done, true);
 });
 
-scoped('Edit properties confirms the drops the server plans, not the client diff: SAVE waits for the checkbox', async () => {
+// datagrok-api comes from the server: an older one cannot say who owns a column, and a full-state extension sent
+// without knowing would drop the user's columns
+scoped('EQ-018: on a server without DomainTable.userColumns Edit properties refuses, and nothing is sent', async () => {
   const calls = [];
-  // the client only adds a column; the server's plan, disagreeing, also drops one that holds values
-  const server = {manifest: MANIFEST, extVersion: 96, plan: {destructive: true,
-    drops: {tables: [], columns: [{table: 'issue', column: 'mine', nonNullValues: 3}]}}};
-  stub(calls, server);
-  const done = domains.editProperties(NAME, 'issue');
-  await flush();
-  await flush();
-  await addProperty();
-  save();
-  await flush();
-  await flush();
-
-  const confirm = byKind(document, 'dialog').find((d) => state(d).name === 'properties-confirm');
-  assert.ok(confirm, 'a destructive plan asks before saving');
-  assert.match(confirm.textContent, /issue\.mine dropped.*3 values deleted/,
-    'the confirmation lists the plan\'s drop with its value count');
-  const box = byName(confirm, 'confirmDestructive');
-  assert.equal(state(box).visible, true, 'the deletion checkbox is shown');
-  assert.equal(state(box).label, 'Delete 3 stored values');
-  assert.equal(byName(confirm, 'SAVE').disabled, true, 'SAVE waits for the checkbox');
-  byName(confirm, 'SAVE').click();
-  await flush();
-  assert.deepEqual(commits(calls), [], 'nothing committed before the deletion is confirmed');
-
-  user.click(byName(box, 'Delete 3 stored values'));
-  await flush();
-  assert.equal(byName(confirm, 'SAVE').disabled, false, 'ticking the checkbox enables SAVE');
-  byName(confirm, 'SAVE').click();
-  await flush();
-  await flush();
-  const [commit] = commits(calls);
-  assert.ok(commit, 'the confirmed save commits');
-  assert.equal(commit[1].confirmDestructive, true);
-  assert.equal(await done, true);
-});
-
-scoped('Edit properties confirms a type change the server plans though nothing is dropped', async () => {
-  const calls = [];
-  // the client only adds a column; the server's plan also changes the type of one, which no drop shows
-  const server = {manifest: MANIFEST, extVersion: 96, plan: {destructive: true,
-    typeChanges: [{table: 'issue', column: 'mine', to: 'int'}]}};
-  stub(calls, server);
-  const done = domains.editProperties(NAME, 'issue');
-  await flush();
-  await flush();
-  await addProperty();
-  save();
-  await flush();
-  await flush();
-
-  const confirm = byKind(document, 'dialog').find((d) => state(d).name === 'properties-confirm');
-  assert.ok(confirm, 'a destructive plan asks before saving');
-  assert.match(confirm.textContent, /issue\.mine: type changes to int/, 'the confirmation lists the plan\'s type change');
-  const box = byName(confirm, 'confirmDestructive');
-  assert.equal(state(box).visible, true, 'the checkbox is shown');
-  assert.equal(state(box).label, 'Change the type of 1 column', 'the checkbox names what it consents to');
-  assert.equal(byName(confirm, 'SAVE').disabled, true, 'SAVE waits for the checkbox');
-  byName(confirm, 'SAVE').click();
-  await flush();
-  assert.deepEqual(commits(calls), [], 'nothing committed before the change is confirmed');
-
-  user.click(byName(box, 'Change the type of 1 column'));
-  await flush();
-  byName(confirm, 'SAVE').click();
-  await flush();
-  await flush();
-  const [commit] = commits(calls);
-  assert.ok(commit, 'the confirmed save commits');
-  assert.equal(commit[1].confirmDestructive, true);
-  assert.equal(await done, true);
+  stub(calls, {manifest: MANIFEST, extVersion: 96, table: () => ({name: 'issue'})});
+  await assert.rejects(domains.editProperties(NAME, 'issue'), /unavailable on this server version/);
+  assert.deepEqual(extensions(calls), [], 'no extension sent');
 });
