@@ -387,9 +387,10 @@ export namespace chem {
     }
 
     /** Sets the molecule, supports either SMILES, SMARTS or MOLBLOCK formats. A substructure filter's sketcher takes a
-     * SMILES with a bracket atom's H count (`[NH2]c1ccccc1`, `[CH3]c`, `c1cc[nH]c1`) as SMARTS, so that the H count stays
+     * SMILES with a bracket H count only a query writes (`[NH2]c1ccccc1`, `[CH3]c`) as SMARTS, so that the H count stays
      * the query's: set as SMILES it was dropped, and the filter searched any N on benzene (264 of mol1K's rows where
-     * `[NH2]c1ccccc1` finds 11). */
+     * `[NH2]c1ccccc1` finds 11). A SMILES whose brackets the notation needs (`[C@@H]`, `[nH]`, `[NH3+]`) stays a SMILES,
+     * as it is when pasted on the canvas. */
     setMolecule(molString: string, substructure: boolean = false): void {
       if (substructure || isSmarts(molString) || (this._isSubstructureFilter && hasBracketHCount(molString)))
         this.setSmarts(molString);
@@ -1187,11 +1188,16 @@ export namespace chem {
     return resultBool;
   }
 
-  /** Whether a one-line text has a bracket atom with an H count: `[NH2]`, `[nH]`, `[C@@H]`, `[13CH3]`, `[OH-]`; not a
-   * bracket hydrogen (`[2H]`, `[H+]`) or an element whose symbol starts with H (`[Hg]`). */
+  /** Whether a one-line text has a bracket atom whose H count only a query would write: an aliphatic organic-subset
+   * element with an H count and nothing else (`[NH2]`, `[CH3]`, `[OH]`, `[NH]`), a bracket SMILES does not need. A bracket
+   * SMILES needs is a molecule's, not a query's: a stereo centre (`[C@@H]`), an aromatic N-H (`[nH]`), a charge
+   * (`[NH3+]`), an isotope (`[13CH3]`), an atom map (`[CH3:1]`); so is a bracket hydrogen (`[2H]`, `[H+]`) and an element
+   * whose symbol starts with H (`[Hg]`). RDKit writes no bracket a SMILES does not need, so a canonical SMILES copied from
+   * a table stays a molecule (pasted with its stereo it was read as SMARTS, every atom aromatic- or aliphatic-only, and
+   * Similar found nothing; reported 2026-11-23). */
   function hasBracketHCount(s: string): boolean {
     const text = s.trim();
-    return !/\s/.test(text) && /\[\d*(?:[A-Z][a-z]?|[a-z]{1,2}|\*)@*H/.test(text);
+    return !/\s/.test(text) && /\[(?:Cl|Br|B|C|N|O|P|S|F|I)H\d*\]/.test(text);
   }
 
   export function isSmarts(s: string): boolean {

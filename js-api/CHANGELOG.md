@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Chem: Fixed a SMILES with stereo centres, an aromatic N-H, a charge or an isotope pasted into a substructure filter's sketcher text box being read as SMARTS (`Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@H](O)[C@H]3O`: every atom drawn aromatic- or aliphatic-only, and Similar found nothing). Only an H count a SMILES does not need (`[NH2]c1ccccc1`, `[CH3]c`, `[OH]`) still makes the text SMARTS, so that the H count stays the query's; a canonical SMILES stays a molecule, as when pasted on the canvas. A typed `c1cc[nH]c1` again finds N-substituted pyrroles too
 * Chem: Added `DG.chem.ISketcherOptions`, the third argument of `new DG.chem.Sketcher(mode, validationFunc, options)`: `sketcherType` shows that sketcher in the host whatever the session's (`DG.chem.currentSketcherType`, left as it is), and `showInput: false` leaves out the host's input row (the molecule field and its ≡ menu), the sketcher taking the whole host (Chem's Sketcher app)
 * Chem: Fixed `DG.chem.Sketcher` leaving the context panel on an earlier drawing: `grok.shell.o` keeps an object set as current for a second, so a drawing made within a second of the host's last one never became the current object; the host's next drawing now replaces its own last one (anything else made current since is replaced as before)
 * Chem: `DG.DEFAULT_SKETCHER` is `'Crux'` (was `'OpenChemLib'`), as Chem's Sketcher setting's default: the session's sketcher before Chem's init sets it, and the fallback of a molecule editor asked for a sketcher that has no function
