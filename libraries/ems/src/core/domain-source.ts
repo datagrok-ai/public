@@ -586,7 +586,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const frame = this._frame;
     if (frame === undefined || this._restart)
       return this.refresh();
-    if (this._done || this._state.peek() === 'loading')
+    // a scope changed over pending edits is read once they are saved or discarded: until then the frame
+    // holds the old scope's rows, and a page of the new one does not belong behind them
+    if (this._done || this._state.peek() === 'loading' || this._readFor() !== this._shownFor)
       return;
     const gen = this._gen;
     this._state.value = 'loading';

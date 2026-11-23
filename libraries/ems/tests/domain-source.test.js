@@ -1217,6 +1217,17 @@ source('a page asked for just before a new query is not a page of the new query 
   src.dispose();
 });
 
+source('a page asked for under a query changed over pending edits is not read for the new query', async () => {
+  emsBackends.domain = backend();
+  const src = await issues({pageSize: 1});
+  src.rows.byKey('i1').title = 'Edited';
+  src.query.value = 'done = false';
+  await flush();
+  await src.loadMore();
+  assert.deepEqual(titles(src), ['Edited'], 'the rows shown wait for Save or Discard, with no page of the new query');
+  src.dispose();
+});
+
 source('a lost window stays lost through a reload that fails: the next page starts over', async () => {
   emsBackends.domain = backend();
   const inner = emsBackends.domain.table.bind(emsBackends.domain);
