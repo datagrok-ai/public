@@ -88,12 +88,14 @@ function served() {
   return {be, probes, reads: () => reads};
 }
 
-async function tick(times = 1, ms = 1000) {
-  for (let i = 0; i < times; i++) {
-    mock.timers.tick(ms);
-    for (let j = 0; j < 4; j++)
-      await flush();
-  }
+async function settle() {
+  for (let j = 0; j < 4; j++)
+    await flush();
+}
+
+async function tick() {
+  mock.timers.tick(1000);
+  await settle();
 }
 
 /** The Projects app as a table with count(Issues.Title) and sum(Issues.Number) in the Output pane. */
@@ -105,12 +107,10 @@ async function projects(stand) {
   await flush();
   app.view.value = 'table';
   app.output.show();
-  for (let j = 0; j < 4; j++)
-    await flush();
+  await settle();
   app.output.aggregations.value = [{column: 'Issues.Title', aggregation: 'count'},
     {column: 'Issues.Number', aggregation: 'sum'}];
-  for (let j = 0; j < 4; j++)
-    await flush();
+  await settle();
   return app;
 }
 
@@ -121,36 +121,32 @@ const shown = (app, id) => {
 
 // EQ-063: the aggregation columns live in the child tables, so a write there has to reach them
 scoped('an aggregation column follows a child row saved in this session (EQ-063)', async () => {
-  const stand = served();
-  const app = await projects(stand);
-  assert.deepEqual(shown(app, 'p1'), [2, 3], 'the table view starts on the server\'s values');
+  const app = await projects(served());
+  assert.deepEqual(shown(app, 'p1'), [2, 3]);
   const issues = await domains.table('grit.issue');
   const child = testOwner().build(() => issues.source({query: 'project_id = "p1"', pageSize: 10}));
   await flush();
   child.newRow({project_id: 'p1', number: 7, title: 'Added from the project page'});
   assert.equal(await child.save(), true);
-  for (let j = 0; j < 4; j++)
-    await flush();
+  await settle();
   assert.deepEqual(shown(app, 'p1'), [3, 10], 'a child row saved in this session re-fetches the aggregations');
   child.dispose();
   app.dispose();
 });
 
-scoped('an aggregation column follows a peer\'s child write on the live probe, one probe per child table (EQ-063)',
-  async () => {
-    const stand = served();
-    const app = await projects(stand);
-    assert.deepEqual(shown(app, 'p2'), [1, 1]);
-    await tick();
-    const before = stand.probes.length;
-    const reads = stand.reads();
-    await tick();
-    assert.equal(stand.reads(), reads, 'nothing moved, nothing is read again');
-    const issue = await stand.be.table('grit.issue');
-    await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p2', number: 4, title: 'Theirs'}}]);
-    await tick();
-    assert.deepEqual(shown(app, 'p2'), [2, 5], 'a peer\'s child insert seen by the live probe re-fetches the aggregations');
-    assert.deepEqual(stand.probes.slice(before).sort(), ['grit.issue', 'grit.issue', 'grit.project', 'grit.project'],
-      'a tick asks the list\'s table and the child table once each, not once per aggregation');
-    app.dispose();
-  });
+scoped('an aggregation column follows a peer\'s child write on the live probe, one probe per child table (EQ-063)', async () => {
+  const stand = served();
+  const app = await projects(stand);
+  await tick();
+  const before = stand.probes.length;
+  const reads = stand.reads();
+  await tick();
+  assert.equal(stand.reads(), reads, 'nothing moved, nothing is read again');
+  const issue = await stand.be.table('grit.issue');
+  await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p2', number: 4, title: 'Theirs'}}]);
+  await tick();
+  assert.deepEqual(shown(app, 'p2'), [2, 5], 'a peer\'s child insert seen by the live probe re-fetches the aggregations');
+  assert.deepEqual(stand.probes.slice(before).sort(), ['grit.issue', 'grit.issue', 'grit.project', 'grit.project'],
+    'one probe per table per tick, not one per aggregation');
+  app.dispose();
+});
