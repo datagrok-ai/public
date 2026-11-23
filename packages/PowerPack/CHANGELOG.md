@@ -3,6 +3,11 @@
 ## v.next
 
 * Formula Lines: Fixed the Delete button of an annotation region listed below formula lines removing another region, or none
+* Formula Lines: Fixed the Delete button removing another item after the items table is sorted
+* Formula Lines: Fixed Clone of an annotation region changing its fill opacity and landing in the formula lines history
+* Formula Lines: Fixed the OK button being enabled while another item is invalid, and staying disabled after the invalid item is removed
+* Formula Lines: Fixed an error on changing the preview's axis while the formula of the line is incomplete
+* Formula Lines: Fixed an error on opening the dialog for a table
 * [public#4640](https://github.com/datagrok-ai/public/issues/4640): Spotlight: Fixed the Interactive Tutorials links doing nothing; a new user's empty workspace shows the getting-started columns across the full width; headers sit further from their items than the items from each other; empty tabs' messages line up with the tab names
 * Search: The home page's search moves into the otherwise empty top row, leaving more room below: the view's ribbon without tabs, the tab strip while Home is the only tab; the page has less padding on top
 * Spotlight: The home page's Spotlight widget is as tall as its tabs, longer tabs scroll

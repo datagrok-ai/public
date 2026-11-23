@@ -1,7 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 
 import {wrapCol} from './formulas';
-import {AxisColumns, BTN_CAPTION, EditorItem, ITEM_CAPTION, ITEM_ORIENTATION, ITEM_TYPE} from './types';
+import {AxisColumns, BTN_CAPTION, EditorItem, isAnnotationRegionType, ITEM_CAPTION, ITEM_ORIENTATION,
+  ITEM_TYPE} from './types';
 
 /** Host-specific defaults of the new items. */
 export interface NewItemDefaults {
@@ -34,11 +35,6 @@ function getItemTypeByCaption(caption: string): string {
   default: throw new Error('Unknown item caption.');
   }
 }
-
-/** True for the regions defined by two formula lines, which need no drawing on the viewer. */
-export const isFormulaRegionCaption = (caption: string): boolean =>
-  caption === ITEM_CAPTION.FORMULA_REGION || caption === ITEM_CAPTION.VERT_RANGE_REGION ||
-  caption === ITEM_CAPTION.HORZ_RANGE_REGION;
 
 /** Creates the item of the [caption] menu item on the [cols] axes, or a clone of [currentItem];
  *  null when the viewer lacks an axis column the item needs.
@@ -107,6 +103,9 @@ export function createItem(caption: string, cols: AxisColumns, defaults: NewItem
     break;
 
   case BTN_CAPTION.CLONE:
+    // A region takes no formula line defaults
+    if (isAnnotationRegionType(currentItem!.type))
+      return structuredClone(currentItem!);
     item = currentItem!;
     break;
   }

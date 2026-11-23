@@ -43,6 +43,7 @@ export class Table {
   constructor(
     public readonly items: ItemList,
     private onItemChangedAction: (rowIdx: number) => void,
+    private onItemRemovedAction: (item: EditorItem) => void,
     srcAxes?: AxisNames,
     setCurrentByAxes?: boolean,
   ) {
@@ -173,7 +174,7 @@ export class Table {
         case BTN_CAPTION.REMOVE: cell.style.textColor = 0; break;
         }
       } else if (cell.isTableCell && cell.gridColumn.name === BTN_CAPTION.REMOVE)
-        cell.style.element = this.deleteBtn(cell.gridRow);
+        cell.style.element = this.deleteBtn(cell.tableRowIndex!); // the grid may be sorted
     });
 
     return grid;
@@ -182,11 +183,13 @@ export class Table {
   /** Creates "Delete" button */
   private deleteBtn(rowIdx: number): HTMLElement {
     const btn = ui.button(ui.iconFA('trash-alt'), () => {
+      const item = this.items.at(rowIdx)!;
       this.items.removeAt(rowIdx);
       this.dataFrame.rows.removeAt(rowIdx);
       if (this.currentItemIdx > rowIdx)
         this.currentItemIdx--;
 
+      this.onItemRemovedAction(item);
       this.onItemChangedAction(this.currentItemIdx);
     }, 'Delete');
     btn.style.textAlign = 'center';

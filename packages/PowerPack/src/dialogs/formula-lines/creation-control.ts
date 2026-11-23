@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {formatAreaFormula} from './formulas';
 import {ItemHistory} from './history';
-import {createItem, isFormulaRegionCaption, NewItemDefaults} from './item-factory';
+import {createItem, NewItemDefaults} from './item-factory';
 import {AxisColumns, BTN_CAPTION, EditorItem, isAnnotationRegionType, ITEM_CAPTION, ITEM_TYPE} from './types';
 
 const HISTORY_KEY = 'formula-lines-dialog';
@@ -163,7 +163,7 @@ export class CreationControl {
           return;
 
         region.zIndex ??= this.options.defaultItemZIndex;
-        this.onCreated(region, true);
+        this.onCreated(region);
       });
       return;
     }
@@ -171,11 +171,11 @@ export class CreationControl {
     const currentItem = itemCaption === BTN_CAPTION.CLONE ? this.actions.getCurrentItem() : null;
     const item = createItem(itemCaption, this.actions.getCols(), this.options, currentItem, valY, valX);
     if (item)
-      this.onCreated(item, isFormulaRegionCaption(itemCaption));
+      this.onCreated(item);
   }
 
-  private onCreated(item: EditorItem, isRegion: boolean): void {
-    (isRegion ? this.annotationRegionsHistory : this.formulaLinesHistory).add(item);
+  private onCreated(item: EditorItem): void {
+    (isAnnotationRegionType(item.type) ? this.annotationRegionsHistory : this.formulaLinesHistory).add(item);
     this.actions.onItemCreated(item);
   }
 }

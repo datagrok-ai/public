@@ -84,8 +84,8 @@ function syncBandColumn2(item: DG.FormulaLine, propertyName: string, axisCols: A
  *  An axis token already does that on its own, so rebinding it would only pin it to one column.
  *  Returns the column the line has moved to, if any. */
 function syncConstantLine(item: DG.FormulaLine, propertyName: string, axisCols: AxisColumns): string | undefined {
-  const meta = DG.FormulaLinesHelper.getMeta(item);
-  if (meta.argName || isAxisToken(meta.funcName))
+  const meta = tryGetMeta(item);
+  if (!meta || meta.argName || isAxisToken(meta.funcName))
     return undefined;
 
   let newCol: string | undefined;
@@ -101,16 +101,21 @@ function syncConstantLine(item: DG.FormulaLine, propertyName: string, axisCols: 
   return newCol;
 }
 
+/** The parsed formula of a line or band; undefined while it does not parse (an edit in progress). */
+function tryGetMeta(item: DG.FormulaLine): DG.FormulaLineMeta | undefined {
+  try {
+    return DG.FormulaLinesHelper.getMeta(item);
+  } catch {
+    return undefined;
+  }
+}
+
 /** Line/band: the leading ${column} follows its same-group sibling onto the axis.
  *  Returns true if the formula has changed. */
 function syncLeadingColumn(item: DG.FormulaLine, axisCols: AxisColumns, df: DG.DataFrame): boolean {
-  // getMeta parses the formula and throws on in-progress/invalid input — bail rather than crash the handler.
-  let lineMeta: DG.FormulaLineMeta;
-  try {
-    lineMeta = DG.FormulaLinesHelper.getMeta(item);
-  } catch {
+  const lineMeta = tryGetMeta(item);
+  if (!lineMeta)
     return false;
-  }
   // Band → range column (argName). Line → left side (funcName), but only for two-variable
   // lines: a constant line has no argName and is already axis-followed by syncConstantLine.
   const leadingCol = item.type === ITEM_TYPE.BAND ?

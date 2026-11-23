@@ -29,6 +29,8 @@ export class FormulaLinesDialog {
   private dframeTable?: Table;
   private creationControl: CreationControl;
   private tabs: DG.TabControl;
+  /** Items that failed the validation of their form; OK is disabled while there are any. */
+  private invalidItems = new Set<EditorItem>();
 
   /** Returns the Table corresponding to the current tab in the tab control */
   public get currentTable(): Table {
@@ -95,8 +97,10 @@ export class FormulaLinesDialog {
     if (!this.showValueOnOpen)
       return;
 
-    this.tabs.currentPane = this.tabs.getPane(
-      this.showValueOnOpen.isDataFrame ? ITEM_SOURCE.DATAFRAME : ITEM_SOURCE.VIEWER);
+    // A table has no Viewer tab, and a viewer may come without the DataFrame one: the first tab stays then
+    const pane = this.tabs.getPane(this.showValueOnOpen.isDataFrame ? ITEM_SOURCE.DATAFRAME : ITEM_SOURCE.VIEWER);
+    if (pane)
+      this.tabs.currentPane = pane;
     const table = this.currentTable;
     if (this.showValueOnOpen.index != null)
       table.update(table.items.rowIdx(this.showValueOnOpen.index, !this.showValueOnOpen.isAnnotationArea));
@@ -146,14 +150,17 @@ export class FormulaLinesDialog {
         this.currentTable.update(rowIdx);
         return this.preview.update(rowIdx);
       },
-      (isValid: boolean): void => {
-        const ok = this.dialog.getButton('OK');
-        ok.classList.toggle('disabled', !isValid);
-        isValid ? ok.removeAttribute('aria-disabled') : ok.setAttribute('aria-disabled', 'true');
-      },
+      (item, isValid) => this.setItemValidity(item, isValid),
       this.host.singleAxisColumnName,
       this.host.defaultItemZIndex,
     );
+  }
+
+  private setItemValidity(item: EditorItem, isValid: boolean): void {
+    isValid ? this.invalidItems.delete(item) : this.invalidItems.add(item);
+    const ok = this.dialog.getButton('OK');
+    ok.classList.toggle('disabled', this.invalidItems.size > 0);
+    this.invalidItems.size > 0 ? ok.setAttribute('aria-disabled', 'true') : ok.removeAttribute('aria-disabled');
   }
 
   private initTabs(): DG.TabControl {
@@ -197,7 +204,7 @@ export class FormulaLinesDialog {
       (rowIdx: number): void => {
         this.editor.update(rowIdx);
         this.preview.update(rowIdx);
-      }, this.preview.srcAxes, !this.showValueOnOpen);
+      }, (item) => this.setItemValidity(item, true), this.preview.srcAxes, !this.showValueOnOpen);
   }
 
   private onOKAction() {

@@ -5,6 +5,7 @@ import {AnnotationRegionForm} from './annotation-region-form';
 import {FormulaLineForm} from './formula-line-form';
 import {ItemList} from './item-list';
 import {FormContext} from './item-form';
+import {EditorItem} from './types';
 
 /**
  * Editor Helper for Formula Lines (form with corresponding inputs).
@@ -25,7 +26,7 @@ export class Editor {
     public items: ItemList,
     private dataFrame: DG.DataFrame,
     private onItemChangedAction: (rowIdx: number) => boolean,
-    private onFormulaValidation: (isValid: boolean) => void,
+    private onFormulaValidation: (item: EditorItem, isValid: boolean) => void,
     private singleAxisColumnName: string | undefined,
     private defaultItemZIndex: number,
   ) {}
@@ -39,10 +40,10 @@ export class Editor {
     if (!item)
       newForm = this.emptyForm();
     else if (this.items.isFormulaLine(rowIdx)) {
-      this.formulaLineForm = new FormulaLineForm(item, this.formContext(rowIdx));
+      this.formulaLineForm = new FormulaLineForm(item, this.formContext(rowIdx, item));
       newForm = this.formulaLineForm.root;
     } else
-      newForm = new AnnotationRegionForm(item, this.formContext(rowIdx)).root;
+      newForm = new AnnotationRegionForm(item, this.formContext(rowIdx, item)).root;
 
     this.form.replaceWith(newForm);
     this.form = newForm;
@@ -58,13 +59,13 @@ export class Editor {
     }
   }
 
-  private formContext(rowIdx: number): FormContext {
+  private formContext(rowIdx: number, item: EditorItem): FormContext {
     return {
       dataFrame: this.dataFrame,
       singleAxisColumnName: this.singleAxisColumnName,
       defaultItemZIndex: this.defaultItemZIndex,
       onItemChanged: () => this.onItemChangedAction(rowIdx),
-      onFormulaValidation: this.onFormulaValidation,
+      onFormulaValidation: (isValid) => this.onFormulaValidation(item, isValid),
       applyChange: (change) => this.applyChange(change),
     };
   }
