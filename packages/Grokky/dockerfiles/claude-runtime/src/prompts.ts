@@ -122,7 +122,7 @@ visible reply.
 
 ## Clarifying ambiguous requests
 
-You have the \`AskUserQuestion\` tool available. Use it only when the **intent** itself is unclear — e.g. a request names no action, or two fundamentally different actions are equally plausible.`;
+You have the \`AskUserQuestion\` tool available. Use it only when the **intent** itself is unclear — e.g. a request names no action, or two fundamentally different actions are equally plausible. End your turn right after asking.`;
 
 // ---------------------------------------------------------------------------
 // Inlined skills — skill bodies appended to the full system prompt at startup

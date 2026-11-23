@@ -1,7 +1,8 @@
 /**
  * Bio's macromolecule assembler on Crux (engine/biopolymer.ts, `Chem:getMacromoleculeAssembler`; Bio-on-Crux PLAN
  * §5.3): the worker jobs (crux/jobs/biopolymer.ts), CruxService.assembleMacromolecules (each worker's library, sent
- * once and again after a restart; the chunks; a long row alone on an idle worker), the main thread's one-row calls.
+ * once and again after a restart; the chunks; a long row alone on an idle worker), the main thread's one-row calls;
+ * molecules back to HELM (`toHelm`: the workers and the main thread, one compiled library for both directions).
  * Crux in both engines, as molzip: there is no RDKit path. The batch helpers (crux/biopolymer-batch.ts) need no Crux.
  * The assembly's chemistry is crux-core's (its biopolymer crate's oracles); here a molecule is checked by its canonical
  * SMILES on the main thread's Crux module against a peptide written by hand.
@@ -10,7 +11,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
-import {AsmBatch, AsmConnection, AsmLayout, AsmRole, AsmSequence, AssembleResult, packBatch, unpackRow}
+import {AsmBatch, AsmConnection, AsmLayout, AsmRole, AsmSequence, AssembleResult, ToHelmResult, packBatch, unpackRow}
   from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
 import type {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {PackageFunctions} from '../package';
@@ -39,6 +40,129 @@ const SMILES = {
   'A-G-C': 'C[C@H](N)C(=O)NCC(=O)N[C@@H](CS)C(=O)O',
   'G': 'NCC(=O)O',
 };
+
+/** The HELM of the peptides of SMILES, as Crux writes it (TINY and HELMCore both name them A, G, C). */
+const HELM = {
+  'A-G': 'PEPTIDE1{A.G}$$$$V2.0',
+  'G-C': 'PEPTIDE1{G.C}$$$$V2.0',
+  'A-G-C': 'PEPTIDE1{A.G.C}$$$$V2.0',
+  'G': 'PEPTIDE1{G}$$$$V2.0',
+};
+
+/** HELM's top-level parts split at `sep`, not inside brackets, braces, parentheses or quotes (an inline monomer's
+ * CXSMILES holds `$` and `|`). */
+function splitHelm(text: string, sep: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let quoted = false;
+  let cur = '';
+  for (const ch of text) {
+    if (ch === '"') quoted = !quoted;
+    else if (!quoted && '[({'.includes(ch)) depth++;
+    else if (!quoted && '])}'.includes(ch)) depth--;
+    else if (!quoted && depth === 0 && ch === sep) {
+      parts.push(cur);
+      cur = '';
+      continue;
+    }
+    cur += ch;
+  }
+  parts.push(cur);
+  return parts;
+}
+
+/** The connections of `helm` as written, `PEPTIDE1:4:R2-PEPTIDE1:1:R1` each, in order. */
+function connectionsOf(helm: string | null): string[] {
+  const section = splitHelm(helm ?? '', '$')[1] ?? '';
+  return section ? splitHelm(section, '|').map((c) => {
+    const m = /^(\w+),(\w+),(\d+):(R\d+)-(\d+):(R\d+)$/.exec(c);
+    return m ? `${m[1]}:${m[3]}:${m[4]}-${m[2]}:${m[5]}:${m[6]}` : `unread: ${c}`;
+  }) : [];
+}
+
+/** The monomers of chain `chain` (0-based) of `helm`: symbols without their brackets, inline SMILES as written. */
+function monomersOf(helm: string | null, chain: number): string[] {
+  const polymer = splitHelm(splitHelm(helm ?? '', '$')[0], '|')[chain] ?? '';
+  const body = /^\w+\{(.*)\}$/s.exec(polymer)?.[1];
+  if (body === undefined) return []; // no such chain
+  return splitHelm(body, '.').map((t) => t.startsWith('[') && t.endsWith(']') ? t.slice(1, -1) : t);
+}
+
+/** Known topologies with TINY (Datagrok's parsed form, as Bio sends it to `assemble`), and the HELM Crux writes back
+ * for the molecule `assemble` builds: rings, disulfides, two chains. Its connections, with their R numbers, are checked
+ * one by one too. */
+const TOPOLOGIES: {name: string, seq: () => AsmSequence, helm: string, connections: string[]}[] = [
+  {name: 'head-to-tail ring', seq: () => peptide(['A', 'G', 'C', 'G'],
+    [{seqIndex1: 0, monomerIndex1: 3, rGroup1: 2, seqIndex2: 0, monomerIndex2: 0, rGroup2: 1}]),
+  helm: 'PEPTIDE1{A.G.C.G}$PEPTIDE1,PEPTIDE1,4:R2-1:R1$$$V2.0', connections: ['PEPTIDE1:4:R2-PEPTIDE1:1:R1']},
+  {name: 'disulfide', seq: () => peptide(['C', 'A', 'G', 'C'],
+    [{seqIndex1: 0, monomerIndex1: 0, rGroup1: 3, seqIndex2: 0, monomerIndex2: 3, rGroup2: 3}]),
+  helm: 'PEPTIDE1{C.A.G.C}$PEPTIDE1,PEPTIDE1,1:R3-4:R3$$$V2.0', connections: ['PEPTIDE1:1:R3-PEPTIDE1:4:R3']},
+  {name: 'bicyclic: a head-to-tail ring with a disulfide across it', seq: () => peptide(['C', 'A', 'G', 'C', 'G'],
+    [{seqIndex1: 0, monomerIndex1: 4, rGroup1: 2, seqIndex2: 0, monomerIndex2: 0, rGroup2: 1},
+      {seqIndex1: 0, monomerIndex1: 0, rGroup1: 3, seqIndex2: 0, monomerIndex2: 3, rGroup2: 3}]),
+  helm: 'PEPTIDE1{C.A.G.C.G}$PEPTIDE1,PEPTIDE1,5:R2-1:R1|PEPTIDE1,PEPTIDE1,1:R3-4:R3$$$V2.0',
+  connections: ['PEPTIDE1:5:R2-PEPTIDE1:1:R1', 'PEPTIDE1:1:R3-PEPTIDE1:4:R3']},
+  {name: 'two chains joined by a disulfide', seq: () => ({
+    monomers: [...peptide(['A', 'C', 'G']).monomers,
+      ...peptide(['G', 'C', 'A']).monomers.map((m) => ({...m, position: m.position + 3}))],
+    graphInfo: {disjointSeqStarts: [0, 3],
+      connections: [{seqIndex1: 0, monomerIndex1: 1, rGroup1: 3, seqIndex2: 1, monomerIndex2: 1, rGroup2: 3}]}}),
+  helm: 'PEPTIDE1{A.C.G}|PEPTIDE2{G.C.A}$PEPTIDE1,PEPTIDE2,2:R3-2:R3$$$V2.0',
+  connections: ['PEPTIDE1:2:R3-PEPTIDE2:2:R3']},
+];
+
+/** A piece TINY has no monomer for, on the backbone (L-phenylalanine between G and G): an inline-SMILES monomer, its R1
+ * on the amine N (to G's R2), its R2 on the carbonyl C (to the next G's R1), as Datagrok writes inline monomers
+ * (CXSMILES, `_R1` / `_R2` atom labels). `fragment`: that monomer by hand, its R groups as [*:n]. `helm`: as Crux
+ * writes it (crux-core f92fd728c), checked by hand: atom 0 `*` labelled `_R1` on the N, atom 11 `*` labelled `_R2` on
+ * the carbonyl C, the alpha C `[C@@H]` as in L-Phe; on localhost, Bio's To Atomic Level builds it back to the input
+ * molecule (canonical SMILES with stereo, 2026-11-17). */
+const INLINE_ON_BACKBONE = {smiles: 'C[C@H](N)C(=O)NCC(=O)N[C@@H](Cc1ccccc1)C(=O)NCC(=O)O',
+  fragment: '[*:1]N[C@@H](Cc1ccccc1)C(=O)[*:2]',
+  helm: 'PEPTIDE1{A.G.[*N[C@@H](Cc1ccccc1)C(*)=O |$_R1;;;;;;;;;;;_R2;$|].G}$$$$V2.0'};
+/** A piece off the backbone (an S-acetyl on C's side chain, a thioester): a CHEM entity, the acetyl, its R1 on the
+ * carbonyl C, joined to C's R3 (the S). `helm`: as Crux writes it (crux-core f92fd728c), checked by hand (atom 0 `*`,
+ * `_R1`, on the carbonyl C) and built back to the input molecule by Bio's To Atomic Level on localhost. With HELMCore
+ * the acetyl is its `[ac]` instead (Bio's `moleculesToHelm` tests): TINY has no monomer for it. */
+const CHEM_OFF_BACKBONE = {smiles: 'C[C@H](N)C(=O)N[C@@H](CSC(C)=O)C(=O)NCC(=O)O',
+  fragment: '[*:1]C(C)=O', helm: 'PEPTIDE1{A.C.G}|CHEM1{[*C(C)=O |$_R1;;;$|]}$PEPTIDE1,CHEM1,2:R3-1:R1$$$V2.0'};
+
+/** An inline monomer as Datagrok writes it (CXSMILES, its R groups `*` atoms labelled `_R1`, `_R2`, ... in `|$...$|`)
+ * as plain SMILES with those atoms written `[*:1]`, `[*:2]`, ...: a molecule any engine reads, its attachment points
+ * kept, so a monomer compares by canonical SMILES. Inline SMILES already in the `[*:n]` form are returned as they
+ * are. */
+function inlineWithMaps(inline: string): string {
+  const m = /^(.*?)\s*\|\$([^$]*)\$\|\s*$/s.exec(inline);
+  if (!m) return inline;
+  const labels = m[2].split(';');
+  const relabel = (token: string, label: string | undefined): string => {
+    const r = /^_R(\d+)$/.exec(label ?? '');
+    return r && (token === '*' || token === '[*]') ? `[*:${r[1]}]` : token;
+  };
+  const smiles = m[1];
+  let atom = -1;
+  let out = '';
+  for (let i = 0; i < smiles.length;) {
+    const ch = smiles[i];
+    if (ch === '[') { // a bracket atom
+      const j = smiles.indexOf(']', i);
+      out += relabel(smiles.slice(i, j + 1), labels[++atom]);
+      i = j + 1;
+    } else if (smiles.startsWith('Cl', i) || smiles.startsWith('Br', i)) {
+      ++atom;
+      out += smiles.slice(i, i + 2);
+      i += 2;
+    } else if (/[BCNOPSFIbcnops*]/.test(ch)) { // an organic-subset atom
+      out += relabel(ch, labels[++atom]);
+      i++;
+    } else { // bonds, branches, ring closures
+      out += ch;
+      i++;
+    }
+  }
+  return out;
+}
 
 /** One peptide chain of `symbols` ('' a gap), and its `connections`. */
 function peptide(symbols: string[], connections: AsmConnection[] = []): AsmSequence {
@@ -398,10 +522,143 @@ category('crux: biopolymer', () => {
     expect(assembler.toV2000Sync(inputs[0]!), await assembler.toV2000(inputs[0]!), 'toV2000Sync');
   }, {timeout: 60000});
 
+  test('toHelm: known topologies to their exact HELM, each connection\'s R numbers', async () => {
+    const assembler = new CruxMacromoleculeAssembler();
+    await assembler.setLibrary('tiny', TINY);
+    for (const t of TOPOLOGIES) {
+      const built = await assembler.assembleOne(t.seq(), 'tiny', {layout: 'nonlinear'});
+      expect(built.error, null, `${t.name}: assembled`);
+      const r = await assembler.toHelm([built.molblock], 'tiny');
+      expect(r.errors[0], null, `${t.name}: error`);
+      expect(r.helms[0], t.helm, t.name);
+      expect(connectionsOf(r.helms[0]).join(' | '), t.connections.join(' | '), `${t.name}: connections and R numbers`);
+      expect(r.matched[0], t.seq().monomers.length, `${t.name}: every monomer matched from the library`);
+      expect(r.inline[0] + r.chem[0], 0, `${t.name}: nothing inline`);
+    }
+  }, {timeout: 60000});
+
+  test('toHelm: a piece the library has no monomer for: inline SMILES on the backbone, a CHEM entity off it', async () => {
+    const assembler = new CruxMacromoleculeAssembler();
+    await assembler.setLibrary('tiny', TINY);
+    const r = await assembler.toHelm([INLINE_ON_BACKBONE.smiles, CHEM_OFF_BACKBONE.smiles], 'tiny');
+    expect(r.errors[0], null, 'inline: error');
+    expect(r.helms[0], INLINE_ON_BACKBONE.helm, 'inline on the backbone');
+    const chain = monomersOf(r.helms[0], 0);
+    expect(chain.length === 4 && chain[0] === 'A' && chain[1] === 'G' && chain[3] === 'G', true, `the chain: ${chain}`);
+    expect(canonical(inlineWithMaps(chain[2])), canonical(INLINE_ON_BACKBONE.fragment),
+      `the inline monomer, its R1 on the N and its R2 on the carbonyl C: ${chain[2]}`);
+    expect(connectionsOf(r.helms[0]).length, 0, 'inline: no connection (the backbone is implicit)');
+    expect([r.matched[0], r.inline[0], r.chem[0]].join(), '3,1,0', 'inline: matched, inline, CHEM');
+    expect(r.errors[1], null, 'CHEM: error');
+    expect(r.helms[1], CHEM_OFF_BACKBONE.helm, 'a CHEM entity off the backbone');
+    expect(monomersOf(r.helms[1], 0).join('.'), 'A.C.G', 'CHEM: the peptide chain');
+    const entity = monomersOf(r.helms[1], 1);
+    expect(entity.length === 1 && canonical(inlineWithMaps(entity[0])) === canonical(CHEM_OFF_BACKBONE.fragment), true,
+      `CHEM: the entity is the acetyl, its R1 on the carbonyl C: ${entity}`);
+    expect(connectionsOf(r.helms[1]).join(' | '), 'PEPTIDE1:2:R3-CHEM1:1:R1', 'CHEM: C\'s R3 to the entity\'s R1');
+    expect([r.matched[1], r.inline[1], r.chem[1]].join(), '3,0,1', 'CHEM: matched, inline, CHEM');
+  }, {timeout: 60000});
+
+  test('toHelm: per-row errors and empty rows; the main thread and the workers agree; progress', async () => {
+    const assembler = new CruxMacromoleculeAssembler();
+    await assembler.setLibrary('tiny', TINY);
+    // a SMILES, empty rows, a V2000 block, no molecule, a V3000 block, a peptide with a counter-ion (a fragment that
+    // matches no monomer and joins none: the row's error, not a silent drop), a single G
+    const few: (string | null)[] = [SMILES['A-G'], '', null, molblockOf(SMILES['G-C']), 'not a molecule',
+      molblockOf(SMILES['A-G-C'], true), `${SMILES['A-G']}.Cl`, SMILES['G']];
+    const expected: (string | null)[] = [HELM['A-G'], '', '', HELM['G-C'], null, HELM['A-G-C'], null, HELM['G']];
+    const matched = [2, 0, 0, 2, 0, 3, 0, 1];
+    const check = (r: ToHelmResult, i: number, what: string): void => {
+      const k = i % few.length;
+      if (expected[k] === null)
+        expect(r.helms[i] === null && !!r.errors[i], true, `${what}: row ${i} must fail: ${r.helms[i]} ${r.errors[i]}`);
+      else {
+        expect(r.errors[i], null, `${what}: row ${i}'s error`);
+        expect(r.helms[i], expected[k], `${what}: row ${i}`);
+      }
+      expect(r.matched[i], matched[k], `${what}: row ${i}'s monomers matched`);
+    };
+    const one = await assembler.toHelm(few, 'tiny'); // a few rows: the main thread
+    few.forEach((_, i) => check(one, i, 'main thread'));
+    // the errors say why: a value that is no molecule; a fragment no monomer is and nothing joins, named
+    expect(String(one.errors[4]).includes('cannot be read'), true, `no molecule: ${one.errors[4]}`);
+    expect(String(one.errors[6]).includes('joins none') && String(one.errors[6]).endsWith('Cl'), true,
+      `the counter-ion: ${one.errors[6]}`);
+    // 2,000 rows: the workers, in chunks, in order, with progress
+    const many = Array.from({length: 2000}, (_, i) => few[i % few.length]);
+    const service = await getCruxService();
+    const generation = service.generation;
+    const progress: [number, number][] = [];
+    const col = await assembler.toHelm(many, 'tiny', {onProgress: (done, total) => progress.push([done, total])});
+    expect(col.helms.length === 2000 && col.errors.length === 2000 && col.matched.length === 2000 &&
+      col.inline.length === 2000 && col.chem.length === 2000, true, 'a value per row');
+    for (let i = 0; i < 2000; i++)
+      check(col, i, 'workers');
+    const sent = many.filter((m) => !!m).length;
+    expect(progress.length > 2, true, `progress told ${progress.length} times`);
+    expect(progress.every(([d, t], k) => t === sent && d > 0 && d <= t && (k === 0 || d >= progress[k - 1][0])), true,
+      `progress: ${JSON.stringify(progress.slice(0, 6))}`);
+    expect(progress[progress.length - 1][0], sent, 'progress ends at the total');
+    expect(service.generation, generation, 'the pool restarted');
+    const empty = await assembler.toHelm([], 'tiny');
+    expect(empty.helms.length + empty.matched.length, 0, 'no molecules');
+  }, {timeout: 120000});
+
+  test('toHelm: refusals: no library under the key, a library that does not read', async () => {
+    const assembler = new CruxMacromoleculeAssembler();
+    await expectRejection(() => assembler.toHelm([SMILES['A-G']], 'nope'), 'setLibrary first', 'no library');
+    await assembler.setLibrary('bad', '{"not": "a list of monomers"}');
+    const service = await getCruxService();
+    const generation = service.generation;
+    await expectRejection(() => assembler.toHelm([SMILES['A-G']], 'bad'), 'JSON array', 'a bad library, main thread');
+    await expectRejection(() => assembler.toHelm(new Array(100).fill(SMILES['A-G']), 'bad'), 'does not read',
+      'a bad library, the workers');
+    expect(service.generation, generation, 'a bad library restarted the pool');
+  }, {timeout: 60000});
+
+  test('toHelm: one compiled library per worker for both directions, its HELM index built once', async () => {
+    const assembler = new CruxMacromoleculeAssembler();
+    await assembler.setLibrary('tiny', TINY);
+    const key = assembler.workerKeyForTests('tiny')!;
+    const service = await getCruxService();
+    const start = await service.biopolymerLibrariesForTests();
+    const workers = service.workerCount;
+    // 4 rows a worker: every worker gets a chunk and compiles the library once
+    await assembler.assemble(packBatch(Array.from({length: 4 * workers}, () => peptide(['A', 'G']))), 'tiny',
+      {layout: 'linear'});
+    for (let call = 0; call < 3; call++) {
+      // 25 molecules a worker (more than the main thread takes): every worker gets a chunk
+      const r = await assembler.toHelm(new Array(25 * workers).fill(SMILES['A-G']), 'tiny');
+      expect(r.helms.every((h) => h === HELM['A-G']), true, `call ${call}: ${r.helms.find((h) => h !== HELM['A-G'])}`);
+    }
+    const after = await service.biopolymerLibrariesForTests();
+    expect(after.length, start.length, 'the pool was restarted');
+    after.forEach((worker, w) => {
+      expect(worker.compiled, start[w].compiled + 1, `worker ${w}: libraries compiled (assemble and toHelm share it)`);
+      expect(worker.helmIndexed, start[w].helmIndexed + 1, `worker ${w}: HELM indexes built`);
+      expect(worker.keys.includes(key), true, `worker ${w} holds the library`);
+    });
+  }, {timeout: 60000});
+
+  test('toHelm: assemble\'s molecules back to their sequences with HELMCore, in both engines', async () => {
+    const assembler = new CruxMacromoleculeAssembler();
+    await assembler.setLibrary('HELMCore', await grok.dapi.files.readAsText(HELM_CORE));
+    const seqs = [peptide(['A', 'G']), peptide(['G', 'C']), peptide(['A', 'G', 'C']), TOPOLOGIES[2].seq()];
+    const built = await assembler.assemble(packBatch(seqs), 'HELMCore', {layout: 'nonlinear'});
+    expect(built.errors.every((e) => e === null), true, `assembled: ${built.errors.find((e) => e)}`);
+    const {rdkit, crux: cruxMode} = await inBothEngines(() => assembler.toHelm(built.molblocks, 'HELMCore'));
+    const expected = [HELM['A-G'], HELM['G-C'], HELM['A-G-C'], TOPOLOGIES[2].helm];
+    expected.forEach((helm, i) => {
+      expect(cruxMode.errors[i], null, `row ${i}: Crux mode's error`);
+      expect(cruxMode.helms[i], helm, `row ${i}: Crux mode`);
+      expect(rdkit.helms[i], cruxMode.helms[i], `row ${i}: the same in RDKit mode`);
+    });
+  }, {timeout: 60000});
+
   test('Chem:getMacromoleculeAssembler: one assembler for the session', async () => {
     const assembler = await PackageFunctions.getMacromoleculeAssembler();
     expect(assembler === await PackageFunctions.getMacromoleculeAssembler(), true, 'the same object');
-    for (const method of ['setLibrary', 'assemble', 'assembleOne', 'markStereoAbsolute', 'toV2000', 'ready',
+    for (const method of ['setLibrary', 'assemble', 'assembleOne', 'markStereoAbsolute', 'toV2000', 'toHelm', 'ready',
       'assembleOneSync', 'assembleSync', 'markStereoAbsoluteSync', 'toV2000Sync'] as const)
       expect(typeof assembler[method], 'function', method);
   });

@@ -1471,10 +1471,19 @@ export function getMolecularFormula(molecule: string) : string {
   return PackageFunctions.getMolecularFormula(molecule);
 }
 
+//description: Checks a molecule (SMILES, SMARTS or molfile): the error messages of the chemical engine on reading it, each line starting with its time, or an empty string when it reads without an error
 //input: string s 
 //output: object result
 export function validateMolecule(s: string) : any {
   return PackageFunctions.validateMolecule(s);
+}
+
+//description: Checks every molecule of a column (SMILES, SMARTS or molfiles) in background workers: one cell per row with the error messages of the chemical engine on reading that molecule (those of validateMolecule without their times), empty for a molecule that reads without an error. As a formula in Add New Column it is called once for the whole column
+//input: column<string> molecules { semType: Molecule }
+//output: column result
+//meta.vectorFunc: true
+export async function validateMolecules(molecules: DG.Column) : Promise<any> {
+  return await PackageFunctions.validateMolecules(molecules);
 }
 
 //name: Train Chemprop
@@ -1507,7 +1516,8 @@ export function validateMolecule(s: string) : any {
 //output: dynamic model
 //meta.mlname: Chemprop
 //meta.mlrole: train
-export async function trainChemprop(df: DG.DataFrame, predictColumn: DG.Column, dataset_type: string, metric: string, multiclass_num_classes: number, num_folds: number, data_seed: number, split_sizes: any, split_type: string, activation: string, atom_messages: boolean, message_bias: boolean, ensemble_size: number, message_hidden_dim: number, depth: number, dropout: number, ffn_hidden_dim: number, ffn_num_layers: number, epochs: number, batch_size: number, warmup_epochs: number, init_lr: number, max_lr: number, final_lr: number, no_descriptor_scaling: boolean) : Promise<any> {
+//meta.mlsemtypes: Molecule
+export async function trainChemprop(df: DG.DataFrame, predictColumn: DG.Column, dataset_type: string, metric: string, multiclass_num_classes: number, num_folds: number, data_seed: number, split_sizes: any, split_type: string, activation: string, atom_messages: boolean, message_bias: boolean, ensemble_size: number, message_hidden_dim: number, depth: number, dropout: number, ffn_hidden_dim: number, ffn_num_layers: number, epochs: number, batch_size: number, warmup_epochs: number, init_lr: number, max_lr: number, final_lr: number, no_descriptor_scaling: boolean) : Promise<Uint8Array> {
   return await PackageFunctions.trainChemprop(df, predictColumn, dataset_type, metric, multiclass_num_classes, num_folds, data_seed, split_sizes, split_type, activation, atom_messages, message_bias, ensemble_size, message_hidden_dim, depth, dropout, ffn_hidden_dim, ffn_num_layers, epochs, batch_size, warmup_epochs, init_lr, max_lr, final_lr, no_descriptor_scaling);
 }
 
@@ -1703,6 +1713,7 @@ export async function mpoProfilesApp(path?: string) : Promise<any> {
 //description: Forward-reaction library enumeration over building blocks and SMARTS templates.
 //output: view result
 //meta.browsePath: Chem | Reactions
+//meta.icon: images/reaction-enumerator.png
 //meta.role: app
 export async function reactionEnumeratorApp() : Promise<any> {
   return await PackageFunctions.reactionEnumeratorApp();
@@ -1712,9 +1723,21 @@ export async function reactionEnumeratorApp() : Promise<any> {
 //description: Draws, edits and exports reactions and multi-step routes
 //output: view result
 //meta.browsePath: Chem | Reactions
+//meta.icon: images/reaction-sketcher.png
 //meta.role: app
 export async function reactionsApp() : Promise<any> {
   return await PackageFunctions.reactionsApp();
+}
+
+//name: Sketcher
+//description: Draws a molecule or a query in the Crux sketcher; the page address is a link to the drawing
+//input: string smiles { optional: true; description:  }
+//output: view result
+//meta.browsePath: Chem
+//meta.icon: images/sketcher.png
+//meta.role: app
+export async function sketcherApp(smiles?: string) : Promise<any> {
+  return await PackageFunctions.sketcherApp(smiles);
 }
 
 //input: dynamic treeNode 
@@ -1777,6 +1800,7 @@ export async function twoComponentReactionTopMenu() : Promise<void> {
 //output: view result
 //meta.browsePath: Chem | Reactions
 //meta.role: app
+//meta.icon: images/transformation-reactions.png
 export async function transformationReactionsApp(_path?: string) : Promise<any> {
   return await PackageFunctions.transformationReactionsApp(_path);
 }
@@ -1787,6 +1811,7 @@ export async function transformationReactionsApp(_path?: string) : Promise<any> 
 //output: view result
 //meta.browsePath: Chem | Reactions
 //meta.role: app
+//meta.icon: images/two-component-reactions.png
 export async function twoComponentReactionsApp(_path?: string) : Promise<any> {
   return await PackageFunctions.twoComponentReactionsApp(_path);
 }

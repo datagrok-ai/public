@@ -9,7 +9,7 @@ import {el, type ElementRef} from '../../src/runtime/args.js';
 import {expectState, type State} from '../../src/runtime/assertions.js';
 import {click, dblclick, drag, editorOf, setExpanded} from '../../src/runtime/gestures.js';
 import {atFeatureEnd, atScenarioStop} from '../../src/runtime/harness.js';
-import {shellSimpleMode, silent} from '../../src/runtime/guide.js';
+import {hop, shellSimpleMode, silent} from '../../src/runtime/guide.js';
 import {cssString, escapeRegExp, exactText, locate, locateActionable} from '../../src/runtime/locate.js';
 import {armEvent, openContextMenuOf} from '../../src/runtime/viewer-menus.js';
 import {pickMenuPath, settleAll} from '../../src/runtime/viewers.js';
@@ -892,7 +892,7 @@ export const sketcherIs = Given('the molecule sketcher is {string}', async (page
     await expect.poll(() => page.evaluate(async () => String(await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY) ?? '')),
       {message: 'the sketcher setting of the account on the server, put back', timeout: pollMs(30000)}).toBe(was ?? '');
   });
-}, {tier: 'api', description: 'the sketcher every molecule editor opens from then on (OpenChemLib is the platform\'s default), or the one BDD_MOLECULE_SKETCHER names for the whole run (a @sketcher-controls feature pinning another then skips); the account\'s own choice comes back at feature end, read back from the server; not in the video'});
+}, {tier: 'api', description: 'the sketcher every molecule editor opens from then on (Crux is the platform\'s default), or the one BDD_MOLECULE_SKETCHER names for the whole run (a @sketcher-controls feature pinning another then skips); the account\'s own choice comes back at feature end, read back from the server; not in the video'});
 
 /** Every guide's second step (the compiler insists): the shell as a person has it, view tabs and
  * menu bar included, in a plain run as much as in a filmed one. Silent, like the login. */
@@ -1071,6 +1071,8 @@ async function pickUser(page: Page, target: ElementRef, login: string, shown: Re
   await typeLogin(page, target, login);
   const row = page.locator(SUGGESTION_ROWS).filter({has: page.locator('.d4-user-selector-user-name', {hasText: shown})}).first();
   await expect(row, `the "${login}" row of the user typeahead`).toBeVisible({timeout: pollMs(15000)});
+  // the typeahead is a popup the step's first picture never shows: a guide pictures it with the row lit before the press
+  await hop(page, row);
   await row.click();
 }
 

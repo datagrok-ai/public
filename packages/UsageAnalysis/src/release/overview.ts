@@ -6,8 +6,10 @@ import {UaView} from '../tabs/ua';
 import {UaToolbox} from '../ua-toolbox';
 import {fetchVexIndex, criticalHighCount, toDashboardImages, vexReleaseDelta} from '../tabs/vulnerabilities';
 import {computeTestAlerts, fetchReleaseBenchmarks, computeBenchmarkAlerts, stressRegression, fetchStressSummary,
-  defaultNextVersion, ReleaseContext, ReleasePivot, BenchmarkPivot, STALE_DAYS, BENCH_SLOW_PCT} from './data';
-import {fetchReleaseTickets, isActionable, hasMainLabel} from './tickets';
+  defaultNextVersion, ReleaseContext, ReleasePivot, BenchmarkPivot, STALE_DAYS, BENCH_SLOW_PCT,
+  STRESS_LAST_BUILDS} from './data';
+import {countTickets} from './tickets';
+import {GitHubIssue} from '../github/issue';
 
 type Band = 'green' | 'orange' | 'red' | 'info';
 const BAND_CLASS: Record<Band, string> = {
@@ -99,9 +101,9 @@ export class ReleaseOverviewView extends UaView {
       load(['Tests', 'Failing', 'Unstable'], this.ctx.tests(5, force), (p) => this.applyTests(p)),
       load(['Benchmarks'], fetchReleaseBenchmarks(this.ctx.env.value, 5, this.ctx.branch.value),
         (p) => this.applyBenchmarks(p)),
-      load(['Stress'], fetchStressSummary(20), (df) => this.applyStress(df)),
+      load(['Stress'], fetchStressSummary(STRESS_LAST_BUILDS), (df) => this.applyStress(df)),
       load(['Vulnerabilities'], fetchVexIndex(), (vex) => this.applyVex(vex)),
-      load(['Tickets'], fetchReleaseTickets(defaultNextVersion()), (issues) => this.applyTickets(issues)),
+      load(['Tickets'], this.ctx.tickets(defaultNextVersion(), force), (issues) => this.applyTickets(issues)),
     ];
     this.renderBanner([], true);
     await Promise.all(all);
@@ -152,8 +154,8 @@ export class ReleaseOverviewView extends UaView {
 
   private applyStress(df: DG.DataFrame): AlertNode[] {
     const reg = stressRegression(df);
-    this.setCard('Stress', reg.regressed ? 'Slower' : 'OK', reg.regressed ? 'red' : 'green');
-    return reg.regressed ? [{label: `Stress slower — ${reg.detail}`, band: 'red', tab: 'Stress', groups: {}}] : [];
+    this.setCard('Stress', reg.value, reg.band, reg.summary);
+    return reg.alerts.map((a) => ({label: a.label, band: a.band, tab: 'Stress', groups: {}}));
   }
 
   private applyVex({services, bleedingEdge}: Awaited<ReturnType<typeof fetchVexIndex>>): AlertNode[] {
@@ -172,11 +174,10 @@ export class ReleaseOverviewView extends UaView {
         `${x.dHigh >= 0 ? '+' : ''}${x.dHigh} high`)}}];
   }
 
-  private applyTickets(issues: any[] | null): AlertNode[] {
-    // Card counts only actionable tickets (not Done / Won't Fix), split by the MAIN label.
-    const open = (issues ?? []).filter(isActionable).length;
-    const mainOpen = (issues ?? []).filter((r: any) => isActionable(r) && hasMainLabel(r)).length;
-    this.setCard('Tickets', `${open}`, open === 0 ? 'green' : 'info', `${mainOpen} MAIN, ${open - mainOpen} other`);
+  private applyTickets(issues: GitHubIssue[]): AlertNode[] {
+    const c = countTickets(issues);
+    this.setCard('Tickets', `${c.open}`, c.open === 0 ? 'green' : 'info',
+      `${c.mainOpen} MAIN, ${c.open - c.mainOpen} other`);
     return [];
   }
 

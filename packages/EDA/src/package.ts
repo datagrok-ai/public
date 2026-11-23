@@ -25,22 +25,28 @@ import {KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 import {runKNNImputer} from './missing-values-imputation/ui';
+import {imputeColumns} from './missing-values-imputation/impute-columns';
+import {DISTANCE_TYPE} from './missing-values-imputation/knn-imputer';
 import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
 import {MCLViewer} from '@datagrok-libraries/ml/src/MCL/mcl-viewer';
 import {MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
 
-import {getLinearRegressionParams, getPredictionByLinearRegression,
-  isLinearRegressionApplicable, isLinearRegressionInteractive,
-  packLinearRegressionModel, unpackLinearRegressionModel,
-  TOLERANCE} from './regression';
-import {PlsModel} from './pls/pls-ml';
-import {SoftmaxClassifier} from './softmax-classifier';
-
-import {initXgboost} from '../wasm/xgbooster';
-import {XGBooster} from './xgbooster';
-
-import {initSvm, KernelType} from '../wasm/svm';
-import {SVM} from './svm';
+import {isLinearRegressionApplicable, isLinearRegressionInteractive, trainLinearRegression} from './regression';
+import {isPlsApplicable, isPlsInteractive, plsRegressionViewers, trainPlsRegression} from './pls/pls-ml';
+import {isSoftmaxApplicable, isSoftmaxInteractive, isSvmApplicable, isSvmInteractive, isXgboostApplicable,
+  isXgboostInteractive, trainSoftmax, trainSvm, trainXgboost, isRandomForestApplicable, isRandomForestInteractive,
+  trainRandomForest, isExtraTreesApplicable, isExtraTreesInteractive, trainExtraTrees,
+  isHistGradientBoostingApplicable, isHistGradientBoostingInteractive, trainHistGradientBoosting,
+  isCatBoostApplicable, isCatBoostInteractive, trainCatBoost, isDecisionTreeApplicable, isDecisionTreeInteractive,
+  trainDecisionTree, isKnnApplicable, isKnnInteractive, trainKnn, isNaiveBayesApplicable, isNaiveBayesInteractive,
+  trainNaiveBayes, isLdaApplicable, isLdaInteractive, trainLda, isMlpApplicable, isMlpInteractive,
+  trainMlp, isRealMlpApplicable, isRealMlpInteractive, trainRealMlp, isTabmApplicable, isTabmInteractive,
+  trainTabm} from './crux/methods';
+import {cruxPredict, isCruxModel, modelFeatures, readCruxManifest} from './crux/crux-model';
+import {LEGACY_MODEL_ERROR, featureColumns} from './crux/model-common';
+import {readLegacyModel} from './legacy/legacy-models';
+import {ClassificationReport, classificationReport} from './crux/crux-metrics';
+import {withDefaults} from './crux/input-defaults';
 
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
 import {ParetoFrontViewer} from './pareto-optimization/pareto-front-viewer';
@@ -456,9 +462,51 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
+    'name': 'knnImpute',
+    'description': 'Fills missing values in place using the k-nearest neighbors method; cells with no usable neighbors stay empty',
+    'outputs': [{'type': 'dataframe', 'name': 'result'}],
+  })
+  static knnImpute(
+    table: DG.DataFrame,
+    @grok.decorators.param({'type': 'list<string>', 'options': {'description': 'Columns to fill, an empty list fills every feature with missing values'}}) columns: string[],
+    @grok.decorators.param({'type': 'list<string>', 'options': {'description': 'Columns used to find the nearest rows'}}) features: string[],
+    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '4', 'min': '1', 'description': 'Nearest rows used to fill a value.'}}) neighbors: number,
+    @grok.decorators.param({'type': 'string', 'options': {'choices': ['Euclidean', 'Manhattan'], 'initialValue': 'Euclidean', 'description': 'How the distance between rows is measured.'}}) distance: string): DG.DataFrame {
+    const distances: string[] = Object.values(DISTANCE_TYPE);
+    if (!distances.includes(distance))
+      throw new Error(`knnImpute: unknown distance "${distance}"; use ${distances.join(' or ')}`);
+    imputeColumns(table, columns?.length ? columns : features, features, neighbors, distance as DISTANCE_TYPE);
+    return table;
+  }
+
+
+  @grok.decorators.func({
+    'name': 'classificationReport',
+    'description': 'Classification quality of predicted vs actual classes from Crux (scikit-learn metrics): accuracy, balanced accuracy, MCC, precision, recall, F1, the confusion matrix, per-class values and, with class probabilities, AUC-ROC, average precision and the ROC and precision-recall curves of the positive class. Used by Forge',
+    'outputs': [{'type': 'object', 'name': 'report', 'options': {'description': 'n, labels, accuracy, balancedAccuracy, mcc, optional cohenKappa, precision, recall, auc and averagePrecision, f1, confusion, classes (per class: label, rows, optional precision and recall, f1, optional auc and averagePrecision), optional roc (fpr, tpr, threshold) and pr (precision, recall, threshold)'}}],
+  })
+  static async classificationReport(
+    @grok.decorators.param({'type': 'column', 'options': {'description': 'The actual classes'}}) actual: DG.Column,
+    @grok.decorators.param({'type': 'column', 'options': {'description': 'The predicted classes'}}) predicted: DG.Column,
+    @grok.decorators.param({'type': 'string', 'options': {'optional': true, 'description': 'The positive class of two classes - its precision, recall, F1, AUC-ROC, average precision and curves. Empty for none'}}) positiveClass: string,
+    @grok.decorators.param({'type': 'list<string>', 'options': {'optional': true, 'description': 'The classes the probability columns stand for, in column order'}}) classes: string[],
+    @grok.decorators.param({'type': 'dataframe', 'options': {'optional': true, 'description': 'One column per entry of classes - the probability of the class per row'}}) probabilities: DG.DataFrame,
+    @grok.decorators.param({'type': 'bool', 'options': {'initialValue': 'false', 'description': 'Also the ROC and precision-recall curves of the positive class'}}) curves: boolean): Promise<ClassificationReport> {
+    const columns = probabilities?.columns.toList() ?? [];
+    const given = classes?.length ? {classes, columns} : undefined;
+    if (given !== undefined && given.columns.length !== given.classes.length)
+      throw new Error('classificationReport: classes and probabilities differ in length');
+    return classificationReport(actual, predicted, positiveClass || undefined, given, curves === true);
+  }
+
+
+  @grok.decorators.func({
     'meta': {
       'mlname': 'Linear Regression',
       'mlrole': 'train',
+      'mlparallel': 'true',
+      'mlspace': '{"alpha": {"type": "float", "low": 0.001, "high": 10, "log": true, "simpler": "high"}, "lambda": {"type": "float", "low": 0.001, "high": 10, "log": true, "simpler": "high"}}',
+      'mlenabled': '{"iterations": {"alpha": {"gt": 0}}}',
     },
     'name': 'trainLinearRegression',
     'outputs': [{'type': 'dynamic', 'name': 'model'}],
@@ -466,14 +514,12 @@ export class PackageFunctions {
   static async trainLinearRegression(
     df: DG.DataFrame,
     predictColumn: DG.Column,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Rate', 'min': '0', 'initialValue': '0.1', 'max': '10', 'step': '0.01', 'description': 'Gradient descent learning rate.'}}) rate: number,
-    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'step': '50', 'max': '10000', 'initialValue': '1000', 'description': 'Largest number of training steps before training stops.'}}) iterations: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'step': '50', 'max': '10000', 'initialValue': '1000', 'description': 'Largest number of solver iterations. Used only when L1 > 0 (elastic net).'}}) iterations: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'L1', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L1 (Lasso) regularization term. 0 means plain ordinary least squares.'}}) alpha: number,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L2 (Ridge) regularization term. 0 means plain ordinary least squares.'}}) lambda: number): Promise<Uint8Array> {
-    const features = df.columns;
-    const params = await getLinearRegressionParams(features, predictColumn, alpha, lambda, rate, iterations, TOLERANCE);
-
-    return packLinearRegressionModel(params, features.names());
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L2 (Ridge) regularization term. 0 means plain ordinary least squares.'}}) lambda: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed of the ridge and elastic net solvers. The solvers used here are deterministic, so with these settings the model does not depend on it.'}}) seed: number): Promise<Uint8Array> {
+    const p = withDefaults('trainLinearRegression', {iterations, alpha, lambda, seed});
+    return trainLinearRegression(df, predictColumn, p.alpha, p.lambda, p.iterations, p.seed);
   }
 
 
@@ -485,12 +531,10 @@ export class PackageFunctions {
     'name': 'Apply Linear Regression',
     'description': 'Predict the target for a table using a trained linear regression model.',
   })
-  static applyLinearRegression(
+  static async applyLinearRegression(
     df: DG.DataFrame,
-    @grok.decorators.param({'options': {'description': 'Trained linear regression model to apply.'}}) model: any): DG.DataFrame {
-    const features = df.columns;
-    const {params, names} = unpackLinearRegressionModel(model as Uint8Array);
-    return DG.DataFrame.fromColumns([getPredictionByLinearRegression(features, params, names)]);
+    @grok.decorators.param({'options': {'description': 'Trained linear regression model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
   }
 
 
@@ -526,25 +570,19 @@ export class PackageFunctions {
     'meta': {
       'mlname': 'Softmax',
       'mlrole': 'train',
+      'mlparallel': 'true',
+      'mlprobabilities': 'true',
+      'mlspace': '{"penalty": {"type": "float", "low": 0.001, "high": 1, "log": true, "simpler": "high"}, "iterations": {"type": "int", "low": 50, "high": 500, "log": true}}',
     },
     'name': 'trainSoftmax',
     'outputs': [{'type': 'dynamic', 'name': 'model'}],
   })
   static async trainSoftmax(df: DG.DataFrame, predictColumn: DG.Column,
-    @grok.decorators.param({'options': {'initialValue': '1.0', 'min': '0.001', 'max': '20', 'description': 'Gradient descent learning rate.'}}) rate: number,
     @grok.decorators.param({'options': {'initialValue': '100', 'min': '1', 'max': '10000', 'step': '10', 'description': 'Largest number of training steps before training stops.'}}) iterations: number,
     @grok.decorators.param({'options': {'initialValue': '0.1', 'min': '0.0001', 'max': '1', 'description': 'Regularization rate.'}}) penalty: number,
     @grok.decorators.param({'options': {'initialValue': '0.001', 'min': '0.00001', 'max': '0.1', 'description': 'Smallest improvement worth continuing training for.'}}) tolerance: number): Promise<Uint8Array> {
-    const features = df.columns;
-
-    const model = new SoftmaxClassifier({
-      classesCount: predictColumn.type === DG.COLUMN_TYPE.BOOL ? 2 : predictColumn.categories.length,
-      featuresCount: features.length,
-    });
-
-    await model.fit(features, predictColumn, rate, iterations, penalty, tolerance);
-
-    return model.toBytes();
+    const p = withDefaults('trainSoftmax', {iterations, penalty, tolerance});
+    return trainSoftmax(df, predictColumn, p.iterations, p.penalty, p.tolerance);
   }
 
 
@@ -556,13 +594,10 @@ export class PackageFunctions {
     'name': 'Apply Softmax',
     'description': 'Classify the rows of a table using a trained softmax (multinomial logistic regression) model.',
   })
-  static applySoftmax(
+  static async applySoftmax(
     df: DG.DataFrame,
-    @grok.decorators.param({'options': {'description': 'Trained softmax classifier model to apply.'}}) model: any): DG.DataFrame {
-    const features = df.columns;
-    const unpackedModel = new SoftmaxClassifier(undefined, model);
-
-    return DG.DataFrame.fromColumns([unpackedModel.predict(features)]);
+    @grok.decorators.param({'options': {'description': 'Trained softmax classifier model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
   }
 
 
@@ -576,7 +611,7 @@ export class PackageFunctions {
   static isApplicableSoftmax(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return SoftmaxClassifier.isApplicable(df.columns, predictColumn);
+    return isSoftmaxApplicable(df.columns, predictColumn);
   }
 
 
@@ -590,7 +625,7 @@ export class PackageFunctions {
   static isInteractiveSoftmax(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return SoftmaxClassifier.isInteractive(df.columns, predictColumn);
+    return isSoftmaxInteractive(df.columns, predictColumn);
   }
 
 
@@ -598,6 +633,8 @@ export class PackageFunctions {
     'meta': {
       'mlname': 'PLS Regression',
       'mlrole': 'train',
+      'mlparallel': 'true',
+      'mlspace': '{"components": {"type": "int", "low": 1, "high": 10, "simpler": "low"}}',
     },
     'name': 'trainPLSRegression',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -606,16 +643,7 @@ export class PackageFunctions {
     df: DG.DataFrame,
     predictColumn: DG.Column,
     @grok.decorators.param({'type': 'int', 'options': {'min': '1', 'max': '10', 'initialValue': '3', 'description': 'Number of latent components.'}}) components: number): Promise<Uint8Array> {
-    const features = df.columns;
-
-    const model = new PlsModel();
-    await model.fit(
-      features,
-      predictColumn,
-      Math.min(components, features.length),
-    );
-
-    return model.toBytes();
+    return trainPlsRegression(df, predictColumn, components);
   }
 
 
@@ -627,11 +655,10 @@ export class PackageFunctions {
     'name': 'Apply PLS Regression',
     'description': 'Predict the target for a table using a trained partial least squares (PLS) regression model.',
   })
-  static applyPLSRegression(
+  static async applyPLSRegression(
     df: DG.DataFrame,
-    @grok.decorators.param({'options': {'description': 'Trained PLS regression model to apply.'}}) model: any): DG.DataFrame {
-    const unpackedModel = new PlsModel(model);
-    return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
+    @grok.decorators.param({'options': {'description': 'Trained PLS regression model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
   }
 
 
@@ -645,7 +672,7 @@ export class PackageFunctions {
   static isApplicablePLSRegression(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return PlsModel.isApplicable(df.columns, predictColumn);
+    return isPlsApplicable(df.columns, predictColumn);
   }
 
 
@@ -661,10 +688,20 @@ export class PackageFunctions {
     targetColumn: DG.Column,
     predictColumn: DG.Column,
     model: any): Promise<any> {
-    const unpackedModel = new PlsModel(model);
-    const viewers = unpackedModel.viewers();
-
-    return viewers.map((v) => v.root);
+    const bytes = model as Uint8Array;
+    const spec = (): {features: DG.Column[], components: number} => {
+      if (isCruxModel(bytes)) {
+        const manifest = readCruxManifest(bytes);
+        return {features: modelFeatures(df, manifest), components: manifest.params.n_components as number};
+      }
+      const legacy = readLegacyModel(bytes);
+      if (legacy.kind !== 'pls')
+        throw new Error(LEGACY_MODEL_ERROR);
+      return {features: featureColumns(df, legacy.features), components: legacy.components};
+    };
+    const {features, components} = spec();
+    const names = features.map((col) => col.name);
+    return (await plsRegressionViewers(df.clone(null, names), targetColumn, components)).map((v) => v.root);
   }
 
 
@@ -678,13 +715,18 @@ export class PackageFunctions {
   static isInteractivePLSRegression(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return PlsModel.isInteractive(df.columns, predictColumn);
+    return isPlsInteractive(df.columns, predictColumn);
   }
 
   @grok.decorators.func({
     'meta': {
       'mlname': 'XGBoost',
       'mlrole': 'train',
+      'mlnativenans': 'true',
+      'mlparallel': 'true',
+      'mlprobabilities': 'true',
+      'mlspace': '{"iterations": {"type": "int", "low": 10, "high": 100, "log": true, "simpler": "low"}, "eta": {"type": "float", "low": 0.03, "high": 0.5, "log": true}, "maxDepth": {"type": "int", "low": 1, "high": 10, "simpler": "low"}, "lambda": {"type": "float", "low": 0.1, "high": 10, "log": true, "simpler": "high"}, "alpha": {"type": "float", "low": 0.01, "high": 10, "log": true, "simpler": "high"}, "subsample": {"type": "float", "low": 0.5, "high": 1, "simpler": "high"}, "colsample": {"type": "float", "low": 0.5, "high": 1, "simpler": "high"}}',
+      'mlenabled': '{"seed": [{"subsample": {"lt": 1}}, {"colsample": {"lt": 1}}]}',
     },
     'name': 'trainXGBooster',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -692,17 +734,17 @@ export class PackageFunctions {
   static async trainXGBooster(
     df: DG.DataFrame,
     predictColumn: DG.Column,
-    @grok.decorators.param({'type': 'int', 'options': {'min': '1', 'max': '100', 'initialValue': '20', 'description': 'Number of training iterations.'}}) iterations: number,
-    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Rate', 'min': '0', 'max': '1', 'initialValue': '0.3', 'description': 'Learning rate.'}}) eta: number,
-    @grok.decorators.param({'type': 'int', 'options': {'min': '0', 'max': '20', 'initialValue': '6', 'description': 'Maximum depth of a tree.'}}) maxDepth: number,
-    @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '100', 'initialValue': '1', 'description': 'L2 regularization term.'}}) lambda: number,
-    @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L1 regularization term.'}}) alpha: number): Promise<Uint8Array> {
-    const features = df.columns;
-
-    const booster = new XGBooster();
-    await booster.fit(features, predictColumn, iterations, eta, maxDepth, lambda, alpha);
-
-    return booster.toBytes();
+    @grok.decorators.param({'type': 'int', 'options': {'min': '1', 'max': '100', 'initialValue': '20', 'description': 'Number of boosting rounds. Each round adds one tree (one per class for a multiclass target). More rounds fit the training data more closely. Use a lower Rate with more rounds.'}}) iterations: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Rate', 'min': '0', 'max': '1', 'initialValue': '0.3', 'description': 'Step-size shrinkage (eta) applied to the weights of each new tree. Lower values are more conservative and need more rounds.'}}) eta: number,
+    @grok.decorators.param({'type': 'int', 'options': {'min': '0', 'max': '20', 'initialValue': '6', 'description': 'Maximum depth of a tree. Deeper trees capture more feature interactions and overfit more easily.'}}) maxDepth: number,
+    @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '100', 'initialValue': '1', 'description': 'L2 regularization on the leaf weights. Larger values give a more conservative model.'}}) lambda: number,
+    @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L1 regularization on the leaf weights. Larger values give a more conservative model and can zero out leaves.'}}) alpha: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Row sample', 'min': '0.1', 'max': '1', 'initialValue': '1', 'description': 'Share of the rows sampled for each tree. Below 1 adds randomness that Model seed controls.'}}) subsample: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Column sample', 'min': '0.1', 'max': '1', 'initialValue': '1', 'description': 'Share of the features sampled for each tree. Below 1 adds randomness that Model seed controls.'}}) colsample: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed of the row and column sampling. Has an effect only when Row sample or Column sample is below 1.'}}) seed: number): Promise<Uint8Array> {
+    const p = withDefaults('trainXGBooster', {iterations, eta, maxDepth, lambda, alpha, subsample, colsample, seed});
+    return trainXgboost(df, predictColumn, p.iterations, p.eta, p.maxDepth, p.lambda, p.alpha, p.subsample, p.colsample,
+      p.seed);
   }
 
 
@@ -717,9 +759,7 @@ export class PackageFunctions {
   static async applyXGBooster(
     df: DG.DataFrame,
     @grok.decorators.param({'options': {'description': 'Trained XGBoost model to apply.'}}) model: any): Promise<DG.DataFrame> {
-    await initXgboost();
-    const unpackedModel = new XGBooster(model);
-    return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
+    return cruxPredict(df, model as Uint8Array);
   }
 
 
@@ -733,7 +773,7 @@ export class PackageFunctions {
   static isInteractiveXGBooster(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return XGBooster.isInteractive(df.columns, predictColumn);
+    return isXgboostInteractive(df.columns, predictColumn);
   }
 
 
@@ -747,13 +787,18 @@ export class PackageFunctions {
   static isApplicableXGBooster(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return XGBooster.isApplicable(df.columns, predictColumn);
+    return isXgboostApplicable(df.columns, predictColumn);
   }
 
   @grok.decorators.func({
     'meta': {
       'mlname': 'SVM',
       'mlrole': 'train',
+      'mlhasrows': 'true',
+      'mlparallel': 'true',
+      'mlspace': '{"kernel": {"type": "categorical", "choices": ["Linear", "RBF", "Polynomial"], "simpler": "first"}, "cost": {"type": "float", "low": 0.01, "high": 100, "log": true, "simpler": "low"}, "gamma": {"type": "float", "low": 0.001, "high": 10, "log": true, "simpler": "low"}, "degree": {"type": "int", "low": 2, "high": 4, "simpler": "low"}, "epsilon": {"type": "float", "low": 0.01, "high": 1, "log": true, "simpler": "high"}}',
+      'mlenabled': '{"gamma": {"kernel": ["RBF", "Polynomial", "Sigmoid"]}, "degree": {"kernel": ["Polynomial"]}, "coef0": {"kernel": ["Polynomial", "Sigmoid"]}, "epsilon": {"task": ["regression"]}}',
+      'mlprobabilities': 'probability',
     },
     'name': 'trainSVM',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
@@ -766,18 +811,12 @@ export class PackageFunctions {
     @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '100', 'initialValue': '0', 'description': 'Kernel coefficient. Used by the RBF, polynomial, and sigmoid kernels. Leave 0 to use 1/number-of-features.'}}) gamma: number,
     @grok.decorators.param({'type': 'int', 'options': {'min': '1', 'max': '10', 'initialValue': '3', 'description': 'Degree of the polynomial kernel. Higher values give a more flexible, curved decision boundary. Used by the polynomial kernel only.'}}) degree: number,
     @grok.decorators.param({'type': 'double', 'options': {'caption': 'Offset', 'min': '-100', 'max': '100', 'initialValue': '0', 'description': 'Constant added inside the kernel before the polynomial power or the sigmoid. Used by the polynomial and sigmoid kernels only.'}}) coef0: number,
-    @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '10', 'initialValue': '0.1', 'description': 'Width of the error-insensitive tube in SVR regression. Training errors smaller than this are not penalized, so larger values give a smoother model with fewer support vectors. Used for regression targets only.'}}) epsilon: number): Promise<Uint8Array> {
-    const kernelType = ({
-      'Linear': KernelType.Linear,
-      'Polynomial': KernelType.Poly,
-      'RBF': KernelType.Rbf,
-      'Sigmoid': KernelType.Sigmoid,
-    } as Record<string, KernelType>)[kernel] ?? KernelType.Rbf;
-
-    const model = new SVM();
-    await model.fit(df.columns, predictColumn, {kernelType, C: cost, gamma, degree, coef0, epsilon});
-
-    return model.toBytes();
+    @grok.decorators.param({'type': 'double', 'options': {'min': '0', 'max': '10', 'initialValue': '0.1', 'description': 'Width of the error-insensitive tube in SVR regression. Training errors smaller than this are not penalized, so larger values give a smoother model with fewer support vectors. Used for regression targets only.'}}) epsilon: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Max iterations', 'min': '1', 'max': '1000000000', 'initialValue': '1000000', 'description': 'Solver iterations before it stops unconverged. The model is still returned, so a slow fit cannot hang.'}}) maxIterations: number,
+    @grok.decorators.param({'type': 'bool', 'options': {'caption': 'Class probabilities', 'initialValue': 'false', 'description': 'Also estimates the probability of each class (Platt scaling: an internal 5-fold cross-validation, about 5 times the training time). Classification targets only.'}}) probability: boolean): Promise<Uint8Array> {
+    const p = withDefaults('trainSVM', {kernel, cost, gamma, degree, coef0, epsilon, maxIterations, probability});
+    return trainSvm(df, predictColumn, p.kernel, p.cost, p.gamma, p.degree, p.coef0, p.epsilon, p.probability,
+      p.maxIterations);
   }
 
 
@@ -792,9 +831,7 @@ export class PackageFunctions {
   static async applySVM(
     df: DG.DataFrame,
     @grok.decorators.param({'options': {'description': 'Trained SVM model to apply.'}}) model: any): Promise<DG.DataFrame> {
-    await initSvm();
-    const unpackedModel = new SVM(model);
-    return DG.DataFrame.fromColumns([unpackedModel.predict(df.columns)]);
+    return cruxPredict(df, model as Uint8Array);
   }
 
 
@@ -808,7 +845,7 @@ export class PackageFunctions {
   static isApplicableSVM(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return SVM.isApplicable(df.columns, predictColumn);
+    return isSvmApplicable(df.columns, predictColumn);
   }
 
 
@@ -822,7 +859,726 @@ export class PackageFunctions {
   static isInteractiveSVM(
     df: DG.DataFrame,
     predictColumn: DG.Column): boolean {
-    return SVM.isInteractive(df.columns, predictColumn);
+    return isSvmInteractive(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Random Forest',
+      'mlrole': 'train',
+      'mlnativenans': 'true',
+      'mlparallel': 'true',
+      'mlprobabilities': 'true',
+      'mlspace': '{"trees": {"type": "int", "low": 20, "high": 200, "log": true, "simpler": "low"}, "maxDepth": {"type": "int", "low": 2, "high": 16, "simpler": "low"}, "minSamplesLeaf": {"type": "int", "low": 1, "high": 20, "log": true, "simpler": "high"}, "maxFeatures": {"type": "categorical", "choices": ["auto", "sqrt", "log2", "all"]}}',
+    },
+    'name': 'trainRandomForest',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
+  })
+  static async trainRandomForest(
+    df: DG.DataFrame,
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Trees', 'min': '1', 'max': '1000', 'initialValue': '100', 'description': 'Number of trees in the forest.'}}) trees: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Max depth', 'min': '1', 'max': '50', 'initialValue': '10', 'description': 'Largest depth of a tree. Bounds the model size.'}}) maxDepth: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Min rows per leaf', 'min': '1', 'max': '1000', 'initialValue': '1', 'description': 'Smallest number of training rows a leaf may hold.'}}) minSamplesLeaf: number,
+    @grok.decorators.param({'type': 'string', 'options': {'caption': 'Features per split', 'choices': ['auto', 'sqrt', 'log2', 'all'], 'initialValue': 'auto', 'description': 'Features tried at each split: auto is sqrt for classification and all for regression.'}}) maxFeatures: string,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    return trainRandomForest(df, predictColumn, trees, maxDepth, minSamplesLeaf, maxFeatures, seed);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Random Forest',
+      'mlrole': 'apply',
+    },
+    'name': 'Apply Random Forest',
+    'description': 'Predict the target for a table using a trained random forest model.',
+  })
+  static async applyRandomForest(
+    df: DG.DataFrame,
+    @grok.decorators.param({'options': {'description': 'Trained random forest model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Random Forest',
+      'mlrole': 'isApplicable',
+    },
+    'name': 'isApplicableRandomForest',
+  })
+  static isApplicableRandomForest(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isRandomForestApplicable(df.columns, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Random Forest',
+      'mlrole': 'isInteractive',
+    },
+    'name': 'isInteractiveRandomForest',
+  })
+  static isInteractiveRandomForest(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isRandomForestInteractive(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Extra Trees',
+      'mlrole': 'train',
+      'mlnativenans': 'true',
+      'mlparallel': 'true',
+      'mlprobabilities': 'true',
+      'mlspace': '{"trees": {"type": "int", "low": 20, "high": 200, "log": true, "simpler": "low"}, "maxDepth": {"type": "int", "low": 2, "high": 16, "simpler": "low"}, "minSamplesLeaf": {"type": "int", "low": 1, "high": 20, "log": true, "simpler": "high"}, "maxFeatures": {"type": "categorical", "choices": ["auto", "sqrt", "log2", "all"]}}',
+    },
+    'name': 'trainExtraTrees',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
+  })
+  static async trainExtraTrees(
+    df: DG.DataFrame,
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Trees', 'min': '1', 'max': '1000', 'initialValue': '100', 'description': 'Number of trees in the forest.'}}) trees: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Max depth', 'min': '1', 'max': '50', 'initialValue': '10', 'description': 'Largest depth of a tree. Bounds the model size.'}}) maxDepth: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Min rows per leaf', 'min': '1', 'max': '1000', 'initialValue': '1', 'description': 'Smallest number of training rows a leaf may hold.'}}) minSamplesLeaf: number,
+    @grok.decorators.param({'type': 'string', 'options': {'caption': 'Features per split', 'choices': ['auto', 'sqrt', 'log2', 'all'], 'initialValue': 'auto', 'description': 'Features tried at each split: auto is sqrt for classification and all for regression.'}}) maxFeatures: string,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    return trainExtraTrees(df, predictColumn, trees, maxDepth, minSamplesLeaf, maxFeatures, seed);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Extra Trees',
+      'mlrole': 'apply',
+    },
+    'name': 'Apply Extra Trees',
+    'description': 'Predict the target for a table using a trained extra trees model.',
+  })
+  static async applyExtraTrees(
+    df: DG.DataFrame,
+    @grok.decorators.param({'options': {'description': 'Trained extra trees model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Extra Trees',
+      'mlrole': 'isApplicable',
+    },
+    'name': 'isApplicableExtraTrees',
+  })
+  static isApplicableExtraTrees(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isExtraTreesApplicable(df.columns, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Extra Trees',
+      'mlrole': 'isInteractive',
+    },
+    'name': 'isInteractiveExtraTrees',
+  })
+  static isInteractiveExtraTrees(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isExtraTreesInteractive(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Hist Gradient Boosting',
+      'mlrole': 'train',
+      'mlnativenans': 'true',
+      'mlparallel': 'true',
+      'mlprobabilities': 'true',
+      'mlspace': '{"iterations": {"type": "int", "low": 20, "high": 300, "log": true, "simpler": "low"}, "learningRate": {"type": "float", "low": 0.01, "high": 0.3, "log": true}, "maxLeafNodes": {"type": "int", "low": 4, "high": 63, "log": true, "simpler": "low"}, "minSamplesLeaf": {"type": "int", "low": 5, "high": 50, "log": true, "simpler": "high"}, "l2": {"type": "float", "low": 0.01, "high": 10, "log": true, "simpler": "high"}}',
+    },
+    'name': 'trainHistGradientBoosting',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
+  })
+  static async trainHistGradientBoosting(
+    df: DG.DataFrame,
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'max': '1000', 'initialValue': '100', 'description': 'Boosting iterations (trees per class).'}}) iterations: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Learning rate', 'min': '0.001', 'max': '1', 'initialValue': '0.1', 'description': 'Shrinkage of each tree\'s contribution.'}}) learningRate: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Max leaves', 'min': '2', 'max': '255', 'initialValue': '31', 'description': 'Largest number of leaves per tree.'}}) maxLeafNodes: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Max depth', 'min': '0', 'max': '50', 'initialValue': '0', 'description': 'Largest depth of a tree. 0 means no limit.'}}) maxDepth: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Min rows per leaf', 'min': '1', 'max': '1000', 'initialValue': '20', 'description': 'Smallest number of training rows a leaf may hold.'}}) minSamplesLeaf: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '100', 'initialValue': '0', 'description': 'L2 penalty of the leaf values.'}}) l2: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    return trainHistGradientBoosting(df, predictColumn, iterations, learningRate, maxLeafNodes, maxDepth, minSamplesLeaf,
+      l2, seed);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Hist Gradient Boosting',
+      'mlrole': 'apply',
+    },
+    'name': 'Apply Hist Gradient Boosting',
+    'description': 'Predict the target for a table using a trained histogram gradient boosting model.',
+  })
+  static async applyHistGradientBoosting(
+    df: DG.DataFrame,
+    @grok.decorators.param({'options': {'description': 'Trained histogram gradient boosting model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Hist Gradient Boosting',
+      'mlrole': 'isApplicable',
+    },
+    'name': 'isApplicableHistGradientBoosting',
+  })
+  static isApplicableHistGradientBoosting(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isHistGradientBoostingApplicable(df.columns, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Hist Gradient Boosting',
+      'mlrole': 'isInteractive',
+    },
+    'name': 'isInteractiveHistGradientBoosting',
+  })
+  static isInteractiveHistGradientBoosting(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isHistGradientBoostingInteractive(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'CatBoost',
+      'mlrole': 'train',
+      'mlnativenans': 'true',
+      'mlparallel': 'true',
+      'mlprobabilities': 'true',
+      'mlspace': '{"iterations": {"type": "int", "low": 30, "high": 300, "log": true, "simpler": "low"}, "learningRate": {"type": "float", "low": 0.01, "high": 0.3, "log": true}, "depth": {"type": "int", "low": 2, "high": 8, "simpler": "low"}, "l2LeafReg": {"type": "float", "low": 0.3, "high": 30, "log": true, "simpler": "high"}}',
+    },
+    'name': 'trainCatBoost',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
+  })
+  static async trainCatBoost(
+    df: DG.DataFrame,
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'max': '5000', 'initialValue': '100', 'description': 'Boosting iterations (trees).'}}) iterations: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Learning rate', 'min': '0.001', 'max': '1', 'initialValue': '0.1', 'description': 'Shrinkage of each tree\'s contribution.'}}) learningRate: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Depth', 'min': '1', 'max': '16', 'initialValue': '6', 'description': 'Depth of the symmetric trees.'}}) depth: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '100', 'initialValue': '3', 'description': 'L2 regularization of the leaf values.'}}) l2LeafReg: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    return trainCatBoost(df, predictColumn, iterations, learningRate, depth, l2LeafReg, seed);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'CatBoost',
+      'mlrole': 'apply',
+    },
+    'name': 'Apply CatBoost',
+    'description': 'Predict the target for a table using a trained CatBoost gradient-boosting model.',
+  })
+  static async applyCatBoost(
+    df: DG.DataFrame,
+    @grok.decorators.param({'options': {'description': 'Trained CatBoost model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'CatBoost',
+      'mlrole': 'isApplicable',
+    },
+    'name': 'isApplicableCatBoost',
+  })
+  static isApplicableCatBoost(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isCatBoostApplicable(df.columns, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'CatBoost',
+      'mlrole': 'isInteractive',
+    },
+    'name': 'isInteractiveCatBoost',
+  })
+  static isInteractiveCatBoost(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isCatBoostInteractive(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Decision Tree',
+      'mlrole': 'train',
+      'mlnativenans': 'true',
+      'mlparallel': 'true',
+      'mlprobabilities': 'true',
+      'mlspace': '{"maxDepth": {"type": "int", "low": 1, "high": 20, "simpler": "low"}, "minSamplesLeaf": {"type": "int", "low": 1, "high": 50, "log": true, "simpler": "high"}}',
+    },
+    'name': 'trainDecisionTree',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
+  })
+  static async trainDecisionTree(
+    df: DG.DataFrame,
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Max depth', 'min': '1', 'max': '50', 'initialValue': '10', 'description': 'Largest depth of the tree. Bounds the model size.'}}) maxDepth: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Min rows per leaf', 'min': '1', 'max': '1000', 'initialValue': '1', 'description': 'Smallest number of training rows a leaf may hold.'}}) minSamplesLeaf: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    return trainDecisionTree(df, predictColumn, maxDepth, minSamplesLeaf, seed);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Decision Tree',
+      'mlrole': 'apply',
+    },
+    'name': 'Apply Decision Tree',
+    'description': 'Predict the target for a table using a trained decision tree model.',
+  })
+  static async applyDecisionTree(
+    df: DG.DataFrame,
+    @grok.decorators.param({'options': {'description': 'Trained decision tree model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Decision Tree',
+      'mlrole': 'isApplicable',
+    },
+    'name': 'isApplicableDecisionTree',
+  })
+  static isApplicableDecisionTree(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isDecisionTreeApplicable(df.columns, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Decision Tree',
+      'mlrole': 'isInteractive',
+    },
+    'name': 'isInteractiveDecisionTree',
+  })
+  static isInteractiveDecisionTree(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isDecisionTreeInteractive(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'k-Nearest Neighbors',
+      'mlrole': 'train',
+      'mlhasrows': 'true',
+      'mlparallel': 'true',
+      'mlprobabilities': 'true',
+      'mlspace': '{"neighbors": {"type": "int", "low": 1, "high": 50, "log": true, "simpler": "high"}, "weights": {"type": "categorical", "choices": ["Uniform", "Distance"], "simpler": "first"}}',
+    },
+    'name': 'trainKnn',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
+  })
+  static async trainKnn(
+    df: DG.DataFrame,
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Neighbors', 'min': '1', 'max': '100', 'initialValue': '5', 'description': 'Training rows that vote for a prediction.'}}) neighbors: number,
+    @grok.decorators.param({'type': 'string', 'options': {'caption': 'Weights', 'choices': ['Uniform', 'Distance'], 'initialValue': 'Uniform', 'description': 'Uniform: every neighbor counts the same. Distance: closer neighbors count more.'}}) weights: string): Promise<Uint8Array> {
+    return trainKnn(df, predictColumn, neighbors, weights);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'k-Nearest Neighbors',
+      'mlrole': 'apply',
+    },
+    'name': 'Apply k-Nearest Neighbors',
+    'description': 'Predict the target for a table using a trained k-nearest neighbors model.',
+  })
+  static async applyKnn(
+    df: DG.DataFrame,
+    @grok.decorators.param({'options': {'description': 'Trained k-nearest neighbors model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'k-Nearest Neighbors',
+      'mlrole': 'isApplicable',
+    },
+    'name': 'isApplicableKnn',
+  })
+  static isApplicableKnn(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isKnnApplicable(df.columns, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'k-Nearest Neighbors',
+      'mlrole': 'isInteractive',
+    },
+    'name': 'isInteractiveKnn',
+  })
+  static isInteractiveKnn(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isKnnInteractive(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Naive Bayes',
+      'mlrole': 'train',
+      'mlparallel': 'true',
+      'mlprobabilities': 'true',
+    },
+    'name': 'trainNaiveBayes',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
+  })
+  static async trainNaiveBayes(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): Promise<Uint8Array> {
+    return trainNaiveBayes(df, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Naive Bayes',
+      'mlrole': 'apply',
+    },
+    'name': 'Apply Naive Bayes',
+    'description': 'Classify the rows of a table using a trained Gaussian naive Bayes model.',
+  })
+  static async applyNaiveBayes(
+    df: DG.DataFrame,
+    @grok.decorators.param({'options': {'description': 'Trained naive Bayes classifier model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Naive Bayes',
+      'mlrole': 'isApplicable',
+    },
+    'name': 'isApplicableNaiveBayes',
+  })
+  static isApplicableNaiveBayes(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isNaiveBayesApplicable(df.columns, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Naive Bayes',
+      'mlrole': 'isInteractive',
+    },
+    'name': 'isInteractiveNaiveBayes',
+  })
+  static isInteractiveNaiveBayes(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isNaiveBayesInteractive(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'LDA',
+      'mlrole': 'train',
+      'mlparallel': 'true',
+      'mlprobabilities': 'true',
+      'mlspace': '{"shrinkage": {"type": "float", "low": 0.001, "high": 1, "log": true, "simpler": "high"}}',
+    },
+    'name': 'trainLda',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
+  })
+  static async trainLda(
+    df: DG.DataFrame,
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Shrinkage', 'min': '0', 'max': '1', 'initialValue': '0', 'description': 'Covariance shrinkage from 0 (none) to 1. Helps when features outnumber rows.'}}) shrinkage: number): Promise<Uint8Array> {
+    return trainLda(df, predictColumn, shrinkage);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'LDA',
+      'mlrole': 'apply',
+    },
+    'name': 'Apply LDA',
+    'description': 'Classify the rows of a table using a trained linear discriminant analysis (LDA) model.',
+  })
+  static async applyLda(
+    df: DG.DataFrame,
+    @grok.decorators.param({'options': {'description': 'Trained LDA classifier model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'LDA',
+      'mlrole': 'isApplicable',
+    },
+    'name': 'isApplicableLda',
+  })
+  static isApplicableLda(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isLdaApplicable(df.columns, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'LDA',
+      'mlrole': 'isInteractive',
+    },
+    'name': 'isInteractiveLda',
+  })
+  static isInteractiveLda(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isLdaInteractive(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Neural Network',
+      'mlrole': 'train',
+      'mlparallel': 'true',
+      'mlprobabilities': 'true',
+      'mlspace': '{"hiddenLayers": {"type": "categorical", "choices": ["32", "64", "100", "128", "64,32", "128,64"], "simpler": "first"}, "activation": {"type": "categorical", "choices": ["ReLU", "Tanh", "Logistic"]}, "iterations": {"type": "int", "low": 50, "high": 500, "log": true, "simpler": "low"}, "learningRate": {"type": "float", "low": 0.0001, "high": 0.01, "log": true}, "alpha": {"type": "float", "low": 0.00001, "high": 1, "log": true, "simpler": "high"}}',
+    },
+    'name': 'trainMlp',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
+  })
+  static async trainMlp(
+    df: DG.DataFrame,
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'string', 'options': {'caption': 'Hidden layers', 'initialValue': '100', 'description': 'Comma-separated sizes of the hidden layers, e.g. 100 or 64,32.'}}) hiddenLayers: string,
+    @grok.decorators.param({'type': 'string', 'options': {'caption': 'Activation', 'choices': ['ReLU', 'Tanh', 'Logistic', 'Identity'], 'initialValue': 'ReLU', 'description': 'Activation function of the hidden layers.'}}) activation: string,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Iterations', 'min': '1', 'max': '2000', 'initialValue': '200', 'description': 'Largest number of training epochs.'}}) iterations: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Learning rate', 'min': '0.00001', 'max': '1', 'initialValue': '0.001', 'description': 'Step size of the weight updates.'}}) learningRate: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'L2', 'min': '0', 'max': '10', 'initialValue': '0.0001', 'description': 'L2 penalty of the weights.'}}) alpha: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    return trainMlp(df, predictColumn, hiddenLayers, activation, iterations, learningRate, alpha, seed);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Neural Network',
+      'mlrole': 'apply',
+    },
+    'name': 'Apply Neural Network',
+    'description': 'Predict the target for a table using a trained neural network (multilayer perceptron) model.',
+  })
+  static async applyMlp(
+    df: DG.DataFrame,
+    @grok.decorators.param({'options': {'description': 'Trained neural network model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Neural Network',
+      'mlrole': 'isApplicable',
+    },
+    'name': 'isApplicableMlp',
+  })
+  static isApplicableMlp(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isMlpApplicable(df.columns, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'Neural Network',
+      'mlrole': 'isInteractive',
+    },
+    'name': 'isInteractiveMlp',
+  })
+  static isInteractiveMlp(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isMlpInteractive(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'RealMLP',
+      'mlrole': 'train',
+      'mlparallel': 'true',
+      'mlprobabilities': 'true',
+      'mlspace': '{"variant": {"type": "categorical", "choices": ["TD", "TD-S"]}, "epochs": {"type": "int", "low": 32, "high": 256, "log": true, "simpler": "low"}, "hiddenLayers": {"type": "categorical", "choices": ["128,128", "256,256", "256,256,256"], "simpler": "first"}, "learningRate": {"type": "float", "low": 0.01, "high": 0.3, "log": true}}',
+    },
+    'name': 'trainRealMlp',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
+  })
+  static async trainRealMlp(
+    df: DG.DataFrame,
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'string', 'options': {'caption': 'Variant', 'choices': ['TD', 'TD-S'], 'initialValue': 'TD', 'description': 'TD: the tuned defaults (numerical embeddings, parametric activations, dropout, weight decay). TD-S: the simplified variant.'}}) variant: string,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Epochs', 'min': '1', 'max': '2000', 'initialValue': '128', 'description': 'Training epochs. The best epoch on the early-stopping rows is kept.'}}) epochs: number,
+    @grok.decorators.param({'type': 'string', 'options': {'caption': 'Hidden layers', 'initialValue': '256,256,256', 'description': 'Comma-separated sizes of the hidden layers, e.g. 256,256,256 or 128,128.'}}) hiddenLayers: string,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Learning rate', 'min': '0', 'max': '1', 'initialValue': '0', 'description': 'Base learning rate. 0 keeps the RealMLP default (0.04 for classification, 0.2 for regression).'}}) learningRate: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Batch size', 'min': '1', 'max': '4096', 'initialValue': '256', 'description': 'Rows per optimizer step.'}}) batchSize: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Early stopping fraction', 'min': '0.05', 'max': '0.5', 'initialValue': '0.2', 'description': 'Rows held out for early stopping.'}}) validationFraction: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    return trainRealMlp(df, predictColumn, variant, epochs, hiddenLayers, learningRate, batchSize, validationFraction,
+      seed);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'RealMLP',
+      'mlrole': 'apply',
+    },
+    'name': 'Apply RealMLP',
+    'description': 'Predict the target for a table using a trained RealMLP (tuned-default tabular MLP) model.',
+  })
+  static async applyRealMlp(
+    df: DG.DataFrame,
+    @grok.decorators.param({'options': {'description': 'Trained RealMLP model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'RealMLP',
+      'mlrole': 'isApplicable',
+    },
+    'name': 'isApplicableRealMlp',
+  })
+  static isApplicableRealMlp(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isRealMlpApplicable(df.columns, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'RealMLP',
+      'mlrole': 'isInteractive',
+    },
+    'name': 'isInteractiveRealMlp',
+  })
+  static isInteractiveRealMlp(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isRealMlpInteractive(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'TabM',
+      'mlrole': 'train',
+      'mlnativenans': 'true',
+      'mlparallel': 'true',
+      'mlprobabilities': 'true',
+      'mlspace': '{"ensembleSize": {"type": "int", "low": 4, "high": 16, "log": true, "simpler": "low"}, "width": {"type": "int", "low": 64, "high": 256, "log": true, "simpler": "low"}, "embeddings": {"type": "categorical", "choices": ["Piecewise linear", "Periodic", "None"]}, "epochs": {"type": "int", "low": 16, "high": 64, "log": true, "simpler": "low"}, "learningRate": {"type": "float", "low": 0.0005, "high": 0.01, "log": true}, "dropout": {"type": "float", "low": 0, "high": 0.3, "simpler": "high"}}',
+    },
+    'name': 'trainTabm',
+    'outputs': [{'name': 'model', 'type': 'dynamic'}],
+  })
+  static async trainTabm(
+    df: DG.DataFrame,
+    predictColumn: DG.Column,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Ensemble size', 'min': '1', 'max': '128', 'initialValue': '8', 'description': 'Weight-sharing MLPs averaged at prediction (the TabM paper uses 32).'}}) ensembleSize: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Width', 'min': '1', 'max': '2048', 'initialValue': '128', 'description': 'Units per hidden layer (the paper uses 512).'}}) width: number,
+    @grok.decorators.param({'type': 'string', 'options': {'caption': 'Embeddings', 'choices': ['Piecewise linear', 'Periodic', 'Linear-ReLU', 'None'], 'initialValue': 'Piecewise linear', 'description': 'Embeddings of the numerical features. Piecewise linear over quantile bins is the paper\'s best.'}}) embeddings: string,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Epochs', 'min': '1', 'max': '1000', 'initialValue': '32', 'description': 'Largest number of training epochs. Early stopping may end training sooner.'}}) epochs: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Patience', 'min': '1', 'max': '100', 'initialValue': '16', 'description': 'Epochs without a better score on the early-stopping rows before training stops.'}}) patience: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Learning rate', 'min': '0.00001', 'max': '1', 'initialValue': '0.002', 'description': 'AdamW learning rate.'}}) learningRate: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Dropout', 'min': '0', 'max': '0.9', 'initialValue': '0.1', 'description': 'Dropout rate of the hidden layers.'}}) dropout: number,
+    @grok.decorators.param({'type': 'double', 'options': {'caption': 'Early stopping fraction', 'min': '0.05', 'max': '0.5', 'initialValue': '0.2', 'description': 'Rows held out for early stopping.'}}) validationFraction: number,
+    @grok.decorators.param({'type': 'int', 'options': {'caption': 'Model seed', 'min': '0', 'max': '2147483647', 'initialValue': '0', 'description': 'Random seed. The same seed gives the same model.'}}) seed: number): Promise<Uint8Array> {
+    return trainTabm(df, predictColumn, ensembleSize, width, embeddings, epochs, patience, learningRate, dropout,
+      validationFraction, seed);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'TabM',
+      'mlrole': 'apply',
+    },
+    'name': 'Apply TabM',
+    'description': 'Predict the target for a table using a trained TabM (ensemble tabular MLP) model.',
+  })
+  static async applyTabm(
+    df: DG.DataFrame,
+    @grok.decorators.param({'options': {'description': 'Trained TabM model to apply.'}}) model: any): Promise<DG.DataFrame> {
+    return cruxPredict(df, model as Uint8Array);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'TabM',
+      'mlrole': 'isApplicable',
+    },
+    'name': 'isApplicableTabm',
+  })
+  static isApplicableTabm(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isTabmApplicable(df.columns, predictColumn);
+  }
+
+
+  @grok.decorators.func({
+    'meta': {
+      'mlname': 'TabM',
+      'mlrole': 'isInteractive',
+    },
+    'name': 'isInteractiveTabm',
+  })
+  static isInteractiveTabm(
+    df: DG.DataFrame,
+    predictColumn: DG.Column): boolean {
+    return isTabmInteractive(df.columns, predictColumn);
   }
 
   @grok.decorators.func({

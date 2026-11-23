@@ -1,0 +1,1053 @@
+import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+import {after, awaitCheck, before, category, expect, expectArray, expectExceptionAsync, expectFloat, test}
+  from '@datagrok-libraries/test/src/test';
+import {applyAndRecord, ApplyRequest, DEFAULT_BATCH_SIZE, LoadedModel, loadModel, missingValuesOf, predictionName,
+  predictRows, runApplyModel, scatteredColumn, targetSchemaOf} from '../apply/apply-model';
+import {compatibility, exactMapping, isSuggested, MAX_NAME_DISTANCE, mappedColumns, mappingProblems, nameDistance,
+  suggestMapping} from '../apply/column-matching';
+import {featureColumns} from '../apply/feature-columns';
+import {predictionTagOf} from '../apply/prediction-tag';
+import {PREDICTION_TAG} from '../constants';
+import {Engine} from '../engines/engine';
+import {apply, LoopProgress} from '../engines/engine-calls';
+import {errorMessage, ForgeError} from '../forge-error';
+import {forgeDb, ModelInsert} from '../generated/db';
+import {aucOf, probabilityOf, regressionMetrics} from '../metrics/metrics';
+import {measure} from '../metrics/report';
+import {MissingValuesSettings} from '../preparation/missing-values';
+import {replayPostprocessing} from '../preparation/pipeline';
+import {BINARY_CLASSIFICATION, isRecord, ONE_HOT, preparationOptionsOf} from '../preparation/preparation-options';
+import {datasetFingerprint} from '../storage/dataset-fingerprint';
+import {modelFieldsOf} from '../storage/model-fields';
+import {BLOB_ROOT, deleteModel, saveModel} from '../storage/model-store';
+import {runEvaluateModel} from '../training/evaluate-api';
+import {evaluateModel} from '../training/evaluation';
+import {runTrainModel} from '../training/train-api';
+import {ColumnSchema, metricsRecordOf, prepareTraining, TrainingResult, trainModel, trainPredictionOf}
+  from '../training/train-model';
+import {storedSummary} from '../ui/metrics-table';
+import {cancelTaskBarEntry, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, demoDemog, expectMetrics,
+  expectNoFrames, expectReleased, failsWith, framesSharing, IMPUTE, IRIS, MEASUREMENTS, ONE_HOT_STEPS, openIris,
+  openIrisFromFile, PREDICT_PROBABILITY, rawValues, requestOf, savedFixture, saveIrisModel, saveKeptGapsModel,
+  saveSkipUniqueModel, saveTestModel, selectionOf, svm, twoSpeciesIris, valuesOf, XGBOOST_FIELDS} from './test-data';
+
+const TIMEOUT = 90000;
+const IRIS_FEATURES: ColumnSchema[] = MEASUREMENTS.map((name) => ({name, type: DG.COLUMN_TYPE.FLOAT}));
+
+interface Fixture { id: string; result: TrainingResult; iris: DG.DataFrame; model: LoadedModel; reference: unknown[] }
+
+let fixture: Fixture | undefined;
+let fixtureId: string | undefined;
+
+/** The engine's predictions for [columns], as a list. */
+async function predictionsOf(engine: Engine, columns: DG.Column[], blob: Uint8Array): Promise<unknown[]> {
+  return (await apply(engine, columns, blob)).prediction.toList();
+}
+
+const shared = () => savedFixture(fixture);
+
+function requestFor(model: LoadedModel, table: DG.DataFrame, options: {mapping?: Map<string, string>;
+  batchSize?: number; missingValues?: MissingValuesSettings} = {}): ApplyRequest {
+  return {model, table, mapping: options.mapping ?? exactMapping(model.features, table),
+    batchSize: options.batchSize ?? DEFAULT_BATCH_SIZE, missingValues: options.missingValues ?? {mode: 'skip'}};
+}
+
+function irisCopy(name: string): DG.DataFrame {
+  const copy = shared().iris.clone();
+  copy.name = `${shared().iris.name}-${name}`;
+  return copy;
+}
+
+async function applicationsOf(table: DG.DataFrame) {
+  return forgeDb.applications.query().where('model_id', '=', shared().id).where('table_name', '=', table.name);
+}
+
+const throwsWith = (text: string) => (e: unknown) => errorMessage(e).includes(text);
+const applicationCount = (id: string) => forgeDb.applications.query().where('model_id', '=', id).count();
+const WAIT_MS = 10000;
+
+interface TaskBarWatch { labels: string[]; entry?: Element }
+
+/** Runs [action] to its end while watching the task-bar entries it adds: their labels as they change (a batch loop
+ * relabels its entry after the first batch) and the first entry; with [isCancelled], that entry's cancel icon is
+ * clicked as soon as it shows. */
+async function watchTaskBar<T>(action: () => Promise<T>, isCancelled: boolean):
+  Promise<[PromiseSettledResult<T>, TaskBarWatch]> {
+  const known = new Set(Array.from(document.querySelectorAll('.d4-task-bar-entry')));
+  const watch: TaskBarWatch = {labels: []};
+  const observer = new MutationObserver(() => {
+    for (const entry of Array.from(document.querySelectorAll('.d4-task-bar-entry')).filter((e) => !known.has(e))) {
+      watch.labels.push(entry.textContent ?? '');
+      if (watch.entry === undefined) {
+        watch.entry = entry;
+        if (isCancelled)
+          cancelTaskBarEntry(entry);
+      }
+    }
+  });
+  observer.observe(document.body, {childList: true, subtree: true, characterData: true});
+  try {
+    const [settled] = await Promise.allSettled([action()]);
+    return [settled, watch];
+  } finally {
+    observer.disconnect();
+  }
+}
+
+category('Apply', () => {
+  before(async () => {
+    const iris = await openIris();
+    const {id, result} = await saveIrisModel(iris);
+    fixtureId = id;
+    const model = await loadModel(id);
+    fixture = {id, result, iris, model,
+      reference: await predictionsOf(model.engine, columnsOf(iris, MEASUREMENTS), result.blob)};
+  });
+
+  after(async () => {
+    if (fixtureId !== undefined)
+      await deleteModel(fixtureId);
+  });
+
+  test('nameDistance splits the calibration pairs at MAX_NAME_DISTANCE', async () => {
+    const pairs: [string, string, number][] = [['Sepal.Width', 'sepal width', 0.04],
+      ['Sepal.Length', 'SepalLengthCm', 0.05], ['age', 'age_years', 0.16], ['Petal.Width', 'pH', 0.42],
+      ['Sepal.Length', 'density', 0.55], ['Petal.Width', 'col 1', 0.57]];
+    pairs.forEach(([feature, column, figure], i) => {
+      const distance = nameDistance(feature, column);
+      expectFloat(distance, figure, 0.021, `${feature} / ${column}`);
+      expect(distance <= MAX_NAME_DISTANCE, i < 3, `${feature} / ${column}: ${distance}`);
+    });
+  });
+
+  test('exactMapping matches names ignoring case and expands one-hot columns', async () => {
+    const table = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'sepal.length', [1, 2]),
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'color=red', [1, 0]),
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'color=blue', [0, 1]),
+    ]);
+    const color: ColumnSchema = {name: 'color', type: DG.COLUMN_TYPE.STRING};
+    const features: ColumnSchema[] = [{name: 'Sepal.Length', type: DG.COLUMN_TYPE.FLOAT}, color,
+      {name: 'z', type: DG.COLUMN_TYPE.FLOAT}];
+    const mapping = exactMapping(features, table);
+    expect(mapping.get('Sepal.Length'), 'sepal.length');
+    expectArray(mappedColumns(color, mapping).map(([, column]) => column), ['color=red', 'color=blue']);
+    expect(mapping.has('z'), false);
+    const problems = mappingProblems(features, mapping, table, 'XGBoost');
+    expectArray(problems.map((p) => p.feature), ['z']);
+    expectArray(featureColumns(table, features.slice(0, 2), mapping).map((c) => c.name),
+      ['Sepal.Length', 'color=red', 'color=blue']);
+  });
+
+  test('suggestMapping takes close names of compatible columns only', async () => {
+    const iris = await openIris();
+    iris.getCol('Sepal.Length').name = 'sepal length';
+    iris.getCol('Sepal.Width').name = 'sepal width';
+    const sepal: ColumnSchema[] = IRIS_FEATURES.slice(0, 2);
+    const mapping = suggestMapping(sepal, iris);
+    expect(mapping.get('Sepal.Length'), 'sepal length');
+    expect(mapping.get('Sepal.Width'), 'sepal width');
+    expect(isSuggested(sepal, iris), true);
+
+    const petal: ColumnSchema = {name: 'Petal.Width', type: DG.COLUMN_TYPE.FLOAT};
+    const ph = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.INT, 'col 1', [1, 2]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'pH', [3.1, 3.2])]);
+    expect(suggestMapping([petal], ph).size, 0);
+    expect(isSuggested([petal], ph), false);
+
+    const single = (col: DG.Column, feature: ColumnSchema) =>
+      suggestMapping([feature], DG.DataFrame.fromColumns([col])).get(feature.name) ?? 'unmapped';
+    const number: ColumnSchema = {name: 'Value', type: DG.COLUMN_TYPE.FLOAT};
+    expect(single(DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'value', ['a', 'b']), number), 'unmapped');
+    expect(single(DG.Column.fromList(DG.COLUMN_TYPE.INT, 'value', [1, 2]), number), 'value');
+    expect(single(DG.Column.dateTime('value', 2), number), 'unmapped');
+    expect(single(DG.Column.fromBigInt64Array('value', new BigInt64Array([1n, 2n])), number), 'unmapped');
+
+    const molecule: ColumnSchema = {name: 'smiles', type: DG.COLUMN_TYPE.STRING, semType: 'Molecule'};
+    const smiles = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'smiles', ['C', 'CC']);
+    expect(single(smiles, molecule), 'unmapped');
+    smiles.semType = 'molecule';
+    expect(single(smiles, molecule), 'smiles');
+  });
+
+  test('compatibility texts', async () => {
+    const x: ColumnSchema = {name: 'x', type: DG.COLUMN_TYPE.FLOAT};
+    const message = (feature: ColumnSchema, col: DG.Column) => {
+      const fit = compatibility(feature, col, 'XGBoost');
+      return fit.kind === 'ok' ? 'ok' : `${fit.kind}: ${fit.message}`;
+    };
+    expect(message(x, DG.Column.fromBigInt64Array('big', new BigInt64Array([1n]))), 'error: \'big\' holds very ' +
+      'large whole numbers, which XGBoost cannot read. Convert the column to a decimal type or choose another column.');
+    expect(message(x, DG.Column.dateTime('when', 1)),
+      'error: \'when\' holds dates but \'x\' needs numbers. Choose a column with numbers.');
+    expect(message(x, DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'name', ['a'])),
+      'error: \'name\' holds text but \'x\' needs numbers. Choose a column with numbers.');
+    expect(message({name: 'label', type: DG.COLUMN_TYPE.STRING}, DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'v', [1])),
+      'error: \'v\' holds numbers but \'label\' needs text. Choose a column with text.');
+    const conc: ColumnSchema = {name: 'conc', type: DG.COLUMN_TYPE.FLOAT, semType: 'Concentration'};
+    expect(message(conc, DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'conc', [1])),
+      'hint: \'conc\' is not marked as Concentration; check that it is the same kind of value.');
+    const molecule: ColumnSchema = {name: 'smiles', type: DG.COLUMN_TYPE.STRING, semType: 'Molecule'};
+    expect(message(molecule, DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'smiles', ['C'])),
+      'error: \'smiles\' is not a Molecule column, which \'smiles\' needs. Choose a Molecule column.');
+    expect(message(x, DG.Column.fromList(DG.COLUMN_TYPE.INT, 'n', [1])), 'ok');
+  });
+
+  test('mappingProblems texts', async () => {
+    const table = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', [1]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', [2])]);
+    const features: ColumnSchema[] = ['a', 'b', 'c', 'd'].map((name) => ({name, type: DG.COLUMN_TYPE.FLOAT}));
+    const mapping = new Map([['a', 'a'], ['b', 'a'], ['c', 'gone']]);
+    const problems = mappingProblems(features, mapping, table, 'XGBoost');
+    expectArray(problems.map((p) => `${p.feature}${p.isUnmapped ? '!' : ''}: ${p.message}`), [
+      'b: \'a\' is also used for \'a\'. Choose a different column.',
+      'c: The column \'gone\' is no longer in the table. Choose another column for \'c\'.',
+      'd!: Choose a column for \'d\'.',
+    ]);
+  });
+
+  test('predictionTagOf reads a Forge id and an earlier tool\'s markup', async () => {
+    const col = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'p', ['a']);
+    const tagOf = (value: string) => {
+      col.setTag(PREDICTION_TAG, value);
+      return JSON.stringify(predictionTagOf(col));
+    };
+    expect(JSON.stringify(predictionTagOf(col)), 'null');
+    const id = DG.Utils.uuid4();
+    expect(tagOf(id), JSON.stringify({kind: 'forge', id}));
+    const old = '<span>#{x.11111111-1111-1111-1111-111111111111.';
+    expect(tagOf(`${old}"Old model"}</span>`), JSON.stringify({kind: 'legacy', name: 'Old model'}));
+    expect(tagOf(`${old}"An "old" model"}</span>`), JSON.stringify({kind: 'legacy', name: 'An "old" model'}));
+    expect(tagOf(`${old}""}</span>`), JSON.stringify({kind: 'legacy', name: null}));
+  });
+
+  test('grok.ml.applyModel applies a Forge model', async () => {
+    const iris = await openIris();
+    const {id, name} = await saveIrisModel(iris);
+    try {
+      const names = iris.columns.names();
+      await grok.ml.applyModel(name, iris, {}, false);
+      expectArray(iris.columns.names(), [...names, 'Species (predicted)']);
+      expect(iris.getCol('Species (predicted)').getTag(PREDICTION_TAG), id);
+      expect(await applicationCount(id), 1);
+    } finally {
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT,
+    skipReason: 'Needs a core with datagrok-ai/core#1518; the released core takes the old path'});
+
+  test('predictionName adds a number for every repeat, ignoring case', async () => {
+    const table = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Species', ['a'])]);
+    expect(predictionName(table, 'Species'), 'Species (predicted)');
+    table.columns.addNewString('Species (predicted)');
+    expect(predictionName(table, 'Species'), 'Species (predicted 2)');
+    table.columns.addNewString('Species (predicted 2)');
+    expect(predictionName(table, 'Species'), 'Species (predicted 3)');
+    const other = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'species (PREDICTED)', ['a'])]);
+    expect(predictionName(other, 'Species'), 'Species (predicted 2)');
+  });
+
+  test('reproduces the training predictions and records the application', async () => {
+    const iris = await openIris();
+    const {id, result} = await saveIrisModel(iris);
+    const applications = () => forgeDb.applications.query().where('model_id', '=', id);
+    try {
+      const names = iris.columns.names();
+      const sepalLength = rawValues(iris.getCol('Sepal.Length'));
+      const model = await loadModel(id);
+      const columns = featureColumns(iris, model.features, exactMapping(model.features, iris));
+      expect(columnNamed(columns, 'Sepal.Length').dart === iris.getCol('Sepal.Length').dart, true,
+        'A feature column was copied');
+
+      const [{column, skippedRows}, frames] = await framesSharing(iris.columns.toList(),
+        () => applyAndRecord(requestFor(model, iris), 'api'));
+      expectReleased(frames);
+      expect(column.dataFrame?.dart === iris.dart, true, 'The prediction column belongs to another frame');
+      expect(column.name, 'Species (predicted)');
+      expect(column.type, DG.COLUMN_TYPE.STRING);
+      expect(column.getTag(PREDICTION_TAG), id);
+      expect(skippedRows, 0);
+      expectMetrics((await measure('classification', iris.getCol('Species'), column, result.metrics.positiveClass,
+        result.probabilities)).values, result.metrics.train, 1e-9);
+      expectArray(column.toList(), await predictionsOf(model.engine, columnsOf(iris, MEASUREMENTS), result.blob));
+      expectArray(iris.columns.names(), [...names, 'Species (predicted)']);
+      expect(iris.getCol('col 1').type, DG.COLUMN_TYPE.INT);
+      expectArray(rawValues(iris.getCol('Sepal.Length')), sepalLength);
+
+      const [record] = await applications();
+      expect(record.status, 'completed');
+      expect(record.row_count, 150);
+      expect(record.skipped_rows, 0);
+      expect(record.column_name, 'Species (predicted)');
+      expect(record.source, 'api');
+      expect(record.table_name, iris.name);
+
+      expect((await applyAndRecord(requestFor(model, iris), 'api')).column.name, 'Species (predicted 2)');
+      expect((await applications()).length, 2);
+    } finally {
+      await deleteModel(id);
+    }
+    expect(await applications().count(), 0);
+  }, {timeout: TIMEOUT});
+
+  test('reproduces the training predictions of a regressor', async () => {
+    const iris = await openIris();
+    const {id, result} = await saveTestModel(columnsOf(iris, ['Sepal.Length', 'Sepal.Width', 'Petal.Width']),
+      iris.getCol('Petal.Length'), iris.name);
+    try {
+      const model = await loadModel(id);
+      const {column} = await applyAndRecord(requestFor(model, iris), 'api');
+      expect(column.name, 'Petal.Length (predicted)');
+      expect(column.type, DG.COLUMN_TYPE.FLOAT);
+      expectMetrics(regressionMetrics(iris.getCol('Petal.Length'), column), result.metrics.train, 1e-6);
+
+      // Numerical predictions of several batches and around a skipped row are put together from their raw data.
+      const gapped = iris.clone();
+      gapped.getCol('Sepal.Width').set(3, null);
+      const batched = (await applyAndRecord(requestFor(model, gapped, {batchSize: 40}), 'api')).column;
+      expect(batched.isNone(3), true, 'The skipped row has a prediction');
+      for (let i = 0; i < iris.rowCount; i++) {
+        if (i !== 3)
+          expectFloat(batched.get(i), column.get(i), 1e-9, `Row ${i}`);
+      }
+    } finally {
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('batches give the same predictions, report progress and stop on cancel', async () => {
+    const {model, reference} = shared();
+    const percents: number[] = [];
+    const progress: LoopProgress = {canceled: false, update: (percent) => percents.push(percent)};
+    const {column} = await applyAndRecord(requestFor(model, irisCopy('batches'), {batchSize: 40}), 'api', progress);
+    expectArray(column.toList(), reference);
+    expect(percents.length, 4);
+    expect(percents.every((p, i) => i === 0 || p > percents[i - 1]), true, percents.join(', '));
+    expect(percents[percents.length - 1], 100);
+
+    const whole = await predictRows(requestFor(model, irisCopy('one-call')));
+    const batched = await predictRows(requestFor(model, irisCopy('batched'), {batchSize: 40}));
+    expectArray(batched.probabilities?.classes ?? [], whole.probabilities?.classes ?? ['none']);
+    for (const [k, col] of (whole.probabilities?.columns ?? []).entries())
+      expectArray(batched.probabilities!.columns[k].toList(), col.toList());
+
+    const cancelled = irisCopy('cancel');
+    const columnCount = cancelled.columns.length;
+    await expectExceptionAsync(async () => {
+      await applyAndRecord(requestFor(model, cancelled, {batchSize: 40}), 'api', {canceled: true, update: () => {}});
+    }, failsWith('Application was cancelled.'));
+    expect(cancelled.columns.length, columnCount);
+    const records = await applicationsOf(cancelled);
+    expect(records.length, 1);
+    expect(records[0].status, 'cancelled');
+  }, {timeout: TIMEOUT});
+
+  test('a cancel from the event loop stops an application between batches', async () => {
+    const {model, iris} = shared();
+    // Iris four times, so 600 one-row batches run well past one pause interval.
+    const repeated = (name: string) => DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name,
+      Array.from({length: 4 * iris.rowCount}, (_, i) => iris.get(name, i % iris.rowCount)));
+    const table = DG.DataFrame.fromColumns(MEASUREMENTS.map(repeated));
+    table.name = `${iris.name}-cancel-timer`;
+    const columnCount = table.columns.length;
+    let isScheduled = false;
+    // The flag flips in a timer after the first batch, as a click on the task bar's cross does: only a batch loop that
+    // yields to the event loop sees it before the last batch.
+    const progress = {canceled: false, update: () => {
+      if (!isScheduled) {
+        isScheduled = true;
+        setTimeout(() => {
+          progress.canceled = true;
+        }, 0);
+      }
+    }};
+    await expectExceptionAsync(async () => {
+      await applyAndRecord(requestFor(model, table, {batchSize: 1}), 'api', progress);
+    }, failsWith('Application was cancelled.'));
+    expect(table.columns.length, columnCount);
+    const records = await applicationsOf(table);
+    expect(records.length, 1);
+    expect(records[0].status, 'cancelled');
+  }, {timeout: TIMEOUT});
+
+  test('the API maps by exact names, the dialog prefill by close names', async () => {
+    const {model, reference} = shared();
+    const renamed = irisCopy('renamed');
+    renamed.getCol('Sepal.Length').name = 'sepal length';
+    await expectExceptionAsync(async () => {
+      await applyAndRecord(requestFor(model, renamed), 'api');
+    }, (e) => e instanceof ForgeError && e.message.includes('Choose a column for \'Sepal.Length\''));
+    expect((await applicationsOf(renamed)).length, 0);
+
+    const mapping = suggestMapping(model.features, renamed);
+    const {column} = await applyAndRecord(requestFor(model, renamed, {mapping}), 'api');
+    expectArray(column.toList(), reference);
+    expect(renamed.col('sepal length') !== null && renamed.col('Sepal.Length') === null, true,
+      renamed.columns.names().join(', '));
+  }, {timeout: TIMEOUT});
+
+  test('Skip rows leaves the rows with missing values without a prediction', async () => {
+    const {model, reference} = shared();
+    const table = irisCopy('skip');
+    table.getCol('Sepal.Width').set(0, null);
+    table.getCol('Sepal.Width').set(5, null);
+    const {column, skippedRows} = await applyAndRecord(requestFor(model, table), 'api');
+    expect(skippedRows, 2);
+    for (let i = 0; i < table.rowCount; i++) {
+      if (i === 0 || i === 5)
+        expect(column.isNone(i), true, `Row ${i} has a prediction`);
+      else
+        expect(column.get(i), reference[i], `Row ${i}`);
+    }
+    const [record] = await applicationsOf(table);
+    expect(record.skipped_rows, 2);
+  }, {timeout: TIMEOUT});
+
+  test('Impute predicts every row and leaves the table\'s gaps', async () => {
+    const {model} = shared();
+    const table = irisCopy('impute');
+    table.getCol('Sepal.Width').set(0, null);
+    table.getCol('Sepal.Width').set(5, null);
+    const [{column, skippedRows}, frames] = await framesSharing(table.columns.toList(),
+      () => applyAndRecord(requestFor(model, table, {missingValues: IMPUTE}), 'api'));
+    expect(skippedRows, 0);
+    expect(column.stats.missingValueCount, 0);
+    expect(table.getCol('Sepal.Width').isNone(0) && table.getCol('Sepal.Width').isNone(5), true,
+      'The table\'s missing values were filled');
+    expectReleased(frames);
+  }, {timeout: TIMEOUT});
+
+  test('Impute leaves a row without feature values unpredicted and counts it', async () => {
+    const {model, reference} = shared();
+    const table = irisCopy('impute-empty-row');
+    const emptyRow = 7;
+    for (const name of MEASUREMENTS)
+      table.getCol(name).set(emptyRow, null);
+    table.getCol('Sepal.Width').set(0, null);
+    const [{column, skippedRows}, frames] = await framesSharing(table.columns.toList(),
+      () => applyAndRecord(requestFor(model, table, {missingValues: IMPUTE}), 'api'));
+    expect(skippedRows, 1);
+    expect(column.isNone(emptyRow), true, 'The row without feature values has a prediction');
+    expect(column.isNone(0), false, 'The imputed row has no prediction');
+    for (let i = 1; i < table.rowCount; i++) {
+      if (i !== emptyRow)
+        expect(column.get(i), reference[i], `Row ${i}`);
+    }
+    // Every feature has a gap, so the imputer and the method get copies only.
+    expectNoFrames(frames);
+    expect((await applicationsOf(table))[0]?.skipped_rows, 1);
+  }, {timeout: TIMEOUT});
+
+  test('two applications at once on one table get their own names and release their frames', async () => {
+    const {model, reference} = shared();
+    const table = irisCopy('concurrent');
+    const [results, frames] = await framesSharing(table.columns.toList(), () => Promise.all([
+      applyAndRecord(requestFor(model, table), 'api'), applyAndRecord(requestFor(model, table), 'api')]));
+    expectArray(results.map((r) => r.column.name).sort(), ['Species (predicted)', 'Species (predicted 2)'].sort());
+    for (const {column} of results)
+      expectArray(column.toList(), reference);
+    expectReleased(frames);
+    expect((await applicationsOf(table)).length, 2);
+  }, {timeout: TIMEOUT});
+
+  test('a one-hot model is applied end to end and releases its frames', async () => {
+    const rows = 40;
+    const x = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', valuesOf(rows, (i) => i / 4));
+    const color = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'color',
+      Array.from({length: rows}, (_, i) => ['red', 'green', 'blue'][i % 3]));
+    const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', valuesOf(rows, (i) => i / 4 + 5 * (i % 3)));
+    // The columns the replay builds from 'color', so the method learns what it will be given.
+    const encoded = color.categories.map((category) => DG.Column.fromInt32Array(`color=${category}`,
+      Int32Array.from({length: rows}, (_, i) => color.get(i) === category ? 1 : 0)));
+    const features = [{name: 'x', type: DG.COLUMN_TYPE.FLOAT}, {name: 'color', type: DG.COLUMN_TYPE.STRING}];
+    const {id, result} = await saveTestModel([x, ...encoded], y, `forge-test-one-hot-${Date.now()}`,
+      {features: {columns: features}, options: {preprocessingInfo: [ONE_HOT], postprocessingInfo: []}});
+    try {
+      const model = await loadModel(id);
+      const expected = await predictionsOf(model.engine, [x, ...encoded], result.blob);
+      const table = DG.DataFrame.fromColumns([x, color]);
+      const [{column}, frames] = await framesSharing(table.columns.toList(),
+        () => applyAndRecord(requestFor(model, table), 'api'));
+      expect(column.name, 'y (predicted)');
+      expectArray(column.toList(), expected);
+      expectReleased(frames);
+      expectArray(table.columns.names(), ['x', 'color', 'y (predicted)']);
+      expect(color.dataFrame?.dart === table.dart, true, 'The text column left the table');
+    } finally {
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
+});
+
+// One category, split for its length: the fixture of `before` and `after` serves both parts.
+category('Apply', () => {
+  test('a one-hot model with recorded categories applies to a table lacking one category and with an extra one',
+    async () => {
+      const rows = 40;
+      const colors = ['red', 'green', 'blue'];
+      const x = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', valuesOf(rows, (i) => i / 4));
+      const color = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'color',
+        Array.from({length: rows}, (_, i) => colors[i % 3]));
+      const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', valuesOf(rows, (i) => i / 4 + 5 * (i % 3)));
+      const {id, result} = await saveTestModel([x, color], y, `forge-test-one-hot-${Date.now()}`, {}, ONE_HOT_STEPS);
+      try {
+        expect(JSON.stringify(result.options.oneHotCategories), JSON.stringify({color: ['blue', 'green', 'red']}));
+        expectArray(result.features.columns.map((c) => c.name), ['x', 'color']);
+        const model = await loadModel(id);
+        // No 'blue' in the applied table, and a 'purple' training never saw: its rows are 0 in every color column.
+        const applied = ['red', 'green', 'purple', 'red'];
+        const table = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2, 3, 4]),
+          DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'color', applied)]);
+        const encoded = ['blue', 'green', 'red'].map((c) => DG.Column.fromInt32Array(`color=${c}`,
+          Int32Array.from(applied, (value) => value === c ? 1 : 0)));
+        const expected = await predictionsOf(model.engine, [table.getCol('x'), ...encoded], result.blob);
+        const {column} = await applyAndRecord(requestFor(model, table), 'api');
+        expect(column.stats.missingValueCount, 0);
+        expectArray(column.toList(), expected);
+        expectArray(table.columns.names(), ['x', 'color', 'y (predicted)']);
+      } finally {
+        await deleteModel(id);
+      }
+    }, {timeout: TIMEOUT});
+
+  test('a model records the columns Skip unique categories left out and does not need them to apply', async () => {
+    const {id, result} = await saveSkipUniqueModel();
+    try {
+      expectArray(result.options.skippedColumns ?? [], ['subject']);
+      expectArray(result.features.columns.map((c) => c.name), ['x', 'subject']);
+      expectArray(preparationOptionsOf((await forgeDb.models.get(id)).options).skippedColumns ?? [], ['subject']);
+      const model = await loadModel(id);
+      expectArray(model.features.map((f) => f.name), ['x']);
+      const table = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2, 3, 4])]);
+      expect(mappingProblems(model.features, exactMapping(model.features, table), table, model.engine.name).length, 0);
+      const expected = await predictionsOf(model.engine, [table.getCol('x')], result.blob);
+      const {column} = await applyAndRecord(requestFor(model, table), 'api');
+      expectArray(column.toList(), expected);
+      // A table that has the column, with repeating values, applies the same: the column is not mapped.
+      const withSubject = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2, 3, 4]),
+        DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'subject', ['s1', 's1', 's2', 's2'])]);
+      expectArray((await applyAndRecord(requestFor(model, withSubject), 'api')).column.toList(), expected);
+    } finally {
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a model saved with Predict probability applies as labels plus the positive class\'s probability',
+    async () => {
+      const iris = await twoSpeciesIris();
+      const species = iris.getCol('Species');
+      const {id, result} = await saveTestModel(columnsOf(iris, MEASUREMENTS), species, iris.name, {},
+        {...PREDICT_PROBABILITY, threshold: 0.7});
+      try {
+        const model = await loadModel(id);
+        const table = iris.clone();
+        table.name = iris.name;
+        const {column, probabilityColumns} = await applyAndRecord(requestFor(model, table), 'api');
+        expect(column.type, DG.COLUMN_TYPE.STRING);
+        expect(column.name, 'Species (predicted)');
+        expectArray(column.toList(),
+          replayPostprocessing(result.prediction, result.options, result.probabilities).toList());
+        expect(column.toList().every((v) => v === 'versicolor' || v === 'virginica'), true, column.categories.join());
+        expectArray(probabilityColumns.map((c) => `${c.name} ${c.type} ${c.getTag(PREDICTION_TAG)}`),
+          [`P(Species = versicolor) ${DG.COLUMN_TYPE.FLOAT} ${id}`]);
+        const [probability] = probabilityColumns;
+        expect(probability.meta.description, `Probability that Species is versicolor, predicted by ${model.row.name}`);
+        const names = table.columns.names();
+        expect(names.indexOf(probability.name), names.indexOf(column.name) + 1, names.join(', '));
+        expect(table.col(probability.name) === probability, true, 'The probability column is not in the table');
+        expect((await forgeDb.models.get(id)).metrics?.validation?.auc !== undefined, true, 'No AUC-ROC was saved');
+
+        const again = await applyAndRecord(requestFor(model, table), 'api');
+        expectArray([again.column.name, ...again.probabilityColumns.map((c) => c.name)],
+          ['Species (predicted 2)', 'P(Species = versicolor) 2']);
+        const batched = await applyAndRecord(requestFor(model, table, {batchSize: 40}), 'api');
+        expectArray(batched.probabilityColumns[0].toList(), probability.toList());
+
+        const viaApi = iris.clone();
+        viaApi.name = iris.name;
+        await runApplyModel(id, viaApi, null, false);
+        expect(viaApi.col('P(Species = versicolor)') !== null, true, viaApi.columns.names().join(', '));
+      } finally {
+        await deleteModel(id);
+      }
+    }, {timeout: TIMEOUT});
+
+  test('a boolean-target model saved with Predict probability adds boolean labels and the first category\'s ' +
+    'probability', async () => {
+    const iris = await twoSpeciesIris();
+    const species = iris.getCol('Species');
+    const target = DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'isVersicolor',
+      Array.from({length: iris.rowCount}, (_, i) => species.get(i) === 'versicolor'));
+    const {id, result} = await saveTestModel(columnsOf(iris, MEASUREMENTS), target, iris.name, {},
+      {...PREDICT_PROBABILITY, threshold: 0.7});
+    try {
+      const positive = target.categories[0];
+      const table = iris.clone();
+      table.name = iris.name;
+      const {column, probabilityColumns} = await applyAndRecord(requestFor(await loadModel(id), table), 'api');
+      expect(column.name, 'isVersicolor (predicted)');
+      expect(column.type, DG.COLUMN_TYPE.BOOL);
+      expectArray(column.toList(), trainPredictionOf(result).toList());
+      expectArray(probabilityColumns.map((c) => c.name), [`P(isVersicolor = ${positive})`]);
+      expectArray(probabilityColumns[0].toList(), probabilityOf(result.probabilities!, positive)!.toList());
+    } finally {
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a three-class model saved with Predict probability adds every class\'s probability', async () => {
+    const iris = await openIris();
+    const {id, result} = await saveTestModel(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'), iris.name, {},
+      PREDICT_PROBABILITY);
+    try {
+      const table = iris.clone();
+      table.name = iris.name;
+      const {column, probabilityColumns} = await applyAndRecord(requestFor(await loadModel(id), table), 'api');
+      expectArray(probabilityColumns.map((c) => c.name),
+        ['P(Species = setosa)', 'P(Species = versicolor)', 'P(Species = virginica)']);
+      expectArray(column.toList(), trainPredictionOf(result).toList());
+
+      const plain = irisCopy('no-step');
+      const without = await applyAndRecord(requestFor(shared().model, plain), 'api');
+      expect(without.probabilityColumns.length, 0);
+      expect(plain.columns.names().some((name) => name.startsWith('P(')), false, plain.columns.names().join());
+    } finally {
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('predictRows predicts the kept rows and adds and records nothing', async () => {
+    const {id, model, reference} = shared();
+    const applications = () => forgeDb.applications.query().where('model_id', '=', id).count();
+    const before = await applications();
+    const table = irisCopy('rows');
+    const columnCount = table.columns.length;
+    const rows = await predictRows(requestFor(model, table));
+    expect(rows.labels.length, 150);
+    expect(rows.raw === rows.labels, true, 'A model without postprocessing gave other labels');
+    expectArray(rows.labels.toList(), reference);
+    expect(rows.keptRows === null && rows.skippedRows === 0, true, 'Rows were skipped');
+    expect(rows.blob.length > 0, true, 'Empty blob');
+    expectArray(rows.columns.map((c) => c.name), MEASUREMENTS);
+    expectArray(rows.probabilities?.classes ?? [], ['setosa', 'versicolor', 'virginica']);
+    expectArray(rows.probabilities?.columns.map((c) => c.length) ?? [], [150, 150, 150]);
+
+    table.getCol('Sepal.Width').set(3, null);
+    const skipped = await predictRows(requestFor(model, table));
+    expect(skipped.keptRows?.trueCount, 149);
+    expect(skipped.skippedRows, 1);
+    expect(skipped.labels.length, 149);
+    expectArray(skipped.probabilities?.columns.map((c) => c.length) ?? [], [149, 149, 149]);
+    const spread = scatteredColumn(skipped.labels, skipped.keptRows ?? DG.BitSet.create(150), 150);
+    expect(spread.isNone(3), true, 'The skipped row has a prediction');
+    expect(spread.get(4), reference[4]);
+    expect(table.columns.length, columnCount);
+    expect(await applications(), before);
+  }, {timeout: TIMEOUT});
+
+  test('evaluateModel measures a saved model on a table without a column or a record', async () => {
+    const {id, model, result} = shared();
+    const applications = () => forgeDb.applications.query().where('model_id', '=', id).count();
+    const before = await applications();
+    const table = irisCopy('evaluate');
+    const columnCount = table.columns.length;
+    const target = table.getCol('Species');
+    const evaluation = await evaluateModel({model, table, target, mapping: exactMapping(model.features, table),
+      positiveClass: result.metrics.positiveClass});
+    expectMetrics(evaluation.values, result.metrics.train, 1e-6);
+    expect(typeof evaluation.values.auc, 'number');
+    expect(typeof evaluation.values.mcc, 'number');
+    expect(evaluation.classes?.length, 3);
+    expect(evaluation.curves === undefined, true, 'Three classes have curves');
+    expect(evaluation.probabilities !== undefined, true, 'No class probabilities');
+    expect(evaluation.rowCount, 150);
+    expect(evaluation.target === target && evaluation.keptRows === null, true, 'The target was copied');
+    expect(evaluation.score === undefined, true, 'A score without Predict probability');
+    expect(table.columns.length, columnCount);
+    expect(await applications(), before);
+
+    table.getCol('Petal.Width').set(0, null);
+    const skipped = await evaluateModel({model, table, target, mapping: exactMapping(model.features, table)});
+    expect(skipped.rowCount, 149);
+    expect(skipped.target.length, 149);
+    expect(skipped.skippedRows, 1);
+
+    const keptModel = await saveKeptGapsModel(shared().iris);
+    try {
+      const loaded = await loadModel(keptModel.id);
+      const kept = await evaluateModel({model: loaded, table, target, mapping: exactMapping(loaded.features, table)});
+      expect(kept.rowCount, 150);
+      expect(kept.skippedRows, 0);
+    } finally {
+      await deleteModel(keptModel.id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a model is applied in the missing-values mode it was trained with, else by its method', async () => {
+    const iris = shared().iris;
+    const noRecord = {options: {preprocessingInfo: [], postprocessingInfo: []}};
+    const apiName = `forge-test-mode-${Date.now()}`;
+    const {modelId} = await runTrainModel({table: iris, target: 'Species', name: apiName, showProgress: false});
+    const models = [
+      ['XGBoost by default on clean data', {id: modelId ?? ''}, 0],
+      ['skip', await saveIrisModel(iris), 2],
+      ['keep', await saveKeptGapsModel(iris), 0],
+      ['XGBoost without a record', await saveIrisModel(iris, noRecord), 0],
+      ['SVM without a record', await saveIrisModel(iris, noRecord, svm()), 2],
+    ] as const;
+    try {
+      for (const [i, [what, {id}, skippedRows]] of models.entries()) {
+        const table = irisCopy(`mode-${i}`);
+        table.getCol('Sepal.Width').set(0, null);
+        table.getCol('Petal.Width').set(5, null);
+        await runApplyModel(id, table, null, false);
+        const column = table.getCol('Species (predicted)');
+        expect(column.stats.missingValueCount, skippedRows, what);
+        expect(column.isNone(0) && column.isNone(5), skippedRows > 0, `${what}: the gap rows`);
+        const [record] = await forgeDb.applications.query().where('model_id', '=', id)
+          .where('table_name', '=', table.name);
+        expect(record?.skipped_rows, skippedRows, `${what}: the recorded skipped rows`);
+      }
+      const {model} = shared();
+      const imputed = {...model, options: {...model.options,
+        missingValues: {mode: 'impute' as const, neighbors: 3, distance: 'Manhattan', skippedRows: 0}}};
+      expect(JSON.stringify(missingValuesOf(imputed)),
+        JSON.stringify({mode: 'impute', impute: {neighbors: 3, distance: 'Manhattan'}}));
+    } finally {
+      for (const [, {id}] of models.slice(1))
+        await deleteModel(id);
+      await deleteModelsNamed(apiName);
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('evaluateModel of a model saved with Predict probability measures its labels and probabilities', async () => {
+    const iris = await twoSpeciesIris();
+    const species = iris.getCol('Species');
+    const {id, result} = await saveTestModel(columnsOf(iris, MEASUREMENTS), species, iris.name, {},
+      PREDICT_PROBABILITY);
+    try {
+      const model = await loadModel(id);
+      const evaluation = await evaluateModel({model, table: iris, target: species,
+        mapping: exactMapping(model.features, iris), positiveClass: result.metrics.positiveClass});
+      expect(evaluation.score === undefined, true, 'A score of a model with class probabilities');
+      expect(evaluation.probabilities !== undefined, true, 'No class probabilities');
+      expect(evaluation.curves !== undefined, true, 'No curves');
+      for (const metric of ['auc', 'averagePrecision', 'logLoss', 'brier'] as const)
+        expect(typeof evaluation.values[metric], 'number', metric);
+      expectMetrics(evaluation.values, result.metrics.train, 1e-6);
+      expect(evaluation.prediction.toList().every((v) => v === 'versicolor' || v === 'virginica'), true,
+        evaluation.prediction.categories.join());
+      const api = await runEvaluateModel({model: id, table: iris, showProgress: false});
+      expect(api.positiveClass, result.metrics.positiveClass);
+      expectFloat(api.metrics.evaluation.auc ?? NaN, evaluation.values.auc ?? NaN, 1e-9, 'auc');
+      expect(api.classes?.length, 2);
+      expectFloat(api.metrics.evaluation.mcc ?? NaN, evaluation.values.mcc ?? NaN, 1e-9, 'mcc');
+      expect(await applicationCount(id), 0);
+    } finally {
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a model of the former regression mode applies its score cut at the threshold and is measured on it',
+    async () => {
+      const iris = await twoSpeciesIris();
+      const species = iris.getCol('Species');
+      const isVersicolor = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Species',
+        Array.from({length: iris.rowCount}, (_, i) => species.get(i) === 'versicolor' ? 1 : 0));
+      const regression = await requestOf(columnsOf(iris, MEASUREMENTS), isVersicolor);
+      const trained = await trainModel(regression);
+      const fields = modelFieldsOf({name: `forge-test-old-probability-${Date.now()}`, description: '', tags: [],
+        engine: regression.engine, datasetName: iris.name, result: trained, storage: {mode: 'none'},
+        fingerprint: datasetFingerprint(regression.features, regression.target)});
+      const id = await saveModel({...fields,
+        target: {name: 'Species', type: DG.COLUMN_TYPE.STRING, categories: ['versicolor', 'virginica']},
+        metrics: {...trained.metrics, positiveClass: 'versicolor'},
+        options: {targetType: DG.COLUMN_TYPE.STRING, missingValues: trained.options.missingValues,
+          negativeClass: 'virginica', positiveClass: 'versicolor', preprocessingInfo: [],
+          postprocessingInfo: [BINARY_CLASSIFICATION], binaryClassificationThreshold: 0.4}}, trained.blob);
+      try {
+        const model = await loadModel(id);
+        const scores = await predictionsOf(model.engine, columnsOf(iris, MEASUREMENTS), trained.blob);
+        const table = iris.clone();
+        table.name = iris.name;
+        const {column, probabilityColumns} = await applyAndRecord(requestFor(model, table), 'api');
+        expect(column.type, DG.COLUMN_TYPE.STRING);
+        expectArray(column.toList(), scores.map((s) => (s as number) >= 0.4 ? 'versicolor' : 'virginica'));
+        expect(probabilityColumns.length, 0, 'An old-step model added probability columns');
+        expect(table.columns.names().some((n) => n.startsWith('P(')), false, table.columns.names().join(', '));
+
+        const evaluation = await evaluateModel({model, table: iris, target: species,
+          mapping: exactMapping(model.features, iris)});
+        if (evaluation.score === undefined)
+          throw new Error('No score');
+        expectArray(evaluation.score.toList(), scores);
+        expect(evaluation.positiveClass, 'versicolor');
+        expect(evaluation.curves !== undefined, true, 'No curves');
+        expectFloat(evaluation.values.auc ?? NaN, aucOf(species, evaluation.score, 'versicolor') ?? NaN, 1e-6, 'auc');
+        expect(typeof evaluation.values.averagePrecision, 'number');
+        expect(evaluation.values.logLoss === undefined && evaluation.values.brier === undefined, true,
+          'Log loss or Brier score of a regression score');
+        expectArray(evaluation.prediction.toList(), column.toList());
+
+        const row = await forgeDb.models.get(id);
+        expect(row.task, 'regression');
+        const summary = storedSummary(row);
+        expect(summary?.threshold === undefined && summary?.thresholdMetric === undefined, true,
+          'An old-step model has a Classification threshold line');
+        expect(summary?.metrics.positiveClass, 'versicolor');
+      } finally {
+        await deleteModel(id);
+      }
+    }, {timeout: TIMEOUT});
+
+  test('runEvaluateModel measures a model on a table next to its stored metrics and adds and records nothing',
+    async () => {
+      const {id, iris, result} = shared();
+      const stored = metricsRecordOf((await forgeDb.models.get(id)).metrics);
+      if (stored === null)
+        throw new Error('The fixture has no stored metrics');
+      const applications = await applicationCount(id);
+      const columnCount = iris.columns.length;
+      const evaluation = await runEvaluateModel({model: id, table: iris, showProgress: false});
+      expectArray([evaluation.id, evaluation.table, evaluation.target, evaluation.rowCount, evaluation.skippedRows],
+        [id, iris.name, 'Species', 150, 0]);
+      expectFloat(evaluation.metrics.evaluation.accuracy ?? NaN, result.metrics.train.accuracy ?? NaN, 1e-6,
+        'accuracy');
+      expectFloat(evaluation.metrics.evaluation.auc ?? NaN, result.metrics.train.auc ?? NaN, 1e-6, 'auc');
+      expect(typeof evaluation.metrics.evaluation.balancedAccuracy, 'number');
+      expectMetrics(evaluation.metrics.train, stored.train, 1e-12);
+      expectMetrics(evaluation.metrics.validation, stored.validation, 1e-12);
+      expect(Array.isArray(evaluation.insights) && evaluation.insights.every((i) => typeof i.text === 'string' &&
+        !('panel' in i)), true, JSON.stringify(evaluation.insights));
+      expect(iris.columns.length, columnCount);
+      expect(await applicationCount(id), applications);
+    }, {timeout: TIMEOUT});
+
+  test('runEvaluateModel without a table uses the data the model references, and refuses a model without data',
+    async () => {
+      const iris = await openIrisFromFile();
+      iris.name = `forge-test-api-evaluate-${Date.now()}`;
+      const tableCount = grok.shell.tables.length;
+      try {
+        const {modelId} = await runTrainModel({table: iris, target: 'Species', name: iris.name, storage: 'reference',
+          showProgress: false});
+        const evaluation = await runEvaluateModel({model: modelId ?? '', showProgress: false});
+        expect(evaluation.table, (await grok.data.files.openTable(IRIS)).name);
+        expect(evaluation.rowCount, 150);
+        expect(grok.shell.tables.length, tableCount, 'The referenced data joined the workspace');
+        await expectExceptionAsync(() => runEvaluateModel({model: shared().id, showProgress: false}).then(() => {}),
+          failsWith('The model keeps no training data. Pass a table with the actual values.'));
+      } finally {
+        grok.shell.closeTable(iris);
+        await deleteModelsNamed(iris.name);
+        await deleteRunsOf([iris]);
+      }
+    }, {timeout: TIMEOUT});
+
+  test('runEvaluateModel refuses a missing target and maps the features as Forge:applyModel', async () => {
+    const {id, result} = shared();
+    const table = irisCopy('evaluate-mapped');
+    const evaluate = (input: {target?: string; columnNamesMap?: {[feature: string]: string}}) =>
+      runEvaluateModel({model: id, table, showProgress: false, ...input});
+    await expectExceptionAsync(() => evaluate({target: 'Specie'}).then(() => {}),
+      failsWith('The table has no column \'Specie\' with the actual values. Pass the column\'s name in target.'));
+    table.getCol('Sepal.Width').name = 'sepal width';
+    await expectExceptionAsync(() => evaluate({}).then(() => {}),
+      failsWith('The table has no column \'Sepal.Width\' the model needs. Map it in columnNamesMap.'));
+    const mapped = await evaluate({columnNamesMap: {'Sepal.Width': 'sepal width'}});
+    expectMetrics(mapped.metrics.evaluation, result.metrics.train, 1e-6);
+  }, {timeout: TIMEOUT});
+
+  test('runEvaluateModel shows Evaluating <model> in the task bar, and a cancel there fails it', async () => {
+    const training = demoDemog(2000);
+    const name = `forge-test-api-evaluate-demog-${Date.now()}`;
+    try {
+      const {modelId} = await runTrainModel({table: training, target: 'sex', features: ['age', 'height', 'weight'],
+        method: 'XGBoost', name, showProgress: false});
+      const evaluate = () => runEvaluateModel({model: modelId ?? '', table: demoDemog(50000)});
+      const [done, shown] = await watchTaskBar(evaluate, false);
+      if (done.status === 'rejected')
+        throw done.reason;
+      expect(done.value.rowCount + done.value.skippedRows, 50000);
+      expect(shown.labels.some((label) => label.includes(`Evaluating ${name}`)), true, shown.labels.join(' | '));
+      await awaitCheck(() => shown.entry?.isConnected === false, 'The progress outlives the evaluation', WAIT_MS);
+
+      const [cancelled, watched] = await watchTaskBar(evaluate, true);
+      const error = cancelled.status === 'rejected' ? cancelled.reason : null;
+      expect(failsWith('Evaluation was cancelled.')(error), true, String(error));
+      await awaitCheck(() => watched.entry?.isConnected === false, 'The progress outlives the cancel', WAIT_MS);
+      expect(await applicationCount(modelId ?? ''), 0);
+    } finally {
+      await deleteModelsNamed(name);
+      await deleteRunsOf([training]);
+    }
+  }, {timeout: 60000});
+
+  test('Forge:evaluateModel through grok.functions.call', async () => {
+    const {id, iris} = shared();
+    const plain: unknown = await grok.functions.call('Forge:evaluateModel', {model: id, table: iris,
+      showProgress: false});
+    const metrics = isRecord(plain) && isRecord(plain.metrics) ? plain.metrics : {};
+    expect(isRecord(metrics.evaluation) && typeof metrics.evaluation.accuracy === 'number', true,
+      JSON.stringify(plain));
+  }, {timeout: TIMEOUT});
+
+  test('targetSchemaOf reads a stored target', async () => {
+    expect(JSON.stringify(targetSchemaOf({name: 'Species', type: 'string', categories: ['a', 'b']})),
+      JSON.stringify({name: 'Species', type: 'string', categories: ['a', 'b']}));
+    expect(JSON.stringify(targetSchemaOf({name: 'y', type: 'double', categories: ['a', 1]})),
+      JSON.stringify({name: 'y', type: 'double'}));
+    expect(targetSchemaOf({name: 'y'}) === null && targetSchemaOf('y') === null, true, 'A partial schema');
+  });
+
+  test('a table whose every row has a missing value gets no prediction', async () => {
+    const {model} = shared();
+    const table = irisCopy('all-missing');
+    const sepalWidth = table.getCol('Sepal.Width');
+    for (let i = 0; i < table.rowCount; i++)
+      sepalWidth.set(i, null, false);
+    const columnCount = table.columns.length;
+    await expectExceptionAsync(async () => {
+      await applyAndRecord(requestFor(model, table), 'api');
+    }, failsWith('Every row has a missing value in the columns the model ' +
+      'needs, so nothing can be predicted. Fill the missing values or choose Impute.'));
+    expect(table.columns.length, columnCount);
+  }, {timeout: TIMEOUT});
+
+  test('a refused mapping is not recorded, a failing method call is', async () => {
+    const {model} = shared();
+    const table = irisCopy('refused');
+    const mapping = exactMapping(model.features, table);
+    mapping.set('Sepal.Length', 'Species');
+    await expectExceptionAsync(async () => {
+      await applyAndRecord(requestFor(model, table, {mapping}), 'api');
+    }, throwsWith('\'Species\' holds text but \'Sepal.Length\' needs numbers.'));
+    expect((await applicationsOf(table)).length, 0);
+
+    const folder = `${BLOB_ROOT}/${DG.Utils.uuid4()}`;
+    await grok.dapi.files.write(`${folder}/model.bin`, new Uint8Array([1, 2, 3]));
+    let id: string | undefined;
+    try {
+      [{id}] = await forgeDb.models.insert({...XGBOOST_FIELDS, name: `forge-test-model-${Date.now()}`,
+        task: 'classification', target_name: 'Species', target: {name: 'Species', type: DG.COLUMN_TYPE.STRING},
+        features: {columns: IRIS_FEATURES}, storage_mode: 'none', blob: `file://${folder}/model.bin`});
+      const broken = await loadModel(id);
+      await expectExceptionAsync(async () => {
+        await applyAndRecord(requestFor(broken, table), 'api');
+      });
+      const records = await forgeDb.applications.query().where('model_id', '=', id);
+      expect(records.length, 1);
+      expect(records[0].status, 'failed');
+      expect((records[0].error ?? '') !== '', true, 'The failed application has no error');
+    } finally {
+      if (id !== undefined)
+        await deleteModel(id);
+      else
+        await grok.dapi.files.delete(folder);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('loadModel refuses models it cannot apply', async () => {
+    const stamp = Date.now();
+    const ownBlob = () => `file://${BLOB_ROOT}/${DG.Utils.uuid4()}/model.bin`;
+    const features = {columns: IRIS_FEATURES};
+    const cases: [Partial<ModelInsert>, string][] = [
+      [{features}, `The model 'forge-test-model-${stamp}' has no model file, so it cannot be applied. ` +
+        'It was not trained and saved in Forge.'],
+      [{features, blob: 'file://System:DemoFiles/iris.csv'},
+        `The model 'forge-test-model-${stamp}' points to a file outside Forge's storage and cannot be applied.`],
+      [{blob: ownBlob()}, `The model 'forge-test-model-${stamp}' has no feature list.`],
+      [{features, blob: ownBlob(), engine_name: 'forge-test-engine'},
+        'The method \'forge-test-engine\' is not installed. Install the Eda package.'],
+    ];
+    for (const [fields, text] of cases) {
+      const [{id}] = await forgeDb.models.insert({...XGBOOST_FIELDS, name: `forge-test-model-${stamp}`,
+        task: 'classification', target_name: 'Species', storage_mode: 'none', ...fields});
+      try {
+        await expectExceptionAsync(() => loadModel(id).then(() => {}),
+          failsWith(text));
+      } finally {
+        await forgeDb.models.delete(id);
+      }
+    }
+  });
+
+  test('loadModel finds a model by id or by a unique name', async () => {
+    const stamp = Date.now();
+    const name = `forge-test-model-${stamp}`;
+    const insert = async (modelName: string) => (await forgeDb.models.insert({...XGBOOST_FIELDS, name: modelName,
+      task: 'regression', target_name: 'y', storage_mode: 'none'}))[0].id;
+    // The rows have no model file, so a row that is found is refused with its own name.
+    const isFound = (e: unknown) => e instanceof ForgeError && e.message.startsWith(`The model '${name}' has no model`);
+    const ids: string[] = [];
+    try {
+      ids.push(await insert(name));
+      ids.push(await insert(`forge-test-dup-${stamp}`), await insert(`forge-test-dup-${stamp}`));
+      await expectExceptionAsync(() => loadModel(ids[0]).then(() => {}), isFound);
+      await expectExceptionAsync(() => loadModel(name).then(() => {}), isFound);
+      await expectExceptionAsync(() => loadModel(`forge-test-none-${stamp}`).then(() => {}),
+        failsWith(`No Forge model 'forge-test-none-${stamp}' is available to you.`));
+      await expectExceptionAsync(() => loadModel(`forge-test-dup-${stamp}`).then(() => {}),
+        failsWith(`Several models are named 'forge-test-dup-${stamp}'. Use the model id.`));
+    } finally {
+      for (const id of ids)
+        await forgeDb.models.delete(id);
+    }
+  });
+
+  test('Forge:applyModel applies by exact names and the given pairs', async () => {
+    const {id} = shared();
+    const call = (table: DG.DataFrame, columnNamesMap: {[feature: string]: string}) =>
+      grok.functions.call('Forge:applyModel', {model: id, table, columnNamesMap, showProgress: false});
+
+    const exact = irisCopy('api');
+    await call(exact, {});
+    expect(exact.col('Species (predicted)') !== null, true, exact.columns.names().join(', '));
+
+    const renamed = irisCopy('api-renamed');
+    renamed.getCol('Sepal.Length').name = 'sepal length';
+    await call(renamed, {'Sepal.Length': 'sepal length'});
+    expect(renamed.col('Species (predicted)') !== null, true, renamed.columns.names().join(', '));
+
+    const unmapped = irisCopy('api-unmapped');
+    unmapped.getCol('Sepal.Length').name = 'sepal length';
+    await expectExceptionAsync(() => call(unmapped, {}),
+      throwsWith('The table has no column \'Sepal.Length\' the model needs. Map it in columnNamesMap.'));
+
+    const dated = irisCopy('api-dated');
+    dated.columns.add(DG.Column.dateTime('when', dated.rowCount));
+    await expectExceptionAsync(() => call(dated, {'Sepal.Length': 'when'}),
+      throwsWith('\'when\' holds dates but \'Sepal.Length\' needs numbers. Choose a column with numbers.'));
+
+    for (const table of [exact, renamed])
+      expectArray((await applicationsOf(table)).map((r) => r.source), ['api']);
+    for (const table of [unmapped, dated])
+      expect((await applicationsOf(table)).length, 0);
+  }, {timeout: TIMEOUT});
+
+  test('an integer feature with missing values never reaches the method', async () => {
+    const rows = 40;
+    const nullRows = [5, 17];
+    const k = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'k', valuesOf(rows, (i) => i % 7, nullRows));
+    const x = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', valuesOf(rows, (i) => i / 2));
+    const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', valuesOf(rows, (i) => 2 * (i % 7) + i / 2 + (i % 3) / 10));
+    const table = DG.DataFrame.fromColumns([k, x, y]);
+    const original = table.columns.toList().map(rawValues);
+
+    const request = await prepareTraining(selectionOf(columnsOf(table, ['k', 'x']), y));
+    expect(request.prepared.options.missingValues?.skippedRows, 2);
+    const metrics = (await trainModel(request)).metrics;
+
+    const kept = DG.BitSet.create(rows, (i) => !nullRows.includes(i));
+    const byHand = await requestOf([k.clone(kept), x.clone(kept)], y.clone(kept));
+    const expected = (await trainModel(byHand)).metrics;
+    expectMetrics(metrics.train, expected.train, 1e-9);
+    expectMetrics(metrics.validation, expected.validation, 1e-9);
+
+    expectArray(table.columns.names(), ['k', 'x', 'y']);
+    table.columns.toList().forEach((col, i) => expectArray(rawValues(col), original[i]));
+    expect(k.isNone(5) && k.isNone(17), true, 'The gaps in k were filled');
+  }, {timeout: TIMEOUT});
+});

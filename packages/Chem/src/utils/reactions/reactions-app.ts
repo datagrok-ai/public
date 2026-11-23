@@ -1,7 +1,8 @@
 /**
  * The Reaction Sketcher app (it was "Reactions", in Chem's Reactions folder of Apps; reactions in Crux): ONE reaction
  * or route (utils/reactions/reaction-document.ts). On the left the editing area, behind one small interface
- * ({@link EditingArea}): the Crux sketcher's reaction document (toolset `publication`) with the reaction's text under
+ * ({@link EditingArea}): the Crux sketcher's reaction document (toolset `reaction`: every tool, the query tools among
+ * them, as in a reaction cell's editor; the owner, 2026-11-17) with the reaction's text under
  * it, and what Crux reads under them ("Crux reads 5 steps.", or Crux's error), the title and the map numbers' switch.
  * On the right the reaction drawn large, and under it what the Reaction pane tells of it (widgets/reaction-panel.ts:
  * full screen, the steps, the template's notes, Map atoms). The ribbon's Examples menu loads one of nine titled
@@ -199,7 +200,7 @@ export type DrawingExport = Pick<ExportOptions, 'cdxml' | 'textsLeftOut' | 'step
 
 /**
  * The app's editing area: what edits the reaction's text, and tells when a person changed it. The app's is the Crux
- * sketcher's reaction document, toolset `publication` ({@link SketcherEditingArea}), with a text box under "Text"
+ * sketcher's reaction document, toolset `reaction` ({@link SketcherEditingArea}), with a text box under "Text"
  * ({@link TextEditingArea}, an editing area of its own).
  */
 export interface EditingArea {
@@ -559,9 +560,12 @@ class SketcherEditingArea implements EditingArea {
       const module = await loadCruxSketchForReactions();
       const shown = this.current;
       // Auto-map by Chem's mapper (crux-sketch's reaction-map option, which a sketcher before it ignores: passed as
-      // a value, not a literal, so that this compiles against it); a kept drawing is read once the sketcher is up
+      // a value, not a literal, so that this compiles against it); a kept drawing is read once the sketcher is up. The
+      // reaction tools, query tools included (query mode): a reaction drawn here may be a template to run, as a cell's
+      // (the owner, 2026-11-17: the app opened in molecule mode, its Atom Properties without the query features); the
+      // gear's choice still switches to the publication tools, and neither changes the reaction's text
       const options = {value: tooLargeToDraw(shown) || this.page !== null ? '' : shown, document: 'reaction',
-        toolset: 'publication', mapReaction: sketchReactionMapper() ?? undefined} as const;
+        toolset: 'reaction', mapReaction: sketchReactionMapper() ?? undefined} as const;
       const sketch = await module.createSketcher(this.host, options);
       if (this.disposed) {
         sketch.destroy();

@@ -1258,16 +1258,18 @@ category('Reactions: app', () => {
   test('the ribbon\'s Export... offers As drawn: the sketcher\'s own picture of the drawing, as SVG in points',
     asDrawnFromTheApp);
 
-  // the editing area is the Crux sketcher (the standalone app's default toolset is 'publication'), the text box under
-  // it, each following the other
-  test('the editing area is the Crux sketcher: a reaction document with the publication tools, ' +
+  // the editing area is the Crux sketcher, the text box under it, each following the other; the app opens with the
+  // reaction tools in query mode, as a cell's editor (the owner, 2026-11-17: it opened with the publication tools, its
+  // Atom Properties without the query features), the text as it was
+  test('the editing area is the Crux sketcher: a reaction document with the reaction tools in query mode, ' +
     'the text under it', async () => {
     forgetDocument();
     const view = await openApp();
     try {
       await awaitCheck(() => sketcherShows(view, defaultExample().text), 'the sketcher did not show the document',
         15000);
-      expect(sketchEl(view).toolset, 'publication');
+      expect(sketchEl(view).toolset, 'reaction');
+      expect(sketchEl(view).mode, 'query', 'the query tools offered');
       expect(textBox(view).value, defaultExample().text, 'the text under the sketcher');
     } finally {
       view.close();
@@ -1430,12 +1432,12 @@ category('Reactions: app', () => {
       if (window.innerHeight < 1080) // a shorter window than the package tests' 1920x1080: the box as tall as it allows
         return;
       expect(sketcherBoxHeight(), SKETCHER_FULL_HEIGHT, 'the full height in a 1080-px window');
-      for (const toolset of ['publication', 'reaction'] as const) {
+      for (const toolset of ['reaction', 'publication'] as const) {
         sketchEl(view).toolset = toolset; // the gear's choice; no edit
         await awaitCheck(() => leftBarWhole(sketchEl(view)),
           `${toolset} tools: the left bar scrolls or hides the arrow tool`, 3000);
       }
-      sketchEl(view).toolset = 'publication';
+      sketchEl(view).toolset = 'reaction';
     } finally {
       view.close();
     }

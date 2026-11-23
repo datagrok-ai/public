@@ -786,8 +786,9 @@ export const moveAcrossPlace = When('user moves the pointer across the remembere
  * in steps; a single jump drops nothing. */
 export const dragAreaOntoWidget = When('user drags the {string} area of {widget} onto the {string} area of {widget}',
   async (page: Page, from: string, source: ElementRef, to: string, target: ElementRef) => {
-    const a = v.centerOf(await v.hitArea(page, source, from, true));
+    // the drop target is read first: the area read last is the one a guide lights, and the press is on the source
     const b = v.centerOf(await v.hitArea(page, target, to, true));
+    const a = v.centerOf(await v.hitArea(page, source, from, true));
     await page.mouse.move(a.x, a.y);
     await page.mouse.down();
     for (let i = 1; i <= 10; i++)

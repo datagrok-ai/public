@@ -107,6 +107,7 @@ export interface AgentTurnRequest {
   gates: TurnGate[];
   /** Round-trips a tool call to the browser; rejects on timeout or abort. */
   awaitBrowser: (toolName: string, input: unknown, timeoutMs: number) => Promise<unknown>;
+  showInBrowser: (toolName: string, input: unknown) => void;
   /** Aborts the turn: the agent is cancelled, nothing more is sent to it, and the event stream ends. */
   signal: AbortSignal;
   credentials: ProviderCredentials;
@@ -131,9 +132,9 @@ export type AgentCommand =
   | ({type: 'turn';
       /** The stored Hermes session a reloaded process continues. */
       restore?: string} &
-      Omit<AgentTurnRequest, 'sessionKey' | 'resumeExpected' | 'gates' | 'awaitBrowser' | 'signal' | 'credentials'>)
+      Omit<AgentTurnRequest, 'sessionKey' | 'resumeExpected' | 'gates' | 'awaitBrowser' | 'showInBrowser' | 'signal' | 'credentials'>)
   | {type: 'continue'; text: string}
-  | {type: 'cancel'}
+  | {type: 'cancel'; reason?: string}
   | {type: 'browser_result'; id: string; value?: unknown; error?: string};
 
 export type AgentProcessEvent =
@@ -145,6 +146,7 @@ export type AgentProcessEvent =
   | {type: 'tool_start'; name: string; args: Record<string, unknown>}
   | {type: 'tool_end'; name: string; args: Record<string, unknown>; result: string}
   | {type: 'browser_call'; id: string; name: string; input: unknown; timeoutMs: number}
+  | {type: 'browser_show'; name: string; input: unknown}
   | {type: 'usage'; metrics: TurnMetrics}
   | {type: 'stopped'; text: string; structuredOutput?: unknown; metrics: TurnMetrics}
   | {type: 'limit'; kind: 'turns' | 'budget'}

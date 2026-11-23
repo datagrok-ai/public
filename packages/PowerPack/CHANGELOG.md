@@ -3,6 +3,12 @@
 ## v.next
 
 * Formula Lines: Fixed the Delete button of an annotation region listed below formula lines removing another region, or none
+* [public#4640](https://github.com/datagrok-ai/public/issues/4640): Spotlight: Fixed the Interactive Tutorials links doing nothing; a new user's empty workspace shows the getting-started columns across the full width; headers sit further from their items than the items from each other; empty tabs' messages line up with the tab names
+* Search: The home page's search moves into the otherwise empty top row, leaving more room below: the view's ribbon without tabs, the tab strip while Home is the only tab; the page has less padding on top
+* Spotlight: The home page's Spotlight widget is as tall as its tabs, longer tabs scroll
+* Spotlight: Added the `showTipOfTheDay` setting to hide the tip of the day on the home page
+* Search: Fixed Ctrl+Space not showing suggestions in an empty search box or after reopening the home page; the "Use Ctrl+Space" hint shows only once you type
+* Search: Fixed missing PDB structure images: RCSB moved them to `cdn.rcsb.org/images/structures/pdb/`
 * [core#1507](https://github.com/datagrok-ai/core/issues/1507): Fixed Down arrow in the Space row's search not moving to the first matching space
 * Spotlight: Fixed notifications staying bold after being clicked, and the Notifications tab showing the oldest notifications instead of the newest
 * Spotlight: A notification's report "Details" link opens the report in the context panel instead of the Reports app

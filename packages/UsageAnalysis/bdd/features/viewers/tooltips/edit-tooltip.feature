@@ -1,8 +1,9 @@
 @journey @viewers @realizes:viewers.tooltips
 Feature: Editing the table's tooltip from a viewer
   Tooltip > Edit... on a viewer opens the Edit Tooltip dialog: a check box that ticks every column,
-  a searchable list of the table's columns with a box each, the Reset group tooltip and Design
-  custom tooltip... actions under it, and OK, CANCEL and the history icon in its footer. The search
+  a searchable list of the table's columns with a box each, the Design custom tooltip... action
+  under it (and Reset group tooltip once a viewer is used as the group tooltip), and OK, CANCEL and
+  the history icon in its footer. The search
   ignores case. The columns picked there and confirmed with OK become the tooltip every viewer that
   inherits the table's tooltip shows, the grid included, and stay the same in a cloned view and in
   the original (public#1208). Edit Tooltip on a viewer bound to another table lists that table's
@@ -18,7 +19,7 @@ Feature: Editing the table's tooltip from a viewer
   the grid list exactly the picked columns.
 
   The search is claimed with a lower-case text, a mixed-case one and a part from the middle of two
-  names. Above the list the dialog also offers Use tooltip (Table here) and Show column names.
+  names. Above the list the dialog also offers Use tooltip ("Table (shared)" here) and Show column names.
 
   Not translated: that the list's grid has three columns (type, name, box) — the list steps read the
   names and the boxes, not the grid's columns; and that every viewer lists the picked columns in the
@@ -41,13 +42,13 @@ Feature: Editing the table's tooltip from a viewer
   Scenario: Tooltip > Edit... opens the Edit Tooltip dialog with every column ticked
     When user picks "Tooltip > Edit..." from the context menu of scatter plot viewer
     Then "Edit Tooltip" dialog should be visible
-    And "Use tooltip" input in "Edit Tooltip" dialog should have value "Table"
+    And "Use tooltip" input in "Edit Tooltip" dialog should have value "Table (shared)"
     And "Show column names" input in "Edit Tooltip" dialog should be visible
     And checkbox in "Edit Tooltip" dialog should be checked
     And the column list of "Edit Tooltip" dialog should be exactly "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"
     And the "AGE" column should be checked in the column list of "Edit Tooltip" dialog
     And the "SEVERITY" column should be checked in the column list of "Edit Tooltip" dialog
-    And "Reset group tooltip" label in "Edit Tooltip" dialog should be visible
+    And "Reset group tooltip" label in "Edit Tooltip" dialog should be absent
     And "Design custom tooltip..." label in "Edit Tooltip" dialog should be visible
     And OK button in "Edit Tooltip" dialog should be visible
     And CANCEL button in "Edit Tooltip" dialog should be visible
@@ -123,7 +124,7 @@ Feature: Editing the table's tooltip from a viewer
   Scenario: View > Edit Tooltip keeps setting the table's tooltip for the plots (core#474)
     When user picks "View > Edit Tooltip..." from the top menu
     Then "Edit Tooltip" dialog should be visible
-    And "Use tooltip" input in "Edit Tooltip" dialog should have value "Table"
+    And "Use tooltip" input in "Edit Tooltip" dialog should have value "Table (shared)"
     When user toggles the "WEIGHT" column in the column list of "Edit Tooltip" dialog
     And user clicks on OK button in "Edit Tooltip" dialog
     Then the "Edit Tooltip" dialog should close

@@ -3,7 +3,7 @@ realizes: [trellisplot.cp.split-and-pick-inner, trellisplot.int.undo-redo-viewer
 --- */
 import {expect, Page} from '@playwright/test';
 import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
-import {openDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {openDatagrok, specTestOptions, softStep, skipWithoutPackage} from '@datagrok-libraries/test/src/playwright/spec-login';
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 
 declare const grok: any;
@@ -134,6 +134,7 @@ test('Trellis plot — layout round-trip, project save dialog, Multi Curve inner
   });
 
   await softStep('Multi Curve inner viewer', async () => {
+    if (await skipWithoutPackage(page, 'Curves', 'Multi Curve inner viewer')) return;
     const result = await page.evaluate(async (cPath) => {
       const w = window as any;
       const demogView = grok.shell.tv;

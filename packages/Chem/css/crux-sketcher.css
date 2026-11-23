@@ -50,4 +50,17 @@ crux-sketch {
   /* Datagrok's dialog title (.d4-dialog-header: 18px, its weight unset); Datagrok has no variable for it */
   --crux-sketch-title-size: 18px;
   --crux-sketch-title-weight: 400;
+  /* Datagrok's form rows (.ui-input-label): the label right-aligned next to its field, light grey, 8px from it; the
+     sketcher's own menus keep their look (the owner, 2026-11-17) */
+  --crux-sketch-label-align: right;
+  --crux-sketch-label-text: var(--text-color-light, #9497a0);
+  --crux-sketch-label-gap: 8px;
+  /* a button in a dialog's body (Periodic table) as Datagrok's ui.button there; keyboard focus a thin accent ring */
+  --crux-sketch-inline-button-size: 10px;
+  --crux-sketch-focus-ring: 1px solid var(--blue-1, #2083d5);
+  --crux-sketch-focus-offset: 2px;
+  /* a focused field: no box, its underline turns accent (Datagrok's .ui-input-editor:focus); a disabled one's face */
+  --crux-sketch-field-focus-ring: none;
+  --crux-sketch-field-focus-line: var(--blue-1, #2083d5);
+  --crux-sketch-field-disabled-face: #fafafa;
 }

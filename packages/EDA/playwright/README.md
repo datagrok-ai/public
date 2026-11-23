@@ -22,13 +22,7 @@ public/packages/EDA/playwright/
 ├── multivariate-analysis.test.ts    # ML > Analyze > Multivariate Analysis on cars.csv
 ├── pca.test.ts                      # ML > Analyze > PCA on cars.csv (+ Center/Scale)
 ├── pls.test.ts                      # ML > Analyze > PLS on cars.csv (UI smoke — see limitation)
-├── pareto-front-viewer.test.ts      # ParetoFrontViewer eligibility + label autoselect
-└── MLMethods/
-    ├── linear-regression.test.ts    # ML > Models > Train Model on cars.csv
-    ├── pls-regression.test.ts       # ML > Models > Train Model on cars.csv (PLS)
-    ├── softmax.test.ts              # ML > Models > Train Model on iris.csv (numeric features only)
-    ├── xgboost1.test.ts             # XGBoost classification on iris.csv
-    └── xgboost2.test.ts             # XGBoost regression on cars.csv
+└── pareto-front-viewer.test.ts      # ParetoFrontViewer eligibility + label autoselect
 ```
 
 ## Shared page + API data load (why the suite is fast)
@@ -127,26 +121,22 @@ on timeout) plus a single trailing `expect`, keeping the error count at `0`.
 ## Last results
 
 **16 passed, 0 failed, 0 skipped** — Test-Package-Playwright-TEMP build #7 (`PACKAGES=EDA`,
-4 workers). Per-test, from `public/packages/EDA/result/test-report-playwright.csv`:
+4 workers), which still ran the five old Train view specs since removed. Per-test for the
+specs in the suite now, from `public/packages/EDA/result/test-report-playwright.csv`:
 
 | # | Scenario | Result | Time |
 |---|----------|--------|------|
 | 1 | ANOVA on demog.csv produces a Box plot viewer carrying the analysis conclusion | PASS | 4.4s |
 | 2 | Control comparisons on demog.csv produces a Box plot and the results table | PASS | 4.4s |
 | 3 | GROK-20795: computes on every row, ignoring the active filter | PASS | 6.3s |
-| 4 | Train Linear Regression on cars.csv predicting price | PASS | 4.2s |
-| 5 | Train PLS Regression on cars.csv with 3 components predicting price | PASS | 4.1s |
-| 6 | Train Softmax on iris.csv predicting Species | PASS | 3.3s |
-| 7 | Train XGBoost classification on iris.csv predicting Species | PASS | 3.4s |
-| 8 | Train XGBoost regression on cars.csv predicting price | PASS | 3.4s |
-| 9 | MVA on cars.csv produces Grid + 3 Scatter plots + 2 Bar charts | PASS | 5.1s |
-| 10 | Pareto cars-with-missing — empty + string columns excluded from Min/Max | PASS | 3.5s |
-| 11 | Pareto cars.csv — auto-select `model` as Label | PASS | 3.1s |
-| 12 | Pareto demog.csv — auto-select `USUBJID` as Label | PASS | 4.0s |
-| 13 | Pareto cars.csv — Description/Objectives/Axes/Labels/Legend categories present | PASS | 2.9s |
-| 14 | PCA on cars.csv adds PC1/PC2/PC3, then PC1 (2)/PC2 (2)/PC3 (2) with Center+Scale | PASS | 7.9s |
-| 15 | PLS dialog opens on cars.csv with all expected inputs and accepts Components=3 | PASS | 3.9s |
-| 16 | Sharing & Permissions — Model (two-user grant/revoke round-trip) | PASS | 83.2s |
+| 4 | MVA on cars.csv produces Grid + 3 Scatter plots + 2 Bar charts | PASS | 5.1s |
+| 5 | Pareto cars-with-missing — empty + string columns excluded from Min/Max | PASS | 3.5s |
+| 6 | Pareto cars.csv — auto-select `model` as Label | PASS | 3.1s |
+| 7 | Pareto demog.csv — auto-select `USUBJID` as Label | PASS | 4.0s |
+| 8 | Pareto cars.csv — Description/Objectives/Axes/Labels/Legend categories present | PASS | 2.9s |
+| 9 | PCA on cars.csv adds PC1/PC2/PC3, then PC1 (2)/PC2 (2)/PC3 (2) with Center+Scale | PASS | 7.9s |
+| 10 | PLS dialog opens on cars.csv with all expected inputs and accepts Components=3 | PASS | 3.9s |
+| 11 | Sharing & Permissions — Model (two-user grant/revoke round-trip) | PASS | 83.2s |
 
 The sharing spec is the slow one by design: it re-authenticates as a second user and polls
 permission round-trips.
@@ -165,10 +155,6 @@ allows it; the table below lists where each scenario falls back to the API and w
 | PCA | UI | UI | UI (Components, Center, Scale) | UI (OK) | UI (column names) |
 | PLS | UI | UI | UI (Components, Using=All) | **skipped** | UI (dialog inputs visible) |
 | Pareto | API (`addViewer`) | n/a | API (`v.props.*`) | n/a | API (`props.getProperties()`) |
-| Linear Regression | UI | UI | UI (Predict) | **API (`eda:trainLinearRegression`)** | API (return non-null) |
-| PLS Regression | UI | UI | UI (Predict) | **API (`eda:trainPLSRegression`)** | API (return non-null) |
-| Softmax | UI | UI | UI (Predict) | **API (`eda:trainSoftmax`, numeric features only)** | API (return non-null) |
-| XGBoost 1/2 | UI | UI | UI (Predict) | **API (`eda:trainXGBooster`)** | API (return non-null) |
 
 ## Known platform limitations and bugs the tests work around
 
@@ -194,38 +180,7 @@ Decision: the test verifies the dialog opens with the documented input set and a
 `Components=3`, then cancels. When the platform bug is fixed (auto-exclude Predict from
 Using, or surface the reason inline) restore the trailing RUN/columns assertion.
 
-### 2. Softmax requires numeric-only features (not a platform bug)
-
-`eda:trainSoftmax` treats *every* column of the passed `df` as a feature and throws
-`"Training failes - incorrect features type"` if any of them is non-numeric — unlike
-XGBoost, it does not tolerate the string target column being included. The earlier
-`test.fail()` workaround was hiding an incorrect call (the full iris frame, including the
-string `Species`, was passed as features).
-
-The fix lives in `trainEdaModelViaApi`: with `numericOnly: true` it feeds only the numeric
-feature columns (and now excludes the predict column from them), while still passing
-`Species` as the predict column. `softmax.test.ts` therefore runs as a normal passing test.
-See [softmax-run.md](../../UsageAnalysis/files/TestTrack/EDA/MLMethods/softmax-run.md).
-
-### 3. Train Model view: canvas-based Features picker, missing Model Engine dropdown, no Train button
-
-Documented across `linear-regression-run.md`, `pls-regression-run.md`, `xgboost*-run.md`.
-Consequences for automation:
-
-* "Select Columns" sub-dialog rows are canvas-rendered — `mousedown`/`click`/`pointerdown`
-  on a cell does not toggle the underlying BitSet (the run reports confirm this for all
-  Train Model paths).
-* The `Model Engine` dropdown is not always rendered on dev — the engine is selected by
-  the function name on the API call instead (`eda:trainLinearRegression`,
-  `eda:trainPLSRegression`, `eda:trainXGBooster`).
-* There is no visible "Train" button in the view — training is triggered implicitly. From
-  automation the training is invoked through the registered function with the same input
-  set RUN would have produced.
-
-The MLMethods tests cover the UI path up to and including Predict-column selection, then
-fall back to the function-registry call for training and assert a non-null model blob.
-
-### 4. Pareto Front Viewer warning is canvas-only
+### 2. Pareto Front Viewer warning is canvas-only
 
 `_showErrorMessage` draws the "Cannot minimize and maximize ..." text directly onto the
 viewer canvas; the `errMsg` field is renamed by the production minifier, so there is no
@@ -233,18 +188,11 @@ stable surface to assert against from automation. The test verifies the eligibil
 (empty + string columns excluded) instead, which is the deterministic part of the
 scenario.
 
-### 5. `cars-with-missing.csv` is not deployed on dev under `System:DemoFiles/`
+### 3. `cars-with-missing.csv` is not deployed on dev under `System:DemoFiles/`
 
 See [pareto-front-viewer-run.md](../../UsageAnalysis/files/TestTrack/EDA/pareto-front-viewer-run.md).
 The Pareto test synthesises an equivalent dataset in memory: open `cars.csv`, null every
 cell of the `turbo` column, rename to `cars-with-missing`.
-
-### 6. `shell.tv` does not survive opening Train Model
-
-Opening the Train Model view makes the `PredictiveModel` view the active view, so
-`grok.shell.tv` no longer points to the source TableView. The `trainEdaModelViaApi` helper
-walks `grok.shell.views` and uses the first `TableView` with a populated `dataFrame`,
-rather than `shell.tv`.
 
 ## helpers.ts cheat sheet
 
@@ -271,15 +219,12 @@ rather than `shell.tv`.
 | `isPrimaryEnabled(page, candidates)` | True if any candidate primary button is enabled |
 | `resetShell(page)` | Escape → `grok.shell.closeAll()` (no navigation; resets the shared page in place) |
 | `visibleErrorBalloons(page)` | Visible `.d4-balloon-error` text |
-| `openTrainModelView(page)` | `ML > Models > Train Model...` + wait for `PredictiveModel` view |
-| `setPredictColumn(page, column)` | Synthetic `mousedown` on Predict editor + type + Enter |
-| `trainEdaModelViaApi(page, fn, predict, opts)` | Find first TableView, optionally restrict to numeric features (`numericOnly` also excludes the predict column), call `g.functions.call(fn, { df, predictColumn, ...extraParams })`. Predict column is read from the source frame so a string target survives the numeric clone (softmax). |
 
 ## Selector patterns used
 
 | Element | Selector |
 |---------|----------|
-| Top menu leaf | `[name="div-ML---Analyze---PCA..."]`, `[name="div-ML---Models---Train-Model..."]` |
+| Top menu leaf | `[name="div-ML---Analyze---PCA..."]` |
 | Input host | `[name="input-host-Predict"]`, `[name="input-host-Using"]`, `[name="input-host-Components"]` |
 | Input editor | `[name="input-host-…"] .ui-input-editor` |
 | Dialog (top) | `.d4-dialog` (use `.last()`) |
@@ -393,15 +338,12 @@ npx playwright test EDA --reporter=list
    `features` arg loses its JS wrapper through the Dart bridge; `Func.apply` and
    `Func.prepare(...).call()` fail the same way.
 6. **`viewer.errMsg`** — renamed by the production minifier; not addressable by name.
-7. **`grok.shell.tv` after opening Train Model** — points to PredictiveModel view, not
-   the source TableView. Use `Array.from(grok.shell.views).find(v => v.type === 'TableView')`.
 
 ## When the underlying platform bugs are fixed
 
 | Bug | What changes in the test |
 |-----|--------------------------|
 | PLS auto-excludes Predict from Using (or surfaces the reason for disabled RUN) | Restore the full PLS scenario in `pls.test.ts`: select Using=All, set Components=3, click RUN, assert PLS1/PLS2/PLS3 columns appear |
-| Train Model view exposes a Model Engine dropdown and a Train button | Replace the API-call training in `linear-regression.test.ts`, `pls-regression.test.ts`, `softmax.test.ts`, `xgboost*.test.ts` with UI clicks; assert the result viewers (Loadings/Scores/etc) where present |
 | `cars-with-missing.csv` is deployed under `System:DemoFiles/` on dev | Drop `openCarsWithMissingFromCarsCsv` from `pareto-front-viewer.test.ts` and use `openDemoCsv(page, 'cars-with-missing.csv')` |
 | Per-column `name=` attributes added to "Select columns..." sub-dialog rows | Implement a proper per-column toggle helper in `helpers.ts`; revisit the PLS deselect-`price` workaround |
 | `Dialog.inputs` exposes the Dart-side input list to JS | The generic `setDialogColumnListInput` helper becomes usable; revisit PLS |
@@ -416,11 +358,6 @@ All scenarios mirror the markdown files under
 * `pca.md`, `pca-run.md`
 * `pls.md`, `pls-run.md`
 * `pareto-front-viewer.md`, `pareto-front-viewer-run.md`
-* `MLMethods/linear-regression.md`, `linear-regression-run.md`, `linear-regression-spec.ts`
-* `MLMethods/pls-regression.md`, `pls-regression-run.md`, `pls-regression-spec.ts`
-* `MLMethods/softmax.md`, `softmax-run.md`, `softmax-spec.ts`
-* `MLMethods/xgboost1.md`, `xgboost1-run.md`, `xgboost1-spec.ts`
-* `MLMethods/xgboost2.md`, `xgboost2-run.md`, `xgboost2-spec.ts`
 
 The `*-spec.ts` files in that directory are grok-browser/CDP-style reference scripts
 written by the run-the-scenarios skill — they are NOT compatible with this Playwright

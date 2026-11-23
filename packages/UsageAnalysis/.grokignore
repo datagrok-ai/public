@@ -1,0 +1,2 @@
+# Not needed on the server: the BDD suite, its filmed guides and its run artifacts
+bdd/

@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import dayjs from 'dayjs';
 
 import {category, expect, expectArray, test, expectTable, expectFloat} from '@datagrok-libraries/test/src/test';
 
@@ -855,6 +856,18 @@ category('DataFrame: RowList', () => {
     const df = createDf();
     df.rows.setValues(0, ['France', 2]);
     expectArray([...df.rows.get(0).cells].map((i) => i.value), ['France', 2]);
+  });
+
+  test('setValues and addNew take the values column.set takes', async () => {
+    const ms = Date.UTC(2024, 0, 15, 10, 30);
+    const df = DG.DataFrame.fromColumns([DG.Column.fromType(DG.COLUMN_TYPE.DATE_TIME, 'date', 1),
+      DG.Column.fromType(DG.COLUMN_TYPE.BIG_INT, 'big', 1)]);
+    df.rows.setValues(0, [ms, 12345678901234567890n]);
+    for (const date of [dayjs(ms), new Date(ms), '2024-01-15T10:30:00Z'])
+      df.rows.addNew([date, 5n]);
+    for (let i = 0; i < df.rowCount; i++)
+      expect(df.col('date')!.get(i)!.valueOf(), ms);
+    expect(df.col('big')!.get(0)!.toString(), '12345678901234567890');
   });
 
   test('toString', async () => {

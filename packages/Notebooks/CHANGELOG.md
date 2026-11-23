@@ -2,6 +2,12 @@
 
 ## v.next
 
+* Added the `@DATAGROK_API_URL` placeholder for the server API URL
+* [public#4660](https://github.com/datagrok-ai/public/issues/4660): Fixed the session token being shown when a notebook is opened and in cell outputs
+
+## 1.6.5 (2026-11-23)
+
+* Notebooks: A notebook view now opens at once and shows a loader with a message while the Jupyter container starts, then renders in place; a failed start is reported in the view with a Retry button instead of an empty view
 * Dependencies: Restored the security floors the pnpm migration dropped for the @jupyterlab 2.x chain (url-parse 1.5.10, marked 4.3.0, sanitize-html 2.18, codemirror 5.65), now also in effect for the workspace build through pnpm-workspace.yaml `overrides`; the bundle no longer ships url-parse 1.4.7 (GHSA-hgjh-723h-mx2j, critical), marked 0.8.2, sanitize-html 1.20.1 with postcss 7, or codemirror 5.53
 * Docker: Moved the jupyter-notebook image from Ubuntu onto Wolfi (TeX Live, pandoc 3.13, antiword and gnuplot installed from upstream; moment 2.31.0 in the nbclassic static files)
 * Container: Fixed the PDF export of a notebook failing in LaTeX: the hide-input-pdf template's license header used HTML-template comments, which reached the .tex file

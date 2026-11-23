@@ -76,8 +76,17 @@ export class Plate {
   }
 
   static autoSize(positions: Iterable<[number, number]>): Plate {
-    const [rows, cols] = toStandardSize(getMaxPosition(positions));
-    return new Plate(rows, cols);
+    return new Plate(...Plate.sizeOf(positions));
+  }
+
+  /** `rows` × `cols` when given, else the smallest standard plate that holds every 0-based position. */
+  static sizeOf(positions: Iterable<[number, number]>, rows?: number, cols?: number): [number, number] {
+    const [maxRow, maxCol] = getMaxPosition(positions);
+    if (!rows || !cols)
+      return toStandardSize([maxRow + 1, maxCol + 1]);
+    if (maxRow >= rows || maxCol >= cols)
+      throw new Error(`Wells reach row ${maxRow + 1} and column ${maxCol + 1}, outside a ${rows} x ${cols} plate`);
+    return [rows, cols];
   }
 
   _idx(row: number, col: number): number {
@@ -162,7 +171,10 @@ export class Plate {
     return df;
   }
 
-  static fromTableByRow(table: DG.DataFrame, options?: {posColName?: string, rowColName?: string, colColName?: string}): Plate {
+  /** A plate from a table with one row per well. Its size is `options.rows` × `options.cols` when given,
+   * else the smallest standard plate that holds the wells. */
+  static fromTableByRow(table: DG.DataFrame, options?: {posColName?: string, rowColName?: string, colColName?: string,
+    rows?: number, cols?: number}): Plate {
     const posCol = wu(table.columns).find((c) =>
       (!options?.posColName || c.name.toLowerCase() == options.posColName) &&
     c.type == DG.TYPE.STRING && /^([A-Za-z]+)(\d+)$/.test(c.get(0)));
@@ -178,8 +190,7 @@ export class Plate {
     if (rowToPos == null)
       throw new Error('Columns with well positions not identified');
     const positions = DG.range(table.rowCount).map(rowToPos);
-    const [rows, cols] = toStandardSize(getMaxPosition(positions));
-    const plate = new Plate(rows, cols);
+    const plate = new Plate(...Plate.sizeOf(positions, options?.rows, options?.cols));
     for (const col of table.columns) {
       if (col.isEmpty || col == posCol || col == rowCol || col == colCol)
         continue;

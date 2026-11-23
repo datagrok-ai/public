@@ -2,6 +2,10 @@
 
 ## v.next
 
+* Tests: `Dapi` 'admin.getMetrics' checks the queue as the server sends it (RabbitMQ message totals, or null), and `ui: spaceSaveRow` tells an installed PowerPack by its functions: `grok.dapi.packages` lists the registry's packages too, so the test failed on a stand without PowerPack
+* [public#4627](https://github.com/datagrok-ai/public/issues/4627): Fixed `JS: domain handlers` 'row permissions and ribbon actions follow a real grant': it grants `Delete` to a probe user instead of revoking the caller's own
+* Node runner: The concurrent runs of a stress level are spread over several processes (`--workers`, by default one per 16 runs, at most a quarter of the cores) instead of sharing one thread, so that the tests wait for the server and not for the runner
+* Tests: `Dapi: connection` no longer deletes every `Local DG Test` connection after the category: under concurrent runs each run deleted the connections of all the others (in a stress sweep 113,000 of 123,000 deletes answered 404, 19% of the server's request time). Each test deletes its own connection
 * Tests: `ui: spaceSaveRow` does not fail on a stand without PowerPack, the package that provides the row
 * Tests: Fixed `Dapi: connector ddl` 'ddl lifecycle' and 'uploadAs creates and loads a DataFrame': the scratch table had a mixed-case name, which the test's own plain SQL checks, unquoted, could not find
 * Tests: Made the suite independent of the packages a stand has: `Dapi: sticky meta: canonical keys` (was `: molecules`) uses the package's own semantic type, detector and canonicalizer instead of Chem's, `Dapi: models` 'Engines' has the package's own engine (`ApiTests engine`, never applicable, so the Train Model view does not offer it) and names the engines it checked, and `Dapi: files: formats` no longer opens kml and kmz, which the GIS importer opens

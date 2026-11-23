@@ -69,7 +69,7 @@ def main() -> int:
     for line in sys.stdin:
         cmd: Command = json.loads(line)
         if cmd['type'] == 'cancel':
-            s.cancel()
+            s.cancel(cmd.get('reason'))
         elif cmd['type'] == 'browser_result':
             s.browser_answer(cmd)
         else:

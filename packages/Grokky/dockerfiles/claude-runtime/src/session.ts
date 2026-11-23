@@ -77,11 +77,15 @@ interface ActiveQuery {
 
 // Round-trips a tool call to the browser: emits input_request, resolves on the matching
 // input_response. The requestId keeps parallel calls from crossing wires; rejects on abort.
+const STOPPED = 'The user stopped this request.';
+const DISCONNECTED = 'The browser connection dropped before this call reported back. Its code may still be ' +
+  'running, or may have finished, in the user\'s tab: check the current state before running it again.';
+
 function awaitBrowserInput(
   sid: string, active: ActiveQuery, toolName: string, input: unknown, timeoutMs: number,
 ): Promise<unknown> {
   if (active.abortController.signal.aborted)
-    return Promise.reject(new Error('aborted'));
+    return Promise.reject(active.abortController.signal.reason);
   const requestId = randomUUID();
   emit(active.ws, {type: 'input_request', sessionId: sid, requestId, toolName, input});
   return new Promise((resolve, reject) => {
@@ -96,7 +100,7 @@ function awaitBrowserInput(
     active.abortController.signal.addEventListener('abort', () => {
       clearTimeout(timer);
       if (active.pendingInputs.delete(requestId))
-        reject(new Error('aborted'));
+        reject(active.abortController.signal.reason);
     }, {once: true});
   });
 }
@@ -235,6 +239,8 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
       limits: TURN_LIMITS[fullPromptTurn ? 'full' : 'bash'],
       gates: [verifier, groundingGate].filter((g) => g !== undefined),
       awaitBrowser: (toolName, input, timeoutMs) => awaitBrowserInput(sid, active, toolName, input, timeoutMs),
+      showInBrowser: (toolName, input) =>
+        emit(active.ws, {type: 'input_request', sessionId: sid, requestId: randomUUID(), toolName, input}),
       signal: abortController.signal,
       credentials: turnCredentials,
     });
@@ -288,11 +294,11 @@ async function runTurn(ws: WsSender, data: UserMessage, sid: string, message: st
   }
 }
 
-function abortSessionQuery(sid: string, ws?: WsSender): boolean {
+function abortSessionQuery(sid: string, reason: string, ws?: WsSender): boolean {
   const active = activeQueries.get(sid);
   if (!active)
     return false;
-  active.abortController.abort();
+  active.abortController.abort(new Error(reason));
   unregisterActiveQuery(sid, active);
   endRevision(sid);
   turnText.delete(sid);
@@ -305,7 +311,7 @@ function abortSessionQuery(sid: string, ws?: WsSender): boolean {
 
 export function handleAbort(ws: WsSender, data: AbortMessage): void {
   const active = activeQueries.get(data.sessionId);
-  if (active?.ws === ws && abortSessionQuery(data.sessionId, ws))
+  if (active?.ws === ws && abortSessionQuery(data.sessionId, STOPPED, ws))
     emit(ws, {type: 'aborted', sessionId: data.sessionId, metrics: active.metrics});
 }
 
@@ -314,9 +320,9 @@ export function handleAbort(ws: WsSender, data: AbortMessage): void {
 export function handleDisconnect(sessionIds: Iterable<string>, ws?: WsSender): void {
   for (const sid of sessionIds) {
     const active = activeQueries.get(sid);
-    if (!ws && active && abortSessionQuery(sid))
+    if (!ws && active && abortSessionQuery(sid, STOPPED))
       emit(active.ws, {type: 'aborted', sessionId: sid, metrics: active.metrics});
     else if (ws && active?.ws === ws)
-      abortSessionQuery(sid);
+      abortSessionQuery(sid, DISCONNECTED);
   }
 }

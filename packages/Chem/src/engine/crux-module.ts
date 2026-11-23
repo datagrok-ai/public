@@ -145,6 +145,11 @@ export function armCruxTrapForTests(calls: number, instances = 1): boolean {
   return true;
 }
 
+/** How many fresh instances the main thread's module has had (crux-recover.ts `renewals`; 0 before the load). */
+export function cruxRenewals(): number {
+  return recovering?.renewals() ?? 0;
+}
+
 /** The main thread's module's recoveries: listens until the returned function is called (null before the load). */
 export function onCruxRecover(listener: Parameters<Recovering<ChemWasm>['onRecover']>[0]): (() => void) | null {
   return recovering?.onRecover(listener) ?? null;

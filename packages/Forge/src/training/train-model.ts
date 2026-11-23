@@ -1,0 +1,684 @@
+import * as DG from 'datagrok-api/dg';
+import {ApplicableEngines, applicableEngines, EngineFailure} from '../engines/applicable-engines';
+import {selectBestEngine} from '../engines/best-engine';
+import {defaultMissingValues, Engine, featureSemTypes, featureSemTypesOf, handlesMissingValues, Hyperparameters,
+  isComplete, isServerCheck, takesSemTypes} from '../engines/engine';
+import {EngineRegistry} from '../engines/engine-registry';
+import {apply, CHECK_TIMEOUT_MS, EnginePrediction, isInteractive, LoopProgress, NoAnswerError, train,
+  yieldToEventLoop} from '../engines/engine-calls';
+import {ForgeError} from '../forge-error';
+import {ModelTask} from '../generated/db';
+import {bestThreshold, BestThresholdMetric, classesOf, classLabelMetrics, ClassMetrics, ClassProbabilities, Curves,
+  METRIC_IDS, MetricValues, metricsOf, probabilityOf, taskOf} from '../metrics/metrics';
+import {classMetricsOf, curvesOf, measure, Measured, SCORE_METRIC_IDS} from '../metrics/report';
+import {missingColumnsOf, MissingValuesSettings, missingValuesProblems, prepareMissingValues}
+  from '../preparation/missing-values';
+import {DEFAULT_THRESHOLD, PreparationSteps, PreparedFeatures, prepareFeatures, replayPostprocessing, twoClasses}
+  from '../preparation/pipeline';
+import {CLASS_PROBABILITIES, IGNORE_MISSING, IMPUTE_MISSING, isRecord, MissingValuesRecord, PreparationOptions}
+  from '../preparation/preparation-options';
+import {isSemTypeFeature} from '../preparation/semtype-feature';
+import {bigIntProblem} from './default-features';
+import {dataInsights, Insight} from './insights';
+import {minimumRows, splitRows, validationFolds, ValidationSettings} from './k-fold';
+import type {SearchRecord} from './search';
+
+export interface ColumnSchema { name: string; type: string; semType?: string }
+export interface TargetSchema extends ColumnSchema { categories?: string[] }
+export interface FeaturesSchema { columns: ColumnSchema[] }
+export interface MetricsRecord {
+  train: MetricValues;
+  validation: MetricValues;
+  /** The final model on the rows held out before a search. */
+  test?: MetricValues;
+  positiveClass?: string;
+  /** A classifier's per-class values, when EDA's report gave them. */
+  classes?: ClassMetrics[];
+}
+export type SplittingScheme = 'none' | 'kfold' | 'holdout';
+/** How the stored Validation was measured; `isShuffled` absent (older models) means shuffled. */
+export interface Splitting { scheme: SplittingScheme; folds?: number; trainFraction?: number; isStratified?: boolean;
+  isShuffled?: boolean }
+
+/** What the user chose: the table's own feature columns, missing values not handled yet. */
+export interface TrainingSelection {
+  engine: Engine;
+  features: DG.Column[];
+  target: DG.Column;
+  hyperparameters: Hyperparameters;
+  /** The split seed: the folds or the hold out, with a search also its own hold out and its trials. */
+  seed: number;
+  validation: ValidationSettings;
+  /** Undefined when none was chosen: {@link selectedMissingValues} gives the method's default. */
+  missingValues?: MissingValuesSettings;
+  steps: PreparationSteps;
+}
+
+/** The selection's missing-values handling, or the method's default when none was chosen. */
+export function selectedMissingValues(selection: TrainingSelection): MissingValuesSettings {
+  return selection.missingValues ?? defaultMissingValues(selection.engine);
+}
+
+/** The data a model is trained on. `features` and `target` are the selection's columns with the missing values
+ * handled (the user's own columns where nothing changed): the model's feature list, target and data summary describe
+ * them. `prepared` is what the method gets, the preparation steps applied, every step recorded in its `options`. */
+export interface TrainingRequest {
+  engine: Engine;
+  features: DG.Column[];
+  target: DG.Column;
+  /** The selection's rows the request holds, or null when no row was skipped. */
+  keptRows: DG.BitSet | null;
+  prepared: PreparedFeatures;
+  hyperparameters: Hyperparameters;
+  seed: number;
+  validation: ValidationSettings;
+  /** Rows held out before a search: the prepared columns and the target of the test rows (clones), measured as
+   * `metrics.test` after the final fit. */
+  holdOut?: HoldOut;
+  /** The search that chose this training's method and settings. */
+  search?: SearchRecord;
+}
+
+export interface HoldOut { columns: DG.Column[]; target: DG.Column; rows: number; fraction: number }
+
+export interface TrainingSetup {
+  task: ModelTask;
+  target: TargetSchema;
+  features: FeaturesSchema;
+  options: PreparationOptions;
+  splitting: Splitting;
+}
+
+export interface TrainingResult extends TrainingSetup {
+  blob: Uint8Array;
+  /** The final model's prediction of the training rows, as the method returned it; {@link trainPredictionOf} gives
+   * the labels (with Predict probability, those of the class probabilities). */
+  prediction: DG.Column;
+  metrics: MetricsRecord;
+  seed: number;
+  hyperparameters: Hyperparameters;
+  rowCount: number;
+  /** The selection's target the predictions are measured against. */
+  actual: DG.Column;
+  /** The out-of-fold prediction (null for a row of no fold) and probabilities, kept to re-cut the labels. */
+  outOfFold: {prediction: DG.Column; probabilities?: ClassProbabilities};
+  /** The hold out's rows, prediction and probabilities (after a search). */
+  test?: {actual: DG.Column; prediction: DG.Column; probabilities?: ClassProbabilities};
+  /** The final model's class probabilities of the training rows, when the method returns them (`proba_<class>`
+   * columns after its prediction). */
+  probabilities?: ClassProbabilities;
+  /** The ROC and PR curves of the final model's positive-class probability (or scores) on the training rows, for two
+   * classes with a positive class. */
+  curves?: Curves;
+  search?: SearchRecord;
+}
+
+export interface TrainingProblems { target: string[]; features: string[]; missingValues: string[]; method: string[] }
+
+export interface SelectionCheck {
+  problems: TrainingProblems;
+  /** The methods that can learn from the selection, in discovery order; none while a target or features rule fails. */
+  engines: Engine[];
+  best: Engine | undefined;
+  /** The selection's method is listed, live retraining is on for it, and it says it is interactive on this data. */
+  isInteractive: boolean;
+  /** Methods whose check threw; they are left out of `engines`. */
+  failed: EngineFailure[];
+  /** Methods whose check runs on the server and was not awaited ({@link CheckOptions}); the view adds their answers as
+   * they come. */
+  pending: Engine[];
+  /** The columns and target the methods were asked about; none while a target or features rule fails. */
+  prepared?: PreparedFeatures;
+  /** The data insights of the prepared columns and the selection's target; none while a target or features rule
+   * fails. */
+  insights: Insight[];
+  /** The prepared features of a semantic type a method takes as it is ({@link isSemTypeFeature}); only the methods
+   * that take every one were asked. */
+  semTypeFeatures: ColumnSchema[];
+}
+
+/** The method a training starts with when it is installed; the check then suggests one for the data. */
+const PREFERRED_ENGINE = 'XGBoost';
+export const MAX_SEED = 2 ** 31 - 1;
+const NUMERICAL = DG.COLUMN_TYPE_FILTER.NUMERICAL_NO_DATE_TIME;
+const NO_METHOD = 'No method can learn from this selection. Check the features and the target.';
+const NO_FEATURE_LEFT = 'Skip unique categories leaves no feature. Check more features.';
+
+/** The task and the target schema follow the selection's target. */
+export function trainingSetupOf(request: TrainingRequest): TrainingSetup {
+  const {target, features, validation, prepared} = request;
+  const targetSchema: TargetSchema = columnSchemaOf(target);
+  if (!target.matches(NUMERICAL))
+    targetSchema.categories = target.categories;
+  const split = {isStratified: stratifyColumn(request) !== undefined, isShuffled: validation.shuffle};
+  return {
+    task: taskOf(prepared.target),
+    target: targetSchema,
+    features: {columns: features.map(columnSchemaOf)},
+    options: prepared.options,
+    splitting: validation.scheme === 'kfold' ? {scheme: 'kfold', folds: validation.folds, ...split} :
+      {scheme: 'holdout', trainFraction: 1 - validation.testFraction, ...split},
+  };
+}
+
+/** Every row's fold of the request's validation ({@link splitRows}) by its seed. */
+export function validationSplit(request: TrainingRequest): Int32Array {
+  return splitRows(request.prepared.target.length, request.validation, request.seed, stratifyColumn(request));
+}
+
+/** The selection's target when the validation is stratified and it is a classification (with Predict probability
+ * too: the classes of the selection's target); undefined when the split is not stratified. */
+function stratifyColumn({validation, target}: TrainingRequest): DG.Column | undefined {
+  return validation.stratified && taskOf(target) === 'classification' ? target : undefined;
+}
+
+export interface CheckOptions {
+  /** False: the methods whose check runs on the server ({@link isServerCheck}) are not asked, only returned as
+   * pending. */
+  waitsForServer?: boolean;
+  /** The time each method's check may take. */
+  timeoutMs?: number;
+  /** The semantic types whose features are passed as they are ({@link isSemTypeFeature}); by default every one the
+   * complete [engines] take. */
+  semTypes?: readonly string[];
+}
+
+/** The rules, then the methods of [engines] that can learn from the selection, the suggested one and whether the
+ * selection's method retrains live; the methods are asked about the prepared columns, as they will get them, each
+ * check at most `timeoutMs`. Without `waitsForServer` the methods whose check runs on the server are returned as
+ * `pending`; the selection's method is no problem while it is pending. A non-numerical feature of a semantic type some
+ * method declares is passed as it is, and only the methods that take every such feature are asked. */
+export async function checkSelection(selection: TrainingSelection, engines: Engine[],
+  {waitsForServer = true, timeoutMs = CHECK_TIMEOUT_MS, semTypes = featureSemTypes(engines.filter(isComplete))}:
+  CheckOptions = {}): Promise<SelectionCheck> {
+  const {engine} = selection;
+  const complete = engines.filter(isComplete);
+  // The missing values are handled only when it trains.
+  const prepared = prepareFeatures(selection.features, selection.target, selection.steps,
+    {preprocessingInfo: [], postprocessingInfo: []}, semTypes);
+  const {columns, target} = prepared;
+  const problems = ruleProblems(selection, columns, semTypes);
+  if (hasDataProblems(problems))
+    return failedCheck(problems);
+  const semTypeFeatures = columns.filter((c) => isSemTypeFeature(c, semTypes)).map(columnSchemaOf);
+  const featureKinds = semTypesOf(semTypeFeatures);
+  const asked = complete.filter((e) => takesSemTypes(e, featureKinds));
+  const pending = waitsForServer ? [] : asked.filter(isServerCheck);
+  const {applicable, failed} = await applicableEngines(asked.filter((e) => !pending.includes(e)), columns, target,
+    timeoutMs);
+  problems.method.push(...methodProblem(engine, applicable, pending, failed, semTypeFeatures));
+  const isListed = applicable.some((e) => e.name === engine.name);
+  return {problems, engines: applicable,
+    best: selectBestEngine(applicable, columns, selection.target, selection.features),
+    isInteractive: isListed && await retrainsLive(engine, columns, target, timeoutMs), failed, pending, prepared,
+    insights: dataInsights(columns, selection.target), semTypeFeatures};
+}
+
+/** [check] with the [late] answers of its pending methods: the methods in [discovery] order, nothing pending, the
+ * failures added, the method problem of [engine] recomputed; the suggested method is kept (the first listed when
+ * there was none). */
+export function withLateEngines(check: SelectionCheck, late: ApplicableEngines, engine: Engine,
+  discovery: Engine[]): SelectionCheck {
+  const names = new Set([...check.engines, ...late.applicable].map((e) => e.name));
+  const engines = discovery.filter((e) => names.has(e.name));
+  const failed = [...check.failed, ...late.failed];
+  return {...check, engines, pending: [], failed, best: check.best ?? engines[0],
+    problems: {...check.problems, method: methodProblem(engine, engines, [], failed, check.semTypeFeatures)}};
+}
+
+/** Rule 7c: that [engine] does not take the [semTypeFeatures]. Rule 8: none while [engine] is listed or pending; its
+ * own message when its check did not answer; else why it cannot learn, or that no method can. */
+function methodProblem(engine: Engine, applicable: Engine[], pending: Engine[], failed: EngineFailure[],
+  semTypeFeatures: ColumnSchema[]): string[] {
+  const refusal = semTypeProblem(engine, semTypeFeatures);
+  if (refusal !== null)
+    return [refusal];
+  const isNamed = (e: Engine) => e.name === engine.name;
+  if (applicable.some(isNamed) || pending.some(isNamed))
+    return [];
+  const error = failed.find((f) => isNamed(f.engine))?.error;
+  if (error instanceof NoAnswerError)
+    return [error.message];
+  return [applicable.length === 0 && pending.length === 0 ? NO_METHOD : cannotLearn(engine)];
+}
+
+function semTypesOf(features: ColumnSchema[]): string[] {
+  return features.map((f) => f.semType ?? '');
+}
+
+/** Rule 7c: that [engine] does not take every one of the semantic-type [features] (`semTypeFeatures`), with their
+ * distinct semantic types as the columns have them, and their names; null when it takes them. */
+export function semTypeProblem(engine: Engine, features: ColumnSchema[]): string | null {
+  const semTypes = semTypesOf(features);
+  if (takesSemTypes(engine, semTypes))
+    return null;
+  const kinds = [...new Set(semTypes)].join(', ');
+  return `${engine.name} cannot learn from ${kinds} features. Uncheck: ${features.map((f) => f.name).join(', ')}.`;
+}
+
+/** A check that lists no method: the selection cannot be trained for [problems]. */
+export function failedCheck(problems: Partial<TrainingProblems>): SelectionCheck {
+  return {problems: {...noProblems(), ...problems}, engines: [], best: undefined, isInteractive: false, failed: [],
+    pending: [], insights: [], semTypeFeatures: []};
+}
+
+function noProblems(): TrainingProblems {
+  return {target: [], features: [], missingValues: [], method: []};
+}
+
+/** A target or features rule fails: no method is asked. */
+export function hasDataProblems(problems: TrainingProblems): boolean {
+  return problems.target.length > 0 || problems.features.length > 0;
+}
+
+/** Every message of [problems]: the target, the features, the missing values, the method. */
+export function problemMessages({target, features, missingValues, method}: TrainingProblems): string[] {
+  return [...target, ...features, ...missingValues, ...method];
+}
+
+/** The complete methods of [discovered] in their order, and the one a training starts with. */
+export function trainingEngines(discovered: Engine[] = EngineRegistry.discover()): {engines: Engine[]; engine: Engine} {
+  const engines = discovered.filter(isComplete);
+  const engine = engines.find((e) => e.name === PREFERRED_ENGINE) ?? engines[0];
+  if (engine === undefined)
+    throw new ForgeError('No machine learning method is installed. Install the EDA package.');
+  return {engines, engine};
+}
+
+/** Live retraining is on for [engine] and it says it is interactive on this data. */
+export async function retrainsLive(engine: Engine, features: DG.Column[], target: DG.Column,
+  timeoutMs: number = CHECK_TIMEOUT_MS): Promise<boolean> {
+  return engine.isLiveUpdate && await isInteractive(engine, features, target, timeoutMs);
+}
+
+/** Rules 1-7 and 9: checks of the column list that call no method; rules 1b and 7 look at the [prepared] columns,
+ * which only Skip unique categories can leave empty; rule 7 leaves out the features of [semTypes] (rule 7c is the
+ * method's, {@link methodProblem}). */
+function ruleProblems(selection: TrainingSelection, prepared: DG.Column[], semTypes: readonly string[]):
+  TrainingProblems {
+  const {engine, features, target} = selection;
+  const problems = noProblems();
+  const targetName = target.name;
+
+  const names = features.map((c) => c.name);
+  if (names.length === 0)
+    problems.features.push('Choose at least one feature.');
+  else if (prepared.length === 0)
+    problems.features.push(NO_FEATURE_LEFT);
+  if (names.includes(targetName))
+    problems.features.push(`The target '${targetName}' is also a feature. Uncheck it in Features.`);
+  const rows = target.length - target.stats.missingValueCount;
+  const needed = minimumRows(selection.validation);
+  if (rows < needed)
+    problems.target.push(`Training needs at least ${needed} rows; the table has ${rows}.`);
+  const isNumerical = target.matches(NUMERICAL);
+  if (target.type === DG.COLUMN_TYPE.BIG_INT)
+    problems.target.push(bigIntProblem(targetName, engine.name, 'choose another target'));
+  if (!isNumerical && !hasTwoValues(target))
+    problems.target.push(`The target '${targetName}' has only one value; a classifier needs at least two.`);
+  if (!isNumerical && !target.isCategorical) {
+    problems.target.push(`${engine.name} cannot predict '${targetName}' (type ${target.type}). ` +
+      'Choose a numerical, text or boolean target.');
+  }
+  // Text and yes/no columns are left only while One-hot encoding is off.
+  const nonNumerical = prepared.filter((c) => !c.matches(NUMERICAL) && !isSemTypeFeature(c, semTypes));
+  const text = nonNumerical.filter((c) => c.isCategorical).map((c) => c.name);
+  const others = nonNumerical.filter((c) => !c.isCategorical).map((c) => c.name);
+  if (text.length > 0) {
+    problems.features.push(`${engine.name} needs numerical features. Check One-hot encoding in Preparation, ` +
+      `or uncheck: ${text.join(', ')}.`);
+  }
+  if (others.length > 0)
+    problems.features.push(`${engine.name} needs numerical features. Uncheck: ${others.join(', ')}.`);
+  for (const col of features.filter((c) => c.type === DG.COLUMN_TYPE.BIG_INT))
+    problems.features.push(bigIntProblem(col.name, engine.name, 'uncheck it'));
+  const missingValues = selectedMissingValues(selection);
+  problems.missingValues.push(...missingValuesProblems(features, missingValues, semTypes));
+  if (missingValues.mode === 'keep' && !handlesMissingValues(engine))
+    problems.missingValues.push(needsRowsWithoutGaps(engine));
+  return problems;
+}
+
+/** Why `keep` cannot train [engine], a method without `meta.mlnativenans`. */
+export function needsRowsWithoutGaps(engine: Engine): string {
+  return `${engine.name} needs rows without missing values. Choose Skip rows or Impute.`;
+}
+
+function cannotLearn(engine: Engine): string {
+  return `${engine.name} cannot learn from this selection. ` +
+    'It needs numerical features and a numerical, text or boolean target.';
+}
+
+/** Skips the rows with a missing target, handles the features' missing values as chosen, then applies the
+ * preparation steps. */
+export async function prepareTraining(selection: TrainingSelection): Promise<TrainingRequest> {
+  const {engine, hyperparameters, seed, validation} = selection;
+  const missingValues = selectedMissingValues(selection);
+  const isSkip = missingValues.mode === 'skip';
+  const hasFeatureGaps = isSkip && missingColumnsOf(selection.features).length > 0;
+  const semTypes = featureSemTypesOf(engine);
+  const handled = await prepareMissingValues(selection.features, selection.target, missingValues, semTypes);
+  const {features, target, skippedRows} = handled;
+  const needed = minimumRows(validation);
+  if (target === undefined || target.length < needed) {
+    throw new ForgeError(`After skipping rows with missing values, ${target?.length ?? 0} rows remain; ` +
+      `training needs at least ${needed}.`);
+  }
+  const preprocessingInfo: string[] = [];
+  if (handled.imputedColumns.length > 0)
+    preprocessingInfo.push(IMPUTE_MISSING);
+  if (isSkip ? hasFeatureGaps : handled.failedRows > 0)
+    preprocessingInfo.push(IGNORE_MISSING);
+  const impute = missingValues.mode === 'impute' ? missingValues.impute : undefined;
+  const record: MissingValuesRecord = impute === undefined ? {mode: missingValues.mode, skippedRows} :
+    {mode: 'impute', neighbors: impute.neighbors, distance: impute.distance, skippedRows};
+  const prepared = prepareFeatures(features, target, selection.steps,
+    {preprocessingInfo, postprocessingInfo: [], missingValues: record}, semTypes);
+  return {engine, features, target, keptRows: handled.keptRows, prepared, hyperparameters, seed, validation};
+}
+
+/** Trains the final model on every row and measures Validation on the predictions of rows a model did not see: the
+ * out-of-fold predictions of k-fold cross-validation, or a hold out's predictions by a model of the other rows (the
+ * out-of-fold column then holds only the held out rows, nulls elsewhere). */
+export async function trainModel(request: TrainingRequest, progress?: LoopProgress): Promise<TrainingResult> {
+  const {engine, hyperparameters, seed, validation} = request;
+  const {columns, target} = request.prepared;
+  const setup = trainingSetupOf(request);
+  const rowCount = target.length;
+  const folds = validationFolds(validation);
+  const steps = folds + 1;
+
+  const fold = validationSplit(request);
+  const foldResults: EnginePrediction[] = [];
+  for (let i = 0; i < folds; i++) {
+    await checkCancelled(progress);
+    foldResults.push(await foldPrediction(engine, columns, target, hyperparameters, foldMasks(fold, i)));
+    progress?.update(100 * (i + 1) / steps, validation.scheme === 'kfold' ? `Fold ${i + 1} of ${folds}` : 'Hold out');
+  }
+  const position = positionsOf(fold);
+  const outOfFold = outOfFoldColumn(foldResults, fold, position);
+  const heldOut = validation.scheme === 'kfold' ? null : DG.BitSet.create(rowCount, (r) => fold[r] === 0);
+  const validated = (col: DG.Column) => heldOut === null ? col : col.clone(heldOut);
+
+  await checkCancelled(progress);
+  const blob = await train(engine, columns, target, hyperparameters);
+  const {prediction: trainPrediction, probabilities} = await apply(engine, columns, blob);
+  progress?.update(100, 'Final model');
+
+  const result = {...setup, blob, prediction: trainPrediction, seed, hyperparameters: {...hyperparameters}, rowCount,
+    ...(request.search === undefined ? {} : {search: request.search})};
+  const classes = setup.target.categories === undefined ? [] : classesOf(request.target);
+  const positiveClass = classes.length === 2 ? classes[0] : undefined;
+  const validationProbabilities = probabilities === undefined ? undefined :
+    outOfFoldProbabilities(foldResults, probabilities, fold, position);
+  const [onTrain, onValidation, test] = await Promise.all([
+    measure(setup.task, target, trainPrediction, positiveClass, probabilities, true),
+    measure(setup.task, validated(target), validated(outOfFold), positiveClass, validationProbabilities === undefined ?
+      undefined : {...validationProbabilities, columns: validationProbabilities.columns.map(validated)}),
+    request.holdOut === undefined ? undefined : testMetrics(engine, request.holdOut, blob, setup.task, positiveClass)]);
+  const {record, curves} = recordOf(onTrain, onValidation, positiveClass, test?.values);
+  const plain: TrainingResult = {...result, metrics: record, probabilities, curves, actual: request.target,
+    outOfFold: {prediction: outOfFold, probabilities: validationProbabilities},
+    ...(test === undefined ? {} : {test: test.test})};
+  const {options} = setup;
+  return options.postprocessingInfo.includes(CLASS_PROBABILITIES) ? recutResult(plain, {predictProbability: true,
+    threshold: options.binaryClassificationThreshold ?? DEFAULT_THRESHOLD, thresholdMetric: options.thresholdMetric}) :
+    plain;
+}
+
+/** The rows of fold [i]'s model: those it fits (the other folds') and those it predicts. */
+export interface FoldMasks { isFit: DG.BitSet; isHeldOut: DG.BitSet }
+
+export function foldMasks(fold: Int32Array, i: number): FoldMasks {
+  const isFit = DG.BitSet.create(fold.length, (r) => fold[r] !== i);
+  return {isFit, isHeldOut: isFit.clone().invert()};
+}
+
+/** A fold model's prediction of its held out rows ([masks]): trained on its fit rows (fold copies keep the target's
+ * full category list, so every fold model has the final model's classes). */
+export async function foldPrediction(engine: Engine, columns: DG.Column[], target: DG.Column,
+  hyperparameters: Hyperparameters, {isFit, isHeldOut}: FoldMasks): Promise<EnginePrediction> {
+  const blob = await train(engine, columns.map((c) => c.clone(isFit)), target.clone(isFit), hyperparameters);
+  return await apply(engine, columns.map((c) => c.clone(isHeldOut)), blob);
+}
+
+/** Each row's index among the rows of its fold; 0 for a row of no fold (fold -1 of a hold out). */
+export function positionsOf(fold: Int32Array): Int32Array {
+  const next = new Int32Array(fold.reduce((max, f) => Math.max(max, f), -1) + 1);
+  return fold.map((f) => f < 0 ? 0 : next[f]++);
+}
+
+/** One column of every row's out-of-fold prediction, from the fold results in fold order (null for a row of no fold:
+ * fold -1 of a hold out); [position] is each row's index in its fold ({@link positionsOf}). */
+export function outOfFoldColumn(results: EnginePrediction[], fold: Int32Array, position: Int32Array): DG.Column {
+  const first = results[0].prediction;
+  const outOfFold = DG.Column.fromType(first.type, first.name, fold.length);
+  for (let r = 0; r < fold.length; r++)
+    outOfFold.set(r, fold[r] < 0 ? null : results[fold[r]].prediction.get(position[r]), false);
+  return outOfFold;
+}
+
+async function testMetrics(engine: Engine, holdOut: HoldOut, blob: Uint8Array, task: ModelTask,
+  positiveClass: string | undefined): Promise<{values: MetricValues; test: NonNullable<TrainingResult['test']>}> {
+  const {prediction, probabilities} = await apply(engine, holdOut.columns, blob);
+  const {values} = await measure(task, holdOut.target, prediction, positiveClass, probabilities);
+  return {values, test: {actual: holdOut.target, prediction, probabilities}};
+}
+
+/** The record of a training's measurements, with the per-class values and the train split's curves of their
+ * reports. */
+function recordOf(train: Measured, validation: Measured, positiveClass: string | undefined, test?: MetricValues):
+  {record: MetricsRecord; curves?: Curves} {
+  const record: MetricsRecord = {train: train.values, validation: validation.values};
+  if (test !== undefined)
+    record.test = test;
+  if (positiveClass !== undefined)
+    record.positiveClass = positiveClass;
+  const classes = classMetricsOf(train.report, validation.report);
+  if (classes !== undefined)
+    record.classes = classes;
+  return {record, curves: curvesOf(train.report)};
+}
+
+/** The out-of-fold probabilities of the classes of [final] (the final model's, whose column names they take),
+ * gathered by class name from the fold models' results ([fold] and [position] map a row to its fold and its row
+ * there); a class a fold model never saw is 0 in its rows, a row of no fold is null; undefined when a fold returned
+ * none. */
+export function outOfFoldProbabilities(results: EnginePrediction[], final: ClassProbabilities,
+  fold: ArrayLike<number>, position: ArrayLike<number>): ClassProbabilities | undefined {
+  if (results.some((r) => r.probabilities === undefined))
+    return undefined;
+  const columns = final.classes.map((cls, k) => {
+    const sources = results.map((r) => probabilityOf(r.probabilities!, cls)?.getRawData() ?? null);
+    const values = new Float32Array(position.length);
+    for (let r = 0; r < position.length; r++) {
+      const source = fold[r] < 0 ? undefined : sources[fold[r]];
+      values[r] = source === undefined ? DG.FLOAT_NULL : source === null ? 0 : source[position[r]];
+    }
+    return DG.Column.fromFloat32Array(final.columns[k].name, values);
+  });
+  return {classes: final.classes, columns};
+}
+
+/** Each training's best thresholds per metric, by its out-of-fold result, which every re-cut of it keeps. */
+const bestThresholds = new WeakMap<TrainingResult['outOfFold'], Map<BestThresholdMetric, number | undefined>>();
+/** The train labels a re-cut built, read by {@link trainPredictionOf}. */
+const trainLabels = new WeakMap<TrainingResult, DG.Column>();
+
+/** A classifier's result with the Predict probability [steps] applied, without retraining: the step recorded in its
+ * options (two classes: the classes and the threshold; with `thresholdMetric`, the threshold is
+ * {@link bestThresholdOf} that metric and the metric is recorded, unless there is none), the labels taken from the
+ * class probabilities (the method's own without the step), so the metrics of the labels change (overall and per class)
+ * and AUC-ROC, average precision, log loss, Brier and the curves do not. A result without class probabilities gets no
+ * step. */
+export function recutResult(result: TrainingResult,
+  steps: Pick<PreparationSteps, 'predictProbability' | 'threshold' | 'thresholdMetric'>): TrainingResult {
+  const {metrics, actual} = result;
+  const options: PreparationOptions = {...result.options,
+    postprocessingInfo: result.options.postprocessingInfo.filter((id) => id !== CLASS_PROBABILITIES)};
+  delete options.positiveClass;
+  delete options.negativeClass;
+  delete options.binaryClassificationThreshold;
+  delete options.thresholdMetric;
+  if (result.probabilities === undefined) {
+    return options.postprocessingInfo.length === result.options.postprocessingInfo.length ? result :
+      {...result, options};
+  }
+  if (steps.predictProbability) {
+    options.postprocessingInfo.push(CLASS_PROBABILITIES);
+    const classes = twoClasses(actual);
+    if (classes !== null) {
+      const {thresholdMetric} = steps;
+      const best = thresholdMetric === undefined ? undefined : bestThresholdOf(result, thresholdMetric);
+      Object.assign(options, {positiveClass: classes[0], negativeClass: classes[1],
+        binaryClassificationThreshold: best ?? steps.threshold}, best === undefined ? {} : {thresholdMetric});
+    }
+  }
+  const {positiveClass} = metrics;
+  const labelsOf = (prediction: DG.Column, probabilities?: ClassProbabilities) =>
+    replayPostprocessing(prediction, options, probabilities);
+  const labels = {train: labelsOf(result.prediction, result.probabilities),
+    validation: labelsOf(result.outOfFold.prediction, result.outOfFold.probabilities)};
+  const recut: MetricsRecord = {...metrics,
+    train: {...scoreValuesOf(metrics.train), ...metricsOf('classification', actual, labels.train, positiveClass)},
+    validation: {...scoreValuesOf(metrics.validation),
+      ...metricsOf('classification', actual, labels.validation, positiveClass)}};
+  const {test} = result;
+  if (test !== undefined && metrics.test !== undefined) {
+    recut.test = {...scoreValuesOf(metrics.test), ...metricsOf('classification', test.actual,
+      labelsOf(test.prediction, test.probabilities), positiveClass)};
+  }
+  if (metrics.classes !== undefined) {
+    const train = classLabelMetrics(actual, labels.train);
+    const validation = classLabelMetrics(actual, labels.validation);
+    recut.classes = metrics.classes.map((c) => ({...c,
+      train: {...scoreValuesOf(c.train), ...train.get(c.label)},
+      validation: {...scoreValuesOf(c.validation), ...validation.get(c.label)}}));
+  }
+  const next = {...result, options, metrics: recut};
+  trainLabels.set(next, labels.train);
+  return next;
+}
+
+/** The threshold of the positive class's probability that maximizes [metric] on [result]'s out-of-fold
+ * probabilities ({@link bestThreshold}); undefined without them, without two classes, or when the validation rows hold
+ * one class only. */
+export function bestThresholdOf(result: TrainingResult, metric: BestThresholdMetric): number | undefined {
+  const {metrics: {positiveClass}, outOfFold} = result;
+  const cached = bestThresholds.get(outOfFold) ?? new Map<BestThresholdMetric, number | undefined>();
+  bestThresholds.set(outOfFold, cached);
+  if (!cached.has(metric)) {
+    const {probabilities} = outOfFold;
+    const column = probabilities === undefined || positiveClass === undefined ? undefined :
+      probabilityOf(probabilities, positiveClass);
+    cached.set(metric, column === undefined || positiveClass === undefined ? undefined :
+      bestThreshold(result.actual, column, positiveClass, metric));
+  }
+  return cached.get(metric);
+}
+
+/** The threshold-independent values of [values]: AUC-ROC, average precision, log loss and Brier. */
+function scoreValuesOf(values: MetricValues): MetricValues {
+  const kept: MetricValues = {};
+  for (const id of SCORE_METRIC_IDS) {
+    if (values[id] !== undefined)
+      kept[id] = values[id];
+  }
+  return kept;
+}
+
+/** The final model's labels of the training rows: with Predict probability, those of its class probabilities. */
+export function trainPredictionOf(result: TrainingResult): DG.Column {
+  return trainLabels.get(result) ?? replayPostprocessing(result.prediction, result.options, result.probabilities);
+}
+
+/** A stored `metrics` value: the known metric ids with numbers; null without a train and a validation object. */
+export function metricsRecordOf(value: unknown): MetricsRecord | null {
+  if (!isRecord(value))
+    return null;
+  const train = metricValuesOf(value.train);
+  const validation = metricValuesOf(value.validation);
+  if (train === null || validation === null)
+    return null;
+  const record: MetricsRecord = {train, validation};
+  const test = metricValuesOf(value.test);
+  if (test !== null)
+    record.test = test;
+  if (typeof value.positiveClass === 'string')
+    record.positiveClass = value.positiveClass;
+  if (Array.isArray(value.classes)) {
+    const classes = value.classes.map(classMetricsRecordOf).filter((c): c is ClassMetrics => c !== null);
+    if (classes.length > 0)
+      record.classes = classes;
+  }
+  return record;
+}
+
+/** A stored `splitting` value narrowed to {@link Splitting}: its known scheme and the fields of the right types;
+ * undefined without a scheme. */
+export function splittingOf(value: unknown): Splitting | undefined {
+  if (!isRecord(value))
+    return undefined;
+  const scheme = SPLITTING_SCHEMES.find((s) => s === value.scheme);
+  if (scheme === undefined)
+    return undefined;
+  const splitting: Splitting = {scheme};
+  const {folds, trainFraction, isStratified, isShuffled} = value;
+  if (typeof folds === 'number')
+    splitting.folds = folds;
+  if (typeof trainFraction === 'number')
+    splitting.trainFraction = trainFraction;
+  if (typeof isStratified === 'boolean')
+    splitting.isStratified = isStratified;
+  if (typeof isShuffled === 'boolean')
+    splitting.isShuffled = isShuffled;
+  return splitting;
+}
+
+const SPLITTING_SCHEMES: SplittingScheme[] = ['none', 'kfold', 'holdout'];
+
+function classMetricsRecordOf(value: unknown): ClassMetrics | null {
+  if (!isRecord(value) || typeof value.label !== 'string' || typeof value.rows !== 'number')
+    return null;
+  const train = metricValuesOf(value.train);
+  const validation = metricValuesOf(value.validation);
+  return train === null || validation === null ? null : {label: value.label, rows: value.rows, train, validation};
+}
+
+function metricValuesOf(value: unknown): MetricValues | null {
+  if (!isRecord(value))
+    return null;
+  const values: MetricValues = {};
+  for (const id of METRIC_IDS) {
+    const v = value[id];
+    if (typeof v === 'number')
+      values[id] = v;
+  }
+  return values;
+}
+
+/** Gives the event loop a turn first, so a click on the progress's cancel is seen before the next fit. */
+async function checkCancelled(progress?: LoopProgress): Promise<void> {
+  await yieldToEventLoop();
+  if (progress?.canceled)
+    throw new ForgeError('Training was cancelled.');
+}
+
+function columnSchemaOf(col: DG.Column): ColumnSchema {
+  const semType = col.semType;
+  return semType ? {name: col.name, type: col.type, semType} : {name: col.name, type: col.type};
+}
+
+function hasTwoValues(col: DG.Column): boolean {
+  let first: string | undefined;
+  for (let i = 0; i < col.length; i++) {
+    if (col.isNone(i))
+      continue;
+    const value = String(col.get(i));
+    if (first === undefined)
+      first = value;
+    else if (value !== first)
+      return true;
+  }
+  return false;
+}

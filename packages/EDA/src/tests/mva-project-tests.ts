@@ -46,11 +46,16 @@ async function runMva(table: DG.DataFrame, componentsOnly: boolean = false): Pro
   return names;
 }
 
-/** Check that the column values agree up to float32 precision */
-function expectClose(actual: DG.Column, expected: DG.Column): void {
+/** Check that the column values agree up to float32 precision, and up to the sign if [signFree] (a PLS component's) */
+function expectClose(actual: DG.Column, expected: DG.Column, signFree: boolean = false): void {
+  let dot = 0;
+  for (let i = 0; signFree && i < expected.length; ++i)
+    dot += actual.get(i) * expected.get(i);
+  const sign = dot < 0 ? -1 : 1;
+
   for (let i = 0; i < expected.length; ++i) {
     const e = expected.get(i);
-    const a = actual.get(i);
+    const a = sign * actual.get(i);
     expect(Math.abs(a - e) <= REL_TOL * Math.max(1, Math.abs(e)), true,
       `'${expected.name}', row ${i}: expected ${e}, got ${a}`);
   }
@@ -183,11 +188,11 @@ category('Multivariate analysis: projects', () => {
     const expected = carsMvaResults();
 
     for (const col of expected.columns)
-      expectClose(table.col(col.name)!, col);
+      expectClose(table.col(col.name)!, col, col.name.startsWith(TITLE.XSCORE) || col.name.startsWith(TITLE.YSCORE));
 
     const analysis = grok.shell.table(names.analysisTable);
     for (const col of expected.analysis.columns.numerical)
-      expectClose(analysis.col(col.name)!, col);
+      expectClose(analysis.col(col.name)!, col, col.name.startsWith(TITLE.XLOADING));
 
     const explVars = grok.shell.table(names.explVarTable);
     for (const col of expected.explVars.columns.numerical)

@@ -161,13 +161,38 @@ export namespace funcs {
   }
 
   /**
-   * @param {number} rate - Gradient descent learning rate.
-   * @param {number} iterations - Largest number of training steps before training stops.
+   * Fills missing values in place using the k-nearest neighbors method; cells with no usable neighbors stay empty
+   * @param {any} columns - Columns to fill, an empty list fills every feature with missing values
+   * @param {any} features - Columns used to find the nearest rows
+   * @param {number} neighbors - Nearest rows used to fill a value.
+   * @param {string} distance - How the distance between rows is measured.
+   *   choices: ["Euclidean","Manhattan"]
+   */
+  export async function knnImpute(table: DG.DataFrame , columns: any , features: any , neighbors: number , distance: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:KnnImpute', { table, columns, features, neighbors, distance });
+  }
+
+  /**
+   * Classification quality of predicted vs actual classes from Crux (scikit-learn metrics): accuracy, balanced accuracy, MCC, precision, recall, F1, the confusion matrix, per-class values and, with class probabilities, AUC-ROC, average precision and the ROC and precision-recall curves of the positive class. Used by Forge
+   * @param {DG.Column} actual - The actual classes
+   * @param {DG.Column} predicted - The predicted classes
+   * @param {string} positiveClass - The positive class of two classes - its precision, recall, F1, AUC-ROC, average precision and curves. Empty for none
+   * @param {any} classes - The classes the probability columns stand for, in column order
+   * @param {DG.DataFrame} probabilities - One column per entry of classes - the probability of the class per row
+   * @param {boolean} curves - Also the ROC and precision-recall curves of the positive class
+   */
+  export async function classificationReport(actual: DG.Column , predicted: DG.Column , positiveClass: string | undefined, classes: any | undefined, probabilities: DG.DataFrame | undefined, curves: boolean ): Promise<any> {
+    return await grok.functions.call('EDA:ClassificationReport', { actual, predicted, positiveClass, classes, probabilities, curves });
+  }
+
+  /**
+   * @param {number} iterations - Largest number of solver iterations. Used only when L1 > 0 (elastic net).
    * @param {number} alpha - L1 (Lasso) regularization term. 0 means plain ordinary least squares.
    * @param {number} lambda - L2 (Ridge) regularization term. 0 means plain ordinary least squares.
+   * @param {number} seed - Random seed of the ridge and elastic net solvers. The solvers used here are deterministic, so with these settings the model does not depend on it.
    */
-  export async function trainLinearRegression(df: DG.DataFrame , predictColumn: DG.Column , rate: number , iterations: number , alpha: number , lambda: number ): Promise<any> {
-    return await grok.functions.call('EDA:TrainLinearRegression', { df, predictColumn, rate, iterations, alpha, lambda });
+  export async function trainLinearRegression(df: DG.DataFrame , predictColumn: DG.Column , iterations: number , alpha: number , lambda: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainLinearRegression', { df, predictColumn, iterations, alpha, lambda, seed });
   }
 
   /**
@@ -187,13 +212,12 @@ export namespace funcs {
   }
 
   /**
-   * @param {number} rate - Gradient descent learning rate.
    * @param {number} iterations - Largest number of training steps before training stops.
    * @param {number} penalty - Regularization rate.
    * @param {number} tolerance - Smallest improvement worth continuing training for.
    */
-  export async function trainSoftmax(df: DG.DataFrame , predictColumn: DG.Column , rate: number , iterations: number , penalty: number , tolerance: number ): Promise<any> {
-    return await grok.functions.call('EDA:TrainSoftmax', { df, predictColumn, rate, iterations, penalty, tolerance });
+  export async function trainSoftmax(df: DG.DataFrame , predictColumn: DG.Column , iterations: number , penalty: number , tolerance: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainSoftmax', { df, predictColumn, iterations, penalty, tolerance });
   }
 
   /**
@@ -240,14 +264,17 @@ export namespace funcs {
   }
 
   /**
-   * @param {number} iterations - Number of training iterations.
-   * @param {number} eta - Learning rate.
-   * @param {number} maxDepth - Maximum depth of a tree.
-   * @param {number} lambda - L2 regularization term.
-   * @param {number} alpha - L1 regularization term.
+   * @param {number} iterations - Number of boosting rounds. Each round adds one tree (one per class for a multiclass target). More rounds fit the training data more closely. Use a lower Rate with more rounds.
+   * @param {number} eta - Step-size shrinkage (eta) applied to the weights of each new tree. Lower values are more conservative and need more rounds.
+   * @param {number} maxDepth - Maximum depth of a tree. Deeper trees capture more feature interactions and overfit more easily.
+   * @param {number} lambda - L2 regularization on the leaf weights. Larger values give a more conservative model.
+   * @param {number} alpha - L1 regularization on the leaf weights. Larger values give a more conservative model and can zero out leaves.
+   * @param {number} subsample - Share of the rows sampled for each tree. Below 1 adds randomness that Model seed controls.
+   * @param {number} colsample - Share of the features sampled for each tree. Below 1 adds randomness that Model seed controls.
+   * @param {number} seed - Random seed of the row and column sampling. Has an effect only when Row sample or Column sample is below 1.
    */
-  export async function trainXGBooster(df: DG.DataFrame , predictColumn: DG.Column , iterations: number , eta: number , maxDepth: number , lambda: number , alpha: number ): Promise<any> {
-    return await grok.functions.call('EDA:TrainXGBooster', { df, predictColumn, iterations, eta, maxDepth, lambda, alpha });
+  export async function trainXGBooster(df: DG.DataFrame , predictColumn: DG.Column , iterations: number , eta: number , maxDepth: number , lambda: number , alpha: number , subsample: number , colsample: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainXGBooster', { df, predictColumn, iterations, eta, maxDepth, lambda, alpha, subsample, colsample, seed });
   }
 
   /**
@@ -274,9 +301,11 @@ export namespace funcs {
    * @param {number} degree - Degree of the polynomial kernel. Higher values give a more flexible, curved decision boundary. Used by the polynomial kernel only.
    * @param {number} coef0 - Constant added inside the kernel before the polynomial power or the sigmoid. Used by the polynomial and sigmoid kernels only.
    * @param {number} epsilon - Width of the error-insensitive tube in SVR regression. Training errors smaller than this are not penalized, so larger values give a smoother model with fewer support vectors. Used for regression targets only.
+   * @param {number} maxIterations - Solver iterations before it stops unconverged. The model is still returned, so a slow fit cannot hang.
+   * @param {boolean} probability - Also estimates the probability of each class (Platt scaling: an internal 5-fold cross-validation, about 5 times the training time). Classification targets only.
    */
-  export async function trainSVM(df: DG.DataFrame , predictColumn: DG.Column , kernel: string , cost: number , gamma: number , degree: number , coef0: number , epsilon: number ): Promise<any> {
-    return await grok.functions.call('EDA:TrainSVM', { df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon });
+  export async function trainSVM(df: DG.DataFrame , predictColumn: DG.Column , kernel: string , cost: number , gamma: number , degree: number , coef0: number , epsilon: number , maxIterations: number , probability: boolean ): Promise<any> {
+    return await grok.functions.call('EDA:TrainSVM', { df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon, maxIterations, probability });
   }
 
   /**
@@ -293,6 +322,302 @@ export namespace funcs {
 
   export async function isInteractiveSVM(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
     return await grok.functions.call('EDA:IsInteractiveSVM', { df, predictColumn });
+  }
+
+  /**
+   * @param {number} trees - Number of trees in the forest.
+   * @param {number} maxDepth - Largest depth of a tree. Bounds the model size.
+   * @param {number} minSamplesLeaf - Smallest number of training rows a leaf may hold.
+   * @param {string} maxFeatures - Features tried at each split: auto is sqrt for classification and all for regression.
+   *   choices: ["auto","sqrt","log2","all"]
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainRandomForest(df: DG.DataFrame , predictColumn: DG.Column , trees: number , maxDepth: number , minSamplesLeaf: number , maxFeatures: string , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainRandomForest', { df, predictColumn, trees, maxDepth, minSamplesLeaf, maxFeatures, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained random forest model.
+   * @param {any} model - Trained random forest model to apply.
+   */
+  export async function applyRandomForest(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyRandomForest', { df, model });
+  }
+
+  export async function isApplicableRandomForest(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableRandomForest', { df, predictColumn });
+  }
+
+  export async function isInteractiveRandomForest(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveRandomForest', { df, predictColumn });
+  }
+
+  /**
+   * @param {number} trees - Number of trees in the forest.
+   * @param {number} maxDepth - Largest depth of a tree. Bounds the model size.
+   * @param {number} minSamplesLeaf - Smallest number of training rows a leaf may hold.
+   * @param {string} maxFeatures - Features tried at each split: auto is sqrt for classification and all for regression.
+   *   choices: ["auto","sqrt","log2","all"]
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainExtraTrees(df: DG.DataFrame , predictColumn: DG.Column , trees: number , maxDepth: number , minSamplesLeaf: number , maxFeatures: string , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainExtraTrees', { df, predictColumn, trees, maxDepth, minSamplesLeaf, maxFeatures, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained extra trees model.
+   * @param {any} model - Trained extra trees model to apply.
+   */
+  export async function applyExtraTrees(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyExtraTrees', { df, model });
+  }
+
+  export async function isApplicableExtraTrees(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableExtraTrees', { df, predictColumn });
+  }
+
+  export async function isInteractiveExtraTrees(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveExtraTrees', { df, predictColumn });
+  }
+
+  /**
+   * @param {number} iterations - Boosting iterations (trees per class).
+   * @param {number} learningRate - Shrinkage of each tree's contribution.
+   * @param {number} maxLeafNodes - Largest number of leaves per tree.
+   * @param {number} maxDepth - Largest depth of a tree. 0 means no limit.
+   * @param {number} minSamplesLeaf - Smallest number of training rows a leaf may hold.
+   * @param {number} l2 - L2 penalty of the leaf values.
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainHistGradientBoosting(df: DG.DataFrame , predictColumn: DG.Column , iterations: number , learningRate: number , maxLeafNodes: number , maxDepth: number , minSamplesLeaf: number , l2: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainHistGradientBoosting', { df, predictColumn, iterations, learningRate, maxLeafNodes, maxDepth, minSamplesLeaf, l2, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained histogram gradient boosting model.
+   * @param {any} model - Trained histogram gradient boosting model to apply.
+   */
+  export async function applyHistGradientBoosting(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyHistGradientBoosting', { df, model });
+  }
+
+  export async function isApplicableHistGradientBoosting(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableHistGradientBoosting', { df, predictColumn });
+  }
+
+  export async function isInteractiveHistGradientBoosting(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveHistGradientBoosting', { df, predictColumn });
+  }
+
+  /**
+   * @param {number} iterations - Boosting iterations (trees).
+   * @param {number} learningRate - Shrinkage of each tree's contribution.
+   * @param {number} depth - Depth of the symmetric trees.
+   * @param {number} l2LeafReg - L2 regularization of the leaf values.
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainCatBoost(df: DG.DataFrame , predictColumn: DG.Column , iterations: number , learningRate: number , depth: number , l2LeafReg: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainCatBoost', { df, predictColumn, iterations, learningRate, depth, l2LeafReg, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained CatBoost gradient-boosting model.
+   * @param {any} model - Trained CatBoost model to apply.
+   */
+  export async function applyCatBoost(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyCatBoost', { df, model });
+  }
+
+  export async function isApplicableCatBoost(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableCatBoost', { df, predictColumn });
+  }
+
+  export async function isInteractiveCatBoost(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveCatBoost', { df, predictColumn });
+  }
+
+  /**
+   * @param {number} maxDepth - Largest depth of the tree. Bounds the model size.
+   * @param {number} minSamplesLeaf - Smallest number of training rows a leaf may hold.
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainDecisionTree(df: DG.DataFrame , predictColumn: DG.Column , maxDepth: number , minSamplesLeaf: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainDecisionTree', { df, predictColumn, maxDepth, minSamplesLeaf, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained decision tree model.
+   * @param {any} model - Trained decision tree model to apply.
+   */
+  export async function applyDecisionTree(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyDecisionTree', { df, model });
+  }
+
+  export async function isApplicableDecisionTree(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableDecisionTree', { df, predictColumn });
+  }
+
+  export async function isInteractiveDecisionTree(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveDecisionTree', { df, predictColumn });
+  }
+
+  /**
+   * @param {number} neighbors - Training rows that vote for a prediction.
+   * @param {string} weights - Uniform: every neighbor counts the same. Distance: closer neighbors count more.
+   *   choices: ["Uniform","Distance"]
+   */
+  export async function trainKnn(df: DG.DataFrame , predictColumn: DG.Column , neighbors: number , weights: string ): Promise<any> {
+    return await grok.functions.call('EDA:TrainKnn', { df, predictColumn, neighbors, weights });
+  }
+
+  /**
+   * Predict the target for a table using a trained k-nearest neighbors model.
+   * @param {any} model - Trained k-nearest neighbors model to apply.
+   */
+  export async function applyKnn(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyKnn', { df, model });
+  }
+
+  export async function isApplicableKnn(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableKnn', { df, predictColumn });
+  }
+
+  export async function isInteractiveKnn(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveKnn', { df, predictColumn });
+  }
+
+  export async function trainNaiveBayes(df: DG.DataFrame , predictColumn: DG.Column ): Promise<any> {
+    return await grok.functions.call('EDA:TrainNaiveBayes', { df, predictColumn });
+  }
+
+  /**
+   * Classify the rows of a table using a trained Gaussian naive Bayes model.
+   * @param {any} model - Trained naive Bayes classifier model to apply.
+   */
+  export async function applyNaiveBayes(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyNaiveBayes', { df, model });
+  }
+
+  export async function isApplicableNaiveBayes(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableNaiveBayes', { df, predictColumn });
+  }
+
+  export async function isInteractiveNaiveBayes(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveNaiveBayes', { df, predictColumn });
+  }
+
+  /**
+   * @param {number} shrinkage - Covariance shrinkage from 0 (none) to 1. Helps when features outnumber rows.
+   */
+  export async function trainLda(df: DG.DataFrame , predictColumn: DG.Column , shrinkage: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainLda', { df, predictColumn, shrinkage });
+  }
+
+  /**
+   * Classify the rows of a table using a trained linear discriminant analysis (LDA) model.
+   * @param {any} model - Trained LDA classifier model to apply.
+   */
+  export async function applyLda(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyLda', { df, model });
+  }
+
+  export async function isApplicableLda(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableLda', { df, predictColumn });
+  }
+
+  export async function isInteractiveLda(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveLda', { df, predictColumn });
+  }
+
+  /**
+   * @param {string} hiddenLayers - Comma-separated sizes of the hidden layers, e.g. 100 or 64,32.
+   * @param {string} activation - Activation function of the hidden layers.
+   *   choices: ["ReLU","Tanh","Logistic","Identity"]
+   * @param {number} iterations - Largest number of training epochs.
+   * @param {number} learningRate - Step size of the weight updates.
+   * @param {number} alpha - L2 penalty of the weights.
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainMlp(df: DG.DataFrame , predictColumn: DG.Column , hiddenLayers: string , activation: string , iterations: number , learningRate: number , alpha: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainMlp', { df, predictColumn, hiddenLayers, activation, iterations, learningRate, alpha, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained neural network (multilayer perceptron) model.
+   * @param {any} model - Trained neural network model to apply.
+   */
+  export async function applyMlp(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyMlp', { df, model });
+  }
+
+  export async function isApplicableMlp(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableMlp', { df, predictColumn });
+  }
+
+  export async function isInteractiveMlp(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveMlp', { df, predictColumn });
+  }
+
+  /**
+   * @param {string} variant - TD: the tuned defaults (numerical embeddings, parametric activations, dropout, weight decay). TD-S: the simplified variant.
+   *   choices: ["TD","TD-S"]
+   * @param {number} epochs - Training epochs. The best epoch on the early-stopping rows is kept.
+   * @param {string} hiddenLayers - Comma-separated sizes of the hidden layers, e.g. 256,256,256 or 128,128.
+   * @param {number} learningRate - Base learning rate. 0 keeps the RealMLP default (0.04 for classification, 0.2 for regression).
+   * @param {number} batchSize - Rows per optimizer step.
+   * @param {number} validationFraction - Rows held out for early stopping.
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainRealMlp(df: DG.DataFrame , predictColumn: DG.Column , variant: string , epochs: number , hiddenLayers: string , learningRate: number , batchSize: number , validationFraction: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainRealMlp', { df, predictColumn, variant, epochs, hiddenLayers, learningRate, batchSize, validationFraction, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained RealMLP (tuned-default tabular MLP) model.
+   * @param {any} model - Trained RealMLP model to apply.
+   */
+  export async function applyRealMlp(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyRealMlp', { df, model });
+  }
+
+  export async function isApplicableRealMlp(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableRealMlp', { df, predictColumn });
+  }
+
+  export async function isInteractiveRealMlp(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveRealMlp', { df, predictColumn });
+  }
+
+  /**
+   * @param {number} ensembleSize - Weight-sharing MLPs averaged at prediction (the TabM paper uses 32).
+   * @param {number} width - Units per hidden layer (the paper uses 512).
+   * @param {string} embeddings - Embeddings of the numerical features. Piecewise linear over quantile bins is the paper's best.
+   *   choices: ["Piecewise linear","Periodic","Linear-ReLU","None"]
+   * @param {number} epochs - Largest number of training epochs. Early stopping may end training sooner.
+   * @param {number} patience - Epochs without a better score on the early-stopping rows before training stops.
+   * @param {number} learningRate - AdamW learning rate.
+   * @param {number} dropout - Dropout rate of the hidden layers.
+   * @param {number} validationFraction - Rows held out for early stopping.
+   * @param {number} seed - Random seed. The same seed gives the same model.
+   */
+  export async function trainTabm(df: DG.DataFrame , predictColumn: DG.Column , ensembleSize: number , width: number , embeddings: string , epochs: number , patience: number , learningRate: number , dropout: number , validationFraction: number , seed: number ): Promise<any> {
+    return await grok.functions.call('EDA:TrainTabm', { df, predictColumn, ensembleSize, width, embeddings, epochs, patience, learningRate, dropout, validationFraction, seed });
+  }
+
+  /**
+   * Predict the target for a table using a trained TabM (ensemble tabular MLP) model.
+   * @param {any} model - Trained TabM model to apply.
+   */
+  export async function applyTabm(df: DG.DataFrame , model: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:ApplyTabm', { df, model });
+  }
+
+  export async function isApplicableTabm(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsApplicableTabm', { df, predictColumn });
+  }
+
+  export async function isInteractiveTabm(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('EDA:IsInteractiveTabm', { df, predictColumn });
   }
 
   /**

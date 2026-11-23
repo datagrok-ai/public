@@ -1,7 +1,8 @@
 /* eslint-disable max-len */
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {MolList, RDModule, RDMol, RGroupDecomp} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {IMolContext, getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
+import {IMolContext, getMolSafe, getQueryMolSafe, validationMessage, validationText}
+  from '../utils/mol-creation_rdkit';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
 import {SubstructureSearchType} from '../constants';
@@ -577,6 +578,13 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       }
     }
     return results;
+  }
+
+  /** `validateMolecules`' texts of {@link molecules} on this worker's module (utils/mol-creation_rdkit.ts: the
+   * `validationText` of `validationMessage`, the function `validateMolecule` calls): '' for a valid molecule. In one go,
+   * without the pauses for the terminate flag (a validation is never cancelled, and each pause costs ~4 ms). */
+  validateMolecules(molecules: string[]): string[] {
+    return molecules.map((molecule) => validationText(validationMessage(molecule, this._rdKitModule)));
   }
 
   getStructuralAlerts(alerts: {[rule in RuleId]?: string[]}, molecules?: string[]): {[rule in RuleId]?: boolean[]} {

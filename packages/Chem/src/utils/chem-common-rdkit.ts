@@ -2,8 +2,8 @@
 // There should be no imports from Datagrok or OCL
 // RDKit-only (it goes with RDKit.js, engine/README.md "Removing RDKit"): RDKit's main-thread module and pool
 // (`initRdKitModuleLocal`, `initRdKitService`, `getRdKitModule`, `getRdKitService`, `cancelChemOp`),
-// `checkMoleculeValid`, `validationMessageByRdKit` and reaction drawing (`drawRdKitReactionToOffscreenCanvas`). The
-// rest takes the module or branches by engine, and stays.
+// `checkMoleculeValid` and reaction drawing (`drawRdKitReactionToOffscreenCanvas`). The rest takes the module or
+// branches by engine, and stays.
 import {RdKitService} from '../rdkit-service/rdkit-service';
 import {convertToRDKit} from '../analysis/r-group-analysis';
 //@ts-ignore
@@ -13,14 +13,13 @@ import initRDKitModule from '../RDKit_minimal.js';
 import {hasNewLines, isChemOpRunning, isMolBlock} from './chem-common';
 import {MAX_SMILES_LENGTH} from './chem-constants';
 import $ from 'cash-dom';
-import {RDLog, RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {IMolContext, getMolSafe} from './mol-creation_rdkit';
 import {initRdKitFrom} from '../rdkit-service/rdkit-service-worker-api';
 import {byEngineModule, withMol} from '../engine/chem-engine';
 import {noteCruxError} from '../engine/crux-module';
 import {isWasmTrap} from '../crux/crux-api';
-import {cruxReadsCxExtension} from '../crux/crux-service';
 import {renderingOptions} from '../rendering/rendering-settings';
 
 export let _rdKitModule: RDModule;
@@ -257,12 +256,9 @@ export function drawMoleculeToCanvas(x: number, y: number, w: number, h: number,
   if (!isMol)
     molString = convertToRDKit(molString);
 
-  // in Crux mode ("Chemical engine") Crux draws, and RDKit whatever Crux cannot read or refuses, and a CXSMILES whose
-  // query features Crux's reader skips (the molecule's or the scaffold's)
-  const cruxReads = (s: string | null): boolean => !s || cruxReadsCxExtension(s);
+  // in Crux mode ("Chemical engine") Crux draws (a CXSMILES with query features too), and RDKit whatever Crux cannot
+  // read or refuses
   byEngineModule('canvasMol', getRdKitModule(), (module, crux) => {
-    if (crux && !(cruxReads(molString) && cruxReads(scaffoldMolString)))
-      return null;
     const drawn = drawMoleculeWith(module, crux, x, y, w, h, nW, nH, onscreenCanvas, molString, isMol,
       scaffoldMolString, scaffoldStruct, renderingOptions);
     return drawn || !crux ? true : null;
@@ -367,23 +363,4 @@ export function checkMoleculeValid(molecule: string): any {
     return null;
   }
   return mol;
-}
-
-/** RDKit's message for a molecule string it does not read ('' for one it reads with nothing logged): what
- * `validateMolecule` shows. RDKit-only: Crux keeps no log. */
-export function validationMessageByRdKit(rdKitModule: RDModule, molecule: string): string | null {
-  let logHandle: RDLog | null = null;
-  let mol: RDMol | null = null;
-  try {
-    logHandle = rdKitModule.set_log_capture('rdApp.error');
-    mol = getMolSafe(molecule, {}, rdKitModule, true).mol;
-    let logBuffer = logHandle?.get_buffer();
-    logHandle?.clear_buffer();
-    if (!mol && !logBuffer)
-      logBuffer = 'unknown error';
-    return logBuffer ?? null;
-  } finally {
-    logHandle?.delete();
-    mol?.delete();
-  }
 }

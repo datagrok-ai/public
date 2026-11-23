@@ -166,9 +166,12 @@ category('substructure filters', async () => {
     await sketchersWarmUp(funcs);
   });
 
-  // The report's rows: with Filter as you draw on, toluene filtered first, then its methyl bond marked aromatic. The
-  // filter named a query by RDKit's sanitized SMARTS, which reads that bond single, so the second query had the first's
-  // name and its search was skipped: toluene's 822 rows of mol1K stayed, where the aromatic bond passes 293.
+  // Pairs of queries the filter once named alike, so that the second one's search was skipped, with Filter as you
+  // draw on. Toluene, then its methyl bond marked aromatic (the report of 2026-10-07): RDKit's sanitized SMARTS read
+  // that bond single; toluene's 822 rows of mol1K stayed, where the aromatic bond passes 293. C-N-C, its C-N bond any
+  // then single or aromatic with a ring topology kept, and the chain twin the other way (lane STAND's S-003, run20):
+  // both engines' SMARTS writers drop "single or aromatic" next to a topology (`[#6]@[#7]-[#6]` both times); 401 rows
+  // stayed where 394 pass, 448 where 453 do.
   test('a query that only an unsanitized reading tells from the last one is searched again: toluene, ' +
     'then its methyl bond aromatic', async () => {
     const df = await readDataframe('mol1K.csv');
@@ -179,25 +182,27 @@ category('substructure filters', async () => {
       const rdkit = chemCommonRdKit.getRdKitModule();
       const matches = (smarts: string): number => {
         const q = rdkit.get_qmol(smarts);
-        let n = 0;
-        try {
-          for (let i = 0; i < df.rowCount; i++) {
-            const m = rdkit.get_mol(df.get('molecule', i));
-            try {
-              if (m.get_substruct_match(q) !== '{}')
-                n++;
-            } finally {
-              m.delete();
-            }
+        const hit = (molecule: string): boolean => {
+          const m = rdkit.get_mol(molecule);
+          try {
+            return m.get_substruct_match(q) !== '{}';
+          } finally {
+            m.delete();
           }
+        };
+        try {
+          return (df.col('molecule')!.toList() as string[]).filter(hit).length;
         } finally {
           q.delete();
         }
-        return n;
       };
-      const toluene = matches('[#6]-[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1');
-      const marked = matches('[#6]:[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1');
-      expect(toluene !== marked && marked > 0, true, `mol1K tells the two apart (${toluene}, ${marked})`);
+      const [toluene, marked] = ['[#6]-[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1', '[#6]:[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1'];
+      const TOLUENE_SINGLE = TOLUENE_AROMATIC_METHYL_BOND.replace('  1  2  4  0', '  1  2  1  0');
+      // C-N-C, its C-N bond of the MDL type and topology given (topology 1 ring, 2 chain)
+      const cnc = (type: number, topology: number) => ['', '  S-003', '', '  3  2  0  0  0  0  0  0  0  0999 V2000',
+        ...['C', 'N', 'C'].map((a, i) =>
+          `${i.toFixed(4).padStart(10)}    0.0000    0.0000 ${a}   0  0  0  0  0  0  0  0  0  0  0  0`),
+        `  1  2  ${type}  0  0  ${topology}  0`, '  2  3  1  0', 'M  END', ''].join('\n');
       // the same written V3000 (RDKit's writer would kekulize the bond away)
       const v3000 = ['', '  query-roundtrip', '', '  0  0  0     0  0            999 V3000', 'M  V30 BEGIN CTAB',
         'M  V30 COUNTS 7 7 0 0 0', 'M  V30 BEGIN ATOM', 'M  V30 1 C 2.5714 0 0 0', 'M  V30 2 C 1.0714 0 0 0',
@@ -205,19 +210,27 @@ category('substructure filters', async () => {
         'M  V30 6 C -1.1786 1.299 0 0', 'M  V30 7 C 0.3214 1.299 0 0', 'M  V30 END ATOM', 'M  V30 BEGIN BOND',
         'M  V30 1 4 1 2', 'M  V30 2 2 2 3', 'M  V30 3 1 3 4', 'M  V30 4 2 4 5', 'M  V30 5 1 5 6', 'M  V30 6 2 6 7',
         'M  V30 7 1 7 2', 'M  V30 END BOND', 'M  V30 END CTAB', 'M  END', ''].join('\n');
-      // with either engine of the search, and the same query written V3000 (the search reads it unsanitized too)
+      // (what, the first query, its meaning, the second query, its meaning)
+      const pairs: [string, string, string, string, string][] = [
+        ['toluene, then its methyl bond aromatic', TOLUENE_SINGLE, toluene, TOLUENE_AROMATIC_METHYL_BOND, marked],
+        ['the same written V3000', TOLUENE_SINGLE, toluene, v3000, marked],
+        ['C-N-C: any ring bond, then -,:', cnc(8, 1), '[#6]~;@[#7]-[#6]', cnc(6, 1), '[#6]-,:;@[#7]-[#6]'],
+        ['C-N-C: -,: chain bond, then any', cnc(6, 2), '[#6]-,:;!@[#7]-[#6]', cnc(8, 2), '[#6]~;!@[#7]-[#6]'],
+      ];
+      // with either engine of the search (each reads the molblock unsanitized)
       for (const engine of [SubstructureSearchEngine.RDKit, SubstructureSearchEngine.Crux]) {
         setSubstructureSearchEngine(engine);
-        for (const [what, query] of [['V2000', TOLUENE_AROMATIC_METHYL_BOND], ['V3000', v3000]]) {
-          filter.sketcher.setMolFile(TOLUENE_AROMATIC_METHYL_BOND.replace('  1  2  4  0', '  1  2  1  0'));
-          await waitUntil(() => df.filter.trueCount === toluene,
-            `${engine}: toluene: ${toluene} rows contain it`, 15000);
+        for (const [what, first, firstMeaning, query, meaning] of pairs) {
+          const [before, after] = [matches(firstMeaning), matches(meaning)];
+          expect(before !== after && after > 0, true, `${what}: mol1K tells the two apart (${before}, ${after})`);
+          filter.sketcher.setMolFile(first);
+          await waitUntil(() => df.filter.trueCount === before, `${engine}, ${what}: ${before} rows first`, 15000);
           filter.sketcher.setMolFile(query);
-          await waitUntil(() => df.filter.trueCount === marked, 'see below', 15000).catch(() => {
+          await waitUntil(() => df.filter.trueCount === after, 'see below', 15000).catch(() => {
             const kept = filter.moleculeToSmarts(filter.currentMolecule);
             const given = filter.moleculeToSmarts(filter.getSketcherMolecule());
-            throw new Error(`with ${engine} and the molblock ${what}, ${df.filter.trueCount} rows pass, ` +
-              `${marked} contain it; the filter keeps ${kept}, its sketcher ` +
+            throw new Error(`with ${engine}, ${what}: ${df.filter.trueCount} rows pass, ` +
+              `${after} contain it; the filter keeps ${kept}, its sketcher ` +
               `(${filter.sketcher.sketcher?.constructor.name}) gives ${given}; ` +
               `searches ${filter.currentSearches.size}, sync ${filter.syncEvent}, calculating ${filter.calculating}`);
           });
@@ -558,6 +571,41 @@ M  END
   });
 
   // the typed molecule kept for its own molblock must not swallow a query feature drawn on it, which leaves its SMILES
+  test('a SMILES with stereo centres pasted into the text box filters as the molecule, Similar too', async () => {
+    // reported 2026-11-23: smiles.csv, the canonical_smiles card's sketcher, this text pasted into its text box was read
+    // as SMARTS for [C@@H]'s H count: every atom drawn aromatic- or aliphatic-only, Contains found its row, Similar
+    // nothing (the filter fingerprinted the drawing's query). Pasted on the canvas it was drawn as the molecule.
+    const text = 'Nc1ncnc2c1c(Br)cn2[C@@H]3OC[C@@H](O)[C@H]3O';
+    const df = await readDataframe('smiles.csv');
+    await grok.data.detectSemanticTypes(df);
+    const row = df.col('canonical_smiles')!.toList().indexOf(text);
+    expect(row >= 0, true, 'the text\'s row in smiles.csv');
+    // in the Crux sketcher, the default and the report's: it drops a SMARTS text that also reads as SMILES, and the
+    // filter then searched its drawing (another sketcher kept the text, and the filter searched that as a molecule)
+    const sketcherType = grok.chem.currentSketcherType;
+    grok.chem.currentSketcherType = 'Crux';
+    const dialogs: DG.Dialog[] = [];
+    const filter = await createFilter('canonical_smiles', df, dialogs);
+    try {
+      filter.sketcher.setValue(text); // what the text box's Enter and paste call
+      await waitUntil(() => filter.currentMolecule === text,
+        () => `the filter does not search the text pasted: it holds ${filter.currentMolecule.slice(0, 80)}`, 15000);
+      await searchEnded(filter);
+      await waitUntil(() => df.filter.trueCount < df.rowCount, 'Contains did not filter', 10000);
+      expect(df.filter.get(row), true, 'Contains: its row passes');
+      filter.searchTypeInput.value = SubstructureSearchType.IS_SIMILAR;
+      await waitUntil(() => filter.searchType === SubstructureSearchType.IS_SIMILAR, 'the search type did not change',
+        5000);
+      await searchEnded(filter);
+      await waitUntil(() => df.filter.get(row), () => `Similar: its row does not pass (${df.filter.trueCount} rows)`,
+        15000);
+    } finally {
+      dialogs.forEach((it) => it.close());
+      filter.detach();
+      grok.chem.currentSketcherType = sketcherType;
+    }
+  });
+
   test('a ring bond count drawn on a typed molecule is an edit', async () => {
     const df = await readDataframe('tests/sar-small_test.csv');
     await grok.data.detectSemanticTypes(df);

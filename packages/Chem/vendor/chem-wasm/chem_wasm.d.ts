@@ -30,6 +30,17 @@ export class ChemMonomerLibrary {
      */
     constructor(json: string);
     /**
+     * `prepareToHelm()`: builds molecule → HELM's index of this library now (else on the first `toHelm`), once;
+     * returns its number of indexed forms.
+     */
+    prepareToHelm(): number;
+    /**
+     * `toHelm(molecules, options?)`: molecule → HELM per row (MOL blocks, SMILES or CXSMILES; null or '' an empty
+     * row): `{helms, errors, matched, inline, chem}` (module docs). A molecule that cannot be converted is its row's
+     * error; throws only where the options are wrong.
+     */
+    toHelm(molecules: (string | null)[], options?: string | null): {helms: (string | null)[], errors: (string | null)[], matched: Int32Array, inline: Int32Array, chem: Int32Array};
+    /**
      * The number of monomers (keys) read.
      */
     readonly size: number;
@@ -322,6 +333,31 @@ export class CollectionBuilder {
 }
 
 /**
+ * RDKit-js's `Log` (MinimalLib's `JSLog`, minilib.h:283-292, minilib.cpp:932-950): what
+ * [`set_log_capture`] / [`set_log_tee`] give, a buffer RDKit's error log writes to while it lives
+ * (`smi_compiler::rdgeneral::rdlog`; spike rdkit-error-log, decision `chem-wasm`).
+ */
+export class JSLog {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * PORT(minilib.cpp:940): `clear_buffer()`.
+     */
+    clear_buffer(): void;
+    /**
+     * Embind's `delete()` (`~JSLog`, minilib.cpp:936): the log back as it was, free for another
+     * `set_log_capture` (the same as wasm-bindgen's `free()`).
+     */
+    delete(): void;
+    /**
+     * PORT(minilib.cpp:938): `get_buffer()`: the records since the log was set or last cleared, each
+     * `"[HH:MM:SS] "` (the local time) and RDKit's text.
+     */
+    get_buffer(): string;
+}
+
+/**
  * RDKit-js `JSMol`.
  */
 export class JSMol {
@@ -338,6 +374,18 @@ export class JSMol {
      * ([`perceived_again`]); `true`.
      */
     add_hs_in_place(): boolean;
+    /**
+     * Crux extension, no RDKit.js call (spikes query-read-match and drawn-query): the query a chemist means by a query
+     * drawn in a sketcher, in place: first [`rk::drawn_query::adjust_drawn_query`] (a drawn aromatic ring stays
+     * aromatic despite its query features; an H count counts drawn H atoms too; a NOT list is a heavy atom; the valence
+     * set on an atom is asked for; "unsaturated" is a double, triple or aromatic bond), then
+     * [`smi_compiler::query_mol::adjust_drawn_query`] (a plain single or double bond at an aromatic query atom whose
+     * ring is not drawn also matches an aromatic bond; an atom list holding H on one atom is that atom's implicit H or
+     * the list's other atoms), which reads the rings the first made aromatic as drawn aromatic. Datagrok's Chem calls
+     * it on the query its substructure search builds from a MOL block, after its rings are aromatized and its H merged;
+     * RDKit has no such step. `true` when the query changed.
+     */
+    adjust_drawn_query(): boolean;
     /**
      * PORT(common.h:894-904): `canonical_tautomer(details)` —
      * `TautomerEnumerator(params).canonicalize`.
@@ -431,8 +479,13 @@ export class JSMol {
     get_avalon_fp(details?: string | null): string;
     /**
      * PORT(SmartsWrite.cpp `MolToCXSmarts`): `get_cxsmarts(details)`: the SMARTS, then
-     * `getCXExtensions(mol, CX_ALL)` over the SMARTS writer's atom and bond output order: with a
+     * `getCXExtensions(mol, flags)` over the SMARTS writer's atom and bond output order: with a
      * conformer its coordinates and their wedges, and the link nodes, as `get_cxsmiles` writes them.
+     * `flags` are the details' `CX_*` keys as `get_cxsmiles` reads them (none: `CX_ALL`, RDKit-js's
+     * `get_cxsmarts`, which reads no `CX_*` key): a Crux extension (spike cxsmiles-fields, for the
+     * Sketcher app's query link, e.g. `{"CX_ALL_BUT_COORDS": true}`), RDKit's own extension writer
+     * with those flags, what `MolToCXSmiles(mol, params, flags)` writes after its SMILES.
+     * `restoreBondDirOption` is not read, as RDKit-js's `get_cxsmarts`.
      */
     get_cxsmarts(details?: string | null): string;
     /**
@@ -1166,7 +1219,10 @@ export function get_mol_copy(other: JSMol): JSMol;
 /**
  * PORT(common.h `qmol_from_input`): RDKit-js `get_qmol(input)`: a SMARTS (`SmartsToMol`) or
  * a MOL block read as a query (`MolBlockToMol(sanitize=false, removeHs=false)`, its query
- * atoms and bonds); `null` when it does not parse.
+ * atoms and bonds); `null` when it does not parse. PORT(SmilesParse.cpp:386-417
+ * `handleCXPartAndName`, CXSmilesOps.cpp:1553-1560): a SMARTS whose CXSMILES extension does not
+ * parse throws (`strictCXSMILES`; RDKit's `SmartsToMol` lets the exception out, MinimalLib's
+ * `get_qmol` does not catch it), as RDKit-js does (spike cxsmiles-fields).
  */
 export function get_qmol(input: string): JSMol | null;
 
@@ -1225,15 +1281,17 @@ export function prefer_coordgen(prefer: boolean): void;
 export function scaffoldTree(smiles: string[], ring_cutoff: number, discharge: boolean): string;
 
 /**
- * RDKit-js `set_log_capture(logName)` / `set_log_tee(logName)`: Crux keeps no RDKit log (its
- * messages are not RDKit's), so these throw `not supported by Crux` rather than being undefined.
+ * PORT(minilib.cpp:947-950): RDKit-js `set_log_capture(logName)`: a [`JSLog`] whose buffer takes the
+ * log's records (in place of its destination); `null` for a name that is no log or a log another handle
+ * holds; throws `not supported by Crux` for the logs Crux does not keep ([`open_log`]).
  */
-export function set_log_capture(log_name: string): any;
+export function set_log_capture(log_name: string): JSLog | null;
 
 /**
- * See [`set_log_capture`].
+ * PORT(minilib.cpp:942-945): RDKit-js `set_log_tee(logName)`: as [`set_log_capture`], the records also
+ * going on to the log's destination; Crux's logs have none, so the buffer reads the same.
  */
-export function set_log_tee(log_name: string): any;
+export function set_log_tee(log_name: string): JSLog | null;
 
 /**
  * RDKit `SimilarityMaps.GetSimilarityMapForFingerprint(ref, probe, fp, draw2d)`
@@ -1288,6 +1346,7 @@ export interface InitOutput {
     readonly __wbg_chemsynthonspace_free: (a: number, b: number) => void;
     readonly __wbg_collection_free: (a: number, b: number) => void;
     readonly __wbg_collectionbuilder_free: (a: number, b: number) => void;
+    readonly __wbg_jslog_free: (a: number, b: number) => void;
     readonly __wbg_jsmol_free: (a: number, b: number) => void;
     readonly __wbg_jsmollistlist_free: (a: number, b: number) => void;
     readonly __wbg_mollist_free: (a: number, b: number) => void;
@@ -1319,7 +1378,9 @@ export interface InitOutput {
     readonly chemmonomerlibrary_assembleOne: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly chemmonomerlibrary_errors: (a: number) => [number, number];
     readonly chemmonomerlibrary_new: (a: number, b: number) => [number, number, number];
+    readonly chemmonomerlibrary_prepareToHelm: (a: number) => number;
     readonly chemmonomerlibrary_size: (a: number) => number;
+    readonly chemmonomerlibrary_toHelm: (a: number, b: any, c: number, d: number) => [number, number, number];
     readonly chemreactionscheme_describe: (a: number) => [number, number];
     readonly chemreactionscheme_draw_to_canvas: (a: number, b: any, c: number, d: number) => [number, number];
     readonly chemreactionscheme_get_centre_counts: (a: number) => [number, number];
@@ -1376,14 +1437,18 @@ export interface InitOutput {
     readonly get_mcs_as_smarts: (a: number, b: number, c: number) => [number, number, number, number];
     readonly get_mol: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly get_mol_copy: (a: number) => number;
-    readonly get_qmol: (a: number, b: number) => any;
+    readonly get_qmol: (a: number, b: number) => [number, number, number];
     readonly get_rgd: (a: number, b: number, c: number) => [number, number, number];
     readonly get_rgd_smarts: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly get_rgd_text: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly get_rxn: (a: number, b: number, c: number, d: number) => number;
     readonly initRxnMapper: (a: number, b: number) => [number, number];
+    readonly jslog_clear_buffer: (a: number) => void;
+    readonly jslog_delete: (a: number) => void;
+    readonly jslog_get_buffer: (a: number) => [number, number];
     readonly jsmol_add_hs: (a: number) => [number, number, number, number];
     readonly jsmol_add_hs_in_place: (a: number) => [number, number, number];
+    readonly jsmol_adjust_drawn_query: (a: number) => number;
     readonly jsmol_canonical_tautomer: (a: number, b: number, c: number) => [number, number, number];
     readonly jsmol_charge_parent: (a: number, b: number, c: number) => [number, number, number];
     readonly jsmol_cleanup: (a: number, b: number, c: number) => [number, number, number];

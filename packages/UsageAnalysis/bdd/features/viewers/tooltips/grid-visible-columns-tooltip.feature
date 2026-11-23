@@ -15,8 +15,8 @@ Feature: The grid's tooltip and the columns it cannot show
   out of a grid's row tooltip).
 
   A cut-off value still shows in full in that default, while one that wraps inside a tall row is
-  not cut off and shows nothing; a grid with its own Row Tooltip shows only that. View > Edit Tooltip says where the columns go: its Use tooltip opens on Table, which moves a
-  default grid to the table's tooltip, or on Grid for a grid with its own Row Tooltip, which edits
+  not cut off and shows nothing; a grid with its own Row Tooltip shows only that. View > Edit Tooltip says where the columns go: its Use tooltip opens on "Table (shared)", which moves a
+  default grid to the table's tooltip, or on "Grid only" for a grid with its own Row Tooltip, which edits
   that. A grid set to "do not show" gets no such choice and stays as it is.
 
   The case's other way of pushing the last column out of sight, widening the context panel, moves
@@ -92,7 +92,7 @@ Feature: The grid's tooltip and the columns it cannot show
       | Show Column Names | Always |
     And user picks "View > Edit Tooltip..." from the top menu
     Then "Edit Tooltip" dialog should be visible
-    And "Use tooltip" input in "Edit Tooltip" dialog should have value "Table"
+    And "Use tooltip" input in "Edit Tooltip" dialog should have value "Table (shared)"
     When user unchecks checkbox in "Edit Tooltip" dialog
     And user toggles the "target" column in the column list of "Edit Tooltip" dialog
     And user clicks on OK button in "Edit Tooltip" dialog
@@ -106,7 +106,7 @@ Feature: The grid's tooltip and the columns it cannot show
       | Row Tooltip  | source              |
     And user picks "View > Edit Tooltip..." from the top menu
     Then "Edit Tooltip" dialog should be visible
-    And "Use tooltip" input in "Edit Tooltip" dialog should have value "Grid"
+    And "Use tooltip" input in "Edit Tooltip" dialog should have value "Grid only"
     When user clicks on OK button in "Edit Tooltip" dialog
     Then the "Edit Tooltip" dialog should close
     And "Show Tooltip" property of grid should be "show custom tooltip"
@@ -129,7 +129,7 @@ Feature: The grid's tooltip and the columns it cannot show
       | Show Column Names | Always |
     And user picks "View > Edit Tooltip..." from the top menu
     Then "Edit Tooltip" dialog should be visible
-    When user selects "Grid" in "Use tooltip" input in "Edit Tooltip" dialog
+    When user selects "Grid only" in "Use tooltip" input in "Edit Tooltip" dialog
     And user toggles the "target" column in the column list of "Edit Tooltip" dialog
     And user clicks on OK button in "Edit Tooltip" dialog
     Then the "Edit Tooltip" dialog should close

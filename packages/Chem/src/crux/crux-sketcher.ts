@@ -35,10 +35,19 @@ export function loadCruxSketch(): Promise<typeof CruxSketch> {
  * Sketch cannot make a sketcher once package.js's has defined its element. */
 interface PageState {
   loader: CruxSketchLoaderForTests | null;
+  /** The hosts whose Crux opens in query mode ({@link openCruxInQueryMode}); made on first use. */
+  queryHosts?: WeakSet<DG.chem.Sketcher>;
 }
 const PAGE_STATE = Symbol.for('datagrok.chem.crux-sketcher.page');
 const pageState: PageState = (globalThis as unknown as {[key: symbol]: PageState | undefined})[PAGE_STATE] ??=
   {loader: null};
+
+/** Makes the Crux sketcher `host` brings up open in query mode, its query tools offered from the start, as the
+ * substructure filter's does (Apps | Chem | Sketcher: the platform's sketcher host has no say in a sketcher's mode).
+ * Call it before the host's sketcher starts; the gear's Query mode still switches it. */
+export function openCruxInQueryMode(host: DG.chem.Sketcher): void {
+  (pageState.queryHosts ??= new WeakSet()).add(host);
+}
 
 /** Tests: what the Crux sketchers load Crux Sketch with, given Chem's own loader (the one to wrap). */
 export type CruxSketchLoaderForTests = (load: () => Promise<typeof CruxSketch>) => Promise<typeof CruxSketch>;
@@ -243,10 +252,12 @@ export class CruxSketcher extends grok.chem.SketcherBase {
     let sketch: SketcherHandle;
     this.loading = true;
     try {
-      // Where Datagrok asks for a query (its substructure filter), Crux opens in query mode, offering the query tools;
-      // every other host opens it in molecule mode. The user can switch it in Crux's gear menu either way.
+      // Where Datagrok asks for a query (its substructure filter) or a host asked for it (openCruxInQueryMode: the
+      // Sketcher app), Crux opens in query mode, offering the query tools; every other host opens it in molecule mode.
+      // The user can switch it in Crux's gear menu either way.
+      const query = host.isSubstructureFilter || (pageState.queryHosts?.has(host) ?? false);
       sketch = await (await (pageState.loader?.(loadCruxSketch) ?? loadCruxSketch())).createSketcher(this.root,
-        host.isSubstructureFilter ? {mode: 'query'} : undefined);
+        query ? {mode: 'query'} : undefined);
     } catch (e) {
       console.error(e);
       this.root.append(ui.divText(SKETCHER_NOT_STARTED, 'crux-sketcher-error'));
@@ -306,6 +317,13 @@ export class CruxSketcher extends grok.chem.SketcherBase {
 
   get isInitialized(): boolean {
     return this.sketch !== null;
+  }
+
+  /** Crux Sketch's own handle once the sketcher is up (null before, and when it did not start): what the Sketcher app
+   * reads the drawing's other formats and pictures from (CXSMILES, InChI, CDXML, `svgWith`, `png`), which the
+   * platform's sketcher API does not give. */
+  get handle(): SketcherHandle | null {
+    return this.sketch;
   }
 
   get smiles(): string {
@@ -464,7 +482,11 @@ export class CruxSketcher extends grok.chem.SketcherBase {
     // SMILES with setMolFile) is read as the SMILES it is
     else if ((notation === 'molblock' || notation === 'molblockV3000') && value && !DG.chem.isMolBlock(value))
       notation = 'smiles';
-    this.explicitMol = {notation, value};
+    // A SMARTS that also reads as SMILES (`[NH2]c1ccccc1`, which js-api's substructure host sets as SMARTS for its bracket
+    // H count; run20 STAND S-004) is not kept as the caller's string: the substructure filter tells SMARTS from SMILES by
+    // the text, took it for a molecule and dropped the H count (264 of mol1K's rows where it finds 11). The drawing's own
+    // query answers instead.
+    this.explicitMol = notation === 'smarts' && !DG.chem.isSmarts(value) ? null : {notation, value};
     if (this.sketch === null || this.isDetached) {
       this.unshown = {notation, value};
       if (this.isDetached)

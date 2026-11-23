@@ -296,8 +296,13 @@ export declare const STRINGS: {
     readonly removeExplicitHydrogens: 'Remove explicit hydrogens';
     readonly addExplicitHydrogensLine: 'Draw each implicit H as an atom (the selection, if any)';
     readonly removeExplicitHydrogensLine: 'Fold H atoms back into their atoms (the selection, if any)';
-    /** Why Add explicit hydrogens is disabled in query mode (spike milestone-6-fixes, F3, R3): its tooltip in each menu. */
-    readonly addHydrogensQueryMode: 'Not in query mode: each hydrogen drawn would become part of the query';
+    /**
+     * Add explicit hydrogens in query mode (spike query-add-hydrogens, the product owner's choice B of 2026-11-19; it replaces
+     * milestone-6-fixes' F3): what it does on an atom or a selection, the top bar's line and the context menus' tooltip; and
+     * why it is disabled on the whole drawing (the top bar with nothing selected, the canvas's menu), its tooltip.
+     */
+    readonly addExplicitHydrogensQueryLine: 'Draw each implicit H as an atom: the query then asks each atom for at least that many H';
+    readonly addHydrogensWholeQuery: 'Not on the whole query: each hydrogen drawn becomes part of it, so only molecules with no substituent anywhere would pass; select atoms first';
     /** Straighten (spike layout-tools, L5, L9): RDKit's straightenDepiction, in the selection's and the canvas's menus (P1: no button, no key). */
     readonly straighten: 'Straighten';
     /**
@@ -802,6 +807,16 @@ export declare const STRINGS: {
     readonly noRingsToAromatize: 'Nothing to aromatize';
     readonly noRingsToDearomatize: 'No aromatic ring to dearomatize';
     readonly noKekuleStructure: 'no Kekulé structure';
+    /**
+     * crux-core aromatize-queries (2026-11-17, the owner's report): a ring system whose query features (`~`, `-,:`, a list,
+     * ring or chain, a custom SMARTS) stop Aromatize or Dearomatize is left as drawn and refused `query`; said with how many.
+     */
+    readonly queryRingSystems: {
+        readonly one: 'it has query features';
+        readonly other: 'they have query features';
+    };
+    readonly cantAromatizeRings: "Can't aromatize {what}: {why}";
+    readonly cantDearomatizeRings: "Can't dearomatize {what}: {why}";
     readonly aromatized: 'Aromatized {what}';
     readonly dearomatized: 'Dearomatized {what}';
     readonly cantAromatize: "Can't aromatize: {why}";
@@ -1247,6 +1262,10 @@ export declare const STRINGS: {
     readonly queryOrMore: '{n} or more';
     /** The query tooltip's field (spike polish-look, row 7): its name and its value, in the menus' words ("ring bond count 2"). */
     readonly queryTipField: '{field} {value}';
+    /** The query tooltip of an atom with H count None beside one that may be H (run20, QUERY-036): "[H,Cl,F] beside it is never H". */
+    readonly queryTipNeverH: '{label} beside it is never H';
+    /** The query tooltip of an atom that may be H beside one with H count None (QUERY-036): "never H: the C beside it has H count none". */
+    readonly queryTipNoHBeside: 'never H: the {atom} beside it has {field}';
     readonly queryAromatic: 'Aromatic';
     readonly queryAliphatic: 'Aliphatic';
     readonly clearQueryProperties: 'Clear query properties';
@@ -1313,7 +1332,7 @@ export declare const STRINGS: {
 /** A message's name. */
 export type StringKey = keyof typeof STRINGS;
 /** The messages with placeholders or plural forms: read through the catalog's functions, never as text. */
-type FormattedKey = 'readoutUnspecified' | 'readoutAtom' | 'readoutAtomValence' | 'readoutBond' | 'readoutDrawn' | 'readoutMoved' | 'readoutCopyItem' | 'readoutCopied' | 'groupCount' | 'percent' | 'zoomButton' | 'withHotkey' | 'notAvailableYet' | 'copyNoReaction' | 'noRoomBond' | 'noRoomRing' | 'noRoomChain' | 'noRoomTemplate' | 'noRoomMerge' | 'thisAtom' | 'noRoomForRadical' | 'problemValence' | 'chargeLimitUp' | 'chargeLimitDown' | 'tooClose' | 'cannotFlip' | 'cannotTurn' | 'noFreeAttachment' | 'pasteNotYet' | 'clipboardBlocked' | 'copyAsBlocked' | 'copiedLost' | 'copiedV3000' | 'copiedV3000Lost' | 'copiedV3000Needed' | 'copiedNone' | 'copiedLater' | 'copiedAs' | 'lossReaction' | 'lossArrowStyle' | 'lossFailedReaction' | 'lossResonanceArrows' | 'lossCurvedArrows' | 'lossTexts' | 'lossCompoundNumbers' | 'lossBrackets' | 'lossCycles' | 'lossShapes' | 'lossAlias' | 'lossRLabelNumbers' | 'lossAttachmentPoints' | 'lossStereoGroups' | 'lossChiralFlag' | 'lossQuery' | 'lossSgroup' | 'lossHydrogenBond' | 'lossZeroOrder' | 'lossAtomMaps' | 'lossStereo' | 'lossRLabel' | 'lossDummy' | 'lossDative' | 'lossOther' | 'pasteNotAs' | 'pasteNotAsMol' | 'pasteSpecialHint' | 'notReadAs' | 'notReadAsMol' | 'dropNothing' | 'dropNotYet' | 'pasteNoText' | 'readPasted' | 'readDropped' | 'readWritten' | 'readLeftOut' | 'readAlso' | 'leftStructure' | 'leftText' | 'leftGraphic' | 'leftArrow' | 'leftPicture' | 'leftBracket' | 'keptAliases' | 'lostRecords' | 'lostSdData' | 'lostRgroupDefinitions' | 'lostCoordinates3d' | 'lostSgroup' | 'lostQuery' | 'lostCxSection' | 'lostMolfile' | 'lostOther' | 'degrees' | 'radicalElectrons' | 'notAnElement' | 'notValid' | 'detailsNumber' | 'detailsMass' | 'opensDialog' | 'atomCount' | 'bondCount' | 'both' | 'description' | 'withFormula' | 'hotAtom' | 'hotBond' | 'selected' | 'added' | 'deleted' | 'pasted' | 'bondNow' | 'bondsNow' | 'atomNow' | 'atomsNow' | 'changed' | 'moved' | 'rotated' | 'flipped' | 'joined' | 'undone' | 'redone' | 'newDrawing' | 'noCentreConfig' | 'noAxisConfig' | 'atomNumber' | 'bondNumber' | 'stereoConfigOf' | 'stereoGroupChip' | 'stereoGroupSaid' | 'stereoGroupOf' | 'stereoGroupOfSelected' | 'groupSizeCentres' | 'groupSizeElements' | 'newAndGroup' | 'newOrGroup' | 'selectAllOfGroup' | 'stereoElements' | 'unspecifiedCount' | 'standsFor' | 'flagSaid' | 'stereoRemoved' | 'wedgesPlaced' | 'centreCount' | 'axisCount' | 'stereoBondCount' | 'aromatized' | 'dearomatized' | 'cantAromatize' | 'cantDearomatize' | 'cantAromatizeSome' | 'cantDearomatizeSome' | 'doneAndRefused' | 'ringCount' | 'ringSystemCount' | 'cleanedAtoms' | 'switchedOn' | 'switchedOff' | 'toolThen' | 'toolChosen' | 'zoomTo' | 'reactionHint' | 'cycleChosen' | 'cyclePlaced' | 'cycleFilled' | 'cycleTaken' | 'droppedAgent' | 'droppedAgents' | 'routeContinued' | 'stepAddMode' | 'stepRoleReactant' | 'stepRoleProduct' | 'stepRoleOut' | 'textLandsStep' | 'textLeavesStep' | 'textJoinedStep' | 'textLeftStep' | 'slotCycleTip' | 'slotRingTip' | 'slotChosen' | 'stepAddHandle' | 'continueRouteTip' | 'stepAddTip' | 'roleInStep' | 'mapTwiceMolecule' | 'mapTwiceReactants' | 'mapTwiceProducts' | 'mapUnpaired' | 'mapped' | 'sheetInTurn' | 'cycleFirst' | 'cycleLater' | 'sheetFuse' | 'sheetNudge' | 'sheetRotate' | 'sheetCopyAs' | 'sheetPasteAs' | 'dissolveQuestion' | 'sheetAbbreviation' | 'sgroupNameTooLong' | 'sgroupFieldNameTooLong' | 'sgroupValueTooLong' | 'sgroupCountRange' | 'sgroupLabelTooLong' | 'sgroupContextMismatch' | 'sgroupTipData' | 'sgroupTipSru' | 'sgroupTipMul' | 'sgroupTipSup' | 'sgroupTipOther' | 'queryAtomList' | 'queryAtomNotList' | 'queryAtomGeneric' | 'queryOrMore' | 'queryTipField' | 'smartsNotRead' | 'queryModeOnly' | 'pasteQueryOnly' | 'dropQueryOnly' | 'queryElementOff' | 'viewOnlyOff' | 'pendingOff' | 'noItemsHereFoundOn' | 'notApplied' | 'chargeSaidPlus' | 'chargeSaidMinus' | 'zoomRange';
+type FormattedKey = 'readoutUnspecified' | 'readoutAtom' | 'readoutAtomValence' | 'readoutBond' | 'readoutDrawn' | 'readoutMoved' | 'readoutCopyItem' | 'readoutCopied' | 'groupCount' | 'percent' | 'zoomButton' | 'withHotkey' | 'notAvailableYet' | 'copyNoReaction' | 'noRoomBond' | 'noRoomRing' | 'noRoomChain' | 'noRoomTemplate' | 'noRoomMerge' | 'thisAtom' | 'noRoomForRadical' | 'problemValence' | 'chargeLimitUp' | 'chargeLimitDown' | 'tooClose' | 'cannotFlip' | 'cannotTurn' | 'noFreeAttachment' | 'pasteNotYet' | 'clipboardBlocked' | 'copyAsBlocked' | 'copiedLost' | 'copiedV3000' | 'copiedV3000Lost' | 'copiedV3000Needed' | 'copiedNone' | 'copiedLater' | 'copiedAs' | 'lossReaction' | 'lossArrowStyle' | 'lossFailedReaction' | 'lossResonanceArrows' | 'lossCurvedArrows' | 'lossTexts' | 'lossCompoundNumbers' | 'lossBrackets' | 'lossCycles' | 'lossShapes' | 'lossAlias' | 'lossRLabelNumbers' | 'lossAttachmentPoints' | 'lossStereoGroups' | 'lossChiralFlag' | 'lossQuery' | 'lossSgroup' | 'lossHydrogenBond' | 'lossZeroOrder' | 'lossAtomMaps' | 'lossStereo' | 'lossRLabel' | 'lossDummy' | 'lossDative' | 'lossOther' | 'pasteNotAs' | 'pasteNotAsMol' | 'pasteSpecialHint' | 'notReadAs' | 'notReadAsMol' | 'dropNothing' | 'dropNotYet' | 'pasteNoText' | 'readPasted' | 'readDropped' | 'readWritten' | 'readLeftOut' | 'readAlso' | 'leftStructure' | 'leftText' | 'leftGraphic' | 'leftArrow' | 'leftPicture' | 'leftBracket' | 'keptAliases' | 'lostRecords' | 'lostSdData' | 'lostRgroupDefinitions' | 'lostCoordinates3d' | 'lostSgroup' | 'lostQuery' | 'lostCxSection' | 'lostMolfile' | 'lostOther' | 'degrees' | 'radicalElectrons' | 'notAnElement' | 'notValid' | 'detailsNumber' | 'detailsMass' | 'opensDialog' | 'atomCount' | 'bondCount' | 'both' | 'description' | 'withFormula' | 'hotAtom' | 'hotBond' | 'selected' | 'added' | 'deleted' | 'pasted' | 'bondNow' | 'bondsNow' | 'atomNow' | 'atomsNow' | 'changed' | 'moved' | 'rotated' | 'flipped' | 'joined' | 'undone' | 'redone' | 'newDrawing' | 'noCentreConfig' | 'noAxisConfig' | 'atomNumber' | 'bondNumber' | 'stereoConfigOf' | 'stereoGroupChip' | 'stereoGroupSaid' | 'stereoGroupOf' | 'stereoGroupOfSelected' | 'groupSizeCentres' | 'groupSizeElements' | 'newAndGroup' | 'newOrGroup' | 'selectAllOfGroup' | 'stereoElements' | 'unspecifiedCount' | 'standsFor' | 'flagSaid' | 'stereoRemoved' | 'wedgesPlaced' | 'centreCount' | 'axisCount' | 'stereoBondCount' | 'aromatized' | 'dearomatized' | 'cantAromatize' | 'cantDearomatize' | 'cantAromatizeSome' | 'cantDearomatizeSome' | 'queryRingSystems' | 'cantAromatizeRings' | 'cantDearomatizeRings' | 'doneAndRefused' | 'ringCount' | 'ringSystemCount' | 'cleanedAtoms' | 'switchedOn' | 'switchedOff' | 'toolThen' | 'toolChosen' | 'zoomTo' | 'reactionHint' | 'cycleChosen' | 'cyclePlaced' | 'cycleFilled' | 'cycleTaken' | 'droppedAgent' | 'droppedAgents' | 'routeContinued' | 'stepAddMode' | 'stepRoleReactant' | 'stepRoleProduct' | 'stepRoleOut' | 'textLandsStep' | 'textLeavesStep' | 'textJoinedStep' | 'textLeftStep' | 'slotCycleTip' | 'slotRingTip' | 'slotChosen' | 'stepAddHandle' | 'continueRouteTip' | 'stepAddTip' | 'roleInStep' | 'mapTwiceMolecule' | 'mapTwiceReactants' | 'mapTwiceProducts' | 'mapUnpaired' | 'mapped' | 'sheetInTurn' | 'cycleFirst' | 'cycleLater' | 'sheetFuse' | 'sheetNudge' | 'sheetRotate' | 'sheetCopyAs' | 'sheetPasteAs' | 'dissolveQuestion' | 'sheetAbbreviation' | 'sgroupNameTooLong' | 'sgroupFieldNameTooLong' | 'sgroupValueTooLong' | 'sgroupCountRange' | 'sgroupLabelTooLong' | 'sgroupContextMismatch' | 'sgroupTipData' | 'sgroupTipSru' | 'sgroupTipMul' | 'sgroupTipSup' | 'sgroupTipOther' | 'queryAtomList' | 'queryAtomNotList' | 'queryAtomGeneric' | 'queryOrMore' | 'queryTipField' | 'queryTipNeverH' | 'queryTipNoHBeside' | 'smartsNotRead' | 'queryModeOnly' | 'pasteQueryOnly' | 'dropQueryOnly' | 'queryElementOff' | 'viewOnlyOff' | 'pendingOff' | 'noItemsHereFoundOn' | 'notApplied' | 'chargeSaidPlus' | 'chargeSaidMinus' | 'zoomRange';
 /** The messages read as plain text. */
 export type PlainKey = Exclude<StringKey, FormattedKey>;
 /** What a refused gesture was for, as a refusal says it (F3). */
@@ -1350,6 +1369,10 @@ export type Catalog = {
      * ("unsaturated", "aromatic"). In English the first letter is lower-cased, unless it is a symbol (H).
      */
     queryTipField(field: string, value?: string): string;
+    /** QUERY-036: "[H,Cl,F] beside it is never H", `label` the neighbour's query label. */
+    queryTipNeverH(label: string): string;
+    /** QUERY-036: "never H: the C beside it has H count none", `atom` the neighbour's label, `field` the tooltip's H count None. */
+    queryTipNoHBeside(atom: string, field: string): string;
     noRoomForRadical(symbol: string): string;
     problemValence(symbol: string): string;
     chargeLimit(symbol: string, delta: 1 | -1): string;

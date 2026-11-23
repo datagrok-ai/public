@@ -12,18 +12,15 @@ per-table data sync, creation-script dependency linking, and the correct upload 
 hand-write project/table saves with `grok.dapi` — open the dialog and drive it through its
 functions.
 
-1. **Open the dialog** (`datagrok_exec`) — do NOT await the dialog promise (it resolves only when
-   the dialog closes):
+1. **Open the dialog** (`datagrok_exec`) with the platform's Save Project command — it saves the
+   current project and moves the workspace onto it:
 
    ```js
-   const project = grok.shell.project;
-   DG.Project.showSaveDialog({
-     tables: [t], views: [view],                              // add more pairs for multi-table saves
-     project: project.isOnServer ? project : undefined,       // re-publish into the SAME project
-     name: project.isOnServer ? undefined : '<name the user gave>',
-   });
+   grok.functions.call('CmdSaveProject');
    return {dialogOpened: true};
    ```
+
+   A new project's name is pre-filled from the tables; a saved project is updated in place.
 
 2. **Find it**: `list_view_widgets` — the dialog is an extra root ref `dlg0` ("Save project");
    note also the child ref of its entity-list widget (type `ProjectEntityMoveWidget`).
@@ -45,13 +42,15 @@ functions.
 5. **Confirm**: `call_view_function(name: 'clickButton', parameters: {name: 'OK'}, widget: 'dlg0')`
    — applies the save and closes the dialog. If the user wanted to review first, stop before this
    step and say the dialog is ready.
+   A first save then opens a **Share dialog** (a new `dlg<N>`): `clickButton CANCEL` unless the
+   user asked to share.
 
 6. **Verify server-side** (`datagrok_verify`) — the upload is asynchronous, so if the first
    re-read misses, confirm the dialog has closed and retry once:
 
    ```js
    const p = await grok.dapi.projects.filter('friendlyName = "<name>"').first();
-   return p != null;
+   return p != null && grok.shell.project.id === p.id;
    ```
 
    When data sync was requested, also verify the table:
@@ -91,6 +90,7 @@ it with data sync":
 
 ## Don't
 
+- Save with `DG.Project.showSaveDialog` — it leaves the workspace unsaved.
 - Hand-write saves with `grok.dapi.tables.save` / `uploadDataFrame` / `projects.save` — the
   dialog handles upload order, table meta, and sync dependencies; manual writes corrupt them.
 - Set `.data-sync` / `.script` tags directly — use `setDataSync` and let it refuse when the

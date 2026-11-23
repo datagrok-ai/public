@@ -70,6 +70,17 @@ function firstProductSmiles(result: RDReactionResult): string | null {
 
 // ---- Core: run a single reaction on one molecule (either engine's module) ----
 
+/** The molecule `module` reads from `smiles`; throws, naming it, where it reads none, as Deprotect's reaction does
+ * (crux/jobs/reactions.ts): a null molecule handed on to the module failed there with the engine's own type error
+ * (Crux's glue: "expected instance of ..."). */
+function readMolecule(module: RDModule, smiles: string): RDMol {
+  const mol = module.get_mol(smiles);
+  if (mol && mol.is_valid())
+    return mol;
+  mol?.delete();
+  throw new Error(`no molecule read from ${smiles}`);
+}
+
 function runSingleReaction(
   rxn: RDReaction, module: RDModule, smiles: string, maxProducts: number = 2,
 ): string | null {
@@ -77,7 +88,7 @@ function runSingleReaction(
   let molList: MolList | null = null;
   let result: RDReactionResult | null = null;
   try {
-    mol = module.get_mol(smiles);
+    mol = readMolecule(module, smiles);
     molList = new module.MolList();
     molList.append(mol);
     result = rxn.run_reactants(molList, maxProducts);
@@ -99,8 +110,8 @@ function runTwoComponentSingle(
   let molList: MolList | null = null;
   let result: RDReactionResult | null = null;
   try {
-    mol1 = module.get_mol(smiles1);
-    mol2 = module.get_mol(smiles2);
+    mol1 = readMolecule(module, smiles1);
+    mol2 = readMolecule(module, smiles2);
     molList = new module.MolList();
     molList.append(mol1);
     molList.append(mol2);

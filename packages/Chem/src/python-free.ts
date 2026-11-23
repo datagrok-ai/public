@@ -16,7 +16,6 @@ import * as ui from 'datagrok-api/ui';
 import {byEngineAsync} from './engine/chem-engine';
 import {loadCrux} from './engine/crux-module';
 import {getCruxService} from './crux/crux-searches';
-import {cruxReadsCxExtension} from './crux/crux-service';
 import {loadCruxSketch} from './crux/crux-sketcher';
 import {BUTINA_FP_WORDS, ButinaNeighbours} from './crux/jobs/python-free';
 import * as container from './docker/api';
@@ -59,14 +58,6 @@ async function scriptOutput<T>(name: string, params: {[name: string]: any}): Pro
     .getOutputParamValue() as T;
 }
 
-/** Throws (the script or the container runs) where a molecule is a CXSMILES whose query features Crux's reader skips:
- * they read them. */
-function assertCruxReads(molecules: (string | null)[]): void {
-  const query = molecules.find((m) => !!m && !cruxReadsCxExtension(m));
-  if (query !== undefined)
-    throw new Error(`Crux does not read the query features of ${query}`);
-}
-
 /** Each distinct value of `col` once (its categories; '' for an empty cell), and each row's index in them, as the
  * column is now. */
 function distinct(col: DG.Column): {values: string[], rows: ArrayLike<number>} {
@@ -104,7 +95,6 @@ export interface CurateOptions {
 export function curate(data: DG.DataFrame, molecules: DG.Column, options: CurateOptions): Promise<DG.DataFrame> {
   return byEngineAsync('Curate', async () => {
     const {values, rows} = distinct(molecules);
-    assertCruxReads(values);
     const ms = options.tautomerization ? CURATE_TAUTOMERS_MS_PER_MOLECULE : CURATE_MS_PER_MOLECULE;
     // the script's SMILES per molecule, null where it raises
     const curated = await onWorkers<string | null>('chemCurate', values, ms, [JSON.stringify(options)]);
@@ -125,7 +115,6 @@ const randomSeed = (): number => crypto.getRandomValues(new Uint32Array(1))[0];
 export function mutate(molecule: string, steps: number, randomize: boolean, maxRandomResults: number):
   Promise<DG.DataFrame> {
   return byEngineAsync('Mutate', async () => {
-    assertCruxReads([molecule]);
     const options = JSON.stringify({steps, randomize, maxRandomResults, seed: randomSeed()});
     const mutations = await (await getCruxService()).idleWorkerJob<string[]>('chemMutate', [molecule ?? '', options],
       MUTATE_TIMEOUT_MS);
@@ -146,7 +135,6 @@ interface ConformerRow {smiles: string, molblock: string, conformer: number, ene
 export function generateConformers(molecule: string, numConformers: number, optimize: boolean,
   rmsThreshold: number, maxAttempts: number, seed: number): Promise<DG.DataFrame> {
   return byEngineAsync('Generate Conformers', async () => {
-    assertCruxReads([molecule]);
     const options = JSON.stringify({numConformers, optimize, rmsThreshold, maxAttempts, randomSeed: seed,
       timeoutMs: CONFORMERS_TIMEOUT_MS});
     const {rows} = await (await getCruxService()).idleWorkerJob<{rows: ConformerRow[]}>('chemConformers',
@@ -189,7 +177,6 @@ function graphicsUrl(output: unknown): string | null {
  * its SVG), as an element; an empty one where the script draws nothing (the molecule does not read). */
 export function gasteigerPicture(mol: string, contours: number): Promise<HTMLElement> {
   return byEngineAsync('Gasteiger Partial Charges', async () => {
-    assertCruxReads([mol]);
     if (!Number.isInteger(contours) || contours < 0) // the script raises; chem-wasm's u32 would wrap
       throw new Error(`Gasteiger Partial Charges: contours ${contours}`);
     const crux = await loadCrux('Gasteiger Partial Charges');
@@ -304,7 +291,6 @@ export function butinaCluster(data: DG.DataFrame, molecules: DG.Column, distance
   return byEngineAsync('Butina Molecules Clustering', async () => {
     const service = await getCruxService();
     const values = molecules.toList().map((v) => v ?? '') as string[];
-    assertCruxReads(values);
     const parts = await service.jobInChunks<Uint32Array>('butinaFingerprints', values, BUTINA_MS_PER_MOLECULE);
     const fps = new Uint32Array(values.length * BUTINA_FP_WORDS);
     let at = 0;
@@ -339,7 +325,6 @@ export function butinaCluster(data: DG.DataFrame, molecules: DG.Column, distance
 export function calculateLogP(table: DG.DataFrame, molecules: DG.Column): Promise<DG.DataFrame> {
   return byEngineAsync('Calculate logP', async () => {
     const {values, rows} = distinct(molecules);
-    assertCruxReads(values);
     // the script's: a blank cell is no molecule; a MOL block's `\n` (two characters) a line break
     const asked = values.map((m) => !m.trim() ? '' : m.includes('M  END') ? m.replaceAll('\\n', '\n') : m);
     const {MolLogP} = await (await getCruxService()).calcDescriptors(asked, ['MolLogP']);
@@ -355,7 +340,6 @@ export function calculateLogP(table: DG.DataFrame, molecules: DG.Column): Promis
 export function murckoScaffolds(data: DG.DataFrame, smiles: DG.Column): Promise<DG.DataFrame> {
   return byEngineAsync('Murcko Scaffolds', async () => {
     const {values, rows} = distinct(smiles);
-    assertCruxReads(values);
     const scaffolds = await onWorkers<string | null>('chemMurckoScaffolds', values, MURCKO_MS_PER_MOLECULE);
     return DG.DataFrame.fromColumns([moleculeColumn('scaffolds', Array.from(rows, (k) => scaffolds[k] ?? ''))]);
   }, () => scriptOutput<DG.DataFrame>(PYTHON_SCRIPTS.murcko, {data, smiles}));
@@ -370,7 +354,6 @@ export function filterByCatalogs(data: DG.DataFrame, smiles: DG.Column, catalog:
     if (!FILTER_CATALOGS.includes(catalog)) // the script raises (a KeyError): it runs, for its error
       throw new Error(`Filter by Catalogs: no catalog ${catalog}`);
     const {values, rows} = distinct(smiles);
-    assertCruxReads(values);
     const flags = await onWorkers<number>('chemFilterCatalog', values, FILTERS_MS_PER_MOLECULE, [catalog]);
     return DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.BOOL, catalog,
       Array.from(rows, (k) => flags[k] === 1))]);
@@ -382,21 +365,18 @@ export function filterByCatalogs(data: DG.DataFrame, smiles: DG.Column, catalog:
 /** A cell's text as the container gets it (`ids.toList()`'s value): null and non-strings as null. */
 const text = (v: unknown): string | null => typeof v === 'string' ? v : null;
 
-/** The container's conversion `byContainer` of `values`, or in Crux mode `byCrux`; `molecules`: the values are
- * molecules (a CXSMILES whose query features Crux's reader skips: the container's), else InChIs. */
-function convert<R>(values: unknown[], molecules: boolean, byCrux: (values: (string | null)[]) => Promise<R[]>,
+/** The container's conversion `byContainer` of `values` (molecules or InChIs), or in Crux mode `byCrux`. */
+function convert<R>(values: unknown[], byCrux: (values: (string | null)[]) => Promise<R[]>,
   byContainer: () => Promise<R[]>): Promise<R[]> {
   return byEngineAsync('Map Identifiers', async () => {
     const texts = values.map(text);
-    if (molecules)
-      assertCruxReads(texts);
     return byCrux(texts);
   }, byContainer);
 }
 
 /** The container's `/chem/molecules_to_canonical`: RDKit's canonical SMILES per molecule, '' where it does not read. */
 export function smilesToCanonical(smiles: string[]): Promise<string[]> {
-  return convert(smiles, true,
+  return convert(smiles,
     (molecules) => onWorkers<string>('chemCanonicalSmiles', molecules, IDENTIFIERS_MS_PER_MOLECULE),
     () => container.smilesToCanonical(smiles));
 }
@@ -409,13 +389,13 @@ async function inchisOf(molecules: (string | null)[], keys: boolean): Promise<st
 
 /** The container's `/chem/molecules_to_inchi`: the standard InChI per molecule, '' where it does not read. */
 export function smilesToInchi(smiles: string[]): Promise<string[]> {
-  return convert(smiles, true, (molecules) => inchisOf(molecules, false),
+  return convert(smiles, (molecules) => inchisOf(molecules, false),
     () => container.smilesToInchi(smiles));
 }
 
 /** The container's `/chem/molecules_to_inchi_key`: the standard InChIKey per molecule, '' where it does not read. */
 export function smilesToInchiKey(smiles: string[]): Promise<string[]> {
-  return convert(smiles, true, (molecules) => inchisOf(molecules, true),
+  return convert(smiles, (molecules) => inchisOf(molecules, true),
     () => container.smilesToInchiKey(smiles));
 }
 
@@ -424,13 +404,13 @@ export function smilesToInchiKey(smiles: string[]): Promise<string[]> {
  * written under the new stereo perception, as Chem's: the container's legacy one writes a few otherwise), in the Crux
  * workers (crux/jobs/inchi.ts). */
 export function inchiToSmiles(inchi: string[]): Promise<string[]> {
-  return convert(inchi, false, (inchis) => onWorkers<string>('inchiToSmiles', inchis, IDENTIFIERS_MS_PER_MOLECULE),
+  return convert(inchi, (inchis) => onWorkers<string>('inchiToSmiles', inchis, IDENTIFIERS_MS_PER_MOLECULE),
     () => container.inchiToSmiles(inchi));
 }
 
 /** The container's `/chem/inchi_to_inchi_key`: the InChIKey per InChI, null for '' and where the library refuses it
  * (crux-sketch's InChI module in the Crux workers: crux/jobs/inchi.ts). */
 export function inchiToInchiKey(inchi: string[]): Promise<string[]> {
-  return convert(inchi, false, (inchis) => onWorkers<string>('inchiToInchiKey', inchis, IDENTIFIERS_MS_PER_MOLECULE),
+  return convert(inchi, (inchis) => onWorkers<string>('inchiToInchiKey', inchis, IDENTIFIERS_MS_PER_MOLECULE),
     () => container.inchiToInchiKey(inchi));
 }

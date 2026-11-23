@@ -6,56 +6,96 @@ It incorporates the open-source components listed below; this file reproduces
 the attribution and notices required by their respective licenses.
 
 All runtime dependencies bundled into the published artifact are under
-permissive licenses (MIT, Apache-2.0, BSD-3-Clause). No copyleft (GPL/LGPL/MPL)
-component is bundled into the published EDA plugin artifact.
+permissive licenses (MIT, Apache-2.0, BSD-3-Clause, BSL-1.0, Unlicense), except
+the Eigen port inside the Crux module, which is MPL-2.0 (file-level copyleft,
+see below). No GPL/LGPL component is bundled into the published EDA plugin
+artifact.
 
 ---
 
 ## 1. Bundled in the published artifact (`dist/`)
 
-### XGBoost (linked into `wasm/XGBoostAPI.wasm`)
+### Crux (`crux/eda/crux_wasm_bg.wasm`)
 
-Gradient-boosting library compiled to WebAssembly. The C++ XGBoost source
-(upstream tag **v3.3.0**, with a minimal-build patch from
-`wasm/xgboost/patches/` that trims unused components) is linked into
-`wasm/XGBoostAPI.wasm` at build time (Emscripten, see `wasm/xgboost/build.ps1`;
-XGBoost sources come from an external clone); the resulting
-`wasm/XGBoostAPI.js` loader + `.wasm` binary are bundled by webpack into the
-published artifact (the binary is emitted to `dist/`). XGBoost bundles
-dmlc-core (also Apache-2.0, same copyright holders), which is linked in as
-part of the build.
+Datagrok's Crux engine (crux-core, the commit pinned in `crux/engine.toml`),
+built as the `crux-wasm` crate with the feature list of `crux/engine.toml` and
+shipped as `crux/eda/crux_wasm.js` + `crux_wasm_bg.wasm` (copied to
+`dist/crux/eda/`). It runs PCA, PLS, linear and logistic regression, XGBoost,
+SVM and the RealMLP and TabM neural models. The module contains Rust ports of the following upstreams (the crates
+compiled into the shipped binary; licenses as declared by the crux crates:
+`Cargo.toml` `license`, the `LICENSE*` files and `LICENSE` consts of the
+crates, the model `upstreams()`, the pins in `upstreams/*.toml`):
 
-- Upstream: https://xgboost.ai/ — https://github.com/dmlc/xgboost
-- License: **Apache-2.0**
+| Upstream | Version | License | Crux crate |
+|---|---|---|---|
+| scikit-learn (incl. its vendored, modified LIBSVM 3.10 and LIBLINEAR) | 1.9.1 | BSD-3-Clause | `ml` |
+| astartes (QSAR splits) | 1.3.3 | MIT | `ml` |
+| SIMPD (QSAR splits) | 403f758 | MIT | `ml` |
+| pymoo (SIMPD's optimizer) | 0.5.0 | Apache-2.0 | `ml` |
+| XGBoost | 3.4.1 | Apache-2.0 | `xgboost` |
+| LightGBM (compiled in as a dependency of `shap`; no LightGBM functions in the module) | 4.7.0 | MIT | `lightgbm` |
+| CatBoost | 1.2.10 | Apache-2.0 | `catboost` |
+| imbalanced-learn | 0.14.2 | MIT | `imblearn` |
+| shap | 0.53.0 | MIT | `shap` |
+| crepes | 0.9.1 | BSD-3-Clause | `conformal` |
+| venn-abers | 1.5.4 | MIT | `conformal` |
+| MAPIE (subset) | 1.5.0 | BSD-3-Clause | `conformal` |
+| Optuna | 5.0.0 | MIT | `hpo` |
+| cmaes | 0.13.1 | MIT | `hpo` |
+| bayesian-optimization (bayes_opt) | 3.4.0 | MIT | `hpo` |
+| SciPy | 1.18.1 | BSD-3-Clause | `scipy` |
+| Boost.Math (as vendored by SciPy 1.18.1) | c114cf4 | BSL-1.0 | `scipy` |
+| Reference LAPACK (+ reference BLAS) | 3.12.0 | BSD-3-Clause | `lapack` |
+| HiGHS | 1.12.0 | MIT | `highs` |
+| NumPy (random / linalg / sort building blocks) | 1.26.4 | BSD-3-Clause | `pycompat` |
+| David M. Gay's dtoa.c (float formatting) | | Lucent notice (permissive) | `pycompat` |
+| RDKit (molecule model, SMILES / SMARTS, descriptors, fingerprints, MolStandardize, reactions) | 2026.03.6 | BSD-3-Clause | `rk`, `smi-compiler`, `smarts-parser`, `molstandardize`, `rxn` |
+| Avalon Toolkit (Avalon fingerprints, as RDKit builds it) | 2.0.5-pre.3 | BSD-3-Clause | `rk` |
+| pytabkit (RealMLP) | 1.7.3 | Apache-2.0 | `realmlp` |
+| TabM | 0.0.3 | Apache-2.0 | `tabm` |
+| rtdl_num_embeddings | 0.0.12 | Apache-2.0 | `tabm` |
+| delu (EarlyStopping, random.seed) | 0.0.25 | MIT | `tabm` |
+| PyTorch (CPU generator streams, autograd / optimizer / init / loss semantics) | 2.13.0 | BSD-3-Clause | `nn-train`, `nn`, `pycompat` |
+| Eigen (dense decompositions, self-adjoint eigensolver, SVD) | 3.4.0 / 3.3.9 | **MPL-2.0** | `eigen` |
 
-> Licensed under the Apache License, Version 2.0 (the "License"); you may not
-> use this file except in compliance with the License. You may obtain a copy of
-> the License at http://www.apache.org/licenses/LICENSE-2.0
->
-> Unless required by applicable law or agreed to in writing, software
-> distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-> WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-> License for the specific language governing permissions and limitations
-> under the License.
+- scikit-learn: https://scikit-learn.org — `Copyright (c) 2007-2026 The scikit-learn developers`
+- astartes: https://github.com/JacksonBurns/astartes — `Copyright (c) 2023 Jackson Burns`
+- SIMPD: https://github.com/rinikerlab/molecular_time_series — `Copyright (c) 2022 Greg Landrum`
+- pymoo: https://github.com/anyoptimization/pymoo
+- XGBoost: https://github.com/dmlc/xgboost — `Copyright (c) 2019 by Contributors`
+- LightGBM: https://github.com/microsoft/LightGBM
+- CatBoost: https://github.com/catboost/catboost
+- LIBSVM (inside scikit-learn): https://www.csie.ntu.edu.tw/~cjlin/libsvm/
+- imbalanced-learn: https://github.com/scikit-learn-contrib/imbalanced-learn — `Copyright (c) 2014-2020 The imbalanced-learn developers`
+- shap: https://github.com/shap/shap
+- crepes: https://github.com/henrikbostrom/crepes — `Copyright 2026 Henrik Boström`
+- venn-abers: https://github.com/ip200/venn-abers — `Copyright (c) 2023 Ivan Petej`
+- MAPIE: https://github.com/scikit-learn-contrib/MAPIE — `Copyright (c) 2021, Vianney TAQUET, Grégoire MARTINON, Nicolas BRUNEL, Issam IBNOUHSEIN, François DEHEEGER and MAPIE contributors`
+- Optuna: https://github.com/optuna/optuna — `Copyright (c) 2018 Preferred Networks, Inc.`
+- cmaes: https://github.com/CyberAgentAILab/cmaes — `Copyright (c) 2020 CyberAgent, Inc.`
+- bayesian-optimization: https://github.com/bayesian-optimization/BayesianOptimization — `Copyright (c) 2014 Fernando M. F. Nogueira`
+- SciPy: https://github.com/scipy/scipy — `Copyright (c) 2001-2002 Enthought, Inc. 2003, SciPy Developers`
+- Boost.Math: https://github.com/boostorg/math
+- LAPACK: https://github.com/Reference-LAPACK/lapack — `Copyright (c) 1992-2023 The University of Tennessee and The University of Tennessee Research Foundation; Copyright (c) 2000-2023 The University of California Berkeley; ...`
+- HiGHS: https://github.com/ERGO-Code/HiGHS
+- NumPy: https://github.com/numpy/numpy — `Copyright (c) 2005-2023, NumPy Developers`
+- dtoa.c: `Copyright (c) 1991, 2000, 2001 by Lucent Technologies` (author David M. Gay)
+- RDKit: https://github.com/rdkit/rdkit — `Copyright (C) Greg Landrum and other RDKit contributors`
+- Avalon Toolkit: https://github.com/rdkit/ava-formake — `Copyright 2001-2011 Novartis Pharma AG`
+- pytabkit: https://github.com/dholzmueller/pytabkit — `Copyright David Holzmüller, Léo Grinsztajn, Ingo Steinwart`
+- TabM: https://github.com/yandex-research/tabm — `Copyright 2024 Yandex LLC`
+- rtdl_num_embeddings: https://github.com/yandex-research/rtdl-num-embeddings — `Copyright 2023 Yandex LLC`
+- delu: https://github.com/Yura52/delu
+- PyTorch: https://github.com/pytorch/pytorch — `Copyright (c) 2016- Facebook, Inc (Adam Paszke) and contributors`
+- Eigen: https://gitlab.com/libeigen/eigen — MPL-2.0 (https://mozilla.org/MPL/2.0/). The
+  Source Code Form of the ported Eigen files is the `eigen` crate of crux-core at the commit
+  pinned in `crux/engine.toml`; the original is available at the URL above.
 
-The full Apache-2.0 license text is reproduced in `THIRD_PARTY_LICENSES.txt`
-and available at the URL above. Copyright is held by *XGBoost contributors*
-(`Copyright (c) 2019 by Contributors`); upstream ships no NOTICE file.
-
-### LIBSVM (linked into `wasm/SVMAPI.wasm`)
-
-Support Vector Machine library compiled to WebAssembly. The C++ LIBSVM source
-(upstream tag **v3.37**) is linked into `wasm/SVMAPI.wasm` at build time
-(Emscripten, see `wasm/libsvm/build.ps1`; LIBSVM sources come from an external
-clone) together with the thin wrapper `wasm/libsvm/svm-api.cpp`; the resulting
-`wasm/SVMAPI.js` loader + `.wasm` binary are bundled by webpack into the
-published artifact (the binary is emitted to `dist/`).
-
-- Upstream: https://www.csie.ntu.edu.tw/~cjlin/libsvm/ — https://github.com/cjlin1/libsvm
-- License: **BSD-3-Clause**
+The Apache-2.0 license text is reproduced in `THIRD_PARTY_LICENSES.txt`. The
+BSD-3-Clause notice of LIBSVM, which scikit-learn's port carries:
 
 ```
-Copyright (c) 2000-2023 Chih-Chung Chang and Chih-Jen Lin
+Copyright (c) 2000-2009 Chih-Chung Chang and Chih-Jen Lin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -86,16 +126,65 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
-### sci-comp-ml (`wasm/sci_comp_ml_bg.wasm`)
+The BSD-3-Clause notice of PyTorch, whose semantics the `nn-train`, `nn` and
+`pycompat` crates port:
 
-In-house Rust implementations of PCA (NIPALS), PLS1, softmax classification
-and linear regression / Elastic Net, compiled to WebAssembly with
-`wasm-pack`. The source lives in the separate `sci-comp-rust` repository and
-is covered by the repo-wide MIT umbrella; it is listed here because the
-compiled artifact (`wasm/sci_comp_ml.js` glue + `wasm/sci_comp_ml_bg.wasm`)
-is bundled. The numerical kernels use no external crates; the WASM-boundary
-dependencies (`wasm-bindgen`, `serde`, `serde-wasm-bindgen`, `js-sys`) are
-**MIT** or **MIT OR Apache-2.0** (MIT elected).
+```
+Copyright (c) 2016-     Facebook, Inc            (Adam Paszke)
+Copyright (c) 2014-     Facebook, Inc            (Soumith Chintala)
+Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
+Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
+Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
+Copyright (c) 2011-2013 NYU                      (Clement Farabet)
+Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
+Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
+Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+3. Neither the names of Facebook, Deepmind Technologies, NYU, NEC Laboratories America
+   and IDIAP Research Institute nor the names of its contributors may be
+   used to endorse or promote products derived from this software without
+   specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+```
+
+### Apache Arrow JavaScript (apache-arrow, 21.x)
+
+Arrow IPC encoding of the data exchanged with the Crux module.
+
+- Upstream: https://github.com/apache/arrow-js
+- License: **Apache-2.0**; NOTICE: `Apache Arrow JavaScript, Copyright
+  2017-2025 The Apache Software Foundation. This product includes software
+  developed at The Apache Software Foundation (http://www.apache.org/).`
+
+### fast-sha256 (1.3.x)
+
+SHA-256 of a model blob (the Crux model cache key).
+
+- Upstream: https://github.com/dchest/fast-sha256-js
+- License: **Unlicense** (public domain)
 
 ### @keckelt/tsne (1.0.x)
 

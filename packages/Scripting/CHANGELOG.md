@@ -1,5 +1,9 @@
 # Scripting changelog
 
+## 1.1.5 (2026-11-18)
+
+* [core#1692](https://github.com/datagrok-ai/core/issues/1692): Fixed Julia scripts failing with "Worker did not start the julia script: no data read within 45 s" on hosts whose CPU differs from the image build machine (jkg_julia 1.1.5 is precompiled for a portable CPU target); the other jkg_* images are rebuilt from master
+
 ## 1.1.4 (2026-11-04)
 
 * Rebuilt the jkg_* kernel images with zero vulnerability findings: tornado 6.6 from PyPI in the gateway and Python environments (conda-forge stops at 6.5.10); the Octave kernel runs from the gateway's Python 3.11 instead of the Octave prefix's 3.10; the Node.js kernel moved from Node 18 (end of life) to Node 22, with a small zeromq 6 kernel replacing ijavascript's jmp/zeromq 5 transport (nel still runs the code, so scripts behave the same)

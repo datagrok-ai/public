@@ -152,7 +152,9 @@ export async function multipleSequenceAlignmentUI(
 
       // --- State management ---
 
+      let editorBuild = 0;
       async function updateEngineEditor(): Promise<void> {
+        const build = ++editorBuild;
         engineParamsDiv.innerHTML = '';
         state.currentFuncCall = null;
 
@@ -162,11 +164,16 @@ export async function multipleSequenceAlignmentUI(
         if (!state.currentFunc) return;
 
         state.currentFuncCall = state.currentFunc.prepare({});
-        const inputs = await state.currentFuncCall.buildEditor(engineParamsDiv);
+        // Built off the dialog: setting the engine fires onChanged even when the value stays, so two builds
+        // can overlap, and only the latest one is bound to the call that runs.
+        const editorDiv = ui.div();
+        const inputs = await state.currentFuncCall.buildEditor(editorDiv);
+        if (build !== editorBuild) return;
 
         // Hide the first input (sequence column) - managed by the dialog's column selector
         if (inputs.length > 0 && inputs[0].inputType === 'column')
           inputs[0].root.style.display = 'none';
+        engineParamsDiv.append(...Array.from(editorDiv.childNodes));
       }
 
       const _engineSub: Subscription = engineInput.onChanged.subscribe(async () => {

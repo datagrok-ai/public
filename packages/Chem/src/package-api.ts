@@ -1497,8 +1497,20 @@ export namespace funcs {
     return await grok.functions.call('Chem:GetMolecularFormula', { molecule });
   }
 
+  /**
+   * Checks a molecule (SMILES, SMARTS or molfile): the error messages of the chemical engine on reading it, each line starting with its time, or an empty string when it reads without an error
+   */
   export async function validateMolecule(s: string ): Promise<any> {
     return await grok.functions.call('Chem:ValidateMolecule', { s });
+  }
+
+  /**
+   * Checks every molecule of a column (SMILES, SMARTS or molfiles) in background workers: one cell per row with the error messages of the chemical engine on reading that molecule (those of validateMolecule without their times), empty for a molecule that reads without an error. As a formula in Add New Column it is called once for the whole column
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   */
+  export async function validateMolecules(molecules: DG.Column ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:ValidateMolecules', { molecules });
   }
 
   /**
@@ -1692,6 +1704,13 @@ export namespace funcs {
    */
   export async function reactionsApp(): Promise<DG.View> {
     return await grok.functions.call('Chem:ReactionsApp', {});
+  }
+
+  /**
+   * Draws a molecule or a query in the Crux sketcher; the page address is a link to the drawing
+   */
+  export async function sketcherApp(smiles?: string ): Promise<DG.View> {
+    return await grok.functions.call('Chem:SketcherApp', { smiles });
   }
 
   export async function mpoProfilesAppTreeBrowser(treeNode: any , _browseView: DG.View ): Promise<void> {

@@ -105,7 +105,7 @@ export function getActivityDistribution(
     showColumnSelector: false,
     showRangeSlider: false,
     showBinSelector: false,
-    backColor: isTooltip ? '#fdffe5' : '#fffff',
+    backColor: isTooltip ? DG.Color.fromHtml('#fdffe5') : DG.Color.white,
     // @ts-ignore TODO: fix after api update
   }) as DG.Viewer<DG.IHistogramSettings>;
   hist.root.style.width = 'auto';

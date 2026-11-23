@@ -2,6 +2,14 @@
 
 ## v.next
 
+* `grok claude`: The `scripting` and `full` profiles start the `jkg_python` and `jkg_r` kernel gateways instead of the retired `jupyter_kernel_gateway` image
+* `grok publish`: Fixed uploading a package's `bdd/` folder (its filmed guides, a gigabyte for Bio, and its login token): the walk read only the package's own ignore files, not the repository root's
+* `grok report ticket`: Requests a GitHub issue through the instance (`POST /reports/{id}/ticket`) instead of creating a Jira ticket
+* `grok s push --creds`: Fixed a pushed connection getting the login and password as ordinary parameters instead of its credentials
+
+## 6.7.12 (2026-11-18)
+
+* `grok src clone`: Clones the whole umbrella by default; children you cannot read are skipped
 * Added `grok s o metrics [overview|routes|statements [reset]|instances [--isolates]|database|growth|sessions|queue|failures|request-log|disk|storage]`, `grok s o health [--instances]` and `grok s o metric-alerts get|put`: every view of the Health center from the command line, as tables or `--output json`
 * Added `grok s o metrics export` (the gauges a Metrics log group pushes) and `grok s o groups add --kind metrics`
 

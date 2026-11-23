@@ -109,6 +109,11 @@ function pairUncommonAtomsAndBonds(module: RDModule, molecule1: string, molecule
   }
 }
 
+/** A Crux job's answer where Crux reads no molecule from some of its rows (not empty ones): those rows, in order. */
+export interface CruxUnread {
+  unread: number[];
+}
+
 /** The jobs by name (the Crux worker's `op`). */
 export const ANALYSIS_JOBS: {[op: string]: WorkerJob} = {
   /**
@@ -127,14 +132,20 @@ export const ANALYSIS_JOBS: {[op: string]: WorkerJob} = {
     }
     return {...result, unread};
   },
-  /** One R-group decomposition (RdKitServiceWorker.rGroupAnalysis); null where Crux cannot read a molecule. */
+  /** One R-group decomposition (RdKitServiceWorker.rGroupAnalysis); where Crux reads no molecule from some rows, those
+   * rows instead ({@link CruxUnread}: the main thread decides, engine/analysis-jobs.ts). */
   rGroupAnalysis: async ({rdkitWorker, module}, molecules: string[], core: string, coreIsQMol: boolean,
-    options?: string): Promise<IRGroupAnalysisResult | null> => unreadRows(molecules, module).length > 0 ? null :
-    rdkitWorker().rGroupAnalysis(molecules, core, coreIsQMol, options),
-  /** The FMCS SMARTS of the molecules (RdKitServiceWorker.mostCommonStructure); null where Crux cannot read one. */
+    options?: string): Promise<IRGroupAnalysisResult | CruxUnread> => {
+    const unread = unreadRows(molecules, module);
+    return unread.length > 0 ? {unread} : rdkitWorker().rGroupAnalysis(molecules, core, coreIsQMol, options);
+  },
+  /** The FMCS SMARTS of the molecules (RdKitServiceWorker.mostCommonStructure); where Crux reads no molecule from some
+   * rows, those rows instead ({@link CruxUnread}). */
   mostCommonStructure: ({rdkitWorker, module}, molecules: string[], exactAtoms: boolean, exactBonds: boolean):
-    string | null => unreadRows(molecules, module).length > 0 ? null :
-    rdkitWorker().mostCommonStructure(molecules, exactAtoms, exactBonds),
+    string | CruxUnread => {
+    const unread = unreadRows(molecules, module);
+    return unread.length > 0 ? {unread} : rdkitWorker().mostCommonStructure(molecules, exactAtoms, exactBonds);
+  },
   /** Each cluster's FMCS SMARTS within {@link CLUSTER_MCS_TIMEOUT_S} ('' past it); null for one the RDKit pool does. */
   clusterMCS: ({rdkitWorker, module}, clusters: string[][], exactAtoms: boolean, exactBonds: boolean) =>
     perCluster(clusters, (molecules) => molecules, module,

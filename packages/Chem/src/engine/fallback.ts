@@ -8,6 +8,9 @@ import {noteCruxError} from './crux-module';
 
 const warned = new Set<string>();
 const counts = new Map<string, number>();
+const reasons = new Map<string, string>();
+/** How many {@link quietFallbacksForTests} runs are under way. */
+let quiet = 0;
 
 /** The first fallback of each call name per session, to the platform's log (a warning with the call, the reason and
  * the setting's engine); never to the UI. Tests replace it ({@link setFallbackReporterForTests}). */
@@ -22,10 +25,11 @@ let report = (call: string, message: string): void => {
 /** Logs, once per `call`, that RDKit did what Crux could not (and counts every time). */
 export function warnCruxFallback(call: string, reason: unknown): void {
   counts.set(call, (counts.get(call) ?? 0) + 1);
-  if (warned.has(call))
+  const message = reason instanceof Error ? reason.message : String(reason);
+  reasons.set(call, message);
+  if (warned.has(call) || quiet > 0)
     return;
   warned.add(call);
-  const message = reason instanceof Error ? reason.message : String(reason);
   console.warn(`Chem | Crux could not do ${call}, RDKit did it (logged once per call): ${message}`);
   report(call, message);
 }
@@ -53,8 +57,8 @@ export async function cruxOrRdKitAsync<T>(call: string, crux: () => Promise<T>, 
 }
 
 /**
- * A column job's RDKit side for the rows its Crux side left (`rows`: a molecule Crux does not read, a call it refuses,
- * a CXSMILES whose query features its reader skips): `rdkit(rows)` computes them, `put(patch, k, row)` stores the k-th
+ * A column job's RDKit side for the rows its Crux side left (`rows`: a molecule Crux does not read, a call it
+ * refuses): `rdkit(rows)` computes them, `put(patch, k, row)` stores the k-th
  * result at `row` and tells whether RDKit did it (a row neither engine does is no fallback); the rows RDKit did are
  * logged as one fallback of `call` (`example`: what the log names).
  */
@@ -71,6 +75,23 @@ export async function rdkitForRows<P>(call: string, rows: number[], rdkit: (rows
 /** How many times RDKit did `call` for Crux so far (tests). */
 export function cruxFallbackCount(call: string): number {
   return counts.get(call) ?? 0;
+}
+
+/** Why Crux could not do `call` the last time RDKit did it, in its own words (tests). */
+export function cruxFallbackReason(call: string): string | undefined {
+  return reasons.get(call);
+}
+
+/** Tests: `run()` with its fallbacks counted (and their reasons kept) but not logged: a fallback a test makes on
+ * purpose neither reaches the platform's log, where it reads as one of real use, nor keeps the first real one of its
+ * call in the session from reaching it (each call name is logged once). */
+export async function quietFallbacksForTests<T>(run: () => Promise<T>): Promise<T> {
+  quiet++;
+  try {
+    return await run();
+  } finally {
+    quiet--;
+  }
 }
 
 /** Tests: where the first fallback of each call name goes (the package logger's warning); returns the one replaced. */

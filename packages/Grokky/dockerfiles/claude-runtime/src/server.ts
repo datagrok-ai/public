@@ -18,6 +18,7 @@ import {CONTAINER_TOKEN_HEADER, userCredentials} from './credentials';
 const PORT = 5355;
 // The life of the container token a connection brings: its credentials are not re-read after that.
 const CREDENTIALS_TTL_MS = 15 * 60_000;
+const KEEPALIVE_MS = 20_000;
 
 const app = new Hono();
 const {injectWebSocket, upgradeWebSocket} = createNodeWebSocket({app});
@@ -62,8 +63,13 @@ app.get('/ws', upgradeWebSocket((c) => {
     closeIfStale();
   }, CREDENTIALS_TTL_MS);
   const sessionIds = new Set<string>();
+  const keepalive = setInterval(() => {
+    if (turns)
+      socket?.send(JSON.stringify({type: 'keepalive'}));
+  }, KEEPALIVE_MS);
   const disconnect = (_evt: unknown, ws: WsSender) => {
     clearTimeout(expiry);
+    clearInterval(keepalive);
     handleDisconnect(sessionIds, ws);
   };
   return {

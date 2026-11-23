@@ -4,16 +4,19 @@ import * as ui from 'datagrok-api/ui';
 import * as rx from "rxjs";
 import {delay} from 'rxjs/operators'
 import {loadUsers, setupUserIconRenderer} from '../utils';
+import {GitHubIssuesClient} from '../github/issues-client';
 
 export class ReportingApp {
   static readonly APP_NAME = 'Reports';
   view: DG.TableView = DG.TableView.create(DG.DataFrame.create(), false);
   parentCall: DG.FuncCall;
+  issues: GitHubIssuesClient;
   currentFilter?: DG.Viewer;
   isInit: boolean = false;
 
-  constructor(parentCall: DG.FuncCall) {
+  constructor(parentCall: DG.FuncCall, issues: GitHubIssuesClient) {
     this.parentCall = parentCall;
+    this.issues = issues;
     this.view.name = ReportingApp.APP_NAME;
     this.view.path = '';
     this.view.setRibbonPanels([[ui.button('Add rule...', async () =>
@@ -94,6 +97,7 @@ export class ReportingApp {
 
       table.getCol('jira').semType = 'JIRA Ticket';
       table.getCol('jira').setTag('cell.renderer', 'JIRA Ticket');
+      this.addTicketColumn(table);
 
       this.applyStyle(grid);
       const users = await loadUsers();
@@ -158,6 +162,18 @@ export class ReportingApp {
     }
   }
 
+  addTicketColumn(table: DG.DataFrame): void {
+    const ticket = table.columns.addNewString('ticket');
+    this.issues.reportIssues().then((byReport) => {
+      const ids = table.getCol('id');
+      ticket.init((i) => {
+        const issue = byReport.get(ids.get(i));
+        return issue ? `<a href="${issue.url}" target="_blank">${issue.key}</a>` : '';
+      });
+      table.fireValuesChanged();
+    }).catch((e) => console.warn(`Reports: GitHub tickets not shown: ${e?.message ?? e}`));
+  }
+
   refreshFilter(table: DG.DataFrame) {
     this.currentFilter?.close();
     this.currentFilter = DG.Viewer.filters(table, {
@@ -167,10 +183,12 @@ export class ReportingApp {
   }
 
   applyStyle(viewer: DG.Grid) {
-    viewer.columns.setOrder(['date', 'auto', 'number', 'users', 'errors_count', 'reporter', 'assignee', 'description', 'jira', 'labels', 'error_stack_trace', 'id', 'last_occurrence', 'first_occurrence']);
+    viewer.columns.setOrder(['date', 'auto', 'number', 'users', 'errors_count', 'reporter', 'assignee', 'description', 'jira', 'ticket', 'labels', 'error_stack_trace', 'id', 'last_occurrence', 'first_occurrence']);
 
     viewer.col('jira')!.cellType = 'html';
     viewer.col('jira')!.width = 55;
+    viewer.col('ticket')!.cellType = 'html';
+    viewer.col('ticket')!.width = 75;
 
     viewer.col('id')!.visible = false;
     viewer.col('error_stack_trace_hash')!.visible = false;

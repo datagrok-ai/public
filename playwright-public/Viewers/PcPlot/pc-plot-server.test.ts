@@ -3,7 +3,7 @@ realizes: [pcplot.cp.layout-project-persistence]
 --- */
 
 import {test, expect} from '@datagrok-libraries/test/src/playwright/shared-page';
-import {openDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
+import {openDatagrok, specTestOptions, softStep, skipWithoutPackage} from '@datagrok-libraries/test/src/playwright/spec-login';
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
 import {saveProjectViaApi, deleteProjectWithCleanup} from '@datagrok-libraries/test/src/playwright/projects';
 
@@ -52,7 +52,7 @@ test('PC Plot — To Script, layout and project persistence', async ({page}) => 
         (n: number) => n === 0, 800);
     });
 
-    const balloon = await page.evaluate(async () => {
+    const balloon = await skipWithoutPackage(page, 'DevTools', 'To Script') ? null : await page.evaluate(async () => {
       const w = window as any;
       const viewer = document.querySelector('[name="viewer-PC-Plot"]')!;
       const canvas = viewer.querySelector('canvas[name="canvas"]')!;
@@ -83,8 +83,10 @@ test('PC Plot — To Script, layout and project persistence', async ({page}) => 
       return {present: text.length > 0, text};
     });
 
-    expect(balloon.present).toBe(true);
-    expect(balloon.text).toContain('addViewer');
+    if (balloon) {
+      expect(balloon.present).toBe(true);
+      expect(balloon.text).toContain('addViewer');
+    }
 
     await page.evaluate(() => {
       const pc = grok.shell.tv.viewers.find((vw: any) => vw.type === 'PC Plot');

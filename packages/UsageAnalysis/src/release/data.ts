@@ -5,9 +5,10 @@ import {BehaviorSubject, Observable, Subject, combineLatest} from 'rxjs';
 import {debounceTime, distinctUntilChanged, map, skip} from 'rxjs/operators';
 
 import {queries} from '../package-api';
+import {GitHubIssuesClient} from '../github/issues-client';
+import {GitHubIssue} from '../github/issue';
 
 export const DEV_HOST = 'dev.datagrok.ai';
-export const JIRA_BROWSE = 'https://reddata.atlassian.net/browse/';
 export const JENKINS_TEST_JOB = 'https://ops.datagrok.ai/job/test-build/';
 const SLOW_FACTOR = 1.25;
 const MIN_SLOW_MS = 1000; // ignore sub-second tests — a +% on a few-ms test is noise, not a regression
@@ -30,7 +31,10 @@ export class ReleaseContext {
    * so the pair is debounced into one event; re-asserting the current values fires nothing. */
   readonly scopeChanged: Observable<string>;
   private lastTests: {key: string, pivot: Promise<ReleasePivot | null>} | null = null;
-  constructor(env: string = DEFAULT_ENV, branch: string = DEFAULT_BRANCH) {
+  lastTickets: {milestone: string, issues: Promise<GitHubIssue[]>} | null = null;
+  githubIssues: GitHubIssuesClient;
+  constructor(githubIssues: GitHubIssuesClient, env: string = DEFAULT_ENV, branch: string = DEFAULT_BRANCH) {
+    this.githubIssues = githubIssues;
     this.env = new BehaviorSubject(env);
     this.branch = new BehaviorSubject(branch);
     this.scopeChanged = combineLatest([this.env, this.branch]).pipe(debounceTime(0),
@@ -49,9 +53,22 @@ export class ReleaseContext {
     return this.lastTests!.pivot;
   }
 
+  tickets(milestone: string, force = false): Promise<GitHubIssue[]> {
+    if (!force && this.lastTickets?.milestone === milestone)
+      return this.lastTickets.issues;
+    const issues = this.githubIssues.milestoneIssues(milestone);
+    const entry = this.lastTickets = {milestone, issues};
+    issues.catch(() => {
+      if (this.lastTickets === entry)
+        this.lastTickets = null;
+    });
+    return issues;
+  }
+
   /** Ribbon Refresh: drops the kept pivot once, then lets every tab re-fetch. */
   reload(): void {
     this.lastTests = null;
+    this.lastTickets = null;
     this.refresh.next();
   }
 }
@@ -243,9 +260,14 @@ function countGroups(map: Record<string, string[]>): number {
   return Object.values(map).reduce((n, xs) => n + xs.length, 0);
 }
 
+export type StressBand = 'green' | 'orange' | 'red' | 'info';
+
 export interface StressRegression {
-  regressed: boolean;
+  band: StressBand;
+  value: string; // the card's headline: OK, or the worst change
+  summary: string; // the latest sweep's own numbers
   detail: string;
+  alerts: {label: string, band: StressBand}[];
 }
 
 interface PivotValue { col: string; suffix: string; type?: DG.ColumnType; }
@@ -728,11 +750,16 @@ export function computeBenchmarkAlerts(p: BenchmarkPivot): BenchmarkAlerts {
 }
 
 const STRESS_PARALLEL = 4;
+export const STRESS_LAST_BUILDS = 30;
+export const STRESS_WARN_PCT = 10;
+export const STRESS_FAIL_PCT = 25;
+const STRESS_MIN_PASS = 95;
 
-/** The StressTestsSummary table (one row per build x threads, newest build first), assembled from
- * per-build summaries. Summarizing 20 builds in one query reads millions of rows and takes minutes;
- * per build the server caches the answer, so only a new or re-run build is computed. Uncached builds
- * are fetched a few at a time so a cold cache does not flood the database. */
+/** The StressTestsSummary table (one row per build x threads: trunk builds newest first, then the
+ * latest release branch's sweeps), assembled from per-build summaries. Summarizing 20 builds in one
+ * query reads millions of rows and takes minutes; per build the server caches the answer, so only a
+ * new or re-run build is computed. Uncached builds are fetched a few at a time so a cold cache does
+ * not flood the database. */
 export async function fetchStressSummary(lastBuilds: number): Promise<DG.DataFrame> {
   const builds = await queries.stressTestsBuilds(lastBuilds);
   const names = builds.getCol('build');
@@ -742,7 +769,10 @@ export async function fetchStressSummary(lastBuilds: number): Promise<DG.DataFra
   await Promise.all(Array.from({length: Math.min(STRESS_PARALLEL, parts.length)}, async () => {
     while (next < parts.length) {
       const i = next++;
-      parts[i] = await queries.stressTestsBuildSummary(names.get(i), runs.get(i));
+      const part = await queries.stressTestsBuildSummary(names.get(i), runs.get(i));
+      const branch = builds.get('branch', i);
+      part.columns.addNewString('branch').init(() => branch);
+      parts[i] = part;
     }
   }));
   if (parts.length === 0)
@@ -753,34 +783,108 @@ export async function fetchStressSummary(lastBuilds: number): Promise<DG.DataFra
   return df;
 }
 
-/** Compares the latest build's worst-case p95 to the median of prior builds (from fetchStressSummary). */
-export function stressRegression(df: DG.DataFrame, factor = 1.2): StressRegression {
-  const n = df.rowCount;
-  if (n === 0)
-    return {regressed: false, detail: 'No stress runs reported.'};
-  const buildCol = df.getCol('build');
-  const startedCol = df.columns.byName('started') ?? df.columns.byName('build_date');
-  const p95Col = df.columns.byName('p95_ms') ?? df.columns.byName('median_ms');
-  if (!p95Col)
-    return {regressed: false, detail: 'No duration metric available.'};
+type StressMetric = 'speed' | 'median';
+type StressValues = Record<StressMetric, number>;
 
-  const byBuild = new Map<string, {started: number, p95: number}>();
-  for (let i = 0; i < n; i++) {
-    const b = buildCol.get(i);
-    const p = Number(p95Col.get(i) ?? 0);
-    const raw = startedCol ? startedCol.get(i) : i;
-    const started = raw && (raw as any).valueOf ? (raw as any).valueOf() : Number(raw) || 0;
-    const cur = byBuild.get(b);
-    byBuild.set(b, {started: Math.max(started, cur?.started ?? 0), p95: Math.max(p, cur?.p95 ?? 0)});
+interface StressBuild extends StressValues {
+  build: string;
+  branch: string;
+  started: number;
+  levels: Map<number, StressValues>; // per thread level; the build's own values average them
+  minPass: number;
+}
+
+// sign: which direction is worse (-1: lower is worse, 1: higher is worse).
+const STRESS_METRICS: {key: StressMetric, name: string, unit: string, sign: number, best: string}[] = [
+  {key: 'speed', name: 'speed', unit: 'tests/s', sign: -1, best: 'fastest'},
+  {key: 'median', name: 'median duration', unit: 'ms', sign: 1, best: 'lowest-median'},
+];
+
+function stressBuilds(df: DG.DataFrame): StressBuild[] {
+  const byBuild = new Map<string, StressBuild>();
+  for (let i = 0; i < df.rowCount; i++) {
+    const name = df.get('build', i);
+    let b = byBuild.get(name);
+    if (!b) {
+      b = {build: name, branch: df.get('branch', i) ?? '', started: df.get('started', i)?.valueOf() ?? 0,
+        levels: new Map(), speed: 0, median: 0, minPass: 100};
+      byBuild.set(name, b);
+    }
+    b.levels.set(df.get('threads', i), {speed: df.get('tests_per_s', i) ?? 0, median: df.get('median_ms', i) ?? 0});
+    b.minPass = Math.min(b.minPass, df.get('pass_rate', i) ?? 0);
   }
-  const builds = [...byBuild.entries()].map(([build, v]) => ({build, ...v})).sort((x, y) => y.started - x.started);
-  if (builds.length < 3)
-    return {regressed: false, detail: 'Not enough stress history to compare.'};
-  const latest = builds[0];
-  const priorMed = median(builds.slice(1).map((b) => b.p95));
-  const pct = priorMed > 0 ? Math.round((latest.p95 / priorMed - 1) * 100) : 0;
-  const regressed = priorMed > 0 && latest.p95 > priorMed * factor;
-  return {regressed, detail: regressed ?
-    `Latest p95 ${Math.round(latest.p95)}ms is ${pct}% above prior median ${Math.round(priorMed)}ms` :
-    `Latest p95 within range (${pct >= 0 ? '+' : ''}${pct}% vs prior median)`};
+  const builds = [...byBuild.values()].sort((x, y) => y.started - x.started);
+  for (const b of builds) {
+    for (const m of STRESS_METRICS)
+      b[m.key] = [...b.levels.values()].reduce((s, v) => s + v[m.key], 0) / b.levels.size;
+  }
+  return builds;
+}
+
+const signed = (pct: number): string => `${pct > 0 ? '+' : ''}${pct}%`;
+
+/** The latest trunk sweep (from fetchStressSummary) against two baselines, the best trunk sweep in
+ * the window and the best sweep of the latest release branch, on two metrics: speed (tests/s) and
+ * median test duration, each averaged over the thread levels. The best sweep is picked per metric.
+ * Only a sweep that completed the full suite counts, as the latest or as a baseline: every thread
+ * level ran and passed. A sweep cut short has no slow top levels and one whose tests fail returns
+ * early, so both read as fast. */
+export function stressRegression(df: DG.DataFrame): StressRegression {
+  const builds = stressBuilds(df);
+  const trunk = builds.filter((b) => !b.branch.startsWith('release/'));
+  if (trunk.length === 0)
+    return {band: 'info', value: 'n/a', summary: 'no stress runs', detail: 'No stress runs reported.', alerts: []};
+  const levelCount = Math.max(...trunk.map((b) => b.levels.size));
+  const full = (b: StressBuild): boolean => b.levels.size === levelCount && b.minPass >= STRESS_MIN_PASS &&
+    [...b.levels.values()].every((v) => v.speed > 0);
+
+  const latest = trunk[0];
+  if (!full(latest)) {
+    const detail = `Latest sweep ${latest.build} did not complete the full suite ` +
+      `(${latest.levels.size} of ${levelCount} thread levels, lowest pass rate ${latest.minPass}%): not compared`;
+    return {band: 'orange', value: 'Incomplete', summary: `${latest.levels.size} of ${levelCount} thread levels`,
+      detail, alerts: [{label: `Stress: ${detail}`, band: 'orange'}]};
+  }
+
+  const release = builds.filter((b) => b.branch.startsWith('release/'));
+  const res: StressRegression = {band: 'green', value: 'OK', detail: '', alerts: [],
+    summary: STRESS_METRICS.map((m) => `${Math.round(latest[m.key])} ${m.unit}${m.key === 'median' ? ' median' : ''}`)
+      .join(', ')};
+  let worstPct = 0;
+  const details: string[] = [];
+  for (const m of STRESS_METRICS) {
+    const change = (now: number, was: number): number => Math.round((now / was - 1) * 100);
+    const parts: string[] = [];
+    const compare = (candidates: StressBuild[], title: string): void => {
+      const base = candidates.filter(full).sort((x, y) => m.sign * (x[m.key] - y[m.key]))[0];
+      if (!base)
+        return;
+      const pct = change(latest[m.key], base[m.key]);
+      parts.push(`${signed(pct)} vs ${title} (${base.build}, ${Math.round(base[m.key])} ${m.unit})`);
+      const worse = m.sign * pct;
+      if (worse < STRESS_WARN_PCT)
+        return;
+      const band = worse >= STRESS_FAIL_PCT ? 'red' : 'orange';
+      let worst = {threads: 0, pct: 0};
+      for (const [threads, v] of latest.levels) {
+        const p = change(v[m.key], base.levels.get(threads)![m.key]);
+        if (m.sign * p > m.sign * worst.pct)
+          worst = {threads, pct: p};
+      }
+      res.alerts.push({band, label: `Stress ${m.name} ${signed(pct)} vs ${title}: ${Math.round(latest[m.key])} vs ` +
+        `${Math.round(base[m.key])} ${m.unit} (${base.build}), worst at ${worst.threads} threads (${signed(worst.pct)})`});
+      if (band === 'red' || res.band === 'green')
+        res.band = band;
+      if (worse > worstPct) {
+        worstPct = worse;
+        res.value = `${signed(pct)} ${m.key}`;
+      }
+    };
+    compare(trunk, `the ${m.best} full sweep`);
+    compare(release, release[0]?.branch);
+    details.push(`${Math.round(latest[m.key])} ${m.unit}${m.key === 'median' ? ' median' : ''}: ${parts.join(', ')}`);
+  }
+  res.detail = details.join('; ') + (release.some(full) ? '' : release.length > 0 ?
+    `; no full sweep on ${release[0].branch}` : '; no stress sweep on a release branch yet');
+  return res;
 }

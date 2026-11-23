@@ -17,6 +17,9 @@ smiles = data[smiles]
 length = len(smiles)
 scaffolds = np.full(length, None, dtype=object)
 for n in range(0, length):
+    # an empty cell arrives as NaN (a float), which MolFromSmiles refuses with an exception: no scaffold for it
+    if not isinstance(smiles[n], str):
+        continue
     mol = Chem.MolFromSmiles(smiles[n])
     if mol is None:
         continue

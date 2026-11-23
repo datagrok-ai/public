@@ -57,6 +57,14 @@ export async function loadDefaultReactions(): Promise<NamedReaction[]> {
   return [];
 }
 
+/** Tests: the built-in reactions are `reactions` (null: read from the package's file at the next load), and the list
+ * with the user's is made afresh. The test bundle's package.ts `_package` has no name and reads no package file, so a
+ * test gives the library itself. */
+export function setDefaultReactionsForTests(reactions: NamedReaction[] | null): void {
+  _cachedDefaults = reactions ? reactions.map((r) => ({...r, isUserDefined: false})) : null;
+  _cachedReactions = null;
+}
+
 /** Load user-defined reactions for the current user from AppData. */
 export async function loadUserReactions(): Promise<NamedReaction[]> {
   const userName = getUserFileName();
@@ -99,8 +107,9 @@ export async function deleteUserReaction(reactionId: string): Promise<boolean> {
   return true;
 }
 
-/** Validate a reaction SMARTS/SMIRKS string using RDKit, in both modes: with the drawing it gates (reaction-drawing.ts
- * `drawReactionByRdKit`); a run reads the reaction on Crux in Crux mode, with RDKit behind it. */
+/** Validate a reaction SMARTS/SMIRKS string using RDKit, in both modes: a reaction saved to the library runs and is
+ * drawn in either mode. The preview it gates is drawn by the engine in effect (reaction-drawing.ts
+ * `drawReactionPreview`), and a run reads the reaction on Crux in Crux mode, with RDKit behind it. */
 export function validateReactionSmarts(
   rdkit: RDModule, smarts: string,
 ): {valid: boolean; error?: string; numReactants?: number; numProducts?: number} {

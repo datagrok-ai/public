@@ -23,9 +23,11 @@ let library: Promise<InchiLibrary> | null = null;
 
 /** crux-sketch's InChI module, loaded once per worker (a failed load is tried again by the next job). */
 function inchiLibrary(): Promise<InchiLibrary> {
-  // the module file of vendor/crux-sketch that crux-sketch.js imports for its InChI calls (its wasm beside it in dist/)
+  // the module file of vendor/crux-sketch that crux-sketch.js imports for its InChI calls (its wasm beside it in dist/),
+  // by its fixed name since crux-sketch's spike inchi-fixed-name (the owner's decision 3 of 2026-11-20): a new build no
+  // longer renames it, and crux-sketch's deploy refuses a build that lacks a vendored file Chem imports
   // @ts-ignore: a vendored ES module without declarations
-  library ??= import('../../../vendor/crux-sketch/inchi-BJfSCJ9F.js').then((m) => m.start() as Promise<InchiLibrary>)
+  library ??= import('../../../vendor/crux-sketch/inchi.js').then((m) => m.start() as Promise<InchiLibrary>)
     .catch((e: unknown) => {
       library = null;
       throw e;

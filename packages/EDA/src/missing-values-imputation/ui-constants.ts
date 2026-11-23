@@ -49,7 +49,7 @@ export const KNN_IMPUTER = '/help/explore/missing-values-imputation#the-k-nn-met
 /** Tooltips */
 export enum HINT {
   TARGET = 'Columns with missing values that must be filled',
-  FEATURES = "Columns with features to be used for determining the 'nearest' elements in the k-NN method",
+  FEATURES = 'Columns with features to be used for determining the \'nearest\' elements in the k-NN method',
   IN_PLACE = 'Defines whether to use in-place imputation or add a new column without missing values',
   METRIC = 'Type of metric between the feature values',
   WEIGHT = 'Weight',

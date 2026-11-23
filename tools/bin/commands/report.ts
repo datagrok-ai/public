@@ -373,86 +373,24 @@ async function handleTicket(args: ReportArgs): Promise<boolean> {
   const instance = args._[2];
   const reportId = args._[3];
   if (!instance || !reportId) {
-    color.error('Usage: grok report ticket <instance> <report-id> [--project <KEY>] [--type <Bug>] [--jira-url <url>]');
+    color.error('Usage: grok report ticket <instance> <report-id> [--summary <text>]');
     return false;
   }
-
-  const projectKey = (args['project'] as string | undefined) || process.env.JIRA_PROJECT || '';
-  if (!projectKey) {
-    color.error('--project or $JIRA_PROJECT is required (no GROK default)');
-    return false;
-  }
-  const issueType = (args['type'] as string | undefined) || 'Bug';
-
-  const auth = jiraAuthHeader();
-  if (auth == null) {
-    color.error('Set JIRA_TOKEN (plus JIRA_USER for a user API token) for `grok report ticket`.');
-    return false;
-  }
-  const jiraBase = await resolveJiraBase(args);
 
   try {
     const {url, key} = getDevKey(instance);
     const token = await getToken(url, key);
-
-    console.log(`Fetching report ${reportId}...`);
-    const reportResp = await fetch(`${url}/reports/${encodeURIComponent(reportId)}`, {
-      headers: {Authorization: token},
-    });
-    if (!reportResp.ok) {
-      const body = await reportResp.text();
-      color.error(`Failed to fetch report (HTTP ${reportResp.status}): ${body.slice(0, 400)}`);
-      return false;
-    }
-    const body = await reportResp.json();
-    // The REST endpoint returns a flat UserReport: top-level `#type`,
-    // `number`, `errorMessage`, etc. The `data` field is a ref to the
-    // related data-table entity, not a body wrapper — do not unwrap.
-    const number = body && (body.number != null ? body.number : body.Number);
-    const errorMessage = (body && (body.errorMessage || body.ErrorMessage) || '').toString().trim();
-
-    let summary = number != null
-      ? (errorMessage ? `Report #${number}: ${errorMessage}` : `Report #${number}`)
-      : (errorMessage || `Report ${reportId}`);
-    if (summary.length > 200) summary = summary.slice(0, 200);
-    // JIRA rejects newlines in summary.
-    summary = summary.replace(/[\r\n]+/g, ' ').trim();
-
-    const webRoot = url.replace(/\/api\/?$/, '');
-    const reportLink = number != null
-      ? `${webRoot}/apps/usage/reports/${number}`
-      : `${webRoot}/apps/usage/reports/`;
-    const description = `Auto-created from ${reportLink}`;
-
-    console.log(`Creating JIRA ticket in ${projectKey} (${issueType})...`);
-    const createResp = await fetch(`${jiraBase}/rest/api/2/issue/`, {
+    const summary = args['summary'] as string | undefined;
+    const resp = await fetch(`${url}/reports/${encodeURIComponent(reportId)}/ticket`, {
       method: 'POST',
-      headers: {Authorization: auth, 'Content-Type': 'application/json', Accept: 'application/json'},
-      body: JSON.stringify({
-        fields: {
-          project: {key: projectKey},
-          summary,
-          issuetype: {name: issueType},
-          description,
-        },
-      }),
+      headers: {Authorization: token, 'Content-Type': 'application/json'},
+      body: JSON.stringify(summary ? {summary} : {}),
     });
-
-    if (createResp.status !== 200 && createResp.status !== 201) {
-      const errBody = await createResp.text();
-      color.error(`JIRA issue creation failed (HTTP ${createResp.status}): ${errBody}`);
+    if (!resp.ok) {
+      color.error(`Ticket request failed (HTTP ${resp.status}): ${(await resp.text()).slice(0, 400)}`);
       return false;
     }
-
-    const result = await createResp.json();
-    const ticketKey = result && result.key;
-    if (!ticketKey) {
-      color.error(`No ticket key in response: ${JSON.stringify(result).slice(0, 200)}`);
-      return false;
-    }
-
-    color.success(`Created ticket: ${ticketKey}`);
-    console.log(ticketKey);
+    color.success(`Ticket requested for report ${reportId}; the monitoring stack files the GitHub issue`);
     return true;
   }
   catch (err: any) {

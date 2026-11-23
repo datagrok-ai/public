@@ -11,6 +11,7 @@ import wu, {WuIterable} from "wu";
 import {IDartApi} from "../api/grok_api.g";
 import type {FilterState} from "../viewer";
 import type {DataFrame} from "./data-frame";
+import {DateTimeColumn} from "./column";
 import type {Column} from "./column";
 import type {BitSet} from "./bit-set";
 import type {RowPredicate} from "./types";
@@ -256,7 +257,7 @@ export class RowList {
    * @param values - List of values (length and types should match columns)
    * @param notify - Whether a change notification should be fired. */
   addNew(values: any[] | null = null, notify: boolean = true): Row {
-    return new Row(this.table, api.grok_RowList_AddNew(this.dart, values, notify));
+    return new Row(this.table, api.grok_RowList_AddNew(this.dart, values && this.toDartValues(values), notify));
   }
 
   /** Iterates over all rows. */
@@ -270,7 +271,18 @@ export class RowList {
    * @param values - List of values (length and types should match columns)
    * @param notify - Raise onDataChanged event  */
   setValues(idx: number, values: any[], notify: boolean = true): void {
-    api.grok_RowList_SetValues(this.dart, idx, values, notify);
+    api.grok_RowList_SetValues(this.dart, idx, this.toDartValues(values), notify);
+  }
+
+  /** Converts the values as the columns' own `set` does: a datetime column takes a dayjs, a Date, a string or epoch ms. */
+  private toDartValues(values: any[]): any[] {
+    const columns = api.grok_DataFrame_Columns(this.table.dart);
+    return values.map((v, i) => {
+      if (v == null || typeof v === 'boolean' || api.grok_Column_Get_Type(api.grok_ColumnList_ByIndex(columns, i)) !== TYPE.DATE_TIME)
+        return toDart(v);
+      const ms = DateTimeColumn.getMs(v);
+      return ms == null ? null : api.grok_DayJs_To_DateTime(ms);
+    });
   }
 
   /**

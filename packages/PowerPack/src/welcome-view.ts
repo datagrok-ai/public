@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
-import {powerSearch} from './search/power-search';
+import {powerSearch, showSearchSuggestions} from './search/power-search';
 import {getSettings, saveSettings, UserWidgetsSettings, widgetHostFromFunc} from './utils';
 import {setWorkspacePreviewHost, setWorkspaceCustomizeEl} from './spotlight/preview-host';
 import {getCurrentUserGroup} from './spotlight/group-favorites';
@@ -25,22 +25,19 @@ export function welcomeView(): DG.View | undefined {
   const inputHost = ui.div([
     ui.iconFA('search'),
     inputContainer,
-  ], 'd4-search-bar');
-  const helpDiv = ui.divText('Use Ctrl+Space to see suggestions', {style: {
-    marginLeft: '12px', fontSize: '10px', color: 'var(--text-color-light)',
-    fontStyle: 'italic',
-    marginBottom: '10px', flexGrow: '0',
-  }, classes: 'power-search-help-text-container'});
+  ], 'd4-search-bar,power-pack-welcome-search');
+  const helpDiv = ui.divText('Use Ctrl+Space to see suggestions', 'power-search-help-text-container');
+  inputHost.appendChild(helpDiv);
 
-  // input.addEventListener('input', () => {
-  //   if (!input.value)
-  //     helpDiv.style.visibility = 'hidden';
-  //   else
-  //     helpDiv.style.visibility = 'visible';
-  // });
-
-  // helpDiv.style.display = input.value ? 'flex' : 'none';
-  inputHost.style.marginBottom = '0px';
+  const updateHelp = () => {helpDiv.style.visibility = input.value ? 'visible' : 'hidden';};
+  updateHelp();
+  input.addEventListener('input', updateHelp);
+  input.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.code === 'Space') {
+      e.preventDefault();
+      showSearchSuggestions(input);
+    }
+  });
   suggestionMenuKeyNavigation(inputContainer);
 
   const searchHost = ui.block([], 'power-pack-search-host');
@@ -52,9 +49,38 @@ export function welcomeView(): DG.View | undefined {
   const viewHost = ui.div([widgetsPanel, searchHost], 'power-pack-view-host');
   setWorkspacePreviewHost(previewHost);
   const view = DG.View.create();
-  view.root.appendChild(inputHost);
-  view.root.appendChild(helpDiv);
   view.root.appendChild(viewHost);
+  // The search takes the otherwise empty top row: the view's ribbon without tabs, or the tab strip while Home is its
+  // only tab. The mode is known only after the settings load.
+  let place: 'ribbon' | 'strip' | 'page' | null = null;
+  const tabStrip = () => view.root.closest('.grok-tab-host')?.querySelector<HTMLElement>(':scope > .tab-handle-list-container');
+  const stripRoom = (strip: HTMLElement) => {
+    let used = 0;
+    for (const c of Array.from(strip.children))
+      if (c !== inputHost) used += (c as HTMLElement).offsetWidth;
+    return strip.clientWidth - used;
+  };
+  const placeSearch = () => {
+    const strip = tabStrip();
+    const newPlace = grok.shell.windows.simpleMode ? 'ribbon' :
+      strip && strip.querySelectorAll('.tab-handle:not(.tab-handle-preview, .tab-handle-temp-tab)').length === 1 &&
+      stripRoom(strip) >= 300 ? 'strip' : 'page';
+    if (newPlace === place)
+      return;
+    place = newPlace;
+    view.setRibbonPanels(place === 'ribbon' ? [[inputHost]] : []);
+    if (place === 'strip')
+      strip!.append(inputHost);
+    else if (place === 'page')
+      view.root.prepend(inputHost);
+  };
+  placeSearch();
+  const resized = new rxjs.Subject<void>();
+  const resizeObserver = new ResizeObserver(() => resized.next());
+  resizeObserver.observe(view.root);
+  view.subs.push(
+    rxjs.merge(grok.events.onEvent('grok-panels-changed'), grok.events.onViewAdded, grok.events.onViewRemoved, resized).pipe(debounceTime(50)).subscribe(placeSearch),
+    new rxjs.Subscription(() => resizeObserver.disconnect()));
   view.root.classList.add('power-pack-welcome-view');
 
   const widgetFunctions = DG.Func.find({meta: {role: DG.FUNC_TYPES.DASHBOARD}, returnType: 'widget'});
@@ -103,6 +129,7 @@ export function welcomeView(): DG.View | undefined {
 
   function doSearch(s: string) {
     input.value = s;
+    updateHelp();
     const search = s !== '';
     widgetsPanel.style.display = (search ? 'none' : '');
     searchHost.style.display = (search ? '' : 'none');

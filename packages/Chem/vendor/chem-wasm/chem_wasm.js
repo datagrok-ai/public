@@ -111,12 +111,38 @@ export class ChemMonomerLibrary {
         return this;
     }
     /**
+     * `prepareToHelm()`: builds molecule → HELM's index of this library now (else on the first `toHelm`), once;
+     * returns its number of indexed forms.
+     * @returns {number}
+     */
+    prepareToHelm() {
+        const ret = wasm.chemmonomerlibrary_prepareToHelm(this.__wbg_ptr);
+        return ret >>> 0;
+    }
+    /**
      * The number of monomers (keys) read.
      * @returns {number}
      */
     get size() {
         const ret = wasm.chemmonomerlibrary_size(this.__wbg_ptr);
         return ret >>> 0;
+    }
+    /**
+     * `toHelm(molecules, options?)`: molecule → HELM per row (MOL blocks, SMILES or CXSMILES; null or '' an empty
+     * row): `{helms, errors, matched, inline, chem}` (module docs). A molecule that cannot be converted is its row's
+     * error; throws only where the options are wrong.
+     * @param {(string | null)[]} molecules
+     * @param {string | null} [options]
+     * @returns {{helms: (string | null)[], errors: (string | null)[], matched: Int32Array, inline: Int32Array, chem: Int32Array}}
+     */
+    toHelm(molecules, options) {
+        var ptr0 = isLikeNone(options) ? 0 : passStringToWasm0(options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        const ret = wasm.chemmonomerlibrary_toHelm(this.__wbg_ptr, molecules, ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return takeFromExternrefTable0(ret[0]);
     }
 }
 if (Symbol.dispose) ChemMonomerLibrary.prototype[Symbol.dispose] = ChemMonomerLibrary.prototype.free;
@@ -834,6 +860,62 @@ export class CollectionBuilder {
 if (Symbol.dispose) CollectionBuilder.prototype[Symbol.dispose] = CollectionBuilder.prototype.free;
 
 /**
+ * RDKit-js's `Log` (MinimalLib's `JSLog`, minilib.h:283-292, minilib.cpp:932-950): what
+ * [`set_log_capture`] / [`set_log_tee`] give, a buffer RDKit's error log writes to while it lives
+ * (`smi_compiler::rdgeneral::rdlog`; spike rdkit-error-log, decision `chem-wasm`).
+ */
+export class JSLog {
+    static __wrap(ptr) {
+        const obj = Object.create(JSLog.prototype);
+        obj.__wbg_ptr = ptr;
+        JSLogFinalization.register(obj, obj.__wbg_ptr, obj);
+        return obj;
+    }
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        JSLogFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_jslog_free(ptr, 0);
+    }
+    /**
+     * PORT(minilib.cpp:940): `clear_buffer()`.
+     */
+    clear_buffer() {
+        wasm.jslog_clear_buffer(this.__wbg_ptr);
+    }
+    /**
+     * Embind's `delete()` (`~JSLog`, minilib.cpp:936): the log back as it was, free for another
+     * `set_log_capture` (the same as wasm-bindgen's `free()`).
+     */
+    delete() {
+        const ptr = this.__destroy_into_raw();
+        wasm.jslog_delete(ptr);
+    }
+    /**
+     * PORT(minilib.cpp:938): `get_buffer()`: the records since the log was set or last cleared, each
+     * `"[HH:MM:SS] "` (the local time) and RDKit's text.
+     * @returns {string}
+     */
+    get_buffer() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.jslog_get_buffer(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+}
+if (Symbol.dispose) JSLog.prototype[Symbol.dispose] = JSLog.prototype.free;
+
+/**
  * RDKit-js `JSMol`.
  */
 export class JSMol {
@@ -887,6 +969,22 @@ export class JSMol {
             throw takeFromExternrefTable0(ret[1]);
         }
         return ret[0] !== 0;
+    }
+    /**
+     * Crux extension, no RDKit.js call (spikes query-read-match and drawn-query): the query a chemist means by a query
+     * drawn in a sketcher, in place: first [`rk::drawn_query::adjust_drawn_query`] (a drawn aromatic ring stays
+     * aromatic despite its query features; an H count counts drawn H atoms too; a NOT list is a heavy atom; the valence
+     * set on an atom is asked for; "unsaturated" is a double, triple or aromatic bond), then
+     * [`smi_compiler::query_mol::adjust_drawn_query`] (a plain single or double bond at an aromatic query atom whose
+     * ring is not drawn also matches an aromatic bond; an atom list holding H on one atom is that atom's implicit H or
+     * the list's other atoms), which reads the rings the first made aromatic as drawn aromatic. Datagrok's Chem calls
+     * it on the query its substructure search builds from a MOL block, after its rings are aromatized and its H merged;
+     * RDKit has no such step. `true` when the query changed.
+     * @returns {boolean}
+     */
+    adjust_drawn_query() {
+        const ret = wasm.jsmol_adjust_drawn_query(this.__wbg_ptr);
+        return ret !== 0;
     }
     /**
      * PORT(common.h:894-904): `canonical_tautomer(details)` —
@@ -1242,8 +1340,13 @@ export class JSMol {
     }
     /**
      * PORT(SmartsWrite.cpp `MolToCXSmarts`): `get_cxsmarts(details)`: the SMARTS, then
-     * `getCXExtensions(mol, CX_ALL)` over the SMARTS writer's atom and bond output order: with a
+     * `getCXExtensions(mol, flags)` over the SMARTS writer's atom and bond output order: with a
      * conformer its coordinates and their wedges, and the link nodes, as `get_cxsmiles` writes them.
+     * `flags` are the details' `CX_*` keys as `get_cxsmiles` reads them (none: `CX_ALL`, RDKit-js's
+     * `get_cxsmarts`, which reads no `CX_*` key): a Crux extension (spike cxsmiles-fields, for the
+     * Sketcher app's query link, e.g. `{"CX_ALL_BUT_COORDS": true}`), RDKit's own extension writer
+     * with those flags, what `MolToCXSmiles(mol, params, flags)` writes after its SMILES.
+     * `restoreBondDirOption` is not read, as RDKit-js's `get_cxsmarts`.
      * @param {string | null} [details]
      * @returns {string}
      */
@@ -3761,7 +3864,10 @@ export function get_mol_copy(other) {
 /**
  * PORT(common.h `qmol_from_input`): RDKit-js `get_qmol(input)`: a SMARTS (`SmartsToMol`) or
  * a MOL block read as a query (`MolBlockToMol(sanitize=false, removeHs=false)`, its query
- * atoms and bonds); `null` when it does not parse.
+ * atoms and bonds); `null` when it does not parse. PORT(SmilesParse.cpp:386-417
+ * `handleCXPartAndName`, CXSmilesOps.cpp:1553-1560): a SMARTS whose CXSMILES extension does not
+ * parse throws (`strictCXSMILES`; RDKit's `SmartsToMol` lets the exception out, MinimalLib's
+ * `get_qmol` does not catch it), as RDKit-js does (spike cxsmiles-fields).
  * @param {string} input
  * @returns {JSMol | null}
  */
@@ -3769,7 +3875,10 @@ export function get_qmol(input) {
     const ptr0 = passStringToWasm0(input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
     const ret = wasm.get_qmol(ptr0, len0);
-    return ret;
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
 }
 
 /**
@@ -3936,10 +4045,11 @@ export function scaffoldTree(smiles, ring_cutoff, discharge) {
 }
 
 /**
- * RDKit-js `set_log_capture(logName)` / `set_log_tee(logName)`: Crux keeps no RDKit log (its
- * messages are not RDKit's), so these throw `not supported by Crux` rather than being undefined.
+ * PORT(minilib.cpp:947-950): RDKit-js `set_log_capture(logName)`: a [`JSLog`] whose buffer takes the
+ * log's records (in place of its destination); `null` for a name that is no log or a log another handle
+ * holds; throws `not supported by Crux` for the logs Crux does not keep ([`open_log`]).
  * @param {string} log_name
- * @returns {any}
+ * @returns {JSLog | null}
  */
 export function set_log_capture(log_name) {
     const ptr0 = passStringToWasm0(log_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -3952,9 +4062,10 @@ export function set_log_capture(log_name) {
 }
 
 /**
- * See [`set_log_capture`].
+ * PORT(minilib.cpp:942-945): RDKit-js `set_log_tee(logName)`: as [`set_log_capture`], the records also
+ * going on to the log's destination; Crux's logs have none, so the buffer reads the same.
  * @param {string} log_name
- * @returns {any}
+ * @returns {JSLog | null}
  */
 export function set_log_tee(log_name) {
     const ptr0 = passStringToWasm0(log_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -4207,6 +4318,18 @@ function __wbg_get_imports() {
             const ret = arg0.done;
             return ret;
         },
+        __wbg_getHours_f57dcda3efee150c: function(arg0) {
+            const ret = arg0.getHours();
+            return ret;
+        },
+        __wbg_getMinutes_951e7f98fc4fdb30: function(arg0) {
+            const ret = arg0.getMinutes();
+            return ret;
+        },
+        __wbg_getSeconds_8ffcca0e220547af: function(arg0) {
+            const ret = arg0.getSeconds();
+            return ret;
+        },
         __wbg_get_31af05bd4842a84f: function() { return handleError(function (arg0, arg1) {
             const ret = Reflect.get(arg0, arg1);
             return ret;
@@ -4261,6 +4384,10 @@ function __wbg_get_imports() {
             const ret = Symbol.iterator;
             return ret;
         },
+        __wbg_jslog_new: function(arg0) {
+            const ret = JSLog.__wrap(arg0);
+            return ret;
+        },
         __wbg_jsmol_new: function(arg0) {
             const ret = JSMol.__wrap(arg0);
             return ret;
@@ -4283,6 +4410,10 @@ function __wbg_get_imports() {
         },
         __wbg_mollist_unwrap: function(arg0) {
             const ret = MolList.__unwrap(arg0);
+            return ret;
+        },
+        __wbg_new_0_72d020f0c63443d4: function() {
+            const ret = new Date();
             return ret;
         },
         __wbg_new_1dbf7428bba60a42: function(arg0) {
@@ -4400,6 +4531,7 @@ const ChemSmartsSetFinalization = __cruxRegistry(ptr => wasm.__wbg_chemsmartsset
 const ChemSynthonSpaceFinalization = __cruxRegistry(ptr => wasm.__wbg_chemsynthonspace_free(ptr, 1));
 const CollectionFinalization = __cruxRegistry(ptr => wasm.__wbg_collection_free(ptr, 1));
 const CollectionBuilderFinalization = __cruxRegistry(ptr => wasm.__wbg_collectionbuilder_free(ptr, 1));
+const JSLogFinalization = __cruxRegistry(ptr => wasm.__wbg_jslog_free(ptr, 1));
 const JSMolFinalization = __cruxRegistry(ptr => wasm.__wbg_jsmol_free(ptr, 1));
 const JSMolListListFinalization = __cruxRegistry(ptr => wasm.__wbg_jsmollistlist_free(ptr, 1));
 const MolListFinalization = __cruxRegistry(ptr => wasm.__wbg_mollist_free(ptr, 1));
@@ -4856,7 +4988,7 @@ function __cruxShaped(wrapper, plain) {
 
 /** Every method and accessor of the classes refuses an object of an older instance, and a freed one; their free does
  * nothing. */
-const __cruxClasses = new Map([[ChemMonomerLibrary, ChemMonomerLibraryFinalization], [ChemReactionScheme, ChemReactionSchemeFinalization], [ChemSmartsSet, ChemSmartsSetFinalization], [ChemSynthonSpace, ChemSynthonSpaceFinalization], [Collection, CollectionFinalization], [CollectionBuilder, CollectionBuilderFinalization], [JSMol, JSMolFinalization], [JSMolListList, JSMolListListFinalization], [MolList, MolListFinalization], [RGroupDecomposition, RGroupDecompositionFinalization], [Reaction, ReactionFinalization], [ReactionEnumerator, ReactionEnumeratorFinalization], [SimilarityResult, SimilarityResultFinalization]]);
+const __cruxClasses = new Map([[ChemMonomerLibrary, ChemMonomerLibraryFinalization], [ChemReactionScheme, ChemReactionSchemeFinalization], [ChemSmartsSet, ChemSmartsSetFinalization], [ChemSynthonSpace, ChemSynthonSpaceFinalization], [Collection, CollectionFinalization], [CollectionBuilder, CollectionBuilderFinalization], [JSLog, JSLogFinalization], [JSMol, JSMolFinalization], [JSMolListList, JSMolListListFinalization], [MolList, MolListFinalization], [RGroupDecomposition, RGroupDecompositionFinalization], [Reaction, ReactionFinalization], [ReactionEnumerator, ReactionEnumeratorFinalization], [SimilarityResult, SimilarityResultFinalization]]);
 for (const cls of __cruxClasses.keys()) {
     const proto = cls.prototype;
     const dispose = typeof Symbol.dispose === 'symbol' ? Symbol.dispose : null;
@@ -5039,4 +5171,4 @@ export function setTrapHook(hook) {
 }
 
 /** Each class's methods that change the object (the crate's `&mut self` and `self` methods), by JS name. */
-export const cruxChanging = Object.freeze({"ChemSmartsSet":["match"],"ChemMonomerLibrary":[],"ChemReactionScheme":[],"ChemCheMeleon":["fingerprints"],"ChemSynthonSpace":["installFingerprints","search"],"JSMol":["add_hs_in_place","canonical_tautomer","charge_parent","cleanup","clear_prop","convert_to_aromatic_form","convert_to_kekule_form","delete","disconnect_metals","disconnect_organometallics","fragment_parent","generate_aligned_coords","isotope_parent","largest_fragment","neutralize","normalize","normalize_depiction","normalize_in_place","reionize","remove_fragments","remove_hs_in_place","set_new_coords","set_prop","stereo_parent","straighten_depiction","super_parent","tautomer_parent","uncharge"],"MolList":["append","delete","insert","next","pop","reset"],"RGroupDecomposition":["add","add_text","delete","process"],"JSMolListList":["delete"],"Reaction":["delete","run_reactants"],"ReactionEnumerator":["delete","next","next_smiles","reset_state","set_state"],"SimilarityResult":[],"CollectionBuilder":["addMany","addSdf","finish","finishSdf","setLenient"],"Collection":[]});
+export const cruxChanging = Object.freeze({"ChemSmartsSet":["match"],"ChemMonomerLibrary":[],"ChemReactionScheme":[],"ChemCheMeleon":["fingerprints"],"ChemSynthonSpace":["installFingerprints","search"],"JSMol":["add_hs_in_place","adjust_drawn_query","canonical_tautomer","charge_parent","cleanup","clear_prop","convert_to_aromatic_form","convert_to_kekule_form","delete","disconnect_metals","disconnect_organometallics","fragment_parent","generate_aligned_coords","isotope_parent","largest_fragment","neutralize","normalize","normalize_depiction","normalize_in_place","reionize","remove_fragments","remove_hs_in_place","set_new_coords","set_prop","stereo_parent","straighten_depiction","super_parent","tautomer_parent","uncharge"],"MolList":["append","delete","insert","next","pop","reset"],"JSLog":["delete"],"RGroupDecomposition":["add","add_text","delete","process"],"JSMolListList":["delete"],"Reaction":["delete","run_reactants"],"ReactionEnumerator":["delete","next","next_smiles","reset_state","set_state"],"SimilarityResult":[],"CollectionBuilder":["addMany","addSdf","finish","finishSdf","setLenient"],"Collection":[]});

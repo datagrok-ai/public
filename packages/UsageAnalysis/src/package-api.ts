@@ -552,8 +552,8 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:ReleaseDashboardApp', { path });
   }
 
-  export async function getTicketsVerdict(ticketColumn: DG.Column , resultColumn: DG.Column ): Promise<void> {
-    return await grok.functions.call('UsageAnalysis:GetTicketsVerdict', { ticketColumn, resultColumn });
+  export async function getTicketsVerdict(ticketColumn: DG.Column ): Promise<DG.Column> {
+    return await grok.functions.call('UsageAnalysis:GetTicketsVerdict', { ticketColumn });
   }
 
   export async function vexImages(): Promise<DG.DataFrame> {
@@ -602,12 +602,5 @@ export namespace funcs {
 
   export async function describeCurrentObj(): Promise<void> {
     return await grok.functions.call('UsageAnalysis:DescribeCurrentObj', {});
-  }
-
-  /**
-   * Creates JIRA ticket using current error log
-   */
-  export async function createJiraTicket(): Promise<void> {
-    return await grok.functions.call('UsageAnalysis:CreateJiraTicket', {});
   }
 }

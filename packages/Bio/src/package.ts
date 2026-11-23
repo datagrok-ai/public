@@ -70,6 +70,7 @@ import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
 import {FuncCallParamsEditor, MessageFuncCallEditor} from '@datagrok-libraries/utils/src/func-call-params-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
+import {addHelmColumnOfMolecules, convertMoleculesToHelm} from './utils/molecules-to-helm';
 import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
 import {matchMoleculesWithMonomers, MonomerManager, standardizeMonomerLibrary} from './utils/monomer-lib/monomer-manager/monomer-manager';
@@ -87,7 +88,6 @@ import {showLiabilityScannerDialog} from './utils/annotations/liability-scanner-
 import {showAnnotationManagerDialog} from './utils/annotations/annotation-manager-ui';
 import {numberAntibodyColumn} from './utils/antibody-numbering/number-antibody';
 
-import * as api from './package-api';
 import {antibodyDemo, atomicLevelDemo, sirnaDemo} from './demo/feature_demos';
 export const _package = new BioPackage(/*{debug: true}/**/);
 export * from './package.g';
@@ -880,34 +880,20 @@ export class PackageFunctions {
     @grok.decorators.param({name: 'table', options: {description: 'Input data table'}})table: DG.DataFrame,
     @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule', description: 'Molecule column'}})molecules: DG.Column,
   ) {
-    // collect current monomer library
-    const monomerLib = _package.monomerLib;
-    const libJSON = JSON.stringify(monomerLib.toJSON());
-    const fileInfo = DG.FileInfo.fromString('monomerLib.json', libJSON);
-    await api.scripts.molToHelmConverterPy(table, molecules, fileInfo);
-
-    // semtype is not automatically set, so we set it manually
-    const newCol = table.columns.toList().find((c) => c.name.toLowerCase().includes('regenerated sequence') && c.semType !== DG.SEMTYPE.MACROMOLECULE);
-    if (newCol) {
-      newCol.meta.units = NOTATION.HELM;
-      newCol.semType = DG.SEMTYPE.MACROMOLECULE;
-      newCol.setTag('cell.renderer', 'helm');
-    }
+    // Chem's Crux workers with the current monomer library (utils/molecules-to-helm.ts): the column
+    // `regenerated sequences`, HELM, added to the table
+    await addHelmColumnOfMolecules(table, molecules, _package.monomerLib);
   }
 
   @grok.decorators.func({name: 'Molecule to HELM Single', description: 'Converts a single molecule to HELM notation without requiring a table or column', outputs: [{name: 'result', type: 'string', options: {semType: 'Macromolecule', units: 'helm'}}]})
   static async moleculeToHelmSingle(
     @grok.decorators.param({name: 'molecule', options: {semType: 'Molecule', description: 'Input molecule'}})molecule: string,
   ): Promise<string> {
-    // create temporary dataframe
-    const tempCol = DG.Column.fromStrings('molecule', [molecule]);
-    tempCol.semType = DG.SEMTYPE.MOLECULE;
-    const tempDF = DG.DataFrame.fromColumns([tempCol]);
-    // call converter
-    await PackageFunctions.moleculesToHelmTopMenu(tempDF, tempCol);
-    // get result
-    const result = tempDF.columns.toList().find((c) => c.name.toLowerCase().includes('regenerated sequence'))?.get(0);
-    return result ?? '';
+    // one molecule: Chem's main-thread module; '' where it does not convert (the reason goes to the log)
+    const res = await convertMoleculesToHelm([molecule], _package.monomerLib);
+    if (res.errors[0])
+      _package.logger.warning(`Molecule to HELM Single: ${res.errors[0]}`);
+    return res.helms[0] ?? '';
   }
 
   @grok.decorators.func({
@@ -1325,16 +1311,9 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Table', nullable: false}}) table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule', caption: 'Molecules', nullable: false}}) molecules: DG.Column<string>,
   ): Promise<DG.Column<string>> {
-    // The converter appends its result under a name it picks itself, so diff the
-    // column list rather than matching a name that may already be taken by an
-    // earlier run of the same node.
-    const before = new Set(table.columns.names());
-    await PackageFunctions.moleculesToHelmTopMenu(table, molecules);
-    const added = table.columns.names().filter((n) => !before.has(n));
-    const name = added.find((n) => n.toLowerCase().includes('regenerated sequence')) ?? added[0];
-    if (!name)
-      throw new Error('Molecules to HELM: the converter returned no sequence column');
-    return table.getCol(name);
+    // the column the conversion added (an unused name: an earlier run of the same node may hold the plain one)
+    const {helmCol} = await addHelmColumnOfMolecules(table, molecules, _package.monomerLib, false);
+    return helmCol;
   }
 
   @grok.decorators.func({
@@ -1902,7 +1881,7 @@ async function initBioInt() {
   const libHelper = await MonomerLibManager.getInstance();
   // Fix user lib settings for explicit stuck from a terminated test
   const libSettings = await getUserLibSettings();
-  if (libSettings.explicit) {
+  if ((libSettings.explicit?.length ?? 0) > 0) { // an empty list (always an array here) needs no fix and no write
     libSettings.explicit = [];
     await setUserLibSettings(libSettings);
   }

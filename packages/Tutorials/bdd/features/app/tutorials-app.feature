@@ -1,8 +1,10 @@
 @tutorials @serial @realizes:apps.tutorials
 Feature: The Tutorials application
-  The app as a whole, as the TestTrack case "Tutorials" (Apps) walks it: launched from Browse > Apps it
-  lists every track and every tutorial; a tutorial finished to its end offers the next one of its track,
-  which starts at its first step; the finished one's card says it is done.
+  The app as a whole, as the TestTrack case "Tutorials" (Apps) walks it: launched from Browse > Apps its
+  view lists every track and every tutorial; a tutorial runs in a bar on top, with all its steps in a
+  panel on demand, and closing it returns to the view; a tutorial finished to its end offers the next
+  one of its track, which starts at its first step; the finished one's card says it is done. In the
+  Browse tree the app lists its tracks and tutorials, and selecting one previews it without starting it.
   Each tutorial walked to its end, with every step claimed, is a feature of its own (bdd/features/*) —
   the case's "Complete all tutorials", "no steps are skipped or missing" and "the highlighted elements"
   are claimed there, step by step and hint by hint.
@@ -21,7 +23,8 @@ Feature: The Tutorials application
     Given the Tutorials app is closed
     When user clicks on Apps tree node inside browse tree
     And user double-clicks on Tutorials gallery card
-    Then Tutorials panel should be visible
+    Then Tutorials view should be visible
+    And Tutorials panel should be absent
     And there should be 7 visible tutorial tracks
     And there should be 20 visible tutorial cards
     And "Exploratory data analysis" tutorial track should be visible
@@ -43,7 +46,8 @@ Feature: The Tutorials application
     And the tutorial step "Open scatter plot" should be current
     When user closes the tutorial
     Then tutorial bar should be absent
-    And Tutorials panel should be visible
+    And Tutorials panel should be absent
+    And Tutorials view should be visible
     And no errors should have been logged
 
   Scenario: A finished tutorial offers the next one of its track, which starts
@@ -70,4 +74,18 @@ Feature: The Tutorials application
     And the tutorial step "Open scatter plot" should not be done yet
     When user closes the tutorial
     Then the "Scatter Plot" tutorial card should show it is done
+    And no errors should have been logged
+
+  Scenario: Selecting a tutorial in the Browse tree previews it and starts nothing
+    Given the Tutorials app is closed
+    And Apps tree node inside browse tree is expanded
+    And Apps---Tutorials tree node inside browse tree is expanded
+    And Apps---Tutorials---Exploratory-Data-Analysis tree node inside browse tree is expanded
+    When user clicks on Apps---Tutorials---Exploratory-Data-Analysis---Scatter-Plot tree node inside browse tree
+    Then "Start" button should be visible
+    And tutorial bar should be absent
+    When user clicks on Apps---Tutorials---Exploratory-Data-Analysis tree node inside browse tree
+    Then Tutorials view should be visible
+    And there should be 1 visible tutorial tracks
+    And tutorial bar should be absent
     And no errors should have been logged

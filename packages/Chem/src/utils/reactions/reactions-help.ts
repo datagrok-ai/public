@@ -17,7 +17,7 @@ export type ReactionsHelpSection = 'the-reaction-sketcher' | 'the-reaction-panel
 
 /** Chem's web root, ending in a slash. In the package-test bundle (a second bundle) package.ts's `_package` was never
  * given to the platform, so its `webRoot` throws: the published Chem's is read from one of its functions there. */
-function chemWebRoot(): string {
+export function chemWebRoot(): string {
   let root = '';
   try {
     root = _package.webRoot;

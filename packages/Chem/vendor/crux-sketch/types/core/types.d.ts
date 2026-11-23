@@ -761,8 +761,10 @@ export interface SketcherApi {
     readonly canonicalCxsmiles: string;
     /**
      * SMARTS, as RDKit's MolToSmarts writes the same query (spike query, Q10; QUERY-017): each query feature as RDKit writes
-     * it, drawn hydrogens merged into their heavy atoms where the drawing has a query feature (P10, QUERY-022); a drawing
-     * without one gives RDKit's explicit-atom SMARTS (QUERY-018).
+     * it; a drawing without one gives RDKit's explicit-atom SMARTS (QUERY-018). Drawn hydrogens are merged into their heavy
+     * atoms as "at least that many H" (`[#8&!H0]`), as RDKit's `mergeQueryHs` reads the molfile on Datagrok's path, whether
+     * or not the drawing has a query feature (P10, QUERY-022; spike query-add-hydrogens); one it keeps, a deuterium, stays
+     * an atom.
      */
     readonly smarts: string;
     /**

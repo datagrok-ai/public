@@ -64,7 +64,7 @@ Options:
 --in-place              Use current directory instead of creating a git worktree
 --grok-connect-version  grok_connect image version (default: latest)
 --grok-spawner-version  grok_spawner image version (default: latest)
---jkg-version           jupyter_kernel_gateway image version (default: latest)
+--jkg-version           jkg_python and jkg_r image version (default: latest)
 --tools-dev-version     tools-dev image version (default: latest)
 
 Examples:
@@ -493,14 +493,12 @@ Subcommands:
     fetch    Download a report zip from a managed instance (writes <stem>_meta.json next to it)
     read     Normalize a report (zip or json) into one JSON object on stdout
     resolve  Mark a report as resolved (needs the _meta.json written by fetch)
-    ticket   Create a JIRA ticket for a report directly in JIRA (no dedup; the key is NOT
-             written back to the report — prefer POST /reports/{id}/jira for that)
+    ticket   Request a GitHub issue for a report (POST /reports/{id}/ticket; the monitoring stack files it)
     comment  Add a comment to a JIRA ticket (--body <text> | --body-file <path>)
     label    Add labels to a JIRA ticket
     attach   Attach a file to a JIRA ticket
 
-JIRA subcommands need JIRA_TOKEN (plus JIRA_USER for a user API token); ticket also needs
---project or $JIRA_PROJECT.
+JIRA subcommands need JIRA_TOKEN (plus JIRA_USER for a user API token).
 
 Read flags:
     --extract-screenshot <path>  Write the screenshot binary to <path>
@@ -514,7 +512,7 @@ Examples:
   grok report read dev 1528              Fetch + normalize report #1528 from 'dev'
   grok report read /tmp/report.zip --extract-screenshot ./shot.png
   grok report resolve dev 1528           Resolve report #1528 on the 'dev' instance
-  grok report ticket dev <report-uuid>   Create a JIRA ticket for a report
+  grok report ticket dev <report-uuid>   Request a GitHub issue for a report
 
 The instance name must match a server alias in ~/.grok/config.yaml.
 `;
@@ -524,12 +522,13 @@ Usage: grok src <command> [options]
 
 Git recipes across the repos of the datagrok umbrella (git submodules). Runs from anywhere
 in the tree; paths are relative to the umbrella root. Every git command that changes
-something is printed; a repo that fails is listed and the exit code is 1. Children that are
-not cloned get no folder: the umbrella's sparse checkout leaves them out.
+something is printed; a repo that fails is listed and the exit code is 1. A child you cannot read
+(not found, or no credentials) is skipped and listed, not failed, unless you typed its path.
+Children that are not cloned get no folder: the umbrella's sparse checkout leaves them out.
 
 Commands:
     clone [profile | path...]   Clone the umbrella and the given children (profiles: .gitprofiles;
-                                none: profile "default", else every child)
+                                none: profile "default", every child you can read)
     add <profile | path>...     Clone more children, each on its branch
     sparse <path> <glob>...     Clone a child with only the matching files
     switch                      Put every child on its branch from .gitmodules

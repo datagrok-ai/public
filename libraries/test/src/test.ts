@@ -507,7 +507,9 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
     await initAutoTests(package_);
   const results:TestResultExtended[] = [];
   let lastGc = Date.now();
-  const reports = new ReportQueue();
+  // A load test keeps its results in the run's own report: sending each one to the server under load is a
+  // quarter of the requests that server gets.
+  const reports = new ReportQueue(!options?.stressTest);
   console.log(`Running tests...`);
   console.log(options);
   options ??= {};
@@ -830,7 +832,11 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
 class ReportQueue {
   sent: Promise<void> = Promise.resolve();
 
+  constructor(private enabled: boolean = true) {}
+
   add(type: string, params: object): void {
+    if (!this.enabled)
+      return;
     this.sent = this.sent.then(() => grok.shell.reportTest(type, params))
       .catch((e: any) => stdWarn(`A test result was not reported: ${e?.message ?? e}`));
   }

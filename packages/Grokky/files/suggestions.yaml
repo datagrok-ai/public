@@ -8,7 +8,7 @@
 #          column       -> applies when the current table has a column with match.semType
 #
 # Slots: {name.filter} picks a live column where `filter` is truthy — isNumerical,
-#   isCategorical, semType, isDateTime — and biases the pick with `prefer` regexes.
+#   isCategorical, semType (the block's match.semType), isDateTime — and biases the pick with `prefer` regexes.
 #   Extra path segments read column props, e.g. {x.stats.med}. A suggestion whose slot
 #   finds no matching column is dropped (and its block hides if all its suggestions drop),
 #   so type-specific blocks appear only when the data supports them.
@@ -77,18 +77,12 @@
       prompt: Calculate physicochemical and Lipinski descriptors for {mol.semType} and add them as columns
     - label: Cluster by similarity
       prompt: Cluster {mol.semType} by structural similarity and show a representative of each cluster
-    - label: Find a substructure
-      immediateResponse: What substructure should I look for? Give me a SMILES/SMARTS pattern or a name like "pyridine".
-      prompt: Find and highlight the molecules in {mol.semType} that contain the substructure the user specifies.
     - label: Flag structural alerts
       prompt: Screen {mol.semType} for PAINS and structural toxicity alerts and flag the hits
     - label: R-group analysis
       prompt: Run R-group analysis on {mol.semType} around the common scaffold and summarize the R-groups
     - label: Most diverse subset
       prompt: Select the 24 most structurally diverse molecules from {mol.semType}
-    - label: Similarity to a reference
-      immediateResponse: Which reference molecule should I compare against? Give me a SMILES or a compound name.
-      prompt: Rank {mol.semType} by structural similarity to the reference the user specifies and highlight the closest matches.
     - label: Standardize & deduplicate
       prompt: Detect duplicates, salts and tautomers in {mol.semType}, then standardize the structures
     - label: Murcko scaffolds
@@ -112,9 +106,6 @@
       prompt: Show the monomer composition and a WebLogo for {seq.semType}
     - label: Cluster sequences
       prompt: Cluster {seq.semType} by similarity and show the clusters
-    - label: Find a motif
-      immediateResponse: What motif should I look for in the sequences?
-      prompt: Find and highlight the sequences in {seq.semType} that contain the motif the user specifies.
     - label: Detect modified monomers
       prompt: Detect non-natural or modified monomers and gaps in {seq.semType}
 
@@ -200,8 +191,7 @@
   color: var(--steel-5)
   suggestions:
     - label: Choropleth map
-      immediateResponse: Which numeric column should color the map (e.g. a count, average or total per {country.semType})?
-      prompt: Build a choropleth map aggregated per {country.semType}, colored by the numeric column the user specifies.
+      prompt: Build a choropleth map aggregated per {country.semType}, colored by {v.isNumerical}
     - label: Aggregate by country
       prompt: Group the rows by {country.semType} and summarize the numeric columns
 
@@ -325,9 +315,6 @@
       prompt: Color rows by {risk.isNumerical} (red high, green low, split at {risk.stats.med})
       prefer:
         risk: 'name~="risk|herg|tox|alert|liability"'
-    - label: Add a calculated column
-      immediateResponse: 'What formula should the new column use? You can reference existing columns, e.g. ${Weight} / (${Height} * ${Height}).'
-      prompt: Add a calculated column using the formula the user provides. If they reference a column that doesn't exist, tell them which columns are available.
 
 # ---------------------------------------------------------------------- panel :: global
 - context: panel
@@ -351,6 +338,3 @@
       requires: [Chem]
     - label: 'Python: render Gasteiger partial charges'
       prompt: 'Python: write a script that accepts a molecule and renders Gasteiger partial charges as a result'
-    - label: 'JS: build a custom viewer'
-      immediateResponse: What kind of viewer do you want (e.g. scatter, line, bar, or a custom HTML/canvas render), and which columns should it use? If you've selected columns in the grid, I'll use those.
-      prompt: 'JS: Write and run a script that builds the custom viewer the user describes. Use the currently selected columns if any are selected; otherwise use the columns the user names.'

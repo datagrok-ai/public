@@ -11,9 +11,6 @@ export interface Suggestion {
   label?: string;
   /** The prompt sent to the assistant. Omitted for `action` suggestions handled client-side. */
   prompt?: string;
-  /** When set, clicking posts this text straight into the chat as the assistant's reply (no AI call)
-   * — used to ask for a missing detail. The user's answer then runs `prompt` as the task context. */
-  immediateResponse?: string;
   /** A client-side action key (see [SUGGESTION_ACTIONS]) — runs immediately instead of prompting the AI. */
   action?: string;
   prefer?: Record<string, string>;
@@ -38,26 +35,52 @@ const SLOT = /\{(\w+)\.(\w+)}/g;
 let _cache: Block[] | null = null;
 const MAX_GROUPING_CATEGORIES = 50;
 
-// Slot filters beyond the native truthy Column getters (isNumerical / isCategorical / semType).
-// A suggestion whose slot finds no matching column is dropped, so these keep type-specific
-// suggestions (e.g. time series) from surfacing on tables that lack such a column.
-const SYNTHETIC_FILTERS: Record<string, (c: DG.Column) => boolean> = {
-  isDateTime: (c) => c.type === DG.COLUMN_TYPE.DATE_TIME,
-};
-
-function columnMatches(c: DG.Column, filter: string): boolean {
-  const synthetic = SYNTHETIC_FILTERS[filter];
-  return synthetic ? synthetic(c) : !!c[filter as keyof DG.Column];
+enum SlotFilter {
+  Numerical = 'isNumerical',
+  Categorical = 'isCategorical',
+  DateTime = 'isDateTime',
+  SemType = 'semType',
 }
 
-const _pkgAvailable = new Map<string, boolean>();
+type SlotColumns = (filter: SlotFilter, semType?: string) => DG.Column[];
+
+const SLOT_COLUMNS: Record<SlotFilter, (cols: DG.ColumnList, semType?: string) => Iterable<DG.Column>> = {
+  [SlotFilter.Numerical]: (cols) => cols.numericalNoDateTime,
+  [SlotFilter.Categorical]: (cols) => cols.categorical,
+  [SlotFilter.DateTime]: (cols) => cols.dateTime,
+  [SlotFilter.SemType]: (cols, semType) => semType ? cols.bySemTypeAll(semType) : [],
+};
+
+const isSlotFilter = (filter: string): filter is SlotFilter => filter in SLOT_COLUMNS;
+
+function isGrouping(c: DG.Column): boolean {
+  const n = c.categories.length;
+  return n > 1 && n <= MAX_GROUPING_CATEGORIES;
+}
+
+function slotColumns(df: DG.DataFrame): SlotColumns {
+  const lists = new Map<string, DG.Column[]>();
+  return (filter, semType) => {
+    const key = filter === SlotFilter.SemType ? `${filter}:${semType}` : filter;
+    let list = lists.get(key);
+    if (!list) {
+      const first: DG.Column[] = [];
+      const rest: DG.Column[] = [];
+      for (const c of SLOT_COLUMNS[filter](df.columns, semType))
+        (filter === SlotFilter.Categorical && !isGrouping(c) ? rest : first).push(c);
+      lists.set(key, list = first.concat(rest));
+    }
+    return list;
+  };
+}
+
+const _pkgAvailable = new Set<string>();
 
 function requiresMet(req?: string[]): boolean {
   return !req || req.every((p) => {
-    let ok = _pkgAvailable.get(p);
-    if (ok === undefined)
-      _pkgAvailable.set(p, ok = DG.Func.find({package: p}).length > 0);
-    return ok;
+    if (!_pkgAvailable.has(p) && DG.Func.find({package: p}).length > 0)
+      _pkgAvailable.add(p);
+    return _pkgAvailable.has(p);
   });
 }
 
@@ -67,50 +90,43 @@ async function load(): Promise<Block[]> {
   return _cache;
 }
 
-function firstGroupingColumn(cols: DG.Column[]): DG.Column {
-  return cols.find((c) => c.categories.length > 1 && c.categories.length <= MAX_GROUPING_CATEGORIES) ?? cols[0];
-}
-
-function resolveSuggestion(s: Suggestion, df: DG.DataFrame | null): Suggestion | null {
+function resolveSuggestion(s: Suggestion, columns: SlotColumns | null, semType?: string): Suggestion | null {
   const pickedCols: Record<string, DG.Column> = {};
-  const taken = new Set<string>();
-  let cols: DG.Column[] | null = null;
+  const taken = new Set<DG.Column>();
 
-  const slotSource = `${s.label ?? ''}\n${s.prompt ?? ''}\n${s.immediateResponse ?? ''}`;
+  const slotSource = `${s.label ?? ''}\n${s.prompt ?? ''}`;
   for (const [, name, filter] of slotSource.matchAll(SLOT)) {
     if (name in pickedCols) continue;
-    if (!df) return null;
-    if (!cols) cols = df.columns.toList();
-    const candidates = cols.filter((c) => !taken.has(c.name) && columnMatches(c, filter));
+    if (!columns || !isSlotFilter(filter)) return null;
+    const candidates = columns(filter, semType).filter((c) => !taken.has(c));
     if (!candidates.length) return null;
 
     const prefer = s.prefer?.[name];
     const re = prefer ? new RegExp(prefer.match(/name~="([^"]+)"/)?.[1] ?? prefer, 'i') : null;
-    const pick = (re && candidates.find((c) => re.test(c.name))) ||
-      (filter === 'isCategorical' ? firstGroupingColumn(candidates) : candidates[0]);
+    const pick = (re && candidates.find((c) => re.test(c.name))) || candidates[0];
     pickedCols[name] = pick;
-    taken.add(pick.name);
+    taken.add(pick);
   }
 
   const fill = (t: string): string => t
     .replace(/\{(\w+)((?:\.\w+)+)}/g, (_, n, path) => {
       if (!path.includes('.', 1))
         return pickedCols[n]?.name ?? '';
-      let val: any = pickedCols[n];
+      let val: unknown = pickedCols[n];
       for (const key of path.slice(1).split('.'))
-        val = val?.[key];
-      return val ?? '';
+        val = (val as Record<string, unknown> | undefined)?.[key];
+      return `${val ?? ''}`;
     });
   return {
     label: s.label ? fill(s.label) : undefined,
     prompt: s.prompt ? fill(s.prompt) : undefined,
-    immediateResponse: s.immediateResponse ? fill(s.immediateResponse) : undefined,
     action: s.action,
   };
 }
 
 export async function resolveScopes(context: Context, view: DG.ViewBase | null = null): Promise<Block[]> {
   const df = view instanceof DG.TableView ? view.dataFrame ?? null : null;
+  const columns = df ? slotColumns(df) : null;
   const out: Block[] = [];
   for (const b of await load()) {
     if (b.context !== context) continue;
@@ -120,7 +136,7 @@ export async function resolveScopes(context: Context, view: DG.ViewBase | null =
     if (!applies || !requiresMet(b.requires)) continue;
 
     const suggestions = b.suggestions
-      .map((s) => requiresMet(s.requires) ? resolveSuggestion(s, df) : null)
+      .map((s) => requiresMet(s.requires) ? resolveSuggestion(s, columns, b.match?.semType) : null)
       .filter((s): s is Suggestion => !!s);
     if (suggestions.length)
       out.push({...b, suggestions});

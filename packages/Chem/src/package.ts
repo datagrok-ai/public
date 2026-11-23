@@ -53,8 +53,8 @@ import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
 import {Fingerprint, hasNewLines} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {getMolSafe, _isSmarts, getQueryMolSafe, readsAsQuery, isSmilesSyntax,
-  withoutCxExtension} from './utils/mol-creation_rdkit';
-import {canonicalWith, _rdKitModule, validationMessageByRdKit} from './utils/chem-common-rdkit';
+  withoutCxExtension, validationMessage, ValidationOptions} from './utils/mol-creation_rdkit';
+import {canonicalWith, _rdKitModule} from './utils/chem-common-rdkit';
 import {_convertMolNotation, convertNotationForColumn, molToMolblock, asSmiles} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {getSdfString, saveAsSdfDialog} from './utils/sdf-utils';
@@ -119,6 +119,7 @@ import {createMixtureTreeWidget, createMixtureWidget, mixtureSmiles} from './uti
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from '@datagrok-libraries/utils/src/view-utils';
 import {getMpoScoreColumnName, isDesirabilityProfile, mpo, PropertyDesirability, WEIGHTED_AGGREGATIONS_LIST, WeightedAggregation} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {DESIRABILITY_PROFILE_TYPE} from '@datagrok-libraries/statistics/src/mpo/mpo-types';
 //@ts-ignore
 import '../css/chem.css';
 import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
@@ -132,17 +133,21 @@ import {applyDesirabilityTags, collectMpoResultColumns, computeMpo, findSuitable
 import {removeWaterAndSalts, runTransformationReaction} from './utils/reactions/reactions';
 import {transformationReactionsUI, transformationReactionsView, twoComponentReactionsView, twoComponentReactionUI} from './utils/reactions/ui';
 import {byEngineAsync, byEngineModule, cruxReady, onEngineSwitch, requestedEngine} from './engine/chem-engine';
-import {noteCruxError} from './engine/crux-module';
+import {cruxRenewals, noteCruxError} from './engine/crux-module';
 import {getCruxService} from './crux/crux-searches';
 import {clusterMcsByEngine, molzip as molzipOnCrux, MolzipParams} from './engine/analysis-jobs';
 import {getMacromoleculeAssembler as cruxMacromoleculeAssembler} from './engine/biopolymer';
 import type {IMacromoleculeAssembler} from '@datagrok-libraries/chem-meta/src/macromolecule-assembler';
-import {atomsColumnByEngine, beautifyMolsByEngine, coordGenCoordsByEngine, flattenMoleculesByEngine}
-  from './engine/molecule-jobs';
+import {atomsColumnByEngine, beautifyMolsByEngine, coordGenCoordsByEngine, flattenMoleculesByEngine,
+  validationTextsByEngine} from './engine/molecule-jobs';
 import * as pythonFree from './python-free';
 
 export {getMCS};
 export * from './package.g';
+
+/** `validateMolecule` on Crux's main-thread module: a read Crux throws for, or a renewal of the module while it reads
+ * (its log lost), is RDKit's (utils/mol-creation_rdkit.ts `validationMessage`). */
+const CRUX_VALIDATION: ValidationOptions = {rethrow: true, renewals: cruxRenewals};
 
 /** Temporary polyfill */
 
@@ -181,6 +186,10 @@ const SKETCHER_FUNCS_FRIENDLY_NAMES: { [key: string]: string } = {
   ChemDraw: 'ChemDraw',
   Crux: 'Crux',
 };
+
+/** The sketcher of a user who never picked one (no `sketcher/selected` user setting) and whose groups set no
+ * Sketcher setting: the Sketcher setting's default (package.json); also the fallback for a pick whose package is gone. */
+const DEFAULT_CHEM_SKETCHER = 'Crux';
 
 const PREVIOUS_SKETCHER_NAMES: { [key: string]: string } = {
   'Open Chem Sketcher': 'OpenChemLib',
@@ -246,12 +255,14 @@ async function initChemInt(): Promise<void> {
   if (sketcherFunc)
     DG.chem.currentSketcherType = sketcherFunc.friendlyName;
   else {
+    // Chem's own default (the Sketcher setting's), Crux, which Chem always registers: the API's DG.DEFAULT_SKETCHER is
+    // Crux too since datagrok-api 1.27.13's next release, and an older API's (OpenChemLib) is not taken
     if (!!storedSketcherType) {
       grok.shell.warning(
-        `Package with ${storedSketcherType} function is not installed.Switching to ${DG.DEFAULT_SKETCHER}.`);
+        `Package with ${storedSketcherType} function is not installed. Switching to ${DEFAULT_CHEM_SKETCHER}.`);
     }
 
-    DG.chem.currentSketcherType = DG.DEFAULT_SKETCHER;
+    DG.chem.currentSketcherType = DEFAULT_CHEM_SKETCHER;
   }
   // here, not in init: other packages call Chem:init too (HitTriage), and each call would add another handler
   DG.ObjectHandler.register(new MpoProfileHandler());
@@ -998,10 +1009,11 @@ export class PackageFunctions {
   /**
    * Bio's macromolecule assembler (chem-meta's IMacromoleculeAssembler): sequences parsed by Datagrok assembled from a
    * monomer library's templates into V3000 MOL blocks, with monomer maps per row, by Crux in both chemical engines
-   * (engine/biopolymer.ts). Usage:
+   * (engine/biopolymer.ts); and molecules back to HELM with the same library (Bio's Molecules to HELM). Usage:
    * const assembler = await grok.functions.call('Chem:getMacromoleculeAssembler');
    * await assembler.setLibrary(key, json);
    * const {molblocks, layouts, errors} = await assembler.assemble(batch, key, {layout: 'linear'});
+   * const {helms, errors: helmErrors} = await assembler.toHelm(molecules, key);
    */
   @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
   static async getMacromoleculeAssembler(): Promise<IMacromoleculeAssembler> {
@@ -1126,11 +1138,12 @@ export class PackageFunctions {
     if (plotEmbeddings) {
       checkCurrentView(table);
       tv = grok.shell.tv;
-      res = tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space'});
+      res = tv.scatterPlot({x: embedColsNames[0], y: embedColsNames[1], title: 'Chemical space',
+        markerType: DG.MARKER_TYPE.CIRCLE});
       const description = `Molecules column: ${molecules.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}`;
       res.setOptions({description: description, descriptionVisibilityMode: 'Never'});
       //temporary fix (to save backward compatibility) since labels option type has been changed from string to array in 1.23 platform version
-      if (Object.keys(res.props).includes('labelColumnNames')) { //@ts-ignore
+      if (table.rowCount < 20000 && Object.keys(res.props).includes('labelColumnNames')) { //@ts-ignore
         if (res.props['labelColumnNames'].constructor.name == 'Array')
           res.setOptions({labelColumnNames: [molecules.name]});
       }
@@ -3149,19 +3162,31 @@ export class PackageFunctions {
     return oclMol(molecule).getMolecularFormula().formula;
   }
 
-  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  @grok.decorators.func({
+    description: 'Checks a molecule (SMILES, SMARTS or molfile): the error messages of the chemical engine on reading it, each line starting with its time, or an empty string when it reads without an error',
+    outputs: [{type: 'object', name: 'result'}],
+  })
   static validateMolecule(s: string): string | null {
-    // "Chemical Engine" (engine/README.md): in Crux mode a molecule Crux reads as it stands (getMolSafe's first read) is
-    // valid; the message for the rest is RDKit's log (Crux keeps none). Not a fallback: an invalid molecule is no Crux
-    // failure, so only a throw on Crux's side is logged as one.
-    const validOnCrux = byEngineModule<boolean>('validateMolecule', _rdKitModule, (module, crux) => {
-      if (!crux)
-        return false;
-      const ctx = getMolSafe(s, {}, module, true, noteCruxError);
-      ctx.mol?.delete();
-      return ctx.mol !== null && ctx.kekulize && !ctx.isQMol;
-    });
-    return validOnCrux ? '' : validationMessageByRdKit(_rdKitModule, s);
+    // "Chemical Engine" (engine/README.md): the engine's own log, by the one function the workers' validateMolecules
+    // calls too (utils/mol-creation_rdkit.ts `validationMessage`): in Crux mode Crux's (RDKit 2026.03's lines), touching
+    // no RDKit, a CXSMILES with query features too; RDKit's when Crux throws (a Crux file without the log, a read it
+    // refused), logged as a fallback
+    return byEngineModule<string>('validateMolecule', _rdKitModule,
+      (module, crux) => validationMessage(s, module, crux ? CRUX_VALIDATION : {}), 'Crux gave no log, RDKit was asked');
+  }
+
+  @grok.decorators.func({
+    description: 'Checks every molecule of a column (SMILES, SMARTS or molfiles) in background workers: one cell per row with the error messages of the chemical engine on reading that molecule (those of validateMolecule without their times), empty for a molecule that reads without an error. As a formula in Add New Column it is called once for the whole column',
+    meta: {vectorFunc: 'true'},
+    outputs: [{name: 'result', type: 'column'}],
+  })
+  static async validateMolecules(
+    @grok.decorators.param({type: 'column<string>', options: {semType: 'Molecule'}}) molecules: DG.Column):
+    Promise<DG.Column> {
+    // engine/molecule-jobs.ts `validationTextsByEngine`: the Crux workers in Crux mode, the RDKit pool in RDKit mode
+    // (toList leaves holes for empty cells, which map skips: Array.from visits them)
+    const texts = await validationTextsByEngine(Array.from(molecules.toList(), (m) => m ?? ''));
+    return DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'validation', texts);
   }
 
   //#region Chemprop
@@ -3205,7 +3230,7 @@ export class PackageFunctions {
     return new Uint8Array(await response.arrayBuffer());
   }
 
-  static async applyModelChemprop(modelBlob: Uint8Array, table: string): Promise<DG.Column> {
+  static async applyModelChemprop(modelBlob: Uint8Array, table: string, rowCount: number): Promise<DG.Column> {
     let chempropContainer = await PackageFunctions.getContainer();
 
     const body = {
@@ -3228,13 +3253,14 @@ export class PackageFunctions {
     }
 
     const data = await response.json();
-    return DG.Column.fromStrings('outcome', data['outcome'].map((v: any) => v?.toString()));
+    return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'outcome',
+      Array.from({length: rowCount}, (_, i) => data['outcome'][i] ?? DG.FLOAT_NULL));
   }
 
   @grok.decorators.func({
     name: 'Train Chemprop',
     description: 'Trains a Chemprop message-passing neural network model on molecular structures.',
-    meta: {mlname: 'Chemprop', mlrole: 'train'},
+    meta: {mlname: 'Chemprop', mlrole: 'train', mlsemtypes: 'Molecule'},
     outputs: [{name: 'model', type: 'dynamic'}],
   })
   static async trainChemprop(
@@ -3285,7 +3311,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {category: 'Training', initialValue: '0.0001', description: 'Final learning rate'}})
     final_lr: number,
     @grok.decorators.param({options: {category: 'Training', initialValue: 'false', description: 'Turn off scaling of features'}})
-    no_descriptor_scaling: boolean): Promise<Uint8Array | undefined> {
+    no_descriptor_scaling: boolean): Promise<Uint8Array> {
     const parameterValues = {
       'dataset_type': dataset_type,
       'metric': metric,
@@ -3313,16 +3339,9 @@ export class PackageFunctions {
     };
     predictColumn.name = df.columns.getUnusedName(predictColumn.name);
     df.columns.add(predictColumn);
-    try {
-      const modelBlob = await PackageFunctions.trainModelChemprop(df.toCsv(), predictColumn.name, parameterValues);
-      const zip = new JSZip();
-      const archive = await zip.loadAsync(modelBlob);
-      const file = archive.file('blob.bin');
-      const binBlob = await file?.async('uint8array')!;
-      return binBlob;
-    } catch (error: any) {
-      grok.shell.error(error);
-    }
+    const modelBlob = await PackageFunctions.trainModelChemprop(df.toCsv(), predictColumn.name, parameterValues);
+    const archive = await new JSZip().loadAsync(modelBlob);
+    return await archive.file('blob.bin')!.async('uint8array');
   }
 
   @grok.decorators.func({
@@ -3333,12 +3352,8 @@ export class PackageFunctions {
   })
   static async applyChemprop(df: DG.DataFrame,
     @grok.decorators.param({type: 'dynamic'}) model: Uint8Array) {
-    try {
-      const column = await PackageFunctions.applyModelChemprop(model, df.toCsv());
-      return DG.DataFrame.fromColumns([column]);
-    } catch (error: any) {
-      grok.shell.error(error);
-    }
+    const column = await PackageFunctions.applyModelChemprop(model, df.toCsv(), df.rowCount);
+    return DG.DataFrame.fromColumns([column]);
   }
 
   @grok.decorators.func({
@@ -3566,7 +3581,14 @@ export class PackageFunctions {
     outputs: [{name: 'result', type: 'bool'}],
   })
   static checkJsonMpoProfile(content: string) {
-    return isDesirabilityProfile(JSON.parse(content));
+    // every JSON file previewed or opened comes through here: no parse unless the profile type is there
+    if (!content.includes(DESIRABILITY_PROFILE_TYPE))
+      return false;
+    try {
+      return isDesirabilityProfile(JSON.parse(content));
+    } catch (_) {
+      return false;
+    }
   }
 
   //#endregion
@@ -3652,7 +3674,7 @@ export class PackageFunctions {
   @grok.decorators.app({
     'name': 'Reaction Enumerator',
     'description': 'Forward-reaction library enumeration over building blocks and SMARTS templates.',
-    'meta': {browsePath: 'Chem | Reactions'},
+    'meta': {browsePath: 'Chem | Reactions', icon: 'images/reaction-enumerator.png'},
   })
   static async reactionEnumeratorApp(): Promise<DG.ViewBase> {
     const {buildEnumeratorView} = await import('./utils/reaction-enumeration/enumerator-app');
@@ -3664,11 +3686,27 @@ export class PackageFunctions {
   @grok.decorators.app({
     'name': 'Reaction Sketcher',
     'description': 'Draws, edits and exports reactions and multi-step routes',
-    'meta': {browsePath: 'Chem | Reactions'},
+    'meta': {browsePath: 'Chem | Reactions', icon: 'images/reaction-sketcher.png'},
   })
   static async reactionsApp(): Promise<DG.ViewBase> {
     const {reactionsAppView} = await import('./utils/reactions/reactions-app');
     return reactionsAppView();
+  }
+
+  // Apps | Chem | Sketcher (utils/sketcher-app/sketcher-app.ts): the Crux sketcher filling its view, the context panel
+  // showing the drawing; `/apps/Chem/Sketcher?smiles=...` opens it on a molecule (core's routing hands an app its URL's
+  // parameters by name), and every change of the drawing writes the link back through the view's path
+  @grok.decorators.app({
+    'name': 'Sketcher',
+    'description': 'Draws a molecule or a query in the Crux sketcher; the page address is a link to the drawing',
+    'meta': {browsePath: 'Chem', icon: 'images/sketcher.png'},
+  })
+  static async sketcherApp(
+    @grok.decorators.param({options: {optional: true, description: 'The molecule to open (SMILES, CXSMILES or ' +
+      'SMARTS, the parameter of the app\'s link), or none for the example'}}) smiles?: string,
+  ): Promise<DG.ViewBase> {
+    const {sketcherAppView} = await import('./utils/sketcher-app/sketcher-app');
+    return sketcherAppView(smiles);
   }
 
   @grok.decorators.func()
@@ -3795,7 +3833,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Transformation Reactions', meta: {browsePath: 'Chem | Reactions', role: 'app'},
+    name: 'Transformation Reactions',
+    meta: {browsePath: 'Chem | Reactions', role: 'app', icon: 'images/transformation-reactions.png'},
     tags: ['app'],
     result: {name: 'result', type: 'view'},
   })
@@ -3804,7 +3843,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Two-Component Reactions', meta: {browsePath: 'Chem | Reactions', role: 'app'},
+    name: 'Two-Component Reactions',
+    meta: {browsePath: 'Chem | Reactions', role: 'app', icon: 'images/two-component-reactions.png'},
     tags: ['app'],
     result: {name: 'result', type: 'view'},
   })

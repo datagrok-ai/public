@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {drawReactionByRdKit} from './reaction-drawing';
+import {drawReactionPreview} from './reaction-drawing';
 import {NamedReaction, ReactionMode} from './types';
 import {getReactionCategories} from './consts';
 import {validateReactionSmarts, saveUserReaction, generateReactionId, loadAllReactions} from './reaction-storage';
@@ -125,7 +125,7 @@ export async function openReactionEditor(
     validationState = validateReactionSmarts(rdkit, smarts) as typeof validationState;
     if (validationState.valid) {
       try {
-        drawReactionByRdKit(previewCanvas, smarts, previewCanvas.width, previewCanvas.height);
+        drawReactionPreview(previewCanvas, smarts);
       } catch {/* failed to render preview */}
       // auto-detect mode (only when not locked)
       if (!defaultMode) {

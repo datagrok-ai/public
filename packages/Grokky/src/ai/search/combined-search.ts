@@ -9,7 +9,6 @@ import {UsageLimiter} from '../usage-limiter';
 import {AIPanel} from '../panel';
 import {runPromptWithLifecycle, RENDERED_EVENT} from '../ui';
 import {AiFeature} from '../../claude/ai-feature';
-import {contentLoggingNotice} from '../../claude/turn-log';
 
 interface AISearchFuncInfo {
   func: DG.Func;
@@ -107,14 +106,13 @@ export class CombinedAISearchAssistant {
     tabcontrol.root.style.minHeight = '300px';
     // d4 TabControl auto-hides the header stripe when only one pane is added; force it visible so tabs always show
     tabcontrol.header.style.display = 'flex';
-    const notice = contentLoggingNotice();
-    return DG.Widget.fromRoot(notice ? ui.divV([tabcontrol.root, notice]) : tabcontrol.root);
+    return DG.Widget.fromRoot(tabcontrol.root);
   }
 
   private buildFunctionTabContent(funcInfo: AISearchFuncInfo, prompt: string): HTMLElement {
     const host = ui.divV([], 'grokky-ai-search-tab-host');
     const chat = new AIPanel(`search-${funcInfo.func.name}`, grok.shell.v, {inline: true, feature: SEARCH_FEATURES[funcInfo.func.name]});
-    chat.onRunRequest.subscribe((a) => runPromptWithLifecycle(chat, a.currentPrompt.prompt, grok.shell.v, 'search'));
+    chat.onRunRequest.subscribe((a) => runPromptWithLifecycle(chat, a.currentPrompt.prompt, grok.shell.v, 'search', undefined, a.currentPrompt.isAnswer));
 
     host.appendChild(ui.wait(async () => {
       const client = ClaudeRuntimeClient.getInstance();

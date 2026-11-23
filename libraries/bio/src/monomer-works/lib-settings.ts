@@ -101,6 +101,11 @@ export async function setUserLibSettings(value: UserLibSettings): Promise<void> 
     await setDuplicatePrefsFull(duplicatePrefsShortHand);
     //await grok.userSettings.add(LIB_STORAGE_NAME, DUPLICATE_MONOMER_PREFERENCES_KEY, JSON.stringify(duplicatePrefsShortHand), true);
     await grok.userSettings.add(LIB_STORAGE_NAME, LIB_SETTINGS_KEY, JSON.stringify(value), true);
+    // User settings reach the server on a periodic sync (every 10 s). A session closed sooner, e.g. a test run right
+    // after its clean-up put the user's libraries back, lost them: the server kept the test libraries. Send them now
+    // (flush() is in platforms since 2026-09-28; an older one keeps the periodic sync).
+    if (typeof grok.userSettings.flush === 'function')
+      await grok.userSettings.flush();
   });
   await userLibSettingsPromise;
 }

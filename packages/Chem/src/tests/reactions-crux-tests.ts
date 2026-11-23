@@ -1,5 +1,6 @@
 /**
- * Category `Reactions: Crux`: reaction cells and the Reaction panel
+ * Category `Reactions: Crux`: reaction cells, the Reaction panel and the reaction previews (the reaction dialogs', full
+ * screen included, the reaction browser's cards, the reaction editor's: utils/reactions/reaction-drawing.ts)
  * drawn by Crux in Crux mode, and by RDKit as before in RDKit mode (rendering/crux-reaction-drawing.ts). The rows are
  * 41 of a reaction corpus (files/tests/reactions-crux.csv, the corpus's ids kept: single steps of every
  * category RDKit reads, routes of every kind) and Chem's own test-reactions.csv. The renderer drawing them is this
@@ -31,8 +32,15 @@ import {UNSPECIFIED_STEREO_IS_UNKNOWN, renderingOptions, renderingValue, setRend
   from '../rendering/rendering-settings';
 import {PackageFunctions} from '../package';
 import {_package} from '../package-test';
-import {inEngine} from './engine-utils';
+import {expectFallback, expectNoFallback, inEngine} from './engine-utils';
 import {loadFileAsText} from './utils';
+import {PREVIEW_CALL, drawReactionPreview, setCruxUnreadablePreviewsForTests}
+  from '../utils/reactions/reaction-drawing';
+import {ReactionBrowser} from '../utils/reactions/reaction-browser';
+import {openReactionEditor} from '../utils/reactions/reaction-editor';
+import {transformationReactionsUI, twoComponentReactionUI} from '../utils/reactions/ui';
+import {NamedReaction} from '../utils/reactions/types';
+import {setDefaultReactionsForTests} from '../utils/reactions/reaction-storage';
 
 /** The cell the grid gives a reaction column by default (CSS px). */
 const [CELL_W, CELL_H] = [600, 150];
@@ -97,6 +105,68 @@ async function sentOptions(run: () => Promise<void>): Promise<any[]> {
     scheme.draw_to_canvas = draw;
   }
   return sent;
+}
+
+/** A reaction drawing by Crux: the canvas it drew on and the options it was sent. */
+interface CruxDraw {
+  canvas: HTMLCanvasElement;
+  options: any;
+}
+
+/** What drew reactions while `run()` ran: Crux's drawings (none when Chem's Crux file is not loaded), and how many
+ * times RDKit's reaction objects were asked to draw (a picture RDKit's renderer kept is copied, not counted); with
+ * `run()`'s result. */
+async function reactionDraws<T>(run: () => Promise<T>): Promise<{result: T, crux: CruxDraw[], rdkit: number}> {
+  const crux: CruxDraw[] = [];
+  const scheme: any = (cruxModuleSync() as unknown as ChemWasm | null)?.ChemReactionScheme.prototype ?? null;
+  const cruxDraw = scheme?.draw_to_canvas;
+  if (scheme) {
+    scheme.draw_to_canvas = function(this: any, canvas: HTMLCanvasElement, options: string) {
+      crux.push({canvas, options: JSON.parse(options)});
+      return cruxDraw.call(this, canvas, options);
+    };
+  }
+  const rxn = getRdKitModule().get_rxn('C>>C');
+  const rdkitProto: any = Object.getPrototypeOf(rxn);
+  rxn.delete();
+  const rdkitCalls = ['draw_to_canvas', 'draw_to_canvas_with_highlights', 'get_svg', 'get_svg_with_highlights']
+    .filter((name) => typeof rdkitProto[name] === 'function');
+  const kept = rdkitCalls.map((name) => rdkitProto[name]);
+  let rdkit = 0;
+  rdkitCalls.forEach((name, i) => rdkitProto[name] = function(this: any, ...args: any[]) {
+    rdkit++;
+    return kept[i].apply(this, args);
+  });
+  try {
+    const result = await run();
+    return {result, crux, rdkit};
+  } finally {
+    if (scheme)
+      scheme.draw_to_canvas = cruxDraw;
+    rdkitCalls.forEach((name, i) => rdkitProto[name] = kept[i]);
+  }
+}
+
+/** The open dialog titled `title`, waited for at most `ms`. */
+async function dialogTitled(title: string, ms: number = 10000): Promise<DG.Dialog> {
+  await awaitCheck(() => DG.Dialog.getOpenDialogs().some((d) => d.title === title), `no "${title}" dialog`, ms);
+  return DG.Dialog.getOpenDialogs().find((d) => d.title === title)!;
+}
+
+/** Clicks the reaction browser's card of the reaction `name` in `root` (its name label; the click reaches the card),
+ * once the card is there (waited for at most `ms`). */
+async function clickCard(root: HTMLElement, name: string, ms: number = 15000): Promise<void> {
+  const label = () => [...root.querySelectorAll('label.ui-label')].find((l) => l.textContent === name) as
+    HTMLElement | undefined;
+  await awaitCheck(() => !!label(), `no "${name}" card`, ms);
+  label()!.click();
+}
+
+/** The canvas the dialog's previews are drawn on: a click on it opens the reaction full screen. */
+function previewCanvasOf(dialog: DG.Dialog): HTMLCanvasElement {
+  const canvas = [...dialog.root.querySelectorAll('canvas')].find((c) => c.style.cursor === 'pointer');
+  expect(!!canvas, true, `the preview canvas of "${dialog.title}"`);
+  return canvas!;
 }
 
 category('Reactions: Crux', () => {
@@ -1100,4 +1170,166 @@ category('Reactions: Crux', () => {
       }
     });
   });
+
+  // the reaction previews were RDKit's in both modes, from when Crux drew no reactions; they follow the engine in
+  // effect now, as the cells do: Crux in Crux mode (RDKit behind it for a template Crux reads none from), RDKit in
+  // RDKit mode
+
+  /** A table of acids and amines (Molecule columns) the reaction dialogs open on. */
+  const reactantsTable = (): DG.DataFrame => {
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('acids', ['OC(=O)c1ccccc1', 'CC(=O)O', 'OC(=O)CNC(=O)OCC1c2ccccc2-c2ccccc21']),
+      DG.Column.fromStrings('amines', ['Nc1ccccc1', 'NCc1ccccc1', 'CCN'])]);
+    for (const col of df.columns.toList()) {
+      col.semType = DG.SEMTYPE.MOLECULE;
+      col.meta.units = DG.UNITS.Molecule.SMILES;
+    }
+    return df;
+  };
+
+  /** `run(library)` with the reaction library (files/reactions/default-reactions.json) as the dialogs' and the
+   * browser's built-in reactions: this bundle's package object reads no package file (reaction-storage.ts). */
+  async function withLibrary<T>(run: (library: NamedReaction[]) => Promise<T>): Promise<T> {
+    const library = JSON.parse(await loadFileAsText('reactions/default-reactions.json')) as NamedReaction[];
+    setDefaultReactionsForTests(library);
+    try {
+      return await run(library);
+    } finally {
+      setDefaultReactionsForTests(null);
+    }
+  }
+
+  test('the reaction browser\'s cards are drawn by Crux in Crux mode, RDKit drawing none; by RDKit in RDKit mode',
+    async () => withLibrary(async (library) => {
+      // every card of the library (and the user's own reactions), each template with its variables' defaults
+      const cards = async (): Promise<HTMLCanvasElement[]> => {
+        const browser = new ReactionBrowser(getRdKitModule(), {allowAdd: false, allowEdit: false});
+        await awaitCheck(() => browser.root.querySelectorAll('canvas').length >= library.length,
+          `fewer cards than the library's ${library.length} reactions`, 15000);
+        return [...browser.root.querySelectorAll('canvas')] as HTMLCanvasElement[];
+      };
+      await inCrux(async () => {
+        const draws = await reactionDraws(() => expectNoFallback([PREVIEW_CALL], cards));
+        const drawn = new Set(draws.crux.map((d) => d.canvas));
+        expect(draws.result.filter((c) => !drawn.has(c)).length, 0,
+          `cards Crux did not draw, of ${draws.result.length}`);
+        expect(draws.rdkit, 0, 'RDKit\'s reaction drawings');
+        expect(draws.result.filter((c) => ink(c) < 100).length, 0, 'cards with no picture');
+      });
+      await inEngine(ChemicalEngine.RDKit, async () => {
+        const draws = await reactionDraws(cards);
+        expect(draws.crux.length, 0, 'reactions Crux drew');
+        expect(draws.result.filter((c) => ink(c) < 100).length, 0, 'cards with no picture');
+      });
+    }));
+
+  test('the reaction editor\'s preview is drawn by Crux in Crux mode, RDKit drawing none; by RDKit in RDKit mode',
+    async () => {
+      const preset: NamedReaction = {id: 'test-preview', name: 'Preview test', category: 'Test', mode: 'two-component',
+        reactionSmarts: '[C:1](=[O:2])[OH].[NH2:3]>>[C:1](=[O:2])[NH:3]'};
+      const preview = async (): Promise<HTMLCanvasElement> => {
+        await openReactionEditor(getRdKitModule(), {preset});
+        const dialog = await dialogTitled('Edit Reaction');
+        try {
+          const canvas = dialog.root.querySelector('canvas') as HTMLCanvasElement | null;
+          expect(!!canvas, true, 'the editor\'s preview');
+          return canvas!;
+        } finally {
+          dialog.close();
+        }
+      };
+      await inCrux(async () => {
+        const draws = await reactionDraws(() => expectNoFallback([PREVIEW_CALL], preview));
+        expect(draws.crux.some((d) => d.canvas === draws.result), true, 'Crux drew the preview');
+        expect(draws.rdkit, 0, 'RDKit\'s reaction drawings');
+        expect(ink(draws.result) > 100, true, 'the preview\'s picture');
+      });
+      await inEngine(ChemicalEngine.RDKit, async () => {
+        const draws = await reactionDraws(preview);
+        expect(draws.crux.length, 0, 'reactions Crux drew');
+        expect(ink(draws.result) > 100, true, 'the preview\'s picture');
+      });
+    });
+
+  test('the reaction dialogs\' previews and the full-screen preview are drawn by Crux in Crux mode, RDKit drawing ' +
+    'none; by RDKit in RDKit mode', async () => withLibrary(async () => {
+    const table = reactantsTable();
+    // a template with a variable, drawn with its default (`${smiles}`: CCCC)
+    const template = 'Fmoc Substitution';
+    // Transformation...: the preview of the picked reaction, then full screen (a click on the preview)
+    const transformation = async (): Promise<{preview: HTMLCanvasElement, full: HTMLCanvasElement}> => {
+      await transformationReactionsUI(table, table.col('acids'));
+      const dialog = await dialogTitled('Run Reaction');
+      try {
+        const preview = previewCanvasOf(dialog);
+        await clickCard(dialog.root, template);
+        await awaitCheck(() => ink(preview) > 100, 'the transformation preview drawn', 5000);
+        preview.click();
+        const full = await dialogTitled(template);
+        try {
+          const canvas = full.root.querySelector('canvas') as HTMLCanvasElement | null;
+          expect(!!canvas && ink(canvas) > 100, true, 'the full-screen picture');
+          return {preview, full: canvas!};
+        } finally {
+          full.close();
+        }
+      } finally {
+        dialog.close();
+      }
+    };
+    // Two-Component Reaction...: the preview of the picked reaction
+    const twoComponent = async (): Promise<HTMLCanvasElement> => {
+      await twoComponentReactionUI(table);
+      const dialog = await dialogTitled('Two-Component Reaction');
+      try {
+        const preview = previewCanvasOf(dialog);
+        await clickCard(dialog.root, 'Amide Coupling');
+        await awaitCheck(() => ink(preview) > 100, 'the two-component preview drawn', 5000);
+        return preview;
+      } finally {
+        dialog.close();
+      }
+    };
+    await inCrux(async () => {
+      const one = await reactionDraws(() => expectNoFallback([PREVIEW_CALL], transformation));
+      const on = (canvas: HTMLCanvasElement) => one.crux.filter((d) => d.canvas === canvas);
+      expect(on(one.result.preview).length > 0, true, 'Crux drew the transformation preview');
+      const full = on(one.result.full);
+      expect(full.length > 0, true, 'Crux drew the full-screen preview');
+      // fitted to its window, as the Reaction panel's full screen (Crux's own bond is 22 px)
+      expect(full[0].options.bondLength > 22, true, `the full-screen bond length: ${full[0].options.bondLength}`);
+      expect(one.rdkit, 0, 'RDKit\'s reaction drawings, Transformation');
+      const two = await reactionDraws(() => expectNoFallback([PREVIEW_CALL], twoComponent));
+      expect(two.crux.some((d) => d.canvas === two.result), true, 'Crux drew the two-component preview');
+      expect(two.rdkit, 0, 'RDKit\'s reaction drawings, Two-Component Reaction');
+    });
+    await inEngine(ChemicalEngine.RDKit, async () => {
+      const one = await reactionDraws(transformation);
+      expect(one.crux.length, 0, 'reactions Crux drew, Transformation');
+      const two = await reactionDraws(twoComponent);
+      expect(two.crux.length, 0, 'reactions Crux drew, Two-Component Reaction');
+    });
+  }));
+
+  test('a template Crux reads no reaction from is previewed by RDKit in Crux mode, as the fallback "reaction preview"',
+    async () => {
+      const template = '[C:1](=[O:2])[OH].[NH2:3]>>[C:1](=[O:2])[NH:3]';
+      const r = window.devicePixelRatio;
+      await inCrux(async () => {
+        const canvas = ui.canvas(400 * r, 100 * r);
+        setCruxUnreadablePreviewsForTests([template]);
+        try {
+          // one preview RDKit drew for Crux (the fallback's reason names the template; the platform's log gets a real
+          // one as "Crux fallback: reaction preview", not this test's own)
+          const {result: draws, reason} = await expectFallback(PREVIEW_CALL,
+            () => reactionDraws(async () => drawReactionPreview(canvas, template)));
+          expect(draws.result, true, 'drawn');
+          expect(draws.crux.length, 0, 'reactions Crux drew');
+          expect(reason, `Crux reads no reaction from ${template}`, 'why');
+        } finally {
+          setCruxUnreadablePreviewsForTests(null);
+        }
+        expect(ink(canvas) > 100, true, 'RDKit\'s picture');
+      });
+    });
 });

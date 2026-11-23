@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitModule} from '../chem-common-rdkit';
-import {drawReactionByRdKit} from './reaction-drawing';
+import {drawReactionPreview} from './reaction-drawing';
 import {resolveReactionVariables, runTransformationReaction, runTwoComponentReaction} from './reactions';
 import {footerSlot} from '../footguns/footer-slot';
 import {checkTransform, checksModule} from '../footguns/checks';
@@ -222,7 +222,7 @@ function buildTransformationComponents(
     const ctx = previewCanvas.getContext('2d')!;
     ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
     try {
-      drawReactionByRdKit(previewCanvas, smarts, previewCanvas.width, previewCanvas.height);
+      drawReactionPreview(previewCanvas, smarts);
     } catch {/* preview error */}
 
     const col = columnInput.value;
@@ -379,7 +379,7 @@ function buildTwoComponentComponents(
     const smarts = smartsWithDefaults(reaction);
 
     try {
-      drawReactionByRdKit(previewCanvas, smarts, previewCanvas.width, previewCanvas.height);
+      drawReactionPreview(previewCanvas, smarts);
     } catch {/* preview error */}
 
     const col1 = column1Input.value;
@@ -714,7 +714,7 @@ function openFullscreenPreview(reaction: NamedReaction | null): void {
   const smarts = smartsWithDefaults(reaction);
 
   try {
-    drawReactionByRdKit(canvas, smarts, canvas.width, canvas.height);
+    drawReactionPreview(canvas, smarts, canvas.width, canvas.height, {fullScreen: true});
   } catch {
     const ctx = canvas.getContext('2d')!;
     ctx.save();

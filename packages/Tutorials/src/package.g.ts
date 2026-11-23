@@ -3,10 +3,18 @@ import * as DG from 'datagrok-api/dg';
 
 //name: Tutorials
 //input: string path { meta.url: true; optional: true }
+//output: view result
 //meta.role: app
 //top-menu: Help | Tutorials @Toolbox Help | Tutorials
-export function trackOverview(path?: string) : void {
-  PackageFunctions.trackOverview(path);
+export function trackOverview(path?: string) : any {
+  return PackageFunctions.trackOverview(path);
+}
+
+//input: dynamic treeNode 
+//meta.role: appTreeBrowser
+//meta.app: Tutorials
+export async function tutorialsAppTreeBrowser(treeNode: any) : Promise<void> {
+  await PackageFunctions.tutorialsAppTreeBrowser(treeNode);
 }
 
 //output: widget result

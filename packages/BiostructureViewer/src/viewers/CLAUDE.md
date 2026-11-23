@@ -4,6 +4,14 @@
 registered as **NGL**) are `DG.JsViewer`s that queue every load and update on one `PendingSyncer`
 (`pending-syncer.ts`, a `PromiseSyncer` that counts what is queued and what its debounces hold).
 
+## Column auto-pick (Mol*)
+
+A viewer given no structure (`pdb`, `dataJson`) picks its structure column (Molecule3D or PDB id)
+and ligand column by itself. Dart attaches the table (`onTableAttached`) *before* it applies the
+options of `df.plot.fromType(type, options)`, so the pick runs at the first `setData`, never at
+attach: picked at attach, a docking table's pose column becomes the structure and replaces the
+receptor the caller passed (the Docking AutoDock panel). Pinned by the `explicit-structure` test.
+
 ## Representation (Mol*)
 
 The `representation` property is applied as one extra representation (`sequence-visual-<ref>`) over

@@ -31,11 +31,10 @@ import {MAX_SMILES_LENGTH} from '../utils/chem-constants';
 import {createRenderingOpts, drawErrorCross, drawMarkingUnknownStereo, drawRdKitMoleculeToOffscreenCanvas}
   from '../utils/chem-common-rdkit';
 import {renderingOptions} from './rendering-settings';
-import {IMolContext, getMolSafe} from '../utils/mol-creation_rdkit';
+import {IMolContext, getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import {ChemicalEngine, engineGeneration, renderingModule} from '../engine/chem-engine';
 import {cruxModuleSync, noteCruxError} from '../engine/crux-module';
 import {cruxOrRdKit, warnCruxFallback} from '../engine/fallback';
-import {cruxReadsCxExtension} from '../crux/crux-service';
 import {getGridCellColTemp} from '../utils/ui-utils';
 import {errInfo} from '../utils/err-info';
 import {extractAtomPositionsFromSvg} from '../utils/chem-atom-picker-utils';
@@ -65,7 +64,10 @@ export interface IColoredScaffold {
   priority?: number,
   isSuperstructure?: string,
   align?: boolean,
-  highlight?: boolean
+  highlight?: boolean,
+  /** The substructure filter's query (FILTER_SCAFFOLD_TAG): in Crux mode matched and aligned as the filter reads it
+   * ({@link getQueryMolSafe}, its drawn-query meanings), so that every row the filter passes shows its match. */
+  filter?: boolean,
 }
 
 export interface IHighlightTagInfo {
@@ -290,7 +292,14 @@ M  END
     let substruct: ISubstruct = {};
     if ((details as any).isSubstructure) {
       const mappedDummiesAreRGroups = (details as any).mappedDummiesAreRGroups || false;
-      if (molString.includes(' H ') || molString.includes('V3000')) {
+      if (crux && (details as any).filterQuery) {
+        // the substructure filter's query, read as the filter reads it in Crux mode (getQueryMolSafe: adjust_drawn_query's
+        // meanings, run20); read literally, a row the filter passes by those meanings showed no match and was not aligned
+        // (the owner's decision 1 of 2026-11-20). Null where Crux reads none: the row then goes to RDKit, read literally.
+        // The failover is the filter's key for a text (moleculeToSmarts: the text itself); a molblock never reads it.
+        mol = getQueryMolSafe(molString, molString, module);
+        molCtx = {mol: mol, kekulize: false, isQMol: true, useMolBlockWedging: false};
+      } else if (molString.includes(' H ') || molString.includes('V3000')) {
         molCtx = getMolSafe(molString, {mergeQueryHs: true, mappedDummiesAreRGroups}, module, true,
           crux ? noteCruxError : undefined);
         mol = molCtx.mol;
@@ -332,7 +341,8 @@ M  END
         if (alignedByFirstSubstr) {
           const scaffoldMol = this._fetchMol(scaffolds[0].molecule,
             parentMolScaffoldMolString ? [{molecule: parentMolScaffoldMolString}] : [], molRegenerateCoords,
-            false, {mergeQueryHs: true, isSubstructure: !parentMolScaffoldMolString}, false, engine).molCtx.mol;
+            false, {mergeQueryHs: true, isSubstructure: !parentMolScaffoldMolString,
+              filterQuery: crux && !!scaffolds[0].filter}, false, engine).molCtx.mol;
           cruxMissed(scaffoldMol, scaffolds[0].molecule);
           if (scaffoldMol) {
             scaffoldMol.normalize_depiction(0);
@@ -394,7 +404,8 @@ M  END
         for (let i = alignedByFirstSubstr ? 1 : 0; i < scaffolds.length; i++) {
           if (scaffolds[i].color !== NO_SCAFFOLD_COLOR) {
             const substructMol = this._fetchMol(scaffolds[i].molecule, [], molRegenerateCoords, false,
-              {mergeQueryHs: true, isSubstructure: true}, false, engine).molCtx.mol;
+              {mergeQueryHs: true, isSubstructure: true, filterQuery: crux && !!scaffolds[i].filter}, false,
+              engine).molCtx.mol;
             cruxMissed(substructMol, scaffolds[i].molecule);
             if (substructMol) {
               const matchedAtomsAndBonds: ISubstruct[] = JSON.parse(mol!.get_substruct_matches(substructMol!));
@@ -472,7 +483,8 @@ M  END
     const name = engine + ' || ' + molString + ' || ' + JSON.stringify(scaffolds) + ' || ' +
       molRegenerateCoords + ' || ' + scaffoldRegenerateCoords + ' || ' +
       ((details as any).isSubstructure || false).toString() +
-      ((details as any).haveReferenceSmarts || false).toString();
+      ((details as any).haveReferenceSmarts || false).toString() +
+      ((details as any).filterQuery ? ' || filter' : '');
     return this.molCache.getOrCreate(name, (_: any) => {
       const info = this._fetchMolGetOrCreate(molString, scaffolds, molRegenerateCoords, details,
         alignByFirstSubstructure, engine);
@@ -490,11 +502,7 @@ M  END
       scaffoldRegenerateCoords, details, alignByFirstSubstructure, engine);
     if (renderingModule(this.rdKitModule).engine !== ChemicalEngine.Crux)
       return fetch(ChemicalEngine.RDKit);
-    // a CXSMILES whose query features Crux's reader skips (the molecule's, a scaffold's): RDKit draws it
-    if (!(cruxReadsCxExtension(molString) && scaffolds.every((s) => cruxReadsCxExtension(s.molecule ?? '')))) {
-      warnCruxFallback('rendering', `RDKit draws a CXSMILES query Crux's reader skips, e.g. ${molString}`);
-      return fetch(ChemicalEngine.RDKit);
-    }
+    // (a CXSMILES with query features, the molecule's or a scaffold's, is Crux's too)
     const crux = fetch(ChemicalEngine.Crux);
     if (crux.molCtx.mol !== null)
       return crux;
@@ -750,6 +758,8 @@ M  END
     const col = gridCell.cell.column;
     const highlightScaffold = getSyncTag(col, HIGHLIGHT_BY_SCAFFOLD_COL_SYNC, HIGHLIGHT_BY_SCAFFOLD_COL) === 'true';
     const filter = this._initScaffoldArray(colTemp, FILTER_SCAFFOLD_TAG, true); //expected molBlock
+    for (const s of filter)
+      s.filter = true;
     const align = (this._initScaffoldString(col, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG) ?? [])
       // temporary concatination to support both tags
       .concat(this._initScaffoldString(col, ALIGN_BY_SCAFFOLD_TAG) ?? []);

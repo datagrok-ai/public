@@ -1174,6 +1174,8 @@ test.describe('Content view: click, open, search, breadcrumb', () => {
       }, CV_SPACE);
 
       // Fresh navigation start: parent → child → grandchild
+      // An open space view is not re-queried after a file is written through the API.
+      await page.reload();
       await openSpaceContent(page, CV_SPACE);
       await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${CV_CHILD}$`) }).first()).toBeVisible({ timeout: 10_000 });
       await expect(page.locator(`${LINK_LABEL} label`).filter({ hasText: /^acidiq\.csv$/ }).first()).toBeVisible({ timeout: 10_000 });

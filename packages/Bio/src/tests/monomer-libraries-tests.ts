@@ -7,6 +7,7 @@ import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/sr
 import {
   getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {expectMonomerLib} from '@datagrok-libraries/bio/src/tests/monomer-lib-tests';
 import {MonomerTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {Monomer} from '@datagrok-libraries/bio/src/types/monomer-library';
@@ -18,16 +19,17 @@ const CORE_LIBRARY_PATH = 'System:AppData/Bio/monomer-libraries/HELMCoreLibrary.
 
 category('monomerLibraries', () => {
   let monomerLibHelper: IMonomerLibHelper;
-  /** Backup actual user's monomer libraries settings */
-  let userLibrariesSettings: any = null;
+  /** Backup actual user's monomer libraries settings (awaited: a Promise written back reset the user's settings) */
+  let userLibrariesSettings: UserLibSettings | null = null;
 
   before(async () => {
     monomerLibHelper = await getMonomerLibHelper();
-    userLibrariesSettings = getUserLibSettings();
+    userLibrariesSettings = await getUserLibSettings();
   });
 
   after(async () => {
-    await setUserLibSettings(userLibrariesSettings);
+    if (userLibrariesSettings)
+      await setUserLibSettings(userLibrariesSettings);
   });
 
   test('default', async () => {

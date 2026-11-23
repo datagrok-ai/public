@@ -376,6 +376,15 @@ category('Reactions: editor', () => {
         expect(token('--crux-sketch-title-size'), title.fontSize, 'the size of Datagrok\'s dialog title');
         expect(token('--crux-sketch-title-weight'), title.fontWeight, 'the weight of Datagrok\'s dialog title');
         expect(token('--crux-sketch-title-size'), '18px');
+        // its dialogs' form rows as Datagrok's (the owner, 2026-11-17: "inputs' labels are right aligned"): a label
+        // right-aligned in Datagrok's light grey, 8px from its field; a focused field's underline Datagrok's blue, no
+        // box; Settings' check boxes with their names in the label column (no switch set)
+        expect(token('--crux-sketch-label-align'), 'right');
+        expect(token('--crux-sketch-label-text'), root('--text-color-light') || '#9497a0', 'Datagrok\'s label grey');
+        expect(token('--crux-sketch-label-gap'), '8px');
+        expect(token('--crux-sketch-field-focus-ring'), 'none');
+        expect(token('--crux-sketch-field-focus-line'), root('--blue-1') || '#2083d5', 'Datagrok\'s focused underline');
+        expect(token('--crux-sketch-settings-checks'), '', 'Settings\' check boxes: names in the label column');
       } finally {
         editor.dialog.close();
       }

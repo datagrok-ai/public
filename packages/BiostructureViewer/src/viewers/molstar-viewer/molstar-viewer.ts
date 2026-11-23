@@ -396,11 +396,20 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     }));
   }
 
+  /** Set on table attach, consumed by the first setData. Dart attaches the table before it applies the options
+   * the viewer was created with, so the columns can only be guessed once those options are in. */
+  private autoColumnsPending: boolean = false;
+
+  /** Layout states this viewer sent to Mol* itself. Mirroring them back would let an update still in flight
+   * overwrite a property that was changed again in the meantime. */
+  private ownLayoutStates = new WeakSet<Partial<PluginLayoutStateProps>>();
+
+  /** Picks the structure and ligand columns the caller left unset, unless the caller passed the structure itself. */
   private async _initProps() {
-    if (!this.dataFrame || (this.dataJson && this.dataJson !== BiostructureDataJson.empty)) return;
+    if (!this.dataFrame || this.pdb || (this.dataJson && this.dataJson !== BiostructureDataJson.empty)) return;
 
     // -- Pdb or Pdb Id --
-    if (!this.biostructureIdColumnName && !this.pdb && !this.dataFrame.tags.has(this.pdbTag || pdbTAGS.PDB)) {
+    if (!this.biostructureIdColumnName && !this.dataFrame.tags.has(this.pdbTag || pdbTAGS.PDB)) {
       const pdbCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.MOLECULE3D) || this.dataFrame.columns.bySemType(DG.SEMTYPE.PDB_ID);
       if (pdbCol && pdbCol.name !== this.ligandColumnName) {
         this.biostructureIdColumnName = pdbCol.name;
@@ -489,6 +498,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         //   break;
         // }
       }
+      this.ownLayoutStates.add(state);
       //eslint-disable-next-line new-cap
       await PluginCommands.Layout.Update(plugin, {state: state});
       this.logger.debug(`${logPrefix}.applyProperty(), end`);
@@ -617,7 +627,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       this.props.getProperty(PROPS.biostructureDataProvider).choices =
         ['', ...this.biostructureDataProviderList.map((f) => f.nqName)];
     });
-    this._initProps();
+    this.autoColumnsPending = true;
 
     //this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
 
@@ -789,6 +799,11 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.viewSyncer.sync(logPrefix, async () => { // setData
       if (!this.setDataInProgress) this.setDataInProgress = true; else return; // check setDataInProgress synced
       try {
+        if (this.autoColumnsPending) {
+          this.autoColumnsPending = false;
+          await this._initProps();
+        }
+
         if (this.viewed) {
           await this.destroyView(false, 1, callLog);
           this.viewed = false;
@@ -954,8 +969,12 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     if (!this.viewer) throw new Error(`The 'viewer' is not created.`);
 
     const plugin = this.viewer.plugin;
-    this.viewSubs.push(plugin.commands.subscribe(PluginCommands.Layout.Update, () => {
-
+    this.viewSubs.push(plugin.commands.subscribe(PluginCommands.Layout.Update, ({state}) => {
+      if (this.ownLayoutStates.has(state)) return;
+      if (state.showControls !== undefined && state.showControls !== this.layoutShowControls)
+        this.setOptions({[PROPS.layoutShowControls]: state.showControls});
+      if (state.isExpanded !== undefined && state.isExpanded !== this.layoutIsExpanded)
+        this.setOptions({[PROPS.layoutIsExpanded]: state.isExpanded});
     }));
 
     const isPdbColumn = this.biostructureIdColumnName ?
@@ -1365,7 +1384,11 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
         hoveredLigand.structureRefs = await addLigandOnStage(plugin, hoveredLigandData, color, this.zoom);
       });
     }
-    this.logger.debug(`${logPrefix}, newLigands:`, () => newLigands);
+    this.logger.debug(`${logPrefix}, newLigands:`, {
+      selected: newLigands.selected.map((l) => l.rowIdx),
+      current: newLigands.current?.rowIdx,
+      hovered: newLigands.hovered?.rowIdx,
+    });
 
     // Because of the async nature of loading structures to .viewer, the .dataFrame property can be changed (to null).
     // So collect data from the .dataFrame synchronously and then add ligands to the .viewer with postponed sync.

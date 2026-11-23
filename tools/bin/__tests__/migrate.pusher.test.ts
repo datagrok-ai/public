@@ -1110,7 +1110,20 @@ describe('--creds', () => {
     const bundle = bundleOf([[CONN_ID, {type: 'DataConnection', json: conn}]]);
     const result = await push(dapi, bundle, {onConflict: 'fail', creds: {'Admin:NW': {password: 'secret'}}}, () => {});
     expect(result.items.map((r) => `${r.action}:${r.reason}`)).toEqual(['update:credentials']);
-    expect(calls.find((c) => c.method === 'POST')!.body.parameters).toEqual({db: 'northwind', password: 'secret'});
+    expect(calls.find((c) => c.method === 'POST' && c.path.startsWith('/connectors/connections'))!.body.parameters).toEqual({db: 'northwind'});
+    expect(calls.find((c) => c.method === 'POST' && c.path === '/credentials')!.body)
+      .toMatchObject({entityBindId: CONN_ID, parameters: {password: 'secret'}});
+  });
+
+  it('saves a database login and password as the connection credentials, not as parameters', async () => {
+    const conn = {'#type': 'DataConnection', id: CONN_ID, name: 'NW', namespace: 'Admin:', parameters: {db: 'northwind'}};
+    const {dapi, calls} = storingDapi();
+    const result = await push(dapi, bundleOf([[CONN_ID, {type: 'DataConnection', json: conn}]]), {onConflict: 'fail',
+      creds: {'Admin:NW': {login: 'datagrok', password: 'secret'}}}, () => {});
+    expect(result.items.map((r) => r.action)).toEqual(['create']);
+    expect(calls.find((c) => c.method === 'POST' && c.path.startsWith('/connectors/connections'))!.body.parameters).toEqual({db: 'northwind'});
+    expect(calls.find((c) => c.method === 'POST' && c.path === '/credentials')!.body)
+      .toMatchObject({entityBindId: CONN_ID, parameters: {login: 'datagrok', password: 'secret'}});
   });
 
   it('reports needs-credentials for a connection the file does not cover', async () => {
@@ -1131,7 +1144,7 @@ describe('--creds', () => {
     const {dapi, calls} = storingDapi();
     const result = await push(dapi, {dir, manifest, entities, idmap: {}}, {onConflict: 'fail', creds: {'Admin:NW': {password: 'secret'}}}, () => {});
     expect(result.items.map((r) => r.action)).toEqual(['create']);
-    expect(calls.find((c) => c.method === 'POST')!.body.parameters.password).toBe('secret');
+    expect(calls.find((c) => c.method === 'POST' && c.path === '/credentials')!.body.parameters.password).toBe('secret');
   });
 });
 

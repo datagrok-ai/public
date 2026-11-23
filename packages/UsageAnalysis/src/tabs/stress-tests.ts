@@ -4,12 +4,12 @@ import * as ui from 'datagrok-api/ui';
 import {UaToolbox} from '../ua-toolbox';
 import {UaView} from './ua';
 import {queries} from '../package-api';
-import {stressRegression, fetchStressSummary, openInWorkspaceIcon, ReleaseContext} from '../release/data';
-
-const LAST_BUILDS = 20;
+import {stressRegression, fetchStressSummary, openInWorkspaceIcon, ReleaseContext,
+  STRESS_LAST_BUILDS as LAST_BUILDS} from '../release/data';
 
 export class StressView extends UaView {
   private byBuildHost!: HTMLElement;
+  private medianHost!: HTMLElement;
   private summaryHost!: HTMLElement;
   private boxHost!: HTMLElement;
   private boxHeader!: HTMLElement;
@@ -26,6 +26,7 @@ export class StressView extends UaView {
   async initViewers(): Promise<void> {
     this.root.className = 'grok-view ui-box ua-metrics';
     this.byBuildHost = ui.div([], 'ua-metrics-grid-host ua-metrics-chart-host');
+    this.medianHost = ui.div([], 'ua-metrics-grid-host ua-metrics-chart-host');
     this.summaryHost = ui.div([], 'ua-metrics-grid-host');
     this.boxHost = ui.div([], 'ua-metrics-grid-host ua-metrics-chart-host');
     this.boxHeader = ui.divText('Last build', 'ua-metrics-panel-title');
@@ -37,9 +38,14 @@ export class StressView extends UaView {
     const header = ui.divH([this.regressionHost, ui.div([], {style: {flex: '1'}}), refreshBtn], 'ua-metrics-header');
 
     const byBuildPanel = ui.div([
-      ui.divH([ui.divText(`Median duration by build (last ${LAST_BUILDS}, split by threads)`, 'ua-metrics-panel-title')],
+      ui.divH([ui.divText(`Speed by build, tests/s (last ${LAST_BUILDS}, split by threads)`, 'ua-metrics-panel-title')],
         'ua-metrics-panel-header'),
       this.byBuildHost,
+    ], 'ua-metrics-panel');
+    const medianPanel = ui.div([
+      ui.divH([ui.divText(`Median duration by build, ms (last ${LAST_BUILDS}, split by threads)`, 'ua-metrics-panel-title')],
+        'ua-metrics-panel-header'),
+      this.medianHost,
     ], 'ua-metrics-panel');
     const summaryPanel = ui.div([
       ui.divH([ui.divText('Metrics by build × threads', 'ua-metrics-panel-title'),
@@ -51,7 +57,7 @@ export class StressView extends UaView {
       this.boxHost,
     ], 'ua-metrics-panel');
 
-    this.root.append(ui.div([header, byBuildPanel, boxPanel, summaryPanel], 'ua-metrics-root'));
+    this.root.append(ui.div([header, byBuildPanel, medianPanel, boxPanel, summaryPanel], 'ua-metrics-root'));
     await this.refresh();
   }
 
@@ -74,6 +80,7 @@ export class StressView extends UaView {
     this.summaryDf = null;
     this.byBuildHost.innerHTML = '';
     this.byBuildHost.append(ui.loader());
+    this.medianHost.innerHTML = '';
     this.summaryHost.innerHTML = '';
     try {
       const df = await fetchStressSummary(LAST_BUILDS);
@@ -85,14 +92,25 @@ export class StressView extends UaView {
       }
       const reg = stressRegression(df);
       this.regressionHost.textContent = reg.detail;
-      this.regressionHost.className = `ua-metrics-asof ${reg.regressed ? 'ua-metrics-red' : 'ua-metrics-green'}`;
+      this.regressionHost.className = `ua-metrics-asof ua-metrics-${reg.band}`;
       df.columns.addNewString('threads ').init((i) => `${df.get('threads', i)} threads`);
-      const line = DG.Viewer.lineChart(df, {
+      // Build names do not sort by time ('bleeding-edge-<sha>' next to '<date>-<version>'): order them by sweep
+      // start, release sweeps first, so those open the chart as the reference.
+      const builds = df.getCol('build');
+      const key = new Map<string, number[]>();
+      for (let i = 0; i < df.rowCount; i++) {
+        key.set(builds.get(i), [`${df.get('branch', i)}`.startsWith('release/') ? 0 : 1,
+          df.get('started', i)?.valueOf() ?? 0]);
+      }
+      builds.setCategoryOrder([...key.keys()].sort((a, b) => key.get(a)![0] - key.get(b)![0] ||
+        key.get(a)![1] - key.get(b)![1]));
+      const byBuild = (y: string): HTMLElement => DG.Viewer.lineChart(df, {
         xColumnName: 'build',
-        yColumnNames: ['median_ms'],
+        yColumnNames: [y],
         splitColumnNames: ['threads '],
-      });
-      StressView.mount(this.byBuildHost, line.root, '320px');
+      }).root;
+      StressView.mount(this.byBuildHost, byBuild('tests_per_s'), '320px');
+      StressView.mount(this.medianHost, byBuild('median_ms'), '320px');
 
       const grid = DG.Viewer.grid(df, {'showColumnGridlines': false, 'allowBlockSelection': false});
       const threadsSplitCol = grid.col('threads ');

@@ -178,6 +178,11 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
   }
 }
 
+/** RCSB's picture of the first biological assembly of a PDB entry */
+export function pdbIdImageUrl(pdbId: string): string {
+  return `https://cdn.rcsb.org/images/structures/pdb/${pdbId.toLowerCase()}_assembly-1.jpeg`;
+}
+
 /// Shows PDB id when the cell is small, and renders protein if the cell is higher than 40 pixels
 export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
   imageCache: LruCache<string, HTMLImageElement> = new LruCache<string, HTMLImageElement>();
@@ -208,8 +213,7 @@ export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle, cellValue: string, renderedOnGrid: boolean
   ): void {
-    const pdb = cellValue;
-    const url = `https://cdn.rcsb.org/images/structures/${pdb}_assembly-1.jpeg`;
+    const url = pdbIdImageUrl(cellValue);
     const cache = this.imageCache;
 
     if (this.imageCache.has(url)) {

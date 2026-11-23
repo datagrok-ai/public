@@ -18,7 +18,6 @@ import {UsageLimiter} from './usage-limiter';
 import {viewFunctionTools, NO_VIEW_TOOLS} from './view-tools';
 import {resolveScopes, showSuggestionsMenu} from './prompt-suggestions';
 import {AiFeature} from '../claude/ai-feature';
-import {contentLoggingNotice} from '../claude/turn-log';
 
 interface ExecutionPlan {
   plan: string[];
@@ -61,8 +60,7 @@ async function streamingWidget(prompt: string, opts: StreamingOpts): Promise<DG.
 
   const activityHost = ui.divV([], 'grokky-stream-activity');
   const contentHost = ui.div([], 'grokky-stream-content');
-  const notice = opts.sessionId ? null : contentLoggingNotice();
-  const container = ui.divV([activityHost, contentHost, ...(notice ? [notice] : [])], 'grokky-stream');
+  const container = ui.divV([activityHost, contentHost], 'grokky-stream');
 
   let onFirstEvent: () => void = () => {};
   const firstEvent = new Promise<void>((res) => { onFirstEvent = res; });
@@ -129,7 +127,7 @@ export async function smartExecution(prompt: string, sessionId?: string): Promis
         return;
       }
 
-      host.appendChild(ui.markdown(result.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')));
+      host.appendChild(ui.markdown(result.plan.map((s, i) => `${i + 1}. ${s}`).join('\n'), {sanitize: true}));
       if (!result.code)
         return;
 
@@ -177,10 +175,7 @@ export function setupSearchUI() {
 
   const maxRetries = 10;
   function searchForSearchBox() {
-    const searchBoxContainer = document.getElementsByClassName('power-pack-welcome-view')[0];
-    if (!searchBoxContainer)
-      return null;
-    return Array.from(searchBoxContainer.getElementsByClassName('power-search-search-everywhere-input'))[0] as HTMLInputElement;
+    return document.querySelector<HTMLInputElement>('.power-search-search-everywhere-input');
   }
 
   function initInput(searchInput: HTMLInputElement) {
@@ -245,18 +240,29 @@ export async function setupAIQueryEditorUI(_v: DG.ViewBase, _connectionID: strin
   return true;
 }
 
+async function withinLimit(panel: StreamingPanel, quotaCategory: string): Promise<boolean> {
+  try {
+    await UsageLimiter.getInstance().checkAndIncrement(quotaCategory);
+    return true;
+  } catch (e: any) {
+    panel.showError(e.message);
+    return false;
+  }
+}
+
 export async function runPromptWithLifecycle(
   panel: StreamingPanel,
   prompt: string,
   view: DG.ViewBase,
   quotaCategory: string,
   displayPrompt?: string,
+  isAnswer = false,
 ): Promise<void> {
   if (prompt.startsWith('!!'))
     prompt = prompt.slice(1); // !!cmd → !cmd, falls through to normal pipeline
   else if (prompt.startsWith('!')) {
     const command = prompt.slice(1).trimStart();
-    if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory))
+    if (!await withinLimit(panel, quotaCategory))
       return;
     await runClaudeStreaming(panel, command, view, 'bash');
     return;
@@ -277,7 +283,7 @@ export async function runPromptWithLifecycle(
     } else
       session.session.addUserMessage({role: 'user', content: [{type: 'text', text: prompt}]}, prompt);
 
-    if (await grok.ai.processPrompt(prompt)) {
+    if (!isAnswer && await grok.ai.processPrompt(prompt)) {
       // Built-in handler claimed the prompt — no AI response, just a green check next to it.
       session.session.markHandledNatively();
       session.endSession();
@@ -285,7 +291,7 @@ export async function runPromptWithLifecycle(
       return;
     }
   }
-  if (!await UsageLimiter.getInstance().tryCheckAndIncrement(quotaCategory)) {
+  if (!await withinLimit(panel, quotaCategory)) {
     session?.endSession();
     return;
   }
@@ -295,8 +301,17 @@ export async function runPromptWithLifecycle(
 }
 
 function buildConfirmCard(input: any, resolve: (confirmed: boolean) => void): HTMLElement {
+  const answer = (confirmed: boolean) => {
+    const [style, icon, text] = confirmed ? ['success', 'check', 'Confirmed'] : ['muted', 'times', 'Cancelled'];
+    buttons.remove();
+    strip.classList.replace('grokky-strip-danger', `grokky-strip-${style}`);
+    strip.append(ui.divH([ui.iconFA(icon), ui.divText(text)], 'grokky-strip-answer'));
+    resolve(confirmed);
+  };
+  const strip = ui.divH([ui.divText(input.action ?? 'Confirm action')], 'grokky-strip grokky-strip-danger');
+  const buttons = ui.divH([ui.bigButton('OK', () => answer(true)), ui.button('CANCEL', () => answer(false))]);
   return ui.divV([
-    ui.divText(input.action ?? 'Confirm action', 'grokky-strip grokky-strip-danger'),
+    strip,
     ui.divV([
       ui.tableFromMap({
         ...(input.name ? {Name: input.name} : {}),
@@ -304,10 +319,7 @@ function buildConfirmCard(input: any, resolve: (confirmed: boolean) => void): HT
         ...(input.created ? {Created: input.created} : {}),
         ...(input.details ? {Details: input.details} : {}),
       }),
-      ui.divH([
-        ui.bigButton('OK', () => resolve(true)),
-        ui.button('CANCEL', () => resolve(false)),
-      ]),
+      buttons,
     ], 'grokky-confirm-body'),
   ], 'grokky-confirm-card');
 }
@@ -327,6 +339,13 @@ async function runClaudeStreaming(
   }
 }
 
+enum Status {
+  None = '',
+  Tool = 'tool',
+  Writing = 'writing',
+  Revising = 'revising',
+}
+
 async function streamOnce(
   panel: StreamingPanel, userPrompt: string, view: DG.ViewBase,
   systemPromptMode: string | undefined,
@@ -336,7 +355,7 @@ async function streamOnce(
     const sessionId = panel.sessionId;
     let accumulated = '';
     let segmentStart = 0;
-    let toolStatus = '';
+    let status = Status.None;
     let nextBlockIndex = 0;
     const execCodes: string[] = [];
     let preRevisionExecCodes: string[] | null = null;
@@ -354,7 +373,7 @@ async function streamOnce(
 
     const endWithError = (msg: string) => {
       panel.clearStreaming();
-      grok.shell.error(msg);
+      panel.showError(msg);
       cleanup();
       resolve();
     };
@@ -383,14 +402,17 @@ async function streamOnce(
             accumulated += '\n\n';
         }
         accumulated += evt.content;
-        toolStatus = '';
-        panel.updateStreaming(accumulated.slice(segmentStart), chatSession.loader);
+        if (status !== Status.Writing) {
+          status = Status.Writing;
+          panel.setStatus('Writing…');
+        }
+        panel.updateStreaming(accumulated.slice(segmentStart));
       });
 
       forSession(client.onToolActivity, (evt) => {
         pendingSegmentBreak = true;
-        toolStatus = `\n\n---\n**${evt.summary}**`;
-        panel.updateStreaming(accumulated.slice(segmentStart) + toolStatus, chatSession.loader);
+        status = Status.Tool;
+        panel.setStatus(evt.summary);
         chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: `[tool-activity] ${evt.summary}`}]});
       });
 
@@ -401,9 +423,9 @@ async function streamOnce(
         // original. The status appears only if revising takes noticeable time — an immediate
         // NO_REVISION resolves before it ever shows.
         revisingTimer = window.setTimeout(() => {
-          if (toolStatus) return; // a live tool-activity status is more informative
-          toolStatus = '\n\n---\n*Revising…*';
-          panel.updateStreaming(accumulated.slice(segmentStart) + toolStatus, chatSession.loader);
+          if (status === Status.Tool) return;
+          status = Status.Revising;
+          panel.setStatus('Revising…');
         }, 1200);
         preRevisionExecCodes = [...execCodes];
       });
@@ -412,7 +434,6 @@ async function streamOnce(
       forSession(client.onFinal, async (evt) => {
         // Always end the turn: otherwise the panel stays busy and the chat is not saved.
         try {
-          panel.cancelInputRequest();
           if (revisingTimer != null) {
             clearTimeout(revisingTimer);
             revisingTimer = null;
@@ -421,9 +442,7 @@ async function streamOnce(
             // The revision supersedes the visible answer — render it in place of the original.
             accumulated = evt.content;
             segmentStart = 0;
-            toolStatus = '';
-          } else if (evt.revision === 'kept')
-            toolStatus = ''; // original answer stands; just drop the Revising status
+          }
           const fullContent = accumulated || evt.content;
           const segmentContent = accumulated ? accumulated.slice(segmentStart) : fullContent;
           chatSession.session.addEngineMessage({role: 'assistant', content: [{type: 'text', text: fullContent}]});
@@ -440,14 +459,12 @@ async function streamOnce(
       });
 
       forSession(client.onError, (evt) => {
-        panel.cancelInputRequest();
-        endWithError(`AI assistant: ${evt.message}`);
+        endWithError(evt.message);
       });
 
       forSession(client.onAborted, async () => {
-        panel.cancelInputRequest();
         panel.clearStreaming();
-        chatSession.session.addUiMessage('**Processing aborted by user**', false, {system: true});
+        chatSession.session.addUiMessage('Processing aborted by user', false, {system: true});
         cleanup();
         resolve();
       });
@@ -465,7 +482,6 @@ async function streamOnce(
           if (element) {
             panel.appendStreamedElement(element);
             segmentStart = accumulated.length;
-            toolStatus = '';
           }
           let result: any = error ?
             {success: false, error: error.error} :
@@ -495,7 +511,6 @@ async function streamOnce(
             panel.appendStreamedElement(buildConfirmCard(evt.input ?? {}, resolve));
           });
           segmentStart = accumulated.length;
-          toolStatus = '';
           client.respondToInput(sessionId, evt.requestId, {confirmed});
           return;
         }
@@ -503,7 +518,6 @@ async function streamOnce(
         if (evt.toolName === 'datagrok_show_entities') {
           panel.appendStreamedElement(renderEntityRefList(evt.input.entities ?? []));
           segmentStart = accumulated.length;
-          toolStatus = '';
           client.respondToInput(sessionId, evt.requestId, {success: true});
           return;
         }
@@ -521,22 +535,12 @@ async function streamOnce(
         // Default: AskUserQuestion
         accumulated = '';
         segmentStart = 0;
-        toolStatus = '';
         panel.clearStreaming();
-        // The ball is in the user's court — a spinning loader would read as "still working".
-        chatSession.loader.style.display = 'none';
-        const response = await panel.showInputRequest(evt.input);
-        if (response) {
-          client.respondToInput(sessionId, evt.requestId, response);
-          const answerText = Object.values(response.answers).join(', ');
-          chatSession.session.addEngineMessage({role: 'user', content: [{type: 'text', text: answerText}]});
-          // And back to us: show the loader immediately — the next runtime event (thinking,
-          // tool call) can be many seconds away, and dead air here reads as "nothing happened".
-          panel.showWaitingIndicator(chatSession.loader);
-        }
+        panel.showInputRequest(evt.input);
       });
 
-      subs.push(client.onClose.subscribe(() => endWithError('AI assistant: connection lost')));
+      subs.push(client.onClose.subscribe(() =>
+        endWithError('Connection lost, the request was stopped. Send it again.')));
 
       subs.push(getAIAbortSubscription().subscribe(() => {
         client.abort(sessionId);
@@ -554,23 +558,20 @@ async function streamOnce(
         // Queued-task admission (queue-task.ts): the queued call only holds the turn's
         // admission slot; the turn itself streams over this socket as usual.
         sendChatTurn(client, sessionId, message, options)
-          .catch((e: any) => endWithError(`AI assistant: ${e?.message ?? e}`));
+          .catch((e: any) => endWithError(e?.message ?? String(e)));
       };
 
       forSession(client.onSessionReset, () => {
         if (resentAfterReset)
-          return endWithError('AI assistant: the session was lost and could not be restored');
+          return endWithError('The session was lost and could not be restored. Start a new chat.');
         resentAfterReset = true;
         sendPrompt();
       });
 
       sendPrompt();
     } catch (e: any) {
-      panel.clearStreaming();
-      grok.shell.error(`AI runtime: ${e.message}`);
       console.error('Claude runtime error:', e);
-      cleanup();
-      resolve();
+      endWithError(e.message);
     }
   });
 }
@@ -587,7 +588,7 @@ export function initAIWindow(): AIPanel | null {
         _shellAIPanel!.enableNoPrompt();
         return;
       }
-      await runPromptWithLifecycle(_shellAIPanel!, args.currentPrompt.prompt, grok.shell.v, 'shell-ai');
+      await runPromptWithLifecycle(_shellAIPanel!, args.currentPrompt.prompt, grok.shell.v, 'shell-ai', undefined, args.currentPrompt.isAnswer);
     });
     AIWindowManager.instance.init(_shellAIPanel);
   }

@@ -2,6 +2,40 @@
 
 ## v.next
 
+* Reduce Dimensionality: UMAP's Random Seed applies with Use WebGPU too: the same seed gives the same coordinates (on the same GPU). Test: `Dimensionality reduction: UMAP random seed`
+
+* GROK-20932: Removed the Playwright tests of the old ML | Models Train view (playwright/MLMethods), which the platform replaced with Forge
+* GROK-20932: ML methods: Fixed training XGBoost, SVM, Softmax and Linear Regression through the API with inputs left out: they now take the defaults of the function's inputs
+* [core#1518](https://github.com/datagrok-ai/core/issues/1518): Required the Forge plugin for predictive modeling with EDA's methods in the platform's UI; the earlier tool no longer works with this version (needs Datagrok <minimum platform version: TBD> or later)
+* GROK-20932: Added SVM's Max iterations (default 1000000), so a non-converging fit stops and still returns a model
+* GROK-20932: Added meta.mlprobabilities on every classifier's train function and the Class probabilities input of SVM (Platt scaling, set by Forge's Predict probability)
+* GROK-20932: Rewrote the XGBoost hyperparameter tooltips after the XGBoost parameter docs
+* GROK-20932: Added the Row sample and Column sample hyperparameters (subsample / colsample_bytree, default 1, searched in 0.5-1) and a Model seed to XGBoost; the seed matters only when a sample is below 1
+* GROK-20932: Added a Model seed hyperparameter to Linear Regression, where Crux takes one; with the current settings the model does not depend on it
+* GROK-20932: Added meta.mlenabled on train (the inputs Forge disables by the other inputs or the task): SVM gamma / degree / offset by kernel and epsilon for regression only; Linear Regression iterations only with L1 > 0; XGBoost seed only with a sample below 1
+* GROK-20932: Renamed the RealMLP and TabM Validation fraction input to Early stopping fraction
+* GROK-20932: Added a pool of Crux module workers (parallel fits for Forge's search) and the mlparallel / mlspace meta on every train function (search spaces for Forge's Tune)
+* GROK-20932: Added the classificationReport function: Crux (scikit-learn) classification metrics, confusion matrix, per-class values and ROC / precision-recall curves of an actual and a predicted column, used by Forge
+* GROK-20932: Added class probabilities to the apply functions of every classifier but SVM: one proba_<class> column per class after the prediction
+* GROK-21061: Pareto front: Fixed result columns staying in the table after the viewer is closed
+* GROK-21017: Skip adding MVA viewers when the source table view was closed during the analysis
+* GROK-20932: Added the knnImpute function: headless k-NN imputation of chosen columns, used by Forge
+* GROK-20932: Marked trainSVM with meta.mlhasrows: the model embeds training rows
+* GROK-20932: Added files/legacy-models: one pre-Crux model per ML method with the Legacy models test category
+* GROK-20932: Added the Crux bridge (src/crux): lazy Crux module worker, DataFrame <-> Arrow IPC, cruxFit / cruxPredict
+* GROK-20932: Replaced the PCA, PLS, Linear Regression, Softmax, PLS Regression, XGBoost and SVM kernels with Crux (scikit-learn 1.9.1 and XGBoost 3.4.1 ports); models trained by earlier EDA versions are applied only as described below, the rest must be retrained
+* GROK-20932: Narrowed the ML methods' applicability: features must be INT or FLOAT, regression targets (Linear Regression, PLS Regression, XGBoost and SVM regression) must be INT or FLOAT; BIG_INT and other numerical types are rejected
+* GROK-20932: Removed the gradient-descent Rate hyperparameter of Linear Regression and Softmax; Softmax Penalty (must be > 0) now maps to logistic C, L1 / L2 follow scikit-learn's ridge / elastic net definitions
+* GROK-20932: Changed regression predictions to float columns for integer targets
+* GROK-20932: Changed Linear Regression, Softmax, PLS Regression, XGBoost and SVM training to skip rows with a missing target instead of failing
+* GROK-20932: Removed the sci-comp-ml, XGBoost and LIBSVM wasm modules
+* GROK-20932: Added nine Forge methods on Crux: Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost, Decision Tree, k-Nearest Neighbors, Naive Bayes, LDA and Neural Network (MLP); the stochastic methods have a Model seed hyperparameter; kNN keeps the training rows in the model (meta.mlhasrows)
+* GROK-20932: Marked XGBoost, Random Forest, Extra Trees, Hist Gradient Boosting, CatBoost and Decision Tree with meta.mlnativenans: they take rows with missing feature values (Forge no longer skips or imputes them by default)
+* GROK-20932: Added two Forge methods on Crux's neural tabular models: RealMLP (pytabkit 1.7.3) and TabM (TabM 0.0.3 with rtdl_num_embeddings); both have a Model seed hyperparameter; TabM takes rows with missing feature values (meta.mlnativenans)
+* GROK-20932: Rebuilt the Crux module with crux-fn/realmlp and crux-fn/tabm (same crux revision; saved models keep working)
+* GROK-20932: Restored applying pre-Crux models with the same predictions as before (prediction only): PLS Regression with stored feature names, Linear Regression from 1.8.0, Softmax, XGBoost and SVM from 1.9.0 (src/legacy; XGBoost through Crux's ml.xgboost_predict); older models still require retraining; added files/legacy-models/reference.json and five more fixtures (regression, binary and bool targets)
+* [public#4245](https://github.com/datagrok-ai/public/issues/4245): T-test, ANOVA, Control comparisons: Fixed the analysis and its checks running on the whole table instead of the rows that pass the filter
+* [core#1407](https://github.com/datagrok-ai/core/issues/1407): Control comparisons, ANOVA, t-test: Fixed the method radio missing its property type
 * [public#4473](https://github.com/datagrok-ai/public/issues/4473): MCL: Fixed Markov clustering on number columns only never finishing (the dialog passed the clustering no column); added the package test 'DBSCAN'
 * [core#1146](https://github.com/datagrok-ai/core/issues/1146): Pareto Front: Fixed a 1 s check that ran for the rest of the session when the table was not applicable
 * Tests: `models/share-model` claims the second account's side: it finds the shared model under Shared with me and applies it (back in the serial lane, since it signs in as the second account)
@@ -13,8 +47,6 @@
 * [#418](https://github.com/datagrok-ai/core/issues/418): Control comparisons: The Control drop-down stays empty and disabled for an ID-like category instead of listing every value
 * Tests: `models/apply-and-delete` chooses a model in the Apply dialog by name (the dialog keys its models by id), so it and `share-model` left the serial lane; the analysis features keep to what the dialog produced, the statistics being the package tests'
 * Tests: Added the BDD feature `models/apply-and-delete` — PLS and linear regression models saved, applied to new data and deleted from the gallery (from TestTrack General/predictive-models)
-* GROK-21061: Pareto front: Fixed result columns staying in the table after the viewer is closed
-* GROK-21017: Skip adding MVA viewers when the source table view was closed during the analysis
 * Tests: Added BDD features for PCA, PLS, multivariate analysis, ANOVA, control comparisons, model training, sharing a model and the Pareto front viewer
 * Tests: Check completed training, rendered charts and fixture cleanup; isolate shared models per run
 * Pareto front: Corrected the viewer help link

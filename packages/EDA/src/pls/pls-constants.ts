@@ -87,17 +87,6 @@ export enum RESULT_NAMES {
   COMPS = 'components',
 }
 
-/** Indeces of wasm-computation output */
-export enum WASM_OUTPUT_IDX {
-  PREDICTION = 0,
-  REGR_COEFFS = 1,
-  T_SCORES = 2,
-  U_SCORES = 3,
-  X_LOADINGS = 4,
-  Y_LOADINGS = 5,
-  VIP = 6,
-}
-
 /** Tag of the source table that stores the fitted PLS model */
 export const MVA_MODEL_TAG = 'mvaModel';
 
@@ -108,8 +97,6 @@ export const MVA_TRANSFORM_FUNC = 'multivariateAnalysisTransform';
 /** Function that restores the viewer state when a project or layout is opened */
 export const MVA_INIT_FUNC = 'mvaModelInitFunction';
 
-export const INT = 'Int';
-export const TIMEOUT = 6;
 export const LINE_WIDTH = 1;
 export const X_COORD = 200;
 export const Y_COORD = 200;

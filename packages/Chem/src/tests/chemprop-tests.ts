@@ -33,7 +33,7 @@ category('w_chemprop', () => {
   test('utilizeModel', async () => {
     await ensureContainerRunning('chemprop', CONTAINER_TIMEOUT);
     const smilesColumn = table.columns.byName('canonical_smiles');
-    const column = await fetchWrapper(() => PackageFunctions.applyModelChemprop(binBlob, DG.DataFrame.fromColumns([smilesColumn]).toCsv()));
+    const column = await fetchWrapper(() => PackageFunctions.applyModelChemprop(binBlob, DG.DataFrame.fromColumns([smilesColumn]).toCsv(), smilesColumn.length));
 
     expect(column.length, 20);
   }, {skipReason: 'GROK-19084'});

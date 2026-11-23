@@ -27,6 +27,25 @@ Feature: Foot-guns in the molecule cell editor with Crux: what OK writes that br
     Then the cell in row 1 of "molecule" holds a molblock with an atom list
     And the context panel's Checks section for that cell lists a warn mentioning "query"
 
+  @catalogue-MOL-04
+  Scenario Outline: A molecule's stereo centres and charges in a molblock column are no query: its editor opens without a query warn
+    The product owner's report of 2026-11-19: "when I open mol1k dataset from chem, and doubleclick on row 2 or row 3
+    [...] it shows warning on the bottom that "A query (an atom query) in a molecule column: calculators, canonical
+    SMILES and duplicate checks ignore its query features", but this is not entirely true is it. these are not exactly
+    query feature, these are molecule features". The check read the molblock as SMARTS, which writes a molecule's own
+    stereo centres and charges as `[#6@H]`, `[#7+]`. Row 1 holds the same azide and stereo centres.
+    Given user opens mol1K.sdf dataset
+    When user double-clicks on the "cell <row> of molecule" area of grid
+    Then the middle slot of the footer shows no flag mentioning "query"
+    When user clicks on Cancel button in sketcher dialog
+    Then the context panel's Checks section lists no flag mentioning "query"
+
+    Examples:
+      | row |
+      | 1   |
+      | 2   |
+      | 3   |
+
   @catalogue-MOL-07
   Scenario Outline: An edit of only enhanced stereo, an attachment point or an S-group is written, not thrown away
     Given user opens a table "molecules" with a SMILES column "molecule" holding "<before>"

@@ -25,7 +25,6 @@ import {getMolSafe, isSmilesSyntax} from './mol-creation_rdkit';
 import {byEngineModule} from '../engine/chem-engine';
 import {noteCruxError} from '../engine/crux-module';
 import {convertMolNotationByEngine} from '../engine/worker-jobs';
-import {cruxReadsCxExtension} from '../crux/crux-service';
 
 
 export const MALFORMED_MOL_V2000 = `
@@ -53,8 +52,8 @@ const cxWithoutCoordsJSON = JSON.stringify({CX_ALL_BUT_COORDS: true});
  * @param {boolean} addHs
  * @return {string} the converted representation
  *
- * In Crux mode ("Chemical Engine", engine/README.md) the Crux module converts (RDKit.js 2026.03.6's strings), and
- * `rdKitModule` what Crux cannot read or refuses, and a CXSMILES whose query features Crux does not read.
+ * In Crux mode ("Chemical Engine", engine/README.md) the Crux module converts (RDKit.js 2026.03.6's strings; a
+ * CXSMILES with query features too), and `rdKitModule` what Crux cannot read or refuses.
  */
 export function _convertMolNotation(
   moleculeString: string,
@@ -65,8 +64,6 @@ export function _convertMolNotation(
 ): string {
   if (sourceNotation === targetNotation)
     throw new Error(`Convert molecule notation: source and target notations must differ: "${sourceNotation}"`);
-  if (!cruxReadsCxExtension(moleculeString)) // query features Crux's reader skips: RDKit's in both modes
-    return _convertMolNotationByRdKit(moleculeString, sourceNotation, targetNotation, rdKitModule, addHs);
   const none = notConverted(targetNotation);
   return byEngineModule('convertMolNotation', rdKitModule, (module, crux) => {
     const converted = convertWith(moleculeString, sourceNotation, targetNotation, module, addHs, crux);

@@ -1,24 +1,13 @@
 // Predicitve tools based on the PLS method
 
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {TITLE, RESULT_NAMES} from './pls-constants';
-import {getPlsAnalysis, PlsOutput, getLines} from './pls-tools';
-import {LINK} from './pls-constants';
-import {getPredictionByLinearRegression} from '../regression';
-
-// PLS ML specific constants
-const EXTRA_ROWS = 1;
-const SHIFT = 2;
-const MIN_LOADINGS = 1;
-const MIN_COLS_COUNT = SHIFT + MIN_LOADINGS;
-const SIZE_ARR_LEN = 2;
-const MODEL_IDX = 0;
-const SCORES_IDX = 1;
-const BYTES_PER_SIZES = SIZE_ARR_LEN * 4;
-const BLOCK_SIZE = 64;
+import {TITLE, RESULT_NAMES, LINK} from './pls-constants';
+import {getPlsAnalysis, getLines, PlsOutput} from './pls-tools';
+import {cruxFit, runCrux} from '../crux/crux-model';
+import {toArrowIpc} from '../crux/crux-bridge';
+import {isNumeric, isRegressionTarget} from '../crux/methods';
+import {checkColumnType, checkDimensionReducerInputs, nonNullRows} from '../utils';
 
 /** Interactivity tresholds */
 enum INTERACTIVITY {
@@ -29,393 +18,139 @@ enum INTERACTIVITY {
 /** Applicability bound: design-matrix budget (Float32 cells, ≈ 200 MB) */
 const APPLICABILITY_MAX_CELLS = 5e7;
 
-/** Model specification */
-type PlsModelSpecification = {
-  params: Float32Array,
-  names: string[],
-  loadings: Float32Array[],
-  dim: number,
-  components: number,
-  scores: DG.DataFrame,
-  vip?: Float32Array,
+export function isPlsApplicable(features: DG.ColumnList, target: DG.Column): boolean {
+  return isNumeric(features) && isRegressionTarget(target) &&
+    features.length * target.length <= APPLICABILITY_MAX_CELLS;
 }
 
-/** PLS regression modeling tool */
-export class PlsModel {
-  /** Check applicability */
-  static isApplicable(features: DG.ColumnList, predictColumn: DG.Column): boolean {
-    for (const col of features) {
-      if (!col.matches('numerical'))
-        return false;
-    }
-    if (!predictColumn.matches('numerical'))
-      return false;
+export function isPlsInteractive(features: DG.ColumnList, target: DG.Column): boolean {
+  return features.length <= INTERACTIVITY.MAX_FEATURES && target.length <= INTERACTIVITY.MAX_SAMLPES;
+}
 
-    if (features.length * predictColumn.length > APPLICABILITY_MAX_CELLS)
-      return false;
+/** The rows of `df` and `target` that have a target value: `ml.pls_analysis` rejects a missing y */
+function targetRows(df: DG.DataFrame, target: DG.Column): {df: DG.DataFrame, target: DG.Column} {
+  const missing = target.stats.missingValueCount;
+  if (missing === 0)
+    return {df, target};
+  if (missing === target.length)
+    throw new Error(`The column '${target.name}' has only missing values.`);
+  const mask = nonNullRows([target]);
+  return {df: df.clone(mask), target: target.clone(mask)};
+}
 
-    return true;
+/** Trains PLS regression; `ml.pls_analysis` checks first that the data supports `components` */
+export async function trainPlsRegression(df: DG.DataFrame, target: DG.Column, components: number):
+  Promise<Uint8Array> {
+  const k = Math.min(components, df.columns.length);
+  try {
+    checkDimensionReducerInputs(df.columns, k);
+    checkColumnType(target);
+    const rows = targetRows(df, target);
+    await runCrux('ml.pls_analysis', toArrowIpc(rows.df.columns.toList(), rows.target), {n_components: k});
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    throw new Error(`PLS Regression: ${message.replace(/^ml\.pls_analysis: /, '')}`);
   }
+  return cruxFit('regression', 'pls', df, target, {estimator: {n_components: k}});
+}
 
-  /** Check interactivity */
-  static isInteractive(features: DG.ColumnList, predictColumn: DG.Column): boolean {
-    return (features.length <= INTERACTIVITY.MAX_FEATURES) &&
-      (predictColumn.length <= INTERACTIVITY.MAX_SAMLPES);
+/** Loadings, regression coefficients, VIP, explained variances and scores of the PLS model of `df` */
+export async function plsRegressionViewers(df: DG.DataFrame, target: DG.Column, components: number):
+  Promise<DG.Viewer[]> {
+  const rows = targetRows(df, target);
+  const analysis = await getPlsAnalysis({table: rows.df, features: rows.df.columns, predict: rows.target, components,
+    isQuadratic: false, names: undefined});
+  const k = analysis.xLoadings.length;
+
+  return [...loadingsParamsViewers(df.columns.names(), analysis, k),
+    explVarsViewer(analysis.yLoadings, rows.target.length, k), scoresScatter(analysis)];
+}
+
+function loadingsParamsViewers(names: string[], analysis: PlsOutput, components: number): DG.Viewer[] {
+  const coefs = analysis.regressionCoefficients;
+  coefs.name = TITLE.REGR_COEFS;
+  const loadingsDf = DG.DataFrame.fromColumns([DG.Column.fromStrings(TITLE.FEATURES, names), coefs]);
+
+  const columns = loadingsDf.columns;
+  for (const [idx, col] of analysis.xLoadings.entries()) {
+    col.name = `${TITLE.XLOADING}${idx + 1}`;
+    columns.add(col);
   }
+  const vip = analysis.vip;
+  vip.name = TITLE.VIP;
+  columns.add(vip);
 
-  /** Specification of the PLS model */
-  private specn: PlsModelSpecification | null = null;
+  const bars = (column: string, help: string) => DG.Viewer.barChart(loadingsDf, {
+    title: column,
+    splitColumnName: TITLE.FEATURES,
+    valueColumnName: column,
+    valueAggrType: DG.AGG.AVG,
+    help,
+    showValueSelector: false,
+    showStackSelector: false,
+  });
 
-  constructor(packedModel?: Uint8Array) {
-    if (packedModel) {
-      try {
-        // Extract model's bytes count
-        const sizeArr = new Uint32Array(packedModel.buffer, 0, SIZE_ARR_LEN); // 1-st element is a size of model bytes
-        const modelDfBytesCount = sizeArr[MODEL_IDX];
-        const scoresDfBytesCount = sizeArr[SCORES_IDX];
-
-        // Model's bytes
-        const modelBytes = new Uint8Array(packedModel.buffer, BYTES_PER_SIZES, modelDfBytesCount);
-
-        // Model as dataframe
-        const modelDf = DG.DataFrame.fromByteArray(modelBytes);
-        const rowCount = modelDf.rowCount;
-        const columns = modelDf.columns;
-        const colsCount = columns.length;
-
-        // Scores
-        const scoresBytes = new Uint8Array(packedModel.buffer, BYTES_PER_SIZES + modelDfBytesCount, scoresDfBytesCount);
-        const scores = DG.DataFrame.fromByteArray(scoresBytes);
-
-        if (colsCount < MIN_COLS_COUNT)
-          throw new Error('incorrect columns count');
-
-        // Extract names of features
-        const featureNames = columns.byName(TITLE.FEATURES).toList();
-
-        // Extract parameters of the linear model
-        const params = new Float32Array(rowCount);
-        params.set(columns.byName(TITLE.REGR_COEFS).getRawData());
-
-        // Extract VIP: absent in models saved before it was added
-        const vipCol = modelDf.col(TITLE.VIP);
-        let vip: Float32Array | undefined;
-
-        if (vipCol !== null) {
-          vip = new Float32Array(rowCount);
-          vip.set(vipCol.getRawData().subarray(0, rowCount));
-        }
-
-        // Extract loadings
-        const components = colsCount - SHIFT - (vipCol !== null ? 1 : 0);
-        const loadings = new Array<Float32Array>(components);
-
-        for (let i = 0; i < components; ++i) {
-          loadings[i] = new Float32Array(rowCount);
-          loadings[i].set(columns.byIndex(i + SHIFT).getRawData());
-        }
-
-        this.specn = {
-          params: params,
-          loadings: loadings,
-          names: featureNames,
-          dim: rowCount - EXTRA_ROWS,
-          components: components,
-          scores: scores,
-          vip: vip,
-        };
-      } catch (error) {
-        throw new Error(`Failed to load model: ${(error instanceof Error ? error.message : 'the platform issue')}`);
-      }
-    }
-  }
-
-  /** Train model */
-  public async fit(features: DG.ColumnList, target: DG.Column, components: number) {
-    const analysis = await getPlsAnalysis({
-      table: DG.DataFrame.fromColumns([target]),
-      features: features,
-      predict: target,
-      components: components,
-      names: undefined,
-      isQuadratic: false,
-    });
-
-    // 1. Names of features
-    const featureNames = features.names();
-    featureNames.push('_'); // add extra item
-
-    // 2. Regression coefficients
-    const params = this.getRegrCoeffs(features, target, analysis.regressionCoefficients);
-
-    // 3. Loadings
-    const loadings = this.getLoadings(components, analysis.xLoadings);
-
-    // 4. Variable importance
-    const dim = features.length;
-    const vip = new Float32Array(dim + EXTRA_ROWS);
-    vip.set(analysis.vip.getRawData().subarray(0, dim));
-
-    // 5. Model specification
-    this.specn = {
-      names: featureNames,
-      params: params,
-      loadings: loadings,
-      components: components,
-      dim: dim,
-      scores: this.getScoresDf(analysis),
-      vip: vip,
-    };
-
-    // 6. Compute explained variances
-    this.computeExplVars(target.length, components, analysis.yLoadings);
-  } // fit
-
-  /** Return x-loadings with extra items reserved for explained variances */
-  private getLoadings(components: number, loadingsCols: DG.Column[]): Float32Array[] {
-    const res = Array<Float32Array>(components);
-    const len = loadingsCols[0].length + EXTRA_ROWS;
-
-    for (let i = 0; i < components; ++i) {
-      res[i] = new Float32Array(len);
-      res[i].set(loadingsCols[i].getRawData());
-    }
-
-    return res;
-  }
-
-  /** Return regression coefficients */
-  private getRegrCoeffs(features: DG.ColumnList, target: DG.Column, regrCoefsCol: DG.Column): Float32Array {
-    const dim = features.length;
-    const params = new Float32Array(dim + EXTRA_ROWS);
-    const paramsByPLS = regrCoefsCol.getRawData();
-
-    let tmpSum = 0;
-
-    for (let i = 0; i < dim; ++i) {
-      params[i] = paramsByPLS[i];
-      tmpSum += paramsByPLS[i] * features.byIndex(i).stats.avg;
-    }
-
-    // compute bias
-    params[dim] = target.stats.avg - tmpSum;
-
-    return params;
-  }
-
-  /** Return explained variances */
-  private computeExplVars(samplesCount: number, components: number, yLoadings: DG.Column) {
-    if (this.specn === null)
-      throw new Error('Failed to compute explained variances');
-
-    const raw = yLoadings.getRawData();
-    const dim = this.specn.loadings[0].length - EXTRA_ROWS;
-
-    // Compute, source: the paper https://doi.org/10.1002/cem.2589
-    let explVar = raw[0]**2 / samplesCount;
-
-    this.specn.loadings[0][dim] = explVar;
-
-    for (let comp = 1; comp < components; ++comp) {
-      explVar += raw[comp]**2 / samplesCount;
-      this.specn.loadings[comp][dim] = explVar;
-    }
-  }
-
-  /** Return packed model */
-  public toBytes(): Uint8Array {
-    if (this.specn === null)
-      throw new Error('Failed to pack untrained model');
-
-    // 1. Store model params in dataframe
-    const modelDf = DG.DataFrame.fromColumns([
-      DG.Column.fromStrings(TITLE.FEATURES, this.specn.names),
-      DG.Column.fromFloat32Array(TITLE.REGR_COEFS, this.specn.params),
-    ]);
-
-    this.specn.loadings.forEach((array, idx) => modelDf.columns.add(DG.Column.fromFloat32Array(
-      `${TITLE.XLOADING}${idx + 1}`,
-      array,
-    )));
-
-    // Appended after the loadings: the loader counts components by column index
-    if (this.specn.vip !== undefined)
-      modelDf.columns.add(DG.Column.fromFloat32Array(TITLE.VIP, this.specn.vip));
-
-    // 2. Pack model dataframe
-    const modelDfBytes = modelDf.toByteArray();
-    const modelDfBytesCount = modelDfBytes.length;
-
-    const scoresBytes = this.specn.scores.toByteArray();
-    const scoresBytesCount = scoresBytes.length;
-
-    const requiredBytes = modelDfBytesCount + scoresBytesCount + BYTES_PER_SIZES;
-
-    const packedModel = new Uint8Array((Math.ceil(requiredBytes / BLOCK_SIZE) + 1) * BLOCK_SIZE);
-
-    // 4 bytes for storing model's bytes count
-    const sizeArr = new Uint32Array(packedModel.buffer, 0, SIZE_ARR_LEN);
-    sizeArr[MODEL_IDX] = modelDfBytesCount;
-    sizeArr[SCORES_IDX] = scoresBytesCount;
-
-    // Store model's bytes
-    packedModel.set(modelDfBytes, BYTES_PER_SIZES);
-
-    // Store scores bytes
-    packedModel.set(scoresBytes, BYTES_PER_SIZES + modelDfBytesCount);
-
-    return packedModel;
-  } // toBytes
-
-  /** Return prediction */
-  public predict(features: DG.ColumnList): DG.Column {
-    if (this.specn === null)
-      throw new Error('Predicting failed: model is not trained');
-
-    // names carries a trailing service item matching the bias row of params
-    return getPredictionByLinearRegression(features, this.specn.params, this.specn.names.slice(0, -1));
-  }
-
-  /** Return loadings and regression coefficients viewers */
-  private loadingsParamsViewers(): DG.Viewer[] {
-    if (this.specn === null)
-      throw new Error('Failed to create loadings and parameters viewers: untrained model');
-
-    const viewers: DG.Viewer[] = [];
-
-    const dim = this.specn.dim;
-
-    // Parameters and loadings dataframe
-    const loadingsDf = DG.DataFrame.fromColumns([
-      DG.Column.fromStrings(TITLE.FEATURES, this.specn.names.slice(0, -1)),
-      DG.Column.fromFloat32Array(TITLE.REGR_COEFS, this.specn.params, dim),
-    ]);
-
-    const columns = loadingsDf.columns;
-    const shift = columns.length;
-    const components = this.specn.components;
-
-    this.specn.loadings.forEach((arr, idx) => loadingsDf.columns.add(
-      DG.Column.fromFloat32Array(`${TITLE.XLOADING}${idx + 1}`, arr, dim),
-    ));
-
-    // Loading scatterplot
-    viewers.push(DG.Viewer.scatterPlot(loadingsDf, {
+  return [
+    DG.Viewer.scatterPlot(loadingsDf, {
       title: TITLE.LOADINGS,
-      xColumnName: columns.byIndex(shift).name,
-      yColumnName: columns.byIndex(shift + (components > 1 ? 1 : 0)).name,
+      xColumnName: `${TITLE.XLOADING}1`,
+      yColumnName: `${TITLE.XLOADING}${components > 1 ? 2 : 1}`,
       markerType: DG.MARKER_TYPE.CIRCLE,
       //@ts-ignore
       labelFormColumnNames: [TITLE.FEATURES],
       help: LINK.LOADINGS,
-    }));
+    }),
+    bars(TITLE.REGR_COEFS, LINK.COEFFS),
+    bars(TITLE.VIP, LINK.VIPS),
+  ];
+}
 
-    // Regression coefficients barchart
-    viewers.push(DG.Viewer.barChart(loadingsDf, {
-      title: TITLE.REGR_COEFS,
-      splitColumnName: TITLE.FEATURES,
-      valueColumnName: TITLE.REGR_COEFS,
-      valueAggrType: DG.AGG.AVG,
-      help: LINK.COEFFS,
-      showValueSelector: false,
-      showStackSelector: false,
-    }));
+/** Cumulative explained variances of y, source: https://doi.org/10.1002/cem.2589 */
+function explVarsViewer(yLoadings: DG.Column, samplesCount: number, components: number): DG.Viewer {
+  const q = yLoadings.getRawData();
+  const compNames = new Array<string>(components);
+  const explVars = new Float32Array(components);
 
-    // Variable importance barchart
-    if (this.specn.vip !== undefined) {
-      loadingsDf.columns.add(DG.Column.fromFloat32Array(TITLE.VIP, this.specn.vip, dim));
-
-      viewers.push(DG.Viewer.barChart(loadingsDf, {
-        title: TITLE.VIP,
-        splitColumnName: TITLE.FEATURES,
-        valueColumnName: TITLE.VIP,
-        valueAggrType: DG.AGG.AVG,
-        help: LINK.VIPS,
-        showValueSelector: false,
-        showStackSelector: false,
-      }));
-    }
-
-    return viewers;
-  } // getLoadingsParamsViewers
-
-  /** Return explained variances viewer */
-  private explVarsViewer(): DG.Viewer {
-    if (this.specn === null)
-      throw new Error('Failed to create exaplained variances viewer: untrained model');
-
-    const components = this.specn.components;
-    const dim = this.specn.dim;
-
-    const compNames = new Array<string>(components);
-    const explVars = new Float32Array(components);
-
-    compNames[0] = `${RESULT_NAMES.COMP} 1`;
-    explVars[0] = this.specn.loadings[0][dim];
-
-    for (let i = 1; i < components; ++i) {
-      compNames[i] = `${RESULT_NAMES.COMPS} ${i + 1}`;
-      explVars[i] = this.specn.loadings[i][dim];
-    }
-
-    return DG.Viewer.barChart(DG.DataFrame.fromColumns([
-      DG.Column.fromStrings(RESULT_NAMES.COMPS, compNames),
-      DG.Column.fromFloat32Array(TITLE.EXPL_VAR, explVars),
-    ]), {
-      title: TITLE.EXPL_VAR,
-      splitColumnName: RESULT_NAMES.COMPS,
-      valueColumnName: TITLE.EXPL_VAR,
-      valueAggrType: DG.AGG.AVG,
-      help: LINK.EXPL_VARS,
-      showCategorySelector: false,
-      showStackSelector: false,
-      showValueSelector: false,
-    });
+  let explVar = 0;
+  for (let i = 0; i < components; ++i) {
+    explVar += q[i] ** 2 / samplesCount;
+    compNames[i] = `${i === 0 ? RESULT_NAMES.COMP : RESULT_NAMES.COMPS} ${i + 1}`;
+    explVars[i] = explVar;
   }
 
-  /** Returns viewers */
-  public viewers(): DG.Viewer[] {
-    if (this.specn === null)
-      throw new Error('Failed to create viewers: untrained model');
+  return DG.Viewer.barChart(DG.DataFrame.fromColumns([
+    DG.Column.fromStrings(RESULT_NAMES.COMPS, compNames),
+    DG.Column.fromFloat32Array(TITLE.EXPL_VAR, explVars),
+  ]), {
+    title: TITLE.EXPL_VAR,
+    splitColumnName: RESULT_NAMES.COMPS,
+    valueColumnName: TITLE.EXPL_VAR,
+    valueAggrType: DG.AGG.AVG,
+    help: LINK.EXPL_VARS,
+    showCategorySelector: false,
+    showStackSelector: false,
+    showValueSelector: false,
+  });
+}
 
-    const viewers = this.loadingsParamsViewers();
-    viewers.push(
-      this.explVarsViewer(),
-      this.getScoresScatter(),
-    );
+function scoresScatter(analysis: PlsOutput): DG.Viewer {
+  for (const [idx, col] of analysis.tScores.entries())
+    col.name = `${TITLE.XSCORE}${idx + 1}`;
+  for (const [idx, col] of analysis.uScores.entries())
+    col.name = `${TITLE.YSCORE}${idx + 1}`;
+  const scores = DG.DataFrame.fromColumns(analysis.tScores.concat(analysis.uScores));
+  const names = scores.columns.names();
 
-    return viewers;
-  }
+  const scatter = DG.Viewer.scatterPlot(scores, {
+    title: TITLE.SCORES,
+    xColumnName: names[0],
+    yColumnName: names[1],
+    markerType: DG.MARKER_TYPE.CIRCLE,
+    help: LINK.SCORES,
+    showViewerFormulaLines: true,
+  });
 
-  /** Return dataframe with scores */
-  private getScoresDf(analysis: PlsOutput): DG.DataFrame {
-    const tScores = analysis.tScores;
-    const uScores = analysis.uScores;
+  scatter.meta.formulaLines.addAll(getLines(scores.columns.toList()));
 
-    tScores.forEach((col, idx) => col.name = `${TITLE.XSCORE}${idx + 1}`);
-    uScores.forEach((col, idx) => col.name = `${TITLE.YSCORE}${idx + 1}`);
-
-    return DG.DataFrame.fromColumns(tScores.concat(uScores));
-  }
-
-  /** Return scores scatter */
-  private getScoresScatter(): DG.Viewer {
-    if (this.specn === null)
-      throw new Error('Failed to create scores scatter: untrained model');
-
-    const names = this.specn.scores.columns.names();
-
-    const scatter = DG.Viewer.scatterPlot(this.specn.scores, {
-      title: TITLE.SCORES,
-      xColumnName: names[0],
-      yColumnName: names[1],
-      markerType: DG.MARKER_TYPE.CIRCLE,
-      help: LINK.SCORES,
-      showViewerFormulaLines: true,
-    });
-
-    scatter.meta.formulaLines.addAll(getLines(this.specn.scores.columns.toList()));
-
-    return scatter;
-  }
-};
+  return scatter;
+}

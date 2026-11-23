@@ -1143,7 +1143,8 @@ function install(): void {
    * `view` area, else a point of the element's visible part that the page hit-tests to it — with
    * the canvas baseline taken and the menu armed. A tree node, a card or a list row has no render to
    * wait through and no areas (`settle` and `stableArea` throw for a non-viewer). */
-  const menuPoint = async (el: Element, area: string | null, capMs: number): Promise<{x: number; y: number; token: string}> => {
+  const menuPoint = async (el: Element, area: string | null, capMs: number):
+    Promise<{x: number; y: number; token: string; area?: Box}> => {
     const v = findViewer(el);
     if (!v && area !== null)
       throw new Error(`"${area}" names a hit area, and the element is not a viewer of an open table view`);
@@ -1212,7 +1213,9 @@ function install(): void {
         box ??= now ?? {x: r.x, y: r.y, width: r.width, height: r.height};
       }
     }
-    return {x: box.x + box.width / 2, y: box.y + box.height / 2, token: await openMenu(capMs)};
+    // a named area's rectangle goes back too: a guide lights it, not the viewer round it
+    return {x: box.x + box.width / 2, y: box.y + box.height / 2, token: await openMenu(capMs),
+      ...(area !== null ? {area: box} : {})};
   };
   let added: any;
   const addViewer = (type: string): void => {

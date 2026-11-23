@@ -1,7 +1,7 @@
 /**
  * The reaction cell renderer and reaction drawing: in Crux mode the cells are drawn by Crux (crux-reaction-drawing.ts),
- * in RDKit mode by RDKit; the reaction dialogs' previews are RDKit's in both modes (engine/README.md, "What stays
- * RDKit"). Its `rdKitModule` is RDKit's.
+ * in RDKit mode by RDKit. The reaction previews follow the engine in effect the same way
+ * (utils/reactions/reaction-drawing.ts); `renderReactionToCanvas` is their RDKit side. Its `rdKitModule` is RDKit's.
  */
 import * as DG from 'datagrok-api/dg';
 import {RDModule, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';

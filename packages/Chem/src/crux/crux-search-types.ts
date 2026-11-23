@@ -4,7 +4,7 @@ import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-me
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {Fingerprint} from '../utils/chem-common';
 import {SubstructureSearchType, getSearchQueryAndType} from '../constants';
-import {CruxSegment, cruxReadsCxExtension, hashStrings} from './crux-service';
+import {CruxSegment, hashStrings} from './crux-service';
 import {getCruxService, runCruxSearch} from './crux-searches';
 import {SearchTypeKeys, SegmentSearchResult, searchTypeHits} from './jobs/search-types';
 
@@ -54,8 +54,8 @@ export async function cruxSearchByType(col: DG.Column, molString: string, molBlo
       let sent: string[] | null = null;
       const send = (): string[] => {
         values ??= rawValues(col);
-        // a CXSMILES whose extension Crux does not read as RDKit does: RDKit's answer (its row sent empty)
-        return sent ??= values.slice(segment.start, segment.end).map((v) => cruxReadsCxExtension(v) ? v : '');
+        // (a CXSMILES with query features is Crux's too: Crux reads every field of the extension as RDKit does)
+        return sent ??= values.slice(segment.start, segment.end);
       };
       const job = (molecules: string[] | null) => call<SegmentSearchResult>('searchTypes::search',
         [segment.key, molecules, molString, molBlockFailover, searchType], MS_PER_ROW);
@@ -73,9 +73,8 @@ export async function cruxSearchByType(col: DG.Column, molString: string, molBlo
       if (!answer)
         throw new Error('a Crux worker holds no search keys of a segment it was sent');
       if (!state) {
-        const molecules = send();
-        const unread = [...Array.from(answer.unread), ...molecules.flatMap((m, i) => !m && values![segment.start + i] ?
-          [i] : [])].sort((a, b) => a - b);
+        values ??= rawValues(col);
+        const unread = Array.from(answer.unread).sort((a, b) => a - b);
         state = {unread, rdkitKeys: new SearchTypeKeys(unread.map((i) => values![segment.start + i])), version,
           hash: hashStrings(values!, segment.start, segment.end)};
         segmentStates.set(segment, state);

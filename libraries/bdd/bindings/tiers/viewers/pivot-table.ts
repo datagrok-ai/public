@@ -5,6 +5,7 @@ import {el, type ElementRef} from '../../../src/runtime/args.js';
 import {atFeatureEnd} from '../../../src/runtime/harness.js';
 import {exactText} from '../../../src/runtime/locate.js';
 import * as gestures from '../../../src/runtime/gestures.js';
+import {guideDir} from '../../../src/runtime/guide.js';
 import * as viewers from '../../../src/runtime/viewers.js';
 
 const HISTORY_KEY = 'grok-aggregation-history';
@@ -19,9 +20,12 @@ const settle = (page: Page, target: ElementRef): Promise<number> => viewers.sett
 export const addToRow = When('user adds {string} to the {string} row of pivot table viewer',
   async (page: Page, column: string, row: string) => {
     const target = el('pivot table viewer');
-    const c = viewers.centerOf(await viewers.hitArea(page, target, `add ${row}`, true));
+    const plus = await viewers.hitArea(page, target, `add ${row}`, true);
+    const c = viewers.centerOf(plus);
     await page.mouse.click(c.x, c.y);
-    await page.mouse.move(2, 2);
+    // a guide's pointer steps just off the +, clear of the picker: the page's corner is a flight across the video
+    const away = guideDir() ? await gestures.besidePicker(page, plus) : {x: 2, y: 2};
+    await page.mouse.move(away.x, away.y);
     await gestures.pickInColumnGrid(page, column, `the "${row}" row`);
     await settle(page, target);
   }, {tier: 'ui', description: 'the + of a tag row, the column typed and committed — as a user picks it'});
