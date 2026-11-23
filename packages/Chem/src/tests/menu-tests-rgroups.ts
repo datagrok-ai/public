@@ -196,7 +196,7 @@ M  END
       onlyMatchAtRGroups: true,
     }).call(undefined, undefined, {processed: false});
     expect(sampleTable.columns.names().length, 5, 'Number of detected R Grpoups is incorrect');
-    expect(['smiles', 'Core', 'R1', 'r-groups-highlight_0', 'isMatch']
+    expect(['smiles', 'Core', 'R1', '~r-groups-highlight_0', 'isMatch']
       .every((it) => sampleTable.columns.names().includes(it)), true);
   });
 
