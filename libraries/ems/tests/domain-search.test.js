@@ -197,5 +197,12 @@ scoped('a search changed over pending edits is applied by the Save\'s own re-bas
   assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Ibuprofen'], 'the pending search applies');
   assert.equal(reads.frames, 1, 'exactly one read of the rows, no second refresh');
   assert.equal(src.currentRow.value?.id, 'i2', 'the current row is kept');
+  // the re-base recorded the scope it read: a later Discard has no search left to apply
+  src.rows.byKey('i2').title = 'Edited again';
+  src.discard();
+  await flush();
+  await wait(30);
+  assert.equal(reads.frames, 1, 'Discard after the save reads nothing: the search was applied once');
+  assert.equal(src.currentRow.value?.id, 'i2');
   src.dispose();
 });
