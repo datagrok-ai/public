@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Forms: Fixed Save being allowed when a schema constraint over several columns was broken through any column but its first (saved Low 5, High 10 under `low <= high`, High set to 1): the Low field showed the message but Save went on and the server refused it; a constraint now holds Save whichever of its columns was edited, while an untouched stored value a tightened per-field rule refuses still does not
 * Lists: Fixed the first Load more after a search, filter or sort change re-reading every loaded page, or showing "Data changed" over pending edits, when nothing changed: a page check of the previous list that answered late was applied to the new one
 * Lists: Fixed a list showing the rows of a search, filter or Trash mode you had already switched away from: going to another scope and back while its read was in flight let that read land; a read that lands for a scope no longer current is dropped and the current one is read
 * Import: Fixed the preview saying "the file has no rows" on a storage with no dry run when the file had rows but every one was refused or skipped before sending: it says how many rows have errors and that no row is valid, as the dry-run preview does
