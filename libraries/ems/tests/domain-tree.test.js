@@ -372,3 +372,31 @@ scoped('a deleted node kept over pending changes stays selected through every la
     f.done();
   }
 });
+
+scoped('a node the user clicks while a followed tree is refreshing stays selected when the refresh ends', async () => {
+  const f = await following({expandTo: 'l4'});
+  try {
+    const memory = f.peer;
+    const real = memory.query;
+    let release;
+    const gate = new Promise((resolve) => release = resolve);
+    memory.query = async (spec) => {
+      if (spec.filter?.property === 'parent_id' || spec.filter?.property === 'id')
+        await gate;
+      return real.call(memory, spec);
+    };
+    await f.peer.transaction([{op: 'update', table: 'location', id: 'l2', values: {name: 'Room 2'}}]);
+    await f.tick();
+    const other = [...f.tree.root.querySelectorAll('[role="treeitem"]')].find((n) => n.textContent === 'Other site');
+    fire(other, 'click', {bubbles: true});
+    await flush();
+    assert.equal(f.tree.selected.value?.id, 'l9', 'what is bound to the selection follows the pick at once');
+    release();
+    await settle();
+    memory.query = real;
+    assert.ok(labels(f.tree).includes('Room 2'), 'the refresh ran');
+    assert.equal(f.tree.selected.value?.id, 'l9', 'the user\'s pick wins over the row the refresh re-found');
+  } finally {
+    f.done();
+  }
+});

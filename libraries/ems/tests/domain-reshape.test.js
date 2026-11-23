@@ -133,3 +133,39 @@ scoped('reshaped: an edit undone by hand leaves the session clean, and the page 
     done();
   }
 });
+
+scoped('reshaped: clearing a draft value in a removed column turns Save back on', async () => {
+  const {app, done} = await docked();
+  try {
+    const draft = app.listSource.newRow({project_id: 'p1', number: 9, title: 'New', priority: 'low'});
+    await flush();
+    emsBackends.domain = reshaped(({priority, ...columns}) => columns);
+    await DomainViews.reload('grit');
+    await flush();
+    assert.equal(app.session.validity.value, DROPPED);
+    draft.priority = null;
+    await flush();
+    assert.equal(app.session.changeCount.value, 1, 'still one change: the draft');
+    assert.equal(app.session.validity.value, null, 'nothing removed is pending any more');
+  } finally {
+    done();
+  }
+});
+
+scoped('reshaped: a rebuild that fails says why, and Refresh tries again', async () => {
+  const {app, done} = await docked();
+  try {
+    app.listSource.rows.byKey('i1').title = 'Edited';
+    await flush();
+    let tries = 0;
+    app.reshape(new Map(), () => (tries++, Promise.reject(new Error('The table did not load'))));
+    app.session.discard();
+    await flush();
+    assert.match(document.body.querySelector('[role="alert"]')?.textContent ?? '', /The table did not load/);
+    assert.equal(app.status.value.notice, 'Data changed — Refresh', 'nothing left to save or discard');
+    assert.equal(await app.refresh(), true);
+    assert.equal(tries, 2, 'the page is still marked: Refresh rebuilds again');
+  } finally {
+    done();
+  }
+});
