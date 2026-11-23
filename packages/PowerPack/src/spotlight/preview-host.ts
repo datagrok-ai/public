@@ -36,12 +36,11 @@ export function clearWorkspacePreview(): void {
   if (customizeEl) customizeEl.style.display = '';
 }
 
-export function showWorkspacePreview(content: HTMLElement, title?: string, onOpen?: () => void,
-  focus: boolean = false): void {
+export function showWorkspacePreview(content: HTMLElement, title?: string, onOpen?: () => void): void {
   if (!host)
     return;
   host.innerHTML = '';
-  host.parentElement?.classList.toggle(FOCUS_CLASS, focus);
+  host.parentElement?.classList.remove(FOCUS_CLASS);
   if (title || onOpen) {
     const header = document.createElement('div');
     header.className = 'pp-workspace-preview-header';
@@ -66,4 +65,10 @@ export function showWorkspacePreview(content: HTMLElement, title?: string, onOpe
   host.appendChild(content);
   host.style.display = '';
   if (customizeEl) customizeEl.style.display = 'none';
+}
+
+/** A package Spotlight tab's results: the other widgets step aside until the Spotlight's tab changes. */
+export function showFocusedPreview(content: HTMLElement, title?: string): void {
+  showWorkspacePreview(content, title);
+  host?.parentElement?.classList.add(FOCUS_CLASS);
 }
