@@ -1980,3 +1980,30 @@ scoped('EQ-054: Refresh on the no-access page reads the access afresh and brings
   assert.equal(add.root.hidden, false, 'New appears once the re-read finds the grant');
   a.dispose();
 });
+
+// row-mode tables: no table-level View, every row reachable through its own grant
+scoped('a user who reaches rows only through row grants sees them: picker, child tab and row page panes', async () => {
+  const fields = Object.fromEntries(['key', 'name', 'project_id', 'number', 'title'].map((c) => [c, 'readonly']));
+  emsBackends.domain = backend({access: {can: {view: false, insert: false, edit: false, delete: false, share: false},
+    fields}});
+  const {DomainPick} = await import('../src/dg/pick.js');
+  const pick = testOwner().build(() => new DomainPick('grit.project', {label: 'Project', debounceMs: 0}));
+  document.body.append(pick.root);
+  pick.root.querySelector('input').focus();
+  await flush();
+  await flush();
+  assert.match(document.body.textContent, /Datagrok.*Grit/, 'the picker lists the granted rows');
+  pick.dispose();
+  const table = await domains.table('grit.project');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await flush();
+  assert.equal(await a.goTo('entity', 'p1'), true);
+  await flush();
+  await flush();
+  assert.deepEqual([...a.panes.children].map((el) => el.dataset.u2), ['domain-children', 'domain-history'],
+    'the granted row keeps its panes');
+  assert.match(byKind(a, 'domain-children')[0].textContent, /Issues \(2\)/, 'the child tab counts the granted children');
+  assert.doesNotMatch(document.body.textContent, /do not have access/);
+  a.dispose();
+});
