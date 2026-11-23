@@ -84,7 +84,7 @@ function jsonOf(v: unknown): unknown {
     return undefined;
   try {
     return JSON.parse(typeof v === 'string' ? v : JSON.stringify(v));
-  } catch (_) {
+  } catch {
     return undefined;
   }
 }

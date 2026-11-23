@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {Control, signal, text, textWidth, Dates, span, timestamp, DataTable, Rows, notify} from '@datagrok-libraries/u2';
+import {Control, signal, text, textWidth, Dates, span, timestamp, DataTable, Rows,
+  notify} from '@datagrok-libraries/u2';
 import type {ReadonlySignal, IProperty, ObjectRenderer, CellStateLike, DataTableColumn,
   RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';

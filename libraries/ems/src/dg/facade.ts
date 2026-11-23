@@ -243,7 +243,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   }
 
   /** Whether the server fills a draft's `prop` on save: it has a default, or it is a column the table
-   * generates (its name column, an optional business-key part: the auto-numbered one). Any other column the caller may not write stays empty. */
+   * generates (its name column, an optional business-key part: the auto-numbered one). Any other column the
+   * caller may not write stays empty. */
   static isAssignedOnSave(info: DomainTableInfoLike, prop: IProperty): boolean {
     return (prop.defaultValue ?? null) !== null || prop.name === info.nameColumn ||
       (prop.nullable !== false && info.businessKey.includes(prop.name!));
@@ -259,7 +260,8 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
       !SYSTEM_COLUMNS.some(([name]) => name === p.name) && draft.field(p.name!) !== 'editable');
   }
 
-  /** {@link DomainErrors.noRequired} over `columns`, split by whether the access hides them or leaves them View-only. */
+  /** {@link DomainErrors.noRequired} over `columns`, split by whether the access hides them or leaves them
+   * View-only. */
   static noRequired(info: DomainTableInfoLike, columns: readonly IProperty[], access: Access): string {
     const draft = access.columnPolicy().forDraft();
     const caption = (p: IProperty) => DomainTable.captionOf(p);

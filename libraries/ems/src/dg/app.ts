@@ -32,7 +32,8 @@ export type DomainAppMode = 'live' | 'trash';
 /** What the status bar says while a live source is behind the server ({@link DomainApp.refresh}). */
 const STALE = 'Data changed — Refresh';
 
-/** What it says while Edit properties… changed the table's columns under pending changes ({@link DomainApp.reshape}). */
+/** What it says while Edit properties… changed the table's columns under pending changes
+ * ({@link DomainApp.reshape}). */
 const RESHAPED = 'Properties changed: save or discard to reload';
 
 /** Below this width the ribbon has no room for the presets. */
@@ -191,8 +192,8 @@ export class DomainApp extends Control {
   private readonly _sync: ViewSync;
   private _opening: {address: string, done: Promise<boolean>} | undefined;
   // the columns Edit properties… dropped under pending changes, and how the page is rebuilt once they are settled
-  private readonly _reshaped =
-    signal<{removed: ReadonlyMap<string, IProperty[]>, rebuild: () => Promise<void>} | null>(null);
+  private readonly _reshaped: Signal<{removed: ReadonlyMap<string, IProperty[]>, rebuild: () => Promise<void>} | null> =
+    signal(null);
 
   private static readonly _byView = new WeakMap<DG.ViewBase, DomainApp>();
   private static readonly _views = new WeakMap<DomainApp, DG.ViewBase>();
@@ -687,9 +688,10 @@ export class DomainApp extends Control {
     const edit = source.edit.peek();
     for (const row of source.pending()) {
       const prop = removed.find((p) => Rows.isDraft(row) ? row[p.name!] != null : edit?.isChanged(row.id, p.name!));
-      if (prop !== undefined)
+      if (prop !== undefined) {
         return `${DomainTable.captionOf(prop)} was removed in Edit properties…: ` +
           'undo your change to it, or Discard all changes';
+      }
     }
     return null;
   }

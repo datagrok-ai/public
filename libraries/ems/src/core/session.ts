@@ -1,5 +1,6 @@
 import {emsBackends, capital, nounOf, DomainBackendError} from './domain-backend.js';
-import {signal, computed, batch, ReadonlySignal, Emitter, plural, notify, Dialog, Rows, div} from '@datagrok-libraries/u2';
+import {signal, computed, batch, ReadonlySignal, Emitter, plural, notify, Dialog, Rows,
+  div} from '@datagrok-libraries/u2';
 import type {ObservableLike, SpecInstance, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from './domain-source.js';
 
@@ -194,7 +195,8 @@ export class SharedSession implements DomainSession {
         const was = before.get(s)!;
         const rows = written.get(s);
         const dropped = rows === 0 && was.rows > 0;
-        return {source: s, changes: dropped ? 0 : rows === undefined || rows >= was.rows ? was.changes : Math.min(rows, was.changes),
+        return {source: s,
+          changes: dropped ? 0 : rows === undefined || rows >= was.rows ? was.changes : Math.min(rows, was.changes),
           dropped};
       }).filter((l) => !l.dropped);
       if (landing.length === 0) {

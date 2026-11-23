@@ -204,7 +204,7 @@ export class DomainList extends Control {
           [button(`New ${nounOf(info, true)}`, () => create(), {primary: true})] : [];
     const said = denied ?? this._options.empty ?? (search !== '' ? `No ${what} match "${search}"` :
       filtered ? `No ${what} match the filter` : trash ? 'Trash is empty' :
-      `No ${what} yet${create !== undefined && noCreate !== null ? `. ${noCreate}` : ''}`);
+        `No ${what} yet${create !== undefined && noCreate !== null ? `. ${noCreate}` : ''}`);
     const state = emptyState(said,
       {icon: denied !== null ? 'lock' : search !== '' ? 'search' : trash ? 'trash-alt' : 'inbox', actions});
     state.classList.add('u2-domain-list-nothing');
