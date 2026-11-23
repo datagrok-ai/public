@@ -892,10 +892,12 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private tryAgain() {
     if (this._messages.length === 0)
       return; // should never happen, but just in case
-    if (this.isBusy)
+    // The prompt itself is resent: a request stopped before the agent picked it up is not in its history.
+    const last = this.promptHistory.pop();
+    if (!last || this.isBusy)
       return;
     const inputs = this.getCurrentInputs();
-    inputs.prompt = 'Please try again. ';
+    inputs.prompt = last;
     this._onRunRequest.next({
       prevMessages: [...this._messages],
       currentPrompt: inputs,
@@ -1094,15 +1096,42 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       }
 
       const menu = DG.Menu.popup();
+      const deleting = new Map<string, number>();
+      const finish = (id: string, remove: boolean) => {
+        clearTimeout(deleting.get(id));
+        deleting.delete(id);
+        if (remove)
+          ConversationStorage.deleteConversation(id).catch(() => grok.shell.error('Failed to delete chat'));
+      };
       for (const conv of conversations) {
         if (this.currentConversationId && conv.id === this.currentConversationId)
           continue;
         const date = new Date(conv.timestamp).toLocaleString();
-        const preview = conv.initialPrompt.substring(0, 40);
+        const preview = conv.initialPrompt.substring(0, 40).replace(/\|/g, '/'); // '|' would make a submenu
         const displayText = `${preview}${conv.initialPrompt.length > 40 ? '...' : ''} (${date})`;
 
-        menu.item(displayText, () => this.loadConversation(conv.id));
+        menu.item(displayText, () => {
+          finish(conv.id, false);
+          this.loadConversation(conv.id);
+        });
+        const row = menu.root.querySelector('.d4-menu-item:last-child')!;
+        const toggle = (e: MouseEvent) => {
+          e.stopPropagation();
+          finish(conv.id, false);
+          if (row.classList.toggle('grokky-history-deleted')) {
+            deleting.set(conv.id, window.setTimeout(() => {
+              row.remove();
+              finish(conv.id, true);
+            }, 5000));
+          }
+        };
+        const trash = ui.icons.delete(toggle, 'Delete chat');
+        const undo = ui.icons.undo(toggle, 'Undo');
+        trash.classList.add('grokky-history-icon', 'grokky-history-delete');
+        undo.classList.add('grokky-history-icon', 'grokky-history-undo', 'grok-icon-blue');
+        row.append(trash, undo);
       }
+      menu.onClose.subscribe(() => Array.from(deleting.keys()).forEach((id) => finish(id, true)));
 
       menu.separator();
       menu.item('Clear All History', async () => {

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Grokky: Fixed Try again forgetting the request after a quick Stop
+* Grokky: Added deleting a single chat from the history menu, with undo
 * Grokky: Fixed suggestions naming the wrong column, such as an ID column in the Molecules prompts or a date in the numeric ones
 * Grokky: Confirmation card shows its answer in the header
 * [public#4648](https://github.com/datagrok-ai/public/issues/4648): Fixed asterisks in the Stop notice
