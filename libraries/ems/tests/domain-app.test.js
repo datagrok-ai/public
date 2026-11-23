@@ -693,6 +693,20 @@ scoped('a shared ?sort= keeps only the columns this caller may read, and the lis
   a.dispose();
 });
 
+scoped('a saved search sorting by a column removed since drops it, says so once, and the list loads', async () => {
+  emsBackends.domain = backend();
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await flush();
+  SavedSearches.apply(a.listSource, {q: '', search: '', sort: 'qa_gone,!number'});
+  await flush();
+  assert.equal(a.listSource.sort.value, '!number', 'only the columns the table describes are sent');
+  assert.equal(a.listSource.state.value, 'ready');
+  assert.equal(document.body.querySelectorAll('[role="alert"]').length, 1, 'said once');
+  a.dispose();
+});
+
 scoped('a ?q= link or a saved search is sent as the box formats it: the server reads what the box validated', async () => {
   const {app: a} = await app();
   const formatted = (q) => Filters.format(Filters.parse(q, a.listSource.schema, 'domain').root);
