@@ -384,6 +384,20 @@ scoped('a child row typed while the clean parent\'s reload is in flight survives
   parent.dispose();
 });
 
+scoped('a search change still lands over a child row typed while it was in flight', async () => {
+  const {gate, parent, children} = await heldPage({pageSize: 10});
+  gate.hold = true;
+  parent.search.value = 'Globex';
+  await settle();
+  children.child(CONTACTS).newRow({name: 'Typed during search'});
+  gate.release();
+  await settle();
+  await settle();
+  assert.deepEqual(parent.rows.items.value.map((r) => r.id), ['c2'], 'the search the user asked for is applied');
+  children.dispose();
+  parent.dispose();
+});
+
 scoped('a reload kept over a child row typed in flight keeps its lost window: the next page starts over', async () => {
   const {gate, parent, children, typeDuringReload} = await heldPage({pageSize: 1});
   parent.markStale(new Error('offline'));
