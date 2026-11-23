@@ -565,24 +565,29 @@ scoped('DomainTable.app(): the shell rewrites the view path only AFTER onViewAdd
 });
 
 // EQ-021: Edit revoked mid-edit. Today's served js-api refusal has no code, only the bare
-// "forbidden"; it must still drop the platform caches so the app re-reads the access and re-gates.
+// "forbidden"; it must still drop the platform caches, re-read the access and the rows' own
+// `~can_edit` (which replaces the table's answer per row), and re-gate the form after Discard.
 scoped('EQ-021: a save refused as bare "forbidden" re-reads the access and re-gates the form', async () => {
   const DG = await import('datagrok-api/dg');
   const {DgDomainBackend} = await import('../src/dg/backend.js');
   const {app: a} = await app();
+  const memory = emsBackends.domain;
+  const table = memory.tableSync('grit.issue');
+  const i1 = table.rows.find((r) => r.id === 'i1');
+  i1['~can_edit'] = true; // the server's per-row answer, as a platform frame carries it
   await a.goTo('entity', 'i1');
   await flush();
   a.form.value.input('title').value = 'Revoked meanwhile';
   await flush();
   const dg = new DgDomainBackend();
-  const memory = emsBackends.domain;
   memory.saveAll = (edits) => dg.saveAll(edits);
   memory.dropAccess = () => dg.dropAccess();
-  const table = memory.tableSync('grit.issue');
   const cached = table.access.bind(table);
   const before = grok.dapi.domains.invalidated;
+  // the revoke, read after the caches go: the table and the row say no; the column grant stays
   table.access = async () => grok.dapi.domains.invalidated > before ?
-    {can: {view: true, insert: false, edit: false, delete: false, share: false}, fields: {title: 'readonly'}} : cached();
+    {can: {view: true, insert: false, edit: false, delete: false, share: false}, fields: {title: 'editable'}} : cached();
+  i1['~can_edit'] = false;
   DG.DomainSession.next = {message: 'forbidden', editor: null};
   try {
     assert.equal(await a.session.save(), false);
@@ -592,8 +597,10 @@ scoped('EQ-021: a save refused as bare "forbidden" re-reads the access and re-ga
   }
   assert.equal(grok.dapi.domains.invalidated > before, true, 'a forbidden save drops the platform access caches');
   assert.equal(a.entitySource.value.access.value.can('edit'), false, 'the entity source re-read its access');
-  assert.equal(a.form.value.input('title'), undefined, 'the form is read-only');
   assert.equal(a.session.isDirty.value, true, 'the edit is kept until Discard');
+  a.session.discard();
+  await flush();
+  assert.equal(a.form.value.input('title') === undefined, true, 'after Discard the form is read-only');
   a.dispose();
 });
 
