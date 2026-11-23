@@ -216,8 +216,16 @@ export class DgDomainTable implements DomainTableLike {
       edit,
       append: async (page) => {
         const rows = await this.client.queryDf(DgDomainTable.spec(page));
+        const read = rows.rowCount;
+        // a row another session's write pushed across the page boundary is already in the frame
+        const ids = df.col('id');
+        const theirs = rows.col('id');
+        if (ids !== null && theirs !== null) {
+          const held = new Set(ids.toList());
+          rows.rows.removeWhereIdx((i) => held.has(theirs.get(i)));
+        }
         df.append(rows, true);
-        return rows.rowCount;
+        return read;
       },
       dispose: () => edit.dispose(),
     };

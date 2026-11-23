@@ -6,6 +6,7 @@ import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {backends, Scope} from '@datagrok-libraries/u2';
 import {DomainSource} from '../src/core/domain-source.js';
+import {SharedSession} from '../src/core/session.js';
 import {backend} from './domain-fixtures.mjs';
 
 // before any test(): a later top-level await lets dg/backend.js reassign the seam mid-test
@@ -78,24 +79,81 @@ async function tick(times = 1, ms = 1000) {
   }
 }
 
-scoped('the first probe only baselines; a moved pair reloads a clean source', async () => {
+scoped('the load takes the baseline, the first probe compares; a moved pair reloads a clean source', async () => {
   const be = counted();
   const src = await started(be);
   assert.equal(src.rows.items.value.length, 3);
-  assert.deepEqual(be.probes, [], 'nothing is asked before the first interval');
+  assert.equal(be.probes.length, 1, 'the load asked once, for the baseline');
 
   await tick();
-  assert.equal(be.probes.length, 1, 'ONE call per interval, not a page of rows');
-  assert.deepEqual(Object.keys(be.probes[0]).sort(), ['filter'], 'the one read scope, the default trash mode left off');
+  assert.equal(be.probes.length, 2, 'ONE call per interval, not a page of rows');
+  assert.deepEqual(Object.keys(be.probes[1]).sort(), ['filter'], 'the one read scope, the default trash mode left off');
   assert.equal(src.stale.value, false);
 
   const issue = await be.backend.table('grit.issue');
   await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'New one'}}]);
   await tick();
-  assert.equal(be.probes.length, 2);
+  assert.equal(be.probes.length, 4, 'the poll, then the reload\'s fresh baseline');
   await flush();
   assert.equal(src.rows.items.value.length, 4, 'the collection moved, so the rows were read again');
   assert.equal(src.stale.value, false, 'a source that reloaded is not stale');
+  src.dispose();
+});
+
+scoped('a write between the load and the first poll is seen by that poll (EQ-037)', async () => {
+  const be = counted();
+  const src = await started(be);
+  const issue = await be.backend.table('grit.issue');
+  await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'Early'}}]);
+  await tick();
+  await flush();
+  assert.equal(src.rows.items.value.length, 4, 'the first poll compares with the load, it does not adopt the write as its baseline');
+  src.dispose();
+});
+
+scoped('a write by another session right after a save is seen by the next poll (EQ-037)', async () => {
+  const be = counted();
+  const src = await started(be);
+  src.rows.byKey('i1').title = 'Mine';
+  assert.equal(await src.save(), true);
+  await flush();
+  const issue = await be.backend.table('grit.issue');
+  await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'Theirs'}}]);
+  await tick();
+  await flush();
+  assert.equal(src.rows.items.value.length, 4, 'the next poll compares with the re-base, it does not adopt the write');
+  src.dispose();
+});
+
+scoped('a load that bails over an edit made in flight keeps the baseline its rows were read with (EQ-037)', async () => {
+  const be = counted();
+  const src = await started(be);
+  await tick();
+  const reload = src.refresh();
+  src.rows.byKey('i1').title = 'Mine';
+  await reload;
+  const issue = await be.backend.table('grit.issue');
+  await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'Theirs'}}]);
+  await tick();
+  assert.equal(src.stale.value, true, 'the next poll says the data changed');
+  assert.equal(src.rows.byKey('i1').title, 'Mine');
+  src.dispose();
+});
+
+scoped('the poll keeps pending rows anywhere in the session: a clean source over them is marked stale (EQ-037)', async () => {
+  const be = counted();
+  const session = new SharedSession();
+  const src = await started(be, {session});
+  const projects = testOwner().build(() => new DomainSource({table: 'grit.project', pageSize: 10, session}, env));
+  projects.start();
+  await flush();
+  projects.rows.items.value[0].name = 'Pending';
+  const issue = await be.backend.table('grit.issue');
+  await issue.transaction([{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 9, title: 'Theirs'}}]);
+  await tick();
+  assert.equal(src.stale.value, true, 'a dirty session is marked behind the server, never reloaded under');
+  assert.equal(src.rows.items.value.length, 3);
+  projects.dispose();
   src.dispose();
 });
 
@@ -198,16 +256,17 @@ scoped('a probe that fails keeps the baseline, and a run of failures stops the t
 scoped('nothing is asked while the tab is hidden, and nothing after dispose', async () => {
   const be = counted();
   const src = await started(be);
+  assert.equal(be.probes.length, 1, 'the load\'s baseline');
   Object.defineProperty(document, 'hidden', {configurable: true, value: true});
   await tick(3);
-  assert.deepEqual(be.probes, [], 'a background tab is throttled and has no one reading it');
+  assert.equal(be.probes.length, 1, 'a background tab is throttled and has no one reading it');
   delete document.hidden;
   await tick();
-  assert.equal(be.probes.length, 1);
+  assert.equal(be.probes.length, 2);
 
   src.dispose();
   await tick(3);
-  assert.equal(be.probes.length, 1, 'the timer went with the source');
+  assert.equal(be.probes.length, 2, 'the timer went with the source');
 });
 
 scoped('live is a signal: turning it off stops the timer, turning it on starts one', async () => {
@@ -358,7 +417,7 @@ scoped('a change token that moves refreshes a clean source and marks a dirty one
   const be = tokened();
   const src = await started(be);
   await tick();
-  assert.equal(be.calls.token, 1, 'one token read per interval');
+  assert.equal(be.calls.token, 2, 'one token read per interval, after the load\'s baseline');
   await tick();
   assert.equal(src.stale.value, false, 'a token that did not move is not a change');
 
@@ -384,13 +443,13 @@ scoped('narrowing the query re-baselines: the shapes never meet in one compariso
   const be = tokened();
   const src = await started(be);
   await tick();
-  assert.equal(be.calls.token, 1);
+  assert.equal(be.calls.token, 2, 'the load\'s baseline and the first poll');
 
   src.query.value = 'done = false';
   await flush();
   await tick();
-  assert.equal(be.calls.aggregate, 1, 'a narrowed source counts');
-  assert.equal(src.stale.value, false, 'and the first poll after the change only baselines');
+  assert.equal(be.calls.aggregate, 2, 'a narrowed source counts: its reload\'s baseline, then the poll');
+  assert.equal(src.stale.value, false, 'and the first poll after the change compares with the reload\'s baseline');
   const rows = src.rows.items.value.length;
   await tick();
   assert.equal(src.rows.items.value.length, rows, 'no false change out of the shape swap');
@@ -398,7 +457,7 @@ scoped('narrowing the query re-baselines: the shapes never meet in one compariso
   src.query.value = '';
   await flush();
   await tick();
-  assert.equal(be.calls.token, 2, 'back to the whole table, back to the token');
+  assert.equal(be.calls.token, 4, 'back to the whole table, back to the token');
   assert.equal(src.stale.value, false);
   src.dispose();
 });
@@ -448,7 +507,7 @@ scoped('DomainAppOptions.live reaches the list source — the option the apps ac
   await flush();
   assert.equal(app.listSource.live.value, true, 'the app asked for it, so the list polls');
   await tick();
-  assert.equal(be.probes.length, 1);
+  assert.equal(be.probes.length, 2, 'the load\'s baseline, then the first poll');
 
   // the simulated user's scenario: a draft pending here, an insert from another session there
   app.listSource.newRow({title: 'Mine', project_id: 'p1'});
@@ -507,4 +566,100 @@ scoped('the trash reads newest-deleted first, and leaving it gives the order bac
   assert.equal(app.listSource.sort.value, '');
   app.dispose();
   assert.equal(DomainApp.live.size, 0, 'no app left behind');
+});
+
+// EQ-002: a peer's write reloads a clean live source, and the reload went through `_drop`, which empties the
+// current row and the selection. The source's own save (`_rebase`) keeps both by id.
+const selectRows = (src, ...keys) => {
+  for (const key of keys)
+    src.df.value.selection.set(src.rows.indexOf(key), true);
+};
+const selectedIds = (src) => src.selection.value.map((r) => r.id);
+const peerUpdate = async (be, table, id, values) =>
+  (await be.backend.table(`grit.${table}`)).transaction([{op: 'update', table, id, values}]);
+
+scoped('a peer\'s write refreshes the rows in place: the current row (never null) and the selection stay by id (EQ-002)', async () => {
+  const be = counted();
+  const src = await started(be);
+  await tick();
+  src.currentRow.value = src.rows.byKey('i3');
+  selectRows(src, 'i2', 'i3');
+  await flush();
+  const seen = [];
+  src.effect(() => seen.push(src.currentRow.value?.id ?? null));
+  await peerUpdate(be, 'issue', 'i1', {title: 'Theirs'});
+  await tick();
+  await flush();
+  assert.equal(src.rows.byKey('i1').title, 'Theirs', 'the poll saw the write and read the rows again');
+  assert.deepEqual(seen.filter((id) => id !== 'i3'), [], 'the current row stays on the row it was');
+  assert.deepEqual(selectedIds(src), ['i2', 'i3']);
+  src.dispose();
+});
+
+scoped('a current row past the first page stays where it is: the reload re-reads the window shown (EQ-002)', async () => {
+  const be = counted();
+  const src = await started(be, {pageSize: 2});
+  await src.loadMore();
+  await tick();
+  src.currentRow.value = src.rows.byKey('i3');
+  await flush();
+  await peerUpdate(be, 'issue', 'i1', {title: 'Theirs'});
+  await tick();
+  await flush();
+  assert.equal(src.rows.byKey('i1').title, 'Theirs');
+  assert.equal(src.currentRow.value?.id, 'i3', 'the current row on page two stays on the row it was');
+  src.dispose();
+});
+
+scoped('a child collection under the current row is not rebuilt when a peer\'s write reloads its parent (EQ-002)', async () => {
+  const be = counted();
+  emsBackends.domain = be.backend;
+  const projects = await domains.table('grit.project');
+  const parent = testOwner().build(() => projects.source({pageSize: 10, live: true, liveMs: 1000}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('p1');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await flush();
+  await flush();
+  const child = children.child('grit.issue.project_id');
+  await tick();
+  await peerUpdate(be, 'project', 'p2', {name: 'Theirs'});
+  await tick();
+  await flush();
+  assert.equal(parent.rows.byKey('p2').name, 'Theirs', 'the poll saw the write and read the parent again');
+  // by identity: a child that passed through a null parent row is disposed and built again
+  assert.ok(children.child('grit.issue.project_id') === child && !child.scope.isDisposed, 'the same child source');
+  children.dispose();
+  parent.dispose();
+});
+
+scoped('a save that re-bases while a peer\'s reload is in flight keeps the current row and the selection (EQ-002)', async () => {
+  const be = counted();
+  // the next frame read (the poll's reload) is held until released, so the save's re-base lands first
+  let hold;
+  const inner = be.backend.table;
+  be.backend.table = async (address) => {
+    const t = await inner(address);
+    return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {
+      frame: async (spec) => { const gate = hold; hold = undefined; await gate; return t.frame(spec); }});
+  };
+  const src = await started(be);
+  await tick();
+  src.currentRow.value = src.rows.byKey('i2');
+  selectRows(src, 'i2', 'i3');
+  await flush();
+  let release;
+  hold = new Promise((r) => release = r);
+  await peerUpdate(be, 'issue', 'i3', {title: 'Theirs'});
+  await tick();
+  src.rows.byKey('i1').title = 'Mine';
+  assert.equal(await src.save(), true);
+  release();
+  await flush();
+  await flush();
+  await tick();
+  assert.equal(src.rows.byKey('i3').title, 'Theirs');
+  assert.equal(src.currentRow.value?.id, 'i2', 'the current row stays on the row it was');
+  assert.deepEqual(selectedIds(src), ['i2', 'i3']);
+  src.dispose();
 });

@@ -5,7 +5,7 @@ import type {FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterSca
   ComponentStart} from '@datagrok-libraries/u2';
 import type {EditState} from './edit-state.js';
 import {emsBackends, DomainBackendError, capital, nounOf} from './domain-backend.js';
-import type {DomainBackend, DomainDeletedMode, DomainFrameLike, DomainQueryLike, DomainReadScope,
+import type {DomainBackend, DomainDeletedMode, DomainFrameLike, DomainProbeLike, DomainQueryLike, DomainReadScope,
   DomainTableInfoLike, DomainTableLike} from './domain-backend.js';
 import {SharedSession} from './session.js';
 import type {DomainSession} from './session.js';
@@ -176,19 +176,30 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _captionOption: string[] | undefined;
   private _table: DomainTableLike | undefined;
   private _ready: Promise<DomainTableLike> | undefined;
+  // the other tables the live probe follows for whoever reads them off these rows ({@link watch})
+  private readonly _watched = new Map<string, {moved: Set<() => void>, table?: Promise<DomainTableLike>,
+    last?: DomainProbeLike}>();
   private _frame: DomainFrameLike | undefined;
   private _schema: DomainSchema = {properties: [], info: NO_INFO};
   private _unwire: (() => void) | undefined;
   private _gen = 0;
   private _loaded = 0;
+  // the id of the last row the server answered at offset `_loaded - 1`: the next page checks it is still there
+  private _last: string | null = null;
+  // a page found the window shifted while changes were pending: the next clean page re-bases it
+  private _moved = false;
   private _done = false;
+  // what the shown rows were read for (query, search, sort, deleted) — a reload of the same collection
+  // is told from a filter change by it
+  private _shownFor: string | undefined;
   // the loaded window is no longer the server's: the next load starts over, not at the next page
   private _restart = false;
   // the caller of `rebind` re-reads; a refresh here would drop the frame the batch just landed in
   private _rebinding = false;
   private readonly _liveMs: number;
   private _timer: ReturnType<typeof setInterval> | undefined;
-  // undefined until the first probe after a load, which only sets the baseline
+  // what the server looked like when the rows landed — read just before them by a live load; undefined
+  // (after a save, or a load that could not ask) until the next probe, which then only sets it
   private _probed: {count: number, last: string | null} | undefined;
   private _probing = false;
   private _failures = 0;
@@ -376,8 +387,24 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     if (this.scope.isDisposed)
       return;
     const gen = ++this._gen;
+    // a load that keeps the shown rows below keeps what is known about their window too
+    const restart = this._restart;
+    const moved = this._moved;
     this._restart = false;
-    // the rows about to arrive are the server's again, and the next probe baselines on them
+    this._moved = false;
+    const readFor = this._readFor();
+    // a reload of the collection shown, started over a clean session, keeps the rows when changes appear
+    // in the session before it lands — a child row typed under the current row, which `_drop` would dispose
+    const keepOverSession = readFor === this._shownFor && !this.session.isDirty.peek();
+    // the same collection read again — a peer's write the poll saw, another source's save, Refresh — is
+    // re-read over the window shown (EQ-025), as the re-base after a save is, and swapped in place: the
+    // current row and the selection stay by id, never through null (EQ-002). A new query, search, sort or
+    // trash mode is a new collection and starts over from the first page
+    const shownFrame = readFor === this._shownFor ? this._frame : undefined;
+    const window = shownFrame === undefined ? this.pageSize : Math.max(this._loaded, this.pageSize);
+    // the rows about to arrive are the server's again, and the baseline is taken with them below; the
+    // one the rows shown now were read with is kept for a load that bails over pending changes
+    const shown = this._probed;
     this._probed = undefined;
     batch(() => {
       this._error.value = undefined;
@@ -399,34 +426,67 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       await this._serve(true);
       if (gen !== this._gen)
         return;
+      // the baseline the first poll compares with, read BEFORE the rows: a write after it is seen by
+      // that poll, one between it and the rows costs one reload at worst. Adopting the first poll's
+      // answer instead let a write between this load and that poll (up to `liveMs`) go unseen for good
+      const baseline = await this._baseline(table);
+      if (gen !== this._gen)
+        return;
       const [frame, total] = await Promise.all([
-        table.frame(this._spec(0)), this._noRows ? 0 : this._count(table)]);
+        table.frame(this._spec(0, window)), this._noRows ? 0 : this._count(table)]);
       if (gen !== this._gen) {
         frame.dispose();
         return;
       }
-      // an edit landed on the live frame while this load was in flight: the edited frame stays
-      if (this.isDirty.peek()) {
+      // an edit landed on the live frame while this load was in flight: the edited frame stays, and
+      // so does the baseline it was read with — a write since then is still a change to the next poll
+      if (this.isDirty.peek() || (keepOverSession && this.session.isDirty.peek())) {
         frame.dispose();
-        this._state.value = 'ready';
+        this._probed = shown;
+        this._restart ||= restart;
+        this._moved ||= moved;
+        batch(() => {
+          // over changes elsewhere in the session the rows are behind the server, as a peer save marks them
+          if (!this.isDirty.peek())
+            this._isStale.value = true;
+          this._state.value = 'ready';
+        });
         return;
       }
-      this._drop();
-      this._frame = frame;
-      this._loaded = frame.df.rowCount;
-      this._done = this._noRows || this._loaded < this.pageSize;
-      this._wire(frame);
-      batch(() => {
-        this._df.value = frame.df;
-        this._edit.value = frame.edit;
+      const landed = () => {
         this._total.value = total;
         this._state.value = 'ready';
         // cleared where the load LANDS, not where it starts: one that bails over pending changes
         // leaves the rows behind the server, and the mark has to say so
         this._isStale.value = false;
-      });
-      this._syncCurrent();
-      this._syncSelection();
+      };
+      if (readFor === this._shownFor && this._frame !== undefined && this._frame !== shownFrame) {
+        // the collection shown was swapped while this read was in flight — a save's or a page's re-base —
+        // and which of the two reads is newer is unknown: this one is dropped and the collection read
+        // again over the frame now held, never through `_drop` (that would null the current row)
+        frame.dispose();
+        await this.refresh();
+        return;
+      }
+      if (shownFrame !== undefined)
+        this._swap(frame, window, baseline, this._keep(), landed);
+      else {
+        this._drop();
+        this._shownFor = readFor;
+        this._frame = frame;
+        this._loaded = frame.df.rowCount;
+        this._last = DomainSource._lastOf(frame.df, this._loaded);
+        this._done = this._noRows || this._loaded < this.pageSize;
+        this._probed = baseline;
+        this._wire(frame);
+        batch(() => {
+          this._df.value = frame.df;
+          this._edit.value = frame.edit;
+          landed();
+        });
+        this._syncCurrent();
+        this._syncSelection();
+      }
       if (this.isDraft)
         this.newRow({}, {pristine: true});
     } catch (e) {
@@ -451,11 +511,37 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._state.value = 'loading';
     try {
       await this._serve();
-      const added = await frame.append(this._spec(this._loaded));
+      const offset = this._loaded;
+      const boundary = this._last;
+      // what the server answered at `offset`; an id the frame already holds is not appended a second time
+      const read = await frame.append(this._spec(offset));
       if (gen !== this._gen)
         return;
-      this._loaded += added;
-      this._done = added < this.pageSize;
+      this._loaded += read;
+      this._last = read === 0 ? this._last : DomainSource._lastOf(frame.df, frame.df.rowCount);
+      this._done = read < this.pageSize;
+      // checked AFTER the page was read, so a write that landed before the read is seen too: another
+      // session's insert, delete or update before the boundary moved the offsets, and the page repeated or
+      // skipped a row. The window is then re-read from offset 0, as after a save; over pending changes,
+      // which a re-read would drop, the source says the data changed and the next clean page re-bases
+      this._moved ||= await this._shifted(offset, boundary);
+      if (gen !== this._gen)
+        return;
+      const moved = this._moved;
+      if (moved && this.isDirty.peek())
+        this._isStale.value = true;
+      else if (moved) {
+        // the re-base takes a fresh baseline with the window it re-reads
+        this._probed = undefined;
+        await this._rebase();
+      }
+      // the total too: a write after the boundary is not a shift, but it moves "N of M"
+      if ((moved || this._done) && this._table !== undefined && gen === this._gen) {
+        const total = await this._count(this._table);
+        if (gen !== this._gen)
+          return;
+        this._total.value = total;
+      }
       this._state.value = 'ready';
     } catch (e) {
       if (gen !== this._gen)
@@ -615,20 +701,59 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return this._rows.pending() as RowView<TRow>[];
   }
 
+  /** Follows another table `address` on this source's live probe — what is read off these rows
+   * but lives elsewhere (the table view's aggregations over the child tables): every tick asks it
+   * once, unscoped (the change token where the backend keeps one), however many callers watch it,
+   * and `moved` runs when it changed, or when a save in this browser wrote it. Answers the unwatch. */
+  watch(address: string, moved: () => void): () => void {
+    let entry = this._watched.get(address);
+    if (entry === undefined) {
+      this._watched.set(address, entry = {moved: new Set()});
+      // the baseline now, not at the first tick: a write before that tick is a move, as for the rows (EQ-037)
+      if (this.live.peek())
+        void this._probeWatched(address, entry);
+    }
+    entry.moved.add(moved);
+    return () => {
+      entry!.moved.delete(moved);
+      if (entry!.moved.size === 0 && this._watched.get(address) === entry)
+        this._watched.delete(address);
+    };
+  }
+
   /** After a batch this source took part in landed: the loaded window re-read so paging starts
    * from the offset the server agrees with, the total counted again, and every other live source
    * of the same table reloaded — it is holding the rows this batch just rewrote. */
   async afterSave(): Promise<void> {
     const gen = this._gen;
-    // the batch moved the collection itself: the next probe baselines on what we just wrote
+    // the batch moved the collection itself: the re-base takes the baseline again with the window it
+    // re-reads; until then (and where it cannot) the next probe adopts, never reads our own write as theirs
     this._probed = undefined;
     await this._rebase();
     // and the re-base has just re-read the window, so the rows are the server's again — a save
     // clears the stale mark as a reload does, or "Data changed — Refresh" would stand for good
     this._isStale.value = false;
     for (const source of DomainSource.live) {
-      if (source !== this && source.table === this.table && !source.isDirty.peek())
+      if (source === this || source.table !== this.table)
+        continue;
+      // pending changes anywhere in its session — its own rows, or a child collection under its
+      // current row that the reload's `_drop` would dispose — are never someone else's to throw
+      // away: the source is marked behind the server instead, as a live probe marks it
+      if (source.isDirty.peek() || source.session.isDirty.peek())
+        source._isStale.value = true;
+      else
         source.refresh().catch((e) => source.fail(e));
+    }
+    // what this batch wrote is news to whoever follows this table off another one's rows; their
+    // baseline moves past our own write, so the next probe does not report it a second time
+    for (const source of DomainSource.live) {
+      const entry = source._watched.get(this.table);
+      if (entry === undefined)
+        continue;
+      entry.last = undefined;
+      void source._probeWatched(this.table, entry);
+      for (const moved of [...entry.moved])
+        moved();
     }
     if (!this._noRows && this._table !== undefined) {
       const total = await this._count(this._table);
@@ -674,42 +799,77 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     // the frame may have just lost every row of it to a delete
     const window = Math.max(this._loaded, frame.df.rowCount) || this.pageSize;
     const gen = this._gen;
-    const selected = this._selection.peek().map((row) => row.id);
-    // read before the swap: a row the replacement does not hold takes `currentRow` with it
-    const current = this.currentRow.peek()?.id ?? null;
+    const kept = this._keep();
     await this._serve(true);
+    // read BEFORE the window, as a load does: a write by someone else after the save is a change
+    // to the next poll, not its baseline
+    const baseline = await this._baseline(table);
     const replacement = await table.frame(this._spec(0, window));
     if (gen !== this._gen) {
       replacement.dispose();
       return;
     }
-    // swapped in place, never through `_drop`: a row's proxy is keyed, reads whatever frame the
-    // source holds, and everything bound to it stays bound
+    this._swap(replacement, window, baseline, kept);
+  }
+
+  // the window re-read swapped in place, never through `_drop`: a row's proxy is keyed, reads whatever
+  // frame the source holds, and everything bound to it stays bound — the current row is never null on the
+  // way, so nothing under it reloads. `also` lands with the frame, in the same batch
+  private _swap(frame: DomainFrameLike, window: number, baseline: DomainProbeLike | undefined,
+    kept: {current: string | null, at: number, selected: string[]}, also?: () => void): void {
+    const old = this._frame;
     this._unwire?.();
     this._unwire = undefined;
-    this._frame = replacement;
-    this._loaded = replacement.df.rowCount;
-    this._done = this._loaded < window;
-    this._wire(replacement);
+    this._frame = frame;
+    this._loaded = frame.df.rowCount;
+    this._last = DomainSource._lastOf(frame.df, this._loaded);
+    this._moved = false;
+    this._done = this._noRows || this._loaded < window;
+    this._probed = baseline;
+    this._wire(frame);
     batch(() => {
-      this._df.value = replacement.df;
-      this._edit.value = replacement.edit;
+      this._df.value = frame.df;
+      this._edit.value = frame.edit;
+      also?.();
     });
-    frame.dispose();
-    const at = current === null ? -1 : this._rows.indexOf(current);
-    if (at >= 0) {
-      replacement.df.currentRowIdx = at;
-      this._syncCurrent();
-    }
-    const selection = replacement.df.selection as {set?(i: number, value: boolean): void} | null | undefined;
-    if (typeof selection?.set === 'function') {
-      for (const id of selected) {
-        const index = this._rows.indexOf(id);
-        if (index >= 0)
-          selection.set(index, true);
+    old?.dispose();
+    this._restore(kept);
+  }
+
+  // the current row and the selection by id, read before the frame is swapped: a row the replacement
+  // does not hold takes `currentRow` with it. `at` is where the current row stood, for its neighbour
+  private _keep(): {current: string | null, at: number, selected: string[]} {
+    const current = this.currentRow.peek()?.id ?? null;
+    return {current, at: current === null ? -1 : this._rows.indexOf(current),
+      selected: this._selection.peek().map((row) => row.id)};
+  }
+
+  // back onto the frame now held: a current row the server no longer answers hands on to the row now at
+  // its place (the last one past the end), as a saved delete does; selected rows that left are dropped
+  private _restore(kept: {current: string | null, at: number, selected: string[]}): void {
+    const df = this._df.peek();
+    if (df === undefined)
+      return;
+    // one batch: the current row and the selection land together, the selection whole
+    batch(() => {
+      if (kept.current !== null) {
+        const at = this._rows.indexOf(kept.current);
+        const to = at >= 0 ? at : Math.min(kept.at, df.rowCount - 1);
+        if (to >= 0) {
+          df.currentRowIdx = to;
+          this._syncCurrent();
+        }
       }
-    }
-    this._syncSelection();
+      const selection = df.selection as {set?(i: number, value: boolean): void} | null | undefined;
+      if (typeof selection?.set === 'function') {
+        for (const id of kept.selected) {
+          const index = this._rows.indexOf(id);
+          if (index >= 0)
+            selection.set(index, true);
+        }
+      }
+      this._syncSelection();
+    });
   }
 
   /** What the last save threw — the session hands every dirty source the backend's refusal. */
@@ -817,6 +977,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._unwire = undefined;
     const frame = this._frame;
     this._frame = undefined;
+    this._shownFor = undefined;
     frame?.dispose();
     batch(() => {
       this._df.value = undefined;
@@ -878,6 +1039,33 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._selection.value = rows;
   }
 
+  // whether `id`, the row a window of `count` rows ended on, has left offset `count - 1` on the server: one
+  // id, not a page. With ties on the sort (EMS-082) the server may answer another id with nothing written,
+  // and the window is re-read needlessly; an empty sort is total (`created_on, id`)
+  private async _shifted(count: number, id: string | null): Promise<boolean> {
+    const table = this._table;
+    if (table === undefined || id === null || count === 0 || this._noRows)
+      return false;
+    const sort = this.sort.peek();
+    let rows: Record<string, unknown>[];
+    try {
+      // `columns: []`: the system columns alone — `id` is always projected, and never a column to name
+      rows = await table.query({...this._scope(), ...(sort === '' ? {} : {sort}),
+        columns: [], limit: 1, offset: count - 1});
+    } catch {
+      // the check is a guard, not the load: the page that landed stays and the status is the load's
+      return false;
+    }
+    return String(rows[0]?.id ?? '') !== id;
+  }
+
+  // the id of the last of the first `count` rows of `df` (the server's rows come first, drafts after);
+  // null where there is none, and then no page is checked
+  private static _lastOf(df: DataFrameLike, count: number): string | null {
+    const id = count === 0 || df.columns.byName('id') === null ? null : df.get('id', count - 1);
+    return id === null || id === undefined || id === '' ? null : String(id);
+  }
+
   private _count(table: DomainTableLike): Promise<number> {
     return table.count(this._scope());
   }
@@ -898,9 +1086,12 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       this._failures = 0;
       const before = this._probed;
       this._probed = now;
+      await Promise.all([...this._watched].map(([address, entry]) => this._probeWatched(address, entry)));
       if (before === undefined || (before.count === now.count && before.last === now.last))
         return;
-      if (this.isDirty.peek() || this.isSaving.peek())
+      // pending changes anywhere in its session — a child collection under its current row too, which the
+      // reload's `_drop` would dispose — are never the poll's to throw away (as in `afterSave`)
+      if (this.isDirty.peek() || this.session.isDirty.peek() || this.isSaving.peek())
         this._isStale.value = true;
       else
         await this.refresh();
@@ -911,6 +1102,38 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         this._stopPolling();
     } finally {
       this._probing = false;
+    }
+  }
+
+  // one watched table asked on the tick: the first answer is its baseline, a later one that differs
+  // tells its watchers; a failed ask keeps the baseline, as the rows' probe does
+  private async _probeWatched(address: string, entry: {moved: Set<() => void>, table?: Promise<DomainTableLike>,
+    last?: DomainProbeLike}): Promise<void> {
+    try {
+      const table = await (entry.table ??= this._backend.table(address));
+      if (table.probe === undefined)
+        return;
+      const now = await table.probe({});
+      const before = entry.last;
+      entry.last = now;
+      if (before !== undefined && (before.count !== now.count || before.last !== now.last)) {
+        for (const moved of [...entry.moved])
+          moved();
+      }
+    } catch {
+      entry.table = undefined;
+    }
+  }
+
+  // a live load's {@link _probe} baseline; none where nothing polls, and none over a failed ask — the
+  // first poll then sets it, as before
+  private async _baseline(table: DomainTableLike): Promise<DomainProbeLike | undefined> {
+    if (!this.live.peek() || table.probe === undefined || this._noRows)
+      return undefined;
+    try {
+      return await table.probe(this._scope());
+    } catch {
+      return undefined;
     }
   }
 
@@ -954,6 +1177,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     const refs = this._schema.properties.filter((p) => REF_ADDRESS.test(p.semType ?? '') &&
       access.field(p.name!) !== 'hidden').map((p) => p.name!);
     return listed === undefined ? refs : listed.filter((name) => refs.includes(name));
+  }
+
+  // what a load reads for: the same key is a reload of the collection shown, another one a filter change
+  private _readFor(): string {
+    return JSON.stringify([this.query.peek(), this.search.peek(), this.sort.peek(), this.deleted.peek()]);
   }
 
   // the one scope `_spec`, `count` and `probe` all take, so none forgets the search or the trash mode

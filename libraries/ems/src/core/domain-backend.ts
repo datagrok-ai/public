@@ -225,7 +225,9 @@ export interface AuditEntryLike {
 export interface DomainFrameLike {
   df: DataFrameLike;
   edit: EditState;
-  /** Answers the number of rows appended. */
+  /** Answers the number of rows the server answered for `spec` — the offset the next page starts at.
+   * A row whose id the frame already holds is not appended again (another session's write shifted
+   * the page), so fewer rows may land than are counted. */
   append(spec: DomainQueryLike): Promise<number>;
   dispose(): void;
 }

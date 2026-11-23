@@ -257,6 +257,78 @@ scoped('finding 4: an update that takes the row out of the query re-bases it as 
     src.dispose();
   });
 
+// EQ-025: the same shift made by ANOTHER session's write between two pages — nothing re-based it
+const insertBefore = async (be) => (await be.table('grit.issue')).transaction(
+  [{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 7, title: 'Acetaminophen'}}]);
+
+scoped('EQ-025: another session\'s insert before the window does not repeat a row on the next page', {}, async () => {
+    const be = backend();
+    emsBackends.domain = be;
+    const src = await issues({pageSize: 2, sort: 'title'});
+    await insertBefore(be);
+    await src.loadMore();
+    assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Acetaminophen', 'Aspirin', 'Ibuprofen', 'Naproxen']);
+    assert.equal(src.total.value, 4);
+    src.dispose();
+  });
+
+scoped('EQ-025: over pending changes the shift is reported, never re-read away', {}, async () => {
+    const be = backend();
+    emsBackends.domain = be;
+    const src = await issues({pageSize: 2, sort: 'title'});
+    src.rows.byKey('i2').title = 'Ibuprofen edited';
+    await insertBefore(be);
+    await src.loadMore();
+    assert.equal(src.rows.byKey('i2').title, 'Ibuprofen edited');
+    assert.equal(src.stale.value, true);
+    assert.deepEqual(src.rows.items.value.map((r) => r.id), ['i1', 'i2', 'i3'], 'no row twice');
+    src.dispose();
+  });
+
+scoped('EQ-025: a write landing while the page is read is caught too', {}, async () => {
+    const be = backend();
+    emsBackends.domain = be;
+    const src = await issues({pageSize: 2, sort: 'title'});
+    const table = await be.table('grit.issue');
+    const query = table.query.bind(table);
+    let written = false;
+    // the other session's insert lands just before the server answers the next page
+    table.query = async (spec) => {
+      if (!written && spec.offset === 2 && spec.columns === undefined)
+        await insertBefore(be).then(() => { written = true; });
+      return query(spec);
+    };
+    await src.loadMore();
+    assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Acetaminophen', 'Aspirin', 'Ibuprofen', 'Naproxen']);
+    src.dispose();
+  });
+
+scoped('EQ-025: an insert after the boundary row is counted when the last page lands', {}, async () => {
+    const be = backend();
+    emsBackends.domain = be;
+    const src = await issues({pageSize: 2, sort: 'title'});
+    await (await be.table('grit.issue')).transaction(
+      [{op: 'insert', table: 'issue', values: {project_id: 'p1', number: 7, title: 'Zyrtec'}}]);
+    await src.loadMore();
+    await src.loadMore();
+    assert.equal(src.total.value, 4, 'not "4 of 3"');
+    src.dispose();
+  });
+
+scoped('EQ-025: a boundary check the server refuses keeps the page', {}, async () => {
+    emsBackends.domain = backend();
+    const src = await issues({pageSize: 2, sort: 'title'});
+    const table = await emsBackends.domain.table('grit.issue');
+    const query = table.query.bind(table);
+    // a page read carries no `columns`; the check is the one read that does
+    table.query = (spec) => spec.columns !== undefined ?
+      Promise.reject(new Error('Unknown or inaccessible column "id"')) : query(spec);
+    await src.loadMore();
+    assert.deepEqual(src.rows.items.value.map((r) => r.title), ['Aspirin', 'Ibuprofen', 'Naproxen']);
+    assert.equal(src.error.value, undefined);
+    src.dispose();
+  });
+
 // ───────────────────────── 5. every standalone save leaks a session ─────────────────────────────
 
 /** The participant surface `DomainSession` subscribes to and drives; an empty batch is enough —

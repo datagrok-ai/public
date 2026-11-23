@@ -66,7 +66,14 @@ test('query: copies of the store, filtered by the grammar or a tree, sorted, pag
   assert.deepEqual(await titles({sort: '!priority'}), ['Aspirin', 'Ibuprofen', 'Naproxen'], 'first descending, as Postgres');
   assert.deepEqual(await titles({limit: 2}), ['Aspirin', 'Ibuprofen']);
   assert.deepEqual(await titles({limit: 2, offset: 2}), ['Naproxen']);
-  assert.deepEqual(await issue.query({columns: ['id', 'title'], limit: 1}), [{id: 'i1', title: 'Aspirin'}]);
+  const [picked] = await issue.query({columns: ['title'], limit: 1});
+  assert.deepEqual(Object.keys(picked).sort(), ['author_id', 'created_on', 'id', 'title', 'updated_on', 'version'],
+    'the system columns always ride along, as on the server');
+  assert.deepEqual(await issue.query({columns: [], limit: 1}).then((rows) => rows.map((r) => r.id)), ['i1'],
+    'no declared column: the system ones alone');
+  await assert.rejects(issue.query({columns: ['id']}), /Unknown or inaccessible column "id"/,
+    'a system column is not one `columns` takes (the server refuses it)');
+  await assert.rejects(issue.query({columns: ['nope']}), /Unknown or inaccessible column "nope"/);
   assert.equal(await issue.count(), 3);
   assert.equal(await issue.count({filter: 'done = false'}), 2);
   await assert.rejects(issue.query({filter: 'title starts'}), (e) => e.code === 'validation');

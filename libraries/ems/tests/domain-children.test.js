@@ -313,3 +313,101 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
   children.dispose();
   parent.dispose();
 });
+
+scoped('another view\'s save of the same table keeps a page\'s pending child rows and marks it stale', async () => {
+  emsBackends.domain = crm();
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({query: 'id = "c1"', pageSize: 1}));
+  const other = testOwner().build(() => companies.source({pageSize: 10}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await settle();
+  const contacts = children.child(CONTACTS);
+  await flush();
+  contacts.newRow({name: 'Unsaved'});
+  other.rows.byKey('c2').name = 'Globex edited';
+  assert.equal(await other.session.save(), true);
+  await settle();
+  assert.equal(children.child(CONTACTS) === contacts, true, 'the child source with its pending rows is still the one shown');
+  assert.equal(parent.session.changeCount.value, 1);
+  assert.equal(parent.stale.value, true);
+  children.dispose();
+  other.dispose();
+  parent.dispose();
+});
+
+/** A page over crm.company whose frame reads wait for `release()` while `hold` is on (a reload in flight),
+ * with its children open on c1. */
+async function heldPage(options) {
+  const memory = crm();
+  const gate = {hold: false, waiting: [], offsets: [], release: () => { gate.hold = false; gate.waiting.splice(0).forEach((go) => go()); }};
+  const t = await memory.table('crm.company');
+  const frame = t.frame.bind(t);
+  t.frame = async (spec) => {
+    gate.offsets.push(spec.offset);
+    const f = await frame(spec);
+    if (gate.hold)
+      await new Promise((go) => gate.waiting.push(go));
+    return f;
+  };
+  emsBackends.domain = memory;
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source(options));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await settle();
+  await flush();
+  /** Reloads with the read held, types a child row meanwhile, then lets the read land. */
+  const typeDuringReload = async () => {
+    gate.hold = true;
+    const reload = parent.refresh();
+    await settle();
+    children.child(CONTACTS).newRow({name: 'Typed during reload'});
+    await flush();
+    gate.release();
+    await reload;
+    await settle();
+  };
+  return {gate, parent, children, typeDuringReload};
+}
+
+scoped('a child row typed while the clean parent\'s reload is in flight survives it landing', async () => {
+  const {parent, children, typeDuringReload} = await heldPage({query: 'id = "c1"', pageSize: 1});
+  const contacts = children.child(CONTACTS);
+  await typeDuringReload();
+  assert.equal(children.child(CONTACTS) === contacts, true, 'the child source with its pending row is still the one shown');
+  assert.equal(parent.session.changeCount.value, 1);
+  assert.equal(parent.stale.value, true);
+  children.dispose();
+  parent.dispose();
+});
+
+scoped('a search change still lands over a child row typed while it was in flight', async () => {
+  const {gate, parent, children} = await heldPage({pageSize: 10});
+  gate.hold = true;
+  parent.search.value = 'Globex';
+  await settle();
+  children.child(CONTACTS).newRow({name: 'Typed during search'});
+  gate.release();
+  await settle();
+  await settle();
+  assert.deepEqual(parent.rows.items.value.map((r) => r.id), ['c2'], 'the search the user asked for is applied');
+  children.dispose();
+  parent.dispose();
+});
+
+scoped('a reload kept over a child row typed in flight keeps its lost window: the next page starts over', async () => {
+  const {gate, parent, children, typeDuringReload} = await heldPage({pageSize: 1});
+  parent.markStale(new Error('offline'));
+  await typeDuringReload();
+  assert.equal(await parent.session.save(), true);
+  await settle();
+  gate.offsets.length = 0;
+  await parent.loadMore();
+  await settle();
+  assert.deepEqual(gate.offsets, [0], 'the next page reloads from the first page, not from the lost window\'s offset');
+  children.dispose();
+  parent.dispose();
+});

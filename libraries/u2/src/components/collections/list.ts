@@ -238,8 +238,10 @@ export abstract class VirtualRows<T> extends Control {
 
   /** Selects the rows the keys name, keeping whichever of them leads today (the first otherwise);
    * a key no longer among the items is dropped, and an empty result clears the selection. What
-   * survives a collection being read again — the keys are the identity, the indices are not. */
-  selectKeys(keys: Iterable<string>): void {
+   * survives a collection being read again — the keys are the identity, the indices are not.
+   * With `lead`, the row that key names leads while the items hold it, selected or not: the
+   * current row a selection is carried around (a saved delete hands it to a neighbour). */
+  selectKeys(keys: Iterable<string>, lead?: string): void {
     const keyOf = this.keyOf;
     if (keyOf === undefined)
       return;
@@ -249,8 +251,9 @@ export abstract class VirtualRows<T> extends Control {
       if (wanted.has(keyOf(item)))
         set.add(i);
     }
-    const lead = this.selectedIndex.peek();
-    this._write(set, set.size === 0 ? -1 : set.has(lead) ? lead : [...set][0]);
+    const own = lead === undefined ? -1 : this.items.findIndex((item) => keyOf(item) === lead);
+    const today = this.selectedIndex.peek();
+    this._write(set, own >= 0 ? own : set.size === 0 ? -1 : set.has(today) ? today : [...set][0]);
   }
 
   /** The keys of the selected rows — the form a selection travels in. */
