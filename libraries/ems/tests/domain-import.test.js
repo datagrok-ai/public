@@ -6,7 +6,8 @@ import {register} from 'node:module';
 import {fire, flush, resetDom} from '@datagrok-libraries/u2/tests/dom-shim.js';
 import {layout} from '@datagrok-libraries/u2/tests/layout.mjs';
 import {backends, Scope, Control, notify} from '@datagrok-libraries/u2';
-import {SCHEMA, backend} from './domain-fixtures.mjs';
+import {SCHEMA, ROWS, backend} from './domain-fixtures.mjs';
+import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -587,6 +588,21 @@ scoped('a user column takes ids as the server reads them: a login or a padded id
   await toPreview();
   assert.deepEqual(counts('preview'), ['3 to add', '2 errors'], 'a login or a padded id is refused in the preview');
   assert.match(document.body.textContent, /Reporter: expected a user id \(uuid\), got "admin"/);
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
+scoped('a group column takes group ids: a group name is refused by name, a group id passes', async () => {
+  const issue = SCHEMA.tables.issue;
+  const memory = new MemoryDomainBackend({...SCHEMA, tables: {...SCHEMA.tables, issue: {...issue,
+    columns: {...issue.columns, team: {type: 'group'}}}}},
+  {rows: Object.fromEntries(Object.entries(ROWS).map(([t, list]) => [t, list.map((r) => ({...r}))]))});
+  const {running} = await opened(memory, frame(['project_id', 'title', 'team'],
+    [{project_id: 'p1', title: 'A', team: 'Developers'}, {project_id: 'p1', title: 'B', team: UID}]));
+  await toMapping();
+  await toPreview();
+  assert.deepEqual(counts('preview'), ['1 to add', '1 error'], 'a group name is refused, a group id passes');
+  assert.match(document.body.textContent, /Team: expected a group id \(uuid\), got "Developers"/);
   fire(buttonNamed('CANCEL'), 'click');
   assert.equal(await running, null);
 });
