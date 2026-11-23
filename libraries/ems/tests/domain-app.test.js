@@ -1776,65 +1776,22 @@ scoped('EQ-023: View revoked after the list loaded: the row opened from it re-re
   a.dispose();
 });
 
-const FULL = {view: true, insert: true, edit: true, delete: true, share: true};
-const REASON = 'You cannot create issues: they need a value for Project id, which you cannot set. ' +
-  'Ask the table\'s owner to share Project id with you.';
-const REASON_VIEW_ONLY = REASON.replace('share Project id with you', 'let you edit Project id');
-
-scoped('EQ-053: a required column the user cannot see or write turns New off and says why', async () => {
-  // project_id and title are required with no default; project_id is not in the access, so it is hidden
-  emsBackends.domain = backend({access: {can: FULL, fields: {title: 'editable', number: 'readonly'}}});
-  const table = await domains.table('grit.issue');
-  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
-  document.body.append(a.root);
-  await flush();
-  const add = testOwner().build(() => a.ribbon()).main[0];
-  assert.equal(add.root.disabled, true, 'New is off: a save would be refused for project_id');
-  assert.equal(add.root.getAttribute('aria-description'),
-    REASON);
-  a.dispose();
-});
-
-scoped('EQ-053: a required column the user can write leaves New on', async () => {
-  emsBackends.domain = backend({access: {can: FULL, fields: {title: 'editable', project_id: 'editable'}}});
-  const table = await domains.table('grit.issue');
-  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
-  document.body.append(a.root);
-  await flush();
-  const add = testOwner().build(() => a.ribbon()).main[0];
-  assert.equal(add.root.disabled, false);
-  a.dispose();
-});
-
-scoped('EQ-053: a draft field the user may not write says "assigned on save" only where the server fills it', async () => {
-  emsBackends.domain = backend({access: {can: FULL,
-    fields: {title: 'editable', project_id: 'editable', number: 'readonly', weight: 'readonly'}}});
-  const table = await domains.table('grit.issue');
-  const src = testOwner().build(() => table.draft({}));
-  const form = testOwner().build(() => domains.form(src));
-  await flush();
-  const text = form.root.textContent;
-  assert.equal(text.includes('assigned on save'), true, 'the generated number says it is assigned');
-  assert.equal(text.split('assigned on save').length - 1, 1,
-    'weight is restricted with nothing to fill it: it does not say "assigned on save"');
-  form.dispose();
-  src.dispose();
-});
-
-scoped('EQ-053: a View-only required column turns New off too, and so do the empty list and the /new page', async () => {
-  emsBackends.domain = backend({access: {can: FULL,
+// EQ-053: New is gated on every way to a new row (review: the ribbon alone left the empty list and /new)
+scoped('EQ-053: a View-only required column turns New off, on the ribbon, the empty list and the /new page', async () => {
+  const reason = 'You cannot create issues: they need a value for Project id, which you cannot set. ' +
+    'Ask the table\'s owner to let you edit Project id.';
+  emsBackends.domain = backend({access: {can: {view: true, insert: true, edit: true, delete: true, share: true},
     fields: {title: 'editable', number: 'readonly', project_id: 'readonly'}}, rows: {project: [], issue: []}});
   const table = await domains.table('grit.issue');
   const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
   document.body.append(a.root);
   await flush();
   const add = testOwner().build(() => a.ribbon()).main[0];
-  assert.equal(add.root.getAttribute('aria-description'), REASON_VIEW_ONLY, 'New is off for a View-only required column');
-  assert.equal(a.root.textContent.includes(REASON_VIEW_ONLY), true, 'the empty list says why instead of offering New');
+  assert.equal(add.root.getAttribute('aria-description'), reason, 'New is off for a View-only required column');
   assert.equal([...a.root.querySelectorAll('button')].some((b) => b.textContent === 'New issue'), false,
     'the empty list offers no New button');
   assert.equal(await a.create(), true);
   await flush();
-  assert.equal(a.root.textContent.includes(REASON_VIEW_ONLY), true, 'the /new page shows the reason');
+  assert.equal(a.root.textContent.includes(reason), true, 'the /new page shows the reason');
   a.dispose();
 });

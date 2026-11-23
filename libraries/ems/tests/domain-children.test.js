@@ -7,6 +7,7 @@ import {backends, Scope, signal, Rows, Registry, SpecContext, renderSpec, regist
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {Property, WidgetDescriptor, platform} from '@datagrok-libraries/u2/tests/platform-doubles.mjs';
 import {backend} from './domain-fixtures.mjs';
+import {byKind} from '@datagrok-libraries/u2/testing';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
