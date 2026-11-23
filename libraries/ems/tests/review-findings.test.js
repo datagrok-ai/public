@@ -471,3 +471,39 @@ scoped('finding 7b: a sibling source of the same table reloads after another one
   one.dispose();
   two.dispose();
 });
+
+// ───────────── EQ-006: the js-api writer references only a draft id of the batch ──────────────
+
+/** A js-api editor over [rows] ({id, state, note, parent_id, changes}) — frame, client and access
+ * stubs, as the Dart frame does not run in node; `note` and `parent_id` are writable. */
+async function wireEditor(rows) {
+  const {DomainFrameEditor: E} = await import('../../../js-api/dist/src/ui/domains/domains-editor.js');
+  const cols = {id: 'id', note: 'note', parent_id: 'parent_id', [E.STATE_COLUMN]: 'state'};
+  const cell = (name, r) => name === E.CHANGES_COLUMN ? JSON.stringify(rows[r].changes ?? {}) :
+    name === E.ERRORS_COLUMN ? '' : rows[r][cols[name]] ?? null;
+  const column = (name) => ({get: (r) => cell(name, r), isNone: (r) => cell(name, r) == null || cell(name, r) === ''});
+  return Object.assign(Object.create(E.prototype), {
+    _df: {rowCount: rows.length, columns: {byName: column, contains: () => true}},
+    _propByName: new Map(), _parsed: new Map(), _snapshots: new Map(), _unguarded: new Set(), _pristine: new Set(),
+    _info: {nameColumn: 'note'}, client: {table: 'item'},
+    access: {fields: {note: 'editable', parent_id: 'editable'}, support: {concurrency: 'none'}},
+  });
+}
+
+scoped('EQ-006: js-api sends a text starting with ~new: as typed, a draft id of the batch as $ref', {}, async () => {
+  const draft = '~new:7b1f8c3e-5d2a-4e6b-9c1d-0a2b3c4d5e6f';
+  const other = '~new:0f9e8d7c-6b5a-4c3d-8e2f-1a0b9c8d7e6f';
+  const editor = await wireEditor([
+    {id: 'r1', state: 'modified', note: '~new:release notes', changes: {note: 'old'}},
+    {id: 'r2', state: 'modified', note: '$x', changes: {note: 'old'}},
+    {id: draft, state: 'new', note: 'parent'},
+    {id: '~new:9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d', state: 'new', note: 'child', parent_id: draft},
+  ]);
+  const values = editor.buildOps().map((p) => p.op.values);
+  assert.equal(values[0].note, '~new:release notes', 'a text starting with ~new: is sent as typed');
+  assert.equal(values[1].note, '$$x', 'a literal $ keeps its $$ escape');
+  assert.equal(values[3].parent_id, `$${draft}`, 'a draft id of the batch is the server\'s $ref');
+  const sibling = await wireEditor([{id: 'r3', state: 'modified', parent_id: other, changes: {parent_id: null}}]);
+  assert.equal(sibling.buildOps(new Set([other]))[0].op.values.parent_id, `$${other}`,
+    'another participant\'s draft, passed in, is a $ref');
+});

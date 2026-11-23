@@ -335,7 +335,7 @@ test('saveAll: every writer\'s batch as one transaction, the results sliced back
   const p = projects.edit.newRow({key: 'S', name: 'Session'});
   issues.edit.newRow({project_id: p, title: 'Child of a draft'});
   issues.edit.setValue('i1', 'title', 'Aspirin 100');
-  const ops = issues.edit.buildOps();
+  const ops = issues.edit.buildOps(new Set([p])); // the batch's drafts, as saveAll passes them
   assert.deepEqual(ops.map((x) => x.op.op), ['update', 'insert']);
   assert.deepEqual(ops[1].op, {op: 'insert', table: 'grit.issue', ref: ops[1].row.id,
     values: {project_id: `$${p}`, title: 'Child of a draft'}}, 'the draft reference is the server\'s $ref');

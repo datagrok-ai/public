@@ -118,7 +118,10 @@ export class MemoryDomainBackend implements DomainBackend {
       notify.warning('The batch is already being saved.');
       return false;
     }
-    const parts = edits.map((edit) => ({edit: edit as MemoryEditState, pending: (edit as MemoryEditState).buildOps()}));
+    const writers = edits as MemoryEditState[];
+    // a value is a reference when it is the draft id of any writer's row, as `DomainSession` builds it
+    const drafts = new Set(writers.flatMap((edit) => [...edit.draftIds()]));
+    const parts = writers.map((edit) => ({edit, pending: edit.buildOps(drafts)}));
     // every participant closed for the whole transaction, as the platform session closes its
     // editors (`domains-session.ts`): an edit made meanwhile is not in the batch being sent
     for (const part of parts)

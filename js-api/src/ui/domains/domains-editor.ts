@@ -891,9 +891,10 @@ export class DomainFrameEditor implements IFrameEditor {
    * payload; a {@link DomainSession} concatenates several editors' into one
    * transaction.
    *
-   * A value equal to a draft id — this editor's or another's — goes out as the
-   * `'$<draftId>'` reference the server resolves; a literal leading `$` is
-   * escaped as `$$`. An empty cell of a NEW row is LEFT OUT of the insert rather
+   * A value equal to a draft id of the batch — of [drafts], by default this editor's
+   * own ({@link draftIds}); a {@link DomainSession} passes every participant's — goes out as
+   * the `'$<draftId>'` reference the server resolves; a literal leading `$` is escaped as `$$`;
+   * any other text, one starting with `~new:` included, goes out as typed. An empty cell of a NEW row is LEFT OUT of the insert rather
    * than sent as an explicit null, so the column takes its server-side default (a
    * bool cell has no empty state and is always sent, so a NOT NULL bool default is
    * not preserved); a column with no default and no value is rejected by the server's own
@@ -903,7 +904,7 @@ export class DomainFrameEditor implements IFrameEditor {
    * Every insert carries `onDuplicate: 'error'`: a business-key conflict fails
    * the whole transaction (409) instead of silently merging the new row into an
    * existing one. */
-  buildOps(): DomainPendingOp[] {
+  buildOps(drafts: ReadonlySet<string> = this.draftIds()): DomainPendingOp[] {
     const table = this.client.table;
     const writable = DomainFrameEditor.writableColumns(this.access);
     const insertable = DomainFrameEditor.writableColumns(this.access, {draft: true});
@@ -926,7 +927,7 @@ export class DomainFrameEditor implements IFrameEditor {
         for (const name of insertable) {
           const v = this._wire(row, name);
           if (v != null && name !== 'id')
-            values[name] = DomainFrameEditor._refValue(v);
+            values[name] = DomainFrameEditor._refValue(v, drafts);
         }
         const op: DomainTransactionOp = {op: 'insert', table: table, values: values, onDuplicate: 'error'};
         if (DomainFrameEditor.isDraftId(id))
@@ -937,7 +938,7 @@ export class DomainFrameEditor implements IFrameEditor {
         const values: {[column: string]: any} = {};
         for (const name of Object.keys(this.changesOf(row)))
           if (writable.includes(name))
-            values[name] = DomainFrameEditor._refValue(this._wire(row, name));
+            values[name] = DomainFrameEditor._refValue(this._wire(row, name), drafts);
         if (Object.keys(values).length === 0)
           continue;
         const op: DomainTransactionOp = {op: 'update', table: table, id: `${id}`, values: values};
@@ -991,12 +992,24 @@ export class DomainFrameEditor implements IFrameEditor {
     return guard;
   }
 
-  /** [v] as the transaction wire wants it: a draft id becomes a `$ref`, a literal
-   * leading `$` is doubled (the server's `$$` escape), lists element-wise. */
-  private static _refValue(v: any): any {
+  /** The id of every draft row of the frame — the drafts its batch may reference. */
+  draftIds(): Set<string> {
+    const ids = new Set<string>();
+    for (let row = 0; row < this._df.rowCount; row++) {
+      const id = this._wire(row, 'id');
+      if (DomainFrameEditor.isDraftId(id))
+        ids.add(id);
+    }
+    return ids;
+  }
+
+  /** [v] as the transaction wire wants it: a draft id of [drafts] becomes a `$ref`, a
+   * literal leading `$` is doubled (the server's `$$` escape), lists element-wise; a `~new:`
+   * text that names no draft goes out as typed. */
+  private static _refValue(v: any, drafts: ReadonlySet<string>): any {
     if (Array.isArray(v))
-      return v.map((x) => DomainFrameEditor._refValue(x));
-    return typeof v === 'string' && (DomainFrameEditor.isDraftId(v) || v.startsWith('$')) ? '$' + v : v;
+      return v.map((x) => DomainFrameEditor._refValue(x, drafts));
+    return typeof v === 'string' && (drafts.has(v) || v.startsWith('$')) ? '$' + v : v;
   }
 
   /**
@@ -1028,8 +1041,8 @@ export class DomainFrameEditor implements IFrameEditor {
    * {@link buildOps} — after a row added and then deleted in the same batch has
    * been resolved LOCALLY (removed from the frame: it never reached the server, so
    * it can neither survive the save as phantom pending state nor hold the batch
-   * dirty). */
-  prepareSave(): DomainPendingOp[] | null {
+   * dirty). [drafts]: the batch's draft ids, as {@link buildOps} takes them. */
+  prepareSave(drafts?: ReadonlySet<string>): DomainPendingOp[] | null {
     const blocking = this._firstBlockingError();
     if (blocking != null) {
       balloon.error(`Cannot save: ${blocking}`);
@@ -1048,7 +1061,7 @@ export class DomainFrameEditor implements IFrameEditor {
       this._df.rows.requestFilter();
       this._fire();
     }
-    return this.buildOps();
+    return this.buildOps(drafts);
   }
 
   /** Lands this editor's slice of a successful transaction: returned ids and

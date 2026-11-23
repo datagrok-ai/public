@@ -303,9 +303,11 @@ export class MemoryEditState implements EditState {
   }
 
   /** The batch in row order, as the js-api editor builds it: an insert names itself with its
-   * draft id, a value that is a draft id (this writer's or another's) becomes the `$` reference
-   * the server resolves, a literal leading `$` is escaped; `id` is never sent. */
-  buildOps(): MemoryPendingOp[] {
+   * draft id, a value that is a draft id of the batch — of `drafts`, by default this writer's own
+   * (`draftIds`); `saveAll` passes every writer's — becomes the `$` reference the server resolves,
+   * a literal leading `$` is escaped, and any other text, `~new:…` included, is sent as typed;
+   * `id` is never sent. */
+  buildOps(drafts: ReadonlySet<string> = this.draftIds()): MemoryPendingOp[] {
     const table = this._table.address;
     const pending: MemoryPendingOp[] = [];
     for (const row of this.df.rows) {
@@ -320,19 +322,25 @@ export class MemoryEditState implements EditState {
       else if (state === 'new') {
         for (const name of writable) {
           if (row[name] != null)
-            values[name] = MemoryEditState._reference(row[name]);
+            values[name] = MemoryEditState._reference(row[name], drafts);
         }
         pending.push({row, op: {op: 'insert', table, ref: String(row.id), values}});
       } else if (state === 'modified') {
         for (const name of this._originals.get(row)?.keys() ?? []) {
           if (writable.includes(name))
-            values[name] = MemoryEditState._reference(row[name]);
+            values[name] = MemoryEditState._reference(row[name], drafts);
         }
         if (Object.keys(values).length > 0)
           pending.push({row, op: {op: 'update', table, id: String(row.id), values, ...guard}});
       }
     }
     return pending;
+  }
+
+  /** The id of every draft row of the frame — the drafts its batch may reference. */
+  draftIds(): Set<string> {
+    return new Set(this.df.rows.map((row) => row.id)
+      .filter((id): id is string => typeof id === 'string' && Rows.isDraft(id)));
   }
 
   /** The landed batch written back: deleted rows leave, every other row takes its result (a
@@ -425,10 +433,10 @@ export class MemoryEditState implements EditState {
     return `Types differ. Expected: map, passed: ${type}`;
   }
 
-  private static _reference(v: unknown): unknown {
+  private static _reference(v: unknown, drafts: ReadonlySet<string>): unknown {
     if (Array.isArray(v))
-      return v.map((x) => MemoryEditState._reference(x));
-    return typeof v === 'string' && (Rows.isDraft(v) || v.startsWith('$')) ? `$${v}` : v;
+      return v.map((x) => MemoryEditState._reference(x, drafts));
+    return typeof v === 'string' && (drafts.has(v) || v.startsWith('$')) ? `$${v}` : v;
   }
 
   private static _resolve(v: unknown, ids: Record<string, string>): unknown {

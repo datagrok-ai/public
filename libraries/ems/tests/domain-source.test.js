@@ -1078,3 +1078,22 @@ source('hosted: a host condition goes to the server as the ids the app answers',
   src.dispose();
   off();
 });
+
+source('EQ-006: a text value that only starts with ~new: is saved as typed; a literal $ keeps its escape', async () => {
+  emsBackends.domain = backend();
+  const src = await issues();
+  const row = src.rows.byKey('i1');
+  row.title = '~new:release notes';
+  row.description = '$x';
+  row.tags = ['~new:tag', '$y'];
+  src.newRow({project_id: 'p1', number: 9, title: '~new:draft title'});
+  assert.equal(await src.save(), true,
+    `a text starting with ~new: is saved as typed (${src.error.value?.message ?? 'no error'})`);
+  const table = emsBackends.domain.tableSync('grit.issue');
+  const saved = table.rows.find((r) => r.id === 'i1');
+  assert.equal(saved.title, '~new:release notes', 'stored as typed');
+  assert.equal(saved.description, '$x', 'a literal $ round-trips');
+  assert.deepEqual(saved.tags, ['~new:tag', '$y'], 'element-wise in a list');
+  assert.equal(table.rows.find((r) => r.number === 9)?.title, '~new:draft title', 'and in an insert');
+  src.dispose();
+});
