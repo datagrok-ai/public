@@ -911,9 +911,9 @@ class ImportFlow {
     const target = hit((a) => a === want) ?? hit((a) => a.startsWith(want) || want.startsWith(a)) ??
       hit((a) => a.includes(want) || want.includes(a)) ?? (typed.length === 1 ? typed[0].name! : SKIP);
     // a reference's caption ("substance") over values that are no ids ("Ethanol") names the records: find them by
-    // their name or key; a column called as the id column itself (`substance_id`) holds ids
+    // their name or key
     const link = this._links.get(target);
-    if (link === undefined || plain(target) === want || ImportFlow._ids(column))
+    if (link === undefined || ImportFlow._ids(column))
       return target;
     const info = link.target.info;
     const by = [info.nameColumn, info.businessKey[0]].find((f) => link.fields.some((l) => l.prop.name === f));
