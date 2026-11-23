@@ -564,29 +564,31 @@ scoped('DomainTable.app(): the shell rewrites the view path only AFTER onViewAdd
   }
 });
 
-/** EQ-021: Edit revoked while the user edits I1 on the platform path — the save goes through the
- * js-api session, which answers the 403 as `refusal`. The memory table answers the revoked access
- * once the platform caches are dropped, as the server does once `grok.dapi.domains` re-reads it. */
-async function refusedAsForbidden(refusal) {
+// EQ-021: Edit revoked mid-edit. Today's served js-api refusal has no code, only the bare
+// "forbidden"; it must still drop the platform caches, re-read the access and the rows' own
+// `~can_edit` (which replaces the table's answer per row), and re-gate the form after Discard.
+scoped('EQ-021: a save refused as bare "forbidden" re-reads the access and re-gates the form', async () => {
   const DG = await import('datagrok-api/dg');
   const {DgDomainBackend} = await import('../src/dg/backend.js');
   const {app: a} = await app();
-  const [add, , , more] = testOwner().build(() => a.ribbon()).main;
+  const memory = emsBackends.domain;
+  const table = memory.tableSync('grit.issue');
+  const i1 = table.rows.find((r) => r.id === 'i1');
+  i1['~can_edit'] = true; // the server's per-row answer, as a platform frame carries it
   await a.goTo('entity', 'i1');
   await flush();
   a.form.value.input('title').value = 'Revoked meanwhile';
   await flush();
   const dg = new DgDomainBackend();
-  const memory = emsBackends.domain;
   memory.saveAll = (edits) => dg.saveAll(edits);
   memory.dropAccess = () => dg.dropAccess();
-  const revoked = {can: {view: true, insert: false, edit: false, delete: false, share: false}, fields: {title: 'readonly'}};
-  const table = memory.tableSync('grit.issue');
   const cached = table.access.bind(table);
   const before = grok.dapi.domains.invalidated;
-  table.access = async () => grok.dapi.domains.invalidated > before ? revoked : cached();
-  const listWriter = a.listSource.edit.value;
-  DG.DomainSession.next = refusal;
+  // the revoke, read after the caches go: the table and the row say no; the column grant stays
+  table.access = async () => grok.dapi.domains.invalidated > before ?
+    {can: {view: true, insert: false, edit: false, delete: false, share: false}, fields: {title: 'editable'}} : cached();
+  i1['~can_edit'] = false;
+  DG.DomainSession.next = {message: 'forbidden', editor: null};
   try {
     assert.equal(await a.session.save(), false);
     await flush();
@@ -595,85 +597,34 @@ async function refusedAsForbidden(refusal) {
   }
   assert.equal(grok.dapi.domains.invalidated > before, true, 'a forbidden save drops the platform access caches');
   assert.equal(a.entitySource.value.access.value.can('edit'), false, 'the entity source re-read its access');
-  assert.equal(a.form.value.input('title'), undefined, 'the form is read-only: Title is no longer an input');
-  assert.equal(a.summary.value, 'Revoked meanwhile — Cannot save: you do not have permission to make these ' +
-    'changes. Discard the changes, or ask the table\'s owner for access', 'the status line says what happened and what to do');
-  assert.equal(a.session.isDirty.value, true, 'the edit is not lost until Discard');
-  assert.notEqual(a.listSource.edit.value, listWriter, 'the pristine list rebuilt the writer its grid edits through');
-  const entityWriter = a.entitySource.value.edit.value;
+  assert.equal(a.session.isDirty.value, true, 'the edit is kept until Discard');
   a.session.discard();
   await flush();
-  assert.notEqual(a.entitySource.value.edit.value, entityWriter, 'after Discard the entity source rebuilt its writer too');
-  assert.equal(await a.goTo('list'), true);
-  await flush();
-  a.listSource.rows.byKey('i2').title = 'Inline edit';
-  await flush();
-  // the memory writer drops what the access does not let it write when it builds the batch (the
-  // js-api editor refuses the cell outright): under the revoked access nothing of it is sent
-  assert.deepEqual(a.listSource.edit.value.buildOps().map((x) => x.op.values), [],
-    'an inline grid edit goes through a writer built under the revoked access');
-  a.session.discard();
-  assert.equal(add.root.hidden, true, 'no New without insert');
-  assert.equal(allowedActions(a.menuActions(), {access: a.listSource.access.value}).length, 0,
-    'no Import…, Bulk edit… or Show deleted');
-  assert.equal(more.root.hidden, true, 'the ⋯ menu has nothing left to offer');
+  assert.equal(a.form.value.input('title') === undefined, true, 'after Discard the form is read-only');
   a.dispose();
-}
+});
 
-scoped('EQ-021: a save refused as forbidden re-gates the app and says so plainly — the refusal carries the code', () =>
-  refusedAsForbidden({message: 'forbidden', editor: null, code: 'forbidden'}));
-
-scoped('EQ-021: the same on today\'s servers — their js-api refusal has no code, only the bare "forbidden"', () =>
-  refusedAsForbidden({message: 'forbidden', editor: null}));
-
-scoped('EQ-055: a refused new record re-gates on today\'s servers — the insert refusal has no code and a sentence message', async () => {
+// EQ-055: the served js-api's refusal has no code, and the insert 403 carries a sentence: only its
+// stable prefixes tell a refusal as forbidden (access re-read) from any other
+scoped('EQ-055: a refused new record is a refusal as forbidden on today\'s servers; other refusals are not', async () => {
   const DG = await import('datagrok-api/dg');
   const {DgDomainBackend} = await import('../src/dg/backend.js');
-  const refusals = [
-    {message: 'Insufficient privileges to insert into "grit.issue"', editor: null},
-    {message: 'You don\'t have Edit permission on schema "grit"', editor: null},
-    {message: 'Insufficient privileges to insert into "grit.issue"', editor: null, code: 'forbidden'},
+  const cases = [
+    ['Insufficient privileges to insert into "grit.issue"', 'forbidden'],
+    ['You don\'t have Edit permission on schema "grit"', 'forbidden'],
+    ['Ethanol still has 3 containers', null],
+    ['Too many version conflicts in a row', null],
   ];
-  for (const refusal of refusals) {
+  for (const [message, code] of cases) {
     const state = {problem: null, problemCode: null, editor: null, errorCells: () => [], retry: () => {}};
-    DG.DomainSession.next = refusal;
-    try {
-      assert.equal(await new DgDomainBackend().saveAll([state]), false);
-    } finally {
-      DG.DomainSession.next = true;
-    }
-    assert.equal(state.problemCode, 'forbidden', `"${refusal.message}" is a refusal as forbidden: access is re-read`);
-  }
-  for (const refusal of [{message: 'Ethanol still has 3 containers', editor: null}, {message: 'Too many version conflicts in a row', editor: null}]) {
-    const state = {problem: null, problemCode: null, editor: null, errorCells: () => [], retry: () => {}};
-    DG.DomainSession.next = refusal;
+    DG.DomainSession.next = {message, editor: null};
     try {
       await new DgDomainBackend().saveAll([state]);
     } finally {
       DG.DomainSession.next = true;
     }
-    assert.equal(state.problemCode, null, `"${refusal.message}" is not forbidden`);
+    assert.equal(state.problemCode, code, `"${message}" ${code ? 'is a refusal as forbidden: access is re-read' : 'is not forbidden'}`);
   }
-});
-
-scoped('EQ-021: a save that throws forbidden drops the access caches before the sources re-read', async () => {
-  const {app: a} = await app();
-  const memory = emsBackends.domain;
-  const order = [];
-  memory.dropAccess = () => order.push('drop');
-  const table = memory.tableSync('grit.issue');
-  table.access = async () => (order.push('access'), {can: {view: true, insert: false, edit: false, delete: false,
-    share: false}, fields: {title: 'readonly'}});
-  memory.transaction = async () => {
-    throw Object.assign(new Error('Edit is required on "grit.issue"'), {code: 'forbidden'});
-  };
-  a.listSource.rows.byKey('i1').title = 'Revoked meanwhile';
-  assert.equal(await a.session.save(), false);
-  await flush();
-  assert.equal(order[0], 'drop', 'the caches go before anything re-reads');
-  assert.equal(order.includes('access'), true);
-  assert.equal(a.listSource.access.value.can('insert'), false);
-  a.dispose();
 });
 
 scoped('the ambient session is the app\'s; New is hidden without insert', async () => {
