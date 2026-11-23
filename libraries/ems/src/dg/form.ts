@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import type * as DG from 'datagrok-api/dg';
 import {Control, Scope, Signal, ReadonlySignal, computed, signal, untracked, Rows, Access, Filters, div, span,
-  timestamp, EMPTY, isEmpty, text, loader, link, iconButton, notify, PickInput, ChoiceInput} from '@datagrok-libraries/u2';
+  timestamp, EMPTY, isEmpty, text, loader, link, iconButton, notify, PickInput,
+  ChoiceInput} from '@datagrok-libraries/u2';
 import type {Input, IProperty, FilterGroup, FilterSchema, IWidgetStatus,
   RowView} from '@datagrok-libraries/u2';
 import {propertyForm, ObjectForm, Editors, userPick, groupPick, kindOf} from '@datagrok-libraries/u2/dg';
@@ -610,9 +611,10 @@ export class DomainForm extends Control {
         el.replaceChildren(loader('Loading…'));
       else if (state === 'error')
         el.replaceChildren(span(DomainErrors.message(source.error.value, source), 'u2-domain-form-error'));
-      else
+      else {
         el.replaceChildren(span(DomainErrors.noView(source) ?? this._options.empty ?? DomainForm.emptyHint(source),
           'u2-domain-form-hint'));
+      }
     });
     return el;
   }

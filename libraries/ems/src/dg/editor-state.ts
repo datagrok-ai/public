@@ -181,7 +181,7 @@ export class EditorEditState implements EditState {
     let parsed: unknown;
     try {
       parsed = JSON.parse(value);
-    } catch (_) {
+    } catch {
       return value;
     }
     return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ?

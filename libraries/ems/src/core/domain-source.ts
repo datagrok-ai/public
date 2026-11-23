@@ -1,7 +1,7 @@
 import {signal, computed, batch, Signal, ReadonlySignal, Component, Access, plural, Filters, requireBackend, subBind,
   Rows, FrameRows} from '@datagrok-libraries/u2';
-import type {AccessData, FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterScalar, FilterSchema, DomainRowLike,
-  RowsLike, RowValues, RowView, DataFrameLike, BindProp, BindSource, ComponentEnv,
+import type {AccessData, FilterCondition, FilterGroup, FilterNode, FilterProperty, FilterScalar, FilterSchema,
+  DomainRowLike, RowsLike, RowValues, RowView, DataFrameLike, BindProp, BindSource, ComponentEnv,
   ComponentStart} from '@datagrok-libraries/u2';
 import type {EditState} from './edit-state.js';
 import {emsBackends, DomainBackendError, capital, nounOf} from './domain-backend.js';
@@ -284,7 +284,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       const problem = this.validity.value;
       const edit = this._edit.value;
       // the writer's own cell verdict is named the way its refusal is: the row and the field
-      return problem !== null && edit?.validity.value === problem ? this._name(edit, problem)?.message ?? problem : problem;
+      return problem !== null && edit?.validity.value === problem ?
+        this._name(edit, problem)?.message ?? problem : problem;
     });
     this.blocking = computed(() => {
       // what the client refused before sending (a guard, two edits of one row) and a 403 hold
@@ -379,7 +380,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       // or a Save) — the rows shown were read for another scope. Clean with the same scope reloads nothing
       // (a Save in flight re-bases onto the new scope itself, and records it in `_shownFor`)
       const dirty = this.isDirty.value;
-      if (!dirty && !this._rebinding && !this.isSaving.peek() && (this._shownFor === undefined || this._readFor() !== this._shownFor))
+      if (!dirty && !this._rebinding && !this.isSaving.peek() &&
+        (this._shownFor === undefined || this._readFor() !== this._shownFor))
         void this.refresh();
     });
     this.effect(() => {

@@ -266,12 +266,14 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
       this._notice.value = `${caption} was deleted — save or discard your changes to leave it`;
       return;
     }
-    await this._toParent(row, now === undefined ? `${caption} was deleted` : `${caption} is no longer reachable from here`);
+    await this._toParent(row,
+      now === undefined ? `${caption} was deleted` : `${caption} is no longer reachable from here`);
   }
 
   private _pending(track: boolean): boolean {
     const follow = this._options.follow;
-    const read = (s: ReadonlySignal<boolean> | undefined): boolean => s === undefined ? false : track ? s.value : s.peek();
+    const read = (s: ReadonlySignal<boolean> | undefined): boolean =>
+      s === undefined ? false : track ? s.value : s.peek();
     return read(follow?.isDirty) || read(follow?.session?.isDirty);
   }
 

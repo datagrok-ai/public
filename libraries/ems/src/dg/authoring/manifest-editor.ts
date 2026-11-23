@@ -2,7 +2,8 @@ import {Control, signal, Signal, ReadonlySignal, Splitter} from '@datagrok-libra
 import type {EditorContext, FieldOffer} from './editor-context.js';
 import {AccessModel, ManifestModel} from './manifest-model.js';
 import type {AccessJson, AccessPrincipal, AccessSnapshot, DraftEnvelope, ExtendPatch, ManifestChange,
-  ManifestDiagnostic, ManifestJson, ManifestOwnership, ManifestPatch, ManifestSelection, RebaseReport} from './manifest-model.js';
+  ManifestDiagnostic, ManifestJson, ManifestOwnership, ManifestPatch, ManifestSelection,
+  RebaseReport} from './manifest-model.js';
 import {ManifestTree} from './manifest-tree.js';
 import {ManifestContextPanel} from './manifest-panel.js';
 import type {ColumnOption, PrincipalPicker} from './manifest-panel.js';

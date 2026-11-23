@@ -131,14 +131,15 @@ export function domainOutput(source: DomainSource, table: DomainTable, exclude: 
           }
           root.replaceChildren(form.root);
         });
-        const ids = () => source.rows.items.value.filter((row: RowView) => !Rows.isDraft(row)).map((row) => String(row.id));
+        const ids = () => source.rows.items.value.filter((row: RowView) => !Rows.isDraft(row))
+          .map((row) => String(row.id));
         self.effect(() => {
           if (shown.value)
             fetch(ids(), aggregations.value).catch((e) => DomainErrors.report(e));
         });
         // the values live in the tables aggregated, not in the rows: a write there (a save here, a peer's write
         // the list's live probe sees) asks again — one watch per table, however many aggregations read it
-        const watching = new Map<string, () => void>();
+        const watching: Map<string, () => void> = new Map();
         const moved = () => {
           if (shown.peek())
             fetch(untracked(ids), aggregations.peek()).catch((e) => DomainErrors.report(e));

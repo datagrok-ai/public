@@ -1098,9 +1098,10 @@ class ImportFlow {
         return {...this._row(i, p, 'skip', this._duplicate(), errors), id: row.existingId ?? null};
       if (p.payload === null)
         return this._kept(i, p);
-      if (failed || row === undefined)
-        return this._row(i, p, failed ? 'aborted' : '', failed ? 'Another row has errors' : 'Not itemized by the server',
-          errors);
+      if (failed || row === undefined) {
+        return this._row(i, p, failed ? 'aborted' : '',
+          failed ? 'Another row has errors' : 'Not itemized by the server', errors);
+      }
       return {...this._row(i, p, row.status === 'inserted' ? 'insert' : 'update', p.verdict.note ?? '', errors),
         id: row.id};
     });

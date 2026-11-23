@@ -523,7 +523,8 @@ export class MemoryTable implements DomainTableLike {
       append: async (page) => {
         const more = await this.query(page);
         const held = new Set(df.rows.map((row) => row.id));
-        df.rows.push(...more.filter((row) => row.id === undefined || !held.has(row.id)).map((row) => this._frameRow(row)));
+        df.rows.push(...more.filter((row) => row.id === undefined || !held.has(row.id))
+          .map((row) => this._frameRow(row)));
         df.onRowsAdded.fire(undefined);
         return more.length;
       },
@@ -533,9 +534,10 @@ export class MemoryTable implements DomainTableLike {
 
   // a queried row as the platform frame holds it (`MemoryEditState.frameCell`)
   private _frameRow(row: Row): Row {
-    for (const prop of this.properties)
+    for (const prop of this.properties) {
       if (prop.name! in row)
         row[prop.name!] = MemoryEditState.frameCell(prop, row[prop.name!]);
+    }
     return row;
   }
 
@@ -791,14 +793,15 @@ export class MemoryTable implements DomainTableLike {
     try {
       // what reaches the server is the value's JSON, never the object a frame held
       decoded = JSON.parse(typeof value === 'string' ? value : JSON.stringify(value));
-    } catch (_) {
+    } catch {
       decoded = undefined;
     }
     if (type === 'string_list' && Array.isArray(decoded) && !decoded.some((x) => typeof x === 'object' && x !== null))
       return decoded.map((x) => `${x}`);
     if (type === 'map' && typeof decoded === 'object' && decoded !== null && !Array.isArray(decoded))
       return decoded;
-    throw new DomainBackendError('validation', `Operation ${index}: Cannot convert "${typeof value === 'string' ? value : JSON.stringify(value)}" to ${type}`);
+    throw new DomainBackendError('validation',
+      `Operation ${index}: Cannot convert "${typeof value === 'string' ? value : JSON.stringify(value)}" to ${type}`);
   }
 
   withDefaults(values: Row): Row {
