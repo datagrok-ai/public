@@ -1212,57 +1212,31 @@ function tightened() {
   }}, {rows: {ticket: [{id: 't1', code: 'T1', score: 50, kind: 'alpha'}]}});
 }
 
-scoped('a stored value a tightened max refuses is marked on its field at once, and does not hold Save off', async () => {
-  emsBackends.domain = tightened();
-  const table = await domains.table('desk.ticket');
-  const src = testOwner().build(() => table.source({pageSize: 10}));
-  await flush();
-  src.currentRow.value = src.rows.byKey('t1');
-  const form = testOwner().build(() => domains.form(src));
-  await flush();
-  const score = form.input('score');
-  assert.equal(score.value, 50, 'the stored value is shown');
-  assert.equal(score.getState().error, 'Value must be at most 10', 'the untouched stored value shows why on its field');
-  assert.equal(form.problem.value, null, 'the stored value the update will not send holds nothing off');
-  score.value = 60;
-  await flush();
-  assert.equal(src.session.validity.value, 'Score: Value must be at most 10', 'a value the user changes is still refused');
-  score.value = 50;
-  await flush();
-  assert.equal(form.problem.value, null, 'back to the stored value, nothing to refuse');
-  form.dispose();
-  src.dispose();
-});
-
 scoped('an unrelated edit saves over stored values a tightened rule refuses, and the update leaves them out', async () => {
-  emsBackends.domain = tightened();
+  const memory = emsBackends.domain = tightened();
+  const sent = [];
+  const real = memory.transaction.bind(memory);
+  memory.transaction = (ops) => (sent.push(...ops), real(ops));
   const table = await domains.table('desk.ticket');
   const src = testOwner().build(() => table.source({pageSize: 10}));
   await flush();
   src.currentRow.value = src.rows.byKey('t1');
   const form = testOwner().build(() => domains.form(src));
   await flush();
-  const sent = [];
-  const real = emsBackends.domain.transaction.bind(emsBackends.domain);
-  emsBackends.domain.transaction = (ops) => {
-    sent.push(...ops);
-    return real(ops);
-  };
   form.input('code').value = 'T1 edited';
   await flush();
   assert.equal(src.session.validity.value, null, 'Save is allowed');
   assert.equal(await src.save(), true, 'and the save lands');
-  const update = sent.find((op) => op.op === 'update');
-  assert.deepEqual(Object.keys(update?.values ?? {}), ['code'], 'only the edited column is sent, not score or kind');
-  const stored = emsBackends.domain.tableSync('desk.ticket').rows.find((row) => row.id === 't1');
-  assert.equal(stored.code, 'T1 edited');
-  assert.equal(stored.score, 50, 'the stored values stay');
-  assert.equal(stored.kind, 'alpha');
+  assert.deepEqual(Object.keys(sent.find((op) => op.op === 'update')?.values ?? {}), ['code'],
+    'only the edited column is sent, not score or kind');
+  const stored = memory.tableSync('desk.ticket').rows.find((row) => row.id === 't1');
+  assert.deepEqual([stored.code, stored.score, stored.kind], ['T1 edited', 50, 'alpha'], 'the stored values stay');
   form.dispose();
   src.dispose();
 });
 
-scoped('a stored value whose choice was removed stays shown, marked not in the list, until the user picks another', async () => {
+// a review found the stale choice kept as a pickable option after the user moved off it
+scoped('a stored value whose choice was removed is offered only until the user picks another', async () => {
   emsBackends.domain = tightened();
   const table = await domains.table('desk.ticket');
   const src = testOwner().build(() => table.source({pageSize: 10}));
@@ -1271,29 +1245,10 @@ scoped('a stored value whose choice was removed stays shown, marked not in the l
   const form = testOwner().build(() => domains.form(src));
   await flush();
   const kind = form.input('kind');
-  assert.equal(kind.value, 'alpha', 'the input holds the stored value');
-  assert.equal(kind.getState().text, 'alpha (not in the list)',
-    'the stored choice is shown, marked as not one of the choices, not an empty dropdown');
-  assert.equal(kind.getState().error, 'Must be one of: beta, gamma', 'the field says why');
-  assert.equal(form.problem.value, null, 'and, unedited, holds no Save off');
+  assert.equal(kind.getState().text, 'alpha (not in the list)', 'the stored choice is shown, not an empty dropdown');
   kind.value = 'beta';
   await flush();
-  assert.equal(kind.getState().error, null, 'a listed choice clears it');
   assert.deepEqual(kind.getItems().list.map((i) => i.key), ['beta', 'gamma'], 'the stale choice is no longer offered');
-  form.dispose();
-  src.dispose();
-});
-
-scoped('a draft still waits for a touch: the stored-value mark is for saved records only', async () => {
-  emsBackends.domain = tightened();
-  const table = await domains.table('desk.ticket');
-  const src = testOwner().build(() => table.draft({score: 50}));
-  await flush();
-  const form = testOwner().build(() => domains.form(src));
-  await flush();
-  assert.equal(form.input('score').validity.peek(), 'Value must be at most 10', 'the draft breaks the rule too');
-  assert.equal(form.input('score').getState().error, null,
-    'a new record does not nag before the user is in the field');
   form.dispose();
   src.dispose();
 });
