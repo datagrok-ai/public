@@ -61,6 +61,20 @@
   margin-top: 8px;
 }
 
+/* The chat keeps a reading width however wide the panel is. */
+.d4-ai-generation-panel:not(.d4-ai-raw-mode) .d4-ai-panel-output-area > *,
+.d4-ai-generation-panel:not(.d4-ai-raw-mode) > .grokky-status-bar,
+.d4-ai-generation-panel:not(.d4-ai-raw-mode) > .d4-ai-panel-input-area {
+  width: 100%;
+  max-width: 760px;
+  align-self: center;
+}
+
+.d4-ai-generation-panel:not(.d4-ai-raw-mode) > .d4-ai-panel-input-area {
+  box-sizing: border-box;
+  max-width: 772px;
+}
+
 .d4-ai-generation-panel .d4-ai-panel-input-area {
   display: flex;
   flex-direction: column;
@@ -167,7 +181,6 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-left: 35px;
 }
 
 .d4-ai-handled-natively-icon {
@@ -177,12 +190,12 @@
 }
 
 .d4-ai-generation-panel .d4-ai-user-prompt-container .d4-ai-user-prompt-divtext {
-  width: 100%;
-  border-radius: 8px;
+  max-width: 80%;
+  border-radius: 16px;
   background-color: var(--steel-1);
-  text-align: right;
-  padding: 4px;
+  padding: 6px 14px;
   margin: 4px 0;
+  overflow-wrap: anywhere;
   -webkit-user-select: text !important;
   user-select: text !important;
 }
@@ -191,20 +204,14 @@
   width: 100%;
   display: flex;
   justify-content: flex-start;
-  padding-right: 20px;
-  background: aliceblue;
-  border-radius: 8px;
-  padding: 6px;
+  padding-top: 6px;
   margin-bottom: 4px;
-  padding-bottom: 0px;
   -webkit-user-select: text;
   user-select: text;
 }
 
 .d4-ai-generation-panel .d4-ai-assistant-response-container pre {
-  background: aliceblue;
-  -webkit-filter: drop-shadow(0px 0px 4px var(--steel-2));
-  filter: drop-shadow(0px 0px 4px var(--steel-2));
+  background: var(--grey-1);
   padding: 6px;
   border-radius: 8px;
   overflow: scroll;
@@ -421,6 +428,7 @@
 }
 
 .d4-ai-generation-panel.d4-ai-raw-mode .d4-ai-user-prompt-container .d4-ai-user-prompt-divtext {
+  max-width: none;
   background: transparent;
   color: #7cb8ff;
   text-align: left;
@@ -623,7 +631,7 @@
 }
 
 .grokky-system-message {
-  text-align: right;
+  text-align: center;
   font-size: 12px;
   color: var(--grey-4);
   font-style: italic;

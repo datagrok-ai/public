@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Grokky: The chat keeps a reading width in a wide panel: replies on white, your prompt in a bubble that fits its text
+* Grokky: Fixed "Speech recognition error: aborted" in the console when voice input stops
+* Grokky: Added bringing back earlier prompts with the Up and Down arrow keys in the prompt box
 * Grokky: Fixed Try again forgetting the request after a quick Stop
 * Grokky: Added deleting a single chat from the history menu, with undo
 * Grokky: Fixed suggestions naming the wrong column, such as an ID column in the Molecules prompts or a date in the numeric ones

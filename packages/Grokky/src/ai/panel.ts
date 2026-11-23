@@ -187,12 +187,11 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
   private statusRepeats = 0;
   private followOutput = true;
   private _sessionId: string;
-  private _skillMenu: DG.Menu | null = null;
   private _inline: boolean = false;
   private _feature: AiFeature;
   /** Guards async {@link renderEmptyState} against out-of-order completion on rapid view switches. */
   private _emptyStateSeq = 0;
-  /** Index into {@link promptHistory} while cycling with Ctrl+[ / Ctrl+]; `null` means the live draft is shown. */
+  /** Index into {@link promptHistory} while recalling prompts with the arrow keys; `null` means the live draft is shown. */
   private _promptHistoryIndex: number | null = null;
   /** The unsubmitted draft saved when the user starts cycling, restored when they cycle back past the newest entry. */
   private _promptDraft: string = '';
@@ -220,29 +219,25 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.handleRun();
     }, 'Send');
     this.textArea.addEventListener('keydown', (event: KeyboardEvent) => {
-      if ((event.key === 'Escape' || event.keyCode === 27) && this._skillMenu) {
-        this._skillMenu.hide();
-        this._skillMenu = null;
+      if (event.isComposing)
+        return;
+      if (event.key === 'Escape' && this._promptHistoryIndex !== null) {
+        this.textArea.value = this._promptDraft;
+        this._promptHistoryIndex = null;
         return;
       }
-      // Ctrl+[ / Ctrl+] cycle through this session's prompt history (keyCode fallback for Chrome ≤ 50).
-      if (event.ctrlKey && (event.key === '[' || event.keyCode === 219)) {
+      const up = event.key === 'ArrowUp';
+      if ((up || event.key === 'ArrowDown') && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey &&
+        (this._promptHistoryIndex !== null || (up && this.textArea.selectionEnd === 0)) &&
+        this.navigatePromptHistory(up ? -1 : 1))
         event.preventDefault();
-        this.navigatePromptHistory(-1);
-        return;
-      }
-      if (event.ctrlKey && (event.key === ']' || event.keyCode === 221)) {
-        event.preventDefault();
-        this.navigatePromptHistory(1);
-        return;
-      }
       if (isEnterKey(event) && (!event.ctrlKey && !event.metaKey)) {
         event.preventDefault();
         event.stopImmediatePropagation();
         this.handleRun();
       }
     });
-    this.textArea.addEventListener('input', () => { this._promptHistoryIndex = null; this._updateSkillMenu(); });
+    this.textArea.addEventListener('input', () => this._promptHistoryIndex = null);
     this.textArea.addEventListener('blur', (e) => {
       if (this.isBusy && (e as any).sourceCapabilities === null)
         Promise.resolve().then(() => this.textArea.focus());
@@ -913,29 +908,19 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     return this._uiMessages.filter((m) => m.fromUser).map((m) => m.text);
   }
 
-  /** Replaces the input with the previous (-1) or next (+1) prompt from this session's history. */
-  private navigatePromptHistory(direction: -1 | 1): void {
+  /** Replaces the input with the previous (-1) or next (+1) prompt from this session's history; false if there is none. */
+  private navigatePromptHistory(direction: -1 | 1): boolean {
     const hist = this.promptHistory;
-    if (hist.length === 0)
-      return;
-    if (this._promptHistoryIndex === null) {
-      if (direction === 1)
-        return; // already at the live draft — nothing newer
+    const current = this._promptHistoryIndex ?? hist.length;
+    const next = current + direction;
+    if (next < 0 || next > hist.length)
+      return false;
+    if (this._promptHistoryIndex === null)
       this._promptDraft = this.textArea.value;
-      this._promptHistoryIndex = hist.length;
-    }
-    const next = this._promptHistoryIndex + direction;
-    if (next < 0)
-      return; // already at the oldest entry
-    if (next >= hist.length) {
-      this._promptHistoryIndex = null;
-      this.textArea.value = this._promptDraft;
-    } else {
-      this._promptHistoryIndex = next;
-      this.textArea.value = hist[next];
-    }
+    this._promptHistoryIndex = next === hist.length ? null : next;
+    this.textArea.value = next === hist.length ? this._promptDraft : hist[next];
     this.textArea.selectionStart = this.textArea.selectionEnd = this.textArea.value.length;
-    this._updateSkillMenu();
+    return true;
   }
 
   protected handleRun() {
@@ -956,40 +941,6 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       prevMessages: this._messages,
       currentPrompt: inputs,
     });
-  }
-
-  private _hideSkillMenu(): void {
-    if (this._skillMenu) {
-      this._skillMenu.hide();
-      this._skillMenu = null;
-    }
-  }
-
-  private _updateSkillMenu(): void {
-    const text = this.textArea.value;
-    if (!text.startsWith('/'))
-      return this._hideSkillMenu();
-
-    const query = text.slice(1).toLowerCase();
-    const allNames = ClaudeRuntimeClient.getInstance().getSkillNames();
-    if (!allNames.length)
-      return this._hideSkillMenu();
-
-    const filtered = allNames.filter((name) => name.toLowerCase().includes(query));
-    if (!filtered.length)
-      return this._hideSkillMenu();
-
-    this._hideSkillMenu();
-    this._skillMenu = DG.Menu.popup();
-    this._skillMenu.header('Skills');
-    for (const name of filtered) {
-      this._skillMenu.item(name, () => {
-        this.textArea.value = `/${name} `;
-        this.textArea.focus();
-        this._skillMenu = null;
-      });
-    }
-    this._skillMenu.show({element: this.textAreaDiv, y: 0});
   }
 
   protected showContentIcons() {
@@ -1297,6 +1248,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
           return;
         }
 
+        this._promptHistoryIndex = null;
         this.textArea.value = (this.voiceTranscript + interim).trim();
         window.clearTimeout(this.voiceSubmitTimer);
         this.voiceSubmitTimer = window.setTimeout(() => this.submitVoicePrompt(), VOICE_SUBMIT_DELAY_MS);
@@ -1305,7 +1257,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.recognition.onerror = (event) => {
         if (event.error === 'no-speech')
           return; // silence timeout — onend restarts the mic, no user action needed
-        console.error('Speech recognition error:', event.error);
+        if (event.error !== 'aborted')
+          console.error('Speech recognition error:', event.error);
         ui.setUpdateIndicator(this.textAreaDiv, false);
 
         let errorMessage = 'Speech recognition error';
@@ -1322,7 +1275,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
           errorMessage = 'Network error during speech recognition';
           break;
         case 'aborted':
-          // User stopped intentionally, no error message needed
+          // Something else took the microphone, e.g. voice input in another tab: no error message needed
           break;
         default:
           errorMessage = `Speech recognition error: ${event.error}`;
@@ -1356,6 +1309,7 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
       this.terminate();
       return;
     }
+    this._promptHistoryIndex = null;
     this.textArea.value = '';
     this.stopRecognition();
     this.textArea.focus();
@@ -1374,6 +1328,8 @@ export class AIPanel<T extends MessageType = MessageType, K extends AIPanelInput
     this.syncVoiceCancelHint();
 
     if (this.recognition) {
+      // A stopped session can still report late; it must not log or switch off a newer one.
+      this.recognition.onresult = this.recognition.onerror = this.recognition.onend = null;
       try {
         this.recognition.stop();
       } catch (error) {
