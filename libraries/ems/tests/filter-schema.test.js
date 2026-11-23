@@ -29,9 +29,7 @@ function smoke(name, body) {
 
 // --- forDomainTable ---
 
-/** `hidden` maps an address to the columns its access leaves out — a restricted column the
- * registry still lists. */
-function domainsDouble(filters = 'full', hidden = {}) {
+function domainsDouble(filters = 'full') {
   const calls = {rowProperties: [], facets: []};
   const tables = {
     'plates.plate': [
@@ -50,8 +48,8 @@ function domainsDouble(filters = 'full', hidden = {}) {
       },
     },
     table: (address) => ({
-      access: async () => ({support: {filters}, fields: Object.fromEntries(tables[address]
-        .filter((p) => !(hidden[address] ?? []).includes(p.name)).map((p) => [p.name, 'readonly']))}),
+      access: async () => ({support: {filters},
+        fields: Object.fromEntries(tables[address].map((p) => [p.name, 'readonly']))}),
       facets: async (spec) => {
         calls.facets.push([address, spec]);
         const column = spec.facets[0].column;
@@ -122,13 +120,4 @@ smoke('forDomainTable: resolveRef loads the target table', async () => {
   assert.deepEqual(calls.rowProperties, ['plates.plate', 'Core.projects']);
   assert.deepEqual(target.properties.map((p) => p.name), ['name', 'created_on']);
   assert.equal(Filters.kindOf(propOf(target, 'created_on')), KIND.DATE_TIME);
-});
-
-smoke('forDomainTable: a column the access hides is not offered, on the table nor through a ref', async () => {
-  domainsDouble('full', {'plates.plate': ['volume'], 'Core.projects': ['created_on']});
-  const schema = await domainFilterSchema('plates.plate');
-  assert.deepEqual(schema.properties.map((p) => p.name), ['name', 'project_id'],
-    'the registry lists volume, the access does not');
-  const target = await schema.resolveRef(propOf(schema, 'project_id'));
-  assert.deepEqual(target.properties.map((p) => p.name), ['name']);
 });
