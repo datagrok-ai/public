@@ -1241,6 +1241,25 @@ scoped('a constraint over two columns is read with SQL null semantics: an empty 
   src.dispose();
 });
 
+scoped('a constraint broken through its second column holds Save, though its first column is untouched', async () => {
+  emsBackends.domain = new MemoryDomainBackend({name: 'grit', tables: {
+    issue: {friendlyName: 'Issues',
+      constraints: {order: {expr: 'low <= high', message: 'Low must not exceed high'}},
+      columns: {title: {type: 'string', isName: true}, low: {type: 'int'}, high: {type: 'int'}}},
+  }}, {rows: {issue: [{id: 'i1', title: 'A', low: 5, high: 10}]}});
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  form.input('high').value = 1;
+  await flush();
+  assert.equal(form.input('low').validity.value, 'Low must not exceed high', 'the Low field shows it');
+  assert.equal(form.problem.value, 'Low: Low must not exceed high', 'and the form holds Save on it');
+  assert.equal(src.session.validity.value, 'Low: Low must not exceed high');
+  form.dispose();
+  src.dispose();
+});
+
 scoped('a draft shows the column defaults, so a required column with one is already filled', async () => {
   emsBackends.domain = new MemoryDomainBackend({name: 'desk', tables: {
     ticket: {businessKey: ['code'], columns: {

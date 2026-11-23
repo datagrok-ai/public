@@ -544,8 +544,9 @@ function rowName<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowV
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Whether a caption names nothing: empty, exactly a uuid, or only the row's id, its reference ids, numbers and
- * separators ("<project id>-1"). "Sample A-1" and a caption that merely contains a uuid name the row. */
+/** Whether a caption names nothing: empty, exactly a uuid, or the row's id or its reference ids with only numbers
+ * and separators around them ("<project id>-1"). "Sample A-1", a caption that merely contains a uuid and one made
+ * of digits alone ("12345", "2024-05") name the row. */
 export function madeOfIds<TRow extends DomainRowLike>(table: DomainTable<TRow>, row: RowView<TRow>,
   caption: string): boolean {
   if (caption === '' || UUID.test(caption))
@@ -559,7 +560,7 @@ export function madeOfIds<TRow extends DomainRowLike>(table: DomainTable<TRow>, 
   let rest = caption;
   for (const id of ids.sort((x, y) => y.length - x.length))
     rest = rest.split(id).join(' ');
-  return /^[\s\d\-_:/,.#]*$/.test(rest);
+  return rest !== caption && /^[\s\d\-_:/,.#]*$/.test(rest);
 }
 
 /** `domains.table(address)` and every domain control (`domains.form(src)`, `domains.list(src)`, …), each made at

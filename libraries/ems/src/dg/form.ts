@@ -101,8 +101,15 @@ export class DomainForm extends Control {
       this._violationsVersion.value;
       for (const c of this._constraints) {
         const message = this._violations.get(c.name);
-        if (message !== undefined && !this._attached.has(c.name))
+        if (message === undefined)
+          continue;
+        if (!this._attached.has(c.name))
           return message;
+        // the stored-value exemption is for the field's own rule: a constraint is a CHECK over the whole
+        // row, broken through whichever of its columns was edited
+        const input = this._form.value!.input(c.columns[0])!;
+        if (this._stored.get(input)?.value)
+          return `${capital(input.label)}: ${message}`;
       }
       return null;
     });
