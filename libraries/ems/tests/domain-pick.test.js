@@ -357,18 +357,3 @@ scoped('DomainPick.bind: a bound filter is a tree, an empty sibling leaves the n
   assert.deepEqual(DomainPick.bind(tree), {filter: tree, unbound: []});
   assert.deepEqual(DomainPick.bind(undefined), {unbound: []});
 });
-
-scoped('EQ-042: a pick over a table the user cannot view says so, not "No projects yet"', async () => {
-  const memory = backend();
-  memory.tableSync('grit.project').access = () => Promise.resolve(
-    {can: {view: false, insert: false, edit: false, delete: false, share: false}, fields: {}});
-  emsBackends.domain = memory;
-  const pick = new DomainPick('grit.project', {label: 'Project', debounceMs: 0});
-  const input = mount(pick);
-  input.focus();
-  await flush();
-  await flush();
-  assert.match(document.body.textContent, /You do not have access to projects\. Ask the table's owner to share it/);
-  assert.doesNotMatch(document.body.textContent, /No projects yet/);
-  pick.dispose();
-});

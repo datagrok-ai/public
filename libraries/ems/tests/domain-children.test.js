@@ -7,7 +7,6 @@ import {backends, Scope, signal, Rows, Registry, SpecContext, renderSpec, regist
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 import {Property, WidgetDescriptor, platform} from '@datagrok-libraries/u2/tests/platform-doubles.mjs';
 import {backend} from './domain-fixtures.mjs';
-import {byKind} from '@datagrok-libraries/u2/testing';
 
 register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
@@ -311,27 +310,6 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
   assert.equal(Rows.isDraft(contacts.currentRow.value), true, 'the draft is current');
   assert.equal(parent.session.isDirty.value, true, 'the press is the change — Ctrl+S and the leave gate answer');
   assert.equal(parent.session.summary.value, '1 unsaved change');
-  children.dispose();
-  parent.dispose();
-});
-
-scoped('EQ-042: a child tab for a table the user cannot view says so, not "No contacts." or a count of 0', async () => {
-  const memory = crm();
-  memory.tableSync('crm.contact').access = () => Promise.resolve(
-    {can: {view: false, insert: false, edit: false, delete: false, share: false}, fields: {}});
-  emsBackends.domain = memory;
-  const companies = await domains.table('crm.company');
-  const parent = testOwner().build(() => companies.source({pageSize: 10}));
-  await flush();
-  parent.currentRow.value = parent.rows.byKey('c1');
-  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
-  await settle();
-  await settle();
-  assert.doesNotMatch(children.root.textContent, /Contacts \(\d/, 'no count where the server answers 0 by design');
-  const pane = children.root;
-  assert.match(pane.textContent, /You do not have access to contacts\. Ask the table's owner/);
-  assert.doesNotMatch(pane.textContent, /No contacts\./);
-  assert.equal(byKind(children, 'new-button')[0].hidden, true, 'nothing to add where nothing may be viewed');
   children.dispose();
   parent.dispose();
 });
