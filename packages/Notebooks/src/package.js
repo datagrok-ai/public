@@ -43,11 +43,11 @@ class NotebookView extends DG.ViewBase {
     this.PATH = '/notebook';
 
     this.openAsHtmlIcon = ui.bigButton('HTML', () => {
-      this.htmlMode().then();
+      this.htmlMode();
     }, 'Open as HTML');
     this.openAsHtmlIcon.classList.add('notebooks-action-button');
     this.editIcon = ui.bigButton('EDIT', () => {
-      this.editMode().then();
+      this.editMode();
     }, 'Edit notebook');
     this.editIcon.classList.add('notebooks-action-button');
 
@@ -77,9 +77,27 @@ class NotebookView extends DG.ViewBase {
       const html = 'html' in params ? params['html'] : null;
 
       if (edit)
-        this.editMode().then();
+        this.editMode();
       else
-        this.htmlMode(html).then();
+        this.htmlMode(html);
+    }
+  }
+
+  async render(build) {
+    ui.empty(this.root);
+    try {
+      ui.setUpdateIndicator(this.root, true, 'Starting Jupyter Notebook, this can take a minute...');
+      await ensureContainer();
+      ui.setUpdateIndicator(this.root, true, 'Loading notebook...');
+      await build();
+    } catch (e) {
+      ui.empty(this.root);
+      this.root.appendChild(ui.divV([
+        ui.divText(`Failed to open the notebook: ${e?.message ?? e}`),
+        ui.button('Retry', () => this.render(build)),
+      ], 'notebooks-error'));
+    } finally {
+      ui.setUpdateIndicator(this.root, false);
     }
   }
 
@@ -137,7 +155,7 @@ class NotebookView extends DG.ViewBase {
 
   open(id) {
     this.id = id;
-    this.htmlMode(null).then();
+    this.htmlMode(null);
   }
 
   async initNotebook() {
@@ -145,10 +163,13 @@ class NotebookView extends DG.ViewBase {
     this.name = this.notebook.name;
   }
 
-  async htmlMode(html = null) {
+  htmlMode(html = null) {
+    return this.render(() => this.buildHtml(html));
+  }
+
+  async buildHtml(html) {
     this.html = html;
     await this.initNotebook();
-    ui.empty(this.root);
     if (this.html === null)
       this.html = await toHtml(this.notebook);
     const iframe = document.createElement('iframe');
@@ -194,9 +215,12 @@ class NotebookView extends DG.ViewBase {
     return environmentInput;
   }
 
-  async editMode() {
+  editMode() {
+    return this.render(() => this.buildEditor());
+  }
+
+  async buildEditor() {
     await this.initNotebook();
-    ui.empty(this.root);
 
     this.subs.push(grok.events.onEvent('d4-entity-edited').subscribe((e) => {
       if (this.notebook !== undefined && this.notebook !== null && e.id === this.notebook.id)
@@ -514,6 +538,24 @@ const DockerWebSocket = new Proxy(createDockerWebSocket, {
 
 let CONTAINER_ID;
 let SESSION_TOKEN;
+let containerStart = null;
+
+// The container is on demand and stops when idle, so only an in-flight start is shared.
+function ensureContainer() {
+  return containerStart ??= startContainer().finally(() => containerStart = null);
+}
+
+async function startContainer() {
+  await grok.dapi.docker.dockerContainers.run(CONTAINER_ID, true);
+  // nginx in the container answers before Jupyter does
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(CONTAINER_ID, '/notebook/api');
+    if (response.ok)
+      return;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  throw new Error('Jupyter Notebook did not respond after the container start');
+}
 
 async function toHtml(notebook) {
   const arrayBuffer = await convertNotebook(JSON.stringify(notebook.notebook));
@@ -524,16 +566,6 @@ async function toHtml(notebook) {
 export async function initContainer() {
   const container = await grok.dapi.docker.dockerContainers.filter('Notebooks-jupyter-notebook').first();
   CONTAINER_ID = container.id;
-  if (container.status !== 'started' && !container.status.startsWith('pending') && container.status !== 'checking') {
-    const progress = DG.TaskBarProgressIndicator.create('Starting Jupyter Notebook...');
-    try {
-      await grok.dapi.docker.dockerContainers.run(CONTAINER_ID, true);
-      // wait additional time, because nginx tends to start faster
-      await new Promise((res, _) => setTimeout(() => res(), 3000));
-    } finally {
-      progress.close();
-    }
-  }
   SESSION_TOKEN = getAuthToken();
 }
 
@@ -554,6 +586,7 @@ export function notebookView(params = null, path = '') {
 //input: bool execute
 //output: blob result
 export async function convertNotebook(notebook, format = 'html', execute = false) {
+  await ensureContainer();
   notebook = notebook.replace(/@USER_API_KEY/g, `'${SESSION_TOKEN}'`);
   const response = await grok.dapi.docker.dockerContainers.fetchProxy(CONTAINER_ID, `/notebook/helper/notebooks/convert?format=${format}&execute=${execute}`,
     {method: 'POST', body: new TextEncoder().encode(notebook)});
