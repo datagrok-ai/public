@@ -1893,6 +1893,8 @@ scoped('EQ-023: View revoked after the list loaded: the row opened from it re-re
   issues.access = () => Promise.resolve(cached ??= {can: {view: !revoked, insert: false, edit: false, delete: false,
     share: false}, fields: {title: 'readonly'}});
   issues.query = (spec) => revoked ? Promise.resolve([]) : query(spec);
+  const count = issues.count.bind(issues);
+  issues.count = (scope) => revoked ? Promise.resolve(0) : count(scope);
   memory.dropAccess = () => (drops++, cached = null);
   emsBackends.domain = memory;
   const table = await domains.table('grit.issue');
@@ -1906,6 +1908,30 @@ scoped('EQ-023: View revoked after the list loaded: the row opened from it re-re
   await flush();
   assert.match(byKind(a, 'domain-form')[0].textContent, /You do not have access to issues\./);
   assert.equal(drops, 1, 'the caches go once');
+  a.dispose();
+});
+
+scoped('a viewable row opened from the list keeps the access caches and reads the row once', async () => {
+  const memory = backend();
+  const issues = memory.tableSync('grit.issue');
+  const frame = issues.frame.bind(issues);
+  let frames = 0;
+  let drops = 0;
+  issues.frame = (...args) => (frames++, frame(...args));
+  memory.dropAccess = () => drops++;
+  emsBackends.domain = memory;
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await flush();
+  const listFrames = frames;
+  a.listSource.currentRow.value = a.listSource.rows.byKey('i1');
+  a.listSource.activate.value++;
+  await flush();
+  await flush();
+  assert.equal(a.form.value.source.currentRow.value?.id, 'i1', 'the row shows');
+  assert.equal(drops, 0, 'the caches stay');
+  assert.equal(frames - listFrames, 1, 'the row is read once');
   a.dispose();
 });
 

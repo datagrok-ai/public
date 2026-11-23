@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Pages: Fixed every row page opened from a list dropping the access caches and reading the access and the row a second time: the access is read again only when the page finds no row
 * Lists: Fixed the first Load more after a search, filter or sort change re-reading every loaded page, or showing "Data changed" over pending edits, when nothing changed: a page check of the previous list that answered late was applied to the new one
 * Lists: Fixed a list showing the rows of a search, filter or Trash mode you had already switched away from: going to another scope and back while its read was in flight let that read land; a read that lands for a scope no longer current is dropped and the current one is read
 * Import: Fixed the preview saying "the file has no rows" on a storage with no dry run when the file had rows but every one was refused or skipped before sending: it says how many rows have errors and that no row is valid, as the dry-run preview does

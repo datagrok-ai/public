@@ -1140,7 +1140,7 @@ export class DomainApp extends Control {
         }
         if (rows.length > 0 && source.currentRow.peek() === null)
           source.currentRow.value = rows[0];
-        else if (rows.length === 0 && !rechecked && source.access.peek().can('view')) {
+        else if (source.total.value === 0 && !rechecked && source.access.peek().can('view')) {
           rechecked = true;
           emsBackends.domain?.dropAccess?.();
           void source.reloadAccess();
