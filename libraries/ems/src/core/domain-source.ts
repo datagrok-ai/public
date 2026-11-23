@@ -974,6 +974,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
 
   // back onto the frame now held: a current row the server no longer answers hands on to the row now at
   // its place (the last one past the end), as a saved delete does; selected rows that left are dropped
+  private _restoring = false;
+
   private _restore(kept: {current: string | null, at: number, selected: string[]}): void {
     const df = this._df.peek();
     if (df === undefined)
@@ -988,13 +990,18 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
           this._syncCurrent();
         }
       }
-      const selection = df.selection as {set?(i: number, value: boolean): void} | null | undefined;
+      const selection = df.selection as
+        {set?(i: number, value: boolean, notify?: boolean): void, fireChanged?(): void} | null | undefined;
       if (typeof selection?.set === 'function') {
+        // one change, announced once: a scan of every row per restored id is what a refresh would cost
+        this._restoring = true;
         for (const id of kept.selected) {
           const index = this._rows.indexOf(id);
           if (index >= 0)
-            selection.set(index, true);
+            selection.set(index, true, false);
         }
+        this._restoring = false;
+        selection.fireChanged?.();
       }
       this._syncSelection();
     });
@@ -1162,7 +1169,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
           this.currentRow.value = this.rows.byKey(real) ?? null;
       }),
       frame.df.onCurrentRowChanged.subscribe(() => this._syncCurrent()),
-      frame.df.onSelectionChanged.subscribe(() => this._syncSelection()),
+      frame.df.onSelectionChanged.subscribe(() => this._restoring || this._syncSelection()),
       frame.df.onValuesChanged.subscribe(bump),
     ];
     this._unwire = () => {
