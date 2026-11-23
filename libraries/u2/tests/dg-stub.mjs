@@ -246,7 +246,9 @@ export const data = {parseCsv: () => new DataFrame()};
 export const userSettings = {values: {}, get: (name) => userSettings.values[name],
   getValue: (name, key) => userSettings.values[name]?.[key],
   add: (name, key, value) => (userSettings.values[name] ??= {})[key] = value,
-  delete: (name, key) => delete userSettings.values[name]?.[key]};
+  delete: (name, key) => delete userSettings.values[name]?.[key],
+  /** js-api user_settings_storage.ts: sends pending writes to the server now instead of at the 10 s sync. */
+  flush: async () => {}};
 
 /** Ad-hoc function registration (js-api functions.ts:137): every registration, newest last, and
  * the Func it hands back — the platform's own is a dart wrapper over the same record. */

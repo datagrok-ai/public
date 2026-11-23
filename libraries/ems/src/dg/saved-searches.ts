@@ -15,6 +15,10 @@ const RECENT = 'ems-recent-searches';
 const savedKey = (table: string) => `ems-searches|${table}`;
 const same = (a: DomainSearch, b: DomainSearch) => a.q === b.q && a.search === b.search && a.sort === b.sort;
 const label = (s: DomainSearch) => [s.q, s.search && `Search "${s.search}"`].filter((x) => x).join(' · ');
+/** grok.userSettings keeps writes in memory until its 10 s sync, so a reload or a closed tab right after an
+ * explicit save, delete or clear would lose it: send them now. Recent searches, written on every list change,
+ * are left to the periodic sync. */
+const persist = () => void grok.userSettings.flush();
 
 /** The keys of `sort` over columns the table describes (a column the caller may not read, or one removed since, is
  * refused by the server for the whole read, so it is dropped and the rest of the order kept). */
@@ -55,11 +59,13 @@ export class SavedSearches {
 
   static save(table: string, name: string, search: DomainSearch): void {
     grok.userSettings.add(savedKey(table), name, JSON.stringify(search));
+    persist();
     SavedSearches.changed.value++;
   }
 
   static remove(table: string, name: string): void {
     grok.userSettings.delete(savedKey(table), name);
+    persist();
     SavedSearches.changed.value++;
   }
 
@@ -70,6 +76,11 @@ export class SavedSearches {
   static record(table: string, search: DomainSearch): void {
     const list = [{...search, at: Date.now()}, ...SavedSearches.recent(table).filter((r) => !same(r, search))];
     grok.userSettings.add(RECENT, table, JSON.stringify(list.slice(0, 20)));
+  }
+
+  static clearRecent(table: string): void {
+    grok.userSettings.delete(RECENT, table);
+    persist();
   }
 
   static current(source: DomainSource): Signal<string | null> {
@@ -137,7 +148,7 @@ export class SavedSearches {
         menu.separator();
       for (const r of SavedSearches.recent(source.table))
         menu.item(label(r), () => SavedSearches.apply(source, r), {detail: new Date(r.at!).toLocaleTimeString()});
-      return menu.separator().item('Clear recent searches', () => grok.userSettings.delete(RECENT, source.table));
+      return menu.separator().item('Clear recent searches', () => SavedSearches.clearRecent(source.table));
     }});
   }
 
