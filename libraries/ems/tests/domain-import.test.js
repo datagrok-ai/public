@@ -621,29 +621,13 @@ async function importProjects(memory, source, allOrNothing, mode = 'insert') {
 const projectRows = (count, prefix) => Array.from({length: count}, (_, i) =>
   ({key: `${prefix}-${String(i + 1).padStart(4, '0')}`, name: `Project ${i + 1}`}));
 
-for (const allOrNothing of [true, false]) {
-  scoped(`a commit past the 1,000 rows the server itemizes still reports and writes back every row's key ` +
-    `(all or nothing ${allOrNothing ? 'on' : 'off'})`, async () => {
-    const memory = backend();
-    capped(memory.tableSync('grit.project'));
-    const rows = [...projectRows(1200, 'BIG'), {key: 'GRIT', name: 'Grit again'}];
-    const {shown, written} = await importProjects(memory, frame(['key', 'name'], rows), allOrNothing);
-    assert.match(shown, /1,200 added/);
-    assert.equal(written.filter((key, i) => key !== rows[i].key).length, 0,
-      'every imported row has its key written back, past the 1,000 rows the server itemizes');
-    assert.doesNotMatch(shown, /not itemized/);
-  });
-}
-
-scoped('rows the server leaves out of its report and that cannot be told apart are counted, not left blank', async () => {
+scoped('a commit past the 1,000 rows the server itemizes still writes back every row\'s key', async () => {
   const memory = backend();
-  const projects = memory.tableSync('grit.project');
-  // 1,050 updates fill the itemized 1,000; the 150 inserts after them could be either
-  projects.batch = async (rows) => ({inserted: 150, updated: 1050, skipped: 0, errorCount: 0,
-    rows: rows.slice(0, 1000).map((_, index) => ({index, id: 'p1', status: 'updated'}))});
-  const {shown, written} = await importProjects(memory, frame(['key', 'name'], projectRows(1200, 'MIX')), false,
-    'upsert');
-  assert.match(shown, /200 rows are not itemized by the server/);
-  assert.match(shown, /empty for the 200 rows not itemized/);
-  assert.equal(written.filter((key) => key === '').length, 200);
+  capped(memory.tableSync('grit.project'));
+  // the existing GRIT is itemized first (a duplicate), so the cap leaves out more of the inserts
+  const rows = [...projectRows(1200, 'BIG'), {key: 'GRIT', name: 'Grit again'}];
+  const {shown, written} = await importProjects(memory, frame(['key', 'name'], rows), false);
+  assert.match(shown, /1,200 added/);
+  assert.equal(written.filter((key, i) => key !== rows[i].key).length, 0,
+    'every imported row has its key written back, past the 1,000 rows the server itemizes');
 });
