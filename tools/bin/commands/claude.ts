@@ -176,8 +176,9 @@ services:
     restart: unless-stopped
     profiles: ["full"]
 
-  jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:\${JKG_VERSION:-latest}
+  # One kernel gateway per language; they version with the Scripting package (JKG_VERSION).
+  jkg_python:
+    image: datagrok/jkg_python:\${JKG_VERSION:-latest}
     platform: linux/amd64
     depends_on:
       rabbitmq:
@@ -199,7 +200,34 @@ services:
         }
     networks:
       dg:
-        aliases: [jupyter_kernel_gateway]
+        aliases: [jkg_python]
+    restart: unless-stopped
+    profiles: ["scripting", "full"]
+
+  jkg_r:
+    image: datagrok/jkg_r:\${JKG_VERSION:-latest}
+    platform: linux/amd64
+    depends_on:
+      rabbitmq:
+        condition: service_started
+    environment:
+      GROK_PARAMETERS: |
+        {
+          "queueSettings": {
+            "useQueue": true,
+            "amqpHost": "rabbitmq",
+            "amqpUser": "guest",
+            "amqpPassword": "guest",
+            "amqpPort": 5672,
+            "pipeHost": "grok_pipe",
+            "pipePort": 3000,
+            "pipeKey": "test-key",
+            "maxConcurrentCalls": 16
+          }
+        }
+    networks:
+      dg:
+        aliases: [jkg_r]
     restart: unless-stopped
     profiles: ["scripting", "full"]
 
