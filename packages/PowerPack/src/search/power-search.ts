@@ -289,7 +289,33 @@ export async function searchSuggestions(si: string): Promise<SearchSuggestion[]>
 }
 
 let _suggestionsMenu: DG.Menu | null = null;
-let _ctrlSpaceSubscribed = false;
+
+/** Shows the suggestions for the text of [searchInput] in a menu under it; an empty text lists all of them. */
+export async function showSearchSuggestions(searchInput: HTMLInputElement): Promise<void> {
+  const suggestions = await searchSuggestions(searchInput.value?.trim() ?? '');
+  _suggestionsMenu?.hide();
+  const menu = _suggestionsMenu = DG.Menu.popup();
+  let any = false;
+  for (const sug of suggestions) {
+    // an exact match of the text is not worth suggesting
+    if ((sug.value ?? sug.text) === searchInput.value)
+      continue;
+    menu.item(sug.text, () => {
+      if (sug.value) {
+        searchInput.value = sug.value;
+        searchInput.dispatchEvent(new Event('input', {bubbles: true}));
+      }
+      searchInput.focus();
+      sug.onValueEnter?.(searchInput.value, grok.shell.v);
+    }, sug.priority);
+    any = true;
+  }
+  if (any) {
+    menu.show({element: searchInput.parentElement!, x: searchInput.offsetLeft,
+      y: searchInput.offsetTop + searchInput.offsetHeight});
+  }
+}
+
 async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInput: HTMLInputElement, track: Track): Promise<void> {
   _suggestionsMenu?.hide();
   _suggestionsMenu = null;
