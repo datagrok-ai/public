@@ -47,7 +47,7 @@ export class Preview {
   /** Source viewer axes */
   public readonly srcAxes?: AxisNames;
 
-  /** Text of the item on the preview, reported in the viewer status. */
+  // Text of the item on the preview, reported in the viewer status
   private currentItem = '';
 
   public get root(): HTMLElement {return this.viewer.root;}
@@ -161,15 +161,11 @@ export class Preview {
     this.currentItem = '';
   }
 
-  /** Sets the current axes of the preview viewer by column names. */
   private setAxes(names: AxisNames): void {
     this.viewer.setOptions(axesToOptions(this.viewer, this.dataFrame, names));
   }
 
-  /**
-   * Extracts the axes names from the formula. If possible, adjusts the axes
-   * of the formula to the axes of the original viewer.
-   */
+  // The axes named in the formula, adjusted to the axes of the original viewer where possible
   private getItemAxes(axesItem: EditorItem): AxisNames {
     const result = isAnnotationRegionType(axesItem.type) ?
       this.getRegionAxes(axesItem) :

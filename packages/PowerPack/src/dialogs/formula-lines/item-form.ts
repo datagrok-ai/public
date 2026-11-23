@@ -40,8 +40,8 @@ export abstract class ItemForm<T extends EditorItem> {
     return ui.div([combinedPanels.root]);
   }
 
-  /** Pairs ui-input-roots on a single row when there's enough width; wraps to
-   *  separate rows when the container is narrower than ~2× the basis. */
+  // Pairs ui-input-roots on a single row when there's enough width; wraps to
+  // separate rows when the container is narrower than ~2× the basis.
   protected inlineInputs(...children: HTMLElement[]): HTMLElement {
     const row = ui.divH(children);
     row.style.flexWrap = 'wrap';
@@ -56,7 +56,7 @@ export abstract class ItemForm<T extends EditorItem> {
     return row;
   }
 
-  /** A handler that writes the value of an input to the [key] field of the item. */
+  // A handler that writes the value of an input to the [key] field of the item
   protected setField<K extends keyof T>(key: K): (value: T[K]) => void {
     return (value) => {
       this.item[key] = value;
@@ -64,7 +64,6 @@ export abstract class ItemForm<T extends EditorItem> {
     };
   }
 
-  /** Creates textarea for item description */
   protected inputDescription(): HTMLElement {
     const ibDescription = ui.input.textArea('Description', {value: this.item.description ?? '',
       onValueChanged: this.setField('description')});
@@ -72,7 +71,7 @@ export abstract class ItemForm<T extends EditorItem> {
     return ibDescription.root;
   }
 
-  /** Creates combobox for item position (above/below markers); [fallbackZIndex] applies while `zIndex` is unset. */
+  // [fallbackZIndex] applies while `zIndex` is unset
   protected inputArrange(fallbackZIndex: number): HTMLElement {
     const effectiveZIndex = this.item.zIndex ?? fallbackZIndex;
 
@@ -89,8 +88,7 @@ export abstract class ItemForm<T extends EditorItem> {
     return ui.divH([ibArrange.root]);
   }
 
-  /** Marks the formula input as valid or not, and reports it to the editor.
-   *  [resultOk] is false when the preview failed to render the formula. */
+  // [resultOk] is false when the preview failed to render the formula
   protected setFormulaValidationResult(resultOk: boolean, value: string, ibFormula: DG.InputBase<string>,
     isBand: boolean = false): void {
     const structureError = isBand ?

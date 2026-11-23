@@ -7,7 +7,7 @@ export class ItemHistory<T extends EditorItem> {
   /** Items saved by the previous dialogs */
   public readonly items: T[];
 
-  /** Items created in the currently open dialog */
+  // Items created in the currently open dialog
   private justCreatedItems: T[] = [];
 
   constructor(private storageKey: string) {

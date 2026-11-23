@@ -12,7 +12,7 @@ export class FormulaLineForm extends ItemForm<DG.FormulaLine> {
   /** The "Column" input of a constant line. */
   public columnInput?: DG.InputBase<DG.Column | null>;
 
-  /** The title must be accessible from other inputs, because it may depend on the formula */
+  // Kept for the other inputs, because the title may depend on the formula
   private ibTitle?: DG.InputBase;
 
   constructor(item: DG.FormulaLine, ctx: FormContext) {
@@ -66,7 +66,6 @@ export class FormulaLineForm extends ItemForm<DG.FormulaLine> {
       this.ibTitle!.value = newFormula;
   }
 
-  /** Creates textarea for item formula */
   private inputFormula(): HTMLElement {
     const item = this.item;
     const isBand = item.type === ITEM_TYPE.BAND;
@@ -93,7 +92,6 @@ export class FormulaLineForm extends ItemForm<DG.FormulaLine> {
     return ibFormula.root;
   }
 
-  /** Creates column input and text input for constant item */
   private inputConstant(colName: string, value: string): HTMLElement {
     const item = this.item;
 
@@ -114,7 +112,6 @@ export class FormulaLineForm extends ItemForm<DG.FormulaLine> {
     return ui.div([ibColumn.root, ibValue.root], 'ui-form');
   }
 
-  /** Creates column input for band second column */
   private inputColumn2(): HTMLElement {
     return ui.divH([this.inputColumn('Adjacent column', this.item.column2, (column) => this.ctx.applyChange(() => {
       this.item.column2 = column.name;
@@ -122,7 +119,7 @@ export class FormulaLineForm extends ItemForm<DG.FormulaLine> {
     })).root]);
   }
 
-  /** A column picker; a single-axis viewer offers only its value column. */
+  // A single-axis viewer offers only its value column
   private inputColumn(caption: string, colName: string | undefined,
     onValueChanged: (column: DG.Column) => void): DG.InputBase<DG.Column | null> {
     const axisName = this.ctx.singleAxisColumnName;
@@ -136,8 +133,8 @@ export class FormulaLineForm extends ItemForm<DG.FormulaLine> {
     });
   }
 
-  /** A line's or band's color; the alpha is the opacity. A color saved before the alpha is read
-   *  the way the viewers draw it, and written back in the new format on the first edit. */
+  // The alpha of the color is the opacity. A color saved before the alpha is read
+  // the way the viewers draw it, and written back in the new format on the first edit.
   private inputColor(): HTMLElement {
     const item = this.item;
     const defaultColor = '#000000';
@@ -155,7 +152,6 @@ export class FormulaLineForm extends ItemForm<DG.FormulaLine> {
     return ibColor.root;
   }
 
-  /** Creates combobox for item line style and text input for item width */
   private inputStyle(): HTMLElement {
     const ibStyle = ui.input.choice('Style', {value: this.item.style ?? 'solid',
       items: ['solid', 'dotted', 'dashed', 'longdash', 'dotdash'], onValueChanged: this.setField('style')});
@@ -170,7 +166,6 @@ export class FormulaLineForm extends ItemForm<DG.FormulaLine> {
     return ui.divH([ibStyle.root, ibWidth.root]);
   }
 
-  /** Creates text inputs for min-max values of item */
   private inputRange(): HTMLElement {
     return ui.divH([this.inputRangeBound('min', 'Range'), this.inputRangeBound('max', '')]);
   }
@@ -191,7 +186,6 @@ export class FormulaLineForm extends ItemForm<DG.FormulaLine> {
     return ibBound.root;
   }
 
-  /** Creates text input for item title */
   private inputTitle(): HTMLElement {
     const item = this.item;
     if (!item.title || item.title === item.formula)

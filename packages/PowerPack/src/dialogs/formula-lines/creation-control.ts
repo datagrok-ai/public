@@ -98,7 +98,7 @@ export class CreationControl {
     menu.show();
   };
 
-  /** Adds the region items the axes of the preview can show. */
+  // The region items the axes of the preview can show
   private addRegionItems(menu: DG.Menu, onClickAction: (itemCaption: string) => void): void {
     const {allowedItems} = this.options;
     const addItem = (itemCaption: string, description: string) =>
@@ -155,7 +155,6 @@ export class CreationControl {
     group.endGroup();
   }
 
-  /** Creates the item of the [itemCaption] menu item and shows it in the dialog. */
   private createItem(itemCaption: string, valY?: number, valX?: number): void {
     if (itemCaption === ITEM_CAPTION.POLYGON_REGION || itemCaption === ITEM_CAPTION.RECT_REGION) {
       this.actions.createArea(itemCaption === ITEM_CAPTION.POLYGON_REGION).then((region) => {

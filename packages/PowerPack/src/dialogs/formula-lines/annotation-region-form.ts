@@ -39,7 +39,6 @@ export class AnnotationRegionForm extends ItemForm<DG.AnnotationRegion> {
     this.root = this.createAccordion({[isArea ? 'Area' : 'Formula']: mainPane, 'Description': descriptionPane});
   }
 
-  /** Creates column input for an axis of the area */
   private inputAreaColumn(axis: 'x' | 'y'): HTMLElement {
     const item = this.item as DG.AreaAnnotationRegion;
 
@@ -104,8 +103,8 @@ export class AnnotationRegionForm extends ItemForm<DG.AnnotationRegion> {
     return ibFormula.root;
   }
 
-  /** The region's fill; the alpha is the opacity. A color saved before the alpha is read the way
-   *  the viewers draw it, and written back in the new format on the first edit. */
+  // The alpha of the fill is the opacity. A color saved before the alpha is read the way
+  // the viewers draw it, and written back in the new format on the first edit.
   private inputColor(): HTMLElement {
     const item = this.item;
     const defaultColor = DG.Color.toHtml(DG.Color.gray);

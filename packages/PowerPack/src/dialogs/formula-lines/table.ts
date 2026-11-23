@@ -14,7 +14,7 @@ const REMOVE_COL_WIDTH = 35;
 export class Table {
   private grid: DG.Grid;
 
-  /** Used to prevent onValuesChanged event when the grid changes itself */
+  // Stops the onValuesChanged handler while the grid changes itself
   private notify: boolean = true;
 
   public get root(): HTMLElement {return this.grid.root;}
@@ -95,7 +95,7 @@ export class Table {
     return rowIdx;
   }
 
-  /** What the row of an item shows. */
+  // What the row of an item shows
   private cellValues(rowIdx: number): {title?: string, formula?: string, visible?: boolean} {
     if (this.items.isFormulaLine(rowIdx)) {
       const line = this.items.formulaLines[rowIdx];
@@ -180,7 +180,6 @@ export class Table {
     return grid;
   }
 
-  /** Creates "Delete" button */
   private deleteBtn(rowIdx: number): HTMLElement {
     const btn = ui.button(ui.iconFA('trash-alt'), () => {
       const item = this.items.at(rowIdx)!;
@@ -197,7 +196,7 @@ export class Table {
     return btn;
   }
 
-  /** Writes the cells edited in the grid back to the item. */
+  // Writes the cells edited in the grid back to the item
   private onValuesChanged(indexes?: ArrayLike<number>): void {
     if (!this.notify)
       return;
@@ -224,7 +223,7 @@ export class Table {
     this.onItemChangedAction(rowIdx);
   }
 
-  /** The row of the first item on the [x] and [y] axes, or -1. */
+  // The row of the first item on the [x] and [y] axes, or -1
   private findRowByAxes(x: string, y: string): number {
     // Escape axis names so nested braces (e.g. `${AGE} + 10`) match their escaped form in the formula.
     const escapedX = escapeColName(x);

@@ -29,7 +29,7 @@ export class FormulaLinesDialog {
   private dframeTable?: Table;
   private creationControl: CreationControl;
   private tabs: DG.TabControl;
-  /** Items that failed the validation of their form; OK is disabled while there are any. */
+  // Items that failed the validation of their form; OK is disabled while there are any
   private invalidItems = new Set<EditorItem>();
 
   /** Returns the Table corresponding to the current tab in the tab control */
@@ -68,7 +68,7 @@ export class FormulaLinesDialog {
     this.dialog.sub(syncItemWithAxes(this.preview, this.editor, () => this.currentTable));
   }
 
-  /** The items table over the preview on the left, the editor on the right. */
+  // The items table over the preview on the left, the editor on the right
   private createLayout(): HTMLElement {
     const tabsInitialHeight = '140px';
     const editorInitialWidth = '420px';
@@ -123,7 +123,7 @@ export class FormulaLinesDialog {
     }, this.host);
   }
 
-  /** Lets the user draw an area on the preview; resolves to null if the preview viewer has no drawing. */
+  // Resolves to null if the preview viewer has no drawing
   private drawArea(lassoMode?: boolean): Promise<DG.AnnotationRegion | null> {
     const viewer = this.preview.viewer;
     if (!supportsRegionDrawing(viewer))
