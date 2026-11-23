@@ -509,6 +509,13 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         // leaves the rows behind the server, and the mark has to say so
         this._isStale.value = false;
       };
+      // the scope went back to the one shown while this read was in flight: the effect saw no change to the
+      // rows shown and started no load, so this one must not land rows read for a scope the user left
+      if (readFor !== this._readFor()) {
+        frame.dispose();
+        await this.refresh();
+        return;
+      }
       if (readFor === this._shownFor && this._frame !== undefined && this._frame !== shownFrame) {
         // the collection shown was swapped while this read was in flight — a save's or a page's re-base —
         // and which of the two reads is newer is unknown: this one is dropped and the collection read
@@ -573,9 +580,10 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       // session's insert, delete or update before the boundary moved the offsets, and the page repeated or
       // skipped a row. The window is then re-read from offset 0, as after a save; over pending changes,
       // which a re-read would drop, the source says the data changed and the next clean page re-bases
-      this._moved ||= await this._shifted(offset, boundary);
+      const shifted = this._moved || await this._shifted(offset, boundary);
       if (gen !== this._gen)
         return;
+      this._moved = shifted;
       const moved = this._moved;
       if (moved && this.isDirty.peek())
         this._isStale.value = true;

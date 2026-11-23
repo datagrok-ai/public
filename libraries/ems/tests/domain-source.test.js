@@ -7,7 +7,7 @@ import {backends, Scope, signal, Signal, Registry, SpecContext, renderSpec, regi
 import {registerDomainSources} from '../src/core/registrations.js';
 import {DomainSource} from '../src/core/domain-source.js';
 import {SharedSession} from '../src/core/session.js';
-import {SCHEMA, ROWS, backend} from './domain-fixtures.mjs';
+import {SCHEMA, ROWS, backend, until} from './domain-fixtures.mjs';
 import {MemoryDomainBackend} from '../src/core/memory-domain.js';
 
 /** Every test runs over its own backend and must leave the live-scope count where it was. */
@@ -1095,5 +1095,34 @@ source('EQ-006: a text value that only starts with ~new: is saved as typed; a li
   assert.equal(saved.description, '$x', 'a literal $ round-trips');
   assert.deepEqual(saved.tags, ['~new:tag', '$y'], 'element-wise in a list');
   assert.equal(table.rows.find((r) => r.number === 9)?.title, '~new:draft title', 'and in an insert');
+  src.dispose();
+});
+
+source('a page check that answers after a new sort started leaves the new list\'s next page a plain append', async () => {
+  emsBackends.domain = backend();
+  const inner = emsBackends.domain.table.bind(emsBackends.domain);
+  const gate = {hold: false, waiting: [], offsets: []};
+  emsBackends.domain.table = async (address) => {
+    const t = await inner(address);
+    // a page is appended through the frame: only a window read from the top passes here
+    return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {
+      frame: (spec) => (gate.offsets.push(spec.offset), t.frame(spec)),
+      // a held check answers that the page boundary moved
+      query: async (q) => gate.hold ? new Promise((go) => gate.waiting.push(() => go([{id: 'moved'}]))) : t.query(q),
+    });
+  };
+  const src = await issues({pageSize: 1});
+  gate.hold = true;
+  const paging = src.loadMore();
+  await until(() => gate.waiting.length === 1);
+  gate.hold = false;
+  src.sort.value = '-number';
+  await flush();
+  await until(() => src.state.value === 'ready');
+  gate.waiting.splice(0).forEach((go) => go());
+  await paging;
+  gate.offsets.length = 0;
+  await src.loadMore();
+  assert.deepEqual(gate.offsets, [], 'the page appended, the window not read again from the top');
   src.dispose();
 });
