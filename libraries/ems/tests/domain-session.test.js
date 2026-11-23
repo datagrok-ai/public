@@ -934,6 +934,92 @@ scoped('a save refused as forbidden is sent once a later re-read of the access f
   projects.dispose();
 });
 
+scoped('a 403 over two tables lets Save go once a re-read restores the grant revoked on one of them', async () => {
+  const memory = backend();
+  const table = memory.tableSync('grit.issue');
+  const access = table.access.bind(table);
+  let granted = true;
+  table.access = async () => {
+    const data = await access();
+    return {...data, can: {...data.can, edit: granted}};
+  };
+  emsBackends.domain = {
+    table: (address) => memory.table(address),
+    saveAll: (edits) => {
+      if (granted)
+        return memory.saveAll(edits);
+      for (const edit of edits)
+        Object.assign(edit, {problem: 'forbidden', problemCode: 'forbidden'});
+      return Promise.resolve(false);
+    },
+  };
+  const session = new SharedSession();
+  const [projects, issues] = ['grit.project', 'grit.issue'].map((t) =>
+    testOwner().build(() => new DomainSource({table: t, session}, env)));
+  projects.start();
+  issues.start();
+  const save = testOwner().build(() => saveButton(session));
+  await flush();
+  projects.rows.byKey('p1').name = 'Grit 2';
+  issues.rows.byKey('i1').title = 'Aspirin 2';
+  granted = false;
+  assert.equal(await session.save(), false);
+  assert.equal(save.button.disabled, true, 'the 403 holds Save');
+  granted = true;
+  await session.reloadAccess();
+  await flush();
+  assert.equal(save.button.disabled, false, 'the grant restored on the issues lets Save go');
+  assert.equal(await session.save(), true, 'and both edits are sent');
+  save.dispose();
+  projects.dispose();
+  issues.dispose();
+});
+
+scoped('a save over a re-read access keeps the new row current under its id, and rebuilds the writer once', async () => {
+  const memory = backend();
+  const table = memory.tableSync('grit.project');
+  const frame = table.frame.bind(table);
+  let reads = 0;
+  table.frame = (spec) => (reads++, frame(spec));
+  emsBackends.domain = {
+    table: (address) => memory.table(address),
+    // the platform editor's order: the rows turn clean, its re-read runs, onSaved fires last
+    saveAll: async ([edit]) => {
+      edit.setSaving(true);
+      try {
+        const pending = edit.buildOps();
+        const results = await memory.transaction(pending.map((p) => p.op));
+        const fire = edit.onSaved.fire.bind(edit.onSaved);
+        let saved;
+        edit.onSaved.fire = (r) => saved = r;
+        edit.applyResults(pending, results);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        fire(saved);
+        return true;
+      } finally {
+        edit.setSaving(false);
+      }
+    },
+  };
+  const session = new SharedSession();
+  const projects = testOwner().build(() => new DomainSource({table: 'grit.project', session}, env));
+  projects.start();
+  await flush();
+  const draft = projects.newRow({key: 'NEW', name: 'New project'});
+  const issues = testOwner().build(() =>
+    new DomainSource({table: 'grit.issue', session, defaults: {project_id: draft.id}}, env));
+  await session.reloadAccess();
+  reads = 0;
+  assert.equal(await session.save(), true);
+  await flush();
+  const id = (await table.query({})).find((r) => r.key === 'NEW').id;
+  assert.equal(projects.currentRow.value?.id, id, 'the current row is the saved row, under its real id');
+  assert.equal(issues.defaults.project_id, id, 'a child under the draft names the row it became');
+  assert.equal(reads, 1, 'the writer is rebuilt once, by the save');
+  projects.dispose();
+  issues.dispose();
+});
+
 // the platform session's RELOAD in the conflict dialog drops the conflicting writer's edits inside
 // `saveAll` and retries the rest: the backend still answers true, and says what each writer wrote
 function reloading(dropped) {

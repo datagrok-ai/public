@@ -362,6 +362,28 @@ scoped('EQ-062: a Save that deletes the parent and adds a child under it is refu
   parent.dispose();
 });
 
+scoped('New in a children tab is off once the parent edited in one field is deleted, and on again at its undo', async () => {
+  emsBackends.domain = crm();
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await settle();
+  const add = byKind(children, 'new-button')[0];
+  parent.rows.byKey('c1').name = 'Acme 2';
+  await flush();
+  assert.equal(add.disabled, false, 'an edited parent takes children');
+  parent.edit.value.markDeleted('c1');
+  await flush();
+  assert.equal(add.disabled, true, 'a parent deleted on Save takes none');
+  parent.edit.value.unmarkDeleted('c1');
+  await flush();
+  assert.equal(add.disabled, false, 'the deletion undone, it takes them again');
+  children.dispose();
+  parent.dispose();
+});
+
 scoped('EQ-062: the refusal names the row under the deleted parent, not another edit of the same Save', async () => {
   const memory = emsBackends.domain = crmWithEmpty();
   const contacts = await domains.table('crm.contact');

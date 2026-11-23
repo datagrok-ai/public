@@ -231,7 +231,13 @@ export class SharedSession implements DomainSession {
   async reloadAccess(): Promise<void> {
     // the snapshot every affordance was built from is stale: the caches go before anything re-reads
     emsBackends.domain?.dropAccess?.();
-    await Promise.all(this._sources.peek().map((source) => source.reloadAccess()));
+    const restored = await Promise.all(this._sources.peek().map((source) => source.reloadAccess()));
+    // the refusal was copied onto every source of the batch, and one whose own grant never moved (the
+    // parent of the child table the grant came back on) would hold Save alone
+    if (restored.includes(true)) {
+      for (const source of this._sources.peek())
+        source.releaseForbidden();
+    }
   }
 
   /** What the status line says for a save the server refused as forbidden: its own sentence where
