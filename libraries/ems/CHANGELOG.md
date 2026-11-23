@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Lists: Fixed an empty list telling a user with View only that they "cannot create issues: they need a value for Project id, which you cannot set": the reason is given only to a user who may insert; one who may not reads "No issues yet"
 * Forms: Fixed retyping JSON-looking text in a plain text column (`{"a":1}` as `{"a": 1}`) being dropped: the field snapped back and Save sent a no-op update (or nothing was written at all on the platform); only json and string list columns now compare by their JSON value, and retyping one as it was no longer counts as a change
 * Forms: Fixed Save being allowed when a schema constraint over several columns was broken through any column but its first (saved Low 5, High 10 under `low <= high`, High set to 1): the Low field showed the message but Save went on and the server refused it; a constraint now holds Save whichever of its columns was edited, while an untouched stored value a tightened per-field rule refuses still does not
 * Lists: Fixed the first Load more after a search, filter or sort change re-reading every loaded page, or showing "Data changed" over pending edits, when nothing changed: a page check of the previous list that answered late was applied to the new one
