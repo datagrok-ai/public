@@ -37,6 +37,8 @@ category('Benchmarks: Calculated columns and layouts', () => {
   async function applyLayout(): Promise<number> {
     const table = makeTable(rows);
     const view = grok.shell.addTableView(table);
+    // the table's own semantic type detection and first render belong to opening it, not to the layout
+    await waitIdle(performance.now());
     const columnCount = table.columns.length + formulas.length;
     const start = performance.now();
     view.loadLayout(DG.ViewLayout.fromJson(layout));
