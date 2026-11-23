@@ -119,3 +119,32 @@ scoped('the binding lives as long as the owner: disposing it releases the listen
   assert.deepEqual(ids(source), ['i1'], 'nothing follows a disposed binding');
   source.dispose();
 });
+
+// EQ-040: Save of a deleted current row in a multi-selection. The saved delete leaves the frame and the source
+// hands the current row on to a neighbour; that hand-on reached the list as a programmatic lead write, which
+// collapsed the multi-selection to the lead.
+scoped('a saved delete of the current row keeps the other selected rows and hands the lead to a neighbour', async () => {
+  emsBackends.domain = backend();
+  const handle = await domains.table('grit.issue');
+  const source = testOwner().build(() => handle.source({pageSize: 10}));
+  await flush();
+  const list = testOwner().build(() => domains.list(source));
+  document.body.append(list.root);
+  layout(list.list.root, {clientHeight: 300});
+  fire(list.list.root, 'scroll');
+  await flush();
+  fire(list.list.rowAt(0), 'click');
+  fire(list.list.rowAt(2), 'click', {ctrlKey: true});
+  await flush();
+  assert.equal(source.currentRow.value.id, 'i3');
+  fire(list.list.root, 'keydown', {key: 'Delete'});
+  await flush();
+  assert.equal(await source.save(), true);
+  await flush();
+  assert.equal(source.rows.byKey('i3'), undefined, 'the deleted row is gone');
+  assert.equal(source.currentRow.value?.id, 'i2', 'the current row is the deleted row\'s neighbour');
+  assert.deepEqual(ids(source), ['i1'], 'the other selected row stays selected, nothing else is');
+  assert.deepEqual(list.list.selectedKeys(), ['i1'], 'and the list shows the same selection');
+  list.dispose();
+  source.dispose();
+});
