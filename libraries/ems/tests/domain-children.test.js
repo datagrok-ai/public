@@ -313,3 +313,28 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
   children.dispose();
   parent.dispose();
 });
+
+// EQ-052: the server refuses a read that filters on a column the caller cannot see (a 400 the tab
+// swallows), so a tab whose link to the parent is hidden must ask nothing about that link
+scoped('EQ-052: a child tab whose link to the parent is hidden queries and counts nothing by that link', async () => {
+  const memory = crm();
+  const contact = memory.tableSync('crm.contact');
+  const open = contact.access;
+  contact.access = () => open.call(contact).then((a) => ({...a, fields: {...a.fields, company_id: 'hidden'}}));
+  const asked = [];
+  for (const read of ['count', 'query']) {
+    const real = contact[read].bind(contact);
+    contact[read] = (spec) => (asked.push(JSON.stringify(spec ?? {})), real(spec));
+  }
+  emsBackends.domain = memory;
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c1');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await settle();
+  await settle();
+  assert.deepEqual(asked.filter((spec) => spec.includes('company_id')), [], 'nothing filters on the hidden link');
+  children.dispose();
+  parent.dispose();
+});
