@@ -149,7 +149,7 @@ export class SharedSession implements DomainSession {
           const forbidden = batch.some((s) => s.edit.peek()?.problemCode === 'forbidden');
           this._raise(batch, SharedSession._refused(batch, forbidden));
           if (forbidden)
-            await this._reloadAccess();
+            await this.reloadAccess();
           return false;
         }
       } catch (e) {
@@ -161,7 +161,7 @@ export class SharedSession implements DomainSession {
         const forbidden = (e as {code?: unknown} | null)?.code === 'forbidden';
         this._raise(batch, () => forbidden);
         if (forbidden)
-          await this._reloadAccess();
+          await this.reloadAccess();
         return false;
       } finally {
         for (const sub of heard)
@@ -226,8 +226,9 @@ export class SharedSession implements DomainSession {
       source.edit.peek()?.setSaving(saving);
   }
 
-  // every source, not just the batch: New and the ⋯ menu follow the list source
-  private async _reloadAccess(): Promise<void> {
+  /** Reads the caller's access again for every source, not just a batch: New and the ⋯ menu follow the
+   * list source. A grant restored since a refused save lifts that refusal's hold. */
+  async reloadAccess(): Promise<void> {
     // the snapshot every affordance was built from is stale: the caches go before anything re-reads
     emsBackends.domain?.dropAccess?.();
     await Promise.all(this._sources.peek().map((source) => source.reloadAccess()));

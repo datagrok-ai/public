@@ -647,6 +647,10 @@ export class DomainApp extends Control {
    * page is {@link stale}. Through the gate: a reload drops whatever is pending. */
   async refresh(): Promise<boolean> {
     const source = this._page.peek() === 'entity' ? this._entitySource.peek() : this.listSource;
+    // over pending changes the access is read first: a grant restored since a refused save lets them be saved,
+    // from the dialog below or from Save
+    if (source !== null && this.session.isDirty.peek())
+      await this.session.reloadAccess();
     if (source === null || !await confirmDiscard(this.session, {action: 'reload the rows'}))
       return false;
     // the access is read again too, once: the platform caches it until told otherwise, and a grant made by

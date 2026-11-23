@@ -2084,3 +2084,39 @@ scoped('a row-grant reader whose filter, search or typed text matches nothing is
   assert.doesNotMatch(document.body.textContent, /do not have access/);
   pick.dispose();
 });
+
+scoped('Refresh over a save refused as forbidden reads the access again: the grant restored turns SAVE back on', async () => {
+  const memory = backend();
+  const issues = memory.tableSync('grit.issue');
+  const access = issues.access.bind(issues);
+  const saveAll = memory.saveAll.bind(memory);
+  let granted = true;
+  issues.access = async () => {
+    const data = await access();
+    return {...data, can: {...data.can, edit: granted}};
+  };
+  memory.saveAll = (edits) => {
+    if (granted)
+      return saveAll(edits);
+    edits.forEach((edit) => Object.assign(edit, {problem: 'forbidden', problemCode: 'forbidden'}));
+    return Promise.resolve(false);
+  };
+  emsBackends.domain = memory;
+  const table = await domains.table('grit.issue');
+  const a = testOwner().build(() => domains.app({table, base: BASE, pageSize: 10}));
+  document.body.append(a.root);
+  await flush();
+  a.listSource.rows.byKey('i1').title = 'Edited';
+  granted = false;
+  assert.equal(await a.session.save(), false);
+  assert.notEqual(a.session.blocking.value, null, 'the 403 holds Save');
+  granted = true;
+  const refreshing = a.refresh();
+  await flush();
+  await flush();
+  assert.equal(a.session.blocking.value, null, 'the restored grant lifts the hold before the dialog asks');
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await refreshing, false);
+  assert.equal(await a.session.save(), true, 'and the changes are saved');
+  a.dispose();
+});
