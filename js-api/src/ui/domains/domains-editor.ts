@@ -1252,18 +1252,23 @@ export class DomainFrameEditor implements IFrameEditor {
         read = false;
       }
       if (read) {
-        if (fresh == null)
+        if (fresh == null) {
           balloon.error(`${subject} no longer exists.`);
-        else
+          // as a saved delete leaves it: cleared state alone would show the row as live
+          this._write(() => this._df.rows.removeAt(row, 1, false));
+          this._resetCaches();
+        }
+        else {
           this._write(() => {
             for (const name of Object.keys(fresh))
               if (this._df.columns.contains(name))
                 this._df.set(name, row, DomainFrameEditor._cellOf(fresh[name]));
           });
-        this._clearRowState(row);
-        // The pre-reload values are gone: a snapshot of them would make the next
-        // in-grid edit record an "original" the cell never held.
-        this._snapshots.delete(row);
+          this._clearRowState(row);
+          // The pre-reload values are gone: a snapshot of them would make the next
+          // in-grid edit record an "original" the cell never held.
+          this._snapshots.delete(row);
+        }
         this._df.rows.requestFilter();
         this._fire();
         return true;

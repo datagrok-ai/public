@@ -22,7 +22,10 @@ function frame(cols) {
     columns: {byName: (n) => n in cols ? column(n) : null, contains: (n) => n in cols},
     set: (n, r, v) => { cols[n][r] = v; },
     filter: {get: (r) => bits[r], set: (r, v) => { bits[r] = v; }},
-    rows: {requestFilter: () => { bits.fill(true); df.onRowsFiltering?.(); }},
+    rows: {
+      requestFilter: () => { bits.fill(true); df.onRowsFiltering?.(); },
+      removeAt: (r, n) => { for (const c of Object.values(cols)) c.splice(r, n); bits.splice(r, n); },
+    },
     onRowsFiltering: null,
     cols,
   };
@@ -36,7 +39,7 @@ function editor(state, fresh, {concurrency = 'version'} = {}) {
   Object.assign(ed, {
     _df: frame({id: ['r1'], name: ['Mine'], version: [1], [DG.DOMAIN_DELETED_COLUMN]: [state === 'restored'],
       [E.STATE_COLUMN]: [state], [E.CHANGES_COLUMN]: [''], [E.ERRORS_COLUMN]: ['']}),
-    _propByName: new Map(), _parsed: new Map(), _snapshots: new Map(), _unguarded: new Set(), _pristine: new Set(),
+    _propByName: new Map(), _parsed: new Map(), _contributions: new Map(), _snapshots: new Map(), _unguarded: new Set(), _pristine: new Set(),
     _info: {nameColumn: 'name'},
     access: {fields: {name: 'editable'}, support: {concurrency}},
     client: {table: 'item', get: async (id, options) => { reads.push({id, options}); return fresh; }},
@@ -108,6 +111,17 @@ test('a stale delete, RELOAD: the row is shown again before the retry', async ()
   assert.equal(ed._df.filter.get(0), false, 'the staged delete hides the row');
   assert.equal(await ed.resolveConflict(conflict(2), ed.buildOps()[0]), true);
   assert.equal(ed._df.filter.get(0), true, 'the dropped delete no longer hides the row, whatever the retry does');
+});
+
+test('a stale delete, RELOAD of a row the server no longer has: the row leaves the frame, as a saved delete', async () => {
+  dialog('reload');
+  const balloons = [];
+  Object.assign(sandbox, {grok_JS_To_Map: (o) => o, grok_Balloon: (s) => { balloons.push(s); }});
+  const {ed} = editor('deleted', null);
+  assert.equal(await ed.resolveConflict(conflict(2), ed.buildOps()[0]), true);
+  assert.deepEqual(balloons, ['Mine no longer exists.']);
+  assert.equal(ed._df.rowCount, 0, 'the row is not shown again as a live one');
+  assert.equal(ed.buildOps().length, 0, 'the delete is not retried');
 });
 
 test('a stale update, RELOAD: json and string_list values land as the JSON text the frame holds', async () => {
