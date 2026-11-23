@@ -655,6 +655,33 @@ scoped('text a number field cannot read is an unsaved change too: the gates ask,
   src.dispose();
 });
 
+scoped('a write the writer throws on is a problem on its field: Save is refused, never "saved" for nothing (EQ-024)', async () => {
+  const {src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = testOwner().build(() => domains.form(src));
+  await flush();
+  // the platform writer over a frame that lost the column since the form was built (dropped in another session)
+  const edit = src.edit.peek();
+  const setValue = edit.setValue;
+  edit.setValue = (key, column, value) => {
+    if (column === 'title')
+      throw new Error('No such column: title');
+    return setValue.call(edit, key, column, value);
+  };
+  const box = form.input('title').root.querySelector('input');
+  box.value = 'typed into a dropped column';
+  fire(box, 'input');
+  fire(box, 'focusout');
+  await flush();
+  assert.match(form.input('title').validity.value ?? '', /cannot be saved \(No such column: title\): reload the page/,
+    'the field says its value cannot be saved, and what to do');
+  assert.equal(await src.save(), false, 'a Save run anyway is refused');
+  assert.equal(document.querySelector('[role="status"]'), null, 'and no "saved" balloon');
+  edit.setValue = setValue;
+  form.dispose();
+  src.dispose();
+});
+
 scoped('a field left invalid over a changed cell is one change, and the row reads as the field holds it', async () => {
   const {src} = await issues();
   src.currentRow.value = src.rows.byKey('i1');

@@ -352,6 +352,13 @@ export class DomainForm extends Control {
       const kind = kindOf(source.schema.properties.find((p) => p.name === name)!);
       input.addValidator((value) => (ObjectForm.same(value, ObjectForm.coerce(kind, row[name])) ?
         source.edit.peek()?.errorOf(row.id, name) : null) ?? table?.validators.check(name, value, row) ?? null);
+      // a value the writer threw on (a column the table no longer has) never reaches the row, so no
+      // Save could send it: the field says so and holds Save off, instead of counting a change
+      input.addValidator((value) => {
+        const failed = source.unapplied(row.id, name);
+        return failed !== null && ObjectForm.same(value, failed.value) ?
+          `cannot be saved (${failed.message}): reload the page to see the table as it is now` : null;
+      });
       // and a constraint is judged on what the fields hold, written or not
       if (this._constraints.some((c) => c.columns.includes(name))) {
         let initial = true;

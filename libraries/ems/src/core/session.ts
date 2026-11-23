@@ -1,4 +1,4 @@
-import {emsBackends, capital, nounOf} from './domain-backend.js';
+import {emsBackends, capital, nounOf, DomainBackendError} from './domain-backend.js';
 import {signal, computed, batch, ReadonlySignal, Emitter, plural, notify, Dialog, Rows, div} from '@datagrok-libraries/u2';
 import type {ObservableLike, SpecInstance, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from './domain-source.js';
@@ -120,6 +120,15 @@ export class SharedSession implements DomainSession {
       }
       if (this._overlapping(batch))
         return false;
+      // dirty, yet no row carries a change: what is held never reached the rows, and a batch
+      // without one writes nothing — refused as such, never announced as saved
+      if (batch.every((s) => s.pending().length === 0)) {
+        for (const source of dirty) {
+          source.fail(new DomainBackendError('validation', 'Cannot save: the unsaved changes could not be ' +
+            'written to the rows; reload the page to see the table as it is now'));
+        }
+        return false;
+      }
       // every draft id the transaction assigned, over the whole batch: a source's query, defaults
       // or cells may name one (a child collection under a draft parent), and what it reads next
       // must be about the id that parent was given. No prototype: what is read against this map is

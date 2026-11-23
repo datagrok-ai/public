@@ -180,6 +180,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _guards = new Set<() => string | null>();
   private readonly _problems = signal<readonly ReadonlySignal<string | null>[]>([]);
   private readonly _unwritten = signal<readonly ReadonlySignal<UnwrittenEdits | null>[]>([]);
+  // a write the writer threw on (a column the frame no longer has), by row and column: what the
+  // control holding that value reports, until a write of the cell lands or the edits are dropped
+  private readonly _unapplied = signal<ReadonlyMap<string, {value: unknown, message: string}>>(new Map());
   private readonly _captionOption: string[] | undefined;
   private _table: DomainTableLike | undefined;
   private _ready: Promise<DomainTableLike> | undefined;
@@ -252,8 +255,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this._errorStep = computed(() => DomainSource._message(this._error.value));
     this.currentRow = signal<RowView<TRow> | null>(null);
     this._rows = new FrameRows(this._df, {owner: this.scope,
-      onWrite: (id, column, value) =>
-        this._edit.peek()?.setValue(id, column, DomainSource.frameValue(this._df.peek(), column, value))});
+      onWrite: (id, column, value) => this._write(id, column, value)});
     this.rows = this._rows as RowsLike<RowView> as RowsLike<RowView<TRow>>;
     this.isDirty = computed(() => (this._edit.value?.isDirty.value ?? false) || this._holding());
     this.changeCount = computed(() => {
@@ -717,6 +719,33 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return n;
   }
 
+  /** Why the writer threw on the last write of a cell — the value it was handed and what it said —
+   * null while that cell's writes land. A control holding that value cannot get it saved: it says
+   * so instead of counting it as a change Save would send. */
+  unapplied(id: string, column: string): {value: unknown, message: string} | null {
+    return this._unapplied.value.get(DomainSource._cell(id, column)) ?? null;
+  }
+
+  // the throw still reaches the caller (a form keeps the value as unwritten), and is remembered
+  private _write(id: string, column: string, value: unknown): void {
+    const cell = DomainSource._cell(id, column);
+    try {
+      this._edit.peek()?.setValue(id, column, DomainSource.frameValue(this._df.peek(), column, value));
+    } catch (e) {
+      this._unapplied.value = new Map(this._unapplied.peek()).set(cell, {value, message: DomainSource._message(e)});
+      throw e;
+    }
+    if (this._unapplied.peek().has(cell)) {
+      const left = new Map(this._unapplied.peek());
+      left.delete(cell);
+      this._unapplied.value = left;
+    }
+  }
+
+  private static _cell(id: string, column: string): string {
+    return `${id}\u0000${column}`;
+  }
+
   private _holding(): boolean {
     return this._unwritten.value.some((held) => Object.keys(held.value?.values ?? {}).length > 0);
   }
@@ -992,6 +1021,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
 
   /** Drops this source's pending changes — what its session calls. */
   revert(): void {
+    this._unapplied.value = new Map();
     this._edit.peek()?.discard();
     if (this._regate && !this.isDirty.peek())
       void this._rebuildWriter();
