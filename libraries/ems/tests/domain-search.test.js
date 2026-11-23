@@ -207,6 +207,24 @@ scoped('a search changed over pending edits is applied by the Save\'s own re-bas
   src.dispose();
 });
 
+scoped('a search on a table with no searchable column is dropped and the list read once', async () => {
+  emsBackends.domain = backend();
+  const inner = emsBackends.domain.table.bind(emsBackends.domain);
+  const specs = [];
+  emsBackends.domain.table = async (address) => {
+    const t = await inner(address);
+    return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {info: {...t.info, searchableColumns: []},
+      frame: (spec) => (specs.push(spec), t.frame(spec))});
+  };
+  const table = await domains.table('grit.issue');
+  const src = testOwner().build(() => table.source({pageSize: 10, search: 'abc'}));
+  await until(() => src.state.value === 'ready');
+  await wait(10);
+  assert.equal(src.search.value, '', 'the search is dropped');
+  assert.equal(specs.length, 1, 'the rows are read once');
+  src.dispose();
+});
+
 scoped('a search typed and cleared while its read is in flight leaves the unsearched rows shown', async () => {
   emsBackends.domain = backend();
   const inner = emsBackends.domain.table.bind(emsBackends.domain);
