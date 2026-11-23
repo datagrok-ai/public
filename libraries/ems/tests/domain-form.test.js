@@ -1282,3 +1282,20 @@ scoped('EQ-057: a stored json object shows its pairs, and a typed pair is writte
   form.dispose();
   src.dispose();
 });
+
+scoped('EQ-057: the memory backend takes json and string_list cells as the server coerces them', async () => {
+  const memory = new MemoryDomainBackend({name: 'qa', tables: {item: {columns: {
+    name: {type: 'string', required: true}, meta: {type: 'json'}, tags: {type: 'string_list'}}}}});
+  const table = memory.tableSync('qa.item');
+  const report = await table.batch([{name: 'a', meta: '{"k":"v"}', tags: '["x","y"]'}]);
+  assert.equal(report.inserted, 1, 'a batch of JSON text is planned, not refused');
+  const row = table.rows.find((r) => r.name === 'a');
+  assert.deepEqual([row.meta, row.tags], [{k: 'v'}, ['x', 'y']], 'JSON text is decoded, as the server does');
+  await assert.rejects(memory.transaction([{op: 'insert', table: 'item', values: {name: 'b', meta: ['k']}}]),
+    (e) => e.message.endsWith('Cannot convert "["k"]" to map'), 'a list is no json object');
+  const frame = await table.frame({});
+  frame.edit.setValue(row.id, 'meta', ['k']);
+  assert.equal(frame.edit.errorOf(row.id, 'meta'), 'Types differ. Expected: map, passed: list',
+    'a list in a json cell is refused as the platform editor refuses it');
+  frame.dispose();
+});
