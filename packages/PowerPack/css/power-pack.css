@@ -1818,5 +1818,5 @@ body.dartium .power-pack-widgets-host.ui-div {
 
 /* a package tab's preview (PowerPack:showSpotlightPreview) has the page to itself: only the Spotlight stays above it */
 .power-pack-widgets-panel.power-pack-preview-focus .power-pack-widget-host:not(:has(.power-pack-activity-widget-content)) {
-    display: none !important;
+    display: none;
 }

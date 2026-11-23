@@ -1,3 +1,4 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
@@ -15,40 +16,23 @@ export function spotlightTabFunctions(): DG.Func[] {
 export async function spotlightTabContent(func: DG.Func): Promise<HTMLElement> {
   try {
     const widget: DG.Widget = await func.apply();
-    return widget?.root ?? ui.divText(`${func.friendlyName} returned nothing to show`);
+    return widget?.root ?? ui.divText(`${func.friendlyName} returned nothing to show`, 'pp-empty-message');
   }
   catch (e) {
     console.error(e);
-    return ui.divText(`${func.friendlyName} could not be shown: ${e instanceof Error ? e.message : e}`);
+    return ui.divText(`${func.friendlyName} could not be shown: ${e instanceof Error ? e.message : e}`, 'pp-empty-message');
   }
 }
 
-const OPENED_KEY = 'power-pack-spotlight-default-opened';
+const SETTINGS = 'power-pack-spotlight-tabs';
+const OPENED_KEY = 'openedDefaultTabs';
 
-function readOpened(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(OPENED_KEY) ?? '[]');
-  }
-  catch (_) {
-    return [];
-  }
-}
-
+/** `funcs` are the functions that got a tab. */
 export function openDefaultTabOnce(tabs: DG.TabControl, funcs: DG.Func[]): void {
   const func = funcs.find((f) => `${f.options['spotlightDefault']}` === 'true');
-  if (!func)
+  const opened: string[] = JSON.parse(grok.userSettings.getValue(SETTINGS, OPENED_KEY) ?? '[]');
+  if (!func || opened.includes(func.nqName))
     return;
-  const opened = readOpened();
-  if (opened.includes(func.nqName))
-    return;
-  const pane = tabs.panes.find((p) => p.name === func.friendlyName);
-  if (!pane)
-    return;
-  tabs.currentPane = pane;
-  try {
-    localStorage.setItem(OPENED_KEY, JSON.stringify([...opened, func.nqName]));
-  }
-  catch (_) {
-    // without storage the default tab opens each time
-  }
+  tabs.currentPane = tabs.getPane(func.friendlyName);
+  grok.userSettings.add(SETTINGS, OPENED_KEY, JSON.stringify([...opened, func.nqName]));
 }
