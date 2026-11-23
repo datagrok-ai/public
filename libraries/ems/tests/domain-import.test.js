@@ -648,6 +648,21 @@ scoped('a user column takes ids as the server reads them: a login or a padded id
   assert.equal(await running, null);
 });
 
+scoped('a group column takes group ids: a group name is refused by name, a group id passes', async () => {
+  const issue = SCHEMA.tables.issue;
+  const memory = new MemoryDomainBackend({...SCHEMA, tables: {...SCHEMA.tables, issue: {...issue,
+    columns: {...issue.columns, team: {type: 'group'}}}}},
+  {rows: Object.fromEntries(Object.entries(ROWS).map(([t, list]) => [t, list.map((r) => ({...r}))]))});
+  const {running} = await opened(memory, frame(['project_id', 'title', 'team'],
+    [{project_id: 'p1', title: 'A', team: 'Developers'}, {project_id: 'p1', title: 'B', team: UID}]));
+  await toMapping();
+  await toPreview();
+  assert.deepEqual(counts('preview'), ['1 to add', '1 error'], 'a group name is refused, a group id passes');
+  assert.match(document.body.textContent, /Team: expected a group id \(uuid\), got "Developers"/);
+  fire(buttonNamed('CANCEL'), 'click');
+  assert.equal(await running, null);
+});
+
 /** The server's answer to a batch a table CHECK fails (`repository.dart` `_mapPgError`): the statement aborts, so
  * the dry run and the commit both get HTTP 409 `{error: 'validation', rows: [...]}` pinned on row 0, which the
  * js-api client resolves rather than rejects — no `validateOnly`, no counts, no `status` or `predicted`. */
