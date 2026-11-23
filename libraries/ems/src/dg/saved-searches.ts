@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
-import {batch, computed, iconButton, signal, Dialog, Filters, Menu, TextInput} from '@datagrok-libraries/u2';
-import type {Signal} from '@datagrok-libraries/u2';
+import {batch, computed, iconButton, signal, Dialog, Filters, Menu, TextInput, notify} from '@datagrok-libraries/u2';
+import type {Signal, FilterProperty, FilterSchema} from '@datagrok-libraries/u2';
 import type {DomainSource} from '../core/domain-source.js';
 import {confirmDiscard} from '../core/session.js';
 
@@ -16,6 +16,24 @@ const savedKey = (table: string) => `ems-searches|${table}`;
 const same = (a: DomainSearch, b: DomainSearch) => a.q === b.q && a.search === b.search && a.sort === b.sort;
 const label = (s: DomainSearch) => [s.q, s.search && `Search "${s.search}"`].filter((x) => x).join(' · ');
 
+/** The keys of `sort` over columns the table describes (a column the caller may not read, or one removed since, is
+ * refused by the server for the whole read, so it is dropped and the rest of the order kept). */
+export function sortable(sort: string, properties: readonly {name?: string}[]): string {
+  const columns = new Set(properties.map((p) => p.name));
+  return sort.split(',').filter((key) => key !== '' && columns.has(key.replace(/^!/, ''))).join(',');
+}
+
+/** The query text as the box reads it, in the form the box sends: a link's, a saved or a recent search's text goes
+ * through the schema's grammar (case-insensitive and `[bracket]` names, its `like` escapes) and is written back
+ * formatted, so the server parses what the box validated. Text the grammar or the schema refuses stays as it is: the
+ * box shows its refusal and sends nothing. */
+export function normalized(q: string, schema: {properties: readonly FilterProperty[]}): string {
+  if (q.trim() === '' || schema.properties.length === 0)
+    return q;
+  const parsed = Filters.parse(q, schema as FilterSchema, 'domain');
+  return parsed.problems.length > 0 ? q : Filters.format(parsed.root);
+}
+
 export class SavedSearches {
   static readonly changed = signal(0);
   private static readonly _current = new WeakMap<DomainSource, Signal<string | null>>();
@@ -27,6 +45,12 @@ export class SavedSearches {
 
   static saved(table: string): Map<string, DomainSearch> {
     return new Map(Object.entries(grok.userSettings.get(savedKey(table)) ?? {}).map(([k, v]) => [k, JSON.parse(v)]));
+  }
+
+  /** The saved search `name` collides with (names compare trimmed and ignoring case), or null. */
+  static taken(table: string, name: string): string | null {
+    const key = name.trim().toLowerCase();
+    return [...SavedSearches.saved(table).keys()].find((k) => k.trim().toLowerCase() === key) ?? null;
   }
 
   static save(table: string, name: string, search: DomainSearch): void {
@@ -64,11 +88,23 @@ export class SavedSearches {
   }
 
   static apply(source: DomainSource, search: DomainSearch): void {
-    void confirmDiscard(source.session, {action: 'change the filter'}).then((ok) => ok && batch(() => {
-      source.query.value = search.q;
-      source.search.value = search.search;
-      source.sort.value = search.sort;
-    }));
+    // a saved sort may name a column removed since: dropped, and said once, never written into the address
+    const sort = sortable(search.sort, source.schema.properties);
+    void confirmDiscard(source.session, {action: 'change the filter'}).then((ok) => {
+      if (!ok)
+        return;
+      if (sort !== search.sort) {
+        const gone = search.sort.split(',').filter((k) => k !== '' && !sort.split(',').includes(k))
+          .map((k) => k.replace(/^!/, ''));
+        notify.warning(`Sort by ${gone.join(', ')} is no longer available; showing ${sort === '' ?
+          'the default order' : `the order by ${sort}`}`);
+      }
+      batch(() => {
+        source.query.value = normalized(search.q, source.schema);
+        source.search.value = search.search;
+        source.sort.value = sort;
+      });
+    });
   }
 
   static query({q, search, sort}: DomainSearch): string {
@@ -121,8 +157,14 @@ export class SavedSearches {
 
   private static _saveDialog(source: DomainSource): void {
     const name = new TextInput({label: 'Name', value: label(SavedSearches.of(source)).slice(0, 40)});
+    // saving under a taken name would silently replace that search: refused until the name changes
+    const clash = (value: string) => {
+      const other = SavedSearches.taken(source.table, value);
+      return other === null ? null : `A saved search named ${other} exists.`;
+    };
+    name.addValidator(clash);
     Dialog.create('Save search').add(name)
-      .okDisabled(computed(() => name.value.trim() === '' ? 'Enter a name' : null))
+      .okDisabled(computed(() => name.value.trim() === '' ? 'Enter a name' : clash(name.value)), {footer: true})
       .onOK(() => SavedSearches._saveAs(source, name.peek().trim()), {text: 'SAVE', primary: true})
       .show();
   }

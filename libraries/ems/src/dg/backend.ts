@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {Access} from '@datagrok-libraries/u2';
 import type {IProperty, DataFrameLike} from '@datagrok-libraries/u2';
 import type {AuditEntryLike, DomainBackend, DomainBatchReportLike, DomainDeletedMode, DomainFrameLike, DomainProbeLike,
   DomainQueryLike, DomainReadScope, DomainSupportLike, DomainTableInfoLike, DomainTableLike, DomainTransactionOpLike,
@@ -164,8 +165,19 @@ export class DgDomainTable implements DomainTableLike {
     }
     // the change token is read behind the table-level View grant: a reader who reaches rows
     // through row grants only polls the aggregate over what it may see
-    return new DgDomainTable(address, client, properties, info, access.support,
+    const readable = DgDomainTable.readable(access);
+    return new DgDomainTable(address, client, properties.filter((p) => readable(p.name)),
+      {...info, searchableColumns: info.searchableColumns.filter(readable)}, access.support,
       access.support.version && access.can.view);
+  }
+
+  /** Whether the caller may read a column, by its access: the registry describes every column of
+   * a table, a restricted one too, and only `access().fields` leaves it out (an admin's, and an
+   * unrestricted table's, lists them all, the system columns too). The one place the registry's
+   * answers are narrowed to what this caller may read — the handle and {@link domainFilterSchema}. */
+  static readable(access: DG.DomainAccess): (name: string) => boolean {
+    const fields = Access.from(access);
+    return (name) => fields.field(name) !== 'hidden';
   }
 
   /** The system columns every row carries, ahead of the declared ones — `names` is what this

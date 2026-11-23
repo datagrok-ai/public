@@ -13,7 +13,7 @@ import {DomainList} from './list.js';
 import type {DomainListMode} from './list.js';
 import {SAVE_SHORTCUTS, isSaveKey, DomainForm} from './form.js';
 import {DomainFilters} from './filters.js';
-import {SavedSearches} from './saved-searches.js';
+import {SavedSearches, sortable, normalized} from './saved-searches.js';
 import type {DomainFiltersOptions} from './filters.js';
 import type {DomainChildrenOptions} from './children.js';
 import {DomainAddress} from './address.js';
@@ -988,10 +988,10 @@ export class DomainApp extends Control {
     }
     if (!await this._goTo('list', null))
       return false;
-    const q = params.get('q') ?? '';
+    const q = normalized(params.get('q') ?? '', this.listSource.schema);
     const search = params.get('search') ?? '';
     const trash = this._mode.peek() === 'trash';
-    const sort = trash ? this.listSource.sort.peek() : params.get('sort') ?? this._options.sort ?? '';
+    const sort = trash ? this.listSource.sort.peek() : this._sortable(params.get('sort') ?? this._options.sort ?? '');
     const current = this.listSource.query.peek();
     // already on the list, the gate `goTo` skipped: the query is changing under pending changes
     if ((typeof current === 'string' ? current : Filters.format(current)) === q &&
@@ -1005,6 +1005,12 @@ export class DomainApp extends Control {
       this.listSource.sort.value = sort;
     });
     return true;
+  }
+
+  // a shared `?sort=` may name a column this caller may not read (the table does not describe it):
+  // the server refuses the whole read for it, so it is dropped and the rest of the order kept
+  private _sortable(sort: string): string {
+    return sortable(sort, this.table.properties);
   }
 
   // `draft` is the create page: an entity of "new" without it is the row so keyed

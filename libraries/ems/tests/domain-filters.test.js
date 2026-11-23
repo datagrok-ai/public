@@ -386,3 +386,30 @@ scoped('saved and recent searches: the list names the saved search it holds, his
   filters.dispose();
   src.dispose();
 });
+
+scoped('Save as new search under a taken name is refused, not a silent replace', async () => {
+  userSettings.values = {};
+  const first = {q: 'priority = "high"', search: '', sort: ''};
+  SavedSearches.save('grit.issue', 'S1', first);
+  const src = await issues();
+  src.search.value = 'Nap';
+  await flush();
+  const button = testOwner().build(() => SavedSearches.saveButton(src));
+  document.body.append(button);
+  button.click();
+  await flush();
+  const input = document.querySelector('[role="dialog"] input');
+  const ok = [...document.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent === 'SAVE');
+  assert.ok(input && ok, 'the save dialog is open');
+  input.value = ' s1 ';
+  fire(input, 'input');
+  await flush();
+  assert.match(document.querySelector('[role="dialog"]').textContent, /A saved search named S1 exists\./,
+    'the dialog says the name is taken');
+  ok.click();
+  await flush();
+  assert.deepEqual(SavedSearches.saved('grit.issue').get('S1'), first, 'the saved search S1 is kept');
+  assert.equal(SavedSearches.saved('grit.issue').size, 1, 'nothing was saved under another spelling');
+  button.remove();
+  src.dispose();
+});

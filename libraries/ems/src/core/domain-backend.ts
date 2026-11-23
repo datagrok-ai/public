@@ -236,6 +236,9 @@ export interface DomainFrameLike {
 export interface DomainTableLike {
   /** `'<schema>.<table>'`. */
   address: string;
+  /** The columns the CALLER may read, system columns included: a column its access hides
+   * ({@link access} leaves it out of `fields`) is not described here, nor among
+   * `info.searchableColumns` — so no control can offer it to show, sort, search or filter by. */
   properties: IProperty[];
   info: DomainTableInfoLike;
   /** What the table can do at all — declared, never guessed; see {@link DomainSupportLike}. */

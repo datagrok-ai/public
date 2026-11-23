@@ -357,3 +357,33 @@ scoped('DomainPick.bind: a bound filter is a tree, an empty sibling leaves the n
   assert.deepEqual(DomainPick.bind(tree), {filter: tree, unbound: []});
   assert.deepEqual(DomainPick.bind(undefined), {unbound: []});
 });
+
+scoped('a key search never ORs a searchable column the access hides: the server would refuse the read', async () => {
+  // the registry describes `secret` (searchable); this caller's access leaves it out
+  const grok = await import('datagrok-api/grok');
+  const {TYPE} = await import('datagrok-api/u2core');
+  const {Property} = await import('@datagrok-libraries/u2/tests/platform-doubles.mjs');
+  const {DgDomainBackend} = await import('../src/dg/backend.js');
+  const system = ['id', 'version', 'created_on', 'updated_on', 'author_id'];
+  const queries = [];
+  grok.dapi.domains.table = () => ({
+    access: async () => ({can: {view: true}, support: {systemColumns: system, filters: 'full', batch: {}},
+      fields: Object.fromEntries([...system, 'number', 'title'].map((c) => [c, 'readonly']))}),
+    query: async (spec) => (queries.push(spec), []),
+  });
+  grok.dapi.domains.registry = {
+    rowProperties: async () => [new Property('number', TYPE.INT, {format: 'DG-000000'}),
+      new Property('title', TYPE.STRING), new Property('secret', TYPE.STRING)],
+    tableInfo: async () => ({nameColumn: 'number', businessKey: ['number'], searchableColumns: ['title', 'secret'],
+      constraints: [], refFilters: {}, permissions: [], childTables: []}),
+  };
+  emsBackends.domain = new DgDomainBackend();
+  try {
+    await DomainPick.search('qa.ticket', '42');
+    const columns = JSON.stringify(queries[0].filter).match(/"property":"\w+"/g).map((m) => m.slice(12, -1));
+    assert.deepEqual([...new Set(columns)], ['number', 'title']);
+  } finally {
+    delete grok.dapi.domains.table;
+    delete grok.dapi.domains.registry;
+  }
+});
