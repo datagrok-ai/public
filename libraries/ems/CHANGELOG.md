@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Properties: Fixed the save confirmation listing only what you changed: it lists everything destructive in the server's plan that your changes do not already say (dropped tables and columns with the values they hold, type, unique, auto-numbering and business-key changes, dropped constraints), and a destructive plan waits for a checkbox that names all of it ("Delete 3 stored values", "Change the type of 1 column") before SAVE
+* Properties: Fixed a column you added showing as a locked plugin column after a reload, and adding the next column deleting it with its values: Edit properties reads who owns each column from the registry (`DomainTable.userColumns`), on open and after a conflict reload, and every extension sends all your columns back; on a server too old to say who owns a column, Edit properties refuses to open rather than risk deleting them
+* Properties: Fixed two people editing a table's properties at once silently dropping each other's columns: a save names the extension version the dialog was opened at, so a concurrent change is a conflict that reloads with your edits on top
 * [core#611](https://github.com/datagrok-ai/core/issues/611): Domain schemas: a named error code for an unknown group on grants — the binding dialog reads `unknown-group` instead of matching the message
 * History: Fixed "Show older" turning off with no reason while it loads; it now says "Loading older entries…"
 * u2-domain-pick: Fixed a pick bound to a read-only path rendering a spec error instead of a read-only input

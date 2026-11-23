@@ -215,6 +215,10 @@ export interface ManifestPatch {
   dropTables?: string[];
 }
 
+/** Who owns what on a plugin schema, by table logical name: the registry's `origin` of each table and the
+ * columns users added (`DomainTable.origin`, `DomainTable.userColumns`). The manifest never carries it. */
+export type ManifestOwnership = Record<string, {origin: 'package' | 'user', userColumns: string[]}>;
+
 export interface ManifestModelOptions {
   friendlyName?: string;
   description?: string;
@@ -222,6 +226,8 @@ export interface ManifestModelOptions {
   /** Edit mode: the registered manifest, the immutable baseline the draft annotates and extends. */
   baseline?: ManifestJson;
   extend?: boolean;
+  /** Extend mode: the columns the user owns, and so may edit, remove and must send back with every extension. */
+  ownership?: ManifestOwnership;
 }
 
 interface ColumnState {
@@ -349,6 +355,7 @@ export class ManifestModel {
 
   private readonly _rev = signal(0);
   private readonly _extend: boolean;
+  private _ownership: ManifestOwnership;
   private _baseline: ManifestJson | null;
   // whose storage and unexposed keys `toJSON` carries: the draft's, or the baseline
   private _source!: ManifestJson;
@@ -371,6 +378,7 @@ export class ManifestModel {
   constructor(draft: DraftEnvelope | null, options: ManifestModelOptions = {}) {
     this._baseline = options.baseline ?? null;
     this._extend = options.extend === true;
+    this._ownership = options.ownership ?? {};
     this.name = signal('');
     this.friendlyName = signal(options.friendlyName ?? '');
     this.description = signal(options.description ?? '');
@@ -780,9 +788,12 @@ export class ManifestModel {
     const patch: ExtendPatch = {};
     for (const state of this._tables.values()) {
       const own = [...state.columns.values()].filter((c) => c.owned && (c.registered || c.included));
+      // full state over columns whose owner is unknown would drop the user's: no patch at all
+      if (own.length > 0 && state.registered && !Array.isArray(this._ownership[state.logical]?.userColumns))
+        throw new Error(`u2: who owns the columns of ${state.logical} is unknown — an extension cannot be sent`);
       const now = Object.fromEntries(own.filter((c) => c.included).map((c) => [c.logical, this._columnJSON(c, false)]));
       const before = Object.fromEntries(Object.entries(this._baseline!.tables[state.logical]?.columns ?? {})
-        .filter(([, c]) => c.origin === 'user').map(([name, {origin: _o, ...c}]) => [name, c]));
+        .filter(([name]) => this._userOwned(state.logical, name)));
       if (own.length > 0 && !Fields.same(before, now))
         patch[state.logical] = {columns: now};
     }
@@ -821,12 +832,14 @@ export class ManifestModel {
    * (the server's value stands, the user's is reported); one on an item the new baseline and
    * draft no longer hold is dropped and reported. */
   rebase(baseline: ManifestJson, draft: DraftEnvelope | null,
-    options: {friendlyName: string, description: string}): RebaseReport {
+    options: {friendlyName: string, description: string, ownership?: ManifestOwnership}): RebaseReport {
     const before = this._loaded;
     const ops = Fields.diff(before, this._surface());
     const added = [...this._tables.values()].flatMap((t) => [...t.columns.values()]
       .filter((c) => this._extend && !c.registered).map((c) => [t.remote, c] as const));
     this._baseline = baseline;
+    if (options.ownership !== undefined)
+      this._ownership = options.ownership;
     this.friendlyName.value = options.friendlyName;
     this.description.value = options.description;
     this._load(draft);
@@ -1116,19 +1129,25 @@ export class ManifestModel {
     options: {registered: boolean, included: boolean, inventory?: InventoryTable}): void {
     const columns = new Map<string, ColumnState>();
     const keyByLogical = new Map<string, string>();
-    // `origin` is the registry's read-only ownership stamp, never sent back
-    for (const [name, {origin, ...c}] of Object.entries(decl?.columns ?? {})) {
+    // a copy: edits change the model's declaration, never the baseline's
+    for (const [name, {...c}] of Object.entries(decl?.columns ?? {})) {
       const columnRemote = c.column ?? name;
       keyByLogical.set(name, columnRemote);
       columns.set(columnRemote, {remote: columnRemote, logical: name, decl: c, included: true, type: c.type,
         target: ManifestModel._refTarget(source, c), registered: options.registered,
-        owned: !this._extend || origin === 'user'});
+        owned: !this._extend || this._userOwned(logical, name)});
     }
     const key = decl?.businessKey?.map((k) => keyByLogical.get(k) ?? k) ?? options.inventory?.key ?? [];
     this._tables.set(remote, {remote, logical, decl: decl === null ? null : {...decl},
       included: decl !== null && options.included, key, columns, inventory: options.inventory,
       registered: options.registered});
     this._order.push(remote);
+  }
+
+  // extend mode: whether the user added [column] to [table], the registry's word, never the manifest's
+  private _userOwned(table: string, column: string): boolean {
+    const owned = this._ownership[table]?.userColumns;
+    return Array.isArray(owned) && owned.includes(column);
   }
 
   private _markTableDrift(): void {
