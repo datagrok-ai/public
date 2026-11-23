@@ -270,10 +270,12 @@ export class DomainTable<TRow extends DomainRowLike = DomainRowLike> {
   }
 
   /** What every way into a new row (the ribbon, the empty list, `/new`, a children tab) says when the caller
-   * cannot create a savable row on `source`'s table; null while the table is loading or when they can. A column
+   * cannot create a savable row on `source`'s table; null while the table is loading, when they can, or when they
+   * may not insert at all (nothing offers them a new row). A column
    * the source's defaults fill is not the caller's to set. */
   static noCreate(source: DomainSource): string | null {
-    if (source.edit.value === undefined)
+    // a reader without Insert gets every field readonly, so the reason would blame a column
+    if (source.edit.value === undefined || !source.access.value.can('insert'))
       return null;
     const filled = Object.entries(source.defaults).filter(([, v]) => v !== undefined && v !== null).map(([k]) => k);
     const columns = DomainTable.unsettable(source.schema.properties, source.schema.info, source.access.value, filled);
