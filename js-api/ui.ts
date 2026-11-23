@@ -228,11 +228,10 @@ export function tags(entity: Entity): HTMLElement {
   return api.grok_UI_Tags(entity.dart);
 }
 
-/**
- * Example: {@link https://public.datagrok.ai/js/samples/ui/components/markdown}
- */
-export function markdown(text: string): HTMLElement {
-  return api.grok_UI_Markdown(text);
+/** Renders markdown. Pass `sanitize: true` for untrusted text: scripts and event handlers do not run.
+ * Example: {@link https://public.datagrok.ai/js/samples/ui/components/markdown} */
+export function markdown(text: string, options?: {sanitize?: boolean}): HTMLElement {
+  return api.grok_UI_Markdown(text, options?.sanitize ?? false);
 }
 
 /** An icon by name: Font Awesome by default (`'plus'`), an SVG icon for `.svg` names or `style: 'svg'`,

@@ -127,7 +127,7 @@ export async function smartExecution(prompt: string, sessionId?: string): Promis
         return;
       }
 
-      host.appendChild(ui.markdown(result.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')));
+      host.appendChild(ui.markdown(result.plan.map((s, i) => `${i + 1}. ${s}`).join('\n'), {sanitize: true}));
       if (!result.code)
         return;
 
