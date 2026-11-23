@@ -206,3 +206,32 @@ scoped('a search changed over pending edits is applied by the Save\'s own re-bas
   assert.equal(src.currentRow.value?.id, 'i2');
   src.dispose();
 });
+
+scoped('a search typed and cleared while its read is in flight leaves the unsearched rows shown', async () => {
+  emsBackends.domain = backend();
+  const inner = emsBackends.domain.table.bind(emsBackends.domain);
+  const gate = {hold: false, waiting: []};
+  emsBackends.domain.table = async (address) => {
+    const t = await inner(address);
+    return Object.assign(Object.create(Object.getPrototypeOf(t)), t, {frame: async (spec) => {
+      const f = await t.frame(spec);
+      if (gate.hold)
+        await new Promise((go) => gate.waiting.push(go));
+      return f;
+    }});
+  };
+  const table = await domains.table('grit.issue');
+  const src = testOwner().build(() => table.source({pageSize: 10}));
+  await flush();
+  await wait(10);
+  gate.hold = true;
+  src.search.value = 'Ibuprofen';
+  await until(() => gate.waiting.length === 1);
+  src.search.value = '';
+  await flush();
+  gate.hold = false;
+  gate.waiting.splice(0).forEach((go) => go());
+  await wait(20);
+  assert.deepEqual(src.rows.items.value.map((r) => r.id), ['i1', 'i2', 'i3'], 'the rows match the empty search');
+  src.dispose();
+});

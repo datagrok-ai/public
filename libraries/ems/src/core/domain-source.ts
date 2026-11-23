@@ -509,6 +509,13 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
         // leaves the rows behind the server, and the mark has to say so
         this._isStale.value = false;
       };
+      // the scope went back to the one shown while this read was in flight: the effect saw no change to the
+      // rows shown and started no load, so this one must not land rows read for a scope the user left
+      if (readFor !== this._readFor()) {
+        frame.dispose();
+        await this.refresh();
+        return;
+      }
       if (readFor === this._shownFor && this._frame !== undefined && this._frame !== shownFrame) {
         // the collection shown was swapped while this read was in flight — a save's or a page's re-base —
         // and which of the two reads is newer is unknown: this one is dropped and the collection read
