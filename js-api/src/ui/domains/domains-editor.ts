@@ -1205,15 +1205,21 @@ export class DomainFrameEditor implements IFrameEditor {
         for (const name of Object.keys(fresh)) {
           if (!this._df.columns.contains(name) || DomainFrameEditor.SERVICE_COLUMNS.includes(name))
             continue;
-          const v = fresh[name];
-          // jsonb cells travel as objects; the frame holds them as text. dayjs passes through.
-          const plain = v != null && typeof v === 'object' && typeof v.toISOString !== 'function';
-          this._df.set(name, row, plain ? JSON.stringify(v) : v);
+          this._df.set(name, row, DomainFrameEditor._cellOf(fresh[name]));
         }
       }
     });
     this._resetCaches();
     this._fire();
+  }
+
+  /** A server value as the frame holds it: json and string_list values travel as objects and
+   * arrays, the frame holds them as JSON text (a Dart map in the cell makes the change compare
+   * throw). dayjs passes through. */
+  private static _cellOf(v: unknown): unknown {
+    const plain = v != null && typeof v === 'object'
+      && typeof (v as {toISOString?: unknown}).toISOString !== 'function';
+    return plain ? JSON.stringify(v) : v;
   }
 
   /** The reload/overwrite dialog for a version conflict on [failing], with the outcome applied:
@@ -1252,12 +1258,13 @@ export class DomainFrameEditor implements IFrameEditor {
           this._write(() => {
             for (const name of Object.keys(fresh))
               if (this._df.columns.contains(name))
-                this._df.set(name, row, fresh[name]);
+                this._df.set(name, row, DomainFrameEditor._cellOf(fresh[name]));
           });
         this._clearRowState(row);
         // The pre-reload values are gone: a snapshot of them would make the next
         // in-grid edit record an "original" the cell never held.
         this._snapshots.delete(row);
+        this._df.rows.requestFilter();
         this._fire();
         return true;
       }
