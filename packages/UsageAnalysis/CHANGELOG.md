@@ -2,6 +2,7 @@
 
 ## v.next
 
+* core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
 * Release dashboard: Tickets read GitHub issues instead of Jira (needs the `githubToken` credential)
 * Test dashboards: Ticket verdicts read GitHub issues instead of Jira
 * Test dashboards: Fixed the Test Track tickets status column

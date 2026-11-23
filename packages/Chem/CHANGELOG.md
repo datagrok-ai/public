@@ -2,6 +2,7 @@
 
 ## v.next
 
+* core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
 * R-Groups Analysis: Fixed the highlight helper column showing in the grid
 * Chemical space: UMAP's Random Seed applies with Use WebGPU too: the same seed gives the same coordinates (on the same GPU). Test: `top menu chem space`, chemSpace: same seed, same coordinates, on the GPU and on the CPU
 * Chemical space: The scatter plot labels points with the molecules only for tables of fewer than 20,000 rows, and always draws circle markers

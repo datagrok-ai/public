@@ -2,6 +2,7 @@
 
 ## v.next
 
+* core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
 * Biostructure viewer: Fixed the `layoutShowControls` and `layoutIsExpanded` properties not following the Mol* `Toggle Controls Panel` and `Toggle Expanded Viewport` buttons
 * PDB_ID renderer: Fixed missing structure images: RCSB moved them to `cdn.rcsb.org/images/structures/pdb/`
 * Biostructure viewer: Fixed a structure passed in `dataJson` or `pdb` being replaced by the table's Molecule3D column (the AutoDock panel showed the pose without its receptor); the viewer now picks its columns only after its options are applied, and only when it is given no structure

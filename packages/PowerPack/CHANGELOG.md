@@ -2,6 +2,7 @@
 
 ## v.next
 
+* core#1765: Detectors: Declared the column types the semantic type detectors check, so the platform no longer calls them for other columns
 * Spotlight: Packages can add tabs: a function with `meta.role: spotlightTab` that returns a widget becomes a tab after the built-in ones, named by its friendly name; `meta.spotlightDefault: true` opens the Spotlight on it the first time it appears, after which the tab the user last picked is kept. What a tab finds goes to the preview below the Spotlight, as the Workspace tab's previews do, through `PowerPack:showSpotlightPreview(content, title)`
 * [public#4640](https://github.com/datagrok-ai/public/issues/4640): Spotlight: Fixed the Interactive Tutorials links doing nothing; a new user's empty workspace shows the getting-started columns across the full width; headers sit further from their items than the items from each other; empty tabs' messages line up with the tab names
 * Search: The home page's search moves into a row that is there anyway, leaving more room below: the tab strip while Home is the only tab, otherwise the view's ribbon; the page has less padding on top

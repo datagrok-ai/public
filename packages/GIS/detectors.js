@@ -24,7 +24,7 @@ const SEMTYPEGIS = {
 
 class GisPackageDetectors extends DG.Package {
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: double}
   //output: string semType
   //description: detect longitude/latitude coordinates
   detectGisCoord(col) {
@@ -79,7 +79,7 @@ class GisPackageDetectors extends DG.Package {
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   //description: detector of countries
   detectGisCountry(col) {
@@ -161,7 +161,7 @@ class GisPackageDetectors extends DG.Package {
   // }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   //description: detector address
   detectGisAddress(col) {

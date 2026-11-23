@@ -1,13 +1,13 @@
 class ChartsPackageDetectors extends DG.Package {
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: string}
   //output: string semType
   detectFlags(col) {
     return (col.type === DG.TYPE.STRING && col.name === 'flag') ? 'flag' : null;
   }
 
   //meta.role: semTypeDetector
-  //input: column col
+  //input: column col {type: numerical}
   //output: string semType
   detectMagnitude(col) {
     if ((col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) &&
