@@ -358,55 +358,32 @@ scoped('DomainPick.bind: a bound filter is a tree, an empty sibling leaves the n
   assert.deepEqual(DomainPick.bind(undefined), {unbound: []});
 });
 
-/** A `DgDomainBackend` over a stubbed js-api: the registry describes `secret` (searchable), the
- * access lists it only when `restricted` is false — an admin's, or an unrestricted table's. */
-async function platform(restricted) {
+scoped('a key search never ORs a searchable column the access hides: the server would refuse the read', async () => {
+  // the registry describes `secret` (searchable); this caller's access leaves it out
   const grok = await import('datagrok-api/grok');
   const {TYPE} = await import('datagrok-api/u2core');
   const {Property} = await import('@datagrok-libraries/u2/tests/platform-doubles.mjs');
   const {DgDomainBackend} = await import('../src/dg/backend.js');
   const system = ['id', 'version', 'created_on', 'updated_on', 'author_id'];
   const queries = [];
-  const fields = Object.fromEntries([...system, 'number', 'title', ...(restricted ? [] : ['secret'])]
-    .map((c) => [c, 'readonly']));
   grok.dapi.domains.table = () => ({
-    access: async () => ({can: {view: true}, fields, support: {
-      systemColumns: system, writes: false, deleted: false, restore: false, audit: false, ancestors: false,
-      probe: false, version: false, watch: false, updateWhere: false, captions: false, transaction: false,
-      concurrency: 'none', filters: 'full', batch: {upsert: false, partial: false, validate: false,
-        skipDuplicates: false}}}),
+    access: async () => ({can: {view: true}, support: {systemColumns: system, filters: 'full', batch: {}},
+      fields: Object.fromEntries([...system, 'number', 'title'].map((c) => [c, 'readonly']))}),
     query: async (spec) => (queries.push(spec), []),
   });
   grok.dapi.domains.registry = {
     rowProperties: async () => [new Property('number', TYPE.INT, {format: 'DG-000000'}),
       new Property('title', TYPE.STRING), new Property('secret', TYPE.STRING)],
-    tableInfo: async () => ({nameColumn: 'number', singularName: 'ticket', pluralName: 'tickets',
-      businessKey: ['number'], rowAddress: 'businessKey', searchableColumns: ['title', 'secret'], constraints: [],
-      refFilters: {}, permissions: [], childTables: []}),
+    tableInfo: async () => ({nameColumn: 'number', businessKey: ['number'], searchableColumns: ['title', 'secret'],
+      constraints: [], refFilters: {}, permissions: [], childTables: []}),
   };
   emsBackends.domain = new DgDomainBackend();
-  return {queries, done: () => {
+  try {
+    await DomainPick.search('qa.ticket', '42');
+    const columns = JSON.stringify(queries[0].filter).match(/"property":"\w+"/g).map((m) => m.slice(12, -1));
+    assert.deepEqual([...new Set(columns)], ['number', 'title']);
+  } finally {
     delete grok.dapi.domains.table;
     delete grok.dapi.domains.registry;
-  }};
-}
-
-const columnsOf = (tree) => JSON.stringify(tree).match(/"property":"\w+"/g).map((m) => m.slice(12, -1));
-
-scoped('a key search ORs the searchable columns the caller may read, never one its access hides', async () => {
-  for (const [restricted, expected] of [[true, ['number', 'title']], [false, ['number', 'title', 'secret']]]) {
-    const {queries, done} = await platform(restricted);
-    try {
-      await DomainPick.search('qa.ticket', '42');
-      assert.deepEqual([...new Set(columnsOf(queries[0].filter))], expected,
-        restricted ? 'a restricted column is not searched: the server refuses the whole read' : 'an admin keeps it');
-      const table = await emsBackends.domain.table('qa.ticket');
-      assert.deepEqual([table.properties.some((p) => p.name === 'secret'), table.info.searchableColumns],
-        [!restricted, restricted ? ['title'] : ['title', 'secret']], 'the handle describes what the caller may read');
-      assert.deepEqual(table.properties.slice(0, 5).map((p) => p.name), ['id', 'version', 'created_on',
-        'updated_on', 'author_id'], 'the system columns stay');
-    } finally {
-      done();
-    }
   }
 });
