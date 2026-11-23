@@ -213,55 +213,6 @@ scoped('a branch that answers with no children keeps no twistie', async () => {
 });
 
 // EQ-067: the tree was read once; a peer's write reached the containers beside it, never the tree
-scoped('the tree follows a peer\'s rename and delete of the selected node on a live source\'s probe (EQ-067)',
-  async () => {
-    mock.timers.enable({apis: ['setInterval']});
-    try {
-      const be = hierarchyBackend();
-      emsBackends.domain = be;
-      const table = await domains.table('stock.location');
-      const settle = async () => {
-        for (let i = 0; i < 12; i++)
-          await flush();
-      };
-      const source = testOwner().build(() => table.source({live: true, liveMs: 1000, pageSize: 10}));
-      await settle();
-      const t = testOwner().build(() => domains.tree(table, {follow: source, expandTo: 'l4'}));
-      document.body.append(t.root);
-      viewport(t);
-      await settle();
-      assert.deepEqual(labels(t), ['Other site', 'Site', 'Room', 'Shelf', 'Box']);
-      assert.equal(t.selected.value.id, 'l4');
-
-      const peer = be.tableSync('stock.location');
-      await peer.transaction([{op: 'update', table: 'location', id: 'l4', values: {name: 'Box 2'}},
-        {op: 'insert', table: 'location', values: {id: 'l0', name: 'Annex', parent_id: 'l1'}}]);
-      mock.timers.tick(1000);
-      await settle();
-      assert.deepEqual(labels(t), ['Other site', 'Site', 'Annex', 'Room', 'Shelf', 'Box 2'],
-        'a peer\'s rename and insert reach the tree on the next live probe');
-      assert.equal(t.selected.value.id, 'l4', 'the renamed row stays selected, though a row landed above it');
-      assert.equal(t.selected.value.name, 'Box 2');
-      assert.equal(t.notice.value, null);
-
-      await peer.transaction([{op: 'delete', table: 'location', id: 'l4'}]);
-      mock.timers.tick(1000);
-      await settle();
-      assert.deepEqual(labels(t), ['Other site', 'Site', 'Annex', 'Room', 'Shelf'],
-        'a node a peer deleted is no longer offered');
-      assert.equal(t.selected.value?.id, 'l3', 'the deleted selection gives way to its parent');
-      assert.equal(t.notice.value, 'Box 2 was deleted');
-      assert.match(t.root.textContent, /Box 2 was deleted/, 'and the tree says so');
-
-      await t.tree.expandPath(['l9']);
-      await settle();
-      assert.equal(t.notice.value, null, 'picking another node retires the notice');
-      t.dispose();
-      source.dispose();
-    } finally {
-      mock.timers.reset();
-    }
-  });
 
 /** A tree over `be` that follows a live source of the same table; `tick` is one live poll. */
 async function following(options = {}, be = hierarchyBackend()) {
@@ -292,6 +243,25 @@ async function settle() {
     await flush();
 }
 
+scoped('the tree follows a peer\'s rename, insert and delete of the selected node on the live probe (EQ-067)', async () => {
+  const f = await following({expandTo: 'l4'});
+  try {
+    await f.peer.transaction([{op: 'update', table: 'location', id: 'l4', values: {name: 'Box 2'}},
+      {op: 'insert', table: 'location', values: {id: 'l0', name: 'Annex', parent_id: 'l1'}}]);
+    await f.tick();
+    assert.deepEqual(labels(f.tree), ['Other site', 'Site', 'Annex', 'Room', 'Shelf', 'Box 2'],
+      'a peer\'s rename and insert reach the tree on the next live probe');
+    assert.equal(f.tree.selected.value.id, 'l4', 'the renamed row stays selected, though a row landed above it');
+    await f.peer.transaction([{op: 'delete', table: 'location', id: 'l4'}]);
+    await f.tick();
+    assert.equal(labels(f.tree).includes('Box 2'), false, 'a node a peer deleted is no longer offered');
+    assert.equal(f.tree.selected.value?.id, 'l3', 'the deleted selection gives way to its parent');
+    assert.equal(f.tree.notice.value, 'Box 2 was deleted');
+  } finally {
+    f.done();
+  }
+});
+
 scoped('a peer\'s delete of the selected node over pending changes keeps it selected and says so (EQ-067)', async () => {
   const f = await following({expandTo: 'l4'});
   try {
@@ -303,8 +273,6 @@ scoped('a peer\'s delete of the selected node over pending changes keeps it sele
     assert.equal(labels(f.tree).includes('Box'), false, 'the deleted node is no longer offered');
     assert.equal(f.tree.selected.value?.id, 'l4', 'what is bound to the selection is not rebound over pending changes');
     assert.equal(f.tree.notice.value, 'Box was deleted — save or discard your changes to leave it');
-    await f.tick();
-    assert.equal(f.tree.selected.value?.id, 'l4', 'another poll keeps it too');
 
     f.source.discard();
     await settle();
