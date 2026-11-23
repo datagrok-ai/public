@@ -138,13 +138,22 @@ export class EditorEditState implements EditState {
   }
 
   /** Before a save: the server's marks still standing are dropped, so the editor sends the batch
-   * and the server decides again — re-marking what it still refuses. `validate()` re-runs the
-   * client's own checks over the pending rows and takes back every error they do not find. */
+   * and the server decides again — re-marking what it still refuses. Each marked cell's own checks
+   * run again, and take the mark back where they find nothing; `validate()` would check every cell
+   * of the pending rows, and mark an untouched stored value that never holds Save. */
   retry(): void {
-    if (this._refused.size === 0)
-      return;
+    const marked = [...this._refused].flatMap(([key, cells]) => [...cells.keys()].map((column) => ({key, column})));
     this._refused.clear();
-    this.editor.validate();
+    for (const {key, column} of marked) {
+      const at = this.indexOf(key);
+      if (at < 0)
+        continue;
+      // a cell with no pending value has no original to track it by: written as it stands, it is clean again
+      if (this.editor.isChanged(at, column))
+        this.editor.commitEdit(at, column);
+      else
+        this.editor.setValue(at, column, this.df.get(column, at));
+    }
   }
 
   /** A json or string_list value retyped as the row had it is the cell reverted, not a write the editor

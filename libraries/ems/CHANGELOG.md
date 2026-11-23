@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Saving: Fixed a second Save after the server refused a cell being held by a value stored in another field of the row that you never edited (an empty field since made required): only the cells the server marked are checked again
 * Permissions: Fixed a save refused for lack of permission keeping Save off after the access was granted again: once a re-read of the access finds the grant, Save sends the pending changes
 * Lists: Fixed scrolling a list whose filter was changed over unsaved edits appending rows of the new filter behind the old ones
 * Lists: Fixed the current row and the selection snapping back to where they were when a save started (or a Load more that found the list shifted) if you moved them while the rows were re-read: your newer choice stands
