@@ -13,6 +13,7 @@ register('@datagrok-libraries/u2/tests/dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/facade.js');
 const {DomainChildren} = await import('../src/dg/children.js');
 const {DomainPick} = await import('../src/dg/pick.js');
+const {DomainErrors} = await import('../src/dg/errors.js');
 const {registerDomainComponents} = await import('../src/dg/registrations.js');
 
 /** Companies with contacts, and deals that point at a company twice (seller and buyer). */
@@ -313,6 +314,41 @@ scoped('a New from the children toolbar is an unsaved change of its own: the gat
   assert.equal(parent.session.summary.value, '1 unsaved change');
   children.dispose();
   parent.dispose();
+});
+
+// EQ-062: no live child under a parent in the trash, whatever order the Save sends the ops in
+const crmWithEmpty = () => new MemoryDomainBackend(SCHEMA, {rows: Object.fromEntries(Object.entries(ROWS).map(([t, list]) =>
+  [t, [...list, ...t === 'company' ? [{id: 'c3', name: 'Initech'}] : []].map((r) => ({...r}))]))});
+
+scoped('EQ-062: a Save that deletes the parent and adds a child under it is refused whole', async () => {
+  const memory = emsBackends.domain = crmWithEmpty();
+  const companies = await domains.table('crm.company');
+  const parent = testOwner().build(() => companies.source({pageSize: 10}));
+  await flush();
+  parent.currentRow.value = parent.rows.byKey('c3');
+  const children = testOwner().build(() => domains.children(parent, {mode: 'list'}));
+  await settle();
+  children.child(CONTACTS).newRow({name: 'Peter'});
+  parent.edit.value.markDeleted('c3');
+  assert.equal(await parent.session.save(), false, 'a child under a deleted parent is refused');
+  assert.equal(memory.tableSync('crm.company').rows.find((r) => r.id === 'c3').is_deleted, undefined, 'the parent stays');
+  assert.deepEqual(memory.tableSync('crm.contact').rows.filter((r) => r.name === 'Peter'), [], 'nothing landed');
+  children.dispose();
+  parent.dispose();
+});
+
+scoped('EQ-062: the refusal names the row under the deleted parent, not another edit of the same Save', async () => {
+  const memory = emsBackends.domain = crmWithEmpty();
+  const contacts = await domains.table('crm.contact');
+  const src = testOwner().build(() => contacts.source({pageSize: 10}));
+  await flush();
+  await memory.transaction([{op: 'delete', table: 'crm.company', id: 'c3'}]);
+  src.rows.byKey('k1').name = 'Ann B.';
+  src.newRow({name: 'Peter', company_id: 'c3'});
+  assert.equal(await src.save(), false);
+  await flush();
+  assert.equal(DomainErrors.message(src.error.value, src), 'Cannot save "Peter": its company was deleted. Restore the company first.');
+  src.dispose();
 });
 
 scoped('EQ-053: a children tab whose table needs a column the user cannot set has its New off and says why', async () => {

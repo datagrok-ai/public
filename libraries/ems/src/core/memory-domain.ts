@@ -232,6 +232,19 @@ export class MemoryDomainBackend implements DomainBackend {
     const audit: [MemoryTable, AuditLine][] = [];
     const tx = uuid4();
     const ts = new Date().toISOString();
+    // the server's live-parent rule (`_checkParentsLive`): a live row may not point at a row in the trash,
+    // read against this transaction's own copies, so a parent an earlier op deleted counts as deleted
+    const parentsLive = (table: MemoryTable, row: Row, columns: string[]): void => {
+      for (const column of columns) {
+        const parentTable = this._tables.get(table.refs[column]);
+        const parent = parentTable === undefined || row[column] == null ? undefined :
+          rowsOf(parentTable).find((r) => r.id === row[column]);
+        if (parent?.[IS_DELETED] === true) {
+          throw new DomainBackendError('restrict',
+            `Column "${column}" references a deleted row in "${parentTable!.name}" ("${String(row[column])}")`);
+        }
+      }
+    };
     for (const index of order) {
       const op = ops[index];
       const table = tables[index];
@@ -246,6 +259,7 @@ export class MemoryDomainBackend implements DomainBackend {
       if (op.op === 'insert') {
         const row = table.stamp(table.withDefaults(values), 1);
         table.check(row, index);
+        parentsLive(table, row, Object.keys(table.refs));
         rows.push(row);
         if (op.ref !== undefined)
           refs.set(op.ref, row.id as string);
@@ -273,15 +287,9 @@ export class MemoryDomainBackend implements DomainBackend {
         rows[at] = table.stamp({...rows[at], [IS_DELETED]: true}, (rows[at].version as number) + 1);
         results[index] = {id};
       } else if (op.op === 'restore') {
-        for (const [column, target] of Object.entries(table.refs)) {
-          const parentTable = this._tables.get(target);
-          const parent = parentTable === undefined ? undefined :
-            rowsOf(parentTable).find((r) => r.id === rows[at][column]);
-          if (parent?.[IS_DELETED] === true) {
-            throw new DomainBackendError('restrict',
-              `Column "${column}" references a deleted row in "${parentTable!.name}"`);
-          }
-        }
+        if (rows[at][IS_DELETED] !== true)
+          throw new DomainBackendError('not-found', `Operation ${index}: no deleted row "${id}"`);
+        parentsLive(table, rows[at], Object.keys(table.refs));
         const row = table.stamp({...rows[at], [IS_DELETED]: false}, (rows[at].version as number) + 1);
         entry('undelete', id!, {...rows[at]}, {...row});
         rows[at] = row;
@@ -295,6 +303,7 @@ export class MemoryDomainBackend implements DomainBackend {
         }
         const row = table.stamp({...rows[at], ...values}, (rows[at].version as number) + 1);
         table.check(row, index);
+        parentsLive(table, row, Object.keys(values).filter((column) => column in table.refs));
         entry(op.op, id!, {...rows[at]}, {...row});
         rows[at] = row;
         results[index] = MemoryDomainBackend._stamped(row, row.version as number);

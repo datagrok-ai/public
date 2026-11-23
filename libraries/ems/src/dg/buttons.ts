@@ -71,14 +71,15 @@ export function discardButton(target: SessionTarget,
  * edits; a function receives the row that was current (the one just saved, say) so an app carries
  * fields over from one entry to the next. The press is a change of its own — the draft counts
  * against the session from the start, unlike the create page's initial row. Permission ⇒ hidden:
- * absent without the `insert` capability; state ⇒ off, saying "Loading…", until the table is loaded. */
+ * absent without the `insert` capability; state ⇒ off, saying "Loading…", until the table is loaded.
+ * `disabled` is the caller's own reason to keep it off, read live; `null` while it has none. */
 export function newButton(source: DomainSource,
   values: Record<string, unknown> | ((last: RowView | null) => Record<string, unknown>) = {},
-  options: SessionButtonOptions = {}): Control {
+  options: SessionButtonOptions & {disabled?: () => string | null} = {}): Control {
   const control = component((self) => {
     const el = button(options.text ?? 'New', () => source.newRow(
       typeof values === 'function' ? values(source.currentRow.peek()) : values),
-    {disabled: computed(() => source.edit.value === undefined ? 'Loading…' : DomainTable.noCreate(source))});
+    {disabled: computed(() => source.edit.value === undefined ? 'Loading…' : options.disabled?.() ?? DomainTable.noCreate(source))});
     self.effect(() => {
       el.hidden = !source.access.value.can('insert');
     });

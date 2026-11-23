@@ -217,7 +217,13 @@ export class DomainChildren extends Control {
         const body = grid?.root ??
           divH([domains.list(child).root, domains.form(child).root], 'u2-domain-children-split');
         const empty = span(`No ${entry.label.toLowerCase()}.`, 'u2-domain-children-empty');
-        const add = domains.newButton(child);
+        // a child saved under a parent the same Save deletes would land live under a row in the trash
+        const add = domains.newButton(child, {}, {disabled: () => {
+          this.parent.changeCount.value;
+          return this.parent.currentRow.value?.[Rows.STATE] !== 'deleted' ? null :
+            `This ${nounOf(this.parent.schema.info, true)} is deleted on Save: ` +
+            `undo the deletion to add ${entry.label.toLowerCase()}`;
+        }});
         // a list's form takes the focus itself; the grid needs it handed over once the button's own click has refocused it
         if (grid !== null)
           add.root.addEventListener('click', () => queueMicrotask(() => grid.grid.root.focus()));

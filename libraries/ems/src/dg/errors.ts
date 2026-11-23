@@ -1,14 +1,16 @@
 import {emsBackends, nounOf} from '../core/domain-backend.js';
 import * as grok from 'datagrok-api/grok';
 import {Rows, notify} from '@datagrok-libraries/u2';
-import type {NotifyHandle} from '@datagrok-libraries/u2';
-import type {DomainSource} from '../core/domain-source.js';
+import type {NotifyHandle, RowView} from '@datagrok-libraries/u2';
+import {DomainSource} from '../core/domain-source.js';
 import {DgDomainBackend} from './backend.js';
 
-/** How both backends word the veto on restoring a child whose parent is still deleted. Matched by its shape,
- * whatever the code says: over the platform it arrives as the session's refusal text (code `'refused'`), and
- * the sentence is the only thing both paths share. */
-const RESTRICT_PARENT = /Column "(.+?)" references a deleted row in "(.+?)"/;
+/** How both backends word the veto on a row that would be live under a deleted parent: a restore, an insert or
+ * a reference moved onto it. Matched by its shape, whatever the code says: over the platform it arrives as the
+ * session's refusal text (code `'refused'`), and the sentence is the only thing both paths share. */
+// the parent's id follows where the backend gives it (an insert's or an update's veto); an older server's restore
+// veto ends at the table
+const RESTRICT_PARENT = /Column "(.+?)" references a deleted row in "(.+?)"(?: \("(.+?)"\))?/;
 
 /** What a domain control says when the source reports a failure. Over the platform the js-api editor never
  * throws from `save()` (it balloons, maps column errors onto the cells, resolves a 409 itself), so nothing here
@@ -34,13 +36,69 @@ export class DomainErrors {
       return raw;
     // the backend names a column and a table; the user asked to bring a ROW back, and the way
     // forward is the parent, not the column
-    const prop = source?.schema.properties.find((p) => p.name === parts[1]);
-    const target = (prop?.friendlyName ?? parts[2]).replace(/_/g, ' ').toLowerCase();
+    const column = parts[1];
     const staged = (source?.pending() ?? []).filter((r) => r[Rows.STATE] === 'restored');
-    const name = source?.schema.info.nameColumn;
-    const row = staged.length !== 1 ? null : (name == null ? null : staged[0][name]) ?? staged[0].id;
-    return `Cannot restore${row === null ? '' : ` "${String(row)}"`}: its ${target} was deleted too. ` +
-      `Restore the ${target} first.`;
+    const writer = staged.length > 0 ? undefined : DomainErrors._writer(source, column, parts[3]);
+    const owner = writer?.source ?? source;
+    const prop = owner?.schema.properties.find((p) => p.name === column);
+    const target = (prop?.friendlyName ?? parts[2]).replace(/_/g, ' ').toLowerCase();
+    if (writer === null)
+      return `Cannot save: a reference points at a deleted ${target}. Restore the ${target} first.`;
+    if (writer === undefined) {
+      const row = staged.length !== 1 ? null : DomainErrors._nameOf(source!, staged[0]);
+      return `Cannot restore${row === null ? '' : ` "${row}"`}: its ${target} was deleted too. ` +
+        `Restore the ${target} first.`;
+    }
+    // a new row, or a reference moved: the parent is the way forward, so it is named as the user knows it
+    const child = DomainErrors._nameOf(writer.source, writer.row);
+    const subject = `Cannot save${child === null ? '' : ` "${child}"`}: its ${target}`;
+    const parent = DomainErrors._held(String(writer.row[column]));
+    if (parent === undefined)
+      return `${subject} was deleted. Restore the ${target} first.`;
+    const named = DomainErrors._nameOf(parent.source, parent.row);
+    return parent.row[Rows.STATE] === 'deleted' ?
+      `${subject} "${named}" is being deleted. Undo the deletion, or remove the new reference to it.` :
+      `${subject} "${named}" was deleted. Restore the ${target} first.`;
+  }
+
+  // the row naming `parentId`; without it (an older server) the one whose parent is known deleted, null if ambiguous
+  private static _writer(source: DomainSource | undefined, column: string, parentId: string | undefined):
+    {source: DomainSource, row: RowView} | null | undefined {
+    if (source === undefined)
+      return undefined;
+    const candidates: {source: DomainSource, row: RowView}[] = [];
+    for (const s of [source, ...[...DomainSource.live].filter((x) => x !== source && x.session === source.session)]) {
+      if (!s.schema.properties.some((p) => p.name === column))
+        continue;
+      for (const row of s.pending()) {
+        if ((row[Rows.STATE] === 'new' || row[Rows.STATE] === 'modified') && row[column] != null &&
+          (parentId === undefined || String(row[column]) === parentId))
+          candidates.push({source: s, row});
+      }
+    }
+    if (candidates.length <= 1 || parentId !== undefined)
+      return candidates[0];
+    const dead = candidates.filter((c) => {
+      const parent = DomainErrors._held(String(c.row[column]))?.row;
+      return parent !== undefined && (parent[Rows.STATE] === 'deleted' || Rows.isDeleted(parent));
+    });
+    return dead.length === 1 ? dead[0] : null;
+  }
+
+  // the row a live source of this page holds under `id`
+  private static _held(id: string): {source: DomainSource, row: RowView} | undefined {
+    for (const source of DomainSource.live) {
+      const row = source.rows.byKey(id);
+      if (row !== undefined)
+        return {source, row};
+    }
+    return undefined;
+  }
+
+  private static _nameOf(source: DomainSource, row: RowView): string {
+    const name = source.schema.info.nameColumn;
+    const value = name == null ? null : row[name];
+    return String(value ?? source.caption?.(row) ?? row.id);
   }
 
   /** What a page over `source` says in place of its empty or not-found state when the table denies the caller
