@@ -273,7 +273,7 @@ export function linkBareUrls(text: string): string {
 /** Null when the platform's markdown parser throws (it did on a paragraph ending in `](`). */
 export function tryMarkdown(content: string): HTMLElement | null {
   try {
-    return ui.markdown(normalizeMarkdownTables(linkBareUrls(content)));
+    return ui.markdown(normalizeMarkdownTables(linkBareUrls(content)), {sanitize: true});
   } catch {
     return null;
   }

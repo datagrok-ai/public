@@ -143,4 +143,14 @@ category('JS API: additions', () => {
     expect((await users.order('login', true).first()).login >= (await users.order('login').first()).login, true);
     expect((await users.list()).length, all.length);
   });
+
+  test('ui.markdown: sanitize drops scripts, handlers and javascript: links, keeps formatting', async () => {
+    const md = '**bold** [ok](https://datagrok.ai) [bad](javascript:window.__mdSanitize=1)\n\n' +
+      '<img src="/no-such-image.png" onerror="window.__mdSanitize=1"><script>window.__mdSanitize=1</script>';
+    const el = ui.markdown(md, {sanitize: true});
+    expect(el.querySelector('strong')?.textContent, 'bold');
+    expect(el.querySelector('a[href="https://datagrok.ai"]') != null, true);
+    expect(el.querySelector('script, [onerror], a[href^="javascript"]'), null);
+    expect(ui.markdown(md).querySelector('[onerror]') != null, true, 'the default stays trusted');
+  });
 });
